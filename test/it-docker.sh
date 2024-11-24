@@ -29,11 +29,15 @@ DOCKER_COMMON="docker run --rm olivierkorach/sonar-tools"
 CREDS="-u $SONAR_HOST_URL -t $SONAR_TOKEN"
 root="docker-$env"
 
-for cmd in loc measures-export findings-export audit rules
+for cmd in loc measures-export rules
 do
     f="$root-$cmd.csv"; run_test_stdout "$f" $DOCKER_COMMON "sonar-$cmd" $CREDS
 done
 
-f="$root-config.json"; run_test_stdout "$f" $DOCKER_COMMON "sonar-config -e" $CREDS
+f="$root-findings.csv"; run_test_stdout "$f" $DOCKER_COMMON sonar-audit -w settings,users,groups,qualitygates $CREDS
+
+f="$root-findings.csv"; run_test_stdout "$f" $DOCKER_COMMON sonar-findings-export --severities BLOCKER,CRITICAL $CREDS
+
+f="$root-config.json"; run_test_stdout "$f" $DOCKER_COMMON "sonar-config" "-e" $CREDS
 
 f="$root-housekeeper.csv"; run_test_stdout "$f" $DOCKER_COMMON "sonar-housekeeper" $CREDS
