@@ -176,4 +176,3 @@ def test_import() -> None:
 def test_audit_disabled() -> None:
     """test_audit_disabled"""
     assert len(qualityprofiles.audit(util.SQ, {"audit.qualityProfiles": False})) == 0
-
