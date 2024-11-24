@@ -87,6 +87,13 @@ def clean(*files: str) -> None:
             pass
 
 
+def file_empty(file: str) -> bool:
+    """Returns whether a file exists and is empty"""
+    if not os.path.isfile(file):
+        return False
+    return os.stat(file).st_size == 0
+
+
 def file_not_empty(file: str) -> bool:
     """Returns whether a file exists and is not empty"""
     if not os.path.isfile(file):
@@ -126,10 +133,10 @@ def __get_args_and_file(string_arguments: str) -> tuple[Optional[str], list[str]
     """Gets the list arguments and output file of a sonar-tools cmd"""
     args = string_arguments.split(" ")
     try:
-        file = args[args.index(opt.REPORT_FILE) + 1]
+        file = args[args.index(f"--{opt.REPORT_FILE}") + 1]
     except ValueError:
         try:
-            file = args[args.index(opt.REPORT_FILE_SHORT) + 1]
+            file = args[args.index(f"-{opt.REPORT_FILE_SHORT}") + 1]
         except ValueError:
             file = None
     return file, args
@@ -139,6 +146,7 @@ def run_cmd(func: callable, arguments: str, expected_code: int) -> Optional[str]
     """Runs a sonar-tools command, verifies it raises the right exception, and returns the expected code"""
     logging.info("RUNNING: %s", arguments)
     file, args = __get_args_and_file(arguments)
+    logging.info("file = %s, args = %s", str(file), str(args))
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", args):
             func()
