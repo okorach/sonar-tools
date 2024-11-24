@@ -54,16 +54,15 @@ def load(config_name: Optional[str] = None, settings: types.ConfigSettings = Non
     if settings is None:
         settings = {}
 
-    default_conf = _load_properties_file(pathlib.Path(__file__).parent / f"{config_name}.properties")
-    home_conf = _load_properties_file(f"{os.path.expanduser('~')}{os.sep}.{config_name}.properties")
-    local_conf = _load_properties_file(f"{os.getcwd()}{os.sep}{config_name}.properties")
-
-    _CONFIG_SETTINGS = {**default_conf, **home_conf, **local_conf, **settings}
+    _CONFIG_SETTINGS = _load_properties_file(pathlib.Path(__file__).parent / f"{config_name}.properties")
+    _CONFIG_SETTINGS.update(_load_properties_file(f"{os.path.expanduser('~')}{os.sep}.{config_name}.properties"))
+    _CONFIG_SETTINGS.update(_load_properties_file(f"{os.getcwd()}{os.sep}.{config_name}.properties"))
+    _CONFIG_SETTINGS.update(settings)
 
     for key, value in _CONFIG_SETTINGS.items():
         _CONFIG_SETTINGS[key] = util.convert_string(value)
 
-    log.debug("Audit settings = %s", util.json_dump(_CONFIG_SETTINGS))
+    log.info("Audit settings = %s", util.json_dump(_CONFIG_SETTINGS))
     return _CONFIG_SETTINGS
 
 
