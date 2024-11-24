@@ -10,7 +10,7 @@ DOCKER_OPTS="-u $DOCKER_URL -t $SONAR_TOKEN -l $DOCKER_LOG"
 HOST_OPTS="-u $HOST_URL -t $SONAR_TOKEN -l $HOST_LOG"
 
 DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-source "$DIR/test-tools.sh"
+source "$DIR/it-tools.sh"
 
 announce_test "sonar-loc"
 docker run --rm -w `pwd` -v `pwd`:`pwd` -e SONAR_TOKEN=$SONAR_TOKEN -e SONAR_HOST_URL=$DOCKER_URL sonar-tools sonar-loc -l $DOCKER_LOG -f loc.docker.csv 2>/dev/null

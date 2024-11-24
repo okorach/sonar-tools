@@ -22,7 +22,7 @@
 env=${1:-gen}
 
 DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-source "$DIR/test-tools.sh"
+source "$DIR/it-tools.sh"
 
 # DOCKER_COMMON="docker run --rm -w `pwd` -v `pwd`:/home/sonar olivierkorach/sonar-tools"
 DOCKER_COMMON="docker run --rm olivierkorach/sonar-tools"

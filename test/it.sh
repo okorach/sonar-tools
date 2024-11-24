@@ -22,7 +22,7 @@
 # set -euo pipefail
 
 DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-source "$DIR/test-tools.sh"
+source "$DIR/it-tools.sh"
 DB_BACKUPS_DIR=~/backup
 
 function backup_for {
