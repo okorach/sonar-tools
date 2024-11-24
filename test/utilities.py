@@ -146,7 +146,6 @@ def run_cmd(func: callable, arguments: str, expected_code: int) -> Optional[str]
     """Runs a sonar-tools command, verifies it raises the right exception, and returns the expected code"""
     logging.info("RUNNING: %s", arguments)
     file, args = __get_args_and_file(arguments)
-    logging.info("file = %s, args = %s", str(file), str(args))
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", args):
             func()
