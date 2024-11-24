@@ -346,6 +346,9 @@ class QualityGate(sq.SqObject):
 
 def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = None, **kwargs) -> list[Problem]:
     """Audits Sonar platform quality gates, returns found problems"""
+    if not audit_settings.get("audit.qualityGates", True):
+        log.info("Auditing quality gates is disabled, audit skipped...")
+        return []
     log.info("--- Auditing quality gates ---")
     problems = []
     quality_gates_list = get_list(endpoint)

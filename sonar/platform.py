@@ -910,6 +910,9 @@ def basics(endpoint: Platform, **kwargs) -> types.ObjectJsonRepr:
 
 def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
     """Audits a platform"""
+    if not audit_settings.get("audit.globalSettings", True):
+        log.info("Auditing global settings is disabled, audit skipped...")
+        return []
     pbs = endpoint.audit(audit_settings)
     if "write_q" in kwargs:
         kwargs["write_q"].put(pbs)

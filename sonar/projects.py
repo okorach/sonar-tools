@@ -1532,6 +1532,9 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     ::return: list of problems found
     :rtype: list[Problem]
     """
+    if not audit_settings.get("audit.projects", True):
+        log.info("Auditing projects is disabled, audit skipped...")
+        return []
     log.info("--- Auditing projects ---")
     plist = get_list(endpoint, kwargs.get("key_list", None))
     write_q = kwargs.get("write_q", None)
