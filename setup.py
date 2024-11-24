@@ -53,6 +53,7 @@ setuptools.setup(
         "requests",
         "jprops",
         "levenshtein",
+        "PyYAML ",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

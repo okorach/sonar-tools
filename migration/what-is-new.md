@@ -1,4 +1,8 @@
 
+# Version 0.5
+
+- Fixes [#1500](https://github.com/okorach/sonar-tools/issues/1500)
+
 # Version 0.4
 
 - Robustness: Handle all types of HTTP errors including SSL errors, which were causing freezes
