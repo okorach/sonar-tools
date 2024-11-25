@@ -40,6 +40,7 @@ TOOL_NAME = "sonar-config"
 
 DONT_INLINE_LISTS = "dontInlineLists"
 FULL_EXPORT = "fullExport"
+EXPORT_EMPTY = "exportEmpty"
 
 _EXPORT_CALLS = {
     c.CONFIG_KEY_PLATFORM: [c.CONFIG_KEY_PLATFORM, platform.basics, None],
@@ -89,6 +90,13 @@ def __parse_args(desc: str) -> object:
         action="store_true",
         help="By default, sonar-config exports multi-valued settings as comma separated strings instead of arrays (if there is not comma in values). "
         "Set this flag if you want to force export multi valued settings as arrays",
+    )
+    parser.add_argument(
+        f"--{EXPORT_EMPTY}",
+        required=False,
+        default=False,
+        action="store_true",
+        help="By default, sonar-config does not export empty values, setting this flag will add empty values in the export",
     )
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
@@ -144,14 +152,17 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
     """Exports a platform configuration in a JSON file"""
     file = kwargs[options.REPORT_FILE]
     mode = kwargs.get("mode", "CONFIG")
-    export_settings = {
-        "INLINE_LISTS": False if mode == "MIGRATION" else not kwargs.get(DONT_INLINE_LISTS, False),
-        "EXPORT_DEFAULTS": True,
-        "FULL_EXPORT": False if mode == "MIGRATION" else kwargs.get(FULL_EXPORT, False),
-        "MODE": mode,
-        "THREADS": kwargs[options.NBR_THREADS],
-        "SKIP_ISSUES": kwargs.get("skipIssues", False),
-    }
+    export_settings = kwargs.copy()
+    export_settings.update(
+        {
+            "INLINE_LISTS": False if mode == "MIGRATION" else not kwargs.get(DONT_INLINE_LISTS, False),
+            "EXPORT_DEFAULTS": True,
+            "FULL_EXPORT": False if mode == "MIGRATION" else kwargs.get(FULL_EXPORT, False),
+            "MODE": mode,
+            "THREADS": kwargs[options.NBR_THREADS],
+            "SKIP_ISSUES": kwargs.get("skipIssues", False),
+        }
+    )
     if "projects" in what and kwargs[options.KEYS]:
         non_existing_projects = [key for key in kwargs[options.KEYS] if not projects.exists(key, endpoint)]
         if len(non_existing_projects) > 0:
@@ -181,7 +192,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
         print("\n}", file=fd)
-    utilities.normalize_json_file(file, remove_empty=False, remove_none=True)
+    utilities.normalize_json_file(file, remove_empty=not kwargs.get(EXPORT_EMPTY, False), remove_none=True)
     log.info("Exporting %s data from %s completed", mode.lower(), kwargs[options.URL])
 
 
@@ -191,7 +202,9 @@ def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: type
     if export_settings.get("MODE", "CONFIG") == "MIGRATION":
         return json_data
     if not export_settings.get("FULL_EXPORT", False):
-        json_data = utilities.remove_empties(utilities.remove_nones(json_data))
+        json_data = utilities.remove_nones(json_data)
+        if not export_settings.get(EXPORT_EMPTY, False):
+            json_data = utilities.remove_empties(json_data)
     if export_settings.get("INLINE_LISTS", True):
         json_data = utilities.inline_lists(json_data, exceptions=("conditions",))
     return json_data
