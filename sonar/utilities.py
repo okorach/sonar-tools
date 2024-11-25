@@ -180,7 +180,7 @@ def remove_empties(d: dict[str, any]) -> dict[str, any]:
     # log.debug("Cleaning up %s", json_dump(d))
     new_d = d.copy()
     for k, v in d.items():
-        if v is None:
+        if isinstance(v, str) and v == "":
             new_d.pop(k)
             continue
         if not isinstance(v, (list, dict)):
@@ -703,7 +703,7 @@ def normalize_json_file(file: Optional[str], remove_empty: bool = True, remove_n
     if file is None:
         log.info("Output is stdout, skipping normalization")
         return
-    log.info("Normalizing JSON file '%s'", file)
+    log.info("Normalizing JSON file '%s' - remove empty = %s, remove nones = %s", file, str(remove_empty), str(remove_none))
     try:
         with open_file(file, mode="r") as fd:
             json_data = json.loads(fd.read())
