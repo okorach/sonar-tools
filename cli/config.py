@@ -31,7 +31,7 @@ import yaml
 
 from cli import options
 from sonar import exceptions, errcodes, utilities, version
-from sonar.util import types
+from sonar.util import types, constants as c
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
@@ -41,31 +41,20 @@ TOOL_NAME = "sonar-config"
 DONT_INLINE_LISTS = "dontInlineLists"
 FULL_EXPORT = "fullExport"
 
-__JSON_KEY_PLATFORM = "platform"
-__JSON_KEY_SETTINGS = "globalSettings"
-__JSON_KEY_USERS = "users"
-__JSON_KEY_GROUPS = "groups"
-__JSON_KEY_GATES = "qualityGates"
-__JSON_KEY_RULES = "rules"
-__JSON_KEY_PROFILES = "qualityProfiles"
-__JSON_KEY_PROJECTS = "projects"
-__JSON_KEY_APPS = "applications"
-__JSON_KEY_PORTFOLIOS = "portfolios"
-
 _EXPORT_CALLS = {
-    __JSON_KEY_PLATFORM: [__JSON_KEY_PLATFORM, platform.basics],
-    options.WHAT_SETTINGS: [__JSON_KEY_SETTINGS, platform.export],
-    options.WHAT_RULES: [__JSON_KEY_RULES, rules.export],
-    options.WHAT_PROFILES: [__JSON_KEY_PROFILES, qualityprofiles.export],
-    options.WHAT_GATES: [__JSON_KEY_GATES, qualitygates.export],
-    options.WHAT_PROJECTS: [__JSON_KEY_PROJECTS, projects.export],
-    options.WHAT_APPS: [__JSON_KEY_APPS, applications.export],
-    options.WHAT_PORTFOLIOS: [__JSON_KEY_PORTFOLIOS, portfolios.export],
-    options.WHAT_USERS: [__JSON_KEY_USERS, users.export],
-    options.WHAT_GROUPS: [__JSON_KEY_GROUPS, groups.export],
+    c.CONFIG_KEY_PLATFORM: [c.CONFIG_KEY_PLATFORM, platform.basics],
+    options.WHAT_SETTINGS: [c.CONFIG_KEY_SETTINGS, platform.export],
+    options.WHAT_RULES: [c.CONFIG_KEY_RULES, rules.export],
+    options.WHAT_PROFILES: [c.CONFIG_KEY_PROFILES, qualityprofiles.export],
+    options.WHAT_GATES: [c.CONFIG_KEY_GATES, qualitygates.export],
+    options.WHAT_PROJECTS: [c.CONFIG_KEY_PROJECTS, projects.export],
+    options.WHAT_APPS: [c.CONFIG_KEY_APPS, applications.export],
+    options.WHAT_PORTFOLIOS: [c.CONFIG_KEY_PORTFOLIOS, portfolios.export],
+    options.WHAT_USERS: [c.CONFIG_KEY_USERS, users.export],
+    options.WHAT_GROUPS: [c.CONFIG_KEY_GROUPS, groups.export],
 }
 
-_EVERYTHING = list(_EXPORT_CALLS.keys())[1:]
+WHAT_EVERYTHING = list(_EXPORT_CALLS.keys())[1:]
 
 
 def __parse_args(desc: str) -> object:
@@ -74,7 +63,7 @@ def __parse_args(desc: str) -> object:
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("json", "yaml"))
     parser = options.add_thread_arg(parser, "project export")
-    parser = options.set_what(parser, what_list=_EVERYTHING, operation="export or import")
+    parser = options.set_what(parser, what_list=WHAT_EVERYTHING, operation="export or import")
     parser = options.add_import_export_arg(parser, "configuration")
     parser.add_argument(
         f"--{FULL_EXPORT}",
@@ -115,24 +104,24 @@ def __write_export(config: dict[str, str], file: str, format: str) -> None:
 
 def __convert_for_yaml(json_export: dict[str, any]) -> dict[str, any]:
     """Converts the default JSON produced by export to a modified version more suitable for YAML"""
-    if "globalSettings" in json_export:
-        json_export["globalSettings"] = platform.convert_for_yaml(json_export["globalSettings"])
-    if "qualityGates" in json_export:
-        json_export["qualityGates"] = qualitygates.convert_for_yaml(json_export["qualityGates"])
-    if "qualityProfiles" in json_export:
-        json_export["qualityProfiles"] = qualityprofiles.convert_for_yaml(json_export["qualityProfiles"])
-    if "projects" in json_export:
-        json_export["projects"] = projects.convert_for_yaml(json_export["projects"])
-    if "portfolios" in json_export:
-        json_export["portfolios"] = portfolios.convert_for_yaml(json_export["portfolios"])
-    if "applications" in json_export:
-        json_export["applications"] = applications.convert_for_yaml(json_export["applications"])
-    if "users" in json_export:
-        json_export["users"] = users.convert_for_yaml(json_export["users"])
-    if "groups" in json_export:
-        json_export["groups"] = groups.convert_for_yaml(json_export["groups"])
-    if "rules" in json_export:
-        json_export["rules"] = rules.convert_for_yaml(json_export["rules"])
+    if c.CONFIG_KEY_SETTINGS in json_export:
+        json_export[c.CONFIG_KEY_SETTINGS] = platform.convert_for_yaml(json_export[c.CONFIG_KEY_SETTINGS])
+    if c.CONFIG_KEY_GATES in json_export:
+        json_export[c.CONFIG_KEY_GATES] = qualitygates.convert_for_yaml(json_export[c.CONFIG_KEY_GATES])
+    if c.CONFIG_KEY_PROFILES in json_export:
+        json_export[c.CONFIG_KEY_PROFILES] = qualityprofiles.convert_for_yaml(json_export[c.CONFIG_KEY_PROFILES])
+    if c.CONFIG_KEY_PROJECTS in json_export:
+        json_export[c.CONFIG_KEY_PROJECTS] = projects.convert_for_yaml(json_export[c.CONFIG_KEY_PROJECTS])
+    if c.CONFIG_KEY_PORTFOLIOS in json_export:
+        json_export[c.CONFIG_KEY_PORTFOLIOS] = portfolios.convert_for_yaml(json_export[c.CONFIG_KEY_PORTFOLIOS])
+    if c.CONFIG_KEY_APPS in json_export:
+        json_export[c.CONFIG_KEY_APPS] = applications.convert_for_yaml(json_export[c.CONFIG_KEY_APPS])
+    if c.CONFIG_KEY_USERS in json_export:
+        json_export[c.CONFIG_KEY_USERS] = users.convert_for_yaml(json_export[c.CONFIG_KEY_USERS])
+    if c.CONFIG_KEY_GROUPS in json_export:
+        json_export[c.CONFIG_KEY_GROUPS] = groups.convert_for_yaml(json_export[c.CONFIG_KEY_GROUPS])
+    if c.CONFIG_KEY_RULES in json_export:
+        json_export[c.CONFIG_KEY_RULES] = rules.convert_for_yaml(json_export[c.CONFIG_KEY_RULES])
     return json_export
 
 
@@ -182,7 +171,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
         if len(non_existing_projects) > 0:
             utilities.exit_fatal(f"Project key(s) '{','.join(non_existing_projects)}' do(es) not exist", errcodes.NO_SUCH_KEY)
 
-    what.append(__JSON_KEY_PLATFORM)
+    what.append(c.CONFIG_KEY_PLATFORM)
     log.info("Exporting configuration from %s", kwargs[options.URL])
 
     is_first = True
@@ -266,7 +255,7 @@ def main() -> None:
     if not kwargs[options.EXPORT] and not kwargs[options.IMPORT]:
         utilities.exit_fatal(f"One of --{options.EXPORT} or --{options.IMPORT} option must be chosen", exit_code=errcodes.ARGS_ERROR)
 
-    what = utilities.check_what(kwargs.pop(options.WHAT, None), _EVERYTHING, "exported or imported")
+    what = utilities.check_what(kwargs.pop(options.WHAT, None), WHAT_EVERYTHING, "exported or imported")
     if options.WHAT_PROFILES in what and options.WHAT_RULES not in what:
         what.append(options.WHAT_RULES)
     kwargs[options.FORMAT] = utilities.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE], allowed_formats=("json", "yaml"))
