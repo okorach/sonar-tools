@@ -462,7 +462,7 @@ def convert_for_export(rule: types.ObjectJsonRepr, qp_lang: str, with_template_k
     if rule["isTemplate"]:
         d["isTemplate"] = True
     if "tags" in rule and len(rule["tags"]) > 0:
-        d["tags"] = utilities.list_to_csv(rule["tags"])
+        d["tags"] = rule["tags"]
     if rule.get("mdNote", None) is not None:
         d["description"] = rule["mdNote"]
     if with_template_key and "templateKey" in rule:
