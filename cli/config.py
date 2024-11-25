@@ -197,7 +197,8 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
         print("\n}", file=fd)
-    utilities.normalize_json_file(file, remove_empty=not kwargs.get(EXPORT_EMPTY, False), remove_none=True)
+    remove_empty = False if mode == "MIGRATION" else not kwargs.get(EXPORT_EMPTY, False)
+    utilities.normalize_json_file(file, remove_empty=remove_empty, remove_none=True)
     log.info("Exporting %s data from %s completed", mode.lower(), kwargs[options.URL])
 
 
