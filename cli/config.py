@@ -155,14 +155,19 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
     export_settings = kwargs.copy()
     export_settings.update(
         {
-            "INLINE_LISTS": False if mode == "MIGRATION" else not kwargs.get(DONT_INLINE_LISTS, False),
+            "INLINE_LISTS": not kwargs.get(DONT_INLINE_LISTS, False),
             "EXPORT_DEFAULTS": True,
-            "FULL_EXPORT": False if mode == "MIGRATION" else kwargs.get(FULL_EXPORT, False),
+            "FULL_EXPORT": kwargs.get(FULL_EXPORT, False),
             "MODE": mode,
             "THREADS": kwargs[options.NBR_THREADS],
             "SKIP_ISSUES": kwargs.get("skipIssues", False),
         }
     )
+    if mode == "MIGRATION":
+        export_settings["FULL_EXPORT"] = False
+        export_settings["INLINE_LISTS"] = False
+        export_settings[EXPORT_EMPTY] = True
+    log.info("Exporting with settings: %s", utilities.json_dump(export_settings))
     if "projects" in what and kwargs[options.KEYS]:
         non_existing_projects = [key for key in kwargs[options.KEYS] if not projects.exists(key, endpoint)]
         if len(non_existing_projects) > 0:
