@@ -42,16 +42,16 @@ DONT_INLINE_LISTS = "dontInlineLists"
 FULL_EXPORT = "fullExport"
 
 _EXPORT_CALLS = {
-    c.CONFIG_KEY_PLATFORM: [c.CONFIG_KEY_PLATFORM, platform.basics],
-    options.WHAT_SETTINGS: [c.CONFIG_KEY_SETTINGS, platform.export],
-    options.WHAT_RULES: [c.CONFIG_KEY_RULES, rules.export],
-    options.WHAT_PROFILES: [c.CONFIG_KEY_PROFILES, qualityprofiles.export],
-    options.WHAT_GATES: [c.CONFIG_KEY_GATES, qualitygates.export],
-    options.WHAT_PROJECTS: [c.CONFIG_KEY_PROJECTS, projects.export],
-    options.WHAT_APPS: [c.CONFIG_KEY_APPS, applications.export],
-    options.WHAT_PORTFOLIOS: [c.CONFIG_KEY_PORTFOLIOS, portfolios.export],
-    options.WHAT_USERS: [c.CONFIG_KEY_USERS, users.export],
-    options.WHAT_GROUPS: [c.CONFIG_KEY_GROUPS, groups.export],
+    c.CONFIG_KEY_PLATFORM: [c.CONFIG_KEY_PLATFORM, platform.basics, None],
+    options.WHAT_SETTINGS: [c.CONFIG_KEY_SETTINGS, platform.export, platform.convert_for_yaml],
+    options.WHAT_RULES: [c.CONFIG_KEY_RULES, rules.export, rules.convert_for_yaml],
+    options.WHAT_PROFILES: [c.CONFIG_KEY_PROFILES, qualityprofiles.export, qualityprofiles.convert_for_yaml],
+    options.WHAT_GATES: [c.CONFIG_KEY_GATES, qualitygates.export, qualitygates.convert_for_yaml],
+    options.WHAT_PROJECTS: [c.CONFIG_KEY_PROJECTS, projects.export, projects.convert_for_yaml],
+    options.WHAT_APPS: [c.CONFIG_KEY_APPS, applications.export, applications.convert_for_yaml],
+    options.WHAT_PORTFOLIOS: [c.CONFIG_KEY_PORTFOLIOS, portfolios.export, portfolios.convert_for_yaml],
+    options.WHAT_USERS: [c.CONFIG_KEY_USERS, users.export, users.convert_for_yaml],
+    options.WHAT_GROUPS: [c.CONFIG_KEY_GROUPS, groups.export, groups.convert_for_yaml],
 }
 
 WHAT_EVERYTHING = list(_EXPORT_CALLS.keys())[1:]
@@ -104,24 +104,10 @@ def __write_export(config: dict[str, str], file: str, format: str) -> None:
 
 def __convert_for_yaml(json_export: dict[str, any]) -> dict[str, any]:
     """Converts the default JSON produced by export to a modified version more suitable for YAML"""
-    if c.CONFIG_KEY_SETTINGS in json_export:
-        json_export[c.CONFIG_KEY_SETTINGS] = platform.convert_for_yaml(json_export[c.CONFIG_KEY_SETTINGS])
-    if c.CONFIG_KEY_GATES in json_export:
-        json_export[c.CONFIG_KEY_GATES] = qualitygates.convert_for_yaml(json_export[c.CONFIG_KEY_GATES])
-    if c.CONFIG_KEY_PROFILES in json_export:
-        json_export[c.CONFIG_KEY_PROFILES] = qualityprofiles.convert_for_yaml(json_export[c.CONFIG_KEY_PROFILES])
-    if c.CONFIG_KEY_PROJECTS in json_export:
-        json_export[c.CONFIG_KEY_PROJECTS] = projects.convert_for_yaml(json_export[c.CONFIG_KEY_PROJECTS])
-    if c.CONFIG_KEY_PORTFOLIOS in json_export:
-        json_export[c.CONFIG_KEY_PORTFOLIOS] = portfolios.convert_for_yaml(json_export[c.CONFIG_KEY_PORTFOLIOS])
-    if c.CONFIG_KEY_APPS in json_export:
-        json_export[c.CONFIG_KEY_APPS] = applications.convert_for_yaml(json_export[c.CONFIG_KEY_APPS])
-    if c.CONFIG_KEY_USERS in json_export:
-        json_export[c.CONFIG_KEY_USERS] = users.convert_for_yaml(json_export[c.CONFIG_KEY_USERS])
-    if c.CONFIG_KEY_GROUPS in json_export:
-        json_export[c.CONFIG_KEY_GROUPS] = groups.convert_for_yaml(json_export[c.CONFIG_KEY_GROUPS])
-    if c.CONFIG_KEY_RULES in json_export:
-        json_export[c.CONFIG_KEY_RULES] = rules.convert_for_yaml(json_export[c.CONFIG_KEY_RULES])
+    for what in WHAT_EVERYTHING:
+        if what in json_export:
+            yamlify_func = _EXPORT_CALLS[what][2]
+            json_export[what] = yamlify_func(json_export[what])
     return json_export
 
 
@@ -181,7 +167,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
         for what_item, call_data in _EXPORT_CALLS.items():
             if what_item not in what:
                 continue
-            ndx, func = call_data
+            ndx, func, _ = call_data
             try:
                 if not is_first:
                     print(",", file=fd)
