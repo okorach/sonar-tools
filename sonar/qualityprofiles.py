@@ -834,7 +834,7 @@ def convert_one_qp_yaml(qp: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
     new_json = {}
-    for lang, qp_list in original_json.items():
+    for lang, qp_list in util.remove_nones(original_json).items():
         new_json[lang] = {"profiles": util.dict_to_list(qp_list, "name")}
     new_json = util.dict_to_list(new_json, "language")
     for lang in new_json:

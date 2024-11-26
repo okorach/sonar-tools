@@ -356,12 +356,10 @@ class Application(aggr.Aggregation):
                 # 'projects': self.projects(),
                 "branches": {br.name: br.export() for br in self.branches().values()},
                 "permissions": self.permissions().export(export_settings=export_settings),
+                "tags": self.get_tags(),
             }
         )
-        tags = util.list_to_csv(self.get_tags(), separator=", ", check_for_separator=True)
-        if tags != "":
-            json_data["tags"] = tags
-        return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
+        return util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
     def set_permissions(self, data: types.JsonPermissions) -> application_permissions.ApplicationPermissions:
         """Sets an application permissions
@@ -593,7 +591,7 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Application]:
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    new_json = util.dict_to_list(original_json, "key")
+    new_json = util.dict_to_list(util.remove_nones(original_json), "key")
     for app_json in new_json:
         app_json["branches"] = util.dict_to_list(app_json["branches"], "name")
         for b in app_json["branches"]:

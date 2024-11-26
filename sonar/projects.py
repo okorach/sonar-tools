@@ -1014,25 +1014,20 @@ class Project(components.Component):
         # If there is only 1 branch with no specific config except being main, don't return anything
         if len(branch_data) == 0 or (len(branch_data) == 1 and "main" in branch_data and len(branch_data["main"]) <= 1):
             return None
-        return util.remove_nones(branch_data)
+        return branch_data
 
     def migration_export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Produces the data that is exported for SQ to SC migration"""
         json_data = super().migration_export(export_settings)
-        log.debug("migration data %s 2", str(self))
         json_data["detectedCi"] = self.ci()
-        log.debug("migration data %s 2", str(self))
         json_data["revision"] = self.revision()
-        log.debug("migration data %s 3", str(self))
         last_task = self.last_task()
-        log.debug("migration data %s 4", str(self))
         json_data["backgroundTasks"] = {}
         if last_task:
             ctxt = last_task.scanner_context()
             if ctxt:
                 ctxt = {k: v for k, v in ctxt.items() if k not in _UNNEEDED_CONTEXT_DATA}
             t_hist = []
-            log.debug("migration data %s 5", str(self))
             for t in self.task_history():
                 t_hist.append({k: v for k, v in t.sq_json.items() if k not in _UNNEEDED_TASK_DATA})
             json_data["backgroundTasks"] = {
@@ -1040,7 +1035,7 @@ class Project(components.Component):
                 # "lastTaskWarnings": last_task.warnings(),
                 "taskHistory": t_hist,
             }
-        log.debug("migration data %s 6", str(self))
+        log.debug("Returning %s migration data %s", str(self), util.json_dump(json_data))
         return json_data
 
     def export(self, export_settings: types.ConfigSettings, settings_list: dict[str, str] = None) -> types.ObjectJsonRepr:
@@ -1092,8 +1087,8 @@ class Project(components.Component):
         except Exception as e:
             util.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
             json_data["error"] = f"{util.error_msg(e)} while exporting project"
-        log.debug("Exporting %s done", str(self))
-        return util.remove_nones(json_data)
+        log.debug("Exporting %s done, returning %s", str(self), util.json_dump(json_data))
+        return json_data
 
     def new_code(self) -> str:
         """
@@ -1735,7 +1730,8 @@ def convert_proj_for_yaml(proj_json: types.ObjectJsonRepr) -> types.ObjectJsonRe
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
+    clean_json = util.remove_nones(original_json)
     new_json = []
-    for proj in util.dict_to_list(original_json, "key"):
+    for proj in util.dict_to_list(clean_json, "key"):
         new_json.append(convert_proj_for_yaml(proj))
     return new_json

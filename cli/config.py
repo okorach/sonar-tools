@@ -31,7 +31,7 @@ import yaml
 
 from cli import options
 from sonar import exceptions, errcodes, utilities, version
-from sonar.util import types
+from sonar.util import types, constants as c
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
@@ -40,32 +40,22 @@ TOOL_NAME = "sonar-config"
 
 DONT_INLINE_LISTS = "dontInlineLists"
 FULL_EXPORT = "fullExport"
-
-__JSON_KEY_PLATFORM = "platform"
-__JSON_KEY_SETTINGS = "globalSettings"
-__JSON_KEY_USERS = "users"
-__JSON_KEY_GROUPS = "groups"
-__JSON_KEY_GATES = "qualityGates"
-__JSON_KEY_RULES = "rules"
-__JSON_KEY_PROFILES = "qualityProfiles"
-__JSON_KEY_PROJECTS = "projects"
-__JSON_KEY_APPS = "applications"
-__JSON_KEY_PORTFOLIOS = "portfolios"
+EXPORT_EMPTY = "exportEmpty"
 
 _EXPORT_CALLS = {
-    __JSON_KEY_PLATFORM: [__JSON_KEY_PLATFORM, platform.basics],
-    options.WHAT_SETTINGS: [__JSON_KEY_SETTINGS, platform.export],
-    options.WHAT_RULES: [__JSON_KEY_RULES, rules.export],
-    options.WHAT_PROFILES: [__JSON_KEY_PROFILES, qualityprofiles.export],
-    options.WHAT_GATES: [__JSON_KEY_GATES, qualitygates.export],
-    options.WHAT_PROJECTS: [__JSON_KEY_PROJECTS, projects.export],
-    options.WHAT_APPS: [__JSON_KEY_APPS, applications.export],
-    options.WHAT_PORTFOLIOS: [__JSON_KEY_PORTFOLIOS, portfolios.export],
-    options.WHAT_USERS: [__JSON_KEY_USERS, users.export],
-    options.WHAT_GROUPS: [__JSON_KEY_GROUPS, groups.export],
+    c.CONFIG_KEY_PLATFORM: [c.CONFIG_KEY_PLATFORM, platform.basics, None],
+    options.WHAT_SETTINGS: [c.CONFIG_KEY_SETTINGS, platform.export, platform.convert_for_yaml],
+    options.WHAT_RULES: [c.CONFIG_KEY_RULES, rules.export, rules.convert_for_yaml],
+    options.WHAT_PROFILES: [c.CONFIG_KEY_PROFILES, qualityprofiles.export, qualityprofiles.convert_for_yaml],
+    options.WHAT_GATES: [c.CONFIG_KEY_GATES, qualitygates.export, qualitygates.convert_for_yaml],
+    options.WHAT_PROJECTS: [c.CONFIG_KEY_PROJECTS, projects.export, projects.convert_for_yaml],
+    options.WHAT_APPS: [c.CONFIG_KEY_APPS, applications.export, applications.convert_for_yaml],
+    options.WHAT_PORTFOLIOS: [c.CONFIG_KEY_PORTFOLIOS, portfolios.export, portfolios.convert_for_yaml],
+    options.WHAT_USERS: [c.CONFIG_KEY_USERS, users.export, users.convert_for_yaml],
+    options.WHAT_GROUPS: [c.CONFIG_KEY_GROUPS, groups.export, groups.convert_for_yaml],
 }
 
-_EVERYTHING = list(_EXPORT_CALLS.keys())[1:]
+WHAT_EVERYTHING = list(_EXPORT_CALLS.keys())[1:]
 
 
 def __parse_args(desc: str) -> object:
@@ -74,7 +64,7 @@ def __parse_args(desc: str) -> object:
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("json", "yaml"))
     parser = options.add_thread_arg(parser, "project export")
-    parser = options.set_what(parser, what_list=_EVERYTHING, operation="export or import")
+    parser = options.set_what(parser, what_list=WHAT_EVERYTHING, operation="export or import")
     parser = options.add_import_export_arg(parser, "configuration")
     parser.add_argument(
         f"--{FULL_EXPORT}",
@@ -101,6 +91,13 @@ def __parse_args(desc: str) -> object:
         help="By default, sonar-config exports multi-valued settings as comma separated strings instead of arrays (if there is not comma in values). "
         "Set this flag if you want to force export multi valued settings as arrays",
     )
+    parser.add_argument(
+        f"--{EXPORT_EMPTY}",
+        required=False,
+        default=False,
+        action="store_true",
+        help="By default, sonar-config does not export empty values, setting this flag will add empty values in the export",
+    )
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
@@ -115,24 +112,10 @@ def __write_export(config: dict[str, str], file: str, format: str) -> None:
 
 def __convert_for_yaml(json_export: dict[str, any]) -> dict[str, any]:
     """Converts the default JSON produced by export to a modified version more suitable for YAML"""
-    if "globalSettings" in json_export:
-        json_export["globalSettings"] = platform.convert_for_yaml(json_export["globalSettings"])
-    if "qualityGates" in json_export:
-        json_export["qualityGates"] = qualitygates.convert_for_yaml(json_export["qualityGates"])
-    if "qualityProfiles" in json_export:
-        json_export["qualityProfiles"] = qualityprofiles.convert_for_yaml(json_export["qualityProfiles"])
-    if "projects" in json_export:
-        json_export["projects"] = projects.convert_for_yaml(json_export["projects"])
-    if "portfolios" in json_export:
-        json_export["portfolios"] = portfolios.convert_for_yaml(json_export["portfolios"])
-    if "applications" in json_export:
-        json_export["applications"] = applications.convert_for_yaml(json_export["applications"])
-    if "users" in json_export:
-        json_export["users"] = users.convert_for_yaml(json_export["users"])
-    if "groups" in json_export:
-        json_export["groups"] = groups.convert_for_yaml(json_export["groups"])
-    if "rules" in json_export:
-        json_export["rules"] = rules.convert_for_yaml(json_export["rules"])
+    for what in WHAT_EVERYTHING:
+        if what in json_export:
+            yamlify_func = _EXPORT_CALLS[what][2]
+            json_export[what] = yamlify_func(json_export[what])
     return json_export
 
 
@@ -169,20 +152,28 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
     """Exports a platform configuration in a JSON file"""
     file = kwargs[options.REPORT_FILE]
     mode = kwargs.get("mode", "CONFIG")
-    export_settings = {
-        "INLINE_LISTS": False if mode == "MIGRATION" else not kwargs.get(DONT_INLINE_LISTS, False),
-        "EXPORT_DEFAULTS": True,
-        "FULL_EXPORT": False if mode == "MIGRATION" else kwargs.get(FULL_EXPORT, False),
-        "MODE": mode,
-        "THREADS": kwargs[options.NBR_THREADS],
-        "SKIP_ISSUES": kwargs.get("skipIssues", False),
-    }
+    export_settings = kwargs.copy()
+    export_settings.update(
+        {
+            "INLINE_LISTS": not kwargs.get(DONT_INLINE_LISTS, False),
+            "EXPORT_DEFAULTS": True,
+            "FULL_EXPORT": kwargs.get(FULL_EXPORT, False),
+            "MODE": mode,
+            "THREADS": kwargs[options.NBR_THREADS],
+            "SKIP_ISSUES": kwargs.get("skipIssues", False),
+        }
+    )
+    if mode == "MIGRATION":
+        export_settings["FULL_EXPORT"] = False
+        export_settings["INLINE_LISTS"] = False
+        export_settings[EXPORT_EMPTY] = True
+    log.info("Exporting with settings: %s", utilities.json_dump(export_settings))
     if "projects" in what and kwargs[options.KEYS]:
         non_existing_projects = [key for key in kwargs[options.KEYS] if not projects.exists(key, endpoint)]
         if len(non_existing_projects) > 0:
             utilities.exit_fatal(f"Project key(s) '{','.join(non_existing_projects)}' do(es) not exist", errcodes.NO_SUCH_KEY)
 
-    what.append(__JSON_KEY_PLATFORM)
+    what.append(c.CONFIG_KEY_PLATFORM)
     log.info("Exporting configuration from %s", kwargs[options.URL])
 
     is_first = True
@@ -192,7 +183,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
         for what_item, call_data in _EXPORT_CALLS.items():
             if what_item not in what:
                 continue
-            ndx, func = call_data
+            ndx, func, _ = call_data
             try:
                 if not is_first:
                     print(",", file=fd)
@@ -206,7 +197,8 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
         print("\n}", file=fd)
-    utilities.normalize_json_file(file, remove_empty=False, remove_none=True)
+    remove_empty = False if mode == "MIGRATION" else not kwargs.get(EXPORT_EMPTY, False)
+    utilities.normalize_json_file(file, remove_empty=remove_empty, remove_none=True)
     log.info("Exporting %s data from %s completed", mode.lower(), kwargs[options.URL])
 
 
@@ -216,7 +208,9 @@ def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: type
     if export_settings.get("MODE", "CONFIG") == "MIGRATION":
         return json_data
     if not export_settings.get("FULL_EXPORT", False):
-        json_data = utilities.remove_empties(utilities.remove_nones(json_data))
+        json_data = utilities.remove_nones(json_data)
+        if not export_settings.get(EXPORT_EMPTY, False):
+            json_data = utilities.remove_empties(json_data)
     if export_settings.get("INLINE_LISTS", True):
         json_data = utilities.inline_lists(json_data, exceptions=("conditions",))
     return json_data
@@ -266,7 +260,7 @@ def main() -> None:
     if not kwargs[options.EXPORT] and not kwargs[options.IMPORT]:
         utilities.exit_fatal(f"One of --{options.EXPORT} or --{options.IMPORT} option must be chosen", exit_code=errcodes.ARGS_ERROR)
 
-    what = utilities.check_what(kwargs.pop(options.WHAT, None), _EVERYTHING, "exported or imported")
+    what = utilities.check_what(kwargs.pop(options.WHAT, None), WHAT_EVERYTHING, "exported or imported")
     if options.WHAT_PROFILES in what and options.WHAT_RULES not in what:
         what.append(options.WHAT_RULES)
     kwargs[options.FORMAT] = utilities.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE], allowed_formats=("json", "yaml"))

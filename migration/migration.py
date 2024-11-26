@@ -25,46 +25,11 @@ import sys
 
 from cli import options, config
 from sonar import exceptions, errcodes, utilities, version
+import sonar.util.constants as c
 import sonar.logging as log
 from sonar import platform
 
 TOOL_NAME = "sonar-migration"
-
-_EVERYTHING = [
-    options.WHAT_SETTINGS,
-    options.WHAT_USERS,
-    options.WHAT_GROUPS,
-    options.WHAT_GATES,
-    options.WHAT_RULES,
-    options.WHAT_PROFILES,
-    options.WHAT_PROJECTS,
-    options.WHAT_APPS,
-    options.WHAT_PORTFOLIOS,
-]
-
-__JSON_KEY_PLATFORM = "platform"
-
-__JSON_KEY_SETTINGS = "globalSettings"
-__JSON_KEY_USERS = "users"
-__JSON_KEY_GROUPS = "groups"
-__JSON_KEY_GATES = "qualityGates"
-__JSON_KEY_RULES = "rules"
-__JSON_KEY_PROFILES = "qualityProfiles"
-__JSON_KEY_PROJECTS = "projects"
-__JSON_KEY_APPS = "applications"
-__JSON_KEY_PORTFOLIOS = "portfolios"
-
-__MAP = {
-    options.WHAT_SETTINGS: __JSON_KEY_SETTINGS,
-    options.WHAT_USERS: __JSON_KEY_USERS,
-    options.WHAT_GROUPS: __JSON_KEY_GROUPS,
-    options.WHAT_GATES: __JSON_KEY_GATES,
-    options.WHAT_RULES: __JSON_KEY_RULES,
-    options.WHAT_PROFILES: __JSON_KEY_PROFILES,
-    options.WHAT_PROJECTS: __JSON_KEY_PROJECTS,
-    options.WHAT_APPS: __JSON_KEY_APPS,
-    options.WHAT_PORTFOLIOS: __JSON_KEY_PORTFOLIOS,
-}
 
 
 def __parse_args(desc: str) -> object:
@@ -73,7 +38,7 @@ def __parse_args(desc: str) -> object:
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("json",))
     parser = options.add_thread_arg(parser, "migration export")
-    parser = options.set_what(parser, what_list=_EVERYTHING, operation="export")
+    parser = options.set_what(parser, what_list=config.WHAT_EVERYTHING, operation="export")
     parser = options.add_import_export_arg(parser, "migration")
     parser.add_argument(
         "--skipIssues",
@@ -106,7 +71,7 @@ def main() -> None:
     except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         utilities.exit_fatal(e.message, e.errcode)
 
-    what = utilities.check_what(kwargs.pop(options.WHAT, None), _EVERYTHING, "exported")
+    what = utilities.check_what(kwargs.pop(options.WHAT, None), config.WHAT_EVERYTHING, "exported")
     if options.WHAT_PROFILES in what and options.WHAT_RULES not in what:
         what.append(options.WHAT_RULES)
     kwargs[options.FORMAT] = "json"
