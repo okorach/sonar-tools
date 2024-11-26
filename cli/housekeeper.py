@@ -103,6 +103,7 @@ def _parse_arguments() -> object:
     _DEFAULT_PR_OBSOLESCENCE = 30
     _DEFAULT_TOKEN_OBSOLESCENCE = 365
     parser = options.set_common_args("Deletes projects, branches, PR, user tokens not used since a given number of days")
+    parser = options.set_output_file_args(parser, allowed_formats=("csv",))
     parser = options.add_thread_arg(parser, "auditing before housekeeping")
     parser.add_argument(
         "--mode",
@@ -215,7 +216,7 @@ def main() -> None:
         if token_age:
             problems += get_user_problems(token_age, sq)
 
-        problem.dump_report(problems, file=None, format="csv")
+        problem.dump_report(problems, file=kwargs[options.REPORT_FILE], format="csv")
 
         op = "to delete"
         if mode == "delete":
