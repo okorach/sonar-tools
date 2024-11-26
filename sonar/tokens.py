@@ -76,10 +76,11 @@ class UserToken(sq.SqObject):
 
     def audit(self, settings: types.ConfigSettings, today: Optional[datetime.datetime] = None) -> list[Problem]:
         problems = []
+        mode = settings.get("audit.mode", "")
         if not today:
             today = datetime.datetime.now(datetime.timezone.utc).astimezone()
         age = util.age(self.created_at, now=today)
-        if not self.expiration_date:
+        if mode != "housekeeper" and not self.expiration_date:
             problems.append(Problem(get_rule(RuleId.TOKEN_WITHOUT_EXPIRATION), self, str(self), age))
         if age > settings.get("audit.tokens.maxAge", 90):
             problems.append(Problem(get_rule(RuleId.TOKEN_TOO_OLD), self, str(self), age))
@@ -87,7 +88,7 @@ class UserToken(sq.SqObject):
             last_cnx_age = util.age(self.last_connection_date, now=today)
             if last_cnx_age > settings.get("audit.tokens.maxUnusedAge", 30):
                 problems.append(Problem(get_rule(RuleId.TOKEN_UNUSED), self, str(self), last_cnx_age))
-        else:
+        elif mode != "housekeeper":
             problems.append(Problem(get_rule(RuleId.TOKEN_NEVER_USED), self, str(self), age))
         return problems
 
