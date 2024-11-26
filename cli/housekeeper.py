@@ -39,6 +39,7 @@ from sonar.audit import config, problem
 TOOL_NAME = "sonar-housekeeper"
 PROJ_MAX_AGE = "audit.projects.maxLastAnalysisAge"
 
+
 def get_project_problems(settings: dict[str, str], endpoint: object) -> list[problem.Problem]:
     """Returns the list of problems that would require housekeeping for a given project"""
     problems = []
