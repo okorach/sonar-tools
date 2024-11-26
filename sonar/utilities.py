@@ -169,10 +169,14 @@ def convert_to_type(value: any) -> any:
 
 def remove_nones(d: dict[str, str]) -> dict[str, str]:
     """Removes elements of the dict that are None values"""
-    if isinstance(d, dict):
-        return {k: v for k, v in d.items() if v is not None}
-    else:
-        return d
+    new_d = d.copy()
+    for k, v in d.items():
+        if v is None:
+            new_d.pop(k)
+            continue
+        if isinstance(v, dict):
+            new_d[k] = remove_nones(v)
+    return new_d
 
 
 def remove_empties(d: dict[str, any]) -> dict[str, any]:

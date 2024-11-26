@@ -396,4 +396,4 @@ def exists(group_name: str, endpoint: pf.Platform) -> bool:
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    return util.dict_to_list(original_json, "name", "description")
+    return util.dict_to_list(util.remove_nones(original_json), "name", "description")

@@ -484,10 +484,11 @@ def convert_rule_list_for_yaml(rule_list: types.ObjectJsonRepr) -> list[types.Ob
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
+    clean_json = utilities.remove_nones(original_json)
     new_json = {}
     for category in ("instantiated", "extended"):
-        if category in original_json:
-            new_json[category] = convert_rule_list_for_yaml(original_json[category])
+        if category in clean_json:
+            new_json[category] = convert_rule_list_for_yaml(clean_json[category])
     return new_json
 
 

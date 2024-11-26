@@ -591,7 +591,7 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Application]:
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    new_json = util.dict_to_list(original_json, "key")
+    new_json = util.dict_to_list(util.remove_nones(original_json), "key")
     for app_json in new_json:
         app_json["branches"] = util.dict_to_list(app_json["branches"], "name")
         for b in app_json["branches"]:
