@@ -452,7 +452,7 @@ class Project(components.Component):
         main_br_count = 0
         for branch in self.branches().values():
             problems += branch.audit(audit_settings)
-            if audit_settings[AUDIT_MODE_PARAM] != "housekeeper" and branch.name in ("main", "master"):
+            if audit_settings.get(AUDIT_MODE_PARAM, "") != "housekeeper" and branch.name in ("main", "master"):
                 main_br_count += 1
                 if main_br_count > 1:
                     problems.append(Problem(get_rule(RuleId.PROJ_MAIN_AND_MASTER), self, str(self)))
