@@ -171,7 +171,7 @@ do
         f2="findings-$env-user.csv";    run_test "$f2" sonar-findings-export -v DEBUG -k okorach_audio-video-tools,okorach_sonar-tools
     fi
 
-    source it-docker.sh "$env"
+    source "$DIR"/it-docker.sh "$env"
 
     # Restore admin token as long as previous version is 2.9 or less
     logmsg "Restore sonar-tools last released version"
