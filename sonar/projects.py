@@ -452,7 +452,7 @@ class Project(components.Component):
         main_br_count = 0
         for branch in self.branches().values():
             problems += branch.audit(audit_settings)
-            if branch.name in ("main", "master"):
+            if audit_settings.get(AUDIT_MODE_PARAM, "") != "housekeeper" and branch.name in ("main", "master"):
                 main_br_count += 1
                 if main_br_count > 1:
                     problems.append(Problem(get_rule(RuleId.PROJ_MAIN_AND_MASTER), self, str(self)))
@@ -661,7 +661,8 @@ class Project(components.Component):
             problems += self.__audit_zero_loc(audit_settings)
             # Skip language audit, as this can be problematic
             # problems += self.__audit_languages(audit_settings)
-            problems += self.permissions().audit(audit_settings)
+            if audit_settings.get(AUDIT_MODE_PARAM, "") != "housekeeper":
+                problems += self.permissions().audit(audit_settings)
             problems += self.__audit_branches(audit_settings)
             problems += self.__audit_pull_requests(audit_settings)
             problems += self._audit_bg_task(audit_settings)
@@ -1479,11 +1480,12 @@ def __audit_thread(
                 queue.task_done()
                 log.debug("%s audit done", str(project))
                 continue
-            bindkey = project.binding_key()
-            if bindkey and bindkey in bindings:
-                problems.append(Problem(get_rule(RuleId.PROJ_DUPLICATE_BINDING), project, str(project), str(bindings[bindkey])))
-            else:
-                bindings[bindkey] = project
+            if audit_settings.get(AUDIT_MODE_PARAM, "") != "housekeeper":
+                bindkey = project.binding_key()
+                if bindkey and bindkey in bindings:
+                    problems.append(Problem(get_rule(RuleId.PROJ_DUPLICATE_BINDING), project, str(project), str(bindings[bindkey])))
+                else:
+                    bindings[bindkey] = project
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"auditing {str(project)}", catch_all=True)
         __increment_processed(audit_settings)

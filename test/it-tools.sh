@@ -42,14 +42,11 @@ function run_test {
         file="$REPO_ROOT/tmp/$file"
     fi
     announce_test "$announced_args -f $file"
-    # logmsg "========================================="
-    # logmsg "$@"
-    # logmsg "========================================="
     if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
-        "$@" -o okorach -f "$file" 2>$IT_LOG_FILE
+        "$@" -o okorach -f "$file" 2>>$IT_LOG_FILE
     else
-        # echo "$@" -o okorach -l $IT_LOG_FILE -f "$file"
-        "$@" -f "$file" 2>$IT_LOG_FILE
+        # echo "$@" -f "$file"
+        "$@" -f "$file" 2>>$IT_LOG_FILE
     fi
     test_passed_if_file_not_empty "$file"
 }
@@ -74,14 +71,10 @@ function run_test_stdout {
     announced_args=$(get_announced_args $@)  
     announce_test "$announced_args >$file"
     file="$REPO_ROOT/tmp/$file"
-    # logmsg "========================================="
-    # logmsg "$@ >$file"
-    # logmsg "========================================="
     if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
-        "$@" -o okorach >"$file" 2>$IT_LOG_FILE
+        "$@" -o okorach >"$file" 2>>$IT_LOG_FILE
     else
-        # echo "$@" -o okorach -l $IT_LOG_FILE "> $file"
-        "$@" >"$file" 2>$IT_LOG_FILE
+        "$@" >"$file" 2>>$IT_LOG_FILE
     fi
     test_passed_if_file_not_empty "$file"
 }

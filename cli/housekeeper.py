@@ -37,23 +37,16 @@ import sonar.exceptions as ex
 from sonar.audit import config, problem
 
 TOOL_NAME = "sonar-housekeeper"
+PROJ_MAX_AGE = "audit.projects.maxLastAnalysisAge"
 
 
-def get_project_problems(max_days_proj: int, max_days_branch: int, max_days_pr: int, nb_threads: int, endpoint: object) -> list[problem.Problem]:
+def get_project_problems(settings: dict[str, str], endpoint: object) -> list[problem.Problem]:
     """Returns the list of problems that would require housekeeping for a given project"""
     problems = []
-    if max_days_proj < 90:
+    if settings[PROJ_MAX_AGE] < 90:
         log.error("As a safety measure, can't delete projects more recent than 90 days")
         return problems
 
-    settings = {
-        "audit.projects.maxLastAnalysisAge": max_days_proj,
-        "audit.projects.branches.maxLastAnalysisAge": max_days_branch,
-        "audit.projects.pullRequests.maxLastAnalysisAge": max_days_pr,
-        projects.AUDIT_MODE_PARAM: "housekeeper",
-    }
-    settings = config.load(config_name="sonar-audit", settings=settings)
-    settings["threads"] = nb_threads
     problems = projects.audit(endpoint=endpoint, audit_settings=settings)
     nb_proj = 0
     total_loc = 0
@@ -65,29 +58,27 @@ def get_project_problems(max_days_proj: int, max_days_branch: int, max_days_pr: 
             nb_proj += 1
             total_loc += int(p.concerned_object.get_measure("ncloc", fallback="0"))
 
-    if nb_proj == 0:
-        log.info("%d projects older than %d days found during audit", nb_proj, max_days_proj)
-    else:
-        log.warning(
-            "%d projects older than %d days for a total of %d LoC found during audit",
-            nb_proj,
-            max_days_proj,
-            total_loc,
-        )
+    loglevel = log.WARNING if nb_proj > 0 else log.INFO
+    log.log(
+        loglevel,
+        "%d projects older than %d days found during housekeeping (%d LoC)",
+        nb_proj,
+        settings[PROJ_MAX_AGE],
+        total_loc,
+    )
     return problems
 
 
-def get_user_problems(max_days: int, endpoint: platform.Platform) -> list[problem.Problem]:
+def get_user_problems(settings: dict[str, str], endpoint: platform.Platform) -> list[problem.Problem]:
     """Collects problems related to user accounts"""
-    settings = {
-        "audit.tokens.maxAge": max_days,
-        "audit.tokens.maxUnusedAge": 90,
-        # "audit.groups.empty": True,
-    }
-    settings = config.load(config_name="sonar-audit", settings=settings)
     user_problems = users.audit(endpoint=endpoint, audit_settings=settings)
     loglevel = log.WARNING if len(user_problems) > 0 else log.INFO
-    log.log(loglevel, "%d user tokens older than %d days, or unused since 90 days, found during audit", len(user_problems), max_days)
+    log.log(
+        loglevel,
+        "%d user tokens older than %d days, or unused since 90 days, found during housekeeping",
+        len(user_problems),
+        settings["audit.tokens.maxAge"],
+    )
     # group_problems = groups.audit(endpoint=endpoint, audit_settings=settings)
     # user_problems += group_problems
     # nb_problems = len(group_problems)
@@ -103,6 +94,7 @@ def _parse_arguments() -> object:
     _DEFAULT_PR_OBSOLESCENCE = 30
     _DEFAULT_TOKEN_OBSOLESCENCE = 365
     parser = options.set_common_args("Deletes projects, branches, PR, user tokens not used since a given number of days")
+    parser = options.set_output_file_args(parser, allowed_formats=("csv",))
     parser = options.add_thread_arg(parser, "auditing before housekeeping")
     parser.add_argument(
         "--mode",
@@ -208,14 +200,25 @@ def main() -> None:
             kwargs["pullrequestsMaxAge"],
             kwargs["tokensMaxAge"],
         )
+        settings = {
+            "audit.tokens.maxAge": token_age,
+            "audit.tokens.maxUnusedAge": 90,
+            # "audit.groups.empty": True,
+            PROJ_MAX_AGE: proj_age,
+            "audit.projects.branches.maxLastAnalysisAge": branch_age,
+            "audit.projects.pullRequests.maxLastAnalysisAge": pr_age,
+            projects.AUDIT_MODE_PARAM: "housekeeper",
+            "threads": kwargs[options.NBR_THREADS],
+        }
+        log.info("Housekeeper settings = %s", util.json_dump(settings))
         problems = []
         if proj_age > 0 or branch_age > 0 or pr_age > 0:
-            problems = get_project_problems(proj_age, branch_age, pr_age, kwargs[options.NBR_THREADS], sq)
+            problems = get_project_problems(settings, sq)
 
         if token_age:
-            problems += get_user_problems(token_age, sq)
+            problems += get_user_problems(settings, sq)
 
-        problem.dump_report(problems, file=None, format="csv")
+        problem.dump_report(problems, file=kwargs[options.REPORT_FILE], format="csv")
 
         op = "to delete"
         if mode == "delete":
