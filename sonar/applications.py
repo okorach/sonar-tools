@@ -65,7 +65,7 @@ class Application(aggr.Aggregation):
         c.SET_TAGS: "applications/set_tags",
         c.GET_TAGS: "applications/show",
         "CREATE_BRANCH": "applications/create_branch",
-        "UDPATE_BRANCH": "applications/update_branch",
+        "UPDATE_BRANCH": "applications/update_branch",
     }
 
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
