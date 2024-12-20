@@ -199,6 +199,13 @@ class Application(aggr.Aggregation):
         br = self.branches()
         return branch in br and br[branch].is_main()
 
+    def main_branch(self) -> object:
+        """Returns the application main branch"""
+        for br in self.branches().values():
+            if br.is_main():
+                return br
+        return None
+
     def set_branch(self, branch_name: str, branch_data: types.ObjectJsonRepr) -> Application:
         """Creates or updates an Application branch with a set of project branches
 
@@ -229,10 +236,11 @@ class Application(aggr.Aggregation):
         if len(project_list) > 0:
             params = {"application": self.key, "branch": branch_name, "project": project_list, "projectBranch": branch_list}
             api = Application.API["CREATE_BRANCH"]
+            self.refresh()
             if self.branch_exists(branch_name):
                 api = Application.API["UPDATE_BRANCH"]
                 params["name"] = params["branch"]
-            log.debug("Updating application branch with project list", str(project_list))
+            log.debug("%s application branch with project list %s", api, str(project_list))
             ok = ok and self.post(api, params=params).ok
         return self
 
@@ -243,10 +251,7 @@ class Application(aggr.Aggregation):
         """
         from sonar.app_branches import list_from
 
-        if self._branches is not None:
-            return self._branches
-        if not self.sq_json or "branches" not in self.sq_json:
-            self.refresh()
+        self.refresh()
         self._branches = list_from(app=self, data=self.sq_json)
         return self._branches
 
@@ -415,6 +420,10 @@ class Application(aggr.Aggregation):
             # self.set_permissions(util.csv_to_list(perms))
         self.add_projects(_project_list(data))
         self.set_tags(util.csv_to_list(data.get("tags", [])))
+        main_branch = self.main_branch()
+        for name, branch_data in data.get("branches", {}).items():
+            if branch_data.get("isMain", False):
+                main_branch.rename(name)
         for name, branch_data in data.get("branches", {}).items():
             self.set_branch(name, branch_data)
 
