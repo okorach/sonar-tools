@@ -32,7 +32,6 @@ from sonar.util import types, cache
 
 from sonar.components import Component
 
-from sonar.applications import Application as App
 from sonar.branches import Branch
 from sonar import exceptions, projects, utilities
 import sonar.sqobject as sq
@@ -55,7 +54,7 @@ class ApplicationBranch(Component):
         c.UPDATE: "applications/update_branch",
     }
 
-    def __init__(self, app: App, name: str, project_branches: list[Branch], is_main: bool = False) -> None:
+    def __init__(self, app: object, name: str, project_branches: list[Branch], is_main: bool = False) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=app.endpoint, key=f"{app.key} BRANCH {name}")
         self.concerned_object = app
@@ -67,7 +66,7 @@ class ApplicationBranch(Component):
         ApplicationBranch.CACHE.put(self)
 
     @classmethod
-    def get_object(cls, app: App, branch_name: str) -> ApplicationBranch:
+    def get_object(cls, app: object, branch_name: str) -> ApplicationBranch:
         """Gets an Application object from SonarQube
 
         :param Application app: Reference to the Application holding that branch
@@ -90,7 +89,7 @@ class ApplicationBranch(Component):
         raise exceptions.ObjectNotFound(app.key, f"Application key '{app.key}' branch '{branch_name}' not found")
 
     @classmethod
-    def create(cls, app: App, name: str, project_branches: list[Branch]) -> ApplicationBranch:
+    def create(cls, app: object, name: str, project_branches: list[Branch]) -> ApplicationBranch:
         """Creates an ApplicationBranch object in SonarQube
 
         :param Application app: Reference to the Application holding that branch
@@ -111,11 +110,11 @@ class ApplicationBranch(Component):
             app.endpoint.post(ApplicationBranch.API[c.CREATE], params=params)
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"creating branch {name} of {str(app)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(f"app.App {app.key} branch '{name}", e.response.text)
+            raise exceptions.ObjectAlreadyExists(f"application {app.key} branch '{name}", e.response.text)
         return ApplicationBranch(app=app, name=name, project_branches=project_branches)
 
     @classmethod
-    def load(cls, app: App, branch_data: types.ApiPayload) -> ApplicationBranch:
+    def load(cls, app: object, branch_data: types.ApiPayload) -> ApplicationBranch:
         project_branches = []
         for proj_data in branch_data["projects"]:
             proj = projects.Project.get_object(app.endpoint, proj_data["key"])
@@ -234,13 +233,13 @@ class ApplicationBranch(Component):
         return f"{self.endpoint.url}/dashboard?id={self.concerned_object.key}&branch={quote(self.name)}"
 
 
-def list_from(app: App, data: types.ApiPayload) -> dict[str, ApplicationBranch]:
+def list_from(app: object, data: types.ApiPayload) -> dict[str, ApplicationBranch]:
     """Returns a dict of application branches form the pure App JSON"""
     if not data or "branches" not in data:
         return {}
     branch_list = {}
     for br in data["branches"]:
-        branch_data = json.loads(app.endpoint.get(ApplicationBranch.API[c.GET], params={"application": app.key, "branch": br["name"]}).text)[
+        branch_data = json.loads(app.get(ApplicationBranch.API[c.GET], params={"application": app.key, "branch": br["name"]}).text)[
             "application"
         ]
         branch_list[branch_data["branch"]] = ApplicationBranch.load(app, branch_data)
