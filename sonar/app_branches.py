@@ -36,14 +36,8 @@ from sonar.applications import Application as App
 from sonar.branches import Branch
 from sonar import exceptions, projects, utilities
 import sonar.sqobject as sq
+from sonar.util import constants as c
 
-APIS = {
-    "search": "api/components/search_projects",
-    "get": "api/applications/show",
-    "create": "api/applications/create_branch",
-    "delete": "api/applications/delete_branch",
-    "update": "api/applications/update_branch",
-}
 
 _NOT_SUPPORTED = "Applications not supported in community edition"
 
@@ -54,6 +48,12 @@ class ApplicationBranch(Component):
     """
 
     CACHE = cache.Cache()
+    API = {
+        c.CREATE: "applications/create_branch",
+        c.GET: "applications/show",
+        c.DELETE: "applications/delete_branch",
+        c.UPDATE: "applications/update_branch",
+    }
 
     def __init__(self, app: App, name: str, project_branches: list[Branch], is_main: bool = False) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
@@ -108,7 +108,7 @@ class ApplicationBranch(Component):
             br_name = "" if branch.is_main() else branch.name
             params["projectBranch"].append(br_name)
         try:
-            app.endpoint.post(APIS["create"], params=params)
+            app.endpoint.post(ApplicationBranch.API[c.CREATE], params=params)
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"creating branch {name} of {str(app)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(f"app.App {app.key} branch '{name}", e.response.text)
@@ -149,7 +149,7 @@ class ApplicationBranch(Component):
         if self.is_main():
             log.warning("Can't delete main %s, simply delete the application for that", str(self))
             return False
-        return sq.delete_object(self, APIS["delete"], self.search_params(), ApplicationBranch.CACHE)
+        return sq.delete_object(self, ApplicationBranch.API[c.DELETE], self.search_params(), ApplicationBranch.CACHE)
 
     def reload(self, data: types.ApiPayload) -> None:
         """Reloads an App Branch from JSON data coming from Sonar"""
@@ -180,14 +180,16 @@ class ApplicationBranch(Component):
             return False
         params = self.search_params()
         params["name"] = name
+        if len(project_branches) > 0:
+            params.update({"project": [], "projectBranch": []})
         for branch in project_branches:
             params["project"].append(branch.concerned_object.key)
             br_name = "" if branch.is_main() else branch.name
             params["projectBranch"].append(br_name)
         try:
-            ok = self.endpoint.post(APIS["update"], params=params).ok
+            ok = self.post(ApplicationBranch.API[c.UPDATE], params=params).ok
         except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"uptdating {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            utilities.handle_error(e, f"updating {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             ApplicationBranch.CACHE.pop(self)
             raise exceptions.ObjectNotFound(str(self), e.response.text)
 
@@ -195,7 +197,7 @@ class ApplicationBranch(Component):
         self._project_branches = project_branches
         return ok
 
-    def update_name(self, new_name: str) -> bool:
+    def rename(self, new_name: str) -> bool:
         """Updates an Application Branch name
 
         :param str name: New application branch name
@@ -238,6 +240,9 @@ def list_from(app: App, data: types.ApiPayload) -> dict[str, ApplicationBranch]:
         return {}
     branch_list = {}
     for br in data["branches"]:
-        branch_data = json.loads(app.endpoint.get(APIS["get"], params={"application": app.key, "branch": br["name"]}).text)["application"]
+        branch_data = json.loads(app.endpoint.get(ApplicationBranch.API[c.GET], params={"application": app.key, "branch": br["name"]}).text)[
+            "application"
+        ]
         branch_list[branch_data["branch"]] = ApplicationBranch.load(app, branch_data)
+    log.debug("Returning Application branch list %s", str(list(branch_list.keys())))
     return branch_list
