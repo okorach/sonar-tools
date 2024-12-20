@@ -386,7 +386,7 @@ class Platform(object):
             if isinstance(v, datetime.date):
                 good_params[k] = util.format_date(v)
             elif isinstance(v, (list, tuple, set)):
-                good_params[k] = ",".join(str(v))
+                good_params[k] = ",".join(list(v))
         return url + "?" + "&".join([f"{k}={requests.utils.quote(str(v))}" for k, v in good_params.items()])
 
     def webhooks(self) -> dict[str, object]:
