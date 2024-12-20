@@ -228,3 +228,15 @@ def test_app_branches(get_test_application: Generator[applications.Application])
     app.update(definition)
     br = app.branches()
     assert sorted(list(br.keys())) == ["BRANCH foo", "Other Branch"]
+    assert app.main_branch().name == "BRANCH foo"
+    definition = {
+        "branches": {
+            "MiBranch": {"projects": {"TESTSYNC": "main", "demo:jcl": "main", "training:security": "main"}},
+            "Master": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "training:security": "main"}},
+            "Main Branch": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "training:security": "main"}, "isMain": True},
+        }
+    }
+    app.update(definition)
+    br = app.branches()
+    assert sorted(list(br.keys())) == ["Main Branch", "Master", "MiBranch"]
+    assert app.main_branch().name == "Main Branch"
