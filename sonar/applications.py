@@ -210,8 +210,9 @@ class Application(aggr.Aggregation):
         """
         project_list, branch_list = [], []
         ok = True
+        log.debug("Updating application branch with %s", util.json_dump(branch_data))
         for p in branch_data.get("projects", []):
-            (pkey, bname) = (p["projectKey"], p["branch"]) if isinstance(p, dict) else (p, branch_data["projects"][p])
+            (pkey, bname) = (p["projectKey"], p["branch"]) if isinstance(p, list) else (p, branch_data["projects"][p])
             try:
                 o_proj = projects.Project.get_object(self.endpoint, pkey)
                 if bname == settings.DEFAULT_BRANCH:
@@ -231,6 +232,7 @@ class Application(aggr.Aggregation):
             if self.branch_exists(branch_name):
                 api = Application.API["UPDATE_BRANCH"]
                 params["name"] = params["branch"]
+            log.debug("Updating application branch with project list", str(project_list))
             ok = ok and self.post(api, params=params).ok
         return self
 
@@ -401,6 +403,7 @@ class Application(aggr.Aggregation):
 
         :param dict data:
         """
+        log.info("Updating application with %s", util.json_dump(data))
         if "permissions" in data:
             decoded_perms = {}
             for ptype in permissions.PERMISSION_TYPES:
