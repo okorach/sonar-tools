@@ -211,6 +211,5 @@ def get_test_application() -> Generator[applications.Application]:
     yield o
     try:
         o.delete()
-        pass
     except exceptions.ObjectNotFound:
         pass
