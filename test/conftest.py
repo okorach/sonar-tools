@@ -198,3 +198,19 @@ def get_sarif_file() -> Generator[str]:
     file = get_temp_filename("sarif")
     yield file
     rm(file)
+
+
+@pytest.fixture
+def get_test_application() -> Generator[applications.Application]:
+    """setup of tests"""
+    util.start_logging()
+    try:
+        o = applications.Application.get_object(endpoint=util.SQ, key=util.TEMP_KEY)
+    except exceptions.ObjectNotFound:
+        o = applications.Application.create(endpoint=util.SQ, key=util.TEMP_KEY, name=util.TEMP_KEY)
+    yield o
+    try:
+        o.delete()
+        pass
+    except exceptions.ObjectNotFound:
+        pass

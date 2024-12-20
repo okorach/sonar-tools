@@ -23,6 +23,7 @@
 
 import datetime
 import pytest
+from collections.abc import Generator
 
 import utilities as util
 import sonar.logging as log
@@ -214,3 +215,16 @@ def test_set_tags(get_test_app: callable) -> None:
 def test_audit_disabled() -> None:
     """test_audit_disabled"""
     assert len(applications.audit(util.SQ, {"audit.applications": False})) == 0
+
+
+def test_app_branches(get_test_application: Generator[applications.Application]) -> None:
+    app = get_test_application
+    definition = {
+        "branches": {
+            "Other Branch": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "training:security": "main"}},
+            "BRANCH foo": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "training:security": "main"}, "isMain": True},
+        }
+    }
+    app.update(definition)
+    br = app.branches()
+    assert sorted(list(br.keys())) == ["BRANCH foo", "Other Branch"]
