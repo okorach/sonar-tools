@@ -228,12 +228,11 @@ class Application(aggr.Aggregation):
                 branch_definition[p["projectKey"]] = p["branch"]
             else:
                 branch_definition[p] = branch_data["projects"][p]
-        o_project_branches = self.__get_project_branches(branch_definition)
         try:
             o = app_branches.ApplicationBranch.get_object(self, branch_name)
-            o.update_project_branches(new_project_branches=o_project_branches)
+            o.update_project_branches(new_project_branches=self.__get_project_branches(branch_definition))
         except exceptions.ObjectNotFound:
-            self.create_branch(branch_name=branch_name, branch_definition=o_project_branches)
+            self.create_branch(branch_name=branch_name, branch_definition=branch_definition)
         return self
 
     def branches(self) -> dict[str, object]:
