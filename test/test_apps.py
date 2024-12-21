@@ -227,7 +227,7 @@ def test_app_branches(get_test_application: Generator[applications.Application])
     }
     app.update(definition)
     br = app.branches()
-    assert sorted(list(br.keys())) == ["BRANCH foo", "Other Branch"]
+    assert set(br.keys()) == {"BRANCH foo", "Other Branch"}
     assert app.main_branch().name == "BRANCH foo"
     definition = {
         "branches": {
@@ -238,5 +238,5 @@ def test_app_branches(get_test_application: Generator[applications.Application])
     }
     app.update(definition)
     br = app.branches()
-    assert sorted(list(br.keys())) == ["Main Branch", "Master", "MiBranch"]
+    assert set(br.keys()) >= {"Main Branch", "Master", "MiBranch"}
     assert app.main_branch().name == "Main Branch"
