@@ -227,7 +227,7 @@ class Application(aggr.Aggregation):
         o_app_branch = app_branches.ApplicationBranch.get_object(self, branch_name)
         o_app_branch.update_project_branches(new_project_branches=self.__get_project_branches(branch_definition))
 
-    def set_branch(self, branch_name: str, branch_data: types.ObjectJsonRepr) -> Application:
+    def set_branches(self, branch_name: str, branch_data: types.ObjectJsonRepr) -> Application:
         """Creates or updates an Application branch with a set of project branches
 
         :param str branch_name: The Application branch to set
@@ -429,7 +429,7 @@ class Application(aggr.Aggregation):
             if branch_data.get("isMain", False):
                 main_branch.rename(name)
         for name, branch_data in data.get("branches", {}).items():
-            self.set_branch(name, branch_data)
+            self.set_branches(name, branch_data)
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         ops = {c.GET: {"application": self.key}, c.SET_TAGS: {"application": self.key}, c.GET_TAGS: {"application": self.key}}
