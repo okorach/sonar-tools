@@ -55,7 +55,7 @@ def test_get_object_gh_refresh() -> None:
 def test_get_object_ado() -> None:
     """test_get_object_ado"""
     plt = devops.get_object(endpoint=util.SQ, key=ADO_KEY)
-    assert plt.url == "https://dev.azure.com/okorach"
+    assert plt.url == "https://dev.azure.com/olivierkorach"
     assert str(plt) == f"devops platform '{ADO_KEY}'"
 
 
