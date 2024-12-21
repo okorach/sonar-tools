@@ -206,12 +206,12 @@ class Application(aggr.Aggregation):
         return None
 
     def create_branch(self, branch_name: str, branch_definition: types.ObjectJsonRepr) -> object:
-        return app_branches.ApplicationBranch.create(app=self, name=branch_name, project_branches=get_project_branches(branch_definition))
-    
+        return app_branches.ApplicationBranch.create(app=self, name=branch_name, project_branches=self.__get_project_branches(branch_definition))
+
     def update_branch(self, branch_name: str, branch_definition: types.ObjectJsonRepr) -> object:
         o_app_branch = app_branches.ApplicationBranch.get_object(self, branch_name)
-        o_app_branch.update_project_branches(new_project_branches=get_project_branches(branch_definition))
-       
+        o_app_branch.update_project_branches(new_project_branches=self.__get_project_branches(branch_definition))
+
     def set_branch(self, branch_name: str, branch_data: types.ObjectJsonRepr) -> Application:
         """Creates or updates an Application branch with a set of project branches
 
@@ -228,7 +228,7 @@ class Application(aggr.Aggregation):
                 branch_definition[p["projectKey"]] = p["branch"]
             else:
                 branch_definition[p] = branch_data["projects"][p]
-        o_project_branches = get_project_branches(branch_definition)
+        o_project_branches = self.__get_project_branches(branch_definition)
         try:
             o = app_branches.ApplicationBranch.get_object(self, branch_name)
             o.update_project_branches(new_project_branches=o_project_branches)
@@ -425,6 +425,21 @@ class Application(aggr.Aggregation):
         """Return params used to search/create/delete for that object"""
         return self.api_params(c.GET)
 
+    def __get_project_branches(self, branch_definition: types.ObjectJsonRepr):
+        project_branches = []
+        log.debug("Getting branch definition for %s", str(branch_definition))
+        list_mode = isinstance(branch_definition, list)
+        for proj in branch_definition:
+            o_proj = projects.Project.get_object(self.endpoint, proj)
+            if list_mode:
+                proj_br = o_proj.main_branch().name
+            else:
+                proj_br = branch_definition[proj]
+                if proj_br == util.DEFAULT:
+                    proj_br = o_proj.main_branch().name
+            project_branches.append(branches.Branch.get_object(o_proj, proj_br))
+        return project_branches
+
 
 def _project_list(data: types.ObjectJsonRepr) -> types.KeyList:
     """Returns the list of project keys of an application"""
@@ -602,13 +617,3 @@ def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRep
         if "permissions" in app_json:
             app_json["permissions"] = permissions.convert_for_yaml(app_json["permissions"])
     return new_json
-
-
-def get_project_branches(branch_definition: types.ObjectJsonRepr):
-    project_branches = []
-    for proj, proj_br in branch_definition:
-        o_proj = projects.Project.get_object(proj)
-        if proj_br == util.DEFAULT:
-            proj_br = o_proj.main_branch().name
-        project_branches.append(branches.Branch.get_object(o_proj, proj_br))
-    return project_branches
