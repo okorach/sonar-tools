@@ -206,7 +206,22 @@ class Application(aggr.Aggregation):
         return None
 
     def create_branch(self, branch_name: str, branch_definition: types.ObjectJsonRepr) -> object:
+        """Creates an application branch
+
+        :param str branch_name: The Application branch to set
+        :param dict[str, str] branch_definition, {<projectKey!>: <branchName1>, <projectKey2>: <branchName2>, ...}
+        :raises ObjectAlreadyExists: if the branch name already exists
+        :raises ObjectNotFound: if one of the specified projects or project branches does not exists
+        """
         return app_branches.ApplicationBranch.create(app=self, name=branch_name, project_branches=self.__get_project_branches(branch_definition))
+
+    def delete_branch(self, branch_name: str) -> bool:
+        """Deletes an application branch
+
+        :param str branch_name: The Application branch to set
+        :raises ObjectNotFound: if the branch name does not exist
+        """
+        app_branches.ApplicationBranch.get_object(self, branch_name).delete()
 
     def update_branch(self, branch_name: str, branch_definition: types.ObjectJsonRepr) -> object:
         o_app_branch = app_branches.ApplicationBranch.get_object(self, branch_name)
@@ -217,7 +232,7 @@ class Application(aggr.Aggregation):
 
         :param str branch_name: The Application branch to set
         :param dict branch_data: in format returned by api/applications/show or {"projects": {<projectKey>: <branch>, ...}}
-        :raises ObjectNotFound: if a project key does not exist or project branch does not exists
+        :raises ObjectNotFound: if a project key does not exist or project branch does not exist
         :return: self:
         :rtype: Application
         """
