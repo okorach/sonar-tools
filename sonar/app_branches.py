@@ -110,7 +110,7 @@ class ApplicationBranch(Component):
             app.endpoint.post(ApplicationBranch.API[c.CREATE], params=params)
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"creating branch {name} of {str(app)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(f"application {app.key} branch '{name}", e.response.text)
+            raise exceptions.ObjectAlreadyExists(f"{str(app)} branch '{name}", e.response.text)
         return ApplicationBranch(app=app, name=name, project_branches=project_branches)
 
     @classmethod
