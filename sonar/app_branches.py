@@ -232,6 +232,7 @@ class ApplicationBranch(Component):
         """Returns the URL of the Application Branch"""
         return f"{self.endpoint.url}/dashboard?id={self.concerned_object.key}&branch={quote(self.name)}"
 
+
 def exists(app: object, branch: str) -> bool:
     """Returns whether an application branch exists"""
     try:
@@ -239,16 +240,15 @@ def exists(app: object, branch: str) -> bool:
         return True
     except exceptions.ObjectNotFound:
         return False
-    
+
+
 def list_from(app: object, data: types.ApiPayload) -> dict[str, ApplicationBranch]:
     """Returns a dict of application branches form the pure App JSON"""
     if not data or "branches" not in data:
         return {}
     branch_list = {}
     for br in data["branches"]:
-        branch_data = json.loads(app.get(ApplicationBranch.API[c.GET], params={"application": app.key, "branch": br["name"]}).text)[
-            "application"
-        ]
+        branch_data = json.loads(app.get(ApplicationBranch.API[c.GET], params={"application": app.key, "branch": br["name"]}).text)["application"]
         branch_list[branch_data["branch"]] = ApplicationBranch.load(app, branch_data)
     log.debug("Returning Application branch list %s", str(list(branch_list.keys())))
     return branch_list
