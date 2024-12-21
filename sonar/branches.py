@@ -92,15 +92,15 @@ class Branch(components.Component):
         if o:
             return o
         try:
-            data = json.loads(concerned_object.endpoint.get(APIS["list"], params={"project": concerned_object.key}).text)
+            data = json.loads(concerned_object.get(APIS["list"], params={"project": concerned_object.key}).text)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"searching {str(concerned_object)} for branch '{branch_name}'", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(concerned_object.key, f"Project '{concerned_object.key}' not found")
+            raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
 
         for br in data.get("branches", []):
             if br["name"] == branch_name:
                 return cls.load(concerned_object, branch_name, br)
-        raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of project '{concerned_object.key}' not found")
+        raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(concerned_object)} not found")
 
     @classmethod
     def load(cls, concerned_object: projects.Project, branch_name: str, data: types.ApiPayload) -> Branch:
