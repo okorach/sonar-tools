@@ -22,8 +22,8 @@
 """ applications tests """
 
 import datetime
-import pytest
 from collections.abc import Generator
+import pytest
 
 import utilities as util
 import sonar.logging as log
