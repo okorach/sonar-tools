@@ -40,8 +40,10 @@ from sonar import utilities, exceptions
 class SqObject(object):
     """Abstraction of Sonar objects"""
 
-    SEARCH_API = None
     CACHE = cache.Cache
+    API = {
+        c.SEARCH: None
+    }
 
     def __init__(self, endpoint: object, key: str) -> None:
         self.key = key  #: Object unique key (unique in its class)
@@ -60,12 +62,12 @@ class SqObject(object):
 
     @classmethod
     def get_search_api(cls, endpoint: object) -> Optional[str]:
-        api = cls.SEARCH_API
+        api = cls.API[c.SEARCH]
         if endpoint.is_sonarcloud():
             try:
                 api = cls.SEARCH_API_SC
             except AttributeError:
-                api = cls.SEARCH_API
+                api = cls.API[c.SEARCH]
         return api
 
     @classmethod
