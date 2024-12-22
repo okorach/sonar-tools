@@ -382,10 +382,7 @@ class Branch(components.Component):
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {
-            c.GET: {"project": self.concerned_object.key, "branch": self.name},
-            c.LIST: {"project": self.concerned_object.key}
-            }
+        ops = {c.GET: {"project": self.concerned_object.key, "branch": self.name}, c.LIST: {"project": self.concerned_object.key}}
         return ops[op] if op in ops else ops[c.GET]
 
     def last_task(self) -> Optional[tasks.Task]:

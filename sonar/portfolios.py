@@ -83,7 +83,14 @@ class Portfolio(aggregations.Aggregation):
 
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
-    API = {c.CREATE: "views/create", c.GET: "views/show", c.UPDATE: "views/update", c.DELETE: "views/delete", c.SEARCH: "views/search", "REFRESH": "views/refresh"}
+    API = {
+        c.CREATE: "views/create",
+        c.GET: "views/show",
+        c.UPDATE: "views/update",
+        c.DELETE: "views/delete",
+        c.SEARCH: "views/search",
+        "REFRESH": "views/refresh",
+    }
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
