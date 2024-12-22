@@ -39,9 +39,6 @@ from sonar.util import types, cache, constants as c
 
 SONAR_USERS = "sonar-users"
 
-ADD_USER_API = "user_groups/add_user"
-REMOVE_USER_API = "user_groups/remove_user"
-
 
 class Group(sq.SqObject):
     """
@@ -52,7 +49,10 @@ class Group(sq.SqObject):
     CACHE = cache.Cache()
     SEARCH_API_V1 = "user_groups/search"
     UPDATE_API_V1 = "user_groups/update"
-    API = {c.CREATE: "user_groups/create", c.UPDATE: "v2/authorizations/groups", c.SEARCH: "v2/authorizations/groups"}
+    API = {c.CREATE: "user_groups/create", c.UPDATE: "v2/authorizations/groups", c.SEARCH: "v2/authorizations/groups",
+           "ADD_USER": "user_groups/add_user",
+           "REMOVE_USER": "user_groups/remove_user"
+    }
     SEARCH_KEY_FIELD = "name"
     SEARCH_RETURN_FIELD = "groups"
 
@@ -159,7 +159,7 @@ class Group(sq.SqObject):
         :rtype: bool
         """
         try:
-            r = self.post(ADD_USER_API, params={"login": user_login, "name": self.name})
+            r = self.post(Group.API["ADD_USER"], params={"login": user_login, "name": self.name})
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, "adding user to group")
             if isinstance(e, HTTPError):
@@ -177,7 +177,7 @@ class Group(sq.SqObject):
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        return self.post(REMOVE_USER_API, params={"login": user_login, "name": self.name}).ok
+        return self.post(Group.API["REMOVE_USER"], params={"login": user_login, "name": self.name}).ok
 
     def audit(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
         """Audits a group and return list of problems found
