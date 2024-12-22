@@ -78,10 +78,6 @@ class PullRequest(components.Component):
             self._last_analysis = util.string_to_date(self.json["analysisDate"])
         return self._last_analysis
 
-    def delete(self) -> bool:
-        """Deletes a PR and returns whether the operation succeeded"""
-        return sqobject.delete_object(self, PullRequest.API[c.DELETE], self.search_params(), PullRequest.CACHE)
-
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         age = util.age(self.last_analysis())
         if age is None:  # Main branch not analyzed yet
@@ -94,9 +90,10 @@ class PullRequest(components.Component):
             log.debug("%s age is %d days", str(self), age)
         return problems
 
-    def search_params(self) -> types.ApiParams:
+    def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        return {"project": self.concerned_object.key, "pullRequest": self.key}
+        ops = {c.GET: {"project": self.concerned_object.key, "pullRequest": self.key}}
+        return ops[op] if op in ops else ops[c.GET]
 
 
 def get_object(pull_request_key: str, project: object, data: types.ApiPayload = None) -> Optional[PullRequest]:
