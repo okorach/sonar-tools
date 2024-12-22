@@ -1166,20 +1166,30 @@ class Project(components.Component):
             util.handle_error(e, f"setting permissions of {str(self)}", catch_all=True)
         return False
 
-    def set_ai_code_assurance(self, enabled: bool) -> bool:
-        """Sets whether a project has AI code assurance enabled or not"""
-        if self.endpoint.version() >= (10, 7, 0) and self.endpoint.edition() != "community":
-            try:
-                return self.post("projects/set_ai_code_assurance", params={"project": self.key, "contains_ai_code": str(enabled).lower()}).ok
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"setting AI code assurance of {str(self)}", catch_all=True)
-        return False
+    def set_contains_ai_code(self, contains_ai_code: bool) -> bool:
+        """Sets whether a project contains AI code
 
-    def get_ai_code_assurance(self) -> Optional[bool]:
-        """Returns whether project AI code assurance flag is enabled or not"""
+        :param bool contains_ai_code: Whether the project contains AI code
+        :return: Whether the operation succeeded
+        """
+        if self.endpoint.version() < (10, 7, 0) or self.endpoint.edition() == "community":
+            return False
+        try:
+            api = "projects/set_contains_ai_code"
+            if self.endpoint.version() == (10, 7, 0):
+                api = "projects/set_ai_code_assurance"
+            return self.post(api, params={"project": self.key, "contains_ai_code": str(contains_ai_code).lower()}).ok
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"setting contains AI code of {str(self)}", catch_all=True)
+            return False
+
+    def get_ai_code_assurance(self) -> Optional[str]:
+        """
+        :return: The AI code assurance status of the project
+        """
         if self.endpoint.version() >= (10, 7, 0) and self.endpoint.edition() != "community":
             try:
-                return json.loads(self.get("projects/get_ai_code_assurance", params={"project": self.key}).text)["aiCodeAssurance"]
+                return str(json.loads(self.get("projects/get_ai_code_assurance", params={"project": self.key}).text)["aiCodeAssurance"]).upper()
             except (ConnectionError, RequestException) as e:
                 util.handle_error(e, f"getting AI code assurance of {str(self)}", catch_all=True)
         return None
@@ -1187,7 +1197,7 @@ class Project(components.Component):
     def set_quality_profile(self, language: str, quality_profile: str) -> bool:
         """Sets project quality profile for a given language
 
-        :param str language: Language mnemonic, following SonarQube convention
+        :param str language: Language key, following SonarQube convention
         :param str quality_profile: Name of the quality profile in the language
         :return: Whether the operation was successful
         :rtype: bool
