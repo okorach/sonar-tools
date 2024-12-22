@@ -20,6 +20,8 @@
 
 """Abstraction of the SonarQube User Token concept"""
 
+from __future__ import annotations
+
 from typing import Optional
 import json
 
@@ -93,7 +95,7 @@ class UserToken(sq.SqObject):
 
     def audit(self, settings: types.ConfigSettings, today: Optional[datetime.datetime] = None) -> list[Problem]:
         """Audits a token
-        
+
         :return: List of problem found
         """
         problems = []
