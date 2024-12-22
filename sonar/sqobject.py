@@ -54,7 +54,7 @@ class SqObject(object):
         return hash((self.key, self.endpoint.url))
 
     def __eq__(self, another: object) -> bool:
-        if type(self) == type(another):
+        if type(self) is type(another):
             return hash(self) == hash(another)
         return NotImplemented
 
