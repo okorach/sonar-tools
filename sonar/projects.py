@@ -55,7 +55,6 @@ from sonar.audit.problem import Problem
 _CLASS_LOCK = Lock()
 
 MAX_PAGE_SIZE = 500
-_CREATE_API = "projects/create"
 _NAV_API = "navigation/component"
 _TREE_API = "components/tree"
 PRJ_QUALIFIER = "TRK"
@@ -129,7 +128,7 @@ class Project(components.Component):
     CACHE = cache.Cache()
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
-    API = {c.SEARCH: "projects/search", "SET_TAGS": "project_tags/set", "GET_TAGS": "components/show"}
+    API = {c.CREATE: "projects/create", c.SEARCH: "projects/search", "SET_TAGS": "project_tags/set", "GET_TAGS": "components/show"}
     # SEARCH_API = "components/search_projects" - This one does not require admin permission but returns APPs too
 
     def __init__(self, endpoint: pf.Platform, key: str) -> None:
@@ -205,7 +204,7 @@ class Project(components.Component):
         :rtype: Project
         """
         try:
-            endpoint.post(_CREATE_API, params={"project": key, "name": name})
+            endpoint.post(Project.API[c.CREATE], params={"project": key, "name": name})
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"creating project '{key}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(key, e.response.text)
