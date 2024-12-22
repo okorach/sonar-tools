@@ -195,8 +195,8 @@ class QualityGate(sq.SqObject):
         if self._conditions is None:
             self._conditions = []
             data = json.loads(self.get(QualityGate.API["details"], params={"name": self.name}).text)
-            for c in data.get("conditions", []):
-                self._conditions.append(c)
+            for cond in data.get("conditions", []):
+                self._conditions.append(cond)
         if encoded:
             return _encode_conditions(self._conditions)
         return self._conditions
@@ -449,8 +449,8 @@ def exists(endpoint: pf.Platform, gate_name: str) -> bool:
 def _encode_conditions(conds: list[dict[str, str]]) -> list[str]:
     """Encode dict conditions in strings"""
     simple_conds = []
-    for c in conds:
-        simple_conds.append(_encode_condition(c))
+    for cond in conds:
+        simple_conds.append(_encode_condition(cond))
     return simple_conds
 
 
@@ -466,9 +466,9 @@ def _encode_condition(cond: dict[str, str]) -> str:
     return f"{metric} {op} {val}"
 
 
-def _decode_condition(c: str) -> tuple[str, str, str]:
+def _decode_condition(cond: str) -> tuple[str, str, str]:
     """Decodes a string condition in a tuple metric, op, value"""
-    (metric, op, val) = c.strip().split(" ")
+    (metric, op, val) = cond.strip().split(" ")
     if op in (">", ">="):
         op = "GT"
     elif op in ("<", "<="):
