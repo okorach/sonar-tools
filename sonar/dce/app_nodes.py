@@ -49,7 +49,7 @@ class AppNode(dce_nodes.DceNode):
         return self.json.get("Plugins", None)
 
     def health(self) -> str:
-        """Returns app node health, RED by default if heLTH NOT AVAILABLE"""
+        """Returns app node health, RED by default if health not available"""
         return self.json.get("Health", dce_nodes.HEALTH_RED)
 
     def node_type(self) -> str:
@@ -68,6 +68,7 @@ class AppNode(dce_nodes.DceNode):
             return None
 
     def edition(self) -> str:
+        """Returns the node edition"""
         return self.sif.edition()
 
     def name(self) -> str:
@@ -109,11 +110,10 @@ class AppNode(dce_nodes.DceNode):
 def audit(sub_sif: dict[str, str], sif_object: object, audit_settings: types.ConfigSettings) -> list[Problem]:
     """Audits application nodes of a DCE instance
 
-    :param dict sub_sif: The JSON subsection of the SIF pertaining to the App Nodes
+    :param sub_sif: The JSON subsection of the SIF pertaining to the App Nodes
     :param Sif sif_object: The Sif object
-    :param ConfigSettings audit_settings: Config settings for audit
+    :param audit_settings: Config settings for audit
     :return: List of Problems
-    :rtype: list[Problem]
     """
     nodes = []
     problems = []
