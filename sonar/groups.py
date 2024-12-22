@@ -49,9 +49,12 @@ class Group(sq.SqObject):
     CACHE = cache.Cache()
     SEARCH_API_V1 = "user_groups/search"
     UPDATE_API_V1 = "user_groups/update"
-    API = {c.CREATE: "user_groups/create", c.UPDATE: "v2/authorizations/groups", c.SEARCH: "v2/authorizations/groups",
-           "ADD_USER": "user_groups/add_user",
-           "REMOVE_USER": "user_groups/remove_user"
+    API = {
+        c.CREATE: "user_groups/create",
+        c.UPDATE: "v2/authorizations/groups",
+        c.SEARCH: "v2/authorizations/groups",
+        "ADD_USER": "user_groups/add_user",
+        "REMOVE_USER": "user_groups/remove_user",
     }
     SEARCH_KEY_FIELD = "name"
     SEARCH_RETURN_FIELD = "groups"
