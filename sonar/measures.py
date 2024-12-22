@@ -29,12 +29,12 @@ from http import HTTPStatus
 from requests import RequestException
 from sonar import metrics, exceptions, platform
 from sonar.util.types import ApiPayload, ApiParams, KeyList
-from sonar.util import cache
+from sonar.util import cache, constants as c
 import sonar.logging as log
 import sonar.utilities as util
 import sonar.sqobject as sq
 
-_ALT_COMPONENTS = ("project", "application", "portfolio")
+ALT_COMPONENTS = ("project", "application", "portfolio", "key")
 
 DATETIME_METRICS = ("last_analysis", "createdAt", "updatedAt", "creation_date", "modification_date")
 
@@ -82,7 +82,7 @@ class Measure(sq.SqObject):
         :return: The new measure value
         :rtype: int or float or str
         """
-        params = util.replace_keys(_ALT_COMPONENTS, "component", self.concerned_object.search_params())
+        params = util.replace_keys(ALT_COMPONENTS, "component", self.concerned_object.api_params(c.GET))
         data = json.loads(self.get(Measure.API_READ, params=params).text)["component"]["measures"]
         self.value = self.__converted_value(_search_value(data))
         return self.value
@@ -138,7 +138,7 @@ def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, 
     :return: Dict of found measures
     :rtype: dict{<metric>: <value>}
     """
-    params = util.replace_keys(_ALT_COMPONENTS, "component", concerned_object.search_params())
+    params = util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(c.GET))
     params["metricKeys"] = util.list_to_csv(metrics_list)
     log.debug("Getting measures with %s", str(params))
 
@@ -167,7 +167,7 @@ def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> li
     """
     # http://localhost:9999/api/measures/search_history?component=okorach_sonar-tools&metrics=ncloc&p=1&ps=1000
 
-    params = util.replace_keys(_ALT_COMPONENTS, "component", concerned_object.search_params())
+    params = util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(c.GET))
     params["metrics"] = util.list_to_csv(metrics_list)
     log.debug("Getting measures history with %s", str(params))
 
