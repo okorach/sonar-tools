@@ -24,10 +24,9 @@
 """
 
 from __future__ import annotations
-from queue import Queue
+
 from typing import Optional
 import json
-import datetime
 from http import HTTPStatus
 from threading import Lock
 from requests import HTTPError, RequestException
