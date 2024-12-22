@@ -158,7 +158,7 @@ class Rule(sq.SqObject):
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "rules"
 
-    API = {c.CREATE: "rules/create", c.GET: "rules/show", c.UPDATE: "rules/update", c.SEARCH: "rules/search"}
+    API = {c.CREATE: "rules/create", c.GET: "rules/show", c.UPDATE: "rules/update", c.DELETE: "rules/delete", c.SEARCH: "rules/search"}
 
     def __init__(self, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)
@@ -311,6 +311,11 @@ class Rule(sq.SqObject):
     def impacts(self) -> dict[str, str]:
         """Returns the rule clean code attributes"""
         return self._impacts
+
+    def api_params(self, op: str = c.GET) -> types.ApiParams:
+        """Return params used to search/create/delete for that object"""
+        ops = {c.GET: {"key": self.key}}
+        return ops[op] if op in ops else ops[c.GET]
 
 
 def get_facet(facet: str, endpoint: platform.Platform) -> dict[str, str]:

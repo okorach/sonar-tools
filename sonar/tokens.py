@@ -28,7 +28,7 @@ import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
 import sonar.utilities as util
-from sonar.util import types, cache
+from sonar.util import types, cache, constants as c
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 
@@ -39,10 +39,7 @@ class UserToken(sq.SqObject):
     """
 
     CACHE = cache.Cache()
-    API_ROOT = "user_tokens"
-    API_REVOKE = API_ROOT + "/revoke"
-    API_SEARCH = API_ROOT + "/search"
-    API_GENERATE = API_ROOT + "/generate"
+    API = {c.CREATE: "user_tokens/generate", c.DELETE: "user_tokens/revoke", c.LIST: "user_tokens/search"}
 
     def __init__(self, endpoint: pf.Platform, login: str, json_data: types.ApiPayload, name: str = None) -> None:
         """Constructor"""
@@ -69,10 +66,12 @@ class UserToken(sq.SqObject):
         :return: Whether the revocation succeeded
         :rtype: bool
         """
-        if self.name is None:
-            return False
-        log.info("Revoking token '%s' of user login '%s'", self.name, self.login)
-        return self.post(UserToken.API_REVOKE, {"name": self.name, "login": self.login}).ok
+        return self.delete()
+
+    def api_params(self, op: str = c.GET) -> types.ApiParams:
+        """Return params used to search/create/delete for that object"""
+        ops = {c.GET: {"name": self.name, "login": self.login}}
+        return ops[op] if op in ops else ops[c.GET]
 
     def audit(self, settings: types.ConfigSettings, today: Optional[datetime.datetime] = None) -> list[Problem]:
         problems = []
@@ -100,7 +99,7 @@ def search(endpoint: pf.Platform, login: str) -> list[UserToken]:
     :return: list of tokens
     :rtype: list[UserToken]
     """
-    data = json.loads(endpoint.get(UserToken.API_SEARCH, {"login": login}).text)
+    data = json.loads(endpoint.get(UserToken.API[c.LIST], {"login": login}).text)
     return [UserToken(endpoint=endpoint, login=data["login"], json_data=tk) for tk in data["userTokens"]]
 
 
@@ -109,5 +108,5 @@ def generate(name: str, endpoint: pf.Platform, login: str = None) -> UserToken:
     :return: the generated Token object
     :rtype: Token
     """
-    data = json.loads(endpoint.post(UserToken.API_GENERATE, {"name": name, "login": login}).text)
+    data = json.loads(endpoint.post(UserToken.API[c.CREATE], {"name": name, "login": login}).text)
     return UserToken(endpoint=endpoint, login=data["login"], json_data=data)
