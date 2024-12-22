@@ -40,13 +40,6 @@ from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 
 
-#: APIs used for branch management
-APIS = {
-    "rename": "project_branches/rename",
-    "get_new_code": "new_code_periods/list",
-    "delete": "project_branches/delete",
-}
-
 _UNSUPPORTED_IN_CE = "Branches not available in Community Edition"
 
 
@@ -56,7 +49,12 @@ class Branch(components.Component):
     """
 
     CACHE = cache.Cache()
-    API = {c.LIST: "project_branches/list", c.DELETE: "project_branches/delete"}
+    API = {
+        c.LIST: "project_branches/list",
+        c.DELETE: "project_branches/delete",
+        "rename": "project_branches/rename",
+        "get_new_code": "new_code_periods/list",
+    }
 
     def __init__(self, project: projects.Project, name: str) -> None:
         """Don't use this, use class methods to create Branch objects
@@ -205,7 +203,7 @@ class Branch(components.Component):
             self._new_code = settings.new_code_to_string({"inherited": True})
         elif self._new_code is None:
             try:
-                data = json.loads(self.get(api=APIS["get_new_code"], params={"project": self.concerned_object.key}).text)
+                data = json.loads(self.get(api=Branch.API["get_new_code"], params={"project": self.concerned_object.key}).text)
             except (ConnectionError, RequestException) as e:
                 util.handle_error(e, f"getting new code period of {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
                 Branch.CACHE.pop(self)
@@ -267,7 +265,7 @@ class Branch(components.Component):
             return False
         log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
         try:
-            self.post(APIS["rename"], params={"project": self.concerned_object.key, "name": new_name})
+            self.post(Branch.API["rename"], params={"project": self.concerned_object.key, "name": new_name})
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"Renaming {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST))
             if isinstance(e, HTTPError):
