@@ -24,10 +24,14 @@ from typing import Optional
 import json
 
 import datetime
+from http import HTTPStatus
+from requests import RequestException
+
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
 import sonar.utilities as util
+from sonar import exceptions
 from sonar.util import types, cache, constants as c
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
@@ -54,17 +58,31 @@ class UserToken(sq.SqObject):
         self.token = json_data.get("token", None)
         log.debug("Created '%s'", str(self))
 
+    @classmethod
+    def create(cls, endpoint: pf.Platform, login: str, name: str) -> UserToken:
+        """Creates a user token in SonarQube
+
+        :param endpoint: Reference to the SonarQube platform
+        :param login: User for which the token must be created
+        :param name: Token name
+        :return: The UserToken
+        """
+        try:
+            data = json.loads(endpoint.post(UserToken.API[c.CREATE], {"name": name, "login": login}).text)
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"creating token '{name}' for user '{login}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            raise exceptions.ObjectAlreadyExists(name, e.response.text)
+        return UserToken(endpoint=endpoint, login=data["login"], json_data=data, name=name)
+
     def __str__(self) -> str:
         """
         :return: Token string representation
-        :rtype: str
         """
         return f"token '{self.name}' of user '{self.login}'"
 
     def revoke(self) -> bool:
         """Revokes the token
         :return: Whether the revocation succeeded
-        :rtype: bool
         """
         return self.delete()
 
@@ -74,6 +92,10 @@ class UserToken(sq.SqObject):
         return ops[op] if op in ops else ops[c.GET]
 
     def audit(self, settings: types.ConfigSettings, today: Optional[datetime.datetime] = None) -> list[Problem]:
+        """Audits a token
+        
+        :return: List of problem found
+        """
         problems = []
         mode = settings.get("audit.mode", "")
         if not today:
@@ -95,18 +117,8 @@ class UserToken(sq.SqObject):
 def search(endpoint: pf.Platform, login: str) -> list[UserToken]:
     """Searches tokens of a given user
 
-    :param str login: login of the user
+    :param login: login of the user
     :return: list of tokens
-    :rtype: list[UserToken]
     """
     data = json.loads(endpoint.get(UserToken.API[c.LIST], {"login": login}).text)
     return [UserToken(endpoint=endpoint, login=data["login"], json_data=tk) for tk in data["userTokens"]]
-
-
-def generate(name: str, endpoint: pf.Platform, login: str = None) -> UserToken:
-    """Generates a new token for a given user
-    :return: the generated Token object
-    :rtype: Token
-    """
-    data = json.loads(endpoint.post(UserToken.API[c.CREATE], {"name": name, "login": login}).text)
-    return UserToken(endpoint=endpoint, login=data["login"], json_data=data)
