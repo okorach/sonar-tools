@@ -31,7 +31,7 @@ from requests import RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import types, cache
+from sonar.util import types, cache, constants as c
 
 from sonar import sqobject, exceptions
 import sonar.utilities as util
@@ -48,9 +48,11 @@ class Organization(sqobject.SqObject):
     """
 
     CACHE = cache.Cache()
-    SEARCH_API = "api/organizations/search"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "organizations"
+    API = {
+        c.SEARCH: "organizations/search"
+    }
 
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
@@ -77,7 +79,7 @@ class Organization(sqobject.SqObject):
         if o:
             return o
         try:
-            data = json.loads(endpoint.get(Organization.SEARCH_API, params={"organizations": key}).text)
+            data = json.loads(endpoint.get(Organization.API[c.SEARCH], params={"organizations": key}).text)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"getting organization {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")

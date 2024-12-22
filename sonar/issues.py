@@ -213,7 +213,7 @@ class Issue(findings.Finding):
         :return: whether the refresh was successful
         :rtype: bool
         """
-        resp = self.get(Issue.SEARCH_API, params={"issues": self.key, "additionalFields": "_all"})
+        resp = self.get(Issue.API[c.SEARCH], params={"issues": self.key, "additionalFields": "_all"})
         if resp.ok:
             self._load(json.loads(resp.text)["issues"][0])
         return resp.ok
@@ -766,7 +766,7 @@ def search_first(endpoint: pf.Platform, **params) -> Union[Issue, None]:
     """
     filters = pre_search_filters(endpoint=endpoint, params=params)
     filters["ps"] = 1
-    data = json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text)
+    data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text)
     if len(data) == 0:
         return None
     i = data["issues"][0]
@@ -789,7 +789,7 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
 
     log.debug("Search filters = %s", str(filters))
     issue_list = {}
-    data = json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text)
+    data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text)
     nbr_issues = util.nbr_total_elements(data)
     nbr_pages = util.nbr_pages(data)
     log.debug("Number of issues: %d - Nbr pages: %d", nbr_issues, nbr_pages)
@@ -797,7 +797,7 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
     if nbr_pages > 20 and raise_error:
         raise TooManyIssuesError(
             nbr_issues,
-            f"{nbr_issues} issues returned by api/{Issue.SEARCH_API}, this is more than the max {Issue.MAX_SEARCH} possible",
+            f"{nbr_issues} issues returned by api/{Issue.API[c.SEARCH]}, this is more than the max {Issue.MAX_SEARCH} possible",
         )
 
     for i in data["issues"]:
@@ -808,7 +808,7 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
         return issue_list
     q = Queue(maxsize=0)
     for page in range(2, nbr_pages + 1):
-        q.put((endpoint, Issue.SEARCH_API, issue_list, filters, page))
+        q.put((endpoint, Issue.API[c.SEARCH], issue_list, filters, page))
     for i in range(threads):
         log.debug("Starting issue search thread %d", i)
         worker = Thread(target=__search_thread, args=[q])
@@ -823,7 +823,7 @@ def _get_facets(endpoint: pf.Platform, project_key: str, facets: str = "director
     """Returns the facets of a search"""
     params.update({component_filter(endpoint): project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
     filters = pre_search_filters(endpoint=endpoint, params=params)
-    data = json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text)
+    data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text)
     l = {}
     facets_list = util.csv_to_list(facets)
     for f in data["facets"]:
@@ -854,7 +854,7 @@ def count(endpoint: pf.Platform, **kwargs) -> int:
     """Returns number of issues of a search"""
     filters = pre_search_filters(endpoint=endpoint, params=kwargs)
     filters["ps"] = 1
-    nbr_issues = util.nbr_total_elements(json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text))
+    nbr_issues = util.nbr_total_elements(json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text))
     log.debug("Count issues with filters %s returned %d issues", str(kwargs), nbr_issues)
     return nbr_issues
 
@@ -872,7 +872,7 @@ def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
     for i in range(nbr_slices):
         params["rules"] = ",".join(ruleset[i * SLICE_SIZE : min((i + 1) * SLICE_SIZE - 1, len(ruleset))])
         try:
-            data = json.loads(endpoint.get(Issue.SEARCH_API, params=params).text)["facets"][0]["values"]
+            data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=params).text)["facets"][0]["values"]
             for d in data:
                 if d["val"] not in ruleset:
                     continue
