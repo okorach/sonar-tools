@@ -24,7 +24,7 @@
 """
 
 from __future__ import annotations
-from typing import Union, Optional
+from typing import Union
 
 from http import HTTPStatus
 import json
@@ -33,7 +33,7 @@ from requests import RequestException
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
-from sonar.util import types, cache
+from sonar.util import types, cache, constants as c
 from sonar import measures, exceptions, projects
 import sonar.permissions.qualitygate_permissions as permissions
 import sonar.utilities as util
@@ -41,15 +41,6 @@ import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 
-
-#: Quality gates APIs
-APIS = {
-    "create": "qualitygates/create",
-    "list": "qualitygates/list",
-    "rename": "qualitygates/rename",
-    "details": "qualitygates/show",
-    "get_projects": "qualitygates/search",
-}
 
 __NEW_ISSUES_SHOULD_BE_ZERO = "Any numeric threshold on new issues should be 0 or should be removed from QG conditions"
 
@@ -78,6 +69,13 @@ class QualityGate(sq.SqObject):
     Abstraction of the Sonar Quality Gate concept
     """
 
+    API = {
+        c.CREATE: "qualitygates/create",
+        c.LIST: "qualitygates/list",
+        "rename": "qualitygates/rename",
+        "details": "qualitygates/show",
+        "get_projects": "qualitygates/search",
+    }
     CACHE = cache.Cache()
 
     def __init__(self, endpoint: pf.Platform, name: str, data: types.ApiPayload) -> None:
@@ -131,7 +129,7 @@ class QualityGate(sq.SqObject):
     @classmethod
     def create(cls, endpoint: pf.Platform, name: str) -> Union[QualityGate, None]:
         """Creates an empty quality gate"""
-        r = endpoint.post(APIS["create"], params={"name": name})
+        r = endpoint.post(QualityGate.API[c.CREATE], params={"name": name})
         if not r.ok:
             return None
         return cls.get_object(endpoint, name)
@@ -167,7 +165,7 @@ class QualityGate(sq.SqObject):
         while page <= nb_pages:
             params["p"] = page
             try:
-                resp = self.get(APIS["get_projects"], params=params)
+                resp = self.get(QualityGate.API["get_projects"], params=params)
             except (ConnectionError, RequestException) as e:
                 util.handle_error(e, f"getting projects of {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
                 QualityGate.CACHE.pop(self)
@@ -196,7 +194,7 @@ class QualityGate(sq.SqObject):
         """
         if self._conditions is None:
             self._conditions = []
-            data = json.loads(self.get(APIS["details"], params={"name": self.name}).text)
+            data = json.loads(self.get(QualityGate.API["details"], params={"name": self.name}).text)
             for c in data.get("conditions", []):
                 self._conditions.append(c)
         if encoded:
@@ -281,7 +279,7 @@ class QualityGate(sq.SqObject):
         """
         if "name" in data and data["name"] != self.name:
             log.info("Renaming %s with %s", str(self), data["name"])
-            self.post(APIS["rename"], params={"id": self.key, "name": data["name"]})
+            self.post(QualityGate.API["rename"], params={"id": self.key, "name": data["name"]})
             QualityGate.CACHE.pop(self)
             self.name = data["name"]
             self.key = data["name"]
@@ -370,7 +368,7 @@ def get_list(endpoint: pf.Platform) -> dict[str, QualityGate]:
     :rtype: dict {<name>: <QualityGate>}
     """
     log.info("Getting quality gates")
-    data = json.loads(endpoint.get(APIS["list"]).text)
+    data = json.loads(endpoint.get(QualityGate.API[c.LIST]).text)
     qg_list = {}
     for qg in data["qualitygates"]:
         log.debug("Getting QG %s", util.json_dump(qg))
@@ -482,7 +480,7 @@ def _decode_condition(c: str) -> tuple[str, str, str]:
 
 def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, QualityGate]:
     """Searches quality gates matching name"""
-    return util.search_by_name(endpoint, name, APIS["list"], "qualitygates")
+    return util.search_by_name(endpoint, name, QualityGate.API[c.LIST], "qualitygates")
 
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
