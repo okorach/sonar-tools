@@ -60,7 +60,7 @@ _NAV_API = "navigation/component"
 _TREE_API = "components/tree"
 PRJ_QUALIFIER = "TRK"
 APP_QUALIFIER = "APP"
-
+_CONTAINS_AI_CODE = "containsAiCode"
 _BIND_SEP = ":::"
 _AUDIT_BRANCHES_PARAM = "audit.projects.branches"
 AUDIT_MODE_PARAM = "audit.mode"
@@ -1078,8 +1078,8 @@ class Project(components.Component):
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
             ai = self.get_ai_code_assurance()
-            if ai:
-                json_data["aiCodeAssurance"] = ai
+            contains_ai = ai is not None and ai != "NONE"
+            json_data[_CONTAINS_AI_CODE] = contains_ai
             for s in settings_dict.values():
                 if not export_settings.get("INCLUDE_INHERITED", False) and s.inherited:
                     continue
@@ -1148,9 +1148,7 @@ class Project(components.Component):
         """Sets project quality gate
 
         :param quality_gate: quality gate name
-        :type quality_gate: str
         :return: Whether the operation was successful
-        :rtype: bool
         """
         if quality_gate is None:
             return False
@@ -1166,20 +1164,30 @@ class Project(components.Component):
             util.handle_error(e, f"setting permissions of {str(self)}", catch_all=True)
         return False
 
-    def set_ai_code_assurance(self, enabled: bool) -> bool:
-        """Sets whether a project has AI code assurance enabled or not"""
-        if self.endpoint.version() >= (10, 7, 0) and self.endpoint.edition() != "community":
-            try:
-                return self.post("projects/set_ai_code_assurance", params={"project": self.key, "contains_ai_code": str(enabled).lower()}).ok
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"setting AI code assurance of {str(self)}", catch_all=True)
-        return False
+    def set_contains_ai_code(self, contains_ai_code: bool) -> bool:
+        """Sets whether a project contains AI code
 
-    def get_ai_code_assurance(self) -> Optional[bool]:
-        """Returns whether project AI code assurance flag is enabled or not"""
+        :param contains_ai_code: Whether the project contains AI code
+        :return: Whether the operation succeeded
+        """
+        if self.endpoint.version() < (10, 7, 0) or self.endpoint.edition() == "community":
+            return False
+        try:
+            api = "projects/set_contains_ai_code"
+            if self.endpoint.version() == (10, 7, 0):
+                api = "projects/set_ai_code_assurance"
+            return self.post(api, params={"project": self.key, "contains_ai_code": str(contains_ai_code).lower()}).ok
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"setting contains AI code of {str(self)}", catch_all=True)
+            return False
+
+    def get_ai_code_assurance(self) -> Optional[str]:
+        """
+        :return: The AI code assurance status of the project
+        """
         if self.endpoint.version() >= (10, 7, 0) and self.endpoint.edition() != "community":
             try:
-                return json.loads(self.get("projects/get_ai_code_assurance", params={"project": self.key}).text)["aiCodeAssurance"]
+                return str(json.loads(self.get("projects/get_ai_code_assurance", params={"project": self.key}).text)["aiCodeAssurance"]).upper()
             except (ConnectionError, RequestException) as e:
                 util.handle_error(e, f"getting AI code assurance of {str(self)}", catch_all=True)
         return None
@@ -1187,10 +1195,9 @@ class Project(components.Component):
     def set_quality_profile(self, language: str, quality_profile: str) -> bool:
         """Sets project quality profile for a given language
 
-        :param str language: Language mnemonic, following SonarQube convention
-        :param str quality_profile: Name of the quality profile in the language
+        :param language: Language key, following SonarQube convention
+        :param quality_profile: Name of the quality profile in the language
         :return: Whether the operation was successful
-        :rtype: bool
         """
         if not qualityprofiles.exists(endpoint=self.endpoint, language=language, name=quality_profile):
             log.warning("Quality profile '%s' in language '%s' does not exist, can't set it for %s", quality_profile, language, str(self))
@@ -1406,7 +1413,9 @@ class Project(components.Component):
         settings_to_apply = {
             k: v for k, v in data.items() if k not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding", "name")
         }
-        self.set_ai_code_assurance(data.get("aiCodeAssurance", False))
+        if "aiCodeAssurance" in data:
+            log.warning("'aiCodeAssurance' project setting is deprecated, please use '%s' instead", _CONTAINS_AI_CODE)
+        self.set_contains_ai_code(data.get(_CONTAINS_AI_CODE, data.get("aiCodeAssurance", False)))
         # TODO: Set branch settings
         self.set_settings(settings_to_apply)
 

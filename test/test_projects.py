@@ -197,14 +197,14 @@ def test_set_quality_gate(get_test_project: callable) -> None:
 def test_ai_code_assurance(get_test_project: callable) -> None:
     """test_set_ai_code_assurance"""
     proj = get_test_project
-    assert proj.set_ai_code_assurance(True)
-    assert proj.get_ai_code_assurance() is True
-    assert proj.set_ai_code_assurance(False)
-    assert proj.get_ai_code_assurance() is False
+    assert proj.set_contains_ai_code(True)
+    assert proj.get_ai_code_assurance() in ("CONTAINS_AI_CODE", "AI_CODE_ASSURED")
+    assert proj.set_contains_ai_code(False)
+    assert proj.get_ai_code_assurance() == "NONE"
     proj.key = util.NON_EXISTING_KEY
-    assert not proj.set_ai_code_assurance(True)
+    assert not proj.set_contains_ai_code(True)
     assert proj.get_ai_code_assurance() is None
-    assert not proj.set_ai_code_assurance(False)
+    assert not proj.set_contains_ai_code(False)
     assert proj.get_ai_code_assurance() is None
 
 
