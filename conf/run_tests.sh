@@ -29,6 +29,6 @@ utReport="$buildDir/xunit-results.xml"
 
 echo "Running tests"
 export SONAR_HOST_URL=${1:-${SONAR_HOST_URL}}
-coverage run --source=$ROOTDIR -m pytest $ROOTDIR/test/ --junit-xml="$utReport"
+coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test/ --junit-xml="$utReport"
 
 coverage xml -o $coverageReport
