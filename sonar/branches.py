@@ -29,7 +29,7 @@ from requests import HTTPError, RequestException
 import requests.utils
 
 from sonar import platform
-from sonar.util import types, cache
+from sonar.util import types, cache, constants as c
 import sonar.logging as log
 import sonar.sqobject as sq
 from sonar import components, settings, exceptions, tasks
@@ -42,7 +42,6 @@ from sonar.audit.rules import get_rule, RuleId
 
 #: APIs used for branch management
 APIS = {
-    "list": "project_branches/list",
     "rename": "project_branches/rename",
     "get_new_code": "new_code_periods/list",
     "delete": "project_branches/delete",
@@ -57,6 +56,10 @@ class Branch(components.Component):
     """
 
     CACHE = cache.Cache()
+    API = {
+        c.LIST: "project_branches/list",
+        c.DELETE: "project_branches/delete"
+    }
 
     def __init__(self, project: projects.Project, name: str) -> None:
         """Don't use this, use class methods to create Branch objects
@@ -92,7 +95,7 @@ class Branch(components.Component):
         if o:
             return o
         try:
-            data = json.loads(concerned_object.get(APIS["list"], params={"project": concerned_object.key}).text)
+            data = json.loads(concerned_object.get(Branch.API[c.LIST], params={"project": concerned_object.key}).text)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"searching {str(concerned_object)} for branch '{branch_name}'", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
@@ -140,7 +143,7 @@ class Branch(components.Component):
         :rtype: Branch
         """
         try:
-            data = json.loads(self.get(APIS["list"], params={"project": self.concerned_object.key}).text)
+            data = json.loads(self.get(Branch.API[c.LIST], params={"project": self.concerned_object.key}).text)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"refreshing {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             Branch.CACHE.pop(self)
@@ -189,7 +192,7 @@ class Branch(components.Component):
         :rtype: bool
         """
         try:
-            return sq.delete_object(self, APIS["delete"], {"branch": self.name, "project": self.concerned_object.key}, Branch.CACHE)
+            return sq.delete_object(self, Branch.API[c.DELETE], {"branch": self.name, "project": self.concerned_object.key}, Branch.CACHE)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"deleting {str(self)}", catch_all=True)
             if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
@@ -405,7 +408,7 @@ def get_list(project: projects.Project) -> dict[str, Branch]:
         raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 
     log.debug("Reading all branches of %s", str(project))
-    data = json.loads(project.endpoint.get(APIS["list"], params={"project": project.key}).text)
+    data = json.loads(project.endpoint.get(Branch.API[c.LIST], params={"project": project.key}).text)
     return {branch["name"]: Branch.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
 
 
