@@ -38,7 +38,7 @@ from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.utilities as util
-from sonar.util import types
+from sonar.util import types, constants as c
 
 from sonar import errcodes, settings, devops, version, sif, exceptions
 from sonar.permissions import permissions, global_permissions, permission_templates
@@ -336,7 +336,7 @@ class Platform(object):
         :rtype: dict{<key>: <value>, ...}
         """
         params = util.remove_nones({"keys": util.list_to_csv(settings_list)})
-        resp = self.get(settings.API_GET, params=params)
+        resp = self.get(settings.Setting.API[c.GET], params=params)
         json_s = json.loads(resp.text)
         platform_settings = {}
         for s in json_s["settings"]:
@@ -583,7 +583,7 @@ class Platform(object):
             )
             visi = json.loads(resp.text)["organization"]["projectVisibility"]
         else:
-            resp = self.get(settings.API_GET, params={"keys": "projects.default.visibility"})
+            resp = self.get(settings.Setting.API[c.GET], params={"keys": "projects.default.visibility"})
             visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)
         if config.get_property("checkDefaultProjectVisibility") and visi != "private":

@@ -27,7 +27,7 @@ import json
 from requests import RequestException
 
 import sonar.logging as log
-from sonar.util import types, cache
+from sonar.util import types, cache, constants as c
 from sonar import platform
 import sonar.sqobject as sq
 from sonar import exceptions
@@ -41,7 +41,6 @@ _CREATE_API_GITLAB = "alm_settings/create_gitlab"
 _CREATE_API_AZURE = "alm_settings/create_azure"
 _CREATE_API_BITBUCKET = "alm_settings/create_bitbucket"
 _CREATE_API_BBCLOUD = "alm_settings/create_bitbucketcloud"
-APIS = {"list": "alm_settings/list_definitions"}
 
 _TO_BE_SET = "TO_BE_SET"
 _IMPORTABLE_PROPERTIES = ("key", "type", "url", "workspace", "clientId", "appId")
@@ -53,6 +52,7 @@ class DevopsPlatform(sq.SqObject):
     """
 
     CACHE = cache.Cache()
+    API = {c.LIST: "alm_settings/list_definitions"}
 
     def __init__(self, endpoint: platform.Platform, key: str, platform_type: str) -> None:
         """Constructor"""
@@ -69,7 +69,7 @@ class DevopsPlatform(sq.SqObject):
         o = DevopsPlatform.CACHE.get(key, endpoint.url)
         if o:
             return o
-        data = json.loads(endpoint.get(APIS["list"]).text)
+        data = json.loads(endpoint.get(DevopsPlatform.API[c.LIST]).text)
         for plt_type, platforms in data.items():
             for p in platforms:
                 if p["key"] == key:
@@ -137,7 +137,7 @@ class DevopsPlatform(sq.SqObject):
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        data = json.loads(self.get(APIS["list"]).text)
+        data = json.loads(self.get(DevopsPlatform.API[c.LIST]).text)
         for alm_data in data.get(self.type, {}):
             if alm_data["key"] != self.key:
                 self.sq_json = alm_data
@@ -209,7 +209,7 @@ def get_list(endpoint: platform.Platform) -> dict[str, DevopsPlatform]:
     """
     if endpoint.is_sonarcloud():
         raise exceptions.UnsupportedOperation("Can't get list of DevOps platforms on SonarCloud")
-    data = json.loads(endpoint.get(APIS["list"]).text)
+    data = json.loads(endpoint.get(DevopsPlatform.API[c.LIST]).text)
     for alm_type in DEVOPS_PLATFORM_TYPES:
         for alm_data in data.get(alm_type, {}):
             DevopsPlatform.load(endpoint, alm_type, alm_data)

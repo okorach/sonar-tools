@@ -23,7 +23,7 @@ import json
 
 import sonar.logging as log
 from sonar import platform as pf
-from sonar.util import types, cache
+from sonar.util import types, cache, constants as c
 import sonar.utilities as util
 import sonar.sqobject as sq
 
@@ -38,7 +38,7 @@ class WebHook(sq.SqObject):
     """
 
     CACHE = cache.Cache()
-    SEARCH_API = "webhooks/list"
+    API = {c.CREATE: "webhooks/create", c.UPDATE: "webhooks/update", c.LIST: "webhooks/list"}
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "webhooks"
 
@@ -49,7 +49,7 @@ class WebHook(sq.SqObject):
         super().__init__(endpoint=endpoint, key=name)
         if data is None:
             params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
-            data = json.loads(self.post("webhooks/create", params=params).text)["webhook"]
+            data = json.loads(self.post(WebHook.API[c.CREATE], params=params).text)["webhook"]
         self.sq_json = data
         self.name = data["name"]  #: Webhook name
         self.key = data["key"]  #: Webhook key
@@ -81,7 +81,7 @@ class WebHook(sq.SqObject):
         """
         params = util.remove_nones(kwargs)
         params.update({"webhook": self.key})
-        self.post("webhooks/update", params=params)
+        self.post(WebHook.API[c.UPDATE], params=params)
 
     def audit(self) -> list[problem.Problem]:
         """

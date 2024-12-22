@@ -43,14 +43,14 @@ import sonar.audit.problem as pb
 KEY_SEPARATOR = " "
 
 _ALT_COMPONENTS = ("project", "application", "portfolio")
-SEARCH_API = "components/search"
-_DETAILS_API = "components/show"
 
 
 class Component(sq.SqObject):
     """
     Abstraction of the Sonar component concept
     """
+
+    API = {c.SEARCH: "components/search"}
 
     def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None) -> None:
         """Constructor"""

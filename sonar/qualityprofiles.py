@@ -42,8 +42,6 @@ import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 
-_DETAILS_API = "qualityprofiles/show"
-
 _KEY_PARENT = "parent"
 _CHILDREN_KEY = "children"
 
@@ -59,14 +57,13 @@ class QualityProfile(sq.SqObject):
     """
 
     CACHE = cache.Cache()
-    SEARCH_API = "qualityprofiles/search"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "profiles"
     API = {
         c.CREATE: "qualityprofiles/create",
-        c.LIST: "qualityprofiles/search",
         c.GET: "qualityprofiles/search",
         c.DELETE: "qualityprofiles/delete",
+        c.LIST: "qualityprofiles/search",
         c.RENAME: "qualityprofiles/rename",
     }
 

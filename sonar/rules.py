@@ -30,12 +30,8 @@ from requests import RequestException
 
 import sonar.logging as log
 import sonar.sqobject as sq
-from sonar.util import types, cache
+from sonar.util import types, cache, constants as c
 from sonar import platform, utilities, exceptions, languages
-
-_DETAILS_API = "rules/show"
-_UPDATE_API = "rules/update"
-_CREATE_API = "rules/create"
 
 _BUG = "BUG"
 _VULN = "VULNERABILITY"
@@ -159,9 +155,10 @@ class Rule(sq.SqObject):
     """
 
     CACHE = cache.Cache()
-    SEARCH_API = "rules/search"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "rules"
+
+    API = {c.CREATE: "rules/create", c.GET: "rules/show", c.UPDATE: "rules/update", c.SEARCH: "rules/search"}
 
     def __init__(self, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)
@@ -200,7 +197,7 @@ class Rule(sq.SqObject):
         if o:
             return o
         try:
-            r = endpoint.get(_DETAILS_API, params={"key": key})
+            r = endpoint.get(Rule.API[c.GET], params={"key": key})
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"getting rule {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
@@ -214,7 +211,7 @@ class Rule(sq.SqObject):
         params = kwargs.copy()
         (_, params["customKey"]) = key.split(":")
         log.debug("Creating rule key '%s'", key)
-        if not endpoint.post(_CREATE_API, params=params).ok:
+        if not endpoint.post(cls.API[c.CREATE], params=params).ok:
             return None
         return cls.get_object(endpoint=endpoint, key=key)
 
@@ -283,7 +280,7 @@ class Rule(sq.SqObject):
     def set_tags(self, tags: list[str]) -> bool:
         """Sets rule custom tags"""
         log.debug("Settings custom tags of %s to '%s' ", str(self), str(tags))
-        ok = self.post(_UPDATE_API, params={"key": self.key, "tags": utilities.list_to_csv(tags)}).ok
+        ok = self.post(Rule.API[c.UPDATE], params={"key": self.key, "tags": utilities.list_to_csv(tags)}).ok
         if ok:
             self.tags = sorted(tags) if len(tags) > 0 else None
         return ok
@@ -298,7 +295,7 @@ class Rule(sq.SqObject):
         if self.endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Can't extend rules description on SonarCloud")
         log.debug("Settings custom description of %s to '%s'", str(self), description)
-        ok = self.post(_UPDATE_API, params={"key": self.key, "markdown_note": description}).ok
+        ok = self.post(Rule.API[c.UPDATE], params={"key": self.key, "markdown_note": description}).ok
         if ok:
             self.custom_desc = description if description != "" else None
         return ok
@@ -318,7 +315,7 @@ class Rule(sq.SqObject):
 
 def get_facet(facet: str, endpoint: platform.Platform) -> dict[str, str]:
     """Returns a facet as a count per item in the facet"""
-    data = json.loads(endpoint.get(Rule.SEARCH_API, params={"ps": 1, "facets": facet}).text)
+    data = json.loads(endpoint.get(Rule.API[c.SEARCH], params={"ps": 1, "facets": facet}).text)
     return {f["val"]: f["count"] for f in data["facets"][0]["values"]}
 
 
@@ -336,7 +333,7 @@ def search_keys(endpoint: platform.Platform, **params) -> list[str]:
     try:
         while new_params["p"] < nbr_pages:
             new_params["p"] += 1
-            data = json.loads(endpoint.get(Rule.SEARCH_API, params=new_params).text)
+            data = json.loads(endpoint.get(Rule.API[c.SEARCH], params=new_params).text)
             nbr_pages = utilities.nbr_pages(data)
             rule_list += [r[Rule.SEARCH_KEY_FIELD] for r in data[Rule.SEARCH_RETURN_FIELD]]
     except (ConnectionError, RequestException) as e:
@@ -346,7 +343,7 @@ def search_keys(endpoint: platform.Platform, **params) -> list[str]:
 
 def count(endpoint: platform.Platform, **params) -> int:
     """Count number of rules that correspond to certain filters"""
-    return json.loads(endpoint.get(Rule.SEARCH_API, params={**params, "ps": 1}).text)["total"]
+    return json.loads(endpoint.get(Rule.API[c.SEARCH], params={**params, "ps": 1}).text)["total"]
 
 
 def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> dict[str, Rule]:

@@ -50,8 +50,8 @@ class ApplicationBranch(Component):
     API = {
         c.CREATE: "applications/create_branch",
         c.GET: "applications/show",
-        c.DELETE: "applications/delete_branch",
         c.UPDATE: "applications/update_branch",
+        c.DELETE: "applications/delete_branch",
     }
 
     def __init__(self, app: object, name: str, project_branches: list[Branch], is_main: bool = False) -> None:

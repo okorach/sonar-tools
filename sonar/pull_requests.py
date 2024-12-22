@@ -30,7 +30,7 @@ from typing import Optional
 import requests.utils
 
 import sonar.logging as log
-from sonar.util import types, cache
+from sonar.util import types, cache, constants as c
 from sonar import components, sqobject, exceptions
 import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
@@ -46,6 +46,7 @@ class PullRequest(components.Component):
     """
 
     CACHE = cache.Cache()
+    API = {c.DELETE: "project_pull_requests/delete", c.LIST: "project_pull_requests/list"}
 
     def __init__(self, project: object, key: str, data: types.ApiPayload = None) -> None:
         """Constructor"""
@@ -79,7 +80,7 @@ class PullRequest(components.Component):
 
     def delete(self) -> bool:
         """Deletes a PR and returns whether the operation succeeded"""
-        return sqobject.delete_object(self, "project_pull_requests/delete", self.search_params(), PullRequest.CACHE)
+        return sqobject.delete_object(self, PullRequest.API[c.DELETE], self.search_params(), PullRequest.CACHE)
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         age = util.age(self.last_analysis())
@@ -121,7 +122,7 @@ def get_list(project: object) -> dict[str, PullRequest]:
         log.debug(_UNSUPPORTED_IN_CE)
         raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 
-    data = json.loads(project.get("project_pull_requests/list", params={"project": project.key}).text)
+    data = json.loads(project.get(PullRequest.API[c.LIST], params={"project": project.key}).text)
     pr_list = {}
     for pr in data["pullRequests"]:
         pr_list[pr["key"]] = get_object(pr["key"], project, pr)

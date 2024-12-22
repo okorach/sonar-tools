@@ -35,15 +35,9 @@ from sonar import exceptions
 
 from sonar.audit import rules
 from sonar.audit.problem import Problem
-from sonar.util import types, cache
+from sonar.util import types, cache, constants as c
 
 SONAR_USERS = "sonar-users"
-
-_CREATE_API = "user_groups/create"
-_UPDATE_API = "user_groups/update"
-ADD_USER_API = "user_groups/add_user"
-REMOVE_USER_API = "user_groups/remove_user"
-_UPDATE_API_V2 = "v2/authorizations/groups"
 
 
 class Group(sq.SqObject):
@@ -53,8 +47,15 @@ class Group(sq.SqObject):
     """
 
     CACHE = cache.Cache()
-    SEARCH_API = "user_groups/search"
-    SEARCH_API_V2 = "v2/authorizations/groups"
+    SEARCH_API_V1 = "user_groups/search"
+    UPDATE_API_V1 = "user_groups/update"
+    API = {
+        c.CREATE: "user_groups/create",
+        c.UPDATE: "v2/authorizations/groups",
+        c.SEARCH: "v2/authorizations/groups",
+        "ADD_USER": "user_groups/add_user",
+        "REMOVE_USER": "user_groups/remove_user",
+    }
     SEARCH_KEY_FIELD = "name"
     SEARCH_RETURN_FIELD = "groups"
 
@@ -82,7 +83,7 @@ class Group(sq.SqObject):
         o = Group.CACHE.get(name, endpoint.url)
         if o:
             return o
-        data = util.search_by_name(endpoint, name, Group.SEARCH_API, "groups")
+        data = util.search_by_name(endpoint, name, Group.get_search_api(endpoint), "groups")
         if data is None:
             raise exceptions.ObjectNotFound(name, f"Group '{name}' not found.")
         # SonarQube 10 compatibility: "id" field is dropped, use "name" instead
@@ -103,7 +104,7 @@ class Group(sq.SqObject):
         :rtype: Group or None
         """
         log.debug("Creating group '%s'", name)
-        endpoint.post(_CREATE_API, params={"name": name, "description": description})
+        endpoint.post(Group.API[c.SEARCH], params={"name": name, "description": description})
         return cls.read(endpoint=endpoint, name=name)
 
     @classmethod
@@ -119,9 +120,9 @@ class Group(sq.SqObject):
 
     @classmethod
     def get_search_api(cls, endpoint: object) -> Optional[str]:
-        api = cls.SEARCH_API
-        if endpoint.version() >= (10, 4, 0):
-            api = cls.SEARCH_API_V2
+        api = cls.API[c.SEARCH]
+        if endpoint.version() < (10, 4, 0):
+            api = cls.SEARCH_API_V1
         return api
 
     def __str__(self) -> str:
@@ -161,7 +162,7 @@ class Group(sq.SqObject):
         :rtype: bool
         """
         try:
-            r = self.post(ADD_USER_API, params={"login": user_login, "name": self.name})
+            r = self.post(Group.API["ADD_USER"], params={"login": user_login, "name": self.name})
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, "adding user to group")
             if isinstance(e, HTTPError):
@@ -179,7 +180,7 @@ class Group(sq.SqObject):
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        return self.post(REMOVE_USER_API, params={"login": user_login, "name": self.name}).ok
+        return self.post(Group.API["REMOVE_USER"], params={"login": user_login, "name": self.name}).ok
 
     def audit(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
         """Audits a group and return list of problems found
@@ -226,9 +227,9 @@ class Group(sq.SqObject):
         log.debug("Updating %s with description = %s", str(self), description)
         if self.endpoint.version() >= (10, 4, 0):
             data = json.dumps({"description": description})
-            r = self.patch(f"{_UPDATE_API_V2}/{self._id}", data=data, headers={"content-type": "application/merge-patch+json"})
+            r = self.patch(f"{Group.API[c.UPDATE]}/{self._id}", data=data, headers={"content-type": "application/merge-patch+json"})
         else:
-            r = self.post(_UPDATE_API, params={"currentName": self.key, "description": description})
+            r = self.post(Group.UPDATE_API_V1, params={"currentName": self.key, "description": description})
         if r.ok:
             self.description = description
         return r.ok
@@ -245,9 +246,9 @@ class Group(sq.SqObject):
             return True
         log.debug("Updating %s with name = %s", str(self), name)
         if self.endpoint.version() >= (10, 4, 0):
-            r = self.patch(f"{_UPDATE_API_V2}/{self.key}", params={"name": name})
+            r = self.patch(f"{Group.API[c.UPDATE]}/{self.key}", params={"name": name})
         else:
-            r = self.post(_UPDATE_API, params={"currentName": self.key, "name": name})
+            r = self.post(Group.UPDATE_API_V1, params={"currentName": self.key, "name": name})
         if r.ok:
             Group.CACHE.pop(self)
             self.name = name

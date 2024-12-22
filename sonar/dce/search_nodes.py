@@ -23,7 +23,7 @@
 
 """
 
-from typing import Union
+from typing import Optional
 
 import sonar.logging as log
 from sonar.util import types
@@ -61,7 +61,8 @@ class SearchNode(nodes.DceNode):
         log.info("%s: Auditing...", str(self))
         return self.__audit_store_size() + self.__audit_available_disk()
 
-    def max_heap(self) -> Union[int, None]:
+    def max_heap(self) -> Optional[int]:
+        """Returns the node max heap or None if not found"""
         if self.sif.edition() != "datacenter" and self.sif.version() < (9, 0, 0):
             return util.jvm_heap(self.sif.search_jvm_cmdline())
         try:
@@ -72,7 +73,7 @@ class SearchNode(nodes.DceNode):
         return int(float(sz.split(" ")[0]) * 1024)
 
     def __audit_store_size(self) -> list[Problem]:
-        """Auditing the search node store size vs heap allocated to ES"""
+        """Audits the search node store size vs heap allocated to ES"""
         log.info("%s: Auditing store size", str(self))
         es_heap = self.max_heap()
         if es_heap is None:
@@ -97,6 +98,7 @@ class SearchNode(nodes.DceNode):
         return es_pb
 
     def __audit_available_disk(self) -> list[Problem]:
+        """Audits whether the node has enough free disk space"""
         log.info("%s: Auditing available disk space", str(self))
         try:
             space_avail = util.int_memory(self.json[_ES_STATE]["Disk Available"])
@@ -104,12 +106,7 @@ class SearchNode(nodes.DceNode):
             log.warning("%s: disk space available not found in SIF, skipping this check", str(self))
             return []
         store_size = self.store_size()
-        log.info(
-            "%s: Search server available disk size of %d MB and store size is %d MB",
-            str(self),
-            space_avail,
-            store_size,
-        )
+        log.info("%s: Search server available disk size of %d MB and store size is %d MB", str(self), space_avail, store_size)
         if space_avail < 10000:
             return [Problem(get_rule(RuleId.LOW_FREE_DISK_SPACE_2), self, str(self), space_avail // 1024)]
         elif store_size * 2 > space_avail:
@@ -119,7 +116,7 @@ class SearchNode(nodes.DceNode):
 
 
 def __audit_index_balance(searchnodes: list[SearchNode]) -> list[Problem]:
-    """Audits whether ES index is decently balanced acros search nodes"""
+    """Audits whether ES index is decently balanced across search nodes"""
     log.info("Auditing search nodes store size balance")
     nbr_search_nodes = len(searchnodes)
     for i in range(nbr_search_nodes):

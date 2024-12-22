@@ -55,7 +55,6 @@ from sonar.audit.problem import Problem
 _CLASS_LOCK = Lock()
 
 MAX_PAGE_SIZE = 500
-_CREATE_API = "projects/create"
 _NAV_API = "navigation/component"
 _TREE_API = "components/tree"
 PRJ_QUALIFIER = "TRK"
@@ -127,11 +126,16 @@ class Project(components.Component):
     """
 
     CACHE = cache.Cache()
-    SEARCH_API = "projects/search"
-    # SEARCH_API = "components/search_projects" - This one does not require admin permission but returns APPs too
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
-    API = {"SET_TAGS": "project_tags/set", "GET_TAGS": "components/show"}
+    API = {
+        c.CREATE: "projects/create",
+        c.DELETE: "projects/delete",
+        c.SEARCH: "projects/search",
+        c.SET_TAGS: "project_tags/set",
+        c.GET_TAGS: "components/show",
+    }
+    # SEARCH_API = "components/search_projects" - This one does not require admin permission but returns APPs too
 
     def __init__(self, endpoint: pf.Platform, key: str) -> None:
         """
@@ -166,7 +170,7 @@ class Project(components.Component):
         if o:
             return o
         try:
-            data = json.loads(endpoint.get(Project.SEARCH_API, params={"projects": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
+            data = json.loads(endpoint.get(Project.API[c.SEARCH], params={"projects": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
             if len(data["components"]) == 0:
                 log.error("Project key '%s' not found", key)
                 raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
@@ -206,7 +210,7 @@ class Project(components.Component):
         :rtype: Project
         """
         try:
-            endpoint.post(_CREATE_API, params={"project": key, "name": name})
+            endpoint.post(Project.API[c.CREATE], params={"project": key, "name": name})
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"creating project '{key}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(key, e.response.text)
@@ -232,7 +236,7 @@ class Project(components.Component):
         :return: self
         :rtype: Project
         """
-        data = json.loads(self.get(Project.SEARCH_API, params={"projects": self.key}).text)
+        data = json.loads(self.get(Project.API[c.SEARCH], params={"projects": self.key}).text)
         if len(data["components"]) == 0:
             Project.CACHE.pop(self)
             raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
@@ -359,7 +363,7 @@ class Project(components.Component):
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         log.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-        ok = sqobject.delete_object(self, "projects/delete", {"project": self.key}, Project.CACHE)
+        ok = sqobject.delete_object(self, Project.API[c.DELETE], {"project": self.key}, Project.CACHE)
         log.info("Successfully deleted %s - %d LoCs", str(self), loc)
         return ok
 
@@ -1438,7 +1442,7 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
     """
     new_params = {} if params is None else params.copy()
     new_params.update({"ps": 1, "p": 1})
-    return util.nbr_total_elements(json.loads(endpoint.get(Project.SEARCH_API, params=params).text))
+    return util.nbr_total_elements(json.loads(endpoint.get(Project.API[c.SEARCH], params=params).text))
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Project]:

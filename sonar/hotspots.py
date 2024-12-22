@@ -31,7 +31,7 @@ import sonar.logging as log
 import sonar.platform as pf
 
 import sonar.utilities as util
-from sonar.util import types, cache
+from sonar.util import types, cache, constants as c
 
 from sonar import syncer, users
 from sonar import findings, rules, changelog
@@ -86,7 +86,7 @@ class Hotspot(findings.Finding):
     """Abstraction of the Sonar hotspot concept"""
 
     CACHE = cache.Cache()
-    SEARCH_API = "hotspots/search"
+    API = {c.GET: "hotspots/show", c.SEARCH: "hotspots/search"}
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
@@ -152,7 +152,7 @@ class Hotspot(findings.Finding):
         :return: The hotspot details
         :rtype: Whether ther operation succeeded
         """
-        resp = self.get("hotspots/show", {"hotspot": self.key})
+        resp = self.get(Hotspot.API[c.GET], {"hotspot": self.key})
         if resp.ok:
             self.__details = json.loads(resp.text)
         return resp.ok
@@ -345,15 +345,15 @@ class Hotspot(findings.Finding):
             self.refresh()
         self._comments = {}
         seq = 0
-        for c in self.__details["comment"]:
+        for cmt in self.__details["comment"]:
             seq += 1
-            self._comments[f"{c['createdAt']}_{seq:03d}"] = {
-                "date": c["createdAt"],
+            self._comments[f"{cmt['createdAt']}_{seq:03d}"] = {
+                "date": cmt["createdAt"],
                 "event": "comment",
-                "value": c["markdown"],
-                "user": c["login"],
-                "userName": c["login"],
-                "commentKey": c["key"],
+                "value": cmt["markdown"],
+                "user": cmt["login"],
+                "userName": cmt["login"],
+                "commentKey": cmt["key"],
             }
         return self._comments
 
@@ -405,7 +405,7 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
         while True:
             inline_filters["p"] = p
             try:
-                data = json.loads(endpoint.get(Hotspot.SEARCH_API, params=inline_filters, mute=(HTTPStatus.NOT_FOUND,)).text)
+                data = json.loads(endpoint.get(Hotspot.API[c.SEARCH], params=inline_filters, mute=(HTTPStatus.NOT_FOUND,)).text)
                 nbr_hotspots = util.nbr_total_elements(data)
             except (ConnectionError, RequestException) as e:
                 util.handle_error(e, "searching hotspots", catch_all=True)
@@ -416,7 +416,7 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
             if nbr_hotspots > Hotspot.MAX_SEARCH:
                 raise TooManyHotspotsError(
                     nbr_hotspots,
-                    f"{nbr_hotspots} hotpots returned by api/{Hotspot.SEARCH_API}, this is more than the max {Hotspot.MAX_SEARCH} possible",
+                    f"{nbr_hotspots} hotpots returned by api/{Hotspot.API[c.SEARCH]}, this is more than the max {Hotspot.MAX_SEARCH} possible",
                 )
 
             for i in data["hotspots"]:
@@ -512,6 +512,6 @@ def count(endpoint: pf.Platform, **kwargs) -> int:
     params = {} if not kwargs else kwargs.copy()
     params["ps"] = 1
     params = sanitize_search_filters(endpoint, params)
-    nbr_hotspots = util.nbr_total_elements(json.loads(endpoint.get(Hotspot.SEARCH_API, params=params, mute=(HTTPStatus.NOT_FOUND,)).text))
+    nbr_hotspots = util.nbr_total_elements(json.loads(endpoint.get(Hotspot.API[c.SEARCH], params=params, mute=(HTTPStatus.NOT_FOUND,)).text))
     log.debug("Hotspot counts with filters %s returned %d hotspots", str(kwargs), nbr_hotspots)
     return nbr_hotspots
