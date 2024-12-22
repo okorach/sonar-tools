@@ -42,8 +42,6 @@ from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettin
 from sonar import users, findings, changelog, projects, rules
 import sonar.utilities as util
 
-API_SET_TYPE = "issues/set_type"
-
 COMPONENT_FILTER_OLD = "componentKeys"
 COMPONENT_FILTER = "components"
 
@@ -132,10 +130,9 @@ class Issue(findings.Finding):
     """
 
     CACHE = cache.Cache()
-    SEARCH_API = "issues/search"
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
-    API = {"SEARCH": SEARCH_API, "GET_TAGS": SEARCH_API, "SET_TAGS": "issues/set_tags"}
+    API = {c.SEARCH: "issues/search", "GET_TAGS": "issues/search", "SET_TAGS": "issues/set_tags"}
 
     def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
@@ -357,7 +354,7 @@ class Issue(findings.Finding):
         """
         log.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
         try:
-            r = self.post(API_SET_TYPE, {"issue": self.key, "type": new_type})
+            r = self.post("issues/set_type", {"issue": self.key, "type": new_type})
             if r.ok:
                 self.type = new_type
         except (ConnectionError, requests.RequestException) as e:
