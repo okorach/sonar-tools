@@ -52,7 +52,7 @@ class Branch(components.Component):
     API = {
         c.LIST: "project_branches/list",
         c.DELETE: "project_branches/delete",
-        "rename": "project_branches/rename",
+        c.RENAME: "project_branches/rename",
         "get_new_code": "new_code_periods/list",
     }
 
@@ -138,7 +138,7 @@ class Branch(components.Component):
         :rtype: Branch
         """
         try:
-            data = json.loads(self.get(Branch.API[c.LIST], params={"project": self.concerned_object.key}).text)
+            data = json.loads(self.get(Branch.API[c.LIST], params=self.api_params(c.LIST)).text)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"refreshing {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             Branch.CACHE.pop(self)
@@ -187,9 +187,8 @@ class Branch(components.Component):
         :rtype: bool
         """
         try:
-            return sq.delete_object(self, Branch.API[c.DELETE], {"branch": self.name, "project": self.concerned_object.key}, Branch.CACHE)
+            return super().delete()
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"deleting {str(self)}", catch_all=True)
             if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
                 log.warning("Can't delete %s, it's the main branch", str(self))
             return False
@@ -203,7 +202,7 @@ class Branch(components.Component):
             self._new_code = settings.new_code_to_string({"inherited": True})
         elif self._new_code is None:
             try:
-                data = json.loads(self.get(api=Branch.API["get_new_code"], params={"project": self.concerned_object.key}).text)
+                data = json.loads(self.get(api=Branch.API["get_new_code"], params=self.api_params(c.LIST)).text)
             except (ConnectionError, RequestException) as e:
                 util.handle_error(e, f"getting new code period of {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
                 Branch.CACHE.pop(self)
@@ -265,7 +264,7 @@ class Branch(components.Component):
             return False
         log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
         try:
-            self.post(Branch.API["rename"], params={"project": self.concerned_object.key, "name": new_name})
+            self.post(Branch.API[c.RENAME], params={"project": self.concerned_object.key, "name": new_name})
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"Renaming {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST))
             if isinstance(e, HTTPError):
@@ -381,9 +380,13 @@ class Branch(components.Component):
             log.error("%s while auditing %s, audit skipped", util.error_msg(e), str(self))
         return []
 
-    def search_params(self) -> types.ApiParams:
+    def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        return {"project": self.concerned_object.key, "branch": self.name}
+        ops = {
+            c.GET: {"project": self.concerned_object.key, "branch": self.name},
+            c.LIST: {"project": self.concerned_object.key}
+            }
+        return ops[op] if op in ops else ops[c.GET]
 
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
