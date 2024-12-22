@@ -37,10 +37,7 @@ import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 
-CREATE_API = "users/create"
-UPDATE_API = "users/update"
-DEACTIVATE_API = "users/deactivate"
-UPDATE_LOGIN_API = "users/update_login"
+
 _GROUPS_API_SC = "users/groups"
 _GROUPS_API_V2 = "v2/authorizations/group-memberships"
 
@@ -54,12 +51,18 @@ class User(sqobject.SqObject):
     """
 
     CACHE = cache.Cache()
-    SEARCH_API = "users/search"
-    SEARCH_API_V2 = "v2/users-management/users"
+    SEARCH_API_V1 = "users/search"
     SEARCH_KEY_FIELD = "login"
     SEARCH_RETURN_FIELD = "users"
 
     SEARCH_API_SC = "organizations/search_members"
+    API = {
+        c.CREATE: "users/create",
+        c.UPDATE: "users/update",
+        c.SEARCH: "v2/users-management/users",
+        "DEACTIVATE": "users/deactivate",
+        "UPDATE_LOGIN": "users/update_login"
+    }
 
     def __init__(self, endpoint: pf.Platform, login: str, data: types.ApiPayload) -> None:
         """Do not use to create users, use on of the constructor class methods"""
@@ -112,7 +115,7 @@ class User(sqobject.SqObject):
         if is_local:
             params["password"] = password if password else login
         try:
-            endpoint.post(CREATE_API, params=params)
+            endpoint.post(User.API[c.CREATE], params=params)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"creating user '{login}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(login, util.sonar_error(e.response))
@@ -139,11 +142,11 @@ class User(sqobject.SqObject):
 
     @classmethod
     def get_search_api(cls, endpoint: object) -> Optional[str]:
-        api = cls.SEARCH_API
+        api = cls.SEARCH_API_V1
         if endpoint.is_sonarcloud():
             api = cls.SEARCH_API_SC
         elif endpoint.version() >= (10, 4, 0):
-            api = cls.SEARCH_API_V2
+            api = cls.API[c.SEARCH]
         return api
 
     def __str__(self) -> str:
@@ -197,12 +200,7 @@ class User(sqobject.SqObject):
 
         :return:  The user itself
         """
-        if self.endpoint.is_sonarcloud():
-            api = User.SEARCH_API_SC
-        elif self.endpoint.version() < (10, 4, 0):
-            api = User.SEARCH_API
-        else:
-            api = User.SEARCH_API_V2
+        api = User.get_search_api(self.endpoint)
         data = json.loads(self.get(api, params={"q": self.login}).text)
         for d in data["users"]:
             if d["login"] == self.login:
@@ -225,7 +223,7 @@ class User(sqobject.SqObject):
         :return: Whether the deactivation succeeded
         :rtype: bool
         """
-        return self.post(DEACTIVATE_API, {"name": self.name, "login": self.login}).ok
+        return self.post(User.API["DEACTIVATE"], {"name": self.name, "login": self.login}).ok
 
     def tokens(self, **kwargs) -> list[tokens.UserToken]:
         """
@@ -257,14 +255,14 @@ class User(sqobject.SqObject):
         if self.is_local:
             params.update({k: kwargs[k] for k in ("name", "email") if k in kwargs and kwargs[k] != my_data[k]})
             if len(params) > 1:
-                self.post(UPDATE_API, params=params)
+                self.post(User.API[c.UPDATE], params=params)
             if "scmAccounts" in kwargs:
                 self.set_scm_accounts(kwargs["scmAccounts"])
             if "login" in kwargs:
                 new_login = kwargs["login"]
                 o = User.CACHE.get(new_login, self.endpoint.url)
                 if not o:
-                    self.post(UPDATE_LOGIN_API, params={"login": self.login, "newLogin": new_login})
+                    self.post(User.API["UPDATE_LOGIN"], params={"login": self.login, "newLogin": new_login})
                     User.CACHE.pop(self)
                     self.login = new_login
                     User.CACHE.put(self)
@@ -342,7 +340,7 @@ class User(sqobject.SqObject):
         :rtype: bool
         """
         log.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
-        r = self.post(UPDATE_API, params={"login": self.login, "scmAccount": ",".join(set(accounts_list))})
+        r = self.post(User.API[c.UPDATE], params={"login": self.login, "scmAccount": ",".join(set(accounts_list))})
         if not r.ok:
             self.scm_accounts = []
             return False
