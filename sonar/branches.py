@@ -56,10 +56,7 @@ class Branch(components.Component):
     """
 
     CACHE = cache.Cache()
-    API = {
-        c.LIST: "project_branches/list",
-        c.DELETE: "project_branches/delete"
-    }
+    API = {c.LIST: "project_branches/list", c.DELETE: "project_branches/delete"}
 
     def __init__(self, project: projects.Project, name: str) -> None:
         """Don't use this, use class methods to create Branch objects

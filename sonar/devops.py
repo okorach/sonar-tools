@@ -52,9 +52,7 @@ class DevopsPlatform(sq.SqObject):
     """
 
     CACHE = cache.Cache()
-    API = {
-        c.LIST: "alm_settings/list_definitions"
-    }
+    API = {c.LIST: "alm_settings/list_definitions"}
 
     def __init__(self, endpoint: platform.Platform, key: str, platform_type: str) -> None:
         """Constructor"""

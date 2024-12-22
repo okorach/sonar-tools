@@ -128,7 +128,13 @@ class Project(components.Component):
     CACHE = cache.Cache()
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
-    API = {c.CREATE: "projects/create", c.DELETE: "projects/delete", c.SEARCH: "projects/search", "SET_TAGS": "project_tags/set", "GET_TAGS": "components/show"}
+    API = {
+        c.CREATE: "projects/create",
+        c.DELETE: "projects/delete",
+        c.SEARCH: "projects/search",
+        "SET_TAGS": "project_tags/set",
+        "GET_TAGS": "components/show",
+    }
     # SEARCH_API = "components/search_projects" - This one does not require admin permission but returns APPs too
 
     def __init__(self, endpoint: pf.Platform, key: str) -> None:
