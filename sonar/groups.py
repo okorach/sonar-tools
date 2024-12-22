@@ -39,7 +39,6 @@ from sonar.util import types, cache, constants as c
 
 SONAR_USERS = "sonar-users"
 
-_CREATE_API = "user_groups/create"
 _UPDATE_API = "user_groups/update"
 ADD_USER_API = "user_groups/add_user"
 REMOVE_USER_API = "user_groups/remove_user"
@@ -55,6 +54,7 @@ class Group(sq.SqObject):
     CACHE = cache.Cache()
     SEARCH_API_V1 = "user_groups/search"
     API = {
+        c.CREATE: "user_groups/create",
         c.SEARCH: "v2/authorizations/groups"
     }
     SEARCH_KEY_FIELD = "name"
@@ -105,7 +105,7 @@ class Group(sq.SqObject):
         :rtype: Group or None
         """
         log.debug("Creating group '%s'", name)
-        endpoint.post(_CREATE_API, params={"name": name, "description": description})
+        endpoint.post(Group.API[c.SEARCH], params={"name": name, "description": description})
         return cls.read(endpoint=endpoint, name=name)
 
     @classmethod
