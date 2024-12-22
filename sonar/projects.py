@@ -60,7 +60,7 @@ _NAV_API = "navigation/component"
 _TREE_API = "components/tree"
 PRJ_QUALIFIER = "TRK"
 APP_QUALIFIER = "APP"
-CONTAINS_AI_CODE = "containsAiCode"
+_CONTAINS_AI_CODE = "containsAiCode"
 _BIND_SEP = ":::"
 _AUDIT_BRANCHES_PARAM = "audit.projects.branches"
 AUDIT_MODE_PARAM = "audit.mode"
@@ -1079,7 +1079,7 @@ class Project(components.Component):
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
             ai = self.get_ai_code_assurance()
             contains_ai = ai is not None and ai != "NONE"
-            json_data[CONTAINS_AI_CODE] = contains_ai
+            json_data[_CONTAINS_AI_CODE] = contains_ai
             for s in settings_dict.values():
                 if not export_settings.get("INCLUDE_INHERITED", False) and s.inherited:
                     continue
@@ -1414,8 +1414,8 @@ class Project(components.Component):
             k: v for k, v in data.items() if k not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding", "name")
         }
         if "aiCodeAssurance" in data:
-            log.warning("'aiCodeAssurance' project setting is deprecated, please use '%s' instead", CONTAINS_AI_CODE)
-        self.set_contains_ai_code(data.get(CONTAINS_AI_CODE, data.get("aiCodeAssurance", False)))
+            log.warning("'aiCodeAssurance' project setting is deprecated, please use '%s' instead", _CONTAINS_AI_CODE)
+        self.set_contains_ai_code(data.get(_CONTAINS_AI_CODE, data.get("aiCodeAssurance", False)))
         # TODO: Set branch settings
         self.set_settings(settings_to_apply)
 
