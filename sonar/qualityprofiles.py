@@ -42,8 +42,6 @@ import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 
-_DETAILS_API = "qualityprofiles/show"
-
 _KEY_PARENT = "parent"
 _CHILDREN_KEY = "children"
 
