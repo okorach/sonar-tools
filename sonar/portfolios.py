@@ -306,8 +306,8 @@ class Portfolio(aggregations.Aggregation):
             ).text
         )
         comp_list = {}
-        for c in data["components"]:
-            comp_list[c["key"]] = c
+        for cmp in data["components"]:
+            comp_list[cmp["key"]] = cmp
         return comp_list
 
     def delete(self) -> bool:
@@ -592,7 +592,7 @@ class Portfolio(aggregations.Aggregation):
             try:
                 data = json.loads(self.get("api/measures/component_tree", params=params).text)
                 nbr_projects = util.nbr_total_elements(data)
-                proj_key_list += [c["refKey"] for c in data["components"]]
+                proj_key_list += [comp["refKey"] for comp in data["components"]]
             except (ConnectionError, RequestException) as e:
                 util.handle_error(e, f"getting projects list of {str(self)}", catch_all=True)
                 break

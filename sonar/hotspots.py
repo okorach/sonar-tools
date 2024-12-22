@@ -345,15 +345,15 @@ class Hotspot(findings.Finding):
             self.refresh()
         self._comments = {}
         seq = 0
-        for c in self.__details["comment"]:
+        for cmt in self.__details["comment"]:
             seq += 1
-            self._comments[f"{c['createdAt']}_{seq:03d}"] = {
-                "date": c["createdAt"],
+            self._comments[f"{cmt['createdAt']}_{seq:03d}"] = {
+                "date": cmt["createdAt"],
                 "event": "comment",
-                "value": c["markdown"],
-                "user": c["login"],
-                "userName": c["login"],
-                "commentKey": c["key"],
+                "value": cmt["markdown"],
+                "user": cmt["login"],
+                "userName": cmt["login"],
+                "commentKey": cmt["key"],
             }
         return self._comments
 

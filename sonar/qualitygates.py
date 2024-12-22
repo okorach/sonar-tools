@@ -209,8 +209,8 @@ class QualityGate(sq.SqObject):
             log.debug("Can't clear conditions of built-in %s", str(self))
         else:
             log.debug("Clearing conditions of %s", str(self))
-            for c in self.conditions():
-                self.post("qualitygates/delete_condition", params={"id": c["id"]})
+            for cond in self.conditions():
+                self.post("qualitygates/delete_condition", params={"id": cond["id"]})
             self._conditions = None
 
     def set_conditions(self, conditions_list: list[str]) -> bool:
@@ -292,12 +292,12 @@ class QualityGate(sq.SqObject):
 
     def __audit_conditions(self) -> list[Problem]:
         problems = []
-        for c in self.conditions():
-            m = c["metric"]
+        for cond in self.conditions():
+            m = cond["metric"]
             if m not in GOOD_QG_CONDITIONS:
                 problems.append(Problem(get_rule(RuleId.QG_WRONG_METRIC), self, str(self), m))
                 continue
-            val = int(c["error"])
+            val = int(cond["error"])
             (mini, maxi, precise_msg) = GOOD_QG_CONDITIONS[m]
             log.info("Condition on metric '%s': Check that %d in range [%d - %d]", m, val, mini, maxi)
             if val < mini or val > maxi:
@@ -454,9 +454,9 @@ def _encode_conditions(conds: list[dict[str, str]]) -> list[str]:
     return simple_conds
 
 
-def _encode_condition(c: dict[str, str]) -> str:
+def _encode_condition(cond: dict[str, str]) -> str:
     """Encode one dict conditions in a string"""
-    metric, op, val = c["metric"], c["op"], c["error"]
+    metric, op, val = cond["metric"], cond["op"], cond["error"]
     if op == "GT":
         op = ">="
     elif op == "LT":
