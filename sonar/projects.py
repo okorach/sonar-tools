@@ -132,8 +132,8 @@ class Project(components.Component):
         c.CREATE: "projects/create",
         c.DELETE: "projects/delete",
         c.SEARCH: "projects/search",
-        "SET_TAGS": "project_tags/set",
-        "GET_TAGS": "components/show",
+        c.SET_TAGS: "project_tags/set",
+        c.GET_TAGS: "components/show",
     }
     # SEARCH_API = "components/search_projects" - This one does not require admin permission but returns APPs too
 
