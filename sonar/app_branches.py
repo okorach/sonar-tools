@@ -148,7 +148,7 @@ class ApplicationBranch(Component):
         if self.is_main():
             log.warning("Can't delete main %s, simply delete the application for that", str(self))
             return False
-        return sq.delete_object(self, ApplicationBranch.API[c.DELETE], self.search_params(), ApplicationBranch.CACHE)
+        return super().delete(self)
 
     def reload(self, data: types.ApiPayload) -> None:
         """Reloads an App Branch from JSON data coming from Sonar"""
@@ -177,7 +177,7 @@ class ApplicationBranch(Component):
         """
         if not name and not project_branches:
             return False
-        params = self.search_params()
+        params = self.api_params()
         params["name"] = name
         if len(project_branches) > 0:
             params.update({"project": [], "projectBranch": []})
@@ -214,9 +214,10 @@ class ApplicationBranch(Component):
         """
         return self.update(name=self.name, project_branches=new_project_branches)
 
-    def search_params(self) -> types.ApiParams:
+    def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        return {"application": self.concerned_object.key, "branch": self.name}
+        ops = {c.GET: {"application": self.concerned_object.key, "branch": self.name}}
+        return ops[op] if op in ops else ops[c.GET]
 
     def component_data(self) -> types.Obj:
         """Returns key data"""
