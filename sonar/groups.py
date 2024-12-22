@@ -53,8 +53,10 @@ class Group(sq.SqObject):
 
     CACHE = cache.Cache()
     SEARCH_API_V1 = "user_groups/search"
+    UPDATE_API_V1 = "user_groups/update"
     API = {
         c.CREATE: "user_groups/create",
+        c.UPDATE: "v2/authorizations/groups",
         c.SEARCH: "v2/authorizations/groups"
     }
     SEARCH_KEY_FIELD = "name"
@@ -228,9 +230,9 @@ class Group(sq.SqObject):
         log.debug("Updating %s with description = %s", str(self), description)
         if self.endpoint.version() >= (10, 4, 0):
             data = json.dumps({"description": description})
-            r = self.patch(f"{_UPDATE_API_V2}/{self._id}", data=data, headers={"content-type": "application/merge-patch+json"})
+            r = self.patch(f"{Group.API[c.UPDATE]}/{self._id}", data=data, headers={"content-type": "application/merge-patch+json"})
         else:
-            r = self.post(_UPDATE_API, params={"currentName": self.key, "description": description})
+            r = self.post(Group.UPDATE_API_V1, params={"currentName": self.key, "description": description})
         if r.ok:
             self.description = description
         return r.ok
@@ -247,9 +249,9 @@ class Group(sq.SqObject):
             return True
         log.debug("Updating %s with name = %s", str(self), name)
         if self.endpoint.version() >= (10, 4, 0):
-            r = self.patch(f"{_UPDATE_API_V2}/{self.key}", params={"name": name})
+            r = self.patch(f"{Group.API[c.UPDATE]}/{self.key}", params={"name": name})
         else:
-            r = self.post(_UPDATE_API, params={"currentName": self.key, "name": name})
+            r = self.post(Group.UPDATE_API_V1, params={"currentName": self.key, "name": name})
         if r.ok:
             Group.CACHE.pop(self)
             self.name = name
