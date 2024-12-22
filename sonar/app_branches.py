@@ -148,7 +148,7 @@ class ApplicationBranch(Component):
         if self.is_main():
             log.warning("Can't delete main %s, simply delete the application for that", str(self))
             return False
-        return super().delete(self)
+        return super().delete()
 
     def reload(self, data: types.ApiPayload) -> None:
         """Reloads an App Branch from JSON data coming from Sonar"""
