@@ -363,9 +363,7 @@ class Project(components.Component):
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         log.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-        ok = sqobject.delete_object(self, Project.API[c.DELETE], {"project": self.key}, Project.CACHE)
-        log.info("Successfully deleted %s - %d LoCs", str(self), loc)
-        return ok
+        return super().delete()
 
     def has_binding(self) -> bool:
         """Whether the project has a DevOps platform binding"""
@@ -1424,12 +1422,9 @@ class Project(components.Component):
         self.set_settings(settings_to_apply)
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
-        ops = {c.GET: {"project": self.key}, c.SET_TAGS: {"project": self.key}, c.GET_TAGS: {"project": self.key}}
-        return ops[op] if op in ops else ops[c.GET]
-
-    def search_params(self) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        return self.api_params(c.GET)
+        ops = {c.GET: {"project": self.key}}
+        return ops[op] if op in ops else ops[c.GET]
 
 
 def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:

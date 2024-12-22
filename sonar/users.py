@@ -60,6 +60,7 @@ class User(sqobject.SqObject):
         c.CREATE: "users/create",
         c.UPDATE: "users/update",
         c.SEARCH: "v2/users-management/users",
+        "GROUP_MEMBERSHIPS": "v2/authorizations/group-memberships",
         "DEACTIVATE": "users/deactivate",
         "UPDATE_LOGIN": "users/update_login",
     }
@@ -185,12 +186,12 @@ class User(sqobject.SqObject):
         if self._groups is not None and kwargs.get(c.USE_CACHE, True):
             return self._groups
         if self.endpoint.is_sonarcloud():
-            data = json.loads(self.get(_GROUPS_API_SC, {"login": self.key}).text)["groups"]
+            data = json.loads(self.get(_GROUPS_API_SC, self.api_params(c.GET)).text)["groups"]
             self._groups = [g["name"] for g in data]
         elif self.endpoint.version() < (10, 4, 0):
             self._groups = data.get("groups", [])  #: User groups
         else:
-            data = json.loads(self.get(_GROUPS_API_V2, {"userId": self._id, "pageSize": 500}).text)["groupMemberships"]
+            data = json.loads(self.get(User.API["GROUP_MEMBERSHIPS"], {"userId": self._id, "pageSize": 500}).text)["groupMemberships"]
             log.debug("Groups = %s", str(data))
             self._groups = [groups.get_object_from_id(self.endpoint, g["groupId"]).name for g in data]
         return self._groups
@@ -223,7 +224,7 @@ class User(sqobject.SqObject):
         :return: Whether the deactivation succeeded
         :rtype: bool
         """
-        return self.post(User.API["DEACTIVATE"], {"name": self.name, "login": self.login}).ok
+        return self.post(User.API["DEACTIVATE"], self.api_params(User.API["DEACTIVATE"])).ok
 
     def tokens(self, **kwargs) -> list[tokens.UserToken]:
         """
@@ -250,7 +251,7 @@ class User(sqobject.SqObject):
         :rtype: User
         """
         log.debug("Updating %s with %s", str(self), str(kwargs))
-        params = {"login": self.login}
+        params = self.api_params(c.UPDATE)
         my_data = vars(self)
         if self.is_local:
             params.update({k: kwargs[k] for k in ("name", "email") if k in kwargs and kwargs[k] != my_data[k]})
@@ -262,7 +263,7 @@ class User(sqobject.SqObject):
                 new_login = kwargs["login"]
                 o = User.CACHE.get(new_login, self.endpoint.url)
                 if not o:
-                    self.post(User.API["UPDATE_LOGIN"], params={"login": self.login, "newLogin": new_login})
+                    self.post(User.API["UPDATE_LOGIN"], params={**self.api_params(User.API["UPDATE_LOGIN"]), "newLogin": new_login})
                     User.CACHE.pop(self)
                     self.login = new_login
                     User.CACHE.put(self)
@@ -299,6 +300,11 @@ class User(sqobject.SqObject):
         if group.is_default():
             raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't remove membership for {str(self)}")
         return group.remove_user(self.login)
+
+    def api_params(self, op: str = c.GET) -> types.ApiParams:
+        """Return params used to search/create/delete for that object"""
+        ops = {c.GET: {"login": self.login}}
+        return ops[op] if op in ops else ops[c.GET]
 
     def set_groups(self, group_list: list[str]) -> bool:
         """Set the user group membership (replaces current groups)
@@ -340,7 +346,7 @@ class User(sqobject.SqObject):
         :rtype: bool
         """
         log.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
-        r = self.post(User.API[c.UPDATE], params={"login": self.login, "scmAccount": ",".join(set(accounts_list))})
+        r = self.post(User.API[c.UPDATE], params={**self.api_params(c.UPDATE), "scmAccount": ",".join(set(accounts_list))})
         if not r.ok:
             self.scm_accounts = []
             return False

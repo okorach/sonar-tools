@@ -36,7 +36,7 @@ import sonar.platform as pf
 import sonar.util.constants as c
 from sonar.util import types, cache
 
-from sonar import exceptions, settings, projects, branches, app_branches
+from sonar import exceptions, projects, branches, app_branches
 from sonar.permissions import permissions, application_permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
@@ -262,17 +262,11 @@ class Application(aggr.Aggregation):
         """Deletes an Application and all its branches
 
         :return: Whether the delete succeeded
-        :rtype: bool
         """
-        ok = True
         if self.branches() is not None:
             for branch in self.branches().values():
-                if not branch.is_main:
-                    ok = ok and branch.delete()
-        ok = ok and sq.delete_object(self, "applications/delete", {"application": self.key}, Application.CACHE)
-        if ok:
-            Application.CACHE.pop(self)
-        return ok
+                branch.delete()
+        return super().delete()
 
     def get_filtered_branches(self, filters: dict[str, str]) -> Union[None, dict[str, object]]:
         """Get lists of branches according to the filter"""
@@ -431,12 +425,8 @@ class Application(aggr.Aggregation):
             self.set_branches(name, branch_data)
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
-        ops = {c.GET: {"application": self.key}, c.SET_TAGS: {"application": self.key}, c.GET_TAGS: {"application": self.key}}
+        ops = {c.GET: {"application": self.key}}
         return ops[op] if op in ops else ops[c.GET]
-
-    def search_params(self) -> types.ApiParams:
-        """Return params used to search/create/delete for that object"""
-        return self.api_params(c.GET)
 
     def __get_project_branches(self, branch_definition: types.ObjectJsonRepr):
         project_branches = []

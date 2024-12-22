@@ -54,7 +54,7 @@ class SqObject(object):
         return hash((self.key, self.endpoint.url))
 
     def __eq__(self, another: object) -> bool:
-        if type(self) == type(another):
+        if type(self) is type(another):
             return hash(self) == hash(another)
         return NotImplemented
 
@@ -228,7 +228,11 @@ def search_objects(endpoint: object, object_class: any, params: types.ApiParams,
     data = json.loads(endpoint.get(api, params=new_params).text)
     nb_pages = utilities.nbr_pages(data)
     nb_objects = max(len(data[returned_field]), utilities.nbr_total_elements(data))
-    log.debug("Loading %d %ss...", nb_objects, object_class.__name__)
+    log.debug("Loading %d %ss page of %d elements...", nb_objects, object_class.__name__, len(data[returned_field]))
+    if utilities.nbr_total_elements(data) > 0 and len(data[returned_field]) == 0:
+        msg = f"Index on {object_class.__name__} is corrupted, please reindex before using API"
+        log.fatal(msg)
+        raise exceptions.SonarException(msg)
     for obj in data[returned_field]:
         if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization"):
             objects_list[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
@@ -248,17 +252,3 @@ def search_objects(endpoint: object, object_class: any, params: types.ApiParams,
         worker.start()
     q.join()
     return objects_list
-
-
-def delete_object(object: SqObject, api: str, params: types.ApiParams, class_cache: object) -> bool:
-    """Deletes a Sonar object"""
-    try:
-        log.info("Deleting %s", str(object))
-        r = object.post(api, params=params, mute=(HTTPStatus.NOT_FOUND,))
-        class_cache.pop(object)
-        log.info("Successfully deleted %s", str(object))
-        return r.ok
-    except (ConnectionError, RequestException) as e:
-        utilities.handle_error(e, f"deleting {str(object)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
-        class_cache.pop(object)
-        raise exceptions.ObjectNotFound(object.key, f"{str(object)} not found for delete")

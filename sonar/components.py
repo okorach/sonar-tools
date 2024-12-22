@@ -42,8 +42,6 @@ import sonar.audit.problem as pb
 # Character forbidden in keys that can be used to separate a key from a post fix
 KEY_SEPARATOR = " "
 
-_ALT_COMPONENTS = ("project", "application", "portfolio")
-
 
 class Component(sq.SqObject):
     """
@@ -118,7 +116,7 @@ class Component(sq.SqObject):
         from sonar.issues import search_all
 
         log.info("Searching issues for %s with filters %s", str(self), str(filters))
-        params = self.search_params()
+        params = self.api_params(c.GET)
         if filters is not None:
             params.update(filters)
         params["additionalFields"] = "comments"
@@ -130,7 +128,7 @@ class Component(sq.SqObject):
         """Returns the count of issues of a component for a given ruleset"""
         from sonar.issues import count_by_rule
 
-        params = self.search_params()
+        params = self.api_params(c.GET)
         if filters is not None:
             params.update(filters)
         params["facets"] = "rules"
@@ -150,7 +148,7 @@ class Component(sq.SqObject):
         from sonar.hotspots import component_filter, search
 
         log.info("Searching hotspots for %s with filters %s", str(self), str(filters))
-        params = utilities.replace_keys(_ALT_COMPONENTS, component_filter(self.endpoint), self.search_params())
+        params = utilities.replace_keys(measures.ALT_COMPONENTS, component_filter(self.endpoint), self.api_params(c.GET))
         if filters is not None:
             params.update(filters)
         return search(endpoint=self.endpoint, filters=params)
@@ -173,7 +171,7 @@ class Component(sq.SqObject):
 
         tpissues = self.count_third_party_issues()
         inst_issues = self.count_instantiated_rules_issues()
-        params = self.search_params()
+        params = self.api_params(c.GET)
         json_data["issues"] = {
             "thirdParty": tpissues if len(tpissues) > 0 else 0,
             "instantiatedRules": inst_issues if len(inst_issues) > 0 else 0,
@@ -215,7 +213,7 @@ class Component(sq.SqObject):
 
     def get_navigation_data(self) -> types.ApiPayload:
         """Returns a component navigation data"""
-        params = utilities.replace_keys(_ALT_COMPONENTS, "component", self.search_params())
+        params = utilities.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(c.GET))
         data = json.loads(self.get("navigation/component", params=params).text)
         self.sq_json.update(data)
         return data
@@ -279,12 +277,11 @@ class Component(sq.SqObject):
     def api_params(self, op: str = c.LIST) -> types.ApiParams:
         from sonar.issues import component_filter
 
-        ops = {c.LIST: {component_filter(self.endpoint): self.key}, c.SET_TAGS: {"issue": self.key}, c.GET_TAGS: {"issues": self.key}}
+        ops = {
+            c.GET: {"component": self.key},
+            c.LIST: {component_filter(self.endpoint): self.key},
+        }
         return ops[op] if op in ops else ops[c.LIST]
-
-    def search_params(self) -> types.ApiParams:
-        """Return params used to search/create/delete for that object"""
-        return self.api_params(c.LIST)
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""
