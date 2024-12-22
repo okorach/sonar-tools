@@ -402,7 +402,7 @@ def nbr_total_elements(sonar_api_json: dict[str, str]) -> int:
     elif "paging" in sonar_api_json:
         return sonar_api_json["paging"]["total"]
     else:
-        return 1
+        return 0
 
 
 @contextlib.contextmanager
