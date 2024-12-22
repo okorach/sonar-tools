@@ -132,7 +132,7 @@ class Issue(findings.Finding):
     CACHE = cache.Cache()
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
-    API = {c.SEARCH: "issues/search", "GET_TAGS": "issues/search", "SET_TAGS": "issues/set_tags"}
+    API = {c.SEARCH: "issues/search", c.GET_TAGS: "issues/search", c.SET_TAGS: "issues/set_tags"}
 
     def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
