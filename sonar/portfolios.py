@@ -33,7 +33,7 @@ from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import types, cache
+from sonar.util import types, cache, constants as c
 
 from sonar import aggregations, exceptions, settings, applications, app_branches
 import sonar.permissions.permissions as perms
@@ -45,9 +45,6 @@ from sonar.audit import rules, problem
 from sonar.portfolio_reference import PortfolioReference
 
 _CLASS_LOCK = Lock()
-
-_CREATE_API = "views/create"
-_GET_API = "views/show"
 
 _PORTFOLIO_QUALIFIER = "VW"
 _SUBPORTFOLIO_QUALIFIER = "SVW"
@@ -84,9 +81,13 @@ class Portfolio(aggregations.Aggregation):
     Abstraction of the Sonar portfolio concept
     """
 
-    SEARCH_API = "views/search"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
+    API = {
+        c.CREATE: "views/create",
+        c.GET: "views/show",
+        c.SEARCH: "views/search"
+    }
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
@@ -139,7 +140,7 @@ class Portfolio(aggregations.Aggregation):
         params = {"name": name, "key": key, "parent": parent_key}
         for p in "description", "visibility":
             params[p] = kwargs.get(p, None)
-        endpoint.post(_CREATE_API, params=params)
+        endpoint.post(Portfolio.API[c.CREATE], params=params)
         o = cls(endpoint=endpoint, name=name, key=key)
         if parent_key:
             parent_p = Portfolio.get_object(endpoint, parent_key)
@@ -210,7 +211,7 @@ class Portfolio(aggregations.Aggregation):
         if not self.is_toplevel():
             self.root_portfolio.refresh()
             return
-        data = json.loads(self.get(_GET_API, params={"key": self.key}).text)
+        data = json.loads(self.get(Portfolio.API[c.GET], params={"key": self.key}).text)
         if not self.is_sub_portfolio():
             self.reload(data)
         self.root_portfolio.reload_sub_portfolios()
@@ -393,7 +394,7 @@ class Portfolio(aggregations.Aggregation):
         """Returns a portfolio selection mode"""
         if self._selection_mode is None:
             # FIXME: If portfolio is a subportfolio you must reload with sub-JSON
-            self.reload(json.loads(self.get(_GET_API, params={"key": self.root_portfolio.key}).text))
+            self.reload(json.loads(self.get(Portfolio.API[c.GET], params={"key": self.root_portfolio.key}).text))
         return {k.lower(): v for k, v in self._selection_mode.items()}
 
     def has_project(self, key: str) -> bool:
@@ -656,7 +657,7 @@ class Portfolio(aggregations.Aggregation):
 
 def count(endpoint: pf.Platform) -> int:
     """Counts number of portfolios"""
-    return aggregations.count(api=Portfolio.SEARCH_API, endpoint=endpoint)
+    return aggregations.count(api=Portfolio.API[c.SEARCH], endpoint=endpoint)
 
 
 def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Portfolio]:
@@ -762,12 +763,12 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
 
 def search_by_name(endpoint: pf.Platform, name: str) -> types.ApiPayload:
     """Searches portfolio by name and, if found, returns data as JSON"""
-    return util.search_by_name(endpoint, name, Portfolio.SEARCH_API, "components")
+    return util.search_by_name(endpoint, name, Portfolio.API[c.SEARCH], "components")
 
 
 def search_by_key(endpoint: pf.Platform, key: str) -> types.ApiPayload:
     """Searches portfolio by key and, if found, returns data as JSON"""
-    return util.search_by_key(endpoint, key, Portfolio.SEARCH_API, "components")
+    return util.search_by_key(endpoint, key, Portfolio.API[c.SEARCH], "components")
 
 
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
