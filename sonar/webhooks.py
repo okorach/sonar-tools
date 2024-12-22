@@ -38,11 +38,7 @@ class WebHook(sq.SqObject):
     """
 
     CACHE = cache.Cache()
-    API = {
-        c.CREATE: "webhooks/create",
-        c.UPDATE: "webhooks/update",
-        c.LIST: "webhooks/list"
-    }
+    API = {c.CREATE: "webhooks/create", c.UPDATE: "webhooks/update", c.LIST: "webhooks/list"}
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "webhooks"
 

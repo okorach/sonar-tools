@@ -158,12 +158,7 @@ class Rule(sq.SqObject):
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "rules"
 
-    API = {
-        c.CREATE: "rules/create",
-        c.GET: "rules/show",
-        c.UPDATE: "rules/update",
-        c.SEARCH: "rules/search"
-    }
+    API = {c.CREATE: "rules/create", c.GET: "rules/show", c.UPDATE: "rules/update", c.SEARCH: "rules/search"}
 
     def __init__(self, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)

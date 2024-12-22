@@ -50,9 +50,7 @@ class Organization(sqobject.SqObject):
     CACHE = cache.Cache()
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "organizations"
-    API = {
-        c.SEARCH: "organizations/search"
-    }
+    API = {c.SEARCH: "organizations/search"}
 
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""

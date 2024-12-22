@@ -41,9 +41,7 @@ class SqObject(object):
     """Abstraction of Sonar objects"""
 
     CACHE = cache.Cache
-    API = {
-        c.SEARCH: None
-    }
+    API = {c.SEARCH: None}
 
     def __init__(self, endpoint: object, key: str) -> None:
         self.key = key  #: Object unique key (unique in its class)

@@ -127,7 +127,7 @@ class Setting(sqobject.SqObject):
         c.GET: "settings/values",
         c.LIST: "settings/list_definitions",
         "NEW_CODE_GET": "new_code_periods/show",
-        "NEW_CODE_SET": "new_code_periods/set"
+        "NEW_CODE_SET": "new_code_periods/set",
     }
 
     def __init__(self, endpoint: pf.Platform, key: str, component: object = None, data: types.ApiPayload = None) -> None:

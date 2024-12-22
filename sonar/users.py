@@ -61,7 +61,7 @@ class User(sqobject.SqObject):
         c.UPDATE: "users/update",
         c.SEARCH: "v2/users-management/users",
         "DEACTIVATE": "users/deactivate",
-        "UPDATE_LOGIN": "users/update_login"
+        "UPDATE_LOGIN": "users/update_login",
     }
 
     def __init__(self, endpoint: pf.Platform, login: str, data: types.ApiPayload) -> None:
