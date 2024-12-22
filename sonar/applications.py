@@ -36,7 +36,7 @@ import sonar.platform as pf
 import sonar.util.constants as c
 from sonar.util import types, cache
 
-from sonar import exceptions, settings, projects, branches
+from sonar import exceptions, settings, projects, branches, app_branches
 from sonar.permissions import permissions, application_permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
@@ -184,54 +184,70 @@ class Application(aggr.Aggregation):
             self._projects[p["key"]] = p["branch"]
         return self._projects
 
-    def branch_exists(self, branch_name: str) -> bool:
+    def branch_exists(self, branch: str) -> bool:
         """
         :return: Whether the Application branch exists
         :rtype: bool
         """
-        return branch_name in self.branches()
+        return app_branches.exists(self, branch)
 
     def branch_is_main(self, branch: str) -> bool:
         """
         :return: Whether the Application branch is the main branch
         :rtype: bool
         """
-        br = self.branches()
-        return branch in br and br[branch].is_main()
+        return app_branches.ApplicationBranch.get_object(self, branch).is_main()
 
-    def set_branch(self, branch_name: str, branch_data: types.ObjectJsonRepr) -> Application:
+    def main_branch(self) -> object:
+        """Returns the application main branch"""
+        for br in self.branches().values():
+            if br.is_main():
+                return br
+        return None
+
+    def create_branch(self, branch_name: str, branch_definition: types.ObjectJsonRepr) -> object:
+        """Creates an application branch
+
+        :param str branch_name: The Application branch to set
+        :param dict[str, str] branch_definition, {<projectKey!>: <branchName1>, <projectKey2>: <branchName2>, ...}
+        :raises ObjectAlreadyExists: if the branch name already exists
+        :raises ObjectNotFound: if one of the specified projects or project branches does not exists
+        """
+        return app_branches.ApplicationBranch.create(app=self, name=branch_name, project_branches=self.__get_project_branches(branch_definition))
+
+    def delete_branch(self, branch_name: str) -> bool:
+        """Deletes an application branch
+
+        :param str branch_name: The Application branch to set
+        :raises ObjectNotFound: if the branch name does not exist
+        """
+        app_branches.ApplicationBranch.get_object(self, branch_name).delete()
+
+    def update_branch(self, branch_name: str, branch_definition: types.ObjectJsonRepr) -> object:
+        o_app_branch = app_branches.ApplicationBranch.get_object(self, branch_name)
+        o_app_branch.update_project_branches(new_project_branches=self.__get_project_branches(branch_definition))
+
+    def set_branches(self, branch_name: str, branch_data: types.ObjectJsonRepr) -> Application:
         """Creates or updates an Application branch with a set of project branches
 
         :param str branch_name: The Application branch to set
         :param dict branch_data: in format returned by api/applications/show or {"projects": {<projectKey>: <branch>, ...}}
-        :raises ObjectNotFound: if a project key does not exist or project branch does not exists
+        :raises ObjectNotFound: if a project key does not exist or project branch does not exist
         :return: self:
         :rtype: Application
         """
-        project_list, branch_list = [], []
-        ok = True
+        log.debug("Updating application branch with %s", util.json_dump(branch_data))
+        branch_definition = {}
         for p in branch_data.get("projects", []):
-            (pkey, bname) = (p["projectKey"], p["branch"]) if isinstance(p, dict) else (p, branch_data["projects"][p])
-            try:
-                o_proj = projects.Project.get_object(self.endpoint, pkey)
-                if bname == settings.DEFAULT_BRANCH:
-                    bname = o_proj.main_branch().name
-                if not branches.exists(self.endpoint, bname, pkey):
-                    ok = False
-                    log.warning("Branch '%s' of %s not found while setting application branch", bname, str(o_proj))
-                else:
-                    project_list.append(pkey)
-                    branch_list.append(bname)
-            except exceptions.ObjectNotFound:
-                ok = False
-
-        if len(project_list) > 0:
-            params = {"application": self.key, "branch": branch_name, "project": project_list, "projectBranch": branch_list}
-            api = Application.API["CREATE_BRANCH"]
-            if self.branch_exists(branch_name):
-                api = Application.API["UPDATE_BRANCH"]
-                params["name"] = params["branch"]
-            ok = ok and self.post(api, params=params).ok
+            if isinstance(p, list):
+                branch_definition[p["projectKey"]] = p["branch"]
+            else:
+                branch_definition[p] = branch_data["projects"][p]
+        try:
+            o = app_branches.ApplicationBranch.get_object(self, branch_name)
+            o.update_project_branches(new_project_branches=self.__get_project_branches(branch_definition))
+        except exceptions.ObjectNotFound:
+            self.create_branch(branch_name=branch_name, branch_definition=branch_definition)
         return self
 
     def branches(self) -> dict[str, object]:
@@ -239,13 +255,8 @@ class Application(aggr.Aggregation):
         :return: the list of branches of the application and their definition
         :rtype: dict {<branchName>: <ApplicationBranch>}
         """
-        from sonar.app_branches import list_from
-
-        if self._branches is not None:
-            return self._branches
-        if not self.sq_json or "branches" not in self.sq_json:
-            self.refresh()
-        self._branches = list_from(app=self, data=self.sq_json)
+        self.refresh()
+        self._branches = app_branches.list_from(app=self, data=self.sq_json)
         return self._branches
 
     def delete(self) -> bool:
@@ -401,6 +412,7 @@ class Application(aggr.Aggregation):
 
         :param dict data:
         """
+        log.info("Updating application with %s", util.json_dump(data))
         if "permissions" in data:
             decoded_perms = {}
             for ptype in permissions.PERMISSION_TYPES:
@@ -412,8 +424,12 @@ class Application(aggr.Aggregation):
             # self.set_permissions(util.csv_to_list(perms))
         self.add_projects(_project_list(data))
         self.set_tags(util.csv_to_list(data.get("tags", [])))
+        main_branch = self.main_branch()
         for name, branch_data in data.get("branches", {}).items():
-            self.set_branch(name, branch_data)
+            if branch_data.get("isMain", False):
+                main_branch.rename(name)
+        for name, branch_data in data.get("branches", {}).items():
+            self.set_branches(name, branch_data)
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         ops = {c.GET: {"application": self.key}, c.SET_TAGS: {"application": self.key}, c.GET_TAGS: {"application": self.key}}
@@ -422,6 +438,21 @@ class Application(aggr.Aggregation):
     def search_params(self) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
         return self.api_params(c.GET)
+
+    def __get_project_branches(self, branch_definition: types.ObjectJsonRepr):
+        project_branches = []
+        log.debug("Getting branch definition for %s", str(branch_definition))
+        list_mode = isinstance(branch_definition, list)
+        for proj in branch_definition:
+            o_proj = projects.Project.get_object(self.endpoint, proj)
+            if list_mode:
+                proj_br = o_proj.main_branch().name
+            else:
+                proj_br = branch_definition[proj]
+                if proj_br == util.DEFAULT:
+                    proj_br = o_proj.main_branch().name
+            project_branches.append(branches.Branch.get_object(o_proj, proj_br))
+        return project_branches
 
 
 def _project_list(data: types.ObjectJsonRepr) -> types.KeyList:

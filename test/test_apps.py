@@ -22,6 +22,7 @@
 """ applications tests """
 
 import datetime
+from collections.abc import Generator
 import pytest
 
 import utilities as util
@@ -214,3 +215,28 @@ def test_set_tags(get_test_app: callable) -> None:
 def test_audit_disabled() -> None:
     """test_audit_disabled"""
     assert len(applications.audit(util.SQ, {"audit.applications": False})) == 0
+
+
+def test_app_branches(get_test_application: Generator[applications.Application]) -> None:
+    app = get_test_application
+    definition = {
+        "branches": {
+            "Other Branch": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "training:security": "main"}},
+            "BRANCH foo": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "training:security": "main"}, "isMain": True},
+        }
+    }
+    app.update(definition)
+    br = app.branches()
+    assert set(br.keys()) == {"BRANCH foo", "Other Branch"}
+    assert app.main_branch().name == "BRANCH foo"
+    definition = {
+        "branches": {
+            "MiBranch": {"projects": {"TESTSYNC": "main", "demo:jcl": "main", "training:security": "main"}},
+            "Master": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "training:security": "main"}},
+            "Main Branch": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "training:security": "main"}, "isMain": True},
+        }
+    }
+    app.update(definition)
+    br = app.branches()
+    assert set(br.keys()) >= {"Main Branch", "Master", "MiBranch"}
+    assert app.main_branch().name == "Main Branch"
