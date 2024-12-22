@@ -35,7 +35,7 @@ from sonar import exceptions
 
 from sonar.audit import rules
 from sonar.audit.problem import Problem
-from sonar.util import types, cache
+from sonar.util import types, cache, constants as c
 
 SONAR_USERS = "sonar-users"
 
@@ -53,8 +53,10 @@ class Group(sq.SqObject):
     """
 
     CACHE = cache.Cache()
-    SEARCH_API = "user_groups/search"
-    SEARCH_API_V2 = "v2/authorizations/groups"
+    SEARCH_API_V1 = "user_groups/search"
+    API = {
+        c.SEARCH: "v2/authorizations/groups"
+    }
     SEARCH_KEY_FIELD = "name"
     SEARCH_RETURN_FIELD = "groups"
 
@@ -82,7 +84,7 @@ class Group(sq.SqObject):
         o = Group.CACHE.get(name, endpoint.url)
         if o:
             return o
-        data = util.search_by_name(endpoint, name, Group.SEARCH_API, "groups")
+        data = util.search_by_name(endpoint, name, Group.get_search_api(), "groups")
         if data is None:
             raise exceptions.ObjectNotFound(name, f"Group '{name}' not found.")
         # SonarQube 10 compatibility: "id" field is dropped, use "name" instead
@@ -119,9 +121,9 @@ class Group(sq.SqObject):
 
     @classmethod
     def get_search_api(cls, endpoint: object) -> Optional[str]:
-        api = cls.SEARCH_API
-        if endpoint.version() >= (10, 4, 0):
-            api = cls.SEARCH_API_V2
+        api = cls.API[c.SEARCH]
+        if endpoint.version() < (10, 4, 0):
+            api = cls.SEARCH_API_V1
         return api
 
     def __str__(self) -> str:
