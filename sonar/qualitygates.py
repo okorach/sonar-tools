@@ -71,9 +71,10 @@ class QualityGate(sq.SqObject):
 
     API = {
         c.CREATE: "qualitygates/create",
+        c.GET: "qualitygates/show",
+        c.DELETE: "qualitygates/destroy",
         c.LIST: "qualitygates/list",
-        "rename": "qualitygates/rename",
-        "details": "qualitygates/show",
+        c.RENAME: "qualitygates/rename",
         "get_projects": "qualitygates/search",
     }
     CACHE = cache.Cache()
@@ -194,7 +195,7 @@ class QualityGate(sq.SqObject):
         """
         if self._conditions is None:
             self._conditions = []
-            data = json.loads(self.get(QualityGate.API["details"], params={"name": self.name}).text)
+            data = json.loads(self.get(QualityGate.API[c.GET], params=self.api_params()).text)
             for cond in data.get("conditions", []):
                 self._conditions.append(cond)
         if encoded:
@@ -279,7 +280,7 @@ class QualityGate(sq.SqObject):
         """
         if "name" in data and data["name"] != self.name:
             log.info("Renaming %s with %s", str(self), data["name"])
-            self.post(QualityGate.API["rename"], params={"id": self.key, "name": data["name"]})
+            self.post(QualityGate.API[c.RENAME], params={"id": self.key, "name": data["name"]})
             QualityGate.CACHE.pop(self)
             self.name = data["name"]
             self.key = data["name"]
@@ -289,6 +290,11 @@ class QualityGate(sq.SqObject):
         if data.get("isDefault", False):
             self.set_as_default()
         return ok
+
+    def api_params(self, op: str = c.GET) -> types.ApiParams:
+        """Return params used to search/create/delete for that object"""
+        ops = {c.GET: {"name": self.name}}
+        return ops[op] if op in ops else ops[c.GET]
 
     def __audit_conditions(self) -> list[Problem]:
         problems = []
