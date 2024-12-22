@@ -83,7 +83,7 @@ class Portfolio(aggregations.Aggregation):
 
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
-    API = {c.CREATE: "views/create", c.GET: "views/show", c.SEARCH: "views/search"}
+    API = {c.CREATE: "views/create", c.GET: "views/show", c.UPDATE: "views/update", c.DELETE: "views/delete", c.SEARCH: "views/search", "REFRESH": "views/refresh"}
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
@@ -310,11 +310,6 @@ class Portfolio(aggregations.Aggregation):
             comp_list[cmp["key"]] = cmp
         return comp_list
 
-    def delete(self) -> bool:
-        """Deletes a portfolio, returns whether the operation succeeded"""
-        log.info("Deleting %s", str(self))
-        return sq.delete_object(self, "views/delete", {"key": self.key}, Portfolio.CACHE)
-
     def _audit_empty(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
         """Audits if a portfolio is empty (no projects)"""
         if not audit_settings.get("audit.portfolios.empty", True):
@@ -508,13 +503,13 @@ class Portfolio(aggregations.Aggregation):
 
     def set_description(self, desc: str) -> Portfolio:
         if desc:
-            self.post("views/update", params={"key": self.key, "name": self.name, "description": desc})
+            self.post(Portfolio.API[c.UPDATE], params={"key": self.key, "name": self.name, "description": desc})
             self._description = desc
         return self
 
     def set_name(self, name: str) -> Portfolio:
         if name:
-            self.post("views/update", params={"key": self.key, "name": name})
+            self.post(Portfolio.API[c.UPDATE], params={"key": self.key, "name": name})
             self.name = name
         return self
 
@@ -578,8 +573,8 @@ class Portfolio(aggregations.Aggregation):
     def recompute(self) -> bool:
         """Triggers portfolio recomputation, return whether operation REQUEST succeeded"""
         log.debug("Recomputing %s", str(self))
-        key = self.root_portfolio.key if self.root_portfolio else self.key
-        return self.post("views/refresh", params={"key": key}).ok
+        params = self.root_portfolio.api_params() if self.root_portfolio else self.api_params()
+        return self.post(Portfolio.API["REFRESH"], params=params).ok
 
     def get_project_list(self) -> list[str]:
         log.debug("Search %s projects list", str(self))
@@ -646,9 +641,10 @@ class Portfolio(aggregations.Aggregation):
                     o_subp = self.add_subportfolio(key=key, name=subp_data["name"], by_ref=False)
                 o_subp.update(data=subp_data, recurse=True)
 
-    def search_params(self) -> types.ApiParams:
+    def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        return {"portfolio": self.key}
+        ops = {c.GET: {"key": self.key}}
+        return ops[op] if op in ops else ops[c.GET]
 
 
 def count(endpoint: pf.Platform) -> int:
@@ -807,7 +803,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
 
 def recompute(endpoint: pf.Platform) -> None:
     """Triggers recomputation of all portfolios"""
-    endpoint.post("views/refresh")
+    endpoint.post(Portfolio.API["REFRESH"])
 
 
 def _find_sub_portfolio(key: str, data: types.ApiPayload) -> types.ApiPayload:
