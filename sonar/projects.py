@@ -1148,9 +1148,7 @@ class Project(components.Component):
         """Sets project quality gate
 
         :param quality_gate: quality gate name
-        :type quality_gate: str
         :return: Whether the operation was successful
-        :rtype: bool
         """
         if quality_gate is None:
             return False
@@ -1169,7 +1167,7 @@ class Project(components.Component):
     def set_contains_ai_code(self, contains_ai_code: bool) -> bool:
         """Sets whether a project contains AI code
 
-        :param bool contains_ai_code: Whether the project contains AI code
+        :param contains_ai_code: Whether the project contains AI code
         :return: Whether the operation succeeded
         """
         if self.endpoint.version() < (10, 7, 0) or self.endpoint.edition() == "community":
@@ -1197,10 +1195,9 @@ class Project(components.Component):
     def set_quality_profile(self, language: str, quality_profile: str) -> bool:
         """Sets project quality profile for a given language
 
-        :param str language: Language key, following SonarQube convention
-        :param str quality_profile: Name of the quality profile in the language
+        :param language: Language key, following SonarQube convention
+        :param quality_profile: Name of the quality profile in the language
         :return: Whether the operation was successful
-        :rtype: bool
         """
         if not qualityprofiles.exists(endpoint=self.endpoint, language=language, name=quality_profile):
             log.warning("Quality profile '%s' in language '%s' does not exist, can't set it for %s", quality_profile, language, str(self))
