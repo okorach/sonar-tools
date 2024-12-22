@@ -39,10 +39,8 @@ from sonar.util import types, cache, constants as c
 
 SONAR_USERS = "sonar-users"
 
-_UPDATE_API = "user_groups/update"
 ADD_USER_API = "user_groups/add_user"
 REMOVE_USER_API = "user_groups/remove_user"
-_UPDATE_API_V2 = "v2/authorizations/groups"
 
 
 class Group(sq.SqObject):
@@ -54,11 +52,7 @@ class Group(sq.SqObject):
     CACHE = cache.Cache()
     SEARCH_API_V1 = "user_groups/search"
     UPDATE_API_V1 = "user_groups/update"
-    API = {
-        c.CREATE: "user_groups/create",
-        c.UPDATE: "v2/authorizations/groups",
-        c.SEARCH: "v2/authorizations/groups"
-    }
+    API = {c.CREATE: "user_groups/create", c.UPDATE: "v2/authorizations/groups", c.SEARCH: "v2/authorizations/groups"}
     SEARCH_KEY_FIELD = "name"
     SEARCH_RETURN_FIELD = "groups"
 
