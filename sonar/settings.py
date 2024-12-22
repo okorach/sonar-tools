@@ -30,7 +30,7 @@ from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import types, cache
+from sonar.util import types, cache, constants as c
 from sonar import sqobject, exceptions
 import sonar.utilities as util
 
@@ -113,13 +113,6 @@ _INLINE_SETTINGS = (
     r"^sonar\.auth\..*\.organizations$",
 )
 
-API_SET = "settings/set"
-API_CREATE = API_SET
-API_GET = "settings/values"
-API_LIST = "settings/list_definitions"
-API_NEW_CODE_GET = "new_code_periods/show"
-API_NEW_CODE_SET = "new_code_periods/set"
-
 VALID_SETTINGS = set()
 
 
@@ -129,6 +122,13 @@ class Setting(sqobject.SqObject):
     """
 
     CACHE = cache.Cache()
+    API = {
+        c.CREATE: "settings/set",
+        c.GET: "settings/values",
+        c.LIST: "settings/list_definitions",
+        "NEW_CODE_GET": "new_code_periods/show",
+        "NEW_CODE_SET": "new_code_periods/set"
+    }
 
     def __init__(self, endpoint: pf.Platform, key: str, component: object = None, data: types.ApiPayload = None) -> None:
         """Constructor"""
@@ -152,13 +152,13 @@ class Setting(sqobject.SqObject):
             return o
         if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
             params = get_component_params(component, name="project")
-            data = json.loads(endpoint.get(API_NEW_CODE_GET, params=params).text)
+            data = json.loads(endpoint.get(Setting.API["NEW_CODE_GET"], params=params).text)
         else:
             if key == NEW_CODE_PERIOD:
                 key = "sonar.leak.period.type"
             params = get_component_params(component)
             params.update({"keys": key})
-            data = json.loads(endpoint.get(API_GET, params=params, with_organization=(component is None)).text)["settings"]
+            data = json.loads(endpoint.get(Setting.API[c.GET], params=params, with_organization=(component is None)).text)["settings"]
             if not endpoint.is_sonarcloud() and len(data) > 0:
                 data = data[0]
             else:
@@ -169,7 +169,7 @@ class Setting(sqobject.SqObject):
     def create(cls, key: str, endpoint: pf.Platform, value: any = None, component: object = None) -> Union[Setting, None]:
         """Creates a setting with a custom value"""
         log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
-        r = endpoint.post(API_CREATE, params={"key": key, "component": component})
+        r = endpoint.post(Setting.API[c.CREATE], params={"key": key, "component": component})
         if not r.ok:
             return None
         o = cls.read(key=key, endpoint=endpoint, component=component)
@@ -265,7 +265,7 @@ class Setting(sqobject.SqObject):
                 params["values"] = value
             else:
                 params["value"] = value
-        return self.post(API_SET, params=params).ok
+        return self.post(Setting.API[c.CREATE], params=params).ok
 
     def to_json(self, list_as_csv: bool = True) -> types.ObjectJsonRepr:
         val = self.value
@@ -402,7 +402,7 @@ def get_bulk(
     params = get_component_params(component)
 
     if include_not_set:
-        data = json.loads(endpoint.get(API_LIST, params=params, with_organization=(component is None)).text)
+        data = json.loads(endpoint.get(Setting.API[c.LIST], params=params, with_organization=(component is None)).text)
         for s in data["definitions"]:
             if s["key"].endswith("coverage.reportPath") or s["key"] == "languageSpecificParameters":
                 continue
@@ -412,7 +412,7 @@ def get_bulk(
     if settings_list is not None:
         params["keys"] = util.list_to_csv(settings_list)
 
-    data = json.loads(endpoint.get(API_GET, params=params, with_organization=(component is None)).text)
+    data = json.loads(endpoint.get(Setting.API[c.GET], params=params, with_organization=(component is None)).text)
     settings_dict |= __get_settings(endpoint, data, component)
 
     # Hack since projects.default.visibility is not returned by settings/list_definitions
@@ -464,10 +464,10 @@ def set_new_code_period(endpoint: pf.Platform, nc_type: str, nc_value: str, proj
     log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
     try:
         if endpoint.is_sonarcloud():
-            ok = endpoint.post(API_SET, params={"key": "sonar.leak.period.type", "value": nc_type, "project": project_key}).ok
-            ok = ok and endpoint.post(API_SET, params={"key": "sonar.leak.period", "value": nc_value, "project": project_key}).ok
+            ok = endpoint.post(Setting.API[c.CREATE], params={"key": "sonar.leak.period.type", "value": nc_type, "project": project_key}).ok
+            ok = ok and endpoint.post(Setting.API[c.CREATE], params={"key": "sonar.leak.period", "value": nc_value, "project": project_key}).ok
         else:
-            ok = endpoint.post(API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch}).ok
+            ok = endpoint.post(Setting.API["NEW_CODE_SET"], params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch}).ok
     except (ConnectionError, RequestException) as e:
         util.handle_error(e, f"setting new code period of {project_key}", catch_all=True)
         if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
@@ -488,7 +488,7 @@ def get_visibility(endpoint: pf.Platform, component: object) -> str:
     else:
         if endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Project default visibility does not exist in SonarCloud")
-        data = json.loads(endpoint.get(API_GET, params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
+        data = json.loads(endpoint.get(Setting.API[c.GET], params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
         return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 
 
