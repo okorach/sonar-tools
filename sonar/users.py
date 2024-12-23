@@ -86,7 +86,7 @@ class User(sqobject.SqObject):
         self.nb_tokens = None  #: Nbr of tokens (int) - read-only
         self.__tokens = None
         self.__load(data)
-        log.debug("Created %s", str(self))
+        log.debug("Created %s id %s", str(self), str(self._id))
         User.CACHE.put(self)
 
     @classmethod
@@ -186,6 +186,7 @@ class User(sqobject.SqObject):
 
     def groups(self, data: types.ApiPayload = None, **kwargs) -> types.KeyList:
         """Returns the list of groups of a user"""
+        log.info("Getting %s groups", str(self))
         if self._groups is not None and kwargs.get(c.USE_CACHE, True):
             return self._groups
         if self.endpoint.is_sonarcloud():

@@ -79,7 +79,7 @@ class Group(sq.SqObject):
         self._id = data.get("id", None)  #: SonarQube 10.4+ Group id
         self.sq_json = data
         Group.CACHE.put(self)
-        log.debug("Created %s object", str(self))
+        log.debug("Created %s object, id %s", str(self), str(self._id))
 
     @classmethod
     def read(cls, endpoint: pf.Platform, name: str) -> Group:
@@ -131,7 +131,7 @@ class Group(sq.SqObject):
 
     @classmethod
     def _api_for(cls, op: str, endpoint: object) -> Optional[str]:
-        """Returns the API for a given operation depedning on the SonarQube version"""
+        """Returns the API for a given operation depending on the SonarQube version"""
         return cls.API[op] if endpoint.version() >= (10, 4, 0) else cls.API_V1[op]
 
     @classmethod
@@ -157,7 +157,7 @@ class Group(sq.SqObject):
             if self.endpoint.version() >= (10, 4, 0):
                 ok = self.endpoint.delete(api=f"{Group.API[c.DELETE]}/{self._id}").ok
             else:
-                ok = self.post(api={Group.API_V1[c.DELETE]}, params=self.api_params(c.DELETE)).ok
+                ok = self.post(api=Group.API_V1[c.DELETE], params=self.api_params(c.DELETE)).ok
             if ok:
                 log.info("Removing from %s cache", str(self.__class__.__name__))
                 self.__class__.CACHE.pop(self)
@@ -210,13 +210,15 @@ class Group(sq.SqObject):
         :return: Whether the operation succeeded
         :rtype: bool
         """
+        log.info("Adding %s to %s", str(user), str(self))
         try:
-
+            log.debug("Version NNN = %s", str(self.endpoint.version()))
+            log.debug("ADD_USER API = %s", Group._api_for(ADD_USER, self.endpoint))
             if self.endpoint.version() >= (10, 4, 0):
                 params = {"groupId": self._id, "userId": user._id}
             else:
                 params = {"login": user.login, "name": self.name}
-            r = self.post(Group._api_for("ADD_USER", self.endpoint), params=params)
+            r = self.post(Group._api_for(ADD_USER, self.endpoint), params=params)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, "adding user to group")
             if isinstance(e, HTTPError):
@@ -224,17 +226,35 @@ class Group(sq.SqObject):
                 if code == HTTPStatus.BAD_REQUEST:
                     raise exceptions.UnsupportedOperation(util.sonar_error(e.response))
                 if code == HTTPStatus.NOT_FOUND:
-                    raise exceptions.ObjectNotFound(user_login, util.sonar_error(e.response))
+                    raise exceptions.ObjectNotFound(user.login, util.sonar_error(e.response))
         return r.ok
 
-    def remove_user(self, user_login: str) -> bool:
+    def remove_user(self, user: object) -> bool:
         """Removes a user from the group
 
         :param str user_login: User login
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        return self.post(Group.API["REMOVE_USER"], params={"login": user_login, "name": self.name}).ok
+        log.info("Removing %s from %s", str(user), str(self))
+        try:
+            if self.endpoint.version() >= (10, 4, 0):
+                for m in json.loads(self.post("v2/authorizations/group-memberships", params={"userId": user._id}).text):
+                    log.debug("Looking at membership %s", str(m))
+                    if m["groupId"] == self._id:
+                        return self.endpoint.delete(f"{Group._api_for(REMOVE_USER)}/{m['id']}").ok
+            else:
+                params = {"login": user.login, "name": self.name}
+                return self.post(Group._api_for(REMOVE_USER, self.endpoint), params=params).ok
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, "adding user to group")
+            if isinstance(e, HTTPError):
+                code = e.response.status_code
+                if code == HTTPStatus.BAD_REQUEST:
+                    raise exceptions.UnsupportedOperation(util.sonar_error(e.response))
+                if code == HTTPStatus.NOT_FOUND:
+                    raise exceptions.ObjectNotFound(user.login, util.sonar_error(e.response))
+        return False
 
     def audit(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
         """Audits a group and return list of problems found
@@ -300,7 +320,7 @@ class Group(sq.SqObject):
             return True
         log.debug("Updating %s with name = %s", str(self), name)
         if self.endpoint.version() >= (10, 4, 0):
-            r = self.patch(f"{Group.API[c.UPDATE]}/{self.key}", params={"name": name})
+            r = self.patch(f"{Group.API[c.UPDATE]}/{self._id}", params={"name": name})
         else:
             r = self.post(Group.UPDATE_API_V1, params={"currentName": self.key, "name": name})
         if r.ok:
