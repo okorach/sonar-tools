@@ -67,6 +67,7 @@ def main() -> None:
             "description": issue.get("Description", ""),
             "engineId": TOOLNAME,
             "type": "VULNERABILITY",
+            "severity": sev,
             "cleanCodeAttribute": "LOGICAL",
             "impacts": [{"softwareQuality": "SECURITY", "severity": sev}],
         }
