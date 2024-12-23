@@ -51,6 +51,7 @@ class User(sqobject.SqObject):
 
     CACHE = cache.Cache()
     SEARCH_API_V1 = "users/search"
+    CREATE_API_V1 = "users/create"
     SEARCH_KEY_FIELD = "login"
     SEARCH_RETURN_FIELD = "users"
 
@@ -60,6 +61,13 @@ class User(sqobject.SqObject):
         c.UPDATE: "users/update",
         c.SEARCH: "v2/users-management/users",
         "GROUP_MEMBERSHIPS": "v2/authorizations/group-memberships",
+        "DEACTIVATE": "users/deactivate",
+        "UPDATE_LOGIN": "users/update_login",
+    }
+    API_V1 = {
+        c.CREATE: "users/create",
+        c.UPDATE: "users/update",
+        c.SEARCH: "users/search",
         "DEACTIVATE": "users/deactivate",
         "UPDATE_LOGIN": "users/update_login",
     }
@@ -141,13 +149,10 @@ class User(sqobject.SqObject):
         raise exceptions.ObjectNotFound(login, f"User '{login}' not found")
 
     @classmethod
-    def get_search_api(cls, endpoint: object) -> Optional[str]:
-        api = cls.SEARCH_API_V1
-        if endpoint.is_sonarcloud():
-            api = cls.SEARCH_API_SC
-        elif endpoint.version() >= (10, 4, 0):
-            api = cls.API[c.SEARCH]
-        return api
+    def _api_for(cls, op: str, endpoint: object) -> Optional[str]:
+        """Returns the API for a given operation depedning on the SonarQube version"""
+        return cls.API[op] if endpoint.version() >= (10, 4, 0) else cls.API_V1[op]
+    
 
     def __str__(self) -> str:
         """
@@ -200,8 +205,7 @@ class User(sqobject.SqObject):
 
         :return:  The user itself
         """
-        api = User.get_search_api(self.endpoint)
-        data = json.loads(self.get(api, params={"q": self.login}).text)
+        data = json.loads(self.get(User._api_for(c.SEARCH, self.endpoint), params={"q": self.login}).text)
         for d in data["users"]:
             if d["login"] == self.login:
                 self.__load(d)
