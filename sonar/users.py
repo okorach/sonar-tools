@@ -39,7 +39,6 @@ from sonar.audit.problem import Problem
 
 
 _GROUPS_API_SC = "users/groups"
-_GROUPS_API_V2 = "v2/authorizations/group-memberships"
 
 SETTABLE_PROPERTIES = ("login", "name", "scmAccounts", "email", "groups", "local")
 
@@ -409,7 +408,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, U
     :rtype: dict{login: User}
     """
     log.debug("Searching users with params %s", str(params))
-    return dict(sorted(sqobject.search_objects(endpoint=endpoint, object_class=User, params=params).items()))
+    return dict(sorted(sqobject.search_objects(endpoint=endpoint, object_class=User, params=params, api_version=2).items()))
 
 
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:

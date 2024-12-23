@@ -198,14 +198,13 @@ class SqObject(object):
 def __search_thread(queue: Queue) -> None:
     """Performs a search for a given object"""
     while not queue.empty():
-        (endpoint, api, objects, key_field, returned_field, object_class, params, page) = queue.get()
+        (endpoint, api, objects, key_field, returned_field, object_class, params) = queue.get()
         page_params = params.copy()
-        page_params["p"] = page
         log.debug("Threaded search: API = %s params = %s", api, str(params))
         try:
             data = json.loads(endpoint.get(api, params=page_params).text)
             for obj in data[returned_field]:
-                if object_class.__name__ in ("QualityProfile", "QualityGate", "Groups", "Portfolio", "Project"):
+                if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization"):
                     objects[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
                 else:
                     objects[obj[key_field]] = object_class(endpoint, obj[key_field], data=obj)
@@ -214,20 +213,22 @@ def __search_thread(queue: Queue) -> None:
         queue.task_done()
 
 
-def search_objects(endpoint: object, object_class: any, params: types.ApiParams, threads: int = 8) -> dict[str, SqObject]:
+def search_objects(endpoint: object, object_class: any, params: types.ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
     """Runs a multi-threaded object search for searchable Sonar Objects"""
     api = object_class.get_search_api(endpoint)
     key_field = object_class.SEARCH_KEY_FIELD
     returned_field = object_class.SEARCH_RETURN_FIELD
 
     new_params = {} if params is None else params.copy()
-    if "ps" not in new_params:
-        new_params["ps"] = 500
-    new_params["p"] = 1
+    p_field = "pageIndex" if api_version == 2 else "p"
+    ps_field = "pageSize" if api_version == 2 else "ps"
+    if ps_field not in new_params:
+        new_params[ps_field] = 500
+    new_params[p_field] = 1
     objects_list = {}
     data = json.loads(endpoint.get(api, params=new_params).text)
-    nb_pages = utilities.nbr_pages(data)
-    nb_objects = max(len(data[returned_field]), utilities.nbr_total_elements(data))
+    nb_pages = utilities.nbr_pages(data, api_version)
+    nb_objects = max(len(data[returned_field]), utilities.nbr_total_elements(data, api_version))
     log.debug("Loading %d %ss page of %d elements...", nb_objects, object_class.__name__, len(data[returned_field]))
     if utilities.nbr_total_elements(data) > 0 and len(data[returned_field]) == 0:
         msg = f"Index on {object_class.__name__} is corrupted, please reindex before using API"
@@ -243,7 +244,8 @@ def search_objects(endpoint: object, object_class: any, params: types.ApiParams,
         return objects_list
     q = Queue(maxsize=0)
     for page in range(2, nb_pages + 1):
-        q.put((endpoint, api, objects_list, key_field, returned_field, object_class, new_params, page))
+        new_params[p_field] = page
+        q.put((endpoint, api, objects_list, key_field, returned_field, object_class, new_params))
     for i in range(threads):
         log.debug("Starting %s search thread %d", object_class.__name__, i)
         worker = Thread(target=__search_thread, args=[q])

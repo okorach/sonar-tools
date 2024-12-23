@@ -264,7 +264,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, G
     :return: dict of groups with group name as key
     :rtype: dict{name: Group}
     """
-    return sq.search_objects(endpoint=endpoint, object_class=Group, params=params)
+    return sq.search_objects(endpoint=endpoint, object_class=Group, params=params, api_version=2)
 
 
 def get_list(endpoint: pf.Platform) -> dict[str, Group]:
