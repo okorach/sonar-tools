@@ -190,7 +190,14 @@ class Platform(object):
         :param params: params to pass in the HTTP request, defaults to None
         :return: the HTTP response
         """
-        return self.__run_request(requests.post, api, params, **kwargs)
+        if util.is_api_v2(api):
+            if "headers" in kwargs:
+                kwargs["headers"]["content-type"] = "application/json"
+            else:
+                kwargs["headers"] = {"content-type": "application/json"}
+            return self.__run_request(requests.post, api, data=params, **kwargs)
+        else:
+            return self.__run_request(requests.post, api, params, **kwargs)
 
     def patch(self, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
         """Makes an HTTP PATCH request to SonarQube
@@ -199,7 +206,14 @@ class Platform(object):
         :param params: params to pass in the HTTP request, defaults to None
         :return: the HTTP response
         """
-        return self.__run_request(requests.patch, api, params, **kwargs)
+        if util.is_api_v2(api):
+            if "headers" in kwargs:
+                kwargs["headers"]["content-type"] = "application/merge-patch+json"
+            else:
+                kwargs["headers"] = {"content-type": "application/merge-patch+json"}
+            return self.endpoint.patch(api=api, params=params, data=params, **kwargs)
+        else:
+            return self.__run_request(requests.patch, api, params, **kwargs)
 
     def delete(self, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
         """Makes an HTTP DELETE request to SonarQube
