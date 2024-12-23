@@ -160,10 +160,11 @@ def test_convert_for_yaml() -> None:
     assert isinstance(yaml_exp, list)
     assert len(yaml_exp) == len(json_exp)
 
-def test_more_than_50_groups(get_60_users) -> None:
+
+def test_more_than_50_users(get_60_users) -> None:
     # Count groups first
     user_list = get_60_users
-    users.Users.clear_cache()
+    users.User.clear_cache()
     new_user_list = users.get_list(util.SQ)
     assert len(new_user_list) > 60
     assert set(new_user_list.keys()) > set([u.name for u in user_list])

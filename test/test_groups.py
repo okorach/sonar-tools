@@ -24,7 +24,7 @@
 import pytest
 
 import utilities as util
-from sonar import exceptions, logging
+from sonar import exceptions
 from sonar import groups
 
 GROUP1 = "sonar-users"
@@ -51,4 +51,4 @@ def test_more_than_50_groups(get_60_groups) -> None:
     groups.Group.clear_cache()
     new_group_list = groups.get_list(util.SQ)
     assert len(new_group_list) > 60
-    assert set(new_group_list.keys()) > set([g.name for g in group_list])
+    assert set(new_group_list.keys()) > set(g.name for g in group_list)

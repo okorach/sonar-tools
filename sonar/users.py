@@ -411,6 +411,16 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, U
     return dict(sorted(sqobject.search_objects(endpoint=endpoint, object_class=User, params=params, api_version=2).items()))
 
 
+def get_list(endpoint: pf.Platform) -> dict[str, User]:
+    """Returns the list of users
+
+    :params Platform endpoint: Reference to the SonarQube platform
+    :return: The list of users
+    """
+    log.info("Listing users")
+    return search(endpoint).items()
+
+
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports all users in JSON representation
 
