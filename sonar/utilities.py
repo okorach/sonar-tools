@@ -407,6 +407,10 @@ def nbr_total_elements(sonar_api_json: dict[str, str], api_version: int = 1) -> 
         return 0
 
 
+def is_api_v2(api: str) -> bool:
+    """Returns whether and API string is v2"""
+    return api.lower().startswith("v2/") or api.lower().startswith("api/v2/")
+
 @contextlib.contextmanager
 def open_file(file: str = None, mode: str = "w") -> TextIO:
     """Opens a file if not None or -, otherwise stdout"""
