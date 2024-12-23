@@ -112,7 +112,6 @@ class SqObject(object):
         self,
         api: str,
         params: types.ApiParams = None,
-        data: str = None,
         mute: tuple[HTTPStatus] = (),
         **kwargs,
     ) -> requests.Response:
@@ -125,13 +124,12 @@ class SqObject(object):
         :type mute: tuple, optional
         :return: The request response
         """
-        return self.endpoint.post(api=api, params=params, data=data, mute=mute, **kwargs)
+        return self.endpoint.post(api=api, params=params, mute=mute, **kwargs)
 
     def patch(
         self,
         api: str,
         params: types.ApiParams = None,
-        data: str = None,
         mute: tuple[HTTPStatus] = (),
         **kwargs,
     ) -> requests.Response:
@@ -144,7 +142,7 @@ class SqObject(object):
         :type mute: tuple, optional
         :return: The request response
         """
-        return self.endpoint.patch(api=api, params=params, data=data, mute=mute, **kwargs)
+        return self.endpoint.patch(api=api, params=params, mute=mute, **kwargs)
 
     def delete(self) -> bool:
         """Deletes an object, returns whether the operation succeeded"""
