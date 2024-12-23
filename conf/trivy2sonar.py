@@ -28,6 +28,8 @@ import json
 
 TOOLNAME = "trivy"
 
+MAPPING = {"INFO": "INFO", "LOW": "MINOR", "MEDIUM": "MAJOR", "HIGH": "CRITICAL", "BLOCKER": "BLOCKER"}
+
 
 def main() -> None:
     """Main script entry point"""
@@ -60,16 +62,16 @@ def main() -> None:
         #     sev = "MEDIUM"
         # else:
         #     sev = "HIGH"
-        sev = issue.get("Severity", "MEDIUM")
+        sev_mqr = issue.get("Severity", "MEDIUM")
         rules_dict[f"{TOOLNAME}:{issue['VulnerabilityID']}"] = {
             "id": f"{TOOLNAME}:{issue['VulnerabilityID']}",
             "name": f"{TOOLNAME}:{issue['VulnerabilityID']} - {issue['Title']}",
             "description": issue.get("Description", ""),
             "engineId": TOOLNAME,
             "type": "VULNERABILITY",
-            "severity": sev,
+            "severity": MAPPING[sev_mqr],
             "cleanCodeAttribute": "LOGICAL",
-            "impacts": [{"softwareQuality": "SECURITY", "severity": sev}],
+            "impacts": [{"softwareQuality": "SECURITY", "severity": sev_mqr}],
         }
 
     external_issues = {"rules": list(rules_dict.values()), "issues": issue_list}
