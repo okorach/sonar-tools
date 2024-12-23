@@ -217,10 +217,15 @@ def get_test_application() -> Generator[applications.Application]:
 
 @pytest.fixture
 def get_60_groups() -> Generator[list[groups.Group]]:
+    util.start_logging()
     group_list = []
     for i in range(60):
         gr_name = f"Group-{util.TEMP_KEY}{i}"
-        group_list.append(groups.Group.create(endpoint=util.SQ, name=gr_name, description=gr_name))
+        try:
+            o_gr = groups.Group.get_object(endpoint=util.SQ, name=gr_name)
+        except exceptions.ObjectNotFound:
+            o_gr = groups.Group.create(endpoint=util.SQ, name=gr_name, description=gr_name)
+        group_list.append(o_gr)
     yield group_list
     for g in group_list:
         g.delete()
@@ -228,10 +233,15 @@ def get_60_groups() -> Generator[list[groups.Group]]:
 
 @pytest.fixture
 def get_60_users() -> Generator[list[users.User]]:
+    util.start_logging()
     user_list = []
     for i in range(60):
         u_name = f"User-{util.TEMP_KEY}{i}"
-        user_list.append(users.User.create(endpoint=util.SQ, login=u_name))
+        try:
+            o_gr = users.User.get_object(endpoint=util.SQ, login=u_name)
+        except exceptions.ObjectNotFound:
+            o_gr = users.User.create(endpoint=util.SQ, login=u_name)
+        user_list.append(o_gr)
     yield user_list
     for u in user_list:
         u.delete()
