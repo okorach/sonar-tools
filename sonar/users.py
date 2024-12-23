@@ -152,7 +152,6 @@ class User(sqobject.SqObject):
     def _api_for(cls, op: str, endpoint: object) -> Optional[str]:
         """Returns the API for a given operation depedning on the SonarQube version"""
         return cls.API[op] if endpoint.version() >= (10, 4, 0) else cls.API_V1[op]
-    
 
     def __str__(self) -> str:
         """
