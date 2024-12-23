@@ -155,7 +155,7 @@ class Group(sq.SqObject):
         log.info("Deleting %s", str(self))
         try:
             if self.endpoint.version() >= (10, 4, 0):
-                ok = self.post(api=f"{Group.API[c.DELETE]}/{self._id}").ok
+                ok = self.endpoint.delete(api=f"{Group.API[c.DELETE]}/{self._id}").ok
             else:
                 ok = self.post(api={Group.API_V1[c.DELETE]}, params=self.api_params(c.DELETE)).ok
             if ok:
