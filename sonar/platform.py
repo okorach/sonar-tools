@@ -402,7 +402,7 @@ class Platform(object):
             if len(params_string) > 0:
                 url += f"?{params_string}"
         if data is not None:
-            url += f"\nBODY: {data}"
+            url += f" - BODY: {data}"
         return url
 
     def webhooks(self) -> dict[str, object]:
