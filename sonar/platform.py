@@ -195,7 +195,7 @@ class Platform(object):
                 kwargs["headers"]["content-type"] = "application/json"
             else:
                 kwargs["headers"] = {"content-type": "application/json"}
-            return self.__run_request(requests.post, api, data=params, **kwargs)
+            return self.__run_request(requests.post, api, data=json.dumps(params), **kwargs)
         else:
             return self.__run_request(requests.post, api, params, **kwargs)
 
@@ -211,7 +211,7 @@ class Platform(object):
                 kwargs["headers"]["content-type"] = "application/merge-patch+json"
             else:
                 kwargs["headers"] = {"content-type": "application/merge-patch+json"}
-            return self.endpoint.patch(api=api, params=params, data=params, **kwargs)
+            return self.__run_request(requests.patch, api=api, data=json.dumps(params), **kwargs)
         else:
             return self.__run_request(requests.patch, api, params, **kwargs)
 
@@ -228,7 +228,8 @@ class Platform(object):
         """Makes an HTTP request to SonarQube"""
         mute = kwargs.pop("mute", ())
         api = _normalize_api(api)
-        headers = {"user-agent": self._user_agent, **kwargs.get("headers", {})}
+        headers = {"user-agent": self._user_agent}
+        headers.update(kwargs.get("headers", {}))
         if params is None:
             params = {}
         with_org = kwargs.pop("with_organization", True)
@@ -239,9 +240,9 @@ class Platform(object):
         req_type, url = "", ""
         if log.get_level() <= log.DEBUG:
             req_type = getattr(request, "__name__", repr(request)).upper()
-            url = self.__urlstring(api, params)
+            url = self.__urlstring(api, params, kwargs.get("data", {}))
             log.debug("%s: %s", req_type, url)
-
+        kwargs["headers"] = headers
         try:
             retry = True
             while retry:
@@ -251,7 +252,6 @@ class Platform(object):
                     auth=self.__credentials(),
                     verify=self.__cert_file,
                     params=params,
-                    headers=headers,
                     timeout=self.http_timeout,
                     **kwargs,
                 )
@@ -388,20 +388,22 @@ class Platform(object):
         """
         return settings.set_setting(self, key, value)
 
-    def __urlstring(self, api: str, params: types.ApiParams) -> str:
+    def __urlstring(self, api: str, params: types.ApiParams, data: str = None) -> str:
         """Returns a string corresponding to the URL and parameters"""
         url = f"{str(self)}{api}"
-        if params is None:
-            return url
-        good_params = {k: v for k, v in params.items() if v is not None}
-        if len(good_params) == 0:
-            return url
-        for k, v in good_params.items():
-            if isinstance(v, datetime.date):
-                good_params[k] = util.format_date(v)
-            elif isinstance(v, (list, tuple, set)):
-                good_params[k] = ",".join(list(v))
-        return url + "?" + "&".join([f"{k}={requests.utils.quote(str(v))}" for k, v in good_params.items()])
+        if params is not None:
+            good_params = {k: v for k, v in params.items() if v is not None}
+            for k, v in good_params.items():
+                if isinstance(v, datetime.date):
+                    good_params[k] = util.format_date(v)
+                elif isinstance(v, (list, tuple, set)):
+                    good_params[k] = ",".join(list(v))
+            params_string = "&".join([f"{k}={requests.utils.quote(str(v))}" for k, v in good_params.items()])
+            if len(params_string) > 0:
+                url += f"?{params_string}"
+        if data is not None:
+            url += f"\nBODY: {data}"
+        return url
 
     def webhooks(self) -> dict[str, object]:
         """
