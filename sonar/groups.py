@@ -215,8 +215,8 @@ class Group(sq.SqObject):
             if self.endpoint.version() >= (10, 4, 0):
                 params = {"groupId": self._id, "userId": user._id}
             else:
-                param = {"login": user.login, "name": self.name}
-            r = self.post(Group._api_for("ADD_USER", self.endpoint), params={"groupId": self._id, "userId": user._id})
+                params = {"login": user.login, "name": self.name}
+            r = self.post(Group._api_for("ADD_USER", self.endpoint), params=params)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, "adding user to group")
             if isinstance(e, HTTPError):
