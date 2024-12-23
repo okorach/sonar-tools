@@ -63,6 +63,7 @@ def main() -> None:
             "id": f"{SHELLCHECK}:{issue['code']}",
             "name": f"{SHELLCHECK}:{issue['code']}",
             "engineId": SHELLCHECK,
+            "type": "CODE_SMELL",
             "cleanCodeAttribute": "LOGICAL",
             "severity": MAPPING[sev_mqr],
             "impacts": [{"softwareQuality": "MAINTAINABILITY", "severity": sev_mqr}],
