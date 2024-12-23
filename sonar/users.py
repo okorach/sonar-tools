@@ -301,7 +301,7 @@ class User(sqobject.SqObject):
         group = groups.Group.read(endpoint=self.endpoint, name=group_name)
         if group.is_default():
             raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't remove membership for {str(self)}")
-        return group.remove_user(self.login)
+        return group.remove_user(self)
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
