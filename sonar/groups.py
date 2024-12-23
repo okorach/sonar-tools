@@ -38,7 +38,8 @@ from sonar.audit.problem import Problem
 from sonar.util import types, cache, constants as c
 
 SONAR_USERS = "sonar-users"
-
+ADD_USER = "ADD_USER"
+REMOVE_USER = "REMOVE_USER"
 
 class Group(sq.SqObject):
     """
@@ -47,14 +48,20 @@ class Group(sq.SqObject):
     """
 
     CACHE = cache.Cache()
-    SEARCH_API_V1 = "user_groups/search"
-    UPDATE_API_V1 = "user_groups/update"
+
     API = {
-        c.CREATE: "user_groups/create",
+        c.CREATE: "v2/authorizations/groups",
         c.UPDATE: "v2/authorizations/groups",
         c.SEARCH: "v2/authorizations/groups",
-        "ADD_USER": "user_groups/add_user",
-        "REMOVE_USER": "user_groups/remove_user",
+        ADD_USER: "v2/authorizations/group-memberships",
+        REMOVE_USER: "v2/authorizations/group-memberships",
+    }
+    API_V1 = {
+        c.CREATE: "user_groups/create",
+        c.UPDATE: "user_groups/update",
+        c.SEARCH: "user_groups/search",
+        ADD_USER: "user_groups/add_user",
+        REMOVE_USER: "user_groups/remove_user",
     }
     SEARCH_KEY_FIELD = "name"
     SEARCH_RETURN_FIELD = "groups"
@@ -83,7 +90,7 @@ class Group(sq.SqObject):
         o = Group.CACHE.get(name, endpoint.url)
         if o:
             return o
-        data = util.search_by_name(endpoint, name, Group.get_search_api(endpoint), "groups")
+        data = util.search_by_name(endpoint, name, Group._api_for(c.SEARCH, endpoint), "groups")
         if data is None:
             raise exceptions.ObjectNotFound(name, f"Group '{name}' not found.")
         # SonarQube 10 compatibility: "id" field is dropped, use "name" instead
@@ -96,15 +103,13 @@ class Group(sq.SqObject):
     def create(cls, endpoint: pf.Platform, name: str, description: str = None) -> Group:
         """Creates a new group in SonarQube and returns the corresponding Group object
 
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param str name: Group name
-        :param description: Group description
-        :type description: str, optional
+        :param endpoint: Reference to the SonarQube platform
+        :param name: Group name
+        :param description: Group description, optional
         :return: The group object
-        :rtype: Group or None
         """
         log.debug("Creating group '%s'", name)
-        endpoint.post(Group.API[c.SEARCH], params={"name": name, "description": description})
+        endpoint.post(Group._api_for(c.CREATE), params={"name": name, "description": description})
         return cls.read(endpoint=endpoint, name=name)
 
     @classmethod
@@ -112,19 +117,16 @@ class Group(sq.SqObject):
         """Creates a Group object from the result of a SonarQube API group search data
 
         :param Platform endpoint: Reference to the SonarQube platform
-        :param dict data: The JSON data corresponding to the group
+        :param data: The JSON data corresponding to the group
         :return: The group object
-        :rtype: Group or None
         """
         return cls(endpoint=endpoint, name=data["name"], data=data)
 
     @classmethod
-    def get_search_api(cls, endpoint: object) -> Optional[str]:
-        api = cls.API[c.SEARCH]
-        if endpoint.version() < (10, 4, 0):
-            api = cls.SEARCH_API_V1
-        return api
-
+    def _api_for(cls, op: str, endpoint: object) -> Optional[str]:
+        """Returns the API for a given operation depedning on the SonarQube version"""
+        return cls.API[op] if endpoint.version() >= (10, 4, 0) else cls.API_V1[op]
+    
     @classmethod
     def get_object(cls, endpoint: pf.Platform, name: str) -> Group:
         """Returns a group object
@@ -170,7 +172,7 @@ class Group(sq.SqObject):
         """
         return f"{self.endpoint.url}/admin/groups"
 
-    def add_user(self, user_login: str) -> bool:
+    def add_user(self, user: object) -> bool:
         """Adds a user in the group
 
         :param str user_login: User login
@@ -178,7 +180,11 @@ class Group(sq.SqObject):
         :rtype: bool
         """
         try:
-            r = self.post(Group.API["ADD_USER"], params={"login": user_login, "name": self.name})
+
+            if self.endpoint.version() >= (10, 4, 0):
+                r = self.post(Group._api_for("ADD_USER", self.endpoint), params={"groupId": self._id, "userId": user._id})
+            else:
+                r = self.post(Group._api_for("ADD_USER", self.endpoint), params={"login": user.login, "name": self.name})
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, "adding user to group")
             if isinstance(e, HTTPError):
@@ -243,7 +249,7 @@ class Group(sq.SqObject):
         log.debug("Updating %s with description = %s", str(self), description)
         if self.endpoint.version() >= (10, 4, 0):
             data = json.dumps({"description": description})
-            r = self.patch(f"{Group.API[c.UPDATE]}/{self._id}", data=data, headers={"content-type": "application/merge-patch+json"})
+            r = self.patch(f"{Group.API[c.UPDATE]}/{self._id}", data=data)
         else:
             r = self.post(Group.UPDATE_API_V1, params={"currentName": self.key, "description": description})
         if r.ok:
