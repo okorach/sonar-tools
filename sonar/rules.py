@@ -263,7 +263,7 @@ class Rule(sq.SqObject):
             data["ruleType"] = "TEMPLATE"
         elif self.template_key:
             data["ruleType"] = "INSTANTIATED"
-        if self.endpoint.version() > (10, 4, 0):
+        if self.endpoint.version() >= (10, 4, 0):
             data["legacySeverity"] = data.pop("severity", "")
             data["legacyType"] = data.pop("type", "")
             for qual in QUALITIES:
