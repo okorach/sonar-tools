@@ -284,7 +284,7 @@ class User(sqobject.SqObject):
         except exceptions.ObjectNotFound:
             log.warning("Group '%s' does not exists, can't add membership for %s", group_name, str(self))
             raise
-        ok = group.add_user(self.login)
+        ok = group.add_user(self)
         if ok:
             self._groups.append(group_name)
         return ok
