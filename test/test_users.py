@@ -161,7 +161,7 @@ def test_convert_for_yaml() -> None:
     assert len(yaml_exp) == len(json_exp)
 
 
-def test_more_than_50_users(get_60_users) -> None:
+def test_more_than_50_users(get_60_users: Generator[list[users.User]]) -> None:
     # Count groups first
     user_list = get_60_users
     users.User.clear_cache()

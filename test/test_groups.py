@@ -21,6 +21,8 @@
 
 """ Groups tests """
 
+from collections.abc import Generator
+
 import pytest
 
 import utilities as util
@@ -45,7 +47,7 @@ def test_get_object() -> None:
         groups.Group.get_object(endpoint=util.SQ, name=util.NON_EXISTING_KEY)
 
 
-def test_more_than_50_groups(get_60_groups) -> None:
+def test_more_than_50_groups(get_60_groups: Generator[list[groups.Group]]) -> None:
     # Count groups first
     group_list = get_60_groups
     groups.Group.clear_cache()
