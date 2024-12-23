@@ -167,4 +167,4 @@ def test_more_than_50_users(get_60_users) -> None:
     users.User.clear_cache()
     new_user_list = users.get_list(util.SQ)
     assert len(new_user_list) > 60
-    assert set(new_user_list.keys()) > set([u.name for u in user_list])
+    assert set(new_user_list.keys()) > set(u.name for u in user_list)
