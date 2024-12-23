@@ -125,6 +125,22 @@ class Group(sq.SqObject):
             api = cls.SEARCH_API_V1
         return api
 
+    @classmethod
+    def get_object(cls, endpoint: pf.Platform, name: str) -> Group:
+        """Returns a group object
+
+        :param Platform endpoint: reference to the SonarQube platform
+        :param str name: group name
+        :return: The group
+        """
+        o = Group.CACHE.get(name, endpoint.url)
+        if not o:
+            get_list(endpoint)
+        o = Group.CACHE.get(name, endpoint.url)
+        if not o:
+            raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
+        return o
+
     def __str__(self) -> str:
         """
         :return: String formatting of the object
@@ -317,22 +333,6 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     if "write_q" in kwargs:
         kwargs["write_q"].put(problems)
     return problems
-
-
-def get_object(endpoint: pf.Platform, name: str) -> Group:
-    """Returns a group object
-
-    :param Platform endpoint: reference to the SonarQube platform
-    :param str name: group name
-    :return: The group
-    """
-    o = Group.CACHE.get(name, endpoint.url)
-    if not o:
-        get_list(endpoint)
-    o = Group.CACHE.get(name, endpoint.url)
-    if not o:
-        raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
-    return o
 
 
 def get_object_from_id(endpoint: pf.Platform, id: str) -> Group:
