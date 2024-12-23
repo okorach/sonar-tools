@@ -41,6 +41,7 @@ SONAR_USERS = "sonar-users"
 ADD_USER = "ADD_USER"
 REMOVE_USER = "REMOVE_USER"
 
+
 class Group(sq.SqObject):
     """
     Abstraction of the SonarQube "group" concept.
@@ -52,6 +53,7 @@ class Group(sq.SqObject):
     API = {
         c.CREATE: "v2/authorizations/groups",
         c.UPDATE: "v2/authorizations/groups",
+        c.DELETE: "v2/authorizations/groups",
         c.SEARCH: "v2/authorizations/groups",
         ADD_USER: "v2/authorizations/group-memberships",
         REMOVE_USER: "v2/authorizations/group-memberships",
@@ -59,6 +61,7 @@ class Group(sq.SqObject):
     API_V1 = {
         c.CREATE: "user_groups/create",
         c.UPDATE: "user_groups/update",
+        c.DELETE: "user_groups/delete",
         c.SEARCH: "user_groups/search",
         ADD_USER: "user_groups/add_user",
         REMOVE_USER: "user_groups/remove_user",
@@ -109,7 +112,11 @@ class Group(sq.SqObject):
         :return: The group object
         """
         log.debug("Creating group '%s'", name)
-        endpoint.post(Group._api_for(c.CREATE), params={"name": name, "description": description})
+        try:
+            endpoint.post(Group._api_for(c.CREATE, endpoint), params={"name": name, "description": description})
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"creating group '{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            raise exceptions.ObjectAlreadyExists(name, util.sonar_error(e.response))
         return cls.read(endpoint=endpoint, name=name)
 
     @classmethod
@@ -126,7 +133,7 @@ class Group(sq.SqObject):
     def _api_for(cls, op: str, endpoint: object) -> Optional[str]:
         """Returns the API for a given operation depedning on the SonarQube version"""
         return cls.API[op] if endpoint.version() >= (10, 4, 0) else cls.API_V1[op]
-    
+
     @classmethod
     def get_object(cls, endpoint: pf.Platform, name: str) -> Group:
         """Returns a group object
@@ -142,6 +149,30 @@ class Group(sq.SqObject):
         if not o:
             raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
         return o
+
+    def delete(self) -> bool:
+        """Deletes an object, returns whether the operation succeeded"""
+        log.info("Deleting %s", str(self))
+        try:
+            if self.endpoint.version() >= (10, 4, 0):
+                ok = self.post(api=f"{Group.API[c.DELETE]}/{self._id}").ok
+            else:
+                ok = self.post(api={Group.API_V1[c.DELETE]}, params=self.api_params(c.DELETE)).ok
+            if ok:
+                log.info("Removing from %s cache", str(self.__class__.__name__))
+                self.__class__.CACHE.pop(self)
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"deleting {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
+        return ok
+
+    def api_params(self, op: str) -> types.ApiParams:
+        """Return params used to search/create/delete for that object"""
+        if self.endpoint.version() >= (10, 4, 0):
+            ops = {c.GET: {}}
+        else:
+            ops = {c.GET: {"name": self.name}}
+        return ops[op] if op in ops else ops[c.GET]
 
     def __str__(self) -> str:
         """
@@ -182,9 +213,10 @@ class Group(sq.SqObject):
         try:
 
             if self.endpoint.version() >= (10, 4, 0):
-                r = self.post(Group._api_for("ADD_USER", self.endpoint), params={"groupId": self._id, "userId": user._id})
+                params = {"groupId": self._id, "userId": user._id}
             else:
-                r = self.post(Group._api_for("ADD_USER", self.endpoint), params={"login": user.login, "name": self.name})
+                param = {"login": user.login, "name": self.name}
+            r = self.post(Group._api_for("ADD_USER", self.endpoint), params={"groupId": self._id, "userId": user._id})
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, "adding user to group")
             if isinstance(e, HTTPError):
@@ -363,7 +395,7 @@ def create_or_update(endpoint: pf.Platform, name: str, description: str) -> Grou
     :rtype: Group
     """
     try:
-        o = get_object(endpoint=endpoint, name=name)
+        o = Group.get_object(endpoint=endpoint, name=name)
         o.set_description(description)
         return o
     except exceptions.ObjectNotFound:
@@ -398,7 +430,7 @@ def exists(group_name: str, endpoint: pf.Platform) -> bool:
     :return: whether the project exists
     :rtype: bool
     """
-    return get_object(name=group_name, endpoint=endpoint) is not None
+    return Group.get_object(name=group_name, endpoint=endpoint) is not None
 
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
