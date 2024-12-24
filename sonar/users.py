@@ -116,7 +116,7 @@ class User(sqobject.SqObject):
         :return: The user object
         :rtype: User or None
         """
-        log.debug("Creating user '%s' name '%s,", login, name)
+        log.debug("Creating user '%s' name '%s'", login, name)
         params = {"login": login, "local": str(is_local).lower(), "name": name}
         if is_local:
             params["password"] = password if password else login
