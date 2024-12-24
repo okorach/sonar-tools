@@ -206,14 +206,11 @@ class Group(sq.SqObject):
     def add_user(self, user: object) -> bool:
         """Adds a user in the group
 
-        :param str user_login: User login
+        :param user: the User to add
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.info("Adding %s to %s", str(user), str(self))
         try:
-            log.debug("Version NNN = %s", str(self.endpoint.version()))
-            log.debug("ADD_USER API = %s", Group._api_for(ADD_USER, self.endpoint))
             if self.endpoint.version() >= (10, 4, 0):
                 params = {"groupId": self.id, "userId": user.id}
             else:
@@ -240,14 +237,13 @@ class Group(sq.SqObject):
         try:
             if self.endpoint.version() >= (10, 4, 0):
                 for m in json.loads(self.get(MEMBERSHIP_API, params={"userId": user.id}).text)["groupMemberships"]:
-                    log.debug("Looking at membership %s", str(m))
                     if m["groupId"] == self.id:
                         return self.endpoint.delete(f"{Group._api_for(REMOVE_USER, self.endpoint)}/{m['id']}").ok
             else:
                 params = {"login": user.login, "name": self.name}
                 return self.post(Group._api_for(REMOVE_USER, self.endpoint), params=params).ok
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, "adding user to group")
+            util.handle_error(e, "removing user from group")
             if isinstance(e, HTTPError):
                 code = e.response.status_code
                 if code == HTTPStatus.BAD_REQUEST:
@@ -303,7 +299,7 @@ class Group(sq.SqObject):
             data = json.dumps({"description": description})
             r = self.patch(f"{Group.API[c.UPDATE]}/{self.id}", data=data)
         else:
-            r = self.post(Group.UPDATE_API_V1, params={"currentName": self.key, "description": description})
+            r = self.post(Group.API_V1[c.UPDATE], params={"currentName": self.key, "description": description})
         if r.ok:
             self.description = description
         return r.ok
@@ -322,7 +318,7 @@ class Group(sq.SqObject):
         if self.endpoint.version() >= (10, 4, 0):
             r = self.patch(f"{Group.API[c.UPDATE]}/{self.id}", params={"name": name})
         else:
-            r = self.post(Group.UPDATE_API_V1, params={"currentName": self.key, "name": name})
+            r = self.post(Group.API[c.UPDATE], params={"currentName": self.key, "name": name})
         if r.ok:
             Group.CACHE.pop(self)
             self.name = name
