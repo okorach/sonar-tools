@@ -40,8 +40,8 @@ from sonar.util import types, cache, constants as c
 SONAR_USERS = "sonar-users"
 ADD_USER = "ADD_USER"
 REMOVE_USER = "REMOVE_USER"
-
-
+GROUPS_API = "v2/authorizations/groups"
+MEMBERSHIP_API = "v2/authorizations/group-memberships"
 class Group(sq.SqObject):
     """
     Abstraction of the SonarQube "group" concept.
@@ -51,12 +51,12 @@ class Group(sq.SqObject):
     CACHE = cache.Cache()
 
     API = {
-        c.CREATE: "v2/authorizations/groups",
-        c.UPDATE: "v2/authorizations/groups",
-        c.DELETE: "v2/authorizations/groups",
-        c.SEARCH: "v2/authorizations/groups",
-        ADD_USER: "v2/authorizations/group-memberships",
-        REMOVE_USER: "v2/authorizations/group-memberships",
+        c.CREATE: GROUPS_API,
+        c.UPDATE: GROUPS_API,
+        c.DELETE: GROUPS_API,
+        c.SEARCH: GROUPS_API,
+        ADD_USER: MEMBERSHIP_API,
+        REMOVE_USER: MEMBERSHIP_API,
     }
     API_V1 = {
         c.CREATE: "user_groups/create",
@@ -76,10 +76,10 @@ class Group(sq.SqObject):
         self.description = data.get("description", "")  #: Group description
         self.__members_count = data.get("membersCount", None)
         self.__is_default = data.get("default", None)
-        self._id = data.get("id", None)  #: SonarQube 10.4+ Group id
+        self.id = data.get("id", None)  #: SonarQube 10.4+ Group id
         self.sq_json = data
         Group.CACHE.put(self)
-        log.debug("Created %s object, id %s", str(self), str(self._id))
+        log.debug("Created %s object, id %s", str(self), str(self.id))
 
     @classmethod
     def read(cls, endpoint: pf.Platform, name: str) -> Group:
@@ -155,7 +155,7 @@ class Group(sq.SqObject):
         log.info("Deleting %s", str(self))
         try:
             if self.endpoint.version() >= (10, 4, 0):
-                ok = self.endpoint.delete(api=f"{Group.API[c.DELETE]}/{self._id}").ok
+                ok = self.endpoint.delete(api=f"{Group.API[c.DELETE]}/{self.id}").ok
             else:
                 ok = self.post(api=Group.API_V1[c.DELETE], params=self.api_params(c.DELETE)).ok
             if ok:
@@ -215,7 +215,7 @@ class Group(sq.SqObject):
             log.debug("Version NNN = %s", str(self.endpoint.version()))
             log.debug("ADD_USER API = %s", Group._api_for(ADD_USER, self.endpoint))
             if self.endpoint.version() >= (10, 4, 0):
-                params = {"groupId": self._id, "userId": user._id}
+                params = {"groupId": self.id, "userId": user.id}
             else:
                 params = {"login": user.login, "name": self.name}
             r = self.post(Group._api_for(ADD_USER, self.endpoint), params=params)
@@ -239,9 +239,9 @@ class Group(sq.SqObject):
         log.info("Removing %s from %s", str(user), str(self))
         try:
             if self.endpoint.version() >= (10, 4, 0):
-                for m in json.loads(self.get("v2/authorizations/group-memberships", params={"userId": user._id}).text)["groupMemberships"]:
+                for m in json.loads(self.get(MEMBERSHIP_API, params={"userId": user.id}).text)["groupMemberships"]:
                     log.debug("Looking at membership %s", str(m))
-                    if m["groupId"] == self._id:
+                    if m["groupId"] == self.id:
                         return self.endpoint.delete(f"{Group._api_for(REMOVE_USER, self.endpoint)}/{m['id']}").ok
             else:
                 params = {"login": user.login, "name": self.name}
@@ -301,7 +301,7 @@ class Group(sq.SqObject):
         log.debug("Updating %s with description = %s", str(self), description)
         if self.endpoint.version() >= (10, 4, 0):
             data = json.dumps({"description": description})
-            r = self.patch(f"{Group.API[c.UPDATE]}/{self._id}", data=data)
+            r = self.patch(f"{Group.API[c.UPDATE]}/{self.id}", data=data)
         else:
             r = self.post(Group.UPDATE_API_V1, params={"currentName": self.key, "description": description})
         if r.ok:
@@ -320,7 +320,7 @@ class Group(sq.SqObject):
             return True
         log.debug("Updating %s with name = %s", str(self), name)
         if self.endpoint.version() >= (10, 4, 0):
-            r = self.patch(f"{Group.API[c.UPDATE]}/{self._id}", params={"name": name})
+            r = self.patch(f"{Group.API[c.UPDATE]}/{self.id}", params={"name": name})
         else:
             r = self.post(Group.UPDATE_API_V1, params={"currentName": self.key, "name": name})
         if r.ok:
@@ -400,7 +400,7 @@ def get_object_from_id(endpoint: pf.Platform, id: str) -> Group:
     if len(Group.CACHE) == 0:
         get_list(endpoint)
     for o in Group.CACHE.values():
-        if o._id == id:
+        if o.id == id:
             return o
     raise exceptions.ObjectNotFound(id, message=f"Group '{id}' not found")
 
