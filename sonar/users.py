@@ -41,7 +41,7 @@ from sonar.audit.problem import Problem
 _GROUPS_API_SC = "users/groups"
 
 SETTABLE_PROPERTIES = ("login", "name", "scmAccounts", "email", "groups", "local")
-
+USER_API = "v2/users-management/users"
 
 class User(sqobject.SqObject):
     """
@@ -55,10 +55,10 @@ class User(sqobject.SqObject):
 
     SEARCH_API_SC = "organizations/search_members"
     API = {
-        c.CREATE: "users/create",
-        c.UPDATE: "users/update",
-        c.DELETE: "v2/users-management/users",
-        c.SEARCH: "v2/users-management/users",
+        c.CREATE: USER_API,
+        c.UPDATE: USER_API,
+        c.DELETE: USER_API,
+        c.SEARCH: USER_API,
         "GROUP_MEMBERSHIPS": "v2/authorizations/group-memberships",
         "UPDATE_LOGIN": "users/update_login",
     }
@@ -68,6 +68,9 @@ class User(sqobject.SqObject):
         c.DELETE: "users/deactivate",
         c.SEARCH: "users/search",
         "UPDATE_LOGIN": "users/update_login",
+    }
+    API_SC = {
+        c.SEARCH: "users/search",
     }
 
     def __init__(self, endpoint: pf.Platform, login: str, data: types.ApiPayload) -> None:
