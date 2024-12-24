@@ -54,7 +54,6 @@ class User(sqobject.SqObject):
     SEARCH_KEY_FIELD = "login"
     SEARCH_RETURN_FIELD = "users"
 
-    SEARCH_API_SC = "organizations/search_members"
     API = {
         c.CREATE: USER_API,
         c.UPDATE: USER_API,
@@ -71,7 +70,7 @@ class User(sqobject.SqObject):
         "UPDATE_LOGIN": "users/update_login",
     }
     API_SC = {
-        c.SEARCH: "users/search",
+        c.SEARCH: "organizations/search_members",
     }
 
     def __init__(self, endpoint: pf.Platform, login: str, data: types.ApiPayload) -> None:
