@@ -101,7 +101,7 @@ do
         export SONAR_HOST_URL="http://localhost:$sqport"
     fi
 
-    logmsg "=====> IT $env sonar-measures-export"
+    logmsg "=====> IT sonar-measures-export $env"
 
     f="measures-$env-unrel.csv"; run_test "$f" sonar-measures-export -b -m _main --withURL
     f="measures-$env-2.csv";     run_test_stdout "$f" sonar-measures-export -b -m _main --withURL
@@ -115,29 +115,30 @@ do
     f="measures-history-$env-2.csv";     run_test "$f" sonar-measures-export -b -k okorach_sonar-tools --history --asTable
     f="measures-history-$env-3.json";    run_test "$f" sonar-measures-export -b --history
 
-    logmsg "=====> IT $env sonar-findings-export"
+    logmsg "=====> IT sonar-findings-export $env"
 
     f="findings-$env-unrel.csv";  run_test "$f" sonar-findings-export -v DEBUG
     f="findings-$env-1.json";     run_test "$f" sonar-findings-export
     f="findings-$env-2.json";     run_test_stdout "$f" sonar-findings-export -v DEBUG --format json -k okorach_audio-video-tools,okorach_sonar-tools
     f="findings-$env-3.json";     run_test_stdout "$f" sonar-findings-export -v DEBUG --format json -k okorach_audio-video-tools,okorach_sonar-tools --useFindings
     f="findings-$env-4.csv";      run_test_stdout "$f" sonar-findings-export --format csv -k okorach_audio-video-tools,okorach_sonar-tools --csvSeparator '+'
-    
+
+
     if [ "$env" = "sonarcloud" ]; then
         logmsg "IT $env sonar-audit SKIPPED"
         logmsg "IT $env sonar-housekeeper SKIPPED"
     else
-        logmsg "=====> IT $env sonar-audit"
+        logmsg "=====> IT sonar-audit $env"
         f="audit-$env-unrel.csv";     run_test_stdout "$f" sonar-audit
         f="audit-$env-1.json";        run_test "$f" sonar-audit
         f="audit-$env-2.json";        run_test_stdout "$f" sonar-audit --format json --what qualitygates,qualityprofiles,settings
         f="audit-$env-3.csv";         run_test_stdout "$f" sonar-audit  --csvSeparator '+' --format csv
 
-        logmsg "=====> IT $env sonar-housekeeper"
+        logmsg "=====> IT sonar-housekeeper $env"
         f="housekeeper-$env-1.csv";   run_test_stdout "$f" sonar-housekeeper -P 365 -B 90 -T 180 -R 30
     fi
 
-    logmsg "=====> IT $env sonar-loc"
+    logmsg "=====> IT sonar-loc $env"
     f="loc-$env-1.csv";           run_test_stdout "$f" sonar-loc
     f="loc-$env-unrel.csv";       run_test_stdout "$f" sonar-loc -n -a
     f="loc-$env-2.csv";           run_test "$f" sonar-loc -n -a --csvSeparator ';'
@@ -163,7 +164,7 @@ do
         f="proj-export-$env-2.json"; run_test "$f" sonar-projects-export
     fi
 
-    logmsg "=====> sonar-findings-export $env ADMIN export"
+    logmsg "=====> IT sonar-findings-export $env ADMIN export"
     f1="findings-$env-admin.csv";   run_test "$f1" sonar-findings-export -v DEBUG -k okorach_audio-video-tools,okorach_sonar-tools
 
     #--------------------------------------------------------------------------
@@ -172,7 +173,7 @@ do
     if [ "$env" = "sonarcloud" ]; then
         logmsg "sonar-projects-export $env SKIPPED"
     else
-        logmsg "=====> sonar-findings-export $env USER export"
+        logmsg "=====> IT sonar-findings-export $env USER export"
         export SONAR_TOKEN=$SONAR_TOKEN_USER_USER
         f2="findings-$env-user.csv";    run_test "$f2" sonar-findings-export -v DEBUG -k okorach_audio-video-tools,okorach_sonar-tools
     fi

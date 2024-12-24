@@ -37,11 +37,10 @@ function logmsg {
 function run_test {
     file=$1; shift
     announced_args=$(get_announced_args $@)  
-    announce_test "$announced_args"
+    announce_test "$announced_args -f $file"
     if [ "$1" != "docker" ]; then
         file="$REPO_ROOT/tmp/$file"
     fi
-    announce_test "$announced_args -f $file"
     if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
         "$@" -o okorach -f "$file" 2>>$IT_LOG_FILE
     else
