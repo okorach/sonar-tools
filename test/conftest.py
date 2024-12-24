@@ -238,10 +238,10 @@ def get_60_users() -> Generator[list[users.User]]:
     for i in range(60):
         u_name = f"User-{util.TEMP_KEY}{i}"
         try:
-            o_gr = users.User.get_object(endpoint=util.SQ, login=u_name)
+            o_user = users.User.get_object(endpoint=util.SQ, login=u_name)
         except exceptions.ObjectNotFound:
-            o_gr = users.User.create(endpoint=util.SQ, login=u_name)
-        user_list.append(o_gr)
+            o_user = users.User.create(endpoint=util.SQ, login=u_name, name=u_name)
+        user_list.append(o_user)
     yield user_list
     for u in user_list:
         u.delete()
