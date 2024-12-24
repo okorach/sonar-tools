@@ -150,7 +150,7 @@ class User(sqobject.SqObject):
         raise exceptions.ObjectNotFound(login, f"User '{login}' not found")
 
     @classmethod
-    def _api_for(cls, op: str, endpoint: object) -> Optional[str]:
+    def api_for(cls, op: str, endpoint: object) -> Optional[str]:
         """Returns the API for a given operation depedning on the SonarQube version"""
         return cls.API[op] if endpoint.version() >= (10, 4, 0) else cls.API_V1[op]
 
@@ -206,7 +206,7 @@ class User(sqobject.SqObject):
 
         :return:  The user itself
         """
-        data = json.loads(self.get(User._api_for(c.SEARCH, self.endpoint), params={"q": self.login}).text)
+        data = json.loads(self.get(User.api_for(c.SEARCH, self.endpoint), params={"q": self.login}).text)
         for d in data["users"]:
             if d["login"] == self.login:
                 self.__load(d)
