@@ -239,10 +239,10 @@ class Group(sq.SqObject):
         log.info("Removing %s from %s", str(user), str(self))
         try:
             if self.endpoint.version() >= (10, 4, 0):
-                for m in json.loads(self.post("v2/authorizations/group-memberships", params={"userId": user._id}).text):
+                for m in json.loads(self.get("v2/authorizations/group-memberships", params={"userId": user._id}).text)["groupMemberships"]:
                     log.debug("Looking at membership %s", str(m))
                     if m["groupId"] == self._id:
-                        return self.endpoint.delete(f"{Group._api_for(REMOVE_USER)}/{m['id']}").ok
+                        return self.endpoint.delete(f"{Group._api_for(REMOVE_USER, self.endpoint)}/{m['id']}").ok
             else:
                 params = {"login": user.login, "name": self.name}
                 return self.post(Group._api_for(REMOVE_USER, self.endpoint), params=params).ok
