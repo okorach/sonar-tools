@@ -334,7 +334,10 @@ class User(sqobject.SqObject):
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.GET: {"login": self.login}}
+        if self.endpoint.version() >= (10, 4, 0):
+            ops = {c.GET: {}}
+        else:
+            ops = {c.GET: {"login": self.login}}
         return ops[op] if op in ops else ops[c.GET]
 
     def set_groups(self, group_list: list[str]) -> bool:
@@ -377,7 +380,12 @@ class User(sqobject.SqObject):
         :rtype: bool
         """
         log.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
-        r = self.post(User.API[c.UPDATE], params={**self.api_params(c.UPDATE), "scmAccount": ",".join(set(accounts_list))})
+        if self.endpoint.version() >= (10, 4, 0):
+            r = self.patch(f"{User.api_for(c.UPDATE, self.endpoint)}/{self.id}", params={"scmAccounts": accounts_list})
+        else:
+            params = self.api_params()
+            params["scmAccount"] = ",".join(set(accounts_list))
+            r = self.post(User.api_for(c.UPDATE, self.endpoint), params=params)
         if not r.ok:
             self.scm_accounts = []
             return False
