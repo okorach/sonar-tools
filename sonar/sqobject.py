@@ -59,20 +59,21 @@ class SqObject(object):
         return NotImplemented
 
     @classmethod
-    def get_search_api(cls, endpoint: object) -> Optional[str]:
-        api = cls.API[c.SEARCH]
-        if endpoint.is_sonarcloud():
-            try:
-                api = cls.SEARCH_API_SC
-            except AttributeError:
-                api = cls.API[c.SEARCH]
-        return api
+    def api_for(cls, op: str, endpoint: object) -> Optional[str]:
+        """Returns the API to use for a particular operation
+
+        :param op: The desired API operation
+        :param endpoint: The SQS or SQC to invoke the API
+        This function must be overloaded for classes that need specific treatment
+        e.g. API V1 or V2 depending on SonarQube version, different API for SonarCloud
+        """
+        return cls.API[op] if op in cls.API else cls.API[c.LIST]
 
     @classmethod
     def clear_cache(cls, endpoint: Optional[object] = None) -> None:
-        """
-        Clear the cache of a given class
-        :param endpoint Platform: Optional, clears only the cache fo rthis platfiorm if specified, clear all if not
+        """Clears the cache of a given class
+
+        :param endpoint: Optional, clears only the cache fo rthis platfiorm if specified, clear all if not
         """
         log.info("Emptying cache of %s", str(cls))
         try:
@@ -213,7 +214,7 @@ def __search_thread(queue: Queue) -> None:
 
 def search_objects(endpoint: object, object_class: any, params: types.ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
     """Runs a multi-threaded object search for searchable Sonar Objects"""
-    api = object_class.get_search_api(endpoint)
+    api = object_class.api_for(c.SEARCH, endpoint)
     key_field = object_class.SEARCH_KEY_FIELD
     returned_field = object_class.SEARCH_RETURN_FIELD
 

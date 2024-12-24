@@ -41,6 +41,7 @@ from sonar.audit.problem import Problem
 _GROUPS_API_SC = "users/groups"
 
 SETTABLE_PROPERTIES = ("login", "name", "scmAccounts", "email", "groups", "local")
+USER_API = "v2/users-management/users"
 
 
 class User(sqobject.SqObject):
@@ -53,12 +54,11 @@ class User(sqobject.SqObject):
     SEARCH_KEY_FIELD = "login"
     SEARCH_RETURN_FIELD = "users"
 
-    SEARCH_API_SC = "organizations/search_members"
     API = {
-        c.CREATE: "users/create",
-        c.UPDATE: "users/update",
-        c.DELETE: "v2/users-management/users",
-        c.SEARCH: "v2/users-management/users",
+        c.CREATE: USER_API,
+        c.UPDATE: USER_API,
+        c.DELETE: USER_API,
+        c.SEARCH: USER_API,
         "GROUP_MEMBERSHIPS": "v2/authorizations/group-memberships",
         "UPDATE_LOGIN": "users/update_login",
     }
@@ -68,6 +68,9 @@ class User(sqobject.SqObject):
         c.DELETE: "users/deactivate",
         c.SEARCH: "users/search",
         "UPDATE_LOGIN": "users/update_login",
+    }
+    API_SC = {
+        c.SEARCH: "organizations/search_members",
     }
 
     def __init__(self, endpoint: pf.Platform, login: str, data: types.ApiPayload) -> None:
@@ -147,9 +150,15 @@ class User(sqobject.SqObject):
         raise exceptions.ObjectNotFound(login, f"User '{login}' not found")
 
     @classmethod
-    def _api_for(cls, op: str, endpoint: object) -> Optional[str]:
+    def api_for(cls, op: str, endpoint: object) -> Optional[str]:
         """Returns the API for a given operation depedning on the SonarQube version"""
-        return cls.API[op] if endpoint.version() >= (10, 4, 0) else cls.API_V1[op]
+        if endpoint.is_sonarcloud():
+            api_to_use = User.API_SC
+        elif endpoint.version() < (10, 4, 0):
+            api_to_use = User.API_V1
+        else:
+            api_to_use = User.API
+        return api_to_use[op] if op in api_to_use else api_to_use[c.LIST]
 
     def __str__(self) -> str:
         """
@@ -203,7 +212,7 @@ class User(sqobject.SqObject):
 
         :return:  The user itself
         """
-        data = json.loads(self.get(User._api_for(c.SEARCH, self.endpoint), params={"q": self.login}).text)
+        data = json.loads(self.get(User.api_for(c.SEARCH, self.endpoint), params={"q": self.login}).text)
         for d in data["users"]:
             if d["login"] == self.login:
                 self.__load(d)
@@ -325,7 +334,10 @@ class User(sqobject.SqObject):
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.GET: {"login": self.login}}
+        if self.endpoint.version() >= (10, 4, 0):
+            ops = {c.GET: {}}
+        else:
+            ops = {c.GET: {"login": self.login}}
         return ops[op] if op in ops else ops[c.GET]
 
     def set_groups(self, group_list: list[str]) -> bool:
@@ -368,7 +380,12 @@ class User(sqobject.SqObject):
         :rtype: bool
         """
         log.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
-        r = self.post(User.API[c.UPDATE], params={**self.api_params(c.UPDATE), "scmAccount": ",".join(set(accounts_list))})
+        if self.endpoint.version() >= (10, 4, 0):
+            r = self.patch(f"{User.api_for(c.UPDATE, self.endpoint)}/{self.id}", params={"scmAccounts": accounts_list})
+        else:
+            params = self.api_params()
+            params["scmAccount"] = ",".join(set(accounts_list))
+            r = self.post(User.api_for(c.UPDATE, self.endpoint), params=params)
         if not r.ok:
             self.scm_accounts = []
             return False

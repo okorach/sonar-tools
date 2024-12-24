@@ -42,6 +42,8 @@ ADD_USER = "ADD_USER"
 REMOVE_USER = "REMOVE_USER"
 GROUPS_API = "v2/authorizations/groups"
 MEMBERSHIP_API = "v2/authorizations/group-memberships"
+
+
 class Group(sq.SqObject):
     """
     Abstraction of the SonarQube "group" concept.
@@ -93,7 +95,7 @@ class Group(sq.SqObject):
         o = Group.CACHE.get(name, endpoint.url)
         if o:
             return o
-        data = util.search_by_name(endpoint, name, Group._api_for(c.SEARCH, endpoint), "groups")
+        data = util.search_by_name(endpoint, name, Group.api_for(c.SEARCH, endpoint), "groups")
         if data is None:
             raise exceptions.ObjectNotFound(name, f"Group '{name}' not found.")
         # SonarQube 10 compatibility: "id" field is dropped, use "name" instead
@@ -113,7 +115,7 @@ class Group(sq.SqObject):
         """
         log.debug("Creating group '%s'", name)
         try:
-            endpoint.post(Group._api_for(c.CREATE, endpoint), params={"name": name, "description": description})
+            endpoint.post(Group.api_for(c.CREATE, endpoint), params={"name": name, "description": description})
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"creating group '{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(name, util.sonar_error(e.response))
@@ -130,9 +132,13 @@ class Group(sq.SqObject):
         return cls(endpoint=endpoint, name=data["name"], data=data)
 
     @classmethod
-    def _api_for(cls, op: str, endpoint: object) -> Optional[str]:
-        """Returns the API for a given operation depending on the SonarQube version"""
-        return cls.API[op] if endpoint.version() >= (10, 4, 0) else cls.API_V1[op]
+    def api_for(cls, op: str, endpoint: object) -> Optional[str]:
+        """Returns the API for a given operation depedning on the SonarQube version"""
+        if endpoint.is_sonarcloud() or endpoint.version() < (10, 4, 0):
+            api_to_use = Group.API_V1
+        else:
+            api_to_use = Group.API
+        return api_to_use[op] if op in api_to_use else api_to_use[c.LIST]
 
     @classmethod
     def get_object(cls, endpoint: pf.Platform, name: str) -> Group:
@@ -215,7 +221,7 @@ class Group(sq.SqObject):
                 params = {"groupId": self.id, "userId": user.id}
             else:
                 params = {"login": user.login, "name": self.name}
-            r = self.post(Group._api_for(ADD_USER, self.endpoint), params=params)
+            r = self.post(Group.api_for(ADD_USER, self.endpoint), params=params)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, "adding user to group")
             if isinstance(e, HTTPError):
@@ -238,10 +244,10 @@ class Group(sq.SqObject):
             if self.endpoint.version() >= (10, 4, 0):
                 for m in json.loads(self.get(MEMBERSHIP_API, params={"userId": user.id}).text)["groupMemberships"]:
                     if m["groupId"] == self.id:
-                        return self.endpoint.delete(f"{Group._api_for(REMOVE_USER, self.endpoint)}/{m['id']}").ok
+                        return self.endpoint.delete(f"{Group.api_for(REMOVE_USER, self.endpoint)}/{m['id']}").ok
             else:
                 params = {"login": user.login, "name": self.name}
-                return self.post(Group._api_for(REMOVE_USER, self.endpoint), params=params).ok
+                return self.post(Group.api_for(REMOVE_USER, self.endpoint), params=params).ok
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, "removing user from group")
             if isinstance(e, HTTPError):
