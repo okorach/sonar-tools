@@ -74,7 +74,7 @@ class User(sqobject.SqObject):
         """Do not use to create users, use on of the constructor class methods"""
         super().__init__(endpoint=endpoint, key=login)
         self.login = login  #: User login (str)
-        self._id = None  #: SonarQube 10+ User Id (str)
+        self.id = None  #: SonarQube 10+ User Id (str)
         self.name = None  #: User name (str)
         self._groups = None  #: User groups (list)
         self.scm_accounts = None  #: User SCM accounts (list)
@@ -84,7 +84,7 @@ class User(sqobject.SqObject):
         self.nb_tokens = None  #: Nbr of tokens (int) - read-only
         self.__tokens = None
         self.__load(data)
-        log.debug("Created %s id '%s'", str(self), str(self._id))
+        log.debug("Created %s id '%s'", str(self), str(self.id))
         User.CACHE.put(self)
 
     @classmethod
@@ -177,7 +177,7 @@ class User(sqobject.SqObject):
                 self.last_login = dt1
             else:
                 self.last_login = max(dt1, dt2)
-            self._id = data["id"]
+            self.id = data["id"]
         self.__tokens = None
         self._groups = self.groups(data)  #: User groups
         self.sq_json = data
@@ -193,7 +193,7 @@ class User(sqobject.SqObject):
         elif self.endpoint.version() < (10, 4, 0):
             self._groups = data.get("groups", [])  #: User groups
         else:
-            data = json.loads(self.get(User.API["GROUP_MEMBERSHIPS"], {"userId": self._id, "pageSize": 500}).text)["groupMemberships"]
+            data = json.loads(self.get(User.API["GROUP_MEMBERSHIPS"], {"userId": self.id, "pageSize": 500}).text)["groupMemberships"]
             log.debug("Groups = %s", str(data))
             self._groups = [groups.get_object_from_id(self.endpoint, g["groupId"]).name for g in data]
         return self._groups
@@ -312,7 +312,7 @@ class User(sqobject.SqObject):
         log.info("Deleting %s", str(self))
         try:
             if self.endpoint.version() >= (10, 4, 0):
-                ok = self.endpoint.delete(api=f"{User.API[c.DELETE]}/{self._id}").ok
+                ok = self.endpoint.delete(api=f"{User.API[c.DELETE]}/{self.id}").ok
             else:
                 ok = self.post(api=User.API_V1[c.DELETE], params=self.api_params(c.DELETE)).ok
             if ok:
