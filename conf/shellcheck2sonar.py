@@ -27,6 +27,7 @@ import sys
 import json
 
 SHELLCHECK = "shellcheck"
+MAPPING = {"INFO": "INFO", "LOW": "MINOR", "MEDIUM": "MAJOR", "HIGH": "CRITICAL", "BLOCKER": "BLOCKER"}
 
 
 def main() -> None:
@@ -53,17 +54,19 @@ def main() -> None:
         }
         issue_list.append(sonar_issue)
         if issue["level"] in ("info", "style"):
-            sev = "LOW"
+            sev_mqr = "LOW"
         elif issue["level"] == "warning":
-            sev = "MEDIUM"
+            sev_mqr = "MEDIUM"
         else:
-            sev = "HIGH"
+            sev_mqr = "HIGH"
         rules_dict[f"{SHELLCHECK}:{issue['code']}"] = {
             "id": f"{SHELLCHECK}:{issue['code']}",
             "name": f"{SHELLCHECK}:{issue['code']}",
             "engineId": SHELLCHECK,
+            "type": "CODE_SMELL",
             "cleanCodeAttribute": "LOGICAL",
-            "impacts": [{"softwareQuality": "MAINTAINABILITY", "severity": sev}],
+            "severity": MAPPING[sev_mqr],
+            "impacts": [{"softwareQuality": "MAINTAINABILITY", "severity": sev_mqr}],
         }
 
     external_issues = {"rules": list(rules_dict.values()), "issues": issue_list}

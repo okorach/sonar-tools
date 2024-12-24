@@ -194,7 +194,7 @@ def test_set_quality_gate(get_test_project: callable) -> None:
     assert not proj.set_quality_gate(util.EXISTING_QG)
 
 
-def test_ai_code_assurance(get_test_project: callable) -> None:
+def test_ai_code_assurance(get_test_project: Generator[projects.Project]) -> None:
     """test_set_ai_code_assurance"""
     proj = get_test_project
     assert proj.set_contains_ai_code(True)

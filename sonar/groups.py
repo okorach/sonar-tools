@@ -38,8 +38,10 @@ from sonar.audit.problem import Problem
 from sonar.util import types, cache, constants as c
 
 SONAR_USERS = "sonar-users"
-
-
+ADD_USER = "ADD_USER"
+REMOVE_USER = "REMOVE_USER"
+GROUPS_API = "v2/authorizations/groups"
+MEMBERSHIP_API = "v2/authorizations/group-memberships"
 class Group(sq.SqObject):
     """
     Abstraction of the SonarQube "group" concept.
@@ -47,14 +49,22 @@ class Group(sq.SqObject):
     """
 
     CACHE = cache.Cache()
-    SEARCH_API_V1 = "user_groups/search"
-    UPDATE_API_V1 = "user_groups/update"
+
     API = {
+        c.CREATE: GROUPS_API,
+        c.UPDATE: GROUPS_API,
+        c.DELETE: GROUPS_API,
+        c.SEARCH: GROUPS_API,
+        ADD_USER: MEMBERSHIP_API,
+        REMOVE_USER: MEMBERSHIP_API,
+    }
+    API_V1 = {
         c.CREATE: "user_groups/create",
-        c.UPDATE: "v2/authorizations/groups",
-        c.SEARCH: "v2/authorizations/groups",
-        "ADD_USER": "user_groups/add_user",
-        "REMOVE_USER": "user_groups/remove_user",
+        c.UPDATE: "user_groups/update",
+        c.DELETE: "user_groups/delete",
+        c.SEARCH: "user_groups/search",
+        ADD_USER: "user_groups/add_user",
+        REMOVE_USER: "user_groups/remove_user",
     }
     SEARCH_KEY_FIELD = "name"
     SEARCH_RETURN_FIELD = "groups"
@@ -66,10 +76,10 @@ class Group(sq.SqObject):
         self.description = data.get("description", "")  #: Group description
         self.__members_count = data.get("membersCount", None)
         self.__is_default = data.get("default", None)
-        self._id = data.get("id", None)  #: SonarQube 10.4+ Group id
+        self.id = data.get("id", None)  #: SonarQube 10.4+ Group id
         self.sq_json = data
         Group.CACHE.put(self)
-        log.debug("Created %s object", str(self))
+        log.debug("Created %s object, id %s", str(self), str(self.id))
 
     @classmethod
     def read(cls, endpoint: pf.Platform, name: str) -> Group:
@@ -83,7 +93,7 @@ class Group(sq.SqObject):
         o = Group.CACHE.get(name, endpoint.url)
         if o:
             return o
-        data = util.search_by_name(endpoint, name, Group.get_search_api(endpoint), "groups")
+        data = util.search_by_name(endpoint, name, Group._api_for(c.SEARCH, endpoint), "groups")
         if data is None:
             raise exceptions.ObjectNotFound(name, f"Group '{name}' not found.")
         # SonarQube 10 compatibility: "id" field is dropped, use "name" instead
@@ -96,15 +106,17 @@ class Group(sq.SqObject):
     def create(cls, endpoint: pf.Platform, name: str, description: str = None) -> Group:
         """Creates a new group in SonarQube and returns the corresponding Group object
 
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param str name: Group name
-        :param description: Group description
-        :type description: str, optional
+        :param endpoint: Reference to the SonarQube platform
+        :param name: Group name
+        :param description: Group description, optional
         :return: The group object
-        :rtype: Group or None
         """
         log.debug("Creating group '%s'", name)
-        endpoint.post(Group.API[c.SEARCH], params={"name": name, "description": description})
+        try:
+            endpoint.post(Group._api_for(c.CREATE, endpoint), params={"name": name, "description": description})
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"creating group '{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            raise exceptions.ObjectAlreadyExists(name, util.sonar_error(e.response))
         return cls.read(endpoint=endpoint, name=name)
 
     @classmethod
@@ -112,18 +124,55 @@ class Group(sq.SqObject):
         """Creates a Group object from the result of a SonarQube API group search data
 
         :param Platform endpoint: Reference to the SonarQube platform
-        :param dict data: The JSON data corresponding to the group
+        :param data: The JSON data corresponding to the group
         :return: The group object
-        :rtype: Group or None
         """
         return cls(endpoint=endpoint, name=data["name"], data=data)
 
     @classmethod
-    def get_search_api(cls, endpoint: object) -> Optional[str]:
-        api = cls.API[c.SEARCH]
-        if endpoint.version() < (10, 4, 0):
-            api = cls.SEARCH_API_V1
-        return api
+    def _api_for(cls, op: str, endpoint: object) -> Optional[str]:
+        """Returns the API for a given operation depending on the SonarQube version"""
+        return cls.API[op] if endpoint.version() >= (10, 4, 0) else cls.API_V1[op]
+
+    @classmethod
+    def get_object(cls, endpoint: pf.Platform, name: str) -> Group:
+        """Returns a group object
+
+        :param Platform endpoint: reference to the SonarQube platform
+        :param str name: group name
+        :return: The group
+        """
+        o = Group.CACHE.get(name, endpoint.url)
+        if not o:
+            get_list(endpoint)
+        o = Group.CACHE.get(name, endpoint.url)
+        if not o:
+            raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
+        return o
+
+    def delete(self) -> bool:
+        """Deletes an object, returns whether the operation succeeded"""
+        log.info("Deleting %s", str(self))
+        try:
+            if self.endpoint.version() >= (10, 4, 0):
+                ok = self.endpoint.delete(api=f"{Group.API[c.DELETE]}/{self.id}").ok
+            else:
+                ok = self.post(api=Group.API_V1[c.DELETE], params=self.api_params(c.DELETE)).ok
+            if ok:
+                log.info("Removing from %s cache", str(self.__class__.__name__))
+                self.__class__.CACHE.pop(self)
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"deleting {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
+        return ok
+
+    def api_params(self, op: str) -> types.ApiParams:
+        """Return params used to search/create/delete for that object"""
+        if self.endpoint.version() >= (10, 4, 0):
+            ops = {c.GET: {}}
+        else:
+            ops = {c.GET: {"name": self.name}}
+        return ops[op] if op in ops else ops[c.GET]
 
     def __str__(self) -> str:
         """
@@ -154,15 +203,19 @@ class Group(sq.SqObject):
         """
         return f"{self.endpoint.url}/admin/groups"
 
-    def add_user(self, user_login: str) -> bool:
+    def add_user(self, user: object) -> bool:
         """Adds a user in the group
 
-        :param str user_login: User login
+        :param user: the User to add
         :return: Whether the operation succeeded
-        :rtype: bool
         """
+        log.info("Adding %s to %s", str(user), str(self))
         try:
-            r = self.post(Group.API["ADD_USER"], params={"login": user_login, "name": self.name})
+            if self.endpoint.version() >= (10, 4, 0):
+                params = {"groupId": self.id, "userId": user.id}
+            else:
+                params = {"login": user.login, "name": self.name}
+            r = self.post(Group._api_for(ADD_USER, self.endpoint), params=params)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, "adding user to group")
             if isinstance(e, HTTPError):
@@ -170,17 +223,34 @@ class Group(sq.SqObject):
                 if code == HTTPStatus.BAD_REQUEST:
                     raise exceptions.UnsupportedOperation(util.sonar_error(e.response))
                 if code == HTTPStatus.NOT_FOUND:
-                    raise exceptions.ObjectNotFound(user_login, util.sonar_error(e.response))
+                    raise exceptions.ObjectNotFound(user.login, util.sonar_error(e.response))
         return r.ok
 
-    def remove_user(self, user_login: str) -> bool:
+    def remove_user(self, user: object) -> bool:
         """Removes a user from the group
 
         :param str user_login: User login
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        return self.post(Group.API["REMOVE_USER"], params={"login": user_login, "name": self.name}).ok
+        log.info("Removing %s from %s", str(user), str(self))
+        try:
+            if self.endpoint.version() >= (10, 4, 0):
+                for m in json.loads(self.get(MEMBERSHIP_API, params={"userId": user.id}).text)["groupMemberships"]:
+                    if m["groupId"] == self.id:
+                        return self.endpoint.delete(f"{Group._api_for(REMOVE_USER, self.endpoint)}/{m['id']}").ok
+            else:
+                params = {"login": user.login, "name": self.name}
+                return self.post(Group._api_for(REMOVE_USER, self.endpoint), params=params).ok
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, "removing user from group")
+            if isinstance(e, HTTPError):
+                code = e.response.status_code
+                if code == HTTPStatus.BAD_REQUEST:
+                    raise exceptions.UnsupportedOperation(util.sonar_error(e.response))
+                if code == HTTPStatus.NOT_FOUND:
+                    raise exceptions.ObjectNotFound(user.login, util.sonar_error(e.response))
+        return False
 
     def audit(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
         """Audits a group and return list of problems found
@@ -227,9 +297,9 @@ class Group(sq.SqObject):
         log.debug("Updating %s with description = %s", str(self), description)
         if self.endpoint.version() >= (10, 4, 0):
             data = json.dumps({"description": description})
-            r = self.patch(f"{Group.API[c.UPDATE]}/{self._id}", data=data, headers={"content-type": "application/merge-patch+json"})
+            r = self.patch(f"{Group.API[c.UPDATE]}/{self.id}", data=data)
         else:
-            r = self.post(Group.UPDATE_API_V1, params={"currentName": self.key, "description": description})
+            r = self.post(Group.API_V1[c.UPDATE], params={"currentName": self.key, "description": description})
         if r.ok:
             self.description = description
         return r.ok
@@ -246,9 +316,9 @@ class Group(sq.SqObject):
             return True
         log.debug("Updating %s with name = %s", str(self), name)
         if self.endpoint.version() >= (10, 4, 0):
-            r = self.patch(f"{Group.API[c.UPDATE]}/{self.key}", params={"name": name})
+            r = self.patch(f"{Group.API[c.UPDATE]}/{self.id}", params={"name": name})
         else:
-            r = self.post(Group.UPDATE_API_V1, params={"currentName": self.key, "name": name})
+            r = self.post(Group.API[c.UPDATE], params={"currentName": self.key, "name": name})
         if r.ok:
             Group.CACHE.pop(self)
             self.name = name
@@ -264,7 +334,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, G
     :return: dict of groups with group name as key
     :rtype: dict{name: Group}
     """
-    return sq.search_objects(endpoint=endpoint, object_class=Group, params=params)
+    return sq.search_objects(endpoint=endpoint, object_class=Group, params=params, api_version=2)
 
 
 def get_list(endpoint: pf.Platform) -> dict[str, Group]:
@@ -319,22 +389,6 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     return problems
 
 
-def get_object(endpoint: pf.Platform, name: str) -> Group:
-    """Returns a group object
-
-    :param Platform endpoint: reference to the SonarQube platform
-    :param str name: group name
-    :return: The group
-    """
-    o = Group.CACHE.get(name, endpoint.url)
-    if not o:
-        get_list(endpoint)
-    o = Group.CACHE.get(name, endpoint.url)
-    if not o:
-        raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
-    return o
-
-
 def get_object_from_id(endpoint: pf.Platform, id: str) -> Group:
     """Searches a Group object from its id - SonarQube 10.4+"""
     if endpoint.version() < (10, 4, 0):
@@ -342,7 +396,7 @@ def get_object_from_id(endpoint: pf.Platform, id: str) -> Group:
     if len(Group.CACHE) == 0:
         get_list(endpoint)
     for o in Group.CACHE.values():
-        if o._id == id:
+        if o.id == id:
             return o
     raise exceptions.ObjectNotFound(id, message=f"Group '{id}' not found")
 
@@ -357,7 +411,7 @@ def create_or_update(endpoint: pf.Platform, name: str, description: str) -> Grou
     :rtype: Group
     """
     try:
-        o = get_object(endpoint=endpoint, name=name)
+        o = Group.get_object(endpoint=endpoint, name=name)
         o.set_description(description)
         return o
     except exceptions.ObjectNotFound:
@@ -392,7 +446,7 @@ def exists(group_name: str, endpoint: pf.Platform) -> bool:
     :return: whether the project exists
     :rtype: bool
     """
-    return get_object(name=group_name, endpoint=endpoint) is not None
+    return Group.get_object(name=group_name, endpoint=endpoint) is not None
 
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:

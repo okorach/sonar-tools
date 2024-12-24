@@ -26,7 +26,7 @@ from collections.abc import Generator
 import pytest
 
 import utilities as util
-from sonar import projects, applications, portfolios, qualityprofiles, exceptions, logging, issues, users
+from sonar import projects, applications, portfolios, qualityprofiles, exceptions, logging, issues, users, groups
 
 TEMP_FILE_ROOT = f"temp.{os.getpid()}"
 CSV_FILE = f"{TEMP_FILE_ROOT}.csv"
@@ -213,3 +213,35 @@ def get_test_application() -> Generator[applications.Application]:
         o.delete()
     except exceptions.ObjectNotFound:
         pass
+
+
+@pytest.fixture
+def get_60_groups() -> Generator[list[groups.Group]]:
+    util.start_logging()
+    group_list = []
+    for i in range(60):
+        gr_name = f"Group-{util.TEMP_KEY}{i}"
+        try:
+            o_gr = groups.Group.get_object(endpoint=util.SQ, name=gr_name)
+        except exceptions.ObjectNotFound:
+            o_gr = groups.Group.create(endpoint=util.SQ, name=gr_name, description=gr_name)
+        group_list.append(o_gr)
+    yield group_list
+    for g in group_list:
+        g.delete()
+
+
+@pytest.fixture
+def get_60_users() -> Generator[list[users.User]]:
+    util.start_logging()
+    user_list = []
+    for i in range(60):
+        u_name = f"User-{util.TEMP_KEY}{i}"
+        try:
+            o_user = users.User.get_object(endpoint=util.SQ, login=u_name)
+        except exceptions.ObjectNotFound:
+            o_user = users.User.create(endpoint=util.SQ, login=u_name, name=u_name)
+        user_list.append(o_user)
+    yield user_list
+    for u in user_list:
+        u.delete()

@@ -385,24 +385,31 @@ def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: any
     return json_data
 
 
-def nbr_pages(sonar_api_json: dict[str, str]) -> int:
+def nbr_pages(sonar_api_json: dict[str, str], api_version: int = 1) -> int:
     """Returns nbr of pages of a paginated Sonar API call"""
-    if "paging" in sonar_api_json:
-        return math.ceil(sonar_api_json["paging"]["total"] / sonar_api_json["paging"]["pageSize"])
+    paging = "page" if api_version == 2 else "paging"
+    if paging in sonar_api_json:
+        return math.ceil(sonar_api_json[paging]["total"] / sonar_api_json[paging]["pageSize"])
     elif "total" in sonar_api_json:
         return math.ceil(sonar_api_json["total"] / sonar_api_json["ps"])
     else:
         return 1
 
 
-def nbr_total_elements(sonar_api_json: dict[str, str]) -> int:
+def nbr_total_elements(sonar_api_json: dict[str, str], api_version: int = 1) -> int:
     """Returns nbr of elements of a paginated Sonar API call"""
+    paging = "page" if api_version == 2 else "paging"
     if "total" in sonar_api_json:
         return sonar_api_json["total"]
-    elif "paging" in sonar_api_json:
-        return sonar_api_json["paging"]["total"]
+    elif paging in sonar_api_json:
+        return sonar_api_json[paging]["total"]
     else:
         return 0
+
+
+def is_api_v2(api: str) -> bool:
+    """Returns whether and API string is v2"""
+    return api.lower().startswith("v2/") or api.lower().startswith("api/v2/")
 
 
 @contextlib.contextmanager

@@ -23,9 +23,9 @@ ME="$( basename "${BASH_SOURCE[0]}" )"
 ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-dolint=true
-dotest=false
-localbuild=false
+dolint="true"
+dotest="false"
+localbuild="false"
 
 scanOpts=()
 
@@ -33,11 +33,11 @@ while [ $# -ne 0 ]
 do
   case "$1" in
     -nolint)
-      dolint=false
+      dolint="false"
       ;;
     -test)
-      dotest=true
-      localbuild=true
+      dotest="true"
+      localbuild="true"
       ;;
     *)
       scanOpts=("${scanOpts[@]}" "$1")
@@ -58,12 +58,13 @@ utReport="$buildDir/xunit-results.xml"
 [ ! -d $buildDir ] && mkdir $buildDir
 rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  testpytest/__pycache__ testunittest/__pycache__
 
-if [ "$dotest" == "true" ]; then
-  "$CONFDIR"/run_tests.sh
-fi
 
 if [ "$dolint" != "false" ]; then
   "$CONFDIR"/run_linters.sh "$localbuild"
+fi
+
+if [ "$dotest" == "true" ]; then
+  "$CONFDIR"/run_tests.sh
 fi
 
 version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")

@@ -19,7 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" applications tests """
+""" users tests """
 
 from collections.abc import Generator
 
@@ -95,7 +95,8 @@ def test_set_groups(get_test_user: Generator[users.User]) -> None:
     # TODO(@okorach): Pick groups that exist in SonarQube
     groups = ["quality-managers", "tech-leads"]
     for g in groups:
-        assert user.remove_from_group(g)
+        if g in user.groups():
+            assert user.remove_from_group(g)
     user.refresh()
     for g in groups:
         assert g not in user.groups()
@@ -159,3 +160,12 @@ def test_convert_for_yaml() -> None:
     assert isinstance(json_exp, dict)
     assert isinstance(yaml_exp, list)
     assert len(yaml_exp) == len(json_exp)
+
+
+def test_more_than_50_users(get_60_users: Generator[list[users.User]]) -> None:
+    # Count groups first
+    user_list = get_60_users
+    users.User.clear_cache()
+    new_user_list = users.get_list(util.SQ)
+    assert len(new_user_list) > 60
+    assert set(new_user_list.keys()) > set(u.name for u in user_list)
