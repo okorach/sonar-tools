@@ -42,6 +42,8 @@ ADD_USER = "ADD_USER"
 REMOVE_USER = "REMOVE_USER"
 GROUPS_API = "v2/authorizations/groups"
 MEMBERSHIP_API = "v2/authorizations/group-memberships"
+
+
 class Group(sq.SqObject):
     """
     Abstraction of the SonarQube "group" concept.
@@ -131,8 +133,12 @@ class Group(sq.SqObject):
 
     @classmethod
     def api_for(cls, op: str, endpoint: object) -> Optional[str]:
-        """Returns the API for a given operation depending on the SonarQube version"""
-        return cls.API[op] if endpoint.version() >= (10, 4, 0) else cls.API_V1[op]
+        """Returns the API for a given operation depedning on the SonarQube version"""
+        if endpoint.is_sonarcloud() or endpoint.version() < (10, 4, 0):
+            api_to_use = Group.API_V1
+        else:
+            api_to_use = Group.API
+        return api_to_use[op] if op in api_to_use else api_to_use[c.LIST]
 
     @classmethod
     def get_object(cls, endpoint: pf.Platform, name: str) -> Group:

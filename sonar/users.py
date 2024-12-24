@@ -43,6 +43,7 @@ _GROUPS_API_SC = "users/groups"
 SETTABLE_PROPERTIES = ("login", "name", "scmAccounts", "email", "groups", "local")
 USER_API = "v2/users-management/users"
 
+
 class User(sqobject.SqObject):
     """
     Abstraction of the SonarQube "user" concept
@@ -152,7 +153,13 @@ class User(sqobject.SqObject):
     @classmethod
     def api_for(cls, op: str, endpoint: object) -> Optional[str]:
         """Returns the API for a given operation depedning on the SonarQube version"""
-        return cls.API[op] if endpoint.version() >= (10, 4, 0) else cls.API_V1[op]
+        if endpoint.is_sonarcloud():
+            api_to_use = User.API_SC
+        elif endpoint.version() < (10, 4, 0):
+            api_to_use = User.API_V1
+        else:
+            api_to_use = User.API
+        return api_to_use[op] if op in api_to_use else api_to_use[c.LIST]
 
     def __str__(self) -> str:
         """
