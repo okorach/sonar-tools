@@ -370,10 +370,7 @@ def test_issues_count_3() -> None:
 def test_search_issues_by_project() -> None:
     """test_search_issues_by_project"""
     nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key=util.LIVE_PROJECT, search_findings=True))
-    if util.SQ.version() < (10, 0, 0):
-        assert 200 <= nb_issues <= 1000
-    else:
-        assert 500 <= nb_issues <= 1500
+    assert 200 <= nb_issues <= 1000
     nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key=util.LIVE_PROJECT, params={"resolved": "false"}))
     assert nb_issues < 1000
     nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key=None))
