@@ -61,13 +61,12 @@ class SqObject(object):
     @classmethod
     def api_for(cls, op: str, endpoint: object) -> Optional[str]:
         """Returns the API to use for a particular operation
-        
+
         :param op: The desired API operation
         :param endpoint: The SQS or SQC to invoke the API
         This function must be overloaded for classes that need specific treatment
         e.g. API V1 or V2 depending on SonarQube version, different API for SonarCloud
         """
-
         return cls.API[op] if op in cls.API else cls.API[c.LIST]
 
     @classmethod
