@@ -95,7 +95,8 @@ def test_set_groups(get_test_user: Generator[users.User]) -> None:
     # TODO(@okorach): Pick groups that exist in SonarQube
     groups = ["quality-managers", "tech-leads"]
     for g in groups:
-        assert user.remove_from_group(g)
+        if g in user.groups():
+            assert user.remove_from_group(g)
     user.refresh()
     for g in groups:
         assert g not in user.groups()
