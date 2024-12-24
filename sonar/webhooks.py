@@ -87,7 +87,7 @@ class WebHook(sq.SqObject):
         """
         :meta private:
         """
-        if self.sq_json["latestDelivery"]["success"]:
+        if "latestDelivery" not in self.sq_json or self.sq_json["latestDelivery"]["success"]:
             return []
         return [problem.Problem(rules.get_rule(rules.RuleId.FAILED_WEBHOOK), self, str(self))]
 
