@@ -50,8 +50,6 @@ class User(sqobject.SqObject):
     """
 
     CACHE = cache.Cache()
-    SEARCH_API_V1 = "users/search"
-    CREATE_API_V1 = "users/create"
     SEARCH_KEY_FIELD = "login"
     SEARCH_RETURN_FIELD = "users"
 
@@ -59,16 +57,16 @@ class User(sqobject.SqObject):
     API = {
         c.CREATE: "users/create",
         c.UPDATE: "users/update",
+        c.DELETE: "v2/users-management/users",
         c.SEARCH: "v2/users-management/users",
         "GROUP_MEMBERSHIPS": "v2/authorizations/group-memberships",
-        "DEACTIVATE": "users/deactivate",
         "UPDATE_LOGIN": "users/update_login",
     }
     API_V1 = {
         c.CREATE: "users/create",
         c.UPDATE: "users/update",
+        c.DELETE: "users/deactivate",
         c.SEARCH: "users/search",
-        "DEACTIVATE": "users/deactivate",
         "UPDATE_LOGIN": "users/update_login",
     }
 
@@ -86,7 +84,7 @@ class User(sqobject.SqObject):
         self.nb_tokens = None  #: Nbr of tokens (int) - read-only
         self.__tokens = None
         self.__load(data)
-        log.debug("Created %s id %s", str(self), str(self._id))
+        log.debug("Created %s id '%s'", str(self), str(self._id))
         User.CACHE.put(self)
 
     @classmethod
@@ -104,7 +102,7 @@ class User(sqobject.SqObject):
         return cls(login=data["login"], endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, login: str, name: str = None, is_local: bool = True, password: str = None) -> User:
+    def create(cls, endpoint: pf.Platform, login: str, name: str, is_local: bool = True, password: str = None) -> User:
         """Creates a new user in SonarQube and returns the corresponding User object
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -118,7 +116,7 @@ class User(sqobject.SqObject):
         :return: The user object
         :rtype: User or None
         """
-        log.debug("Creating user '%s'", login)
+        log.debug("Creating user '%s' name '%s,", login, name)
         params = {"login": login, "local": str(is_local).lower(), "name": name}
         if is_local:
             params["password"] = password if password else login
@@ -186,7 +184,7 @@ class User(sqobject.SqObject):
 
     def groups(self, data: types.ApiPayload = None, **kwargs) -> types.KeyList:
         """Returns the list of groups of a user"""
-        log.info("Getting %s groups", str(self))
+        log.info("Getting %s groups = %s", str(self), str(self._groups))
         if self._groups is not None and kwargs.get(c.USE_CACHE, True):
             return self._groups
         if self.endpoint.is_sonarcloud():
@@ -220,14 +218,6 @@ class User(sqobject.SqObject):
         :rtype: str
         """
         return f"{self.endpoint.url}/admin/users"
-
-    def deactivate(self) -> bool:
-        """Deactivates the user
-
-        :return: Whether the deactivation succeeded
-        :rtype: bool
-        """
-        return self.post(User.API["DEACTIVATE"], self.api_params(User.API["DEACTIVATE"])).ok
 
     def tokens(self, **kwargs) -> list[tokens.UserToken]:
         """
@@ -302,7 +292,36 @@ class User(sqobject.SqObject):
         group = groups.Group.read(endpoint=self.endpoint, name=group_name)
         if group.is_default():
             raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't remove membership for {str(self)}")
-        return group.remove_user(self)
+        ok = group.remove_user(self)
+        if ok:
+            self._groups.remove(group_name)
+        return ok
+
+    def deactivate(self) -> bool:
+        """Deactivates the user
+
+        :return: Whether the deactivation succeeded
+        """
+        return self.delete()
+
+    def delete(self) -> bool:
+        """Deactivates the user (true deleting is not possible)
+
+        :return: Whether the deactivation succeeded
+        """
+        log.info("Deleting %s", str(self))
+        try:
+            if self.endpoint.version() >= (10, 4, 0):
+                ok = self.endpoint.delete(api=f"{User.API[c.DELETE]}/{self._id}").ok
+            else:
+                ok = self.post(api=User.API_V1[c.DELETE], params=self.api_params(c.DELETE)).ok
+            if ok:
+                log.info("Removing from %s cache", str(self.__class__.__name__))
+                self.__class__.CACHE.pop(self)
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"deleting {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
+        return ok
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
@@ -422,7 +441,7 @@ def get_list(endpoint: pf.Platform) -> dict[str, User]:
     :return: The list of users
     """
     log.info("Listing users")
-    return search(endpoint).items()
+    return search(endpoint)
 
 
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
