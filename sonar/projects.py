@@ -1079,9 +1079,10 @@ class Project(components.Component):
 
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
-            ai = self.get_ai_code_assurance()
-            contains_ai = ai is not None and ai != "NONE"
-            json_data[_CONTAINS_AI_CODE] = contains_ai
+            if self.endpoint.version() >= (10, 7, 0) and self.endpoint.edition() != "community":
+                ai = self.get_ai_code_assurance()
+                contains_ai = ai is not None and ai != "NONE"
+                json_data[_CONTAINS_AI_CODE] = contains_ai
             for s in settings_dict.values():
                 if not export_settings.get("INCLUDE_INHERITED", False) and s.inherited:
                     continue
