@@ -64,7 +64,8 @@ def test_no_scanner_context() -> None:
     """test_no_scanner_context"""
     tutil.start_logging()
     task = tasks.search_last(component_key="project1", endpoint=tutil.SQ, type="REPORT")
-    assert task.scanner_context() is None
+    if tutil.SQ.version() >= (10, 0, 0):
+        assert task.scanner_context() is None
     settings = {}
     task.audit(settings)
 
