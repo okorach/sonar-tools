@@ -128,7 +128,7 @@ def test_export() -> None:
 def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """test_add_remove_rules"""
     qp = get_test_qp
-    RULE1, RULE2, RULE3 = "python:S6542", "python:FunctionComplexity", "python:S139"
+    RULE1, RULE2, RULE3 = "python:S1142", "python:FunctionComplexity", "python:S139"
     ruleset = {RULE1: "MAJOR", RULE2: "MAJOR"}
     qp.activate_rules(ruleset)
     qp_rules = qp.rules()
@@ -148,7 +148,7 @@ def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]
 
     assert qp.set_parent("Sonar way")
     rulecount = len(qp.rules())
-    assert rulecount > 250
+    assert rulecount > 250 if util.SQ.version() >= (10, 0, 0) else 200
 
     assert qp.deactivate_rule(RULE3)
     assert len(qp.rules()) == rulecount - 1
