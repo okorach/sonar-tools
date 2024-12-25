@@ -124,7 +124,7 @@ class User(sqobject.SqObject):
         if is_local:
             params["password"] = password if password else login
         try:
-            endpoint.post(User.API[c.CREATE], params=params)
+            endpoint.post(User.api_for(c.CREATE, endpoint), params=params)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"creating user '{login}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(login, util.sonar_error(e.response))
@@ -188,7 +188,7 @@ class User(sqobject.SqObject):
                 self.last_login = max(dt1, dt2)
             self.id = data["id"]
         self.__tokens = None
-        self._groups = self.groups(data)  #: User groups
+        self._groups = self.groups(data)
         self.sq_json = data
 
     def groups(self, data: types.ApiPayload = None, **kwargs) -> types.KeyList:
@@ -200,7 +200,9 @@ class User(sqobject.SqObject):
             data = json.loads(self.get(_GROUPS_API_SC, self.api_params(c.GET)).text)["groups"]
             self._groups = [g["name"] for g in data]
         elif self.endpoint.version() < (10, 4, 0):
-            self._groups = data.get("groups", [])  #: User groups
+            if data is None:
+                data = self.sq_json
+            self._groups = data.get("groups", [])
         else:
             data = json.loads(self.get(User.API["GROUP_MEMBERSHIPS"], {"userId": self.id, "pageSize": 500}).text)["groupMemberships"]
             log.debug("Groups = %s", str(data))
