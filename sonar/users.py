@@ -448,7 +448,8 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, U
     :rtype: dict{login: User}
     """
     log.debug("Searching users with params %s", str(params))
-    return dict(sorted(sqobject.search_objects(endpoint=endpoint, object_class=User, params=params, api_version=2).items()))
+    api_version = 2 if endpoint.version() >= (10, 4, 0) else 1
+    return dict(sorted(sqobject.search_objects(endpoint=endpoint, object_class=User, params=params, api_version=api_version).items()))
 
 
 def get_list(endpoint: pf.Platform) -> dict[str, User]:
