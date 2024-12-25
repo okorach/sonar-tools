@@ -635,7 +635,6 @@ class Project(components.Component):
         """Returns whether this project is enabled for AI Code Fix (if only enabled per project)"""
         log.debug("Getting project AI Code Fix suggestion flag for %s", str(self))
         global_setting = settings.Setting.read(key=settings.AI_CODE_FIX, endpoint=self.endpoint)
-        log.debug("Global Setting = %s JSON = %s", str(global_setting.value), util.json_dump(self.sq_json))
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
@@ -1485,6 +1484,9 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
         if key_list is None or len(key_list) == 0 or not use_cache:
             log.info("Listing projects")
             p_list = dict(sorted(search(endpoint=endpoint).items()))
+            global_setting = settings.Setting.read(key=settings.AI_CODE_FIX, endpoint=endpoint)
+            if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
+                return p_list
             for d in sqobject.get_paginated(
                 endpoint=endpoint, api="components/search_projects", params={"filter": "qualifier=TRK"}, return_field="components"
             )["components"]:
