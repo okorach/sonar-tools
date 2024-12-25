@@ -77,6 +77,7 @@ _IMPORTABLE_PROPERTIES = (
     "visibility",
     "qualityGate",
     "webhooks",
+    "aiCodeFix",
 )
 
 _UNNEEDED_CONTEXT_DATA = (
@@ -631,8 +632,8 @@ class Project(components.Component):
         return self._revision
 
     def ai_code_fix(self) -> Optional[str]:
-        """Returns whether this porject is enabled for AI Code Fix (if only enabled per project)"""
-        log.debug("Getting project AI Code Fix suggestion flag")
+        """Returns whether this project is enabled for AI Code Fix (if only enabled per project)"""
+        log.debug("Getting project AI Code Fix suggestion flag for %s", str(self))
         global_setting = settings.Setting.read(key=settings.AI_CODE_FIX, endpoint=self.endpoint)
         log.debug("Global Setting = %s JSON = %s", str(global_setting.value), util.json_dump(self.sq_json))
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
@@ -643,7 +644,6 @@ class Project(components.Component):
             p_data = next((p for p in data["components"] if p["key"] == self.key), None)
             if p_data:
                 self.sq_json.update(p_data)
-        log.debug("RETURNING = %s", str(self.sq_json.get("isAiCodeFixEnabled", None)))
         return self.sq_json.get("isAiCodeFixEnabled", None)
 
     def __audit_scanner(self, audit_settings: types.ConfigSettings) -> list[Problem]:
@@ -1484,7 +1484,13 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 or not use_cache:
             log.info("Listing projects")
-            return dict(sorted(search(endpoint=endpoint).items()))
+            p_list = dict(sorted(search(endpoint=endpoint).items()))
+            for d in sqobject.get_paginated(
+                endpoint=endpoint, api="components/search_projects", params={"filter": "qualifier=TRK"}, return_field="components"
+            )["components"]:
+                if d["key"] in p_list:
+                    p_list[d["key"]].sq_json.update(d)
+            return p_list
     return {key: Project.get_object(endpoint, key) for key in sorted(key_list)}
 
 
