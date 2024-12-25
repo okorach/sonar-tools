@@ -26,7 +26,7 @@ from collections.abc import Generator
 import pytest
 
 import utilities as util
-from sonar import projects, applications, portfolios, qualityprofiles, exceptions, logging, issues, users, groups
+from sonar import projects, applications, portfolios, qualityprofiles, qualitygates, exceptions, logging, issues, users, groups
 
 TEMP_FILE_ROOT = f"temp.{os.getpid()}"
 CSV_FILE = f"{TEMP_FILE_ROOT}.csv"
@@ -208,6 +208,19 @@ def get_test_application() -> Generator[applications.Application]:
         o = applications.Application.get_object(endpoint=util.SQ, key=util.TEMP_KEY)
     except exceptions.ObjectNotFound:
         o = applications.Application.create(endpoint=util.SQ, key=util.TEMP_KEY, name=util.TEMP_KEY)
+    yield o
+    try:
+        o.delete()
+    except exceptions.ObjectNotFound:
+        pass
+
+
+@pytest.fixture
+def get_test_quality_gate() -> Generator[qualitygates.QualityGate]:
+    """setup of tests"""
+    util.start_logging()
+    sonar_way = qualitygates.QualityGate.get_object(util.SQ, "Sonar way")
+    o = sonar_way.copy(util.TEMP_KEY)
     yield o
     try:
         o.delete()

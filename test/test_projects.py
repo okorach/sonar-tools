@@ -25,7 +25,7 @@ from collections.abc import Generator
 
 import pytest
 
-from sonar import projects, exceptions, qualityprofiles
+from sonar import projects, exceptions, qualityprofiles, qualitygates
 from sonar.audit import config
 
 import utilities as util
@@ -102,7 +102,8 @@ def test_get_findings() -> None:
 def test_count_third_party_issues() -> None:
     """test_count_third_party_issues"""
     proj = projects.Project.get_object(endpoint=util.SQ, key="checkstyle-issues")
-    assert len(proj.count_third_party_issues(filters={"branch": "develop"})) > 0
+    if util.SQ.version() >= (10, 0, 0):
+        assert len(proj.count_third_party_issues(filters={"branch": "develop"})) > 0
     assert len(proj.count_third_party_issues(filters={"branch": "non-existing-branch"})) == 0
 
 
@@ -135,6 +136,7 @@ def test_already_exists() -> None:
 
 def test_binding() -> None:
     """test_binding"""
+    util.start_logging()
     proj = projects.Project.get_object(util.SQ, util.TEST_KEY)
     assert proj.has_binding()
     assert proj.binding() is not None
@@ -183,15 +185,16 @@ def test_set_tags(get_test_project: callable) -> None:
     assert not proj.set_tags(None)
 
 
-def test_set_quality_gate(get_test_project: callable) -> None:
+def test_set_quality_gate(get_test_project: Generator[projects.Project], get_test_quality_gate: Generator[qualitygates.QualityGate]) -> None:
     """test_set_quality_gate"""
     proj = get_test_project
-    assert proj.set_quality_gate(util.EXISTING_QG)
+    qg = get_test_quality_gate
+    assert proj.set_quality_gate(qg.name)
     assert not proj.set_quality_gate(None)
     assert not proj.set_quality_gate(util.NON_EXISTING_KEY)
 
     proj.key = util.NON_EXISTING_KEY
-    assert not proj.set_quality_gate(util.EXISTING_QG)
+    assert not proj.set_quality_gate(qg.name)
 
 
 def test_ai_code_assurance(get_test_project: Generator[projects.Project]) -> None:
