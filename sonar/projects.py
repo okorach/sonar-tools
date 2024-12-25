@@ -638,9 +638,7 @@ class Project(components.Component):
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
-            data = sqobject.get_paginated(
-                endpoint=self.endpoint, api="components/search_projects", params={"filter": "qualifier=TRK"}, return_field="components"
-            )
+            data = self.endpoint.get_paginated(api="components/search_projects", params={"filter": "qualifier=TRK"}, return_field="components")
             p_data = next((p for p in data["components"] if p["key"] == self.key), None)
             if p_data:
                 self.sq_json.update(p_data)
@@ -1488,9 +1486,9 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
             global_setting = settings.Setting.read(key=settings.AI_CODE_FIX, endpoint=endpoint)
             if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
                 return p_list
-            for d in sqobject.get_paginated(
-                endpoint=endpoint, api="components/search_projects", params={"filter": "qualifier=TRK"}, return_field="components"
-            )["components"]:
+            for d in endpoint.get_paginated(api="components/search_projects", params={"filter": "qualifier=TRK"}, return_field="components")[
+                "components"
+            ]:
                 if d["key"] in p_list:
                     p_list[d["key"]].sq_json.update(d)
             return p_list
