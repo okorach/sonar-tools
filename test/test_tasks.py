@@ -22,8 +22,7 @@
 """ Test of the tasks module and class """
 
 import utilities as tutil
-from sonar import tasks, logging
-from sonar import utilities as util
+from sonar import tasks
 
 
 def test_task() -> None:
@@ -63,6 +62,7 @@ def test_audit() -> None:
 
 def test_no_scanner_context() -> None:
     """test_no_scanner_context"""
+    tutil.start_logging()
     task = tasks.search_last(component_key="project1", endpoint=tutil.SQ, type="REPORT")
     assert task.scanner_context() is None
     settings = {}

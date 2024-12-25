@@ -199,16 +199,17 @@ def test_set_quality_gate(get_test_project: Generator[projects.Project], get_tes
 
 def test_ai_code_assurance(get_test_project: Generator[projects.Project]) -> None:
     """test_set_ai_code_assurance"""
-    proj = get_test_project
-    assert proj.set_contains_ai_code(True)
-    assert proj.get_ai_code_assurance() in ("CONTAINS_AI_CODE", "AI_CODE_ASSURED")
-    assert proj.set_contains_ai_code(False)
-    assert proj.get_ai_code_assurance() == "NONE"
-    proj.key = util.NON_EXISTING_KEY
-    assert not proj.set_contains_ai_code(True)
-    assert proj.get_ai_code_assurance() is None
-    assert not proj.set_contains_ai_code(False)
-    assert proj.get_ai_code_assurance() is None
+    if util.SQ.version() >= (10, 7, 0):
+        proj = get_test_project
+        assert proj.set_contains_ai_code(True)
+        assert proj.get_ai_code_assurance() in ("CONTAINS_AI_CODE", "AI_CODE_ASSURED")
+        assert proj.set_contains_ai_code(False)
+        assert proj.get_ai_code_assurance() == "NONE"
+        proj.key = util.NON_EXISTING_KEY
+        assert not proj.set_contains_ai_code(True)
+        assert proj.get_ai_code_assurance() is None
+        assert not proj.set_contains_ai_code(False)
+        assert proj.get_ai_code_assurance() is None
 
 
 def test_set_quality_profile(get_test_project: Generator[projects.Project], get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:

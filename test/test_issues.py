@@ -28,15 +28,19 @@ from sonar import utilities as util
 from sonar.util import constants as c
 
 
-ISSUE_WITH_CHANGELOG = "402452b7-fd3a-4487-97cc-1c996697b397"
-ISSUE_2 = "a1fddba4-9e70-46c6-ac95-e815104ead59"
+ISSUE_FP = "402452b7-fd3a-4487-97cc-1c996697b397"
+ISSUE_FP_V9_9 = "AZNT89kklhFmauJ_HQSK"
+ISSUE_ACCEPTED = "a1fddba4-9e70-46c6-ac95-e815104ead59"
+ISSUE_ACCEPTED_V9_9 = "AZI6frkTuTfDeRt_hspx"
 
 
 def test_issue() -> None:
     """Test issues"""
+    issue_key = ISSUE_FP if tutil.SQ.version() >= (10, 0, 0) else ISSUE_FP_V9_9
+    issue_key_accepted = ISSUE_ACCEPTED if tutil.SQ.version() >= (10, 0, 0) else ISSUE_ACCEPTED_V9_9
     issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
-    assert ISSUE_WITH_CHANGELOG in issues_d
-    issue = issues_d[ISSUE_WITH_CHANGELOG]
+
+    issue = issues_d[issue_key]
     assert not issue.is_security_issue()
     assert not issue.is_hotspot()
     assert not issue.is_accepted()
@@ -47,12 +51,12 @@ def test_issue() -> None:
     assert not issue.is_wont_fix()
     assert issue.is_false_positive()
     assert issue.refresh()
-    assert issue.api_params(c.LIST) == {"issues": ISSUE_WITH_CHANGELOG}
-    assert issue.api_params(c.SET_TAGS) == {"issue": ISSUE_WITH_CHANGELOG}
-    assert issue.api_params(c.GET_TAGS) == {"issues": ISSUE_WITH_CHANGELOG}
+    assert issue.api_params(c.LIST) == {"issues": issue_key}
+    assert issue.api_params(c.SET_TAGS) == {"issue": issue_key}
+    assert issue.api_params(c.GET_TAGS) == {"issues": issue_key}
 
-    assert ISSUE_2 in issues_d
-    issue2 = issues_d[ISSUE_2]
+    assert issue_key_accepted in issues_d
+    issue2 = issues_d[issue_key_accepted]
     assert not issue.almost_identical_to(issue2)
 
 
@@ -124,10 +128,11 @@ def test_assign() -> None:
 def test_changelog() -> None:
     """Test changelog"""
     issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
-    assert ISSUE_WITH_CHANGELOG in issues_d
-    issue = issues_d[ISSUE_WITH_CHANGELOG]
-    assert issue.key == ISSUE_WITH_CHANGELOG
-    assert str(issue) == f"Issue key '{ISSUE_WITH_CHANGELOG}'"
+    issue_key = ISSUE_FP if tutil.SQ.version() >= (10, 0, 0) else ISSUE_FP_V9_9
+    assert issue_key in issues_d
+    issue = issues_d[issue_key]
+    assert issue.key == issue_key
+    assert str(issue) == f"Issue key '{issue_key}'"
     assert issue.is_false_positive()
     changelog_l = list(issue.changelog().values())
     assert len(changelog_l) == 1
@@ -150,7 +155,7 @@ def test_changelog() -> None:
     assert not changelog.is_assignment()
     assert changelog.new_assignee() is None
     assert changelog.old_assignee() is None
-    assert datetime(2024, 10, 20) <= util.string_to_date(changelog.date()).replace(tzinfo=None) < datetime(2024, 10, 22)
+    assert datetime(2024, 10, 20) <= util.string_to_date(changelog.date()).replace(tzinfo=None) < datetime(2024, 12, 26)
     assert changelog.author() == "admin"
     assert not changelog.is_tag()
     assert changelog.get_tags() is None
