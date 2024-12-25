@@ -401,7 +401,7 @@ class Platform(object):
             params_string = "&".join([f"{k}={requests.utils.quote(str(v))}" for k, v in good_params.items()])
             if len(params_string) > 0:
                 url += f"?{params_string}"
-        if data is not None:
+        if data is not None and len(data) > 0:
             url += f" - BODY: {data}"
         return url
 

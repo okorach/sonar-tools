@@ -77,17 +77,15 @@ def test_migration(get_json_file: Generator[str]) -> None:
     assert json_config["users"]["olivier"]["externalProvider"] == "sonarqube"
 
     GH_USER = "olivier-korach65532"
-    GL_USER = "olivier-korach22656"
+    GL_USER = "olivier-korach22656" if util.SQ.version() > (10, 0, 0) else "olivier-korach82556"
     USER = GL_USER
     u = json_config["users"][USER]
     assert u["name"] == "Olivier Korach"
     assert not u["local"]
+    assert u["externalProvider"] == ("gitlab" if USER == GL_USER else "github")
     if util.SQ.version() >= (10, 0, 0):
-        assert u["externalProvider"] == ("gitlab" if USER == GL_USER else "github")
         assert u["externalLogin"] == "okorach"
         assert u["email"] == "olivier.korach@gmail.com"
-    else:
-        assert u["externalProvider"] == "sonarqube"
 
     p = json_config["projects"]["okorach_sonar-tools"]
     assert "lastTaskScannerContext" in p["backgroundTasks"]
@@ -109,11 +107,11 @@ def test_migration(get_json_file: Generator[str]) -> None:
     assert p["branches"]["master"]["hotspots"]["acknowledged"] == 0
 
     p = json_config["projects"]["checkstyle-issues"]
-    assert len(p["branches"]["main"]["issues"]["thirdParty"]) > 0
 
     if util.SQ.version() >= (10, 0, 0):
         assert json_config["projects"]["demo:gitlab-ci-maven"]["detectedCi"] == "Gitlab CI"
         assert json_config["projects"]["demo:github-actions-cli"]["detectedCi"] == "Github Actions"
+        assert len(p["branches"]["main"]["issues"]["thirdParty"]) > 0
 
     for p in json_config["portfolios"].values():
         assert "projects" in p

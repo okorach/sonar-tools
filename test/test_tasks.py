@@ -22,8 +22,7 @@
 """ Test of the tasks module and class """
 
 import utilities as tutil
-from sonar import tasks, logging
-from sonar import utilities as util
+from sonar import tasks
 
 
 def test_task() -> None:
@@ -34,7 +33,10 @@ def test_task() -> None:
     task.sq_json = None
     task._load()
     assert task.sq_json is not None
-    assert len(task.id()) == 36
+    if tutil.SQ.version() >= (10, 0, 0):
+        assert len(task.id()) == 36
+    else:
+        assert len(task.id()) == 20
     assert task.status() == tasks.SUCCESS
     assert 100 <= task.execution_time() <= 100000
     assert task.submitter() == "admin"
@@ -60,8 +62,10 @@ def test_audit() -> None:
 
 def test_no_scanner_context() -> None:
     """test_no_scanner_context"""
+    tutil.start_logging()
     task = tasks.search_last(component_key="project1", endpoint=tutil.SQ, type="REPORT")
-    assert task.scanner_context() is None
+    if tutil.SQ.version() >= (10, 0, 0):
+        assert task.scanner_context() is None
     settings = {}
     task.audit(settings)
 

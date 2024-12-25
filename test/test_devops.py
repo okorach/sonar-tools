@@ -42,7 +42,10 @@ def test_get_object_gh() -> None:
     """test_get_object_gh"""
     plt = devops.get_object(endpoint=util.SQ, key=GH_KEY)
     assert plt.url == "https://api.github.com"
-    assert plt._specific["appId"] == "946159"
+    if util.SQ.version() >= (10, 0, 0):
+        assert plt._specific["appId"] == "946159"
+    else:
+        assert plt._specific["appId"] == "1096234"
     assert str(plt) == f"devops platform '{GH_KEY}'"
 
 

@@ -24,6 +24,7 @@
 DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 source "$DIR/it-tools.sh"
 DB_BACKUPS_DIR=~/backup
+IT_TEST_PORT=9888
 
 function backup_for {
     case $1 in
@@ -94,9 +95,10 @@ do
     else
         id="it$$"
         logmsg "Creating IT test environment $env - sonarId $id"
-        sqport=10020
+        sqport=$IT_TEST_PORT
+        pgport=$(expr $sqport - 4000)
         # echo sonar create -i $id -t "$(tag_for "$env")" -s $sqport -p 6020 -f "$(backup_for "$env")"
-        sonar create -i $id -t "$(tag_for "$env")" -s $sqport -p 6020 -f "$(backup_for "$env")" 1>$IT_LOG_FILE 2>&1
+        sonar create -i $id -t "$(tag_for "$env")" -s $sqport -p $pgport -f "$(backup_for "$env")" 1>$IT_LOG_FILE 2>&1
         export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
         export SONAR_HOST_URL="http://localhost:$sqport"
     fi
@@ -174,7 +176,11 @@ do
         logmsg "sonar-projects-export $env SKIPPED"
     else
         logmsg "=====> IT sonar-findings-export $env USER export"
-        export SONAR_TOKEN=$SONAR_TOKEN_USER_USER
+        if [ "$env" = "lts" ]; then
+            export SONAR_TOKEN=$SONAR_TOKEN_USER_USER_LTS
+        else
+            export SONAR_TOKEN=$SONAR_TOKEN_USER_USER
+        fi
         f2="findings-$env-user.csv";    run_test "$f2" sonar-findings-export -v DEBUG -k okorach_audio-video-tools,okorach_sonar-tools
     fi
 
@@ -211,7 +217,7 @@ do
 
     if [ "$env" != "sonarcloud" ]; then
         logmsg "Deleting environment sonarId $id"
-        sonar delete -i "$id" 1>$IT_LOG_FILE 2>&1
+        # sonar delete -i "$id" 1>$IT_LOG_FILE 2>&1
     fi
 done
 
