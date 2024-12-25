@@ -361,7 +361,11 @@ class Platform(object):
 
     def __settings(self, settings_list: types.KeyList = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
         log.info("getting global settings")
-        return settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
+        settings_dict = settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
+        ai_code_fix = settings.Setting.read(endpoint=self, key=settings.AI_CODE_FIX)
+        if ai_code_fix:
+            settings_dict[ai_code_fix.key] = ai_code_fix
+        return settings_dict
 
     def get_setting(self, key: str) -> any:
         """Returns a platform global setting value from its key
