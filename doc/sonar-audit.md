@@ -214,6 +214,8 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - Tokens without expiration date
 - Groups: (if `audit.groups = yes`, default `yes`)
   - Empty groups
+- WebHooks:
+  - Failed webhooks deliveries
 </details>
 
 # License
