@@ -630,6 +630,22 @@ class Project(components.Component):
             self.ci()
         return self._revision
 
+    def ai_code_fix(self) -> Optional[str]:
+        """Returns whether this porject is enabled for AI Code Fix (if only enabled per project)"""
+        log.debug("Getting project AI Code Fix suggestion flag")
+        global_setting = settings.Setting.read(key=settings.AI_CODE_FIX, endpoint=self.endpoint)
+        log.debug("Global Setting = %s JSON = %s", str(global_setting.value), util.json_dump(self.sq_json))
+        if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
+            return None
+        if "isAiCodeFixEnabled" not in self.sq_json:
+            r = self.get("components/search_projects")
+            data = json.loads(r.text)
+            p_data = next((p for p in data["components"] if p["key"] == self.key), None)
+            if p_data:
+                self.sq_json.update(p_data)
+        log.debug("RETURNING = %s", str(self.sq_json.get("isAiCodeFixEnabled", None)))
+        return self.sq_json.get("isAiCodeFixEnabled", None)
+
     def __audit_scanner(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
@@ -1058,6 +1074,7 @@ class Project(components.Component):
             json_data["qualityProfiles"] = self.__export_get_qp()
             json_data["links"] = self.links()
             json_data["permissions"] = self.permissions().to_json(csv=export_settings.get("INLINE_LISTS", True))
+            json_data["aiCodeFix"] = self.ai_code_fix()
             json_data["branches"] = self.__get_branch_export(export_settings)
             json_data["tags"] = self.get_tags()
             json_data["visibility"] = self.visibility()

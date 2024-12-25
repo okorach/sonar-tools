@@ -59,6 +59,7 @@ CATEGORIES = (
 NEW_CODE_PERIOD = "newCodePeriod"
 COMPONENT_VISIBILITY = "visibility"
 PROJECT_DEFAULT_VISIBILITY = "projects.default.visibility"
+AI_CODE_FIX = "sonar.ai.suggestions.enabled"
 
 DEFAULT_BRANCH = "-DEFAULT_BRANCH-"
 
@@ -292,7 +293,7 @@ class Setting(sqobject.SqObject):
         if self.component:
             return False
         if self._is_global is None:
-            self._is_global = self.definition() is not None
+            self._is_global = self.definition() is not None or self.key == AI_CODE_FIX
         return self._is_global
 
     def is_internal(self) -> bool:
@@ -354,7 +355,7 @@ class Setting(sqobject.SqObject):
         if m:
             return (AUTH_SETTINGS, None)
         if self.key not in (NEW_CODE_PERIOD, PROJECT_DEFAULT_VISIBILITY, COMPONENT_VISIBILITY) and not re.match(
-            r"^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.core|"
+            r"^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.ai|"
             r"sonar\.cpd|sonar\.dbcleaner|sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|"
             r"sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.scm\.provider|sonar\.technicalDebt|sonar\.validateWebhooks|"
             r"sonar\.docker|sonar\.login|sonar\.kubernetes|sonar\.plugins|sonar\.documentation|sonar\.projectCreation|"
