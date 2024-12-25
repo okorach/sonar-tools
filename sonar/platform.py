@@ -268,6 +268,20 @@ class Platform(object):
             util.handle_error(e, "")
         return r
 
+    def get_paginated(self, api: str, return_field: str, params: types.ApiParams = None) -> types.ObjectJsonRepr:
+        """Returns all pages of a paginated API"""
+        new_params = {} if params is None else params.copy()
+        new_params["ps"] = 500
+        new_params["p"] = 1
+        data = json.loads(self.get(api, params=new_params).text)
+        nb_pages = util.nbr_pages(data, api_version=1)
+        if nb_pages == 1:
+            return data
+        for page in range(2, nb_pages + 1):
+            new_params["p"] = page
+            data[return_field].update(json.loads(self.get(api, params=new_params).text)[return_field])
+        return data
+
     def global_permissions(self) -> dict[str, any]:
         """Returns the SonarQube platform global permissions
 
@@ -938,11 +952,3 @@ def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs) ->
     if "write_q" in kwargs:
         kwargs["write_q"].put(pbs)
     return pbs
-
-
-def log_and_exit(exception: Exception) -> None:
-    """If HTTP response is not OK, display an error log and exit"""
-    err_code, msg = util.http_error_and_code(exception)
-    if err_code is None:
-        return
-    util.exit_fatal(msg, err_code)
