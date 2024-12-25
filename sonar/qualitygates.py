@@ -259,7 +259,7 @@ class QualityGate(sq.SqObject):
 
     def copy(self, new_qg_name: str) -> QualityGate:
         """Copies the QG into another one with name new_qg_name"""
-        data = json.loads(self.post("qualitygates/copy", params={"id": self.key, "name": new_qg_name}).text)
+        data = json.loads(self.post("qualitygates/copy", params={"sourceName": self.name, "name": new_qg_name}).text)
         return QualityGate(self.endpoint, name=new_qg_name, data=data)
 
     def set_as_default(self) -> bool:
