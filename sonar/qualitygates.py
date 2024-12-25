@@ -257,6 +257,11 @@ class QualityGate(sq.SqObject):
         """
         return self.permissions().set(permissions_list)
 
+    def copy(self, new_qg_name: str) -> QualityGate:
+        """Copies the QG into another one with name new_qg_name"""
+        data = json.loads(self.post("qualitygates/copy", params={"id": self.key, "name": new_qg_name}).text)
+        return QualityGate(self.endpoint, name=new_qg_name, data=data)
+
     def set_as_default(self) -> bool:
         """Sets the quality gate as the default
         :return: Whether setting as default quality gate was successful
