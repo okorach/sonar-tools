@@ -938,11 +938,3 @@ def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs) ->
     if "write_q" in kwargs:
         kwargs["write_q"].put(pbs)
     return pbs
-
-
-def log_and_exit(exception: Exception) -> None:
-    """If HTTP response is not OK, display an error log and exit"""
-    err_code, msg = util.http_error_and_code(exception)
-    if err_code is None:
-        return
-    util.exit_fatal(msg, err_code)
