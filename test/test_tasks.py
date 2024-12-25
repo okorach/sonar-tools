@@ -34,7 +34,10 @@ def test_task() -> None:
     task.sq_json = None
     task._load()
     assert task.sq_json is not None
-    assert len(task.id()) == 36
+    if tutil.SQ.version() >= (10, 0, 0):
+        assert len(task.id()) == 36
+    else:
+        assert len(task.id()) == 20
     assert task.status() == tasks.SUCCESS
     assert 100 <= task.execution_time() <= 100000
     assert task.submitter() == "admin"
