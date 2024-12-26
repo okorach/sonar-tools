@@ -458,6 +458,9 @@ def sonar_error(response: requests.models.Response) -> str:
         json_res = json.loads(response.text)
         if "errors" in json_res:
             return " | ".join([e["msg"] for e in json.loads(response.text)["errors"]])
+        elif "message" in json_res:
+            # API v2 format
+            return json_res["message"]
         else:
             log.debug("No error found in Response %s", json_dump(json_res))
     except json.decoder.JSONDecodeError:
