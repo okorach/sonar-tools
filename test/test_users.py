@@ -217,7 +217,7 @@ def test_import() -> None:
     users.import_config(util.SQ, data)
     for uname in "TEMP", "TEMP_ADMIN":
         assert users.exists(endpoint=util.SQ, name=uname)
-        o_g = users.Group.get_object(endpoint=util.SQ, name=uname)
+        o_g = users.User.get_object(endpoint=util.SQ, name=uname)
         assert o_g.description == f"User name {uname}"
         o_g.delete()
 
