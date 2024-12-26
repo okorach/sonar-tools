@@ -136,7 +136,7 @@ class User(sqobject.SqObject):
 
         :param Platform endpoint: Reference to the SonarQube platform
         :param str login: User login
-        :raise ObjectNotFound: if login not found
+        :raises ObjectNotFound: if login not found
         :return: The user object
         :rtype: User
         """
@@ -148,6 +148,27 @@ class User(sqobject.SqObject):
             if k == login:
                 return o
         raise exceptions.ObjectNotFound(login, f"User '{login}' not found")
+
+    @classmethod
+    def get_object_by_id(cls, endpoint: pf.Platform, id: str) -> User:
+        """Searches a user by its (API v2) id in SonarQube
+
+        :param endpoint: Reference to the SonarQube platform
+        :param id: User id
+        :raises ObjectNotFound: if id not found
+        :raises UnsuppoertedOperation: If SonarQube version < 10.4
+        :return: The user object
+        :rtype: User
+        """
+        if endpoint.version() < (10, 4, 0):
+            raise exceptions.UnsupportedOperation("Get by ID is an APIv2 features, staring from SonarQube 10.4")
+        log.debug("Getting user id '%s'", id)
+        try:
+            data = json.loads(endpoint.get(f"/api/v2/users-management/users/{id}", mute=()).text)
+            return cls.load(endpoint, data)
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"getting user id '{id}'", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+            raise exceptions.ObjectNotFound(id, f"User id '{id}' not found")
 
     @classmethod
     def api_for(cls, op: str, endpoint: object) -> Optional[str]:

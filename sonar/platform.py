@@ -711,10 +711,9 @@ this.context = Platform(os.getenv("SONAR_HOST_URL", "http://localhost:9000"), os
 
 def _normalize_api(api: str) -> str:
     """Normalizes an API based on its multiple original forms"""
-    api = api.lower()
-    if api.startswith("/api"):
+    if api.startswith("/api/"):
         pass
-    elif api.startswith("api"):
+    elif api.startswith("api/"):
         api = "/" + api
     elif api.startswith("/"):
         api = "/api" + api

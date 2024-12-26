@@ -27,7 +27,7 @@ import pytest
 
 import utilities as util
 from sonar import exceptions
-from sonar import groups
+from sonar import groups, users
 
 GROUP1 = "sonar-users"
 GROUP2 = "sonar-administrators"
@@ -54,3 +54,96 @@ def test_more_than_50_groups(get_60_groups: Generator[list[groups.Group]]) -> No
     new_group_list = groups.get_list(util.SQ)
     assert len(new_group_list) > 60
     assert set(new_group_list.keys()) > set(g.name for g in group_list)
+
+
+def test_read_non_existing() -> None:
+    with pytest.raises(exceptions.ObjectNotFound):
+        groups.Group.read(endpoint=util.SQ, name=util.NON_EXISTING_KEY)
+
+
+def test_create_already_exists(get_test_group: Generator[groups.Group]) -> None:
+    gr = get_test_group
+    with pytest.raises(exceptions.ObjectAlreadyExists):
+        groups.Group.create(endpoint=util.SQ, name=gr.name)
+
+
+def test_size() -> None:
+    gr = groups.Group.get_object(endpoint=util.SQ, name="sonar-users")
+    assert gr.size() > 4
+
+
+def test_url() -> None:
+    gr = groups.Group.get_object(endpoint=util.SQ, name="sonar-users")
+    assert gr.url() == f"{util.SQ.url}/admin/groups"
+
+
+def test_add_non_existing_user(get_test_group: Generator[groups.Group], get_test_user: Generator[users.User]) -> None:
+    gr = get_test_group
+    u = get_test_user
+    (uid, uname) = (u.id, u.name)
+    u.name = util.NON_EXISTING_KEY
+    u.id = util.NON_EXISTING_KEY
+    with pytest.raises(exceptions.ObjectNotFound):
+        gr.add_user(u)
+    (u.name, u.id) = (uid, uname)
+
+
+def test_remove_non_existing_user(get_test_group: Generator[groups.Group], get_test_user: Generator[users.User]) -> None:
+    util.start_logging()
+    gr = get_test_group
+    u = get_test_user
+    with pytest.raises(exceptions.ObjectNotFound):
+        gr.remove_user(u)
+    gr.add_user(u)
+    u.id = util.NON_EXISTING_KEY
+    u.login = util.NON_EXISTING_KEY
+    with pytest.raises(exceptions.ObjectNotFound):
+        gr.remove_user(u)
+
+
+def test_audit_empty(get_test_group: Generator[groups.Group]) -> None:
+    gr = get_test_group
+    settings = {"audit.groups.empty": True}
+    assert len(gr.audit(settings)) == 1
+
+
+def test_to_json(get_test_group: Generator[groups.Group]) -> None:
+    gr = get_test_group
+    json_data = gr.to_json()
+    assert json_data["name"] == util.TEMP_KEY
+    assert "description" not in json_data
+
+    assert gr.set_description("A test group")
+    json_data = gr.to_json()
+    assert json_data["description"] == "A test group"
+
+    assert not gr.set_description(None)
+    assert json_data["description"] == "A test group"
+
+    if util.SQ.version() >= (10, 4, 0):
+        assert "id" in gr.to_json(True)
+
+
+def test_import() -> None:
+    data = {}
+    groups.import_config(util.SQ, data)
+    data = {
+        "groups": {
+            "Group1": "This is Group1",
+            "Group2": "This is Group2",
+            "Group3": "This is Group3",
+        }
+    }
+    groups.import_config(util.SQ, data)
+    for g in "Group1", "Group2", "Group3":
+        assert groups.exists(endpoint=util.SQ, name=g)
+        o_g = groups.Group.get_object(endpoint=util.SQ, name=g)
+        assert o_g.description == f"This is {g}"
+        o_g.delete()
+
+
+def test_convert_yaml() -> None:
+    data = groups.export(util.SQ, {})
+    yaml_list = groups.convert_for_yaml(data)
+    assert len(yaml_list) == len(data)
+    assert len(yaml_list[0]) == 2
