@@ -139,15 +139,20 @@ def get_test_issue() -> Generator[issues.Issue]:
 @pytest.fixture
 def get_test_user() -> Generator[users.User]:
     """setup of tests"""
-    logging.set_logger(util.TEST_LOGFILE)
-    logging.set_debug_level("DEBUG")
+    util.start_logging()
     try:
         o = users.User.get_object(endpoint=util.SQ, login=util.TEMP_KEY)
     except exceptions.ObjectNotFound:
         o = users.User.create(endpoint=util.SQ, login=util.TEMP_KEY, name=f"User name {util.TEMP_KEY}")
+    (uid, uname, ulogin) = (o.name, o.id, o.login)
     _ = [o.remove_from_group(g) for g in o.groups() if g != "sonar-users"]
     yield o
-    _ = [o.remove_from_group(g) for g in o.groups() if g != "sonar-users"]
+    try:
+        (o.name, o.id, o.login) = (uid, uname, ulogin)
+        _ = [o.remove_from_group(g) for g in o.groups() if g != "sonar-users"]
+        o.delete()
+    except exceptions.ObjectNotFound:
+        pass
 
 
 def rm(file: str) -> None:
@@ -221,6 +226,21 @@ def get_test_quality_gate() -> Generator[qualitygates.QualityGate]:
     util.start_logging()
     sonar_way = qualitygates.QualityGate.get_object(util.SQ, "Sonar way")
     o = sonar_way.copy(util.TEMP_KEY)
+    yield o
+    try:
+        o.delete()
+    except exceptions.ObjectNotFound:
+        pass
+
+
+@pytest.fixture
+def get_test_group() -> Generator[groups.Group]:
+    """setup of tests"""
+    util.start_logging()
+    try:
+        o = groups.Group.get_object(endpoint=util.SQ, name=util.TEMP_KEY)
+    except exceptions.ObjectNotFound:
+        o = groups.Group.create(endpoint=util.SQ, name=util.TEMP_KEY)
     yield o
     try:
         o.delete()
