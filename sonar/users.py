@@ -269,9 +269,8 @@ class User(sqobject.SqObject):
         :type email: str, optional
         :param login: New login of the user
         :type login: str, optional
-        :param KeyList groups: List of groups to add membership
-        :param scm_accounts: List of SCM accounts
-        :type scm_accounts: list[str], optional
+        :param groups: List of groups to add membership
+        :param scmAccounts: List of SCM accounts
         :return: self
         :rtype: User
         """
