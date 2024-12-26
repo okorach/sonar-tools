@@ -460,7 +460,7 @@ def exists(endpoint: pf.Platform, name: str) -> bool:
     :param group_name: group name to check
     :return: whether the group exists
     """
-    return Group.get_object(name=name, endpoint=endpoint) is not None
+    return Group.get_object(endpoint=endpoint, name=name) is not None
 
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
