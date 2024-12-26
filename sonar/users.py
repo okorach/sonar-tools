@@ -200,7 +200,7 @@ class User(sqobject.SqObject):
             self.nb_tokens = data.get("tokenCount", None)  #: Nbr of tokens - read-only
         else:
             dt1 = util.string_to_date(data.get("sonarQubeLastConnectionDate", None))
-            dt2 = util.string_to_date(data.get("sonarQubeLastConnectionDate", None))
+            dt2 = util.string_to_date(data.get("sonarLintLastConnectionDate", None))
             if not dt1:
                 self.last_login = dt2
             elif not dt2:
