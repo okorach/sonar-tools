@@ -89,8 +89,8 @@ def test_remove_from_group(get_test_user: Generator[users.User]) -> None:
         user.remove_from_group("non-existing-group")
 
 
-def test_set_groups(get_test_user: Generator[users.User]) -> None:
-    """test_set_groups"""
+def test_set_groups_2(get_test_user: Generator[users.User]) -> None:
+    """test_set_groups_2"""
     user = get_test_user
     # TODO(@okorach): Pick groups that exist in SonarQube
     groups = ["quality-managers", "tech-leads"]
@@ -116,10 +116,6 @@ def test_scm_accounts(get_test_user: Generator[users.User]) -> None:
     assert sorted(user.scm_accounts) == sorted(scm_2)
     user.add_scm_accounts(scm_1)
     assert sorted(user.scm_accounts) == sorted(list(set(scm_1) | set(scm_2)))
-
-
-def test_double_match(get_test_user: Generator[users.User]) -> None:
-    """test_scm_accounts"""
 
 
 def test_audit_user() -> None:
@@ -169,3 +165,63 @@ def test_more_than_50_users(get_60_users: Generator[list[users.User]]) -> None:
     new_user_list = users.get_list(util.SQ)
     assert len(new_user_list) > 60
     assert set(new_user_list.keys()) > set(u.name for u in user_list)
+
+
+def test_update(get_test_user: Generator[users.User]) -> None:
+    # test_update
+    user = get_test_user
+    assert user.groups() == ["sonar-users"]
+    assert user.login == util.TEMP_KEY
+    assert user.name == f"User name {util.TEMP_KEY}"
+
+    user.update(groups=["sonar-administrators"])
+    assert sorted(user.groups()) == ["sonar-administrators", "sonar-users"]
+
+    assert user.scm_accounts is None
+
+    user.update(scmAccounts=["foo@gmail.com", "bar@gmail.com", "foo", "bar"])
+    assert sorted(user.scm_accounts) == sorted(["foo@gmail.com", "bar@gmail.com", "foo", "bar"])
+
+    user.update(login="johndoe")
+    assert user.login == "johndoe"
+
+    user.update(name="John Doe", email="john@doe.com")
+    assert user.name == "John Doe"
+    assert user.email == "john@doe.com"
+
+
+def test_set_groups(get_test_user: Generator[users.User]) -> None:
+    user = get_test_user
+    user.set_groups(["sonar-administrators", "language-experts"])
+    assert sorted(user.groups()) == sorted(["sonar-administrators", "language-experts"])
+
+    user.set_groups(["language-experts", "security-auditors", "developers"])
+    assert sorted(user.groups()) == sorted(["language-experts", "security-auditors", "developers"])
+
+
+def test_import() -> None:
+    data = {}
+    users.import_config(util.SQ, data)
+    data = {
+        "users": {
+            "TEMP": {"local": True, "name": "User name TEMP", "scmAccounts": "temp@acme.com, temp@gmail.com"},
+            "TEMP_ADMIN": {
+                "email": "admin@acme.com",
+                "groups": "sonar-administrators",
+                "local": True,
+                "name": "User name TEMP_ADMIN",
+                "scmAccounts": "admin-acme, administrator-acme",
+            },
+        }
+    }
+    users.import_config(util.SQ, data)
+    for uname in "TEMP", "TEMP_ADMIN":
+        assert users.exists(endpoint=util.SQ, name=uname)
+        o_g = users.Group.get_object(endpoint=util.SQ, name=uname)
+        assert o_g.description == f"User name {uname}"
+        o_g.delete()
+
+
+def test_deactivate(get_test_user: Generator[users.User]) -> None:
+    user = get_test_user
+    assert user.deactivate()
