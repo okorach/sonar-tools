@@ -152,7 +152,7 @@ class SqObject(object):
             ok = self.post(api=self.__class__.API[c.DELETE], params=self.api_params(c.DELETE)).ok
             if ok:
                 log.info("Removing from %s cache", str(self.__class__.__name__))
-                self.__class__.CACHE.pop(self)
+                self.__class__.CACHE.pop(self, None)
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"deleting {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
