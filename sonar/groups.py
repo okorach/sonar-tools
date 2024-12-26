@@ -200,7 +200,6 @@ class Group(sq.SqObject):
         if self.__members is None or not use_cache:
             if self.endpoint.version() >= (10, 4, 0):
                 data = json.loads(self.get(MEMBERSHIP_API, params={"groupId": self.id}).text)["groupMemberships"]
-                log.debug("MEMBER DATA = %s", util.json_dump(data))
                 self.__members = [users.User.get_object_by_id(self.endpoint, d["userId"]) for d in data]
             else:
                 data = self.endpoint.get_paginated("api/user_groups/users", return_field="users", params={"name": self.name})
