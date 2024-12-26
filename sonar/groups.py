@@ -121,7 +121,6 @@ class Group(sq.SqObject):
             raise exceptions.ObjectAlreadyExists(name, util.sonar_error(e.response))
         o = cls.read(endpoint=endpoint, name=name)
         o.sq_json.update(data)
-        o.__members_count = 0
         return o
 
     @classmethod
