@@ -147,3 +147,20 @@ def test_convert_yaml() -> None:
     yaml_list = groups.convert_for_yaml(data)
     assert len(yaml_list) == len(data)
     assert len(yaml_list[0]) == 2
+
+
+def test_set_name(get_test_group: Generator[groups.Group]) -> None:
+    gr = get_test_group
+    assert gr.name == util.TEMP_KEY
+    assert not gr.set_name(gr.name)
+    assert not gr.set_name(None)
+    assert gr.name == util.TEMP_KEY
+    gr.set_name("FOOBAR")
+    assert gr.name == "FOOBAR"
+
+
+def test_create_or_update(get_test_group: Generator[groups.Group]) -> None:
+    gr = get_test_group
+    gr2 = groups.create_or_update(util.SQ, gr.name, "Some new group description")
+    assert gr2 is gr
+    assert gr.description == "Some new group description"

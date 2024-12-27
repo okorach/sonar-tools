@@ -200,7 +200,6 @@ class Group(sq.SqObject):
         if self.__members is None or not use_cache:
             if self.endpoint.version() >= (10, 4, 0):
                 data = json.loads(self.get(MEMBERSHIP_API, params={"groupId": self.id}).text)["groupMemberships"]
-                log.debug("MEMBER DATA = %s", util.json_dump(data))
                 self.__members = [users.User.get_object_by_id(self.endpoint, d["userId"]) for d in data]
             else:
                 data = self.endpoint.get_paginated("api/user_groups/users", return_field="users", params={"name": self.name})
@@ -305,9 +304,8 @@ class Group(sq.SqObject):
     def set_description(self, description: str) -> bool:
         """Set a group description
 
-        :param str description: The new group description
+        :param description: The new group description
         :return: Whether the new description was successfully set
-        :rtype: bool
         """
         if description is None or description == self.description:
             log.debug("No description to update for %s", str(self))
@@ -324,13 +322,12 @@ class Group(sq.SqObject):
     def set_name(self, name: str) -> bool:
         """Set a group name
 
-        :param str name: The new group name
+        :param name: The new group name
         :return: Whether the new description was successfully set
-        :rtype: bool
         """
         if name is None or name == self.name:
             log.debug("No name to update for %s", str(self))
-            return True
+            return False
         log.debug("Updating %s with name = %s", str(self), name)
         if self.endpoint.version() >= (10, 4, 0):
             r = self.patch(f"{Group.API[c.UPDATE]}/{self.id}", params={"name": name})
@@ -349,7 +346,6 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, G
 
     :params Platform endpoint: Reference to the SonarQube platform
     :return: dict of groups with group name as key
-    :rtype: dict{name: Group}
     """
     return sq.search_objects(endpoint=endpoint, object_class=Group, params=params, api_version=2)
 
@@ -461,7 +457,7 @@ def exists(endpoint: pf.Platform, name: str) -> bool:
     :param group_name: group name to check
     :return: whether the group exists
     """
-    return Group.get_object(name=name, endpoint=endpoint) is not None
+    return Group.get_object(endpoint=endpoint, name=name) is not None
 
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
