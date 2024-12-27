@@ -29,6 +29,10 @@ utReport="$buildDir/xunit-results.xml"
 
 echo "Running tests"
 export SONAR_HOST_URL=${1:-${SONAR_HOST_URL}}
+TEST_DIRS=$ROOTDIR/test/
+if [ -d "$ROOTDIR/test_lts/" ]; then
+    TEST_DIRS="$TEST_DIRS $ROOTDIR/test_lts/"
+fi
 coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test/ --junit-xml="$utReport"
 
 coverage xml -o $coverageReport
