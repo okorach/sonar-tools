@@ -189,6 +189,9 @@ def test_update(get_test_user: Generator[users.User]) -> None:
     assert user.name == "John Doe"
     assert user.email == "john@doe.com"
 
+    user.update(login="jdoe", email="john@doe.com")
+    assert user.login == "jdoe"
+
 
 def test_set_groups(get_test_user: Generator[users.User]) -> None:
     user = get_test_user
