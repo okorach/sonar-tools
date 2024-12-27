@@ -263,23 +263,19 @@ class User(sqobject.SqObject):
     def update(self, **kwargs) -> User:
         """Updates a user with name, email, login, SCM accounts, group memberships
 
-        :param name: New name of the user
-        :type name: str, optional
-        :param email: New email of the user
-        :type email: str, optional
-        :param login: New login of the user
-        :type login: str, optional
-        :param groups: List of groups to add membership
-        :param scmAccounts: List of SCM accounts
+        :param str name: Optional, New name of the user
+        :param str email: Optional, New email of the user
+        :param str login: Optional, New login of the user
+        :param list[str] groups: Optional, List of groups to add membership
+        :param list[str] scmAccounts: Optional, List of SCM accounts
         :return: self
-        :rtype: User
         """
         log.debug("Updating %s with %s", str(self), str(kwargs))
         params = self.api_params(c.UPDATE)
         my_data = vars(self)
         if self.is_local:
             params.update({k: kwargs[k] for k in ("name", "email") if k in kwargs and kwargs[k] != my_data[k]})
-            if len(params) > 1:
+            if len(params) >= 1:
                 self.post(User.API[c.UPDATE], params=params)
             if "scmAccounts" in kwargs:
                 self.set_scm_accounts(kwargs["scmAccounts"])
