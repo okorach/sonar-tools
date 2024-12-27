@@ -163,4 +163,4 @@ def test_create_or_update(get_test_group: Generator[groups.Group]) -> None:
     gr = get_test_group
     gr2 = groups.create_or_update(util.SQ, gr.name, "Some new group description")
     assert gr2 is gr
-    assert gr.name == "Some new group description"
+    assert gr.description == "Some new group description"
