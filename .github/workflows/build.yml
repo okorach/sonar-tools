@@ -44,7 +44,7 @@ jobs:
         working-directory: .
         run: |
           chmod +x conf/prep_tests.sh
-          @latest/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning/prep_tests.sh
+          conf/prep_tests.sh
 
       # - name: Run tests
       #  working-directory: .
