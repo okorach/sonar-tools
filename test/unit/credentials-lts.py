@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env python3
 #
-# sonar-tools
-# Copyright (C) 2024 Olivier Korach
+# sonar-tools tests
+# Copyright (C) 2025 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -19,24 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-ME="$( basename "${BASH_SOURCE[0]}" )"
-ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-buildDir="$ROOTDIR/build"
+from os import getenv
 
-[ ! -d $buildDir ] && mkdir $buildDir
-
-echo "Running tests"
-
-"$CONFDIR/prep_tests.sh"
-
-export SONAR_HOST_URL=${1:-${SONAR_HOST_URL}}
-
-for target in latest lts cloud
-do
-    if [ -d "$ROOTDIR/test/$target/" ]; then
-        coverage run --branch --source="$ROOTDIR" -m pytest "$ROOTDIR/test/$target/" --junit-xml="$buildDir/xunit-results-$target.xml"
-        coverage xml -o "$buildDir/coverage-$target.xml"
-    fi
-done
-
+TARGET_PLATFORM = "http://localhost:9000"
+TARGET_TOKEN = getenv("SONAR_TOKEN_LTS_ADMIN_USER")

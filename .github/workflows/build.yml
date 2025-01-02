@@ -39,13 +39,20 @@ jobs:
       # - name: Test with pytest
       #     run: |
       #       pytest
+
+      - name: Prep tests
+        working-directory: .
+        run: |
+          chmod +x conf/prep_tests.sh
+          conf/prep_tests.sh
+
       # - name: Run tests
       #  working-directory: .
       #  run: |
-      #    chmod +x ./run_tests.sh
-      #    ./run_tests.sh
-      #    echo "--------- UT report ---------"; cat build/ut.xml
-      #    echo "---------Coverage report ---------"; cat build/coverage.xml
+      #    chmod +x conf/run_tests.sh
+      #    conf/run_tests.sh
+      #    echo "--------- UT report ---------"; cat build/xunit*.xml
+      #    echo "---------Coverage report ---------"; cat build/coverage*.xml
       - name: Run linters
         working-directory: .
         run: |

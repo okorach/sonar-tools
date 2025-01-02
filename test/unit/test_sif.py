@@ -43,7 +43,7 @@ def test_audit_sif() -> None:
     """test_audit_sif"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD, "--sif", "test/sif1.json", f"--{opt.REPORT_FILE}", util.CSV_FILE]):
+        with patch.object(sys, "argv", [CMD, "--sif", f"{util.FILES_ROOT}/sif1.json", f"--{opt.REPORT_FILE}", util.CSV_FILE]):
             audit.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
@@ -54,7 +54,7 @@ def test_audit_sif_dce1() -> None:
     """test_audit_sif_dce1"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD, "--sif", "test/sif.dce.1.json", f"--{opt.REPORT_FILE}", util.CSV_FILE]):
+        with patch.object(sys, "argv", [CMD, "--sif", f"{util.FILES_ROOT}/sif.dce.1.json", f"--{opt.REPORT_FILE}", util.CSV_FILE]):
             audit.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
@@ -65,7 +65,7 @@ def test_audit_sif_dce2() -> None:
     """test_audit_sif_dce2"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD, "--sif", "test/sif.dce.2.json", f"--{opt.REPORT_FILE}", util.CSV_FILE]):
+        with patch.object(sys, "argv", [CMD, "--sif", f"{util.FILES_ROOT}/sif.dce.2.json", f"--{opt.REPORT_FILE}", util.CSV_FILE]):
             audit.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
@@ -76,7 +76,7 @@ def test_sif_1() -> None:
     """test_sif_1"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--sif", "test/sif1.json"]):
+        with patch.object(sys, "argv", CSV_OPTS + ["--sif", f"{util.FILES_ROOT}/sif1.json"]):
             audit.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
@@ -87,7 +87,7 @@ def test_sif_2() -> None:
     """test_sif_2"""
     util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif2.json"]):
+        with patch.object(sys, "argv", JSON_OPTS + ["--sif", f"{util.FILES_ROOT}/sif2.json"]):
             audit.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.JSON_FILE)
@@ -96,7 +96,7 @@ def test_sif_2() -> None:
 
 def test_audit_sif_ut() -> None:
     """test_audit_sif_ut"""
-    with open("test/sif1.json", "r", encoding="utf-8") as f:
+    with open(f"{util.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
         json_sif = json.loads(f.read())
     sysinfo = sif.Sif(json_sif)
     assert sysinfo.edition() == "enterprise"
@@ -118,7 +118,7 @@ def test_audit_sif_ut() -> None:
 
 def test_modified_sif() -> None:
     """test_modified_sif"""
-    with open("test/sif1.json", "r", encoding="utf-8") as f:
+    with open("test/files/sif1.json", "r", encoding="utf-8") as f:
         json_sif = json.loads(f.read())
 
     json_sif["System"].pop("Edition")
@@ -135,7 +135,7 @@ def test_modified_sif() -> None:
 def test_json_not_sif() -> None:
     """Tests that the right exception is raised if JSON file is not a SIF"""
     with pytest.raises(sif.NotSystemInfo) as e:
-        with open("test/config.json", "r", encoding="utf-8") as f:
+        with open("test/files/config.json", "r", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
             _ = sif.Sif(json_sif)
     assert e.type == sif.NotSystemInfo
@@ -143,7 +143,7 @@ def test_json_not_sif() -> None:
 
 def test_dce_sif_ut() -> None:
     """test_audit_sif_ut"""
-    with open("test/sif.dce.1.json", "r", encoding="utf-8") as f:
+    with open("test/files/sif.dce.1.json", "r", encoding="utf-8") as f:
         json_sif = json.loads(f.read())
 
     sysinfo = sif.Sif(json_sif)

@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # sonar-tools
-# Copyright (C) 2024 Olivier Korach
+# Copyright (C) 2025 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -19,24 +19,20 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-ME="$( basename "${BASH_SOURCE[0]}" )"
 ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-buildDir="$ROOTDIR/build"
 
-[ ! -d $buildDir ] && mkdir $buildDir
+cd "$ROOTDIR/test/unit" || exit 1
 
-echo "Running tests"
-
-"$CONFDIR/prep_tests.sh"
-
-export SONAR_HOST_URL=${1:-${SONAR_HOST_URL}}
-
-for target in latest lts cloud
+for target in lts latest
 do
-    if [ -d "$ROOTDIR/test/$target/" ]; then
-        coverage run --branch --source="$ROOTDIR" -m pytest "$ROOTDIR/test/$target/" --junit-xml="$buildDir/xunit-results-$target.xml"
-        coverage xml -o "$buildDir/coverage-$target.xml"
-    fi
+    rm -rf "$ROOTDIR/test/$target"
+    mkdir -p "$ROOTDIR/test/$target" 2>/dev/null
+    for f in *.py
+    do
+        b=$(basename "$f" .py)
+        cp "$f" "$ROOTDIR/test/$target/${b}_${target}.py"
+    done
+    cp "credentials-$target.py" "$ROOTDIR/test/$target/credentials.py"
+    mv "$ROOTDIR/test/$target/conftest_${target}.py" "$ROOTDIR/test/$target/conftest.py"
+    mv "$ROOTDIR/test/$target/utilities_${target}.py" "$ROOTDIR/test/$target/utilities.py"
 done
-

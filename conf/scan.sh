@@ -46,7 +46,7 @@ do
   shift
 done
 
-buildDir="$ROOTDIR/build"
+buildDir="build"
 pylintReport="$buildDir/pylint-report.out"
 banditReport="$buildDir/bandit-report.json"
 flake8Report="$buildDir/flake8-report.out"
@@ -77,15 +77,23 @@ cmd="sonar-scanner -Dsonar.projectVersion=$version \
   -Dsonar.token=$SONAR_TOKEN \
   "${scanOpts[*]}""
 
-if [ -f "$coverageReport" ]; then
-  cmd="$cmd -Dsonar.python.coverage.reportPaths=$coverageReport"
-fi
-if [ -f "$utReport" ]; then
-  cmd="$cmd -Dsonar.python.xunit.reportPath=$utReport"
+if ls $buildDir/coverage*.xml >/dev/null 2>&1; then
+  cmd="$cmd -Dsonar.python.coverage.reportPaths=$buildDir/coverage*.xml"
 else
+  echo "===> NO COVERAGE REPORT"
+fi
+if ls $buildDir/xunit-results*.xml >/dev/null 2>&1; then
+  cmd="$cmd -Dsonar.python.xunit.reportPath=$buildDir/xunit-results*.xml"
+else
+  echo "===> NO UNIT TESTS REPORT"
   cmd="$cmd -Dsonar.python.xunit.reportPath="
 fi
 
 echo "Running: $cmd"
 
 $cmd
+
+for target in lts latest
+do
+  rm -rf "$ROOTDIR/test/$target"
+done
