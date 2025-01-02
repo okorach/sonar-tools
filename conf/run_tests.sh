@@ -28,14 +28,14 @@ buildDir="$ROOTDIR/build"
 
 echo "Running tests"
 
-$CONFDIR/prep_tests.sh
+"$CONFDIR/prep_tests.sh"
 
 export SONAR_HOST_URL=${1:-${SONAR_HOST_URL}}
 
 for target in latest lts cloud
 do
     if [ -d "$ROOTDIR/test/$target/" ]; then
-        coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test/$target/ --junit-xml="$buildDir/xunit-results-$target.xml"
+        coverage run --branch --source="$ROOTDIR" -m pytest "$ROOTDIR/test/$target/" --junit-xml="$buildDir/xunit-results-$target.xml"
         coverage xml -o "$buildDir/coverage-$target.xml"
     fi
 done
