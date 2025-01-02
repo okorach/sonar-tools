@@ -92,3 +92,8 @@ fi
 echo "Running: $cmd"
 
 $cmd
+
+for target in lts latest
+do
+  rm -rf "$ROOTDIR/test/$target"
+done

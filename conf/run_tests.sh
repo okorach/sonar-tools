@@ -38,6 +38,5 @@ do
         coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test/$target/ --junit-xml="$buildDir/xunit-results-$target.xml"
         coverage xml -o "$buildDir/coverage-$target.xml"
     fi
-    rm -rf "$ROOTDIR/test/$target"
 done
 
