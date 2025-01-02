@@ -84,12 +84,10 @@ def test_url() -> None:
 def test_add_non_existing_user(get_test_group: Generator[groups.Group], get_test_user: Generator[users.User]) -> None:
     gr = get_test_group
     u = get_test_user
-    (uid, uname) = (u.id, u.name)
-    u.name = util.NON_EXISTING_KEY
+    u.login = util.NON_EXISTING_KEY
     u.id = util.NON_EXISTING_KEY
     with pytest.raises(exceptions.ObjectNotFound):
         gr.add_user(u)
-    (u.name, u.id) = (uid, uname)
 
 
 def test_remove_non_existing_user(get_test_group: Generator[groups.Group], get_test_user: Generator[users.User]) -> None:
