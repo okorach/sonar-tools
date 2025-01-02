@@ -39,7 +39,6 @@ CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
 JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
 
 
-
 def test_audit_sif() -> None:
     """test_audit_sif"""
     util.clean(util.CSV_FILE)
