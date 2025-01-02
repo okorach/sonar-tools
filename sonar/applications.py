@@ -460,9 +460,8 @@ def _project_list(data: types.ObjectJsonRepr) -> types.KeyList:
 def count(endpoint: pf.Platform) -> int:
     """returns count of applications
 
-    :param pf.Platform endpoint: Reference to the SonarQube platform
+    :param endpoint: Reference to the SonarQube platform
     :return: Count of applications
-    :rtype: int
     """
     check_supported(endpoint)
     return util.nbr_total_elements(json.loads(endpoint.get(Application.API[c.LIST], params={"ps": 1, "filter": "qualifier = APP"}).text))
@@ -479,11 +478,10 @@ def check_supported(endpoint: pf.Platform) -> None:
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Application]:
     """Searches applications
 
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param endpoint: Reference to the SonarQube platform
     :param params: Search filters (see api/components/search parameters)
     :raises UnsupportedOperation: If on a community edition
     :return: dict of applications
-    :rtype: dict {<appKey>: Application, ...}
     """
     check_supported(endpoint)
     new_params = {"filter": "qualifier = APP"}
@@ -495,12 +493,12 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, A
 def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Application]:
     """
     :return: List of Applications (all of them if key_list is None or empty)
-    :param Platform endpoint: Reference to the Sonar platform
-    :param KeyList key_list: List of app keys to get, if None or empty all applications are returned
+    :param endpoint: Reference to the Sonar platform
+    :param key_list: List of app keys to get, if None or empty all applications are returned
     :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-    :type use_cache: bool
     :rtype: dict{<branchName>: <Branch>}
     """
+    check_supported(endpoint)
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 or not use_cache:
             log.info("Listing applications")
@@ -521,17 +519,14 @@ def exists(endpoint: pf.Platform, key: str) -> bool:
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports applications as JSON
 
-    :param Platform endpoint: Reference to the Sonar platform
-    :param ConfigSetting export_settings: Options to use for export
-    :param KeyList key_list: list of Application keys to export, defaults to all if None
+    :param endpoint: Reference to the Sonar platform
+    :param export_settings: Options to use for export
+    :param key_list: list of Application keys to export, defaults to all if None
     :return: Dict of applications settings
-    :rtype: ObjectJsonRepr
     """
+    check_supported(endpoint)
     write_q = kwargs.get("write_q", None)
     key_list = kwargs.get("key_list", None)
-    if endpoint.is_sonarcloud():
-        # log.info("Applications do not exist in SonarCloud, export skipped")
-        raise exceptions.UnsupportedOperation("Applications do not exist in SonarCloud, export skipped")
 
     apps_settings = {}
     for k, app in get_list(endpoint, key_list).items():
@@ -549,11 +544,10 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[problem.Problem]:
     """Audits applications and return list of problems found
 
-    :param Platform endpoint: Reference to the Sonar platform
-    :param dict audit_settings: dict of audit config settings
-    :param KeyList key_list: list of Application keys to audit, defaults to all if None
+    :param endpoint: Reference to the Sonar platform
+    :param audit_settings: dict of audit config settings
+    :param key_list: list of Application keys to audit, defaults to all if None
     :return: List of problems found
-    :rtype: list [Problem]
     """
     if endpoint.edition() == "community":
         return []
@@ -570,17 +564,17 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
 def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports a list of application configuration in a SonarQube platform
 
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param dict config_data: JSON representation of applications configuration
-    :param KeyList key_list: list of Application keys to import, defaults to all if None
+    :param endpoint: Reference to the SonarQube platform
+    :param config_data: JSON representation of applications configuration
+    :param key_list: list of Application keys to import, defaults to all if None
     :return: Whether import succeeded
-    :rtype: bool
     """
     if "applications" not in config_data:
         log.info("No applications to import")
         return True
-    if endpoint.edition() == "community":
-        log.warning("Can't import applications in a community edition")
+    ed = endpoint.edition()
+    if ed not in ("developer", "enterprise", "datacenter"):
+        log.warning("Can't import applications in %s edition", ed)
         return False
     log.info("Importing applications")
     search(endpoint=endpoint)
