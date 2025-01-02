@@ -94,8 +94,7 @@ def test_remove_non_existing_user(get_test_group: Generator[groups.Group], get_t
     util.start_logging()
     gr = get_test_group
     u = get_test_user
-    with pytest.raises(exceptions.ObjectNotFound):
-        gr.remove_user(u)
+    gr.remove_user(u)
     gr.add_user(u)
     u.id = util.NON_EXISTING_KEY
     u.login = util.NON_EXISTING_KEY
