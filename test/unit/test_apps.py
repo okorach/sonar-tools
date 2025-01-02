@@ -217,14 +217,15 @@ def test_not_found(get_test_app: Generator[applications.Application]) -> None:
     if util.SQ.edition() != "community":
         o = get_test_app
         o.key = "mess-me-up"
-        assert o.refresh()
+        with pytest.raises(exceptions.ObjectNotFound):
+            o.refresh()
 
 
 def test_already_exists(get_test_app: Generator[applications.Application]) -> None:
     if util.SQ.edition() != "community":
         app = get_test_app
         with pytest.raises(exceptions.ObjectAlreadyExists):
-            _ = applications.Application.create(util.SQ, app.key)
+            _ = applications.Application.create(endpoint=util.SQ, key=app.key, name="Foo Bar")
 
 
 def test_branch_exists(get_test_app: Generator[applications.Application]) -> None:
