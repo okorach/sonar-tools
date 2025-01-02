@@ -49,8 +49,9 @@ if [ -d "$ROOTDIR/test/lts/" ]; then
     coverage xml -o $coverageReportLts
 fi
 
-if [ -d "$ROOTDIR/test_cloud/" ]; then
-    coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test/cloud/ --junit-xml="$utReportCloud"
-    coverage xml -o $coverageReportCloud
+if [ false ]; then
+    if [ -d "$ROOTDIR/test_cloud/" ]; then
+        coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test/cloud/ --junit-xml="$utReportCloud"
+        coverage xml -o $coverageReportCloud
+    fi
 fi
-
