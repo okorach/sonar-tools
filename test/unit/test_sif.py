@@ -40,6 +40,7 @@ JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE
 
 _FILES_ROOT = "test/files/"
 
+
 def test_audit_sif() -> None:
     """test_audit_sif"""
     util.clean(util.CSV_FILE)
