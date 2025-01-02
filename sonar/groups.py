@@ -332,7 +332,7 @@ class Group(sq.SqObject):
         if self.endpoint.version() >= (10, 4, 0):
             r = self.patch(f"{Group.API[c.UPDATE]}/{self.id}", params={"name": name})
         else:
-            r = self.post(Group.API[c.UPDATE], params={"currentName": self.key, "name": name})
+            r = self.post(Group.API_V1[c.UPDATE], params={"currentName": self.key, "name": name})
         if r.ok:
             Group.CACHE.pop(self)
             self.name = name
@@ -405,7 +405,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
 def get_object_from_id(endpoint: pf.Platform, id: str) -> Group:
     """Searches a Group object from its id - SonarQube 10.4+"""
     if endpoint.version() < (10, 4, 0):
-        raise exceptions.UnsupportedOperation
+        raise exceptions.UnsupportedOperation("Operation unsupported before SonarQube 10.4")
     if len(Group.CACHE) == 0:
         get_list(endpoint)
     for o in Group.CACHE.values():
