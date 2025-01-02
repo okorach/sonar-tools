@@ -22,13 +22,16 @@
 ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 
 cd $ROOTDIR/test/unit
-for target in lts latest cloud
+for target in lts latest
 do
-    mkdir $ROOTDIR/test/$target
+    rm -rf $ROOTDIR/test/$target
+    mkdir -p $ROOTDIR/test/$target 2>/dev/null
     for f in *.py
     do
         b=$(basename $f .py)
         cp $f $ROOTDIR/test/$target/${b}_${target}.py
     done
     cp credentials-$target.py $ROOTDIR/test/$target/credentials.py
+    mv $ROOTDIR/test/$target/conftest_${target}.py $ROOTDIR/test/$target/conftest.py
+    mv $ROOTDIR/test/$target/utilities_${target}.py $ROOTDIR/test/$target/utilities.py
 done
