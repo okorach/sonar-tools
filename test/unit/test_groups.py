@@ -183,6 +183,7 @@ def test_api_params(get_test_group: Generator[groups.Group]) -> None:
         assert gr.api_params(c.GET) == {"name": util.TEMP_KEY}
         assert gr.api_params(c.CREATE) == {"name": util.TEMP_KEY}
 
+
 def test_get_from_id(get_test_group: Generator[groups.Group]) -> None:
     gr = get_test_group
     if util.SQ.version() >= (10, 4, 0):
