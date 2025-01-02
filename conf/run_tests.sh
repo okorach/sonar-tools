@@ -34,19 +34,23 @@ utReportCloud="$buildDir/xunit-results-cloud.xml"
 [ ! -d $buildDir ] && mkdir $buildDir
 
 echo "Running tests"
+
+$CONFDIR/prep_tests.sh
+
 export SONAR_HOST_URL=${1:-${SONAR_HOST_URL}}
-TEST_DIRS=$ROOTDIR/test/
 
-coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test/ --junit-xml="$utReportLatest"
-coverage xml -o $coverageReportLatest
+if [ -d "$ROOTDIR/test/latest/" ]; then
+    coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test/latest/ --junit-xml="$utReportLatest"
+    coverage xml -o $coverageReportLatest
+fi
 
-if [ -d "$ROOTDIR/test_lts/" ]; then
-    coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test_lts/ --junit-xml="$utReportLts"
+if [ -d "$ROOTDIR/test/lts/" ]; then
+    coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test/lts/ --junit-xml="$utReportLts"
     coverage xml -o $coverageReportLts
 fi
 
 if [ -d "$ROOTDIR/test_cloud/" ]; then
-    coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test_cloud/ --junit-xml="$utReportCloud"
+    coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test/cloud/ --junit-xml="$utReportCloud"
     coverage xml -o $coverageReportCloud
 fi
 
