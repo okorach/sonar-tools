@@ -297,7 +297,7 @@ class Group(sq.SqObject):
         else:
             json_data = {"name": self.name}
             json_data["description"] = self.description if self.description and self.description != "" else None
-            if self.__is_default:
+            if self.is_default():
                 json_data["default"] = True
         return util.remove_nones(json_data)
 
