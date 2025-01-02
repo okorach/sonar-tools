@@ -18,7 +18,7 @@ tmp/
 .DS_Store
 
 !test/config.json
-!test/sif*.json
+!test/integration/sif*.json
 !.vscode/*.json
 !test/files/*
 .sonar/
