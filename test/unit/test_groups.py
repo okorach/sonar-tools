@@ -28,6 +28,7 @@ import pytest
 import utilities as util
 from sonar import exceptions
 from sonar import groups, users
+from sonar.util import constants as c
 
 GROUP1 = "sonar-users"
 GROUP2 = "sonar-administrators"
@@ -42,6 +43,9 @@ def test_get_object() -> None:
 
     gr2 = groups.Group.get_object(endpoint=util.SQ, name=GROUP2)
     assert gr is gr2
+
+    gr3 = groups.Group.read(endpoint=util.SQ, name=GROUP2)
+    assert gr3 is gr
 
     with pytest.raises(exceptions.ObjectNotFound):
         groups.Group.get_object(endpoint=util.SQ, name=util.NON_EXISTING_KEY)
@@ -123,6 +127,10 @@ def test_to_json(get_test_group: Generator[groups.Group]) -> None:
     if util.SQ.version() >= (10, 4, 0):
         assert "id" in gr.to_json(True)
 
+    sonar_users = groups.Group.get_object(util.SQ, "sonar-users")
+    json_exp = sonar_users.to_json()
+    assert "default" in json_exp
+
 
 def test_import() -> None:
     data = {}
@@ -164,3 +172,22 @@ def test_create_or_update(get_test_group: Generator[groups.Group]) -> None:
     gr2 = groups.create_or_update(util.SQ, gr.name, "Some new group description")
     assert gr2 is gr
     assert gr.description == "Some new group description"
+
+
+def test_api_params(get_test_group: Generator[groups.Group]) -> None:
+    gr = get_test_group
+    if util.SQ.version() >= (10, 4, 0):
+        assert gr.api_params(c.GET) == {}
+        assert gr.api_params(c.CREATE) == {}
+    else:
+        assert gr.api_params(c.GET) == {"name": util.TEMP_KEY}
+        assert gr.api_params(c.CREATE) == {"name": util.TEMP_KEY}
+
+def test_get_from_id(get_test_group: Generator[groups.Group]) -> None:
+    gr = get_test_group
+    if util.SQ.version() >= (10, 4, 0):
+        gr2 = groups.get_object_from_id(util.SQ, gr.id)
+        assert gr2 is gr
+    else:
+        with pytest.raises(exceptions.UnsupportedOperation):
+            _ = groups.get_object_from_id(util.SQ, gr.id)
