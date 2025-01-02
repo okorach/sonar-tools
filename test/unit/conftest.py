@@ -215,6 +215,7 @@ def get_test_application() -> Generator[applications.Application]:
         o = applications.Application.create(endpoint=util.SQ, key=util.TEMP_KEY, name=util.TEMP_KEY)
     yield o
     try:
+        o.key = util.TEMP_KEY
         o.delete()
     except exceptions.ObjectNotFound:
         pass
