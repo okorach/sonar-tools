@@ -109,7 +109,7 @@ def test_sif_non_existing(get_csv_file: Generator[str]) -> None:
 
 def test_sif_not_readable(get_json_file: Generator[str]) -> None:
     """test_sif_not_readable"""
-    unreadable_file = "test/sif_not_readable.json"
+    unreadable_file = f"{util.FILES_ROOT}/sif_not_readable.json"
     NO_PERMS = ~stat.S_IRUSR & ~stat.S_IWUSR
     current_permissions = stat.S_IMODE(os.lstat(unreadable_file).st_mode)
     os.chmod(unreadable_file, current_permissions & NO_PERMS)

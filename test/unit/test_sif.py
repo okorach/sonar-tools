@@ -38,14 +38,13 @@ CMD = "sonar-audit.py"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
 JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
 
-_FILES_ROOT = "test/files/"
 
 
 def test_audit_sif() -> None:
     """test_audit_sif"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD, "--sif", f"{_FILES_ROOT}/sif1.json", f"--{opt.REPORT_FILE}", util.CSV_FILE]):
+        with patch.object(sys, "argv", [CMD, "--sif", f"{util.FILES_ROOT}/sif1.json", f"--{opt.REPORT_FILE}", util.CSV_FILE]):
             audit.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
@@ -56,7 +55,7 @@ def test_audit_sif_dce1() -> None:
     """test_audit_sif_dce1"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD, "--sif", f"{_FILES_ROOT}/sif.dce.1.json", f"--{opt.REPORT_FILE}", util.CSV_FILE]):
+        with patch.object(sys, "argv", [CMD, "--sif", f"{util.FILES_ROOT}/sif.dce.1.json", f"--{opt.REPORT_FILE}", util.CSV_FILE]):
             audit.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
@@ -67,7 +66,7 @@ def test_audit_sif_dce2() -> None:
     """test_audit_sif_dce2"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD, "--sif", f"{_FILES_ROOT}/sif.dce.2.json", f"--{opt.REPORT_FILE}", util.CSV_FILE]):
+        with patch.object(sys, "argv", [CMD, "--sif", f"{util.FILES_ROOT}/sif.dce.2.json", f"--{opt.REPORT_FILE}", util.CSV_FILE]):
             audit.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
@@ -78,7 +77,7 @@ def test_sif_1() -> None:
     """test_sif_1"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--sif", f"{_FILES_ROOT}/sif1.json"]):
+        with patch.object(sys, "argv", CSV_OPTS + ["--sif", f"{util.FILES_ROOT}/sif1.json"]):
             audit.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
@@ -89,7 +88,7 @@ def test_sif_2() -> None:
     """test_sif_2"""
     util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + ["--sif", f"{_FILES_ROOT}/sif2.json"]):
+        with patch.object(sys, "argv", JSON_OPTS + ["--sif", f"{util.FILES_ROOT}/sif2.json"]):
             audit.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.JSON_FILE)
@@ -98,7 +97,7 @@ def test_sif_2() -> None:
 
 def test_audit_sif_ut() -> None:
     """test_audit_sif_ut"""
-    with open(f"{_FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+    with open(f"{util.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
         json_sif = json.loads(f.read())
     sysinfo = sif.Sif(json_sif)
     assert sysinfo.edition() == "enterprise"

@@ -37,6 +37,7 @@ import cli.options as opt
 
 TEST_LOGFILE = "pytest.log"
 LOGGER_COUNT = 0
+FILES_ROOT = "test/files/"
 
 LATEST = "http://localhost:10000"
 LATEST_TEST = "http://localhost:10020"
