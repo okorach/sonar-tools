@@ -23,13 +23,6 @@ ME="$( basename "${BASH_SOURCE[0]}" )"
 ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 buildDir="$ROOTDIR/build"
-coverageReportLatest="$buildDir/coverage-latest.xml"
-coverageReportLts="$buildDir/coverage-lts.xml"
-coverageReportCloud="$buildDir/coverage-cloud.xml"
-
-utReportLatest="$buildDir/xunit-results.xml"
-utReportLts="$buildDir/xunit-results-lts.xml"
-utReportCloud="$buildDir/xunit-results-cloud.xml"
 
 [ ! -d $buildDir ] && mkdir $buildDir
 
@@ -39,19 +32,12 @@ $CONFDIR/prep_tests.sh
 
 export SONAR_HOST_URL=${1:-${SONAR_HOST_URL}}
 
-if [ -d "$ROOTDIR/test/latest/" ]; then
-    coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test/latest/ --junit-xml="$utReportLatest"
-    coverage xml -o $coverageReportLatest
-fi
-
-if [ -d "$ROOTDIR/test/lts/" ]; then
-    coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test/lts/ --junit-xml="$utReportLts"
-    coverage xml -o $coverageReportLts
-fi
-
-if [ false ]; then
-    if [ -d "$ROOTDIR/test_cloud/" ]; then
-        coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test/cloud/ --junit-xml="$utReportCloud"
-        coverage xml -o $coverageReportCloud
+for target in latest lts cloud
+do
+    if [ -d "$ROOTDIR/test/$target/" ]; then
+        coverage run --branch --source=$ROOTDIR -m pytest $ROOTDIR/test/$target/ --junit-xml="$buildDir/xunit-results-$target"
+        coverage xml -o "$buildDir/coverage-$target.xml"
     fi
-fi
+    rm -rf "$ROOTDIR/test/$target"
+done
+
