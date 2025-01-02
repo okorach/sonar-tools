@@ -22,4 +22,6 @@ tmp/
 !.vscode/*.json
 !test/files/*
 .sonar/
-test_lts/
+test/lts/
+test/latest/
+test/cloud/
