@@ -119,6 +119,9 @@ def get_test_qp() -> Generator[qualityprofiles.QualityProfile]:
     util.start_logging()
     try:
         o = qualityprofiles.get_object(endpoint=util.SQ, name=util.TEMP_KEY, language="py")
+        if o.is_default:
+            sw = qualityprofiles.get_object(endpoint=util.SQ, name="Sonar way", language="py")
+            sw.set_as_default()
     except exceptions.ObjectNotFound:
         o = qualityprofiles.QualityProfile.create(endpoint=util.SQ, name=util.TEMP_KEY, language="py")
     yield o
