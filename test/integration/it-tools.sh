@@ -21,7 +21,7 @@
 
 #set -euo pipefail
 
-REPO_ROOT="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; cd .. ; pwd -P )"
+REPO_ROOT="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; cd ../.. ; pwd -P )"
 TMP="$REPO_ROOT/tmp"
 IT_LOG_FILE="$TMP/it.log"
 mkdir -p "$TMP"

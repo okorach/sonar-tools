@@ -106,7 +106,7 @@ class QualityProfile(sq.SqObject):
         :rtype: QualityProfile or None if not found
         """
         if not languages.exists(endpoint=endpoint, language=language):
-            log.error("Language '%s' does not exist, quality profile creation aborted")
+            log.error("Language '%s' does not exist, quality profile creation aborted", language)
             return None
         log.debug("Reading quality profile '%s' of language '%s'", name, language)
         o = QualityProfile.CACHE.get(name, language, endpoint.url)
@@ -142,12 +142,11 @@ class QualityProfile(sq.SqObject):
     def clone(cls, endpoint: pf.Platform, name: str, language: str, original_qp_name: str) -> Optional[QualityProfile]:
         """Creates a new quality profile in SonarQube with rules copied from original_key
 
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param str name: Quality profile name
-        :param str language: Quality profile language
-        :param str original_qp_name: Original quality profile name
+        :param endpoint: Reference to the SonarQube platform
+        :param name: Quality profile name
+        :param language: Quality profile language
+        :param original_qp_name: Original quality profile name
         :return: The cloned quality profile object
-        :rtype: QualityProfile
         """
         log.info("Cloning quality profile name '%s' into quality profile name '%s'", original_qp_name, name)
         l = [qp for qp in get_list(endpoint, use_cache=False).values() if qp.name == original_qp_name and qp.language == language]
@@ -724,12 +723,11 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
 def get_object(endpoint: pf.Platform, name: str, language: str) -> Optional[QualityProfile]:
     """Returns a quality profile Object from its name and language
 
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param str name: Quality profile name
-    :param str language: Quality profile language
+    :param endpoint: Reference to the SonarQube platform
+    :param name: Quality profile name
+    :param language: Quality profile language
 
     :return: The quality profile object, of None if not found
-    :rtype: QualityProfile or None
     """
     get_list(endpoint)
     o = QualityProfile.CACHE.get(name, language, endpoint.url)
@@ -757,7 +755,7 @@ def __import_thread(queue: Queue) -> None:
                 log.info("Won't import built-in quality profile '%s'", name)
                 queue.task_done()
                 continue
-            log.info("Qualiy profile '%s' of language '%s' does not exist, creating it", name, lang)
+            log.info("Quality profile '%s' of language '%s' does not exist, creating it", name, lang)
             try:
                 # Statistically a new QP is close to Sonar way so better start with the Sonar way ruleset and
                 # add/remove a few rules, than adding all rules from 0

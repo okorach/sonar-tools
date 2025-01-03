@@ -199,7 +199,7 @@ def test_search_by_name() -> None:
         assert app == first_app
 
 
-def test_set_tags(get_test_app: callable) -> None:
+def test_set_tags(get_test_app: Generator[applications.Application]) -> None:
     """test_set_tags"""
     o = get_test_app
 
@@ -210,6 +210,43 @@ def test_set_tags(get_test_app: callable) -> None:
     assert o.set_tags([])
     assert o.get_tags() == []
     assert not o.set_tags(None)
+
+
+def test_not_found(get_test_app: Generator[applications.Application]) -> None:
+    """test_not_found"""
+    if util.SQ.edition() != "community":
+        o = get_test_app
+        o.key = "mess-me-up"
+        with pytest.raises(exceptions.ObjectNotFound):
+            o.refresh()
+
+
+def test_already_exists(get_test_app: Generator[applications.Application]) -> None:
+    if util.SQ.edition() != "community":
+        app = get_test_app
+        with pytest.raises(exceptions.ObjectAlreadyExists):
+            _ = applications.Application.create(endpoint=util.SQ, key=app.key, name="Foo Bar")
+
+
+def test_branch_exists(get_test_app: Generator[applications.Application]) -> None:
+    if util.SQ.edition() != "community":
+        app = get_test_app
+        assert app.branch_exists("main")
+        assert not app.branch_exists("non-existing")
+
+
+def test_branch_is_main(get_test_app: Generator[applications.Application]) -> None:
+    if util.SQ.edition() != "community":
+        app = get_test_app
+        assert app.branch_is_main("main")
+        with pytest.raises(exceptions.ObjectNotFound):
+            app.branch_is_main("non-existing")
+
+
+def test_get_issues(get_test_app: Generator[applications.Application]) -> None:
+    if util.SQ.edition() != "community":
+        app = get_test_app
+        assert len(app.get_issues()) == 0
 
 
 def test_audit_disabled() -> None:
@@ -240,3 +277,10 @@ def test_app_branches(get_test_application: Generator[applications.Application])
     br = app.branches()
     assert set(br.keys()) >= {"Main Branch", "Master", "MiBranch"}
     assert app.main_branch().name == "Main Branch"
+
+
+def test_convert_for_yaml() -> None:
+    if util.SQ.edition() != "community":
+        data = applications.export(util.SQ, {})
+        yaml_list = applications.convert_for_yaml(data)
+        assert len(yaml_list) == len(data)
