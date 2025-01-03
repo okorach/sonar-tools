@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools
-# Copyright (C) 2019-2024 Olivier Korach
+# Copyright (C) 2019-2025 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -25,6 +25,7 @@ from sonar import version
 
 print(f'''
 sonar-tools version {version.PACKAGE_VERSION}
+(c) Olivier Korach 2019-2025
 Collections of utilities for SonarQube and SonarCloud:
 - sonar-audit: Audits a SonarQube/SonarCloud platform for bad practices, performance, configuration problems
 - sonar-housekeeper: Deletes projects that have not been analyzed since a given number of days
