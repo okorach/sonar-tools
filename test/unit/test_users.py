@@ -177,29 +177,32 @@ def test_update(get_test_user: Generator[users.User]) -> None:
     user.update(groups=["sonar-administrators"])
     assert sorted(user.groups()) == ["sonar-administrators", "sonar-users"]
 
-    assert user.scm_accounts is None
+    assert user.scm_accounts == []
 
     user.update(scmAccounts=["foo@gmail.com", "bar@gmail.com", "foo", "bar"])
     assert sorted(user.scm_accounts) == sorted(["foo@gmail.com", "bar@gmail.com", "foo", "bar"])
 
-    user.update(login="johndoe")
-    assert user.login == "johndoe"
+    if util.SQ.version() >= (10, 4, 0):
+        user.update(login="johndoe")
+        assert user.login == "johndoe"
 
     user.update(name="John Doe", email="john@doe.com")
     assert user.name == "John Doe"
     assert user.email == "john@doe.com"
 
-    user.update(login="jdoe", email="john@doe.com")
-    assert user.login == "jdoe"
+    if util.SQ.version() >= (10, 4, 0):
+        user.update(login="jdoe", email="john@doe.com")
+        assert user.login == "jdoe"
 
 
 def test_set_groups(get_test_user: Generator[users.User]) -> None:
+    """test_set_groups"""
     user = get_test_user
     user.set_groups(["sonar-administrators", "language-experts"])
-    assert sorted(user.groups()) == sorted(["sonar-administrators", "language-experts"])
+    assert sorted(user.groups()) == sorted(["sonar-users", "sonar-administrators", "language-experts"])
 
     user.set_groups(["language-experts", "security-auditors", "developers"])
-    assert sorted(user.groups()) == sorted(["language-experts", "security-auditors", "developers"])
+    assert sorted(user.groups()) == sorted(["sonar-users", "language-experts", "security-auditors", "developers"])
 
 
 def test_import() -> None:
@@ -221,7 +224,7 @@ def test_import() -> None:
     for uname in "TEMP", "TEMP_ADMIN":
         assert users.exists(endpoint=util.SQ, login=uname)
         o_g = users.User.get_object(endpoint=util.SQ, login=uname)
-        assert o_g.description == f"User name {uname}"
+        assert o_g.name == f"User name {uname}"
         o_g.delete()
 
 
