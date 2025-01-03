@@ -224,10 +224,14 @@ class User(sqobject.SqObject):
             if data is None:
                 data = self.sq_json
             self._groups = data.get("groups", [])
+            if "sonar-users" not in self._groups:
+                self._groups.append("sonar-users")
+            log.debug("Updated %s groups = %s", str(self), str(self._groups))
         else:
             data = json.loads(self.get(User.API["GROUP_MEMBERSHIPS"], {"userId": self.id, "pageSize": 500}).text)["groupMemberships"]
             log.debug("Groups = %s", str(data))
             self._groups = [groups.get_object_from_id(self.endpoint, g["groupId"]).name for g in data]
+        self._groups = sorted(self._groups)
         return self._groups
 
     def refresh(self) -> User:
@@ -276,14 +280,20 @@ class User(sqobject.SqObject):
         if self.is_local:
             params.update({k: kwargs[k] for k in ("name", "email") if k in kwargs and kwargs[k] != my_data[k]})
             if len(params) >= 1:
-                self.post(User.API[c.UPDATE], params=params)
+                self.post(User.api_for(c.UPDATE, self.endpoint), params=params)
+                if "name" in params:
+                    self.name = kwargs["name"]
+                if "email" in params:
+                    self.email = kwargs["email"]
             if "scmAccounts" in kwargs:
                 self.set_scm_accounts(kwargs["scmAccounts"])
             if "login" in kwargs:
                 new_login = kwargs["login"]
                 o = User.CACHE.get(new_login, self.endpoint.url)
                 if not o:
-                    self.post(User.API["UPDATE_LOGIN"], params={**self.api_params(User.API["UPDATE_LOGIN"]), "newLogin": new_login})
+                    self.post(
+                        User.api_for("UPDATE_LOGIN", self.endpoint), params={**self.api_params(User.API["UPDATE_LOGIN"]), "newLogin": new_login}
+                    )
                     User.CACHE.pop(self)
                     self.login = new_login
                     User.CACHE.put(self)
@@ -305,6 +315,7 @@ class User(sqobject.SqObject):
         ok = group.add_user(self)
         if ok:
             self._groups.append(group_name)
+            self._groups = sorted(self._groups)
         return ok
 
     def remove_from_group(self, group_name: str) -> bool:
@@ -372,9 +383,7 @@ class User(sqobject.SqObject):
         for g in list(set(self.groups()) - set(group_list)):
             if g != "sonar-users":
                 ok = ok and self.remove_from_group(g)
-        if ok:
-            self._groups = group_list
-        else:
+        if not ok:
             self.refresh()
         return ok
 
