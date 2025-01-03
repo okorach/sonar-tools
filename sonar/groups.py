@@ -135,7 +135,7 @@ class Group(sq.SqObject):
 
     @classmethod
     def api_for(cls, op: str, endpoint: object) -> Optional[str]:
-        """Returns the API for a given operation depedning on the SonarQube version"""
+        """Returns the API for a given operation depending on the SonarQube version"""
         if endpoint.is_sonarcloud() or endpoint.version() < (10, 4, 0):
             api_to_use = Group.API_V1
         else:
