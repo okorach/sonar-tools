@@ -76,12 +76,14 @@ def test_import_no_file() -> None:
     """test_import_no_file"""
     util.run_failed_cmd(projects_cli.main, f"{OPTS} --{opt.IMPORT}", errcodes.ARGS_ERROR)
 
+
 def test_no_export_or_import(get_json_file: Generator[str]) -> None:
     """test_no_export_or_import"""
     args = f"{OPTS} --{opt.REPORT_FILE} {get_json_file}"
     with pytest.raises(opt.ArgumentsError) as e:
         with patch.object(sys, "argv", args.split(" ")):
             projects_cli.main()
+
 
 def test_no_import_file() -> None:
     """test_no_import_file"""
