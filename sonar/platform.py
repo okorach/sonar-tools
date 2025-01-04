@@ -442,7 +442,7 @@ class Platform(object):
         """
         log.info("Exporting platform global settings")
         json_data = {}
-        for s in self.__settings(include_not_set=export_settings["EXPORT_DEFAULTS"]).values():
+        for s in self.__settings(include_not_set=export_settings.get("EXPORT_DEFAULTS", False)).values():
             if s.is_internal():
                 continue
             (categ, subcateg) = s.category()
@@ -451,7 +451,7 @@ class Platform(object):
                 continue
             if not s.is_global():
                 continue
-            util.update_json(json_data, categ, subcateg, s.to_json(export_settings["INLINE_LISTS"]))
+            util.update_json(json_data, categ, subcateg, s.to_json(export_settings.get("INLINE_LISTS", True)))
 
         hooks = {}
         for wb in self.webhooks().values():
