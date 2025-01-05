@@ -22,19 +22,11 @@
 """ platform tests """
 
 import json
-import logging
 from requests import RequestException
 
 import pytest
 import utilities as util
 from sonar import platform, settings
-
-
-@pytest.fixture(autouse=True)
-def run_around_tests():
-    url = util.TEST_SQ.url
-    yield
-    util.TEST_SQ.url = url
 
 
 def test_system_id() -> None:
