@@ -46,6 +46,14 @@ def create_test_object(a_class: type, key: str) -> any:
     return o
 
 
+@pytest.fixture(autouse=True)
+def run_around_tests():
+    util.start_logging()
+    url = util.TEST_SQ.url
+    yield
+    util.TEST_SQ.url = url
+
+
 @pytest.fixture
 def get_test_project() -> Generator[projects.Project]:
     """setup of tests"""

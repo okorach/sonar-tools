@@ -126,3 +126,8 @@ def test_org_search_sq() -> None:
 
     with pytest.raises(exceptions.UnsupportedOperation):
         _ = organizations.get_list(endpoint=util.SQ)
+
+
+def test_audit() -> None:
+    """test_audit"""
+    util.SC.audit({})

@@ -574,7 +574,7 @@ def component_filter(endpoint: pf.Platform) -> str:
         return COMPONENT_FILTER_OLD
 
 
-def __search_all_by_directories(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
+def search_by_directory(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by directory to avoid exceeding the 10K limit"""
     new_params = params.copy()
     facets = _get_facets(endpoint=endpoint, project_key=new_params[component_filter(endpoint)], facets="directories", params=new_params)
@@ -582,12 +582,12 @@ def __search_all_by_directories(endpoint: pf.Platform, params: ApiParams) -> dic
     log.info("Splitting search by directories")
     for d in facets["directories"]:
         new_params["directories"] = d["val"]
-        issue_list.update(search(endpoint=endpoint, params=new_params, raise_error=False))
+        issue_list.update(search(endpoint=endpoint, params=new_params, raise_error=True))
     log.debug("Search by directory ALL: %d issues found", len(issue_list))
     return issue_list
 
 
-def __search_all_by_types(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
+def search_by_type(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by type to avoid exceeding the 10K limit"""
     issue_list = {}
     new_params = params.copy()
@@ -598,12 +598,12 @@ def __search_all_by_types(endpoint: pf.Platform, params: ApiParams) -> dict[str,
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
-            issue_list.update(__search_all_by_directories(endpoint=endpoint, params=new_params))
+            issue_list.update(search_by_directory(endpoint=endpoint, params=new_params))
     log.debug("Search by type ALL: %d issues found", len(issue_list))
     return issue_list
 
 
-def __search_all_by_severities(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
+def search_by_severity(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by severity to avoid exceeding the 10K limit"""
     issue_list = {}
     new_params = params.copy()
@@ -614,14 +614,12 @@ def __search_all_by_severities(endpoint: pf.Platform, params: ApiParams) -> dict
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
-            issue_list.update(__search_all_by_types(endpoint=endpoint, params=new_params))
+            issue_list.update(search_by_type(endpoint=endpoint, params=new_params))
     log.debug("Search by severity ALL: %d issues found", len(issue_list))
     return issue_list
 
 
-def __search_all_by_date(
-    endpoint: pf.Platform, params: ApiParams, date_start: Optional[date] = None, date_stop: Optional[date] = None
-) -> dict[str, Issue]:
+def search_by_date(endpoint: pf.Platform, params: ApiParams, date_start: Optional[date] = None, date_stop: Optional[date] = None) -> dict[str, Issue]:
     """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
     new_params = params.copy()
     if date_start is None:
@@ -648,15 +646,15 @@ def __search_all_by_date(
         diff = (date_stop - date_start).days
         if diff == 0:
             log.info(_TOO_MANY_ISSUES_MSG)
-            issue_list = __search_all_by_severities(endpoint, new_params)
+            issue_list = search_by_severity(endpoint, new_params)
         elif diff == 1:
-            issue_list.update(__search_all_by_date(endpoint=endpoint, params=new_params, date_start=date_start, date_stop=date_start))
-            issue_list.update(__search_all_by_date(endpoint=endpoint, params=new_params, date_start=date_stop, date_stop=date_stop))
+            issue_list.update(search_by_date(endpoint=endpoint, params=new_params, date_start=date_start, date_stop=date_start))
+            issue_list.update(search_by_date(endpoint=endpoint, params=new_params, date_start=date_stop, date_stop=date_stop))
         else:
             date_middle = date_start + timedelta(days=diff // 2)
-            issue_list.update(__search_all_by_date(endpoint=endpoint, params=new_params, date_start=date_start, date_stop=date_middle))
+            issue_list.update(search_by_date(endpoint=endpoint, params=new_params, date_start=date_start, date_stop=date_middle))
             date_middle = date_middle + timedelta(days=1)
-            issue_list.update(__search_all_by_date(endpoint=endpoint, params=new_params, date_start=date_middle, date_stop=date_stop))
+            issue_list.update(search_by_date(endpoint=endpoint, params=new_params, date_start=date_middle, date_stop=date_stop))
     if date_start is not None and date_stop is not None:
         log.debug(
             "Project '%s' has %d issues between %s and %s",
@@ -678,7 +676,7 @@ def __search_all_by_project(endpoint: pf.Platform, project_key: str, params: Api
         issue_list.update(search(endpoint=endpoint, params=new_params))
     except TooManyIssuesError:
         log.info(_TOO_MANY_ISSUES_MSG)
-        issue_list.update(__search_all_by_date(endpoint=endpoint, params=new_params))
+        issue_list.update(search_by_date(endpoint=endpoint, params=new_params))
     return issue_list
 
 
@@ -766,11 +764,10 @@ def search_first(endpoint: pf.Platform, **params) -> Union[Issue, None]:
     """
     filters = pre_search_filters(endpoint=endpoint, params=params)
     filters["ps"] = 1
-    data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text)
+    data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text)["issues"]
     if len(data) == 0:
         return None
-    i = data["issues"][0]
-    return get_object(endpoint=endpoint, key=i["key"], data=i)
+    return get_object(endpoint=endpoint, key=data[0]["key"], data=data[0])
 
 
 def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = True, threads: int = 8) -> dict[str, Issue]:
@@ -821,6 +818,8 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
 
 def _get_facets(endpoint: pf.Platform, project_key: str, facets: str = "directories", params: ApiParams = None) -> dict[str, str]:
     """Returns the facets of a search"""
+    if not params:
+        params = {}
     params.update({component_filter(endpoint): project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
     filters = pre_search_filters(endpoint=endpoint, params=params)
     data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text)

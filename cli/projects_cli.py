@@ -53,21 +53,16 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
 
 def __check_sq_environments(import_sq: platform.Platform, export_sq: dict[str, str]) -> None:
     """Checks if export and import environments are compatibles"""
-    imp_version = utilities.version_to_string(import_sq.version(digits=2))
-    if imp_version != export_sq["version"]:
-        raise exceptions.UnsupportedOperation("Export was not performed with same SonarQube version, aborting...")
-    for export_plugin in export_sq["plugins"]:
-        e_name = export_plugin["name"]
-        e_vers = export_plugin["version"]
-        found = False
-        for import_plugin in import_sq.plugins():
-            if import_plugin["name"] == e_name and import_plugin["version"] == e_vers:
-                found = True
-                break
-        if not found:
-            raise exceptions.UnsupportedOperation(
-                f"Plugin '{e_name}' version '{e_vers}' was not found or not in same version on import platform, aborting..."
-            )
+    imp_version = import_sq.version()[:2]
+    exp_version = tuple(int(n) for n in export_sq["version"].split(".")[:2])
+    if imp_version != exp_version:
+        raise exceptions.UnsupportedOperation(
+            f"Export was not performed with same SonarQube version, aborting... ({utilities.version_to_string(exp_version)} vs {utilities.version_to_string(imp_version)})"
+        )
+    if export_sq["plugins"] != import_sq.plugins():
+        raise exceptions.UnsupportedOperation(
+            f"Plugin list is different on the import and export platforms ({str(export_sq['plugins'])} vs {str(import_sq.plugins())}), aborting..."
+        )
 
 
 def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
@@ -99,7 +94,7 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
         else:
             statuses[s] = 1
         i += 1
-        log.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), project["key"], status)
+        log.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), project["key"], s)
         log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses.items()]))
 
 

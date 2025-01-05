@@ -80,7 +80,7 @@ class Platform(object):
         self.__cert_file = cert_file
         self.__user_data = None
         self._version = None
-        self.__sys_info = None
+        self._sys_info = None
         self.__global_nav = None
         self._server_id = None
         self._permissions = None
@@ -147,8 +147,8 @@ class Platform(object):
         """
         if self._server_id is not None:
             return self._server_id
-        if self.__sys_info is not None and _SERVER_ID_KEY in self.__sys_info["System"]:
-            self._server_id = self.__sys_info["System"][_SERVER_ID_KEY]
+        if self._sys_info is not None and _SERVER_ID_KEY in self._sys_info["System"]:
+            self._server_id = self._sys_info["System"][_SERVER_ID_KEY]
         else:
             self._server_id = json.loads(self.get("system/status").text)["id"]
         return self._server_id
@@ -307,7 +307,7 @@ class Platform(object):
         """
         if self.is_sonarcloud():
             return {"System": {_SERVER_ID_KEY: "sonarcloud"}}
-        if self.__sys_info is None:
+        if self._sys_info is None:
             success, counter = False, 0
             while not success:
                 try:
@@ -322,9 +322,9 @@ class Platform(object):
                     else:
                         log.error("%s while getting system info", util.error_msg(e))
                         raise e
-            self.__sys_info = json.loads(resp.text)
+            self._sys_info = json.loads(resp.text)
             success = True
-        return self.__sys_info
+        return self._sys_info
 
     def global_nav(self) -> dict[str, any]:
         """
@@ -340,7 +340,7 @@ class Platform(object):
         :return: the SonarQube platform backend database
         """
         if self.is_sonarcloud():
-            return "postgres"
+            return "postgresql"
         if self.version() < (9, 7, 0):
             return self.sys_info()["Statistics"]["database"]["name"]
         return self.sys_info()["Database"]["Database"]
@@ -395,7 +395,7 @@ class Platform(object):
         :param key: Setting key
         :return: Whether the reset was successful or not
         """
-        return settings.reset_setting(self, key).ok
+        return settings.reset_setting(self, key)
 
     def set_setting(self, key: str, value: any) -> bool:
         """Sets a platform global setting
@@ -415,7 +415,7 @@ class Platform(object):
                 if isinstance(v, datetime.date):
                     good_params[k] = util.format_date(v)
                 elif isinstance(v, (list, tuple, set)):
-                    good_params[k] = ",".join(list(v))
+                    good_params[k] = ",".join([str(x) for x in v])
             params_string = "&".join([f"{k}={requests.utils.quote(str(v))}" for k, v in good_params.items()])
             if len(params_string) > 0:
                 url += f"?{params_string}"
@@ -442,7 +442,7 @@ class Platform(object):
         """
         log.info("Exporting platform global settings")
         json_data = {}
-        for s in self.__settings(include_not_set=export_settings["EXPORT_DEFAULTS"]).values():
+        for s in self.__settings(include_not_set=export_settings.get("EXPORT_DEFAULTS", False)).values():
             if s.is_internal():
                 continue
             (categ, subcateg) = s.category()
@@ -451,7 +451,7 @@ class Platform(object):
                 continue
             if not s.is_global():
                 continue
-            util.update_json(json_data, categ, subcateg, s.to_json(export_settings["INLINE_LISTS"]))
+            util.update_json(json_data, categ, subcateg, s.to_json(export_settings.get("INLINE_LISTS", True)))
 
         hooks = {}
         for wb in self.webhooks().values():

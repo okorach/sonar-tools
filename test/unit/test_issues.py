@@ -22,6 +22,8 @@
 """ Test of the issues module and class, as well as changelog """
 
 from datetime import datetime
+import pytest
+
 import utilities as tutil
 from sonar import issues
 from sonar import utilities as util
@@ -59,12 +61,12 @@ def test_issue() -> None:
     issue2 = issues_d[issue_key_accepted]
     assert not issue.almost_identical_to(issue2)
 
+    assert f"{issue}".startswith(f"Key: {issue.key} - Type:")
+
 
 def test_add_comments() -> None:
     """Test issue comments manipulations"""
-    issues_d = issues.search_by_project(
-        endpoint=tutil.SQ, project_key="pytorch", params={"impactSeverities": "HIGH", "impactSoftwareQualities": "RELIABILITY"}
-    )
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key="project1")
     issue = list(issues_d.values())[0]
     comment = f"NOW is {str(datetime.now())}"
     assert issue.add_comment(comment)
@@ -161,3 +163,74 @@ def test_changelog() -> None:
     assert changelog.get_tags() is None
     (t, _) = changelog.changelog_type()
     assert t == "FALSE-POSITIVE"
+
+
+def test_request_error() -> None:
+    """test_request_error"""
+    issues_d = issues.search_by_project(endpoint=tutil.TEST_SQ, project_key="project1")
+    issue = list(issues_d.values())[0]
+    tutil.TEST_SQ.url = "http://localhost:3337"
+    assert not issue.add_comment("Won't work")
+
+    assert not issue.assign("admin")
+
+
+def test_transitions() -> None:
+    """test_transitions"""
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key="project1")
+    issue = list(issues_d.values())[0]
+
+    assert issue.confirm()
+    assert not issue.confirm()
+    assert issue.unconfirm()
+    assert not issue.unconfirm()
+
+    assert issue.resolve_as_fixed()
+    assert not issue.resolve_as_fixed()
+    assert issue.reopen()
+    assert not issue.reopen()
+
+    assert issue.mark_as_wont_fix()
+    assert not issue.mark_as_wont_fix()
+    assert issue.reopen()
+    assert not issue.reopen()
+
+    assert issue.accept()
+    assert not issue.accept()
+    assert issue.reopen()
+    assert not issue.reopen()
+
+    assert issue.mark_as_false_positive()
+    assert not issue.mark_as_false_positive()
+    assert issue.reopen()
+    assert not issue.reopen()
+
+
+def test_search_first() -> None:
+    """test_search_first"""
+    assert issues.search_first(tutil.SQ, components="non-existing-project-key") is None
+
+
+def test_get_facets() -> None:
+    """test_get_facets"""
+    facets = issues._get_facets(tutil.SQ, project_key="okorach_sonar-tools")
+    assert len(facets["directories"]) > 1
+
+
+def test_search_by_small() -> None:
+    """Test search_by on small project (less than 10000 issues)"""
+    list1 = issues.search_by_project(tutil.SQ, "okorach_sonar-tools")
+    params = {"components": "okorach_sonar-tools", "project": "okorach_sonar-tools"}
+    assert list1 == issues.search_by_type(tutil.SQ, params)
+    assert list1 == issues.search_by_severity(tutil.SQ, params)
+    assert list1 == issues.search_by_date(tutil.SQ, params)
+    assert list1 == issues.search_by_directory(tutil.SQ, params)
+
+
+def test_search_by_large() -> None:
+    """Test search_by on large project (more than 10000 issues)"""
+    assert len(issues.search_by_project(tutil.SQ, "pytorch")) > 10000
+
+    params = {"components": "pytorch", "project": "pytorch"}
+    with pytest.raises(issues.TooManyIssuesError):
+        issues.search_by_severity(tutil.SQ, params)
