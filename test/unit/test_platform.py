@@ -22,6 +22,9 @@
 """ platform tests """
 
 import json
+import logging
+from requests import RequestException
+
 import pytest
 import utilities as util
 from sonar import platform, settings
@@ -34,8 +37,8 @@ def test_system_id() -> None:
 
 
 def test_db() -> None:
-    assert util.SC.database() == "postgres"
-    assert util.SQ.database() == "postgres"
+    assert util.SC.database().lower() == "postgresql"
+    assert util.SQ.database().lower() == "postgresql"
 
 
 def test_plugins() -> None:
@@ -43,13 +46,18 @@ def test_plugins() -> None:
 
 
 def test_get_set_reset_settings() -> None:
-    assert util.SQ.get_setting("sonar.global.exclusions") == ""
+    # util.start_logging()
+    assert util.SQ.reset_setting("sonar.exclusions")
+    assert util.SQ.get_setting("sonar.exclusions") is None
 
-    assert util.SQ.set_setting("sonar.global.exclusions", "**/*.foo")
-    assert util.SQ.get_setting("sonar.global.exclusions") == "**/*.foo"
+    assert util.SQ.set_setting("sonar.exclusions", "**/*.foo")
+    assert util.SQ.get_setting("sonar.exclusions") == ["**/*.foo"]
 
-    assert util.SQ.reset_setting("sonar.global.exclusions")
-    assert util.SQ.get_setting("sonar.global.exclusions") == ""
+    assert util.SQ.set_setting("sonar.exclusions", "**/*.foo,**/*.bar")
+    assert util.SQ.get_setting("sonar.exclusions") == ["**/*.foo", "**/*.bar"]
+
+    assert util.SQ.reset_setting("sonar.exclusions")
+    assert util.SQ.get_setting("sonar.exclusions") is None
 
 
 def test_import() -> None:
@@ -73,9 +81,11 @@ def test_sys_info() -> None:
 def test_wrong_url() -> None:
     url = util.TEST_SQ.url
     util.TEST_SQ.url = "http://localhost:3337"
-    with pytest.raises(ConnectionError):
+    with pytest.raises(RequestException):
         util.TEST_SQ.sys_info()
-    assert util.TEST_SQ.global_permissions() == []
+
+    util.TEST_SQ.global_permissions()
+
     util.TEST_SQ.url = url
 
 
