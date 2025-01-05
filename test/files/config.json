@@ -12,7 +12,6 @@
                "sonar-administrators": "admin"
             }
          },
-         "tags": "",
          "visibility": "public"
       },
       "APP_TEST": {
@@ -92,7 +91,6 @@
                "sonar-users": "user"
             }
          },
-         "tags": "",
          "visibility": "private"
       },
       "App_with_no_perms": {
@@ -107,68 +105,56 @@
                "admin": "admin, user"
             }
          },
-         "tags": "",
          "visibility": "private"
+      },
+      "MON": {
+         "branches": {
+            "main": {
+               "isMain": true,
+               "projects": {
+                  "demo:jcl": "main",
+                  "demo:target-awareness": "main",
+                  "exclusions-2": "main"
+               }
+            }
+         },
+         "name": "My monorepo",
+         "permissions": {
+            "groups": {
+               "project-admins": "admin",
+               "sonar-administrators": "admin"
+            }
+         },
+         "visibility": "public"
       }
    },
    "globalSettings": {
-      "analysisScope": {
-         "sonar.coverage.exclusions": "",
-         "sonar.cpd.exclusions": "",
-         "sonar.exclusions": "",
-         "sonar.global.exclusions": "",
-         "sonar.global.test.exclusions": "",
-         "sonar.inclusions": "",
-         "sonar.issue.enforce.multicriteria": "",
-         "sonar.issue.ignore.allfile": "",
-         "sonar.issue.ignore.block": "",
-         "sonar.issue.ignore.multicriteria": "",
-         "sonar.test.exclusions": "",
-         "sonar.test.inclusions": ""
-      },
       "authentication": {
          "sonar.auth.bitbucket.allowUsersToSignUp": true,
-         "sonar.auth.bitbucket.clientId.secured": "",
-         "sonar.auth.bitbucket.clientSecret.secured": "",
          "sonar.auth.bitbucket.enabled": false,
-         "sonar.auth.bitbucket.workspaces": "",
          "sonar.auth.github.allowUsersToSignUp": true,
          "sonar.auth.github.apiUrl": "https://api.github.com/",
          "sonar.auth.github.appId": 946173,
-         "sonar.auth.github.clientId.secured": "",
-         "sonar.auth.github.clientSecret.secured": "",
          "sonar.auth.github.enabled": false,
          "sonar.auth.github.groupsSync": false,
          "sonar.auth.github.organizations": "okorach-org",
-         "sonar.auth.github.privateKey.secured": "",
          "sonar.auth.github.webUrl": "https://github.com/",
          "sonar.auth.gitlab.allowUsersToSignUp": true,
          "sonar.auth.gitlab.allowedGroups": "gl-admins",
-         "sonar.auth.gitlab.applicationId.secured": "",
          "sonar.auth.gitlab.enabled": true,
          "sonar.auth.gitlab.groupsSync": true,
-         "sonar.auth.gitlab.secret.secured": "",
          "sonar.auth.gitlab.url": "https://gitlab.com/",
          "sonar.auth.saml.applicationId": "sonarqube",
-         "sonar.auth.saml.certificate.secured": "",
          "sonar.auth.saml.enabled": false,
-         "sonar.auth.saml.group.name": "",
-         "sonar.auth.saml.loginUrl": "",
-         "sonar.auth.saml.providerId": "",
          "sonar.auth.saml.providerName": "SAML",
          "sonar.auth.saml.signature.enabled": false,
-         "sonar.auth.saml.sp.certificate.secured": "",
-         "sonar.auth.saml.sp.privateKey.secured": "",
-         "sonar.auth.saml.user.email": "",
-         "sonar.auth.saml.user.login": "",
-         "sonar.auth.saml.user.name": "",
          "sonar.auth.token.max.allowed.lifetime": "No expiration",
          "sonar.forceAuthentication": true
       },
       "devopsIntegration": {
          "ADO": {
             "type": "azure",
-            "url": "https://dev.azure.com/okorach"
+            "url": "https://dev.azure.com/olivierkorach"
          },
          "GitHub okorach": {
             "appId": "946159",
@@ -188,18 +174,10 @@
          }
       },
       "generalSettings": {
-         "email.from": "noreply@nowhere",
-         "email.fromName": "SonarQube",
-         "email.prefix": "[SONARQUBE]",
-         "email.smtp_host.secured": "",
-         "email.smtp_password.secured": "",
-         "email.smtp_port.secured": "__default__",
-         "email.smtp_secure_connection.secured": "",
-         "email.smtp_username.secured": "",
          "provisioning.github.project.visibility.enabled": true,
          "provisioning.gitlab.enabled": false,
-         "provisioning.gitlab.token.secured": "",
-         "sonar.allowPermissionManagementForProjectAdmins": true,
+         "sonar.ai.suggestions.enabled": "ENABLED_FOR_SOME_PROJECTS",
+         "sonar.allowPermissionManagementForProjectAdmins": false,
          "sonar.announcement.displayMessage": false,
          "sonar.announcement.message": "You are on LATEST",
          "sonar.builtInQualityProfiles.disableNotificationOnUpdate": false,
@@ -226,33 +204,30 @@
          "sonar.developerAggregatedInfo.disabled": false,
          "sonar.governance.report.project.branch.frequency": "Monthly",
          "sonar.governance.report.view.frequency": "Monthly",
-         "sonar.governance.report.view.recipients": "",
-         "sonar.issues.defaultAssigneeLogin": "",
          "sonar.kubernetes.activate": true,
          "sonar.lf.enableGravatar": false,
          "sonar.lf.gravatarServerUrl": "https://secure.gravatar.com/avatar/{EMAIL_MD5}.jpg?s={SIZE}&d=identicon",
-         "sonar.lf.logoUrl": "",
-         "sonar.lf.logoWidthPx": "",
-         "sonar.login.displayMessage": "",
-         "sonar.login.message": "",
          "sonar.plugins.downloadOnlyRequired": true,
          "sonar.portfolios.confidential.header": true,
-         "sonar.portfolios.recompute.hours": "",
          "sonar.projectCreation.mainBranchName": "main",
          "sonar.qualityProfiles.allowDisableInheritedRules": true,
          "sonar.qualitygate.ignoreSmallChanges": true,
          "sonar.scm.disabled": false,
          "sonar.technicalDebt.developmentCost": 30,
          "sonar.technicalDebt.ratingGrid": "0.05,0.1,0.2,0.5",
-         "sonar.validateWebhooks": true
+         "sonar.validateWebhooks": true,
+         "webhooks": {
+            "Jenkins": {
+               "url": "https://jenkins.olivierk.ngrok.io"
+            }
+         }
       },
       "languages": {
          "abap": {
             "sonar.abap.file.suffixes": ".ab4, .abap, .asprog, .flow"
          },
          "apex": {
-            "sonar.apex.file.suffixes": ".cls, .trigger",
-            "sonar.apex.pmd.reportPaths": ""
+            "sonar.apex.file.suffixes": ".cls, .trigger"
          },
          "azureresourcemanager": {
             "sonar.azureresourcemanager.activate": true,
@@ -261,37 +236,19 @@
          },
          "cfamily": {
             "sonar.c.file.suffixes": ".c, .h",
-            "sonar.cfamily.bullseye.reportPath": "",
-            "sonar.cfamily.cobertura.reportPaths": "",
-            "sonar.cfamily.cppunit.reportsPath": "",
-            "sonar.cfamily.gcov.reportsPath": "",
-            "sonar.cfamily.llvm-cov.reportPath": "",
-            "sonar.cfamily.valgrind.reportsPaths": "",
-            "sonar.cfamily.vscoveragexml.reportsPath": "",
             "sonar.cpp.file.suffixes": ".c++, .cc, .cpp, .cxx, .h++, .hh, .hpp, .hxx, .ipp",
             "sonar.objc.file.suffixes": ".m"
          },
          "cloudformation": {
             "sonar.cloudformation.activate": true,
-            "sonar.cloudformation.cfn-lint.reportPaths": "",
             "sonar.cloudformation.file.identifier": "AWSTemplateFormatVersion"
          },
          "cobol": {
             "sonar.cobol.adaprep.activation": false,
-            "sonar.cobol.aucobol.preprocessor.directives.default": "",
             "sonar.cobol.byteBasedColumnCount": false,
-            "sonar.cobol.compilationConstants": "",
-            "sonar.cobol.copy.directories": "",
-            "sonar.cobol.copy.exclusions": "",
-            "sonar.cobol.copy.suffixes": "",
-            "sonar.cobol.db2include.directories": "",
             "sonar.cobol.dialect": "ibm-enterprise-cobol",
             "sonar.cobol.exec.recoveryMode": true,
-            "sonar.cobol.file.suffixes": "",
-            "sonar.cobol.preprocessor.skipping.first.matching.characters": "",
             "sonar.cobol.sourceFormat": "fixed",
-            "sonar.cobol.sql.catalog.csv.path": "",
-            "sonar.cobol.sql.catalog.defaultSchema": "",
             "sonar.cobol.tab.width": 8,
             "sonar.cpd.cobol.ignoreLiteral": true
          },
@@ -300,37 +257,24 @@
             "sonar.cs.analyzeRazorCode": true,
             "sonar.cs.file.suffixes": ".cs",
             "sonar.cs.ignoreHeaderComments": true,
-            "sonar.cs.roslyn.bugCategories": "",
-            "sonar.cs.roslyn.codeSmellCategories": "",
-            "sonar.cs.roslyn.ignoreIssues": false,
-            "sonar.cs.roslyn.vulnerabilityCategories": ""
+            "sonar.cs.roslyn.ignoreIssues": false
          },
          "css": {
-            "sonar.css.file.suffixes": ".css, .less, .scss",
-            "sonar.css.stylelint.reportPaths": ""
+            "sonar.css.file.suffixes": ".css, .less, .scss"
          },
          "dart": {
-            "sonar.dart.file.suffixes": ".dart",
-            "sonar.dart.lcov.reportPaths": ""
+            "sonar.dart.file.suffixes": ".dart"
          },
          "docker": {
             "sonar.docker.activate": true,
-            "sonar.docker.file.patterns": "*.dockerfile, Dockerfile, *.Dockerfile",
-            "sonar.docker.hadolint.reportPaths": ""
+            "sonar.docker.file.patterns": "*.dockerfile, Dockerfile, *.Dockerfile"
          },
          "flex": {
-            "sonar.flex.cobertura.reportPaths": "",
             "sonar.flex.file.suffixes": "as"
          },
          "go": {
-            "sonar.go.coverage.reportPaths": "",
             "sonar.go.exclusions": "**/vendor/**",
-            "sonar.go.file.suffixes": ".go",
-            "sonar.go.golangci-lint.reportPaths": "",
-            "sonar.go.golint.reportPaths": "",
-            "sonar.go.gometalinter.reportPaths": "",
-            "sonar.go.govet.reportPaths": "",
-            "sonar.go.tests.reportPaths": ""
+            "sonar.go.file.suffixes": ".go"
          },
          "html": {
             "sonar.html.file.suffixes": ".ascx, .aspx, .cmp, .cshtml, .erb, .html, .rhtml, .shtm, .shtml, .twig, .vbhtml, .xhtml"
@@ -344,17 +288,13 @@
             "sonar.java.file.suffixes": ".jav, .java",
             "sonar.java.ignoreUnnamedModuleForSplitPackage": false,
             "sonar.java.jvmframeworkconfig.activate": true,
-            "sonar.java.jvmframeworkconfig.file.patterns": "**/src/main/resources/**/application*.properties, **/src/main/resources/**/application*.yaml, **/src/main/resources/**/application*.yml",
-            "sonar.java.pmd.reportPaths": "",
-            "sonar.java.spotbugs.reportPaths": ""
+            "sonar.java.jvmframeworkconfig.file.patterns": "**/src/main/resources/**/application*.properties, **/src/main/resources/**/application*.yaml, **/src/main/resources/**/application*.yml"
          },
          "javascript": {
-            "sonar.eslint.reportPaths": "",
             "sonar.javascript.environments": "amd, applescript, atomtest, browser, commonjs, couch, embertest, flow, greasemonkey, jasmine, jest, jquery, meteor, mocha, mongo, nashorn, node, phantomjs, prototypejs, protractor, qunit, rhino, serviceworker, shared-node-browser, shelljs, webextensions, worker, wsh, yui",
             "sonar.javascript.file.suffixes": ".cjs, .js, .jsx, .mjs, .vue",
             "sonar.javascript.globals": "Backbone, OenLayers, _, angular, casper, d3, dijit, dojo, dojox, goog, google, moment, sap",
             "sonar.javascript.ignoreHeaderComments": true,
-            "sonar.javascript.lcov.reportPaths": "",
             "sonar.javascript.maxFileSize": 1000
          },
          "jcl": {
@@ -367,19 +307,12 @@
             "sonar.jsp.file.suffixes": ".jsp, .jspf, .jspx"
          },
          "kotlin": {
-            "sonar.androidLint.reportPaths": "",
-            "sonar.kotlin.detekt.reportPaths": "",
-            "sonar.kotlin.file.suffixes": ".kt",
-            "sonar.kotlin.ktlint.reportPaths": ""
+            "sonar.kotlin.file.suffixes": ".kt"
          },
          "php": {
-            "sonar.php.coverage.reportPaths": "",
             "sonar.php.exclusions": "**/vendor/**",
             "sonar.php.file.suffixes": "inc, php, php3, php4, php5, phtml",
-            "sonar.php.frameworkDetection": true,
-            "sonar.php.phpstan.reportPaths": "",
-            "sonar.php.psalm.reportPaths": "",
-            "sonar.php.tests.reportPath": ""
+            "sonar.php.frameworkDetection": true
          },
          "pli": {
             "sonar.pli.extralingualCharacters": "#@$",
@@ -393,14 +326,8 @@
             "sonar.plsql.ignoreHeaderComments": false
          },
          "python": {
-            "sonar.python.bandit.reportPaths": "",
             "sonar.python.coverage.reportPaths": "coverage-reports/*coverage-*.xml",
             "sonar.python.file.suffixes": "py",
-            "sonar.python.flake8.reportPaths": "",
-            "sonar.python.mypy.reportPaths": "",
-            "sonar.python.pylint.reportPaths": "",
-            "sonar.python.ruff.reportPaths": "",
-            "sonar.python.version": "",
             "sonar.python.xunit.reportPath": "xunit-reports/xunit-result-*.xml",
             "sonar.python.xunit.skipDetails": false
          },
@@ -411,30 +338,20 @@
          "ruby": {
             "sonar.ruby.coverage.reportPaths": "coverage/.resultset.json",
             "sonar.ruby.exclusions": "**/vendor/**",
-            "sonar.ruby.file.suffixes": ".rb",
-            "sonar.ruby.rubocop.reportPaths": ""
+            "sonar.ruby.file.suffixes": ".rb"
          },
          "scala": {
-            "sonar.scala.coverage.reportPaths": "",
-            "sonar.scala.file.suffixes": ".scala",
-            "sonar.scala.scalastyle.reportPaths": "",
-            "sonar.scala.scapegoat.reportPaths": ""
+            "sonar.scala.file.suffixes": ".scala"
          },
          "swift": {
-            "sonar.swift.coverage.reportPaths": "",
-            "sonar.swift.file.suffixes": ".swift",
-            "sonar.swift.swiftLint.reportPaths": ""
+            "sonar.swift.file.suffixes": ".swift"
          },
          "terraform": {
             "sonar.terraform.activate": true,
-            "sonar.terraform.file.suffixes": ".tf",
-            "sonar.terraform.provider.aws.version": "",
-            "sonar.terraform.provider.azure.version": "",
-            "sonar.terraform.tflint.reportPaths": ""
+            "sonar.terraform.file.suffixes": ".tf"
          },
          "text": {
             "sonar.text.activate": true,
-            "sonar.text.excluded.file.suffixes": "",
             "sonar.text.inclusions": "**/*, **/*.bash, **/*.conf, **/*.config, **/*.ksh, **/*.pem, **/*.properties, **/*.ps1, **/*.sh, **/*.zsh, .aws/config, .env",
             "sonar.text.inclusions.activate": true
          },
@@ -442,9 +359,7 @@
             "sonar.tsql.file.suffixes": ".tsql"
          },
          "typescript": {
-            "sonar.typescript.file.suffixes": ".cts, .mts, .ts, .tsx",
-            "sonar.typescript.tsconfigPaths": "",
-            "sonar.typescript.tslint.reportPaths": ""
+            "sonar.typescript.file.suffixes": ".cts, .mts, .ts, .tsx"
          },
          "vb": {
             "sonar.vb.file.suffixes": ".BAS, .CLS, .CTL, .FRM, .bas, .cls, .ctl, .frm",
@@ -454,10 +369,7 @@
             "sonar.vbnet.analyzeGeneratedCode": false,
             "sonar.vbnet.file.suffixes": ".vb",
             "sonar.vbnet.ignoreHeaderComments": true,
-            "sonar.vbnet.roslyn.bugCategories": "",
-            "sonar.vbnet.roslyn.codeSmellCategories": "",
-            "sonar.vbnet.roslyn.ignoreIssues": false,
-            "sonar.vbnet.roslyn.vulnerabilityCategories": ""
+            "sonar.vbnet.roslyn.ignoreIssues": false
          },
          "xml": {
             "sonar.xml.file.suffixes": ".xml, .xsd, .xsl"
@@ -467,16 +379,12 @@
          }
       },
       "linters": {
-         "sonar.checkstyle.checker.tabWidth": "",
          "sonar.checkstyle.filters": "<module name=\"SuppressWarningsFilter\" />",
          "sonar.checkstyle.treewalkerfilters": "<module name=\"SuppressionCommentFilter\" />",
          "sonar.findbugs.allowuncompiledcode": false,
          "sonar.findbugs.analyzeTests": true,
          "sonar.findbugs.confidenceLevel": "medium",
          "sonar.findbugs.effort": "Default",
-         "sonar.findbugs.excludesFilters": "",
-         "sonar.findbugs.onlyAnalyze": "",
-         "sonar.findbugs.reportpaths": "",
          "sonar.findbugs.timeout": 600000
       },
       "permissionTemplates": {
@@ -494,9 +402,12 @@
             "description": "This permission template will be used as default when no other permission configuration is available",
             "permissions": {
                "groups": {
-                  "project-admins": "admin, user",
-                  "sonar-administrators": "admin",
-                  "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
+                  "developers": "codeviewer, user",
+                  "project-admins": "admin, codeviewer, user",
+                  "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+                  "sonar-administrators": "admin, codeviewer, user",
+                  "sonar-users": "user",
+                  "tech-leads": "codeviewer, issueadmin, user"
                }
             }
          },
@@ -520,7 +431,7 @@
          },
          "9. Bad Template with wildcard instead of regexp": {
             "description": "Bad template that uses wildcard project key pattern instead of regexp",
-            "pattern": "BANKING-INVEST-*"
+            "pattern": "BANKING-INVEST-.*"
          },
          "Default template": {
             "description": "Default",
@@ -534,23 +445,15 @@
       },
       "permissions": {
          "groups": {
-            "language-experts": "profileadmin, provisioning, scan",
-            "quality-managers": "gateadmin, scan",
-            "sonar-administrators": "admin, applicationcreator, gateadmin, portfoliocreator, profileadmin, provisioning",
-            "sonar-users": "provisioning, scan"
+            "ci-tools": "provisioning, scan",
+            "language-experts": "profileadmin",
+            "quality-managers": "gateadmin",
+            "sonar-administrators": "admin, applicationcreator, gateadmin, portfoliocreator, profileadmin, provisioning, scan",
+            "sonar-users": "applicationcreator, portfoliocreator"
          }
       },
-      "sastConfig": {
-         "sonar.security.config.javasecurity": "",
-         "sonar.security.config.phpsecurity": "",
-         "sonar.security.config.pythonsecurity": "",
-         "sonar.security.config.roslyn.sonaranalyzer.security.cs": ""
-      },
-      "tests": {
-         "sonar.coverage.jacoco.xmlReportPaths": "",
-         "sonar.junit.reportPaths": ""
-      },
       "thirdParty": {
+         "sonar.ansible.activate": true,
          "sonar.dependencyCheck.htmlReportPath": "${WORKSPACE}/dependency-check-report.html",
          "sonar.dependencyCheck.jsonReportPath": "${WORKSPACE}/dependency-check-report.json",
          "sonar.dependencyCheck.securityHotspot": false,
@@ -559,20 +462,19 @@
          "sonar.dependencyCheck.severity.medium": 4.0,
          "sonar.dependencyCheck.skip": false,
          "sonar.dependencyCheck.summarize": false,
-         "sonar.dependencyCheck.useFilePath": false
+         "sonar.dependencyCheck.useFilePath": false,
+         "sonar.scanner.skipNodeProvisioning": false
       }
    },
    "groups": {
+      "ci-tools": "Service accounts for CI tools",
       "developers": "Developers",
-      "gl-admins": "",
-      "gl-admins/gl-devs": "",
       "language-experts": "Language experts in charge of defining the company governance in terms of Quality Profiles (rulesets enforced in the company)",
       "project-admins": "Project administrators in charge of project configuration",
       "quality-managers": "Quality Managers in charge of defining company governance in terms of quality gates",
       "security-auditors": "Security Auditors in charge of reviewing security issues",
       "sonar-administrators": "SonarQube administrators",
-      "tech-leads": "Senior developers in charge of reviewing issues",
-      "z comma , group": ""
+      "tech-leads": "Senior developers in charge of reviewing issues"
    },
    "platform": {
       "edition": "enterprise",
@@ -584,7 +486,7 @@
       },
       "serverId": "243B8A4D-AY5SFSbmgIK8PCmM81th",
       "url": "https://latest.olivierk.ngrok.io",
-      "version": "10.7.0"
+      "version": "10.8.0"
    },
    "portfolios": {
       "All": {
@@ -867,6 +769,8 @@
    },
    "projects": {
       "BANKING-AFRICA-OPS": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -886,6 +790,8 @@
          "visibility": "public"
       },
       "BANKING-ASIA-OPS": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -905,6 +811,8 @@
          "visibility": "public"
       },
       "BANKING-INVESTMENT-EQUITY": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -924,6 +832,8 @@
          "visibility": "public"
       },
       "BANKING-INVESTMENT-MERGER": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -943,6 +853,7 @@
          "visibility": "public"
       },
       "BANKING-PORTAL": {
+         "aiCodeFix": false,
          "branches": {
             "comma,branch": {
                "keepWhenInactive": true
@@ -954,6 +865,7 @@
                "keepWhenInactive": true
             }
          },
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -972,6 +884,8 @@
          "visibility": "public"
       },
       "BANKING-PRIVATE-ASSETS": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -990,6 +904,8 @@
          "visibility": "public"
       },
       "BANKING-PRIVATE-WEALTH": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1008,6 +924,8 @@
          "visibility": "public"
       },
       "BANKING-RETAIL-ATM": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1027,6 +945,8 @@
          "visibility": "public"
       },
       "BANKING-RETAIL-CLERK": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1046,6 +966,8 @@
          "visibility": "public"
       },
       "BANKING-TRADING-EURO": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1065,6 +987,8 @@
          "visibility": "public"
       },
       "BANKING-TRADING-JAPAN": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1084,6 +1008,8 @@
          "visibility": "public"
       },
       "BANKING-TRADING-NASDAQ": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1103,6 +1029,8 @@
          "visibility": "public"
       },
       "INSURANCE-HOME": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1122,6 +1050,8 @@
          "visibility": "public"
       },
       "INSURANCE-LIFE": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1141,6 +1071,8 @@
          "visibility": "public"
       },
       "INSURANCE-PET": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1160,6 +1092,8 @@
          "visibility": "public"
       },
       "Project-with-no-perms": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "Project with no perms",
          "permissions": {
             "groups": {
@@ -1171,6 +1105,8 @@
          "visibility": "public"
       },
       "RETAIL-ATM": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "Retail - ATM",
          "permissions": {
             "groups": {
@@ -1182,6 +1118,8 @@
          "visibility": "public"
       },
       "RETAIL-WEB": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1201,11 +1139,13 @@
          "visibility": "public"
       },
       "TEST": {
+         "aiCodeFix": false,
          "binding": {
             "key": "GitHub okorach-org",
             "repository": "okorach-org/demo-github-azdo",
             "summaryCommentEnabled": true
          },
+         "containsAiCode": false,
          "links": [
             {
                "name": "google",
@@ -1362,9 +1302,6 @@
             }
          },
          "qualityGate": "Sonar way",
-         "qualityProfiles": {
-            "py": "Olivier Way"
-         },
          "visibility": "public",
          "webhooks": {
             "Jenkins": {
@@ -1373,6 +1310,7 @@
          }
       },
       "TESTSYNC": {
+         "aiCodeFix": false,
          "branches": {
             "main": {
                "keepWhenInactive": true
@@ -1381,6 +1319,7 @@
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "name": "TESTSYNC",
          "permissions": {
             "groups": {
@@ -1391,11 +1330,13 @@
          "visibility": "public"
       },
       "TESTSYNC2": {
+         "aiCodeFix": false,
          "branches": {
             "main-branch": {
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "name": "TESTSYNC2",
          "permissions": {
             "groups": {
@@ -1405,7 +1346,26 @@
          },
          "visibility": "public"
       },
+      "ai-code-fix": {
+         "aiCodeFix": true,
+         "branches": {
+            "main": {
+               "isMain": true
+            }
+         },
+         "containsAiCode": true,
+         "name": "AI CodeFix examples",
+         "permissions": {
+            "groups": {
+               "project-admins": "admin",
+               "sonar-administrators": "admin",
+               "sonar-users": "issueadmin, securityhotspotadmin"
+            }
+         },
+         "visibility": "public"
+      },
       "checkstyle-issues": {
+         "aiCodeFix": false,
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -1414,6 +1374,7 @@
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1429,12 +1390,11 @@
                "sonar-users": "issueadmin, securityhotspotadmin"
             }
          },
-         "qualityProfiles": {
-            "java": "Java and Checkstyle"
-         },
          "visibility": "public"
       },
       "demo-rules": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "Demo rules",
          "permissions": {
             "groups": {
@@ -1445,7 +1405,27 @@
          },
          "visibility": "public"
       },
+      "demo:ado-cli": {
+         "aiCodeFix": false,
+         "binding": {
+            "key": "ADO",
+            "repository": "demo-ado-cli",
+            "slug": "Demos"
+         },
+         "containsAiCode": false,
+         "name": "demo-ado-cli",
+         "permissions": {
+            "groups": {
+               "project-admins": "admin",
+               "sonar-administrators": "admin",
+               "sonar-users": "issueadmin, securityhotspotadmin"
+            }
+         },
+         "visibility": "public"
+      },
       "demo:autoconfig": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "Demo Autoconfig",
          "permissions": {
             "groups": {
@@ -1457,11 +1437,13 @@
          "visibility": "public"
       },
       "demo:autoconfig:carbon": {
+         "aiCodeFix": false,
          "branches": {
             "develop": {
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "name": "Demo Autoconfig Carbon",
          "permissions": {
             "groups": {
@@ -1473,11 +1455,13 @@
          "visibility": "public"
       },
       "demo:github-actions-cli": {
+         "aiCodeFix": false,
          "binding": {
             "key": "GitHub okorach-org",
             "repository": "okorach-org/demo-actions-cli",
             "summaryCommentEnabled": true
          },
+         "containsAiCode": false,
          "name": "GitHub / Actions / CLI",
          "permissions": {
             "groups": {
@@ -1488,7 +1472,30 @@
          },
          "visibility": "public"
       },
+      "demo:github-actions-maven": {
+         "aiCodeFix": false,
+         "binding": {
+            "key": "GitHub okorach",
+            "repository": "okorach/demo-actions-maven",
+            "summaryCommentEnabled": true
+         },
+         "containsAiCode": false,
+         "name": "GitHub / Actions / Maven",
+         "permissions": {
+            "groups": {
+               "project-admins": "admin",
+               "sonar-administrators": "admin",
+               "sonar-users": "issueadmin, securityhotspotadmin"
+            },
+            "users": {
+               "admin": "scan"
+            }
+         },
+         "qualityGate": "Siemens Healthineers QG",
+         "visibility": "public"
+      },
       "demo:github-actions-mono-cli": {
+         "aiCodeFix": false,
          "binding": {
             "key": "GitHub okorach",
             "monorepo": true,
@@ -1500,6 +1507,7 @@
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "name": "GitHub / Actions / monorepo CLI",
          "permissions": {
             "groups": {
@@ -1511,6 +1519,7 @@
          "visibility": "public"
       },
       "demo:github-actions-mono-dotnet": {
+         "aiCodeFix": false,
          "binding": {
             "key": "GitHub okorach",
             "monorepo": true,
@@ -1522,6 +1531,7 @@
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "name": "GitHub / Actions / monorepo .Net Core",
          "permissions": {
             "groups": {
@@ -1533,6 +1543,7 @@
          "visibility": "public"
       },
       "demo:github-actions-mono-gradle": {
+         "aiCodeFix": false,
          "binding": {
             "key": "GitHub okorach",
             "monorepo": true,
@@ -1544,6 +1555,7 @@
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "name": "GitHub / Actions / monorepo Gradle",
          "permissions": {
             "groups": {
@@ -1556,6 +1568,7 @@
          "visibility": "public"
       },
       "demo:github-actions-mono-maven": {
+         "aiCodeFix": false,
          "binding": {
             "key": "GitHub okorach",
             "monorepo": true,
@@ -1570,6 +1583,7 @@
                "keepWhenInactive": true
             }
          },
+         "containsAiCode": false,
          "name": "GitHub / Actions / monorepo Maven",
          "permissions": {
             "groups": {
@@ -1582,6 +1596,8 @@
          "visibility": "public"
       },
       "demo:gitlab-ci-maven": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "GitLab-CI / Maven",
          "permissions": {
             "groups": {
@@ -1593,6 +1609,8 @@
          "visibility": "public"
       },
       "demo:gitlab:gradle": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "GitLab / Gradle",
          "permissions": {
             "groups": {
@@ -1604,6 +1622,7 @@
          "visibility": "public"
       },
       "demo:gitlab:scanner-cli": {
+         "aiCodeFix": false,
          "branches": {
             "main": {
                "isMain": true
@@ -1612,6 +1631,7 @@
                "keepWhenInactive": true
             }
          },
+         "containsAiCode": false,
          "name": "GitLab / Scanner CLI",
          "permissions": {
             "groups": {
@@ -1623,6 +1643,8 @@
          "visibility": "public"
       },
       "demo:java-security": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1641,6 +1663,8 @@
          "visibility": "public"
       },
       "demo:jcl": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "Demo JCL",
          "permissions": {
             "groups": {
@@ -1649,13 +1673,12 @@
                "sonar-users": "issueadmin, securityhotspotadmin"
             }
          },
-         "qualityProfiles": {
-            "jcl": "Full Way"
-         },
          "visibility": "public"
       },
       "demo:secrets": {
-         "name": "Demo custom secrets",
+         "aiCodeFix": false,
+         "containsAiCode": false,
+         "name": "Demo Secrets Detection",
          "permissions": {
             "groups": {
                "project-admins": "admin",
@@ -1666,6 +1689,8 @@
          "visibility": "public"
       },
       "demo:target-awareness": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "Demo: Target awareness",
          "permissions": {
             "groups": {
@@ -1677,6 +1702,8 @@
          "visibility": "public"
       },
       "dotnet-with-cli": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "dotnet-with-cli",
          "permissions": {
             "groups": {
@@ -1688,7 +1715,8 @@
          "visibility": "public"
       },
       "dvpa": {
-         "aiCodeAssurance": true,
+         "aiCodeFix": false,
+         "containsAiCode": true,
          "name": "dvpa",
          "newCodePeriod": "NUMBER_OF_DAYS = 30",
          "permissions": {
@@ -1702,7 +1730,22 @@
          "sonar.cfamily.generateComputedConfig": false,
          "visibility": "private"
       },
+      "exclusions-2": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
+         "name": "example-2",
+         "permissions": {
+            "groups": {
+               "project-admins": "admin",
+               "sonar-administrators": "admin",
+               "sonar-users": "issueadmin, securityhotspotadmin"
+            }
+         },
+         "visibility": "public"
+      },
       "foobar": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "Super long long project name that makes me crazy",
          "permissions": {
             "groups": {
@@ -1713,6 +1756,8 @@
          "visibility": "public"
       },
       "gradle-with-cli": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "gradle-with-cli",
          "permissions": {
             "groups": {
@@ -1723,7 +1768,39 @@
          },
          "visibility": "public"
       },
+      "juice-shop": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
+         "links": [
+            {
+               "name": "scm",
+               "type": "scm",
+               "url": "https://github.com/juice-shop/juice-shop.git"
+            },
+            {
+               "name": "issue",
+               "type": "issue",
+               "url": "https://github.com/juice-shop/juice-shop/issues"
+            },
+            {
+               "name": "homepage",
+               "type": "homepage",
+               "url": "https://owasp-juice.shop"
+            }
+         ],
+         "name": "juice-shop",
+         "permissions": {
+            "groups": {
+               "project-admins": "admin",
+               "sonar-administrators": "admin",
+               "sonar-users": "issueadmin, securityhotspotadmin"
+            }
+         },
+         "visibility": "public"
+      },
       "maven-with-cli": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "Maven project analyzed with Scanner CLI",
          "permissions": {
             "groups": {
@@ -1735,6 +1812,8 @@
          "visibility": "public"
       },
       "no-scm": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "No SCM",
          "permissions": {
             "groups": {
@@ -1747,6 +1826,7 @@
          "visibility": "public"
       },
       "okorach-org_pr-demo_3a1857ec-cebc-49f2-96ac-9bbc99111469": {
+         "aiCodeFix": false,
          "binding": {
             "key": "GitHub okorach-org",
             "repository": "okorach-org/pr-demo",
@@ -1757,6 +1837,7 @@
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "name": "pr-demo",
          "permissions": {
             "groups": {
@@ -1768,6 +1849,8 @@
          "visibility": "public"
       },
       "okorach_audio-video-tools": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "Audio Video Tools",
          "permissions": {
             "groups": {
@@ -1780,6 +1863,7 @@
          "visibility": "public"
       },
       "okorach_demo-gitlabci-cli_e81d5112-e681-44b2-aee4-62b56c8ac5cb": {
+         "aiCodeFix": false,
          "binding": {
             "key": "gitlab.com",
             "repository": "30584574",
@@ -1790,6 +1874,7 @@
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "name": "Demo GitLab-CI CLI",
          "permissions": {
             "users": {
@@ -1799,11 +1884,13 @@
          "visibility": "public"
       },
       "okorach_demo-gitlabci-maven": {
+         "aiCodeFix": false,
          "binding": {
             "key": "gitlab.com",
             "repository": "30599779",
             "summaryCommentEnabled": true
          },
+         "containsAiCode": false,
          "name": "Demo Gitlab Maven",
          "permissions": {
             "users": {
@@ -1814,6 +1901,7 @@
          "visibility": "public"
       },
       "okorach_sonar-tools": {
+         "aiCodeFix": false,
          "branches": {
             "comma,branch": {
                "keepWhenInactive": true
@@ -1825,15 +1913,17 @@
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "name": "Sonar Tools",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
             }
-         },
-         "qualityProfiles": {
-            "py": "Olivier Way"
          },
          "sonar.cfamily.ignoreHeaderComments": false,
          "sonar.issue.ignore.multicriteria": [
@@ -1847,9 +1937,10 @@
             }
          ],
          "tags": "asia, favorites, insurance",
-         "visibility": "public"
+         "visibility": "private"
       },
       "okorach_sonar-tools_a9480a73-8778-4aea-8796-240cc13686fb": {
+         "aiCodeFix": false,
          "binding": {
             "key": "GitHub okorach",
             "repository": "okorach/sonar-tools",
@@ -1860,6 +1951,7 @@
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "name": "sonar-tools",
          "permissions": {
             "groups": {
@@ -1873,6 +1965,8 @@
          "visibility": "public"
       },
       "project-without-analyses": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "Project without analyses",
          "permissions": {
             "groups": {
@@ -1884,6 +1978,7 @@
          "visibility": "public"
       },
       "project1": {
+         "aiCodeFix": false,
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -1892,6 +1987,7 @@
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1911,6 +2007,7 @@
          "visibility": "public"
       },
       "project2": {
+         "aiCodeFix": false,
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -1919,6 +2016,7 @@
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1937,6 +2035,7 @@
          "visibility": "public"
       },
       "project3": {
+         "aiCodeFix": false,
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -1945,6 +2044,7 @@
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1963,6 +2063,7 @@
          "visibility": "public"
       },
       "project4": {
+         "aiCodeFix": false,
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -1971,6 +2072,7 @@
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1987,6 +2089,7 @@
          "visibility": "public"
       },
       "proyecto5": {
+         "aiCodeFix": false,
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -1995,6 +2098,7 @@
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -2013,6 +2117,8 @@
          "visibility": "public"
       },
       "pytorch": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "pytorch",
          "permissions": {
             "groups": {
@@ -2024,6 +2130,8 @@
          "visibility": "private"
       },
       "rem7annum": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "rem",
          "permissions": {
             "groups": {
@@ -2035,6 +2143,8 @@
          "visibility": "public"
       },
       "ren6annum3": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "wdfefr",
          "permissions": {
             "groups": {
@@ -2046,6 +2156,8 @@
          "visibility": "public"
       },
       "secrets-leak": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "secrets-leak",
          "permissions": {
             "groups": {
@@ -2056,6 +2168,8 @@
          "visibility": "public"
       },
       "testsonar-tools": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "Sonar Tools Test",
          "permissions": {
             "groups": {
@@ -2067,6 +2181,8 @@
          "visibility": "public"
       },
       "training:complexity": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "Training: Cyclomatic vs Cognitive complexity",
          "permissions": {
             "groups": {
@@ -2077,7 +2193,27 @@
          },
          "visibility": "public"
       },
+      "training:coverage": {
+         "aiCodeFix": false,
+         "branches": {
+            "main": {
+               "isMain": true
+            }
+         },
+         "containsAiCode": false,
+         "name": "Training: Coverage",
+         "permissions": {
+            "groups": {
+               "project-admins": "admin",
+               "sonar-administrators": "admin",
+               "sonar-users": "issueadmin, securityhotspotadmin"
+            }
+         },
+         "visibility": "public"
+      },
       "training:external-issues": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "Training: External issues import",
          "permissions": {
             "groups": {
@@ -2088,6 +2224,7 @@
          "visibility": "public"
       },
       "training:security": {
+         "aiCodeFix": false,
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -2096,6 +2233,7 @@
                "isMain": true
             }
          },
+         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -2114,6 +2252,8 @@
          "visibility": "public"
       },
       "vscode": {
+         "aiCodeFix": false,
+         "containsAiCode": false,
          "name": "vscode",
          "permissions": {
             "groups": {
@@ -2155,6 +2295,17 @@
             "new_violations >= 0"
          ]
       },
+      "Siemens Healthineers QG": {
+         "conditions": [
+            "new_coverage <= 80",
+            "new_duplicated_lines_density >= 3",
+            "new_security_hotspots_reviewed <= 100",
+            "new_software_quality_blocker_issues >= 0",
+            "new_software_quality_high_issues >= 0",
+            "new_software_quality_low_issues >= 0",
+            "new_software_quality_medium_issues >= 0"
+         ]
+      },
       "Sonar way": {
          "isBuiltIn": true
       },
@@ -2167,6 +2318,9 @@
             "new_security_hotspots_reviewed <= 100",
             "new_security_rating >= A"
          ]
+      },
+      "Sonar way for AI Code": {
+         "isBuiltIn": true
       },
       "Sonar way w/o coverage": {
          "conditions": [
@@ -2192,6 +2346,12 @@
             "isDefault": true
          }
       },
+      "ansible": {
+         "Sonar way": {
+            "isBuiltIn": true,
+            "isDefault": true
+         }
+      },
       "apex": {
          "Sonar way": {
             "isBuiltIn": true,
@@ -2199,316 +2359,12 @@
          }
       },
       "azureresourcemanager": {
-         "QP with no perms": {
-            "rules": {
-               "azureresourcemanager:S1135": "INFO",
-               "azureresourcemanager:S117": {
-                  "params": {
-                     "format": "^[a-z][a-zA-Z0-9]*$"
-                  },
-                  "severity": "MINOR"
-               },
-               "azureresourcemanager:S1192": {
-                  "params": {
-                     "minimal_literal_length": "5",
-                     "threshold": "5"
-                  },
-                  "severity": "CRITICAL"
-               },
-               "azureresourcemanager:S1481": "MINOR",
-               "azureresourcemanager:S4423": "CRITICAL",
-               "azureresourcemanager:S4507": "MINOR",
-               "azureresourcemanager:S5332": "CRITICAL",
-               "azureresourcemanager:S6321": "MINOR",
-               "azureresourcemanager:S6329": "BLOCKER",
-               "azureresourcemanager:S6364": {
-                  "params": {
-                     "backup_retention_duration": "30"
-                  },
-                  "severity": "MAJOR"
-               },
-               "azureresourcemanager:S6378": "MAJOR",
-               "azureresourcemanager:S6379": "MAJOR",
-               "azureresourcemanager:S6380": "MAJOR",
-               "azureresourcemanager:S6381": "MAJOR",
-               "azureresourcemanager:S6382": "MAJOR",
-               "azureresourcemanager:S6383": "MAJOR",
-               "azureresourcemanager:S6385": "MAJOR",
-               "azureresourcemanager:S6387": "MAJOR",
-               "azureresourcemanager:S6388": "MAJOR",
-               "azureresourcemanager:S6413": {
-                  "params": {
-                     "log_retention_duration": "14"
-                  },
-                  "severity": "MAJOR"
-               },
-               "azureresourcemanager:S6437": "BLOCKER",
-               "azureresourcemanager:S6648": "CRITICAL",
-               "azureresourcemanager:S6656": "CRITICAL",
-               "azureresourcemanager:S6874": "MAJOR",
-               "azureresourcemanager:S6949": "MAJOR",
-               "azureresourcemanager:S6952": "MAJOR",
-               "azureresourcemanager:S6953": "MAJOR",
-               "azureresourcemanager:S6954": "MAJOR",
-               "azureresourcemanager:S6955": "MINOR",
-               "azureresourcemanager:S6956": "MINOR",
-               "azureresourcemanager:S6975": "MAJOR"
-            }
-         },
          "Sonar way": {
             "isBuiltIn": true,
             "isDefault": true
          }
       },
       "c": {
-         "My Way": {
-            "rules": {
-               "c:S1036": "BLOCKER",
-               "c:S1065": "MAJOR",
-               "c:S1066": "MAJOR",
-               "c:S107": {
-                  "params": {
-                     "max": "7"
-                  },
-                  "severity": "MAJOR"
-               },
-               "c:S1079": "CRITICAL",
-               "c:S108": "MAJOR",
-               "c:S1081": "CRITICAL",
-               "c:S1103": "MINOR",
-               "c:S1110": "MAJOR",
-               "c:S1116": "MINOR",
-               "c:S1117": "MAJOR",
-               "c:S1121": "MAJOR",
-               "c:S1123": "MAJOR",
-               "c:S1133": "INFO",
-               "c:S1134": "MAJOR",
-               "c:S1135": "INFO",
-               "c:S1144": "MAJOR",
-               "c:S1172": "MAJOR",
-               "c:S1186": "CRITICAL",
-               "c:S1198": "MAJOR",
-               "c:S1199": "MINOR",
-               "c:S1219": "BLOCKER",
-               "c:S125": "MAJOR",
-               "c:S1264": "MINOR",
-               "c:S128": "BLOCKER",
-               "c:S1301": "MINOR",
-               "c:S1313": "MINOR",
-               "c:S134": {
-                  "params": {
-                     "max": "3"
-                  },
-                  "severity": "CRITICAL"
-               },
-               "c:S1479": {
-                  "params": {
-                     "maximum": "30"
-                  },
-                  "severity": "MAJOR"
-               },
-               "c:S1481": "MINOR",
-               "c:S1656": "MAJOR",
-               "c:S1659": "MINOR",
-               "c:S1751": "MAJOR",
-               "c:S1760": "BLOCKER",
-               "c:S1761": "CRITICAL",
-               "c:S1762": "MINOR",
-               "c:S1763": "MAJOR",
-               "c:S1764": "MAJOR",
-               "c:S1767": "CRITICAL",
-               "c:S1768": "CRITICAL",
-               "c:S1820": {
-                  "params": {
-                     "maximumFieldThreshold": "20"
-                  },
-                  "severity": "MAJOR"
-               },
-               "c:S1831": "CRITICAL",
-               "c:S1836": "CRITICAL",
-               "c:S1854": "MAJOR",
-               "c:S1862": "MAJOR",
-               "c:S1871": "MAJOR",
-               "c:S1874": "MINOR",
-               "c:S1905": "MINOR",
-               "c:S1909": "BLOCKER",
-               "c:S1911": "MAJOR",
-               "c:S1912": {
-                  "params": {
-                     "nonReentrantFunctionList": "::asctime,::crypt,::ctermid,::ctime,::fgetgrent,::fgetpwent,::fgetspent,::getgrent,::getgrgid,::getgrnam,::gethostbyaddr,::gethostbyname,::gethostbyname2,::gethostent,::getlogin,::getnetbyaddr,::getnetbyname,::getnetent,::getnetgrent,::getprotobyname,::getprotobynumber,::getprotoent,::getpwent,::getpwnam,::getpwuid,::getrpcbyname,::getrpcbynumber,::getrpcent,::getservbyname,::getservbyport,::getservent,::getspent,::getspnam,::gmtime,::localtime,::sgetspent,::strtok,::ttyname"
-                  },
-                  "severity": "BLOCKER"
-               },
-               "c:S1913": "MAJOR",
-               "c:S1916": "MINOR",
-               "c:S2068": "BLOCKER",
-               "c:S2095": "BLOCKER",
-               "c:S2123": "MAJOR",
-               "c:S2190": "BLOCKER",
-               "c:S2193": "MINOR",
-               "c:S2216": "MAJOR",
-               "c:S2234": "MAJOR",
-               "c:S2245": "CRITICAL",
-               "c:S2259": "MAJOR",
-               "c:S2275": "BLOCKER",
-               "c:S2323": "CRITICAL",
-               "c:S2479": "CRITICAL",
-               "c:S2583": "MAJOR",
-               "c:S2612": "MAJOR",
-               "c:S2637": "MINOR",
-               "c:S2665": "MINOR",
-               "c:S2668": "MAJOR",
-               "c:S2681": "MAJOR",
-               "c:S2753": "MAJOR",
-               "c:S2754": "MINOR",
-               "c:S2755": "BLOCKER",
-               "c:S2757": "MAJOR",
-               "c:S2761": "MAJOR",
-               "c:S3135": "MAJOR",
-               "c:S3231": "MINOR",
-               "c:S3358": "MAJOR",
-               "c:S3457": "MAJOR",
-               "c:S3458": "MINOR",
-               "c:S3491": "BLOCKER",
-               "c:S3518": "CRITICAL",
-               "c:S3519": "BLOCKER",
-               "c:S3520": "BLOCKER",
-               "c:S3529": "BLOCKER",
-               "c:S3562": "MAJOR",
-               "c:S3584": "BLOCKER",
-               "c:S3588": "BLOCKER",
-               "c:S3590": "BLOCKER",
-               "c:S3646": "MINOR",
-               "c:S3687": "MAJOR",
-               "c:S3689": "MAJOR",
-               "c:S3728": "MINOR",
-               "c:S3729": "BLOCKER",
-               "c:S3730": "MINOR",
-               "c:S3744": "MINOR",
-               "c:S3776": {
-                  "params": {
-                     "maximumFunctionCognitiveComplexityThreshold": "25"
-                  },
-                  "severity": "CRITICAL"
-               },
-               "c:S3805": "MAJOR",
-               "c:S3806": "MAJOR",
-               "c:S3807": "CRITICAL",
-               "c:S3923": "MAJOR",
-               "c:S3935": "MAJOR",
-               "c:S3936": "BLOCKER",
-               "c:S3949": "MAJOR",
-               "c:S3972": "CRITICAL",
-               "c:S3973": "CRITICAL",
-               "c:S4143": "MAJOR",
-               "c:S4263": "MAJOR",
-               "c:S4423": "CRITICAL",
-               "c:S4426": "CRITICAL",
-               "c:S4524": "CRITICAL",
-               "c:S4790": "CRITICAL",
-               "c:S4830": "CRITICAL",
-               "c:S5000": "BLOCKER",
-               "c:S5042": "CRITICAL",
-               "c:S5259": "CRITICAL",
-               "c:S5261": "MAJOR",
-               "c:S5262": "MAJOR",
-               "c:S5263": "CRITICAL",
-               "c:S5266": "MAJOR",
-               "c:S5267": "BLOCKER",
-               "c:S5270": "MAJOR",
-               "c:S5271": "MINOR",
-               "c:S5273": "MAJOR",
-               "c:S5276": "MAJOR",
-               "c:S5278": "MAJOR",
-               "c:S5279": "MAJOR",
-               "c:S5280": "CRITICAL",
-               "c:S5281": "CRITICAL",
-               "c:S5283": "CRITICAL",
-               "c:S5293": "MINOR",
-               "c:S5297": "MAJOR",
-               "c:S5308": "CRITICAL",
-               "c:S5314": "CRITICAL",
-               "c:S5332": "CRITICAL",
-               "c:S5350": "MINOR",
-               "c:S5381": "MINOR",
-               "c:S5443": "CRITICAL",
-               "c:S5485": "CRITICAL",
-               "c:S5486": "BLOCKER",
-               "c:S5487": "BLOCKER",
-               "c:S5488": "CRITICAL",
-               "c:S5489": "BLOCKER",
-               "c:S5491": "MAJOR",
-               "c:S5494": "MAJOR",
-               "c:S5501": "MAJOR",
-               "c:S5527": "CRITICAL",
-               "c:S5542": "CRITICAL",
-               "c:S5547": "CRITICAL",
-               "c:S5570": "CRITICAL",
-               "c:S5658": "CRITICAL",
-               "c:S5782": "BLOCKER",
-               "c:S5798": "BLOCKER",
-               "c:S5801": "MAJOR",
-               "c:S5802": "CRITICAL",
-               "c:S5813": "MAJOR",
-               "c:S5814": "MAJOR",
-               "c:S5815": "MAJOR",
-               "c:S5816": "MAJOR",
-               "c:S5824": "CRITICAL",
-               "c:S5825": "MINOR",
-               "c:S5832": "MAJOR",
-               "c:S5847": "CRITICAL",
-               "c:S5849": "MAJOR",
-               "c:S5955": "MINOR",
-               "c:S5978": "MINOR",
-               "c:S5982": "CRITICAL",
-               "c:S6069": "CRITICAL",
-               "c:S6200": "CRITICAL",
-               "c:S6655": "BLOCKER",
-               "c:S6991": "BLOCKER",
-               "c:S6996": "MAJOR",
-               "c:S796": "MAJOR",
-               "c:S797": "BLOCKER",
-               "c:S798": "BLOCKER",
-               "c:S814": "MAJOR",
-               "c:S817": "MAJOR",
-               "c:S818": "MINOR",
-               "c:S819": "CRITICAL",
-               "c:S820": "CRITICAL",
-               "c:S824": "MAJOR",
-               "c:S833": "MAJOR",
-               "c:S836": "MAJOR",
-               "c:S841": "MAJOR",
-               "c:S859": "CRITICAL",
-               "c:S860": "MAJOR",
-               "c:S872": "MAJOR",
-               "c:S876": "MAJOR",
-               "c:S878": "MAJOR",
-               "c:S886": "MINOR",
-               "c:S897": "MAJOR",
-               "c:S905": "MAJOR",
-               "c:S912": "BLOCKER",
-               "c:S916": "BLOCKER",
-               "c:S923": "CRITICAL",
-               "c:S924": {
-                  "params": {
-                     "maxNumberOfTerminationStatements": "1"
-                  },
-                  "severity": "MAJOR"
-               },
-               "c:S935": "CRITICAL",
-               "c:S936": "CRITICAL",
-               "c:S946": "BLOCKER",
-               "c:S954": "MAJOR",
-               "c:S955": "MAJOR",
-               "c:S956": "MAJOR",
-               "c:S959": "CRITICAL",
-               "c:S961": "BLOCKER",
-               "c:S969": "BLOCKER",
-               "c:S977": "MAJOR",
-               "c:S995": "MINOR",
-               "c:S999": "BLOCKER"
-            }
-         },
          "Sonar way": {
             "isBuiltIn": true,
             "isDefault": true
@@ -2538,20 +2394,11 @@
       "cs": {
          "Corp Way": {
             "children": {
-               "Team XXXX": {
+               "Team A": {
                   "addedRules": {
-                     "csharpsquid:S3884": "BLOCKER",
-                     "csharpsquid:S4212": "MAJOR",
-                     "csharpsquid:S4347": "CRITICAL",
-                     "csharpsquid:S5344": "CRITICAL",
-                     "csharpsquid:S6377": "MAJOR",
-                     "csharpsquid:S6781": "BLOCKER",
-                     "csharpsquid:S6932": "MAJOR",
-                     "csharpsquid:S6967": "MAJOR",
-                     "roslyn.sonaranalyzer.security.cs:S5167": "MINOR"
-                  },
-                  "permissions": {
-                     "users": "michal"
+                     "csharpsquid:S126": "CRITICAL",
+                     "csharpsquid:S3447": "CRITICAL",
+                     "csharpsquid:S3962": "MINOR"
                   }
                }
             },
@@ -2577,7 +2424,6 @@
                "csharpsquid:S108": "MAJOR",
                "csharpsquid:S110": {
                   "params": {
-                     "filteredClasses": "",
                      "max": "5"
                   },
                   "severity": "MAJOR"
@@ -2967,14 +2813,6 @@
       },
       "css": {
          "Sonar way": {
-            "children": {
-               "Acme corp way": {
-                  "addedRules": {
-                     "css:S4664": "CRITICAL",
-                     "css:S5362": "CRITICAL"
-                  }
-               }
-            },
             "isBuiltIn": true,
             "isDefault": true
          }
@@ -3022,763 +2860,6 @@
          "FindBugs Security Minimal": {
             "isBuiltIn": true
          },
-         "Java and Checkstyle": {
-            "rules": {
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.NoCodeInFileCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.OuterTypeFilenameCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.UpperEllCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.annotation.PackageAnnotationCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.AvoidDoubleBraceInitializationCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.AvoidInlineConditionalsCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.AvoidNoArgumentSuperConstructorCallCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.ConstructorsDeclarationGroupingCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.CovariantEqualsCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.EmptyStatementCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.EqualsHashCodeCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.InnerAssignmentCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.MissingCtorCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.MissingSwitchDefaultCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.MultipleVariableDeclarationsCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoArrayTrailingCommaCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoCloneCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoEnumTrailingCommaCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoFinalizerCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.OverloadMethodsDeclarationOrderCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.ParameterAssignmentCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SimplifyBooleanExpressionCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SimplifyBooleanReturnCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.StringLiteralEqualityCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SuperCloneCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SuperFinalizeCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.UnnecessarySemicolonInEnumerationCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.UnusedLocalVariableCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.FinalClassCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.HideUtilityClassConstructorCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.InnerTypeLastCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.OneTopLevelClassCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.imports.RedundantImportCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.javadoc.InvalidJavadocPositionCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocPackageCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.modifier.ModifierOrderCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.whitespace.GenericWhitespaceCheck": "MINOR",
-               "checkstyle:com.puppycrawl.tools.checkstyle.checks.whitespace.NoWhitespaceBeforeCaseDefaultColonCheck": "MINOR",
-               "java:Don_t_be_rude": {
-                  "params": {
-                     "message": "",
-                     "regularExpression": "(fuck|shit|merde)"
-                  },
-                  "severity": "MAJOR",
-                  "templateKey": "java:S124"
-               },
-               "java:S100": {
-                  "params": {
-                     "format": "^[a-z][a-zA-Z0-9]*$"
-                  },
-                  "severity": "MINOR"
-               },
-               "java:S101": {
-                  "params": {
-                     "format": "^[A-Z][a-zA-Z0-9]*$"
-                  },
-                  "severity": "MINOR"
-               },
-               "java:S106": "MAJOR",
-               "java:S1065": "MAJOR",
-               "java:S1066": "MAJOR",
-               "java:S1068": {
-                  "params": {
-                     "ignoreAnnotations": ""
-                  },
-                  "severity": "MAJOR"
-               },
-               "java:S107": {
-                  "params": {
-                     "constructorMax": "7",
-                     "max": "7"
-                  },
-                  "severity": "MAJOR"
-               },
-               "java:S1075": "MINOR",
-               "java:S108": "MAJOR",
-               "java:S110": {
-                  "params": {
-                     "filteredClasses": "",
-                     "max": "5"
-                  },
-                  "severity": "MAJOR"
-               },
-               "java:S1104": "MINOR",
-               "java:S1110": "MAJOR",
-               "java:S1111": "MAJOR",
-               "java:S1113": "CRITICAL",
-               "java:S1116": "MINOR",
-               "java:S1117": "MAJOR",
-               "java:S1118": "MAJOR",
-               "java:S1119": "MAJOR",
-               "java:S112": "MAJOR",
-               "java:S1121": "MAJOR",
-               "java:S1123": "MAJOR",
-               "java:S1124": "MINOR",
-               "java:S1125": "MINOR",
-               "java:S1126": "MINOR",
-               "java:S1128": "MINOR",
-               "java:S1130": "MINOR",
-               "java:S1133": "INFO",
-               "java:S1134": "MAJOR",
-               "java:S1135": "INFO",
-               "java:S114": {
-                  "params": {
-                     "format": "^[A-Z][a-zA-Z0-9]*$"
-                  },
-                  "severity": "MINOR"
-               },
-               "java:S1141": "MAJOR",
-               "java:S1143": "CRITICAL",
-               "java:S1144": "MAJOR",
-               "java:S1149": "MAJOR",
-               "java:S115": {
-                  "description": "En Francais: Les constantes doivent suivre des conventions de nommage",
-                  "params": {
-                     "format": "^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$"
-                  },
-                  "severity": "CRITICAL"
-               },
-               "java:S1150": "MAJOR",
-               "java:S1153": "MINOR",
-               "java:S1155": "MINOR",
-               "java:S1157": "MINOR",
-               "java:S1158": "MINOR",
-               "java:S116": {
-                  "params": {
-                     "format": "^[a-z][a-zA-Z0-9]*$"
-                  },
-                  "severity": "MINOR"
-               },
-               "java:S1161": "MAJOR",
-               "java:S1163": "CRITICAL",
-               "java:S1165": "MINOR",
-               "java:S1168": "MAJOR",
-               "java:S117": {
-                  "params": {
-                     "format": "^[a-z][a-zA-Z0-9]*$"
-                  },
-                  "severity": "MINOR"
-               },
-               "java:S1170": "MINOR",
-               "java:S1171": "MAJOR",
-               "java:S1172": "MAJOR",
-               "java:S1174": "CRITICAL",
-               "java:S1175": "CRITICAL",
-               "java:S1181": "MAJOR",
-               "java:S1182": "MINOR",
-               "java:S1185": "MINOR",
-               "java:S1186": "CRITICAL",
-               "java:S119": {
-                  "params": {
-                     "format": "^[A-Z][0-9]?$"
-                  },
-                  "severity": "MINOR"
-               },
-               "java:S1190": "BLOCKER",
-               "java:S1191": {
-                  "params": {
-                     "Exclude": ""
-                  },
-                  "severity": "MAJOR"
-               },
-               "java:S1192": {
-                  "params": {
-                     "threshold": "3"
-                  },
-                  "severity": "CRITICAL"
-               },
-               "java:S1193": "MAJOR",
-               "java:S1195": "MINOR",
-               "java:S1197": "MINOR",
-               "java:S1199": "MINOR",
-               "java:S120": {
-                  "params": {
-                     "format": "^[a-z_]+(\\.[a-z_][a-z0-9_]*)*$"
-                  },
-                  "severity": "MINOR"
-               },
-               "java:S1201": "MAJOR",
-               "java:S1206": "MINOR",
-               "java:S1210": "MINOR",
-               "java:S1214": "CRITICAL",
-               "java:S1215": "CRITICAL",
-               "java:S1217": "MAJOR",
-               "java:S1219": "BLOCKER",
-               "java:S1220": "MINOR",
-               "java:S1221": "MAJOR",
-               "java:S1223": "MAJOR",
-               "java:S1226": "MINOR",
-               "java:S125": "MAJOR",
-               "java:S1264": "MINOR",
-               "java:S127": "MAJOR",
-               "java:S128": "BLOCKER",
-               "java:S1301": "MINOR",
-               "java:S131": "CRITICAL",
-               "java:S1313": "MINOR",
-               "java:S1317": "MAJOR",
-               "java:S1319": "MINOR",
-               "java:S135": "MINOR",
-               "java:S1444": "MINOR",
-               "java:S1450": "MINOR",
-               "java:S1451": {
-                  "description": "Avec la meme version en francais",
-                  "params": {
-                     "headerFormat": "",
-                     "isRegularExpression": "false"
-                  },
-                  "severity": "BLOCKER"
-               },
-               "java:S1452": "CRITICAL",
-               "java:S1479": {
-                  "params": {
-                     "maximum": "30"
-                  },
-                  "severity": "MAJOR"
-               },
-               "java:S1481": "MINOR",
-               "java:S1488": "MINOR",
-               "java:S1596": "MINOR",
-               "java:S1598": "CRITICAL",
-               "java:S1602": "MINOR",
-               "java:S1604": "MAJOR",
-               "java:S1607": "MAJOR",
-               "java:S1611": "MINOR",
-               "java:S1612": "MINOR",
-               "java:S1640": "MINOR",
-               "java:S1643": "MINOR",
-               "java:S1656": "MAJOR",
-               "java:S1659": "MINOR",
-               "java:S1700": "MAJOR",
-               "java:S1710": "MINOR",
-               "java:S1751": "MAJOR",
-               "java:S1764": "MAJOR",
-               "java:S1844": "MAJOR",
-               "java:S1845": "BLOCKER",
-               "java:S1849": "MAJOR",
-               "java:S1854": "MAJOR",
-               "java:S1858": "MINOR",
-               "java:S1860": "MAJOR",
-               "java:S1862": "MAJOR",
-               "java:S1871": "MAJOR",
-               "java:S1872": "MAJOR",
-               "java:S1874": "MINOR",
-               "java:S1905": "MINOR",
-               "java:S1940": "MINOR",
-               "java:S1948": "CRITICAL",
-               "java:S1989": "MINOR",
-               "java:S1994": "CRITICAL",
-               "java:S2053": "CRITICAL",
-               "java:S2055": "MINOR",
-               "java:S2060": "MAJOR",
-               "java:S2061": "MAJOR",
-               "java:S2062": "CRITICAL",
-               "java:S2065": "MINOR",
-               "java:S2066": "MINOR",
-               "java:S2068": {
-                  "params": {
-                     "credentialWords": "password,passwd,pwd,passphrase,java.naming.security.credentials"
-                  },
-                  "severity": "BLOCKER"
-               },
-               "java:S2077": "MAJOR",
-               "java:S2092": "MINOR",
-               "java:S2093": "CRITICAL",
-               "java:S2094": "MINOR",
-               "java:S2095": {
-                  "params": {
-                     "excludedResourceTypes": ""
-                  },
-                  "severity": "BLOCKER"
-               },
-               "java:S2097": "MINOR",
-               "java:S2109": "MAJOR",
-               "java:S2110": "MAJOR",
-               "java:S2111": "MAJOR",
-               "java:S2112": "MAJOR",
-               "java:S2114": "MAJOR",
-               "java:S2115": "BLOCKER",
-               "java:S2116": "MAJOR",
-               "java:S2118": "MAJOR",
-               "java:S2119": "CRITICAL",
-               "java:S2121": "MAJOR",
-               "java:S2122": "CRITICAL",
-               "java:S2123": "MAJOR",
-               "java:S2127": "MAJOR",
-               "java:S2129": "MAJOR",
-               "java:S2130": "MINOR",
-               "java:S2133": "MAJOR",
-               "java:S2134": "MAJOR",
-               "java:S2139": "MAJOR",
-               "java:S2140": "MINOR",
-               "java:S2142": "MAJOR",
-               "java:S2147": "MINOR",
-               "java:S2151": "CRITICAL",
-               "java:S2153": "MINOR",
-               "java:S2154": "MAJOR",
-               "java:S2157": "CRITICAL",
-               "java:S2159": "MAJOR",
-               "java:S2160": "MINOR",
-               "java:S2166": "MAJOR",
-               "java:S2167": "MINOR",
-               "java:S2168": "BLOCKER",
-               "java:S2175": "MAJOR",
-               "java:S2176": "CRITICAL",
-               "java:S2177": "MAJOR",
-               "java:S2178": "BLOCKER",
-               "java:S2183": "MINOR",
-               "java:S2184": "MINOR",
-               "java:S2185": "MAJOR",
-               "java:S2186": "CRITICAL",
-               "java:S2187": {
-                  "params": {
-                     "TestClassNamePattern": ".*(Test|Tests|TestCase)"
-                  },
-                  "severity": "BLOCKER"
-               },
-               "java:S2188": "BLOCKER",
-               "java:S2189": "BLOCKER",
-               "java:S2200": "MINOR",
-               "java:S2201": "MAJOR",
-               "java:S2204": "MAJOR",
-               "java:S2209": "MAJOR",
-               "java:S2222": "CRITICAL",
-               "java:S2225": "MAJOR",
-               "java:S2226": "MAJOR",
-               "java:S2229": "BLOCKER",
-               "java:S2230": "MAJOR",
-               "java:S2232": "MAJOR",
-               "java:S2234": "MAJOR",
-               "java:S2235": "CRITICAL",
-               "java:S2236": "BLOCKER",
-               "java:S2245": "CRITICAL",
-               "java:S2251": "MAJOR",
-               "java:S2252": "MAJOR",
-               "java:S2254": "CRITICAL",
-               "java:S2257": "CRITICAL",
-               "java:S2259": "MAJOR",
-               "java:S2272": "MINOR",
-               "java:S2273": "MAJOR",
-               "java:S2274": "CRITICAL",
-               "java:S2275": "BLOCKER",
-               "java:S2276": "BLOCKER",
-               "java:S2293": "MINOR",
-               "java:S2326": "MAJOR",
-               "java:S2386": "MINOR",
-               "java:S2387": "BLOCKER",
-               "java:S2388": "MAJOR",
-               "java:S2390": "CRITICAL",
-               "java:S2437": "BLOCKER",
-               "java:S2438": "MAJOR",
-               "java:S2440": "MAJOR",
-               "java:S2441": "MAJOR",
-               "java:S2442": "MAJOR",
-               "java:S2445": "MAJOR",
-               "java:S2446": "MAJOR",
-               "java:S2447": "CRITICAL",
-               "java:S2479": {
-                  "params": {
-                     "allowTabsInTextBlocks": "false"
-                  },
-                  "severity": "CRITICAL"
-               },
-               "java:S2583": "MAJOR",
-               "java:S2589": "MAJOR",
-               "java:S2612": "MAJOR",
-               "java:S2629": "MAJOR",
-               "java:S2637": "MINOR",
-               "java:S2638": "CRITICAL",
-               "java:S2639": "MAJOR",
-               "java:S2674": "MINOR",
-               "java:S2675": "MAJOR",
-               "java:S2676": "MINOR",
-               "java:S2677": "MAJOR",
-               "java:S2681": "MAJOR",
-               "java:S2689": "BLOCKER",
-               "java:S2692": "CRITICAL",
-               "java:S2695": "BLOCKER",
-               "java:S2696": "CRITICAL",
-               "java:S2699": {
-                  "params": {
-                     "customAssertionMethods": ""
-                  },
-                  "severity": "BLOCKER"
-               },
-               "java:S2718": "MAJOR",
-               "java:S2737": "MINOR",
-               "java:S2755": "BLOCKER",
-               "java:S2757": "MAJOR",
-               "java:S2761": "MAJOR",
-               "java:S2786": "MINOR",
-               "java:S2789": "MAJOR",
-               "java:S2864": "MAJOR",
-               "java:S2885": "MAJOR",
-               "java:S2886": "MAJOR",
-               "java:S2924": "MINOR",
-               "java:S2925": "MAJOR",
-               "java:S2970": "BLOCKER",
-               "java:S2975": "BLOCKER",
-               "java:S3008": {
-                  "params": {
-                     "format": "^[a-z][a-zA-Z0-9]*$"
-                  },
-                  "severity": "MINOR"
-               },
-               "java:S3010": "MAJOR",
-               "java:S3011": "MAJOR",
-               "java:S3012": "MINOR",
-               "java:S3014": "BLOCKER",
-               "java:S3020": "MINOR",
-               "java:S3034": "MAJOR",
-               "java:S3038": "MINOR",
-               "java:S3039": "MAJOR",
-               "java:S3042": "MAJOR",
-               "java:S3046": "BLOCKER",
-               "java:S3064": "MAJOR",
-               "java:S3065": "MAJOR",
-               "java:S3066": "MINOR",
-               "java:S3067": "MAJOR",
-               "java:S3077": "MINOR",
-               "java:S3078": "MAJOR",
-               "java:S3252": "CRITICAL",
-               "java:S3305": "CRITICAL",
-               "java:S3329": "CRITICAL",
-               "java:S3330": "MINOR",
-               "java:S3346": "MAJOR",
-               "java:S3358": "MAJOR",
-               "java:S3398": "MINOR",
-               "java:S3400": "MINOR",
-               "java:S3415": "MAJOR",
-               "java:S3416": "MINOR",
-               "java:S3436": "MAJOR",
-               "java:S3457": "MAJOR",
-               "java:S3516": "BLOCKER",
-               "java:S3518": "CRITICAL",
-               "java:S3551": "MAJOR",
-               "java:S3577": {
-                  "params": {
-                     "format": "^((Test|IT)[a-zA-Z0-9_]+|[A-Z][a-zA-Z0-9_]*(Test|Tests|TestCase|IT|ITCase))$"
-                  },
-                  "severity": "MINOR"
-               },
-               "java:S3599": "MINOR",
-               "java:S3626": "MINOR",
-               "java:S3631": "MAJOR",
-               "java:S3655": "MAJOR",
-               "java:S3740": "MAJOR",
-               "java:S3751": "MAJOR",
-               "java:S3752": "MINOR",
-               "java:S3753": "BLOCKER",
-               "java:S3776": {
-                  "params": {
-                     "Threshold": "15"
-                  },
-                  "severity": "CRITICAL"
-               },
-               "java:S3824": "MAJOR",
-               "java:S3864": "MAJOR",
-               "java:S3878": "MINOR",
-               "java:S3923": "MAJOR",
-               "java:S3958": "MAJOR",
-               "java:S3959": "MAJOR",
-               "java:S3972": "CRITICAL",
-               "java:S3973": "CRITICAL",
-               "java:S3981": "MAJOR",
-               "java:S3984": "MAJOR",
-               "java:S3985": "MAJOR",
-               "java:S3986": "MAJOR",
-               "java:S4032": "MINOR",
-               "java:S4034": "MINOR",
-               "java:S4036": "MINOR",
-               "java:S4042": "MAJOR",
-               "java:S4065": "MINOR",
-               "java:S4087": "MINOR",
-               "java:S4143": "MAJOR",
-               "java:S4144": "MAJOR",
-               "java:S4165": "MAJOR",
-               "java:S4201": "MINOR",
-               "java:S4274": "MAJOR",
-               "java:S4275": "CRITICAL",
-               "java:S4276": "MINOR",
-               "java:S4347": "CRITICAL",
-               "java:S4348": "MAJOR",
-               "java:S4349": "MINOR",
-               "java:S4351": "MAJOR",
-               "java:S4423": "CRITICAL",
-               "java:S4425": "MAJOR",
-               "java:S4426": "CRITICAL",
-               "java:S4433": "CRITICAL",
-               "java:S4434": "MAJOR",
-               "java:S4449": "MAJOR",
-               "java:S4454": "CRITICAL",
-               "java:S4488": "MINOR",
-               "java:S4502": "CRITICAL",
-               "java:S4507": "MINOR",
-               "java:S4512": "CRITICAL",
-               "java:S4517": "MAJOR",
-               "java:S4524": "CRITICAL",
-               "java:S4544": "CRITICAL",
-               "java:S4601": "CRITICAL",
-               "java:S4602": "BLOCKER",
-               "java:S4635": "CRITICAL",
-               "java:S4682": "MINOR",
-               "java:S4684": "CRITICAL",
-               "java:S4719": "MINOR",
-               "java:S4738": "MAJOR",
-               "java:S4790": "CRITICAL",
-               "java:S4830": "CRITICAL",
-               "java:S4838": "MINOR",
-               "java:S4925": "MAJOR",
-               "java:S4929": "MINOR",
-               "java:S4968": "MINOR",
-               "java:S4970": "CRITICAL",
-               "java:S4973": "MAJOR",
-               "java:S4977": "MINOR",
-               "java:S5042": "CRITICAL",
-               "java:S5122": "MINOR",
-               "java:S5164": "MAJOR",
-               "java:S5247": "MAJOR",
-               "java:S5261": "MAJOR",
-               "java:S5301": "MINOR",
-               "java:S5320": "CRITICAL",
-               "java:S5322": "CRITICAL",
-               "java:S5324": "CRITICAL",
-               "java:S5329": "MAJOR",
-               "java:S5332": "CRITICAL",
-               "java:S5344": "CRITICAL",
-               "java:S5361": "CRITICAL",
-               "java:S5411": "MINOR",
-               "java:S5413": "MAJOR",
-               "java:S5443": "CRITICAL",
-               "java:S5445": "CRITICAL",
-               "java:S5527": "CRITICAL",
-               "java:S5542": "CRITICAL",
-               "java:S5547": "CRITICAL",
-               "java:S5659": "CRITICAL",
-               "java:S5663": "MINOR",
-               "java:S5664": "MAJOR",
-               "java:S5665": "MINOR",
-               "java:S5669": "MAJOR",
-               "java:S5679": "MAJOR",
-               "java:S5689": "MINOR",
-               "java:S5693": {
-                  "params": {
-                     "fileUploadSizeLimit": "8388608"
-                  },
-                  "severity": "MAJOR"
-               },
-               "java:S5738": "MAJOR",
-               "java:S5776": "MAJOR",
-               "java:S5777": "MINOR",
-               "java:S5778": "MAJOR",
-               "java:S5779": "CRITICAL",
-               "java:S5783": "CRITICAL",
-               "java:S5785": "MAJOR",
-               "java:S5786": "INFO",
-               "java:S5790": "CRITICAL",
-               "java:S5803": "CRITICAL",
-               "java:S5804": "MAJOR",
-               "java:S5808": "MAJOR",
-               "java:S5810": "MAJOR",
-               "java:S5826": "CRITICAL",
-               "java:S5831": "MAJOR",
-               "java:S5833": "MAJOR",
-               "java:S5838": "MINOR",
-               "java:S5841": "MINOR",
-               "java:S5842": "MINOR",
-               "java:S5843": {
-                  "params": {
-                     "maxComplexity": "20"
-                  },
-                  "severity": "MAJOR"
-               },
-               "java:S5845": "CRITICAL",
-               "java:S5846": "CRITICAL",
-               "java:S5850": "MAJOR",
-               "java:S5852": "CRITICAL",
-               "java:S5853": "MINOR",
-               "java:S5854": "MAJOR",
-               "java:S5855": "MAJOR",
-               "java:S5856": "CRITICAL",
-               "java:S5857": "MINOR",
-               "java:S5860": "MAJOR",
-               "java:S5863": "MAJOR",
-               "java:S5866": "MAJOR",
-               "java:S5868": "MAJOR",
-               "java:S5869": "MAJOR",
-               "java:S5876": "CRITICAL",
-               "java:S5917": "MAJOR",
-               "java:S5958": "MAJOR",
-               "java:S5960": "MAJOR",
-               "java:S5961": {
-                  "params": {
-                     "MaximumAssertionNumber": "25"
-                  },
-                  "severity": "MAJOR"
-               },
-               "java:S5967": "MAJOR",
-               "java:S5969": "CRITICAL",
-               "java:S5973": "MAJOR",
-               "java:S5976": "MAJOR",
-               "java:S5993": "MAJOR",
-               "java:S5994": "CRITICAL",
-               "java:S5996": "CRITICAL",
-               "java:S5998": {
-                  "params": {
-                     "maxStackConsumptionFactor": "5.0"
-                  },
-                  "severity": "MAJOR"
-               },
-               "java:S6001": "CRITICAL",
-               "java:S6002": "CRITICAL",
-               "java:S6019": "MAJOR",
-               "java:S6035": "MAJOR",
-               "java:S6068": "MINOR",
-               "java:S6070": "MAJOR",
-               "java:S6103": "MAJOR",
-               "java:S6104": "CRITICAL",
-               "java:S6126": "MAJOR",
-               "java:S6201": "MINOR",
-               "java:S6202": "MAJOR",
-               "java:S6203": {
-                  "params": {
-                     "MaximumNumberOfLines": "5"
-                  },
-                  "severity": "MINOR"
-               },
-               "java:S6204": "MAJOR",
-               "java:S6205": "MINOR",
-               "java:S6206": "MAJOR",
-               "java:S6207": "MAJOR",
-               "java:S6208": "INFO",
-               "java:S6209": "CRITICAL",
-               "java:S6213": "MAJOR",
-               "java:S6216": "MAJOR",
-               "java:S6217": "MINOR",
-               "java:S6218": "MAJOR",
-               "java:S6219": "MINOR",
-               "java:S6241": "MAJOR",
-               "java:S6242": "MAJOR",
-               "java:S6243": "MAJOR",
-               "java:S6244": "MINOR",
-               "java:S6246": "MINOR",
-               "java:S6262": "MINOR",
-               "java:S6263": "MAJOR",
-               "java:S6288": "MAJOR",
-               "java:S6291": "MAJOR",
-               "java:S6293": "MAJOR",
-               "java:S6300": "MAJOR",
-               "java:S6301": "MAJOR",
-               "java:S6326": "MAJOR",
-               "java:S6331": "MAJOR",
-               "java:S6353": "MINOR",
-               "java:S6355": "MAJOR",
-               "java:S6362": "MAJOR",
-               "java:S6363": "MAJOR",
-               "java:S6373": "BLOCKER",
-               "java:S6376": "MAJOR",
-               "java:S6377": "MAJOR",
-               "java:S6395": "MAJOR",
-               "java:S6396": "MAJOR",
-               "java:S6397": "MAJOR",
-               "java:S6418": {
-                  "params": {
-                     "randomnessSensibility": "5.0",
-                     "secretWords": "api[_.-]?key,auth,credential,secret,token"
-                  },
-                  "severity": "BLOCKER"
-               },
-               "java:S6432": "CRITICAL",
-               "java:S6437": "BLOCKER",
-               "java:S6485": "MAJOR",
-               "java:S6539": {
-                  "params": {
-                     "couplingThreshold": "20"
-                  },
-                  "severity": "INFO"
-               },
-               "java:S6541": {
-                  "params": {
-                     "cyclomaticThreshold": "15",
-                     "locThreshold": "65",
-                     "nestingThreshold": "3",
-                     "noavThreshold": "7"
-                  },
-                  "severity": "INFO"
-               },
-               "java:S6548": "INFO",
-               "java:S6804": "MAJOR",
-               "java:S6806": "MAJOR",
-               "java:S6809": "MAJOR",
-               "java:S6810": "MAJOR",
-               "java:S6813": "MAJOR",
-               "java:S6814": "MAJOR",
-               "java:S6816": "MAJOR",
-               "java:S6817": "MAJOR",
-               "java:S6818": "MAJOR",
-               "java:S6829": "MINOR",
-               "java:S6830": "MINOR",
-               "java:S6831": "MAJOR",
-               "java:S6832": "MAJOR",
-               "java:S6833": "MAJOR",
-               "java:S6837": "MAJOR",
-               "java:S6838": "MAJOR",
-               "java:S6856": "MAJOR",
-               "java:S6857": "MAJOR",
-               "java:S6862": "MAJOR",
-               "java:S6863": "MAJOR",
-               "java:S6876": "MAJOR",
-               "java:S6877": "MAJOR",
-               "java:S6878": "MINOR",
-               "java:S6880": "MAJOR",
-               "java:S6881": "MAJOR",
-               "java:S6885": "MAJOR",
-               "java:S6889": "MAJOR",
-               "java:S6901": "MAJOR",
-               "java:S6905": "MAJOR",
-               "java:S6906": "MAJOR",
-               "java:S6909": "MAJOR",
-               "java:S6912": "MAJOR",
-               "java:S6913": "MAJOR",
-               "java:S6915": "MAJOR",
-               "java:S6916": "MAJOR",
-               "java:S899": "MINOR",
-               "javabugs:S2190": "BLOCKER",
-               "javabugs:S6320": "CRITICAL",
-               "javabugs:S6322": "CRITICAL",
-               "javabugs:S6416": "CRITICAL",
-               "javabugs:S6417": "MAJOR",
-               "javabugs:S6466": "CRITICAL",
-               "javasecurity:S2076": "BLOCKER",
-               "javasecurity:S2078": "BLOCKER",
-               "javasecurity:S2083": "BLOCKER",
-               "javasecurity:S2091": "BLOCKER",
-               "javasecurity:S2631": "CRITICAL",
-               "javasecurity:S3649": "BLOCKER",
-               "javasecurity:S5131": "BLOCKER",
-               "javasecurity:S5135": "BLOCKER",
-               "javasecurity:S5144": "MAJOR",
-               "javasecurity:S5145": "MINOR",
-               "javasecurity:S5146": "BLOCKER",
-               "javasecurity:S5147": "BLOCKER",
-               "javasecurity:S5334": "BLOCKER",
-               "javasecurity:S5883": "MINOR",
-               "javasecurity:S6096": "BLOCKER",
-               "javasecurity:S6173": "MAJOR",
-               "javasecurity:S6287": "MAJOR",
-               "javasecurity:S6350": "MAJOR",
-               "javasecurity:S6384": "BLOCKER",
-               "javasecurity:S6390": "CRITICAL",
-               "javasecurity:S6398": "MAJOR",
-               "javasecurity:S6399": "MAJOR",
-               "javasecurity:S6547": "MAJOR",
-               "javasecurity:S6549": "MAJOR"
-            }
-         },
          "Sonar way": {
             "children": {
                "Sonar way and complexity": {
@@ -3790,6 +2871,50 @@
                         "severity": "CRITICAL"
                      }
                   },
+                  "children": {
+                     "With Checkstyle": {
+                        "addedRules": {
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.NoCodeInFileCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.OuterTypeFilenameCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.UpperEllCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.annotation.PackageAnnotationCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.AvoidDoubleBraceInitializationCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.AvoidInlineConditionalsCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.AvoidNoArgumentSuperConstructorCallCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.ConstructorsDeclarationGroupingCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.CovariantEqualsCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.EmptyStatementCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.EqualsHashCodeCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.InnerAssignmentCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.MissingCtorCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.MissingSwitchDefaultCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.MultipleVariableDeclarationsCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoArrayTrailingCommaCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoCloneCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoEnumTrailingCommaCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoFinalizerCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.OverloadMethodsDeclarationOrderCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.ParameterAssignmentCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SimplifyBooleanExpressionCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SimplifyBooleanReturnCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.StringLiteralEqualityCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SuperCloneCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SuperFinalizeCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.UnnecessarySemicolonInEnumerationCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.UnusedLocalVariableCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.FinalClassCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.HideUtilityClassConstructorCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.InnerTypeLastCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.OneTopLevelClassCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.imports.RedundantImportCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.javadoc.InvalidJavadocPositionCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocPackageCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.modifier.ModifierOrderCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.whitespace.GenericWhitespaceCheck": "MINOR",
+                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.whitespace.NoWhitespaceBeforeCaseDefaultColonCheck": "MINOR"
+                        }
+                     }
+                  },
                   "isDefault": true
                }
             },
@@ -3798,31 +2923,6 @@
       },
       "jcl": {
          "Sonar way": {
-            "children": {
-               "Full Way": {
-                  "addedRules": {
-                     "jcl:S2260": "MAJOR",
-                     "jcl:S6935": "MAJOR",
-                     "jcl:S6942": "MAJOR",
-                     "jcl:S6945": {
-                        "params": {
-                           "allowedUnconditionalSteps": "2"
-                        },
-                        "severity": "MAJOR"
-                     },
-                     "jcl:S6947": {
-                        "params": {
-                           "maxSteps": "50"
-                        },
-                        "severity": "MAJOR"
-                     },
-                     "jcl:Track_usage_of_rogue_programs": "INFO"
-                  },
-                  "permissions": {
-                     "groups": "sonar-users"
-                  }
-               }
-            },
             "isBuiltIn": true,
             "isDefault": true
          }
@@ -3892,493 +2992,8 @@
       },
       "py": {
          "Sonar way": {
-            "children": {
-               "Olivier Way": {
-                  "addedRules": {
-                     "python:ClassComplexity": {
-                        "params": {
-                           "maximumClassComplexityThreshold": "200"
-                        },
-                        "severity": "CRITICAL"
-                     },
-                     "python:FunctionComplexity": {
-                        "params": {
-                           "maximumFunctionComplexityThreshold": "15"
-                        },
-                        "severity": "CRITICAL"
-                     },
-                     "python:LineLength": {
-                        "params": {
-                           "maximumLineLength": "120"
-                        },
-                        "severity": "MAJOR"
-                     },
-                     "python:LongIntegerWithLowercaseSuffixUsage": "MINOR",
-                     "python:NoSonar": "MAJOR",
-                     "python:OneStatementPerLine": "MAJOR",
-                     "python:ParsingError": "MAJOR",
-                     "python:S104": {
-                        "params": {
-                           "maximum": "1000"
-                        },
-                        "severity": "MAJOR"
-                     },
-                     "python:S1128": "MINOR",
-                     "python:S113": "MINOR",
-                     "python:S1131": "MINOR",
-                     "python:S1142": {
-                        "params": {
-                           "max": "3"
-                        },
-                        "severity": "MAJOR"
-                     },
-                     "python:S134": {
-                        "params": {
-                           "max": "4"
-                        },
-                        "severity": "CRITICAL"
-                     },
-                     "python:S138": {
-                        "params": {
-                           "max": "100"
-                        },
-                        "severity": "MAJOR"
-                     },
-                     "python:S1451": {
-                        "params": {
-                           "headerFormat": "",
-                           "isRegularExpression": "false"
-                        },
-                        "severity": "BLOCKER"
-                     },
-                     "python:S1578": {
-                        "params": {
-                           "format": "(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$"
-                        },
-                        "severity": "MINOR"
-                     },
-                     "python:S1707": {
-                        "params": {
-                           "pattern": "[ ]*\\([ _a-zA-Z0-9@.]+\\)"
-                        },
-                        "severity": "MINOR"
-                     },
-                     "python:S1720": "MAJOR",
-                     "python:S1721": {
-                        "description": "Actually in the context of an ``if``, parens are necessary:\n``if value in (\"foo\", \"bar\")`` for instance",
-                        "severity": "MINOR",
-                        "tags": "improve-description"
-                     },
-                     "python:S1722": "MINOR",
-                     "python:S2325": "MINOR",
-                     "python:S2712": "BLOCKER",
-                     "python:S3801": "MAJOR",
-                     "python:S5856": "CRITICAL",
-                     "python:S5953": "BLOCKER",
-                     "python:S6538": "MAJOR",
-                     "python:S6540": "MAJOR",
-                     "python:S6542": "MAJOR",
-                     "python:S6543": "MAJOR",
-                     "python:S6545": "MINOR",
-                     "python:S6554": "MAJOR",
-                     "python:S6661": "MINOR",
-                     "python:S6740": "MAJOR"
-                  },
-                  "modifiedRules": {
-                     "python:S3776": {
-                        "params": {
-                           "threshold": "20"
-                        }
-                     }
-                  }
-               },
-               "Pytorch way": {
-                  "addedRules": {
-                     "python:ClassComplexity": {
-                        "params": {
-                           "maximumClassComplexityThreshold": "200"
-                        },
-                        "severity": "CRITICAL"
-                     },
-                     "python:FunctionComplexity": {
-                        "params": {
-                           "maximumFunctionComplexityThreshold": "15"
-                        },
-                        "severity": "CRITICAL"
-                     },
-                     "python:LineLength": {
-                        "params": {
-                           "maximumLineLength": "120"
-                        },
-                        "severity": "MAJOR"
-                     },
-                     "python:LongIntegerWithLowercaseSuffixUsage": "MINOR",
-                     "python:NoSonar": "MAJOR",
-                     "python:OneStatementPerLine": "MAJOR",
-                     "python:ParsingError": "MAJOR",
-                     "python:S104": {
-                        "params": {
-                           "maximum": "1000"
-                        },
-                        "severity": "MAJOR"
-                     },
-                     "python:S1128": "MINOR",
-                     "python:S113": "MINOR",
-                     "python:S1131": "MINOR",
-                     "python:S1142": {
-                        "params": {
-                           "max": "3"
-                        },
-                        "severity": "MAJOR"
-                     },
-                     "python:S134": {
-                        "params": {
-                           "max": "4"
-                        },
-                        "severity": "CRITICAL"
-                     },
-                     "python:S138": {
-                        "params": {
-                           "max": "100"
-                        },
-                        "severity": "MAJOR"
-                     },
-                     "python:S1451": {
-                        "params": {
-                           "headerFormat": "",
-                           "isRegularExpression": "false"
-                        },
-                        "severity": "BLOCKER"
-                     },
-                     "python:S1578": {
-                        "params": {
-                           "format": "(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$"
-                        },
-                        "severity": "MINOR"
-                     },
-                     "python:S1721": {
-                        "description": "Actually in the context of an ``if``, parens are necessary:\n``if value in (\"foo\", \"bar\")`` for instance",
-                        "severity": "MINOR",
-                        "tags": "improve-description"
-                     },
-                     "python:S1722": "MINOR",
-                     "python:S2325": "MINOR",
-                     "python:S2712": "BLOCKER",
-                     "python:S3801": "MAJOR",
-                     "python:S5856": "CRITICAL",
-                     "python:S5953": "BLOCKER",
-                     "python:S6543": "MAJOR",
-                     "python:S6554": "MAJOR",
-                     "python:S6661": "MINOR",
-                     "python:S6740": "MAJOR"
-                  }
-               },
-               "new": {}
-            },
             "isBuiltIn": true,
             "isDefault": true
-         },
-         "Sonar way copy": {
-            "children": {
-               "Child profile": {
-                  "addedRules": {
-                     "python:S2876": "BLOCKER"
-                  }
-               }
-            },
-            "rules": {
-               "python:BackticksUsage": "BLOCKER",
-               "python:ExecStatementUsage": "BLOCKER",
-               "python:InequalityUsage": "MAJOR",
-               "python:PreIncrementDecrement": "MAJOR",
-               "python:PrintStatementUsage": "MAJOR",
-               "python:S100": {
-                  "params": {
-                     "format": "^[a-z_][a-z0-9_]*$"
-                  },
-                  "severity": "MINOR"
-               },
-               "python:S101": {
-                  "params": {
-                     "format": "^_?([A-Z_][a-zA-Z0-9]*|[a-z_][a-z0-9_]*)$"
-                  },
-                  "severity": "MINOR"
-               },
-               "python:S1045": "MAJOR",
-               "python:S1066": "MAJOR",
-               "python:S107": {
-                  "params": {
-                     "max": "13"
-                  },
-                  "severity": "MAJOR"
-               },
-               "python:S108": "MAJOR",
-               "python:S1110": "MAJOR",
-               "python:S112": "MAJOR",
-               "python:S1134": "MAJOR",
-               "python:S1135": "INFO",
-               "python:S1143": "CRITICAL",
-               "python:S1144": "MAJOR",
-               "python:S116": {
-                  "params": {
-                     "format": "^[_a-z][_a-z0-9]*$"
-                  },
-                  "severity": "MINOR"
-               },
-               "python:S117": {
-                  "params": {
-                     "format": "^[_a-z][a-z0-9_]*$"
-                  },
-                  "severity": "MINOR"
-               },
-               "python:S1172": "MAJOR",
-               "python:S1186": "CRITICAL",
-               "python:S1192": {
-                  "params": {
-                     "exclusionRegex": "",
-                     "threshold": "3"
-                  },
-                  "severity": "CRITICAL"
-               },
-               "python:S1226": "MINOR",
-               "python:S125": {
-                  "params": {
-                     "exception": "(fmt|py\\w+):.*"
-                  },
-                  "severity": "MAJOR"
-               },
-               "python:S1313": "MINOR",
-               "python:S1481": {
-                  "params": {
-                     "regex": "(_[a-zA-Z0-9_]*|dummy|unused|ignored)"
-                  },
-                  "severity": "MINOR"
-               },
-               "python:S1515": "MAJOR",
-               "python:S1542": {
-                  "params": {
-                     "format": "^[a-z_][a-z0-9_]*$"
-                  },
-                  "severity": "MAJOR"
-               },
-               "python:S1607": "MAJOR",
-               "python:S1656": "MAJOR",
-               "python:S1700": "MAJOR",
-               "python:S1716": "CRITICAL",
-               "python:S1751": "MAJOR",
-               "python:S1763": "MAJOR",
-               "python:S1764": "MAJOR",
-               "python:S1845": "BLOCKER",
-               "python:S1854": "MAJOR",
-               "python:S1862": "MAJOR",
-               "python:S1871": "MAJOR",
-               "python:S1940": "MINOR",
-               "python:S2053": "CRITICAL",
-               "python:S2068": {
-                  "params": {
-                     "credentialWords": "password,passwd,pwd,passphrase"
-                  },
-                  "severity": "BLOCKER"
-               },
-               "python:S2077": "MAJOR",
-               "python:S2092": "MINOR",
-               "python:S2115": "BLOCKER",
-               "python:S2159": "BLOCKER",
-               "python:S2190": "BLOCKER",
-               "python:S2201": "MAJOR",
-               "python:S2208": "CRITICAL",
-               "python:S2245": "CRITICAL",
-               "python:S2257": "CRITICAL",
-               "python:S2275": "BLOCKER",
-               "python:S2612": "MAJOR",
-               "python:S2638": "CRITICAL",
-               "python:S2710": {
-                  "params": {
-                     "classParameterNames": "cls,mcs,metacls"
-                  },
-                  "severity": "CRITICAL"
-               },
-               "python:S2711": "BLOCKER",
-               "python:S2734": "BLOCKER",
-               "python:S2737": {
-                  "severity": "MINOR",
-                  "tags": "best-practice"
-               },
-               "python:S2755": "BLOCKER",
-               "python:S2757": "MAJOR",
-               "python:S2761": "MAJOR",
-               "python:S2772": "MINOR",
-               "python:S2823": "BLOCKER",
-               "python:S2836": "MAJOR",
-               "python:S3329": "CRITICAL",
-               "python:S3330": "MINOR",
-               "python:S3358": "MAJOR",
-               "python:S3403": "BLOCKER",
-               "python:S3457": "MAJOR",
-               "python:S3516": "BLOCKER",
-               "python:S3626": "MINOR",
-               "python:S3699": "MAJOR",
-               "python:S3752": "MINOR",
-               "python:S3776": {
-                  "params": {
-                     "threshold": "15"
-                  },
-                  "severity": "CRITICAL"
-               },
-               "python:S3827": "BLOCKER",
-               "python:S3862": "BLOCKER",
-               "python:S3923": "MAJOR",
-               "python:S3981": "MAJOR",
-               "python:S3984": "MAJOR",
-               "python:S3985": "MAJOR",
-               "python:S4143": "MAJOR",
-               "python:S4144": "MAJOR",
-               "python:S4423": "CRITICAL",
-               "python:S4426": "CRITICAL",
-               "python:S4433": "CRITICAL",
-               "python:S4487": {
-                  "params": {
-                     "enableSingleUnderscoreIssues": "false"
-                  },
-                  "severity": "CRITICAL"
-               },
-               "python:S4502": "CRITICAL",
-               "python:S4507": "MINOR",
-               "python:S4790": "CRITICAL",
-               "python:S4792": "CRITICAL",
-               "python:S4828": "CRITICAL",
-               "python:S4830": "CRITICAL",
-               "python:S5042": "CRITICAL",
-               "python:S5122": "MINOR",
-               "python:S5247": "MAJOR",
-               "python:S5332": "CRITICAL",
-               "python:S5361": "CRITICAL",
-               "python:S5443": "CRITICAL",
-               "python:S5445": "CRITICAL",
-               "python:S5527": "CRITICAL",
-               "python:S5542": "CRITICAL",
-               "python:S5547": "CRITICAL",
-               "python:S5549": "BLOCKER",
-               "python:S5603": "MAJOR",
-               "python:S5607": "BLOCKER",
-               "python:S5632": "BLOCKER",
-               "python:S5644": "BLOCKER",
-               "python:S5655": "CRITICAL",
-               "python:S5659": "CRITICAL",
-               "python:S5685": "MINOR",
-               "python:S5704": "CRITICAL",
-               "python:S5706": "MAJOR",
-               "python:S5707": "CRITICAL",
-               "python:S5708": "BLOCKER",
-               "python:S5709": "CRITICAL",
-               "python:S5712": "CRITICAL",
-               "python:S5713": "MINOR",
-               "python:S5714": "BLOCKER",
-               "python:S5717": "CRITICAL",
-               "python:S5719": "BLOCKER",
-               "python:S5720": {
-                  "params": {
-                     "ignoredDecorators": "abstractmethod"
-                  },
-                  "severity": "CRITICAL"
-               },
-               "python:S5722": "BLOCKER",
-               "python:S5724": "BLOCKER",
-               "python:S5727": "CRITICAL",
-               "python:S5747": "CRITICAL",
-               "python:S5754": "CRITICAL",
-               "python:S5756": "BLOCKER",
-               "python:S5780": "MAJOR",
-               "python:S5781": "MAJOR",
-               "python:S5795": "MAJOR",
-               "python:S5796": "MAJOR",
-               "python:S5797": "CRITICAL",
-               "python:S5799": "MAJOR",
-               "python:S5806": "MAJOR",
-               "python:S5807": "BLOCKER",
-               "python:S5828": "BLOCKER",
-               "python:S5842": "MINOR",
-               "python:S5843": {
-                  "params": {
-                     "maxComplexity": "20"
-                  },
-                  "severity": "MAJOR"
-               },
-               "python:S5845": "CRITICAL",
-               "python:S5850": "MAJOR",
-               "python:S5855": "MAJOR",
-               "python:S5857": "MINOR",
-               "python:S5864": "MAJOR",
-               "python:S5868": "MAJOR",
-               "python:S5869": "MAJOR",
-               "python:S5886": "MAJOR",
-               "python:S5890": "MAJOR",
-               "python:S5905": "BLOCKER",
-               "python:S5914": "MAJOR",
-               "python:S5996": "CRITICAL",
-               "python:S6002": "CRITICAL",
-               "python:S6019": "MAJOR",
-               "python:S6035": "MAJOR",
-               "python:S6245": "MINOR",
-               "python:S6252": "MINOR",
-               "python:S6265": "BLOCKER",
-               "python:S6270": "BLOCKER",
-               "python:S6275": "MAJOR",
-               "python:S6281": "CRITICAL",
-               "python:S6302": "BLOCKER",
-               "python:S6303": "MAJOR",
-               "python:S6304": "BLOCKER",
-               "python:S6308": "MAJOR",
-               "python:S6317": "CRITICAL",
-               "python:S6319": "MAJOR",
-               "python:S6321": "MINOR",
-               "python:S6323": "MAJOR",
-               "python:S6326": "MAJOR",
-               "python:S6327": "MAJOR",
-               "python:S6328": "MAJOR",
-               "python:S6329": "BLOCKER",
-               "python:S6330": "MAJOR",
-               "python:S6331": "MAJOR",
-               "python:S6332": "MAJOR",
-               "python:S6333": "BLOCKER",
-               "python:S6353": "MINOR",
-               "python:S6395": "MAJOR",
-               "python:S6396": "MAJOR",
-               "python:S6397": "MAJOR",
-               "python:S6463": "MAJOR",
-               "python:S6468": "MAJOR",
-               "python:S905": {
-                  "params": {
-                     "ignoredOperators": "<<,>>,|",
-                     "reportOnStrings": "false"
-                  },
-                  "severity": "MAJOR"
-               },
-               "python:S930": "BLOCKER",
-               "pythonbugs:S2259": "MAJOR",
-               "pythonbugs:S2583": "MAJOR",
-               "pythonbugs:S2589": "MAJOR",
-               "pythonbugs:S5633": "BLOCKER",
-               "pythonbugs:S6417": "MAJOR",
-               "pythonbugs:S6464": "CRITICAL",
-               "pythonbugs:S6465": "CRITICAL",
-               "pythonbugs:S6466": "CRITICAL",
-               "pythonsecurity:S2076": "BLOCKER",
-               "pythonsecurity:S2078": "BLOCKER",
-               "pythonsecurity:S2083": "BLOCKER",
-               "pythonsecurity:S2091": "BLOCKER",
-               "pythonsecurity:S2631": "CRITICAL",
-               "pythonsecurity:S3649": "BLOCKER",
-               "pythonsecurity:S5131": "BLOCKER",
-               "pythonsecurity:S5135": "BLOCKER",
-               "pythonsecurity:S5144": "MAJOR",
-               "pythonsecurity:S5145": "MINOR",
-               "pythonsecurity:S5146": "BLOCKER",
-               "pythonsecurity:S5147": "BLOCKER",
-               "pythonsecurity:S5334": "BLOCKER",
-               "pythonsecurity:S6287": "MAJOR",
-               "pythonsecurity:S6350": "MAJOR"
-            }
          }
       },
       "rpg": {
@@ -4496,14 +3111,6 @@
          }
       },
       "instantiated": {
-         "java:Don_t_be_rude": {
-            "params": {
-               "message": "",
-               "regularExpression": "(fuck|shit|merde)"
-            },
-            "severity": "MAJOR",
-            "templateKey": "java:S124"
-         },
          "jcl:Track_usage_of_rogue_programs": {
             "params": {
                "programName": "ROGUEPROG",
@@ -4538,21 +3145,20 @@
       }
    },
    "users": {
-      "TEMP": {
+      "TEMP_ADMIN": {
          "local": true,
-         "name": "User name TEMP",
-         "scmAccounts": [
-            "jdoe@gmail.com,jdoe@acme.com,john.doe@acme.com,jdoe@live.com"
-         ]
+         "name": "User name TEMP_ADMIN"
       },
       "admin": {
          "email": "admin@acme.com",
-         "groups": "sonar-administrators",
+         "groups": "sonar-administrators, tech-leads",
          "local": true,
          "name": "Administrator",
-         "scmAccounts": [
-            "admin-acme,administrator-acme"
-         ]
+         "scmAccounts": "admin-acme, administrator-acme"
+      },
+      "ado": {
+         "local": true,
+         "name": "Azure DevOps Service Account"
       },
       "bbTEMPaa": {
          "local": true,
