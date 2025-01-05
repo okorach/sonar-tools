@@ -340,7 +340,7 @@ class Platform(object):
         :return: the SonarQube platform backend database
         """
         if self.is_sonarcloud():
-            return "postgres"
+            return "postgresql"
         if self.version() < (9, 7, 0):
             return self.sys_info()["Statistics"]["database"]["name"]
         return self.sys_info()["Database"]["Database"]
@@ -395,7 +395,7 @@ class Platform(object):
         :param key: Setting key
         :return: Whether the reset was successful or not
         """
-        return settings.reset_setting(self, key).ok
+        return settings.reset_setting(self, key)
 
     def set_setting(self, key: str, value: any) -> bool:
         """Sets a platform global setting
@@ -415,7 +415,7 @@ class Platform(object):
                 if isinstance(v, datetime.date):
                     good_params[k] = util.format_date(v)
                 elif isinstance(v, (list, tuple, set)):
-                    good_params[k] = ",".join(list(v))
+                    good_params[k] = ",".join(list([str(x) for x in v]))
             params_string = "&".join([f"{k}={requests.utils.quote(str(v))}" for k, v in good_params.items()])
             if len(params_string) > 0:
                 url += f"?{params_string}"
