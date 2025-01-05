@@ -224,7 +224,7 @@ class Setting(sqobject.SqObject):
 
     def __hash__(self) -> int:
         """Returns object unique ID"""
-        return hash((self.key, self.component.key if self.component else "", self.endpoint.url))
+        return hash((self.key, self.component.key if self.component else None, self.endpoint.url))
 
     def __str__(self) -> str:
         if self.component is None:
@@ -548,7 +548,7 @@ def decode(setting_key: str, setting_value: any) -> any:
 def reset_setting(endpoint: pf.Platform, setting_key: str, project_key: str = None) -> bool:
     """Resets a setting to its default"""
     log.info("Resetting setting '%s", setting_key)
-    return endpoint.post("settings/reset", params={"key": setting_key, "component": project_key}).ok
+    return endpoint.post("settings/reset", params={"keys": setting_key, "component": project_key}).ok
 
 
 def get_component_params(component: object, name: str = "component") -> types.ApiParamss:
