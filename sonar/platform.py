@@ -80,7 +80,7 @@ class Platform(object):
         self.__cert_file = cert_file
         self.__user_data = None
         self._version = None
-        self.__sys_info = None
+        self._sys_info = None
         self.__global_nav = None
         self._server_id = None
         self._permissions = None
@@ -147,8 +147,8 @@ class Platform(object):
         """
         if self._server_id is not None:
             return self._server_id
-        if self.__sys_info is not None and _SERVER_ID_KEY in self.__sys_info["System"]:
-            self._server_id = self.__sys_info["System"][_SERVER_ID_KEY]
+        if self._sys_info is not None and _SERVER_ID_KEY in self._sys_info["System"]:
+            self._server_id = self._sys_info["System"][_SERVER_ID_KEY]
         else:
             self._server_id = json.loads(self.get("system/status").text)["id"]
         return self._server_id
@@ -307,7 +307,7 @@ class Platform(object):
         """
         if self.is_sonarcloud():
             return {"System": {_SERVER_ID_KEY: "sonarcloud"}}
-        if self.__sys_info is None:
+        if self._sys_info is None:
             success, counter = False, 0
             while not success:
                 try:
@@ -322,9 +322,9 @@ class Platform(object):
                     else:
                         log.error("%s while getting system info", util.error_msg(e))
                         raise e
-            self.__sys_info = json.loads(resp.text)
+            self._sys_info = json.loads(resp.text)
             success = True
-        return self.__sys_info
+        return self._sys_info
 
     def global_nav(self) -> dict[str, any]:
         """
