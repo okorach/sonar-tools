@@ -34,7 +34,6 @@ import cli.projects_cli as proj_cli
 def test_import_compatibility() -> None:
     util.start_logging()
     jsondata = util.SQ.basics()
-    logging.debug("JSON = %s", sutil.json_dump(jsondata))
     assert proj_cli.__check_sq_environments(util.SQ, jsondata) is None
 
     incompatible_data = jsondata.copy()
