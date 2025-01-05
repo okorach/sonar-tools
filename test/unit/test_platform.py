@@ -30,6 +30,13 @@ import utilities as util
 from sonar import platform, settings
 
 
+@pytest.fixture(autouse=True)
+def run_around_tests():
+    url = util.TEST_SQ.url
+    yield
+    util.TEST_SQ.url = url
+
+
 def test_system_id() -> None:
     server_id = util.SQ.server_id()
     assert server_id == util.SQ.server_id()
@@ -79,15 +86,13 @@ def test_sys_info() -> None:
 
 
 def test_wrong_url() -> None:
-    url = util.TEST_SQ.url
     util.TEST_SQ.url = "http://localhost:3337"
-    util.TEST_SQ.__sys_info is None
+
+    util.TEST_SQ._sys_info = None
     with pytest.raises(RequestException):
         util.TEST_SQ.sys_info()
 
     util.TEST_SQ.global_permissions()
-
-    util.TEST_SQ.url = url
 
 
 def test_set_webhooks() -> None:
