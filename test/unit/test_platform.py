@@ -81,6 +81,7 @@ def test_sys_info() -> None:
 def test_wrong_url() -> None:
     url = util.TEST_SQ.url
     util.TEST_SQ.url = "http://localhost:3337"
+    util.TEST_SQ.__sys_info is None
     with pytest.raises(RequestException):
         util.TEST_SQ.sys_info()
 
