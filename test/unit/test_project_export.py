@@ -80,7 +80,7 @@ def test_import_no_file() -> None:
 def test_no_export_or_import(get_json_file: Generator[str]) -> None:
     """test_no_export_or_import"""
     args = f"{OPTS} --{opt.REPORT_FILE} {get_json_file}"
-    with pytest.raises(SystemExit):
+    with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", args.split(" ")):
             projects_cli.main()
     assert int(str(e.value)) == errcodes.ARGS_ERROR

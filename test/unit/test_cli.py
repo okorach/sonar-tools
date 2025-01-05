@@ -30,9 +30,6 @@ from cli import options as opt
 import utilities as util
 import cli.projects_cli as proj_cli
 
-CMD = "projects_cli.py"
-OPTS = f"{CMD} {util.SQS_OPTS}"
-
 
 def test_import_compatibility() -> None:
     util.start_logging()
@@ -65,19 +62,20 @@ def test_import_compatibility() -> None:
 def test_import(get_json_file: Generator[str]) -> None:
     """test_import"""
     export_file = get_json_file
-    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {export_file} --{opt.KEYS} project1"
+    cmd = f"projects_cli.py {util.SQS_OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {export_file} --{opt.KEYS} project1"
     util.run_success_cmd(proj_cli.main, cmd)
 
-    proj_cli.__import_projects(util.TEST_SQ, file=export_file)
+    if util.SQ.version() == util.TEST_SQ.version():
+        assert proj_cli.__import_projects(util.TEST_SQ, file=export_file) is None
 
-    with open(export_file, "r", encoding="utf-8") as fd:
-        data = json.load(fd)
-    data["project_exports"][0]["key"] = "TEMP-IMPORT_PROJECT-KEY"
-    with open(export_file, "w", encoding="utf-8") as fd:
-        print(json.dumps(data), file=fd)
-    assert proj_cli.__import_projects(util.TEST_SQ, file=export_file) is None
-    proj = projects.Project.get_object(util.TEST_SQ, "TEMP-IMPORT_PROJECT-KEY")
-    proj.delete()
+        with open(export_file, "r", encoding="utf-8") as fd:
+            data = json.load(fd)
+        data["project_exports"][0]["key"] = "TEMP-IMPORT_PROJECT-KEY"
+        with open(export_file, "w", encoding="utf-8") as fd:
+            print(json.dumps(data), file=fd)
+        assert proj_cli.__import_projects(util.TEST_SQ, file=export_file) is None
+        proj = projects.Project.get_object(util.TEST_SQ, "TEMP-IMPORT_PROJECT-KEY")
+        proj.delete()
 
     # Mess up the JSON file and retry import
     with open(export_file, "r", encoding="utf-8") as fd:
