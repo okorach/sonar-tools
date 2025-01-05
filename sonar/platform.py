@@ -415,7 +415,7 @@ class Platform(object):
                 if isinstance(v, datetime.date):
                     good_params[k] = util.format_date(v)
                 elif isinstance(v, (list, tuple, set)):
-                    good_params[k] = ",".join(list([str(x) for x in v]))
+                    good_params[k] = ",".join([str(x) for x in v])
             params_string = "&".join([f"{k}={requests.utils.quote(str(v))}" for k, v in good_params.items()])
             if len(params_string) > 0:
                 url += f"?{params_string}"
