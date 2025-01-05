@@ -24,18 +24,23 @@
 import json
 import pytest
 import utilities as util
+from sonar import settings
+
 
 def test_system_id() -> None:
     server_id = util.SQ.server_id()
     assert server_id == util.SQ.server_id()
     assert server_id == util.SQ.server_id()
 
+
 def test_db() -> None:
     assert util.SC.database() == "postgres"
     assert util.SQ.database() == "postgres"
 
+
 def test_plugins() -> None:
     assert util.SC.plugins() == {}
+
 
 def test_get_set_reset_settings() -> None:
     assert util.SQ.get_setting("sonar.global.exclusions") == ""
@@ -46,27 +51,33 @@ def test_get_set_reset_settings() -> None:
     assert util.SQ.reset_setting("sonar.global.exclusions")
     assert util.SQ.get_setting("sonar.global.exclusions") == ""
 
+
 def test_import() -> None:
     with open("test/files/config.json", "r", encoding="utf-8") as f:
         json_config = json.load(f)
+    json_config["globalSettings"]["generalSettings"][settings.NEW_CODE_PERIOD] = 60
+    assert util.TEST_SQ.import_config(json_config) is None
+
+    json_config.pop("globalSettings")
     assert util.TEST_SQ.import_config(json_config) is None
 
 
 def test_sys_info() -> None:
     data = util.SC.sys_info()
-    assert data == { "System": {"Server ID": "sonarcloud"}}
+    assert data == {"System": {"Server ID": "sonarcloud"}}
 
     data = util.SQ.sys_info()
     assert "System" in data
 
+
+def test_wrong_url() -> None:
     url = util.TEST_SQ.url
     util.TEST_SQ.url = "http://localhost:3337"
     with pytest.raises(ConnectionError):
-        util.TEST_SQ.sys_info()    
+        util.TEST_SQ.sys_info()
+    assert util.TEST_SQ.global_permissions() == []
     util.TEST_SQ.url = url
 
 
-def test_wrong_url() -> None:
-    with open("test/files/config.json", "r", encoding="utf-8") as f:
-        json_config = json.load(f)
-    assert util.TEST_SQ.import_config(json_config) is None
+def test_set_webhooks() -> None:
+    assert util.SQ.set_webhooks(None) is None
