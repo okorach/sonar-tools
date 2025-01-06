@@ -452,6 +452,7 @@ class User(sqobject.SqObject):
         :rtype: dict
         """
         json_data = self.sq_json.copy()
+        json_data["login"] = self.login
         json_data["scmAccounts"] = self.scm_accounts
         json_data["groups"] = self.groups().copy()
         if export_settings.get("MODE", "") == "MIGRATION":
