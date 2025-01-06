@@ -95,7 +95,8 @@ def test_get_findings() -> None:
     """test_get_findings"""
     proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)
     assert len(proj.get_findings(branch="non-existing-branch")) == 0
-    assert len(proj.get_findings(branch="develop")) > 0
+    if util.SQ.edition() != "community":
+        assert len(proj.get_findings(branch="develop")) > 0
     assert len(proj.get_findings(pr="1")) == 0
 
 
@@ -148,6 +149,8 @@ def test_binding() -> None:
 
 def test_wrong_key(get_test_project: callable) -> None:
     """test_wrong_key"""
+    if util.SQ.edition() not in ("enterprise", "datacenter"):
+        pytest.skip("Project import not available below Enterprise Edition")
     proj = get_test_project
     proj.key = util.NON_EXISTING_KEY
     assert proj.export_async() is None
