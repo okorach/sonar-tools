@@ -184,18 +184,20 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
             if what_item not in what:
                 continue
             ndx, func, _ = call_data
+            if not is_first:
+                print(",", file=fd)
+            is_first = False
+            worker = Thread(target=write_objects, args=(write_q, fd, ndx, export_settings))
+            worker.daemon = True
+            worker.name = f"Write{ndx[:1].upper()}{ndx[1:10]}"
+            worker.start()
             try:
-                if not is_first:
-                    print(",", file=fd)
-                is_first = False
-                worker = Thread(target=write_objects, args=(write_q, fd, ndx, export_settings))
-                worker.daemon = True
-                worker.name = f"Write{ndx[:1].upper()}{ndx[1:10]}"
-                worker.start()
                 func(endpoint, export_settings=export_settings, key_list=kwargs[options.KEYS], write_q=write_q)
-                write_q.join()
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
+                if write_q:
+                    write_q.put(utilities.WRITE_END)
+            write_q.join()
         print("\n}", file=fd)
     remove_empty = False if mode == "MIGRATION" else not kwargs.get(EXPORT_EMPTY, False)
     utilities.normalize_json_file(file, remove_empty=remove_empty, remove_none=True)
