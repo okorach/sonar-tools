@@ -201,7 +201,9 @@ def test_set_quality_gate(get_test_project: Generator[projects.Project], get_tes
 
 
 def test_ai_code_assurance(get_test_project: Generator[projects.Project]) -> None:
-    """test_set_ai_code_assurance"""
+    """test_ai_code_assurance"""
+    if util.SQ.edition() == "community":
+        pytest.skip("AI Code Fix not available in SonarQube Community Build")
     if util.SQ.version() >= (10, 7, 0):
         proj = get_test_project
         assert proj.set_contains_ai_code(True)
@@ -229,6 +231,8 @@ def test_set_quality_profile(get_test_project: Generator[projects.Project], get_
 
 def test_branch_and_pr() -> None:
     """test_branch_and_pr"""
+    if util.SQ.edition() == "community":
+        pytest.skip("Branches and PR unsupported in SonarQube Community Build")
     proj = projects.Project.get_object(util.SQ, util.LIVE_PROJECT)
     assert len(proj.get_branches_and_prs(filters={"branch": "*"})) >= 2
     assert len(proj.get_branches_and_prs(filters={"branch": "foobar"})) == 0
