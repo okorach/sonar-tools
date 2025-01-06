@@ -29,6 +29,8 @@ from sonar import projects, branches, exceptions
 
 def test_tag_portfolios(get_test_portfolio: callable) -> None:
     """test_tag_portfolios"""
+    if util.SQ.edition() in ("community", "developer"):
+        pytest.skip("Portfolios not supported in SonarQube Community Build and Developer Edition")
     o = get_test_portfolio
     with pytest.raises(exceptions.UnsupportedOperation):
         o.get_tags()
