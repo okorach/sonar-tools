@@ -32,7 +32,7 @@ echo "Running tests"
 
 export SONAR_HOST_URL=${1:-${SONAR_HOST_URL}}
 
-for target in latest lts cloud
+for target in latest lts latest-ce lts-ce cloud
 do
     if [ -d "$ROOTDIR/test/$target/" ]; then
         coverage run --branch --source="$ROOTDIR" -m pytest "$ROOTDIR/test/$target/" --junit-xml="$buildDir/xunit-results-$target.xml"
