@@ -39,6 +39,11 @@ def test_tag_portfolios(get_test_portfolio: callable) -> None:
 def test_tag_project_branches() -> None:
     """test_tag_project_branches"""
     proj = projects.Project.get_object(util.SQ, util.LIVE_PROJECT)
+    if util.SQ.edition() == "community":
+        with pytest.raises(exceptions.UnsupportedOperation):
+            branches.Branch.get_object(proj, "master")
+        return
+    proj = projects.Project.get_object(util.SQ, util.LIVE_PROJECT)
     o = branches.Branch.get_object(proj, "master")
     with pytest.raises(exceptions.UnsupportedOperation):
         o.get_tags()
