@@ -70,10 +70,10 @@ def get_test_project() -> Generator[projects.Project]:
 def get_test_app() -> Generator[applications.Application]:
     """setup of tests"""
     o = None
-    if util.SQ.version() in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() in ("developer", "enterprise", "datacenter"):
         o = create_test_object(applications.Application, key=util.TEMP_KEY)
     yield o
-    if util.SQ.version() in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() in ("developer", "enterprise", "datacenter"):
         o.key = util.TEMP_KEY
         try:
             o.delete()
@@ -85,10 +85,10 @@ def get_test_app() -> Generator[applications.Application]:
 def get_test_portfolio() -> Generator[portfolios.Portfolio]:
     """setup of tests"""
     o = None
-    if util.SQ.version() in ("enterprise", "datacenter"):
+    if util.SQ.edition() in ("enterprise", "datacenter"):
         o = create_test_object(portfolios.Portfolio, key=util.TEMP_KEY)
     yield o
-    if util.SQ.version() in ("enterprise", "datacenter"):
+    if util.SQ.edition() in ("enterprise", "datacenter"):
         o.key = util.TEMP_KEY
         try:
             o.delete()
@@ -100,10 +100,10 @@ def get_test_portfolio() -> Generator[portfolios.Portfolio]:
 def get_test_portfolio_2() -> Generator[portfolios.Portfolio]:
     """setup of tests"""
     o = None
-    if util.SQ.version() in ("enterprise", "datacenter"):
+    if util.SQ.edition() in ("enterprise", "datacenter"):
         o = create_test_object(portfolios.Portfolio, key=util.TEMP_KEY_2)
     yield o
-    if util.SQ.version() in ("enterprise", "datacenter"):
+    if util.SQ.edition() in ("enterprise", "datacenter"):
         o.key = util.TEMP_KEY_2
         try:
             o.delete()
@@ -115,11 +115,11 @@ def get_test_portfolio_2() -> Generator[portfolios.Portfolio]:
 def get_test_subportfolio() -> Generator[portfolios.Portfolio]:
     """setup of tests"""
     subp = None
-    if util.SQ.version() in ("enterprise", "datacenter"):
+    if util.SQ.edition() in ("enterprise", "datacenter"):
         parent = create_test_object(portfolios.Portfolio, key=util.TEMP_KEY)
         subp = parent.add_standard_subportfolio(key=util.TEMP_KEY_3, name=util.TEMP_KEY_3)
     yield subp
-    if util.SQ.version() in ("enterprise", "datacenter"):
+    if util.SQ.edition() in ("enterprise", "datacenter"):
         subp.key = util.TEMP_KEY_3
         try:
             subp.delete()
