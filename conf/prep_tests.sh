@@ -23,7 +23,7 @@ ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 
 cd "$ROOTDIR/test/unit" || exit 1
 
-for target in lts latest
+for target in lts latest latest-ce lts-ce
 do
     rm -rf "$ROOTDIR/test/$target"
     mkdir -p "$ROOTDIR/test/$target" 2>/dev/null
