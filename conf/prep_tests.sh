@@ -23,6 +23,9 @@ ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 
 cd "$ROOTDIR/test/unit" || exit 1
 
+echo ""
+echo "Generating edition / version specific tests"
+
 for target in lts latest latest-ce lts-ce
 do
     rm -rf "$ROOTDIR/test/$target"
@@ -35,4 +38,7 @@ do
     cp "credentials-$target.py" "$ROOTDIR/test/$target/credentials.py"
     mv "$ROOTDIR/test/$target/conftest_${target}.py" "$ROOTDIR/test/$target/conftest.py"
     mv "$ROOTDIR/test/$target/utilities_${target}.py" "$ROOTDIR/test/$target/utilities.py"
+    if [ "$target" != "latest" ]; then
+        rm "$ROOTDIR/test/$target/"test_sonarcloud*.py
+    fi
 done
