@@ -227,7 +227,6 @@ def get_sarif_file() -> Generator[str]:
     rm(file)
 
 
-
 @pytest.fixture
 def get_test_quality_gate() -> Generator[qualitygates.QualityGate]:
     """setup of tests"""
