@@ -22,7 +22,7 @@
 """ projects tests """
 
 from collections.abc import Generator
-
+from requests import RequestException
 import pytest
 
 from sonar import projects, exceptions, qualityprofiles, qualitygates
@@ -31,7 +31,7 @@ from sonar.audit import config
 import utilities as util
 
 
-def test_get_object(get_test_project: callable) -> None:
+def test_get_object(get_test_project: Generator[projects.Project]) -> None:
     """test_get_object"""
     proj = get_test_project
     assert str(proj) == f"project '{util.TEMP_KEY}'"
@@ -147,7 +147,7 @@ def test_binding() -> None:
     assert proj.binding_key() is None
 
 
-def test_wrong_key(get_test_project: callable) -> None:
+def test_wrong_key(get_test_project: Generator[projects.Project]) -> None:
     """test_wrong_key"""
     if util.SQ.edition() not in ("enterprise", "datacenter"):
         pytest.skip("Project import not available below Enterprise Edition")
@@ -159,7 +159,7 @@ def test_wrong_key(get_test_project: callable) -> None:
     assert not proj.import_zip()
 
 
-def test_ci(get_test_project: callable) -> None:
+def test_ci(get_test_project: Generator[projects.Project]) -> None:
     """test_ci"""
     proj = get_test_project
     assert proj.ci() == "unknown"
@@ -167,7 +167,7 @@ def test_ci(get_test_project: callable) -> None:
     assert proj.ci() == "unknown"
 
 
-def test_set_links(get_test_project: callable) -> None:
+def test_set_links(get_test_project: Generator[projects.Project]) -> None:
     """test_set_links"""
     proj = get_test_project
     proj.set_links({"links": [{"type": "custom", "name": "google", "url": "https://google.com"}]})
@@ -175,7 +175,7 @@ def test_set_links(get_test_project: callable) -> None:
     assert not proj.set_links({"links": [{"type": "custom", "name": "yahoo", "url": "https://yahoo.com"}]})
 
 
-def test_set_tags(get_test_project: callable) -> None:
+def test_set_tags(get_test_project: Generator[projects.Project]) -> None:
     """test_set_tags"""
     proj = get_test_project
 
@@ -238,3 +238,22 @@ def test_branch_and_pr() -> None:
     assert len(proj.get_branches_and_prs(filters={"branch": "foobar"})) == 0
     assert len(proj.get_branches_and_prs(filters={"pullRequest": "*"})) == 2
     assert len(proj.get_branches_and_prs(filters={"pullRequest": "5"})) == 1
+
+
+def test_audit_languages(get_test_project: Generator[projects.Project]) -> None:
+    """test_audit_languages"""
+    proj = projects.Project.get_object(util.SQ, "okorach_sonar-tools")
+    assert proj.audit_languages({"audit.projects.utilityLocs": False}) == []
+    proj = get_test_project
+    assert proj.audit_languages({"audit.projects.utilityLocs": True}) == []
+
+
+def test_wrong_key_2(get_test_project: Generator[projects.Project]) -> None:
+    """test_wrong_key"""
+    proj = get_test_project
+    proj.key = util.NON_EXISTING_KEY
+    assert proj.webhooks() is None
+    assert proj.links() is None
+    # assert proj.quality_gate() is None
+    with pytest.raises(exceptions.ObjectNotFound):
+        proj.audit({}, None)
