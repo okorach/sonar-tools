@@ -76,7 +76,7 @@ def get_property(name: str, settings: Optional[types.ConfigSettings] = None) -> 
     """Returns the value of a given property"""
     if settings is None:
         settings = _CONFIG_SETTINGS
-    return settings.get(name, "")
+    return "" if not settings else settings.get(name, "")
 
 
 def configure() -> None:

@@ -50,20 +50,11 @@ def test_migration(get_json_file: Generator[str]) -> None:
     for item in GLOBAL_ITEMS:
         assert item in json_config
 
+    item_list = ["backgroundTasks", "detectedCi", "lastAnalysis", "issues", "hotspots", "name", "ncloc", "permissions", "revision", "visibility"]
+    if util.SQ.edition() != "community":
+        item_list.append("branches")
     for p in json_config["projects"].values():
-        for item in (
-            "backgroundTasks",
-            "branches",
-            "detectedCi",
-            "lastAnalysis",
-            "issues",
-            "hotspots",
-            "name",
-            "ncloc",
-            "permissions",
-            "revision",
-            "visibility",
-        ):
+        for item in item_list:
             assert item in p
 
     u = json_config["users"]["admin"]
@@ -94,24 +85,26 @@ def test_migration(get_json_file: Generator[str]) -> None:
     assert p["ncloc"]["py"] > 0
     assert p["ncloc"]["total"] > 0
 
-    iss = p["branches"]["master"]["issues"]
-    if util.SQ.version() >= (10, 0, 0):
-        assert iss["accepted"] > 0
-    else:
-        assert iss["wontFix"] > 0
+    if util.SQ.edition() != "community":
+        iss = p["branches"]["master"]["issues"]
+        if util.SQ.version() >= (10, 0, 0):
+            assert iss["accepted"] > 0
+        else:
+            assert iss["wontFix"] > 0
 
-    assert iss["falsePositives"] > 0
-    assert iss["thirdParty"] == 0
+        assert iss["falsePositives"] > 0
+        assert iss["thirdParty"] == 0
 
-    assert p["branches"]["master"]["hotspots"]["safe"] > 0
-    assert p["branches"]["master"]["hotspots"]["acknowledged"] == 0
+        assert p["branches"]["master"]["hotspots"]["safe"] > 0
+        assert p["branches"]["master"]["hotspots"]["acknowledged"] == 0
 
     p = json_config["projects"]["checkstyle-issues"]
 
     if util.SQ.version() >= (10, 0, 0):
         assert json_config["projects"]["demo:gitlab-ci-maven"]["detectedCi"] == "Gitlab CI"
         assert json_config["projects"]["demo:github-actions-cli"]["detectedCi"] == "Github Actions"
-        assert len(p["branches"]["main"]["issues"]["thirdParty"]) > 0
+        if util.SQ.edition() != "community":
+            assert len(p["branches"]["main"]["issues"]["thirdParty"]) > 0
 
     for p in json_config["portfolios"].values():
         assert "projects" in p

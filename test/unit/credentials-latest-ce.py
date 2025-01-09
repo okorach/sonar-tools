@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env python3
 #
-# sonar-tools
+# sonar-tools tests
 # Copyright (C) 2025 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
@@ -19,26 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+from os import getenv
 
-cd "$ROOTDIR/test/unit" || exit 1
-
-echo ""
-echo "Generating edition / version specific tests"
-
-for target in lts latest latest-ce lts-ce
-do
-    rm -rf "$ROOTDIR/test/$target"
-    mkdir -p "$ROOTDIR/test/$target" 2>/dev/null
-    for f in *.py
-    do
-        b=$(basename "$f" .py)
-        cp "$f" "$ROOTDIR/test/$target/${b}_${target}.py"
-    done
-    cp "credentials-$target.py" "$ROOTDIR/test/$target/credentials.py"
-    mv "$ROOTDIR/test/$target/conftest_${target}.py" "$ROOTDIR/test/$target/conftest.py"
-    mv "$ROOTDIR/test/$target/utilities_${target}.py" "$ROOTDIR/test/$target/utilities.py"
-    if [ "$target" != "latest" ]; then
-        rm "$ROOTDIR/test/$target/"test_sonarcloud*.py
-    fi
-done
+TARGET_PLATFORM = "http://localhost:10001"
+TARGET_TOKEN = getenv("SONAR_TOKEN_LATEST_ADMIN_USER")

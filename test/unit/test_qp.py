@@ -56,7 +56,7 @@ def test_exists(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
 def test_get_list() -> None:
     """Test QP get_list"""
     qps = qualityprofiles.get_list(endpoint=util.SQ)
-    assert len(qps) > 30
+    assert len(qps) > 25
 
 
 def test_create_delete(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:

@@ -25,3 +25,7 @@ tmp/
 test/lts/
 test/latest/
 test/cloud/
+test/latest-ce/
+test/lts-ce/
+test/latest-de/
+test/lts-de/

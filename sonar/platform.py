@@ -570,6 +570,9 @@ class Platform(object):
         if not audit_settings.get("audit.logs", True):
             log.info("Logs audit is disabled, skipping logs audit...")
             return []
+        if self.is_sonarcloud():
+            log.info("Logs audit not available with SonarQube Cloud, skipping logs audit...")
+            return []
         log_map = {"app": "sonar.log", "ce": "ce.log", "web": "web.log", "es": "es.log"}
         if self.edition() == "datacenter":
             log_map.pop("es")
