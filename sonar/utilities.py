@@ -206,7 +206,7 @@ def sort_lists(data: any, redact_tokens: bool = True) -> any:
         return [sort_lists(elem) for elem in data]
     elif isinstance(data, dict):
         for k, v in data.items():
-            if k in ("token", "tokenTarget"):
+            if redact_tokens and k in ("token", "tokenTarget"):
                 data[k] = redacted_token(v)
             if isinstance(v, set):
                 v = list(v)
