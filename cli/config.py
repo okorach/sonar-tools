@@ -167,7 +167,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
         export_settings["FULL_EXPORT"] = False
         export_settings["INLINE_LISTS"] = False
         export_settings[EXPORT_EMPTY] = True
-    log.info("Exporting with settings: %s", utilities.json_dump(export_settings))
+    log.info("Exporting with settings: %s", utilities.json_dump(export_settings, redact_tokens=True))
     if "projects" in what and kwargs[options.KEYS]:
         non_existing_projects = [key for key in kwargs[options.KEYS] if not projects.exists(key, endpoint)]
         if len(non_existing_projects) > 0:
