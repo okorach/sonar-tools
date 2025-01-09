@@ -1,3 +1,11 @@
+# Version 3.8
+
+* Bug fixes
+* Better compatibility with SonarQube 9.9, SonarCloud
+* Better compatibility with SonarQube Community Build and Developer Edition
+* Adjustments for SonarQube 10.8 (AI related features)
+* Partial migration to users and groups APIv2
+
 # Version 3.7
 
 * Numerous hardening, functional and performance improvements on `sonar-audit`, `sonar-measures-export`, `sonar-findings-export`
