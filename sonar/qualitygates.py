@@ -51,6 +51,10 @@ GOOD_QG_CONDITIONS = {
     "new_coverage": (20, 90, "Coverage below 20% is a too low bar, above 90% is overkill"),
     "new_bugs": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
     "new_vulnerabilities": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
+    "new_violations": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
+    "new_software_quality_blocker_issues": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
+    "new_software_quality_high_issues": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
+    "new_software_quality_medium_issues": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
     "new_security_hotspots": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
     "new_blocker_violations": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
     "new_critical_violations": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
@@ -101,10 +105,9 @@ class QualityGate(sq.SqObject):
     def get_object(cls, endpoint: pf.Platform, name: str) -> QualityGate:
         """Reads a quality gate from SonarQube
 
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param str name: Quality gate
+        :param endpoint: Reference to the SonarQube platform
+        :param name: Quality gate
         :return: the QualityGate object or None if not found
-        :rtype: QualityGate or None
         """
         o = QualityGate.CACHE.get(name, endpoint.url)
         if o:
@@ -118,13 +121,14 @@ class QualityGate(sq.SqObject):
     def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> QualityGate:
         """Creates a quality gate from returned API data
         :return: the QualityGate object
-        :rtype: QualityGate or None
         """
         # SonarQube 10 compatibility: "id" field dropped, replaced by "name"
         o = QualityGate.CACHE.get(data["name"], endpoint.url)
         if not o:
             o = cls(endpoint, data["name"], data=data)
         o.sq_json = data
+        o.is_default = data.get("isDefault", False)
+        o.is_built_in = data.get("isBuiltIn", False)
         return o
 
     @classmethod
@@ -202,24 +206,23 @@ class QualityGate(sq.SqObject):
             return _encode_conditions(self._conditions)
         return self._conditions
 
-    def clear_conditions(self) -> None:
+    def clear_conditions(self) -> bool:
         """Clears all quality gate conditions, if quality gate is not built-in
         :return: Nothing
         """
         if self.is_built_in:
             log.debug("Can't clear conditions of built-in %s", str(self))
-        else:
-            log.debug("Clearing conditions of %s", str(self))
-            for cond in self.conditions():
-                self.post("qualitygates/delete_condition", params={"id": cond["id"]})
-            self._conditions = None
+            return False
+        log.debug("Clearing conditions of %s", str(self))
+        for cond in self.conditions():
+            self.post("qualitygates/delete_condition", params={"id": cond["id"]})
+        self._conditions = []
+        return True
 
     def set_conditions(self, conditions_list: list[str]) -> bool:
         """Sets quality gate conditions (overriding any previous conditions) as encoded in sonar-config
-        :param conditions_list: List of conditions, encoded
-        :type conditions_list: dict
+        :param list[str] conditions_list: List of conditions, encoded
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         if not conditions_list or len(conditions_list) == 0:
             return True
@@ -236,6 +239,7 @@ class QualityGate(sq.SqObject):
         for cond in conditions_list:
             (params["metric"], params["op"], params["error"]) = _decode_condition(cond)
             ok = ok and self.post("qualitygates/create_condition", params=params).ok
+        self._conditions = None
         self.conditions()
         return ok
 
@@ -248,12 +252,11 @@ class QualityGate(sq.SqObject):
             self._permissions = permissions.QualityGatePermissions(self)
         return self._permissions
 
-    def set_permissions(self, permissions_list: types.ObjectJsonRepr) -> QualityGate:
+    def set_permissions(self, permissions_list: types.ObjectJsonRepr) -> bool:
         """Sets quality gate permissions
         :param permissions_list:
         :type permissions_list: dict {"users": [<userlist>], "groups": [<grouplist>]}
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         return self.permissions().set(permissions_list)
 
