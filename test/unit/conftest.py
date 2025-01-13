@@ -78,6 +78,8 @@ def get_test_qg() -> Generator[qualitygates.QualityGate]:
     # Teardown: Clean up resources (if any) after the test
     o.key = util.TEMP_KEY
     try:
+        sw = qualitygates.QualityGate.get_object(endpoint=util.SQ, name="Sonar way")
+        sw.set_as_default()
         o.delete()
     except exceptions.ObjectNotFound:
         pass
