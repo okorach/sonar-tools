@@ -134,9 +134,11 @@ class QualityGate(sq.SqObject):
     @classmethod
     def create(cls, endpoint: pf.Platform, name: str) -> Union[QualityGate, None]:
         """Creates an empty quality gate"""
-        r = endpoint.post(QualityGate.API[c.CREATE], params={"name": name})
-        if not r.ok:
-            return None
+        try:
+            r = endpoint.post(QualityGate.API[c.CREATE], params={"name": name})
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"creating quality gate '{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            raise exceptions.ObjectAlreadyExists(name, e.response.text)
         return cls.get_object(endpoint, name)
 
     def __str__(self) -> str:
@@ -335,6 +337,7 @@ class QualityGate(sq.SqObject):
             problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_COND), self, my_name, nb_conditions, max_cond))
         problems += self.__audit_conditions()
         log.debug("Auditing that %s has some assigned projects", my_name)
+        log.debug("IS DEF = %s, Projs = %d", str(self.is_default), len(self.projects()))
         if not self.is_default and len(self.projects()) == 0:
             problems.append(Problem(get_rule(RuleId.QG_NOT_USED), self, my_name))
         return problems
