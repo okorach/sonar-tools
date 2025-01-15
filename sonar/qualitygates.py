@@ -336,8 +336,6 @@ class QualityGate(sq.SqObject):
         elif nb_conditions > max_cond:
             problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_COND), self, my_name, nb_conditions, max_cond))
         problems += self.__audit_conditions()
-        log.debug("Auditing that %s has some assigned projects", my_name)
-        log.debug("IS DEF = %s, Projs = %d", str(self.is_default), len(self.projects()))
         if not self.is_default and len(self.projects()) == 0:
             problems.append(Problem(get_rule(RuleId.QG_NOT_USED), self, my_name))
         return problems
@@ -388,10 +386,14 @@ def get_list(endpoint: pf.Platform) -> dict[str, QualityGate]:
     data = json.loads(endpoint.get(QualityGate.API[c.LIST]).text)
     qg_list = {}
     for qg in data["qualitygates"]:
-        log.debug("Getting QG %s", util.json_dump(qg))
-        qg_obj = QualityGate(endpoint=endpoint, name=qg["name"], data=qg.copy())
+        qg_obj = QualityGate.CACHE.get(qg["name"], endpoint.url)
+        if qg_obj is None:
+            qg_obj = QualityGate(endpoint=endpoint, name=qg["name"], data=qg.copy())
         if endpoint.version() < (7, 9, 0) and "default" in data and data["default"] == qg["id"]:
             qg_obj.is_default = True
+        else:
+            qg_obj.is_default = qg.get("isDefault", False)
+            qg_obj.is_built_in = data.get("isBuiltIn", False)
         qg_list[qg_obj.name] = qg_obj
     return dict(sorted(qg_list.items()))
 
