@@ -126,6 +126,7 @@ class QualityGate(sq.SqObject):
         o = QualityGate.CACHE.get(data["name"], endpoint.url)
         if not o:
             o = cls(endpoint, data["name"], data=data)
+        log.debug("Loading 2 %s QG from %s", o.name, util.json_dump(data))
         o.sq_json = data
         o.is_default = data.get("isDefault", False)
         o.is_built_in = data.get("isBuiltIn", False)
@@ -184,13 +185,6 @@ class QualityGate(sq.SqObject):
             nb_pages = util.nbr_pages(data)
             page += 1
         return self._projects
-
-    def count_projects(self) -> int:
-        """
-        :return: The number of projects using this quality gate
-        :rtype: int
-        """
-        return len(self.projects())
 
     def conditions(self, encoded: bool = False) -> list[str]:
         """
@@ -393,7 +387,7 @@ def get_list(endpoint: pf.Platform) -> dict[str, QualityGate]:
             qg_obj.is_default = True
         else:
             qg_obj.is_default = qg.get("isDefault", False)
-            qg_obj.is_built_in = data.get("isBuiltIn", False)
+            qg_obj.is_built_in = qg.get("isBuiltIn", False)
         qg_list[qg_obj.name] = qg_obj
     return dict(sorted(qg_list.items()))
 
