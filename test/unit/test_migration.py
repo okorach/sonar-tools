@@ -104,7 +104,7 @@ def test_migration(get_json_file: Generator[str]) -> None:
         assert json_config["projects"]["demo:gitlab-ci-maven"]["detectedCi"] == "Gitlab CI"
         assert json_config["projects"]["demo:github-actions-cli"]["detectedCi"] == "Github Actions"
         if util.SQ.edition() != "community":
-            assert len(p["branches"]["main"]["issues"]["thirdParty"]) > 0
+            assert p["branches"]["main"]["issues"]["thirdParty"] > 0
 
     for p in json_config["portfolios"].values():
         assert "projects" in p
