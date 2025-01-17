@@ -67,7 +67,7 @@ def get_test_project() -> Generator[projects.Project]:
 
 
 @pytest.fixture
-def get_test_qg() -> Generator[qualitygates.QualityGate]:
+def get_empty_qg() -> Generator[qualitygates.QualityGate]:
     """setup of tests"""
     try:
         o = qualitygates.QualityGate.get_object(endpoint=util.SQ, name=util.TEMP_KEY)
@@ -76,6 +76,23 @@ def get_test_qg() -> Generator[qualitygates.QualityGate]:
     o.clear_conditions()
     yield o
     # Teardown: Clean up resources (if any) after the test
+    o.key = util.TEMP_KEY
+    try:
+        sw = qualitygates.QualityGate.get_object(endpoint=util.SQ, name="Sonar way")
+        sw.set_as_default()
+        o.delete()
+    except exceptions.ObjectNotFound:
+        pass
+
+
+@pytest.fixture
+def get_loaded_qg() -> Generator[qualitygates.QualityGate]:
+    """setup of tests"""
+    try:
+        o = qualitygates.QualityGate.get_object(endpoint=util.SQ, name=util.TEMP_KEY)
+    except exceptions.ObjectNotFound:
+        o = qualitygates.QualityGate.create(endpoint=util.SQ, name=util.TEMP_KEY)
+    yield o
     o.key = util.TEMP_KEY
     try:
         sw = qualitygates.QualityGate.get_object(endpoint=util.SQ, name="Sonar way")
