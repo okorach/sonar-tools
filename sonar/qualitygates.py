@@ -136,7 +136,7 @@ class QualityGate(sq.SqObject):
     def create(cls, endpoint: pf.Platform, name: str) -> Union[QualityGate, None]:
         """Creates an empty quality gate"""
         try:
-            r = endpoint.post(QualityGate.API[c.CREATE], params={"name": name})
+            endpoint.post(QualityGate.API[c.CREATE], params={"name": name})
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"creating quality gate '{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(name, e.response.text)
