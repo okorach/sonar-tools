@@ -339,13 +339,13 @@ class QualityGate(sq.SqObject):
         json_data = self.sq_json
         full = export_settings.get("FULL_EXPORT", False)
         if not self.is_default and not full:
-            json_data.pop("isDefault")
+            json_data.pop("isDefault", None)
         if self.is_built_in:
             if full:
                 json_data["_conditions"] = self.conditions(encoded=True)
         else:
             if not full:
-                json_data.pop("isBuiltIn")
+                json_data.pop("isBuiltIn", None)
             json_data["conditions"] = self.conditions(encoded=True)
             json_data["permissions"] = self.permissions().export(export_settings=export_settings)
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
