@@ -76,7 +76,7 @@ def test_create_delete(get_loaded_qg: Generator[qualitygates.QualityGate]) -> No
 def test_set_conditions(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """test_set_conditions"""
     qg = get_loaded_qg
-    sw = qualitygates.QualityGate.get_object(util.SQ, "Sonar way")
+    sw = qualitygates.QualityGate.get_object(util.SQ, util.SONAR_WAY)
     assert sorted(qg.conditions(encoded=True)) == sorted(sw.conditions(encoded=True))
     qg.clear_conditions()
     assert qg.set_conditions(None)
@@ -93,7 +93,7 @@ def test_set_conditions(get_loaded_qg: Generator[qualitygates.QualityGate]) -> N
 
 def test_clear_conditions(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """test_clear_conditions"""
-    sw = qualitygates.QualityGate.get_object(util.SQ, "Sonar way")
+    sw = qualitygates.QualityGate.get_object(util.SQ, util.SONAR_WAY)
     assert not sw.clear_conditions()
     assert len(sw.conditions()) >= 3
 
@@ -123,7 +123,7 @@ def test_copy(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
 def test_set_as_default(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """test_set_as_default"""
     qg = get_loaded_qg
-    sw = qualitygates.QualityGate.get_object(util.SQ, "Sonar way")
+    sw = qualitygates.QualityGate.get_object(util.SQ, util.SONAR_WAY)
     assert sw.is_built_in
     qg.set_conditions(["new_coverage <= 50", "new_violations >= 0", "test_success_density <= 100"])
     assert qg.set_as_default()
