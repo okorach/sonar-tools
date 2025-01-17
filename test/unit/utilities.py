@@ -83,6 +83,7 @@ TAGS = ["foo", "bar"]
 
 SONAR_WAY = "Sonar way"
 
+
 def clean(*files: str) -> None:
     """Deletes a list of file if they exists"""
     for file in files:

@@ -36,7 +36,6 @@ YAML_FILE = f"{TEMP_FILE_ROOT}.yaml"
 TEST_ISSUE = "a1fddba4-9e70-46c6-ac95-e815104ead59"
 
 
-
 def create_test_object(a_class: type, key: str) -> any:
     """Creates a SonarQube test object of a given class"""
     try:
