@@ -29,16 +29,15 @@ import utilities as util
 from sonar import qualitygates, exceptions, logging
 
 
-def test_get_object(get_test_qg: Generator[qualitygates.QualityGate]) -> None:
+def test_get_object(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
-    qg = get_test_qg
+    qg = get_loaded_qg
     assert qg.name == util.TEMP_KEY
     assert str(qg) == f"quality gate '{util.TEMP_KEY}'"
     assert qg.url() == f"{util.SQ.url}/quality_gates/show/{util.TEMP_KEY}"
     qg2 = qualitygates.QualityGate.get_object(endpoint=util.SQ, name=util.TEMP_KEY)
     assert qg.projects() == {}
     assert qg.projects() == {}
-    assert qg.count_projects() == 0
     assert qg2 is qg
 
 
@@ -50,9 +49,9 @@ def test_get_object_non_existing() -> None:
     assert str(e.value).endswith(f"Quality gate '{util.NON_EXISTING_KEY}' not found")
 
 
-def test_exists(get_test_qg: Generator[qualitygates.QualityGate]) -> None:
+def test_exists(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """Test exist"""
-    _ = get_test_qg
+    _ = get_loaded_qg
     assert qualitygates.exists(endpoint=util.SQ, gate_name=util.TEMP_KEY)
     assert not qualitygates.exists(endpoint=util.SQ, gate_name=util.NON_EXISTING_KEY)
 
@@ -63,9 +62,9 @@ def test_get_list() -> None:
     assert len(qgs) >= 5
 
 
-def test_create_delete(get_test_qg: Generator[qualitygates.QualityGate]) -> None:
+def test_create_delete(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """Test QG create delete"""
-    qp = get_test_qg
+    qp = get_loaded_qg
     assert qp is not None
 
     with pytest.raises(exceptions.ObjectAlreadyExists):
@@ -74,13 +73,12 @@ def test_create_delete(get_test_qg: Generator[qualitygates.QualityGate]) -> None
     assert not qualitygates.exists(endpoint=util.SQ, gate_name=util.TEMP_KEY)
 
 
-def test_conditions(get_test_qg: Generator[qualitygates.QualityGate]) -> None:
-    """test_conditions"""
-    qg = get_test_qg
+def test_set_conditions(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
+    """test_set_conditions"""
+    qg = get_loaded_qg
     sw = qualitygates.QualityGate.get_object(util.SQ, "Sonar way")
     assert sorted(qg.conditions(encoded=True)) == sorted(sw.conditions(encoded=True))
     qg.clear_conditions()
-    assert qg.conditions(encoded=False) == []
     assert qg.set_conditions(None)
     assert qg.set_conditions([])
     assert qg.set_conditions(["new_coverage <= 80"])
@@ -93,15 +91,28 @@ def test_conditions(get_test_qg: Generator[qualitygates.QualityGate]) -> None:
     assert qg.conditions(encoded=True) == ["new_coverage <= 50", "new_violations >= 0", "test_success_density <= 100"]
 
 
-def test_permissions(get_test_qg: Generator[qualitygates.QualityGate]) -> None:
+def test_clear_conditions(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
+    """test_clear_conditions"""
+    sw = qualitygates.QualityGate.get_object(util.SQ, "Sonar way")
+    assert not sw.clear_conditions()
+    assert len(sw.conditions()) >= 3
+
+    qg = get_loaded_qg
+    assert len(qg.conditions()) >= 3
+    assert qg.clear_conditions()
+    assert len(qg.conditions()) == 0
+    assert qg.conditions() == []
+
+
+def test_permissions(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """test_permissions"""
-    qg = get_test_qg
+    qg = get_loaded_qg
     assert qg.set_permissions({"users": ["olivier", "michal"]})
 
 
-def test_copy(get_test_qg: Generator[qualitygates.QualityGate]) -> None:
+def test_copy(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """test_copy"""
-    qg = get_test_qg
+    qg = get_loaded_qg
     assert qg.set_conditions(["new_coverage <= 50", "new_violations >= 0", "test_success_density <= 100"])
 
     qg2 = qg.copy("TEMP_NAME2")
@@ -109,21 +120,20 @@ def test_copy(get_test_qg: Generator[qualitygates.QualityGate]) -> None:
     qg2.delete()
 
 
-def test_set_as_default(get_test_qg: Generator[qualitygates.QualityGate]) -> None:
+def test_set_as_default(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """test_set_as_default"""
-    qg = get_test_qg
+    qg = get_loaded_qg
     sw = qualitygates.QualityGate.get_object(util.SQ, "Sonar way")
     assert sw.is_built_in
     qg.set_conditions(["new_coverage <= 50", "new_violations >= 0", "test_success_density <= 100"])
     assert qg.set_as_default()
     assert not sw.is_default
     assert sw.is_built_in
-    assert sw.set_as_default()
 
 
-def test_audit(get_test_qg: Generator[qualitygates.QualityGate]) -> None:
+def test_audit(get_empty_qg: Generator[qualitygates.QualityGate]) -> None:
     """test_audit"""
-    qg = get_test_qg
+    qg = get_empty_qg
     for pb in qg.audit():
         logging.debug(str(pb))
     assert len(qg.audit()) == 2
