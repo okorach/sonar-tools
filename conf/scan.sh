@@ -19,7 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-ME="$( basename "${BASH_SOURCE[0]}" )"
+# ME="$( basename "${BASH_SOURCE[0]}" )"
 ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -51,12 +51,9 @@ done
 
 buildDir="build"
 pylintReport="$buildDir/pylint-report.out"
-banditReport="$buildDir/bandit-report.json"
 flake8Report="$buildDir/flake8-report.out"
-coverageReport="$buildDir/coverage.xml"
-utReport="$buildDir/xunit-results.xml"
 
-[ ! -d $buildDir ] && mkdir $buildDir
+[ ! -d "$buildDir" ] && mkdir "$buildDir"
 rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  testpytest/__pycache__ testunittest/__pycache__
 
 
@@ -68,7 +65,7 @@ if [ "$dotest" == "true" ]; then
   "$CONFDIR"/run_tests.sh
 fi
 
-version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
+version=$(grep PACKAGE_VERSION "$ROOTDIR/sonar/version.py" | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
 
 cmd="sonar-scanner -Dsonar.projectVersion=$version \
   -Dsonar.python.flake8.reportPaths=$flake8Report \
