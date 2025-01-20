@@ -36,7 +36,7 @@ def main() -> None:
     text = "".join(sys.stdin)
 
     rules_dict = {}
-    issue_list = []
+    issue_list = {}
 
     for issue in json.loads(text)["Results"][0]["Vulnerabilities"]:
 
@@ -44,7 +44,7 @@ def main() -> None:
             "ruleId": f"{TOOLNAME}:{issue['VulnerabilityID']}",
             "effortMinutes": 30,
             "primaryLocation": {
-                "message": issue["Title"],
+                "message": f"{issue['VulnerabilityID']} - {issue['Title']}",
                 "filePath": "conf/snapshot.Dockerfile",
                 "textRange": {
                     "startLine": 1,
@@ -54,7 +54,7 @@ def main() -> None:
                 },
             },
         }
-        issue_list.append(sonar_issue)
+        issue_list[sonar_issue["primaryLocation"]["message"]] = sonar_issue
         # score = max([v["V3Score"] for v in issue['CVSS'].values()])
         # if score <= 4:
         #     sev = "LOW"
@@ -74,7 +74,7 @@ def main() -> None:
             "impacts": [{"softwareQuality": "SECURITY", "severity": sev_mqr}],
         }
 
-    external_issues = {"rules": list(rules_dict.values()), "issues": issue_list}
+    external_issues = {"rules": list(rules_dict.values()), "issues": list(issue_list.values())}
     print(json.dumps(external_issues, indent=3, separators=(",", ": ")))
 
 
