@@ -19,13 +19,17 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-ME="$( basename "${BASH_SOURCE[0]}" )"
+# ME="$( basename "${BASH_SOURCE[0]}" )"
 ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 dolint="true"
 dotest="false"
-localbuild="false"
+if [ "$CI" == "" ]; then
+  localbuild="true"
+else
+  localbuild="false"
+fi
 
 scanOpts=()
 
@@ -37,7 +41,6 @@ do
       ;;
     -test)
       dotest="true"
-      localbuild="true"
       ;;
     *)
       scanOpts=("${scanOpts[@]}" "$1")
@@ -48,14 +51,9 @@ done
 
 buildDir="build"
 pylintReport="$buildDir/pylint-report.out"
-banditReport="$buildDir/bandit-report.json"
 flake8Report="$buildDir/flake8-report.out"
-coverageReport="$buildDir/coverage.xml"
-shellcheckReport="$buildDir/shellcheck.json"
-trivyReport="$buildDir/trivy.json"
-utReport="$buildDir/xunit-results.xml"
 
-[ ! -d $buildDir ] && mkdir $buildDir
+[ ! -d "$buildDir" ] && mkdir "$buildDir"
 rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  testpytest/__pycache__ testunittest/__pycache__
 
 
@@ -67,12 +65,11 @@ if [ "$dotest" == "true" ]; then
   "$CONFDIR"/run_tests.sh
 fi
 
-version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
+version=$(grep PACKAGE_VERSION "$ROOTDIR/sonar/version.py" | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
 
 cmd="sonar-scanner -Dsonar.projectVersion=$version \
   -Dsonar.python.flake8.reportPaths=$flake8Report \
   -Dsonar.python.pylint.reportPaths=$pylintReport \
-  -Dsonar.externalIssuesReportPaths=$shellcheckReport,$trivyReport \
   -Dsonar.login=$SONAR_TOKEN \
   -Dsonar.token=$SONAR_TOKEN \
   "${scanOpts[*]}""
@@ -82,6 +79,7 @@ if ls $buildDir/coverage*.xml >/dev/null 2>&1; then
 else
   echo "===> NO COVERAGE REPORT"
 fi
+
 if ls $buildDir/xunit-results*.xml >/dev/null 2>&1; then
   cmd="$cmd -Dsonar.python.xunit.reportPath=$buildDir/xunit-results*.xml"
 else
@@ -89,7 +87,18 @@ else
   cmd="$cmd -Dsonar.python.xunit.reportPath="
 fi
 
-echo "Running: $cmd"
+if ls $buildDir/external-issues*.json >/dev/null 2>&1; then
+  files=$(ls $buildDir/external-issues*.json | tr '\n' ' ' | sed -E -e 's/ +$//' -e 's/ +/,/g')
+  echo "EXTERNAL ISSUES FILES = $files"
+  cmd="$cmd -Dsonar.externalIssuesReportPaths=$files"
+else
+  echo "===> NO EXTERNAL ISSUES"
+fi
+
+
+echo
+echo "Running: $cmd" | sed "s/$SONAR_TOKEN/<SONAR_TOKEN>/g"
+echo
 
 $cmd
 
