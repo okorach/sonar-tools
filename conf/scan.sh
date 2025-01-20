@@ -51,8 +51,6 @@ pylintReport="$buildDir/pylint-report.out"
 banditReport="$buildDir/bandit-report.json"
 flake8Report="$buildDir/flake8-report.out"
 coverageReport="$buildDir/coverage.xml"
-shellcheckReport="$buildDir/shellcheck.json"
-trivyReport="$buildDir/trivy.json"
 utReport="$buildDir/xunit-results.xml"
 
 [ ! -d $buildDir ] && mkdir $buildDir
@@ -72,7 +70,6 @@ version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed
 cmd="sonar-scanner -Dsonar.projectVersion=$version \
   -Dsonar.python.flake8.reportPaths=$flake8Report \
   -Dsonar.python.pylint.reportPaths=$pylintReport \
-  -Dsonar.externalIssuesReportPaths=$shellcheckReport,$trivyReport \
   -Dsonar.login=$SONAR_TOKEN \
   -Dsonar.token=$SONAR_TOKEN \
   "${scanOpts[*]}""
@@ -82,12 +79,22 @@ if ls $buildDir/coverage*.xml >/dev/null 2>&1; then
 else
   echo "===> NO COVERAGE REPORT"
 fi
+
 if ls $buildDir/xunit-results*.xml >/dev/null 2>&1; then
   cmd="$cmd -Dsonar.python.xunit.reportPath=$buildDir/xunit-results*.xml"
 else
   echo "===> NO UNIT TESTS REPORT"
   cmd="$cmd -Dsonar.python.xunit.reportPath="
 fi
+
+if ls $buildDir/external-issues*.json >/dev/null 2>&1; then
+  files=$(ls $buildDir/external-issues*.json | tr '\n' ' ' | sed -E -e 's/ +$//' -e 's/ +/,/g')
+  echo "EXTERNAL ISSUES FILES = $files"
+  cmd="$cmd -Dsonar.externalIssuesReportPaths=$files"
+else
+  echo "===> NO EXTERNAL ISSUES"
+fi
+
 
 echo "Running: $cmd"
 

@@ -29,12 +29,12 @@ buildDir="$ROOTDIR/build"
 pylintReport="$buildDir/pylint-report.out"
 # banditReport="$buildDir/bandit-report.json"
 flake8Report="$buildDir/flake8-report.out"
-shellcheckReport="$buildDir/shellcheck.json"
-trivyReport="$buildDir/trivy.json"
+shellcheckReport="$buildDir/external-issues-shellcheck.json"
+trivyReport="$buildDir/external-issues-trivy.json"
 [ ! -d "$buildDir" ] && mkdir "$buildDir"
 # rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  tests/__pycache__
 
-echo "Running pylint"
+echo "===> Running pylint"
 rm -f "$pylintReport"
 pylint --rcfile "$CONFDIR"/pylintrc "$ROOTDIR"/*.py "$ROOTDIR"/*/*.py -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" | tee "$pylintReport"
 re=$?
@@ -43,19 +43,19 @@ if [ "$re" == "32" ]; then
     exit $re
 fi
 
-echo "Running flake8"
+echo "===> Running flake8"
 rm -f "$flake8Report"
 # See .flake8 file for settings
 flake8 --config "$CONFIG/.flake8" "$ROOTDIR" >"$flake8Report"
 
 if [ "$localbuild" = "true" ]; then
-    echo "Running shellcheck"
+    echo "===> Running shellcheck"
     shellcheck "$ROOTDIR"/*.sh "$ROOTDIR"/*/*.sh -s bash -f json | "$CONFDIR"/shellcheck2sonar.py >"$shellcheckReport"
 
-    echo "Running checkov"
+    echo "===> Running checkov"
     checkov -d . --framework dockerfile -o sarif --output-file-path "$buildDir"
 
-    echo "Running trivy"
+    echo "===> Running trivy"
     "$CONFDIR"/build.sh docker
     trivy image -f json -o "$buildDir"/trivy_results.json olivierkorach/sonar-tools:latest
     python3 "$CONFDIR"/trivy2sonar.py < "$buildDir"/trivy_results.json > "$trivyReport"
