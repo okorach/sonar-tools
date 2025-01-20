@@ -19,12 +19,12 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-ME="$( basename "${BASH_SOURCE[0]}" )"
+# ME="$( basename "${BASH_SOURCE[0]}" )"
 ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 buildDir="$ROOTDIR/build"
 
-[ ! -d $buildDir ] && mkdir $buildDir
+[ ! -d "$buildDir" ] && mkdir "$buildDir"
 
 echo "Running tests"
 
