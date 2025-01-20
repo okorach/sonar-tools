@@ -25,7 +25,11 @@ CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 dolint="true"
 dotest="false"
-localbuild="false"
+if [ "$CI" == "" ]; then
+  localbuild="true"
+else
+  localbuild="false"
+fi
 
 scanOpts=()
 
@@ -37,7 +41,6 @@ do
       ;;
     -test)
       dotest="true"
-      localbuild="true"
       ;;
     *)
       scanOpts=("${scanOpts[@]}" "$1")
@@ -96,7 +99,9 @@ else
 fi
 
 
-echo "Running: $cmd"
+echo
+echo "Running: $cmd" | sed "s/$SONAR_TOKEN/<SONAR_TOKEN>/g"
+echo
 
 $cmd
 
