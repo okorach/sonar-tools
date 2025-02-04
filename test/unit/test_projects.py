@@ -257,3 +257,14 @@ def test_wrong_key_2(get_test_project: Generator[projects.Project]) -> None:
     # assert proj.quality_gate() is None
     with pytest.raises(exceptions.ObjectNotFound):
         proj.audit({}, None)
+
+def test_set_permissions(get_test_project: Generator[projects.Project]) -> None:
+    """test_set_permissions"""
+    proj = get_test_project
+    perms = proj.permissions().to_json()
+    assert "tech-leads" in perms["groups"]
+    proj.set_permissions({"users": {"admin": ["user", "admin"], "olivier": ["user"]}})
+    perms = proj.permissions().to_json()
+    assert "groups" not in perms
+    assert len(perms["users"]) == 2
+

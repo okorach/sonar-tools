@@ -51,6 +51,10 @@ GOOD_QG_CONDITIONS = {
     "new_coverage": (20, 90, "Coverage below 20% is a too low bar, above 90% is overkill"),
     "new_bugs": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
     "new_vulnerabilities": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
+    "new_violations": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
+    "new_software_quality_blocker_issues": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
+    "new_software_quality_high_issues": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
+    "new_software_quality_medium_issues": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
     "new_security_hotspots": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
     "new_blocker_violations": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
     "new_critical_violations": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
@@ -101,10 +105,9 @@ class QualityGate(sq.SqObject):
     def get_object(cls, endpoint: pf.Platform, name: str) -> QualityGate:
         """Reads a quality gate from SonarQube
 
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param str name: Quality gate
+        :param endpoint: Reference to the SonarQube platform
+        :param name: Quality gate
         :return: the QualityGate object or None if not found
-        :rtype: QualityGate or None
         """
         o = QualityGate.CACHE.get(name, endpoint.url)
         if o:
@@ -118,21 +121,25 @@ class QualityGate(sq.SqObject):
     def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> QualityGate:
         """Creates a quality gate from returned API data
         :return: the QualityGate object
-        :rtype: QualityGate or None
         """
         # SonarQube 10 compatibility: "id" field dropped, replaced by "name"
         o = QualityGate.CACHE.get(data["name"], endpoint.url)
         if not o:
             o = cls(endpoint, data["name"], data=data)
+        log.debug("Loading 2 %s QG from %s", o.name, util.json_dump(data))
         o.sq_json = data
+        o.is_default = data.get("isDefault", False)
+        o.is_built_in = data.get("isBuiltIn", False)
         return o
 
     @classmethod
     def create(cls, endpoint: pf.Platform, name: str) -> Union[QualityGate, None]:
         """Creates an empty quality gate"""
-        r = endpoint.post(QualityGate.API[c.CREATE], params={"name": name})
-        if not r.ok:
-            return None
+        try:
+            endpoint.post(QualityGate.API[c.CREATE], params={"name": name})
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"creating quality gate '{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            raise exceptions.ObjectAlreadyExists(name, e.response.text)
         return cls.get_object(endpoint, name)
 
     def __str__(self) -> str:
@@ -179,13 +186,6 @@ class QualityGate(sq.SqObject):
             page += 1
         return self._projects
 
-    def count_projects(self) -> int:
-        """
-        :return: The number of projects using this quality gate
-        :rtype: int
-        """
-        return len(self.projects())
-
     def conditions(self, encoded: bool = False) -> list[str]:
         """
         :param encoded: Whether to encode the conditions or not, defaults to False
@@ -202,24 +202,23 @@ class QualityGate(sq.SqObject):
             return _encode_conditions(self._conditions)
         return self._conditions
 
-    def clear_conditions(self) -> None:
+    def clear_conditions(self) -> bool:
         """Clears all quality gate conditions, if quality gate is not built-in
         :return: Nothing
         """
         if self.is_built_in:
             log.debug("Can't clear conditions of built-in %s", str(self))
-        else:
-            log.debug("Clearing conditions of %s", str(self))
-            for cond in self.conditions():
-                self.post("qualitygates/delete_condition", params={"id": cond["id"]})
-            self._conditions = None
+            return False
+        log.debug("Clearing conditions of %s", str(self))
+        for cond in self.conditions():
+            self.post("qualitygates/delete_condition", params={"id": cond["id"]})
+        self._conditions = []
+        return True
 
     def set_conditions(self, conditions_list: list[str]) -> bool:
         """Sets quality gate conditions (overriding any previous conditions) as encoded in sonar-config
-        :param conditions_list: List of conditions, encoded
-        :type conditions_list: dict
+        :param list[str] conditions_list: List of conditions, encoded
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         if not conditions_list or len(conditions_list) == 0:
             return True
@@ -236,6 +235,7 @@ class QualityGate(sq.SqObject):
         for cond in conditions_list:
             (params["metric"], params["op"], params["error"]) = _decode_condition(cond)
             ok = ok and self.post("qualitygates/create_condition", params=params).ok
+        self._conditions = None
         self.conditions()
         return ok
 
@@ -248,12 +248,11 @@ class QualityGate(sq.SqObject):
             self._permissions = permissions.QualityGatePermissions(self)
         return self._permissions
 
-    def set_permissions(self, permissions_list: types.ObjectJsonRepr) -> QualityGate:
+    def set_permissions(self, permissions_list: types.ObjectJsonRepr) -> bool:
         """Sets quality gate permissions
         :param permissions_list:
         :type permissions_list: dict {"users": [<userlist>], "groups": [<grouplist>]}
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         return self.permissions().set(permissions_list)
 
@@ -331,7 +330,6 @@ class QualityGate(sq.SqObject):
         elif nb_conditions > max_cond:
             problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_COND), self, my_name, nb_conditions, max_cond))
         problems += self.__audit_conditions()
-        log.debug("Auditing that %s has some assigned projects", my_name)
         if not self.is_default and len(self.projects()) == 0:
             problems.append(Problem(get_rule(RuleId.QG_NOT_USED), self, my_name))
         return problems
@@ -341,13 +339,13 @@ class QualityGate(sq.SqObject):
         json_data = self.sq_json
         full = export_settings.get("FULL_EXPORT", False)
         if not self.is_default and not full:
-            json_data.pop("isDefault")
+            json_data.pop("isDefault", None)
         if self.is_built_in:
             if full:
                 json_data["_conditions"] = self.conditions(encoded=True)
         else:
             if not full:
-                json_data.pop("isBuiltIn")
+                json_data.pop("isBuiltIn", None)
             json_data["conditions"] = self.conditions(encoded=True)
             json_data["permissions"] = self.permissions().export(export_settings=export_settings)
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
@@ -382,10 +380,14 @@ def get_list(endpoint: pf.Platform) -> dict[str, QualityGate]:
     data = json.loads(endpoint.get(QualityGate.API[c.LIST]).text)
     qg_list = {}
     for qg in data["qualitygates"]:
-        log.debug("Getting QG %s", util.json_dump(qg))
-        qg_obj = QualityGate(endpoint=endpoint, name=qg["name"], data=qg.copy())
+        qg_obj = QualityGate.CACHE.get(qg["name"], endpoint.url)
+        if qg_obj is None:
+            qg_obj = QualityGate(endpoint=endpoint, name=qg["name"], data=qg.copy())
         if endpoint.version() < (7, 9, 0) and "default" in data and data["default"] == qg["id"]:
             qg_obj.is_default = True
+        else:
+            qg_obj.is_default = qg.get("isDefault", False)
+            qg_obj.is_built_in = qg.get("isBuiltIn", False)
         qg_list[qg_obj.name] = qg_obj
     return dict(sorted(qg_list.items()))
 

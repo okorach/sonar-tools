@@ -75,13 +75,13 @@ def test_create_delete(get_test_qp: Generator[qualityprofiles.QualityProfile]) -
 def test_inheritance(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """Test addition of a project in manual mode"""
     qp = get_test_qp
-    sonar_way_qp = qualityprofiles.get_object(util.SQ, "Sonar way", "py")
+    sonar_way_qp = qualityprofiles.get_object(util.SQ, util.SONAR_WAY, "py")
     assert not qp.is_child()
 
-    assert qp.set_parent("Sonar way")
+    assert qp.set_parent(util.SONAR_WAY)
     assert qp.is_child()
     assert qp.inherits_from_built_in()
-    assert qp.parent_name == "Sonar way"
+    assert qp.parent_name == util.SONAR_WAY
     assert qp.built_in_parent() is sonar_way_qp
 
     with pytest.raises(exceptions.ObjectNotFound) as e:
@@ -109,7 +109,7 @@ def test_set_default(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> 
     assert not qp.is_default
     assert qp.set_as_default()
     assert qp.is_default
-    sonar_way_qp = qualityprofiles.get_object(util.SQ, "Sonar way", "py")
+    sonar_way_qp = qualityprofiles.get_object(util.SQ, util.SONAR_WAY, "py")
     assert sonar_way_qp.set_as_default()
     assert sonar_way_qp.is_default
     assert not qp.is_default
@@ -146,7 +146,7 @@ def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]
     qp.deactivate_rules([RULE1, RULE2])
     assert len(qp.rules()) == 1
 
-    assert qp.set_parent("Sonar way")
+    assert qp.set_parent(util.SONAR_WAY)
     rulecount = len(qp.rules())
     assert rulecount > 250 if util.SQ.version() >= (10, 0, 0) else 200
 
