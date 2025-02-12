@@ -59,9 +59,10 @@ def __check_sq_environments(import_sq: platform.Platform, export_sq: dict[str, s
         raise exceptions.UnsupportedOperation(
             f"Export was not performed with same SonarQube version, aborting... ({utilities.version_to_string(exp_version)} vs {utilities.version_to_string(imp_version)})"
         )
-    if export_sq["plugins"] != import_sq.plugins():
+    diff_plugins = set(export_sq["plugins"].items()) - set(import_sq.plugins().items())
+    if len(diff_plugins) > 0:
         raise exceptions.UnsupportedOperation(
-            f"Plugin list is different on the import and export platforms ({str(export_sq['plugins'])} vs {str(import_sq.plugins())}), aborting..."
+            f"Export platform has the following plugins ({str(diff_plugins)}) missing in the import platform, aborting..."
         )
 
 
