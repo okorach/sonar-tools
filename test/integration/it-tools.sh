@@ -26,7 +26,7 @@ TMP="$REPO_ROOT/tmp"
 IT_LOG_FILE="$TMP/it.log"
 mkdir -p "$TMP"
 
-RED=$(tput setaf 1)
+YELLOW=$(tput setaf 3)
 GREEN=$(tput setaf 2)
 RESET=$(tput setaf 7)
 
