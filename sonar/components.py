@@ -37,7 +37,8 @@ import sonar.platform as pf
 
 from sonar import settings, tasks, measures, utilities, rules
 
-import sonar.audit.problem as pb
+from sonar.audit.rules import get_rule, RuleId
+from sonar.audit.problem import Problem
 
 # Character forbidden in keys that can be used to separate a key from a post fix
 KEY_SEPARATOR = " "
@@ -247,7 +248,7 @@ class Component(sq.SqObject):
             settings.set_visibility(self.endpoint, visibility=visibility, component=self)
             self._visibility = visibility
 
-    def _audit_bg_task(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+    def _audit_bg_task(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project background tasks"""
         if audit_settings.get("audit.mode", "") == "housekeeper":
             return []
@@ -264,6 +265,26 @@ class Component(sq.SqObject):
         if last_task:
             last_task.concerned_object = self
             return last_task.audit(audit_settings)
+        return []
+
+    def _audit_history_retention(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits whether a project has an excessive number of history data points
+
+        :param dict audit_settings: Options of what to audit and thresholds to raise problems
+        :return: List of problems found, or empty list
+        """
+        if not audit_settings.get("audit.projects.historyRetention", True):
+            log.debug("%s: History retention audit disabled, audit skipped", str(self))
+            return []
+        log.debug("Auditing %s history retention", str(self))
+        max_history = audit_settings.get("audit.projects.maxHistoryCount", 30)
+        history = self.get_measures_history(["ncloc"])
+        log.debug("%s has %d history data points, max allowed = %d", str(self), len(history), max_history)
+        if not history or max_history == 0:
+            return []
+        history_len = len(history)
+        if history_len > max_history:
+            return [Problem(get_rule(RuleId.PROJ_HISTORY_COUNT), self, str(self), history_len)]
         return []
 
     def last_task(self) -> Optional[tasks.Task]:

@@ -684,6 +684,7 @@ class Project(components.Component):
             problems += self._audit_bg_task(audit_settings)
             problems += self.__audit_binding_valid(audit_settings)
             problems += self.__audit_scanner(audit_settings)
+            problems += self._audit_history_retention(audit_settings)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"auditing {str(self)}", catch_all=True)
 
