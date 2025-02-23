@@ -290,6 +290,12 @@
         "object": "Project",
         "message": "{} with {} LoCs is stale, it has not been analyzed since {} days, it could be deleted"
     },
+    "PROJ_HISTORY_COUNT": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "object": "Branch",
+        "message": "{} has {} data points in history, this is excessive and causes excessive DB size"
+    },
     "BRANCH_NEVER_ANALYZED": {
         "severity": "LOW",
         "type": "PERFORMANCE",
