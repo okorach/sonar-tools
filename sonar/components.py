@@ -248,6 +248,25 @@ class Component(sq.SqObject):
             settings.set_visibility(self.endpoint, visibility=visibility, component=self)
             self._visibility = visibility
 
+    def get_analyses(self, filter_in: list[str] = [], filter_out: list[str] = []) -> types.ApiPayload:
+        """Returns a component analyses"""
+        data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", params=self.api_params(c.GET))["analyses"]
+        if len(filter_in) > 0:
+            data = [d for d in data if any(e["category"] in filter_in for e in d["events"])]
+        if len(filter_out) > 0:
+            data = [d for d in data if all([e["category"] not in filter_out for e in d["events"]])]
+        log.debug("Component analyses = %s", utilities.json_dump(data))
+        return data
+
+    def get_versions(self) -> dict[str, datetime]:
+        """Returns a dict of project versions and their dates"""
+        data = {
+            a["version"]: utilities.string_to_date(a["date"])
+            for a in reversed(self.get_analyses(filter_in=["VERSION"], filter_out=["QUALITY_GATE", "QUALITY_PROFILE", "SQ_UPGRADE"]))
+        }
+        log.debug("Component versions = %s", utilities.json_dump(data))
+        return data
+
     def _audit_bg_task(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project background tasks"""
         if audit_settings.get("audit.mode", "") == "housekeeper":
@@ -276,11 +295,14 @@ class Component(sq.SqObject):
         if not audit_settings.get("audit.projects.historyRetention", True):
             log.debug("%s: History retention audit disabled, audit skipped", str(self))
             return []
+        max_history = audit_settings.get("audit.projects.maxHistoryCount", 100)
+        if max_history == 0:
+            log.debug("Auditing %s history retention disabled, skipped...", str(self))
+            return []
         log.debug("Auditing %s history retention", str(self))
-        max_history = audit_settings.get("audit.projects.maxHistoryCount", 30)
-        history = self.get_measures_history(["ncloc"])
+        history = self.get_analyses(filter_out=["QUALITY_GATE", "QUALITY_PROFILE", "SQ_UPGRADE"])
         log.debug("%s has %d history data points, max allowed = %d", str(self), len(history), max_history)
-        if not history or max_history == 0:
+        if not history:
             return []
         history_len = len(history)
         if history_len > max_history:
