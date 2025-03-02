@@ -67,6 +67,42 @@ def get_test_project() -> Generator[projects.Project]:
 
 
 @pytest.fixture
+def get_empty_qg() -> Generator[qualitygates.QualityGate]:
+    """setup of tests"""
+    try:
+        o = qualitygates.QualityGate.get_object(endpoint=util.SQ, name=util.TEMP_KEY)
+    except exceptions.ObjectNotFound:
+        o = qualitygates.QualityGate.create(endpoint=util.SQ, name=util.TEMP_KEY)
+    o.clear_conditions()
+    yield o
+    # Teardown: Clean up resources (if any) after the test
+    o.key = util.TEMP_KEY
+    try:
+        sw = qualitygates.QualityGate.get_object(endpoint=util.SQ, name=util.SONAR_WAY)
+        sw.set_as_default()
+        o.delete()
+    except exceptions.ObjectNotFound:
+        pass
+
+
+@pytest.fixture
+def get_loaded_qg() -> Generator[qualitygates.QualityGate]:
+    """setup of tests"""
+    try:
+        o = qualitygates.QualityGate.get_object(endpoint=util.SQ, name=util.TEMP_KEY)
+    except exceptions.ObjectNotFound:
+        o = qualitygates.QualityGate.create(endpoint=util.SQ, name=util.TEMP_KEY)
+    yield o
+    o.key = util.TEMP_KEY
+    try:
+        sw = qualitygates.QualityGate.get_object(endpoint=util.SQ, name=util.SONAR_WAY)
+        sw.set_as_default()
+        o.delete()
+    except exceptions.ObjectNotFound:
+        pass
+
+
+@pytest.fixture
 def get_test_app() -> Generator[applications.Application]:
     """setup of tests"""
     o = None
@@ -139,7 +175,7 @@ def get_test_qp() -> Generator[qualityprofiles.QualityProfile]:
     try:
         o = qualityprofiles.get_object(endpoint=util.SQ, name=util.TEMP_KEY, language="py")
         if o.is_default:
-            sw = qualityprofiles.get_object(endpoint=util.SQ, name="Sonar way", language="py")
+            sw = qualityprofiles.get_object(endpoint=util.SQ, name=util.SONAR_WAY, language="py")
             sw.set_as_default()
     except exceptions.ObjectNotFound:
         o = qualityprofiles.QualityProfile.create(endpoint=util.SQ, name=util.TEMP_KEY, language="py")
@@ -231,7 +267,7 @@ def get_sarif_file() -> Generator[str]:
 def get_test_quality_gate() -> Generator[qualitygates.QualityGate]:
     """setup of tests"""
     util.start_logging()
-    sonar_way = qualitygates.QualityGate.get_object(util.SQ, "Sonar way")
+    sonar_way = qualitygates.QualityGate.get_object(util.SQ, util.SONAR_WAY)
     o = sonar_way.copy(util.TEMP_KEY)
     yield o
     try:

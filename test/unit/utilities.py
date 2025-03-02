@@ -81,6 +81,8 @@ TEST_SQ = platform.Platform(url=LATEST_TEST, token=os.getenv("SONAR_TOKEN_ADMIN_
 
 TAGS = ["foo", "bar"]
 
+SONAR_WAY = "Sonar way"
+
 
 def clean(*files: str) -> None:
     """Deletes a list of file if they exists"""
