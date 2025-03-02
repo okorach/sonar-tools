@@ -363,7 +363,6 @@ class Branch(components.Component):
 
         :param ConfigSettings audit_settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
-        :rtype: list[Problem]
         """
         if not audit_settings.get("audit.project.branches", True):
             log.debug("Branch audit disabled, skipping audit of %s", str(self))
@@ -375,6 +374,7 @@ class Branch(components.Component):
                 + self.__audit_zero_loc()
                 + self.__audit_never_analyzed()
                 + self._audit_bg_task(audit_settings)
+                + self._audit_history_retention(audit_settings)
             )
         except Exception as e:
             log.error("%s while auditing %s, audit skipped", util.error_msg(e), str(self))
