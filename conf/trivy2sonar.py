@@ -63,6 +63,8 @@ def main() -> None:
         # else:
         #     sev = "HIGH"
         sev_mqr = issue.get("Severity", "MEDIUM")
+        if sev_mqr == "UNKNOWN":
+            sev_mqr = "MEDIUM"
         rules_dict[f"{TOOLNAME}:{issue['VulnerabilityID']}"] = {
             "id": f"{TOOLNAME}:{issue['VulnerabilityID']}",
             "name": f"{TOOLNAME}:{issue['VulnerabilityID']} - {issue['Title']}",
