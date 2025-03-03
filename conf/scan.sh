@@ -42,6 +42,9 @@ do
     -test)
       dotest="true"
       ;;
+    -local)
+      localbuild="true"
+      ;;
     *)
       scanOpts=("${scanOpts[@]}" "$1")
       ;;
@@ -54,7 +57,7 @@ pylintReport="$buildDir/pylint-report.out"
 flake8Report="$buildDir/flake8-report.out"
 
 [ ! -d "$buildDir" ] && mkdir "$buildDir"
-rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  testpytest/__pycache__ testunittest/__pycache__
+# rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  testpytest/__pycache__ testunittest/__pycache__
 
 
 if [ "$dolint" != "false" ]; then
@@ -101,8 +104,3 @@ echo "Running: $cmd" | sed "s/$SONAR_TOKEN/<SONAR_TOKEN>/g"
 echo
 
 $cmd
-
-for target in lts latest
-do
-  rm -rf "$ROOTDIR/test/$target"
-done

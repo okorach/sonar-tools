@@ -258,6 +258,7 @@ def test_wrong_key_2(get_test_project: Generator[projects.Project]) -> None:
     with pytest.raises(exceptions.ObjectNotFound):
         proj.audit({}, None)
 
+
 def test_set_permissions(get_test_project: Generator[projects.Project]) -> None:
     """test_set_permissions"""
     proj = get_test_project
@@ -267,4 +268,3 @@ def test_set_permissions(get_test_project: Generator[projects.Project]) -> None:
     perms = proj.permissions().to_json()
     assert "groups" not in perms
     assert len(perms["users"]) == 2
-
