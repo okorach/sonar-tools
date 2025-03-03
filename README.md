@@ -1,5 +1,10 @@
 # sonar-tools
-Command line tools to help in SonarQube administration tasks. Available as a **pypi.org** package or a **docker** image
+Command line tools to help in SonarQube administration tasks. Available as a **pypi.org** package or a **docker** image.
+
+`sonar-tools` is compatible with all SonarQube versions starting from 9.9 up to latest 2025.1.
+It way work with older versions but this is not guaranteed.
+Compatibility with recent SonarQube Community Builds should be fine, although it has not been formally validated yet.
+
 
 ![Downloads](https://img.shields.io/pypi/dm/sonar-tools?color=informational)
 ![Python-Versions](https://img.shields.io/pypi/pyversions/sonar-tools)
@@ -12,7 +17,7 @@ Command line tools to help in SonarQube administration tasks. Available as a **p
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonar-tools&metric=bugs)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
 [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonar-tools&metric=ncloc)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
 
-**DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource S.A. Switzerland, the company publishing the [SonarQube](https://www.sonarqube.org/), [SonarCloud](https://sonarcloud.io) and [SonarLint](https://sonarlint.org) products
+**DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource S.A. Switzerland, the company publishing the [SonarQube Server](https://www.sonarsource.com/products/sonarqube/), [SonarQube Cloud](https://sonarcloud.io) and [SonarQube for IDE (ex- SonarLint](https://www.sonarsource.com/products/sonarlint/) products
 
 The following utilities are available:
 - [sonar-audit](#sonar-audit): Audits a SonarQube instance, and reports all the problems
