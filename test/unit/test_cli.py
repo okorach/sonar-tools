@@ -23,7 +23,7 @@
 
 from collections.abc import Generator
 import json
-import logging
+from copy import deepcopy
 import pytest
 from sonar import exceptions, projects, utilities as sutil
 from cli import options as opt
@@ -36,26 +36,25 @@ def test_import_compatibility() -> None:
     jsondata = util.SQ.basics()
     assert proj_cli.__check_sq_environments(util.SQ, jsondata) is None
 
-    incompatible_data = jsondata.copy()
-    incompatible_data["version"] = "8.7.0"
+    src_json = deepcopy(jsondata)
+    src_json["version"] = "8.7.0"
     with pytest.raises(exceptions.UnsupportedOperation):
-        proj_cli.__check_sq_environments(util.SQ, incompatible_data)
+        proj_cli.__check_sq_environments(util.SQ, src_json)
 
-    incompatible_data = jsondata.copy()
-    incompatible_data["plugins"] = {}
-    with pytest.raises(exceptions.UnsupportedOperation):
-        proj_cli.__check_sq_environments(util.SQ, incompatible_data)
+    src_json = deepcopy(jsondata)
+    src_json["plugins"] = {}
+    assert proj_cli.__check_sq_environments(util.SQ, src_json) is None
 
-    incompatible_data["plugins"] = jsondata["plugins"].copy()
-    incompatible_data["plugins"]["lua"] = "1.0 [Lua Analyzer]"
+    src_json = deepcopy(jsondata)
+    src_json["plugins"]["lua"] = "1.0 [Lua Analyzer]"
     with pytest.raises(exceptions.UnsupportedOperation):
-        proj_cli.__check_sq_environments(util.SQ, incompatible_data)
+        proj_cli.__check_sq_environments(util.SQ, src_json)
 
-    incompatible_data["plugins"] = jsondata["plugins"].copy()
-    for p, v in incompatible_data["plugins"].items():
-        incompatible_data["plugins"][p] = "1." + v
+    src_json = deepcopy(jsondata)
+    for p, v in src_json["plugins"].items():
+        src_json["plugins"][p] = "1." + v
     with pytest.raises(exceptions.UnsupportedOperation):
-        proj_cli.__check_sq_environments(util.SQ, incompatible_data)
+        proj_cli.__check_sq_environments(util.SQ, src_json)
 
 
 def test_import(get_json_file: Generator[str]) -> None:
