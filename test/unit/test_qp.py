@@ -156,9 +156,9 @@ def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]
 
 def test_import() -> None:
     """test_import"""
-    util.start_logging("INFO")
     rules.get_list(util.TEST_SQ)
-    # delete all portfolios in test
+    # delete all quality profiles in test
+    _ = [qp.set_as_default() for qp in qualityprofiles.get_list(util.TEST_SQ).values() if qp.name == util.SONAR_WAY]
     qp_list = set(o for o in qualityprofiles.get_list(util.TEST_SQ, use_cache=False).values() if not o.is_built_in and not o.is_default)
     _ = [o.delete() for o in qp_list]
     with open("test/files/config.json", "r", encoding="utf-8") as f:
@@ -167,9 +167,9 @@ def test_import() -> None:
 
     # Compare QP list
     json_name_list = sorted([k for k, v in qualityprofiles.flatten(json_exp).items() if not v.get("isBuiltIn", False)])
-    qp_name_list = sorted([f"{o.language}:{o.name}" for o in qualityprofiles.get_list(util.TEST_SQ).values() if not o.is_built_in])
-    logging.info("FLAT LIST2 = %s", str(json_name_list))
-    logging.info("FLAT LIST2 = %s", str(qp_name_list))
+    qp_name_list = sorted([f"{o.language}:{o.name}" for o in qualityprofiles.get_list(util.TEST_SQ, use_cache=False).values() if not o.is_built_in])
+    logging.debug("Imported  list = %s", str(json_name_list))
+    logging.debug("SonarQube list = %s", str(qp_name_list))
     assert json_name_list == qp_name_list
 
 
