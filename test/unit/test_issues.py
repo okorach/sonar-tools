@@ -137,7 +137,7 @@ def test_changelog() -> None:
     assert str(issue) == f"Issue key '{issue_key}'"
     assert issue.is_false_positive()
     changelog_l = list(issue.changelog().values())
-    assert len(changelog_l) == 1
+    assert len(changelog_l) == 3
     changelog = changelog_l[0]
     assert changelog.is_resolve_as_fp()
     assert not changelog.is_closed()
