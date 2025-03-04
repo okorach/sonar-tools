@@ -602,6 +602,7 @@ def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Quality
 
     with _CLASS_LOCK:
         if len(QualityProfile.CACHE) == 0 or not use_cache:
+            QualityProfile.CACHE.clear()
             search(endpoint=endpoint)
     return QualityProfile.CACHE.objects
 
