@@ -28,6 +28,7 @@ import math
 import json
 
 from datetime import datetime
+from requests import RequestException
 
 from sonar.util import types
 import sonar.util.constants as c
@@ -35,7 +36,7 @@ import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
 
-from sonar import settings, tasks, measures, utilities, rules
+from sonar import settings, tasks, measures, utilities, rules, exceptions
 
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
@@ -266,6 +267,24 @@ class Component(sq.SqObject):
         }
         log.debug("Component versions = %s", utilities.json_dump(data))
         return data
+
+    def get_ai_code_assurance(self) -> Optional[str]:
+        """
+        :return: The AI code assurance status of a project or a branch
+        """
+        log.debug("AI Code assurance version = %s", str(self.endpoint.version()))
+        api = "project/get_ai_code_assurance"
+        if self.endpoint.version() >= (2025, 1, 0):
+            api = "project_branches/get_ai_code_assurance"
+        try:
+            return str(json.loads(self.get(api, params=self.api_params(c.GET)).text)["aiCodeAssurance"]).upper()
+        except (ConnectionError, RequestException) as e:
+            utilities.handle_error(e, f"getting AI code assurance of {str(self)}", catch_all=True)
+            if "Unknown url" in str(e):
+                raise exceptions.UnsupportedOperation(
+                    f"AI code assurance is not available for {self.endpoint.edition()} edition version {str(self.endpoint.version())}"
+                )
+        return None
 
     def _audit_bg_task(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project background tasks"""

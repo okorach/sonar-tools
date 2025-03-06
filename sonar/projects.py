@@ -1095,9 +1095,13 @@ class Project(components.Component):
 
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
-            if self.endpoint.version() >= (10, 7, 0) and self.endpoint.edition() != "community":
+            contains_ai = False
+            try:
                 ai = self.get_ai_code_assurance()
                 contains_ai = ai is not None and ai != "NONE"
+            except exceptions.UnsupportedOperation:
+                pass
+            if contains_ai:
                 json_data[_CONTAINS_AI_CODE] = contains_ai
             for s in settings_dict.values():
                 if not export_settings.get("INCLUDE_INHERITED", False) and s.inherited:
@@ -1199,17 +1203,6 @@ class Project(components.Component):
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"setting contains AI code of {str(self)}", catch_all=True)
             return False
-
-    def get_ai_code_assurance(self) -> Optional[str]:
-        """
-        :return: The AI code assurance status of the project
-        """
-        if self.endpoint.version() >= (10, 7, 0) and self.endpoint.edition() != "community":
-            try:
-                return str(json.loads(self.get("projects/get_ai_code_assurance", params={"project": self.key}).text)["aiCodeAssurance"]).upper()
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting AI code assurance of {str(self)}", catch_all=True)
-        return None
 
     def set_quality_profile(self, language: str, quality_profile: str) -> bool:
         """Sets project quality profile for a given language
