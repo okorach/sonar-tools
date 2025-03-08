@@ -577,9 +577,11 @@ def component_filter(endpoint: pf.Platform) -> str:
 def search_by_directory(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by directory to avoid exceeding the 10K limit"""
     new_params = params.copy()
+    if "components" in params:
+        new_params[component_filter(endpoint)] = params["components"]
+    log.info("Splitting search by directories with %s", util.json_dump(new_params))
     facets = _get_facets(endpoint=endpoint, project_key=new_params[component_filter(endpoint)], facets="directories", params=new_params)
     issue_list = {}
-    log.info("Splitting search by directories")
     for d in facets["directories"]:
         new_params["directories"] = d["val"]
         issue_list.update(search(endpoint=endpoint, params=new_params, raise_error=True))
