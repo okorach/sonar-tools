@@ -277,7 +277,7 @@ class Component(sq.SqObject):
             return str(json.loads(self.get(api, params=self.api_params(c.GET)).text)["aiCodeAssurance"]).upper()
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"getting AI code assurance of {str(self)}", catch_all=True)
-            if "Unknown url" in str(e):
+            if "Unknown url" in utilities.error_msg(e):
                 raise exceptions.UnsupportedOperation(
                     f"AI code assurance is not available for {self.endpoint.edition()} edition version {str(self.endpoint.version())}"
                 )
