@@ -164,10 +164,13 @@ audit.projects.maxLastAnalysisAge = 180
 # Set property to 0 to turn off the check
 audit.projects.maxHistoryCount = 100
 
+# Define project minimum size to audit accepted/FP issues
+audit.projects.minLocSize = 10000
 # Audit (and warn) for projects/project branches with too many accepted or false positive issues
 # Set parameter to the minimum nbr of LoC per accepted or FP issues
 # Set property to 0 to turn off the check
-audit.projects.acceptedAndFalsePositiveIssues = 1000
+audit.projects.minLocPerAcceptedIssue = 1000
+audit.projects.minLocPerFalsePositiveIssue = 1000
 
 # Audit branches for zero LoC and last analysis date
 audit.projects.branches = yes
