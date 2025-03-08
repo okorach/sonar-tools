@@ -262,8 +262,7 @@ class Component(sq.SqObject):
     def get_versions(self) -> dict[str, datetime]:
         """Returns a dict of project versions and their dates"""
         data = {
-            a["version"]: utilities.string_to_date(a["date"])
-            for a in reversed(self.get_analyses(filter_in=["VERSION"], filter_out=["QUALITY_GATE", "QUALITY_PROFILE", "SQ_UPGRADE"]))
+            a["version"]: utilities.string_to_date(a["date"]) for a in reversed(self.get_analyses(filter_in=["VERSION"], filter_out=["QUALITY_GATE", "QUALITY_PROFILE", "SQ_UPGRADE"]))
         }
         log.debug("Component versions = %s", utilities.json_dump(data))
         return data
@@ -311,9 +310,6 @@ class Component(sq.SqObject):
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
         """
-        if not audit_settings.get("audit.projects.historyRetention", True):
-            log.debug("%s: History retention audit disabled, audit skipped", str(self))
-            return []
         max_history = audit_settings.get("audit.projects.maxHistoryCount", 100)
         if max_history == 0:
             log.debug("Auditing %s history retention disabled, skipped...", str(self))
