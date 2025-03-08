@@ -202,12 +202,19 @@ def test_set_quality_gate(get_test_project: Generator[projects.Project], get_tes
 
 def test_ai_code_assurance(get_test_project: Generator[projects.Project]) -> None:
     """test_ai_code_assurance"""
-    if util.SQ.edition() == "community":
-        pytest.skip("AI Code Fix not available in SonarQube Community Build")
-    if util.SQ.version() >= (10, 7, 0):
+    proj = get_test_project
+    if util.SQ.version() >= (10, 7, 0) and util.SQ.edition() != "community":
         proj = get_test_project
         assert proj.set_contains_ai_code(True)
-        assert proj.get_ai_code_assurance() in ("CONTAINS_AI_CODE", "AI_CODE_ASSURED")
+        assert proj.get_ai_code_assurance() in (
+            "CONTAINS_AI_CODE",
+            "AI_CODE_ASSURED",
+            "AI_CODE_ASSURANCE_ON",
+            "AI_CODE_ASSURANCE_OFF",
+            "AI_CODE_ASSURANCE_PASS",
+            "AI_CODE_ASSURANCE_FAIL",
+            "NONE",
+        )
         assert proj.set_contains_ai_code(False)
         assert proj.get_ai_code_assurance() == "NONE"
         proj.key = util.NON_EXISTING_KEY
@@ -215,6 +222,9 @@ def test_ai_code_assurance(get_test_project: Generator[projects.Project]) -> Non
         assert proj.get_ai_code_assurance() is None
         assert not proj.set_contains_ai_code(False)
         assert proj.get_ai_code_assurance() is None
+    else:
+        with pytest.raises(exceptions.UnsupportedOperation):
+            proj.get_ai_code_assurance()
 
 
 def test_set_quality_profile(get_test_project: Generator[projects.Project], get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
