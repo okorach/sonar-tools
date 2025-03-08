@@ -22,7 +22,7 @@
 """ users tests """
 
 from collections.abc import Generator
-
+from datetime import datetime
 import pytest
 
 import utilities as util
@@ -183,16 +183,18 @@ def test_update(get_test_user: Generator[users.User]) -> None:
     assert sorted(user.scm_accounts) == sorted(["foo@gmail.com", "bar@gmail.com", "foo", "bar"])
 
     if util.SQ.version() >= (10, 4, 0):
-        user.update(login="johndoe")
-        assert user.login == "johndoe"
+        new_login = f"johndoe{str(datetime.now()).replace(' ', '').replace(':', '')}"
+        user.update(login=new_login)
+        assert user.login == new_login
 
     user.update(name="John Doe", email="john@doe.com")
     assert user.name == "John Doe"
     assert user.email == "john@doe.com"
 
     if util.SQ.version() >= (10, 4, 0):
-        user.update(login="jdoe", email="john@doe.com")
-        assert user.login == "jdoe"
+        new_login = f"johndoe{str(datetime.now()).replace(' ', '-').replace(':', '-')}"
+        user.update(login=new_login, email="john@doe.com")
+        assert user.login == new_login
 
 
 def test_set_groups(get_test_user: Generator[users.User]) -> None:
