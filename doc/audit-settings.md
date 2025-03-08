@@ -169,8 +169,8 @@ audit.projects.minLocSize = 10000
 # Audit (and warn) for projects/project branches with too many accepted or false positive issues
 # Set parameter to the minimum nbr of LoC per accepted or FP issues
 # Set property to 0 to turn off the check
-audit.projects.minLocPerAcceptedIssue = 1000
-audit.projects.minLocPerFalsePositiveIssue = 1000
+audit.projects.minLocPerAcceptedIssue = 500
+audit.projects.minLocPerFalsePositiveIssue = 500
 
 # Audit branches for zero LoC and last analysis date
 audit.projects.branches = yes

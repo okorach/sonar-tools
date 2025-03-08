@@ -329,8 +329,8 @@ class Component(sq.SqObject):
         :return: List of problems found, or empty list
         """
         loc_min = audit_settings.get("audit.projects.minLocSize", 10000)
-        fp_min = audit_settings.get("minLocPerFalsePositiveIssue", 1000)
-        accepted_min = audit_settings.get("minLocPerAcceptedIssue", 1000)
+        fp_min = audit_settings.get("minLocPerFalsePositiveIssue", 500)
+        accepted_min = audit_settings.get("minLocPerAcceptedIssue", 500)
         m_list = ["ncloc", "accepted_issues", "false_positive_issues"]
         d = {k: int(v.value) if v is not None else 0 for k, v in self.get_measures(m_list).items()}
         ncloc, nb_accepted, nb_fp = d["ncloc"], d["accepted_issues"], d["false_positive_issues"]
