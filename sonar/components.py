@@ -322,6 +322,27 @@ class Component(sq.SqObject):
             return [Problem(get_rule(RuleId.PROJ_HISTORY_COUNT), self, str(self), history_len)]
         return []
 
+    def _audit_accepted_or_fp_issues(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits whether a project or branch has too many accepted or FP issues
+
+        :param dict audit_settings: Options of what to audit and thresholds to raise problems
+        :return: List of problems found, or empty list
+        """
+        loc_min = audit_settings.get("audit.projects.minLocSize", 10000)
+        fp_min = audit_settings.get("minLocPerFalsePositiveIssue", 500)
+        accepted_min = audit_settings.get("minLocPerAcceptedIssue", 500)
+        m_list = ["ncloc", "accepted_issues", "false_positive_issues"]
+        d = {k: int(v.value) if v is not None else 0 for k, v in self.get_measures(m_list).items()}
+        ncloc, nb_accepted, nb_fp = d["ncloc"], d["accepted_issues"], d["false_positive_issues"]
+        problems = []
+        if ncloc < loc_min:
+            return problems
+        if nb_accepted * accepted_min > ncloc:
+            problems.append(Problem(get_rule(RuleId.PROJ_TOO_MANY_ACCEPTED), self, str(self), nb_accepted, ncloc))
+        if nb_fp * fp_min > ncloc:
+            problems.append(Problem(get_rule(RuleId.PROJ_TOO_MANY_FP), self, str(self), nb_fp, ncloc))
+        return problems
+
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
         return tasks.search_last(component_key=self.key, endpoint=self.endpoint)

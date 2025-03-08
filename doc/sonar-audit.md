@@ -196,6 +196,8 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - Projects analyzed with apparently a wrong scanner (Can't be certain in all cases)
   - Projects with too many analysis history data points (due to wrong housekeeping settings
     or wrong usage of `sonar.projectVersion`)
+  - Projects with too many accepted or false positive issues (Projects > 10K LoC and more than 1 accepted/FP issue
+    per 500 LoC)
 - Branches: (if `audit.project.branches = yes`, default `yes`)
   - Branches never analyzed but marked as "keep when inactive"
 - Portfolios: (if `audit.applications = yes`, default `yes`)

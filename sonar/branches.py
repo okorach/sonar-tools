@@ -375,6 +375,7 @@ class Branch(components.Component):
                 + self.__audit_never_analyzed()
                 + self._audit_bg_task(audit_settings)
                 + self._audit_history_retention(audit_settings)
+                + self._audit_accepted_or_fp_issues(audit_settings)
             )
         except Exception as e:
             log.error("%s while auditing %s, audit skipped", util.error_msg(e), str(self))

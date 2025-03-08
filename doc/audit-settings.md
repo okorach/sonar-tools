@@ -134,11 +134,12 @@ audit.projects.permissions.maxHotspotAdminGroups = 2
 
 #========================= PROJECT AUDIT CONFIGURATION ========================
 
-# Audit and warn) for projects likely to be duplicates
+
+# Audit (and warn) for projects likely to be duplicates
 # Duplicate projects are detected from project keys that are similar
 audit.projects.duplicates = yes
 
-# Audit and warn) for projects that have been provisioned but never analyzed
+# Audit (and warn) for projects that have been provisioned but never analyzed
 audit.projects.neverAnalyzed = yes
 
 # Audit (and warn) if project visibility is public
@@ -158,6 +159,18 @@ audit.projects.suspiciousExclusionsExceptions = \\*\\*/(__pycache__|libs|lib|ven
 # Audit (and warn) for projects whose last analysis date is older than maxLastAnalysisAge
 # Set property to 0 to turn off the check
 audit.projects.maxLastAnalysisAge = 180
+
+# Audit (and warn) for projects/project branches with too many data points in history
+# Set property to 0 to turn off the check
+audit.projects.maxHistoryCount = 100
+
+# Define project minimum size to audit accepted/FP issues
+audit.projects.minLocSize = 10000
+# Audit (and warn) for projects/project branches with too many accepted or false positive issues
+# Set parameter to the minimum nbr of LoC per accepted or FP issues
+# Set property to 0 to turn off the check
+audit.projects.minLocPerAcceptedIssue = 500
+audit.projects.minLocPerFalsePositiveIssue = 500
 
 # Audit branches for zero LoC and last analysis date
 audit.projects.branches = yes
@@ -193,6 +206,9 @@ audit.projects.failedTasks = yes
 
 # Audits projects analyzed with too old scanner version, 2 years by default
 audit.projects.scannerMaxAge = 730
+
+# Audits projects scanner consistency with project type
+audit.projects.scanner = yes
 
 #====================== QUALITY GATES AUDIT CONFIGURATION =====================
 
