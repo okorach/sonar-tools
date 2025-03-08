@@ -60,7 +60,7 @@ class User(sqobject.SqObject):
         c.DELETE: USER_API,
         c.SEARCH: USER_API,
         "GROUP_MEMBERSHIPS": "v2/authorizations/group-memberships",
-        "UPDATE_LOGIN": "users/update_login",
+        "UPDATE_LOGIN": USER_API,
     }
     API_V1 = {
         c.CREATE: "users/create",
@@ -277,27 +277,30 @@ class User(sqobject.SqObject):
         log.debug("Updating %s with %s", str(self), str(kwargs))
         params = self.api_params(c.UPDATE)
         my_data = vars(self)
-        if self.is_local:
-            params.update({k: kwargs[k] for k in ("name", "email") if k in kwargs and kwargs[k] != my_data[k]})
-            if len(params) >= 1:
-                self.post(User.api_for(c.UPDATE, self.endpoint), params=params)
-                if "name" in params:
-                    self.name = kwargs["name"]
-                if "email" in params:
-                    self.email = kwargs["email"]
-            if "scmAccounts" in kwargs:
-                self.set_scm_accounts(kwargs["scmAccounts"])
-            if "login" in kwargs:
-                new_login = kwargs["login"]
-                o = User.CACHE.get(new_login, self.endpoint.url)
-                if not o:
-                    self.post(
-                        User.api_for("UPDATE_LOGIN", self.endpoint), params={**self.api_params(User.API["UPDATE_LOGIN"]), "newLogin": new_login}
-                    )
-                    User.CACHE.pop(self)
-                    self.login = new_login
-                    User.CACHE.put(self)
-        self.set_groups(util.csv_to_list(kwargs.get("groups", "")))
+        if not self.is_local:
+            self.set_groups(util.csv_to_list(kwargs.get("groups", "")))
+            return self
+        params.update({k: kwargs[k] for k in ("name", "email") if k in kwargs and kwargs[k] != my_data[k]})
+        if len(params) >= 1:
+            self.post(User.api_for(c.UPDATE, self.endpoint), params=params)
+            if "name" in params:
+                self.name = kwargs["name"]
+            if "email" in params:
+                self.email = kwargs["email"]
+        if "scmAccounts" in kwargs:
+            self.set_scm_accounts(kwargs["scmAccounts"])
+        if "login" in kwargs:
+            new_login = kwargs["login"]
+            o = User.CACHE.get(new_login, self.endpoint.url)
+            if not o:
+                api = User.api_for("UPDATE_LOGIN", self.endpoint)
+                if self.endpoint.version() >= (10, 4, 0):
+                    self.patch(f"{api}/{self.id}", params={"login": new_login})
+                else:
+                    self.post(api, params={**self.api_params(User.API["UPDATE_LOGIN"]), "newLogin": new_login})
+                User.CACHE.pop(self)
+                self.login = new_login
+                User.CACHE.put(self)
         return self
 
     def add_to_group(self, group_name: str) -> bool:
@@ -407,12 +410,13 @@ class User(sqobject.SqObject):
         :rtype: bool
         """
         log.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
+        api = User.api_for(c.UPDATE, self.endpoint)
         if self.endpoint.version() >= (10, 4, 0):
-            r = self.patch(f"{User.api_for(c.UPDATE, self.endpoint)}/{self.id}", params={"scmAccounts": accounts_list})
+            r = self.patch(f"{api}/{self.id}", params={"scmAccounts": accounts_list})
         else:
             params = self.api_params()
             params["scmAccount"] = ",".join(set(accounts_list))
-            r = self.post(User.api_for(c.UPDATE, self.endpoint), params=params)
+            r = self.post(api, params=params)
         if not r.ok:
             self.scm_accounts = []
             return False
