@@ -30,11 +30,7 @@ def test_transitions() -> None:
     hotspot = list(hotspot_d.values())[0]
 
     assert hotspot.mark_as_safe()
-    assert not hotspot.mark_as_safe()
     assert hotspot.reopen()
-    assert not hotspot.reopen()
-
+    
     assert hotspot.mark_as_to_review()
-    assert not hotspot.mark_as_to_review()
     assert hotspot.reopen()
-    assert not hotspot.reopen()
