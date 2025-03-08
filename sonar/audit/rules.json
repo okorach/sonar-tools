@@ -296,6 +296,18 @@
         "object": "Branch",
         "message": "{} has {} data points in history, this is excessive and causes excessive DB size"
     },
+    "PROJ_TOO_MANY_ACCEPTED": {
+        "severity": "MEDIUM",
+        "type": "GOVERNANCE",
+        "object": "Branch",
+        "message": "{} has {} accepted issues for {} LoC, this is excessive"
+    },
+    "PROJ_TOO_MANY_FP": {
+        "severity": "MEDIUM",
+        "type": "GOVERNANCE",
+        "object": "Branch",
+        "message": "{} has {} false positive issues for {} LoC, this is excessive"
+    },
     "BRANCH_NEVER_ANALYZED": {
         "severity": "LOW",
         "type": "PERFORMANCE",
