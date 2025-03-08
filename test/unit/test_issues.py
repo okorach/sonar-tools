@@ -205,6 +205,7 @@ def test_transitions() -> None:
     assert issue.reopen()
     assert not issue.reopen()
 
+
 def test_search_first() -> None:
     """test_search_first"""
     assert issues.search_first(tutil.SQ, components="non-existing-project-key") is None

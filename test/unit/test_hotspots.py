@@ -25,12 +25,13 @@ import utilities as tutil
 from sonar import hotspots
 from sonar.util import constants as c
 
+
 def test_transitions() -> None:
     hotspot_d = hotspots.search(endpoint=tutil.SQ, filters={"project": "okorach_sonar-tools"})
     hotspot = list(hotspot_d.values())[0]
 
     assert hotspot.mark_as_safe()
     assert hotspot.reopen()
-    
+
     assert hotspot.mark_as_to_review()
     assert hotspot.reopen()
