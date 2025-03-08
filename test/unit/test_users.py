@@ -210,6 +210,7 @@ def test_set_groups(get_test_user: Generator[users.User]) -> None:
 def test_import() -> None:
     data = {}
     users.import_config(util.SQ, data)
+    now_str = {str(datetime.now()).replace(" ", "-").replace(":", "-")}
     data = {
         "users": {
             "TEMP": {"local": True, "name": "User name TEMP", "scmAccounts": "temp@acme.com, temp@gmail.com"},
@@ -218,7 +219,7 @@ def test_import() -> None:
                 "groups": "sonar-administrators",
                 "local": True,
                 "name": "User name TEMP_ADMIN",
-                "scmAccounts": "admin-acme, administrator-acme",
+                "scmAccounts": f"admin-acme{now_str}, administrator-acme{now_str}",
             },
         }
     }
