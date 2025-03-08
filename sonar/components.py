@@ -261,10 +261,8 @@ class Component(sq.SqObject):
 
     def get_versions(self) -> dict[str, datetime]:
         """Returns a dict of project versions and their dates"""
-        data = {
-            a["version"]: utilities.string_to_date(a["date"]) for a in reversed(self.get_analyses(filter_in=["VERSION"], filter_out=["QUALITY_GATE", "QUALITY_PROFILE", "SQ_UPGRADE"]))
-        }
-        log.debug("Component versions = %s", utilities.json_dump(data))
+        data = {a["projectVersion"]: utilities.string_to_date(a["date"]) for a in reversed(self.get_analyses(filter_in=["VERSION"]))}
+        log.debug("Component versions = %s", str(data.keys()))
         return data
 
     def get_ai_code_assurance(self) -> Optional[str]:
