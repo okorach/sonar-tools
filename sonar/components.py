@@ -332,7 +332,7 @@ class Component(sq.SqObject):
         fp_min = audit_settings.get("minLocPerFalsePositiveIssue", 1000)
         accepted_min = audit_settings.get("minLocPerAcceptedIssue", 1000)
         data = self.get_measures(["ncloc", "accepted_issues", "false_positive_issues"])
-        ncloc, nb_accepted, nb_fp = data["ncloc"], data["accepted_issues"], data["false_positive_issues"]
+        ncloc, nb_accepted, nb_fp = int(data["ncloc"].value), int(data["accepted_issues"].value), int(data["false_positive_issues"].value)
         problems = []
         if ncloc < loc_min:
             return problems
