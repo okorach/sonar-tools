@@ -114,6 +114,19 @@ def test_webhooks() -> None:
     assert len(proj.webhooks()) == 0
 
 
+def test_versions() -> None:
+    """test_versions"""
+    proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)
+    vers = proj.get_versions()
+    v_list = list(vers.keys())
+    assert len(v_list) > 10
+    for v in "3.9", "2.11", "2.9", "v1.13":
+        assert v in v_list
+    if proj.endpoint.version() >= (2025, 1, 0):
+        for v in "3.1", "3.4", "3.7":
+            assert v in v_list
+
+
 def test_count() -> None:
     """test_count"""
     assert projects.count(util.SQ) > 30
