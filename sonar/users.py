@@ -277,12 +277,16 @@ class User(sqobject.SqObject):
         log.debug("Updating %s with %s", str(self), str(kwargs))
         params = self.api_params(c.UPDATE)
         my_data = vars(self)
+        self.set_groups(util.csv_to_list(kwargs.get("groups", "")))
         if not self.is_local:
-            self.set_groups(util.csv_to_list(kwargs.get("groups", "")))
             return self
         params.update({k: kwargs[k] for k in ("name", "email") if k in kwargs and kwargs[k] != my_data[k]})
         if len(params) >= 1:
-            self.post(User.api_for(c.UPDATE, self.endpoint), params=params)
+            api = User.api_for(c.UPDATE, self.endpoint)
+            if self.endpoint.version() >= (10, 4, 0):
+                self.patch(f"{api}/{self.id}", params=params)
+            else:
+                self.post(api, params=params)
             if "name" in params:
                 self.name = kwargs["name"]
             if "email" in params:
