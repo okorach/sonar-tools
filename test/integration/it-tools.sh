@@ -27,6 +27,7 @@ IT_LOG_FILE="$TMP/it.log"
 mkdir -p "$TMP"
 
 YELLOW=$(tput setaf 3)
+RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 RESET=$(tput setaf 7)
 
