@@ -217,7 +217,7 @@ do
 
     if [ "$env" != "sonarcloud" ]; then
         logmsg "Deleting environment sonarId $id"
-        # sonar delete -i "$id" 1>$IT_LOG_FILE 2>&1
+        sonar delete -i "$id" 1>$IT_LOG_FILE 2>&1
     fi
 done
 
