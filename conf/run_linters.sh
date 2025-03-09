@@ -51,6 +51,7 @@ flake8 --config "$CONFIG/.flake8" "$ROOTDIR" >"$flake8Report"
 if [ "$localbuild" = "true" ]; then
     echo "===> Running shellcheck"
     shellcheck "$ROOTDIR"/*.sh "$ROOTDIR"/*/*.sh -s bash -f json | "$CONFDIR"/shellcheck2sonar.py >"$shellcheckReport"
+    [ ! -s "$shellcheckReport" ] && rm -f "$shellcheckReport"
 
     echo "===> Running checkov"
     checkov -d . --framework dockerfile -o sarif --output-file-path "$buildDir"
@@ -59,4 +60,5 @@ if [ "$localbuild" = "true" ]; then
     "$CONFDIR"/build.sh docker
     trivy image -f json -o "$buildDir"/trivy_results.json olivierkorach/sonar-tools:latest
     python3 "$CONFDIR"/trivy2sonar.py < "$buildDir"/trivy_results.json > "$trivyReport"
+    [ ! -s "$trivyReport" ] && rm -f "$trivyReport"
 fi
