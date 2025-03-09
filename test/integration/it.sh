@@ -100,6 +100,10 @@ do
         echo sonar create -i $id -t "$(tag_for "$env")" -s $sqport -p $pgport -f "$(backup_for "$env")"
         sonar create -i $id -t "$(tag_for "$env")" -s $sqport -p $pgport -f "$(backup_for "$env")" 1>$IT_LOG_FILE 2>&1
         export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
+        if [[ "$env" =~ ^lts.*$ ]]; then
+            logmsg "Using LTS token"
+            export SONAR_TOKEN=$SONAR_TOKEN_LTS_ADMIN_USER
+        fi
         export SONAR_HOST_URL="http://localhost:$sqport"
     fi
 
@@ -176,10 +180,10 @@ do
         logmsg "sonar-projects-export $env SKIPPED"
     else
         logmsg "=====> IT sonar-findings-export $env USER export"
-        if [ "$env" = "lts" ]; then
-            export SONAR_TOKEN=$SONAR_TOKEN_USER_USER_LTS
-        else
-            export SONAR_TOKEN=$SONAR_TOKEN_USER_USER
+        export SONAR_TOKEN=$SONAR_TOKEN_USER_USER
+        if [[ "$env" =~ ^lts.*$ ]]; then
+            logmsg "Using LTS token"
+            export SONAR_TOKEN=$SONAR_TOKEN_LTS_USER_USER
         fi
         f2="findings-$env-user.csv";    run_test "$f2" sonar-findings-export -v DEBUG -k okorach_audio-video-tools,okorach_sonar-tools
     fi
@@ -188,7 +192,12 @@ do
     logmsg "Restore sonar-tools last released version"
     pip install --force-reinstall sonar-tools 1>$IT_LOG_FILE 2>&1; 
     
-    export SONAR_TOKEN="$SONAR_TOKEN_ADMIN_USER"
+           
+    export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
+    if [[ "$env" =~ ^lts.*$ ]]; then
+        logmsg "Using LTS token"
+        export SONAR_TOKEN=$SONAR_TOKEN_LTS_ADMIN_USER
+    fi
     logmsg "=====> IT released tools $env"
     f="measures-$env-rel.csv"; run_test "$f" sonar-measures-export -b -m _main --withURL
     f="findings-$env-rel.csv"; run_test "$f" sonar-findings-export
