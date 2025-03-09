@@ -1,5 +1,11 @@
 # Version 3.9
 
+* Compatibility with SonarQube 2025.1 release
+* Fixed sonar-projects import pre-check to be less strict (follow new SonarQube criterias for project import)
+* A few new things audited by sonar-audit (Excessive project history data points and Excessive proportion of accepted or FP issues)
+* Bug fixes
+* More unit tests
+
 # Version 3.8
 
 * Bug fixes
