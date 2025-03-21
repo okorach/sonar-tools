@@ -31,6 +31,7 @@ import sonar.utilities as util
 from sonar.util import types
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
+import sonar.audit.config as audit_conf
 
 _RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)
 _RELEASE_DATE_7_9 = datetime.datetime(2019, 7, 1) + relativedelta(months=+6)
@@ -39,9 +40,6 @@ _RELEASE_DATE_9_9 = datetime.datetime(2023, 2, 1) + relativedelta(months=+6)
 
 _CE_TASKS = "Compute Engine Tasks"
 _WORKER_COUNT = "Worker Count"
-
-_LATEST_SQS_VERSION = (9999, 99, 99)
-JAVA_COMPAT = {21: [(25, 1, 0), _LATEST_SQS_VERSION], 17: [(9, 6, 0), _LATEST_SQS_VERSION], 11: [(7, 9, 0), (9, 8, 0)], 8: [(7, 9, 0), (8, 9, 0)]}
 
 
 def __audit_background_tasks(obj: object, obj_name: str) -> list[Problem]:
@@ -149,10 +147,12 @@ def __audit_jvm_version(obj: object, obj_name: str, jvm_props: dict[str, str]) -
     except KeyError:
         log.warning("%s: Can't find SonarQube version in SIF, auditing this part is skipped", obj_name)
         return []
-    if java_version not in JAVA_COMPAT:
+    java_compat = audit_conf.get_java_compatibility()
+    log.debug("Java compatibility matrix: %s", str(java_compat))
+    if java_version not in java_compat:
         log.warning("%s: Java version %d not listed in compatibility matrix, skipping JVM version audit", obj_name, java_version)
         return []
-    min_v, max_v = JAVA_COMPAT[java_version]
+    min_v, max_v = java_compat[java_version]
     sq_v_str = ".".join([str(i) for i in sq_version])
     if min_v <= sq_version <= max_v:
         log.info("%s: SonarQube %s running on a supported java version (java %d)", obj_name, sq_v_str, java_version)

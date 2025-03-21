@@ -17,6 +17,7 @@ tmp/
 .venv/
 .DS_Store
 
+!sonar/audit/config.json
 !test/config.json
 !test/integration/sif*.json
 !.vscode/*.json
