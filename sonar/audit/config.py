@@ -110,5 +110,9 @@ def load_config_data() -> None:
 def get_java_compatibility() -> dict[int, list[tuple[int, int, int]]]:
     return {int(k): [tuple(v[0]), tuple(v[1])] for k, v in _CONFIG_DATA["javaCompatibility"].items()}
 
+
 def get_scanners_versions() -> dict[int, list[tuple[int, int, int]]]:
-    return {k: datetime.datetime(v[0], v[1], v[2]) for k, v in _CONFIG_DATA["scannerVersions"].items()}
+    data = {}
+    for scanner, release_info in _CONFIG_DATA["scannerVersions"].items():
+        data[scanner] = {k: datetime.datetime(v[0], v[1], v[2]) for k, v in release_info.items()}
+    return data
