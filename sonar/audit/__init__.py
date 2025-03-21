@@ -20,9 +20,10 @@
 
 """sonar.audit module"""
 
-from sonar.audit import rules
+from sonar.audit import rules, config
 from sonar import utilities, errcodes
 
+config.load_java_compatibility()
 try:
     rules.load()
 except rules.RuleConfigError as e:
