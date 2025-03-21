@@ -21,6 +21,7 @@
 """sonar-config CLI"""
 import os
 import pathlib
+import json
 import jprops
 from typing import Optional
 import sonar.logging as log
@@ -28,6 +29,8 @@ from sonar.util import types
 import sonar.utilities as util
 
 _CONFIG_SETTINGS = None
+
+_CONFIG_DATA = None
 
 
 def _load_properties_file(file: str) -> types.ConfigSettings:
@@ -93,3 +96,15 @@ def configure() -> None:
         log.info("Creating file '%s'", config_file)
         with open(config_file, "w", encoding="utf-8") as fh:
             print(text, file=fh)
+
+
+def load_java_compatibility() -> None:
+    global _CONFIG_DATA
+    config_data_file = pathlib.Path(__file__).parent / "config.json"
+    with open(config_data_file, "r", encoding="utf-8") as fh:
+        text = fh.read()
+    _CONFIG_DATA = json.loads(text)
+
+
+def get_java_compatibility() -> dict[int, list[tuple[int, int, int]]]:
+    return {int(k): [tuple(v[0]), tuple(v[1])] for k, v in _CONFIG_DATA["javaCompatibility"].items()}
