@@ -23,7 +23,7 @@
 from sonar.audit import rules, config
 from sonar import utilities, errcodes
 
-config.load_java_compatibility()
+config.load_config_data()
 try:
     rules.load()
 except rules.RuleConfigError as e:

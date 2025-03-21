@@ -21,6 +21,7 @@
 """sonar-config CLI"""
 import os
 import pathlib
+import datetime
 import json
 import jprops
 from typing import Optional
@@ -98,7 +99,7 @@ def configure() -> None:
             print(text, file=fh)
 
 
-def load_java_compatibility() -> None:
+def load_config_data() -> None:
     global _CONFIG_DATA
     config_data_file = pathlib.Path(__file__).parent / "config.json"
     with open(config_data_file, "r", encoding="utf-8") as fh:
@@ -108,3 +109,6 @@ def load_java_compatibility() -> None:
 
 def get_java_compatibility() -> dict[int, list[tuple[int, int, int]]]:
     return {int(k): [tuple(v[0]), tuple(v[1])] for k, v in _CONFIG_DATA["javaCompatibility"].items()}
+
+def get_scanners_versions() -> dict[int, list[tuple[int, int, int]]]:
+    return {k: datetime.datetime(v[0], v[1], v[2]) for k, v in _CONFIG_DATA["scannerVersions"].items()}
