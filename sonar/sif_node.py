@@ -40,7 +40,8 @@ _RELEASE_DATE_9_9 = datetime.datetime(2023, 2, 1) + relativedelta(months=+6)
 _CE_TASKS = "Compute Engine Tasks"
 _WORKER_COUNT = "Worker Count"
 
-JAVA_COMPAT = {17: [(9, 6, 0), (12, 0, 0)], 11: [(7, 9, 0), (9, 8, 0)], 8: [(7, 9, 0), (8, 9, 0)]}
+_LATEST_SQS_VERSION = (9999, 99, 99)
+JAVA_COMPAT = {21: [(25, 1, 0), _LATEST_SQS_VERSION], 17: [(9, 6, 0), _LATEST_SQS_VERSION], 11: [(7, 9, 0), (9, 8, 0)], 8: [(7, 9, 0), (8, 9, 0)]}
 
 
 def __audit_background_tasks(obj: object, obj_name: str) -> list[Problem]:
