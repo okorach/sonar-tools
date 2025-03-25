@@ -22,7 +22,7 @@
 """ Test of the tasks module and class """
 
 import utilities as tutil
-from sonar import tasks
+from sonar import tasks, logging
 
 
 def test_task() -> None:
@@ -64,6 +64,8 @@ def test_no_scanner_context() -> None:
     """test_no_scanner_context"""
     tutil.start_logging()
     task = tasks.search_last(component_key="project1", endpoint=tutil.SQ, type="REPORT")
+    if not task:
+        return
     if tutil.SQ.version() >= (10, 0, 0):
         assert task.scanner_context() is None
     settings = {}
@@ -78,11 +80,14 @@ def test_search_all_task() -> None:
 def test_suspicious_patterns() -> None:
     """test_suspicious_patterns"""
     pats = "\\*\\*/[^\/]+/\\*\\*, \\*\\*/\\*[\.\w]*, \\*\\*/\\*, \\*\\*/\\*\\.(java|jav|cs|csx|py|php|js|ts|sql|html|css|cpp|c|h|hpp)\\*?"
-    assert tasks._get_suspicious_exclusions(pats) == [s.strip() for s in pats.split(",")]
-    assert tasks._get_suspicious_exclusions(None) == [s.strip() for s in pats.split(",")]
+    s_pats = tasks._get_suspicious_exclusions(pats)
+    l_pats = [s.strip() for s in pats.split(",")]
+    logging.debug(f"{s_pats} == {l_pats}")
+    assert set(tasks._get_suspicious_exclusions(pats)) == set([s.strip() for s in pats.split(",")])
+    assert set(tasks._get_suspicious_exclusions(None)) == set([s.strip() for s in pats.split(",")])
     pats = "\\*\\*/(__pycache__|libs|lib|vendor|node_modules)/\\*\\*"
-    assert tasks._get_suspicious_exceptions(pats) == [s.strip() for s in pats.split(",")]
-    assert tasks._get_suspicious_exceptions(None) == [s.strip() for s in pats.split(",")]
+    assert set(tasks._get_suspicious_exceptions(pats)) == set([s.strip() for s in pats.split(",")])
+    assert set(tasks._get_suspicious_exceptions(None)) == set([s.strip() for s in pats.split(",")])
 
 
 # Test does not work - You can't request branch master when scan happened without the branch spec

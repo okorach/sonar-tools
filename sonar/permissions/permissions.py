@@ -81,16 +81,15 @@ class Permissions(ABC):
     def __str__(self) -> str:
         return f"permissions of {str(self.concerned_object)}"
 
-    def to_json(self, perm_type: str = None, csv: bool = False) -> types.JsonPermissions:
+    def to_json(self, perm_type: str | None = None, csv: bool = False) -> types.JsonPermissions:
         """Converts a permission object to JSON"""
         if not csv:
-            return self.permissions[perm_type] if is_valid(perm_type) else self.permissions
+            return self.permissions.get(perm_type, {}) if is_valid(perm_type) else self.permissions
         perms = {}
-        perm_types = normalize(perm_type)
-        for p in perm_types:
-            dperms = self.permissions.get(p, None)
-            if dperms is not None and len(dperms) > 0:
-                perms[p] = simplify(dperms)
+        for p in normalize(perm_type):
+            if p not in self.permissions or len(self.permissions[p]) == 0:
+                continue
+            perms[p] = {k: encode(v) for k, v in self.permissions.get(p, {}).items()}
         return perms if len(perms) > 0 else None
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
@@ -302,7 +301,7 @@ def is_valid(perm_type: str) -> bool:
     return perm_type and perm_type in PERMISSION_TYPES
 
 
-def normalize(perm_type: str) -> tuple[str]:
+def normalize(perm_type: str | None) -> tuple[str]:
     """
     :meta private:
     """
@@ -334,29 +333,21 @@ def diff_full(perms_1: types.JsonPermissions, perms_2: types.JsonPermissions) ->
 
 
 def diff(perms_1: types.JsonPermissions, perms_2: types.JsonPermissions) -> types.JsonPermissions:
-    """
+    """Performs the difference between two permissions dictionaries
     :meta private:
     """
-    diff_perms = perms_1.copy()
-    for elem, perms in perms_2.items():
-        if elem not in perms_1:
-            continue
-        for p in perms:
-            if p not in diff_perms[elem]:
-                continue
-            diff_perms[elem].remove(p)
-    return diff_perms
+    if not perms_1:
+        return {}
+    if not perms_2:
+        return perms_1
+    return {p: diffarray(perms_1[p], perms_2.get(p, [])) for p in perms_1}
 
 
 def diffarray(perms_1: list[str], perms_2: list[str]) -> list[str]:
     """
     :meta private:
     """
-    diff_perms = perms_1.copy()
-    for elem in perms_2:
-        if elem in diff_perms:
-            diff_perms.remove(elem)
-    return diff_perms
+    return list(set(perms_1) - set(perms_2))
 
 
 def white_list(perms: types.JsonPermissions, allowed_perms: list[str]) -> types.JsonPermissions:

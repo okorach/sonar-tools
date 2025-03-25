@@ -61,6 +61,7 @@ class ProjectPermissions(permissions.Permissions):
         # Hack: SonarQube returns application/portfoliocreator even for objects that don't have this permission
         # so these perms needs to be removed manually
         self.white_list(tuple(PROJECT_PERMISSIONS.keys()))
+        self.permissions = {p: k for p, k in self.permissions.items() if k and len(k) > 0}
         return self
 
     def _set_perms(
@@ -70,11 +71,9 @@ class ProjectPermissions(permissions.Permissions):
         if self.permissions is None:
             self.read()
         for p in permissions.PERMISSION_TYPES:
-            if new_perms is None or p not in new_perms:
-                continue
-            to_remove = diff_func(self.permissions[p], new_perms[p])
+            to_remove = diff_func(self.permissions.get(p, {}), new_perms.get(p, {}))
             self._post_api(apis["remove"][p], field[p], to_remove, **kwargs)
-            to_add = diff_func(new_perms[p], self.permissions[p])
+            to_add = diff_func(new_perms.get(p, {}), self.permissions.get(p, {}))
             self._post_api(apis["add"][p], field[p], to_add, **kwargs)
         return self.read()
 

@@ -267,8 +267,8 @@ def test_app_branches(get_test_app: Generator[applications.Application]) -> None
     app = get_test_app
     definition = {
         "branches": {
-            "Other Branch": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "training:security": "main"}},
-            "BRANCH foo": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "training:security": "main"}, "isMain": True},
+            "Other Branch": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "demo:java-security": "main"}},
+            "BRANCH foo": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "demo:java-security": "main"}, "isMain": True},
         }
     }
     app.update(definition)
@@ -277,9 +277,9 @@ def test_app_branches(get_test_app: Generator[applications.Application]) -> None
     assert app.main_branch().name == "BRANCH foo"
     definition = {
         "branches": {
-            "MiBranch": {"projects": {"TESTSYNC": "main", "demo:jcl": "main", "training:security": "main"}},
-            "Master": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "training:security": "main"}},
-            "Main Branch": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "training:security": "main"}, "isMain": True},
+            "MiBranch": {"projects": {"TESTSYNC": "main", "demo:jcl": "main", "demo:java-security": "main"}},
+            "Master": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "demo:java-security": "main"}},
+            "Main Branch": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "demo:java-security": "main"}, "isMain": True},
         }
     }
     app.update(definition)
