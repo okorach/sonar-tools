@@ -923,7 +923,13 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
         if OLD_STATUS in filters:
             filters[OLD_STATUS] = util.list_re_value(filters[OLD_STATUS], mapping={NEW_FP: OLD_FP})
     else:
-        # Starting from 10.4 - "resolutions" was renamed "issuesStatuses", "FALSE-POSITIVE" was renamed "FALSE_POSITIVE"
+        # Starting from 10.4 - "resolutions" and "statuses" are merged into "issuesStatuses", "FALSE-POSITIVE" was renamed "FALSE_POSITIVE"
+        # and "statuses" is deprecated
+        if "statuses" in filters:
+            if NEW_STATUS in filters:
+                filters[NEW_STATUS].update(filters.pop("statuses"))
+            else:
+                filters[NEW_STATUS] = filters.pop("statuses")
         filters = util.dict_remap(original_dict=filters, remapping={OLD_STATUS: NEW_STATUS})
         if NEW_STATUS in filters:
             filters[NEW_STATUS] = util.list_re_value(filters[NEW_STATUS], mapping={OLD_FP: NEW_FP})
