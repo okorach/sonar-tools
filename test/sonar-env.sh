@@ -1,44 +1,41 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 source ~/.sonar_rc
 
 case $1 in
-    lts)
-        export SONAR_TOKEN=$SONAR_TOKEN_LTS_ADMIN_USER
-        export SONAR_TOKEN_ADMIN=$SONAR_TOKEN_LTS_ADMIN_USER
-        export SONAR_HOST_URL=$SONAR_HOST_URL_LTS
-        # $SONAR_HOST_URL_LTS
-        ;;
-    lts-user)
-        export SONAR_TOKEN=$SONAR_TOKEN_LTS_ADMIN_USER
-        export SONAR_TOKEN_ADMIN=$SONAR_TOKEN_LTS_ADMIN_USER
-        export SONAR_HOST_URL=$SONAR_HOST_URL_LTS
-        # $SONAR_HOST_URL_LTS
-        ;;
-    lts-audit)
-        export SONAR_TOKEN=$SONAR_TOKEN_LTS_ADMIN_ANALYSIS
-        export SONAR_TOKEN_ADMIN=$SONAR_TOKEN_LTS_ADMIN_USER
-        export SONAR_HOST_URL=http://localhost:9800
-        ;;
-    latest)
-        export SONAR_TOKEN=$SONAR_TOKEN_LATEST_ADMIN_USER
-        export SONAR_TOKEN_ADMIN=$SONAR_TOKEN_LATEST_ADMIN_USER
-        export SONAR_HOST_URL=$SONAR_HOST_URL_LATEST
-        ;;
-    latest-user)
-        export SONAR_TOKEN=$SONAR_TOKEN_LATEST_ADMIN_USER
-        export SONAR_TOKEN_ADMIN=$SONAR_TOKEN_LATEST_ADMIN_USER
-        export SONAR_HOST_URL=$SONAR_HOST_URL_LATEST
-        ;;
-    nautilus)
-        export SONAR_TOKEN=$SONAR_TOKEN_NAUTILUS
-        export SONAR_HOST_URL=$SONAR_HOST_URL_NAUTILUS
-        ;;
-    sonarcloud)
-        export SONAR_TOKEN=$SONAR_TOKEN_SONARCLOUD
-        export SONAR_HOST_URL=$SONAR_HOST_URL_SONARCLOUD
-        ;;
-    *)
-        echo -u2 "Unsupported sonar environment $1 - Chose between latest lts or nautilus"
-        ;;
+   9)
+      url=$SONAR_HOST_URL_9
+      ;;
+   9-ce)
+      url=$SONAR_HOST_URL_9_CE
+      ;;
+   9-de)
+      url=$SONAR_HOST_URL_9_DE
+      ;;
+   lts)
+      url=$SONAR_HOST_URL_LTS
+      ;;
+   lts-de)
+      url=$SONAR_HOST_URL_LTS_DE
+      ;;
+   latest)
+      url=$SONAR_HOST_URL_LATEST
+      ;;
+   latest-de)
+      url=$SONAR_HOST_URL_LATEST_DE
+      ;;
+   cb)
+      url=$SONAR_HOST_URL_CB
+      ;;
+   cloud)
+      url="https://sonarcloud.io"
+      ;;
+   *)
+      echo "Error: Usage: $0 [lts|latest|lts-de|latest-de|cb|9|9-de|9-ce|cloud]"
+      return
+      ;;
 esac
+
+export SONAR_HOST_URL=$url
+
+echo "SONAR_HOST_URL=$url"
