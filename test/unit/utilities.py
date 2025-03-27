@@ -32,6 +32,7 @@ import pytest
 
 import credentials as creds
 from sonar import errcodes, logging
+from sonar import utilities as util
 from sonar import platform
 import cli.options as opt
 
@@ -150,10 +151,24 @@ def __get_args_and_file(string_arguments: str) -> tuple[Optional[str], list[str]
             file = None
     return file, args
 
+def __get_redacted_cmd(string_arguments: str) -> str:
+    """Gets a cmd line and redacts the token"""
+    args = string_arguments.split(" ")
+    dash = "-"
+    for option in (opt.TOKEN_SHORT, opt.TOKEN):
+        try:
+            ndx = args.index(f"{dash}{option}") + 1
+            args[ndx] = util.redacted_token(args[ndx])
+            break
+        except ValueError:
+            pass
+        dash = "--"
+    return " ".join(args)
+
 
 def run_cmd(func: callable, arguments: str, expected_code: int) -> Optional[str]:
     """Runs a sonar-tools command, verifies it raises the right exception, and returns the expected code"""
-    logging.info("RUNNING: %s", arguments)
+    logging.info("RUNNING: %s", __get_redacted_cmd(arguments))
     file, args = __get_args_and_file(arguments)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", args):
