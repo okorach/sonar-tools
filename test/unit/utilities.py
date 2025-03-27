@@ -154,15 +154,13 @@ def __get_args_and_file(string_arguments: str) -> tuple[Optional[str], list[str]
 def __get_redacted_cmd(string_arguments: str) -> str:
     """Gets a cmd line and redacts the token"""
     args = string_arguments.split(" ")
-    dash = "-"
-    for option in (opt.TOKEN_SHORT, opt.TOKEN):
+
+    for option in (f"-{opt.TOKEN_SHORT}", f"--{opt.TOKEN}", f"-T", f"--tokenTarget"):
         try:
-            ndx = args.index(f"{dash}{option}") + 1
+            ndx = args.index(f"{option}") + 1
             args[ndx] = util.redacted_token(args[ndx])
-            break
         except ValueError:
             pass
-        dash = "--"
     return " ".join(args)
 
 
