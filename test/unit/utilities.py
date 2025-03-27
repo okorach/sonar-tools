@@ -40,9 +40,12 @@ LOGGER_COUNT = 0
 FILES_ROOT = "test/files/"
 
 LATEST = "http://localhost:10000"
-LATEST_TEST = "http://localhost:10020"
-LTA = "http://localhost:9000"
-LATEST_CE = "http://localhost:8000"
+LTA = "http://localhost:8000"
+LTS = LTA
+
+LATEST_TEST = "http://localhost:10010"
+
+CB = "http://localhost:7000"
 
 TARGET_PLATFORM = LATEST
 
@@ -71,7 +74,7 @@ SQS_OPTS = " ".join(STD_OPTS)
 TEST_OPTS = [f"-{opt.URL_SHORT}", LATEST_TEST, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
 SQS_TEST_OPTS = " ".join(TEST_OPTS)
 
-CE_OPTS = [f"-{opt.URL_SHORT}", LATEST_CE, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
+CE_OPTS = [f"-{opt.URL_SHORT}", CB, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
 
 SC_OPTS = f'--{opt.URL} https://sonarcloud.io --{opt.TOKEN} {os.getenv("SONAR_TOKEN_SONARCLOUD")} --{opt.ORG} okorach'
 
