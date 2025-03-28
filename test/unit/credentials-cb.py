@@ -21,5 +21,5 @@
 
 from os import getenv
 
-TARGET_PLATFORM = "http://localhost:9001"
-TARGET_TOKEN = getenv("SONAR_TOKEN_LTS_ADMIN_USER")
+TARGET_PLATFORM = "http://localhost:7000"
+TARGET_TOKEN = getenv("SONAR_TOKEN_LATEST_ADMIN_USER")

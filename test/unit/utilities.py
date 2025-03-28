@@ -32,6 +32,7 @@ import pytest
 
 import credentials as creds
 from sonar import errcodes, logging
+from sonar import utilities as util
 from sonar import platform
 import cli.options as opt
 
@@ -40,9 +41,12 @@ LOGGER_COUNT = 0
 FILES_ROOT = "test/files/"
 
 LATEST = "http://localhost:10000"
-LATEST_TEST = "http://localhost:10020"
-LTA = "http://localhost:9000"
-LATEST_CE = "http://localhost:8000"
+LTA = "http://localhost:8000"
+LTS = LTA
+
+LATEST_TEST = "http://localhost:10010"
+
+CB = "http://localhost:7000"
 
 TARGET_PLATFORM = LATEST
 
@@ -71,7 +75,7 @@ SQS_OPTS = " ".join(STD_OPTS)
 TEST_OPTS = [f"-{opt.URL_SHORT}", LATEST_TEST, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
 SQS_TEST_OPTS = " ".join(TEST_OPTS)
 
-CE_OPTS = [f"-{opt.URL_SHORT}", LATEST_CE, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
+CE_OPTS = [f"-{opt.URL_SHORT}", CB, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
 
 SC_OPTS = f'--{opt.URL} https://sonarcloud.io --{opt.TOKEN} {os.getenv("SONAR_TOKEN_SONARCLOUD")} --{opt.ORG} okorach'
 
@@ -147,10 +151,22 @@ def __get_args_and_file(string_arguments: str) -> tuple[Optional[str], list[str]
             file = None
     return file, args
 
+def __get_redacted_cmd(string_arguments: str) -> str:
+    """Gets a cmd line and redacts the token"""
+    args = string_arguments.split(" ")
+
+    for option in (f"-{opt.TOKEN_SHORT}", f"--{opt.TOKEN}", f"-T", f"--tokenTarget"):
+        try:
+            ndx = args.index(f"{option}") + 1
+            args[ndx] = util.redacted_token(args[ndx])
+        except ValueError:
+            pass
+    return " ".join(args)
+
 
 def run_cmd(func: callable, arguments: str, expected_code: int) -> Optional[str]:
     """Runs a sonar-tools command, verifies it raises the right exception, and returns the expected code"""
-    logging.info("RUNNING: %s", arguments)
+    logging.info("RUNNING: %s", __get_redacted_cmd(arguments))
     file, args = __get_args_and_file(arguments)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", args):

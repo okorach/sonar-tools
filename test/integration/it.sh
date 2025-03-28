@@ -28,17 +28,23 @@ IT_TEST_PORT=9888
 
 function backup_for {
     case $1 in
-        lts|lta|lts-ce|lta-ce|lts-de|lta-de)
+        lts|lta|lta-ce|lts-de|lta-de)
             db="$DB_BACKUPS_DIR/db.lts.backup"
             ;;
-        lts-audit|lta-audit|lts-audit-ce|lta-audit-ce|lts-audit-de|lta-audit-de)
-            db="$DB_BACKUPS_DIR/db.lts-audit.backup"
+        9|9-de|9-ce)
+            db="$DB_BACKUPS_DIR/db.9.backup"
             ;;
-        latest|latest-ce|latest-de|latest-audit|latest-audit-ce|latest-audit-de)
+        9-audit|9-audit-de|9-audit-ce)
+            db="$DB_BACKUPS_DIR/db.9-audit.backup"
+            ;;
+        cb|cb-audit)
+            db="$DB_BACKUPS_DIR/db.cb.backup"
+            ;;
+        latest|latest-de|latest-audit|latest-audit-de)
             db="$DB_BACKUPS_DIR/db.latest.backup"
             ;;
         *)
-            logmsg "ERROR: Instance $1 has no correspon ding DB backup"
+            logmsg "ERROR: Instance $1 has no corresponding DB backup"
             db="NO_DB_BACKUP"
     esac
     echo $db
@@ -47,22 +53,19 @@ function backup_for {
 function tag_for {
     case $1 in
         lts|lta|lts-audit|lta-audit)
-            tag="lts-enterprise"
-            ;;
-        lts-ce|lta-ce|lts-audit-ce|lta-audit-ce)
-            tag="lts-community"
-            ;;
-        lts-de|lta-de|lts-de-audit|lta-de-audit)
-            tag="lts-developer"
+            tag="enterprise"
             ;;
         latest|latest-audit)
             tag="enterprise"
             ;;
+        lts-de|lta-de|lts-de-audit|lta-de-audit)
+            tag="developer"
+            ;;
         latest-de|latest-audit-de)
             tag="developer"
             ;;
-        latest-ce|latest-audit-ce)
-            tag="latest"
+        cb|cb-audit)
+            tag="community"
             ;;
         *)
             logmsg "ERROR: Instance $1 has no corresponding tag"

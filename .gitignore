@@ -24,9 +24,11 @@ tmp/
 !test/files/*
 .sonar/
 test/lts/
-test/latest/
-test/cloud/
-test/latest-ce/
-test/lts-ce/
-test/latest-de/
 test/lts-de/
+test/latest/
+test/latest-de/
+test/cb/
+test/9-ce/
+test/9-de/
+test/9/
+test/cloud/

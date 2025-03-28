@@ -26,8 +26,9 @@ cd "$ROOTDIR/test/unit" || exit 1
 echo ""
 echo "Generating edition / version specific tests"
 
-for target in lts latest latest-ce lts-ce
+for target in lts latest cb 9 9-ce
 do
+    echo "Generating tests for $target"
     rm -rf "$ROOTDIR/test/$target"
     mkdir -p "$ROOTDIR/test/$target" 2>/dev/null
     for f in *.py
