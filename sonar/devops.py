@@ -179,11 +179,14 @@ class DevopsPlatform(sq.SqObject):
         if alm_type == "bitbucketcloud":
             params.update({"clientId": kwargs["clientId"], "workspace": kwargs["workspace"]})
         elif alm_type == "github":
-            params.update({"clientId": kwargs["clientId"], "appId": kwargs["appId"]})
-
-        ok = self.post(f"alm_settings/update_{alm_type}", params=params).ok
-        self.url = kwargs["url"]
-        self._specific = {k: v for k, v in params.items() if k not in ("key", "url")}
+            params.update({"clientId": kwargs["clientId"], "appId": kwargs["appId"], "privateKey": kwargs.get("privateKey", _TO_BE_SET)})
+        try:
+            ok = self.post(f"alm_settings/update_{alm_type}", params=params).ok
+            self.url = kwargs["url"]
+            self._specific = {k: v for k, v in params.items() if k not in ("key", "url")}
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"updating devops platform {self.key}/{alm_type}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
+            ok = False
         return ok
 
 
