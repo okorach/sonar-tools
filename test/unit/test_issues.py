@@ -232,7 +232,7 @@ def test_search_by_large() -> None:
     assert len(issues.search_by_project(tutil.SQ, "pytorch")) > 10000
 
     params = {"components": "pytorch", "project": "pytorch"}
-    
+
     # Versions below 10.4 did not have enough python rules to break the 10K limit on the pytorch project
     if tutil.SQ.version() >= (10, 4, 0):
         with pytest.raises(issues.TooManyIssuesError):

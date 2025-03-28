@@ -486,6 +486,11 @@
         "type": "OPERATIONS",
         "message": "{} was last analyzed with {} version {} released on {}, it is obsolete, strongly consider updating the scanner"
     },
+    "VULNERABLE_DOTNET_SCANNER": {
+        "severity": "HIGH",
+        "type": "OPERATIONS",
+        "message": "{} was last analyzed with Scanner for .NET version {} which has a vulnerability, strongly consider updating the scanner"
+    },
     "NOT_LATEST_SCANNER": {
         "severity": "MEDIUM",
         "type": "OPERATIONS",

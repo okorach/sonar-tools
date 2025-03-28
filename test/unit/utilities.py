@@ -151,6 +151,7 @@ def __get_args_and_file(string_arguments: str) -> tuple[Optional[str], list[str]
             file = None
     return file, args
 
+
 def __get_redacted_cmd(string_arguments: str) -> str:
     """Gets a cmd line and redacts the token"""
     args = string_arguments.split(" ")

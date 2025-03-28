@@ -319,25 +319,27 @@ class Task(sq.SqObject):
         context = self.scanner_context()
         scanner_type = context.get("sonar.scanner.app", None)
         scanner_version = context.get("sonar.scanner.appVersion", None)
+        proj = self.concerned_object
         log.debug("Scanner type = %s, Scanner version = %s", scanner_type, scanner_version)
         if not scanner_version:
             log.warning(
                 "%s has been scanned with scanner '%s' with no version, skipping check scanner version obsolescence",
-                str(self.concerned_object),
+                str(proj),
                 scanner_type,
             )
             return []
         if scanner_type not in SCANNER_VERSIONS:
             log.warning(
                 "%s has been scanned with scanner '%s' which is not inventoried, skipping check on scanner obsolescence",
-                str(self.concerned_object),
+                str(proj),
                 scanner_type,
             )
             return []
 
         if scanner_type == "Ant":
-            return [Problem(get_rule(RuleId.ANT_SCANNER_DEPRECATED), self.concerned_object, str(self.concerned_object))]
+            return [Problem(get_rule(RuleId.ANT_SCANNER_DEPRECATED), proj, str(proj))]
 
+        problems = []
         if scanner_type in ("ScannerGradle", "ScannerMaven"):
             scanner_version = scanner_version.split("/")[0].replace("-SNAPSHOT", "")
         scanner_version = [int(n) for n in scanner_version.split(".")]
@@ -361,18 +363,20 @@ class Task(sq.SqObject):
 
         tuple_version_list = [tuple(int(n) for n in v.split(".")) for v in versions_list]
         tuple_version_list.sort(reverse=True)
-
         delta_days = (datetime.datetime.today() - release_date).days
         index = tuple_version_list.index(scanner_version)
+
+        log.debug("Auditing Scanner for .NET v9.2.x")
+        if scanner_type == "ScannerMSBuild" and scanner_version[0:2] == (9, 2):
+            problems.append(Problem(get_rule(RuleId.VULNERABLE_DOTNET_SCANNER), proj, str(proj), str_version))
+
         log.debug("Scanner used is %d versions old", index)
-        if delta_days <= audit_settings.get("audit.projects.scannerMaxAge", 730):
-            return []
-        rule = get_rule(RuleId.OBSOLETE_SCANNER) if index >= 3 else get_rule(RuleId.NOT_LATEST_SCANNER)
-        return [
-            Problem(
-                rule, self.concerned_object, str(self.concerned_object), scanner_type, str_version, util.date_to_string(release_date, with_time=False)
-            )
-        ]
+        if delta_days > audit_settings.get("audit.projects.scannerMaxAge", 730):
+            rule = get_rule(RuleId.OBSOLETE_SCANNER) if index >= 3 else get_rule(RuleId.NOT_LATEST_SCANNER)
+            release_date = util.date_to_string(release_date, with_time=False)
+            problems.append(Problem(rule, proj, str(proj), scanner_type, str_version, release_date))
+
+        return problems
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits a background task and returns the list of found problems"""

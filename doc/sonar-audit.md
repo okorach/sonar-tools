@@ -193,6 +193,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - Last background task with failed SCM detection
   - Last background task on main branch `FAILED`
   - Last analysis with an obsolete scanner version (by default more than 2 years old)
+  - Last analysis was with Scanner for .Net 9.2.x that has a vulnerability
   - Projects analyzed with apparently a wrong scanner (Can't be certain in all cases)
   - Projects with too many analysis history data points (due to wrong housekeeping settings
     or wrong usage of `sonar.projectVersion`)
