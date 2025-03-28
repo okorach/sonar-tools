@@ -20,7 +20,7 @@
 
 """Abstraction of the SonarQube DevOps platform concept"""
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Union
 from http import HTTPStatus
 import json
 
@@ -57,9 +57,9 @@ class DevopsPlatform(sq.SqObject):
     def __init__(self, endpoint: platform.Platform, key: str, platform_type: str) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
-        self.type = platform_type  #: DevOps platform type
-        self.url = None  #: DevOps platform URL
-        self._specific = None  #: DevOps platform specific settings
+        self.type: str = platform_type  #: DevOps platform type
+        self.url: Union[str, None] = None  #: DevOps platform URL
+        self._specific: Union[dict[str, str], None] = None  #: DevOps platform specific settings
         DevopsPlatform.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
@@ -91,9 +91,8 @@ class DevopsPlatform(sq.SqObject):
         params = {"key": key}
         try:
             if plt_type == "github":
-                params.update(
-                    {"appId": _TO_BE_SET, "clientId": _TO_BE_SET, "clientSecret": _TO_BE_SET, "privateKey": _TO_BE_SET, "url": url_or_workspace}
-                )
+                params.update({k: _TO_BE_SET for k in ("appId", "clientId", "clientSecret", "privateKey")})
+                params["url"] = url_or_workspace
                 endpoint.post(_CREATE_API_GITHUB, params=params)
             elif plt_type == "azure":
                 # TODO: pass secrets on the cmd line
@@ -135,7 +134,6 @@ class DevopsPlatform(sq.SqObject):
         """Reads / Refresh a DevOps platform information
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         data = json.loads(self.get(DevopsPlatform.API[c.LIST]).text)
         for alm_data in data.get(self.type, {}):
@@ -149,7 +147,6 @@ class DevopsPlatform(sq.SqObject):
 
         :param ConfigSettings export_settings: Config params for the export
         :return: The configuration of the DevOps platform (except secrets)
-        :rtype: dict
         """
         json_data = {"key": self.key, "type": self.type, "url": self.url}
         json_data.update(self.sq_json.copy())
@@ -165,10 +162,9 @@ class DevopsPlatform(sq.SqObject):
     def update(self, **kwargs) -> bool:
         """Updates a DevOps platform with information from data
 
-        :param dict data: data to update the DevOps platform configuration
-                          (url, clientId, workspace, appId depending on the type of platform)
+        :param dict kwargs: data to update the DevOps platform configuration
+                            (url, clientId, workspace, appId, privateKey, "clientSecret" depending on the type of platform)
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         alm_type = kwargs["type"]
         if alm_type != self.type:
@@ -176,22 +172,27 @@ class DevopsPlatform(sq.SqObject):
             return False
 
         params = {"key": self.key, "url": kwargs["url"]}
+        additional = ()
         if alm_type == "bitbucketcloud":
-            params.update({"clientId": kwargs["clientId"], "workspace": kwargs["workspace"]})
+            additional = ("clientId", "workspace")
         elif alm_type == "github":
-            params.update({"clientId": kwargs["clientId"], "appId": kwargs["appId"]})
-
-        ok = self.post(f"alm_settings/update_{alm_type}", params=params).ok
-        self.url = kwargs["url"]
-        self._specific = {k: v for k, v in params.items() if k not in ("key", "url")}
+            additional = ("clientId", "appId", "privateKey", "clientSecret")
+        for k in additional:
+            params[k] = kwargs.get(k, _TO_BE_SET)
+        try:
+            ok = self.post(f"alm_settings/update_{alm_type}", params=params).ok
+            self.url = kwargs["url"]
+            self._specific = {k: v for k, v in params.items() if k not in ("key", "url")}
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"updating devops platform {self.key}/{alm_type}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
+            ok = False
         return ok
 
 
 def count(endpoint: platform.Platform, platf_type: Optional[str] = None) -> int:
     """
-    :param str platf_type: Filter for a specific type, defaults to None (see DEVOPS_PLATFORM_TYPES set)
+    :param platf_type: Filter for a specific type, defaults to None (see DEVOPS_PLATFORM_TYPES set)
     :return: Count of DevOps platforms
-    :rtype: int
     """
     get_list(endpoint=endpoint)
     if platf_type is None:
@@ -203,7 +204,7 @@ def count(endpoint: platform.Platform, platf_type: Optional[str] = None) -> int:
 def get_list(endpoint: platform.Platform) -> dict[str, DevopsPlatform]:
     """Reads all DevOps platforms from SonarQube
 
-    :param platform.Platform endpoint: Reference to the SonarQube platform
+    :param endpoint: Reference to the SonarQube platform
     :return: List of DevOps platforms
     :rtype: dict{<platformKey>: <DevopsPlatform>}
     """
@@ -218,10 +219,9 @@ def get_list(endpoint: platform.Platform) -> dict[str, DevopsPlatform]:
 
 def get_object(endpoint: platform.Platform, key: str) -> DevopsPlatform:
     """
-    :param platform.Platform endpoint: Reference to the SonarQube platform
-    :param str devops_platform_key: Key of the platform (its name)
+    :param endpoint: Reference to the SonarQube platform
+    :param key: Key of the devops platform (its name)
     :return: The DevOps platforms corresponding to key, or None if not found
-    :rtype: DevopsPlatform
     """
     if len(DevopsPlatform.CACHE) == 0:
         get_list(endpoint)
@@ -230,10 +230,9 @@ def get_object(endpoint: platform.Platform, key: str) -> DevopsPlatform:
 
 def exists(endpoint: platform.Platform, key: str) -> bool:
     """
-    :param platform.Platform endpoint: Reference to the SonarQube platform
-    :param str devops_platform_key: Key of the platform (its name)
+    :param endpoint: Reference to the SonarQube platform
+    :param key: Key of the devops platform (its name)
     :return: Whether the platform exists
-    :rtype: bool
     """
     return get_object(endpoint=endpoint, key=key) is not None
 
@@ -278,7 +277,6 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
 def devops_type(endpoint: platform.Platform, key: str) -> Optional[str]:
     """
     :return: The type of a DevOps platform (see DEVOPS_PLATFORM_TYPES), or None if not found
-    :rtype: str or None
     """
     o = get_object(endpoint=endpoint, key=key)
     if o is None:
