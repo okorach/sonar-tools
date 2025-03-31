@@ -308,7 +308,7 @@ class Setting(sqobject.SqObject):
                 if categ in ("languages", "analysisScope", "tests", "authentication"):
                     return True
 
-        return any([self.key.startswith(prefix) for prefix in internal_settings])
+        return any(self.key.startswith(prefix) for prefix in internal_settings)
 
     def is_settable(self) -> bool:
         """Returns whether a setting can be set"""
