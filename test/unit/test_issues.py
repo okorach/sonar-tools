@@ -25,7 +25,7 @@ from datetime import datetime
 import pytest
 
 import utilities as tutil
-from sonar import issues
+from sonar import issues, exceptions
 from sonar import utilities as util
 from sonar.util import constants as c
 
@@ -108,11 +108,15 @@ def test_set_type() -> None:
     issue = list(issues_d.values())[0]
     old_type = issue.type
     new_type = c.VULN if old_type == c.BUG else c.BUG
-    assert issue.set_type(new_type)
-    issue.refresh()
-    assert issue.type == new_type
-    assert not issue.set_type("NON_EXISTING")
-    issue.set_type(old_type)
+    if tutil.SQ.is_mqr_mode():
+        with pytest.raises(exceptions.UnsupportedOperation):
+            issue.set_type(new_type)
+    else:
+        assert issue.set_type(new_type)
+        issue.refresh()
+        assert issue.type == new_type
+        assert not issue.set_type("NON_EXISTING")
+        issue.set_type(old_type)
 
 
 def test_assign() -> None:
