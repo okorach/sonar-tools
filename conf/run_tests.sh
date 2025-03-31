@@ -30,13 +30,14 @@ echo "Running tests"
 
 "$CONFDIR/prep_tests.sh"
 
-export SONAR_HOST_URL=${1:-${SONAR_HOST_URL}}
-
-for target in latest lts latest-ce lts-ce cloud
+for target in latest cb lts 9 9-ce cloud
 do
+    sonar start -i $target && sleep 30
     if [ -d "$ROOTDIR/test/$target/" ]; then
         coverage run --branch --source="$ROOTDIR" -m pytest "$ROOTDIR/test/$target/" --junit-xml="$buildDir/xunit-results-$target.xml"
         coverage xml -o "$buildDir/coverage-$target.xml"
     fi
+    if [ "$target" != "latest" ]; then
+        sonar stop -i $target
+    fi
 done
-
