@@ -705,6 +705,12 @@ class Platform(object):
         # pylint: disable-next=E0606
         return [Problem(rule, self.url, ".".join([str(n) for n in sq_vers]), ".".join([str(n) for n in v]))]
 
+    def is_mqr_mode(self) -> bool:
+        """Returns whether the platform is in MQR mode"""
+        if self.version() >= (10, 8, 0):
+            return self.get_setting(settings.MQR_ENABLED)
+        return self.version() >= (10, 2, 0)
+
 
 # --------------------- Static methods -----------------
 # this is a pointer to the module object instance itself.
