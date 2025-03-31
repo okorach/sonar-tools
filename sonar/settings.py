@@ -60,9 +60,11 @@ NEW_CODE_PERIOD = "newCodePeriod"
 COMPONENT_VISIBILITY = "visibility"
 PROJECT_DEFAULT_VISIBILITY = "projects.default.visibility"
 AI_CODE_FIX = "sonar.ai.suggestions.enabled"
+MQR_ENABLED = "sonar.multi-quality-mode.enabled"
 
 DEFAULT_BRANCH = "-DEFAULT_BRANCH-"
 
+_GLOBAL_SETTINGS_WITHOUT_DEF = (AI_CODE_FIX, MQR_ENABLED)
 
 _SQ_INTERNAL_SETTINGS = (
     "sonaranalyzer",
@@ -293,7 +295,7 @@ class Setting(sqobject.SqObject):
         if self.component:
             return False
         if self._is_global is None:
-            self._is_global = self.definition() is not None or self.key == AI_CODE_FIX
+            self._is_global = self.definition() is not None or self.key in _GLOBAL_SETTINGS_WITHOUT_DEF
         return self._is_global
 
     def is_internal(self) -> bool:
@@ -306,10 +308,7 @@ class Setting(sqobject.SqObject):
                 if categ in ("languages", "analysisScope", "tests", "authentication"):
                     return True
 
-        for prefix in internal_settings:
-            if self.key.startswith(prefix):
-                return True
-        return False
+        return any(self.key.startswith(prefix) for prefix in internal_settings)
 
     def is_settable(self) -> bool:
         """Returns whether a setting can be set"""
@@ -354,7 +353,7 @@ class Setting(sqobject.SqObject):
         m = re.match(r"^sonar\.forceAuthentication$", self.key)
         if m:
             return (AUTH_SETTINGS, None)
-        if self.key not in (NEW_CODE_PERIOD, PROJECT_DEFAULT_VISIBILITY, COMPONENT_VISIBILITY) and not re.match(
+        if self.key not in (NEW_CODE_PERIOD, PROJECT_DEFAULT_VISIBILITY, MQR_ENABLED, COMPONENT_VISIBILITY) and not re.match(
             r"^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.ai|"
             r"sonar\.cpd|sonar\.dbcleaner|sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|"
             r"sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.scm\.provider|sonar\.technicalDebt|sonar\.validateWebhooks|"
