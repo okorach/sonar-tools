@@ -59,6 +59,10 @@ class Changelog(object):
         """Returns whether the changelog item is an issue resolved as won't fix"""
         return self.__is_resolve_as("WONTFIX")
 
+    def is_resolve_as_accept(self) -> bool:
+        """Returns whether the changelog item is an issue resolved as accepted"""
+        return self.__is_resolve_as("ACCEPTED")
+
     def is_closed(self) -> bool:
         """{'creationDate': '2022-02-01T19:15:24+0100', 'diffs': [
         {'key': 'resolution', 'newValue': 'FIXED'},
@@ -219,6 +223,8 @@ class Changelog(object):
             ctype = ("FALSE-POSITIVE", None)
         elif self.is_resolve_as_wf():
             ctype = ("WONT-FIX", None)
+        elif self.is_resolve_as_accept():
+            ctype = ("ACCEPT", None)
         elif self.is_tag():
             ctype = ("TAG", self.get_tags())
         elif self.is_closed():
