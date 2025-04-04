@@ -244,7 +244,7 @@ def search_objects(endpoint: object, object_class: any, params: types.ApiParams,
     q = Queue(maxsize=0)
     for page in range(2, nb_pages + 1):
         new_params[p_field] = page
-        q.put((endpoint, api, objects_list, key_field, returned_field, object_class, new_params))
+        q.put((endpoint, api, objects_list, key_field, returned_field, object_class, new_params.copy()))
     for i in range(threads):
         log.debug("Starting %s search thread %d", object_class.__name__, i)
         worker = Thread(target=__search_thread, args=[q])
