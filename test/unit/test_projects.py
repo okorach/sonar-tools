@@ -22,10 +22,9 @@
 """ projects tests """
 
 from collections.abc import Generator
-from requests import RequestException
 import pytest
 
-from sonar import projects, exceptions, qualityprofiles, qualitygates
+from sonar import projects, exceptions, qualityprofiles, qualitygates, rules
 from sonar.audit import config
 
 import utilities as util
@@ -105,10 +104,14 @@ def test_get_findings() -> None:
 
 def test_count_third_party_issues() -> None:
     """test_count_third_party_issues"""
-    proj = projects.Project.get_object(endpoint=util.SQ, key="checkstyle-issues")
+    proj = projects.Project.get_object(endpoint=util.SQ, key="third-party-issues")
+    filters = None
+    if util.SQ.edition() != "community":
+        filters = {"branch": "develop"}
     if util.SQ.version() >= (10, 0, 0):
-        assert len(proj.count_third_party_issues(filters={"branch": "develop"})) > 0
-    assert len(proj.count_third_party_issues(filters={"branch": "non-existing-branch"})) == 0
+        assert len(proj.count_third_party_issues(filters=filters)) > 0
+    if util.SQ.edition() != "community":
+        assert len(proj.count_third_party_issues(filters={"branch": "non-existing-branch"})) == 0
 
 
 def test_webhooks() -> None:
