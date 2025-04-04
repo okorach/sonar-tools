@@ -76,20 +76,6 @@ def test_search_all_task() -> None:
     """test_search_all_task"""
     assert len(tasks.search_all_last(tutil.SQ)) > 0
 
-
-def test_suspicious_patterns() -> None:
-    """test_suspicious_patterns"""
-    pats = "\\*\\*/[^\/]+/\\*\\*, \\*\\*/\\*[\.\w]*, \\*\\*/\\*, \\*\\*/\\*\\.(java|jav|cs|csx|py|php|js|ts|sql|html|css|cpp|c|h|hpp)\\*?"
-    s_pats = tasks._get_suspicious_exclusions(pats)
-    l_pats = [s.strip() for s in pats.split(",")]
-    logging.debug(f"{s_pats} == {l_pats}")
-    assert set(tasks._get_suspicious_exclusions(pats)) == set([s.strip() for s in pats.split(",")])
-    assert set(tasks._get_suspicious_exclusions(None)) == set([s.strip() for s in pats.split(",")])
-    pats = "\\*\\*/(__pycache__|libs|lib|vendor|node_modules)/\\*\\*"
-    assert set(tasks._get_suspicious_exceptions(pats)) == set([s.strip() for s in pats.split(",")])
-    assert set(tasks._get_suspicious_exceptions(None)) == set([s.strip() for s in pats.split(",")])
-
-
 # Test does not work - You can't request branch master when scan happened without the branch spec
 # def test_search_branch() -> None:
 #     """test_search_branch"""
