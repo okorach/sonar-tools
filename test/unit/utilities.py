@@ -149,13 +149,16 @@ def __get_args_and_file(string_arguments: str) -> tuple[Optional[str], list[str]
             pass
     return None, args
 
+
 def __split_args(string_arguments: str) -> list[str]:
     return [s for s in string_arguments.split(" ") if s != ""]
+
 
 def __get_option_index(args: Union[str, list], option: str) -> Optional[str]:
     if isinstance(args, str):
         args = __split_args(args)
     return args.index(option) + 1
+
 
 def __get_redacted_cmd(string_arguments: str) -> str:
     """Gets a cmd line and redacts the token"""
