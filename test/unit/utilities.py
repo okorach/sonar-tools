@@ -26,7 +26,7 @@
 import os
 import sys
 import datetime
-from typing import Optional
+from typing import Optional, Union
 from unittest.mock import patch
 import pytest
 
@@ -141,24 +141,31 @@ def is_url(value: str) -> bool:
 
 def __get_args_and_file(string_arguments: str) -> tuple[Optional[str], list[str]]:
     """Gets the list arguments and output file of a sonar-tools cmd"""
-    args = string_arguments.split(" ")
-    try:
-        file = args[args.index(f"--{opt.REPORT_FILE}") + 1]
-    except ValueError:
+    args = __split_args(string_arguments)
+    for option in (f"-{opt.REPORT_FILE_SHORT}", f"--{opt.REPORT_FILE}"):
         try:
-            file = args[args.index(f"-{opt.REPORT_FILE_SHORT}") + 1]
+            return args[args.index(option) + 1], args
         except ValueError:
-            file = None
-    return file, args
+            pass
+    return None, args
+
+
+def __split_args(string_arguments: str) -> list[str]:
+    return [s for s in string_arguments.split(" ") if s != ""]
+
+
+def __get_option_index(args: Union[str, list], option: str) -> Optional[str]:
+    if isinstance(args, str):
+        args = __split_args(args)
+    return args.index(option) + 1
 
 
 def __get_redacted_cmd(string_arguments: str) -> str:
     """Gets a cmd line and redacts the token"""
-    args = string_arguments.split(" ")
-
-    for option in (f"-{opt.TOKEN_SHORT}", f"--{opt.TOKEN}", f"-T", f"--tokenTarget"):
+    args = __split_args(string_arguments)
+    for option in (f"-{opt.TOKEN_SHORT}", f"--{opt.TOKEN}", "-T", "--tokenTarget"):
         try:
-            ndx = args.index(f"{option}") + 1
+            ndx = __get_option_index(args, option)
             args[ndx] = util.redacted_token(args[ndx])
         except ValueError:
             pass

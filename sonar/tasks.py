@@ -388,8 +388,8 @@ class Task(sq.SqObject):
         if self.has_scanner_context():
             if audit_settings.get("audit.projects.exclusions", True):
                 context = self.scanner_context()
-                susp_exclusions = _get_suspicious_exclusions(audit_settings.get("audit.projects.suspiciousExclusionsPatterns", ""))
-                susp_exceptions = _get_suspicious_exceptions(audit_settings.get("audit.projects.suspiciousExclusionsExceptions", ""))
+                susp_exclusions = util.csv_to_list(audit_settings.get("audit.projects.suspiciousExclusionsPatterns", ""))
+                susp_exceptions = util.csv_to_list(audit_settings.get("audit.projects.suspiciousExclusionsExceptions", ""))
                 for prop in ("sonar.exclusions", "sonar.global.exclusions"):
                     if context.get(prop, None) is None:
                         continue
@@ -452,23 +452,3 @@ def search_last(endpoint: pf.Platform, component_key: str, **params) -> Optional
 def search_all(endpoint: pf.Platform, component_key: str, **params) -> list[Task]:
     """Search all background tasks of a given component"""
     return search(endpoint=endpoint, component_key=component_key, **params)
-
-
-def _get_suspicious_exclusions(patterns: str) -> list[str]:
-    """Builds suspicious exclusions pattern list"""
-    global __SUSPICIOUS_EXCLUSIONS
-    if __SUSPICIOUS_EXCLUSIONS is not None:
-        return __SUSPICIOUS_EXCLUSIONS
-    # __SUSPICIOUS_EXCLUSIONS = [x.strip().replace('*', '\\*').replace('.', '\\.').replace('?', '\\?')
-    __SUSPICIOUS_EXCLUSIONS = util.csv_to_list(patterns)
-    return __SUSPICIOUS_EXCLUSIONS
-
-
-def _get_suspicious_exceptions(patterns: str) -> list[str]:
-    """Builds suspicious exceptions patterns list"""
-    global __SUSPICIOUS_EXCEPTIONS
-    if __SUSPICIOUS_EXCEPTIONS is not None:
-        return __SUSPICIOUS_EXCEPTIONS
-    #    __SUSPICIOUS_EXCEPTIONS = [x.strip().replace('*', '\\*').replace('.', '\\.').replace('?', '\\?')
-    __SUSPICIOUS_EXCEPTIONS = util.csv_to_list(patterns)
-    return __SUSPICIOUS_EXCEPTIONS

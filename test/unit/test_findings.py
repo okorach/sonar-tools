@@ -98,10 +98,9 @@ __WRONG_OPTS = [
 def test_findings_export_sarif_explicit() -> None:
     """Test SARIF export"""
     util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.KEYS_SHORT}", f"{util.LIVE_PROJECT}", f"--{opt.FORMAT}", "sarif"]):
-            findings_export.main()
-    assert int(str(e.value)) == errcodes.OK
+    util.run_success_cmd(
+        findings_export.main, f"{CMD} {util.SQS_OPTS} --{opt.REPORT_FILE} {util.JSON_FILE} --{opt.KEYS} {util.LIVE_PROJECT} --{opt.FORMAT} sarif"
+    )
     assert util.file_contains(util.JSON_FILE, "schemas/json/sarif-2.1.0-rtm.4")
     util.clean(util.JSON_FILE)
 

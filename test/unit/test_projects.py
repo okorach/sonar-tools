@@ -22,10 +22,9 @@
 """ projects tests """
 
 from collections.abc import Generator
-from requests import RequestException
 import pytest
 
-from sonar import projects, exceptions, qualityprofiles, qualitygates
+from sonar import projects, exceptions, qualityprofiles, qualitygates, rules
 from sonar.audit import config
 
 import utilities as util
@@ -54,9 +53,12 @@ def test_create_delete() -> None:
     """test_create_delete"""
     proj = projects.Project.create(endpoint=util.SQ, key=util.TEMP_KEY, name="temp")
     assert proj.key == util.TEMP_KEY
-    assert proj.main_branch().name == "main"
-    proj.rename_main_branch("foobar")
-    assert proj.main_branch().name == "foobar"
+    if util.SQ.edition() != "community":
+        assert proj.main_branch().name == "main"
+        proj.rename_main_branch("foobar")
+        assert proj.main_branch().name == "foobar"
+    else:
+        assert proj.main_branch_name() == "main"
     assert proj.delete()
     with pytest.raises(exceptions.ObjectNotFound):
         proj.refresh()
@@ -102,10 +104,14 @@ def test_get_findings() -> None:
 
 def test_count_third_party_issues() -> None:
     """test_count_third_party_issues"""
-    proj = projects.Project.get_object(endpoint=util.SQ, key="checkstyle-issues")
+    proj = projects.Project.get_object(endpoint=util.SQ, key="third-party-issues")
+    filters = None
+    if util.SQ.edition() != "community":
+        filters = {"branch": "develop"}
     if util.SQ.version() >= (10, 0, 0):
-        assert len(proj.count_third_party_issues(filters={"branch": "develop"})) > 0
-    assert len(proj.count_third_party_issues(filters={"branch": "non-existing-branch"})) == 0
+        assert len(proj.count_third_party_issues(filters=filters)) > 0
+    if util.SQ.edition() != "community":
+        assert len(proj.count_third_party_issues(filters={"branch": "non-existing-branch"})) == 0
 
 
 def test_webhooks() -> None:

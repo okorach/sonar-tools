@@ -113,9 +113,9 @@ class Platform(object):
         if self.is_sonarcloud():
             return 0, 0, 0
         if self._version is None:
-            self._version = self.get("/api/server/version").text.split(".")
-            log.debug("Version = %s", self._version)
-        return tuple(int(n) for n in self._version[0:3])
+            self._version = tuple(int(n) for n in self.get("/api/server/version").text.split("."))
+            log.debug("Version = %s", str(self._version))
+        return self._version[0:3]
 
     def edition(self) -> str:
         """

@@ -25,7 +25,7 @@ from datetime import datetime
 import pytest
 
 import utilities as tutil
-from sonar import issues, exceptions
+from sonar import issues, exceptions, logging
 from sonar import utilities as util
 from sonar.util import constants as c
 
@@ -141,7 +141,10 @@ def test_changelog() -> None:
     assert str(issue) == f"Issue key '{issue_key}'"
     assert issue.is_false_positive()
     changelog_l = list(issue.changelog().values())
-    nb_changes = 3 if tutil.SQ.version() >= (2025, 1, 0) else 1
+    if tutil.SQ.version() >= (2025, 1, 0) or tutil.SQ.edition() == "community" and tutil.SQ.version() >= (25, 1, 0):
+        nb_changes = 3
+    else:
+        nb_changes = 1
     assert len(changelog_l) == nb_changes
     changelog = changelog_l[0]
     assert changelog.is_resolve_as_fp()
