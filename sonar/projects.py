@@ -863,9 +863,7 @@ class Project(components.Component):
 
     def count_third_party_issues(self, filters: Optional[dict[str, str]] = None) -> dict[str, int]:
         if filters:
-            for k in "branch", "pullRequest":
-                if k in filters:
-                    filters[k] = [filters[k]]
+            filters = {k: [v] for k, v in filters.items() if k in ("branch", "pullRequest")}
         branches_or_prs = self.get_branches_and_prs(filters)
         if branches_or_prs is None:
             return super().count_third_party_issues(filters)
@@ -879,6 +877,7 @@ class Project(components.Component):
                 if k not in issue_counts:
                     issue_counts[k] = 0
                 issue_counts[k] += total
+        log.debug("Issues count = %s", str(issue_counts))
         return issue_counts
 
     def __sync_community(self, another_project: object, sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
