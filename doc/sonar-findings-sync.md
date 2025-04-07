@@ -81,10 +81,6 @@ Issues changelog synchronization includes:
 When an issue could not be synchronized because of one of the above reasons, this is reported in the `sonar-findings-sync` report.
 Whenever a close enough issue was found but not sync'ed (because not 100% certain to be identical), the close issue is provided in the report to complete synchronization manually if desired.
 
-## Required Permissions
-
-`sonar-findings-sync` needs the global `Create Projects` permission
-
 ## Configurable behaviors
 
 When an issue is synchronized, a special comment is added on the target issue with a link to the source one, for cross checking purposes. This comment can be disabled by using the `--nolink` option
