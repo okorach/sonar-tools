@@ -23,6 +23,7 @@
 """
 import sys
 import csv
+from argparse import ArgumentParser
 
 from cli import options
 import sonar.logging as log
@@ -38,7 +39,12 @@ def __parse_args(desc: str) -> object:
     parser = options.set_output_file_args(parser, allowed_formats=("json", "csv"))
     parser = options.add_language_arg(parser, "rules")
     parser = options.add_import_export_arg(parser, "rules", import_opt=False)
+    """Adds the language selection option"""
+    parser.add_argument(f"--{options.QP}", required=False, help="Quality profile to filter rules, requires a --languages option")
     args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
+    kwargs = vars(args)
+    if kwargs[options.LANGUAGES] is None and kwargs[options.QP] is not None:
+        parser.error(f"Option --{options.QP} requires --{options.LANGUAGES}")
     return args
 
 

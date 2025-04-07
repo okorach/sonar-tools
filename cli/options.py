@@ -82,6 +82,7 @@ WITH_BRANCHES_SHORT = "b"
 WITH_BRANCHES = "withBranches"
 
 LANGUAGES = "languages"
+QP = "qualityProfiles"
 
 PORTFOLIOS = "portfolios"
 
