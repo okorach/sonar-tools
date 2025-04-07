@@ -23,11 +23,10 @@
 """
 import sys
 import csv
-from argparse import ArgumentParser
 
 from cli import options
 import sonar.logging as log
-from sonar import rules, platform, exceptions, errcodes, version
+from sonar import rules, platform, exceptions, errcodes, version, qualityprofiles
 import sonar.utilities as util
 
 TOOL_NAME = "sonar-rules"
@@ -43,8 +42,12 @@ def __parse_args(desc: str) -> object:
     parser.add_argument(f"--{options.QP}", required=False, help="Quality profile to filter rules, requires a --languages option")
     args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
     kwargs = vars(args)
-    if kwargs[options.LANGUAGES] is None and kwargs[options.QP] is not None:
-        parser.error(f"Option --{options.QP} requires --{options.LANGUAGES}")
+    if kwargs[options.QP] is not None:
+        if kwargs[options.LANGUAGES] is None and kwargs[options.QP] is not None:
+            parser.error(f"Option --{options.QP} requires --{options.LANGUAGES}")
+        if len(kwargs[options.LANGUAGES]) > 1 and kwargs[options.QP] is not None:
+            parser.error(f"Option --{options.QP} a single --{options.LANGUAGES} option")
+
     return args
 
 
@@ -88,9 +91,13 @@ def main() -> int:
     fmt = util.deduct_format(kwargs[options.FORMAT], file)
 
     params = {"include_external": "false"}
-    if options.LANGUAGES in kwargs:
-        params["languages"] = kwargs[options.LANGUAGES]
-    rule_list = rules.get_list(endpoint=endpoint, use_cache=False, **params)
+    if kwargs[options.QP] is not None:
+        qp = qualityprofiles.get_object(endpoint=endpoint, name=kwargs[options.QP], language=kwargs[options.LANGUAGES][0])
+        rule_list = qp.rules()
+    else:
+        if options.LANGUAGES in kwargs:
+            params["languages"] = kwargs[options.LANGUAGES]
+        rule_list = rules.get_list(endpoint=endpoint, use_cache=False, **params)
 
     try:
         if fmt == "csv":
