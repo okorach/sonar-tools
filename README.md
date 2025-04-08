@@ -313,8 +313,8 @@ Basic Usage: `sonar-rules -e -f <file>`
 - `-f`: Define the output file, if not specified `stdout` is used
 - `-e` or `--export`: Specify the export operation
 - `-l` or `--languages`: Export only rules of given languages (comma separated, defined by they Sonar key, not its name)
-- `--qualityProfile`: Export rules defined in a given quality profile. In this case the `--languages` option is mandatory and should specify a single language
-- `-h`: Display help with teh full list of options
+- `--qualityProfiles`: Export rules defined in a given quality profile. In this case the `--languages` option is mandatory and should specify a single language
+- `-h`: Display help with the full list of options
 
 ## Required Permissions
 
