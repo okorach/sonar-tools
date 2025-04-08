@@ -91,25 +91,27 @@ def main() -> int:
     fmt = util.deduct_format(kwargs[options.FORMAT], file)
 
     params = {"include_external": "false"}
-    if kwargs[options.QP] is not None:
-        qp = qualityprofiles.get_object(endpoint=endpoint, name=kwargs[options.QP], language=kwargs[options.LANGUAGES][0])
-        rule_list = qp.rules()
-    else:
-        if options.LANGUAGES in kwargs:
-            params["languages"] = kwargs[options.LANGUAGES]
-        rule_list = rules.get_list(endpoint=endpoint, use_cache=False, **params)
-
     try:
+        if kwargs[options.QP] is not None:
+            qp = qualityprofiles.get_object(endpoint=endpoint, name=kwargs[options.QP], language=kwargs[options.LANGUAGES][0])
+            rule_list = qp.rules()
+        else:
+            if options.LANGUAGES in kwargs:
+                params["languages"] = kwargs[options.LANGUAGES]
+            rule_list = rules.get_list(endpoint=endpoint, use_cache=False, **params)
+
         if fmt == "csv":
             __write_rules_csv(file=file, rule_list=rule_list, separator=kwargs[options.CSV_SEPARATOR])
         else:
             __write_rules_json(file=file, rule_list=rule_list)
-    except (PermissionError, FileNotFoundError) as e:
-        util.exit_fatal(f"OS error while projects export file: {e}", exit_code=errcodes.OS_ERROR)
 
-    log.info("%d rules exported from %s", len(rule_list), endpoint.url)
-    util.stop_clock(start_time)
-    sys.exit(0)
+        log.info("%d rules exported from %s", len(rule_list), endpoint.url)
+        util.stop_clock(start_time)
+        sys.exit(0)
+    except exceptions.SonarException as e:
+        util.exit_fatal(e.message, e.errcode)
+    except OSError as e:
+        util.exit_fatal(f"OS error: {e}", exit_code=errcodes.OS_ERROR)
 
 
 if __name__ == "__main__":
