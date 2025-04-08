@@ -190,7 +190,7 @@ def test_qp_non_existing_language() -> None:
 
 
 def test_qp_multiple_languages() -> None:
-    util.run_failed_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.LANGUAGES} java,c', errcodes.ARGS_ERROR)
+    util.run_failed_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.QP} "Sonar way" --{opt.LANGUAGES} java,c', errcodes.ARGS_ERROR)
 
 
 def test_os_error() -> None:
