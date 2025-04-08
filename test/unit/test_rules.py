@@ -85,14 +85,8 @@ def test_rules_misspelled_language_1() -> None:
 
 
 def test_rules_misspelled_language_2() -> None:
-    """Tests that you can export rules for a single or a few languages, misspelled and not fixed"""
-    util.run_success_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.LANGUAGES} "Python ,gosu,  aPex"')
-    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        fh.readline()  # Skip header
-        for line in fh:
-            (_, lang, _) = line.split(",", maxsplit=2)
-            assert lang in ("py", "apex")
-    util.clean(util.CSV_FILE)
+    """test_rules_misspelled_language_2"""
+    util.run_failed_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.LANGUAGES} "Python ,gosu,  aPex"', errcodes.NO_SUCH_KEY)
 
 
 def test_get_rule() -> None:
@@ -186,14 +180,18 @@ def test_new_taxo() -> None:
 def test_non_existing_qp() -> None:
     util.run_failed_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.QP} non-existing --{opt.LANGUAGES} java', errcodes.NO_SUCH_KEY)
 
+
 def test_non_existing_language() -> None:
     util.run_failed_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.LANGUAGES} assembly-lang', errcodes.NO_SUCH_KEY)
+
 
 def test_qp_non_existing_language() -> None:
     util.run_failed_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.QP} "Sonar way" --{opt.LANGUAGES} javac', errcodes.NO_SUCH_KEY)
 
+
 def test_qp_multiple_languages() -> None:
     util.run_failed_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.LANGUAGES} java,c', errcodes.ARGS_ERROR)
+
 
 def test_os_error() -> None:
     util.run_failed_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.LANGUAGES} java,c -f /rules.csv', errcodes.OS_ERROR)
