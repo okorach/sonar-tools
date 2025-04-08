@@ -76,9 +76,9 @@ def main() -> int:
         kwargs = util.convert_args(__parse_args("Extract rules"))
         if kwargs[options.QP] is not None:
             if kwargs[options.LANGUAGES] is None and kwargs[options.QP] is not None:
-                util.exit_fatal(f"Option --{options.QP} requires --{options.LANGUAGES}", errcodes.ARGUMENTS_ERROR)
+                util.exit_fatal(f"Option --{options.QP} requires --{options.LANGUAGES}", errcodes.ARGS_ERROR)
             if len(kwargs[options.LANGUAGES]) > 1 and kwargs[options.QP] is not None:
-                util.exit_fatal(f"Option --{options.QP} a single --{options.LANGUAGES} option", errcodes.ARGUMENTS_ERROR)
+                util.exit_fatal(f"Option --{options.QP} a single --{options.LANGUAGES} option", errcodes.ARGS_ERROR)
 
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
