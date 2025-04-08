@@ -360,6 +360,9 @@ def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> d
             lang_list = languages.get_list(endpoint).keys()
         incl_ext = params.pop("include_external", None)
         incl_ext = [incl_ext] if incl_ext else ["false", "true"]
+        for lang_key in lang_list:
+            if not languages.exists(endpoint, lang_key):
+                raise exceptions.ObjectNotFound(key=lang_key, message=f"Language '{lang_key}' does not exist")
         log.info("Getting rules for %d languages", len(lang_list))
         for lang_key in lang_list:
             for inc in incl_ext:
