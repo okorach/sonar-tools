@@ -77,13 +77,11 @@ def main() -> int:
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
-        util.exit_fatal(e.message, e.errcode)
-    file = kwargs[options.REPORT_FILE]
-    fmt = util.deduct_format(kwargs[options.FORMAT], file)
 
-    params = {"include_external": "false"}
-    try:
+        file = kwargs[options.REPORT_FILE]
+        fmt = util.deduct_format(kwargs[options.FORMAT], file)
+        params = {"include_external": "false"}
+
         if kwargs[options.QP] is not None:
             if kwargs[options.LANGUAGES] is None and kwargs[options.QP] is not None:
                 util.exit_fatal(f"Option --{options.QP} requires --{options.LANGUAGES}", errcodes.ARGS_ERROR)
