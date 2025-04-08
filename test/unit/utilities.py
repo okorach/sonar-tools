@@ -89,11 +89,12 @@ TAGS = ["foo", "bar"]
 SONAR_WAY = "Sonar way"
 
 
-def clean(*files: str) -> None:
+def clean(*files: Optional[str]) -> None:
     """Deletes a list of file if they exists"""
     for file in files:
         try:
-            os.remove(file)
+            if file:
+                os.remove(file)
         except FileNotFoundError:
             pass
 
