@@ -40,15 +40,7 @@ def __parse_args(desc: str) -> object:
     parser = options.add_import_export_arg(parser, "rules", import_opt=False)
     """Adds the language selection option"""
     parser.add_argument(f"--{options.QP}", required=False, help="Quality profile to filter rules, requires a --languages option")
-    args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
-    kwargs = vars(args)
-    if kwargs[options.QP] is not None:
-        if kwargs[options.LANGUAGES] is None and kwargs[options.QP] is not None:
-            parser.error(f"Option --{options.QP} requires --{options.LANGUAGES}")
-        if len(kwargs[options.LANGUAGES]) > 1 and kwargs[options.QP] is not None:
-            parser.error(f"Option --{options.QP} a single --{options.LANGUAGES} option")
-
-    return args
+    return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
 def __write_rules_csv(file: str, rule_list: dict[str, rules.Rule], separator: str = ",") -> None:
@@ -82,6 +74,12 @@ def main() -> int:
     start_time = util.start_clock()
     try:
         kwargs = util.convert_args(__parse_args("Extract rules"))
+        if kwargs[options.QP] is not None:
+            if kwargs[options.LANGUAGES] is None and kwargs[options.QP] is not None:
+                util.exit_fatal(f"Option --{options.QP} requires --{options.LANGUAGES}", errcodes.ARGUMENTS_ERROR)
+            if len(kwargs[options.LANGUAGES]) > 1 and kwargs[options.QP] is not None:
+                util.exit_fatal(f"Option --{options.QP} a single --{options.LANGUAGES} option", errcodes.ARGUMENTS_ERROR)
+
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
