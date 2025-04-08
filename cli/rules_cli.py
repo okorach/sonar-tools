@@ -85,7 +85,7 @@ def main() -> int:
         if kwargs[options.QP] is not None:
             if kwargs[options.LANGUAGES] is None and kwargs[options.QP] is not None:
                 util.exit_fatal(f"Option --{options.QP} requires --{options.LANGUAGES}", errcodes.ARGS_ERROR)
-            if len(kwargs[options.LANGUAGES]) > 1 and kwargs[options.QP] is not None:
+            if len(kwargs[options.LANGUAGES]) > 1:
                 util.exit_fatal(f"Option --{options.QP} requires a single --{options.LANGUAGES} value", errcodes.ARGS_ERROR)
             qp = qualityprofiles.get_object(endpoint=endpoint, name=kwargs[options.QP], language=kwargs[options.LANGUAGES][0])
             rule_list = qp.rules()
