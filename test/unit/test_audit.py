@@ -56,7 +56,6 @@ def test_audit_disabled(get_csv_file: Generator[str]) -> None:
 def test_audit(get_csv_file: Generator[str]) -> None:
     """test_audit"""
     file = get_csv_file
-    logging.debug(f"{CMD} --{opt.REPORT_FILE} {file}")
     util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {file}")
     # Ensure no duplicate alarms #1478
     lines = []
