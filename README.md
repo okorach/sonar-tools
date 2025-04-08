@@ -312,7 +312,9 @@ Exports rules from a SonarQube Server or Cloud platform configuration.
 Basic Usage: `sonar-rules -e -f <file>`
 - `-f`: Define the output file, if not specified `stdout` is used
 - `-e` or `--export`: Specify the export operation
-- `-h`: Display help with teh full list of options
+- `-l` or `--languages`: Export only rules of given languages (comma separated, defined by they Sonar key, not its name)
+- `--qualityProfiles`: Export rules defined in a given quality profile. In this case the `--languages` option is mandatory and should specify a single language
+- `-h`: Display help with the full list of options
 
 ## Required Permissions
 
@@ -326,7 +328,10 @@ export SONAR_TOKEN=squ_83356c9b2db891d45da2a119a29cdc4d03fe654e
 # Exports all rules from https://sonar.acme-corp.com, in CSV or in JSON
 sonar-rules -f rules.csv
 sonar-rules -f rules.json
-sonar-rules  >rules.csv
+# Exports rules for languages Java, C# and C++
+sonar-rules -l "java, cs, cpp" -f rules.csv
+# Exports rules of quality profile "Sonar way" of language Java 
+sonar-rules -l java --qualityProfile "Sonar way" >rules.csv
 ```
 
 # <a name="docker"></a>Using sonar-tools in Docker

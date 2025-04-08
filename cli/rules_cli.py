@@ -26,7 +26,7 @@ import csv
 
 from cli import options
 import sonar.logging as log
-from sonar import rules, platform, exceptions, errcodes, version
+from sonar import rules, platform, exceptions, errcodes, version, qualityprofiles
 import sonar.utilities as util
 
 TOOL_NAME = "sonar-rules"
@@ -38,8 +38,9 @@ def __parse_args(desc: str) -> object:
     parser = options.set_output_file_args(parser, allowed_formats=("json", "csv"))
     parser = options.add_language_arg(parser, "rules")
     parser = options.add_import_export_arg(parser, "rules", import_opt=False)
-    args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
-    return args
+    """Adds the language selection option"""
+    parser.add_argument(f"--{options.QP}", required=False, help="Quality profile to filter rules, requires a --languages option")
+    return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
 def __write_rules_csv(file: str, rule_list: dict[str, rules.Rule], separator: str = ",") -> None:
@@ -76,27 +77,35 @@ def main() -> int:
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
-        util.exit_fatal(e.message, e.errcode)
-    file = kwargs[options.REPORT_FILE]
-    fmt = util.deduct_format(kwargs[options.FORMAT], file)
 
-    params = {"include_external": "false"}
-    if options.LANGUAGES in kwargs:
-        params["languages"] = kwargs[options.LANGUAGES]
-    rule_list = rules.get_list(endpoint=endpoint, use_cache=False, **params)
+        file = kwargs[options.REPORT_FILE]
+        fmt = util.deduct_format(kwargs[options.FORMAT], file)
+        params = {"include_external": "false"}
 
-    try:
+        if kwargs[options.QP] is not None:
+            if kwargs[options.LANGUAGES] is None and kwargs[options.QP] is not None:
+                util.exit_fatal(f"Option --{options.QP} requires --{options.LANGUAGES}", errcodes.ARGS_ERROR)
+            if len(kwargs[options.LANGUAGES]) > 1:
+                util.exit_fatal(f"Option --{options.QP} requires a single --{options.LANGUAGES} value", errcodes.ARGS_ERROR)
+            qp = qualityprofiles.get_object(endpoint=endpoint, name=kwargs[options.QP], language=kwargs[options.LANGUAGES][0])
+            rule_list = qp.rules()
+        else:
+            if options.LANGUAGES in kwargs:
+                params["languages"] = kwargs[options.LANGUAGES]
+            rule_list = rules.get_list(endpoint=endpoint, use_cache=False, **params)
+
         if fmt == "csv":
             __write_rules_csv(file=file, rule_list=rule_list, separator=kwargs[options.CSV_SEPARATOR])
         else:
             __write_rules_json(file=file, rule_list=rule_list)
-    except (PermissionError, FileNotFoundError) as e:
-        util.exit_fatal(f"OS error while projects export file: {e}", exit_code=errcodes.OS_ERROR)
 
-    log.info("%d rules exported from %s", len(rule_list), endpoint.url)
-    util.stop_clock(start_time)
-    sys.exit(0)
+        log.info("%d rules exported from %s", len(rule_list), endpoint.url)
+        util.stop_clock(start_time)
+        sys.exit(0)
+    except exceptions.SonarException as e:
+        util.exit_fatal(e.message, e.errcode)
+    except OSError as e:
+        util.exit_fatal(f"OS error: {e}", exit_code=errcodes.OS_ERROR)
 
 
 if __name__ == "__main__":

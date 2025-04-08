@@ -26,6 +26,7 @@
 import os
 import sys
 import datetime
+import re
 from typing import Optional, Union
 from unittest.mock import patch
 import pytest
@@ -88,11 +89,12 @@ TAGS = ["foo", "bar"]
 SONAR_WAY = "Sonar way"
 
 
-def clean(*files: str) -> None:
+def clean(*files: Optional[str]) -> None:
     """Deletes a list of file if they exists"""
     for file in files:
         try:
-            os.remove(file)
+            if file:
+                os.remove(file)
         except FileNotFoundError:
             pass
 
@@ -151,7 +153,7 @@ def __get_args_and_file(string_arguments: str) -> tuple[Optional[str], list[str]
 
 
 def __split_args(string_arguments: str) -> list[str]:
-    return [s for s in string_arguments.split(" ") if s != ""]
+    return [s.strip('"') for s in re.findall(r'(?:[^\s\*"]|"(?:\\.|[^"])*")+', string_arguments)]
 
 
 def __get_option_index(args: Union[str, list], option: str) -> Optional[str]:
@@ -176,6 +178,7 @@ def run_cmd(func: callable, arguments: str, expected_code: int) -> Optional[str]
     """Runs a sonar-tools command, verifies it raises the right exception, and returns the expected code"""
     logging.info("RUNNING: %s", __get_redacted_cmd(arguments))
     file, args = __get_args_and_file(arguments)
+    clean(file)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", args):
             func()

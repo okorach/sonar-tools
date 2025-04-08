@@ -76,6 +76,7 @@ def test_search_all_task() -> None:
     """test_search_all_task"""
     assert len(tasks.search_all_last(tutil.SQ)) > 0
 
+
 # Test does not work - You can't request branch master when scan happened without the branch spec
 # def test_search_branch() -> None:
 #     """test_search_branch"""
