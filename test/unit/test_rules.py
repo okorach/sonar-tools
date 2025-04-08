@@ -42,34 +42,17 @@ LANGUAGE_COL = 1
 
 def test_rules() -> None:
     """test_rules"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS):
-            rules_cli.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    util.run_success_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)}')
 
 
 def test_rules_json_format() -> None:
     """test_rules_json_format"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + [f"--{opt.FORMAT}", "json"]):
-            rules_cli.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.JSON_FILE)
-    util.clean(util.JSON_FILE)
+    util.run_success_cmd(rules_cli.main, f'{" ".join(JSON_OPTS)}')
 
 
 def test_rules_filter_language() -> None:
     """Tests that you can export rules for a single or a few languages"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.LANGUAGES}", "py,jcl"]):
-            rules_cli.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
+    util.run_success_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.LANGUAGES} py,jcl')
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         line = next(csvreader)
@@ -86,12 +69,7 @@ def test_rules_filter_language() -> None:
 
 def test_rules_misspelled_language_1() -> None:
     """Tests that you can export rules for a single or a few languages, misspelled"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.LANGUAGES}", "Python,TypeScript"]):
-            rules_cli.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
+    util.run_success_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.LANGUAGES} Python,TypeScript')
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         line = next(csvreader)
@@ -108,12 +86,7 @@ def test_rules_misspelled_language_1() -> None:
 
 def test_rules_misspelled_language_2() -> None:
     """Tests that you can export rules for a single or a few languages, misspelled and not fixed"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.LANGUAGES}", "Python,gosu , aPex"]):
-            rules_cli.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
+    util.run_success_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.LANGUAGES} "Python,gosu , aPex"')
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         fh.readline()  # Skip header
         for line in fh:
