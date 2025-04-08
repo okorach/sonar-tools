@@ -26,6 +26,7 @@
 import os
 import sys
 import datetime
+import re
 from typing import Optional, Union
 from unittest.mock import patch
 import pytest
@@ -151,7 +152,7 @@ def __get_args_and_file(string_arguments: str) -> tuple[Optional[str], list[str]
 
 
 def __split_args(string_arguments: str) -> list[str]:
-    return [s for s in string_arguments.split(" ") if s != ""]
+    return [s.strip('"') for s in re.findall(r'(?:[^\s\*"]|"(?:\\.|[^"])*")+', string_arguments)]
 
 
 def __get_option_index(args: Union[str, list], option: str) -> Optional[str]:
