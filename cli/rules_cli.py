@@ -74,12 +74,6 @@ def main() -> int:
     start_time = util.start_clock()
     try:
         kwargs = util.convert_args(__parse_args("Extract rules"))
-        if kwargs[options.QP] is not None:
-            if kwargs[options.LANGUAGES] is None and kwargs[options.QP] is not None:
-                util.exit_fatal(f"Option --{options.QP} requires --{options.LANGUAGES}", errcodes.ARGS_ERROR)
-            if len(kwargs[options.LANGUAGES]) > 1 and kwargs[options.QP] is not None:
-                util.exit_fatal(f"Option --{options.QP} requires a single --{options.LANGUAGES} value", errcodes.ARGS_ERROR)
-
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
@@ -91,6 +85,10 @@ def main() -> int:
     params = {"include_external": "false"}
     try:
         if kwargs[options.QP] is not None:
+            if kwargs[options.LANGUAGES] is None and kwargs[options.QP] is not None:
+                util.exit_fatal(f"Option --{options.QP} requires --{options.LANGUAGES}", errcodes.ARGS_ERROR)
+            if len(kwargs[options.LANGUAGES]) > 1 and kwargs[options.QP] is not None:
+                util.exit_fatal(f"Option --{options.QP} requires a single --{options.LANGUAGES} value", errcodes.ARGS_ERROR)
             qp = qualityprofiles.get_object(endpoint=endpoint, name=kwargs[options.QP], language=kwargs[options.LANGUAGES][0])
             rule_list = qp.rules()
         else:
