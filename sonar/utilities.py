@@ -626,6 +626,7 @@ def convert_args(args: object, second_platform: bool = False) -> dict[str, str]:
     if second_platform:
         kwargs["url"] = kwargs.pop("urlTarget", kwargs["url"])
         kwargs["token"] = kwargs.pop("tokenTarget", kwargs["token"])
+        kwargs["org"] = kwargs.pop("organizationTarget", kwargs["org"])
     return kwargs
 
 

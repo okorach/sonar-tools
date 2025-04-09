@@ -35,10 +35,19 @@ from sonar import errcodes, version, utilities, exceptions
 
 URL_SHORT = "u"
 URL = "url"
+
+URL_TARGET_SHORT = "U"
+URL_TARGET = "urlTarget"
+
 TOKEN_SHORT = "t"
 TOKEN = "token"
+TOKEN_TARGET_SHORT = "T"
+TOKEN_TARGET = "tokenTarget"
+
 ORG_SHORT = "o"
 ORG = "organization"
+ORG_TARGET_SHORT = "O"
+ORG_TARGET = "organizationTarget"
 
 VERBOSE_SHORT = "v"
 VERBOSE = "verbosity"
@@ -203,6 +212,8 @@ def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_toke
     kwargs.pop(SKIP_VERSION_CHECK, None)
     if utilities.is_sonarcloud_url(kwargs[URL]) and kwargs[ORG] is None:
         raise ArgumentsError(f"Organization (-{ORG_SHORT}) option is mandatory for SonarCloud")
+    if utilities.is_sonarcloud_url(kwargs[URL_TARGET]) and kwargs[ORG_TARGET] is None:
+        raise ArgumentsError(f"Organization (-{ORG_TARGET_SHORT}) option is mandatory for SonarCloud")
     if verify_token:
         utilities.check_token(args.token, utilities.is_sonarcloud_url(kwargs[URL]))
     return args
@@ -367,16 +378,22 @@ def add_component_type_arg(parser: ArgumentParser, comp_types: tuple[str] = COMP
 def set_target_sonar_args(parser: ArgumentParser) -> ArgumentParser:
     """Sets the target SonarQube CLI options"""
     parser.add_argument(
-        "-U",
-        "--urlTarget",
+        f"-{URL_TARGET_SHORT}",
+        f"--{URL_TARGET}",
         required=False,
-        help="Root URL of the target SonarQube server",
+        help="Root URL of the target platform when using sonar-findings-sync",
     )
     parser.add_argument(
-        "-T",
-        "--tokenTarget",
+        f"-{TOKEN_TARGET_SHORT}",
+        f"--{TOKEN_TARGET}",
         required=False,
-        help="Token to authenticate to target SonarQube - Unauthenticated usage is not possible",
+        help="Token of target platform when using sonar-findings-sync - Unauthenticated usage is not possible",
+    )
+    parser.add_argument(
+        f"-{ORG_TARGET_SHORT}",
+        f"--{ORG_TARGET}",
+        required=False,
+        help="Organization when using sonar-findings-sync with SonarCloud as target platform",
     )
     return parser
 
