@@ -39,10 +39,7 @@ class Changelog(object):
 
     def __is_issue_status_diff(self) -> bool:
         """Returns whether the changelog item contains an object with the key 'issueStatus'"""
-        for d in self.sq_json["diffs"]:
-            if d.get("key", "") == "issueStatus":
-                return True
-        return False
+        return any(d.get("key", "") == "issueStatus" for d in self.sq_json["diffs"])
 
     def __is_resolve_as(self, resolve_reason: str) -> bool:
         """Returns whether the changelog item is an issue resolved as a specific reason"""
@@ -169,24 +166,27 @@ class Changelog(object):
         key = d.get("key", "")
         return key in ("from_short_branch", "from_branch", "effort")
 
+    def is_manual_change(self) -> bool:
+        """Returns whether the changelog item is a manual change"""
+        status_key, closed_state = "issueStatus", "FIXED"
+        if not self.__is_issue_status_diff():
+            status_key, closed_state = "status", "CLOSED"
+        return not any(
+            d.get("key", "") == status_key and closed_state in (d.get("oldValue", ""), d.get("newValue", "")) for d in self.sq_json["diffs"]
+        )
+
     def is_assignment(self) -> bool:
         """Returns whether the changelog item is an assignment"""
-        d = self.sq_json["diffs"][0]
-        return d.get("key", "") == "assignee"
+        return any(d.get("key", "") == "assignee" for d in self.sq_json["diffs"])
 
-    def new_assignee(self) -> Optional[str]:
+    def assignee(self, new: bool = True) -> Optional[str]:
         """Returns the new assignee of a change assignment changelog"""
-        if not self.is_assignment():
-            return None
-        d = self.sq_json["diffs"][0]
-        return d.get("newValue", None)
-
-    def old_assignee(self) -> Optional[str]:
-        """Returns the old assignee of a change assignment changelog"""
-        if not self.is_assignment():
-            return None
-        d = self.sq_json["diffs"][0]
-        return d.get("oldValue", None)
+        try:
+            d = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "assignee")
+            return d.get("newValue" if new else "oldValue", None)
+        except StopIteration:
+            log.warning("No assignment found in changelog %s", str(self))
+        return None
 
     def previous_state(self) -> str:
         """Returns the previous state of a state change changelog"""
@@ -206,20 +206,20 @@ class Changelog(object):
 
     def is_tag(self) -> bool:
         """Returns whether the changelog item is an issue tagging"""
-        d = self.sq_json["diffs"][0]
-        return d.get("key", "") == "tag"
+        return any(d.get("key", "") == "tags" for d in self.sq_json["diffs"])
 
     def get_tags(self) -> Optional[str]:
         """Returns the changelog tags for issue tagging items"""
-        if not self.is_tag():
+        try:
+            d = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "assignee")
+            return d.get("newValue").replace(" ", ",")
+        except StopIteration:
             return None
-        d = self.sq_json["diffs"][0]
-        return d.get("newValue", "").replace(" ", ",")
 
     def changelog_type(self) -> tuple[str, Optional[str]]:
         ctype = (None, None)
         if self.is_assignment():
-            ctype = ("ASSIGN", self.new_assignee())
+            ctype = ("ASSIGN", self.assignee())
         elif self.is_reopen():
             ctype = ("REOPEN", None)
         elif self.is_confirm():

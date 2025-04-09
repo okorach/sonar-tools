@@ -188,7 +188,7 @@ def sync_lists(
             log.debug("%s is closed, so it will not be synchronized despite having a changelog", str(finding))
             continue
         if not (finding.has_changelog(added_after=min_date) or finding.has_comments()):
-            log.debug("%s has no changelog or comments added after %s, skipped in sync", str(finding), str(min_date))
+            log.debug("%s has no manual changelog or comments added after %s, skipped in sync", str(finding), str(min_date))
             continue
 
         modifiers = finding.modifiers().union(finding.commenters())
