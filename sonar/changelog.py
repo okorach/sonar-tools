@@ -219,7 +219,7 @@ class Changelog(object):
     def changelog_type(self) -> tuple[str, Optional[str]]:
         ctype = (None, None)
         if self.is_assignment():
-            ctype = ("ASSIGN", self.new_assignee())
+            ctype = ("ASSIGN", self.assignee())
         elif self.is_reopen():
             ctype = ("REOPEN", None)
         elif self.is_confirm():
