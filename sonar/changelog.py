@@ -39,10 +39,7 @@ class Changelog(object):
 
     def __is_issue_status_diff(self) -> bool:
         """Returns whether the changelog item contains an object with the key 'issueStatus'"""
-        for d in self.sq_json["diffs"]:
-            if d.get("key", "") == "issueStatus":
-                return True
-        return False
+        return any(d.get("key", "") == "issueStatus" for d in self.sq_json["diffs"])
 
     def __is_resolve_as(self, resolve_reason: str) -> bool:
         """Returns whether the changelog item is an issue resolved as a specific reason"""
@@ -168,6 +165,15 @@ class Changelog(object):
         d = self.sq_json["diffs"][0]
         key = d.get("key", "")
         return key in ("from_short_branch", "from_branch", "effort")
+
+    def is_manual_change(self) -> bool:
+        """Returns whether the changelog item is a manual change"""
+        status_key, closed_state = "issueStatus", "FIXED"
+        if not self.__is_issue_status_diff():
+            status_key, closed_state = "status", "CLOSED"
+        return not any(
+            d.get("key", "") == status_key and closed_state in (d.get("oldValue", ""), d.get("newValue", "")) for d in self.sq_json["diffs"]
+        )
 
     def is_assignment(self) -> bool:
         """Returns whether the changelog item is an assignment"""
