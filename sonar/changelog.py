@@ -177,22 +177,16 @@ class Changelog(object):
 
     def is_assignment(self) -> bool:
         """Returns whether the changelog item is an assignment"""
-        d = self.sq_json["diffs"][0]
-        return d.get("key", "") == "assignee"
+        return any(d.get("key", "") == "assignee" for d in self.sq_json["diffs"])
 
-    def new_assignee(self) -> Optional[str]:
+    def assignee(self, new: bool = True) -> Optional[str]:
         """Returns the new assignee of a change assignment changelog"""
-        if not self.is_assignment():
-            return None
-        d = self.sq_json["diffs"][0]
-        return d.get("newValue", None)
-
-    def old_assignee(self) -> Optional[str]:
-        """Returns the old assignee of a change assignment changelog"""
-        if not self.is_assignment():
-            return None
-        d = self.sq_json["diffs"][0]
-        return d.get("oldValue", None)
+        try:
+            d = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "assignee")
+            return d.get("newValue" if new else "oldValue", None)
+        except StopIteration:
+            log.warning("No assignment found in changelog %s", str(self))
+        return None
 
     def previous_state(self) -> str:
         """Returns the previous state of a state change changelog"""
