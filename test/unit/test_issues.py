@@ -163,8 +163,8 @@ def test_changelog() -> None:
     assert changelog.new_type() is None
     assert not changelog.is_technical_change()
     assert not changelog.is_assignment()
-    assert changelog.new_assignee() is None
-    assert changelog.old_assignee() is None
+    assert changelog.assignee() is None
+    assert changelog.assignee(False) is None
     assert datetime(2024, 10, 20) <= util.string_to_date(changelog.date()).replace(tzinfo=None) < datetime(2024, 12, 26)
     assert changelog.author() == "admin"
     assert not changelog.is_tag()
