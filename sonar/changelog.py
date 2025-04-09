@@ -37,15 +37,36 @@ class Changelog(object):
         """str() implementation"""
         return str(self.sq_json)
 
+    def __is_issue_status_diff(self) -> bool:
+        """Returns whether the changelog item contains an object with the key 'issueStatus'"""
+        for d in self.sq_json["diffs"]:
+            if d.get("key", "") == "issueStatus":
+                return True
+        return False
+
     def __is_resolve_as(self, resolve_reason: str) -> bool:
-        cond1 = False
-        cond2 = False
-        for diff in self.sq_json["diffs"]:
-            if diff["key"] == "resolution" and "newValue" in diff and diff["newValue"] == resolve_reason:
-                cond1 = True
-            if diff["key"] == "status" and "newValue" in diff and diff["newValue"] == "RESOLVED":
-                cond2 = True
-        return cond1 and cond2
+        """Returns whether the changelog item is an issue resolved as a specific reason"""
+        # The 'issueStatus' field has been available since SonarQube Server 10.4 and is the preferred
+        # method for retrieving information about issue changes.
+        # Starting with SonarQube Server 10.4, the "resolution" and "status" keys are deprecated in
+        # issue changelogs but remain relevant for security hotspot changelogs.
+        # These conditions are retained for backward compatibility to support versions from SQS 9.9 to 10.3,
+        # where "resolution" and "status" are the only way to detect status changes. They are also still
+        # applicable for security hotspot changelogs.
+        if self.__is_issue_status_diff():
+            for diff in self.sq_json["diffs"]:
+                if diff["key"] == "issueStatus" and "newValue" in diff and diff["newValue"] == resolve_reason:
+                    return True
+        else:
+            cond1 = False
+            cond2 = False
+            for diff in self.sq_json["diffs"]:
+                if diff["key"] == "resolution" and "newValue" in diff and diff["newValue"] == resolve_reason:
+                    cond1 = True
+                if diff["key"] == "status" and "newValue" in diff and diff["newValue"] == "RESOLVED":
+                    cond2 = True
+            return cond1 and cond2
+        return False
 
     def is_resolve_as_fixed(self) -> bool:
         """Returns whether the changelog item is an issue resolved as fixed"""
@@ -53,35 +74,57 @@ class Changelog(object):
 
     def is_resolve_as_fp(self) -> bool:
         """Returns whether the changelog item is an issue resolved as false positive"""
-        return self.__is_resolve_as("FALSE-POSITIVE")
+        # Finding "is resolve as false positive" requires "FALSE-POSITIVE" on SonarQube
+        # Server 9.9 and "FALSE_POSITIVE" on SonarQube Server 2025.1 and SonarQube Cloud.
+        cond1 = self.__is_resolve_as("FALSE-POSITIVE")
+        cond2 = self.__is_resolve_as("FALSE_POSITIVE")
+        return cond1 or cond2
 
     def is_resolve_as_wf(self) -> bool:
         """Returns whether the changelog item is an issue resolved as won't fix"""
         return self.__is_resolve_as("WONTFIX")
 
+    def is_resolve_as_accept(self) -> bool:
+        """Returns whether the changelog item is an issue resolved as accepted"""
+        return self.__is_resolve_as("ACCEPTED")
+
     def is_closed(self) -> bool:
         """{'creationDate': '2022-02-01T19:15:24+0100', 'diffs': [
         {'key': 'resolution', 'newValue': 'FIXED'},
         {'key': 'status', 'newValue': 'CLOSED', 'oldValue': 'OPEN'}]}"""
-        for diff in self.sq_json["diffs"]:
-            if diff["key"] == "status" and "newValue" in diff and diff["newValue"] == "CLOSED":
-                return True
+        if self.__is_issue_status_diff():
+            for diff in self.sq_json["diffs"]:
+                if diff["key"] == "issueStatus" and "newValue" in diff and diff["newValue"] == "CLOSED":
+                    return True
+        else:
+            for diff in self.sq_json["diffs"]:
+                if diff["key"] == "status" and "newValue" in diff and diff["newValue"] == "CLOSED":
+                    return True
         return False
 
     def __is_status(self, status: str) -> bool:
         for d in self.sq_json["diffs"]:
-            if d.get("key", "") == "status" and d.get("newValue", "") == status:
-                return True
+            if self.__is_issue_status_diff():
+                if d.get("key", "") == "issueStatus" and d.get("newValue", "") == status:
+                    return True
+            else:
+                if d.get("key", "") == "status" and d.get("newValue", "") == status:
+                    return True
         return False
 
     def is_reopen(self) -> bool:
         """Returns whether the changelog item is an issue re-open"""
-        for d in self.sq_json["diffs"]:
-            if d.get("key", "") == "status" and (
-                (d.get("newValue", "") == "REOPENED" and d.get("oldValue", "") != "CONFIRMED")
-                or (d.get("newValue", "") == "OPEN" and d.get("oldValue", "") == "CLOSED")
-            ):
-                return True
+        if self.__is_issue_status_diff():
+            for d in self.sq_json["diffs"]:
+                if d.get("key", "") == "issueStatus" and d.get("newValue", "") == "OPEN" and d.get("oldValue", "") != "CONFIRMED":
+                    return True
+        else:
+            for d in self.sq_json["diffs"]:
+                if d.get("key", "") == "status" and (
+                    (d.get("newValue", "") == "REOPENED" and d.get("oldValue", "") != "CONFIRMED")
+                    or (d.get("newValue", "") == "OPEN" and d.get("oldValue", "") == "CLOSED")
+                ):
+                    return True
         return False
 
     def is_confirm(self) -> bool:
@@ -90,9 +133,14 @@ class Changelog(object):
 
     def is_unconfirm(self) -> bool:
         """Returns whether the changelog item is an issue unconfirm"""
-        for d in self.sq_json["diffs"]:
-            if d.get("key", "") == "status" and d.get("newValue", "") == "REOPENED" and d.get("oldValue", "") == "CONFIRMED":
-                return True
+        if self.__is_issue_status_diff():
+            for d in self.sq_json["diffs"]:
+                if d.get("key", "") == "issueStatus" and d.get("newValue", "") == "OPEN" and d.get("oldValue", "") == "CONFIRMED":
+                    return True
+        else:
+            for d in self.sq_json["diffs"]:
+                if d.get("key", "") == "status" and d.get("newValue", "") == "REOPENED" and d.get("oldValue", "") == "CONFIRMED":
+                    return True
         return False
 
     def is_mark_as_safe(self) -> bool:
@@ -174,9 +222,14 @@ class Changelog(object):
 
     def previous_state(self) -> str:
         """Returns the previous state of a state change changelog"""
-        for d in self.sq_json["diffs"]:
-            if d.get("key", "") == "status":
-                return d.get("oldValue", "")
+        if self.__is_issue_status_diff():
+            for d in self.sq_json["diffs"]:
+                if d.get("key", "") == "issueStatus":
+                    return d.get("oldValue", "")
+        else:
+            for d in self.sq_json["diffs"]:
+                if d.get("key", "") == "status":
+                    return d.get("oldValue", "")
         return ""
 
     def date(self) -> str:
@@ -219,6 +272,8 @@ class Changelog(object):
             ctype = ("FALSE-POSITIVE", None)
         elif self.is_resolve_as_wf():
             ctype = ("WONT-FIX", None)
+        elif self.is_resolve_as_accept():
+            ctype = ("ACCEPT", None)
         elif self.is_tag():
             ctype = ("TAG", self.get_tags())
         elif self.is_closed():
