@@ -376,12 +376,7 @@ class Finding(sq.SqObject):
         """
         :meta private:
         """
-        log.debug(
-            "Issue %s: Checking if modifiers %s are different from user %s",
-            str(self),
-            str(self.modifiers()),
-            str(user_list),
-        )
+        log.debug("%s: Checking if modifiers %s are different from user %s", str(self), str(self.modifiers()), str(user_list))
         # If no account dedicated to sync is provided, finding can be synced only if no changelog
         if user_list is None:
             log.debug("Allowed user list empty, checking if issue has changelog")
