@@ -22,7 +22,7 @@
 from __future__ import annotations
 import re
 import datetime
-from typing import Union
+from typing import Union, Optional
 
 from queue import Queue
 from threading import Thread
@@ -332,7 +332,7 @@ class Finding(sq.SqObject):
     def is_closed(self) -> bool:
         return self.status == "CLOSED"
 
-    def changelog(self) -> bool:
+    def changelog(self, manual_only: bool = True) -> bool:
         # Implemented in subclasses, should not reach this
         raise NotImplementedError()
 
@@ -340,15 +340,16 @@ class Finding(sq.SqObject):
         # Implemented in subclasses, should not reach this
         raise NotImplementedError()
 
-    def has_changelog(self, added_after: datetime.datetime = None) -> bool:
+    def has_changelog(self, added_after: Optional[datetime.datetime] = None, manual_only: bool = True) -> bool:
         """
+        :param manual_only: Whether to check only manual changes
         :return: Whether the finding has a changelog
         :rtype: bool
         """
         # log.debug("%s has %d changelogs", str(self), len(self.changelog()))
         if added_after is not None and added_after > self.modification_date:
             return False
-        return len(self.changelog()) > 0
+        return len(self.changelog(manual_only)) > 0
 
     def has_comments(self) -> bool:
         """
@@ -371,7 +372,7 @@ class Finding(sq.SqObject):
         """
         return {v["user"] for v in self.comments() if "user" in v}
 
-    def can_be_synced(self, user_list: list[str]) -> bool:
+    def can_be_synced(self, user_list: Optional[list[str]]) -> bool:
         """
         :meta private:
         """
@@ -386,10 +387,7 @@ class Finding(sq.SqObject):
             log.debug("Allowed user list empty, checking if issue has changelog")
             return not self.has_changelog()
         # Else, finding can be synced only if changes were performed by syncer accounts
-        for u in self.modifiers():
-            if u not in user_list:
-                return False
-        return True
+        return all(u in user_list for u in self.modifiers())
 
     def strictly_identical_to(self, another_finding: Finding, ignore_component: bool = False) -> bool:
         """

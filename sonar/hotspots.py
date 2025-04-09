@@ -275,6 +275,7 @@ class Hotspot(findings.Finding):
             return False
 
         change_nbr = 0
+        # FIXME: There can be a glitch if there are non manual changes in the changelog
         start_change = len(self.changelog()) + 1
         log.debug("Applying changelog of %s to %s, from change %d", str(source_hotspot), str(self), start_change)
         for key in sorted(events.keys()):
@@ -311,7 +312,7 @@ class Hotspot(findings.Finding):
             self.add_comment(comments[key]["value"])
         return True
 
-    def changelog(self) -> dict[str, changelog.Changelog]:
+    def changelog(self, manual_only: bool = True) -> dict[str, changelog.Changelog]:
         """
         :return: The hotspot changelog
         :rtype: dict
