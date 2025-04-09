@@ -932,8 +932,8 @@ class Project(components.Component):
         if len(diff) > 0:
             log.warning(
                 "Target %s has branches that do not exist for source %s, these branches will be ignored: %s",
-                str(self),
                 str(another_project),
+                str(self),
                 ", ".join(diff),
             )
         report = []
