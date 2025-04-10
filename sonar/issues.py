@@ -473,9 +473,9 @@ class Issue(findings.Finding):
     def __apply_event(self, event: changelog.Changelog, settings: ConfigSettings) -> bool:
         from sonar import syncer
 
-        log.debug("Applying event %s", str(event))
         # origin = f"originally by *{event['userName']}* on original branch"
         (event_type, data) = event.changelog_type()
+        log.debug("Applying event type %s - %s", event_type, str(event))
         if event_type == "SEVERITY":
             self.set_severity(data)
             # self.add_comment(f"Change of severity {origin}", settings[SYNC_ADD_COMMENTS])
