@@ -32,12 +32,13 @@ jobs:
           if [ -f requirements-to-build.txt ]; then pip install -r requirements-to-build.txt; fi
         # Linting is done in the run_linters.sh script
 
-      # - name: Prep tests
-      #  working-directory: .
-      #  run: |
-      #    chmod +x conf/prep_tests.sh
-      #    conf/prep_tests.sh
-      #
+      - name: Prep tests
+        # Keep this stage so that the test dirs exists and scanner is happy with sonar.tests property
+        working-directory: .
+        run: |
+          chmod +x conf/prep_tests.sh
+          conf/prep_tests.sh
+      
       # - name: Run tests
       #  working-directory: .
       #  run: |
