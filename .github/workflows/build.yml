@@ -68,8 +68,8 @@ jobs:
         run: |
           version=$(grep PACKAGE_VERSION sonar/version.py | cut -d "=" -f 2 | sed "s/[\'\" ]//g")
           echo "sonar.projectVersion=$version" >> sonar-project.properties
-      - name: SonarCloud scan
-        uses: SonarSource/sonarcloud-github-action@master
+      - name: SonarQube Cloud scan
+        uses: SonarSource/sonarqube-scan-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
