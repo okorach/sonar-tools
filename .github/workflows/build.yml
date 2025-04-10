@@ -28,24 +28,17 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pylint pytest coverage
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      #- name: Lint with flake8
-      #  run: |
-      #    stop the build if there are Python syntax errors or undefined names
-      #    flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-      #    exit-zero treats all errors as warnings.
-      #    flake8 . --count --exit-zero --max-complexity=10 --max-line-length=128 --statistics
-      # - name: Test with pytest
-      #     run: |
-      #       pytest
+          if [ -f requirements-to-build.txt ]; then pip install -r requirements-to-build.txt; fi
+        # Linting is done in the run_linters.sh script
 
       - name: Prep tests
+        # Keep this stage so that the test dirs exists and scanner is happy with sonar.tests property
         working-directory: .
         run: |
           chmod +x conf/prep_tests.sh
           conf/prep_tests.sh
-
+      
       # - name: Run tests
       #  working-directory: .
       #  run: |
@@ -68,8 +61,8 @@ jobs:
         run: |
           version=$(grep PACKAGE_VERSION sonar/version.py | cut -d "=" -f 2 | sed "s/[\'\" ]//g")
           echo "sonar.projectVersion=$version" >> sonar-project.properties
-      - name: SonarCloud scan
-        uses: SonarSource/sonarcloud-github-action@master
+      - name: SonarQube Cloud scan
+        uses: SonarSource/sonarqube-scan-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

@@ -27,6 +27,8 @@ from typing import Union, Optional
 from queue import Queue
 from threading import Thread
 from requests import RequestException
+import Levenshtein
+
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
@@ -417,21 +419,34 @@ class Finding(sq.SqObject):
         if self.rule != another_finding.rule or self.hash != another_finding.hash:
             return False
         score = 0
+        match_msg = " Match"
         if self.message == another_finding.message or kwargs.get("ignore_message", False):
             score += 2
+            match_msg += " message +2"
+        elif Levenshtein.distance(self.message, another_finding.message, score_cutoff=6) <= 5:
+            score += 1
+            match_msg += " message +1"
         if self.file() == another_finding.file():
-            score += 2
+            score += 1
+            match_msg += " file +1"
         if self.line == another_finding.line or kwargs.get("ignore_line", False):
             score += 1
+            match_msg += " line +1"
         if self.component == another_finding.component or ignore_component:
             score += 1
+            match_msg += " component +1"
         if self.author == another_finding.author or kwargs.get("ignore_author", False):
             score += 1
+            match_msg += " author +1"
         if self.type == another_finding.type or kwargs.get("ignore_type", False):
             score += 1
+            match_msg += " type +1"
         if self.severity == another_finding.severity or kwargs.get("ignore_severity", False):
             score += 1
-        # Need at least 7 / 9 to match
+            match_msg += " severity +1"
+
+        log.debug("%s vs %s - %s score = %d", str(self), str(another_finding), match_msg, score)
+        # Need at least 7 / 8 to consider it's a match
         return score >= 7
 
     def search_siblings(
@@ -455,8 +470,8 @@ class Finding(sq.SqObject):
                     log.info("%s and %s are exact match but target already has changes, cannot be synced", str(self), str(finding))
                     match_but_modified.append(finding)
                 return exact_matches, approx_matches, match_but_modified
-            else:
-                log.debug("%s and %s are not identical", str(self), str(finding))
+            # else:
+            #    log.debug("%s and %s are not identical", str(self), str(finding))
 
         log.info("No exact match, searching for an approximate match of %s", str(self))
         for finding in findings_list:

@@ -7,3 +7,5 @@ sphinx-autodoc-typehints
 twine
 pytest
 coverage
+flake8
+pylint
