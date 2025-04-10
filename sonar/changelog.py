@@ -150,14 +150,16 @@ class Changelog(object):
 
     def is_change_type(self) -> bool:
         """Returns whether the changelog item is a change of issue type"""
-        d = self.sq_json["diffs"][0]
-        return d.get("key", "") == "type"
+        return any(d.get("key", "") == "type" and "newValue" in d for d in self.sq_json["diffs"])
 
     def new_type(self) -> Optional[str]:
         """Returns the new type of a change issue type changelog"""
         if self.is_change_type():
-            d = self.sq_json["diffs"][0]
-            return d.get("newValue", None)
+            try:
+                d = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "type")
+                return d.get("newValue", None)
+            except StopIteration:
+                log.warning("No type change found in changelog %s", str(self))
         return None
 
     def is_technical_change(self) -> bool:
@@ -181,13 +183,12 @@ class Changelog(object):
 
     def assignee(self, new: bool = True) -> Optional[str]:
         """Returns the new assignee of a change assignment changelog"""
-        if not self.is_assignment():
-            return None
-        try:
-            d = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "assignee")
-            return d.get("newValue" if new else "oldValue", None)
-        except StopIteration:
-            log.warning("No assignment found in changelog %s", str(self))
+        if self.is_assignment():
+            try:
+                d = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "assignee")
+                return d.get("newValue" if new else "oldValue", None)
+            except StopIteration:
+                log.warning("No assignment found in changelog %s", str(self))
         return None
 
     def previous_state(self) -> str:
@@ -213,8 +214,8 @@ class Changelog(object):
     def get_tags(self) -> Optional[str]:
         """Returns the changelog tags for issue tagging items"""
         try:
-            d = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "assignee")
-            return d.get("newValue").replace(" ", ",")
+            d = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "tags")
+            return d.get("newValue", "").split()
         except StopIteration:
             return None
 
