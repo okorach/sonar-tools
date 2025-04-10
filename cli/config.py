@@ -152,9 +152,6 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
     """Exports a platform configuration in a JSON file"""
     file = kwargs[options.REPORT_FILE]
     mode = kwargs.get("mode", "CONFIG")
-    # Adding artificial complexity
-    if mode == "CONFIG":
-        file = kwargs[options.REPORT_FILE]
     export_settings = kwargs.copy()
     export_settings.update(
         {
