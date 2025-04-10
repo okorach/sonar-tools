@@ -177,10 +177,12 @@ class Changelog(object):
 
     def is_assignment(self) -> bool:
         """Returns whether the changelog item is an assignment"""
-        return any(d.get("key", "") == "assignee" for d in self.sq_json["diffs"])
+        return any(d.get("key", "") == "assignee" and "newValue" in d for d in self.sq_json["diffs"])
 
     def assignee(self, new: bool = True) -> Optional[str]:
         """Returns the new assignee of a change assignment changelog"""
+        if not self.is_assignment():
+            return None
         try:
             d = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "assignee")
             return d.get("newValue" if new else "oldValue", None)
