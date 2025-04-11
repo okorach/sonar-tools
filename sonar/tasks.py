@@ -34,7 +34,7 @@ import sonar.platform as pf
 import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
-from sonar.audit.config import get_scanners_versions
+from sonar.config import get_scanners_versions
 from sonar.util import types, cache
 
 SUCCESS = "SUCCESS"

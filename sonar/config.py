@@ -18,13 +18,28 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""sonar.audit module"""
+"""sonar-config utils"""
 
-from sonar.audit import rules
-from sonar import utilities, errcodes, config
+import pathlib
+import datetime
+import json
 
-config.load_config_data()
-try:
-    rules.load()
-except rules.RuleConfigError as e:
-    utilities.exit_fatal(e.message, errcodes.RULES_LOADING_FAILED)
+_CONFIG_DATA = None
+
+def load_config_data() -> None:
+    global _CONFIG_DATA
+    config_data_file = pathlib.Path(__file__).parent / "config.json"
+    with open(config_data_file, "r", encoding="utf-8") as fh:
+        text = fh.read()
+    _CONFIG_DATA = json.loads(text)
+
+
+def get_java_compatibility() -> dict[int, list[tuple[int, int, int]]]:
+    return {int(k): [tuple(v[0]), tuple(v[1])] for k, v in _CONFIG_DATA["javaCompatibility"].items()}
+
+
+def get_scanners_versions() -> dict[int, list[tuple[int, int, int]]]:
+    data = {}
+    for scanner, release_info in _CONFIG_DATA["scannerVersions"].items():
+        data[scanner] = {k: datetime.datetime(v[0], v[1], v[2]) for k, v in release_info.items()}
+    return data

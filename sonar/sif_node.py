@@ -31,7 +31,7 @@ import sonar.utilities as util
 from sonar.util import types
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
-import sonar.audit.config as audit_conf
+import sonar.config as config
 
 _RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)
 _RELEASE_DATE_7_9 = datetime.datetime(2019, 7, 1) + relativedelta(months=+6)
@@ -147,7 +147,7 @@ def __audit_jvm_version(obj: object, obj_name: str, jvm_props: dict[str, str]) -
     except KeyError:
         log.warning("%s: Can't find SonarQube version in SIF, auditing this part is skipped", obj_name)
         return []
-    java_compat = audit_conf.get_java_compatibility()
+    java_compat = config.get_java_compatibility()
     log.debug("Java compatibility matrix: %s", str(java_compat))
     if java_version not in java_compat:
         log.warning("%s: Java version %d not listed in compatibility matrix, skipping JVM version audit", obj_name, java_version)
