@@ -39,7 +39,7 @@ import sonar.util.constants as c
 
 from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
-from sonar import users, findings, changelog, projects, rules, exceptions
+from sonar import users, findings, changelog, projects, rules, config
 import sonar.utilities as util
 
 COMPONENT_FILTER_OLD = "componentKeys"
@@ -917,7 +917,7 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
     else:
         # Starting from 10.2 - Issue types were replaced by software qualities, and severities replaced by impacts
         __MAP = {"BUG": "RELIABILITY", "CODE_SMELL": "MAINTAINABILITY", "VULNERABILITY": "SECURITY", "SECURITY_HOTSPOT": "SECURITY"}
-        filters["impactSoftwareQualities"] = util.list_re_value(filters.pop("types", None), __MAP)
+        filters["impactSoftwareQualities"] = util.list_re_value(filters.pop("types", None), config.get_issues_map("types"))
         if len(filters["impactSoftwareQualities"]) == 0:
             filters.pop("impactSoftwareQualities")
         __MAP = {"BLOCKER": "HIGH", "CRITICAL": "HIGH", "MAJOR": "MEDIUM", "MINOR": "LOW", "INFO": "LOW"}
