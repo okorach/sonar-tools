@@ -922,8 +922,6 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
             filters.pop("impactSoftwareQualities")
         __MAP = {"BLOCKER": "HIGH", "CRITICAL": "HIGH", "MAJOR": "MEDIUM", "MINOR": "LOW", "INFO": "LOW"}
         filters["impactSeverities"] = util.list_re_value(filters.pop("severities", None), __MAP)
-        if len(filters["impactSeverities"]) == 0:
-            filters.pop("impactSeverities")
 
     if version < (10, 4, 0):
         log.debug("Sanitizing issue search filters - fixing resolutions")
@@ -942,6 +940,7 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
         if NEW_STATUS in filters:
             filters[NEW_STATUS] = util.list_re_value(filters[NEW_STATUS], mapping={OLD_FP: NEW_FP})
 
+    filters = {k: v for k, v in filters.items() if v is not None and len(v) > 0}
     filters = {k: util.allowed_values_string(v, FILTERS_MAP[k]) if k in FILTERS_MAP else v for k, v in filters.items()}
     filters = {k: util.list_to_csv(v) for k, v in filters.items() if v}
     log.debug("Sanitized issue search filters %s", str(filters))
