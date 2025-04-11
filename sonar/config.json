@@ -168,7 +168,8 @@
         "searchFields": {
             "types": "impactSoftwareQualities",
             "severities": "impactSeverities",
-            "statuses": "issueStatuses"
+            "statuses": "issueStatuses",
+            "resolutions": "issueStatuses"
         },
         "resultFields": {
             "resolution": "",
@@ -188,14 +189,17 @@
             "SECURITY_HOTSPOT": "SECURITY"
         },
         "statuses": {
-            "RESOLVED/FALSE-POSITIVE": "FALSE_POSITIVE",
+            "FALSE-POSITIVE": "FALSE_POSITIVE",
             "CONFIRMED": "CONFIRMED",
             "OPEN": "OPEN",
             "REOPENED": "OPEN",
             "CLOSED": "FIXED",
-            "RESOLVED/WONTFIX": "ACCEPTED",
-            "RESOLVED/FIXED": "OPEN",
-            "CLOSED/FIXED": "FIXED"
+            "WONTFIX": "ACCEPTED",
+            "FIXED": "OPEN"
+        },
+        "resolutions": {
+            "FALSE-POSITIVE": "FALSE_POSITIVE",
+            "WONTFIX": "ACCEPTED"
         }
     }
 }
