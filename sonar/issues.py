@@ -39,7 +39,7 @@ import sonar.util.constants as c
 
 from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
-from sonar import users, findings, changelog, projects, rules, config
+from sonar import users, findings, changelog, projects, rules, config, exceptions
 import sonar.utilities as util
 
 COMPONENT_FILTER_OLD = "componentKeys"
@@ -357,6 +357,8 @@ class Issue(findings.Finding):
         :return: Whether the operation succeeded
         :rtype: bool
         """
+        if self.endpoint.is_mqr_mode():
+            raise exceptions.UnsupportedOperation("Changing issue type is not supported in MQR mode")
         log.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
         try:
             r = self.post("issues/set_type", {"issue": self.key, "type": new_type})
