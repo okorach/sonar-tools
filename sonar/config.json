@@ -165,29 +165,29 @@
         }
     },
     "issueMapping": {
-        "searchMap": {
+        "searchFields": {
             "types": "impactSoftwareQualities",
             "severities": "impactSeverities",
             "statuses": "issueStatuses"
         },
-        "resultMap": {
+        "resultFields": {
             "resolution": "",
             "status": "issueStatus"
         },
-        "severityMap": {
+        "severities": {
             "BLOCKER": "BLOCKER",
             "CRITICAL": "HIGH",
             "MAJOR": "MEDIUM",
             "MINOR": "LOW",
             "INFO": "INFO"
         },
-        "typeMap": {
+        "types": {
             "VULNERABILITY": "SECURITY",
             "CODE_SMELL": "MAINTAINABILITY",
             "BUG": "RELIABILITY",
             "SECURITY_HOTSPOT": "SECURITY"
         },
-        "statusMap": {
+        "statuses": {
             "RESOLVED/FALSE-POSITIVE": "FALSE_POSITIVE",
             "CONFIRMED": "CONFIRMED",
             "OPEN": "OPEN",
