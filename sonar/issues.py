@@ -916,7 +916,6 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
         filters = util.dict_remap(original_dict=filters, remapping={COMPONENT_FILTER: COMPONENT_FILTER_OLD})
     else:
         # Starting from 10.2 - Issue types were replaced by software qualities, and severities replaced by impacts
-        __MAP = {"BUG": "RELIABILITY", "CODE_SMELL": "MAINTAINABILITY", "VULNERABILITY": "SECURITY", "SECURITY_HOTSPOT": "SECURITY"}
         filters["impactSoftwareQualities"] = util.list_re_value(filters.pop("types", None), config.get_issues_map("types"))
         if len(filters["impactSoftwareQualities"]) == 0:
             filters.pop("impactSoftwareQualities")
