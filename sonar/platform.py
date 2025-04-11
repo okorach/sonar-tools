@@ -228,7 +228,7 @@ class Platform(object):
         """Makes an HTTP request to SonarQube"""
         mute = kwargs.pop("mute", ())
         api = _normalize_api(api)
-        headers = {"user-agent": self._user_agent}
+        headers = {"user-agent": self._user_agent, "accept": "application/json"}
         headers.update(kwargs.get("headers", {}))
         if params is None:
             params = {}
