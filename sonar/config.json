@@ -163,5 +163,39 @@
             "2.7.1": [2021, 4, 30],
             "2.7": [2019, 10, 1]
         }
+    },
+    "issueMapping": {
+        "searchMap": {
+            "types": "impactSoftwareQualities",
+            "severities": "impactSeverities",
+            "statuses": "issueStatuses"
+        },
+        "resultMap": {
+            "resolution": "",
+            "status": "issueStatus"
+        },
+        "severityMap": {
+            "BLOCKER": "BLOCKER",
+            "CRITICAL": "HIGH",
+            "MAJOR": "MEDIUM",
+            "MINOR": "LOW",
+            "INFO": "INFO"
+        },
+        "typeMap": {
+            "VULNERABILITY": "SECURITY",
+            "CODE_SMELL": "MAINTAINABILITY",
+            "BUG": "RELIABILITY",
+            "SECURITY_HOTSPOT": "SECURITY"
+        },
+        "statusMap": {
+            "RESOLVED/FALSE-POSITIVE": "FALSE_POSITIVE",
+            "CONFIRMED": "CONFIRMED",
+            "OPEN": "OPEN",
+            "REOPENED": "OPEN",
+            "CLOSED": "FIXED",
+            "RESOLVED/WONTFIX": "ACCEPTED",
+            "RESOLVED/FIXED": "OPEN",
+            "CLOSED/FIXED": "FIXED"
+        }
     }
 }

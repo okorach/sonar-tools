@@ -101,7 +101,7 @@ def configure() -> None:
 
 def load_config_data() -> None:
     global _CONFIG_DATA
-    config_data_file = pathlib.Path(__file__).parent / "config.json"
+    config_data_file = pathlib.Path(__file__).parent.parent / "sonar" / "config.json"
     with open(config_data_file, "r", encoding="utf-8") as fh:
         text = fh.read()
     _CONFIG_DATA = json.loads(text)
