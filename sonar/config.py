@@ -27,6 +27,7 @@ from typing import Optional
 
 _CONFIG_DATA = None
 
+
 def load_config_data() -> None:
     global _CONFIG_DATA
     config_data_file = pathlib.Path(__file__).parent / "config.json"
@@ -45,6 +46,6 @@ def get_scanners_versions() -> dict[int, list[tuple[int, int, int]]]:
         data[scanner] = {k: datetime.datetime(v[0], v[1], v[2]) for k, v in release_info.items()}
     return data
 
+
 def get_issues_map(section: str) -> Optional[dict[str, str]]:
     return _CONFIG_DATA["issueMapping"].get(section, None)
-
