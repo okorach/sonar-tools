@@ -23,6 +23,7 @@
 import pathlib
 import datetime
 import json
+from typing import Optional
 
 _CONFIG_DATA = None
 
@@ -43,3 +44,7 @@ def get_scanners_versions() -> dict[int, list[tuple[int, int, int]]]:
     for scanner, release_info in _CONFIG_DATA["scannerVersions"].items():
         data[scanner] = {k: datetime.datetime(v[0], v[1], v[2]) for k, v in release_info.items()}
     return data
+
+def get_issues_map(section: str) -> Optional[dict[str, str]]:
+    return _CONFIG_DATA["issueMapping"].get(section, None)
+
