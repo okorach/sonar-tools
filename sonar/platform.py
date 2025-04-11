@@ -42,7 +42,6 @@ from sonar.util import types, constants as c
 
 from sonar import errcodes, settings, devops, version, sif, exceptions
 from sonar.permissions import permissions, global_permissions, permission_templates
-from sonar.audit import config
 from sonar.audit.rules import get_rule, RuleId
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
@@ -543,7 +542,7 @@ class Platform(object):
                 problems += _audit_setting_set(key, False, platform_settings, audit_settings, settings_url)
 
         problems += (
-            self._audit_project_default_visibility()
+            self._audit_project_default_visibility(audit_settings)
             + self._audit_global_permissions()
             + self._audit_logs(audit_settings)
             + permission_templates.audit(self, audit_settings)
@@ -609,7 +608,7 @@ class Platform(object):
             problems.append(Problem(rule, f"{self.url}/admin/system", nb_deprecation))
         return problems
 
-    def _audit_project_default_visibility(self) -> list[Problem]:
+    def _audit_project_default_visibility(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits whether project default visibility is public"""
         log.info("Auditing project default visibility")
         problems = []
@@ -623,7 +622,7 @@ class Platform(object):
             resp = self.get(settings.Setting.API[c.GET], params={"keys": "projects.default.visibility"})
             visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)
-        if config.get_property("checkDefaultProjectVisibility") and visi != "private":
+        if audit_settings.get("audit.globalSettings.defaultProjectVisibility", "private") != visi:
             rule = get_rule(RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)
             problems.append(Problem(rule, f"{self.url}/admin/projects_management", visi))
         return problems
