@@ -916,22 +916,25 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
     severities = filters.pop("severities", []) + filters.pop("impactSeverities", [])
     statuses = filters.pop("statuses", []) + filters.pop("NEW_STATUS", []) + filters.pop(OLD_STATUS, [])
     if endpoint.is_mqr_mode():
-        filters["impactSoftwareQualities"] = list(set(util.list_remap(types, config.get_issues_map("types"))))
-        filters["impactSeverities"] = list(set(util.list_remap(severities, config.get_issues_map("severities"))))
-        filters[NEW_STATUS] = list(set(util.list_remap(statuses, mapping=config.get_issues_map("resolutions"))))
-        filters = util.dict_remap(original_dict=filters, remapping=config.get_issues_map("searchFields"))
+        log.debug("MAP Type = %s", str(config.get_issues_map("impactSoftwareQualities")))
+        filters["impactSoftwareQualities"] = util.list_remap(types, config.get_issues_map("types"))
+        filters["impactSeverities"] = util.list_remap(severities, config.get_issues_map("severities"))
+        filters[NEW_STATUS] = util.list_remap(statuses, mapping=config.get_issues_map(OLD_STATUS))
     else:
-        filters["types"] = list(set(util.list_remap(types, util.dict_reverse(config.get_issues_map("types")))))
-        filters["severities"] = list(set(util.list_remap(filters.pop("impactSeverities"), util.dict_reverse(config.get_issues_map("severities")))))
-        filters[OLD_STATUS] = list(set(util.list_remap(filters.pop(NEW_STATUS), mapping=util.dict_reverse(config.get_issues_map("severities")))))
-        filters = util.dict_remap(original_dict=filters, remapping=util.dict_reverse(config.get_issues_map("searchFields")))
+        filters["types"] = util.list_remap(types, config.get_issues_map("impactSoftwareQualities"))
+        filters["severities"] = util.list_remap(severities, config.get_issues_map("impactSeverities"))
+        filters[OLD_STATUS] = util.list_remap(statuses, mapping=config.get_issues_map(NEW_STATUS))
 
     if version < (10, 2, 0):
         # Starting from 10.2 - "componentKeys" was renamed "components"
         filters = util.dict_remap(original_dict=filters, remapping={COMPONENT_FILTER: COMPONENT_FILTER_OLD})
 
-    filters = {k: v for k, v in filters.items() if isinstance(v, (list, set, str, tuple)) and len(v) > 0}
-    filters = {k: util.allowed_values_string(v, FILTERS_MAP[k]) if k in FILTERS_MAP else v for k, v in filters.items()}
+    filters = {k: v for k, v in filters.items() if v is not None and (not isinstance(v, (list, set, str, tuple)) or len(v) > 0)}
+    for field in filters:
+        allowed = config.get_issue_search_allowed_values(field)
+        if allowed is not None and filters[field] is not None:
+            filters[field] = util.intersection(filters[field], allowed)
+
     filters = {k: util.list_to_csv(v) for k, v in filters.items() if v}
     log.debug("Sanitized issue search filters %s", str(filters))
     return filters
