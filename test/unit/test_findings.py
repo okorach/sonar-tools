@@ -213,19 +213,18 @@ def test_findings_filter_on_resolution() -> None:
 
 
 def test_findings_filter_on_severity() -> None:
-    """test_findings_filter_on_resolution"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.SEVERITIES}", "BLOCKER,CRITICAL"]):
-            findings_export.main()
+    """test_findings_filter_on_severity"""
+    util.run_success_cmd(findings_export.main, f"{' '.join(CSV_OPTS)} --{opt.SEVERITIES} BLOCKER,CRITICAL")
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
         for line in csvreader:
             if util.SQ.version() < (10, 2, 0):
                 assert line[SEVERITY_COL] in ("BLOCKER", "CRITICAL")
-            else:
+            elif util.SQ.version() < (10, 7, 0):
                 assert "HIGH" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL] or "MEDIUM" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
+            else:
+                assert "BLOCKER" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL] or "HIGH" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
     util.clean(util.CSV_FILE)
 
 

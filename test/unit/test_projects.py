@@ -25,7 +25,7 @@ from collections.abc import Generator
 import pytest
 
 from sonar import projects, exceptions, qualityprofiles, qualitygates, rules
-from sonar.audit import config
+from sonar.audit import audit_config
 
 import utilities as util
 
@@ -66,7 +66,7 @@ def test_create_delete() -> None:
 
 def test_audit() -> None:
     """test_audit"""
-    settings = {k: False for k, v in config.load("sonar-audit").items() if isinstance(v, bool)}
+    settings = {k: False for k, v in audit_config.load("sonar-audit").items() if isinstance(v, bool)}
     settings["audit.projects"] = True
     assert len(projects.audit(util.SQ, settings)) == 0
     proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)

@@ -141,15 +141,22 @@ def is_url(value: str) -> bool:
     return value.startswith("http")
 
 
-def __get_args_and_file(string_arguments: str) -> tuple[Optional[str], list[str]]:
+def __get_args_and_file(string_arguments: str) -> tuple[Optional[str], list[str], bool]:
     """Gets the list arguments and output file of a sonar-tools cmd"""
     args = __split_args(string_arguments)
+    imp_cmd = False
+    for option in (f"-{opt.IMPORT_SHORT}", f"--{opt.IMPORT}"):
+        try:
+            imp_cmd = args.index(option) is not None
+            break
+        except ValueError:
+            logging.info("%s - ValueError", option)
     for option in (f"-{opt.REPORT_FILE_SHORT}", f"--{opt.REPORT_FILE}"):
         try:
-            return args[args.index(option) + 1], args
+            return args[args.index(option) + 1], args, imp_cmd
         except ValueError:
             pass
-    return None, args
+    return None, args, imp_cmd
 
 
 def __split_args(string_arguments: str) -> list[str]:
@@ -177,8 +184,9 @@ def __get_redacted_cmd(string_arguments: str) -> str:
 def run_cmd(func: callable, arguments: str, expected_code: int) -> Optional[str]:
     """Runs a sonar-tools command, verifies it raises the right exception, and returns the expected code"""
     logging.info("RUNNING: %s", __get_redacted_cmd(arguments))
-    file, args = __get_args_and_file(arguments)
-    clean(file)
+    file, args, import_cmd = __get_args_and_file(arguments)
+    if not import_cmd:
+        clean(file)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", args):
             func()
