@@ -661,7 +661,7 @@ def dict_remap(original_dict: dict[str, str], remapping: dict[str, str]) -> dict
 def list_remap(a_list: list[str], mapping: dict[str, str]) -> list[str]:
     if not a_list or len(a_list) == 0:
         return []
-    return [mapping[v] if v in mapping else v for v in a_list]
+    return list(set([mapping[v] if v in mapping else v for v in a_list]))
 
 
 def dict_stringify(original_dict: dict[str, str]) -> dict[str, str]:
