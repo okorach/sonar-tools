@@ -164,42 +164,44 @@
             "2.7": [2019, 10, 1]
         }
     },
-    "issueMapping": {
-        "searchFields": {
-            "types": "impactSoftwareQualities",
-            "severities": "impactSeverities",
-            "statuses": "issueStatuses",
-            "resolutions": "issueStatuses"
-        },
-        "resultFields": {
-            "resolution": "",
-            "status": "issueStatus"
-        },
-        "severities": {
-            "BLOCKER": "BLOCKER",
-            "CRITICAL": "HIGH",
-            "MAJOR": "MEDIUM",
-            "MINOR": "LOW",
-            "INFO": "INFO"
-        },
-        "types": {
-            "VULNERABILITY": "SECURITY",
-            "CODE_SMELL": "MAINTAINABILITY",
-            "BUG": "RELIABILITY",
-            "SECURITY_HOTSPOT": "SECURITY"
-        },
-        "statuses": {
-            "FALSE-POSITIVE": "FALSE_POSITIVE",
-            "CONFIRMED": "CONFIRMED",
-            "OPEN": "OPEN",
-            "REOPENED": "OPEN",
-            "CLOSED": "FIXED",
-            "WONTFIX": "ACCEPTED",
-            "FIXED": "OPEN"
-        },
-        "resolutions": {
-            "FALSE-POSITIVE": "FALSE_POSITIVE",
-            "WONTFIX": "ACCEPTED"
+    "issuesSearch": {
+        "maps": {
+            "fields": {
+                "types": "impactSoftwareQualities",
+                "severities": "impactSeverities",
+                "resolutions": "issueStatuses",
+                "statuses": "issueStatuses"
+            },
+            "resultFields": {
+                "resolution": "",
+                "status": "issueStatus"
+            },
+            "severities": {
+                "BLOCKER": "BLOCKER",
+                "CRITICAL": "HIGH",
+                "MAJOR": "MEDIUM",
+                "MINOR": "LOW",
+                "INFO": "INFO"
+            },
+            "types": {
+                "SECURITY_HOTSPOT": "SECURITY",
+                "VULNERABILITY": "SECURITY",
+                "CODE_SMELL": "MAINTAINABILITY",
+                "BUG": "RELIABILITY"
+            },
+            "statuses": {
+                "FALSE-POSITIVE": "FALSE_POSITIVE",
+                "CONFIRMED": "CONFIRMED",
+                "OPEN": "OPEN",
+                "REOPENED": "OPEN",
+                "CLOSED": "FIXED",
+                "WONTFIX": "ACCEPTED",
+                "FIXED": "OPEN"
+            },
+            "resolutions": {
+                "FALSE-POSITIVE": "FALSE_POSITIVE",
+                "WONTFIX": "ACCEPTED"
+            }
         }
     }
 }
