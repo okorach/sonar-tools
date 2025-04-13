@@ -60,7 +60,6 @@ def test_import_compatibility() -> None:
 def test_import(get_json_file: Generator[str]) -> None:
     """test_import"""
     export_file = get_json_file
-    export_file = "EXP.JSON"
     cmd = f"projects_cli.py {util.SQS_OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {export_file} --{opt.KEYS} project1"
     util.run_success_cmd(proj_cli.main, cmd)
 
