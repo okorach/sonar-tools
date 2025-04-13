@@ -31,7 +31,7 @@ import sonar.utilities as util
 from sonar.util import types
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
-import sonar.config as config
+from sonar import config
 
 _RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)
 _RELEASE_DATE_7_9 = datetime.datetime(2019, 7, 1) + relativedelta(months=+6)
