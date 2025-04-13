@@ -376,6 +376,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
         if not export_settings.get("FULL_EXPORT", False) and g_obj.is_default():
             continue
         g_list[g_name] = "" if g_obj.description is None else g_obj.description
+    log.info("%s groups to export", len(g_list))
     if write_q:
         write_q.put(g_list)
         write_q.put(util.WRITE_END)
