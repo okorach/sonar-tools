@@ -54,6 +54,7 @@ _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 _SONAR_TOOLS_AGENT = f"sonar-tools {version.PACKAGE_VERSION}"
 _UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-center-properties/master/update-center-source.properties"
 
+_APP_JSON = "application/json"
 LTA = None
 LATEST = None
 _HARDCODED_LTA = (9, 9, 6)
@@ -191,9 +192,9 @@ class Platform(object):
         """
         if util.is_api_v2(api):
             if "headers" in kwargs:
-                kwargs["headers"]["content-type"] = "application/json"
+                kwargs["headers"]["content-type"] = _APP_JSON
             else:
-                kwargs["headers"] = {"content-type": "application/json"}
+                kwargs["headers"] = {"content-type": _APP_JSON}
             return self.__run_request(requests.post, api, data=json.dumps(params), **kwargs)
         else:
             return self.__run_request(requests.post, api, params, **kwargs)
@@ -227,7 +228,7 @@ class Platform(object):
         """Makes an HTTP request to SonarQube"""
         mute = kwargs.pop("mute", ())
         api = _normalize_api(api)
-        headers = {"user-agent": self._user_agent, "accept": "application/json"}
+        headers = {"user-agent": self._user_agent, "accept": _APP_JSON}
         headers.update(kwargs.get("headers", {}))
         if params is None:
             params = {}
