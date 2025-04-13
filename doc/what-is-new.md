@@ -10,6 +10,8 @@
   - New audit check to avoid using Scanner for .Net 9.2 that has a vulnerability
   - Fix incorrect warning when running 2025.1 with JRE 21 (this is supported)
   - Fix incorrect warning when SQS is run with JRE 17 (this is supported)
+* `sonar-rules`:
+  - Allow to only export rules of a given quality profile
 * `sonar-findings-sync` hardening
 
 # Version 3.9
