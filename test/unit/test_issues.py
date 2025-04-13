@@ -35,7 +35,9 @@ ISSUE_FP_V9_9 = "AZNT89kklhFmauJ_HQSK"
 ISSUE_ACCEPTED = "a1fddba4-9e70-46c6-ac95-e815104ead59"
 ISSUE_ACCEPTED_V9_9 = "AZI6frkTuTfDeRt_hspx"
 ISSUE_W_MULTIPLE_CHANGELOGS = "6ae41c3b-c3d2-422f-a505-d355e7b0a268"
+CHLOG_ISSUE_DATE = "2019-09-21"
 ISSUE_W_MULTIPLE_CHANGELOGS_V9_9 = "AZBKamIoDJWCTq61gxzW"
+CHLOG_ISSUE_V9_9_DATE = "2021-01-08"
 
 
 def test_issue() -> None:
@@ -177,9 +179,8 @@ def test_changelog() -> None:
 
 def test_multiple_changelogs():
     """test_multiple_changelogs"""
-    dstart = util.string_to_date("2019-09-21")
-    dstop = util.string_to_date("2019-09-21")
-    issues_d = issues.search_by_date(endpoint=tutil.SQ, params={"project": "pytorch"}, date_start=dstart, date_stop=dstop)
+    issue_dt = util.string_to_date(CHLOG_ISSUE_V9_9_DATE if tutil.SQ.version() < (10, 0, 0) else CHLOG_ISSUE_DATE)
+    issues_d = issues.search_by_date(endpoint=tutil.SQ, params={"project": "pytorch", "timeZone": "Europe/Paris"}, date_start=issue_dt, date_stop=issue_dt)
     issue_key = ISSUE_W_MULTIPLE_CHANGELOGS if tutil.SQ.version() >= (10, 0, 0) else ISSUE_W_MULTIPLE_CHANGELOGS_V9_9
     assert issue_key in issues_d
     issue = issues_d[issue_key]

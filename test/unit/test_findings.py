@@ -204,11 +204,15 @@ def test_findings_filter_on_resolution() -> None:
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE,ACCEPTED,SAFE"]):
             findings_export.main()
+    if util.SQ.version() < (10, 0, 0):
+        statuses = ("FALSE-POSITIVE", "WONTFIX", "SAFE")
+    else:
+        statuses = ("FALSE-POSITIVE", "ACCEPTED", "SAFE")
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
         for line in csvreader:
-            assert line[STATUS_COL] in ("FALSE-POSITIVE", "ACCEPTED", "SAFE")
+            assert line[STATUS_COL] in statuses
     util.clean(util.CSV_FILE)
 
 
@@ -239,7 +243,10 @@ def test_findings_filter_on_multiple_criteria() -> None:
         csvreader = csv.reader(fh)
         next(csvreader)
         for line in csvreader:
-            assert line[STATUS_COL] in ("FALSE-POSITIVE", "ACCEPTED")
+            if util.SQ.version() < (10, 0, 0):
+                assert line[STATUS_COL] in ("FALSE-POSITIVE", "WONTFIX")
+            else:
+                assert line[STATUS_COL] in ("FALSE-POSITIVE", "ACCEPTED")
             if util.SQ.version() >= (10, 2, 0):
                 assert line[MAINTAINABILITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
             else:
@@ -281,11 +288,15 @@ def test_findings_filter_on_multiple_criteria_3() -> None:
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.STATUSES}", "ACCEPTED", f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE"]):
             findings_export.main()
 
+    if util.SQ.version() < (10, 0, 0):
+        statuses = ("WONTFIX", "FALSE_POSITIVE", "FALSE-POSITIVE")
+    else:
+        statuses = ("ACCEPTED", "FALSE_POSITIVE", "FALSE-POSITIVE")
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
         for line in csvreader:
-            assert line[STATUS_COL] in ("ACCEPTED", "FALSE_POSITIVE", "FALSE-POSITIVE")
+            assert line[STATUS_COL] in statuses
     util.clean(util.CSV_FILE)
 
 
