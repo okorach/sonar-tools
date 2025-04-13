@@ -180,7 +180,9 @@ def test_changelog() -> None:
 def test_multiple_changelogs():
     """test_multiple_changelogs"""
     issue_dt = util.string_to_date(CHLOG_ISSUE_V9_9_DATE if tutil.SQ.version() < (10, 0, 0) else CHLOG_ISSUE_DATE)
-    issues_d = issues.search_by_date(endpoint=tutil.SQ, params={"project": "pytorch", "timeZone": "Europe/Paris"}, date_start=issue_dt, date_stop=issue_dt)
+    issues_d = issues.search_by_date(
+        endpoint=tutil.SQ, params={"project": "pytorch", "timeZone": "Europe/Paris"}, date_start=issue_dt, date_stop=issue_dt
+    )
     issue_key = ISSUE_W_MULTIPLE_CHANGELOGS if tutil.SQ.version() >= (10, 0, 0) else ISSUE_W_MULTIPLE_CHANGELOGS_V9_9
     assert issue_key in issues_d
     issue = issues_d[issue_key]
