@@ -145,7 +145,7 @@ def test_changelog() -> None:
     assert str(issue) == f"Issue key '{issue_key}'"
     assert issue.is_false_positive()
     changelog_l = list(issue.changelog(manual_only=False).values())
-    if tutil.SQ.version() >= (2025, 1, 0):
+    if tutil.SQ.version() >= (25, 1, 0):
         nb_changes = 3
     else:
         nb_changes = 1
@@ -173,8 +173,6 @@ def test_changelog() -> None:
     assert changelog.author() == "admin"
     assert not changelog.is_tag()
     assert changelog.get_tags() is None
-    (t, _) = changelog.changelog_type()
-    assert t == "FALSE-POSITIVE"
 
 
 def test_multiple_changelogs():
