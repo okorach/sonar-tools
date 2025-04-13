@@ -72,13 +72,6 @@ def load(config_name: Optional[str] = None, settings: types.ConfigSettings = Non
     return _CONFIG_SETTINGS
 
 
-def get_property(name: str, settings: Optional[types.ConfigSettings] = None) -> str:
-    """Returns the value of a given property"""
-    if settings is None:
-        settings = _CONFIG_SETTINGS
-    return "" if not settings else settings.get(name, "")
-
-
 def configure() -> None:
     """Configures a default sonar-audit.properties"""
     template_file = pathlib.Path(__file__).parent / "sonar-audit.properties"
