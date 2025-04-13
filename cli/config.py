@@ -131,7 +131,10 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
         obj_json = queue.get()
         done = obj_json is utilities.WRITE_END
         if not done:
-            obj_json = __prep_json_for_write(obj_json, export_settings)
+            if object_type == "groups":
+                obj_json = __prep_json_for_write(obj_json, {**export_settings, EXPORT_EMPTY: True})
+            else:
+                obj_json = __prep_json_for_write(obj_json, export_settings)
             if object_type in ("projects", "applications", "portfolios", "users"):
                 if object_type == "users":
                     key = obj_json.pop("login", None)
@@ -199,19 +202,20 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
                     write_q.put(utilities.WRITE_END)
             write_q.join()
         print("\n}", file=fd)
-    remove_empty = False if mode == "MIGRATION" else not kwargs.get(EXPORT_EMPTY, False)
-    utilities.normalize_json_file(file, remove_empty=remove_empty, remove_none=True)
+    utilities.normalize_json_file(file, remove_empty=False, remove_none=True)
     log.info("Exporting %s data from %s completed", mode.lower(), kwargs[options.URL])
 
 
 def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
     """Cleans up the JSON before writing"""
+    log.debug("Exporting settings %s", utilities.json_dump(export_settings))
     json_data = utilities.sort_lists(json_data)
     if export_settings.get("MODE", "CONFIG") == "MIGRATION":
         return json_data
     if not export_settings.get("FULL_EXPORT", False):
         json_data = utilities.remove_nones(json_data)
         if not export_settings.get(EXPORT_EMPTY, False):
+            log.debug("Removing empties")
             json_data = utilities.remove_empties(json_data)
     if export_settings.get("INLINE_LISTS", True):
         json_data = utilities.inline_lists(json_data, exceptions=("conditions",))
