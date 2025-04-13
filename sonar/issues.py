@@ -512,6 +512,9 @@ class Issue(findings.Finding):
                     u = settings[syncer.SYNC_SERVICE_ACCOUNTS][0]
                 self.assign(u)
                 # self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
+        elif event_type == "UNASSIGN":
+            # TODO: Handle uassign
+            return False
         elif event_type == "TAG":
             self.set_tags(data)
             # self.add_comment(f"Tag change {origin}", settings[SYNC_ADD_COMMENTS])
