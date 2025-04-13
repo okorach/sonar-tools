@@ -52,7 +52,7 @@ def test_rules_json_format() -> None:
 
 def test_rules_filter_language() -> None:
     """Tests that you can export rules for a single or a few languages"""
-    util.run_success_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.LANGUAGES} py,jcl')
+    util.run_success_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.LANGUAGES} py,apex')
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         line = next(csvreader)
@@ -63,7 +63,7 @@ def test_rules_filter_language() -> None:
         else:
             assert line == rules.LEGACY_CSV_EXPORT_FIELDS
         for line in csvreader:
-            assert line[LANGUAGE_COL] in ("py", "jcl")
+            assert line[LANGUAGE_COL] in ("py", "apex")
     util.clean(util.CSV_FILE)
 
 
