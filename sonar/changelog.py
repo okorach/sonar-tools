@@ -138,14 +138,16 @@ class Changelog(object):
 
     def is_change_severity(self) -> bool:
         """Returns whether the changelog item is a change of issue severity"""
-        d = self.sq_json["diffs"][0]
-        return d.get("key", "") == "severity"
+        return any(d.get("key", "") in ("severity", "impactSeverity") for d in self.sq_json["diffs"])
 
     def new_severity(self) -> Optional[str]:
         """Returns the new severity of a change issue severity changelog"""
         if self.is_change_severity():
-            d = self.sq_json["diffs"][0]
-            return d.get("newValue", None)
+            try:
+                d = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "type")
+                return d.get("newValue", None)
+            except StopIteration:
+                log.warning("No severity change found in changelog %s", str(self))
         return None
 
     def is_change_type(self) -> bool:
