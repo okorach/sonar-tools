@@ -1,3 +1,17 @@
+# Version 3.10
+
+* `sonar-findings-sync` hardening
+  - Allow `-O` option for target organization
+  - Compatibility with MQR mode (credit @lukas-frystak-sonarsource)
+  - Misc bug fixes
+* `sonar-config`:
+  - Fix bug about not exporting all projects when more than 1000 projects
+* `sonar-audit`:
+  - New audit check to avoid using Scanner for .Net 9.2 that has a vulnerability
+  - Fix incorrect warning when running 2025.1 with JRE 21 (this is supported)
+  - Fix incorrect warning when SQS is run with JRE 17 (this is supported)
+* `sonar-findings-sync` hardening
+
 # Version 3.9
 
 * Compatibility with SonarQube 2025.1 release
