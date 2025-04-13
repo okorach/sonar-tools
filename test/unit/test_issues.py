@@ -191,7 +191,6 @@ def test_multiple_changelogs():
     for cl in issue.changelog().values():
         (t, _) = cl.changelog_type()
         assert t is not None
-        logging.debug("Type = %s", t)
         results["ACCEPT"] = results["ACCEPT"] or cl.is_resolve_as_accept() or cl.is_resolve_as_wf()
         results["CONFIRM"] = results["CONFIRM"] or cl.is_confirm()
         results["UNCONFIRM"] = results["UNCONFIRM"] or cl.is_unconfirm()
