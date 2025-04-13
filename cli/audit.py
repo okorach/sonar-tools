@@ -37,7 +37,8 @@ from sonar.util import types
 import sonar.logging as log
 from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, portfolios, applications, projects
 import sonar.utilities as util
-from sonar.audit import problem, config
+from sonar.audit import problem
+from sonar.audit import audit_config as audit_conf
 
 TOOL_NAME = "sonar-audit"
 WHAT_AUDITABLE = {
@@ -156,7 +157,7 @@ def main() -> None:
     errcode = errcodes.OS_ERROR
     try:
         kwargs = util.convert_args(__parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)"))
-        settings = config.load(TOOL_NAME)
+        settings = audit_conf.load(TOOL_NAME)
         file = ofile = kwargs.pop(options.REPORT_FILE)
         settings.update(
             {
@@ -167,7 +168,7 @@ def main() -> None:
             }
         )
         if kwargs.get("config", False):
-            config.configure()
+            audit_conf.configure()
             sys.exit(errcodes.OK)
 
         if kwargs["sif"]:

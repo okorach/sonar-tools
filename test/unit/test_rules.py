@@ -27,7 +27,6 @@
 import sys
 import csv
 from unittest.mock import patch
-import pytest
 import utilities as util
 from cli import rules_cli
 import cli.options as opt
@@ -52,18 +51,16 @@ def test_rules_json_format() -> None:
 
 def test_rules_filter_language() -> None:
     """Tests that you can export rules for a single or a few languages"""
-    util.run_success_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.LANGUAGES} py,jcl')
+    langs = ("py", "cs") if util.SQ.edition() == "community" else ("py", "apex")
+    util.run_success_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.LANGUAGES} {",".join(langs)}')
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         line = next(csvreader)
         assert line[0].startswith("# ")
         line[0] = line[0][2:]
-        if util.SQ.version() >= (10, 2, 0):
-            assert line == rules.CSV_EXPORT_FIELDS
-        else:
-            assert line == rules.LEGACY_CSV_EXPORT_FIELDS
+        assert line == (rules.CSV_EXPORT_FIELDS if util.SQ.version() >= (10, 2, 0) else rules.LEGACY_CSV_EXPORT_FIELDS)
         for line in csvreader:
-            assert line[LANGUAGE_COL] in ("py", "jcl")
+            assert line[LANGUAGE_COL] in langs
     util.clean(util.CSV_FILE)
 
 

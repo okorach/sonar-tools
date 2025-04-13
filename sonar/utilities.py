@@ -652,23 +652,16 @@ def deduct_format(fmt: Union[str, None], filename: Union[str, None], allowed_for
 
 
 def dict_remap(original_dict: dict[str, str], remapping: dict[str, str]) -> dict[str, str]:
-    """Adjust findings search filters based on Sonar version"""
+    """Key old keys by new key in a dict"""
     if not original_dict:
         return {}
-    remapped_filters = original_dict.copy()
-    for old, new in remapping.items():
-        if old in original_dict and new not in remapped_filters:
-            remapped_filters[new] = remapped_filters.pop(old)
-    return remapped_filters
+    return {remapping[k] if k in remapping else k: v for k, v in original_dict.items()}
 
 
-def list_re_value(a_list: list[str], mapping: dict[str, str]) -> list[str]:
-    """Adjust findings search filters based on Sonar version"""
+def list_remap(a_list: list[str], mapping: dict[str, str]) -> list[str]:
     if not a_list or len(a_list) == 0:
         return []
-    for old, new in mapping.items():
-        a_list = [new if v == old else v for v in a_list]
-    return a_list
+    return list(set(mapping[v] if v in mapping else v for v in a_list))
 
 
 def dict_stringify(original_dict: dict[str, str]) -> dict[str, str]:
@@ -679,6 +672,11 @@ def dict_stringify(original_dict: dict[str, str]) -> dict[str, str]:
         if isinstance(v, list):
             original_dict[k] = list_to_csv(v)
     return original_dict
+
+
+def dict_reverse(map: dict[str, str]) -> dict[str, str]:
+    """Reverses a dict"""
+    return {v: k for k, v in map.items()}
 
 
 def inline_lists(element: any, exceptions: tuple[str]) -> any:

@@ -23,6 +23,7 @@
 
 import os, stat
 from collections.abc import Generator
+import pytest
 
 import utilities as util
 from sonar import errcodes, utilities, logging
@@ -114,3 +115,23 @@ def test_sif_not_readable(get_json_file: Generator[str]) -> None:
     os.chmod(unreadable_file, current_permissions & NO_PERMS)
     util.run_failed_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {get_json_file} --sif {unreadable_file}", errcodes.SIF_AUDIT_ERROR)
     os.chmod(unreadable_file, current_permissions)
+
+
+def test_configure() -> None:
+    DEFAULT_CONFIG = f"{os.path.expanduser('~')}{os.sep}.sonar-audit.properties"
+    config_exists = os.path.exists(DEFAULT_CONFIG)
+    if config_exists:
+        os.rename(DEFAULT_CONFIG, f"{DEFAULT_CONFIG}.bak")
+    util.run_success_cmd(audit.main, f"{CMD} --config")
+    assert os.path.exists(DEFAULT_CONFIG)
+    if config_exists:
+        os.rename(f"{DEFAULT_CONFIG}.bak", DEFAULT_CONFIG)
+
+
+def test_configure_stdout() -> None:
+    DEFAULT_CONFIG = f"{os.path.expanduser('~')}{os.sep}.sonar-audit.properties"
+    if not os.path.exists(DEFAULT_CONFIG):
+        pytest.skip("No $HOME config fule")
+    last_change = os.stat(DEFAULT_CONFIG).st_ctime_ns
+    util.run_success_cmd(audit.main, f"{CMD} --config")
+    assert last_change == os.stat(DEFAULT_CONFIG).st_ctime_ns

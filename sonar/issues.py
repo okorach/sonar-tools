@@ -39,7 +39,7 @@ import sonar.util.constants as c
 
 from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
-from sonar import users, findings, changelog, projects, rules, exceptions
+from sonar import users, findings, changelog, projects, rules, config, exceptions
 import sonar.utilities as util
 
 COMPONENT_FILTER_OLD = "componentKeys"
@@ -357,6 +357,8 @@ class Issue(findings.Finding):
         :return: Whether the operation succeeded
         :rtype: bool
         """
+        if self.endpoint.is_mqr_mode():
+            raise exceptions.UnsupportedOperation("Changing issue type is not supported in MQR mode")
         log.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
         try:
             r = self.post("issues/set_type", {"issue": self.key, "type": new_type})
@@ -510,6 +512,9 @@ class Issue(findings.Finding):
                     u = settings[syncer.SYNC_SERVICE_ACCOUNTS][0]
                 self.assign(u)
                 # self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
+        elif event_type == "UNASSIGN":
+            # TODO: Handle uassign
+            return False
         elif event_type == "TAG":
             self.set_tags(data)
             # self.add_comment(f"Tag change {origin}", settings[SYNC_ADD_COMMENTS])
@@ -604,7 +609,7 @@ def search_by_type(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]
     log.info("Splitting search by issue types")
     for issue_type in ("BUG", "VULNERABILITY", "CODE_SMELL"):
         try:
-            new_params["types"] = issue_type
+            new_params["types"] = [issue_type]
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
@@ -620,7 +625,7 @@ def search_by_severity(endpoint: pf.Platform, params: ApiParams) -> dict[str, Is
     log.info("Splitting search by severities")
     for sev in ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO"):
         try:
-            new_params["severities"] = sev
+            new_params["severities"] = [sev]
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
@@ -907,42 +912,32 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
         return {}
     log.debug("Sanitizing issue search filters %s", str(params))
     version = endpoint.version()
-    filters = util.dict_remap(
-        original_dict=params.copy(), remapping={"project": COMPONENT_FILTER, "application": COMPONENT_FILTER, "portfolio": COMPONENT_FILTER}
-    )
+    comp_filter = component_filter(endpoint)
+    filters = util.dict_remap(original_dict=params.copy(), remapping={"project": comp_filter, "application": comp_filter, "portfolio": comp_filter})
     filters = util.dict_subset(util.remove_nones(filters), _SEARCH_CRITERIAS)
+    types = filters.pop("types", []) + filters.pop("impactSoftwareQualities", [])
+    severities = filters.pop("severities", []) + filters.pop("impactSeverities", [])
+    statuses = filters.pop("statuses", []) + filters.pop("NEW_STATUS", []) + filters.pop(OLD_STATUS, [])
+    if endpoint.is_mqr_mode():
+        log.debug("MAP Type = %s", str(config.get_issues_map("impactSoftwareQualities")))
+        filters["impactSoftwareQualities"] = util.list_remap(types, config.get_issues_map("types"))
+        filters["impactSeverities"] = util.list_remap(severities, config.get_issues_map("severities"))
+        filters[NEW_STATUS] = util.list_remap(statuses, mapping=config.get_issues_map(OLD_STATUS))
+    else:
+        filters["types"] = util.list_remap(types, config.get_issues_map("impactSoftwareQualities"))
+        filters["severities"] = util.list_remap(severities, config.get_issues_map("impactSeverities"))
+        filters[OLD_STATUS] = util.list_remap(statuses, mapping=config.get_issues_map(NEW_STATUS))
+
     if version < (10, 2, 0):
         # Starting from 10.2 - "componentKeys" was renamed "components"
         filters = util.dict_remap(original_dict=filters, remapping={COMPONENT_FILTER: COMPONENT_FILTER_OLD})
-    else:
-        # Starting from 10.2 - Issue types were replaced by software qualities, and severities replaced by impacts
-        __MAP = {"BUG": "RELIABILITY", "CODE_SMELL": "MAINTAINABILITY", "VULNERABILITY": "SECURITY", "SECURITY_HOTSPOT": "SECURITY"}
-        filters["impactSoftwareQualities"] = util.list_re_value(filters.pop("types", None), __MAP)
-        if len(filters["impactSoftwareQualities"]) == 0:
-            filters.pop("impactSoftwareQualities")
-        __MAP = {"BLOCKER": "HIGH", "CRITICAL": "HIGH", "MAJOR": "MEDIUM", "MINOR": "LOW", "INFO": "LOW"}
-        filters["impactSeverities"] = util.list_re_value(filters.pop("severities", None), __MAP)
-        if len(filters["impactSeverities"]) == 0:
-            filters.pop("impactSeverities")
 
-    if version < (10, 4, 0):
-        log.debug("Sanitizing issue search filters - fixing resolutions")
-        filters = util.dict_remap(original_dict=filters, remapping={NEW_STATUS: OLD_STATUS})
-        if OLD_STATUS in filters:
-            filters[OLD_STATUS] = util.list_re_value(filters[OLD_STATUS], mapping={NEW_FP: OLD_FP})
-    else:
-        # Starting from 10.4 - "resolutions" and "statuses" are merged into "issuesStatuses", "FALSE-POSITIVE" was renamed "FALSE_POSITIVE"
-        # and "statuses" is deprecated
-        if "statuses" in filters:
-            if NEW_STATUS in filters:
-                filters[NEW_STATUS].update(filters.pop("statuses"))
-            else:
-                filters[NEW_STATUS] = filters.pop("statuses")
-        filters = util.dict_remap(original_dict=filters, remapping={OLD_STATUS: NEW_STATUS})
-        if NEW_STATUS in filters:
-            filters[NEW_STATUS] = util.list_re_value(filters[NEW_STATUS], mapping={OLD_FP: NEW_FP})
+    filters = {k: v for k, v in filters.items() if v is not None and (not isinstance(v, (list, set, str, tuple)) or len(v) > 0)}
+    for field in filters:
+        allowed = config.get_issue_search_allowed_values(field)
+        if allowed is not None and filters[field] is not None:
+            filters[field] = util.intersection(filters[field], allowed)
 
-    filters = {k: util.allowed_values_string(v, FILTERS_MAP[k]) if k in FILTERS_MAP else v for k, v in filters.items()}
     filters = {k: util.list_to_csv(v) for k, v in filters.items() if v}
     log.debug("Sanitized issue search filters %s", str(filters))
     return filters

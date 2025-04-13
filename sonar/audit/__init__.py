@@ -20,8 +20,8 @@
 
 """sonar.audit module"""
 
-from sonar.audit import rules, config
-from sonar import utilities, errcodes
+from sonar.audit import rules
+from sonar import utilities, errcodes, config
 
 config.load_config_data()
 try:

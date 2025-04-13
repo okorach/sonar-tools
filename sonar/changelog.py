@@ -138,14 +138,16 @@ class Changelog(object):
 
     def is_change_severity(self) -> bool:
         """Returns whether the changelog item is a change of issue severity"""
-        d = self.sq_json["diffs"][0]
-        return d.get("key", "") == "severity"
+        return any(d.get("key", "") in ("severity", "impactSeverity") for d in self.sq_json["diffs"])
 
     def new_severity(self) -> Optional[str]:
         """Returns the new severity of a change issue severity changelog"""
         if self.is_change_severity():
-            d = self.sq_json["diffs"][0]
-            return d.get("newValue", None)
+            try:
+                d = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "type")
+                return d.get("newValue", None)
+            except StopIteration:
+                log.warning("No severity change found in changelog %s", str(self))
         return None
 
     def is_change_type(self) -> bool:
@@ -180,6 +182,10 @@ class Changelog(object):
     def is_assignment(self) -> bool:
         """Returns whether the changelog item is an assignment"""
         return any(d.get("key", "") == "assignee" and "newValue" in d for d in self.sq_json["diffs"])
+
+    def is_unassign(self) -> bool:
+        """Returns whether the changelog item is an unassign"""
+        return any(d.get("key", "") == "assignee" and "newValue" not in d for d in self.sq_json["diffs"])
 
     def assignee(self, new: bool = True) -> Optional[str]:
         """Returns the new assignee of a change assignment changelog"""
@@ -223,6 +229,8 @@ class Changelog(object):
         ctype = (None, None)
         if self.is_assignment():
             ctype = ("ASSIGN", self.assignee())
+        elif self.is_unassign():
+            ctype = ("UNASSIGN", None)
         elif self.is_reopen():
             ctype = ("REOPEN", None)
         elif self.is_confirm():

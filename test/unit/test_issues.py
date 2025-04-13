@@ -34,6 +34,10 @@ ISSUE_FP = "402452b7-fd3a-4487-97cc-1c996697b397"
 ISSUE_FP_V9_9 = "AZNT89kklhFmauJ_HQSK"
 ISSUE_ACCEPTED = "a1fddba4-9e70-46c6-ac95-e815104ead59"
 ISSUE_ACCEPTED_V9_9 = "AZI6frkTuTfDeRt_hspx"
+ISSUE_W_MULTIPLE_CHANGELOGS = "6ae41c3b-c3d2-422f-a505-d355e7b0a268"
+CHLOG_ISSUE_DATE = "2019-09-21"
+ISSUE_W_MULTIPLE_CHANGELOGS_V9_9 = "AZBKamIoDJWCTq61gxzW"
+CHLOG_ISSUE_V9_9_DATE = "2021-01-08"
 
 
 def test_issue() -> None:
@@ -140,8 +144,8 @@ def test_changelog() -> None:
     assert issue.key == issue_key
     assert str(issue) == f"Issue key '{issue_key}'"
     assert issue.is_false_positive()
-    changelog_l = list(issue.changelog().values())
-    if tutil.SQ.version() >= (2025, 1, 0) or tutil.SQ.edition() == "community" and tutil.SQ.version() >= (25, 1, 0):
+    changelog_l = list(issue.changelog(manual_only=False).values())
+    if tutil.SQ.version() >= (25, 1, 0):
         nb_changes = 3
     else:
         nb_changes = 1
@@ -169,8 +173,38 @@ def test_changelog() -> None:
     assert changelog.author() == "admin"
     assert not changelog.is_tag()
     assert changelog.get_tags() is None
-    (t, _) = changelog.changelog_type()
-    assert t == "FALSE-POSITIVE"
+
+
+def test_multiple_changelogs():
+    """test_multiple_changelogs"""
+    issue_dt = util.string_to_date(CHLOG_ISSUE_V9_9_DATE if tutil.SQ.version() < (10, 0, 0) else CHLOG_ISSUE_DATE)
+    issues_d = issues.search_by_date(
+        endpoint=tutil.SQ, params={"project": "pytorch", "timeZone": "Europe/Paris"}, date_start=issue_dt, date_stop=issue_dt
+    )
+    issue_key = ISSUE_W_MULTIPLE_CHANGELOGS if tutil.SQ.version() >= (10, 0, 0) else ISSUE_W_MULTIPLE_CHANGELOGS_V9_9
+    assert issue_key in issues_d
+    issue = issues_d[issue_key]
+    state_list = ("ACCEPT", "CONFIRM", "UNCONFIRM", "FP", "REOPEN", "SEVERITY", "ASSIGN", "UNASSIGN", "SEVERITY")
+    results = {s: False for s in state_list}
+    for cl in issue.changelog().values():
+        (t, _) = cl.changelog_type()
+        assert t is not None
+        results["ACCEPT"] = results["ACCEPT"] or cl.is_resolve_as_accept() or cl.is_resolve_as_wf()
+        results["CONFIRM"] = results["CONFIRM"] or cl.is_confirm()
+        results["UNCONFIRM"] = results["UNCONFIRM"] or cl.is_unconfirm()
+        if cl.is_resolve_as_fp():
+            results["FP"] = True
+            assert cl.previous_state() in "OPEN", "REOPENED"
+        if cl.is_assignment():
+            results["ASSIGN"] = True
+            assert len(cl.assignee()) > 0
+        results["UNASSIGN"] = results["UNASSIGN"] or cl.is_unassign()
+        results["SEVERITY"] = results["SEVERITY"] or cl.is_change_severity()
+        results["REOPEN"] = results["REOPEN"] or cl.is_reopen()
+    for s in state_list:
+        if s != "REOPEN" or (s == "REOPEN" and tutil.SQ.version() < (10, 0, 0)):
+            logging.debug("Checking that changelog %s was found", s)
+            assert results[s]
 
 
 def test_request_error() -> None:
