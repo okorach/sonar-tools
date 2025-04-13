@@ -6,6 +6,7 @@
   - Misc bug fixes
 * `sonar-config`:
   - Fix bug about not exporting all projects when more than 1000 projects
+  - Fix bug about not exporting groups that have no description
 * `sonar-audit`:
   - New audit check to avoid using Scanner for .Net 9.2 that has a vulnerability
   - Fix incorrect warning when running 2025.1 with JRE 21 (this is supported)
