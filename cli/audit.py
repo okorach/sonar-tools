@@ -168,7 +168,7 @@ def main() -> None:
             }
         )
         if kwargs.get("config", False):
-            config.configure()
+            audit_conf.configure()
             sys.exit(errcodes.OK)
 
         if kwargs["sif"]:
