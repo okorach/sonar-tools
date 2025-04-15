@@ -93,9 +93,9 @@ _SEARCH_CRITERIAS = (
     "impactSeverities",
     # 10.4 new filter
     NEW_STATUS,
+    "files",
+    "directories",
 )
-
-_FILTERS_10_2_REMAPPING = {"severities": "impactSeverities"}
 
 TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL")
 SEVERITIES = ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO")
@@ -592,13 +592,44 @@ def search_by_directory(endpoint: pf.Platform, params: ApiParams) -> dict[str, I
     new_params = params.copy()
     if "components" in params:
         new_params[component_filter(endpoint)] = params["components"]
+    proj_key = new_params.get("project", new_params.get(component_filter(endpoint), None))
     log.info("Splitting search by directories with %s", util.json_dump(new_params))
-    facets = _get_facets(endpoint=endpoint, project_key=new_params[component_filter(endpoint)], facets="directories", params=new_params)
+    facets = _get_facets(endpoint=endpoint, project_key=proj_key, facets="directories", params=new_params)
+    log.debug("FAcets %s", util.json_dump(facets))
     issue_list = {}
     for d in facets["directories"]:
-        new_params["directories"] = d["val"]
-        issue_list.update(search(endpoint=endpoint, params=new_params, raise_error=True))
+        try:
+            new_params["directories"] = d["val"]
+            issue_list.update(search(endpoint=endpoint, params=new_params, raise_error=True))
+        except TooManyIssuesError:
+            log.info(_TOO_MANY_ISSUES_MSG)
+            new_params[component_filter(endpoint)] = proj_key
+            issue_list.update(search_by_file(endpoint=endpoint, params=new_params))
     log.debug("Search by directory ALL: %d issues found", len(issue_list))
+    return issue_list
+
+
+def search_by_file(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
+    """Searches issues splitting by directory to avoid exceeding the 10K limit"""
+    new_params = params.copy()
+    if "components" in params:
+        new_params[component_filter(endpoint)] = params["components"]
+    proj_key = new_params.get("project", new_params.get(component_filter(endpoint), None))
+    log.info("Splitting search by files with %s", util.json_dump(new_params))
+    facets = _get_facets(endpoint=endpoint, project_key=proj_key, facets="files", params=new_params)
+    log.debug("Facets %s", util.json_dump(facets))
+    issue_list = {}
+    for d in facets["files"]:
+        try:
+            new_params["files"] = d["val"]
+            issue_list.update(search(endpoint=endpoint, params=new_params, raise_error=True))
+        except TooManyIssuesError:
+            log.error("Too many issues (>10000) in file %s, aborting search issue for this file", f'{proj_key}:{d["val"]}')
+            continue
+        except exceptions.SonarException as e:
+            log.error("Error while searching issues in file %s: %s", f'{proj_key}:{d["val"]}', str(e))
+            continue
+    log.debug("Search by files ALL: %d issues found", len(issue_list))
     return issue_list
 
 
