@@ -915,12 +915,9 @@ def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
         params["rules"] = ",".join(ruleset[i * SLICE_SIZE : min((i + 1) * SLICE_SIZE - 1, len(ruleset))])
         try:
             data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=params).text)["facets"][0]["values"]
-            for d in data:
-                if d["val"] not in ruleset:
-                    continue
-                if d["val"] not in rulecount:
-                    rulecount[d["val"]] = 0
-                rulecount[d["val"]] += d["count"]
+            added_count = {d["val"]: d["count"] for d in data if d["val"] in ruleset}
+            for k, v in added_count.items():
+                rulecount[k] = rulecount.get(k, 0) + v
         except Exception as e:
             log.error("%s while counting issues per rule, count may be incomplete", util.error_msg(e))
     return rulecount
