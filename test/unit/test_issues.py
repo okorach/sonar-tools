@@ -266,4 +266,3 @@ def test_search_by_small() -> None:
     assert list1 == issues.search_by_severity(tutil.SQ, params)
     assert list1 == issues.search_by_date(tutil.SQ, params)
     assert list1 == issues.search_by_directory(tutil.SQ, params)
-

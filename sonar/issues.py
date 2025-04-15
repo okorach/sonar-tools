@@ -42,20 +42,30 @@ from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettin
 from sonar import users, findings, changelog, projects, rules, config, exceptions
 import sonar.utilities as util
 
-COMPONENT_FILTER_OLD = "componentKeys"
-COMPONENT_FILTER = "components"
+_OLD_SEARCH_COMPONENT_FIELD = "componentKeys"
+_NEW_SEARCH_COMPONENT_FIELD = "components"
 
-OLD_STATUS = "resolutions"
-NEW_STATUS = "issueStatuses"
+_OLD_SEARCH_STATUS_FIELD = "resolutions"
+_NEW_SEARCH_STATUS_FIELD = "issueStatuses"
+
+_OLD_SEARCH_TYPE_FIELD = "types"
+_NEW_SEARCH_TYPE = "impactSoftwareQualities"
+
+_OLD_SEARCH_SEVERITY_FIELD = "severities"
+_NEW_SEARCH_SEVERITY_FIELD = "impactSeverities"
 
 OLD_FP = "FALSE-POSITIVE"
 NEW_FP = "FALSE_POSITIVE"
 
 _SEARCH_CRITERIAS = (
-    COMPONENT_FILTER_OLD,
-    COMPONENT_FILTER,
-    "types",
-    "severities",
+    _OLD_SEARCH_COMPONENT_FIELD,
+    _NEW_SEARCH_COMPONENT_FIELD,
+    _OLD_SEARCH_TYPE_FIELD,
+    _NEW_SEARCH_TYPE,
+    _OLD_SEARCH_SEVERITY_FIELD,
+    _NEW_SEARCH_SEVERITY_FIELD,
+    _OLD_SEARCH_STATUS_FIELD,
+    _NEW_SEARCH_STATUS_FIELD,
     "createdAfter",
     "createdBefore",
     "createdInLast",
@@ -85,32 +95,19 @@ _SEARCH_CRITERIAS = (
     "author",
     "issues",
     "languages",
-    OLD_STATUS,
     "resolved",
     "rules",
     "scopes",
-    # 10.2 new filter
-    "impactSeverities",
-    # 10.4 new filter
-    NEW_STATUS,
     "files",
     "directories",
 )
 
-TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL")
-SEVERITIES = ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO")
-IMPACT_SEVERITIES = ("HIGH", "MEDIUM", "LOW")
-IMPACT_SOFTWARE_QUALITIES = ("SECURITY", "RELIABILITY", "MAINTAINABILITY")
+OLD_TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL")
+NEW_TYPES = ("RELIABILITY", "SECURITY", "MAINTAINABILITY")
+OLD_SEVERITIES = ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO")
+NEW_SEVERITIES = ("BLOCKER", "HIGH", "MEDIUM", "LOW", "INFO")
 STATUSES = ("OPEN", "CONFIRMED", "REOPENED", "RESOLVED", "CLOSED", "ACCEPTED", "FALSE_POSITIVE")
 RESOLUTIONS = ("FALSE-POSITIVE", "WONTFIX", "FIXED", "REMOVED", "ACCEPTED")
-FILTERS_MAP = {
-    "types": TYPES,
-    "severities": SEVERITIES,
-    "impactSoftwareQualities": IMPACT_SOFTWARE_QUALITIES,
-    "impactSeverities": IMPACT_SEVERITIES,
-    "statuses": STATUSES,
-    OLD_STATUS: RESOLUTIONS,
-}
 
 _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
 
@@ -166,7 +163,7 @@ class Issue(findings.Finding):
         if self.branch is not None:
             branch = f"&branch={requests.utils.quote(self.branch)}"
         elif self.pull_request is not None:
-            branch = f"pullRequest={requests.utils.quote(self.pull_request)}&"
+            branch = f"&pullRequest={requests.utils.quote(self.pull_request)}"
         return f"{self.endpoint.url}/project/issues?id={self.projectKey}{branch}&issues={self.key}"
 
     def debt(self) -> int:
@@ -579,20 +576,29 @@ class Issue(findings.Finding):
 # ------------------------------- Static methods --------------------------------------
 
 
-def component_filter(endpoint: pf.Platform) -> str:
+def component_search_field(endpoint: pf.Platform) -> str:
     """Returns the fields used for issues/search filter by porject key"""
-    if endpoint.version() >= (10, 2, 0):
-        return COMPONENT_FILTER
-    else:
-        return COMPONENT_FILTER_OLD
+    return _NEW_SEARCH_COMPONENT_FIELD if endpoint.version() >= (10, 2, 0) else _OLD_SEARCH_COMPONENT_FIELD
+
+
+def type_search_field(endpoint: pf.Platform) -> str:
+    return _OLD_SEARCH_TYPE_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_TYPE
+
+
+def severity_search_field(endpoint: pf.Platform) -> str:
+    return _OLD_SEARCH_SEVERITY_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_SEVERITY_FIELD
+
+
+def status_search_field(endpoint: pf.Platform) -> str:
+    return _OLD_SEARCH_STATUS_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_STATUS_FIELD
 
 
 def search_by_directory(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by directory to avoid exceeding the 10K limit"""
     new_params = params.copy()
     if "components" in params:
-        new_params[component_filter(endpoint)] = params["components"]
-    proj_key = new_params.get("project", new_params.get(component_filter(endpoint), None))
+        new_params[component_search_field(endpoint)] = params["components"]
+    proj_key = new_params.get("project", new_params.get(component_search_field(endpoint), None))
     log.info("Splitting search by directories with %s", util.json_dump(new_params))
     facets = _get_facets(endpoint=endpoint, project_key=proj_key, facets="directories", params=new_params)
     log.debug("FAcets %s", util.json_dump(facets))
@@ -603,7 +609,7 @@ def search_by_directory(endpoint: pf.Platform, params: ApiParams) -> dict[str, I
             issue_list.update(search(endpoint=endpoint, params=new_params, raise_error=True))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
-            new_params[component_filter(endpoint)] = proj_key
+            new_params[component_search_field(endpoint)] = proj_key
             issue_list.update(search_by_file(endpoint=endpoint, params=new_params))
     log.debug("Search by directory ALL: %d issues found", len(issue_list))
     return issue_list
@@ -613,8 +619,8 @@ def search_by_file(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]
     """Searches issues splitting by directory to avoid exceeding the 10K limit"""
     new_params = params.copy()
     if "components" in params:
-        new_params[component_filter(endpoint)] = params["components"]
-    proj_key = new_params.get("project", new_params.get(component_filter(endpoint), None))
+        new_params[component_search_field(endpoint)] = params["components"]
+    proj_key = new_params.get("project", new_params.get(component_search_field(endpoint), None))
     log.info("Splitting search by files with %s", util.json_dump(new_params))
     facets = _get_facets(endpoint=endpoint, project_key=proj_key, facets="files", params=new_params)
     log.debug("Facets %s", util.json_dump(facets))
@@ -638,9 +644,10 @@ def search_by_type(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by issue types")
-    for issue_type in ("BUG", "VULNERABILITY", "CODE_SMELL"):
+    types = NEW_TYPES if endpoint.is_mqr_mode() else OLD_TYPES
+    for issue_type in types:
         try:
-            new_params["types"] = [issue_type]
+            new_params[type_search_field(endpoint)] = [issue_type]
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
@@ -654,9 +661,10 @@ def search_by_severity(endpoint: pf.Platform, params: ApiParams) -> dict[str, Is
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by severities")
-    for sev in ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO"):
+    severities = NEW_SEVERITIES if endpoint.is_mqr_mode() else OLD_SEVERITIES
+    for sev in severities:
         try:
-            new_params["severities"] = [sev]
+            new_params[severity_search_field(endpoint)] = [sev]
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
@@ -771,7 +779,7 @@ def search_all(endpoint: pf.Platform, params: ApiParams = None) -> dict[str, Iss
         issue_list = search(endpoint=endpoint, params=new_params.copy())
     except TooManyIssuesError:
         log.info(_TOO_MANY_ISSUES_MSG)
-        comp_filter = component_filter(endpoint)
+        comp_filter = component_search_field(endpoint)
         if params and "project" in params:
             key_list = util.csv_to_list(params["project"])
         elif params and comp_filter in params:
@@ -866,15 +874,10 @@ def _get_facets(endpoint: pf.Platform, project_key: str, facets: str = "director
     """Returns the facets of a search"""
     if not params:
         params = {}
-    params.update({component_filter(endpoint): project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
+    params.update({component_search_field(endpoint): project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
     filters = pre_search_filters(endpoint=endpoint, params=params)
     data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text)
-    l = {}
-    facets_list = util.csv_to_list(facets)
-    for f in data["facets"]:
-        if f["property"] in facets_list:
-            l[f["property"]] = f["values"]
-    return l
+    return {f["property"]: f["values"] for f in data["facets"] if f["property"] in util.csv_to_list(facets)}
 
 
 def __get_one_issue_date(endpoint: pf.Platform, asc_sort: str = "false", params: ApiParams = None) -> Optional[datetime]:
@@ -918,12 +921,9 @@ def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
         params["rules"] = ",".join(ruleset[i * SLICE_SIZE : min((i + 1) * SLICE_SIZE - 1, len(ruleset))])
         try:
             data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=params).text)["facets"][0]["values"]
-            for d in data:
-                if d["val"] not in ruleset:
-                    continue
-                if d["val"] not in rulecount:
-                    rulecount[d["val"]] = 0
-                rulecount[d["val"]] += d["count"]
+            added_count = {d["val"]: d["count"] for d in data if d["val"] in ruleset}
+            for k, v in added_count.items():
+                rulecount[k] = rulecount.get(k, 0) + v
         except Exception as e:
             log.error("%s while counting issues per rule, count may be incomplete", util.error_msg(e))
     return rulecount
@@ -942,26 +942,28 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
     if not params:
         return {}
     log.debug("Sanitizing issue search filters %s", str(params))
-    version = endpoint.version()
-    comp_filter = component_filter(endpoint)
-    filters = util.dict_remap(original_dict=params.copy(), remapping={"project": comp_filter, "application": comp_filter, "portfolio": comp_filter})
+    comp_filter = component_search_field(endpoint)
+    filters = util.dict_remap(original_dict=params, remapping={"project": comp_filter, "application": comp_filter, "portfolio": comp_filter})
     filters = util.dict_subset(util.remove_nones(filters), _SEARCH_CRITERIAS)
-    types = filters.pop("types", []) + filters.pop("impactSoftwareQualities", [])
-    severities = filters.pop("severities", []) + filters.pop("impactSeverities", [])
-    statuses = filters.pop("statuses", []) + filters.pop("NEW_STATUS", []) + filters.pop(OLD_STATUS, [])
     if endpoint.is_mqr_mode():
-        log.debug("MAP Type = %s", str(config.get_issues_map("impactSoftwareQualities")))
-        filters["impactSoftwareQualities"] = util.list_remap(types, config.get_issues_map("types"))
-        filters["impactSeverities"] = util.list_remap(severities, config.get_issues_map("severities"))
-        filters[NEW_STATUS] = util.list_remap(statuses, mapping=config.get_issues_map(OLD_STATUS))
+        mapping = {
+            _NEW_SEARCH_TYPE: _OLD_SEARCH_TYPE_FIELD,
+            _NEW_SEARCH_SEVERITY_FIELD: _OLD_SEARCH_SEVERITY_FIELD,
+            _NEW_SEARCH_STATUS_FIELD: _OLD_SEARCH_STATUS_FIELD,
+        }
     else:
-        filters["types"] = util.list_remap(types, config.get_issues_map("impactSoftwareQualities"))
-        filters["severities"] = util.list_remap(severities, config.get_issues_map("impactSeverities"))
-        filters[OLD_STATUS] = util.list_remap(statuses, mapping=config.get_issues_map(NEW_STATUS))
+        mapping = {
+            _OLD_SEARCH_TYPE_FIELD: _NEW_SEARCH_TYPE,
+            _OLD_SEARCH_SEVERITY_FIELD: _NEW_SEARCH_SEVERITY_FIELD,
+            _OLD_SEARCH_STATUS_FIELD: _NEW_SEARCH_STATUS_FIELD,
+        }
+    for new, old in mapping.items():
+        crit = filters.pop(old, []) + filters.pop(new, [])
+        filters[new] = util.list_remap(crit, config.get_issues_map(old))
 
-    if version < (10, 2, 0):
+    if endpoint.version() < (10, 2, 0):
         # Starting from 10.2 - "componentKeys" was renamed "components"
-        filters = util.dict_remap(original_dict=filters, remapping={COMPONENT_FILTER: COMPONENT_FILTER_OLD})
+        filters = util.dict_remap(original_dict=filters, remapping={_NEW_SEARCH_COMPONENT_FIELD: _OLD_SEARCH_COMPONENT_FIELD})
 
     filters = {k: v for k, v in filters.items() if v is not None and (not isinstance(v, (list, set, str, tuple)) or len(v) > 0)}
     for field in filters:
