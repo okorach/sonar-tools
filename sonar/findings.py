@@ -400,9 +400,6 @@ class Finding(sq.SqObject):
                 prelim_check = col1 == col2
             except KeyError:
                 pass
-        if self.key == "444f6f46-9571-42e1-8ee4-d1171d8b497e":
-            log.info("Source: %s / %s / %s / %s ", self.rule, self.hash, self.file(), self.message)
-            log.info("Target: %s / %s / %s / %s ", another_finding.rule, another_finding.hash, another_finding.file(), another_finding.message)
         return (
             self.rule == another_finding.rule
             and self.hash == another_finding.hash
@@ -461,6 +458,7 @@ class Finding(sq.SqObject):
         log.info("Searching for an exact match of %s", str(self))
         for finding in findings_list:
             if self is finding:
+                log.debug("%s and %s are the same issue", str(self), str(finding))
                 continue
             if finding.strictly_identical_to(self, ignore_component, **kwargs):
                 if finding.can_be_synced(allowed_users):
@@ -470,6 +468,8 @@ class Finding(sq.SqObject):
                     log.info("%s and %s are exact match but target already has changes, cannot be synced", str(self), str(finding))
                     match_but_modified.append(finding)
                 return exact_matches, approx_matches, match_but_modified
+            else:
+                log.debug("%s and %s do not exactly match", str(self), str(finding))
             # else:
             #    log.debug("%s and %s are not identical", str(self), str(finding))
 
