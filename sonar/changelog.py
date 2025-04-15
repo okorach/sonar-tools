@@ -185,7 +185,7 @@ class Changelog(object):
 
     def is_unassign(self) -> bool:
         """Returns whether the changelog item is an unassign"""
-        return any(d.get("key", "") == "assignee" and "newValue" not in d for d in self.sq_json["diffs"])
+        return any(d.get("key", "") == "assignee" and "newValue" not in d for d in self.sq_json["diffs"]) and len(self.sq_json["diffs"]) == 1
 
     def assignee(self, new: bool = True) -> Optional[str]:
         """Returns the new assignee of a change assignment changelog"""
