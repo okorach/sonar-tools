@@ -950,7 +950,6 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
     severities = filters.pop("severities", []) + filters.pop("impactSeverities", [])
     statuses = filters.pop("statuses", []) + filters.pop("NEW_STATUS", []) + filters.pop(OLD_STATUS, [])
     if endpoint.is_mqr_mode():
-        log.debug("MAP Type = %s", str(config.get_issues_map("impactSoftwareQualities")))
         filters["impactSoftwareQualities"] = util.list_remap(types, config.get_issues_map("types"))
         filters["impactSeverities"] = util.list_remap(severities, config.get_issues_map("severities"))
         filters[NEW_STATUS] = util.list_remap(statuses, mapping=config.get_issues_map(OLD_STATUS))
