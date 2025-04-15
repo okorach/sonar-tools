@@ -163,7 +163,7 @@ class Issue(findings.Finding):
         if self.branch is not None:
             branch = f"&branch={requests.utils.quote(self.branch)}"
         elif self.pull_request is not None:
-            branch = f"pullRequest={requests.utils.quote(self.pull_request)}&"
+            branch = f"&pullRequest={requests.utils.quote(self.pull_request)}"
         return f"{self.endpoint.url}/project/issues?id={self.projectKey}{branch}&issues={self.key}"
 
     def debt(self) -> int:
