@@ -939,23 +939,18 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
     if not params:
         return {}
     log.debug("Sanitizing issue search filters %s", str(params))
-    version = endpoint.version()
     comp_filter = component_filter(endpoint)
-    filters = util.dict_remap(original_dict=params.copy(), remapping={"project": comp_filter, "application": comp_filter, "portfolio": comp_filter})
+    filters = util.dict_remap(original_dict=params, remapping={"project": comp_filter, "application": comp_filter, "portfolio": comp_filter})
     filters = util.dict_subset(util.remove_nones(filters), _SEARCH_CRITERIAS)
-    types = filters.pop(_OLD_TYPE, []) + filters.pop(_NEW_TYPE, [])
-    severities = filters.pop(_OLD_SEVERITY, []) + filters.pop(_NEW_SEVERITY, [])
-    statuses = filters.pop("statuses", []) + filters.pop(_NEW_STATUS, []) + filters.pop(_OLD_STATUS, [])
     if endpoint.is_mqr_mode():
-        filters[_NEW_TYPE] = util.list_remap(types, config.get_issues_map(_OLD_TYPE))
-        filters[_NEW_SEVERITY] = util.list_remap(severities, config.get_issues_map(_OLD_SEVERITY))
-        filters[_NEW_STATUS] = util.list_remap(statuses, mapping=config.get_issues_map(_OLD_STATUS))
+        mapping = {_NEW_TYPE: _OLD_TYPE, _NEW_SEVERITY: _OLD_SEVERITY, _NEW_STATUS: _OLD_STATUS}
     else:
-        filters[_OLD_TYPE] = util.list_remap(types, config.get_issues_map(_NEW_TYPE))
-        filters[_OLD_SEVERITY] = util.list_remap(severities, config.get_issues_map(_NEW_SEVERITY))
-        filters[_OLD_STATUS] = util.list_remap(statuses, mapping=config.get_issues_map(_NEW_STATUS))
+        mapping = {_OLD_TYPE: _NEW_TYPE, _OLD_SEVERITY: _NEW_SEVERITY, _OLD_STATUS: _NEW_STATUS}
+    for new, old in mapping.items():
+        crit = filters.pop(old, []) + filters.pop(new, [])
+        filters[new] = util.list_remap(crit, config.get_issues_map(old))
 
-    if version < (10, 2, 0):
+    if endpoint.version() < (10, 2, 0):
         # Starting from 10.2 - "componentKeys" was renamed "components"
         filters = util.dict_remap(original_dict=filters, remapping={_NEW_COMPONENT: _OLD_COMPONENT})
 
