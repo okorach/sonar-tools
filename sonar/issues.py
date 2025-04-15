@@ -866,12 +866,7 @@ def _get_facets(endpoint: pf.Platform, project_key: str, facets: str = "director
     params.update({component_filter(endpoint): project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
     filters = pre_search_filters(endpoint=endpoint, params=params)
     data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text)
-    l = {}
-    facets_list = util.csv_to_list(facets)
-    for f in data["facets"]:
-        if f["property"] in facets_list:
-            l[f["property"]] = f["values"]
-    return l
+    return {f["property"]: f["values"] for f in data["facets"] if f["property"] in util.csv_to_list(facets)}
 
 
 def __get_one_issue_date(endpoint: pf.Platform, asc_sort: str = "false", params: ApiParams = None) -> Optional[datetime]:
