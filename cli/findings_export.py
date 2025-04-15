@@ -119,12 +119,12 @@ def parse_args(desc: str) -> Namespace:
     parser.add_argument(
         f"--{options.SEVERITIES}",
         required=False,
-        help="Comma separated severities among" + util.list_to_csv(issues.SEVERITIES + hotspots.SEVERITIES),
+        help="Comma separated severities among" + util.list_to_csv(issues.OLD_SEVERITIES + hotspots.SEVERITIES),
     )
     parser.add_argument(
         f"--{options.TYPES}",
         required=False,
-        help="Comma separated types among " + util.list_to_csv(issues.TYPES + hotspots.TYPES),
+        help="Comma separated types among " + util.list_to_csv(issues.OLD_TYPES + hotspots.TYPES),
     )
     parser.add_argument(f"--{options.TAGS}", help="Comma separated findings tags", required=False)
     parser.add_argument(
@@ -244,7 +244,7 @@ def __verify_inputs(params: types.ApiParams) -> bool:
     if diff:
         util.exit_fatal(f"Severities {str(diff)} are not legit severities", errcodes.WRONG_SEARCH_CRITERIA)
 
-    diff = util.difference(util.csv_to_list(params.get(options.TYPES, None)), issues.TYPES + hotspots.TYPES)
+    diff = util.difference(util.csv_to_list(params.get(options.TYPES, None)), issues.OLD_TYPES + hotspots.TYPES)
     if diff:
         util.exit_fatal(f"Types {str(diff)} are not legit types", errcodes.WRONG_SEARCH_CRITERIA)
     if len(params[options.CSV_SEPARATOR]) > 1:
@@ -265,7 +265,7 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
         i_resols = util.intersection(resol_list, issues.RESOLUTIONS)
         h_resols = util.intersection(resol_list, hotspots.RESOLUTIONS)
         type_list = util.csv_to_list(params.get(options.TYPES, None))
-        i_types = util.intersection(type_list, issues.TYPES)
+        i_types = util.intersection(type_list, issues.OLD_TYPES)
         h_types = util.intersection(type_list, hotspots.TYPES)
         sev_list = util.csv_to_list(params.get(options.SEVERITIES, None))
         i_sevs = util.intersection(sev_list, issues.SEVERITIES)

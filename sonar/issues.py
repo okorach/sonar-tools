@@ -42,30 +42,30 @@ from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettin
 from sonar import users, findings, changelog, projects, rules, config, exceptions
 import sonar.utilities as util
 
-_OLD_COMPONENT = "componentKeys"
-_NEW_COMPONENT = "components"
+_OLD_SEARCH_COMPONENT_FIELD = "componentKeys"
+_NEW_SEARCH_COMPONENT_FIELD = "components"
 
-_OLD_STATUS = "resolutions"
-_NEW_STATUS = "issueStatuses"
+_OLD_SEARCH_STATUS_FIELD = "resolutions"
+_NEW_SEARCH_STATUS_FIELD = "issueStatuses"
 
-_OLD_TYPE = "types"
-_NEW_TYPE = "impactSoftwareQualities"
+_OLD_SEARCH_TYPE_FIELD = "types"
+_NEW_SEARCH_TYPE = "impactSoftwareQualities"
 
-_OLD_SEVERITY = "severities"
-_NEW_SEVERITY = "impactSeverities"
+_OLD_SEARCH_SEVERITY_FIELD = "severities"
+_NEW_SEARCH_SEVERITY_FIELD = "impactSeverities"
 
 OLD_FP = "FALSE-POSITIVE"
 NEW_FP = "FALSE_POSITIVE"
 
 _SEARCH_CRITERIAS = (
-    _OLD_COMPONENT,
-    _NEW_COMPONENT,
-    _OLD_TYPE,
-    _NEW_TYPE,
-    _OLD_SEVERITY,
-    _NEW_SEVERITY,
-    _OLD_STATUS,
-    _NEW_STATUS,
+    _OLD_SEARCH_COMPONENT_FIELD,
+    _NEW_SEARCH_COMPONENT_FIELD,
+    _OLD_SEARCH_TYPE_FIELD,
+    _NEW_SEARCH_TYPE,
+    _OLD_SEARCH_SEVERITY_FIELD,
+    _NEW_SEARCH_SEVERITY_FIELD,
+    _OLD_SEARCH_STATUS_FIELD,
+    _NEW_SEARCH_STATUS_FIELD,
     "createdAfter",
     "createdBefore",
     "createdInLast",
@@ -102,10 +102,10 @@ _SEARCH_CRITERIAS = (
     "directories",
 )
 
-TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL")
-SEVERITIES = ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO")
-IMPACT_SEVERITIES = ("HIGH", "MEDIUM", "LOW")
-IMPACT_SOFTWARE_QUALITIES = ("SECURITY", "RELIABILITY", "MAINTAINABILITY")
+OLD_TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL")
+NEW_TYPES = ("RELIABILITY", "SECURITY", "MAINTAINABILITY")
+OLD_SEVERITIES = ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO")
+NEW_SEVERITIES = ("BLOCKER", "HIGH", "MEDIUM", "LOW", "INFO")
 STATUSES = ("OPEN", "CONFIRMED", "REOPENED", "RESOLVED", "CLOSED", "ACCEPTED", "FALSE_POSITIVE")
 RESOLUTIONS = ("FALSE-POSITIVE", "WONTFIX", "FIXED", "REMOVED", "ACCEPTED")
 
@@ -579,9 +579,9 @@ class Issue(findings.Finding):
 def component_filter(endpoint: pf.Platform) -> str:
     """Returns the fields used for issues/search filter by porject key"""
     if endpoint.version() >= (10, 2, 0):
-        return _NEW_COMPONENT
+        return _NEW_SEARCH_COMPONENT_FIELD
     else:
-        return _OLD_COMPONENT
+        return _OLD_SEARCH_COMPONENT_FIELD
 
 
 def search_by_directory(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
@@ -635,9 +635,11 @@ def search_by_type(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by issue types")
-    for issue_type in ("BUG", "VULNERABILITY", "CODE_SMELL"):
+    mqr = endpoint.is_mqr_mode()
+    types = NEW_TYPES if mqr else OLD_TYPES
+    for issue_type in types:
         try:
-            new_params["types"] = [issue_type]
+            new_params[_NEW_SEARCH_TYPE if mqr else _OLD_SEARCH_TYPE_FIELD] = [issue_type]
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
@@ -651,9 +653,11 @@ def search_by_severity(endpoint: pf.Platform, params: ApiParams) -> dict[str, Is
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by severities")
-    for sev in ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO"):
+    mqr = endpoint.is_mqr_mode()
+    severities = NEW_SEVERITIES if mqr else OLD_SEVERITIES
+    for sev in severities:
         try:
-            new_params["severities"] = [sev]
+            new_params[_NEW_SEARCH_SEVERITY_FIELD if mqr else _OLD_SEARCH_SEVERITY_FIELD] = [sev]
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
@@ -935,16 +939,16 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
     filters = util.dict_remap(original_dict=params, remapping={"project": comp_filter, "application": comp_filter, "portfolio": comp_filter})
     filters = util.dict_subset(util.remove_nones(filters), _SEARCH_CRITERIAS)
     if endpoint.is_mqr_mode():
-        mapping = {_NEW_TYPE: _OLD_TYPE, _NEW_SEVERITY: _OLD_SEVERITY, _NEW_STATUS: _OLD_STATUS}
+        mapping = {_NEW_SEARCH_TYPE: _OLD_SEARCH_TYPE_FIELD, _NEW_SEARCH_SEVERITY_FIELD: _OLD_SEARCH_SEVERITY_FIELD, _NEW_SEARCH_STATUS_FIELD: _OLD_SEARCH_STATUS_FIELD}
     else:
-        mapping = {_OLD_TYPE: _NEW_TYPE, _OLD_SEVERITY: _NEW_SEVERITY, _OLD_STATUS: _NEW_STATUS}
+        mapping = {_OLD_SEARCH_TYPE_FIELD: _NEW_SEARCH_TYPE, _OLD_SEARCH_SEVERITY_FIELD: _NEW_SEARCH_SEVERITY_FIELD, _OLD_SEARCH_STATUS_FIELD: _NEW_SEARCH_STATUS_FIELD}
     for new, old in mapping.items():
         crit = filters.pop(old, []) + filters.pop(new, [])
         filters[new] = util.list_remap(crit, config.get_issues_map(old))
 
     if endpoint.version() < (10, 2, 0):
         # Starting from 10.2 - "componentKeys" was renamed "components"
-        filters = util.dict_remap(original_dict=filters, remapping={_NEW_COMPONENT: _OLD_COMPONENT})
+        filters = util.dict_remap(original_dict=filters, remapping={_NEW_SEARCH_COMPONENT_FIELD: _OLD_SEARCH_COMPONENT_FIELD})
 
     filters = {k: v for k, v in filters.items() if v is not None and (not isinstance(v, (list, set, str, tuple)) or len(v) > 0)}
     for field in filters:
