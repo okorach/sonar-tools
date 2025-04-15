@@ -358,19 +358,18 @@ class Platform(object):
             return sysinfo["Statistics"]["plugins"]
         return sysinfo["Plugins"]
 
-    def get_settings(self, settings_list: list[str] = None) -> dict[str, any]:
+    def get_settings(self, settings_list: Optional[list[str]] = None) -> dict[str, any]:
         """Returns a list of (or all) platform global settings value from their key
         :return: the list of settings values
         :rtype: dict{<key>: <value>, ...}
         """
-        params = util.remove_nones({"keys": util.list_to_csv(settings_list)})
-        resp = self.get(settings.Setting.API[c.GET], params=params)
-        json_s = json.loads(resp.text)
+        if settings_list is None:
+            settings_dict = settings.get_bulk(endpoint=self, use_cache=use_cache)
+        else:
+            settings_dict = {k: settings.get_object(endpoint=self, key=k) for k in settings_list}
         platform_settings = {}
-        for s in json_s["settings"]:
-            for setting_key in "value", "values", "fieldValues":
-                if setting_key in s:
-                    platform_settings[s["key"]] = s[setting_key]
+        for v in settings_dict.values():
+            platform_settings |= v.to_json()
         return platform_settings
 
     def __settings(self, settings_list: types.KeyList = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
@@ -387,7 +386,7 @@ class Platform(object):
         :param key: Setting key
         :return: the setting value
         """
-        return self.get_settings(key).get(key, None)
+        return settings.get_object(endpoint=self, key=key).to_json().get(key, None)
 
     def reset_setting(self, key: str) -> bool:
         """Resets a platform global setting to the SonarQube internal default value
