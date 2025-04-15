@@ -212,6 +212,12 @@ def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_toke
     kwargs.pop(SKIP_VERSION_CHECK, None)
     if utilities.is_sonarcloud_url(kwargs[URL]) and kwargs[ORG] is None:
         raise ArgumentsError(f"Organization (-{ORG_SHORT}) option is mandatory for SonarCloud")
+    if URL_TARGET in kwargs and kwargs[URL_TARGET] is None:
+        kwargs[URL_TARGET] = kwargs[URL]
+    if TOKEN_TARGET in kwargs and kwargs[TOKEN_TARGET] is None:
+        kwargs[TOKEN_TARGET] = kwargs[TOKEN]
+    if ORG_TARGET in kwargs and kwargs[ORG_TARGET] is None:
+        kwargs[ORG_TARGET] = kwargs[ORG]
     if URL_TARGET in kwargs and utilities.is_sonarcloud_url(kwargs[URL_TARGET]) and kwargs[ORG_TARGET] is None:
         raise ArgumentsError(f"Organization (-{ORG_TARGET_SHORT}) option is mandatory for SonarCloud")
     if verify_token:
