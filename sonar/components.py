@@ -356,11 +356,11 @@ class Component(sq.SqObject):
         return measures.get_history(self, metrics_list)
 
     def api_params(self, op: str = c.LIST) -> types.ApiParams:
-        from sonar.issues import component_filter
+        from sonar.issues import component_search_field
 
         ops = {
             c.GET: {"component": self.key},
-            c.LIST: {component_filter(self.endpoint): self.key},
+            c.LIST: {component_search_field(self.endpoint): self.key},
         }
         return ops[op] if op in ops else ops[c.LIST]
 

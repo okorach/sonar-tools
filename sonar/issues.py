@@ -576,20 +576,29 @@ class Issue(findings.Finding):
 # ------------------------------- Static methods --------------------------------------
 
 
-def component_filter(endpoint: pf.Platform) -> str:
+def component_search_field(endpoint: pf.Platform) -> str:
     """Returns the fields used for issues/search filter by porject key"""
-    if endpoint.version() >= (10, 2, 0):
-        return _NEW_SEARCH_COMPONENT_FIELD
-    else:
-        return _OLD_SEARCH_COMPONENT_FIELD
+    return _NEW_SEARCH_COMPONENT_FIELD if endpoint.version() >= (10, 2, 0) else _OLD_SEARCH_COMPONENT_FIELD
+
+
+def type_search_field(endpoint: pf.Platform) -> str:
+    return _OLD_SEARCH_TYPE_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_TYPE
+
+
+def severity_search_field(endpoint: pf.Platform) -> str:
+    return _OLD_SEARCH_SEVERITY_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_SEVERITY_FIELD
+
+
+def status_search_field(endpoint: pf.Platform) -> str:
+    return _OLD_SEARCH_STATUS_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_STATUS_FIELD
 
 
 def search_by_directory(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by directory to avoid exceeding the 10K limit"""
     new_params = params.copy()
     if "components" in params:
-        new_params[component_filter(endpoint)] = params["components"]
-    proj_key = new_params.get("project", new_params.get(component_filter(endpoint), None))
+        new_params[component_search_field(endpoint)] = params["components"]
+    proj_key = new_params.get("project", new_params.get(component_search_field(endpoint), None))
     log.info("Splitting search by directories with %s", util.json_dump(new_params))
     facets = _get_facets(endpoint=endpoint, project_key=proj_key, facets="directories", params=new_params)
     log.debug("FAcets %s", util.json_dump(facets))
@@ -600,7 +609,7 @@ def search_by_directory(endpoint: pf.Platform, params: ApiParams) -> dict[str, I
             issue_list.update(search(endpoint=endpoint, params=new_params, raise_error=True))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
-            new_params[component_filter(endpoint)] = proj_key
+            new_params[component_search_field(endpoint)] = proj_key
             issue_list.update(search_by_file(endpoint=endpoint, params=new_params))
     log.debug("Search by directory ALL: %d issues found", len(issue_list))
     return issue_list
@@ -610,8 +619,8 @@ def search_by_file(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]
     """Searches issues splitting by directory to avoid exceeding the 10K limit"""
     new_params = params.copy()
     if "components" in params:
-        new_params[component_filter(endpoint)] = params["components"]
-    proj_key = new_params.get("project", new_params.get(component_filter(endpoint), None))
+        new_params[component_search_field(endpoint)] = params["components"]
+    proj_key = new_params.get("project", new_params.get(component_search_field(endpoint), None))
     log.info("Splitting search by files with %s", util.json_dump(new_params))
     facets = _get_facets(endpoint=endpoint, project_key=proj_key, facets="files", params=new_params)
     log.debug("Facets %s", util.json_dump(facets))
@@ -635,11 +644,10 @@ def search_by_type(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by issue types")
-    mqr = endpoint.is_mqr_mode()
-    types = NEW_TYPES if mqr else OLD_TYPES
+    types = NEW_TYPES if endpoint.is_mqr_mode() else OLD_TYPES
     for issue_type in types:
         try:
-            new_params[_NEW_SEARCH_TYPE if mqr else _OLD_SEARCH_TYPE_FIELD] = [issue_type]
+            new_params[type_search_field(endpoint)] = [issue_type]
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
@@ -653,11 +661,10 @@ def search_by_severity(endpoint: pf.Platform, params: ApiParams) -> dict[str, Is
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by severities")
-    mqr = endpoint.is_mqr_mode()
-    severities = NEW_SEVERITIES if mqr else OLD_SEVERITIES
+    severities = NEW_SEVERITIES if endpoint.is_mqr_mode() else OLD_SEVERITIES
     for sev in severities:
         try:
-            new_params[_NEW_SEARCH_SEVERITY_FIELD if mqr else _OLD_SEARCH_SEVERITY_FIELD] = [sev]
+            new_params[severity_search_field(endpoint)] = [sev]
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
@@ -772,7 +779,7 @@ def search_all(endpoint: pf.Platform, params: ApiParams = None) -> dict[str, Iss
         issue_list = search(endpoint=endpoint, params=new_params.copy())
     except TooManyIssuesError:
         log.info(_TOO_MANY_ISSUES_MSG)
-        comp_filter = component_filter(endpoint)
+        comp_filter = component_search_field(endpoint)
         if params and "project" in params:
             key_list = util.csv_to_list(params["project"])
         elif params and comp_filter in params:
@@ -867,7 +874,7 @@ def _get_facets(endpoint: pf.Platform, project_key: str, facets: str = "director
     """Returns the facets of a search"""
     if not params:
         params = {}
-    params.update({component_filter(endpoint): project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
+    params.update({component_search_field(endpoint): project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
     filters = pre_search_filters(endpoint=endpoint, params=params)
     data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text)
     return {f["property"]: f["values"] for f in data["facets"] if f["property"] in util.csv_to_list(facets)}
@@ -935,13 +942,21 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
     if not params:
         return {}
     log.debug("Sanitizing issue search filters %s", str(params))
-    comp_filter = component_filter(endpoint)
+    comp_filter = component_search_field(endpoint)
     filters = util.dict_remap(original_dict=params, remapping={"project": comp_filter, "application": comp_filter, "portfolio": comp_filter})
     filters = util.dict_subset(util.remove_nones(filters), _SEARCH_CRITERIAS)
     if endpoint.is_mqr_mode():
-        mapping = {_NEW_SEARCH_TYPE: _OLD_SEARCH_TYPE_FIELD, _NEW_SEARCH_SEVERITY_FIELD: _OLD_SEARCH_SEVERITY_FIELD, _NEW_SEARCH_STATUS_FIELD: _OLD_SEARCH_STATUS_FIELD}
+        mapping = {
+            _NEW_SEARCH_TYPE: _OLD_SEARCH_TYPE_FIELD,
+            _NEW_SEARCH_SEVERITY_FIELD: _OLD_SEARCH_SEVERITY_FIELD,
+            _NEW_SEARCH_STATUS_FIELD: _OLD_SEARCH_STATUS_FIELD,
+        }
     else:
-        mapping = {_OLD_SEARCH_TYPE_FIELD: _NEW_SEARCH_TYPE, _OLD_SEARCH_SEVERITY_FIELD: _NEW_SEARCH_SEVERITY_FIELD, _OLD_SEARCH_STATUS_FIELD: _NEW_SEARCH_STATUS_FIELD}
+        mapping = {
+            _OLD_SEARCH_TYPE_FIELD: _NEW_SEARCH_TYPE,
+            _OLD_SEARCH_SEVERITY_FIELD: _NEW_SEARCH_SEVERITY_FIELD,
+            _OLD_SEARCH_STATUS_FIELD: _NEW_SEARCH_STATUS_FIELD,
+        }
     for new, old in mapping.items():
         crit = filters.pop(old, []) + filters.pop(new, [])
         filters[new] = util.list_remap(crit, config.get_issues_map(old))
