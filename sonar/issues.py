@@ -45,8 +45,14 @@ import sonar.utilities as util
 COMPONENT_FILTER_OLD = "componentKeys"
 COMPONENT_FILTER = "components"
 
-OLD_STATUS = "resolutions"
-NEW_STATUS = "issueStatuses"
+_OLD_STATUS = "resolutions"
+_NEW_STATUS = "issueStatuses"
+
+_OLD_TYPE = "types"
+_NEW_TYPE = "impactSoftwareQualities"
+
+_OLD_SEVERITY = "severities"
+_NEW_SEVERITY = "impactSeverities"
 
 OLD_FP = "FALSE-POSITIVE"
 NEW_FP = "FALSE_POSITIVE"
@@ -54,8 +60,12 @@ NEW_FP = "FALSE_POSITIVE"
 _SEARCH_CRITERIAS = (
     COMPONENT_FILTER_OLD,
     COMPONENT_FILTER,
-    "types",
-    "severities",
+    _OLD_TYPE,
+    _NEW_TYPE,
+    _OLD_SEVERITY,
+    _NEW_SEVERITY,
+    _OLD_STATUS,
+    _NEW_STATUS,
     "createdAfter",
     "createdBefore",
     "createdInLast",
@@ -85,14 +95,9 @@ _SEARCH_CRITERIAS = (
     "author",
     "issues",
     "languages",
-    OLD_STATUS,
     "resolved",
     "rules",
     "scopes",
-    # 10.2 new filter
-    "impactSeverities",
-    # 10.4 new filter
-    NEW_STATUS,
     "files",
     "directories",
 )
@@ -103,14 +108,6 @@ IMPACT_SEVERITIES = ("HIGH", "MEDIUM", "LOW")
 IMPACT_SOFTWARE_QUALITIES = ("SECURITY", "RELIABILITY", "MAINTAINABILITY")
 STATUSES = ("OPEN", "CONFIRMED", "REOPENED", "RESOLVED", "CLOSED", "ACCEPTED", "FALSE_POSITIVE")
 RESOLUTIONS = ("FALSE-POSITIVE", "WONTFIX", "FIXED", "REMOVED", "ACCEPTED")
-FILTERS_MAP = {
-    "types": TYPES,
-    "severities": SEVERITIES,
-    "impactSoftwareQualities": IMPACT_SOFTWARE_QUALITIES,
-    "impactSeverities": IMPACT_SEVERITIES,
-    "statuses": STATUSES,
-    OLD_STATUS: RESOLUTIONS,
-}
 
 _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
 
@@ -946,17 +943,17 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
     comp_filter = component_filter(endpoint)
     filters = util.dict_remap(original_dict=params.copy(), remapping={"project": comp_filter, "application": comp_filter, "portfolio": comp_filter})
     filters = util.dict_subset(util.remove_nones(filters), _SEARCH_CRITERIAS)
-    types = filters.pop("types", []) + filters.pop("impactSoftwareQualities", [])
-    severities = filters.pop("severities", []) + filters.pop("impactSeverities", [])
-    statuses = filters.pop("statuses", []) + filters.pop(NEW_STATUS, []) + filters.pop(OLD_STATUS, [])
+    types = filters.pop(_OLD_TYPE, []) + filters.pop(_NEW_TYPE, [])
+    severities = filters.pop(_OLD_SEVERITY, []) + filters.pop(_NEW_SEVERITY, [])
+    statuses = filters.pop("statuses", []) + filters.pop(_NEW_STATUS, []) + filters.pop(_OLD_STATUS, [])
     if endpoint.is_mqr_mode():
-        filters["impactSoftwareQualities"] = util.list_remap(types, config.get_issues_map("types"))
-        filters["impactSeverities"] = util.list_remap(severities, config.get_issues_map("severities"))
-        filters[NEW_STATUS] = util.list_remap(statuses, mapping=config.get_issues_map(OLD_STATUS))
+        filters[_NEW_TYPE] = util.list_remap(types, config.get_issues_map(_OLD_TYPE))
+        filters[_NEW_SEVERITY] = util.list_remap(severities, config.get_issues_map(_OLD_SEVERITY))
+        filters[_NEW_STATUS] = util.list_remap(statuses, mapping=config.get_issues_map(_OLD_STATUS))
     else:
-        filters["types"] = util.list_remap(types, config.get_issues_map("impactSoftwareQualities"))
-        filters["severities"] = util.list_remap(severities, config.get_issues_map("impactSeverities"))
-        filters[OLD_STATUS] = util.list_remap(statuses, mapping=config.get_issues_map(NEW_STATUS))
+        filters[_OLD_TYPE] = util.list_remap(types, config.get_issues_map(_NEW_TYPE))
+        filters[_OLD_SEVERITY] = util.list_remap(severities, config.get_issues_map(_NEW_SEVERITY))
+        filters[_OLD_STATUS] = util.list_remap(statuses, mapping=config.get_issues_map(_NEW_STATUS))
 
     if version < (10, 2, 0):
         # Starting from 10.2 - "componentKeys" was renamed "components"
