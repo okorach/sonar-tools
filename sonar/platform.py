@@ -364,7 +364,7 @@ class Platform(object):
         :rtype: dict{<key>: <value>, ...}
         """
         if settings_list is None:
-            settings_dict = settings.get_bulk(endpoint=self, use_cache=use_cache)
+            settings_dict = settings.get_bulk(endpoint=self)
         else:
             settings_dict = {k: settings.get_object(endpoint=self, key=k) for k in settings_list}
         platform_settings = {}
