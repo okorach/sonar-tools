@@ -42,8 +42,8 @@ from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettin
 from sonar import users, findings, changelog, projects, rules, config, exceptions
 import sonar.utilities as util
 
-COMPONENT_FILTER_OLD = "componentKeys"
-COMPONENT_FILTER = "components"
+_OLD_COMPONENT = "componentKeys"
+_NEW_COMPONENT = "components"
 
 _OLD_STATUS = "resolutions"
 _NEW_STATUS = "issueStatuses"
@@ -58,8 +58,8 @@ OLD_FP = "FALSE-POSITIVE"
 NEW_FP = "FALSE_POSITIVE"
 
 _SEARCH_CRITERIAS = (
-    COMPONENT_FILTER_OLD,
-    COMPONENT_FILTER,
+    _OLD_COMPONENT,
+    _NEW_COMPONENT,
     _OLD_TYPE,
     _NEW_TYPE,
     _OLD_SEVERITY,
@@ -579,9 +579,9 @@ class Issue(findings.Finding):
 def component_filter(endpoint: pf.Platform) -> str:
     """Returns the fields used for issues/search filter by porject key"""
     if endpoint.version() >= (10, 2, 0):
-        return COMPONENT_FILTER
+        return _NEW_COMPONENT
     else:
-        return COMPONENT_FILTER_OLD
+        return _OLD_COMPONENT
 
 
 def search_by_directory(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
@@ -957,7 +957,7 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
 
     if version < (10, 2, 0):
         # Starting from 10.2 - "componentKeys" was renamed "components"
-        filters = util.dict_remap(original_dict=filters, remapping={COMPONENT_FILTER: COMPONENT_FILTER_OLD})
+        filters = util.dict_remap(original_dict=filters, remapping={_NEW_COMPONENT: _OLD_COMPONENT})
 
     filters = {k: v for k, v in filters.items() if v is not None and (not isinstance(v, (list, set, str, tuple)) or len(v) > 0)}
     for field in filters:
