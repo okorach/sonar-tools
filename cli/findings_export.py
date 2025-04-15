@@ -240,7 +240,7 @@ def __verify_inputs(params: types.ApiParams) -> bool:
     if diff:
         util.exit_fatal(f"Statuses {str(diff)} are not legit statuses", errcodes.WRONG_SEARCH_CRITERIA)
 
-    diff = util.difference(util.csv_to_list(params.get(options.SEVERITIES, None)), issues.SEVERITIES + hotspots.SEVERITIES)
+    diff = util.difference(util.csv_to_list(params.get(options.SEVERITIES, None)), issues.OLD_SEVERITIES + hotspots.SEVERITIES)
     if diff:
         util.exit_fatal(f"Severities {str(diff)} are not legit severities", errcodes.WRONG_SEARCH_CRITERIA)
 
@@ -268,7 +268,7 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
         i_types = util.intersection(type_list, issues.OLD_TYPES)
         h_types = util.intersection(type_list, hotspots.TYPES)
         sev_list = util.csv_to_list(params.get(options.SEVERITIES, None))
-        i_sevs = util.intersection(sev_list, issues.SEVERITIES)
+        i_sevs = util.intersection(sev_list, issues.OLD_SEVERITIES)
         h_sevs = util.intersection(sev_list, hotspots.SEVERITIES)
 
         if status_list or resol_list or type_list or sev_list or options.LANGUAGES in params:
