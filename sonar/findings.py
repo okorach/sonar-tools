@@ -219,6 +219,10 @@ class Finding(sq.SqObject):
         # Must be implemented in sub classes
         raise NotImplementedError()
 
+    def file(self) -> str:
+        # Must be implemented in sub classes
+        raise NotImplementedError()
+
     def language(self) -> str:
         """Returns the finding language"""
         return rules.get_object(endpoint=self.endpoint, key=self.rule).language
