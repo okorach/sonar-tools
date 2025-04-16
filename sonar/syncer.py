@@ -54,7 +54,7 @@ NO_MATCH = "nb_no_match"
 
 def __get_findings(findings_list: list[findings.Finding]) -> list[dict[str, str]]:
     """Returns a list of finding keys and their URLS"""
-    return [{SRC_KEY: f.key, SRC_URL: f.url()} for f in findings_list]
+    return [{TGT_KEY: f.key, TGT_URL: f.url()} for f in findings_list]
 
 
 def __process_exact_sibling(finding: findings.Finding, sibling: findings.Finding, settings: types.ConfigSettings) -> dict[str, str]:
