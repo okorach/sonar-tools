@@ -331,7 +331,7 @@ class Finding(sq.SqObject):
         # Implemented in subclasses, should not reach this
         raise NotImplementedError()
 
-    def unassign(self, assignee: str) -> bool:
+    def unassign(self) -> bool:
         """Unassigns an issue
 
         :return: Whether the operation succeeded
