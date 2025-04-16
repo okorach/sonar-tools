@@ -234,20 +234,31 @@ class Hotspot(findings.Finding):
         params = {"hotspot": self.key, "comment": comment}
         return self.post("hotspots/add_comment", params=params).ok
 
-    def assign(self, assignee: str, comment: str = None) -> bool:
+    def assign(self, assignee: Optional[str] = None, comment: Optional[str] = None) -> bool:
         """Assigns a hotspot (and optionally comment)
 
-        :param assignee: User login to assign the hotspot
-        :type assignee: str
-        :param comment: Comment to add, in markdown format, defaults to None
-        :type comment: str, optional
+        :param str assignee: User login to assign the hotspot
+        :param str comment: Comment to add, in markdown format, defaults to None
+        :return: Whether the operation succeeded
+        """
+        try:
+            params = util.remove_nones({"hotspot": self.key, "assignee": assignee, "comment": comment})
+            log.debug("Assigning %s to '%s'", str(self), str(assignee))
+            r = self.post("hotspots/assign", params)
+            if r.ok:
+                self.assignee = assignee
+        except (ConnectionError, requests.RequestException) as e:
+            util.handle_error(e, "assigning hotspot", catch_all=True)
+            return False
+        return r.ok
+
+    def unassign(self) -> bool:
+        """Unassigns a hotspot (and optionally comment)
+
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        params = {"hotspot": self.key, "assignee": assignee}
-        if comment is not None:
-            params["comment"] = comment
-        return self.post("hotspots/assign", params=params)
+        return self.assign(assignee=None)
 
     def __apply_event(self, event: object, settings: types.ConfigSettings) -> bool:
         """Applies a changelog event (transition, comment, assign) to the hotspot"""
