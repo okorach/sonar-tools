@@ -531,8 +531,6 @@ class Issue(findings.Finding):
                 # self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "UNASSIGN":
             self.unassign()
-            # TODO: Handle uassign
-            return False
         elif event_type == "TAG":
             self.set_tags(data)
             # self.add_comment(f"Tag change {origin}", settings[SYNC_ADD_COMMENTS])
