@@ -425,10 +425,10 @@ class Finding(sq.SqObject):
             match_msg += " severity +1"
 
         log.debug("%s vs %s - %s score = %d", str(self), str(another_finding), match_msg, score)
-        # Need at least 7 / 9 to consider it's a match
+        # Need at least 7 / 8 to consider it's a match
         # for some reason, rarely the hash may not be the same for 2 issues that are identical
         # In this case we match if the rest of the score is perfectly identical
-        return score == 9 or score >= 7 and self.hash == another_finding.hash
+        return score == 8 or score >= 7 and self.hash == another_finding.hash
 
     def search_siblings(
         self, findings_list: list[Finding], allowed_users: bool = None, ignore_component: bool = False, **kwargs
