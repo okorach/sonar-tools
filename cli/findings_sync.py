@@ -198,12 +198,12 @@ def main() -> None:
             (report, counters) = src_project.sync(tgt_project, sync_settings=settings)
 
         __dump_report(report, args.file)
-        log.info("%d issues needed to be synchronized", counters.get("nb_to_sync", 0))
-        log.info("%d issues were synchronized successfully", counters.get("nb_applies", 0))
-        log.info("%d issues could not be synchronized because no match was found in target", counters.get("nb_no_match", 0))
-        log.info("%d issues could not be synchronized because there were multiple matches", counters.get("nb_multiple_matches", 0))
-        log.info("%d issues could not be synchronized because the match was approximate", counters.get("nb_approx_match", 0))
-        log.info("%d issues could not be synchronized because target issue already had a changelog", counters.get("nb_tgt_has_changelog", 0))
+        log.info("%d issues+hotspots needed to be synchronized", counters.get("nb_to_sync", 0))
+        log.info("%d issues+hotspots were synchronized successfully", counters.get("nb_applies", 0))
+        log.info("%d issues+hotspots could not be synchronized because no match was found in target", counters.get("nb_no_match", 0))
+        log.info("%d issues+hotspots could not be synchronized because there were multiple matches", counters.get("nb_multiple_matches", 0))
+        log.info("%d issues+hotspots could not be synchronized because the match was approximate", counters.get("nb_approx_match", 0))
+        log.info("%d issues+hotspots could not be synchronized because target issue already had a changelog", counters.get("nb_tgt_has_changelog", 0))
 
     except (exceptions.SonarException, options.ArgumentsError) as e:
         util.exit_fatal(e.message, e.errcode)

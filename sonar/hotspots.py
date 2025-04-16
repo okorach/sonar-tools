@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import re
+from typing import Optional
 from http import HTTPStatus
 from requests import RequestException
 import requests.utils
@@ -147,15 +148,31 @@ class Hotspot(findings.Finding):
             data.pop("type", None)
         return data
 
+    def file(self) -> Optional[str]:
+        """
+        :return: The hotspot full file path, relative to the project root directory, or None if not found
+        """
+        try:
+            f = self.sq_json["component"]["path"]
+        except KeyError:
+            f = None
+        if not f:
+            log.warning("Can't find file name for %s", str(self))
+        return f
+
     def refresh(self) -> bool:
         """Refreshes and reads hotspots details in SonarQube
         :return: The hotspot details
         :rtype: Whether ther operation succeeded
         """
-        resp = self.get(Hotspot.API[c.GET], {"hotspot": self.key})
-        if resp.ok:
-            self.__details = json.loads(resp.text)
-        return resp.ok
+        try:
+            resp = self.get(Hotspot.API[c.GET], {"hotspot": self.key})
+            if resp.ok:
+                self.__details = json.loads(resp.text)
+                self._load(self.__details)
+            return resp.ok
+        except (ConnectionError, RequestException):
+            return False
 
     def __mark_as(self, resolution: str, comment: str = None) -> bool:
         params = {"hotspot": self.key, "status": "REVIEWED", "resolution": resolution}

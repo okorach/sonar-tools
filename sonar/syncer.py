@@ -20,6 +20,8 @@
 
 """Findings syncer"""
 
+import concurrent.futures
+
 import sonar.logging as log
 import sonar.utilities as util
 from sonar.util import types
@@ -43,10 +45,16 @@ SYNC_STATUS = "syncStatus"
 SYNC_SINCE_DATE = "syncSinceDate"
 SYNC_THREADS = "threads"
 
+EXACT_MATCH = "nb_applies"
+MULTIPLE_MATCHES = "nb_multiple_matches"
+APPROX_MATCH = "nb_approx_match"
+MODIFIED_MATCH = "nb_tgt_has_changelog"
+NO_MATCH = "nb_no_match"
+
 
 def __get_findings(findings_list: list[findings.Finding]) -> list[dict[str, str]]:
     """Returns a list of finding keys and their URLS"""
-    return [{SRC_KEY: f.key, SRC_URL: f.url()} for f in findings_list]
+    return [{TGT_KEY: f.key, TGT_URL: f.url()} for f in findings_list]
 
 
 def __process_exact_sibling(finding: findings.Finding, sibling: findings.Finding, settings: types.ConfigSettings) -> dict[str, str]:
@@ -126,39 +134,48 @@ def __process_modified_siblings(finding: findings.Finding, siblings: list[findin
     }
 
 
+def __sync_one_finding(
+    src_finding: findings.Finding, tgt_findings: list[findings.Finding], settings: types.ConfigSettings
+) -> tuple[int, dict[str, str]]:
+    """Syncs one finding"""
+    (exact_siblings, approx_siblings, modified_siblings) = src_finding.search_siblings(
+        tgt_findings,
+        allowed_users=settings[SYNC_SERVICE_ACCOUNTS],
+        ignore_component=settings[SYNC_IGNORE_COMPONENTS],
+    )
+    if len(exact_siblings) == 1:
+        return EXACT_MATCH, __process_exact_sibling(src_finding, exact_siblings[0], settings)
+    elif len(exact_siblings) > 1:
+        return MULTIPLE_MATCHES, __process_multiple_exact_siblings(src_finding, exact_siblings)
+    elif approx_siblings:
+        return APPROX_MATCH, __process_approx_siblings(src_finding, approx_siblings)
+    elif modified_siblings:
+        return MODIFIED_MATCH, __process_modified_siblings(src_finding, modified_siblings)
+
+    return NO_MATCH, __process_no_match(src_finding)
+
+
 def __sync_curated_list(
     src_findings: list[findings.Finding], tgt_findings: list[findings.Finding], settings: types.ConfigSettings
 ) -> tuple[list[dict[str, str]], dict[str, int]]:
     """Syncs 2 list of findings"""
-    counters = {k: 0 for k in ("nb_applies", "nb_approx_match", "nb_tgt_has_changelog", "nb_multiple_matches")}
+    counters = {k: 0 for k in (EXACT_MATCH, APPROX_MATCH, MODIFIED_MATCH, MULTIPLE_MATCHES, NO_MATCH)}
     counters["nb_to_sync"] = len(src_findings)
     name = "finding" if len(src_findings) == 0 else util.class_name(src_findings[0]).lower()
     report = []
     log.info("%d %ss to sync, %d %ss in target", len(src_findings), name, len(tgt_findings), name)
-    for finding in src_findings:
-        log.debug("Searching sibling for %s", str(finding))
-        (exact_siblings, approx_siblings, modified_siblings) = finding.search_siblings(
-            tgt_findings,
-            allowed_users=settings[SYNC_SERVICE_ACCOUNTS],
-            ignore_component=settings[SYNC_IGNORE_COMPONENTS],
-        )
-        if len(exact_siblings) == 1:
-            report.append(__process_exact_sibling(finding, exact_siblings[0], settings))
-            counters["nb_applies"] += 1
-        elif len(exact_siblings) > 1:
-            report.append(__process_multiple_exact_siblings(finding, exact_siblings))
-            counters["nb_multiple_matches"] += 1
-        elif approx_siblings:
-            report.append(__process_approx_siblings(finding, approx_siblings))
-            counters["nb_approx_match"] += 1
-        elif modified_siblings:
-            counters["nb_tgt_has_changelog"] += 1
-            report.append(__process_modified_siblings(finding, modified_siblings))
-        else:  # No match
-            report.append(__process_no_match(finding))
-    counters["nb_no_match"] = counters["nb_to_sync"] - (
-        counters["nb_applies"] + counters["nb_tgt_has_changelog"] + counters["nb_multiple_matches"] + counters["nb_approx_match"]
-    )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=settings.get(SYNC_THREADS, 8), thread_name_prefix="FindingSync") as executor:
+        futures = [executor.submit(__sync_one_finding, finding, tgt_findings, settings) for finding in src_findings]
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                match_type, result = future.result()  # Retrieve result or raise an exception
+                log.info("Result: %s", str(result))
+                report.append(result)
+                counters[match_type] += 1
+            except Exception as e:
+                log.error(f"Task raised an exception: {e}")
+
     return (report, counters)
 
 
