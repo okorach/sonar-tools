@@ -171,7 +171,7 @@ class Hotspot(findings.Finding):
                 self.__details = json.loads(resp.text)
                 self._load(self.__details)
             return resp.ok
-        except (ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException):
             return False
 
     def __mark_as(self, resolution: str, comment: str = None) -> bool:
