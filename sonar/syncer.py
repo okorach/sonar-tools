@@ -169,10 +169,12 @@ def __sync_curated_list(
         futures = [executor.submit(__sync_one_finding, finding, tgt_findings, settings) for finding in src_findings]
         for future in concurrent.futures.as_completed(futures):
             try:
-                match_type, result = future.result()  # Retrieve result or raise an exception
+                match_type, result = future.result(timeout=60)  # Retrieve result or raise an exception
                 log.info("Result: %s", str(result))
                 report.append(result)
                 counters[match_type] += 1
+            except TimeoutError:
+                log.error(f"Finding sync timed out after 60 seconds for {str(future)}, sync killed.")
             except Exception as e:
                 log.error(f"Task raised an exception: {e}")
 
