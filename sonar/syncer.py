@@ -165,7 +165,7 @@ def __sync_curated_list(
     report = []
     log.info("%d %ss to sync, %d %ss in target", len(src_findings), name, len(tgt_findings), name)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=16, thread_name_prefix="FindingSync") as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=settings.get(SYNC_THREADS, 8), thread_name_prefix="FindingSync") as executor:
         futures = [executor.submit(__sync_one_finding, finding, tgt_findings, settings) for finding in src_findings]
         for future in concurrent.futures.as_completed(futures):
             try:
