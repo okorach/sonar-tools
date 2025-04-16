@@ -172,7 +172,7 @@ class Finding(sq.SqObject):
         if "vulnerabilityProbability" in jsondata:
             self.impacts = {QUALITY_SECURITY: jsondata["vulnerabilityProbability"] + "(HOTSPOT)"}
         elif self.endpoint.version() >= (10, 2, 0):
-            self.impacts = {i["softwareQuality"]: i["severity"] for i in jsondata["impacts"]}
+            self.impacts = {i["softwareQuality"]: i["severity"] for i in jsondata.get("impacts", {})}
         else:
             self.impacts = {TYPE_QUALITY_MAPPING[jsondata.get("type", TYPE_NONE)]: SEVERITY_MAPPING[jsondata.get("severity", SEVERITY_NONE)]}
         self.type = jsondata.get("type", TYPE_NONE)
@@ -193,7 +193,10 @@ class Finding(sq.SqObject):
 
     def _load_from_search(self, jsondata: types.ApiPayload) -> None:
         self._load_common(jsondata)
-        self.projectKey = jsondata["project"]
+        if isinstance(jsondata["project"], str):
+            self.projectKey = jsondata["project"]
+        else:
+            self.projectKey = jsondata["project"]["key"]
         self.creation_date = util.string_to_date(jsondata["creationDate"])
         self.modification_date = util.string_to_date(jsondata["updateDate"])
         self.hash = jsondata.get("hash", None)
@@ -215,28 +218,6 @@ class Finding(sq.SqObject):
     def url(self) -> str:
         # Must be implemented in sub classes
         raise NotImplementedError()
-
-    def file(self) -> Union[str, None]:
-        """
-        :return: The finding full file path, relative to the rpoject root directory
-        :rtype: str or None if not found
-        """
-        if "component" in self.sq_json:
-            comp = self.sq_json["component"]
-            # Hack: Fix to adapt to the ugly component structure on branches and PR
-            # "component": "src:sonar/hot.py:BRANCH:somebranch"
-            m = re.search("(^.*):BRANCH:", comp)
-            if m:
-                comp = m.group(1)
-            m = re.search("(^.*):PULL_REQUEST:", comp)
-            if m:
-                comp = m.group(1)
-            return comp.split(":")[-1]
-        elif "path" in self.sq_json:
-            return self.sq_json["path"]
-        else:
-            log.warning("Can't find file name for %s", str(self))
-            return None
 
     def language(self) -> str:
         """Returns the finding language"""
@@ -391,16 +372,15 @@ class Finding(sq.SqObject):
         :meta private:
         """
         if self.key == another_finding.key:
+            log.debug("%s and %s are the same issue, they have the same key %s", str(self), str(another_finding), self.key)
             return True
         prelim_check = True
         if self.rule in ("python:S6540"):
             try:
-                col1 = self.sq_json["textRange"]["startOffset"]
-                col2 = another_finding.sq_json["textRange"]["startOffset"]
-                prelim_check = col1 == col2
+                prelim_check = self.sq_json["textRange"]["startOffset"] == another_finding.sq_json["textRange"]["startOffset"]
             except KeyError:
                 pass
-        return (
+        identical = (
             self.rule == another_finding.rule
             and self.hash == another_finding.hash
             and self.message == another_finding.message
@@ -408,12 +388,14 @@ class Finding(sq.SqObject):
             and (self.component == another_finding.component or ignore_component)
             and prelim_check
         )
+        log.debug("%s vs %s - identical = %s hash = %s/%s", str(self), str(another_finding), str(identical), self.hash, another_finding.hash)
+        return identical
 
     def almost_identical_to(self, another_finding: Finding, ignore_component: bool = False, **kwargs) -> bool:
         """
         :meta private:
         """
-        if self.rule != another_finding.rule or self.hash != another_finding.hash:
+        if self.rule != another_finding.rule:
             return False
         score = 0
         match_msg = " Match"
@@ -443,8 +425,10 @@ class Finding(sq.SqObject):
             match_msg += " severity +1"
 
         log.debug("%s vs %s - %s score = %d", str(self), str(another_finding), match_msg, score)
-        # Need at least 7 / 8 to consider it's a match
-        return score >= 7
+        # Need at least 7 / 9 to consider it's a match
+        # for some reason, rarely the hash may not be the same for 2 issues that are identical
+        # In this case we match if the rest of the score is perfectly identical
+        return score == 9 or score >= 7 and self.hash == another_finding.hash
 
     def search_siblings(
         self, findings_list: list[Finding], allowed_users: bool = None, ignore_component: bool = False, **kwargs
@@ -468,10 +452,6 @@ class Finding(sq.SqObject):
                     log.info("%s and %s are exact match but target already has changes, cannot be synced", str(self), str(finding))
                     match_but_modified.append(finding)
                 return exact_matches, approx_matches, match_but_modified
-            else:
-                log.debug("%s and %s do not exactly match", str(self), str(finding))
-            # else:
-            #    log.debug("%s and %s are not identical", str(self), str(finding))
 
         log.info("No exact match, searching for an approximate match of %s", str(self))
         for finding in findings_list:
