@@ -283,7 +283,8 @@ class Hotspot(findings.Finding):
                     u = settings[syncer.SYNC_SERVICE_ACCOUNTS][0]
                 self.assign(u)
                 # self.add_comment(f"Hotspot assigned assigned {origin}", settings[SYNC_ADD_COMMENTS])
-
+        elif event_type == "UNASSIGN":
+            self.unassign()
         elif event_type == "INTERNAL":
             log.info("Changelog %s is internal, it will not be applied...", str(event))
             # self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
