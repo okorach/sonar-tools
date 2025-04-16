@@ -234,15 +234,14 @@ class Hotspot(findings.Finding):
         params = {"hotspot": self.key, "comment": comment}
         return self.post("hotspots/add_comment", params=params).ok
 
-    def assign(self, assignee: Optional[str] = None, comment: Optional[str] = None) -> bool:
+    def assign(self, assignee: Optional[str] = None) -> bool:
         """Assigns a hotspot (and optionally comment)
 
         :param str assignee: User login to assign the hotspot
-        :param str comment: Comment to add, in markdown format, defaults to None
         :return: Whether the operation succeeded
         """
         try:
-            params = util.remove_nones({"hotspot": self.key, "assignee": assignee, "comment": comment})
+            params = util.remove_nones({"hotspot": self.key, "assignee": assignee})
             log.debug("Assigning %s to '%s'", str(self), str(assignee))
             r = self.post("hotspots/assign", params)
             if r.ok:

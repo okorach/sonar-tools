@@ -223,7 +223,7 @@ class Finding(sq.SqObject):
         # Must be implemented in sub classes
         raise NotImplementedError()
 
-    def assign(self) -> str:
+    def assign(self, assignee: Optional[str] = None) -> str:
         # Must be implemented in sub classes
         raise NotImplementedError()
 

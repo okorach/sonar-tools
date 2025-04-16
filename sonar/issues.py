@@ -314,7 +314,7 @@ class Issue(findings.Finding):
             return False
         return r.ok
 
-    def assign(self, assignee: Optional[str]) -> bool:
+    def assign(self, assignee: Optional[str] = None) -> bool:
         """Assigns an issue to a user
 
         :param str assignee: The user login, set to None to unassign the issue
