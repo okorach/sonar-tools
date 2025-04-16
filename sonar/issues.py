@@ -314,16 +314,16 @@ class Issue(findings.Finding):
             return False
         return r.ok
 
-    def assign(self, assignee: str) -> bool:
+    def assign(self, assignee: Optional[str] = None) -> bool:
         """Assigns an issue to a user
 
-        :param str assignee: The user login
+        :param str assignee: The user login, set to None to unassign the issue
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         try:
-            log.debug("Assigning %s to '%s'", str(self), assignee)
-            r = self.post("issues/assign", {"issue": self.key, "assignee": assignee})
+            params = util.remove_nones({"issue": self.key, "assignee": assignee})
+            log.debug("Assigning %s to '%s'", str(self), str(assignee))
+            r = self.post("issues/assign", params)
             if r.ok:
                 self.assignee = assignee
         except (ConnectionError, requests.RequestException) as e:
@@ -530,8 +530,7 @@ class Issue(findings.Finding):
                 self.assign(u)
                 # self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "UNASSIGN":
-            # TODO: Handle uassign
-            return False
+            self.unassign()
         elif event_type == "TAG":
             self.set_tags(data)
             # self.add_comment(f"Tag change {origin}", settings[SYNC_ADD_COMMENTS])

@@ -223,6 +223,10 @@ class Finding(sq.SqObject):
         # Must be implemented in sub classes
         raise NotImplementedError()
 
+    def assign(self, assignee: Optional[str] = None) -> str:
+        # Must be implemented in sub classes
+        raise NotImplementedError()
+
     def language(self) -> str:
         """Returns the finding language"""
         return rules.get_object(endpoint=self.endpoint, key=self.rule).language
@@ -326,6 +330,13 @@ class Finding(sq.SqObject):
     def comments(self) -> dict[str, str]:
         # Implemented in subclasses, should not reach this
         raise NotImplementedError()
+
+    def unassign(self) -> bool:
+        """Unassigns an issue
+
+        :return: Whether the operation succeeded
+        """
+        return self.assign(None)
 
     def has_changelog(self, added_after: Optional[datetime.datetime] = None, manual_only: bool = True) -> bool:
         """

@@ -234,20 +234,30 @@ class Hotspot(findings.Finding):
         params = {"hotspot": self.key, "comment": comment}
         return self.post("hotspots/add_comment", params=params).ok
 
-    def assign(self, assignee: str, comment: str = None) -> bool:
+    def assign(self, assignee: Optional[str] = None) -> bool:
         """Assigns a hotspot (and optionally comment)
 
-        :param assignee: User login to assign the hotspot
-        :type assignee: str
-        :param comment: Comment to add, in markdown format, defaults to None
-        :type comment: str, optional
+        :param str assignee: User login to assign the hotspot
+        :return: Whether the operation succeeded
+        """
+        try:
+            params = util.remove_nones({"hotspot": self.key, "assignee": assignee})
+            log.debug("Assigning %s to '%s'", str(self), str(assignee))
+            r = self.post("hotspots/assign", params)
+            if r.ok:
+                self.assignee = assignee
+        except (ConnectionError, requests.RequestException) as e:
+            util.handle_error(e, "assigning hotspot", catch_all=True)
+            return False
+        return r.ok
+
+    def unassign(self) -> bool:
+        """Unassigns a hotspot (and optionally comment)
+
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        params = {"hotspot": self.key, "assignee": assignee}
-        if comment is not None:
-            params["comment"] = comment
-        return self.post("hotspots/assign", params=params)
+        return self.assign(assignee=None)
 
     def __apply_event(self, event: object, settings: types.ConfigSettings) -> bool:
         """Applies a changelog event (transition, comment, assign) to the hotspot"""
@@ -273,7 +283,8 @@ class Hotspot(findings.Finding):
                     u = settings[syncer.SYNC_SERVICE_ACCOUNTS][0]
                 self.assign(u)
                 # self.add_comment(f"Hotspot assigned assigned {origin}", settings[SYNC_ADD_COMMENTS])
-
+        elif event_type == "UNASSIGN":
+            self.unassign()
         elif event_type == "INTERNAL":
             log.info("Changelog %s is internal, it will not be applied...", str(event))
             # self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
