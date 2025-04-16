@@ -1,3 +1,10 @@
+# Version 3.11
+
+* `sonar-findings-sync`
+  - Fixed major sync regression
+  - Added sync multithreading to significantly accelerate sync of large projects with many findings to sync
+  - Covered support for several additional corner cases to increase number of issues that can be matched, and sync them
+  
 # Version 3.10
 
 * `sonar-findings-sync` hardening
