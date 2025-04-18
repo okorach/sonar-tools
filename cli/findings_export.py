@@ -420,7 +420,6 @@ def main() -> None:
     try:
         params["sonar"] = sqenv
         store_findings(components_list, params=params)
-        store_findings(components_list, params=params)
     except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while exporting findings: {e}", exit_code=errcodes.OS_ERROR)
     log.info("%d returned findings from %s", TOTAL_FINDINGS, sqenv.url)
