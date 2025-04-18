@@ -38,7 +38,6 @@ import cli.options as opt
 CMD = "sonar-findings-export.py"
 SARIF_FILE = "issues.sarif"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
-OPTS_STR = "{CMD} {util.SQS_OPTS}"
 CSV_OPTS_STR = " ".join(CSV_OPTS)
 JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
 JSON_OPTS_STR = " ".join(JSON_OPTS)
@@ -80,8 +79,8 @@ __GOOD_OPTS = [
     [f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1}", f"-{opt.WITH_BRANCHES_SHORT}", "*", f"--{opt.REPORT_FILE}", util.CSV_FILE],
     [f"--{opt.KEYS}", "training:security", f"-{opt.WITH_BRANCHES_SHORT}", "main", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
     [f"--{opt.USE_FINDINGS}", f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    ["--apps", f"-{opt.KEYS_SHORT}", "APP_TEST", f"--{opt.BRANCHES}", "*", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    ["--portfolios", f"-{opt.KEYS_SHORT}", "Banking", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.APPS}", f"-{opt.KEYS_SHORT}", "APP_TEST", f"--{opt.BRANCHES}", "*", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.PORTFOLIOS}", f"-{opt.KEYS_SHORT}", "Banking", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
 ]
 
 __WRONG_FILTER_OPTS = [
@@ -94,17 +93,15 @@ __WRONG_FILTER_OPTS = [
 
 __WRONG_OPTS = [
     [f"-{opt.KEYS_SHORT}", "non-existing-project-key"],
-    ["--apps", f"-{opt.KEYS_SHORT}", util.LIVE_PROJECT],
-    ["--portfolios", f"-{opt.KEYS_SHORT}", util.LIVE_PROJECT],
+    [f"--{opt.APPS}", f"-{opt.KEYS_SHORT}", util.LIVE_PROJECT],
+    [f"--{opt.PORTFOLIOS}", f"-{opt.KEYS_SHORT}", util.LIVE_PROJECT],
 ]
 
 
 def test_findings_export_sarif_explicit() -> None:
     """Test SARIF export"""
     util.clean(util.JSON_FILE)
-    util.run_success_cmd(
-        findings_export.main, f"{CMD} {util.SQS_OPTS} --{opt.REPORT_FILE} {util.JSON_FILE} {LIVE_PROJ_KEY} --{opt.FORMAT} sarif"
-    )
+    util.run_success_cmd(findings_export.main, f"{CMD} {util.SQS_OPTS} --{opt.REPORT_FILE} {util.JSON_FILE} {LIVE_PROJ_KEY} --{opt.FORMAT} sarif")
     assert util.file_contains(util.JSON_FILE, "schemas/json/sarif-2.1.0-rtm.4")
     util.clean(util.JSON_FILE)
 
@@ -273,7 +270,7 @@ def test_findings_filter_on_multiple_criteria_3() -> None:
 def test_findings_filter_on_hotspots_multi_1() -> None:
     """test_findings_filter_on_hotspots_multi_1"""
     util.run_success_cmd(
-        findings_export.main, f"{CSV_OPTS_STR} --{opt.RESOLUTIONS} 'ACKNOWLEDGED, SAFE' -{opt.KEYS_SHORT} {util.PROJECT_1},{util.PROJECT_2}"
+        findings_export.main, f'{CSV_OPTS_STR} --{opt.RESOLUTIONS} "ACKNOWLEDGED, SAFE" -{opt.KEYS_SHORT} {util.PROJECT_1},{util.PROJECT_2}'
     )
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
@@ -294,8 +291,8 @@ def test_findings_export() -> None:
     """test_findings_export"""
     for opts in __GOOD_OPTS:
         fullcmd = " ".join([CMD] + util.STD_OPTS + opts)
-        if (util.SQ.edition() == "community" and ("--apps" in opts or "--portfolios" in opts)) or (
-            util.SQ.edition() == "developer" and "--portfolios" in opts
+        if (util.SQ.edition() == "community" and (f"--{opt.APPS}" in opts or f"--{opt.PORTFOLIOS}" in opts)) or (
+            util.SQ.edition() == "developer" and f"--{opt.PORTFOLIOS}" in opts
         ):
             util.run_failed_cmd(findings_export.main, fullcmd, errcodes.UNSUPPORTED_OPERATION)
         else:
@@ -425,7 +422,7 @@ def test_output_format_branch() -> None:
 
 def test_all_prs() -> None:
     """Tests that findings extport for all PRs of a project works"""
-    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} {LIVE_PROJ_KEY} --{opt.PULL_REQUESTS} '*'")
+    util.run_success_cmd(findings_export.main, f'{CSV_OPTS_STR} {LIVE_PROJ_KEY} --{opt.PULL_REQUESTS} "*"')
     with open(util.CSV_FILE, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         try:
