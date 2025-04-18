@@ -267,12 +267,11 @@ class Issue(findings.Finding):
         self.severity = data.get("severity", None)
         self.rule = data.get("rule", None)
         self.type = data.get("type", None)
-        self.pull_request, self.branch = self.get_branch_and_pr(data)
+        self.branch, self.pull_request = self.get_branch_and_pr(data)
         if self.endpoint.version() >= (10, 2, 0):
             self.impacts = {i["softwareQuality"]: i["severity"] for i in data.get("impacts", {})}
         else:
             self.impacts = {TYPE_QUALITY_MAPPING[data.get("type", TYPE_NONE)]: SEVERITY_MAPPING[data.get("severity", SEVERITY_NONE)]}
-        log.debug("Impacts = %s", str(self.impacts))
 
     def changelog(self, manual_only: bool = True) -> dict[str, str]:
         """
