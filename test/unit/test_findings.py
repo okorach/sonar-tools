@@ -70,18 +70,23 @@ BRANCH_COL = fields.index("branch")
 PR_COL = fields.index("pullRequest")
 
 __GOOD_OPTS = [
-    [f"--{opt.FORMAT}", "json", f"--{opt.NBR_THREADS}", "16", f"-{opt.LOGFILE_SHORT}", "sonar-tools.log", f"--{opt.VERBOSE}", "DEBUG"],
     [f"--{opt.FORMAT}", "json", f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE],
-    [f"--{opt.WITH_URL}", f"--{opt.NBR_THREADS}", "16", f"--{opt.REPORT_FILE}", util.CSV_FILE],
     [f"--{opt.CSV_SEPARATOR}", ";", "-d", f"--{opt.TAGS}", "cwe,convention", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.REPORT_FILE}", util.CSV_FILE],
-    [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.SEVERITIES}", "MINOR,MAJOR,CRITICAL", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1}", f"-{opt.WITH_BRANCHES_SHORT}", "*", f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1}", f"-{opt.WITH_BRANCHES_SHORT}", '"*"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
     [f"--{opt.KEYS}", "training:security", f"-{opt.WITH_BRANCHES_SHORT}", "main", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
     [f"--{opt.USE_FINDINGS}", f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"--{opt.APPS}", f"-{opt.KEYS_SHORT}", "APP_TEST", f"--{opt.BRANCHES}", "*", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.APPS}", f"-{opt.KEYS_SHORT}", "APP_TEST", f"--{opt.BRANCHES}", '"*"', f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
     [f"--{opt.PORTFOLIOS}", f"-{opt.KEYS_SHORT}", "Banking", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1}", f"-{opt.WITH_BRANCHES_SHORT}", '"*"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.SEVERITIES}", "BLOCKER,CRITICAL", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
 ]
+
+__GOOD_OPTS_LONG = [
+    [f"--{opt.FORMAT}", "json", f"--{opt.NBR_THREADS}", "16", f"-{opt.LOGFILE_SHORT}", "sonar-tools.log", f"--{opt.VERBOSE}", "DEBUG"],
+    [f"--{opt.WITH_URL}", f"--{opt.NBR_THREADS}", "16", f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.REPORT_FILE}", util.CSV_FILE],
+]
+
 
 __WRONG_FILTER_OPTS = [
     f"--{opt.STATUSES} OPEN,NOT_OPEN",
@@ -306,6 +311,20 @@ def test_findings_export() -> None:
     util.clean(util.CSV_FILE, util.JSON_FILE)
 
 
+def test_findings_export_long() -> None:
+    """test_findings_export_long"""
+    for opts in __GOOD_OPTS_LONG:
+        fullcmd = " ".join([CMD] + util.STD_OPTS + opts)
+        log.info("Running %s", fullcmd)
+        util.run_success_cmd(findings_export.main, fullcmd)
+        if util.CSV_FILE in opts:
+            assert util.file_not_empty(util.CSV_FILE)
+        elif util.JSON_FILE in opts:
+            assert util.file_not_empty(util.JSON_FILE)
+        log.info("SUCCESS running: %s", fullcmd)
+    util.clean(util.CSV_FILE, util.JSON_FILE)
+
+
 def test_issues_count_0() -> None:
     """test_issues_count"""
     assert issues.count(util.SQ) > 10000
@@ -440,8 +459,8 @@ def test_all_prs() -> None:
 def test_one_pr() -> None:
     """Tests that findings extport for a single name PR of a project works"""
     proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)
-    for pr in proj.pull_requests().keys():
-        util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} {LIVE_PROJ_KEY} --{opt.PULL_REQUESTS} {pr}")
+    for pr in list(proj.pull_requests().keys()):
+        util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} {LIVE_PROJ_KEY} -{opt.PULL_REQUESTS_SHORT} {pr}")
         with open(util.CSV_FILE, encoding="utf-8") as fd:
             reader = csv.reader(fd)
             try:
@@ -453,4 +472,4 @@ def test_one_pr() -> None:
                     assert line[PROJECT_COL] == util.LIVE_PROJECT
             except StopIteration:
                 pass
-        util.clean(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
