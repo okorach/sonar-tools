@@ -35,7 +35,7 @@ import sonar.utilities as util
 from sonar.util import types, cache, constants as c
 
 from sonar import syncer, users
-from sonar import findings, rules, changelog
+from sonar import findings, rules, changelog, projects
 
 PROJECT_FILTER = "project"
 PROJECT_FILTER_OLD = "projectKey"
@@ -94,37 +94,21 @@ class Hotspot(findings.Finding):
     def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
-        self.vulnerabilityProbability = None  #:
-        self.category = data["securityCategory"]  #:
-        self.vulnerabilityProbability = data["vulnerabilityProbability"]  #:
-        self.securityCategory = None  #:
         self.type = "SECURITY_HOTSPOT"
         self.__details = None
-
-        # FIXME: Ugly hack to fix how hotspot branches are managed
-        m = re.match(r"^(.*):BRANCH:(.*)$", self.projectKey)
-        if m:
-            self.projectKey = m.group(1)
-            self.branch = m.group(2)
-        m = re.match(r"^(.*):PULL_REQUEST:(.*)$", self.projectKey)
-        if m:
-            self.projectKey = m.group(1)
-            self.branch = m.group(2)
         Hotspot.CACHE.put(self)
         if self.rule is None and self.refresh():
             self.rule = self.__details["rule"]["key"]
 
     def __str__(self) -> str:
         """
-        :return: String representation of the hotspot
-        :rtype: str
+        :return: String representation of the object
         """
         return f"Hotspot key '{self.key}'"
 
     def url(self) -> str:
         """
         :return: Permalink URL to the hotspot in the SonarQube platform
-        :rtype: str
         """
         branch = ""
         if self.branch is not None:
@@ -138,27 +122,27 @@ class Hotspot(findings.Finding):
         :return: JSON representation of the hotspot
         :rtype: dict
         """
-        if self.endpoint.version() >= (10, 2, 0):
-            if "vulnerabilityProbability" in self.sq_json:
-                self.impacts = {findings.QUALITY_SECURITY: self.sq_json["vulnerabilityProbability"] + "(HOTSPOT)"}
-            else:
-                self.impacts = {findings.QUALITY_SECURITY: "UNDEFINED(HOTSPOT)"}
         data = super().to_json(without_time)
         if self.endpoint.version() >= (10, 2, 0):
             data.pop("type", None)
         return data
 
-    def file(self) -> Optional[str]:
-        """
-        :return: The hotspot full file path, relative to the project root directory, or None if not found
-        """
-        try:
-            f = self.sq_json["component"]["path"]
-        except KeyError:
-            f = None
-        if not f:
-            log.warning("Can't find file name for %s", str(self))
-        return f
+    def _load(self, data: types.ApiPayload, from_export: bool = False) -> None:
+        """Loads the hotspot details from the provided data (coming from api/hotspots/search)"""
+        super()._load(data, from_export)
+        self.rule = data.get("ruleKey", None)
+        self.severity = data.get("vulnerabilityProbability", "UNDEFINED") + "(HOTSPOT)"
+        self.impacts = {"SECURITY": self.severity}
+        log.debug("Impacts = %s", str(self.impacts))
+
+    def _load_details(self, data: dict[str, any]) -> None:
+        self.file = data["component"]["path"]
+        self.branch, self.pull_request = self.get_branch_and_pr(data["project"])
+        self.severity = data["rule"].get("vulnerabilityProbability", "UNDEFINED") + "(HOTSPOT)"
+        self.impacts = {"SECURITY": self.severity}
+        self.rule = data["rule"]["key"]
+        self.assignee = data.get("assignee", None)
+        log.debug("Impacts = %s", str(self.impacts))
 
     def refresh(self) -> bool:
         """Refreshes and reads hotspots details in SonarQube
@@ -169,7 +153,7 @@ class Hotspot(findings.Finding):
             resp = self.get(Hotspot.API[c.GET], {"hotspot": self.key})
             if resp.ok:
                 self.__details = json.loads(resp.text)
-                self._load(self.__details)
+                self._load_details(self.__details)
             return resp.ok
         except (ConnectionError, RequestException):
             return False

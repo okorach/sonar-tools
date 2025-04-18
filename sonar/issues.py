@@ -111,6 +111,31 @@ RESOLUTIONS = ("FALSE-POSITIVE", "WONTFIX", "FIXED", "REMOVED", "ACCEPTED")
 
 _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
 
+SEVERITY_NONE = "NONE"
+
+TYPE_VULN = "VULNERABILITY"
+TYPE_BUG = "BUG"
+TYPE_CODE_SMELL = "CODE_SMELL"
+TYPE_HOTSPOT = "SECURITY_HOTSPOT"
+TYPE_NONE = "NONE"
+
+QUALITY_SECURITY = "SECURITY"
+QUALITY_RELIABILITY = "RELIABILITY"
+QUALITY_MAINTAINABILITY = "MAINTAINABILITY"
+QUALITY_NONE = "NONE"
+
+# Mapping between old issues type and new software qualities
+TYPE_QUALITY_MAPPING = {
+    TYPE_CODE_SMELL: QUALITY_MAINTAINABILITY,
+    TYPE_BUG: QUALITY_RELIABILITY,
+    TYPE_VULN: QUALITY_SECURITY,
+    TYPE_HOTSPOT: QUALITY_SECURITY,
+    TYPE_NONE: QUALITY_NONE,
+}
+
+# Mapping between old and new severities
+SEVERITY_MAPPING = {"BLOCKER": "BLOCKER", "CRITICAL": "HIGH", "MAJOR": "MEDIUM", "MINOR": "LOW", "INFO": "INFO", "NONE": "NONE"}
+
 
 class TooManyIssuesError(Exception):
     """When a call to api/issues/search returns too many issues."""
@@ -234,6 +259,20 @@ class Issue(findings.Finding):
         if resp.ok:
             self._load(json.loads(resp.text)["issues"][0])
         return resp.ok
+
+    def _load(self, data: ApiPayload, from_export: bool = False) -> None:
+        """Loads the issue from a JSON payload"""
+        super()._load(data, from_export)
+        self.hash = data.get("hash", None)
+        self.severity = data.get("severity", None)
+        self.rule = data.get("rule", None)
+        self.type = data.get("type", None)
+        self.pull_request, self.branch = self.get_branch_and_pr(data)
+        if self.endpoint.version() >= (10, 2, 0):
+            self.impacts = {i["softwareQuality"]: i["severity"] for i in data.get("impacts", {})}
+        else:
+            self.impacts = {TYPE_QUALITY_MAPPING[data.get("type", TYPE_NONE)]: SEVERITY_MAPPING[data.get("severity", SEVERITY_NONE)]}
+        log.debug("Impacts = %s", str(self.impacts))
 
     def changelog(self, manual_only: bool = True) -> dict[str, str]:
         """
