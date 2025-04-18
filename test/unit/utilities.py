@@ -150,7 +150,7 @@ def __get_args_and_file(string_arguments: str) -> tuple[Optional[str], list[str]
             imp_cmd = args.index(option) is not None
             break
         except ValueError:
-            logging.info("%s - ValueError", option)
+            pass
     for option in (f"-{opt.REPORT_FILE_SHORT}", f"--{opt.REPORT_FILE}"):
         try:
             return args[args.index(option) + 1], args, imp_cmd
