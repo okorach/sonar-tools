@@ -272,6 +272,7 @@ class Setting(sqobject.SqObject):
             self.value = untransformed_value
             return r.ok
         except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"setting setting '{self.key}' of {str(self.component)}", catch_all=True)
             return False
 
     def reset(self) -> bool:

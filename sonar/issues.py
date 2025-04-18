@@ -191,26 +191,6 @@ class Issue(findings.Finding):
             branch = f"&pullRequest={requests.utils.quote(self.pull_request)}"
         return f"{self.endpoint.url}/project/issues?id={self.projectKey}{branch}&issues={self.key}"
 
-    def file(self) -> Optional[str]:
-        """
-        :return: The issue full file path, relative to the project root directory, or None if not found
-        """
-        if "component" in self.sq_json:
-            comp = self.sq_json["component"]
-            # Hack: Fix to adapt to the ugly component structure on branches and PR
-            # "component": "src:sonar/hot.py:BRANCH:somebranch"
-            for prefix in ("BRANCH", "PULL_REQUEST"):
-                m = re.search(rf"(^.*):{prefix}:", comp)
-                if m:
-                    comp = m.group(1)
-                    break
-            return comp.split(":")[-1]
-        elif "path" in self.sq_json:
-            return self.sq_json["path"]
-        else:
-            log.warning("Can't find file name for %s", str(self))
-            return None
-
     def debt(self) -> int:
         """
         :return: The remediation effort of the issue, in minutes
