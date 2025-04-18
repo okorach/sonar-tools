@@ -331,7 +331,7 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
 def store_findings(components_list: dict[str, object], params: ConfigSettings) -> None:
     """Export all findings of a given project list"""
     components_queue = Queue(maxsize=0)
-    comp_params = {k: v for k, v in params.items() if k not in ("withUrl", "logfile", "datesWithouTine", "file", "format", "sonar")}
+    comp_params = {k: v for k, v in params.items() if k not in ("withUrl", "logfile", "datesWithoutTime", "file", "format", "sonar")}
     for comp in components_list.values():
         try:
             log.debug("Queue %s task %s put", str(components_queue), str(comp))
@@ -419,6 +419,7 @@ def main() -> None:
     log.info("Exporting findings for %d projects with params %s", len(components_list), str(params))
     try:
         params["sonar"] = sqenv
+        store_findings(components_list, params=params)
         store_findings(components_list, params=params)
     except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while exporting findings: {e}", exit_code=errcodes.OS_ERROR)
