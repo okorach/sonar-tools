@@ -73,6 +73,8 @@ _OPTIONS_INCOMPATIBLE_WITH_USE_FINDINGS = (
     options.LANGUAGES,
 )
 
+_SARIF_NO_CUSTOM_PROPERTIES = "sarifNoCustomProperties"
+
 
 def parse_args(desc: str) -> Namespace:
     """Sets CLI parameters and parses them"""
@@ -131,7 +133,7 @@ def parse_args(desc: str) -> Namespace:
         f"--{options.USE_FINDINGS}", required=False, default=False, action="store_true", help="Use export_findings() whenever possible"
     )
     parser.add_argument(
-        "--sarifNoCustomProperties",
+        f"--{_SARIF_NO_CUSTOM_PROPERTIES}",
         required=False,
         default=False,
         action="store_true",
@@ -175,9 +177,9 @@ def __write_json_findings(findings_list: dict[str, findings.Finding], fd: TextIO
         if i == 0:
             comma = ""
         if kwargs[options.FORMAT] == "json":
-            json_data = finding.to_json(DATES_WITHOUT_TIME)
+            json_data = finding.to_json(DATES_WITHOUT_TIME, False)
         else:
-            json_data = finding.to_sarif(kwargs.get("full", True))
+            json_data = finding.to_sarif(not kwargs.get(_SARIF_NO_CUSTOM_PROPERTIES, True))
         if not kwargs[options.WITH_URL]:
             json_data.pop("url", None)
         print(f"{util.json_dump(json_data, indent=1)}{comma}", file=fd)
@@ -285,7 +287,7 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
         else:
             new_params = params.copy()
             for p in (
-                "sarifNoCustomProperties",
+                _SARIF_NO_CUSTOM_PROPERTIES,
                 options.NBR_THREADS,
                 options.CSV_SEPARATOR,
                 options.COMPONENT_TYPE,
