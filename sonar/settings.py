@@ -256,19 +256,36 @@ class Setting(sqobject.SqObject):
 
         log.debug("Setting %s to value '%s'", str(self), str(value))
         params = {"key": self.key, "component": self.component.key if self.component else None}
+        untransformed_value = value
         if isinstance(value, list):
             if isinstance(value[0], str):
                 params["values"] = value
             else:
                 params["fieldValues"] = [json.dumps(v) for v in value]
+        elif isinstance(value, bool):
+            value = str(value).lower()
         else:
-            if isinstance(value, bool):
-                value = "true" if value else "false"
-            if self.multi_valued:
-                params["values"] = value
-            else:
-                params["value"] = value
-        return self.post(Setting.API[c.CREATE], params=params).ok
+            pname = "values" if self.multi_valued else "value"
+            params[pname] = value
+        try:
+            r = self.post(Setting.API[c.CREATE], params=params)
+            self.value = untransformed_value
+            return r.ok
+        except (ConnectionError, RequestException) as e:
+            return False
+
+    def reset(self) -> bool:
+        log.info("Resetting %s", str(self))
+        params = {"keys": self.key}
+        if self.component:
+            params["component"] = self.component.key
+        try:
+            r = self.post("settings/reset", params=params)
+            self.value = None
+            return r.ok
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"resetting setting '{self.key}' of {str(self.component)}", catch_all=True)
+            return False
 
     def to_json(self, list_as_csv: bool = True) -> types.ObjectJsonRepr:
         val = self.value
@@ -545,10 +562,9 @@ def decode(setting_key: str, setting_value: any) -> any:
     return setting_value
 
 
-def reset_setting(endpoint: pf.Platform, setting_key: str, project_key: str = None) -> bool:
+def reset_setting(endpoint: pf.Platform, setting_key: str, project: Optional[object] = None) -> bool:
     """Resets a setting to its default"""
-    log.info("Resetting setting '%s", setting_key)
-    return endpoint.post("settings/reset", params={"keys": setting_key, "component": project_key}).ok
+    return get_object(endpoint=endpoint, key=setting_key, component=project).reset()
 
 
 def get_component_params(component: object, name: str = "component") -> types.ApiParamss:
