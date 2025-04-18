@@ -97,8 +97,7 @@ class Hotspot(findings.Finding):
         self.type = "SECURITY_HOTSPOT"
         self.__details = None
         Hotspot.CACHE.put(self)
-        if self.rule is None and self.refresh():
-            self.rule = self.__details["rule"]["key"]
+        self.refresh()
 
     def __str__(self) -> str:
         """
@@ -133,7 +132,6 @@ class Hotspot(findings.Finding):
         self.rule = data.get("ruleKey", None)
         self.severity = data.get("vulnerabilityProbability", "UNDEFINED") + "(HOTSPOT)"
         self.impacts = {"SECURITY": self.severity}
-        log.debug("Impacts = %s", str(self.impacts))
 
     def _load_details(self, data: dict[str, any]) -> None:
         self.file = data["component"]["path"]
@@ -142,7 +140,6 @@ class Hotspot(findings.Finding):
         self.impacts = {"SECURITY": self.severity}
         self.rule = data["rule"]["key"]
         self.assignee = data.get("assignee", None)
-        log.debug("Impacts = %s", str(self.impacts))
 
     def refresh(self) -> bool:
         """Refreshes and reads hotspots details in SonarQube
