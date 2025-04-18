@@ -177,7 +177,7 @@ def __write_json_findings(findings_list: dict[str, findings.Finding], fd: TextIO
         if i == 0:
             comma = ""
         if kwargs[options.FORMAT] == "json":
-            json_data = finding.to_json(DATES_WITHOUT_TIME, False)
+            json_data = finding.to_json(DATES_WITHOUT_TIME)
         else:
             json_data = finding.to_sarif(not kwargs.get(_SARIF_NO_CUSTOM_PROPERTIES, True))
         if not kwargs[options.WITH_URL]:
