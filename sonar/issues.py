@@ -245,7 +245,8 @@ class Issue(findings.Finding):
         super()._load(data, from_export)
         self.hash = data.get("hash", None)
         self.severity = data.get("severity", None)
-        self.rule = data.get("rule", None)
+        if not self.rule:
+            self.rule = data.get("rule", None)
         self.type = data.get("type", None)
         self.branch, self.pull_request = self.get_branch_and_pr(data)
         if self.endpoint.version() >= (10, 2, 0):
