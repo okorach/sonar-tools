@@ -99,6 +99,7 @@ class QualityGate(sq.SqObject):
         self.is_built_in = data.get("isBuiltIn", False)
         self.conditions()
         self.permissions()
+        log.debug("Created %s with uuid %d id %x", str(self), hash(self), id(self))
         QualityGate.CACHE.put(self)
 
     @classmethod
@@ -148,6 +149,10 @@ class QualityGate(sq.SqObject):
         :rtype: str
         """
         return f"quality gate '{self.name}'"
+
+    def __hash__(self) -> int:
+        """Default UUID for SQ objects"""
+        return hash((self.name, self.endpoint.url))
 
     def url(self) -> str:
         """
@@ -266,16 +271,15 @@ class QualityGate(sq.SqObject):
         :return: Whether setting as default quality gate was successful
         :rtype: bool
         """
-        if self.endpoint.is_sonarcloud():
-            r = self.post("qualitygates/set_as_default", params={"id": self.key})
-        else:
-            r = self.post("qualitygates/set_as_default", params={"name": self.name})
-        if r.ok:
-            self.is_default = True
+        params = {"id": self.key} if self.endpoint.is_sonarcloud() else {"name": self.name}
+        try:
+            r = self.post("qualitygates/set_as_default", params=params)
             # Turn off default for all other quality gates except the current one
             for qg in get_list(self.endpoint).values():
-                if qg.name != self.name:
-                    qg.is_default = False
+                qg.is_default = qg.name == self.name
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"setting {str(self)} as default quality gate")
+            return False
         return r.ok
 
     def update(self, **data) -> bool:
