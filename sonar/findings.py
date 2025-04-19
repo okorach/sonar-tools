@@ -148,7 +148,8 @@ class Finding(sq.SqObject):
         self.message = jsondata.get("message", None)
         self.status = jsondata["status"]
         self.resolution = jsondata.get("resolution", None)
-        self.rule = jsondata.get("rule", jsondata.get("ruleReference", None))
+        if not self.rule:
+            self.rule = jsondata.get("rule", jsondata.get("ruleReference", None))
         self.line = jsondata.get("line", jsondata.get("lineNumber", None))
         if self.line == "null":
             self.line = None
