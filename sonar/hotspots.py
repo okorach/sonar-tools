@@ -129,7 +129,8 @@ class Hotspot(findings.Finding):
     def _load(self, data: types.ApiPayload, from_export: bool = False) -> None:
         """Loads the hotspot details from the provided data (coming from api/hotspots/search)"""
         super()._load(data, from_export)
-        self.rule = data.get("ruleKey", None)
+        if not self.rule:
+            self.rule = data.get("ruleKey", None)
         self.severity = data.get("vulnerabilityProbability", "UNDEFINED") + "(HOTSPOT)"
         self.impacts = {"SECURITY": self.severity}
 
@@ -138,7 +139,8 @@ class Hotspot(findings.Finding):
         self.branch, self.pull_request = self.get_branch_and_pr(data["project"])
         self.severity = data["rule"].get("vulnerabilityProbability", "UNDEFINED") + "(HOTSPOT)"
         self.impacts = {"SECURITY": self.severity}
-        self.rule = data["rule"]["key"]
+        if not self.rule:
+            self.rule = data["rule"]["key"]
         self.assignee = data.get("assignee", None)
 
     def refresh(self) -> bool:
