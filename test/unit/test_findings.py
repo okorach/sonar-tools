@@ -288,12 +288,12 @@ def test_findings_filter_on_hotspots_multi_1() -> None:
 
 def test_findings_filter_on_lang() -> None:
     """test_findings_filter_hotspot_on_lang"""
-    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} --{opt.LANGUAGES} java,js")
-    util.clean(util.CSV_FILE)
+    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} --{opt.LANGUAGES} java,js", True)
 
 
 def test_findings_export() -> None:
     """test_findings_export"""
+    util.start_logging()
     for opts in __GOOD_OPTS:
         fullcmd = " ".join([CMD] + util.STD_OPTS + opts)
         if (util.SQ.edition() == "community" and (f"--{opt.APPS}" in opts or f"--{opt.PORTFOLIOS}" in opts)) or (
@@ -302,13 +302,8 @@ def test_findings_export() -> None:
             util.run_failed_cmd(findings_export.main, fullcmd, errcodes.UNSUPPORTED_OPERATION)
         else:
             log.info("Running %s", fullcmd)
-            util.run_success_cmd(findings_export.main, fullcmd)
-            if util.CSV_FILE in opts:
-                assert util.file_not_empty(util.CSV_FILE)
-            elif util.JSON_FILE in opts:
-                assert util.file_not_empty(util.JSON_FILE)
+            util.run_success_cmd(findings_export.main, fullcmd, True)
             log.info("SUCCESS running: %s", fullcmd)
-    util.clean(util.CSV_FILE, util.JSON_FILE)
 
 
 def test_findings_export_long() -> None:
@@ -316,13 +311,8 @@ def test_findings_export_long() -> None:
     for opts in __GOOD_OPTS_LONG:
         fullcmd = " ".join([CMD] + util.STD_OPTS + opts)
         log.info("Running %s", fullcmd)
-        util.run_success_cmd(findings_export.main, fullcmd)
-        if util.CSV_FILE in opts:
-            assert util.file_not_empty(util.CSV_FILE)
-        elif util.JSON_FILE in opts:
-            assert util.file_not_empty(util.JSON_FILE)
+        util.run_success_cmd(findings_export.main, fullcmd, True)
         log.info("SUCCESS running: %s", fullcmd)
-    util.clean(util.CSV_FILE, util.JSON_FILE)
 
 
 def test_issues_count_0() -> None:

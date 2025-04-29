@@ -41,12 +41,12 @@ LANGUAGE_COL = 1
 
 def test_rules() -> None:
     """test_rules"""
-    util.run_success_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)}')
+    util.run_success_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)}', True)
 
 
 def test_rules_json_format() -> None:
     """test_rules_json_format"""
-    util.run_success_cmd(rules_cli.main, f'{" ".join(JSON_OPTS)}')
+    util.run_success_cmd(rules_cli.main, f'{" ".join(JSON_OPTS)}', True)
 
 
 def test_rules_filter_language() -> None:

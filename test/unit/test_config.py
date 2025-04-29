@@ -27,7 +27,6 @@ from collections.abc import Generator
 
 import json
 from unittest.mock import patch
-import pytest
 
 import utilities as util
 from sonar import errcodes, portfolios
@@ -36,70 +35,44 @@ import cli.options as opt
 from cli import config
 
 CMD = "config.py"
-OPTS = [CMD] + util.STD_OPTS + ["-e", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
+LIST_OPTS = [CMD] + util.STD_OPTS + ["-e", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
+OPTS = " ".join(LIST_OPTS)
 OPTS_IMPORT = [CMD] + util.TEST_OPTS + ["-i", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
-
-
-def __test_config_cmd(arguments: list[str]) -> None:
-    """Runs a test command"""
-    outputfile = arguments[arguments.index(f"-{opt.REPORT_FILE_SHORT}") + 1]
-    util.clean(outputfile)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", arguments):
-            config.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(outputfile)
-    util.clean(outputfile)
 
 
 def test_config_export_full() -> None:
     """test_config_export_full"""
-    __test_config_cmd(OPTS + ["--fullExport"])
+    util.run_success_cmd(config.main, f"{OPTS} --fullExport", True)
 
 
 def test_config_export_partial_2() -> None:
     """test_config_export_partial_2"""
-    __test_config_cmd(OPTS + ["-w", "settings,portfolios,users"])
+    util.run_success_cmd(config.main, f"{OPTS} -w settings,portfolios,users", True)
 
 
 def test_config_export_partial_3() -> None:
     """test_config_export_partial_3"""
-    __test_config_cmd(OPTS + ["-w", "projects", f"-{opt.KEYS_SHORT}", "okorach_sonar-tools"])
+    util.run_success_cmd(config.main, f"{OPTS} -w projects -{opt.KEYS_SHORT} okorach_sonar-tools", True)
 
 
 def test_config_export_yaml() -> None:
-    """test_config_export_partial_3"""
-    __test_config_cmd([CMD] + util.STD_OPTS + ["-e", f"-{opt.REPORT_FILE_SHORT}", util.YAML_FILE])
+    """test_config_export_yaml"""
+    util.run_success_cmd(config.main, f"{OPTS} -{opt.REPORT_FILE_SHORT} {util.YAML_FILE}", True)
 
 
 def test_config_export_wrong() -> None:
     """test_config_export_wrong"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", OPTS + ["-w", "settings,wrong,users"]):
-            config.main()
-    assert int(str(e.value)) == errcodes.ARGS_ERROR
-    assert not os.path.isfile(util.JSON_FILE)
-    util.clean(util.JSON_FILE)
+    util.run_failed_cmd(config.main, f"{OPTS} -w settings,wrong,users", errcodes.ARGS_ERROR)
 
 
 def test_config_non_existing_project() -> None:
     """test_config_non_existing_project"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools,bad_project"]):
-            config.main()
-    assert int(str(e.value)) == errcodes.NO_SUCH_KEY
-    assert not os.path.isfile(util.JSON_FILE)
-    util.clean(util.JSON_FILE)
+    util.run_failed_cmd(config.main, f"{OPTS} -{opt.KEYS_SHORT}", "okorach_sonar-tools,bad_project", errcodes.NO_SUCH_KEY)
 
 
 def test_config_inline_lists() -> None:
     """test_config_inline_commas"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", OPTS):
-            config.main()
+    util.run_success_cmd(config.main, OPTS)
     with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], str)
@@ -118,10 +91,7 @@ def test_config_inline_lists() -> None:
 
 def test_config_dont_inline_lists() -> None:
     """test_config_no_inline_commas"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", OPTS + ["--dontInlineLists"]):
-            config.main()
+    util.run_success_cmd(f"{OPTS} --dontInlineLists")
     with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], list)

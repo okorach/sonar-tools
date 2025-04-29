@@ -45,7 +45,7 @@ LATEST = "http://localhost:10000"
 LTA = "http://localhost:8000"
 LTS = LTA
 
-LATEST_TEST = "http://localhost:10010"
+LATEST_TEST = "http://localhost:20010"
 
 CB = "http://localhost:7000"
 
@@ -194,11 +194,13 @@ def run_cmd(func: callable, arguments: str, expected_code: int) -> Optional[str]
     return file
 
 
-def run_success_cmd(func: callable, arguments: str) -> None:
+def run_success_cmd(func: callable, arguments: str, post_cleanup: bool = False) -> None:
     """Runs a command that's suppose to end in success"""
     file = run_cmd(func, arguments, errcodes.OK)
     if file:
         assert file_not_empty(file)
+    if post_cleanup:
+        clean(file)
 
 
 def run_failed_cmd(func: callable, arguments: str, expected_code: int) -> None:

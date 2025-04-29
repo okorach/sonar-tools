@@ -58,4 +58,4 @@ def test_sync_help() -> None:
 def test_sync(get_json_file: callable) -> None:
     """test_sync"""
     file = get_json_file
-    util.run_success_cmd(findings_sync.main, " ".join([CMD] + PLAT_OPTS + SYNC_OPTS) + f" -{opt.REPORT_FILE_SHORT} {file}")
+    util.run_success_cmd(findings_sync.main, " ".join([CMD] + PLAT_OPTS + SYNC_OPTS) + f" -{opt.REPORT_FILE_SHORT} {file}", True)
