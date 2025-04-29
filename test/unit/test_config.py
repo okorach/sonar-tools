@@ -57,7 +57,7 @@ def test_config_export_partial_3() -> None:
 
 def test_config_export_yaml() -> None:
     """test_config_export_yaml"""
-    util.run_success_cmd(config.main, f"{OPTS} -{opt.REPORT_FILE_SHORT} {util.YAML_FILE}", True)
+    util.run_success_cmd(config.main, f"{CMD} {util.SQS_OPTS} --{opt.EXPORT} -{opt.REPORT_FILE_SHORT} {util.YAML_FILE}", True)
 
 
 def test_config_export_wrong() -> None:
