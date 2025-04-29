@@ -67,7 +67,7 @@ def test_config_export_wrong() -> None:
 
 def test_config_non_existing_project() -> None:
     """test_config_non_existing_project"""
-    util.run_failed_cmd(config.main, f"{OPTS} -{opt.KEYS_SHORT}", "okorach_sonar-tools,bad_project", errcodes.NO_SUCH_KEY)
+    util.run_failed_cmd(config.main, f"{OPTS} -{opt.KEYS_SHORT} okorach_sonar-tools,bad_project", errcodes.NO_SUCH_KEY)
 
 
 def test_config_inline_lists() -> None:
@@ -91,7 +91,7 @@ def test_config_inline_lists() -> None:
 
 def test_config_dont_inline_lists() -> None:
     """test_config_no_inline_commas"""
-    util.run_success_cmd(f"{OPTS} --dontInlineLists")
+    util.run_success_cmd(config.main, f"{OPTS} --dontInlineLists")
     with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], list)
