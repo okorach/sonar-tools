@@ -331,6 +331,9 @@ class Application(aggr.Aggregation):
         :return: list of problems found
         :rtype: list [Problem]
         """
+        if not audit_settings.get("audit.applications", True):
+            log.debug("Auditing applications is disabled, skipping...")
+            return []
         log.info("Auditing %s", str(self))
         problems = (
             super().audit(audit_settings)

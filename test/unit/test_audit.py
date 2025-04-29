@@ -64,21 +64,22 @@ def test_audit(get_csv_file: Generator[str]) -> None:
         line = fd.readline()
         assert line not in lines
         lines.append(line)
+    util.clean(file)
 
 
 def test_audit_stdout() -> None:
     """test_audit_stdout"""
-    util.run_success_cmd(audit.main, CMD)
+    util.run_success_cmd(audit.main, CMD, True)
 
 
 def test_audit_json(get_json_file: Generator[str]) -> None:
     """test_audit_json"""
-    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {get_json_file}")
+    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {get_json_file}", True)
 
 
 def test_audit_proj_key(get_csv_file: Generator[str]) -> None:
     """test_audit_proj_key"""
-    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {get_csv_file} --{opt.WHAT} projects --{opt.KEYS} okorach_sonar-tools")
+    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {get_csv_file} --{opt.WHAT} projects --{opt.KEYS} okorach_sonar-tools", True)
 
 
 def test_audit_proj_non_existing_key() -> None:

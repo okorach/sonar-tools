@@ -47,16 +47,16 @@ def test_plugins() -> None:
 def test_get_set_reset_settings() -> None:
     # util.start_logging()
     assert util.SQ.reset_setting("sonar.exclusions")
-    assert util.SQ.get_setting("sonar.exclusions") is None
+    assert util.SQ.get_setting("sonar.exclusions") == ""
 
-    assert util.SQ.set_setting("sonar.exclusions", "**/*.foo")
-    assert util.SQ.get_setting("sonar.exclusions") == ["**/*.foo"]
+    assert util.SQ.set_setting("sonar.exclusions", ["**/*.foo"])
+    assert util.SQ.get_setting("sonar.exclusions") == "**/*.foo"
 
-    assert util.SQ.set_setting("sonar.exclusions", "**/*.foo,**/*.bar")
-    assert util.SQ.get_setting("sonar.exclusions") == ["**/*.foo", "**/*.bar"]
+    assert util.SQ.set_setting("sonar.exclusions", ["**/*.foo", "**/*.bar"])
+    assert util.SQ.get_setting("sonar.exclusions") == "**/*.foo, **/*.bar"
 
     assert util.SQ.reset_setting("sonar.exclusions")
-    assert util.SQ.get_setting("sonar.exclusions") is None
+    assert util.SQ.get_setting("sonar.exclusions") == ""
 
 
 def test_import() -> None:

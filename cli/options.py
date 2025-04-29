@@ -93,8 +93,6 @@ WITH_BRANCHES = "withBranches"
 LANGUAGES = "languages"
 QP = "qualityProfiles"
 
-PORTFOLIOS = "portfolios"
-
 FORMAT = "format"
 WITH_URL = "withURL"
 WITH_NAME_SHORT = "n"
@@ -150,7 +148,10 @@ WHAT_PORTFOLIOS = "portfolios"
 MULTI_VALUED_OPTS = (KEYS, METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES, TAGS, BRANCHES, PULL_REQUESTS, WHAT)
 
 COMPONENT_TYPE = "compType"
-COMPONENT_TYPES = ("projects", "apps", "portfolios")
+PROJECTS = "projects"
+PORTFOLIOS = "portfolios"
+APPS = "apps"
+COMPONENT_TYPES = (PROJECTS, APPS, PORTFOLIOS)
 
 
 class ArgumentsError(exceptions.SonarException):

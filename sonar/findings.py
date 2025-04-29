@@ -98,31 +98,6 @@ CSV_EXPORT_FIELDS = (
     "legacySeverity",
 )
 
-SEVERITY_NONE = "NONE"
-
-TYPE_VULN = "VULNERABILITY"
-TYPE_BUG = "BUG"
-TYPE_CODE_SMELL = "CODE_SMELL"
-TYPE_HOTSPOT = "SECURITY_HOTSPOT"
-TYPE_NONE = "NONE"
-
-QUALITY_SECURITY = "SECURITY"
-QUALITY_RELIABILITY = "RELIABILITY"
-QUALITY_MAINTAINABILITY = "MAINTAINABILITY"
-QUALITY_NONE = "NONE"
-
-# Mapping between old issues type and new software qualities
-TYPE_QUALITY_MAPPING = {
-    TYPE_CODE_SMELL: QUALITY_MAINTAINABILITY,
-    TYPE_BUG: QUALITY_RELIABILITY,
-    TYPE_VULN: QUALITY_SECURITY,
-    TYPE_HOTSPOT: QUALITY_SECURITY,
-    TYPE_NONE: QUALITY_NONE,
-}
-
-# Mapping between old and new severities
-SEVERITY_MAPPING = {"BLOCKER": "BLOCKER", "CRITICAL": "HIGH", "MAJOR": "MEDIUM", "MINOR": "LOW", "INFO": "INFO", "NONE": "NONE"}
-
 STATUS_MAPPING = {"WONTFIX": "ACCEPTED", "REOPENED": "OPEN", "REMOVED": "CLOSED", "FIXED": "CLOSED"}
 
 
@@ -146,6 +121,7 @@ class Finding(sq.SqObject):
         self.projectKey = None  #: Project key (str)
         self._changelog = None
         self._comments = None
+        self.file = None  #: File (str)
         self.line = None  #: Line (int)
         self.component = None
         self.message = None  #: Message
@@ -169,19 +145,11 @@ class Finding(sq.SqObject):
         else:
             self.sq_json.update(jsondata)
         self.author = jsondata.get("author", None)
-        if "vulnerabilityProbability" in jsondata:
-            self.impacts = {QUALITY_SECURITY: jsondata["vulnerabilityProbability"] + "(HOTSPOT)"}
-        elif self.endpoint.version() >= (10, 2, 0):
-            self.impacts = {i["softwareQuality"]: i["severity"] for i in jsondata.get("impacts", {})}
-        else:
-            self.impacts = {TYPE_QUALITY_MAPPING[jsondata.get("type", TYPE_NONE)]: SEVERITY_MAPPING[jsondata.get("severity", SEVERITY_NONE)]}
-        self.type = jsondata.get("type", TYPE_NONE)
-        self.severity = jsondata.get("severity", SEVERITY_NONE)
-
         self.message = jsondata.get("message", None)
         self.status = jsondata["status"]
         self.resolution = jsondata.get("resolution", None)
-        self.rule = jsondata.get("rule", jsondata.get("ruleReference", None))
+        if not self.rule:
+            self.rule = jsondata.get("rule", jsondata.get("ruleReference", None))
         self.line = jsondata.get("line", jsondata.get("lineNumber", None))
         if self.line == "null":
             self.line = None
@@ -193,21 +161,15 @@ class Finding(sq.SqObject):
 
     def _load_from_search(self, jsondata: types.ApiPayload) -> None:
         self._load_common(jsondata)
-        if isinstance(jsondata["project"], str):
-            self.projectKey = jsondata["project"]
-        else:
-            self.projectKey = jsondata["project"]["key"]
+        self.projectKey = jsondata.get("project", None)
+        self.component = jsondata.get("component", None)
+        self.line = jsondata.get("line", None)
+        self.status = jsondata.get("status", None)
+        self.message = jsondata.get("message", None)
+        if self.component:
+            self.file = self.component.replace(f"{self.projectKey}:", "", 1)
         self.creation_date = util.string_to_date(jsondata["creationDate"])
         self.modification_date = util.string_to_date(jsondata["updateDate"])
-        self.hash = jsondata.get("hash", None)
-        self.component = jsondata.get("component", None)
-        self.pull_request = jsondata.get("pullRequest", None)
-        if self.pull_request is None:
-            self.branch = jsondata.get("branch", None)
-            if self.branch is None:
-                self.branch = projects.Project.get_object(self.endpoint, self.projectKey).main_branch_name()
-            else:
-                self.branch = re.sub("^BRANCH:", "", self.branch)
 
     def _load_from_export(self, jsondata: types.ObjectJsonRepr) -> None:
         self._load_common(jsondata)
@@ -216,10 +178,6 @@ class Finding(sq.SqObject):
         self.modification_date = util.string_to_date(jsondata["updatedAt"])
 
     def url(self) -> str:
-        # Must be implemented in sub classes
-        raise NotImplementedError()
-
-    def file(self) -> str:
         # Must be implemented in sub classes
         raise NotImplementedError()
 
@@ -260,7 +218,7 @@ class Finding(sq.SqObject):
         for old_name, new_name in _JSON_FIELDS_REMAPPED:
             data[new_name] = data.pop(old_name, None)
 
-        data["file"] = self.file()
+        data["file"] = self.file
         data["creationDate"] = self.creation_date.strftime(fmt)
         data["updateDate"] = self.modification_date.strftime(fmt)
         data["language"] = self.language()
@@ -288,7 +246,7 @@ class Finding(sq.SqObject):
         data["locations"] = [
             {
                 "physicalLocation": {
-                    "artifactLocation": {"uri": f"file:///{self.file()}", "index": 0},
+                    "artifactLocation": {"uri": f"file:///{self.file}", "index": 0},
                     "region": {
                         "startLine": max(int(rg["startLine"]), 1),
                         "startColumn": max(int(rg["startOffset"]), 1),
@@ -399,7 +357,7 @@ class Finding(sq.SqObject):
             self.rule == another_finding.rule
             and self.hash == another_finding.hash
             and self.message == another_finding.message
-            and self.file() == another_finding.file()
+            and self.file == another_finding.file
             and (self.component == another_finding.component or ignore_component)
             and prelim_check
         )
@@ -420,7 +378,7 @@ class Finding(sq.SqObject):
         elif Levenshtein.distance(self.message, another_finding.message, score_cutoff=6) <= 5:
             score += 1
             match_msg += " message +1"
-        if self.file() == another_finding.file():
+        if self.file == another_finding.file:
             score += 1
             match_msg += " file +1"
         if self.line == another_finding.line or kwargs.get("ignore_line", False):
@@ -489,6 +447,15 @@ class Finding(sq.SqObject):
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"applying transition {transition}")
         return False
+
+    def get_branch_and_pr(self, data: types.ApiPayload) -> tuple[Optional[str], Optional[str]]:
+        """
+        :param data: The data to extract the branch and pull request from
+        :return: The branch name or pull request id
+        """
+        pr = data.get("pullRequest", None)
+        branch = None if pr else data.get("branch", projects.Project.get_object(self.endpoint, key=self.projectKey).main_branch_name())
+        return branch, pr
 
 
 def export_findings(endpoint: pf.Platform, project_key: str, branch: str = None, pull_request: str = None) -> dict[str, Finding]:

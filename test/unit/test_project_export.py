@@ -51,13 +51,13 @@ def test_export_single_proj(get_json_file: Generator[str]) -> None:
 def test_export_timeout(get_json_file: Generator[str]) -> None:
     """test_export_timeout"""
     cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {get_json_file} --{opt.KEYS} okorach_sonar-tools --exportTimeout 10"
-    util.run_success_cmd(projects_cli.main, cmd)
+    util.run_success_cmd(projects_cli.main, cmd, True)
 
 
 def test_export_no_file(get_json_file: Generator[str]) -> None:
     """test_export_timeout"""
     cmd = f"{OPTS} --{opt.EXPORT} -{opt.KEYS_SHORT} okorach_sonar-tools"
-    util.run_success_cmd(projects_cli.main, cmd)
+    util.run_success_cmd(projects_cli.main, cmd, True)
 
 
 def test_export_non_existing_project(get_json_file: Generator[str]) -> None:

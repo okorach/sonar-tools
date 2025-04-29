@@ -38,7 +38,10 @@ import cli.options as opt
 CMD = "sonar-findings-export.py"
 SARIF_FILE = "issues.sarif"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
+CSV_OPTS_STR = " ".join(CSV_OPTS)
 JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
+JSON_OPTS_STR = " ".join(JSON_OPTS)
+LIVE_PROJ_KEY = f"--{opt.KEYS} {util.LIVE_PROJECT}"
 
 RULE_COL = 1
 LANG_COL = 2
@@ -67,51 +70,50 @@ BRANCH_COL = fields.index("branch")
 PR_COL = fields.index("pullRequest")
 
 __GOOD_OPTS = [
-    [f"--{opt.FORMAT}", "json", f"--{opt.NBR_THREADS}", "16", f"-{opt.LOGFILE_SHORT}", "sonar-tools.log", f"--{opt.VERBOSE}", "DEBUG"],
     [f"--{opt.FORMAT}", "json", f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE],
-    [f"--{opt.WITH_URL}", f"--{opt.NBR_THREADS}", "16", f"--{opt.REPORT_FILE}", util.CSV_FILE],
     [f"--{opt.CSV_SEPARATOR}", ";", "-d", f"--{opt.TAGS}", "cwe,convention", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.REPORT_FILE}", util.CSV_FILE],
-    [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.SEVERITIES}", "MINOR,MAJOR,CRITICAL", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1}", f"-{opt.WITH_BRANCHES_SHORT}", "*", f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1}", f"-{opt.WITH_BRANCHES_SHORT}", '"*"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
     [f"--{opt.KEYS}", "training:security", f"-{opt.WITH_BRANCHES_SHORT}", "main", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
     [f"--{opt.USE_FINDINGS}", f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    ["--apps", f"-{opt.KEYS_SHORT}", "APP_TEST", f"--{opt.BRANCHES}", "*", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    ["--portfolios", f"-{opt.KEYS_SHORT}", "Banking", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.APPS}", f"-{opt.KEYS_SHORT}", "APP_TEST", f"--{opt.BRANCHES}", '"*"', f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.PORTFOLIOS}", f"-{opt.KEYS_SHORT}", "Banking", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1}", f"-{opt.WITH_BRANCHES_SHORT}", '"*"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.SEVERITIES}", "BLOCKER,CRITICAL", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
 ]
 
+__GOOD_OPTS_LONG = [
+    [f"--{opt.FORMAT}", "json", f"--{opt.NBR_THREADS}", "16", f"-{opt.LOGFILE_SHORT}", "sonar-tools.log", f"--{opt.VERBOSE}", "DEBUG"],
+    [f"--{opt.WITH_URL}", f"--{opt.NBR_THREADS}", "16", f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.REPORT_FILE}", util.CSV_FILE],
+]
+
+
 __WRONG_FILTER_OPTS = [
-    [f"--{opt.STATUSES}", "OPEN,NOT_OPEN"],
-    [f"--{opt.RESOLUTIONS}", "ACCEPTED,SAFE,DO_FIX,WONTFIX"],
-    [f"--{opt.TYPES}", "BUG,VULN"],
-    [f"--{opt.SEVERITIES}", "HIGH,SUPER_HIGH"],
-    [f"--{opt.CSV_SEPARATOR}", "';'", "-d", f"--{opt.TAGS}", "cwe,convention", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    f"--{opt.STATUSES} OPEN,NOT_OPEN",
+    f"--{opt.RESOLUTIONS} ACCEPTED,SAFE,DO_FIX,WONTFIX",
+    f"--{opt.TYPES} BUG,VULN",
+    f"--{opt.SEVERITIES} HIGH,SUPER_HIGH",
+    f"--{opt.CSV_SEPARATOR} ';' -d --{opt.TAGS} cwe,convention -{opt.REPORT_FILE_SHORT} {util.CSV_FILE}",
 ]
 
 __WRONG_OPTS = [
     [f"-{opt.KEYS_SHORT}", "non-existing-project-key"],
-    ["--apps", f"-{opt.KEYS_SHORT}", util.LIVE_PROJECT],
-    ["--portfolios", f"-{opt.KEYS_SHORT}", util.LIVE_PROJECT],
+    [f"--{opt.APPS}", f"-{opt.KEYS_SHORT}", util.LIVE_PROJECT],
+    [f"--{opt.PORTFOLIOS}", f"-{opt.KEYS_SHORT}", util.LIVE_PROJECT],
 ]
 
 
 def test_findings_export_sarif_explicit() -> None:
     """Test SARIF export"""
     util.clean(util.JSON_FILE)
-    util.run_success_cmd(
-        findings_export.main, f"{CMD} {util.SQS_OPTS} --{opt.REPORT_FILE} {util.JSON_FILE} --{opt.KEYS} {util.LIVE_PROJECT} --{opt.FORMAT} sarif"
-    )
+    util.run_success_cmd(findings_export.main, f"{CMD} {util.SQS_OPTS} --{opt.REPORT_FILE} {util.JSON_FILE} {LIVE_PROJ_KEY} --{opt.FORMAT} sarif")
     assert util.file_contains(util.JSON_FILE, "schemas/json/sarif-2.1.0-rtm.4")
     util.clean(util.JSON_FILE)
 
 
 def test_findings_export_sarif_implicit() -> None:
     """Test SARIF export for a single project and implicit format"""
-    util.clean(SARIF_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.KEYS_SHORT}", f"{util.LIVE_PROJECT}", f"-{opt.REPORT_FILE_SHORT}", SARIF_FILE]):
-            findings_export.main()
-    assert int(str(e.value)) == errcodes.OK
+    util.run_success_cmd(findings_export.main, f"{CMD} {util.SQS_OPTS} -{opt.KEYS_SHORT} {util.LIVE_PROJECT} -{opt.REPORT_FILE_SHORT} {SARIF_FILE}")
     assert util.file_contains(SARIF_FILE, "schemas/json/sarif-2.1.0-rtm.4")
     util.clean(SARIF_FILE)
 
@@ -120,10 +122,7 @@ def test_wrong_filters() -> None:
     """test_wrong_filters"""
     util.clean(util.CSV_FILE, util.JSON_FILE)
     for bad_opts in __WRONG_FILTER_OPTS:
-        with pytest.raises(SystemExit) as e:
-            with patch.object(sys, "argv", CSV_OPTS + bad_opts):
-                findings_export.main()
-        assert int(str(e.value)) == errcodes.WRONG_SEARCH_CRITERIA
+        util.run_failed_cmd(findings_export.main, f"{CSV_OPTS_STR} {bad_opts}", errcodes.WRONG_SEARCH_CRITERIA)
         assert not os.path.isfile(util.CSV_FILE)
         assert not os.path.isfile(util.JSON_FILE)
 
@@ -152,11 +151,7 @@ def test_findings_export_non_existing_branch() -> None:
 
 def test_findings_filter_on_date_after() -> None:
     """test_findings_filter_on_type"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEYS_SHORT}", f"{util.LIVE_PROJECT}", f"--{opt.DATE_AFTER}", "2023-05-01"]):
-            findings_export.main()
-
+    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} -{opt.KEYS_SHORT} {util.LIVE_PROJECT} --{opt.DATE_AFTER} 2023-05-01")
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
@@ -167,11 +162,7 @@ def test_findings_filter_on_date_after() -> None:
 
 def test_findings_filter_on_date_before() -> None:
     """test_findings_filter_on_type"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEYS_SHORT}", f"{util.LIVE_PROJECT}", f"--{opt.DATE_BEFORE}", "2024-05-01"]):
-            findings_export.main()
-
+    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} -{opt.KEYS_SHORT} {util.LIVE_PROJECT} --{opt.DATE_BEFORE} 2024-05-01")
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
@@ -182,11 +173,7 @@ def test_findings_filter_on_date_before() -> None:
 
 def test_findings_filter_on_type() -> None:
     """test_findings_filter_on_type"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.TYPES}", "VULNERABILITY,BUG"]):
-            findings_export.main()
-
+    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} --{opt.TYPES} VULNERABILITY,BUG")
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
@@ -200,10 +187,7 @@ def test_findings_filter_on_type() -> None:
 
 def test_findings_filter_on_resolution() -> None:
     """test_findings_filter_on_resolution"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE,ACCEPTED,SAFE"]):
-            findings_export.main()
+    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} --{opt.RESOLUTIONS} FALSE-POSITIVE,ACCEPTED,SAFE")
     if util.SQ.version() < (10, 0, 0):
         statuses = ("FALSE-POSITIVE", "WONTFIX", "SAFE")
     else:
@@ -218,7 +202,7 @@ def test_findings_filter_on_resolution() -> None:
 
 def test_findings_filter_on_severity() -> None:
     """test_findings_filter_on_severity"""
-    util.run_success_cmd(findings_export.main, f"{' '.join(CSV_OPTS)} --{opt.SEVERITIES} BLOCKER,CRITICAL")
+    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} --{opt.SEVERITIES} BLOCKER,CRITICAL")
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
@@ -234,11 +218,7 @@ def test_findings_filter_on_severity() -> None:
 
 def test_findings_filter_on_multiple_criteria() -> None:
     """test_findings_filter_on_multiple_criteria"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE,ACCEPTED", f"--{opt.TYPES}", "BUG,CODE_SMELL"]):
-            findings_export.main()
-
+    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} --{opt.RESOLUTIONS} FALSE-POSITIVE,ACCEPTED --{opt.TYPES} BUG,CODE_SMELL")
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
@@ -256,13 +236,9 @@ def test_findings_filter_on_multiple_criteria() -> None:
 
 def test_findings_filter_on_multiple_criteria_2() -> None:
     """test_findings_filter_on_multiple_criteria_2"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit):
-        with patch.object(
-            sys, "argv", CSV_OPTS + [f"--{opt.DATE_AFTER}", "2020-01-10", f"--{opt.DATE_BEFORE}", "2020-12-31", f"--{opt.TYPES}", "SECURITY_HOTSPOT"]
-        ):
-            findings_export.main()
-
+    util.run_success_cmd(
+        findings_export.main, f"{CSV_OPTS_STR} --{opt.DATE_AFTER} 2020-01-10 --{opt.DATE_BEFORE} 2020-12-31 --{opt.TYPES} SECURITY_HOTSPOT"
+    )
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
@@ -283,11 +259,7 @@ def test_findings_filter_on_multiple_criteria_2() -> None:
 
 def test_findings_filter_on_multiple_criteria_3() -> None:
     """test_findings_filter_on_multiple_criteria_3"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.STATUSES}", "ACCEPTED", f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE"]):
-            findings_export.main()
-
+    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} --{opt.STATUSES} ACCEPTED --{opt.RESOLUTIONS} FALSE-POSITIVE")
     if util.SQ.version() < (10, 0, 0):
         statuses = ("WONTFIX", "FALSE_POSITIVE", "FALSE-POSITIVE")
     else:
@@ -302,13 +274,9 @@ def test_findings_filter_on_multiple_criteria_3() -> None:
 
 def test_findings_filter_on_hotspots_multi_1() -> None:
     """test_findings_filter_on_hotspots_multi_1"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit):
-        with patch.object(
-            sys, "argv", CSV_OPTS + [f"--{opt.RESOLUTIONS}", "ACKNOWLEDGED, SAFE", f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}"]
-        ):
-            findings_export.main()
-
+    util.run_success_cmd(
+        findings_export.main, f'{CSV_OPTS_STR} --{opt.RESOLUTIONS} "ACKNOWLEDGED, SAFE" -{opt.KEYS_SHORT} {util.PROJECT_1},{util.PROJECT_2}'
+    )
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
@@ -320,38 +288,31 @@ def test_findings_filter_on_hotspots_multi_1() -> None:
 
 def test_findings_filter_on_lang() -> None:
     """test_findings_filter_hotspot_on_lang"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.LANGUAGES}", "java,js"]):
-            findings_export.main()
-    util.clean(util.CSV_FILE)
+    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} --{opt.LANGUAGES} java,js", True)
 
 
 def test_findings_export() -> None:
     """test_findings_export"""
+    util.start_logging()
     for opts in __GOOD_OPTS:
-        if (util.SQ.edition() == "community" and ("--apps" in opts or "--portfolios" in opts)) or (
-            util.SQ.edition() == "developer" and "--portfolios" in opts
+        fullcmd = " ".join([CMD] + util.STD_OPTS + opts)
+        if (util.SQ.edition() == "community" and (f"--{opt.APPS}" in opts or f"--{opt.PORTFOLIOS}" in opts)) or (
+            util.SQ.edition() == "developer" and f"--{opt.PORTFOLIOS}" in opts
         ):
-            with pytest.raises(SystemExit) as e:
-                fullcmd = [CMD] + util.STD_OPTS + opts
-                with patch.object(sys, "argv", fullcmd):
-                    findings_export.main()
-            assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+            util.run_failed_cmd(findings_export.main, fullcmd, errcodes.UNSUPPORTED_OPERATION)
         else:
-            util.clean(util.CSV_FILE, util.JSON_FILE)
-            with pytest.raises(SystemExit) as e:
-                fullcmd = [CMD] + util.STD_OPTS + opts
-                log.info("Running %s", " ".join(fullcmd))
-                with patch.object(sys, "argv", fullcmd):
-                    findings_export.main()
-            assert int(str(e.value)) == errcodes.OK
-            if util.CSV_FILE in opts:
-                assert util.file_not_empty(util.CSV_FILE)
-            elif util.JSON_FILE in opts:
-                assert util.file_not_empty(util.JSON_FILE)
-            log.info("SUCCESS running: %s", " ".join(fullcmd))
-    util.clean(util.CSV_FILE, util.JSON_FILE)
+            log.info("Running %s", fullcmd)
+            util.run_success_cmd(findings_export.main, fullcmd, True)
+            log.info("SUCCESS running: %s", fullcmd)
+
+
+def test_findings_export_long() -> None:
+    """test_findings_export_long"""
+    for opts in __GOOD_OPTS_LONG:
+        fullcmd = " ".join([CMD] + util.STD_OPTS + opts)
+        log.info("Running %s", fullcmd)
+        util.run_success_cmd(findings_export.main, fullcmd, True)
+        log.info("SUCCESS running: %s", fullcmd)
 
 
 def test_issues_count_0() -> None:
@@ -394,11 +355,7 @@ def test_search_too_many_issues() -> None:
 
 def test_output_format_sarif() -> None:
     """test_output_format_sarif"""
-    util.clean(SARIF_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"--{opt.REPORT_FILE}", SARIF_FILE, f"--{opt.KEYS}", util.LIVE_PROJECT]):
-            findings_export.main()
-    assert int(str(e.value)) == errcodes.OK
+    util.run_success_cmd(findings_export.main, f"{CMD} {' '.join(util.STD_OPTS)} --{opt.REPORT_FILE} {SARIF_FILE} {LIVE_PROJ_KEY}")
     with open(SARIF_FILE, encoding="utf-8") as fh:
         sarif_json = json.loads(fh.read())
     assert sarif_json["$schema"] == "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.4.json"
@@ -425,12 +382,7 @@ def test_output_format_sarif() -> None:
 
 def test_output_format_json() -> None:
     """test_output_format_json"""
-    util.clean(util.JSON_FILE)
-    log.set_debug_level("INFO")
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + [f"--{opt.KEYS}", util.LIVE_PROJECT]):
-            findings_export.main()
-    assert int(str(e.value)) == errcodes.OK
+    util.run_success_cmd(findings_export.main, f"{JSON_OPTS_STR} {LIVE_PROJ_KEY}")
     with open(util.JSON_FILE, encoding="utf-8") as fh:
         json_data = json.loads(fh.read())
     for issue in json_data:
@@ -452,11 +404,7 @@ def test_output_format_json() -> None:
 
 def test_output_format_csv() -> None:
     """test_output_format_csv"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", util.LIVE_PROJECT]):
-            findings_export.main()
-    assert int(str(e.value)) == errcodes.OK
+    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} {LIVE_PROJ_KEY}")
     with open(util.CSV_FILE, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         row = next(reader)
@@ -469,11 +417,7 @@ def test_output_format_csv() -> None:
 def test_output_format_branch() -> None:
     """test_output_format_branch"""
     for br in "develop", "master,develop":
-        util.clean(util.CSV_FILE)
-        with pytest.raises(SystemExit) as e:
-            with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", util.LIVE_PROJECT, f"--{opt.BRANCHES}", br]):
-                findings_export.main()
-        assert int(str(e.value)) == errcodes.OK
+        util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} {LIVE_PROJ_KEY} --{opt.BRANCHES} {br}")
         br_list = utilities.csv_to_list(br)
         with open(util.CSV_FILE, encoding="utf-8") as fd:
             reader = csv.reader(fd)
@@ -482,16 +426,12 @@ def test_output_format_branch() -> None:
                 assert line[BRANCH_COL] in br_list
                 assert line[PR_COL] == ""
                 assert line[PROJECT_COL] == util.LIVE_PROJECT
-        util.clean(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
 
 
 def test_all_prs() -> None:
     """Tests that findings extport for all PRs of a project works"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", util.LIVE_PROJECT, f"--{opt.PULL_REQUESTS}", "*"]):
-            findings_export.main()
-    assert int(str(e.value)) == errcodes.OK
+    util.run_success_cmd(findings_export.main, f'{CSV_OPTS_STR} {LIVE_PROJ_KEY} --{opt.PULL_REQUESTS} "*"')
     with open(util.CSV_FILE, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         try:
@@ -509,12 +449,8 @@ def test_all_prs() -> None:
 def test_one_pr() -> None:
     """Tests that findings extport for a single name PR of a project works"""
     proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)
-    for pr in proj.pull_requests().keys():
-        util.clean(util.CSV_FILE)
-        with pytest.raises(SystemExit) as e:
-            with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", util.LIVE_PROJECT, f"--{opt.PULL_REQUESTS}", pr]):
-                findings_export.main()
-        assert int(str(e.value)) == errcodes.OK
+    for pr in list(proj.pull_requests().keys()):
+        util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} {LIVE_PROJ_KEY} -{opt.PULL_REQUESTS_SHORT} {pr}")
         with open(util.CSV_FILE, encoding="utf-8") as fd:
             reader = csv.reader(fd)
             try:
@@ -526,4 +462,4 @@ def test_one_pr() -> None:
                     assert line[PROJECT_COL] == util.LIVE_PROJECT
             except StopIteration:
                 pass
-        util.clean(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
