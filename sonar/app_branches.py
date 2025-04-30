@@ -183,7 +183,7 @@ class ApplicationBranch(Component):
             params.update({"project": [], "projectBranch": []})
         for branch in project_branches:
             params["project"].append(branch.concerned_object.key)
-            br_name = "" if branch.is_main() else branch.name
+            br_name = branch.name
             params["projectBranch"].append(br_name)
         try:
             ok = self.post(ApplicationBranch.API[c.UPDATE], params=params).ok
