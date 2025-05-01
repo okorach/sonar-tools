@@ -175,12 +175,12 @@ class ApplicationBranch(Component):
         :raises ObjectNotFound: If ApplicationBranch not found in SonarQube
         :return: whether the operation succeeded
         """
-        if not name and not project_branches:
+        if not name:
+            name = self.name
+        if not project_branches or len(project_branches) == 0:
             return False
         params = self.api_params()
-        params["name"] = name
-        if len(project_branches) > 0:
-            params.update({"project": [], "projectBranch": []})
+        params.update({"name": name, "project": [], "projectBranch": []})
         for branch in project_branches:
             params["project"].append(branch.concerned_object.key)
             br_name = "" if branch.is_main() else branch.name
