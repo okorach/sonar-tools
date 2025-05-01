@@ -20,16 +20,13 @@
 #
 
 """
-    sonar-findings-export tests
+    sonar-findings-sync tests
 """
 
 import os
-import sys
 from unittest.mock import patch
-import pytest
 
 import utilities as util
-import sonar.logging as log
 from sonar import errcodes
 from cli import findings_sync
 import cli.options as opt
