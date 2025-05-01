@@ -36,14 +36,8 @@ import cli.options as opt
 
 
 CMD = "sonar-findings-sync.py"
-PLAT_OPTS = [f"--{opt.URL}", os.getenv("SONAR_HOST_URL"), f"--{opt.TOKEN}", os.getenv("SONAR_TOKEN_ADMIN_USER")] + [
-    "-U",
-    os.getenv("SONAR_HOST_URL_TEST"),
-    "-T",
-    os.getenv("SONAR_TOKEN_SYNC_USER"),
-]
-SYNC_OPTS = ["--login", "syncer", f"-{opt.KEYS_SHORT}", "okorach_sonar-tools", "-K", "TESTSYNC"]
-ALL_OPTS = [CMD] + PLAT_OPTS + SYNC_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
+PLAT_OPTS = f"--{opt.URL} {os.getenv('SONAR_HOST_URL')} --{opt.TOKEN} {s.getenv('SONAR_TOKEN_ADMIN_USER')} -U {os.getenv('SONAR_HOST_URL_TEST')} -T {os.getenv('SONAR_TOKEN_SYNC_USER')}"
+SYNC_OPTS = f"--login syncer -{opt.KEYS_SHORT} {util.LIVE_PROJECT} -K TESTSYNC -b master -B main"
 
 
 def test_sync_help() -> None:
@@ -53,5 +47,4 @@ def test_sync_help() -> None:
 
 def test_sync(get_json_file: callable) -> None:
     """test_sync"""
-    file = get_json_file
-    util.run_success_cmd(findings_sync.main, " ".join([CMD] + PLAT_OPTS + SYNC_OPTS) + f" -{opt.REPORT_FILE_SHORT} {file}", True)
+    util.run_success_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -{opt.REPORT_FILE_SHORT} {get_json_file}", True)
