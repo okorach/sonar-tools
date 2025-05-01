@@ -48,11 +48,7 @@ ALL_OPTS = [CMD] + PLAT_OPTS + SYNC_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JS
 
 def test_sync_help() -> None:
     """test_sync"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", [CMD, "-h"]):
-            findings_sync.main()
-    assert not os.path.isfile(util.JSON_FILE)
+    util.run_failed_cmd(findings_sync.main, f"{CMD} -h", errcodes.ARGS_ERROR)
 
 
 def test_sync(get_json_file: callable) -> None:

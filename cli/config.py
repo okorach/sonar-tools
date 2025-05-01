@@ -43,7 +43,7 @@ FULL_EXPORT = "fullExport"
 EXPORT_EMPTY = "exportEmpty"
 
 _EXPORT_CALLS = {
-    c.CONFIG_KEY_PLATFORM: [c.CONFIG_KEY_PLATFORM, platform.basics, None],
+    c.CONFIG_KEY_PLATFORM: [c.CONFIG_KEY_PLATFORM, platform.basics, platform.convert_for_yaml],
     options.WHAT_SETTINGS: [c.CONFIG_KEY_SETTINGS, platform.export, platform.convert_for_yaml],
     options.WHAT_RULES: [c.CONFIG_KEY_RULES, rules.export, rules.convert_for_yaml],
     options.WHAT_PROFILES: [c.CONFIG_KEY_PROFILES, qualityprofiles.export, qualityprofiles.convert_for_yaml],
@@ -202,7 +202,16 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
                     write_q.put(utilities.WRITE_END)
             write_q.join()
         print("\n}", file=fd)
-    utilities.normalize_json_file(file, remove_empty=False, remove_none=True)
+    if kwargs[options.FORMAT] == "yaml":
+        try:
+            with utilities.open_file(file, mode="r") as fd:
+                json_data = json.loads(fd.read())
+            with utilities.open_file(file, mode="w") as fd:
+                print(yaml.dump(__convert_for_yaml(json_data), sort_keys=False), file=fd)
+        except json.decoder.JSONDecodeError:
+            log.warning("JSON Decode error while converting JSON file '%s' to YAML, is file complete?", file)
+    else:
+        utilities.normalize_json_file(file, remove_empty=False, remove_none=True)
     log.info("Exporting %s data from %s completed", mode.lower(), kwargs[options.URL])
 
 
