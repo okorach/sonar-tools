@@ -367,7 +367,7 @@ def __turn_off_use_findings_if_needed(endpoint: object, params: dict[str, str]) 
     """Turn off use-findings option if some incompatible options (issue filters) are used"""
     if not params[options.USE_FINDINGS]:
         return params
-    if endpoint.is_sonarcloud(endpoint):
+    if endpoint.is_sonarcloud():
         log.warning("--%s option is not available with SonarCloud, disabling the option to proceed", options.USE_FINDINGS)
         params[options.USE_FINDINGS] = False
         return params
