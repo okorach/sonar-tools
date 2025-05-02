@@ -35,9 +35,9 @@ def test_get_object(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     assert qg.name == util.TEMP_KEY
     assert str(qg) == f"quality gate '{util.TEMP_KEY}'"
     if util.SQ.version() < (10, 0, 0):
-        assert qg.url() == f"{util.SQ.url}/quality_gates/show/{qg.key}"
+        assert qg.url() == f"{util.SQ.external_url}/quality_gates/show/{qg.key}"
     else:
-        assert qg.url() == f"{util.SQ.url}/quality_gates/show/{util.TEMP_KEY}"
+        assert qg.url() == f"{util.SQ.external_url}/quality_gates/show/{util.TEMP_KEY}"
     qg2 = qualitygates.QualityGate.get_object(endpoint=util.SQ, name=util.TEMP_KEY)
     assert qg.projects() == {}
     assert qg2 is qg

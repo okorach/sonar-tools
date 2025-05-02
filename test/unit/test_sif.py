@@ -112,8 +112,8 @@ def test_audit_sif_ut() -> None:
     assert sysinfo.ce_jvm_cmdline() == "-Xmx1G -Xms128m -XX:+HeapDumpOnOutOfMemoryError"
     assert sysinfo.search_jvm_cmdline() == "-Xmx1G -Xms1G -XX:+HeapDumpOnOutOfMemoryError"
     sysinfo = sif.Sif(json_sif, concerned_object=util.SQ)
-    assert sysinfo.url() == util.SQ.url
-    assert str(sysinfo).split("@")[1] == util.SQ.url
+    assert sysinfo.url() == util.SQ.external_url
+    assert str(sysinfo).split("@")[1] == util.SQ.external_url
 
 
 def test_modified_sif() -> None:

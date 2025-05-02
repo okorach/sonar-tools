@@ -57,7 +57,7 @@ def test_create_delete(get_test_user: Generator[users.User]) -> None:
     user.name = "TEMP_USER"
     user.refresh()
     assert user.name == f"User name {util.TEMP_KEY}"
-    assert user.url() == f"{util.SQ.url}/admin/users"
+    assert user.url() == f"{util.SQ.external_url}/admin/users"
 
 
 def test_add_to_group(get_test_user: Generator[users.User]) -> None:

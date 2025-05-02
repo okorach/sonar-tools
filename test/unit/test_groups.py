@@ -78,7 +78,7 @@ def test_size() -> None:
 
 def test_url() -> None:
     gr = groups.Group.get_object(endpoint=util.SQ, name="sonar-users")
-    assert gr.url() == f"{util.SQ.url}/admin/groups"
+    assert gr.url() == f"{util.SQ.external_url}/admin/groups"
 
 
 def test_add_non_existing_user(get_test_group: Generator[groups.Group], get_test_user: Generator[users.User]) -> None:

@@ -29,7 +29,7 @@ def test_task() -> None:
     """test_task"""
     task = tasks.search_last(component_key=tutil.LIVE_PROJECT, endpoint=tutil.SQ, type="REPORT")
     assert task is not None
-    assert task.url() == f"{tutil.SQ.url}/project/background_tasks?id={tutil.LIVE_PROJECT}"
+    assert task.url() == f"{tutil.SQ.external_url}/project/background_tasks?id={tutil.LIVE_PROJECT}"
     task.sq_json = None
     task._load()
     assert task.sq_json is not None
