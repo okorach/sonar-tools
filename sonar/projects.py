@@ -167,7 +167,7 @@ class Project(components.Component):
         :return: The Project
         :rtype: Project
         """
-        o = Project.CACHE.get(key, endpoint.url)
+        o = Project.CACHE.get(key, endpoint.local_url)
         if o:
             return o
         try:
@@ -194,7 +194,7 @@ class Project(components.Component):
         :rtype: Project
         """
         key = data["key"]
-        o = Project.CACHE.get(key, endpoint.url)
+        o = Project.CACHE.get(key, endpoint.local_url)
         if not o:
             o = cls(endpoint, key)
         o.reload(data)
@@ -271,7 +271,7 @@ class Project(components.Component):
         :return: the SonarQube permalink to the project
         :rtype: str
         """
-        return f"{self.endpoint.url}/dashboard?id={self.key}"
+        return f"{self.base_url(local=False)}/dashboard?id={self.key}"
 
     def last_analysis(self, include_branches: bool = False) -> datetime:
         """

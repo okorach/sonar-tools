@@ -67,11 +67,11 @@ class WebHook(sq.SqObject):
         Returns an object unique Id
         :meta private:
         """
-        return hash((self.name, self.project if self.project else "", self.endpoint.url))
+        return hash((self.name, self.project if self.project else "", self.base_url()))
 
     def url(self) -> str:
         """Returns the object permalink"""
-        return f"{self.endpoint.url}/admin/webhooks"
+        return f"{self.base_url(local=False)}/admin/webhooks"
 
     def update(self, **kwargs) -> None:
         """Updates a webhook with new properties (name, url, secret)
@@ -140,7 +140,7 @@ def update(endpoint: pf.Platform, name: str, **kwargs) -> None:
     """Updates a webhook with data in kwargs"""
     project_key = kwargs.pop("project", None)
     get_list(endpoint, project_key)
-    o = WebHook.CACHE.get(name, project_key, endpoint.url)
+    o = WebHook.CACHE.get(name, project_key, endpoint.local_url)
     if not o:
         create(endpoint, name, kwargs["url"], kwargs["secret"], project=project_key)
     else:
@@ -150,7 +150,7 @@ def update(endpoint: pf.Platform, name: str, **kwargs) -> None:
 def get_object(endpoint: pf.Platform, name: str, project_key: str = None, data: types.ApiPayload = None) -> WebHook:
     """Gets a WebHook object from name a project key"""
     log.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
-    o = WebHook.CACHE.get(name, project_key, endpoint.url)
+    o = WebHook.CACHE.get(name, project_key, endpoint.local_url)
     if not o:
         o = WebHook(endpoint=endpoint, name=name, project=project_key, data=data)
     return o

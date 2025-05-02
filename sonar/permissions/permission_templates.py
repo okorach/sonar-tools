@@ -87,7 +87,7 @@ class PermissionTemplate(sqobject.SqObject):
 
     def __hash__(self) -> int:
         """Returns object unique id"""
-        return hash((self.name.lower(), self.endpoint.url))
+        return hash((self.name.lower(), self.base_url()))
 
     def is_default_for(self, qualifier: str) -> bool:
         """Returns whether a template is the default for a type of qualifier"""
@@ -205,7 +205,7 @@ def get_object(endpoint: pf.Platform, name: str) -> PermissionTemplate:
     """Returns Perm Template object corresponding to name"""
     if len(PermissionTemplate.CACHE) == 0:
         get_list(endpoint)
-    return PermissionTemplate.CACHE.get(name.lower(), endpoint.url)
+    return PermissionTemplate.CACHE.get(name.lower(), endpoint.local_url)
 
 
 def create_or_update(endpoint: pf.Platform, name: str, data: types.ObjectJsonRepr) -> PermissionTemplate:

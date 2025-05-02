@@ -89,7 +89,7 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         check_supported(endpoint)
-        o = Application.CACHE.get(key, endpoint.url)
+        o = Application.CACHE.get(key, endpoint.local_url)
         if o:
             return o
         try:
@@ -112,7 +112,7 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         check_supported(endpoint)
-        o = Application.CACHE.get(data["key"], endpoint.url)
+        o = Application.CACHE.get(data["key"], endpoint.local_url)
         if not o:
             o = cls(endpoint, data["key"], data["name"])
         o.reload(data)

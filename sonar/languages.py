@@ -52,7 +52,7 @@ class Language(sqobject.SqObject):
 
     @classmethod
     def load(cls, endpoint: pf.Platform, data: ApiPayload) -> Language:
-        o = Language.CACHE.get(data["key"], endpoint.url)
+        o = Language.CACHE.get(data["key"], endpoint.local_url)
         if not o:
             o = cls(endpoint=endpoint, key=data["key"], name=data["name"])
         return o
@@ -64,7 +64,7 @@ class Language(sqobject.SqObject):
         :rtype: Language or None if not found
         """
         get_list(endpoint)
-        return Language.CACHE.get(key, endpoint.url)
+        return Language.CACHE.get(key, endpoint.local_url)
 
     def number_of_rules(self, rule_type: str = None) -> int:
         """Count rules in the language, optionally filtering on rule type

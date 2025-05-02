@@ -63,11 +63,11 @@ class PullRequest(components.Component):
 
     def __hash__(self) -> int:
         """Returns a PR unique ID"""
-        return hash((self.project().key, self.key, self.endpoint.url))
+        return hash((self.project().key, self.key, self.base_url()))
 
     def url(self) -> str:
         """Returns the PR permalink (until PR is purged)"""
-        return f"{self.endpoint.url}/dashboard?id={self.concerned_object.key}&pullRequest={requests.utils.quote(self.key)}"
+        return f"{self.base_url(local=False)}/dashboard?id={self.concerned_object.key}&pullRequest={requests.utils.quote(self.key)}"
 
     def project(self) -> object:
         """Returns the project"""
@@ -101,7 +101,7 @@ def get_object(pull_request_key: str, project: object, data: types.ApiPayload = 
     if project.endpoint.edition() == "community":
         log.debug("Pull requests not available in Community Edition")
         return None
-    o = PullRequest.CACHE.get(project.key, pull_request_key, project.endpoint.url)
+    o = PullRequest.CACHE.get(project.key, pull_request_key, project.base_url())
     if not o:
         o = PullRequest(project, pull_request_key, data=data)
     return o

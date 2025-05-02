@@ -99,7 +99,7 @@ class Metric(sqobject.SqObject):
     @classmethod
     def get_object(cls, endpoint: pf.Platform, key: str) -> Metric:
         search(endpoint=endpoint)
-        o = Metric.CACHE.get(key, endpoint.url)
+        o = Metric.CACHE.get(key, endpoint.local_url)
         if not o:
             raise exceptions.ObjectNotFound(key, f"Metric key '{key}' not found")
         return o

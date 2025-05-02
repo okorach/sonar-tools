@@ -85,7 +85,7 @@ class Task(sq.SqObject):
         :return: the SonarQube permalink URL to the background task
         :rtype: str
         """
-        u = f"{self.endpoint.url}/project/background_tasks"
+        u = f"{self.base_url(local=False)}/project/background_tasks"
         if self.component_key:
             u += f"?id={self.component_key}"
         return u

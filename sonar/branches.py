@@ -86,7 +86,7 @@ class Branch(components.Component):
         :rtype: Branch
         """
         branch_name = unquote(branch_name)
-        o = Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.endpoint.url)
+        o = Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())
         if o:
             return o
         try:
@@ -113,7 +113,7 @@ class Branch(components.Component):
         :rtype: Branch
         """
         branch_name = unquote(branch_name)
-        o = Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.endpoint.url)
+        o = Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())
         if not o:
             o = cls(concerned_object, branch_name)
         o._load(data)
@@ -124,7 +124,7 @@ class Branch(components.Component):
 
     def __hash__(self) -> int:
         """Computes a uuid for the branch that can serve as index"""
-        return hash((self.concerned_object.key, self.name, self.endpoint.url))
+        return hash((self.concerned_object.key, self.name, self.base_url()))
 
     def project(self) -> projects.Project:
         """Returns the project key"""
@@ -245,7 +245,7 @@ class Branch(components.Component):
         :return: The branch URL in SonarQube as permalink
         :rtype: str
         """
-        return f"{self.endpoint.url}/dashboard?id={self.concerned_object.key}&branch={requests.utils.quote(self.name)}"
+        return f"{self.base_url(local=False)}/dashboard?id={self.concerned_object.key}&branch={requests.utils.quote(self.name)}"
 
     def rename(self, new_name: str) -> bool:
         """Renames a branch
@@ -321,7 +321,7 @@ class Branch(components.Component):
         from sonar.syncer import sync_lists
 
         report, counters = [], {}
-        log.info("Syncing %s (%s) and %s (%s) issues", str(self), self.endpoint.url, str(another_branch), another_branch.endpoint.url)
+        log.info("Syncing %s (%s) and %s (%s) issues", str(self), self.base_url(), str(another_branch), another_branch.endpoint.local_url)
         (report, counters) = sync_lists(
             list(self.get_issues().values()),
             list(another_branch.get_issues().values()),
@@ -329,7 +329,7 @@ class Branch(components.Component):
             another_branch,
             sync_settings=sync_settings,
         )
-        log.info("Syncing %s (%s) and %s (%s) hotspots", str(self), self.endpoint.url, str(another_branch), another_branch.endpoint.url)
+        log.info("Syncing %s (%s) and %s (%s) hotspots", str(self), self.base_url(), str(another_branch), another_branch.endpoint.local_url)
         (tmp_report, tmp_counts) = sync_lists(
             list(self.get_hotspots().values()),
             list(another_branch.get_hotspots().values()),

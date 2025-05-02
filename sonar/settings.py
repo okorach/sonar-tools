@@ -150,7 +150,7 @@ class Setting(sqobject.SqObject):
     def read(cls, key: str, endpoint: pf.Platform, component: object = None) -> Setting:
         """Reads a setting from the platform"""
         log.debug("Reading setting '%s' for %s", key, str(component))
-        o = Setting.CACHE.get(key, component, endpoint.url)
+        o = Setting.CACHE.get(key, component, endpoint.local_url)
         if o:
             return o
         if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
@@ -182,7 +182,7 @@ class Setting(sqobject.SqObject):
     def load(cls, key: str, endpoint: pf.Platform, data: types.ApiPayload, component: object = None) -> Setting:
         """Loads a setting with  JSON data"""
         log.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
-        o = Setting.CACHE.get(key, component, endpoint.url)
+        o = Setting.CACHE.get(key, component, endpoint.local_url)
         if not o:
             o = cls(key=key, endpoint=endpoint, data=data, component=component)
         o.reload(data)
@@ -226,7 +226,7 @@ class Setting(sqobject.SqObject):
 
     def __hash__(self) -> int:
         """Returns object unique ID"""
-        return hash((self.key, self.component.key if self.component else None, self.endpoint.url))
+        return hash((self.key, self.component.key if self.component else None, self.base_url()))
 
     def __str__(self) -> str:
         if self.component is None:
@@ -386,10 +386,10 @@ class Setting(sqobject.SqObject):
 
 def get_object(endpoint: pf.Platform, key: str, component: object = None) -> Setting:
     """Returns a Setting object from its key and, optionally, component"""
-    o = Setting.CACHE.get(key, component, endpoint.url)
+    o = Setting.CACHE.get(key, component, endpoint.local_url)
     if not o:
         get_all(endpoint, component)
-    return Setting.CACHE.get(key, component, endpoint.url)
+    return Setting.CACHE.get(key, component, endpoint.local_url)
 
 
 def __get_settings(endpoint: pf.Platform, data: types.ApiPayload, component: object = None) -> dict[str, Setting]:
@@ -498,7 +498,7 @@ def set_new_code_period(endpoint: pf.Platform, nc_type: str, nc_value: str, proj
 def get_visibility(endpoint: pf.Platform, component: object) -> str:
     """Returns the platform global or component visibility"""
     key = COMPONENT_VISIBILITY if component else PROJECT_DEFAULT_VISIBILITY
-    o = Setting.CACHE.get(key, component, endpoint.url)
+    o = Setting.CACHE.get(key, component, endpoint.local_url)
     if o:
         return o
     if component:

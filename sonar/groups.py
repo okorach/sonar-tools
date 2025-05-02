@@ -92,14 +92,14 @@ class Group(sq.SqObject):
         :return: The group object
         """
         log.debug("Reading group '%s'", name)
-        o = Group.CACHE.get(name, endpoint.url)
+        o = Group.CACHE.get(name, endpoint.local_url)
         if o:
             return o
         data = util.search_by_name(endpoint, name, Group.api_for(c.SEARCH, endpoint), "groups")
         if data is None:
             raise exceptions.ObjectNotFound(name, f"Group '{name}' not found.")
         # SonarQube 10 compatibility: "id" field is dropped, use "name" instead
-        o = Group.CACHE.get(data.get("id", data["name"]), endpoint.url)
+        o = Group.CACHE.get(data.get("id", data["name"]), endpoint.local_url)
         if o:
             return o
         return cls(endpoint, name, data=data)
@@ -150,10 +150,10 @@ class Group(sq.SqObject):
         :param str name: group name
         :return: The group
         """
-        o = Group.CACHE.get(name, endpoint.url)
+        o = Group.CACHE.get(name, endpoint.local_url)
         if not o:
             get_list(endpoint)
-        o = Group.CACHE.get(name, endpoint.url)
+        o = Group.CACHE.get(name, endpoint.local_url)
         if not o:
             raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
         return o
@@ -217,7 +217,7 @@ class Group(sq.SqObject):
         :return: the SonarQube permalink URL to the group, actually the global groups page only
                  since this is as close as we can get to the precise group definition
         """
-        return f"{self.endpoint.url}/admin/groups"
+        return f"{self.base_url(local=False)}/admin/groups"
 
     def add_user(self, user: object) -> bool:
         """Adds an user to the group

@@ -140,7 +140,7 @@ class User(sqobject.SqObject):
         :return: The user object
         :rtype: User
         """
-        o = User.CACHE.get(login, endpoint.url)
+        o = User.CACHE.get(login, endpoint.local_url)
         if o:
             return o
         log.debug("Getting user '%s'", login)
@@ -253,7 +253,7 @@ class User(sqobject.SqObject):
                  since this is as close as we can get to the precise user definition
         :rtype: str
         """
-        return f"{self.endpoint.url}/admin/users"
+        return f"{self.base_url(local=False)}/admin/users"
 
     def tokens(self, **kwargs) -> list[tokens.UserToken]:
         """
@@ -295,7 +295,7 @@ class User(sqobject.SqObject):
             self.set_scm_accounts(kwargs["scmAccounts"])
         if "login" in kwargs:
             new_login = kwargs["login"]
-            o = User.CACHE.get(new_login, self.endpoint.url)
+            o = User.CACHE.get(new_login, self.base_url())
             if not o:
                 api = User.api_for("UPDATE_LOGIN", self.endpoint)
                 if self.endpoint.version() >= (10, 4, 0):

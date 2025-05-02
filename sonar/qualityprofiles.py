@@ -109,7 +109,7 @@ class QualityProfile(sq.SqObject):
             log.error("Language '%s' does not exist, quality profile creation aborted", language)
             return None
         log.debug("Reading quality profile '%s' of language '%s'", name, language)
-        o = QualityProfile.CACHE.get(name, language, endpoint.url)
+        o = QualityProfile.CACHE.get(name, language, endpoint.local_url)
         if o:
             return o
         data = util.search_by_name(
@@ -179,14 +179,14 @@ class QualityProfile(sq.SqObject):
         return f"quality profile '{self.name}' of language '{self.language}'"
 
     def __hash__(self) -> int:
-        return hash((self.name, self.language, self.endpoint.url))
+        return hash((self.name, self.language, self.base_url()))
 
     def url(self) -> str:
         """
         :return: the SonarQube permalink URL to the quality profile
         :rtype: str
         """
-        return f"{self.endpoint.url}/profiles/show?language={self.language}&name={requests.utils.quote(self.name)}"
+        return f"{self.base_url(local=False)}/profiles/show?language={self.language}&name={requests.utils.quote(self.name)}"
 
     def last_use(self) -> datetime:
         """
@@ -628,7 +628,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None, **
     for lang, nb_qp in langs.items():
         if nb_qp > 5:
             rule = get_rule(RuleId.QP_TOO_MANY_QP)
-            problems.append(Problem(rule, f"{endpoint.url}/profiles?language={lang}", nb_qp, lang, 5))
+            problems.append(Problem(rule, f"{endpoint.external_url}/profiles?language={lang}", nb_qp, lang, 5))
     if "write_q" in kwargs:
         kwargs["write_q"].put(problems)
     return problems
@@ -731,7 +731,7 @@ def get_object(endpoint: pf.Platform, name: str, language: str) -> Optional[Qual
     :return: The quality profile object, of None if not found
     """
     get_list(endpoint)
-    o = QualityProfile.CACHE.get(name, language, endpoint.url)
+    o = QualityProfile.CACHE.get(name, language, endpoint.local_url)
     if not o:
         raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
     return o
