@@ -145,8 +145,7 @@ class Hotspot(findings.Finding):
 
     def refresh(self) -> bool:
         """Refreshes and reads hotspots details in SonarQube
-        :return: The hotspot details
-        :rtype: Whether ther operation succeeded
+        :return: Whether there operation succeeded
         """
         try:
             resp = self.get(Hotspot.API[c.GET], {"hotspot": self.key})
@@ -167,7 +166,6 @@ class Hotspot(findings.Finding):
         """Marks a hotspot as safe
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         return self.__mark_as("SAFE")
 
@@ -175,7 +173,6 @@ class Hotspot(findings.Finding):
         """Marks a hotspot as fixed
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         return self.__mark_as("FIXED")
 
@@ -183,7 +180,6 @@ class Hotspot(findings.Finding):
         """Marks a hotspot as acknowledged
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         if self.endpoint.version() < (9, 4, 0):
             log.warning("pf.Platform version is < 9.4, can't acknowledge %s", str(self))
@@ -194,7 +190,6 @@ class Hotspot(findings.Finding):
         """Marks a hotspot as to review
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         return self.post("hotspots/change_status", params={"hotspot": self.key, "status": "TO_REVIEW"}).ok
 
@@ -202,31 +197,31 @@ class Hotspot(findings.Finding):
         """Reopens a hotspot as to review
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         return self.mark_as_to_review()
 
     def add_comment(self, comment: str) -> bool:
         """Adds a comment to a hotspot
 
-        :param comment: Comment to add, in markdown format
-        :type comment: str
-        :return: Whether the operation succeeded
-        :rtype: bool
-        """
-        params = {"hotspot": self.key, "comment": comment}
-        return self.post("hotspots/add_comment", params=params).ok
-
-    def assign(self, assignee: Optional[str] = None) -> bool:
-        """Assigns a hotspot (and optionally comment)
-
-        :param str assignee: User login to assign the hotspot
+        :param str comment: Comment to add, in markdown format
         :return: Whether the operation succeeded
         """
         try:
-            params = util.remove_nones({"hotspot": self.key, "assignee": assignee})
+            return self.post("hotspots/add_comment", params={"hotspot": self.key, "comment": comment}).ok
+        except (ConnectionError, requests.RequestException) as e:
+            util.handle_error(e, "assigning hotspot", catch_all=True)
+            return False
+
+    def assign(self, assignee: Optional[str], comment: Optional[str] = None) -> bool:
+        """Assigns a hotspot (and optionally comment)
+
+        :param str assignee: User login to assign the hotspot, None to unassign
+        :param str comment: Optional comment to add
+        :return: Whether the operation succeeded
+        """
+        try:
             log.debug("Assigning %s to '%s'", str(self), str(assignee))
-            r = self.post("hotspots/assign", params)
+            r = self.post("hotspots/assign", util.remove_nones({"hotspot": self.key, "assignee": assignee, "comment": comment}))
             if r.ok:
                 self.assignee = assignee
         except (ConnectionError, requests.RequestException) as e:
@@ -234,13 +229,12 @@ class Hotspot(findings.Finding):
             return False
         return r.ok
 
-    def unassign(self) -> bool:
+    def unassign(self, comment: Optional[str] = None) -> bool:
         """Unassigns a hotspot (and optionally comment)
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
-        return self.assign(assignee=None)
+        return self.assign(assignee=None, comment=comment)
 
     def __apply_event(self, event: object, settings: types.ConfigSettings) -> bool:
         """Applies a changelog event (transition, comment, assign) to the hotspot"""
