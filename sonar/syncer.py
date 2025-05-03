@@ -33,7 +33,7 @@ SYNC_ADD_LINK = "add_link"
 SYNC_ADD_COMMENTS = "add_comments"
 SYNC_COMMENTS = "sync_comments"
 SYNC_ASSIGN = "sync_assignments"
-SYNC_SERVICE_ACCOUNTS = "sync_service_accounts"
+SYNC_SERVICE_ACCOUNT = "sync_service_account"
 
 SRC_KEY = "sourceFindingKey"
 SRC_URL = "sourceFindingUrl"
@@ -140,7 +140,7 @@ def __sync_one_finding(
     """Syncs one finding"""
     (exact_siblings, approx_siblings, modified_siblings) = src_finding.search_siblings(
         tgt_findings,
-        allowed_users=settings[SYNC_SERVICE_ACCOUNTS],
+        sync_user=settings[SYNC_SERVICE_ACCOUNT],
         ignore_component=settings[SYNC_IGNORE_COMPONENTS],
     )
     if len(exact_siblings) == 1:
@@ -211,12 +211,7 @@ def sync_lists(
             continue
 
         modifiers = finding.modifiers().union(finding.commenters())
-        # TODO - Manage more than 1 sync account - diff the 2 lists
-        syncer = sync_settings[SYNC_SERVICE_ACCOUNTS][0]
-        if sync_settings is None:
-            sync_settings = {}
-        if sync_settings.get(SYNC_SERVICE_ACCOUNTS, None) is None:
-            sync_settings[SYNC_SERVICE_ACCOUNTS] = [syncer]
+        syncer = sync_settings[SYNC_SERVICE_ACCOUNT]
 
         if len(modifiers) == 1 and list(modifiers)[0] == syncer:
             log.info(

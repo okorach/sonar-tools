@@ -63,11 +63,6 @@ def __parse_args(desc: str) -> object:
         help="""key of the target project when synchronizing 2 projects or 2 branches on a same platform""",
     )
     parser.add_argument(
-        "--login",
-        required=False,
-        help="DEPRECATED, IGNORED: One (or several comma separated) service account(s) used for issue-sync",
-    )
-    parser.add_argument(
         "--nocomment",
         required=False,
         default=False,
@@ -177,7 +172,7 @@ def main() -> None:
             syncer.SYNC_ADD_LINK: not params["nolink"],
             syncer.SYNC_ASSIGN: True,
             syncer.SYNC_IGNORE_COMPONENTS: False,
-            syncer.SYNC_SERVICE_ACCOUNTS: util.csv_to_list(params["login"]),
+            syncer.SYNC_SERVICE_ACCOUNT: params["login"],
             syncer.SYNC_SINCE_DATE: __since_date(**params),
             syncer.SYNC_THREADS: params["threads"],
         }

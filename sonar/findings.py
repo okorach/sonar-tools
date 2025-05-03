@@ -328,17 +328,17 @@ class Finding(sq.SqObject):
         """
         return {v["user"] for v in self.comments() if "user" in v}
 
-    def can_be_synced(self, user_list: Optional[list[str]]) -> bool:
+    def can_be_synced(self, sync_user: Optional[str]) -> bool:
         """
         :meta private:
         """
-        log.debug("%s: Checking if modifiers %s are different from user %s", str(self), str(self.modifiers()), str(user_list))
+        log.debug("%s: Checking if modifiers %s are different from user %s", str(self), str(self.modifiers()), str(sync_user))
         # If no account dedicated to sync is provided, finding can be synced only if no changelog
-        if user_list is None:
-            log.debug("Allowed user list empty, checking if issue has changelog")
+        if sync_user is None:
+            log.debug("Allowed sync user is empty, checking if issue has changelog")
             return not self.has_changelog()
         # Else, finding can be synced only if changes were performed by syncer accounts
-        return all(u in user_list for u in self.modifiers())
+        return all(u == sync_user for u in self.modifiers())
 
     def strictly_identical_to(self, another_finding: Finding, ignore_component: bool = False) -> bool:
         """
@@ -404,7 +404,7 @@ class Finding(sq.SqObject):
         return score == 8 or score >= 7 and self.hash == another_finding.hash
 
     def search_siblings(
-        self, findings_list: list[Finding], allowed_users: bool = None, ignore_component: bool = False, **kwargs
+        self, findings_list: list[Finding], sync_user: str = None, ignore_component: bool = False, **kwargs
     ) -> tuple[list[Finding], list[Finding], list[Finding]]:
         """
         :meta private:
@@ -418,7 +418,7 @@ class Finding(sq.SqObject):
                 log.debug("%s and %s are the same issue", str(self), str(finding))
                 continue
             if finding.strictly_identical_to(self, ignore_component, **kwargs):
-                if finding.can_be_synced(allowed_users):
+                if finding.can_be_synced(sync_user):
                     log.info("%s and %s are exact match and can be synced", str(self), str(finding))
                     exact_matches.append(finding)
                 else:
@@ -429,7 +429,7 @@ class Finding(sq.SqObject):
         log.info("No exact match, searching for an approximate match of %s", str(self))
         for finding in findings_list:
             if finding.almost_identical_to(self, ignore_component, **kwargs):
-                if finding.can_be_synced(allowed_users):
+                if finding.can_be_synced(sync_user):
                     log.info("%s and %s are approximate match and could be synced", str(self), str(finding))
                     approx_matches.append(finding)
                 else:
