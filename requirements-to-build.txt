@@ -9,3 +9,4 @@ pytest
 coverage
 flake8
 pylint
+get_pypi_latest_version
