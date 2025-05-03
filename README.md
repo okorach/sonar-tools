@@ -294,7 +294,7 @@ Basic Usage: `sonar-config --export -f <file.json>`
 - `-f`: Define the output file, if not specified `stdout` is used
 - `-e` or `--export`: Specify the export operation
 - `-w` or `--what`: Specify what to export (everything by default)
-- `k "<key1>,<key2>,...,<keyn>"`: Will only import/export projects, apps or portfolios with matching keys
+- `-k "<key1>,<key2>,...,<keyn>"`: Will only import/export projects, apps or portfolios with matching keys
 - `--fullExport`: Will also export object properties that are not used for an import by may be of interest anyway
 See [sonar-config complete doc](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md)
 
@@ -367,6 +367,7 @@ docker run --rm -e SONAR_TOKEN=$SONAR_TOKEN -e SONAR_HOST_URL=https://sonar.acme
 # If you want the 2nd form above to work you must use volumes, for instance:
 docker run --rm -w `pwd` -v `pwd`:`pwd` -e SONAR_TOKEN=$SONAR_TOKEN -e SONAR_HOST_URL=https://sonar.acme.com olivierkorach/sonar-tools sonar-config -e -f config.json
 # After the command the file config.json should be in the local (pwd) directory
+```
 
 # <a name="exit-codes"></a>Exit codes
 
