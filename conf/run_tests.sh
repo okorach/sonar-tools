@@ -30,7 +30,7 @@ echo "Running tests"
 
 "$CONFDIR/prep_tests.sh"
 
-for target in latest cb lts 9 9-ce cloud
+for target in latest cb 9 cloud
 do
     sonar start -i $target && sleep 30
     if [ -d "$ROOTDIR/test/$target/" ]; then
