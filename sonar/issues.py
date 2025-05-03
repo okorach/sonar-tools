@@ -545,7 +545,7 @@ class Issue(findings.Finding):
             if settings[syncer.SYNC_ASSIGN]:
                 u = users.get_login_from_name(endpoint=self.endpoint, name=data)
                 if u is None:
-                    u = settings[syncer.SYNC_SERVICE_ACCOUNTS][0]
+                    u = settings[syncer.SYNC_SERVICE_ACCOUNT]
                 self.assign(u)
                 # self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "UNASSIGN":
