@@ -109,7 +109,7 @@ class Platform(object):
                     self.external_url = s
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, "verifying connection", catch_all=True)
-            raise exceptions.ConnectionError(util.sonar_error(e.response))
+            raise exceptions.ConnectionError(f"{str(e)} while connecting to {self.local_url}")
 
     def version(self) -> tuple[int, int, int]:
         """
