@@ -156,7 +156,10 @@ class Hotspot(findings.Finding):
 
     def __mark_as(self, resolution: str, comment: Optional[str] = None) -> bool:
         try:
-            r = self.post("hotspots/change_status", params=util.remove_nones({"hotspot": self.key, "status": "REVIEWED", "resolution": resolution, "commemt": comment}))
+            r = self.post(
+                "hotspots/change_status",
+                params=util.remove_nones({"hotspot": self.key, "status": "REVIEWED", "resolution": resolution, "commemt": comment}),
+            )
         except (ConnectionError, requests.RequestException) as e:
             util.handle_error(e, f"marking hotspot as {resolution}", catch_all=True)
             return False
