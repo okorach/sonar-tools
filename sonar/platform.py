@@ -75,7 +75,8 @@ class Platform(object):
         :return: the SonarQube object
         :rtype: Platform
         """
-        self.url = url.rstrip("/").lower()  #: SonarQube URL
+        self.local_url = url.rstrip("/").lower()  #: SonarQube URL
+        self.external_url = self.local_url
         self.__token = token
         self.__cert_file = cert_file
         self.__user_data = None
@@ -93,15 +94,19 @@ class Platform(object):
         """
         Returns the string representation of the SonarQube connection, with the token recognizable but largely redacted
         """
-        return f"{util.redacted_token(self.__token)}@{self.url}"
+        return f"{util.redacted_token(self.__token)}@{self.local_url}"
 
     def __credentials(self) -> tuple[str, str]:
         return self.__token, ""
 
     def verify_connection(self) -> None:
         try:
-            log.info("Connecting to %s", self.url)
+            log.info("Connecting to %s", self.local_url)
             self.get("server/version")
+            if not self.is_sonarcloud():
+                s = self.get_setting(key="sonar.core.serverBaseURL")
+                if s not in (None, ""):
+                    self.external_url = s
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, "verifying connection", catch_all=True)
             raise exceptions.ConnectionError(util.sonar_error(e.response))
@@ -157,7 +162,7 @@ class Platform(object):
         """
         Returns whether the target platform is SonarCloud
         """
-        return util.is_sonarcloud_url(self.url)
+        return util.is_sonarcloud_url(self.local_url)
 
     def basics(self) -> dict[str, str]:
         """
@@ -167,7 +172,7 @@ class Platform(object):
 
         url = self.get_setting(key="sonar.core.serverBaseURL")
         if url in (None, ""):
-            url = self.url
+            url = self.local_url
         data = {"edition": self.edition(), "url": url}
         if self.is_sonarcloud():
             return {**data, "organization": self.organization}
@@ -248,7 +253,7 @@ class Platform(object):
             while retry:
                 start = time.perf_counter_ns()
                 r = request(
-                    url=self.url + api,
+                    url=self.local_url + api,
                     auth=self.__credentials(),
                     verify=self.__cert_file,
                     params=params,
@@ -258,7 +263,7 @@ class Platform(object):
                 (retry, new_url) = _check_for_retry(r)
                 log.debug("%s: %s took %d ms", req_type, url, (time.perf_counter_ns() - start) // 1000000)
                 if retry:
-                    self.url = new_url
+                    self.local_url = new_url
             r.raise_for_status()
         except HTTPError as e:
             lvl = log.DEBUG if r.status_code in mute else log.ERROR
@@ -530,7 +535,7 @@ class Platform(object):
         log.info("--- Auditing global settings ---")
         problems = []
         platform_settings = self.get_settings()
-        settings_url = f"{self.url}/admin/settings"
+        settings_url = f"{self.local_url}/admin/settings"
         for key in audit_settings:
             if key.startswith("audit.globalSettings.range"):
                 problems += _audit_setting_in_range(key, platform_settings, audit_settings, self.version(), settings_url)
@@ -600,12 +605,12 @@ class Platform(object):
                     log.warning("Warning found in %s: %s", logfile, line)
                     rule = get_rule(RuleId.WARNING_IN_LOGS)
                 if rule is not None:
-                    problems.append(Problem(rule, f"{self.url}/admin/system", logfile, line))
+                    problems.append(Problem(rule, f"{self.local_url}/admin/system", logfile, line))
         logs = self.get("system/logs", params={"name": "deprecation"}).text
         nb_deprecation = len(logs.splitlines())
         if nb_deprecation > 0:
             rule = get_rule(RuleId.DEPRECATION_WARNINGS)
-            problems.append(Problem(rule, f"{self.url}/admin/system", nb_deprecation))
+            problems.append(Problem(rule, f"{self.local_url}/admin/system", nb_deprecation))
         return problems
 
     def _audit_project_default_visibility(self, audit_settings: types.ConfigSettings) -> list[Problem]:
@@ -624,17 +629,17 @@ class Platform(object):
         log.info("Project default visibility is '%s'", visi)
         if audit_settings.get("audit.globalSettings.defaultProjectVisibility", "private") != visi:
             rule = get_rule(RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)
-            problems.append(Problem(rule, f"{self.url}/admin/projects_management", visi))
+            problems.append(Problem(rule, f"{self.local_url}/admin/projects_management", visi))
         return problems
 
     def _audit_admin_password(self) -> list[Problem]:
         log.info("Auditing admin password")
         problems = []
         try:
-            r = requests.get(url=self.url + "/api/authentication/validate", auth=("admin", "admin"), timeout=self.http_timeout)
+            r = requests.get(url=self.local_url + "/api/authentication/validate", auth=("admin", "admin"), timeout=self.http_timeout)
             data = json.loads(r.text)
             if data.get("valid", False):
-                problems.append(Problem(get_rule(RuleId.DEFAULT_ADMIN_PASSWORD), self.url))
+                problems.append(Problem(get_rule(RuleId.DEFAULT_ADMIN_PASSWORD), self.local_url))
             else:
                 log.info("User 'admin' default password has been changed")
         except requests.RequestException as e:
@@ -644,7 +649,7 @@ class Platform(object):
     def __audit_group_permissions(self) -> list[Problem]:
         log.info("Auditing group global permissions")
         problems = []
-        perms_url = f"{self.url}/admin/permissions"
+        perms_url = f"{self.local_url}/admin/permissions"
         groups = self.global_permissions().groups()
         if len(groups) > 10:
             problems.append(Problem(get_rule(rule_id=RuleId.RISKY_GLOBAL_PERMISSIONS), perms_url, len(groups)))
@@ -668,7 +673,7 @@ class Platform(object):
     def __audit_user_permissions(self) -> list[Problem]:
         log.info("Auditing users global permissions")
         problems = []
-        perms_url = f"{self.url}/admin/permissions"
+        perms_url = f"{self.local_url}/admin/permissions"
         users = self.global_permissions().users()
         if len(users) > 10:
             msg = f"Too many ({len(users)}) users with direct global permissions, use groups instead"
@@ -702,7 +707,7 @@ class Platform(object):
         if not v:
             return []
         # pylint: disable-next=E0606
-        return [Problem(rule, self.url, ".".join([str(n) for n in sq_vers]), ".".join([str(n) for n in v]))]
+        return [Problem(rule, self.local_url, ".".join([str(n) for n in sq_vers]), ".".join([str(n) for n in v]))]
 
     def is_mqr_mode(self) -> bool:
         """Returns whether the platform is in MQR mode"""

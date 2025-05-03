@@ -96,7 +96,7 @@ def test_inheritance(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> 
 def test_read(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """test_read"""
     qp = get_test_qp
-    assert qp.url() == f"{util.SQ.url}/profiles/show?language=py&name={util.TEMP_KEY}"
+    assert qp.url() == f"{util.SQ.external_url}/profiles/show?language=py&name={util.TEMP_KEY}"
     new_qp = qualityprofiles.QualityProfile.read(util.SQ, util.TEMP_KEY, "py")
     assert qp is new_qp
 

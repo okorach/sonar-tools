@@ -78,12 +78,12 @@ class ApplicationBranch(Component):
         """
         if app.endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        o = ApplicationBranch.CACHE.get(app.key, branch_name, app.endpoint.url)
+        o = ApplicationBranch.CACHE.get(app.key, branch_name, app.base_url())
         if o:
             return o
         app.refresh()
         app.branches()
-        o = ApplicationBranch.CACHE.get(app.key, branch_name, app.endpoint.url)
+        o = ApplicationBranch.CACHE.get(app.key, branch_name, app.base_url())
         if o:
             return o
         raise exceptions.ObjectNotFound(app.key, f"Application key '{app.key}' branch '{branch_name}' not found")
@@ -126,7 +126,7 @@ class ApplicationBranch(Component):
 
     def __hash__(self) -> int:
         """Returns the object UUID"""
-        return hash((self.concerned_object.key, self.name, self.endpoint.url))
+        return hash((self.concerned_object.key, self.name, self.base_url()))
 
     def is_main(self) -> bool:
         """Returns whether app branch is main"""
@@ -231,7 +231,7 @@ class ApplicationBranch(Component):
 
     def url(self) -> str:
         """Returns the URL of the Application Branch"""
-        return f"{self.endpoint.url}/dashboard?id={self.concerned_object.key}&branch={quote(self.name)}"
+        return f"{self.base_url(local=False)}/dashboard?id={self.concerned_object.key}&branch={quote(self.name)}"
 
 
 def exists(app: object, branch: str) -> bool:

@@ -114,7 +114,7 @@ class Hotspot(findings.Finding):
             branch = f"branch={requests.utils.quote(self.branch)}&"
         elif self.pull_request is not None:
             branch = f"pullRequest={requests.utils.quote(self.pull_request)}&"
-        return f"{self.endpoint.url}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}"
+        return f"{self.base_url(local=False)}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}"
 
     def to_json(self, without_time: bool = False) -> types.ObjectJsonRepr:
         """
@@ -449,7 +449,7 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
 
 def get_object(endpoint: pf.Platform, key: str, data: dict[str] = None, from_export: bool = False) -> Hotspot:
     """Returns a hotspot from its key"""
-    o = Hotspot.CACHE.get(key, endpoint.url)
+    o = Hotspot.CACHE.get(key, endpoint.local_url)
     if not o:
         o = Hotspot(key=key, data=data, endpoint=endpoint, from_export=from_export)
     return o

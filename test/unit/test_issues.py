@@ -211,7 +211,7 @@ def test_request_error() -> None:
     """test_request_error"""
     issues_d = issues.search_by_project(endpoint=tutil.TEST_SQ, project_key="project1")
     issue = list(issues_d.values())[0]
-    tutil.TEST_SQ.url = "http://localhost:3337"
+    tutil.TEST_SQ.local_url = "http://localhost:3337"
     assert not issue.add_comment("Won't work")
 
     assert not issue.assign("admin")

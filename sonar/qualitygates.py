@@ -110,7 +110,7 @@ class QualityGate(sq.SqObject):
         :param name: Quality gate
         :return: the QualityGate object or None if not found
         """
-        o = QualityGate.CACHE.get(name, endpoint.url)
+        o = QualityGate.CACHE.get(name, endpoint.local_url)
         if o:
             return o
         data = search_by_name(endpoint, name)
@@ -124,7 +124,7 @@ class QualityGate(sq.SqObject):
         :return: the QualityGate object
         """
         # SonarQube 10 compatibility: "id" field dropped, replaced by "name"
-        o = QualityGate.CACHE.get(data["name"], endpoint.url)
+        o = QualityGate.CACHE.get(data["name"], endpoint.local_url)
         if not o:
             o = cls(endpoint, data["name"], data=data)
         log.debug("Loading 2 %s QG from %s", o.name, util.json_dump(data))
@@ -152,14 +152,14 @@ class QualityGate(sq.SqObject):
 
     def __hash__(self) -> int:
         """Default UUID for SQ objects"""
-        return hash((self.name, self.endpoint.url))
+        return hash((self.name, self.base_url()))
 
     def url(self) -> str:
         """
         :return: The object permalink
         :rtype: str
         """
-        return f"{self.endpoint.url}/quality_gates/show/{self.key}"
+        return f"{self.base_url(local=False)}/quality_gates/show/{self.key}"
 
     def projects(self) -> dict[str, projects.Project]:
         """
@@ -367,7 +367,7 @@ def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = N
     nb_qg = len(quality_gates_list)
     log.debug("Auditing that there are no more than %s quality gates", str(max_qg))
     if nb_qg > max_qg:
-        problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_GATES), f"{endpoint.url}/quality_gates", nb_qg, 5))
+        problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_GATES), f"{endpoint.external_url}/quality_gates", nb_qg, 5))
     for qg in quality_gates_list.values():
         problems += qg.audit(audit_settings)
     if "write_q" in kwargs:
@@ -384,7 +384,7 @@ def get_list(endpoint: pf.Platform) -> dict[str, QualityGate]:
     data = json.loads(endpoint.get(QualityGate.API[c.LIST]).text)
     qg_list = {}
     for qg in data["qualitygates"]:
-        qg_obj = QualityGate.CACHE.get(qg["name"], endpoint.url)
+        qg_obj = QualityGate.CACHE.get(qg["name"], endpoint.local_url)
         if qg_obj is None:
             qg_obj = QualityGate(endpoint=endpoint, name=qg["name"], data=qg.copy())
         if endpoint.version() < (7, 9, 0) and "default" in data and data["default"] == qg["id"]:

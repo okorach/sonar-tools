@@ -75,7 +75,7 @@ class Sif(object):
         """Returns the SQ URL of the SQ instance represented by the SIF"""
         if not self._url:
             if self.concerned_object:
-                self._url = self.concerned_object.url
+                self._url = self.concerned_object.external_url
             else:
                 self._url = self.json.get("Settings", {}).get("sonar.core.serverBaseURL", "")
         return self._url

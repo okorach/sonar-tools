@@ -51,7 +51,7 @@ class SqObject(object):
 
     def __hash__(self) -> int:
         """Default UUID for SQ objects"""
-        return hash((self.key, self.endpoint.url))
+        return hash((self.key, self.base_url()))
 
     def __eq__(self, another: object) -> bool:
         if type(self) is type(another):
@@ -80,7 +80,7 @@ class SqObject(object):
             if not endpoint:
                 cls.CACHE.clear()
             else:
-                _ = [cls.CACHE.pop(o) for o in cls.CACHE.values().copy() if o.endpoint.url != endpoint.url]
+                _ = [cls.CACHE.pop(o) for o in cls.CACHE.values().copy() if o.base_url() != endpoint.local_url]
         except AttributeError:
             pass
 
@@ -90,6 +90,10 @@ class SqObject(object):
             self.sq_json = data
         else:
             self.sq_json.update(data)
+
+    def base_url(self, local: bool = True) -> str:
+        """Returns the platform base URL"""
+        return self.endpoint.local_url if local or self.endpoint.external_url in (None, "") else self.endpoint.external_url
 
     def get(
         self,

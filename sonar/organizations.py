@@ -73,7 +73,7 @@ class Organization(sqobject.SqObject):
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        o = Organization.CACHE.get(key, endpoint.url)
+        o = Organization.CACHE.get(key, endpoint.local_url)
         if o:
             return o
         try:
@@ -99,7 +99,7 @@ class Organization(sqobject.SqObject):
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        o = Organization.CACHE.get(data["key"], endpoint.url)
+        o = Organization.CACHE.get(data["key"], endpoint.local_url)
         if not o:
             o = cls(endpoint, data["key"], data["name"])
         o.sq_json = data

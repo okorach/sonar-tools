@@ -367,7 +367,7 @@ def __turn_off_use_findings_if_needed(endpoint: object, params: dict[str, str]) 
     """Turn off use-findings option if some incompatible options (issue filters) are used"""
     if not params[options.USE_FINDINGS]:
         return params
-    if util.is_sonarcloud_url(endpoint.url):
+    if endpoint.is_sonarcloud():
         log.warning("--%s option is not available with SonarCloud, disabling the option to proceed", options.USE_FINDINGS)
         params[options.USE_FINDINGS] = False
         return params
@@ -424,7 +424,7 @@ def main() -> None:
         store_findings(components_list, params=params)
     except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while exporting findings: {e}", exit_code=errcodes.OS_ERROR)
-    log.info("%d returned findings from %s", TOTAL_FINDINGS, sqenv.url)
+    log.info("%d returned findings from %s", TOTAL_FINDINGS, sqenv.local_url)
     util.stop_clock(start_time)
     sys.exit(0)
 

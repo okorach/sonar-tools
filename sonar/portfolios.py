@@ -118,7 +118,7 @@ class Portfolio(aggregations.Aggregation):
         """Gets a portfolio object from its key"""
         check_supported(endpoint)
         log.debug("Getting portfolio object key '%s'", key)
-        o = Portfolio.CACHE.get(key, endpoint.url)
+        o = Portfolio.CACHE.get(key, endpoint.local_url)
         if o:
             log.debug("%s is in cache", str(o))
             return o
@@ -222,7 +222,7 @@ class Portfolio(aggregations.Aggregation):
 
     def url(self) -> str:
         """Returns the object permalink"""
-        return f"{self.endpoint.url}/portfolio?id={self.key}"
+        return f"{self.base_url(local=False)}/portfolio?id={self.key}"
 
     def projects(self) -> Optional[dict[str, str]]:
         """Returns list of projects and their branches if selection mode is manual, None otherwise"""

@@ -66,7 +66,7 @@ class DevopsPlatform(sq.SqObject):
     @classmethod
     def read(cls, endpoint: platform.Platform, key: str) -> DevopsPlatform:
         """Reads a devops platform object in Sonar instance"""
-        o = DevopsPlatform.CACHE.get(key, endpoint.url)
+        o = DevopsPlatform.CACHE.get(key, endpoint.local_url)
         if o:
             return o
         data = json.loads(endpoint.get(DevopsPlatform.API[c.LIST]).text)
@@ -80,7 +80,7 @@ class DevopsPlatform(sq.SqObject):
     def load(cls, endpoint: platform.Platform, plt_type: str, data: types.ApiPayload) -> DevopsPlatform:
         """Finds a devops platform object and loads it with data"""
         key = data["key"]
-        o = DevopsPlatform.CACHE.get(key, endpoint.url)
+        o = DevopsPlatform.CACHE.get(key, endpoint.local_url)
         if not o:
             o = DevopsPlatform(endpoint=endpoint, key=key, platform_type=plt_type)
         return o._load(data)

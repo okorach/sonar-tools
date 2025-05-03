@@ -99,7 +99,7 @@ def main() -> int:
         else:
             __write_rules_json(file=file, rule_list=rule_list)
 
-        log.info("%d rules exported from %s", len(rule_list), endpoint.url)
+        log.info("%d rules exported from %s", len(rule_list), endpoint.local_url)
         util.stop_clock(start_time)
         sys.exit(0)
     except exceptions.SonarException as e:

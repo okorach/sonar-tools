@@ -193,7 +193,7 @@ class Rule(sq.SqObject):
     @classmethod
     def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
         """Returns a rule object from the cache or from the platform itself"""
-        o = Rule.CACHE.get(key, endpoint.url)
+        o = Rule.CACHE.get(key, endpoint.local_url)
         if o:
             return o
         try:
@@ -218,7 +218,7 @@ class Rule(sq.SqObject):
     @classmethod
     def load(cls, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> Rule:
         """Loads a rule object"""
-        o = Rule.CACHE.get(key, endpoint.url)
+        o = Rule.CACHE.get(key, endpoint.local_url)
         if o:
             o.sq_json.update(data)
             return o
@@ -378,7 +378,7 @@ def get_object(endpoint: platform.Platform, key: str) -> Optional[Rule]:
     :param str key: The rule key
     :rtype: Rule or None
     """
-    o = Rule.CACHE.get(key, endpoint.url)
+    o = Rule.CACHE.get(key, endpoint.local_url)
     if o:
         return o
     try:
