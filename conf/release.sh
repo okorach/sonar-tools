@@ -40,7 +40,8 @@ if [ "$confirm" = "y" ]; then
 
     echo "Releasing on pypi.org"
     python3 -m twine upload "$ROOTDIR/dist/sonar_tools-$version-py3-none-any.whl"
-    sleep 10
+    echo "Waiting 3 minutes that pypi publishes the new sonar-tools release"
+    sleep 180
     echo "Releasing on dockerhub"
     docker buildx build --push --platform linux/amd64,linux/arm64 -t "olivierkorach/sonar-tools:$version" -t olivierkorach/sonar-tools:latest -f "$CONFDIR/release.Dockerfile" "$ROOTDIR"
     cd "$ROOTDIR" && docker pushrm olivierkorach/sonar-tools
