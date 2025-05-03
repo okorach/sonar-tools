@@ -4,6 +4,7 @@
   - Fixed major sync regression
   - Added sync multithreading to significantly accelerate sync of large projects with many findings to sync
   - Covered support for several additional corner cases to increase number of issues that can be matched, and sync them
+* Several bug fixes and hardening across the board
   
 # Version 3.10
 
