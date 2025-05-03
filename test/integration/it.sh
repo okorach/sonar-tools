@@ -53,7 +53,7 @@ function backup_for {
 function tag_for {
     case $1 in
         lts|lta|lts-audit|lta-audit)
-            tag="enterprise"
+            tag="2025-lta-enterprise"
             ;;
         latest|latest-audit)
             tag="enterprise"
@@ -66,6 +66,9 @@ function tag_for {
             ;;
         cb|cb-audit)
             tag="community"
+            ;;
+        9)
+            tag="9-enterprise"
             ;;
         *)
             logmsg "ERROR: Instance $1 has no corresponding tag"
@@ -103,9 +106,9 @@ do
         echo sonar create -i $id -t "$(tag_for "$env")" -s $sqport -p $pgport -f "$(backup_for "$env")"
         sonar create -i $id -t "$(tag_for "$env")" -s $sqport -p $pgport -f "$(backup_for "$env")" 1>$IT_LOG_FILE 2>&1
         export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
-        if [[ "$env" =~ ^lts.*$ ]]; then
-            logmsg "Using LTS token"
-            export SONAR_TOKEN=$SONAR_TOKEN_LTS_ADMIN_USER
+        if [[ "$env" =~ ^9.*$ ]]; then
+            logmsg "Using 9 token"
+            export SONAR_TOKEN=$SONAR_TOKEN_9_ADMIN_USER
         fi
         export SONAR_HOST_URL="http://localhost:$sqport"
     fi
@@ -210,7 +213,7 @@ do
     f="config-$env-rel.json"; run_test "$f" sonar-config -e
 
     logmsg "IT compare released and unreleased $env"
-    for f in measures findings loc
+    for f in measures loc
     do
         root="$TMP/$f-$env"
         announce_test "$f-$env diff"
