@@ -170,7 +170,6 @@ def __sync_curated_list(
         for future in concurrent.futures.as_completed(futures):
             try:
                 match_type, result = future.result(timeout=60)  # Retrieve result or raise an exception
-                log.info("Result: %s", str(result))
                 report.append(result)
                 counters[match_type] += 1
             except TimeoutError:
