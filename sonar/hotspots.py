@@ -142,7 +142,7 @@ class Hotspot(findings.Finding):
             resp = self.get(Hotspot.API[c.GET], {"hotspot": self.key})
             if resp.ok:
                 d = json.loads(resp.text)
-                self._details = d
+                self.__details = d
                 self.file = d["component"]["path"]
                 self.branch, self.pull_request = self.get_branch_and_pr(d["project"])
                 self.severity = d["rule"].get("vulnerabilityProbability", "UNDEFINED") + "(HOTSPOT)"
@@ -151,7 +151,8 @@ class Hotspot(findings.Finding):
                     self.rule = d["rule"]["key"]
                 self.assignee = d.get("assignee", None)
             return resp.ok
-        except (ConnectionError, RequestException):
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, "refreshing hotspot", catch_all=True)
             return False
 
     def __mark_as(self, resolution: str, comment: Optional[str] = None) -> bool:
