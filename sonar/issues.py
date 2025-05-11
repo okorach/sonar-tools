@@ -343,14 +343,11 @@ class Issue(findings.Finding):
         :param str severity: The severity to set
         :return: Whether the operation succeeded
         """
-        success = True
         if self.endpoint.is_sonarcloud():
-            sev_map = {v: k for k, v in SEVERITY_MAPPING.items()}
-            success = self.__set_severity(severity=sev_map[severity])
-            if success:
-                self.severity = severity
-        success = success and self.__set_severity(impact=f"{software_quality}:{severity}")
-        return success
+            log.error("SonarQube Cloud does not support MQR severity changes")
+            return False
+        else:
+            return self.__set_severity(impact=f"{software_quality}={severity}")
 
     def assign(self, assignee: Optional[str] = None) -> bool:
         """Assigns an issue to a user
