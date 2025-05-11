@@ -31,6 +31,7 @@ import utilities as util
 from cli import rules_cli
 import cli.options as opt
 from sonar import rules, exceptions, errcodes
+import sonar.util.constants as c
 
 CMD = "rules_cli.py"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
@@ -51,7 +52,7 @@ def test_rules_json_format() -> None:
 
 def test_rules_filter_language() -> None:
     """Tests that you can export rules for a single or a few languages"""
-    langs = ("py", "cs") if util.SQ.edition() == "community" else ("py", "apex")
+    langs = ("py", "cs") if util.SQ.edition() == c.CE else ("py", "apex")
     util.run_success_cmd(rules_cli.main, f'{" ".join(CSV_OPTS)} --{opt.LANGUAGES} {",".join(langs)}')
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
@@ -116,9 +117,9 @@ def test_facets() -> None:
     """test_facets"""
     facets = rules.get_facet(endpoint=util.SQ, facet="languages")
     langs = ["py", "java", "cs", "js", "web", "php", "ruby", "go", "scala", "vbnet"]
-    if util.SQ.edition() in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() in (c.DE, c.EE, c.DCE):
         langs += ["c", "cpp", "objc", "swift", "abap"]
-    if util.SQ.edition() in ("enterprise", "datacenter"):
+    if util.SQ.edition() in (c.EE, c.DCE):
         langs += ["plsql", "rpg", "cobol", "vb", "pli"]
     assert len(facets) >= len(langs)
     for lang in langs:
@@ -153,7 +154,7 @@ def test_get_nonexisting_rule() -> None:
 def test_export_all() -> None:
     """test_export_all"""
     rule_list = rules.export(endpoint=util.SQ, export_settings={"FULL_EXPORT": True})
-    if util.SQ.version() < (10, 0, 0) and util.SQ.edition() == "community":
+    if util.SQ.version() < (10, 0, 0) and util.SQ.edition() == c.CE:
         assert len(rule_list.get("standard", {})) > 2800
     else:
         assert len(rule_list.get("standard", {})) > 3000

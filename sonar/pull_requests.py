@@ -30,11 +30,12 @@ from typing import Optional
 import requests.utils
 
 import sonar.logging as log
-from sonar.util import types, cache, constants as c
-from sonar import components, sqobject, exceptions
+from sonar.util import types, cache
+from sonar import components, exceptions
 import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
+import sonar.util.constants as c
 
 
 _UNSUPPORTED_IN_CE = "Pull requests not available in Community Edition"
@@ -98,7 +99,7 @@ class PullRequest(components.Component):
 
 def get_object(pull_request_key: str, project: object, data: types.ApiPayload = None) -> Optional[PullRequest]:
     """Returns a PR object from a PR key and a project"""
-    if project.endpoint.edition() == "community":
+    if project.endpoint.edition() == c.CE:
         log.debug("Pull requests not available in Community Edition")
         return None
     o = PullRequest.CACHE.get(project.key, pull_request_key, project.base_url())
@@ -115,7 +116,7 @@ def get_list(project: object) -> dict[str, PullRequest]:
     :return: List of project PRs
     :rtype: dict{PR_ID: PullRequest}
     """
-    if project.endpoint.edition() == "community":
+    if project.endpoint.edition() == c.CE:
         log.debug(_UNSUPPORTED_IN_CE)
         raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 

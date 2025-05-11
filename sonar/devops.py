@@ -27,11 +27,12 @@ import json
 from requests import RequestException
 
 import sonar.logging as log
-from sonar.util import types, cache, constants as c
+from sonar.util import types, cache
 from sonar import platform
 import sonar.sqobject as sq
 from sonar import exceptions
 import sonar.utilities as util
+import sonar.util.constants as c
 
 #: DevOps platform types in SonarQube
 DEVOPS_PLATFORM_TYPES = ("github", "azure", "bitbucket", "bitbucketcloud", "gitlab")
@@ -109,7 +110,7 @@ class DevopsPlatform(sq.SqObject):
                 endpoint.post(_CREATE_API_BBCLOUD, params=params)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"creating devops platform {key}/{plt_type}/{url_or_workspace}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            if endpoint.edition() in ("community", "developer"):
+            if endpoint.edition() in (c.CE, c.DE):
                 log.warning("Can't set DevOps platform '%s', don't you have more that 1 of that type?", key)
             raise exceptions.UnsupportedOperation(f"Can't set DevOps platform '{key}', don't you have more that 1 of that type?")
         o = DevopsPlatform(endpoint=endpoint, key=key, platform_type=plt_type)

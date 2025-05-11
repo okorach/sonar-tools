@@ -32,6 +32,8 @@ import utilities as util
 import sonar.logging as log
 from sonar import utilities, projects
 from sonar import findings, issues, errcodes
+import sonar.util.constants as c
+
 from cli import findings_export
 import cli.options as opt
 
@@ -135,7 +137,7 @@ def test_wrong_opts() -> None:
             with patch.object(sys, "argv", CSV_OPTS + bad_opts):
                 findings_export.main()
         assert int(str(e.value)) == errcodes.NO_SUCH_KEY or (
-            int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION and util.SQ.edition() in ("community", "developer")
+            int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION and util.SQ.edition() in (c.CE, c.DE)
         )
         assert not os.path.isfile(util.CSV_FILE)
         assert not os.path.isfile(util.JSON_FILE)
@@ -296,8 +298,8 @@ def test_findings_export() -> None:
     util.start_logging()
     for opts in __GOOD_OPTS:
         fullcmd = " ".join([CMD] + util.STD_OPTS + opts)
-        if (util.SQ.edition() == "community" and (f"--{opt.APPS}" in opts or f"--{opt.PORTFOLIOS}" in opts)) or (
-            util.SQ.edition() == "developer" and f"--{opt.PORTFOLIOS}" in opts
+        if (util.SQ.edition() == c.CE and (f"--{opt.APPS}" in opts or f"--{opt.PORTFOLIOS}" in opts)) or (
+            util.SQ.edition() == c.DE and f"--{opt.PORTFOLIOS}" in opts
         ):
             util.run_failed_cmd(findings_export.main, fullcmd, errcodes.UNSUPPORTED_OPERATION)
         else:

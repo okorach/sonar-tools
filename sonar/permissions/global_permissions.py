@@ -24,7 +24,7 @@ from __future__ import annotations
 import sonar.logging as log
 from sonar.permissions import permissions
 from sonar.util import types
-
+import sonar.util.constants as c
 
 class GlobalPermissions(permissions.Permissions):
     """Abstraction of SonarQube global permissions"""
@@ -83,7 +83,7 @@ def import_config(endpoint: object, config_data: types.ObjectJsonRepr) -> None:
 def edition_filter(perms: types.JsonPermissions, ed: str) -> types.JsonPermissions:
     """Filters permissions available in a given edition"""
     for p in perms.copy():
-        if ed == "community" and p in ("portfoliocreator", "applicationcreator") or ed == "developer" and p == "portfoliocreator":
+        if ed == c.CE and p in ("portfoliocreator", "applicationcreator") or ed == c.DE and p == "portfoliocreator":
             log.warning("Can't manage permission '%s' on a %s edition", p, ed)
             perms.remove(p)
     return perms

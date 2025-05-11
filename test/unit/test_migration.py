@@ -27,6 +27,8 @@ import json
 
 import utilities as util
 from sonar import errcodes
+import sonar.util.constants as c
+
 import cli.options as opt
 from migration import migration
 
@@ -51,7 +53,7 @@ def test_migration(get_json_file: Generator[str]) -> None:
         assert item in json_config
 
     item_list = ["backgroundTasks", "detectedCi", "lastAnalysis", "issues", "hotspots", "name", "ncloc", "permissions", "revision", "visibility"]
-    if util.SQ.edition() != "community":
+    if util.SQ.edition() != c.CE:
         item_list.append("branches")
     for p in json_config["projects"].values():
         for item in item_list:
@@ -85,7 +87,7 @@ def test_migration(get_json_file: Generator[str]) -> None:
     assert p["ncloc"]["py"] > 0
     assert p["ncloc"]["total"] > 0
 
-    if util.SQ.edition() != "community":
+    if util.SQ.edition() != c.CE:
         iss = p["branches"]["master"]["issues"]
         if util.SQ.version() >= (10, 0, 0):
             assert iss["accepted"] > 0
@@ -103,7 +105,7 @@ def test_migration(get_json_file: Generator[str]) -> None:
     if util.SQ.version() >= (10, 0, 0):
         assert json_config["projects"]["demo:gitlab-ci-maven"]["detectedCi"] == "Gitlab CI"
         assert json_config["projects"]["demo:github-actions-cli"]["detectedCi"] == "Github Actions"
-        if util.SQ.edition() != "community":
+        if util.SQ.edition() != c.CE:
             assert sum([v for v in p["branches"]["main"]["issues"]["thirdParty"].values()]) > 0
 
     for p in json_config["portfolios"].values():

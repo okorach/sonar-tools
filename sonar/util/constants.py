@@ -50,3 +50,12 @@ CONFIG_KEY_PROFILES = "qualityProfiles"
 CONFIG_KEY_PROJECTS = "projects"
 CONFIG_KEY_APPS = "applications"
 CONFIG_KEY_PORTFOLIOS = "portfolios"
+
+CE = "community"
+DE = "developer"
+EE = "enterprise"
+DCE = "datacenter"
+
+SC = "sonarcloud"
+SQS = "SonarQube Server"
+SQC = "SonarQube Cloud"

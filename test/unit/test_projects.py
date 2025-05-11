@@ -24,8 +24,9 @@
 from collections.abc import Generator
 import pytest
 
-from sonar import projects, exceptions, qualityprofiles, qualitygates, rules
+from sonar import projects, exceptions, qualityprofiles, qualitygates
 from sonar.audit import audit_config
+import sonar.util.constants as c
 
 import utilities as util
 
@@ -53,7 +54,7 @@ def test_create_delete() -> None:
     """test_create_delete"""
     proj = projects.Project.create(endpoint=util.SQ, key=util.TEMP_KEY, name="temp")
     assert proj.key == util.TEMP_KEY
-    if util.SQ.edition() != "community":
+    if util.SQ.edition() != c.CE:
         assert proj.main_branch().name == "main"
         proj.rename_main_branch("foobar")
         assert proj.main_branch().name == "foobar"
@@ -97,7 +98,7 @@ def test_get_findings() -> None:
     """test_get_findings"""
     proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)
     assert len(proj.get_findings(branch="non-existing-branch")) == 0
-    if util.SQ.edition() != "community":
+    if util.SQ.edition() != c.CE:
         assert len(proj.get_findings(branch="develop")) > 0
     assert len(proj.get_findings(pr="1")) == 0
 
@@ -106,11 +107,11 @@ def test_count_third_party_issues() -> None:
     """test_count_third_party_issues"""
     proj = projects.Project.get_object(endpoint=util.SQ, key="third-party-issues")
     filters = None
-    if util.SQ.edition() != "community":
+    if util.SQ.edition() != c.CE:
         filters = {"branch": "develop"}
     if util.SQ.version() >= (10, 0, 0):
         assert len(proj.count_third_party_issues(filters=filters)) > 0
-    if util.SQ.edition() != "community":
+    if util.SQ.edition() != c.CE:
         assert len(proj.count_third_party_issues(filters={"branch": "non-existing-branch"})) == 0
 
 
@@ -168,7 +169,7 @@ def test_binding() -> None:
 
 def test_wrong_key(get_test_project: Generator[projects.Project]) -> None:
     """test_wrong_key"""
-    if util.SQ.edition() not in ("enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.EE, c.DCE):
         pytest.skip("Project import not available below Enterprise Edition")
     proj = get_test_project
     proj.key = util.NON_EXISTING_KEY
@@ -222,7 +223,7 @@ def test_set_quality_gate(get_test_project: Generator[projects.Project], get_tes
 def test_ai_code_assurance(get_test_project: Generator[projects.Project]) -> None:
     """test_ai_code_assurance"""
     proj = get_test_project
-    if util.SQ.version() >= (10, 7, 0) and util.SQ.edition() != "community":
+    if util.SQ.version() >= (10, 7, 0) and util.SQ.edition() != c.CE:
         proj = get_test_project
         assert proj.set_contains_ai_code(True)
         assert proj.get_ai_code_assurance() in (
@@ -260,7 +261,7 @@ def test_set_quality_profile(get_test_project: Generator[projects.Project], get_
 
 def test_branch_and_pr() -> None:
     """test_branch_and_pr"""
-    if util.SQ.edition() == "community":
+    if util.SQ.edition() == c.CE:
         pytest.skip("Branches and PR unsupported in SonarQube Community Build")
     proj = projects.Project.get_object(util.SQ, util.LIVE_PROJECT)
     assert len(proj.get_branches_and_prs(filters={"branch": "*"})) >= 2

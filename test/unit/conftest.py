@@ -27,6 +27,7 @@ import pytest
 
 import utilities as util
 from sonar import projects, applications, portfolios, qualityprofiles, qualitygates, exceptions, logging, issues, users, groups
+import sonar.util.constants as c
 
 TEMP_FILE_ROOT = f"temp.{os.getpid()}"
 CSV_FILE = f"{TEMP_FILE_ROOT}.csv"
@@ -106,10 +107,10 @@ def get_loaded_qg() -> Generator[qualitygates.QualityGate]:
 def get_test_app() -> Generator[applications.Application]:
     """setup of tests"""
     o = None
-    if util.SQ.edition() in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() in (c.DE, c.EE, c.DCE):
         o = create_test_object(applications.Application, key=util.TEMP_KEY)
     yield o
-    if util.SQ.edition() in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() in (c.DE, c.EE, c.DCE):
         o.key = util.TEMP_KEY
         try:
             o.delete()
@@ -121,10 +122,10 @@ def get_test_app() -> Generator[applications.Application]:
 def get_test_portfolio() -> Generator[portfolios.Portfolio]:
     """setup of tests"""
     o = None
-    if util.SQ.edition() in ("enterprise", "datacenter"):
+    if util.SQ.edition() in (c.EE, c.DCE):
         o = create_test_object(portfolios.Portfolio, key=util.TEMP_KEY)
     yield o
-    if util.SQ.edition() in ("enterprise", "datacenter"):
+    if util.SQ.edition() in (c.EE, c.DCE):
         o.key = util.TEMP_KEY
         try:
             o.delete()
@@ -136,10 +137,10 @@ def get_test_portfolio() -> Generator[portfolios.Portfolio]:
 def get_test_portfolio_2() -> Generator[portfolios.Portfolio]:
     """setup of tests"""
     o = None
-    if util.SQ.edition() in ("enterprise", "datacenter"):
+    if util.SQ.edition() in (c.EE, c.DCE):
         o = create_test_object(portfolios.Portfolio, key=util.TEMP_KEY_2)
     yield o
-    if util.SQ.edition() in ("enterprise", "datacenter"):
+    if util.SQ.edition() in (c.EE, c.DCE):
         o.key = util.TEMP_KEY_2
         try:
             o.delete()
@@ -151,11 +152,11 @@ def get_test_portfolio_2() -> Generator[portfolios.Portfolio]:
 def get_test_subportfolio() -> Generator[portfolios.Portfolio]:
     """setup of tests"""
     subp = None
-    if util.SQ.edition() in ("enterprise", "datacenter"):
+    if util.SQ.edition() in (c.EE, c.DCE):
         parent = create_test_object(portfolios.Portfolio, key=util.TEMP_KEY)
         subp = parent.add_standard_subportfolio(key=util.TEMP_KEY_3, name=util.TEMP_KEY_3)
     yield subp
-    if util.SQ.edition() in ("enterprise", "datacenter"):
+    if util.SQ.edition() in (c.EE, c.DCE):
         subp.key = util.TEMP_KEY_3
         try:
             subp.delete()

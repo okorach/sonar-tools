@@ -36,6 +36,7 @@ import sonar.logging as log
 from sonar import metrics, platform, exceptions, errcodes, version, measures
 from sonar import projects, applications, portfolios
 import sonar.utilities as util
+import sonar.util.constants as c
 
 TOOL_NAME = "sonar-measures"
 RATINGS = "letters"
@@ -286,10 +287,10 @@ def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[proje
 
 def __check_options_vs_edition(edition: str, params: dict[str, str]) -> dict[str, str]:
     """Checks and potentially modify params according to edition of the target platform"""
-    if edition == "community" and params[options.WITH_BRANCHES]:
+    if edition == c.CE and params[options.WITH_BRANCHES]:
         log.warning("SonarQube instance is a community edition, branch option ignored")
         params[options.WITH_BRANCHES] = False
-    if edition in ("community", "developer") and params[options.COMPONENT_TYPE] == "portfolio":
+    if edition in (c.CE, c.DE) and params[options.COMPONENT_TYPE] == "portfolio":
         log.warning("SonarQube instance is a %s edition, there are no portfolios", edition)
         util.exit_fatal("SonarQube instance is a %s edition, there are no portfolios", exit_code=errcodes.UNSUPPORTED_OPERATION)
     return params

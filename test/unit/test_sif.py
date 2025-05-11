@@ -33,6 +33,7 @@ from sonar import sif, errcodes
 from sonar.dce import app_nodes, search_nodes
 from cli import audit
 import cli.options as opt
+import sonar.util.constants as c
 
 CMD = "sonar-audit.py"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
@@ -99,7 +100,7 @@ def test_audit_sif_ut() -> None:
     with open(f"{util.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
         json_sif = json.loads(f.read())
     sysinfo = sif.Sif(json_sif)
-    assert sysinfo.edition() == "enterprise"
+    assert sysinfo.edition() == c.EE
     assert sysinfo.version() == (10, 5, 1)
     assert sysinfo.database() == "PostgreSQL"
     assert len(sysinfo.plugins()) == 0
@@ -122,7 +123,7 @@ def test_modified_sif() -> None:
         json_sif = json.loads(f.read())
 
     json_sif["System"].pop("Edition")
-    assert sif.Sif(json_sif).edition() == "enterprise"
+    assert sif.Sif(json_sif).edition() == c.EE
     json_sif["License"].pop("edition")
     assert sif.Sif(json_sif).edition() is None
 
@@ -156,7 +157,7 @@ def test_dce_sif_ut() -> None:
         assert node.node_type() == "APPLICATION"
         assert node.start_time() == datetime.datetime(2024, 2, 22, 22, 4, 30)
         assert node.version() == (9, 9, 0)
-        assert node.edition() == "datacenter"
+        assert node.edition() == c.DCE
         assert node.name().startswith("app-node")
         _ = node.audit(audit_settings={})
 

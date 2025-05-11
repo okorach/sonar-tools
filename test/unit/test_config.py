@@ -21,8 +21,6 @@
 
 """ sonar-config tests """
 
-import os
-import sys
 from collections.abc import Generator
 
 import json
@@ -31,6 +29,8 @@ from unittest.mock import patch
 import utilities as util
 from sonar import errcodes, portfolios
 from sonar import logging
+import sonar.util.constants as c
+
 import cli.options as opt
 from cli import config
 
@@ -79,7 +79,7 @@ def test_config_inline_lists() -> None:
     assert isinstance(json_config["globalSettings"]["permissionTemplates"]["Default template"]["permissions"]["groups"]["sonar-users"], str)
     assert isinstance(json_config["projects"]["okorach_sonar-tools"]["permissions"]["groups"]["sonar-users"], str)
 
-    if util.SQ.edition() not in ("community", "developer"):
+    if util.SQ.edition() not in (c.CE, c.DE):
         assert isinstance(json_config["portfolios"]["PORTFOLIO_ALL"]["permissions"]["groups"]["sonar-administrators"], str)
         assert isinstance(json_config["portfolios"]["PORTFOLIO_TAGS"]["projects"]["tags"], str)
         # This is a list because there is a comma in one of the branches
@@ -97,12 +97,12 @@ def test_config_dont_inline_lists() -> None:
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], list)
     assert isinstance(json_config["globalSettings"]["permissionTemplates"]["Default template"]["permissions"]["groups"]["sonar-users"], list)
     assert isinstance(json_config["projects"]["okorach_sonar-tools"]["permissions"]["groups"]["sonar-users"], list)
-    if util.SQ.edition() not in ("community", "developer"):
+    if util.SQ.edition() not in (c.CE, c.DE):
         assert isinstance(json_config["portfolios"]["PORTFOLIO_ALL"]["permissions"]["groups"]["sonar-administrators"], list)
         assert isinstance(json_config["portfolios"]["PORTFOLIO_TAGS"]["projects"]["tags"], list)
         if util.SQ.version() >= (10, 0, 0):
             assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["projects"]["manual"]["BANKING-PORTAL"], list)
-    if util.SQ.edition() != "community" and util.SQ.version() > (10, 0, 0):
+    if util.SQ.edition() != c.CE and util.SQ.version() > (10, 0, 0):
         assert "sonar.cfamily.ignoreHeaderComments" not in json_config["globalSettings"]["languages"]["cfamily"]
         assert "sonar.cfamily.ignoreHeaderComments" in json_config["projects"]["okorach_sonar-tools"]
 

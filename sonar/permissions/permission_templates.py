@@ -32,6 +32,7 @@ from sonar.permissions import template_permissions
 import sonar.platform as pf
 from sonar.audit.rules import get_rule, RuleId
 import sonar.audit.problem as pb
+import sonar.util.constants as c
 
 _MAP = {}
 _DEFAULT_TEMPLATES = {}
@@ -140,7 +141,7 @@ class PermissionTemplate(sqobject.SqObject):
         ed = self.endpoint.edition()
         for d in what_list:
             qual = _QUALIFIER_REVERSE_MAP.get(d, d)
-            if (ed == "community" and qual in ("VW", "APP")) or (ed == "developer" and qual == "VW"):
+            if (ed == c.CE and qual in ("VW", "APP")) or (ed == c.DE and qual == "VW"):
                 log.warning("Can't set permission template as default for %s on a %s edition", qual, ed)
                 continue
             try:

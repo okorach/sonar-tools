@@ -25,11 +25,12 @@ import pytest
 
 import utilities as util
 from sonar import projects, branches, exceptions
+import sonar.util.constants as c
 
 
 def test_tag_portfolios(get_test_portfolio: callable) -> None:
     """test_tag_portfolios"""
-    if util.SQ.edition() in ("community", "developer"):
+    if util.SQ.edition() in (c.CE, c.DE):
         pytest.skip("Portfolios not supported in SonarQube Community Build and Developer Edition")
     o = get_test_portfolio
     with pytest.raises(exceptions.UnsupportedOperation):
@@ -41,7 +42,7 @@ def test_tag_portfolios(get_test_portfolio: callable) -> None:
 def test_tag_project_branches() -> None:
     """test_tag_project_branches"""
     proj = projects.Project.get_object(util.SQ, util.LIVE_PROJECT)
-    if util.SQ.edition() == "community":
+    if util.SQ.edition() == c.CE:
         with pytest.raises(exceptions.UnsupportedOperation):
             branches.Branch.get_object(proj, "master")
         return

@@ -40,7 +40,7 @@ import Levenshtein
 import sonar.logging as log
 import sonar.platform as pf
 
-from sonar.util import types, cache, constants as c
+from sonar.util import types, cache
 from sonar import exceptions, errcodes
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops
 import sonar.permissions.permissions as perms
@@ -51,6 +51,7 @@ import sonar.permissions.project_permissions as pperms
 from sonar.audit import severities
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
+import sonar.util.constants as c
 
 _CLASS_LOCK = Lock()
 
@@ -309,7 +310,7 @@ class Project(components.Component):
         """
         if self._ncloc_with_branches is not None:
             return self._ncloc_with_branches
-        if self.endpoint.edition() == "community":
+        if self.endpoint.edition() == c.CE:
             self._ncloc_with_branches = super().loc()
         else:
             self._ncloc_with_branches = max(b.loc() for b in list(self.branches().values()) + list(self.pull_requests().values()))
@@ -333,7 +334,7 @@ class Project(components.Component):
         """
         :return: Project main branch name
         """
-        if self.endpoint.edition() == "community":
+        if self.endpoint.edition() == c.CE:
             return self.sq_json.get("branch", "main")
         b = self.main_branch()
         return b.name if b else ""
@@ -342,7 +343,7 @@ class Project(components.Component):
         """
         :return: Main branch of the project
         """
-        if self.endpoint.edition() == "community":
+        if self.endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation("Main branch is not supported in Community Edition")
         try:
             return next(b for b in self.branches().values() if b.is_main())
@@ -548,7 +549,7 @@ class Project(components.Component):
         :rtype: list[Problem]
         """
         if (
-            (not audit_settings.get(_AUDIT_BRANCHES_PARAM, True) or self.endpoint.edition() == "community")
+            (not audit_settings.get(_AUDIT_BRANCHES_PARAM, True) or self.endpoint.edition() == c.CE)
             and self.last_analysis() is not None
             and self.loc() == 0
         ):
@@ -558,7 +559,7 @@ class Project(components.Component):
     def __audit_binding_valid(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
-        if self.endpoint.edition() == "community":
+        if self.endpoint.edition() == c.CE:
             log.info("Community edition, skipping binding validation...")
             return []
         elif not audit_settings.get("audit.projects.bindings", True):
@@ -711,7 +712,7 @@ class Project(components.Component):
         :rtype: dict
         """
         log.info("Exporting %s (synchronously)", str(self))
-        if self.endpoint.version() < (9, 2, 0) and self.endpoint.edition() not in ("enterprise", "datacenter"):
+        if self.endpoint.version() < (9, 2, 0) and self.endpoint.edition() not in (c.EE, c.DCE):
             raise exceptions.UnsupportedOperation(
                 "Project export is only available with Enterprise and Datacenter Edition, or with SonarQube 9.2 or higher for any Edition"
             )
@@ -750,7 +751,7 @@ class Project(components.Component):
         :rtype: bool
         """
         log.info("Importing %s (asynchronously)", str(self))
-        if self.endpoint.edition() not in ("enterprise", "datacenter"):
+        if self.endpoint.edition() not in (c.EE, c.DCE):
             raise exceptions.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
         try:
             return self.post("project_dump/import", params={"key": self.key}).ok
@@ -798,7 +799,7 @@ class Project(components.Component):
         """
         from sonar import issues, hotspots
 
-        if self.endpoint.version() < (9, 1, 0) or self.endpoint.edition() not in ("enterprise", "datacenter"):
+        if self.endpoint.version() < (9, 1, 0) or self.endpoint.edition() not in (c.EE, c.DCE):
             log.warning("export_findings only available in EE and DCE starting from SonarQube 9.1, returning no issues")
             return {}
         log.info("Exporting findings for %s", str(self))
@@ -913,7 +914,7 @@ class Project(components.Component):
         :return: sync report as tuple, with counts of successful and unsuccessful issue syncs
         :rtype: tuple(report, counters)
         """
-        if self.endpoint.edition() == "community":
+        if self.endpoint.edition() == c.CE:
             return self.__sync_community(another_project, sync_settings)
 
         src_branches = self.branches()
@@ -1202,7 +1203,7 @@ class Project(components.Component):
         :param contains_ai_code: Whether the project contains AI code
         :return: Whether the operation succeeded
         """
-        if self.endpoint.version() < (10, 7, 0) or self.endpoint.edition() == "community":
+        if self.endpoint.version() < (10, 7, 0) or self.endpoint.edition() == c.CE:
             return False
         try:
             api = "projects/set_contains_ai_code"
@@ -1295,7 +1296,7 @@ class Project(components.Component):
         :return: Nothing
         """
         log.debug("Setting devops binding of %s to %s", str(self), util.json_dump(data))
-        if self.endpoint.edition() == "community":
+        if self.endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation(f"{str(self)}: Can't set project binding on Community Edition")
         alm_key = data["key"]
         if not devops.exists(endpoint=self.endpoint, key=alm_key):
@@ -1326,7 +1327,7 @@ class Project(components.Component):
         return {"almSetting": alm_key, "project": self.key, "repository": repo, "monorepo": str(monorepo).lower()}
 
     def _check_binding_supported(self) -> bool:
-        if self.endpoint.edition() == "community":
+        if self.endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation(f"{str(self)}: Can't set project binding on Community Edition")
         return True
 
@@ -1512,7 +1513,7 @@ def __audit_thread(
         project = queue.get()
         problems = project.audit(audit_settings, write_q)
         try:
-            if project.endpoint.edition() == "community" or not audit_bindings or project.is_part_of_monorepo():
+            if project.endpoint.edition() == c.CE or not audit_bindings or project.is_part_of_monorepo():
                 queue.task_done()
                 log.debug("%s audit done", str(project))
                 continue

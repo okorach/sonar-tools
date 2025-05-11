@@ -74,7 +74,7 @@ def test_count() -> None:
     assert devops.count(util.SQ, "azure") == 1
     assert devops.count(util.SQ, "gitlab") == 1
     # TODO: Find out if normal than multiple devops platforms allowed on CE
-    # nb_gh = 1 if util.SQ.edition() == "community" else 2
+    # nb_gh = 1 if util.SQ.edition() == c.CE else 2
     nb_gh = 2
     assert devops.count(util.SQ, "github") == nb_gh
     assert nb_gh + 2 <= devops.count(util.SQ) <= nb_gh + 3

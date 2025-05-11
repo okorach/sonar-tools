@@ -33,6 +33,7 @@ from cli import options
 import sonar.logging as log
 from sonar import errcodes, exceptions, utilities, version
 from sonar import platform, projects
+import sonar.util.constants as c
 
 TOOL_NAME = "sonar-projects"
 
@@ -42,7 +43,7 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
     ed = endpoint.edition()
     if ed == "sonarcloud":
         raise exceptions.UnsupportedOperation("Can't export projects on SonarCloud, aborting...")
-    if ed in ("community", "developer") and endpoint.version()[:2] < (9, 2):
+    if ed in (c.CE, c.DE) and endpoint.version()[:2] < (9, 2):
         raise exceptions.UnsupportedOperation(f"Can't export projects on {ed} Edition before 9.2, aborting...")
     dump = projects.export_zip(
         endpoint=endpoint, key_list=kwargs[options.KEYS], export_timeout=kwargs["exportTimeout"], threads=kwargs[options.NBR_THREADS]

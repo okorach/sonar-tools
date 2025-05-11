@@ -29,6 +29,8 @@ import pytest
 
 import utilities as util
 from sonar import errcodes, logging
+import sonar.util.constants as c
+
 from cli import measures_export
 import cli.options as opt
 
@@ -239,7 +241,7 @@ def test_apps_measures() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--apps", "-m", "ncloc"]):
             measures_export.main()
-    if util.SQ.edition() == "community":
+    if util.SQ.edition() == c.CE:
         assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
     else:
         assert int(str(e.value)) == errcodes.OK
@@ -265,7 +267,7 @@ def test_portfolios_measures() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--portfolios", "-m", "ncloc"]):
             measures_export.main()
-    if util.SQ.edition() in ("community", "developer"):
+    if util.SQ.edition() in (c.CE, c.DE):
         assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
     else:
         assert util.file_not_empty(util.CSV_FILE)
@@ -303,7 +305,7 @@ def test_option_apps() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--apps"]):
             measures_export.main()
-    if util.SQ.edition() == "community":
+    if util.SQ.edition() == c.CE:
         assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
         assert not os.path.isfile(util.CSV_FILE)
     else:
@@ -322,7 +324,7 @@ def test_option_portfolios() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--portfolios"]):
             measures_export.main()
-    if util.SQ.edition() in ("developer", "community"):
+    if util.SQ.edition() in (c.DE, c.CE):
         assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
         assert not os.path.isfile(util.CSV_FILE)
     else:
