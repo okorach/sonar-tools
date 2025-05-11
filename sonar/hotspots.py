@@ -155,14 +155,12 @@ class Hotspot(findings.Finding):
             util.handle_error(e, "refreshing hotspot", catch_all=True)
             return False
 
-    def __mark_as(self, resolution: str, comment: Optional[str] = None) -> bool:
+    def __mark_as(self, resolution: Optional[str], comment: Optional[str] = None, status: str = "REVIEWED") -> bool:
         try:
-            r = self.post(
-                "hotspots/change_status",
-                params=util.remove_nones({"hotspot": self.key, "status": "REVIEWED", "resolution": resolution, "commemt": comment}),
-            )
+            params = util.remove_nones({"hotspot": self.key, "status": status, "resolution": resolution, "commemt": comment})
+            r = self.post("hotspots/change_status", params=params)
         except (ConnectionError, requests.RequestException) as e:
-            util.handle_error(e, f"marking hotspot as {resolution}", catch_all=True)
+            util.handle_error(e, f"marking hotspot as {status}/{resolution}", catch_all=True)
             return False
         self.refresh()
         return r.ok
@@ -172,14 +170,14 @@ class Hotspot(findings.Finding):
 
         :return: Whether the operation succeeded
         """
-        return self.__mark_as("SAFE")
+        return self.__mark_as(resolution="SAFE")
 
     def mark_as_fixed(self) -> bool:
         """Marks a hotspot as fixed
 
         :return: Whether the operation succeeded
         """
-        return self.__mark_as("FIXED")
+        return self.__mark_as(resolution="FIXED")
 
     def mark_as_acknowledged(self) -> bool:
         """Marks a hotspot as acknowledged
@@ -192,20 +190,14 @@ class Hotspot(findings.Finding):
         elif self.endpoint.is_sonarcloud():
             log.warning("Can't acknowledge %s, this is not supported by SonarQube Cloud", str(self))
             return False
-        return self.__mark_as("ACKNOWLEDGED")
+        return self.__mark_as(resolution="ACKNOWLEDGED")
 
     def mark_as_to_review(self) -> bool:
         """Marks a hotspot as to review
 
         :return: Whether the operation succeeded
         """
-        try:
-            r = self.post("hotspots/change_status", params={"hotspot": self.key, "status": "TO_REVIEW"})
-        except (ConnectionError, requests.RequestException) as e:
-            util.handle_error(e, "marking hotspot as TO_REVIEW", catch_all=True)
-            return False
-        self.refresh()
-        return r.ok
+        return self.__mark_as(status="TO_REVIEW", resolution=None)
 
     def reopen(self) -> bool:
         """Reopens a hotspot as to review
