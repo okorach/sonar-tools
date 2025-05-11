@@ -266,6 +266,8 @@ class Hotspot(findings.Finding):
             # self.add_comment(f"Hotspot marked as fixed {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "HOTSPOT_ACKNOWLEDGED":
             self.mark_as_acknowledged()
+            if self.endpoint.is_sonarcloud():
+                self.add_comment("Original hotspot status was changed to ACKNOWLEDGED, but this status is not supported in SonarQube Cloud")
             # self.add_comment(f"Hotspot marked as acknowledged {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "ASSIGN":
             if settings[syncer.SYNC_ASSIGN]:
@@ -308,7 +310,7 @@ class Hotspot(findings.Finding):
         if len(self.comments()) == 0 and settings[syncer.SYNC_ADD_LINK]:
             log.info("Target %s has 0 comments, adding sync link comment", str(self))
             start_change = 1
-            self.add_comment(f"Automatically synchronized from [this original issue]({source_hotspot.url()})")
+            self.add_comment(f"Automatically synchronized from [this original hotspot]({source_hotspot.url()})")
         else:
             start_change = len(self.comments())
             log.info("Target %s already has %d comments", str(self), start_change)
