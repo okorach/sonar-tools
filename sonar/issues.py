@@ -331,6 +331,9 @@ class Issue(findings.Finding):
         :param str severity: The comment to add
         :return: Whether the operation succeeded
         """
+        if not self.endpoint.is_mqr_mode():
+            log.error("Can't change issue standard severity, the SonarQube Server or Cloud instance is in MQR mode")
+            return False
         success = self.__set_severity(severity=severity)
         if success:
             self.severity = severity
@@ -344,7 +347,10 @@ class Issue(findings.Finding):
         :return: Whether the operation succeeded
         """
         if self.endpoint.is_sonarcloud():
-            log.error("SonarQube Cloud does not support MQR severity changes")
+            log.error("Can't change issue MQR severity, this is not supported by SonarQube Cloud")
+            return False
+        elif not self.endpoint.is_mqr_mode():
+            log.error("Can't change issue MQR severity, the SonarQube Server instance is not in MQR mode")
             return False
         else:
             return self.__set_severity(impact=f"{software_quality}={severity}")
@@ -535,9 +541,17 @@ class Issue(findings.Finding):
             if self.endpoint.is_mqr_mode():
                 sw_quality, severity = mqr_severity.split(":")
                 self.set_mqr_severity(sw_quality, severity)
+                if self.endpoint.is_sonarcloud():
+                    self.add_comment(
+                        f"Original issue severity was changed to {sw_quality}={severity}, but MQR severity change is not supported in SonarQube Cloud"
+                    )
             else:
                 self.set_severity(std_severity)
-            # self.add_comment(f"Change of severity {origin}", settings[SYNC_ADD_COMMENTS])
+                # self.add_comment(f"Change of severity {origin}", settings[SYNC_ADD_COMMENTS])
+                if self.endpoint.is_sonarcloud():
+                    self.add_comment(
+                        f"Original issue severity was changed to {std_severity}, but standard severity change is deprecated in SonarQube Cloud"
+                    )
         elif event_type == "TYPE":
             self.set_type(data)
             # self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
