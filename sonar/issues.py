@@ -316,22 +316,41 @@ class Issue(findings.Finding):
             return False
         return r.ok
 
-    def set_severity(self, severity: str) -> bool:
-        """Changes the severity of an issue
-
-        :param str severity: The comment to add
-        :return: Whether the operation succeeded
-        :rtype: bool
-        """
+    def __set_severity(self, **params) -> bool:
         try:
-            log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, severity)
-            r = self.post("issues/set_severity", {"issue": self.key, "severity": severity})
-            if r.ok:
-                self.severity = severity
+            log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, str(params))
+            r = self.post("issues/set_severity", {"issue": self.key, **params})
         except (ConnectionError, requests.RequestException) as e:
             util.handle_error(e, "changing issue severity", catch_all=True)
             return False
         return r.ok
+
+    def set_severity(self, severity: str) -> bool:
+        """Changes the standard severity of an issue
+
+        :param str severity: The comment to add
+        :return: Whether the operation succeeded
+        """
+        success = self.__set_severity(severity=severity)
+        if success:
+            self.severity = severity
+        return success
+
+    def set_mqr_severity(self, software_quality: str, severity: str) -> bool:
+        """Changes the severity of an issue
+
+        :param str software_quality: The software quality to set
+        :param str severity: The severity to set
+        :return: Whether the operation succeeded
+        """
+        success = True
+        if self.endpoint.is_sonarcloud():
+            sev_map = {v: k for k, v in SEVERITY_MAPPING.items()}
+            success = self.__set_severity(severity=sev_map[severity])
+            if success:
+                self.severity = severity
+        success = success and self.__set_severity(impact=f"{software_quality}:{severity}")
+        return success
 
     def assign(self, assignee: Optional[str] = None) -> bool:
         """Assigns an issue to a user
@@ -515,7 +534,12 @@ class Issue(findings.Finding):
         (event_type, data) = event.changelog_type()
         log.debug("Applying event type %s - %s", event_type, str(event))
         if event_type == "SEVERITY":
-            self.set_severity(data)
+            std_severity, mqr_severity = data
+            if self.endpoint.is_mqr_mode():
+                sw_quality, severity = mqr_severity.split(":")
+                self.set_mqr_severity(sw_quality, severity)
+            else:
+                self.set_severity(std_severity)
             # self.add_comment(f"Change of severity {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "TYPE":
             self.set_type(data)
