@@ -134,40 +134,43 @@ class Hotspot(findings.Finding):
         self.severity = data.get("vulnerabilityProbability", "UNDEFINED") + "(HOTSPOT)"
         self.impacts = {"SECURITY": self.severity}
 
-    def _load_details(self, data: dict[str, any]) -> None:
-        self.file = data["component"]["path"]
-        self.branch, self.pull_request = self.get_branch_and_pr(data["project"])
-        self.severity = data["rule"].get("vulnerabilityProbability", "UNDEFINED") + "(HOTSPOT)"
-        self.impacts = {"SECURITY": self.severity}
-        if not self.rule:
-            self.rule = data["rule"]["key"]
-        self.assignee = data.get("assignee", None)
-
     def refresh(self) -> bool:
         """Refreshes and reads hotspots details in SonarQube
-        :return: The hotspot details
-        :rtype: Whether ther operation succeeded
+        :return: Whether there operation succeeded
         """
         try:
             resp = self.get(Hotspot.API[c.GET], {"hotspot": self.key})
             if resp.ok:
-                self.__details = json.loads(resp.text)
-                self._load_details(self.__details)
+                d = json.loads(resp.text)
+                self.__details = d
+                self.file = d["component"]["path"]
+                self.branch, self.pull_request = self.get_branch_and_pr(d["project"])
+                self.severity = d["rule"].get("vulnerabilityProbability", "UNDEFINED") + "(HOTSPOT)"
+                self.impacts = {"SECURITY": self.severity}
+                if not self.rule:
+                    self.rule = d["rule"]["key"]
+                self.assignee = d.get("assignee", None)
             return resp.ok
-        except (ConnectionError, RequestException):
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, "refreshing hotspot", catch_all=True)
             return False
 
-    def __mark_as(self, resolution: str, comment: str = None) -> bool:
-        params = {"hotspot": self.key, "status": "REVIEWED", "resolution": resolution}
-        if comment is not None:
-            params["comment"] = comment
-        return self.post("hotspots/change_status", params=params).ok
+    def __mark_as(self, resolution: str, comment: Optional[str] = None) -> bool:
+        try:
+            r = self.post(
+                "hotspots/change_status",
+                params=util.remove_nones({"hotspot": self.key, "status": "REVIEWED", "resolution": resolution, "commemt": comment}),
+            )
+        except (ConnectionError, requests.RequestException) as e:
+            util.handle_error(e, f"marking hotspot as {resolution}", catch_all=True)
+            return False
+        self.refresh()
+        return r.ok
 
     def mark_as_safe(self) -> bool:
         """Marks a hotspot as safe
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         return self.__mark_as("SAFE")
 
@@ -175,7 +178,6 @@ class Hotspot(findings.Finding):
         """Marks a hotspot as fixed
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         return self.__mark_as("FIXED")
 
@@ -183,10 +185,12 @@ class Hotspot(findings.Finding):
         """Marks a hotspot as acknowledged
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
-        if self.endpoint.version() < (9, 4, 0):
-            log.warning("pf.Platform version is < 9.4, can't acknowledge %s", str(self))
+        if self.endpoint.version() < (9, 4, 0) and not self.endpoint.is_sonarcloud():
+            log.warning("Can't acknowledge %s, this is not supported by SonarQube Server < 9.4", str(self))
+            return False
+        elif self.endpoint.is_sonarcloud():
+            log.warning("Can't acknowledge %s, this is not supported by SonarQube Cloud", str(self))
             return False
         return self.__mark_as("ACKNOWLEDGED")
 
@@ -194,39 +198,44 @@ class Hotspot(findings.Finding):
         """Marks a hotspot as to review
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
-        return self.post("hotspots/change_status", params={"hotspot": self.key, "status": "TO_REVIEW"}).ok
+        try:
+            r = self.post("hotspots/change_status", params={"hotspot": self.key, "status": "TO_REVIEW"})
+        except (ConnectionError, requests.RequestException) as e:
+            util.handle_error(e, "marking hotspot as TO_REVIEW", catch_all=True)
+            return False
+        self.refresh()
+        return r.ok
 
     def reopen(self) -> bool:
         """Reopens a hotspot as to review
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         return self.mark_as_to_review()
 
     def add_comment(self, comment: str) -> bool:
         """Adds a comment to a hotspot
 
-        :param comment: Comment to add, in markdown format
-        :type comment: str
-        :return: Whether the operation succeeded
-        :rtype: bool
-        """
-        params = {"hotspot": self.key, "comment": comment}
-        return self.post("hotspots/add_comment", params=params).ok
-
-    def assign(self, assignee: Optional[str] = None) -> bool:
-        """Assigns a hotspot (and optionally comment)
-
-        :param str assignee: User login to assign the hotspot
+        :param str comment: Comment to add, in markdown format
         :return: Whether the operation succeeded
         """
         try:
-            params = util.remove_nones({"hotspot": self.key, "assignee": assignee})
+            return self.post("hotspots/add_comment", params={"hotspot": self.key, "comment": comment}).ok
+        except (ConnectionError, requests.RequestException) as e:
+            util.handle_error(e, "assigning hotspot", catch_all=True)
+            return False
+
+    def assign(self, assignee: Optional[str], comment: Optional[str] = None) -> bool:
+        """Assigns a hotspot (and optionally comment)
+
+        :param str assignee: User login to assign the hotspot, None to unassign
+        :param str comment: Optional comment to add
+        :return: Whether the operation succeeded
+        """
+        try:
             log.debug("Assigning %s to '%s'", str(self), str(assignee))
-            r = self.post("hotspots/assign", params)
+            r = self.post("hotspots/assign", util.remove_nones({"hotspot": self.key, "assignee": assignee, "comment": comment}))
             if r.ok:
                 self.assignee = assignee
         except (ConnectionError, requests.RequestException) as e:
@@ -234,13 +243,12 @@ class Hotspot(findings.Finding):
             return False
         return r.ok
 
-    def unassign(self) -> bool:
+    def unassign(self, comment: Optional[str] = None) -> bool:
         """Unassigns a hotspot (and optionally comment)
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
-        return self.assign(assignee=None)
+        return self.assign(assignee=None, comment=comment)
 
     def __apply_event(self, event: object, settings: types.ConfigSettings) -> bool:
         """Applies a changelog event (transition, comment, assign) to the hotspot"""
@@ -304,20 +312,12 @@ class Hotspot(findings.Finding):
         else:
             start_change = len(self.comments())
             log.info("Target %s already has %d comments", str(self), start_change)
-        log.info(
-            "Applying comments of %s to %s, from comment %d",
-            str(source_hotspot),
-            str(self),
-            start_change,
-        )
+        log.info("Applying comments of %s to %s, from comment %d", str(source_hotspot), str(self), start_change)
         change_nbr = 0
         for key in sorted(comments.keys()):
             change_nbr += 1
             if change_nbr < start_change:
-                log.debug(
-                    "Skipping comment already applied in a previous sync: %s",
-                    str(comments[key]),
-                )
+                log.debug("Skipping comment already applied in a previous sync: %s", str(comments[key]))
                 continue
             # origin = f"originally by *{event['userName']}* on original branch"
             self.add_comment(comments[key]["value"])
@@ -326,26 +326,24 @@ class Hotspot(findings.Finding):
     def changelog(self, manual_only: bool = True) -> dict[str, changelog.Changelog]:
         """
         :return: The hotspot changelog
-        :rtype: dict
         """
         if self._changelog is not None:
             return self._changelog
         if not self.__details:
             self.refresh()
-        util.json_dump_debug(self.__details, f"{str(self)} Details = ")
         self._changelog = {}
         seq = 1
         for l in self.__details["changelog"]:
             d = changelog.Changelog(l)
             if d.is_technical_change():
                 # Skip automatic changelog events generated by SonarSource itself
-                log.debug("Changelog is a technical change: %s", str(d))
+                log.debug("%s: Changelog is a technical change: %s", str(self), str(l))
                 continue
             if manual_only and not d.is_manual_change():
                 # Skip automatic changelog events generated by SonarSource itself
-                log.debug("%s: Changelog is an automatic change: %s", str(self), str(d))
+                log.debug("%s: Changelog is an automatic change: %s", str(self), str(l))
                 continue
-            util.json_dump_debug(l, "Changelog item Changelog ADDED = ")
+            log.debug("%s: Changelog added %s", str(self), str(l))
             seq += 1
             self._changelog[f"{d.date()}_{seq:03d}"] = d
         return self._changelog
@@ -353,7 +351,6 @@ class Hotspot(findings.Finding):
     def comments(self) -> dict[str, str]:
         """
         :return: The hotspot comments
-        :rtype: dict
         """
         if self._comments is not None:
             return self._comments

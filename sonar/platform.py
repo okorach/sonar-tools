@@ -711,6 +711,8 @@ class Platform(object):
 
     def is_mqr_mode(self) -> bool:
         """Returns whether the platform is in MQR mode"""
+        if self.is_sonarcloud():
+            return True
         if self.version() >= (10, 8, 0):
             return self.get_setting(settings.MQR_ENABLED)
         return self.version() >= (10, 2, 0)
