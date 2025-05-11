@@ -26,6 +26,7 @@ from sonar.permissions import permissions
 from sonar.util import types
 import sonar.util.constants as c
 
+
 class GlobalPermissions(permissions.Permissions):
     """Abstraction of SonarQube global permissions"""
 
