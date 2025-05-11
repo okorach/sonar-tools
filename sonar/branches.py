@@ -29,7 +29,7 @@ from requests import HTTPError, RequestException
 import requests.utils
 
 from sonar import platform
-from sonar.util import types, cache, constants as c
+from sonar.util import types, cache
 import sonar.logging as log
 import sonar.sqobject as sq
 from sonar import components, settings, exceptions, tasks
@@ -38,6 +38,7 @@ import sonar.utilities as util
 
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
+import sonar.util.constants as c
 
 
 _UNSUPPORTED_IN_CE = "Branches not available in Community Edition"
@@ -61,7 +62,7 @@ class Branch(components.Component):
 
         :raises UnsupportedOperation: When attempting to branches on Community Edition
         """
-        if project.endpoint.edition() == "community":
+        if project.endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
         name = unquote(name)
         super().__init__(endpoint=project.endpoint, key=name)
@@ -399,7 +400,7 @@ def get_list(project: projects.Project) -> dict[str, Branch]:
     :return: List of project branches
     :rtype: dict{branch_name: Branch}
     """
-    if project.endpoint.edition() == "community":
+    if project.endpoint.edition() == c.CE:
         log.debug(_UNSUPPORTED_IN_CE)
         raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 

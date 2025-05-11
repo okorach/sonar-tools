@@ -30,6 +30,7 @@ from typing import Optional
 import sonar.logging as log
 import sonar.utilities as util
 from sonar.util import types
+import sonar.util.constants as c
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.sif_node as sifn
@@ -91,7 +92,7 @@ class Sif(object):
                     pass
         if "Application Nodes" in self.json:
             log.debug("DCE edition detected from the presence in SIF of the 'Application Nodes' key")
-            ed = "datacenter"
+            ed = c.DCE
         if ed is None:
             log.warning("Could not find edition in SIF")
             return None
@@ -165,7 +166,7 @@ class Sif(object):
         log.info("Auditing System Info")
         problems = self.__audit_jdbc_url()
         log.debug("Edition = %s", self.edition())
-        if self.edition() == "datacenter":
+        if self.edition() == c.DCE:
             log.info("DCE SIF audit")
             problems += self.__audit_dce_settings(audit_settings)
         else:
@@ -181,7 +182,7 @@ class Sif(object):
 
     def __audit_branch_use(self) -> list[Problem]:
         """Audits whether branch analysis is used or not"""
-        if self.edition() == "community":
+        if self.edition() == c.CE:
             return []
         log.info("Auditing usage of branch analysis")
         try:
@@ -278,7 +279,7 @@ class Sif(object):
         if sq_edition is None:
             log.error("Can't verify edition in System Info File (2_), was it corrupted or redacted ?")
             return problems
-        if sq_edition != "datacenter":
+        if sq_edition != c.DCE:
             log.info("Not a Data Center Edition, skipping DCE checks")
             return problems
         if _APP_NODES in self.json:

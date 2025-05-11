@@ -26,8 +26,8 @@ from collections.abc import Generator
 import pytest
 
 import utilities as util
-import sonar.logging as log
 from sonar import applications, exceptions
+import sonar.util.constants as c
 
 EXISTING_KEY = "APP_TEST"
 EXISTING_KEY_2 = "APP_TEST_2"
@@ -37,7 +37,7 @@ TEST_KEY = "MY_APPPP"
 
 def test_get_object() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = applications.Application.get_object(endpoint=util.SQ, key=EXISTING_KEY)
     else:
@@ -50,7 +50,7 @@ def test_get_object() -> None:
 
 def test_count() -> None:
     """Verify count works"""
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = applications.count(util.SQ)
     else:
@@ -59,7 +59,7 @@ def test_count() -> None:
 
 def test_search() -> None:
     """Verify that search with criterias work"""
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = applications.search(endpoint=util.SQ, params={"s": "analysisDate"})
     else:
@@ -74,7 +74,7 @@ def test_search() -> None:
 
 def test_get_object_non_existing() -> None:
     """Test exception raised when providing non existing portfolio key"""
-    if util.SQ.edition() == "community":
+    if util.SQ.edition() == c.CE:
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = applications.Application.get_object(endpoint=util.SQ, key=NON_EXISTING_KEY)
     else:
@@ -85,7 +85,7 @@ def test_get_object_non_existing() -> None:
 
 def test_exists(get_test_app) -> None:
     """Test exist"""
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = applications.exists(endpoint=util.SQ, key=EXISTING_KEY)
         with pytest.raises(exceptions.UnsupportedOperation):
@@ -99,7 +99,7 @@ def test_exists(get_test_app) -> None:
 def test_get_list() -> None:
     """Test portfolio get_list"""
     k_list = [EXISTING_KEY, EXISTING_KEY_2]
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = applications.get_list(endpoint=util.SQ, key_list=k_list)
     else:
@@ -109,7 +109,7 @@ def test_get_list() -> None:
 
 def test_create_delete() -> None:
     """Test portfolio create delete"""
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = applications.Application.create(endpoint=util.SQ, name=util.TEMP_NAME, key=util.TEMP_KEY)
         return
@@ -129,7 +129,7 @@ def test_create_delete() -> None:
 
 def test_permissions_1(get_test_app) -> None:
     """Test permissions"""
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = applications.Application.create(endpoint=util.SQ, name="An app", key=TEST_KEY)
         return
@@ -140,7 +140,7 @@ def test_permissions_1(get_test_app) -> None:
 
 def test_permissions_2(get_test_app) -> None:
     """Test permissions"""
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = applications.Application.create(endpoint=util.SQ, name=util.TEMP_NAME, key=util.TEMP_KEY)
         return
@@ -151,7 +151,7 @@ def test_permissions_2(get_test_app) -> None:
 
 def test_get_projects() -> None:
     """test_get_projects"""
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = applications.Application.get_object(endpoint=util.SQ, key=EXISTING_KEY)
         return
@@ -163,7 +163,7 @@ def test_get_projects() -> None:
 
 def test_get_branches() -> None:
     """test_get_projects"""
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = applications.Application.get_object(endpoint=util.SQ, key=EXISTING_KEY)
         return
@@ -175,7 +175,7 @@ def test_get_branches() -> None:
 
 def test_no_audit() -> None:
     """Check stop fast when audit params are disabled"""
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = applications.Application.get_object(endpoint=util.SQ, key=EXISTING_KEY)
         return
@@ -187,7 +187,7 @@ def test_no_audit() -> None:
 
 def test_search_by_name() -> None:
     """test_search_by_name"""
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = applications.search_by_name(endpoint=util.SQ, name="TEST_APP")
         return
@@ -201,7 +201,7 @@ def test_search_by_name() -> None:
 
 def test_set_tags(get_test_app: Generator[applications.Application]) -> None:
     """test_set_tags"""
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     o = get_test_app
 
@@ -216,7 +216,7 @@ def test_set_tags(get_test_app: Generator[applications.Application]) -> None:
 
 def test_not_found(get_test_app: Generator[applications.Application]) -> None:
     """test_not_found"""
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     o = get_test_app
     o.key = "mess-me-up"
@@ -225,7 +225,7 @@ def test_not_found(get_test_app: Generator[applications.Application]) -> None:
 
 
 def test_already_exists(get_test_app: Generator[applications.Application]) -> None:
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     app = get_test_app
     with pytest.raises(exceptions.ObjectAlreadyExists):
@@ -233,7 +233,7 @@ def test_already_exists(get_test_app: Generator[applications.Application]) -> No
 
 
 def test_branch_exists(get_test_app: Generator[applications.Application]) -> None:
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     app = get_test_app
     assert app.branch_exists("main")
@@ -241,7 +241,7 @@ def test_branch_exists(get_test_app: Generator[applications.Application]) -> Non
 
 
 def test_branch_is_main(get_test_app: Generator[applications.Application]) -> None:
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     app = get_test_app
     assert app.branch_is_main("main")
@@ -250,7 +250,7 @@ def test_branch_is_main(get_test_app: Generator[applications.Application]) -> No
 
 
 def test_get_issues(get_test_app: Generator[applications.Application]) -> None:
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     app = get_test_app
     assert len(app.get_issues()) == 0
@@ -262,7 +262,7 @@ def test_audit_disabled() -> None:
 
 
 def test_app_branches(get_test_app: Generator[applications.Application]) -> None:
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     app = get_test_app
     definition = {
@@ -289,7 +289,7 @@ def test_app_branches(get_test_app: Generator[applications.Application]) -> None
 
 
 def test_convert_for_yaml() -> None:
-    if util.SQ.edition() not in ("developer", "enterprise", "datacenter"):
+    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     data = applications.export(util.SQ, {})
     yaml_list = applications.convert_for_yaml(data)

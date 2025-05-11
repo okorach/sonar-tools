@@ -33,7 +33,6 @@ from requests import RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
-import sonar.util.constants as c
 from sonar.util import types, cache
 
 from sonar import exceptions, projects, branches, app_branches
@@ -42,6 +41,7 @@ import sonar.sqobject as sq
 import sonar.aggregations as aggr
 import sonar.utilities as util
 from sonar.audit import rules, problem
+import sonar.util.constants as c
 
 _CLASS_LOCK = Lock()
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")
@@ -472,7 +472,7 @@ def count(endpoint: pf.Platform) -> int:
 
 def check_supported(endpoint: pf.Platform) -> None:
     """Verifies the edition and raise exception if not supported"""
-    if endpoint.edition() not in ("developer", "enterprise", "datacenter"):
+    if endpoint.edition() not in (c.DE, c.EE, c.DCE):
         errmsg = f"No applications in {endpoint.edition()} edition"
         log.warning(errmsg)
         raise exceptions.UnsupportedOperation(errmsg)
@@ -552,7 +552,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     :param key_list: list of Application keys to audit, defaults to all if None
     :return: List of problems found
     """
-    if endpoint.edition() == "community":
+    if endpoint.edition() == c.CE:
         return []
     if not audit_settings.get("audit.applications", True):
         log.debug("Auditing applications is disabled, skipping...")
@@ -576,7 +576,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         log.info("No applications to import")
         return True
     ed = endpoint.edition()
-    if ed not in ("developer", "enterprise", "datacenter"):
+    if ed not in (c.DE, c.EE, c.DCE):
         log.warning("Can't import applications in %s edition", ed)
         return False
     log.info("Importing applications")

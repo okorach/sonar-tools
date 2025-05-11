@@ -25,7 +25,7 @@
 
 from __future__ import annotations
 from http import HTTPStatus
-from requests import HTTPError, RequestException
+from requests import RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -33,7 +33,7 @@ from sonar.util import types, cache
 
 from sonar import exceptions, utilities
 import sonar.sqobject as sq
-
+import sonar.util.constants as c
 
 class PortfolioReference(sq.SqObject):
     """
@@ -90,7 +90,7 @@ class PortfolioReference(sq.SqObject):
 def check_supported(endpoint: pf.Platform) -> None:
     """Verifies the edition and raise exception if not supported"""
     errmsg = ""
-    if endpoint.edition() not in ("enterprise", "datacenter"):
+    if endpoint.edition() not in (c.EE, c.DCE):
         errmsg = f"No portfolios in {endpoint.edition()} edition"
     if endpoint.is_sonarcloud():
         errmsg = "No portfolios in SonarCloud"

@@ -32,6 +32,7 @@ from sonar import utilities
 from sonar.util import types
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
+import sonar.util.constants as c
 
 COMMUNITY_GLOBAL_PERMISSIONS = {
     "admin": "Administer System",
@@ -179,9 +180,9 @@ class Permissions(ABC):
     def _filter_permissions_for_edition(self, perms: types.JsonPermissions) -> types.JsonPermissions:
         ed = self.endpoint.edition()
         allowed_perms = list(PROJECT_PERMISSIONS.keys())
-        if ed == "community":
+        if ed == c.CE:
             allowed_perms += list(COMMUNITY_GLOBAL_PERMISSIONS.keys())
-        elif ed == "developer":
+        elif ed == c.DE:
             allowed_perms += list(DEVELOPER_GLOBAL_PERMISSIONS.keys())
         else:
             allowed_perms += list(ENTERPRISE_GLOBAL_PERMISSIONS.keys())

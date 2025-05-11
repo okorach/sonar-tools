@@ -29,6 +29,8 @@ from unittest.mock import patch
 import pytest
 import utilities as util
 from sonar import errcodes
+import sonar.util.constants as c
+
 from cli import loc
 import cli.options as opt
 
@@ -106,7 +108,7 @@ def test_loc_portfolios() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.PORTFOLIOS}", "--topLevelOnly", f"--{opt.WITH_URL}"]):
             loc.main()
-    if util.SQ.edition() in ("community", "developer"):
+    if util.SQ.edition() in (c.CE, c.DE):
         assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
     else:
         assert int(str(e.value)) == errcodes.OK
@@ -131,7 +133,7 @@ def test_loc_branches() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ALL_OPTIONS):
             loc.main()
-    if util.SQ.edition() == "community":
+    if util.SQ.edition() == c.CE:
         assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
     else:
         assert int(str(e.value)) == errcodes.OK
@@ -144,7 +146,7 @@ def test_loc_branches_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"--{opt.REPORT_FILE}", util.JSON_FILE] + ALL_OPTIONS):
             loc.main()
-    if util.SQ.edition() == "community":
+    if util.SQ.edition() == c.CE:
         assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
     else:
         assert int(str(e.value)) == errcodes.OK
@@ -157,7 +159,7 @@ def test_loc_proj_all_options() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ALL_OPTIONS):
             loc.main()
-    if util.SQ.edition() == "community":
+    if util.SQ.edition() == c.CE:
         assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
     else:
         assert int(str(e.value)) == errcodes.OK
@@ -167,7 +169,7 @@ def test_loc_proj_all_options() -> None:
             row = next(reader)
             for k in "# project key", "ncloc", "project name", "last analysis", "URL":
                 assert k in row
-            if util.SQ.edition() != "community":
+            if util.SQ.edition() != c.CE:
                 assert "branch" in row
                 offset = 0
             else:
@@ -185,7 +187,7 @@ def test_loc_apps_all_options() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--apps"] + ALL_OPTIONS):
             loc.main()
-    if util.SQ.edition() == "community":
+    if util.SQ.edition() == c.CE:
         assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
     else:
         assert int(str(e.value)) == errcodes.OK
@@ -208,7 +210,7 @@ def test_loc_portfolios_all_options() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--portfolios"] + ALL_OPTIONS):
             loc.main()
-    if util.SQ.edition() in ("community", "developer"):
+    if util.SQ.edition() in (c.CE, c.DE):
         assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
     else:
         assert int(str(e.value)) == errcodes.OK
@@ -232,7 +234,7 @@ def test_loc_proj_all_options_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS):
             loc.main()
-    if util.SQ.edition() == "community":
+    if util.SQ.edition() == c.CE:
         assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
     else:
         assert int(str(e.value)) == errcodes.OK
@@ -255,7 +257,7 @@ def test_loc_apps_all_options_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS + ["--apps"]):
             loc.main()
-    if util.SQ.edition() == "community":
+    if util.SQ.edition() == c.CE:
         assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
     else:
         assert int(str(e.value)) == errcodes.OK
@@ -278,7 +280,7 @@ def test_loc_portfolios_all_options_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS + ["--portfolios"]):
             loc.main()
-    if util.SQ.edition() in ("community", "developer"):
+    if util.SQ.edition() in (c.CE, c.DE):
         assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
     else:
         assert int(str(e.value)) == errcodes.OK

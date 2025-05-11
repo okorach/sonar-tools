@@ -34,8 +34,7 @@ from sonar.components import Component
 
 from sonar.branches import Branch
 from sonar import exceptions, projects, utilities
-import sonar.sqobject as sq
-from sonar.util import constants as c
+import sonar.util.constants as c
 
 
 _NOT_SUPPORTED = "Applications not supported in community edition"
@@ -76,7 +75,7 @@ class ApplicationBranch(Component):
         :return: The found ApplicationBranch
         :rtype: ApplicationBranch
         """
-        if app.endpoint.edition() == "community":
+        if app.endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         o = ApplicationBranch.CACHE.get(app.key, branch_name, app.base_url())
         if o:
@@ -99,7 +98,7 @@ class ApplicationBranch(Component):
         :return: The created ApplicationBranch object
         :rtype: ApplicationBranch
         """
-        if app.endpoint.edition() == "community":
+        if app.endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         params = {"application": app.key, "branch": name, "project": [], "projectBranch": []}
         for branch in project_branches:

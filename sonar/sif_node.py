@@ -32,6 +32,7 @@ from sonar.util import types
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 from sonar import config
+import sonar.util.constants as c
 
 _RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)
 _RELEASE_DATE_7_9 = datetime.datetime(2019, 7, 1) + relativedelta(months=+6)
@@ -171,7 +172,7 @@ def __audit_workers(obj: object, obj_name: str) -> list[Problem]:
     :rtype: list[Problem]
     """
     ed = obj.edition()
-    if ed in ("community", "developer"):
+    if ed in (c.CE, c.DE):
         log.info("%s: %s edition, CE workers audit skipped...", obj_name, ed)
         return []
     try:
@@ -180,7 +181,7 @@ def __audit_workers(obj: object, obj_name: str) -> list[Problem]:
         log.warning("%s: CE section missing from SIF, CE workers audit skipped...", obj_name)
         return []
     MAX_WORKERS = 4  # EE
-    if ed == "datacenter":
+    if ed == c.DCE:
         MAX_WORKERS = 6
     if ce_workers > MAX_WORKERS:
         return [Problem(get_rule(RuleId.TOO_MANY_CE_WORKERS), obj, ce_workers, MAX_WORKERS)]
@@ -290,7 +291,7 @@ def audit_web(obj: object, obj_name: str) -> list[Problem]:
     :rtype: list[Problem]
     """
     (heap_min, heap_max) = (1024, 4096)
-    if obj.edition() == "datacenter":
+    if obj.edition() == c.DCE:
         (heap_min, heap_max) = (2048, 8192)
     return (
         audit_version(obj, obj_name)

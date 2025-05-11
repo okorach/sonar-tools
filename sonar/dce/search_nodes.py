@@ -26,11 +26,13 @@
 from typing import Optional
 
 import sonar.logging as log
-from sonar.util import types
+
 import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 from sonar.dce import nodes
+from sonar.util import types
+import sonar.util.constants as c
 
 
 _STORE_SIZE = "Store Size"
@@ -63,7 +65,7 @@ class SearchNode(nodes.DceNode):
 
     def max_heap(self) -> Optional[int]:
         """Returns the node max heap or None if not found"""
-        if self.sif.edition() != "datacenter" and self.sif.version() < (9, 0, 0):
+        if self.sif.edition() != c.DCE and self.sif.version() < (9, 0, 0):
             return util.jvm_heap(self.sif.search_jvm_cmdline())
         try:
             sz = self.json[_ES_STATE]["JVM Heap Max"]

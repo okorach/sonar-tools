@@ -33,7 +33,8 @@ from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import types, cache, constants as c
+from sonar.util import types, cache
+import sonar.util.constants as c
 
 from sonar import aggregations, exceptions, settings, applications, app_branches
 import sonar.permissions.permissions as perms
@@ -682,7 +683,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, P
 def check_supported(endpoint: pf.Platform) -> None:
     """Verifies the edition and raise exception if not supported"""
     errmsg = ""
-    if endpoint.edition() not in ("enterprise", "datacenter"):
+    if endpoint.edition() not in (c.EE, c.DCE):
         errmsg = f"No portfolios in {endpoint.edition()} edition"
     if endpoint.is_sonarcloud():
         errmsg = "No portfolios in SonarCloud"

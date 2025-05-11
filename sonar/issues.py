@@ -827,7 +827,7 @@ def search_by_project(endpoint: pf.Platform, project_key: str, params: ApiParams
     issue_list = {}
     for k in key_list:
         log.info("Project '%s' issue search with filters %s", k, str(params))
-        if endpoint.version() >= (9, 1, 0) and endpoint.edition() in ("enterprise", "datacenter") and search_findings:
+        if endpoint.version() >= (9, 1, 0) and endpoint.edition() in (c.EE, c.DCE) and search_findings:
             log.info("Using new export findings to speed up issue export")
             issue_list.update(findings.export_findings(endpoint, k, params.get("branch", None), params.get("pullRequest", None)))
         else:

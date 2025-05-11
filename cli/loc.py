@@ -30,6 +30,7 @@ from cli import options
 import sonar.logging as log
 from sonar import platform, portfolios, applications, projects, errcodes, exceptions, version
 import sonar.utilities as util
+import sonar.util.constants as c
 
 TOOL_NAME = "sonar-loc"
 
@@ -204,9 +205,9 @@ def __parse_args(desc: str) -> object:
 def __check_options(edition: str, kwargs: dict[str, str]) -> dict[str, str]:
     """Verifies a certain number of options for compatibility with edition"""
     kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE])
-    if kwargs[options.WITH_BRANCHES] and edition == "community":
+    if kwargs[options.WITH_BRANCHES] and edition == c.CE:
         util.exit_fatal(f"No branches in {edition} edition, aborting...", errcodes.UNSUPPORTED_OPERATION)
-    if kwargs[options.COMPONENT_TYPE] == "portfolios" and edition in ("community", "developer"):
+    if kwargs[options.COMPONENT_TYPE] == "portfolios" and edition in (c.CE, c.DE):
         util.exit_fatal(f"No portfolios in {edition} edition, aborting...", errcodes.UNSUPPORTED_OPERATION)
     if kwargs[options.COMPONENT_TYPE] == "portfolios" and kwargs[options.WITH_BRANCHES]:
         log.warning("Portfolio LoC export selected, branch option is ignored")

@@ -38,7 +38,8 @@ from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.utilities as util
-from sonar.util import types, constants as c
+from sonar.util import types
+import sonar.util.constants as c
 
 from sonar import errcodes, settings, devops, version, sif, exceptions
 from sonar.permissions import permissions, global_permissions, permission_templates
@@ -124,10 +125,10 @@ class Platform(object):
 
     def edition(self) -> str:
         """
-        Returns the Sonar edition: "community", "developer", "enterprise", "datacenter" or "sonarcloud"
+        Returns the Sonar edition: "community", "developer", "enterprise", c.DCE or "sonarcloud"
         """
         if self.is_sonarcloud():
-            return "sonarcloud"
+            return c.SC
         if "edition" in self.global_nav():
             return util.edition_normalize(self.global_nav()["edition"])
         else:
@@ -578,7 +579,7 @@ class Platform(object):
             log.info("Logs audit not available with SonarQube Cloud, skipping logs audit...")
             return []
         log_map = {"app": "sonar.log", "ce": "ce.log", "web": "web.log", "es": "es.log"}
-        if self.edition() == "datacenter":
+        if self.edition() == c.DCE:
             log_map.pop("es")
         problems = []
         for logtype, logfile in log_map.items():
