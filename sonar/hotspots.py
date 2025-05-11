@@ -189,6 +189,9 @@ class Hotspot(findings.Finding):
         if self.endpoint.version() < (9, 4, 0) and not self.endpoint.is_sonarcloud():
             log.warning("SonarQube Server version is < 9.4, can't acknowledge %s", str(self))
             return False
+        elif self.endpoint.is_sonarcloud():
+            log.warning("Can't acknowledge %s, this is not supported by SonarQube", str(self))
+            return False
         return self.__mark_as("ACKNOWLEDGED")
 
     def mark_as_to_review(self) -> bool:
