@@ -162,7 +162,7 @@ def test_changelog() -> None:
     assert not changelog.is_mark_as_fixed()
     assert not changelog.is_mark_as_acknowledged()
     assert not changelog.is_change_severity()
-    assert changelog.new_severity() is None
+    assert changelog.new_severity() == (None, None)
     assert not changelog.is_change_type()
     assert changelog.new_type() is None
     assert not changelog.is_technical_change()
