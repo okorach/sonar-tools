@@ -59,7 +59,7 @@ def test_rules_filter_language() -> None:
         line = next(csvreader)
         assert line[0].startswith("# ")
         line[0] = line[0][2:]
-        assert line == (rules.CSV_EXPORT_FIELDS if util.SQ.version() >= (10, 2, 0) else rules.LEGACY_CSV_EXPORT_FIELDS)
+        assert line == (rules.CSV_EXPORT_FIELDS if util.SQ.version() >= c.MQR_INTRO_VERSION else rules.LEGACY_CSV_EXPORT_FIELDS)
         for line in csvreader:
             assert line[LANGUAGE_COL] in langs
     util.clean(util.CSV_FILE)
@@ -73,7 +73,7 @@ def test_rules_misspelled_language_1() -> None:
         line = next(csvreader)
         assert line[0].startswith("# ")
         line[0] = line[0][2:]
-        if util.SQ.version() >= (10, 2, 0):
+        if util.SQ.version() >= c.MQR_INTRO_VERSION:
             assert line == rules.CSV_EXPORT_FIELDS
         else:
             assert line == rules.LEGACY_CSV_EXPORT_FIELDS
@@ -163,7 +163,7 @@ def test_export_all() -> None:
 def test_new_taxo() -> None:
     """test_new_taxo"""
     my_rule = rules.get_object(endpoint=util.SQ, key="java:S127")
-    if util.SQ.version() >= (10, 2, 0):
+    if util.SQ.version() >= c.MQR_INTRO_VERSION:
         for qual, sev in my_rule.impacts().items():
             assert qual in rules.QUALITIES
             assert sev in rules.SEVERITIES

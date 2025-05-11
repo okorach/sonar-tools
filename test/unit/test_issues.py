@@ -232,7 +232,7 @@ def test_transitions() -> None:
     assert issue.reopen()
     assert not issue.reopen()
 
-    if tutil.SQ.version() >= (10, 2, 0):
+    if tutil.SQ.version() >= c.ACCEPT_INTRO_VERSION:
         assert issue.accept()
         assert not issue.accept()
     else:

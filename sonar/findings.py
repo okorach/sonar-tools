@@ -22,7 +22,7 @@
 from __future__ import annotations
 import re
 import datetime
-from typing import Union, Optional
+from typing import Optional
 
 from queue import Queue
 from threading import Thread
@@ -33,6 +33,7 @@ import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
 from sonar.util import types
+import sonar.util.constants as c
 
 import sonar.utilities as util
 from sonar import projects, rules
@@ -195,7 +196,7 @@ class Finding(sq.SqObject):
         """
         data = self.to_json(without_time)
         data["projectName"] = projects.Project.get_object(endpoint=self.endpoint, key=self.projectKey).name
-        if self.endpoint.version() >= (10, 2, 0):
+        if self.endpoint.version() >= c.MQR_INTRO_VERSION:
             data["securityImpact"] = self.impacts.get("SECURITY", "")
             data["reliabilityImpact"] = self.impacts.get("RELIABILITY", "")
             data["maintainabilityImpact"] = self.impacts.get("MAINTAINABILITY", "")
@@ -225,7 +226,7 @@ class Finding(sq.SqObject):
         data["url"] = self.url()
         if data.get("resolution", None):
             data["status"] = data.pop("resolution")
-        if self.endpoint.version() >= (10, 2, 0):
+        if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION:
             data["status"] = STATUS_MAPPING.get(data["status"], data["status"])
         return {k: v for k, v in data.items() if v is not None and k not in _JSON_FIELDS_PRIVATE}
 
@@ -475,7 +476,7 @@ def export_findings(endpoint: pf.Platform, project_key: str, branch: str = None,
 
 def to_csv_header(endpoint: pf.Platform) -> list[str]:
     """Returns the list of CSV fields provided by an issue CSV export"""
-    if endpoint.version() >= (10, 2, 0):
+    if endpoint.version() >= c.MQR_INTRO_VERSION:
         return list(CSV_EXPORT_FIELDS)
     else:
         return list(LEGACY_CSV_EXPORT_FIELDS)

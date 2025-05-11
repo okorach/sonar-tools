@@ -59,3 +59,9 @@ DCE = "datacenter"
 SC = "sonarcloud"
 SQS = "SonarQube Server"
 SQC = "SonarQube Cloud"
+
+MQR_INTRO_VERSION = (10, 2, 0)
+ACCEPT_INTRO_VERSION = (10, 2, 0)
+NEW_ISSUE_SEARCH_INTRO_VERSION = (10, 2, 0)
+GROUP_API_V2_INTRO_VERSION = (10, 4, 0)
+USER_API_V2_INTRO_VERSION = (10, 4, 0)

@@ -182,7 +182,7 @@ def test_update(get_test_user: Generator[users.User]) -> None:
     user.update(scmAccounts=["foo@gmail.com", "bar@gmail.com", "foo", "bar"])
     assert sorted(user.scm_accounts) == sorted(["foo@gmail.com", "bar@gmail.com", "foo", "bar"])
 
-    if util.SQ.version() >= (10, 4, 0):
+    if util.SQ.version() >= c.USER_API_V2_INTRO_VERSION:
         new_login = f"johndoe{str(datetime.now()).replace(' ', '').replace(':', '')}"
         user.update(login=new_login)
         assert user.login == new_login
@@ -191,7 +191,7 @@ def test_update(get_test_user: Generator[users.User]) -> None:
     assert user.name == "John Doe"
     assert user.email == "john@doe.com"
 
-    if util.SQ.version() >= (10, 4, 0):
+    if util.SQ.version() >= c.USER_API_V2_INTRO_VERSION:
         new_login = f"johndoe{str(datetime.now()).replace(' ', '-').replace(':', '-')}"
         user.update(login=new_login, email="john@doe.com")
         assert user.login == new_login

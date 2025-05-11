@@ -225,7 +225,7 @@ class Issue(findings.Finding):
         :rtype: dict
         """
         data = super().to_json(without_time)
-        if self.endpoint.version() >= (10, 2, 0):
+        if self.endpoint.version() >= c.MQR_INTRO_VERSION:
             data["impacts"] = {elem["softwareQuality"]: elem["severity"] for elem in self.sq_json["impacts"]}
         data["effort"] = self.debt()
         return data
@@ -249,7 +249,7 @@ class Issue(findings.Finding):
             self.rule = data.get("rule", None)
         self.type = data.get("type", None)
         self.branch, self.pull_request = self.get_branch_and_pr(data)
-        if self.endpoint.version() >= (10, 2, 0):
+        if self.endpoint.version() >= c.MQR_INTRO_VERSION:
             self.impacts = {i["softwareQuality"]: i["severity"] for i in data.get("impacts", {})}
         else:
             self.impacts = {TYPE_QUALITY_MAPPING[data.get("type", TYPE_NONE)]: SEVERITY_MAPPING[data.get("severity", SEVERITY_NONE)]}
@@ -515,7 +515,7 @@ class Issue(findings.Finding):
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        if self.endpoint.version() >= (10, 4, 0) or self.endpoint.is_sonarcloud():
+        if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION or self.endpoint.is_sonarcloud():
             log.warning("Marking %s as won't fix is deprecated, using Accept instead", str(self))
             return self.do_transition("accept")
         else:
@@ -651,7 +651,7 @@ class Issue(findings.Finding):
 
 def component_search_field(endpoint: pf.Platform) -> str:
     """Returns the fields used for issues/search filter by porject key"""
-    return _NEW_SEARCH_COMPONENT_FIELD if endpoint.version() >= (10, 2, 0) else _OLD_SEARCH_COMPONENT_FIELD
+    return _NEW_SEARCH_COMPONENT_FIELD if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else _OLD_SEARCH_COMPONENT_FIELD
 
 
 def type_search_field(endpoint: pf.Platform) -> str:
@@ -1034,7 +1034,7 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
         crit = filters.pop(old, []) + filters.pop(new, [])
         filters[new] = util.list_remap(crit, config.get_issues_map(old))
 
-    if endpoint.version() < (10, 2, 0):
+    if endpoint.version() < c.NEW_ISSUE_SEARCH_INTRO_VERSION:
         # Starting from 10.2 - "componentKeys" was renamed "components"
         filters = util.dict_remap(original_dict=filters, remapping={_NEW_SEARCH_COMPONENT_FIELD: _OLD_SEARCH_COMPONENT_FIELD})
 

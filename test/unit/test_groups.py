@@ -124,7 +124,7 @@ def test_to_json(get_test_group: Generator[groups.Group]) -> None:
     assert not gr.set_description(None)
     assert json_data["description"] == "A test group"
 
-    if util.SQ.version() >= (10, 4, 0):
+    if util.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
         assert "id" in gr.to_json(True)
 
     sonar_users = groups.Group.get_object(util.SQ, "sonar-users")
@@ -176,7 +176,7 @@ def test_create_or_update(get_test_group: Generator[groups.Group]) -> None:
 
 def test_api_params(get_test_group: Generator[groups.Group]) -> None:
     gr = get_test_group
-    if util.SQ.version() >= (10, 4, 0):
+    if util.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
         assert gr.api_params(c.GET) == {}
         assert gr.api_params(c.CREATE) == {}
     else:
@@ -186,7 +186,7 @@ def test_api_params(get_test_group: Generator[groups.Group]) -> None:
 
 def test_get_from_id(get_test_group: Generator[groups.Group]) -> None:
     gr = get_test_group
-    if util.SQ.version() >= (10, 4, 0):
+    if util.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
         gr2 = groups.get_object_from_id(util.SQ, gr.id)
         assert gr2 is gr
     else:

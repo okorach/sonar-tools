@@ -28,6 +28,7 @@ from cli import options
 import sonar.logging as log
 from sonar import rules, platform, exceptions, errcodes, version, qualityprofiles
 import sonar.utilities as util
+import sonar.util.constants as c
 
 TOOL_NAME = "sonar-rules"
 
@@ -48,7 +49,7 @@ def __write_rules_csv(file: str, rule_list: dict[str, rules.Rule], separator: st
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=separator, quotechar='"', quoting=csv.QUOTE_MINIMAL)
         print("# ", file=fd, end="")
-        if list(rule_list.values())[0].endpoint.version() >= (10, 2, 0):
+        if list(rule_list.values())[0].endpoint.version() >= c.MQR_INTRO_VERSION:
             csvwriter.writerow(rules.CSV_EXPORT_FIELDS)
         else:
             csvwriter.writerow(rules.LEGACY_CSV_EXPORT_FIELDS)

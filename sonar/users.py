@@ -160,7 +160,7 @@ class User(sqobject.SqObject):
         :return: The user object
         :rtype: User
         """
-        if endpoint.version() < (10, 4, 0):
+        if endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             raise exceptions.UnsupportedOperation("Get by ID is an APIv2 features, staring from SonarQube 10.4")
         log.debug("Getting user id '%s'", id)
         try:
@@ -175,7 +175,7 @@ class User(sqobject.SqObject):
         """Returns the API for a given operation depedning on the SonarQube version"""
         if endpoint.is_sonarcloud():
             api_to_use = User.API_SC
-        elif endpoint.version() < (10, 4, 0):
+        elif endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             api_to_use = User.API_V1
         else:
             api_to_use = User.API
@@ -195,7 +195,7 @@ class User(sqobject.SqObject):
         self.is_local = data.get("local", False)  #: User is local - read-only
         self.last_login = None  #: User last login - read-only
         self.nb_tokens = None
-        if self.endpoint.version() < (10, 4, 0):
+        if self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             self.last_login = util.string_to_date(data.get("lastConnectionDate", None))
             self.nb_tokens = data.get("tokenCount", None)  #: Nbr of tokens - read-only
         else:
@@ -220,7 +220,7 @@ class User(sqobject.SqObject):
         if self.endpoint.is_sonarcloud():
             data = json.loads(self.get(_GROUPS_API_SC, self.api_params(c.GET)).text)["groups"]
             self._groups = [g["name"] for g in data]
-        elif self.endpoint.version() < (10, 4, 0):
+        elif self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             if data is None:
                 data = self.sq_json
             self._groups = data.get("groups", [])
@@ -283,7 +283,7 @@ class User(sqobject.SqObject):
         params.update({k: kwargs[k] for k in ("name", "email") if k in kwargs and kwargs[k] != my_data[k]})
         if len(params) >= 1:
             api = User.api_for(c.UPDATE, self.endpoint)
-            if self.endpoint.version() >= (10, 4, 0):
+            if self.endpoint.version() >= c.USER_API_V2_INTRO_VERSION:
                 self.patch(f"{api}/{self.id}", params=params)
             else:
                 self.post(api, params=params)
@@ -298,7 +298,7 @@ class User(sqobject.SqObject):
             o = User.CACHE.get(new_login, self.base_url())
             if not o:
                 api = User.api_for("UPDATE_LOGIN", self.endpoint)
-                if self.endpoint.version() >= (10, 4, 0):
+                if self.endpoint.version() >= c.USER_API_V2_INTRO_VERSION:
                     self.patch(f"{api}/{self.id}", params={"login": new_login})
                 else:
                     self.post(api, params={**self.api_params(User.API["UPDATE_LOGIN"]), "newLogin": new_login})
@@ -356,7 +356,7 @@ class User(sqobject.SqObject):
         """
         log.info("Deleting %s", str(self))
         try:
-            if self.endpoint.version() >= (10, 4, 0):
+            if self.endpoint.version() >= c.USER_API_V2_INTRO_VERSION:
                 ok = self.endpoint.delete(api=f"{User.API[c.DELETE]}/{self.id}").ok
             else:
                 ok = self.post(api=User.API_V1[c.DELETE], params=self.api_params(c.DELETE)).ok
@@ -370,7 +370,7 @@ class User(sqobject.SqObject):
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        if self.endpoint.version() >= (10, 4, 0):
+        if self.endpoint.version() >= c.USER_API_V2_INTRO_VERSION:
             ops = {c.GET: {}}
         else:
             ops = {c.GET: {"login": self.login}}
@@ -415,7 +415,7 @@ class User(sqobject.SqObject):
         """
         log.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
         api = User.api_for(c.UPDATE, self.endpoint)
-        if self.endpoint.version() >= (10, 4, 0):
+        if self.endpoint.version() >= c.USER_API_V2_INTRO_VERSION:
             r = self.patch(f"{api}/{self.id}", params={"scmAccounts": accounts_list})
         else:
             params = self.api_params()
@@ -484,7 +484,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, U
     :rtype: dict{login: User}
     """
     log.debug("Searching users with params %s", str(params))
-    api_version = 2 if endpoint.version() >= (10, 4, 0) else 1
+    api_version = 2 if endpoint.version() >= c.USER_API_V2_INTRO_VERSION else 1
     return dict(sorted(sqobject.search_objects(endpoint=endpoint, object_class=User, params=params, api_version=api_version).items()))
 
 

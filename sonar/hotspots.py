@@ -122,7 +122,7 @@ class Hotspot(findings.Finding):
         :rtype: dict
         """
         data = super().to_json(without_time)
-        if self.endpoint.version() >= (10, 2, 0):
+        if self.endpoint.version() >= c.MQR_INTRO_VERSION:
             data.pop("type", None)
         return data
 
@@ -386,7 +386,7 @@ def search_by_project(endpoint: pf.Platform, project_key: str, filters: types.Ap
 
 def component_filter(endpoint: pf.Platform) -> str:
     """Returns the string to filter by porject in api/hotspots/search"""
-    if endpoint.version() >= (10, 2, 0):
+    if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION:
         return PROJECT_FILTER
     else:
         return PROJECT_FILTER_OLD
@@ -458,7 +458,7 @@ def sanitize_search_filters(endpoint: pf.Platform, params: types.ApiParams) -> t
     if "resolution" in criterias:
         criterias["resolution"] = util.allowed_values_string(criterias["resolution"], RESOLUTIONS)
         criterias["status"] = "REVIEWED"
-    if endpoint.version() <= (10, 2, 0):
+    if endpoint.version() <= c.NEW_ISSUE_SEARCH_INTRO_VERSION:
         criterias = util.dict_remap(original_dict=criterias, remapping={PROJECT_FILTER: PROJECT_FILTER_OLD})
     else:
         criterias = util.dict_remap(original_dict=criterias, remapping={PROJECT_FILTER_OLD: PROJECT_FILTER})
