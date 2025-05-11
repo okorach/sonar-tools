@@ -25,6 +25,7 @@ from collections.abc import Generator
 from datetime import datetime
 import pytest
 
+import sonar.util.constants as c
 import utilities as util
 from sonar import exceptions, logging
 from sonar import users
