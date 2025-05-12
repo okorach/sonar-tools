@@ -34,7 +34,7 @@ import cli.options as opt
 
 CMD = "sonar-findings-sync.py"
 PLAT_OPTS = f"--{opt.URL} {os.getenv('SONAR_HOST_URL')} --{opt.TOKEN} {os.getenv('SONAR_TOKEN_ADMIN_USER')} -U {os.getenv('SONAR_HOST_URL_TEST')} -T {os.getenv('SONAR_TOKEN_SYNC_USER')}"
-SYNC_OPTS = f"--login syncer -{opt.KEYS_SHORT} {util.LIVE_PROJECT} -K TESTSYNC -b master -B main"
+SYNC_OPTS = f"-{opt.KEYS_SHORT} {util.LIVE_PROJECT} -K TESTSYNC -b master -B main"
 
 
 def test_sync_help() -> None:
