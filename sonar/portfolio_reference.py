@@ -35,6 +35,7 @@ from sonar import exceptions, utilities
 import sonar.sqobject as sq
 import sonar.util.constants as c
 
+
 class PortfolioReference(sq.SqObject):
     """
     Abstraction of the Sonar portfolio reference concept

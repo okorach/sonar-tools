@@ -179,7 +179,7 @@ class Component(sq.SqObject):
             "instantiatedRules": inst_issues if len(inst_issues) > 0 else 0,
             "falsePositives": issue_count(self.endpoint, issueStatuses=["FALSE_POSITIVE"], **params),
         }
-        status = "accepted" if self.endpoint.version() >= (10, 2, 0) else "wontFix"
+        status = "accepted" if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION else "wontFix"
         json_data["issues"][status] = issue_count(self.endpoint, issueStatuses=[status.upper()], **params)
         json_data["hotspots"] = {
             "acknowledged": hotspot_count(self.endpoint, resolution=["ACKNOWLEDGED"], **params),
@@ -331,11 +331,11 @@ class Component(sq.SqObject):
         loc_min = audit_settings.get("audit.projects.minLocSize", 10000)
         fp_min = audit_settings.get("minLocPerFalsePositiveIssue", 500)
         accepted_min = audit_settings.get("minLocPerAcceptedIssue", 500)
-        m_list = ["ncloc", "false_positive_issues", "accepted_issues" if self.endpoint.version() >= (10, 2, 0) else "wont_fix_issues"]
+        m_list = ["ncloc", "false_positive_issues", "accepted_issues" if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION else "wont_fix_issues"]
         d = {k: int(v.value) if v is not None else 0 for k, v in self.get_measures(m_list).items()}
         ncloc, nb_accepted, nb_fp = (
             d["ncloc"],
-            d["accepted_issues" if self.endpoint.version() >= (10, 2, 0) else "wont_fix_issues"],
+            d["accepted_issues" if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION else "wont_fix_issues"],
             d["false_positive_issues"],
         )
         problems = []

@@ -162,7 +162,7 @@ def test_changelog() -> None:
     assert not changelog.is_mark_as_fixed()
     assert not changelog.is_mark_as_acknowledged()
     assert not changelog.is_change_severity()
-    assert changelog.new_severity() is None
+    assert changelog.new_severity() == (None, None)
     assert not changelog.is_change_type()
     assert changelog.new_type() is None
     assert not changelog.is_technical_change()
@@ -232,7 +232,7 @@ def test_transitions() -> None:
     assert issue.reopen()
     assert not issue.reopen()
 
-    if tutil.SQ.version() >= (10, 2, 0):
+    if tutil.SQ.version() >= c.ACCEPT_INTRO_VERSION:
         assert issue.accept()
         assert not issue.accept()
     else:

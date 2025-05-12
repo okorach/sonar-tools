@@ -716,7 +716,7 @@ class Platform(object):
             return True
         if self.version() >= (10, 8, 0):
             return self.get_setting(settings.MQR_ENABLED)
-        return self.version() >= (10, 2, 0)
+        return self.version() >= c.MQR_INTRO_VERSION
 
 
 # --------------------- Static methods -----------------

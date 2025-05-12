@@ -48,7 +48,7 @@ LIVE_PROJ_KEY = f"--{opt.KEYS} {util.LIVE_PROJECT}"
 RULE_COL = 1
 LANG_COL = 2
 
-if util.SQ.version() >= (10, 2, 0):
+if util.SQ.version() >= c.MQR_INTRO_VERSION:
     fields = findings.CSV_EXPORT_FIELDS
     # 10.x MQR
     SECURITY_IMPACT_COL = fields.index("securityImpact")
@@ -180,7 +180,7 @@ def test_findings_filter_on_type() -> None:
         csvreader = csv.reader(fh)
         next(csvreader)
         for line in csvreader:
-            if util.SQ.version() >= (10, 2, 0):
+            if util.SQ.version() >= c.MQR_INTRO_VERSION:
                 assert line[SECURITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
             else:
                 assert line[TYPE_COL] in ("BUG", "VULNERABILITY")
@@ -209,7 +209,7 @@ def test_findings_filter_on_severity() -> None:
         csvreader = csv.reader(fh)
         next(csvreader)
         for line in csvreader:
-            if util.SQ.version() < (10, 2, 0):
+            if util.SQ.version() < c.MQR_INTRO_VERSION:
                 assert line[SEVERITY_COL] in ("BLOCKER", "CRITICAL")
             elif util.SQ.version() < (10, 7, 0):
                 assert "HIGH" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL] or "MEDIUM" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
@@ -229,7 +229,7 @@ def test_findings_filter_on_multiple_criteria() -> None:
                 assert line[STATUS_COL] in ("FALSE-POSITIVE", "WONTFIX")
             else:
                 assert line[STATUS_COL] in ("FALSE-POSITIVE", "ACCEPTED")
-            if util.SQ.version() >= (10, 2, 0):
+            if util.SQ.version() >= c.MQR_INTRO_VERSION:
                 assert line[MAINTAINABILITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
             else:
                 assert line[TYPE_COL] in ("BUG", "CODE_SMELL")
@@ -246,7 +246,7 @@ def test_findings_filter_on_multiple_criteria_2() -> None:
         next(csvreader)
         for line in csvreader:
             log.info(str(line))
-            if util.SQ.version() >= (10, 2, 0):
+            if util.SQ.version() >= c.MQR_INTRO_VERSION:
                 assert "HOTSPOT" in line[SECURITY_IMPACT_COL]
             else:
                 assert "HOTSPOT" in line[TYPE_COL]
@@ -373,7 +373,7 @@ def test_output_format_sarif() -> None:
             assert k in loc["region"]
         for k in "creationDate", "key", "projectKey", "updateDate":
             assert k in issue["properties"]
-        if util.SQ.version() >= (10, 2, 0):
+        if util.SQ.version() >= c.MQR_INTRO_VERSION:
             assert "effort" in issue["properties"] or "HOTSPOT" in issue["properties"]["impacts"].get("SECURITY", "")
         else:
             assert "effort" in issue["properties"] or issue["properties"]["type"] == "SECURITY_HOTSPOT"
@@ -391,7 +391,7 @@ def test_output_format_json() -> None:
         log.info("ISSUE = %s", json.dumps(issue))
         for k in "creationDate", "file", "key", "message", "projectKey", "rule", "updateDate":
             assert k in issue
-        if util.SQ.version() >= (10, 2, 0):
+        if util.SQ.version() >= c.MQR_INTRO_VERSION:
             assert "impacts" in issue
             assert "effort" in issue or "HOTSPOT" in issue["impacts"].get("SECURITY", "")
         else:

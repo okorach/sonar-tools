@@ -136,7 +136,7 @@ class Group(sq.SqObject):
     @classmethod
     def api_for(cls, op: str, endpoint: object) -> Optional[str]:
         """Returns the API for a given operation depending on the SonarQube version"""
-        if endpoint.is_sonarcloud() or endpoint.version() < (10, 4, 0):
+        if endpoint.is_sonarcloud() or endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
             api_to_use = Group.API_V1
         else:
             api_to_use = Group.API
@@ -162,7 +162,7 @@ class Group(sq.SqObject):
         """Deletes an object, returns whether the operation succeeded"""
         log.info("Deleting %s", str(self))
         try:
-            if self.endpoint.version() >= (10, 4, 0):
+            if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
                 ok = self.endpoint.delete(api=f"{Group.API[c.DELETE]}/{self.id}").ok
             else:
                 ok = self.post(api=Group.API_V1[c.DELETE], params=self.api_params(c.DELETE)).ok
@@ -176,7 +176,7 @@ class Group(sq.SqObject):
 
     def api_params(self, op: str) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        if self.endpoint.version() >= (10, 4, 0):
+        if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
             ops = {c.GET: {}}
         else:
             ops = {c.GET: {"name": self.name}}
@@ -198,7 +198,7 @@ class Group(sq.SqObject):
     def members(self, use_cache: bool = True) -> list[users.User]:
         """Returns the group members"""
         if self.__members is None or not use_cache:
-            if self.endpoint.version() >= (10, 4, 0):
+            if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
                 data = json.loads(self.get(MEMBERSHIP_API, params={"groupId": self.id}).text)
                 self.__members = [users.User.get_object_by_id(self.endpoint, d["userId"]) for d in data["groupMemberships"]]
             else:
@@ -227,7 +227,7 @@ class Group(sq.SqObject):
         """
         log.info("Adding %s to %s", str(user), str(self))
         try:
-            if self.endpoint.version() >= (10, 4, 0):
+            if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
                 params = {"groupId": self.id, "userId": user.id}
             else:
                 params = {"login": user.login, "name": self.name}
@@ -251,7 +251,7 @@ class Group(sq.SqObject):
         """
         log.info("Removing %s from %s", str(user), str(self))
         try:
-            if self.endpoint.version() >= (10, 4, 0):
+            if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
                 for m in json.loads(self.get(MEMBERSHIP_API, params={"userId": user.id}).text)["groupMemberships"]:
                     if m["groupId"] == self.id:
                         return self.endpoint.delete(f"{Group.api_for(REMOVE_USER, self.endpoint)}/{m['id']}").ok
@@ -311,7 +311,7 @@ class Group(sq.SqObject):
             log.debug("No description to update for %s", str(self))
             return False
         log.debug("Updating %s with description = %s", str(self), description)
-        if self.endpoint.version() >= (10, 4, 0):
+        if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
             r = self.patch(f"{Group.API[c.UPDATE]}/{self.id}", params={"description": description})
         else:
             r = self.post(Group.API_V1[c.UPDATE], params={"currentName": self.key, "description": description})
@@ -329,7 +329,7 @@ class Group(sq.SqObject):
             log.debug("No name to update for %s", str(self))
             return False
         log.debug("Updating %s with name = %s", str(self), name)
-        if self.endpoint.version() >= (10, 4, 0):
+        if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
             r = self.patch(f"{Group.API[c.UPDATE]}/{self.id}", params={"name": name})
         else:
             r = self.post(Group.API_V1[c.UPDATE], params={"currentName": self.key, "name": name})
@@ -405,7 +405,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
 
 def get_object_from_id(endpoint: pf.Platform, id: str) -> Group:
     """Searches a Group object from its id - SonarQube 10.4+"""
-    if endpoint.version() < (10, 4, 0):
+    if endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
         raise exceptions.UnsupportedOperation("Operation unsupported before SonarQube 10.4")
     if len(Group.CACHE) == 0:
         get_list(endpoint)
