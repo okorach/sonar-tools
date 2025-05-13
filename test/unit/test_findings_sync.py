@@ -33,8 +33,10 @@ import cli.options as opt
 
 
 CMD = "sonar-findings-sync.py"
-PLAT_OPTS = f"--{opt.URL} {os.getenv('SONAR_HOST_URL')} --{opt.TOKEN} {os.getenv('SONAR_TOKEN_ADMIN_USER')} -U {os.getenv('SONAR_HOST_URL_TEST')} -T {os.getenv('SONAR_TOKEN_SYNC_USER')}"
-SYNC_OPTS = f"--login syncer -{opt.KEYS_SHORT} {util.LIVE_PROJECT} -K TESTSYNC -b master -B main"
+
+PLAT_OPTS = f"{util.SQS_OPTS} -U {os.getenv('SONAR_HOST_URL_TEST')} -T {os.getenv('SONAR_TOKEN_SYNC_USER')}"
+SC_PLAT_OPTS = f"{util.SQS_OPTS} {os.getenv('SONAR_TOKEN_ADMIN_USER')} -U https://sonarcloud.io -T {os.getenv('SONAR_TOKEN_SONARCLOUD')}"
+SYNC_OPTS = f"-{opt.KEYS_SHORT} {util.LIVE_PROJECT} -K TESTSYNC -b master -B main"
 
 
 def test_sync_help() -> None:
@@ -45,3 +47,8 @@ def test_sync_help() -> None:
 def test_sync(get_json_file: callable) -> None:
     """test_sync"""
     util.run_success_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -{opt.REPORT_FILE_SHORT} {get_json_file}", True)
+
+
+def test_sync_scloud(get_json_file: callable) -> None:
+    """test_sync"""
+    util.run_success_cmd(findings_sync.main, f"{CMD} {SC_PLAT_OPTS} {SYNC_OPTS} --threads 16 -{opt.REPORT_FILE_SHORT} {get_json_file}", True)
