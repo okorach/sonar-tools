@@ -49,8 +49,6 @@ LATEST_TEST = "http://localhost:20010"
 
 CB = "http://localhost:7000"
 
-TARGET_PLATFORM = LATEST
-
 CSV_FILE = f"temp.{os.getpid()}.csv"
 JSON_FILE = f"temp.{os.getpid()}.json"
 YAML_FILE = f"temp.{os.getpid()}.yaml"
@@ -73,16 +71,16 @@ TEMP_NAME = "Temp Name"
 STD_OPTS = [f"-{opt.URL_SHORT}", creds.TARGET_PLATFORM, f"-{opt.TOKEN_SHORT}", creds.TARGET_TOKEN]
 SQS_OPTS = " ".join(STD_OPTS)
 
-TEST_OPTS = [f"-{opt.URL_SHORT}", LATEST_TEST, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
+TEST_OPTS = [f"-{opt.URL_SHORT}", LATEST_TEST, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_TEST_ADMIN_USER")]
 SQS_TEST_OPTS = " ".join(TEST_OPTS)
 
-CE_OPTS = [f"-{opt.URL_SHORT}", CB, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
+CE_OPTS = [f"-{opt.URL_SHORT}", CB, f"-{opt.TOKEN_SHORT}", creds.TARGET_TOKEN]
 
 SC_OPTS = f'--{opt.URL} https://sonarcloud.io --{opt.TOKEN} {os.getenv("SONAR_TOKEN_SONARCLOUD")} --{opt.ORG} okorach'
 
 SQ = platform.Platform(url=creds.TARGET_PLATFORM, token=creds.TARGET_TOKEN)
 SC = platform.Platform(url="https://sonarcloud.io", token=os.getenv("SONAR_TOKEN_SONARCLOUD"), org="okorach")
-TEST_SQ = platform.Platform(url=LATEST_TEST, token=os.getenv("SONAR_TOKEN_ADMIN_USER"))
+TEST_SQ = platform.Platform(url=LATEST_TEST, token=os.getenv("SONAR_TOKEN_TEST_ADMIN_USER"))
 
 TAGS = ["foo", "bar"]
 
