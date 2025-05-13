@@ -623,7 +623,7 @@ def convert_args(args: object, second_platform: bool = False) -> dict[str, str]:
     kwargs = vars(args).copy()
     kwargs["org"] = kwargs.pop(opt.ORG, None)
     kwargs["cert_file"] = kwargs.pop(opt.CERT, None)
-     
+
     if second_platform:
         kwargs[opt.URL] = kwargs.pop("urlTarget", kwargs[opt.URL])
         kwargs[opt.TOKEN] = kwargs.pop("tokenTarget", kwargs[opt.TOKEN])
