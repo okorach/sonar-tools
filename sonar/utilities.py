@@ -38,6 +38,8 @@ import requests
 import sonar.logging as log
 from sonar import version, errcodes
 from sonar.util import types
+import sonar.utilities
+import cli.options as opt
 
 
 ISO_DATE_FORMAT = "%04d-%02d-%02d"
@@ -620,13 +622,15 @@ def class_name(obj: object) -> str:
 def convert_args(args: object, second_platform: bool = False) -> dict[str, str]:
     """Converts CLI args int kwargs compatible with a platform"""
     kwargs = vars(args).copy()
-    kwargs["org"] = kwargs.pop("organization", None)
-    kwargs["cert_file"] = kwargs.pop("clientCert", None)
-    kwargs["http_timeout"] = kwargs.pop("httpTimeout", None)
+    kwargs["org"] = kwargs.pop(opt.ORG, None)
+    kwargs["cert_file"] = kwargs.pop(opt.CERT, None)
+     
     if second_platform:
-        kwargs["url"] = kwargs.pop("urlTarget", kwargs["url"])
-        kwargs["token"] = kwargs.pop("tokenTarget", kwargs["token"])
-        kwargs["org"] = kwargs.pop("organizationTarget", kwargs["org"])
+        kwargs[opt.URL] = kwargs.pop("urlTarget", kwargs[opt.URL])
+        kwargs[opt.TOKEN] = kwargs.pop("tokenTarget", kwargs[opt.TOKEN])
+        kwargs[opt.ORG] = kwargs.pop("organizationTarget", kwargs[opt.ORG])
+    default_timeout = 20 if is_sonarcloud_url(kwargs[opt.URL]) else 10
+    kwargs["http_timeout"] = kwargs.pop(opt.HTTP_TIMEOUT, default_timeout)
     return kwargs
 
 
