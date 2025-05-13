@@ -38,7 +38,6 @@ import requests
 import sonar.logging as log
 from sonar import version, errcodes
 from sonar.util import types
-import sonar.utilities
 import cli.options as opt
 
 
