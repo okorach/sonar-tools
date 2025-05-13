@@ -414,18 +414,28 @@ class Finding(sq.SqObject):
         approx_matches = []
         match_but_modified = []
         log.info("Searching for an exact match of %s", str(self))
+        candidate_match = None
+        line_gap = None
         for finding in findings_list:
             if self is finding:
                 log.debug("%s and %s are the same issue", str(self), str(finding))
                 continue
-            if finding.strictly_identical_to(self, ignore_component, **kwargs):
-                if finding.can_be_synced(sync_user):
-                    log.info("%s and %s are exact match and can be synced", str(self), str(finding))
-                    exact_matches.append(finding)
-                else:
-                    log.info("%s and %s are exact match but target already has changes, cannot be synced", str(self), str(finding))
-                    match_but_modified.append(finding)
-                return exact_matches, approx_matches, match_but_modified
+            if not finding.strictly_identical_to(self, ignore_component, **kwargs):
+                continue
+            if line_gap is None or abs(finding.line - self.line) < line_gap:
+                line_gap = abs(finding.line - self.line)
+                candidate_match = finding
+                log.info("%s and %s are exact match with a line gap of %d", str(self), str(candidate_match), line_gap)
+            if line_gap == 0:
+                break
+        if line_gap is not None:
+            if candidate_match.can_be_synced(sync_user):
+                log.info("%s and %s are exact match and can be synced", str(self), str(candidate_match))
+                exact_matches.append(candidate_match)
+            else:
+                log.info("%s and %s are exact match but target already has changes, cannot be synced", str(self), str(candidate_match))
+                match_but_modified.append(candidate_match)
+            return exact_matches, approx_matches, match_but_modified
 
         log.info("No exact match, searching for an approximate match of %s", str(self))
         for finding in findings_list:

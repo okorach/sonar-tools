@@ -61,22 +61,46 @@ Synchronizes issues changelog between:
   `sonar-issue-sync --login myuser@github -k myProject -u https://sonar.acme.com -t <sourceToken> -K myProject -U https://sonarcloud.io -T <targetToken> -O myOrganization`
 
 
-Issues changelog synchronization includes:
-- Change of issue type
-- Change of issue severity
-- Issue marked as Won't fix or False positive
+Findings synchronization includes:
+**Issues**
+- Change of issue type, for standard experience
+- Change of issue severity - both for standard experience and MQR mode - (except when target is SonarQube Cloud, issue severity can't be changed)
+- Issue marked as False positive or Accepted (or Won't fix for older SonarQube instances)
 - Issue re-opened
 - Issue assignments
-- Custom tags added to the issue
+- Issue comments
+**Hotspots**
+- Custom tags added to issues
+- Hotspot marked as Safe, Acknowledged or Fixed
+- Hotspots re-opened as To Review
+- Hotspots assignments
+- Hotspots comments
 
-## Limitations
+What is not always synchronized:
+- On SonarQube Cloud, Hotspots can't be acknowledged. This hotspot status does not exists
+- On SonarQube Cloud, issues severity can't be changed
+- If the assignee does not exists on the target instance, Issue and hotspot assignment can't happen
+- On SonarQube Server in MQR mode and on SonarQube Cloud, issues can't be changed of type (Vulnerability, Bug or Code Smell).
+  This is only possible with SonarQube Server in standard experience. And this is however deprecated and may no lonbger be possible in the future.
 
-`sonar-findings-sync` has a couple of limitations:
-- Security Hotspots are not (yet) synchronized
-- The source and target issues are synchronized only:
-  - When there is a 100% certainty that the issues are the same. In some rare corner cases it can be impossible to be certain that 2 issues are the same.
-  - When the target issue has currently no changelog (except from the synchronization service account changes). If a issue
-  has been manually modified by another user on the target issue, the synchronization can't happen anymore
+## Matching algorithm
+
+Matching algorithm to synchronize findings:
+- Findings are considered a clean match when they have: Same rule, hash, message and file
+  If there are several clean target match for a given source, the target whose line number is the closest to the source is considered the best match
+- If there is a clean match, the findings are synchronized
+- If there is no clean match, approximate matches are searched
+- Findings are considered approximate match if they get a score of 8/9 on the below criteria:
+  - Same message: 2 points, Different but very similar message (levenshtein distance) 1 poimnt
+  - Same file: 1 point
+  - Same line: 1 point
+  - Same component: 1 point
+  - Same author: 1 point
+  - Same type: 1 point
+  - Same severity: 1 point
+  - Same hash: 1 point
+- If there is more than 1 approximate match, the findings are not synchronized and the mutliple matches are reported in the issue sync report
+- If there is a single approximate match, then the findings are synchronized
 
 When an issue could not be synchronized because of one of the above reasons, this is reported in the `sonar-findings-sync` report.
 Whenever a close enough issue was found but not sync'ed (because not 100% certain to be identical), the close issue is provided in the report to complete synchronization manually if desired.
