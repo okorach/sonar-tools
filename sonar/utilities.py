@@ -625,9 +625,9 @@ def convert_args(args: object, second_platform: bool = False) -> dict[str, str]:
     kwargs["cert_file"] = kwargs.pop(opt.CERT, None)
 
     if second_platform:
-        kwargs[opt.URL] = kwargs.pop("urlTarget", kwargs[opt.URL])
-        kwargs[opt.TOKEN] = kwargs.pop("tokenTarget", kwargs[opt.TOKEN])
-        kwargs[opt.ORG] = kwargs.pop("organizationTarget", kwargs[opt.ORG])
+        kwargs[opt.URL] = kwargs.pop(opt.URL_TARGET, kwargs[opt.URL])
+        kwargs[opt.TOKEN] = kwargs.pop(opt.TOKEN_TARGET, kwargs[opt.TOKEN])
+        kwargs[opt.ORG] = kwargs.pop(opt.ORG_TARGET, kwargs[opt.ORG])
     default_timeout = 20 if is_sonarcloud_url(kwargs[opt.URL]) else 10
     kwargs["http_timeout"] = kwargs.pop(opt.HTTP_TIMEOUT, default_timeout)
     return kwargs
