@@ -13,9 +13,8 @@ Note: Replaces `sonar-issues-sync`, which deprecated
 
 ## Usage
 
-`sonar-findings-sync --login <user> -k <projectKey> [-b <sourceBranch>] [-B <targetBranch>] [-K <targetProjectKey>] [-B <targetBranch>] [-U <targetUrl> [-T <targetToken>] [-f <file>] [--nolink] [--nocomment] [--since <YYYY-MM-DD>] [-h] [-u <sqUrl>] [-t <token>] [-v <debugLevel>]`
+`sonar-findings-sync -k <projectKey> [-b <sourceBranch>] [-B <targetBranch>] [-K <targetProjectKey>] [-B <targetBranch>] [-U <targetUrl> [-T <targetToken>] [-f <file>] [--nolink] [--nocomment] [--since <YYYY-MM-DD>] [-h] [-u <sqUrl>] [-t <token>] [-v <debugLevel>]`
 
-- `--login`: **DEPRECATED**. Login of the dedicated technical account used for syncing. This parameter is now automatically deducted from the target token. Using a dedicated account for sync'ing is recommended to detect previous synchronization when issue sync is performed repeatedly.
 - `-k <projectKey>`: Key of the source project.
 - `-K <projectKey>`: Optional. Key of the target project. If not specified, the same project key as the source is assumed
 - `-b <sourceBranch>`: Optional. Name of the source branch. Only required when doing synchronization between 2 branches of a same project of a same instance.
@@ -29,7 +28,7 @@ Note: Replaces `sonar-issues-sync`, which deprecated
 the target token.
 - `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
 
-:warning: Note about `--login` and `-t` and `-T`: It is **strongly recommended** to run `sonar-findings-sync` with the credentials of a specific service account dedicated to issues synchronization. This will allow to recognize automatic synchronization changes by the author of those changes. This token is either the one provided with `-t`when the synchronization is within a same SonarQube instance/SonarCloud (for instance 2 branches of a same project), or `-T` when synchronizing between 2 different SonarQube instances (The `-T <token>` corresponding to a user on the **target** SonarQube instance in that case)
+:warning: Note about `-t` and `-T`: It is **strongly recommended** to run `sonar-findings-sync` with the credentials of a specific service account dedicated to issues synchronization on the target. This will allow to recognize automatic synchronization changes by the author of those changes. This token is either the one provided with `-t`when the synchronization is within a same SonarQube instance/SonarCloud (for instance 2 branches of a same project), or `-T` when synchronizing between 2 different SonarQube instances (The `-T <token>` corresponding to a user on the **target** SonarQube instance in that case)
 
 ## Required Permissions
 
@@ -41,24 +40,24 @@ To be able to perform the sync, the token provided to `sonar-findings-sync` shou
 ## Example
 
 :warning: The `sonar-issue-sync` tool MUST be run with a specific service account (to be named on the command line) so that `sonar-issue-sync` can recognize past synchronizations and complement them if some updates happened on an issue that has already been synchronized before with the same service account.
-`sonar-findings-sync --login <serviceAccount> -t <tokenOfThatServiceAccount> ...` when syncing within a same instance
-`sonar-findings-sync --login <targetInstanceServiceAccount> -T <tokenOfThatServiceAccount> ...` when syncing between 2 instances
+`sonar-findings-sync -t <tokenOfServiceAccount> ...` when syncing within a same instance
+`sonar-findings-sync -T <tokenOfServiceAccount> ...` when syncing between 2 instances
 
 Synchronizes issues changelog between:
 - All branches of a same project:
-  `sonar-issue-sync --login issue-syncer -u https://sonar.acme.com -t abcdefghij -k <projectKey>`
+  `sonar-issue-sync -u https://sonar.acme.com -t abcdefghij -k <projectKey>`
 - 2 different branches of a same project
    (URL is read from `$SONAR_HOST_URL` and `http://localhost:9000` otherwise, token is read from `$SONAR_TOKEN`)
-  `sonar-issue-sync --login issue-syncer -k <projectKey> -b <sourceBranch> -B <targetBranch>`
+  `sonar-issue-sync -k <projectKey> -b <sourceBranch> -B <targetBranch>`
 - All branches with same name between 2 different projects of a same SonarQube instance:
-  `sonar-issue-sync --login issue-syncer -k <sourceProjectKey> -K <targetProject>`
+  `sonar-issue-sync -k <sourceProjectKey> -K <targetProject>`
 - 2 branches of 2 different projects of a same SonarQube instance:
-  `sonar-issue-sync --login issue-syncer -k <sourceProjectKey> -b <sourceBranch> -K <targetProject> -B <targetBranch>`
+  `sonar-issue-sync -k <sourceProjectKey> -b <sourceBranch> -K <targetProject> -B <targetBranch>`
 - All branches with same name between 2 projects from different SonarQube instances:
-  `sonar-issue-sync --login issue-syncer -k <sourceProjectKey> -u <sourceUrl> -t <sourceToken> -K <targetProjectKey> -U <targetUrl> -T <targetToken>`
+  `sonar-issue-sync -k <sourceProjectKey> -u <sourceUrl> -t <sourceToken> -K <targetProjectKey> -U <targetUrl> -T <targetToken>`
   There is no requirements on the 2 SonarQube instances: They do not need to be of same edition, version or have the same list of plugins
 - **main** branch of a source project key **myProject** in a SonarQube instance and **master** branch of the same project in SonarCloud:
-  `sonar-issue-sync --login myuser@github -k myProject -u https://sonar.acme.com -t <sourceToken> -K myProject -U https://sonarcloud.io -T <targetToken> -O myOrganization`
+  `sonar-issue-sync -k myProject -u https://sonar.acme.com -t <sourceToken> -K myProject -U https://sonarcloud.io -T <targetToken> -O myOrganization`
 
 
 Findings synchronization includes:
