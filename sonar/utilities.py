@@ -623,7 +623,7 @@ def convert_args(args: object, second_platform: bool = False) -> dict[str, str]:
     if second_platform:
         kwargs[opt.URL] = kwargs.pop(opt.URL_TARGET, kwargs[opt.URL])
         kwargs[opt.TOKEN] = kwargs.pop(opt.TOKEN_TARGET, kwargs[opt.TOKEN])
-        kwargs[opt.ORG] = kwargs.pop(opt.ORG_TARGET, kwargs.get(opt.ORG, None))
+        kwargs["org"] = kwargs.pop(opt.ORG_TARGET, kwargs.get(opt.ORG, None))
     default_timeout = 20 if is_sonarcloud_url(kwargs[opt.URL]) else 10
     kwargs["http_timeout"] = kwargs.pop(opt.HTTP_TIMEOUT, default_timeout)
     return kwargs
