@@ -861,11 +861,11 @@ def __lta_and_latest() -> tuple[tuple[int, int, int], tuple[int, int, int]]:
                 print(requests.get(_UPDATE_CENTER, headers={"user-agent": _SONAR_TOOLS_AGENT}, timeout=10).text, file=fp)
             with open(tmpfile, "r", encoding="utf-8") as fp:
                 upd_center_props = jprops.load_properties(fp)
-            v = upd_center_props.get("ltsVersion", "9.9.0").split(".")
+            v = upd_center_props.get("ltaVersion", "2025.1.1").split(".")
             if len(v) == 2:
                 v.append("0")
             LTA = tuple(int(n) for n in v)
-            v = upd_center_props.get("publicVersions", "10.4").split(",")[-1].split(".")
+            v = upd_center_props.get("sqs", "2025.2").split(",")[-1].split(".")
             if len(v) == 2:
                 v.append("0")
             LATEST = tuple(int(n) for n in v)
