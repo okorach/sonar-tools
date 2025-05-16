@@ -1710,11 +1710,13 @@ def __export_zip_thread(queue: Queue[Project], results: list[dict[str, str]], st
             queue.task_done()
             util.exit_fatal("Zip export unsupported on your SonarQube version", errcodes.UNSUPPORTED_OPERATION)
         status = dump["status"]
-        statuses[status] = 1 if status not in statuses else statuses[status] + 1
         data = {"key": project.key, "status": status}
         if status == "SUCCESS":
             data["file"] = os.path.basename(dump["file"])
             data["path"] = dump["file"]
+        elif re.match(r"\d\d\d .*", status):
+            status = f"HTTP Error {status[0:3]}"
+        statuses[status] = 1 if status not in statuses else statuses[status] + 1
         results.append(data)
         log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses.items()]))
         queue.task_done()
