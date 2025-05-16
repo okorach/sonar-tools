@@ -165,7 +165,7 @@ def __sync_curated_list(
     counters["nb_to_sync"] = len(src_findings)
     name = "finding" if len(src_findings) == 0 else util.class_name(src_findings[0]).lower()
     report = []
-    log.info("Curated list: %d %ss to sync, %d %ss in target", len(src_findings), name, len(tgt_findings), name)
+    log.debug("Curated list: %d %ss to sync, %d %ss in target", len(src_findings), name, len(tgt_findings), name)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=settings.get(SYNC_THREADS, 8), thread_name_prefix="FindingSync") as executor:
         futures = [executor.submit(__sync_one_finding, finding, tgt_findings, settings) for finding in src_findings]
@@ -180,7 +180,7 @@ def __sync_curated_list(
             except Exception as e:
                 counters["exception"] += 1
                 log.error(f"Task raised an exception: {e}")
-    log.info("Curated list sync results: %s", util.json_dump(counters))
+    log.debug("Curated list sync results: %s", util.json_dump(counters))
     return (report, counters)
 
 
