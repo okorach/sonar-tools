@@ -330,6 +330,7 @@ class Branch(components.Component):
             another_branch,
             sync_settings=sync_settings,
         )
+        log.info("Issue sync result = %s", util.json_dump(counters))
         log.info("Syncing %s (%s) and %s (%s) hotspots", str(self), self.base_url(), str(another_branch), another_branch.endpoint.local_url)
         (tmp_report, tmp_counts) = sync_lists(
             list(self.get_hotspots().values()),
@@ -338,6 +339,7 @@ class Branch(components.Component):
             another_branch,
             sync_settings=sync_settings,
         )
+        log.info("Hotspots sync result = %s", util.json_dump(tmp_counts))
         report += tmp_report
         counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
