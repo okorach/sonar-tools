@@ -28,6 +28,7 @@ from __future__ import annotations
 import os
 import re
 import json
+import concurrent.futures
 from datetime import datetime
 
 from typing import Optional
@@ -1700,26 +1701,18 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             log.info("Imported %d/%d projects (%d%%)", i, nb_projects, (i * 100 // nb_projects))
 
 
-def __export_zip_thread(queue: Queue[Project], results: list[dict[str, str]], statuses: dict[str, int], export_timeout: int) -> None:
+def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]:
     """Thread callable for project zip export"""
-    while not queue.empty():
-        project = queue.get()
-        try:
-            dump = project.export_zip(timeout=export_timeout)
-        except exceptions.UnsupportedOperation:
-            queue.task_done()
-            util.exit_fatal("Zip export unsupported on your SonarQube version", errcodes.UNSUPPORTED_OPERATION)
-        status = dump["status"]
-        data = {"key": project.key, "status": status}
-        if status == "SUCCESS":
-            data["file"] = os.path.basename(dump["file"])
-            data["path"] = dump["file"]
-        elif re.match(r"\d\d\d .*", status):
-            status = f"HTTP Error {status[0:3]}"
-        statuses[status] = 1 if status not in statuses else statuses[status] + 1
-        results.append(data)
-        log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses.items()]))
-        queue.task_done()
+    try:
+        dump = project.export_zip(timeout=export_timeout)
+    except exceptions.UnsupportedOperation:
+        util.exit_fatal("Zip export unsupported on your SonarQube version", errcodes.UNSUPPORTED_OPERATION)
+    status = dump["status"]
+    data = {"key": project.key, "status": status}
+    if status == "SUCCESS":
+        data["file"] = os.path.basename(dump["file"])
+        data["path"] = dump["file"]
+    return data
 
 
 def export_zip(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, export_timeout: int = 30) -> dict[str, str]:
@@ -1734,27 +1727,40 @@ def export_zip(endpoint: pf.Platform, key_list: types.KeyList = None, threads: i
     :return: list of exported projects and platform version
     :rtype: dict
     """
-    statuses, exports = {}, []
+    statuses, results = {}, []
     projects_list = get_list(endpoint, key_list)
     nbr_projects = len(projects_list)
     log.info("Exporting %d projects to export", nbr_projects)
-    q = Queue(maxsize=0)
-    for p in projects_list.values():
-        q.put(p)
-    for i in range(threads):
-        log.debug("Starting project export thread %d", i)
-        worker = Thread(target=__export_zip_thread, args=(q, exports, statuses, export_timeout))
-        worker.setDaemon(True)
-        worker.setName(f"ZipExport{i}")
-        worker.start()
-    q.join()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipExport") as executor:
+        futures = [executor.submit(__export_zip_thread, proj, export_timeout) for proj in projects_list.values()]
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                result = future.result(timeout=export_timeout + 10)  # Retrieve result or raise an exception
+                status = result["status"]
+            except TimeoutError as e:
+                status = f"TIMEOUT Exception {e}"
+                result = {"key": "UNKNOWN", "status": status}
+                log.error(f"Project Zip export timed out after {export_timeout} seconds for {str(future)}.")
+            except Exception as e:
+                status = f"EXCEPTION {e}"
+                result = {"key": "UNKNOWN", "status": status}
+
+            if re.match(r"\d\d\d .*", status):
+                status = f"HTTP Error {status[0:3]}"
+            if status.startswith("TIMEOUT"):
+                status = "TIMEOUT"
+            if status.startswith("EXCEPTION"):
+                status = "EXCEPTION"
+            results.append(result)
+            statuses[status] = 1 if status not in statuses else statuses[status] + 1
+            log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses.items()]))
 
     return {
         "sonarqube_environment": {
             "version": ".".join([str(n) for n in endpoint.version()[:2]]),
             "plugins": endpoint.plugins(),
         },
-        "project_exports": exports,
+        "project_exports": results,
     }
 
 
