@@ -340,11 +340,7 @@ def int_memory(string: str) -> Union[int, None]:
 
 def dict_add(dict1: dict[str, int], dict2: dict[str, int]) -> dict[str, int]:
     """Adds values of 2 dicts"""
-    for k in dict2:
-        if k not in dict1:
-            dict1[k] = 0
-        dict1[k] += dict2[k]
-    return dict1
+    return {k: dict1.get(k, 0) + dict2.get(k, 0) for k in dict1.keys() | dict2.keys()}
 
 
 def exit_fatal(err_msg: str, exit_code: int) -> None:
