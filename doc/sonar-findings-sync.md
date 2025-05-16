@@ -60,6 +60,8 @@ Synchronizes issues changelog between:
   `sonar-issue-sync -k myProject -u https://sonar.acme.com -t <sourceToken> -K myProject -U https://sonarcloud.io -T <targetToken> -O myOrganization`
 
 
+# What is synchronized
+
 Findings synchronization includes:
 **Issues**
 - Change of issue type, for standard experience
@@ -75,12 +77,15 @@ Findings synchronization includes:
 - Hotspots assignments
 - Hotspots comments
 
-What is not always synchronized:
+# What cannot always be synchronized
+
 - On SonarQube Cloud, Hotspots can't be acknowledged. This hotspot status does not exists
 - On SonarQube Cloud, issues severity can't be changed
 - If the assignee does not exists on the target instance, Issue and hotspot assignment can't happen
 - On SonarQube Server in MQR mode and on SonarQube Cloud, issues can't be changed of type (Vulnerability, Bug or Code Smell).
   This is only possible with SonarQube Server in standard experience. And this is however deprecated and may no lonbger be possible in the future.
+- When multiple findings approximately match the source finding, none are synchronized and the list of possible matches is listed so that humans can manually find and synchronized the finding (this is a rare corner case)
+- If the code was not analyzed with the same environment or with the same exact code, some findings may be present in the source and not in the target in which case the source can't be synchronized
 
 ## Matching algorithm
 
