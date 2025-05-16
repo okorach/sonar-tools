@@ -135,10 +135,10 @@ export SONAR_TOKEN=squ_83356c9b2db891d45da2a119a29cdc4d03fe654e
 sonar-findings-sync -k myProjKey -b develop -B master >sync_2_branches.json
 
 # Syncs issues from projectKey1 main branch to projectKey2 main branch
-sonar-findings-sync -k projectKey1 -K projectKey2 >sync_2_projects.json
+sonar-findings-sync -k projectKey1 -K projectKey2 -f sync_2_projects.json
 
 # Syncs issues from projectKey1 main branch to projectKey2 main branch
-sonar-findings-sync -k myPorjectKey -U https://anothersonar.acme-corp.com -t d04d671eaec0272b6c83c056ac363f9b78919b06 -K otherInstanceProjKey >sync_2_instances.json
+sonar-findings-sync -k myProjectKey -U https://anothersonar.acme-corp.com -t d04d671eaec0272b6c83c056ac363f9b78919b06 -K otherInstanceProjKey >sync_2_instances.json
 ```
 
 # License
