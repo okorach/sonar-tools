@@ -58,8 +58,8 @@ _UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-cen
 _APP_JSON = "application/json"
 LTA = None
 LATEST = None
-_HARDCODED_LTA = (9, 9, 6)
-_HARDCODED_LATEST = (10, 6, 0)
+_HARDCODED_LTA = (2025, 1, 1)
+_HARDCODED_LATEST = (2025, 2, 0)
 
 _SERVER_ID_KEY = "Server ID"
 
