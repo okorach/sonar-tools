@@ -144,26 +144,28 @@ def __sync_one_finding(
         ignore_component=settings[SYNC_IGNORE_COMPONENTS],
     )
     if len(exact_siblings) == 1:
-        return EXACT_MATCH, __process_exact_sibling(src_finding, exact_siblings[0], settings)
+        code, report = EXACT_MATCH, __process_exact_sibling(src_finding, exact_siblings[0], settings)
     elif len(exact_siblings) > 1:
-        return MULTIPLE_MATCHES, __process_multiple_exact_siblings(src_finding, exact_siblings)
+        code, report = MULTIPLE_MATCHES, __process_multiple_exact_siblings(src_finding, exact_siblings)
     elif approx_siblings:
-        return APPROX_MATCH, __process_approx_siblings(src_finding, approx_siblings)
+        code, report = APPROX_MATCH, __process_approx_siblings(src_finding, approx_siblings)
     elif modified_siblings:
-        return MODIFIED_MATCH, __process_modified_siblings(src_finding, modified_siblings)
-
-    return NO_MATCH, __process_no_match(src_finding)
+        code, report = MODIFIED_MATCH, __process_modified_siblings(src_finding, modified_siblings)
+    else:
+        code, report = NO_MATCH, __process_no_match(src_finding)
+    log.info("Syncing %s: result = %s", str(src_finding), code)
+    return code, report
 
 
 def __sync_curated_list(
     src_findings: list[findings.Finding], tgt_findings: list[findings.Finding], settings: types.ConfigSettings
 ) -> tuple[list[dict[str, str]], dict[str, int]]:
     """Syncs 2 list of findings"""
-    counters = {k: 0 for k in (EXACT_MATCH, APPROX_MATCH, MODIFIED_MATCH, MULTIPLE_MATCHES, NO_MATCH)}
+    counters = {k: 0 for k in (EXACT_MATCH, APPROX_MATCH, MODIFIED_MATCH, MULTIPLE_MATCHES, NO_MATCH, "timeout", "exception")}
     counters["nb_to_sync"] = len(src_findings)
     name = "finding" if len(src_findings) == 0 else util.class_name(src_findings[0]).lower()
     report = []
-    log.info("%d %ss to sync, %d %ss in target", len(src_findings), name, len(tgt_findings), name)
+    log.debug("Curated list: %d %ss to sync, %d %ss in target", len(src_findings), name, len(tgt_findings), name)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=settings.get(SYNC_THREADS, 8), thread_name_prefix="FindingSync") as executor:
         futures = [executor.submit(__sync_one_finding, finding, tgt_findings, settings) for finding in src_findings]
@@ -173,10 +175,12 @@ def __sync_curated_list(
                 report.append(result)
                 counters[match_type] += 1
             except TimeoutError:
+                counters["timeout"] += 1
                 log.error(f"Finding sync timed out after 60 seconds for {str(future)}, sync killed.")
             except Exception as e:
+                counters["exception"] += 1
                 log.error(f"Task raised an exception: {e}")
-
+    log.debug("Curated list sync results: %s", util.json_dump(counters))
     return (report, counters)
 
 
@@ -195,6 +199,7 @@ def sync_lists(
 
     interesting_src_findings = []
     counters = {k: 0 for k in ("nb_to_sync", "nb_applies", "nb_approx_match", "nb_tgt_has_changelog", "nb_multiple_matches")}
+    log.info("source has %d finding candidates to sync, target has %d", len(src_findings), len(tgt_findings))
     if len(src_findings) == 0 or len(tgt_findings) == 0:
         log.info("source or target list of findings to sync empty, skipping...")
         return ([], counters)

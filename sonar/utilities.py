@@ -340,11 +340,7 @@ def int_memory(string: str) -> Union[int, None]:
 
 def dict_add(dict1: dict[str, int], dict2: dict[str, int]) -> dict[str, int]:
     """Adds values of 2 dicts"""
-    for k in dict2:
-        if k not in dict1:
-            dict1[k] = 0
-        dict1[k] += dict2[k]
-    return dict1
+    return {k: dict1.get(k, 0) + dict2.get(k, 0) for k in dict1.keys() | dict2.keys()}
 
 
 def exit_fatal(err_msg: str, exit_code: int) -> None:
@@ -627,7 +623,7 @@ def convert_args(args: object, second_platform: bool = False) -> dict[str, str]:
     if second_platform:
         kwargs[opt.URL] = kwargs.pop(opt.URL_TARGET, kwargs[opt.URL])
         kwargs[opt.TOKEN] = kwargs.pop(opt.TOKEN_TARGET, kwargs[opt.TOKEN])
-        kwargs[opt.ORG] = kwargs.pop(opt.ORG_TARGET, kwargs.get(opt.ORG, None))
+        kwargs["org"] = kwargs.pop(opt.ORG_TARGET, kwargs.get(opt.ORG, None))
     default_timeout = 20 if is_sonarcloud_url(kwargs[opt.URL]) else 10
     kwargs["http_timeout"] = kwargs.pop(opt.HTTP_TIMEOUT, default_timeout)
     return kwargs
