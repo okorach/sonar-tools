@@ -20,7 +20,7 @@
 """Findings abstraction"""
 
 from __future__ import annotations
-import re
+import concurrent.futures
 import datetime
 from typing import Optional
 
@@ -492,14 +492,11 @@ def to_csv_header(endpoint: pf.Platform) -> list[str]:
         return list(LEGACY_CSV_EXPORT_FIELDS)
 
 
-def __get_changelog(queue: Queue[Finding], added_after: datetime.datetime = None) -> None:
+def __get_changelog(finding: Finding, added_after: Optional[datetime.datetime] = None) -> Finding:
     """Collect the changelog and comments of an issue"""
-    while not queue.empty():
-        findings = queue.get()
-        findings.has_changelog(added_after=added_after)
-        findings.has_comments()
-        queue.task_done()
-    log.debug("Queue empty, exiting thread")
+    finding.has_changelog(added_after=added_after)
+    finding.has_comments()
+    return finding
 
 
 def get_changelogs(issue_list: list[Finding], added_after: datetime.datetime = None, threads: int = 8) -> None:
@@ -507,13 +504,10 @@ def get_changelogs(issue_list: list[Finding], added_after: datetime.datetime = N
     if len(issue_list) == 0:
         return
     log.info("Mass changelog collection for %d findings on %d threads", len(issue_list), threads)
-    q = Queue(maxsize=0)
-    for finding in issue_list:
-        q.put(finding)
-    for i in range(threads):
-        log.debug("Starting issue changelog thread %d", i)
-        worker = Thread(target=__get_changelog, args=(q, added_after))
-        worker.setDaemon(True)
-        worker.setName(f"Changelog{i}")
-        worker.start()
-    q.join()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="GetChangelog") as executor:
+        futures = [executor.submit(__get_changelog, finding, added_after) for finding in issue_list]
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                _ = future.result(timeout=30)
+            except Exception as e:
+                log.error(f"Changelog collection error {str(e)} for {str(future)}.")
