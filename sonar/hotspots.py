@@ -215,7 +215,7 @@ class Hotspot(findings.Finding):
         try:
             return self.post("hotspots/add_comment", params={"hotspot": self.key, "comment": comment}).ok
         except (ConnectionError, requests.RequestException) as e:
-            util.handle_error(e, "assigning hotspot", catch_all=True)
+            util.handle_error(e, "adding comment to hotspot", catch_all=True)
             return False
 
     def assign(self, assignee: Optional[str], comment: Optional[str] = None) -> bool:
@@ -226,12 +226,15 @@ class Hotspot(findings.Finding):
         :return: Whether the operation succeeded
         """
         try:
-            log.debug("Assigning %s to '%s'", str(self), str(assignee))
+            if assignee is None:
+                log.debug("Unassigning %s", str(self))
+            else:
+                log.debug("Assigning %s to '%s'", str(self), str(assignee))
             r = self.post("hotspots/assign", util.remove_nones({"hotspot": self.key, "assignee": assignee, "comment": comment}))
             if r.ok:
                 self.assignee = assignee
         except (ConnectionError, requests.RequestException) as e:
-            util.handle_error(e, "assigning hotspot", catch_all=True)
+            util.handle_error(e, "assigning/unassigning hotspot", catch_all=True)
             return False
         return r.ok
 
