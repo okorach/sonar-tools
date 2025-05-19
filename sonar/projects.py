@@ -1461,22 +1461,20 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
     return util.nbr_total_elements(json.loads(endpoint.get(Project.API[c.SEARCH], params=params).text))
 
 
-def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Project]:
+def search(endpoint: pf.Platform, params: types.ApiParams = None, threads: int = 8) -> dict[str, Project]:
     """Searches projects in SonarQube
 
-    :param endpoint: Reference to the SonarQube platform
-    :type endpoint: pf.Platform
-    :param params: list of parameters to narrow down the search
-    :type params: dict
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param dict params: list of parameters to narrow down the search
     :return: list of projects
     :rtype: dict{key: Project}
     """
     new_params = {} if params is None else params.copy()
     new_params["qualifiers"] = "TRK"
-    return sqobject.search_objects(endpoint=endpoint, object_class=Project, params=new_params)
+    return sqobject.search_objects(endpoint=endpoint, object_class=Project, params=new_params, threads=threads)
 
 
-def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Project]:
+def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, use_cache: bool = True) -> dict[str, Project]:
     """
     :param Platform endpoint: Reference to the SonarQube platform
     :param KeyList key_list: List of portfolios keys to get, if None or empty all portfolios are returned
@@ -1487,7 +1485,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 or not use_cache:
             log.info("Listing projects")
-            p_list = dict(sorted(search(endpoint=endpoint).items()))
+            p_list = dict(sorted(search(endpoint=endpoint, threads=threads).items()))
             global_setting = settings.Setting.read(key=settings.AI_CODE_FIX, endpoint=endpoint)
             if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
                 return p_list
@@ -1571,7 +1569,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         log.info("Auditing projects is disabled, audit skipped...")
         return []
     log.info("--- Auditing projects ---")
-    plist = get_list(endpoint, kwargs.get("key_list", None))
+    plist = get_list(endpoint, kwargs.get("key_list", None), threads=audit_settings.get("threads", 8))
     write_q = kwargs.get("write_q", None)
     problems = []
     audit_settings["NBR_PROJECTS"] = len(plist)
@@ -1632,7 +1630,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     key_list = kwargs.get("key_list", None)
 
     _ = [qp.projects() for qp in qualityprofiles.get_list(endpoint).values()]
-    proj_list = get_list(endpoint=endpoint, key_list=key_list)
+    proj_list = get_list(endpoint=endpoint, key_list=key_list, threads=export_settings.get("THREADS", 8))
     export_settings["NBR_PROJECTS"] = len(proj_list)
     export_settings["PROCESSED"] = 0
     log.info("Exporting %d projects", export_settings["NBR_PROJECTS"])
@@ -1728,7 +1726,7 @@ def export_zip(endpoint: pf.Platform, key_list: types.KeyList = None, threads: i
     :rtype: dict
     """
     statuses, results = {}, []
-    projects_list = get_list(endpoint, key_list)
+    projects_list = get_list(endpoint, key_list, threads=threads)
     nbr_projects = len(projects_list)
     log.info("Exporting %d projects to export", nbr_projects)
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipExport") as executor:
