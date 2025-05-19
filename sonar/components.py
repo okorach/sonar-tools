@@ -269,7 +269,10 @@ class Component(sq.SqObject):
         """
         :return: The AI code assurance status of a project or a branch
         """
-        log.debug("AI Code assurance version = %s", str(self.endpoint.version()))
+        version = self.endpoint.version()
+        log.debug("AI Code assurance version = %s", str(version))
+        if version < (10, 7, 0):
+            raise exceptions.UnsupportedOperation(f"AI code assurance is not available for {self.endpoint.edition()} edition version {str(version)}")
         api = "project/get_ai_code_assurance"
         if self.endpoint.version() >= (2025, 1, 0):
             api = "project_branches/get_ai_code_assurance"
@@ -279,7 +282,7 @@ class Component(sq.SqObject):
             utilities.handle_error(e, f"getting AI code assurance of {str(self)}", catch_all=True)
             if "Unknown url" in utilities.error_msg(e):
                 raise exceptions.UnsupportedOperation(
-                    f"AI code assurance is not available for {self.endpoint.edition()} edition version {str(self.endpoint.version())}"
+                    f"AI code assurance is not available for {self.endpoint.edition()} edition version {str(version)}"
                 )
         return None
 
