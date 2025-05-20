@@ -704,15 +704,15 @@ class Project(components.Component):
             write_q.put(problems)
         return problems
 
-    def export_zip(self, timeout: int = 180) -> dict[str, str]:
+    def export_zip(self, asynchronous: bool = False, timeout: int = 180) -> dict[str, str]:
         """Exports project as zip file, synchronously
 
-        :param timeout: timeout in seconds to complete the export operation
-        :type timeout: int
+        :param int timeout: timeout in seconds to complete the export operation
+        :param bool asynchronous: Whether to export the project asynchronously or not (if async, export_zip returns immediately)
         :return: export status (success/failure/timeout), and zip file path
         :rtype: dict
         """
-        log.info("Exporting %s (synchronously)", str(self))
+        log.info("Exporting %s (%s)", str(self), "asynchronously" if asynchronous else "synchronously")
         if self.endpoint.version() < (9, 2, 0) and self.endpoint.edition() not in (c.EE, c.DCE):
             raise exceptions.UnsupportedOperation(
                 "Project export is only available with Enterprise and Datacenter Edition, or with SonarQube 9.2 or higher for any Edition"
@@ -722,6 +722,8 @@ class Project(components.Component):
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"exporting zip of {str(self)}", catch_all=True)
             return {"status": str(e)}
+        if asynchronous:
+            return {"status": "ASYNC_SUCCESS"}
         data = json.loads(resp.text)
         status = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data).wait_for_completion(timeout=timeout)
         if status != tasks.SUCCESS:
@@ -731,34 +733,29 @@ class Project(components.Component):
         log.debug("%s export %s, dump file %s", str(self), status, dump_file)
         return {"status": status, "file": dump_file}
 
-    def export_async(self) -> Optional[str]:
-        """Export project as zip file, synchronously
-
-        :return: export taskId or None if starting the export failed
-        :rtype: str or None
-        """
-        log.info("Exporting %s (asynchronously)", str(self))
-        try:
-            return json.loads(self.post("project_dump/export", params={"key": self.key}).text)["taskId"]
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"exporting zip of {str(self)} asynchronously", catch_all=True)
-        return None
-
-    def import_zip(self) -> bool:
+    def import_zip(self, asynchronous: bool = False, timeout: int = 180) -> str:
         """Imports a project zip file in SonarQube
 
         :raises http.HTTPError:
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        log.info("Importing %s (asynchronously)", str(self))
+        mode = "asynchronously" if asynchronous else "synchronously"
+        log.info("Importing %s (%s)", str(self), mode)
         if self.endpoint.edition() not in (c.EE, c.DCE):
             raise exceptions.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
         try:
-            return self.post("project_dump/import", params={"key": self.key}).ok
+            resp = self.post("project_dump/import", params={"key": self.key})
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"importing zip of {str(self)} asynchronously", catch_all=True)
-        return False
+            if "Dump file does not exist" in util.sonar_error(e.response):
+                return "ZIP_FILE_MISSING"
+            util.handle_error(e, f"importing zip of {str(self)} {mode}", catch_all=True)
+        if asynchronous:
+            return "ASYNC_SUCCESS" if resp.status_code == HTTPStatus.OK else "FAILED/HTTP_ERROR"
+        data = json.loads(resp.text)
+        status = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data).wait_for_completion(timeout=timeout)
+        log.log(log.INFO if status == tasks.SUCCESS else log.ERROR, "%s import %s", str(self), status)
+        return status
 
     def get_branches_and_prs(self, filters: dict[str, str]) -> Optional[dict[str, object]]:
         """Get lists of branches and PR objects"""

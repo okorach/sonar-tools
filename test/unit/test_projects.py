@@ -91,7 +91,7 @@ def test_revision() -> None:
 def test_export_async() -> None:
     """test_export_async"""
     proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)
-    assert proj.export_async() is not None
+    assert proj.export_zip(asynchronous=True) == {"status": "ASYNC_SUCCESS"}
 
 
 def test_get_findings() -> None:
@@ -173,10 +173,12 @@ def test_wrong_key(get_test_project: Generator[projects.Project]) -> None:
         pytest.skip("Project import not available below Enterprise Edition")
     proj = get_test_project
     proj.key = util.NON_EXISTING_KEY
-    assert proj.export_async() is None
-    res = proj.export_zip()
+    res = proj.export_zip(asynchronous=True)
     assert "error" in res["status"].lower()
-    assert not proj.import_zip()
+    res = proj.export_zip(asynchronous=False)
+    assert "error" in res["status"].lower()
+    assert proj.import_zip(asynchronous=True) != "SUCCESS"
+    assert proj.import_zip(asynchronous=False) != "SUCCESS"
 
 
 def test_ci(get_test_project: Generator[projects.Project]) -> None:
