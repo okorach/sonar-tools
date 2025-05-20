@@ -85,16 +85,17 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
     i = 0
     statuses = {}
     for project in project_list:
+        log.info("Importing project key '%s'", project["key"])
         try:
             o_proj = projects.Project.create(key=project["key"], endpoint=endpoint, name=project["key"])
-            status = o_proj.import_zip()
-            s = f"IMPORT {status}"
         except exceptions.ObjectAlreadyExists:
-            s = "CREATE projectAlreadyExist"
-        if s in statuses:
-            statuses[s] += 1
+            o_proj = projects.Project.get_object(key=project["key"], endpoint=endpoint)
+        if o_proj.last_analysis() is None:
+            s = o_proj.import_zip()
         else:
-            statuses[s] = 1
+            s = "FAILED/PROJECT_ALREADY_EXISTS"
+
+        statuses[s] = statuses[s] + 1 if s in statuses else 1
         i += 1
         log.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), project["key"], s)
         log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses.items()]))
