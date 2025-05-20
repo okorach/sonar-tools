@@ -85,6 +85,9 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
     i = 0
     statuses = {}
     for project in project_list:
+        if project["status"] != "SUCCESS":
+            log.info("Project '%s' export did not succeed (status '%s'), import skipped...", project["key"], project["status"])
+            continue
         log.info("Importing project key '%s'", project["key"])
         try:
             o_proj = projects.Project.create(key=project["key"], endpoint=endpoint, name=project["key"])
