@@ -95,6 +95,8 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
             o_proj = projects.Project.get_object(key=project["key"], endpoint=endpoint)
         if o_proj.last_analysis() is None:
             s = o_proj.import_zip()
+            if s != "SUCCESS":
+                s = f"FAILED/{s}"
         else:
             s = "FAILED/PROJECT_ALREADY_EXISTS"
 

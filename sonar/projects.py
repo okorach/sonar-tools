@@ -753,8 +753,14 @@ class Project(components.Component):
         if asynchronous:
             return "ASYNC_SUCCESS" if resp.status_code == HTTPStatus.OK else "FAILED/HTTP_ERROR"
         data = json.loads(resp.text)
-        status = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data).wait_for_completion(timeout=timeout)
-        log.log(log.INFO if status == tasks.SUCCESS else log.ERROR, "%s import %s", str(self), status)
+        import_task = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data)
+        status = import_task.wait_for_completion(timeout=timeout)
+        log.log(log.INFO if status == tasks.SUCCESS else log.ERROR, "%s import background task %s", str(self), status)
+        if status != tasks.SUCCESS:
+            import_task._load_context(True)
+            error = import_task.error_details()[1].split("\n")[0]
+            log.error("%s import error %s", str(self), error)
+            status = f"BACKGROUND_TASK_{status}"
         return status
 
     def get_branches_and_prs(self, filters: dict[str, str]) -> Optional[dict[str, object]]:

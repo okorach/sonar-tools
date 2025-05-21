@@ -245,6 +245,7 @@ class Task(sq.SqObject):
         :rtype: tuple (errorMsg (str), stackTrace (str)
         """
         self._load_context()
+        log.debug("Background task error details: %s", str(self.sq_json))
         return (self.sq_json.get("errorMessage", None), self.sq_json.get("errorStacktrace", None))
 
     def error_message(self) -> Optional[str]:
