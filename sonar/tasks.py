@@ -97,9 +97,9 @@ class Task(sq.SqObject):
             return
         self._load_context()
 
-    def _load_context(self, force: bool = False) -> None:
+    def _load_context(self, use_cache: bool = True) -> None:
         """Loads a task context"""
-        if not force and self.sq_json is not None and ("scannerContext" in self.sq_json or not self.has_scanner_context()):
+        if use_cache and self.sq_json is not None and ("scannerContext" in self.sq_json or not self.has_scanner_context()):
             # Context already retrieved or not available
             return
         params = {"id": self.key, "additionalFields": "scannerContext,stacktrace"}
@@ -118,7 +118,7 @@ class Task(sq.SqObject):
         """Returns a background task scanner context field"""
         self._load()
         if field not in self.sq_json:
-            self._load_context(force=True)
+            self._load_context(use_cache=False)
         return self.sq_json[field]
 
     def type(self) -> str:
@@ -239,21 +239,21 @@ class Task(sq.SqObject):
         ctxt = self.scanner_context()
         return ctxt.get("sonar.scanner.app", "UNKNOWN").upper().replace("SCANNER", "").replace("MSBUILD", "DOTNET").replace("NPM", "CLI")
 
-    def error_details(self) -> tuple[str, str]:
+    def error_details(self, use_cache: bool = True) -> tuple[str, str]:
         """
         :return: The background task error details
         :rtype: tuple (errorMsg (str), stackTrace (str)
         """
-        self._load_context()
+        self._load_context(use_cache=use_cache)
         log.debug("Background task error details: %s", str(self.sq_json))
         return (self.sq_json.get("errorMessage", None), self.sq_json.get("errorStacktrace", None))
 
-    def error_message(self) -> Optional[str]:
+    def error_message(self, use_cache: bool = True) -> Optional[str]:
         """
         :return: The background task error message
         :rtype: str
         """
-        self._load_context()
+        self._load_context(use_cache=use_cache)
         return self.sq_json.get("errorMessage", None)
 
     def __audit_exclusions(self, exclusion_pattern: str, susp_exclusions: str, susp_exceptions: str) -> list[Problem]:

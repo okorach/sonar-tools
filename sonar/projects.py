@@ -757,8 +757,7 @@ class Project(components.Component):
         status = import_task.wait_for_completion(timeout=timeout)
         log.log(log.INFO if status == tasks.SUCCESS else log.ERROR, "%s import background task %s", str(self), status)
         if status != tasks.SUCCESS:
-            import_task._load_context(True)
-            error = import_task.error_details()[1].split("\n")[0]
+            error = import_task.error_details(use_cache=False)[1].split("\n")[0]
             log.error("%s import error %s", str(self), error)
             status = f"BACKGROUND_TASK_{status}"
         return status
