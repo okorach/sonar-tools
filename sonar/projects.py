@@ -1725,17 +1725,14 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
     return data
 
 
-def export_zip(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, export_timeout: int = 30) -> dict[str, str]:
+def export_zips(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, export_timeout: int = 30) -> dict[str, str]:
     """Export as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
     :param KeyList key_list: List of project keys to export, defaults to None (all projects)
-    :param threads: Number of parallel threads for export, defaults to 8
-    :type threads: int, optional
-    :param export_timeout: Tiemout to export the project, defaults to 30
-    :type export_timeout: int, optional
+    :param int threads: Number of parallel threads for export, defaults to 8
+    :param int export_timeout: Tiemout to export the project, defaults to 30
     :return: list of exported projects and platform version
-    :rtype: dict
     """
     statuses, results = {}, []
     projects_list = get_list(endpoint, key_list, threads=threads)
