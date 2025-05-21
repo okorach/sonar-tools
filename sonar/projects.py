@@ -707,8 +707,8 @@ class Project(components.Component):
     def export_zip(self, asynchronous: bool = False, timeout: int = 180) -> dict[str, str]:
         """Exports project as zip file, synchronously
 
-        :param int timeout: timeout in seconds to complete the export operation
         :param bool asynchronous: Whether to export the project asynchronously or not (if async, export_zip returns immediately)
+        :param int timeout: timeout in seconds to complete the export operation
         :return: export status (success/failure/timeout), and zip file path
         :rtype: dict
         """
@@ -735,8 +735,8 @@ class Project(components.Component):
 
     def import_zip(self, asynchronous: bool = False, timeout: int = 180) -> str:
         """Imports a project zip file in SonarQube
-
-        :raises http.HTTPError:
+        :param bool asynchronous: Whether to export the project asynchronously or not (if async, export_zip returns immediately)
+        :param int timeout: timeout in seconds to complete the export operation
         :return: Whether the operation succeeded
         :rtype: bool
         """
@@ -757,18 +757,7 @@ class Project(components.Component):
         status = import_task.wait_for_completion(timeout=timeout)
         log.log(log.INFO if status == tasks.SUCCESS else log.ERROR, "%s import background task %s", str(self), status)
         if status != tasks.SUCCESS:
-            errmsg = import_task.error_details(use_cache=False)[1].split("\n")[0]
-            short_err = ""
-            if "Dump file does not exist" in errmsg:
-                short_err = "ZIP_MISSING"
-            elif "Missing metadata file" in errmsg:
-                short_err = "ZIP_CORRUPTED"
-            elif "Project key in dump file" in errmsg and "does not match" in errmsg:
-                short_err = "ZIP_DOES_NOT_MATCH_PROJECT"
-            elif "Can not unzip file" in errmsg:
-                short_err = "CANNOT_UNZIP"
-            log.error("%s import error %s", str(self), errmsg)
-            status = f"BACKGROUND_TASK_{status}/{short_err}"
+            status = f"BACKGROUND_TASK_{status}/{import_task.short_error()}"
         return status
 
     def get_branches_and_prs(self, filters: dict[str, str]) -> Optional[dict[str, object]]:
@@ -1792,7 +1781,6 @@ def import_zips(endpoint: pf.Platform, file: str, threads: int = 2, import_timeo
     :param int threads: Number of parallel threads for export, defaults to 2
     :param int import_timeout: Tiemout to import the project, defaults to 60 s
     :return: import results
-    :rtype: dict
     """
 
     if endpoint.edition() not in (c.EE, c.DCE):
@@ -1823,6 +1811,7 @@ def import_zips(endpoint: pf.Platform, file: str, threads: int = 2, import_timeo
             i += 1
             log.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), project_key, status)
             log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses.items()]))
+    return statuses
 
 
 def convert_proj_for_yaml(proj_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
