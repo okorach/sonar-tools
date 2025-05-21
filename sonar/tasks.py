@@ -256,6 +256,23 @@ class Task(sq.SqObject):
         self._load_context(use_cache=use_cache)
         return self.sq_json.get("errorMessage", None)
 
+    def short_error(self) -> Optional[str]:
+        details = self.error_details(use_cache=False)[1]
+        if not details:
+            return "NO_ERROR"
+        errmsg = details.split("\n")[0]
+        short_err = errmsg
+        if "Dump file does not exist" in errmsg:
+            short_err = "ZIP_MISSING"
+        elif "Missing metadata file" in errmsg:
+            short_err = "ZIP_CORRUPTED"
+        elif "Project key in dump file" in errmsg and "does not match" in errmsg:
+            short_err = "ZIP_DOES_NOT_MATCH_PROJECT"
+        elif "Can not unzip file" in errmsg:
+            short_err = "CANNOT_UNZIP"
+        log.error("%s import error %s", str(self), errmsg)
+        return short_err
+
     def __audit_exclusions(self, exclusion_pattern: str, susp_exclusions: str, susp_exceptions: str) -> list[Problem]:
         """Audits a task exclusion patterns are returns found problems"""
         problems = []

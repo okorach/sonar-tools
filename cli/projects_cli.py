@@ -45,7 +45,7 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
         raise exceptions.UnsupportedOperation("Can't export projects on SonarCloud, aborting...")
     if ed in (c.CE, c.DE) and endpoint.version()[:2] < (9, 2):
         raise exceptions.UnsupportedOperation(f"Can't export projects on {ed} Edition before 9.2, aborting...")
-    dump = projects.export_zip(
+    dump = projects.export_zips(
         endpoint=endpoint, key_list=kwargs[options.KEYS], export_timeout=kwargs["exportTimeout"], threads=kwargs[options.NBR_THREADS]
     )
     with utilities.open_file(kwargs[options.REPORT_FILE]) as fd:
@@ -77,33 +77,8 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
             data = json.load(fd)
     except json.JSONDecodeError as e:
         raise options.ArgumentsError(f"JSON decoding error while reading file '{file}': {str(e)}")
-    project_list = data["project_exports"]
     __check_sq_environments(endpoint, data["sonarqube_environment"])
-
-    nb_projects = len(project_list)
-    log.info("%d projects to import", nb_projects)
-    i = 0
-    statuses = {}
-    for project in project_list:
-        if project["status"] != "SUCCESS":
-            log.info("Project '%s' export did not succeed (status '%s'), import skipped...", project["key"], project["status"])
-            continue
-        log.info("Importing project key '%s'", project["key"])
-        try:
-            o_proj = projects.Project.create(key=project["key"], endpoint=endpoint, name=project["key"])
-        except exceptions.ObjectAlreadyExists:
-            o_proj = projects.Project.get_object(key=project["key"], endpoint=endpoint)
-        if o_proj.last_analysis() is None:
-            s = o_proj.import_zip()
-            if s != "SUCCESS":
-                s = f"FAILED/{s}"
-        else:
-            s = "FAILED/PROJECT_ALREADY_EXISTS"
-
-        statuses[s] = statuses[s] + 1 if s in statuses else 1
-        i += 1
-        log.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), project["key"], s)
-        log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses.items()]))
+    projects.import_zips(endpoint, file, kwargs[options.NBR_THREADS], import_timeout=kwargs["exportTimeout"])
 
 
 def main() -> None:
