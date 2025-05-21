@@ -757,9 +757,18 @@ class Project(components.Component):
         status = import_task.wait_for_completion(timeout=timeout)
         log.log(log.INFO if status == tasks.SUCCESS else log.ERROR, "%s import background task %s", str(self), status)
         if status != tasks.SUCCESS:
-            error = import_task.error_details(use_cache=False)[1].split("\n")[0]
-            log.error("%s import error %s", str(self), error)
-            status = f"BACKGROUND_TASK_{status}"
+            errmsg = import_task.error_details(use_cache=False)[1].split("\n")[0]
+            short_err = ""
+            if "Dump file does not exist" in errmsg:
+                short_err = "ZIP_MISSING"
+            elif "Missing metadata file" in errmsg:
+                short_err = "ZIP_CORRUPTED"
+            elif "Project key in dump file" in errmsg and "does not match" in errmsg:
+                short_err = "ZIP_DOES_NOT_MATCH_PROJECT"
+            elif "Can not unzip file" in errmsg:
+                short_err = "CANNOT_UNZIP"
+            log.error("%s import error %s", str(self), errmsg)
+            status = f"BACKGROUND_TASK_{status}/{short_err}"
         return status
 
     def get_branches_and_prs(self, filters: dict[str, str]) -> Optional[dict[str, object]]:
@@ -1763,6 +1772,60 @@ def export_zip(endpoint: pf.Platform, key_list: types.KeyList = None, threads: i
         },
         "project_exports": results,
     }
+
+
+def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30) -> tuple[str, str]:
+    try:
+        o_proj = Project.create(key=project_key, endpoint=endpoint, name=project_key)
+    except exceptions.ObjectAlreadyExists:
+        o_proj = Project.get_object(key=project_key, endpoint=endpoint)
+    if o_proj.last_analysis() is None:
+        s = o_proj.import_zip(asynchronous=False, timeout=import_timeout)
+        if s != "SUCCESS":
+            s = f"FAILED/{s}"
+    else:
+        s = "FAILED/PROJECT_ALREADY_EXISTS"
+    return project_key, s
+
+
+def import_zips(endpoint: pf.Platform, file: str, threads: int = 2, import_timeout: int = 60) -> dict[str, str]:
+    """Imports as zip all or a list of projects
+
+    :param Platform endpoint: reference to the SonarQube platform
+    :param int threads: Number of parallel threads for export, defaults to 2
+    :param int import_timeout: Tiemout to import the project, defaults to 60 s
+    :return: import results
+    :rtype: dict
+    """
+
+    if endpoint.edition() not in (c.EE, c.DCE):
+        raise exceptions.UnsupportedOperation(f"Zip import unsupported on {endpoint.edition()} edition")
+    with open(file, "r", encoding="utf-8") as fd:
+        data = json.load(fd)
+    project_list = [projdata["key"] for projdata in data["project_exports"] if projdata["status"] == "SUCCESS"]
+    failed_list = [projdata["key"] for projdata in data["project_exports"] if projdata["status"] != "SUCCESS"]
+    log.info("Skipping import of %d projects since export was failed", len(failed_list))
+    # __check_sq_environments(endpoint, data["sonarqube_environment"])
+
+    nb_projects = len(project_list)
+    log.info("Importing zip of %d projects", nb_projects)
+    i = 0
+    statuses = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipImport") as executor:
+        futures = [executor.submit(import_zip, endpoint, proj, import_timeout) for proj in project_list]
+        for future in concurrent.futures.as_completed(futures):
+            project_key = "UNKNOWN"
+            try:
+                project_key, status = future.result(timeout=import_timeout + 10)  # Retrieve result or raise an exception
+            except TimeoutError as e:
+                status = f"TIMEOUT Exception {e}"
+                log.error(f"Project Zip import timed out after {import_timeout} seconds for {str(future)}.")
+            except Exception as e:
+                status = f"EXCEPTION {e}"
+            statuses[status] = statuses[status] + 1 if status in statuses else 1
+            i += 1
+            log.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), project_key, status)
+            log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses.items()]))
 
 
 def convert_proj_for_yaml(proj_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
