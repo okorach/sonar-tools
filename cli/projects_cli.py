@@ -90,11 +90,9 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
     statuses = projects.import_zips(endpoint, file, kwargs[options.NBR_THREADS], import_timeout=kwargs["exportTimeout"])
     for proj in data["projects"]:
         if proj["key"] in statuses:
-            proj["importStatus"] = statuses[proj["key"]]["importStatus"]
-            proj["importDate"] = statuses[proj["key"]]["importDate"]
+            proj |= statuses[proj["key"]]
         else:
-            proj.pop("importStatus", None)
-            proj.pop("importDate", None)
+            [proj.pop(k, None) for k in ("importStatus", "importDate", "importProjectUrl")]
     data["importSonarqubeEnvironment"] = {
         "url": endpoint.url(),
         "version": ".".join([str(n) for n in endpoint.version()[:2]]),
