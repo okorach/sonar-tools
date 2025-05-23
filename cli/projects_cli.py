@@ -77,8 +77,17 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
             data = json.load(fd)
     except json.JSONDecodeError as e:
         raise options.ArgumentsError(f"JSON decoding error while reading file '{file}': {str(e)}")
-    __check_sq_environments(endpoint, data["sonarqube_environment"])
-    projects.import_zips(endpoint, file, kwargs[options.NBR_THREADS], import_timeout=kwargs["exportTimeout"])
+    __check_sq_environments(endpoint, data["exportSonarqubeEnvironment"])
+    statuses = projects.import_zips(endpoint, file, kwargs[options.NBR_THREADS], import_timeout=kwargs["exportTimeout"])
+    for proj in data["projects"]:
+        if proj["key"] in statuses:
+            proj["importStatus"] = statuses[proj["key"]]["importStatus"]
+            proj["importDate"] = statuses[proj["key"]]["importDate"]
+        else:
+            proj.pop("importStatus", None)
+            proj.pop("importDate", None)
+    with open(file, "w", encoding="utf-8") as fd:
+        print(utilities.json_dump(data), file=fd)
 
 
 def main() -> None:

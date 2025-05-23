@@ -721,7 +721,10 @@ class Project(components.Component):
             resp = self.post("project_dump/export", params={"key": self.key})
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"exporting zip of {str(self)}", catch_all=True)
-            return {"status": str(e)}
+            errmsg = str(e)
+            if errmsg.startswith("403 Client Error"):
+                errmsg = "FAILED/INSUFFICIENT_PERMISSIONS"
+            return {"status": errmsg}
         if asynchronous:
             return {"status": "ASYNC_SUCCESS"}
         data = json.loads(resp.text)
@@ -735,7 +738,7 @@ class Project(components.Component):
 
     def import_zip(self, asynchronous: bool = False, timeout: int = 180) -> str:
         """Imports a project zip file in SonarQube
-        :param bool asynchronous: Whether to export the project asynchronously or not (if async, export_zip returns immediately)
+        :param bool asynchronous: Whether to export the project asynchronously or not (if async, import_zip returns immediately)
         :param int timeout: timeout in seconds to complete the export operation
         :return: Whether the operation succeeded
         :rtype: bool
@@ -1707,10 +1710,13 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
     except exceptions.UnsupportedOperation:
         util.exit_fatal("Zip export unsupported on your SonarQube version", errcodes.UNSUPPORTED_OPERATION)
     status = dump["status"]
-    data = {"key": project.key, "status": status}
+    log.debug("Exporting thread for %s done, status: %s", str(project), status)
+    data = {"key": project.key, "exportStatus": status}
     if status == "SUCCESS":
         data["file"] = os.path.basename(dump["file"])
-        data["path"] = dump["file"]
+        data["exportPath"] = dump["file"]
+        data["exportDate"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log.debug("Exporting thread for %s returns %s", str(project), str(data))
     return data
 
 
@@ -1732,14 +1738,14 @@ def export_zips(endpoint: pf.Platform, key_list: types.KeyList = None, threads: 
         for future in concurrent.futures.as_completed(futures):
             try:
                 result = future.result(timeout=export_timeout + 10)  # Retrieve result or raise an exception
-                status = result["status"]
+                status = result["exportStatus"]
             except TimeoutError as e:
                 status = f"TIMEOUT Exception {e}"
-                result = {"key": "UNKNOWN", "status": status}
+                result = {"key": "UNKNOWN", "exportStatus": status}
                 log.error(f"Project Zip export timed out after {export_timeout} seconds for {str(future)}.")
             except Exception as e:
                 status = f"EXCEPTION {e}"
-                result = {"key": "UNKNOWN", "status": status}
+                result = {"key": "UNKNOWN", "exportStatus": status}
 
             if re.match(r"\d\d\d .*", status):
                 status = f"HTTP Error {status[0:3]}"
@@ -1752,11 +1758,11 @@ def export_zips(endpoint: pf.Platform, key_list: types.KeyList = None, threads: 
             log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses.items()]))
 
     return {
-        "sonarqube_environment": {
+        "exportSonarqubeEnvironment": {
             "version": ".".join([str(n) for n in endpoint.version()[:2]]),
             "plugins": endpoint.plugins(),
         },
-        "project_exports": results,
+        "projects": results,
     }
 
 
@@ -1787,14 +1793,15 @@ def import_zips(endpoint: pf.Platform, file: str, threads: int = 2, import_timeo
         raise exceptions.UnsupportedOperation(f"Zip import unsupported on {endpoint.edition()} edition")
     with open(file, "r", encoding="utf-8") as fd:
         data = json.load(fd)
-    project_list = [projdata["key"] for projdata in data["project_exports"] if projdata["status"] == "SUCCESS"]
-    failed_list = [projdata["key"] for projdata in data["project_exports"] if projdata["status"] != "SUCCESS"]
+    project_list = [projdata["key"] for projdata in data["projects"] if projdata.get("exportStatus", "") == "SUCCESS"]
+    failed_list = [projdata["key"] for projdata in data["projects"] if projdata.get("exportStatus", "") != "SUCCESS"]
     log.info("Skipping import of %d projects since export was failed", len(failed_list))
-    # __check_sq_environments(endpoint, data["sonarqube_environment"])
+    # __check_sq_environments(endpoint, data["exportSonarqubeEnvironment"])
 
     nb_projects = len(project_list)
     log.info("Importing zip of %d projects", nb_projects)
     i = 0
+    statuses_count = {}
     statuses = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipImport") as executor:
         futures = [executor.submit(import_zip, endpoint, proj, import_timeout) for proj in project_list]
@@ -1807,10 +1814,12 @@ def import_zips(endpoint: pf.Platform, file: str, threads: int = 2, import_timeo
                 log.error(f"Project Zip import timed out after {import_timeout} seconds for {str(future)}.")
             except Exception as e:
                 status = f"EXCEPTION {e}"
-            statuses[status] = statuses[status] + 1 if status in statuses else 1
+            statuses_count[status] = statuses_count[status] + 1 if status in statuses_count else 1
+            if project_key != "UNKNOWN":
+                statuses[project_key] = {"importStatus": status, "importDate": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
             i += 1
             log.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), project_key, status)
-            log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses.items()]))
+            log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses_count.items()]))
     return statuses
 
 
