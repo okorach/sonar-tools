@@ -112,6 +112,12 @@ class Platform(object):
             util.handle_error(e, "verifying connection", catch_all=True)
             raise exceptions.ConnectionError(f"{str(e)} while connecting to {self.local_url}")
 
+    def url(self) -> str:
+        """
+        Returns the SonarQube URL
+        """
+        return self.external_url
+
     def version(self) -> tuple[int, int, int]:
         """
         Returns the SonarQube platform version or 0.0.0 for SonarCloud
