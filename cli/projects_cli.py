@@ -92,7 +92,7 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
         if proj["key"] in statuses:
             proj |= statuses[proj["key"]]
         else:
-            [proj.pop(k, None) for k in ("importStatus", "importDate", "importProjectUrl")]
+            _ = [proj.pop(k, None) for k in ("importStatus", "importDate", "importProjectUrl")]
     data["importSonarqubeEnvironment"] = {
         "url": endpoint.url(),
         "version": ".".join([str(n) for n in endpoint.version()[:2]]),
