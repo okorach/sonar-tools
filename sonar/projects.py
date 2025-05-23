@@ -66,6 +66,15 @@ _BIND_SEP = ":::"
 _AUDIT_BRANCHES_PARAM = "audit.projects.branches"
 AUDIT_MODE_PARAM = "audit.mode"
 
+ZIP_SUCCESS = "SUCCESS"
+ZIP_ASYNC_SUCCESS = "ASYNC_SUCCESS"
+ZIP_ERR_403 = "FAILED/INSUFFICIENT_PERMISSIONS"
+ZIP_CONFLICT = "FAILED/ZIP_CONFLICT"
+ZIP_PROJ_EXISTS = "FAILED/PROJECT_ALREADY_EXISTS"
+ZIP_FILE_MISSING = "FAILED/ZIP_FILE_MISSING"
+ZIP_TIMEOUT = "FAILED/TIMEOUT"
+ZIP_EXCEPTION = "FAILED/EXCEPTION"
+
 _IMPORTABLE_PROPERTIES = (
     "key",
     "name",
@@ -723,10 +732,10 @@ class Project(components.Component):
             util.handle_error(e, f"exporting zip of {str(self)}", catch_all=True)
             errmsg = str(e)
             if errmsg.startswith("403 Client Error"):
-                errmsg = "FAILED/INSUFFICIENT_PERMISSIONS"
+                errmsg = ZIP_ERR_403
             return {"status": errmsg}
         if asynchronous:
-            return {"status": "ASYNC_SUCCESS"}
+            return {"status": ZIP_ASYNC_SUCCESS}
         data = json.loads(resp.text)
         status = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data).wait_for_completion(timeout=timeout)
         if status != tasks.SUCCESS:
@@ -734,7 +743,7 @@ class Project(components.Component):
             return {"status": status}
         dump_file = json.loads(self.get("project_dump/status", params={"key": self.key}).text)["exportedDump"]
         log.debug("%s export %s, dump file %s", str(self), status, dump_file)
-        return {"status": status, "file": dump_file}
+        return {"status": ZIP_SUCCESS, "file": dump_file}
 
     def import_zip(self, asynchronous: bool = False, timeout: int = 180) -> str:
         """Imports a project zip file in SonarQube
@@ -751,17 +760,15 @@ class Project(components.Component):
             resp = self.post("project_dump/import", params={"key": self.key})
         except (ConnectionError, RequestException) as e:
             if "Dump file does not exist" in util.sonar_error(e.response):
-                return "ZIP_FILE_MISSING"
+                return ZIP_FILE_MISSING
             util.handle_error(e, f"importing zip of {str(self)} {mode}", catch_all=True)
         if asynchronous:
-            return "ASYNC_SUCCESS" if resp.status_code == HTTPStatus.OK else "FAILED/HTTP_ERROR"
+            return ZIP_ASYNC_SUCCESS if resp.status_code == HTTPStatus.OK else "FAILED/HTTP_ERROR"
         data = json.loads(resp.text)
         import_task = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data)
         status = import_task.wait_for_completion(timeout=timeout)
         log.log(log.INFO if status == tasks.SUCCESS else log.ERROR, "%s import background task %s", str(self), status)
-        if status != tasks.SUCCESS:
-            status = f"BACKGROUND_TASK_{status}/{import_task.short_error()}"
-        return status
+        return ZIP_SUCCESS if status == tasks.SUCCESS else f"BACKGROUND_TASK_{status}/{import_task.short_error()}"
 
     def get_branches_and_prs(self, filters: dict[str, str]) -> Optional[dict[str, object]]:
         """Get lists of branches and PR objects"""
@@ -1740,19 +1747,27 @@ def export_zips(endpoint: pf.Platform, key_list: types.KeyList = None, threads: 
                 result = future.result(timeout=export_timeout + 10)  # Retrieve result or raise an exception
                 status = result["exportStatus"]
             except TimeoutError as e:
-                status = f"TIMEOUT Exception {e}"
+                status = f"{ZIP_TIMEOUT}({export_timeout}s)"
                 result = {"key": "UNKNOWN", "exportStatus": status}
                 log.error(f"Project Zip export timed out after {export_timeout} seconds for {str(future)}.")
             except Exception as e:
-                status = f"EXCEPTION {e}"
+                status = f"{ZIP_EXCEPTION}({e})"
                 result = {"key": "UNKNOWN", "exportStatus": status}
 
             if re.match(r"\d\d\d .*", status):
-                status = f"HTTP Error {status[0:3]}"
-            if status.startswith("TIMEOUT"):
-                status = "TIMEOUT"
-            if status.startswith("EXCEPTION"):
-                status = "EXCEPTION"
+                status = f"FAILED/HTTP_ERROR {status[0:3]}"
+            elif status.startswith("TIMEOUT"):
+                status = ZIP_TIMEOUT
+            elif status.startswith("EXCEPTION"):
+                status = ZIP_EXCEPTION
+            try:
+                conflict = next(proj for proj in results if proj.get("file", "") == result.get("file", " "))
+                conflict["exportStatus"] = ZIP_CONFLICT
+                statuses[ZIP_SUCCESS] -= 1
+                log.critical("Zip file export conflict detected between project keys '%s' and '%s'", result["key"], conflict["key"])
+                statuses[ZIP_CONFLICT] = 1 if ZIP_CONFLICT not in statuses else statuses[ZIP_CONFLICT] + 1
+            except StopIteration:
+                pass
             results.append(result)
             statuses[status] = 1 if status not in statuses else statuses[status] + 1
             log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses.items()]))
@@ -1767,10 +1782,8 @@ def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30
         o_proj = Project.get_object(key=project_key, endpoint=endpoint)
     if o_proj.last_analysis() is None:
         s = o_proj.import_zip(asynchronous=False, timeout=import_timeout)
-        if s != "SUCCESS":
-            s = f"FAILED/{s}"
     else:
-        s = "FAILED/PROJECT_ALREADY_EXISTS"
+        s = ZIP_PROJ_EXISTS
     return o_proj, s
 
 
