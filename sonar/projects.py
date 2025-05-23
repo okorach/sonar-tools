@@ -1711,7 +1711,7 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
         util.exit_fatal("Zip export unsupported on your SonarQube version", errcodes.UNSUPPORTED_OPERATION)
     status = dump["status"]
     log.debug("Exporting thread for %s done, status: %s", str(project), status)
-    data = {"key": project.key, "exportStatus": status}
+    data = {"key": project.key, "exportProjectUrl": project.url(), "exportStatus": status}
     if status == "SUCCESS":
         data["file"] = os.path.basename(dump["file"])
         data["exportPath"] = dump["file"]
@@ -1771,10 +1771,10 @@ def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30
             s = f"FAILED/{s}"
     else:
         s = "FAILED/PROJECT_ALREADY_EXISTS"
-    return project_key, s
+    return o_proj, s
 
 
-def import_zips(endpoint: pf.Platform, file: str, threads: int = 2, import_timeout: int = 60) -> dict[str, str]:
+def import_zips(endpoint: pf.Platform, file: str, threads: int = 2, import_timeout: int = 60) -> dict[Project, str]:
     """Imports as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1800,19 +1800,23 @@ def import_zips(endpoint: pf.Platform, file: str, threads: int = 2, import_timeo
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipImport") as executor:
         futures = [executor.submit(import_zip, endpoint, proj, import_timeout) for proj in project_list]
         for future in concurrent.futures.as_completed(futures):
-            project_key = "UNKNOWN"
+            o_proj = None
             try:
-                project_key, status = future.result(timeout=import_timeout + 10)  # Retrieve result or raise an exception
+                o_proj, status = future.result(timeout=import_timeout + 10)  # Retrieve result or raise an exception
             except TimeoutError as e:
                 status = f"TIMEOUT Exception {e}"
                 log.error(f"Project Zip import timed out after {import_timeout} seconds for {str(future)}.")
             except Exception as e:
                 status = f"EXCEPTION {e}"
             statuses_count[status] = statuses_count[status] + 1 if status in statuses_count else 1
-            if project_key != "UNKNOWN":
-                statuses[project_key] = {"importStatus": status, "importDate": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+            if o_proj is not None:
+                statuses[o_proj.key] = {
+                    "importProjectUrl": o_proj.url(),
+                    "importStatus": status,
+                    "importDate": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }
             i += 1
-            log.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), project_key, status)
+            log.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), o_proj.key, status)
             log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses_count.items()]))
     return statuses
 
