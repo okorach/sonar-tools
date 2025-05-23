@@ -50,6 +50,7 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
     )
     export_data = {
         "exportSonarqubeEnvironment": {
+            "url": endpoint.url(),
             "version": ".".join([str(n) for n in endpoint.version()[:2]]),
             "plugins": endpoint.plugins(),
         },
@@ -94,6 +95,11 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
         else:
             proj.pop("importStatus", None)
             proj.pop("importDate", None)
+    data["importSonarqubeEnvironment"] = {
+        "url": endpoint.url(),
+        "version": ".".join([str(n) for n in endpoint.version()[:2]]),
+        "plugins": endpoint.plugins(),
+    }
     with open(file, "w", encoding="utf-8") as fd:
         print(utilities.json_dump(data), file=fd)
 
