@@ -48,8 +48,17 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
     dump = projects.export_zips(
         endpoint=endpoint, key_list=kwargs[options.KEYS], export_timeout=kwargs["exportTimeout"], threads=kwargs[options.NBR_THREADS]
     )
+    export_data = {
+        "exportSonarqubeEnvironment": {
+            "url": endpoint.url(),
+            "version": ".".join([str(n) for n in endpoint.version()[:2]]),
+            "plugins": endpoint.plugins(),
+        },
+        "projects": dump,
+    }
+
     with utilities.open_file(kwargs[options.REPORT_FILE]) as fd:
-        print(utilities.json_dump(dump), file=fd)
+        print(utilities.json_dump(export_data), file=fd)
 
 
 def __check_sq_environments(import_sq: platform.Platform, export_sq: dict[str, str]) -> None:
@@ -81,11 +90,14 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
     statuses = projects.import_zips(endpoint, file, kwargs[options.NBR_THREADS], import_timeout=kwargs["exportTimeout"])
     for proj in data["projects"]:
         if proj["key"] in statuses:
-            proj["importStatus"] = statuses[proj["key"]]["importStatus"]
-            proj["importDate"] = statuses[proj["key"]]["importDate"]
+            proj |= statuses[proj["key"]]
         else:
-            proj.pop("importStatus", None)
-            proj.pop("importDate", None)
+            _ = [proj.pop(k, None) for k in ("importStatus", "importDate", "importProjectUrl")]
+    data["importSonarqubeEnvironment"] = {
+        "url": endpoint.url(),
+        "version": ".".join([str(n) for n in endpoint.version()[:2]]),
+        "plugins": endpoint.plugins(),
+    }
     with open(file, "w", encoding="utf-8") as fd:
         print(utilities.json_dump(data), file=fd)
 
