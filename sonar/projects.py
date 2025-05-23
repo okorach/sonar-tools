@@ -1757,13 +1757,7 @@ def export_zips(endpoint: pf.Platform, key_list: types.KeyList = None, threads: 
             statuses[status] = 1 if status not in statuses else statuses[status] + 1
             log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses.items()]))
 
-    return {
-        "exportSonarqubeEnvironment": {
-            "version": ".".join([str(n) for n in endpoint.version()[:2]]),
-            "plugins": endpoint.plugins(),
-        },
-        "projects": results,
-    }
+    return results
 
 
 def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30) -> tuple[str, str]:
