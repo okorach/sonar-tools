@@ -156,7 +156,7 @@ def main() -> None:
     start_time = util.start_clock()
     errcode = errcodes.OS_ERROR
     try:
-        kwargs = util.convert_args(__parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)"))
+        kwargs = util.convert_args(__parser_args("Audits a SonarQube Server or Cloud platform or a SIF (Support Info File or System Info File)"))
         settings = audit_conf.load(TOOL_NAME)
         file = ofile = kwargs.pop(options.REPORT_FILE)
         settings.update(

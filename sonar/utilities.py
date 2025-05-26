@@ -600,10 +600,10 @@ def version_to_string(vers: tuple[int, int, int]) -> str:
 
 
 def is_sonarcloud_url(url: str) -> bool:
-    """Returns whether an URL is the SonarCloud URL
+    """Returns whether an URL is the SonarQube Cloud URL
 
     :param str url: The URL to examine
-    :return: Whether the URL is the SonarCloud URL (in any form)
+    :return: Whether the URL is the SonarQube Cloud URL (in any form)
     :rtype: str
     """
     return url.rstrip("/").lower().endswith("sonarcloud.io")

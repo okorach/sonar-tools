@@ -18,17 +18,17 @@ Note: Replaces `sonar-issues-sync`, which deprecated
 - `-k <projectKey>`: Key of the source project.
 - `-K <projectKey>`: Optional. Key of the target project. If not specified, the same project key as the source is assumed
 - `-b <sourceBranch>`: Optional. Name of the source branch. Only required when doing synchronization between 2 branches of a same project of a same instance.
-- `-o <sourceOrganization>`: Optional. If source project is on SonarCloud.
+- `-o <sourceOrganization>`: Optional. If source project is on SonarQube Cloud.
 - `-B <targetBranch>`: Optional. Name of the target branch. Only required when doing synchronization between 2 branches of a same project of a same instance.
-- `-U <targetUrl>`: Optional. URL of the target SonarQube instance or SonarCloud, when synchronizing between 2 different instances. If not specified, the same URL as the source is assumed.
-- `-T <targetToken>`: Optional. Token if the synchronization service account on the target SonarQube instance, when sync'ing between 2 instances. If not specified, the same token as the source is assumed.
-- `-O <targetOrganization>`: Optional. If target project is on SonarCloud, and if organization is different than the source project or if the source project is not on SonarCloud. If not specified, the same organization as the source is assumed.
+- `-U <targetUrl>`: Optional. URL of the target SonarQube Server or SonarQube Cloud, when synchronizing between 2 different instances. If not specified, the same URL as the source is assumed.
+- `-T <targetToken>`: Optional. Token if the synchronization service account on the target SonarQube Server or Cloud, when sync'ing between 2 instances. If not specified, the same token as the source is assumed.
+- `-O <targetOrganization>`: Optional. If target project is on SonarQube Cloud, and if organization is different than the source project or if the source project is not on SonarQube Cloud. If not specified, the same organization as the source is assumed.
 - `--since <YYYY-MM-DD>`: Only sync issues modified since a give date in the source project/branch. This generally allows to significantly reduce the number of issues involved in the sync, and therefore to significantly accelerate the sync process
 - `-f <file>`: Sends a summary report of synchronization to `<file>`, `stdout` is the default. The output format is JSON
 the target token.
 - `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
 
-:warning: Note about `-t` and `-T`: It is **strongly recommended** to run `sonar-findings-sync` with the credentials of a specific service account dedicated to issues synchronization on the target. This will allow to recognize automatic synchronization changes by the author of those changes. This token is either the one provided with `-t`when the synchronization is within a same SonarQube instance/SonarCloud (for instance 2 branches of a same project), or `-T` when synchronizing between 2 different SonarQube instances (The `-T <token>` corresponding to a user on the **target** SonarQube instance in that case)
+:warning: Note about `-t` and `-T`: It is **strongly recommended** to run `sonar-findings-sync` with the credentials of a specific service account dedicated to issues synchronization on the target. This will allow to recognize automatic synchronization changes by the author of those changes. This token is either the one provided with `-t` when the synchronization is within the same SonarQube Server or Cloud (for instance 2 branches of a same project), or `-T` when synchronizing between 2 different SonarQube Server or Cloud instances (The `-T <token>` corresponding to a user on the **target** SonarQube Server or Cloud in that case)
 
 ## Required Permissions
 
@@ -49,14 +49,14 @@ Synchronizes issues changelog between:
 - 2 different branches of a same project
    (URL is read from `$SONAR_HOST_URL` and `http://localhost:9000` otherwise, token is read from `$SONAR_TOKEN`)
   `sonar-issue-sync -k <projectKey> -b <sourceBranch> -B <targetBranch>`
-- All branches with same name between 2 different projects of a same SonarQube instance:
+- All branches with same name between 2 different projects of a same SonarQube Server or Cloud instance:
   `sonar-issue-sync -k <sourceProjectKey> -K <targetProject>`
-- 2 branches of 2 different projects of a same SonarQube instance:
+- 2 branches of 2 different projects of a same SonarQube Server or Cloud instance:
   `sonar-issue-sync -k <sourceProjectKey> -b <sourceBranch> -K <targetProject> -B <targetBranch>`
-- All branches with same name between 2 projects from different SonarQube instances:
+- All branches with same name between 2 projects from different SonarQube Server or Cloud instances:
   `sonar-issue-sync -k <sourceProjectKey> -u <sourceUrl> -t <sourceToken> -K <targetProjectKey> -U <targetUrl> -T <targetToken>`
-  There is no requirements on the 2 SonarQube instances: They do not need to be of same edition, version or have the same list of plugins
-- **main** branch of a source project key **myProject** in a SonarQube instance and **master** branch of the same project in SonarCloud:
+  There is no requirements on the 2 SonarQube Server or Cloud instances: They do not need to be of same edition, version or have the same list of plugins
+- **main** branch of a source project key **myProject** in a SonarQube Server instance and **master** branch of the same project in SonarQube Cloud:
   `sonar-issue-sync -k myProject -u https://sonar.acme.com -t <sourceToken> -K myProject -U https://sonarcloud.io -T <targetToken> -O myOrganization`
 
 
@@ -66,7 +66,7 @@ Findings synchronization includes:
 **Issues**
 - Change of issue type, for standard experience
 - Change of issue severity - both for standard experience and MQR mode - (except when target is SonarQube Cloud, issue severity can't be changed)
-- Issue marked as False positive or Accepted (or Won't fix for older SonarQube instances)
+- Issue marked as False positive or Accepted (or Won't fix for older SonarQube Server instances)
 - Issue re-opened
 - Issue assignments
 - Issue comments

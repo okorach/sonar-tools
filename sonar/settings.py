@@ -506,7 +506,7 @@ def get_visibility(endpoint: pf.Platform, component: object) -> str:
         return Setting.load(key=COMPONENT_VISIBILITY, endpoint=endpoint, component=component, data=data["component"])
     else:
         if endpoint.is_sonarcloud():
-            raise exceptions.UnsupportedOperation("Project default visibility does not exist in SonarCloud")
+            raise exceptions.UnsupportedOperation("Project default visibility does not exist in SonarQube Cloud")
         data = json.loads(endpoint.get(Setting.API[c.GET], params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
         return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 

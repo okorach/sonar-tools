@@ -686,7 +686,7 @@ def check_supported(endpoint: pf.Platform) -> None:
     if endpoint.edition() not in (c.EE, c.DCE):
         errmsg = f"No portfolios in {endpoint.edition()} edition"
     if endpoint.is_sonarcloud():
-        errmsg = "No portfolios in SonarCloud"
+        errmsg = "No portfolios in SonarQube Cloud"
     if errmsg != "":
         log.warning(errmsg)
         raise exceptions.UnsupportedOperation(errmsg)

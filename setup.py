@@ -35,7 +35,7 @@ setuptools.setup(
     scripts=["sonar-tools"],
     author="Olivier Korach",
     author_email="olivier.korach@gmail.com",
-    description="A collection of utility scripts for SonarQube and SonarCloud",
+    description="A collection of utility scripts for SonarQube Server or Cloud",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/okorach/sonar-tools",

@@ -105,7 +105,7 @@ class QualityPermissions(permissions.Permissions):
         """Reads permissions of a QP or QG"""
         self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
         if self.endpoint.is_sonarcloud():
-            log.debug("No permissions for %s because it's SonarCloud", str(self))
+            log.debug("No permissions for %s because it's SonarQube Cloud", str(self))
         elif self.concerned_object.is_built_in:
             log.debug("No permissions for %s because it's built-in", str(self))
         else:

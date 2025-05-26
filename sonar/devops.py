@@ -210,7 +210,7 @@ def get_list(endpoint: platform.Platform) -> dict[str, DevopsPlatform]:
     :rtype: dict{<platformKey>: <DevopsPlatform>}
     """
     if endpoint.is_sonarcloud():
-        raise exceptions.UnsupportedOperation("Can't get list of DevOps platforms on SonarCloud")
+        raise exceptions.UnsupportedOperation("Can't get list of DevOps platforms on SonarQube Cloud")
     data = json.loads(endpoint.get(DevopsPlatform.API[c.LIST]).text)
     for alm_type in DEVOPS_PLATFORM_TYPES:
         for alm_data in data.get(alm_type, {}):
@@ -258,7 +258,7 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
         log.info("No devops integration settings in config, skipping import...")
         return
     if endpoint.is_sonarcloud():
-        raise exceptions.UnsupportedOperation("Can't get import DevOps platforms in SonarCloud")
+        raise exceptions.UnsupportedOperation("Can't get import DevOps platforms in SonarQube Cloud")
     log.info("Importing DevOps config %s", util.json_dump(devops_settings))
     if len(DevopsPlatform.CACHE) == 0:
         get_list(endpoint)

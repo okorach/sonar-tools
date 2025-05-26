@@ -19,7 +19,7 @@
 #
 """
 
-    Abstraction of the SonarCloud organization concept
+    Abstraction of the SonarQube Cloud organization concept
 
 """
 
@@ -44,7 +44,7 @@ _NOT_SUPPORTED = "Organizations do not exist in SonarQube"
 
 class Organization(sqobject.SqObject):
     """
-    Abstraction of the SonarCloud "organization" concept
+    Abstraction of the SonarQube Cloud "organization" concept
     """
 
     CACHE = cache.Cache()
@@ -62,7 +62,7 @@ class Organization(sqobject.SqObject):
 
     @classmethod
     def get_object(cls, endpoint: pf.Platform, key: str) -> Organization:
-        """Gets an Organization object from SonarCloud
+        """Gets an Organization object from SonarQube Cloud
 
         :param Platform endpoint: Reference to the SonarQube platform
         :param str key: Application key, must not already exist on SonarQube
@@ -88,11 +88,11 @@ class Organization(sqobject.SqObject):
 
     @classmethod
     def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Organization:
-        """Loads an Organization object with data retrieved from SonarCloud
+        """Loads an Organization object with data retrieved from SonarQube Cloud
 
-        :param Platform endpoint: Reference to the SonarCloud platform
+        :param Platform endpoint: Reference to the SonarQube Cloud platform
         :param dict data: Data coming from api/organizations/search
-        :raises UnsupportedOperation: If not running against SonarCloud
+        :raises UnsupportedOperation: If not running against SonarQube Cloud
         :raises ObjectNotFound: If Organization key not found
         :return: The found Organization object
         :rtype: Organization
@@ -142,7 +142,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
     """
     :return: List of Organizations (all of them if key_list is None or empty)
     :param KeyList key_list: List of org keys to get, if None or empty all orgs are returned
-    :param bool use_cache: Whether to use local cache or query SonarCloud, default True (use cache)
+    :param bool use_cache: Whether to use local cache or query SonarQube Cloud, default True (use cache)
     :rtype: dict{<orgName>: <Organization>}
     """
     with _CLASS_LOCK:
@@ -160,7 +160,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, O
 
     :param Platform endpoint: Reference to the SonarQube platform
     :param params: Search filters (see api/organizations/search parameters)
-    :raises UnsupportedOperation: If not on a SonarCloud platform
+    :raises UnsupportedOperation: If not on a SonarQube Cloud platform
     :return: dict of organizations
     :rtype: dict {<orgKey>: Organization, ...}
     """
@@ -175,7 +175,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, O
 def export(endpoint: pf.Platform, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
     """Exports organizations as JSON
 
-    :param Platform endpoint: Reference to the SonarCloud platform
+    :param Platform endpoint: Reference to the SonarQube Cloud platform
     :param KeyList key_list: list of Organizations keys to export, defaults to all if None
     :return: Dict of organization settings
     :rtype: dict
