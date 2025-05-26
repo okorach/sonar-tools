@@ -331,7 +331,7 @@ class Issue(findings.Finding):
         :param str severity: The comment to add
         :return: Whether the operation succeeded
         """
-        if not self.endpoint.is_mqr_mode():
+        if self.endpoint.is_mqr_mode():
             log.error("Can't change issue standard severity, the SonarQube Server or Cloud instance is in MQR mode")
             return False
         success = self.__set_severity(severity=severity)
