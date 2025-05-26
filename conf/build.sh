@@ -41,7 +41,7 @@ echo "======= FORMATTING CODE ========="
 black --line-length=150 .
 echo "======= BUILDING PACKAGE ========="
 rm -rf "$ROOTDIR/build/lib/sonar" "$ROOTDIR/build/lib/cli" "$ROOTDIR"/build/scripts*/sonar-tools "$ROOTDIR"/dist/sonar_tools*
-python3 "$ROOTDIR/setup.py" bdist_wheel
+python -m build
 
 if [ "$build_docs" == "1" ]; then
     echo "======= BUILDING DOCS ========="
