@@ -161,7 +161,7 @@ def test_binding() -> None:
     proj = projects.Project.get_object(util.SQ, util.TEST_KEY)
     assert proj.has_binding()
     assert proj.binding() is not None
-    assert proj.binding_key().startswith("github:::okorach-org/demo-github-azdo")
+    assert proj.binding_key().startswith("github:::okorach/demo-actions-maven")
     proj = projects.Project.get_object(util.SQ, util.LIVE_PROJECT)
     assert not proj.has_binding()
     assert proj.binding_key() is None
