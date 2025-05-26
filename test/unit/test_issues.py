@@ -87,11 +87,16 @@ def test_set_severity() -> None:
     issue = list(issues_d.values())[0]
     old_sev = issue.severity
     new_sev = "MINOR" if old_sev == "CRITICAL" else "CRITICAL"
-    assert issue.set_severity(new_sev)
-    issue.refresh()
-    assert issue.severity == new_sev
-    assert not issue.set_severity("NON_EXISTING")
-    issue.set_severity(old_sev)
+    if tutil.SQ.is_mqr_mode():
+        assert not issue.set_severity(new_sev)
+        issue.refresh()
+        assert issue.severity == old_sev
+    else:
+        assert issue.set_severity(new_sev)
+        issue.refresh()
+        assert issue.severity == new_sev
+        assert not issue.set_severity("NON_EXISTING")
+        issue.set_severity(old_sev)
 
 
 def test_add_remove_tag() -> None:
