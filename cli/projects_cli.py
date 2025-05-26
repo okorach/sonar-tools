@@ -38,6 +38,7 @@ import sonar.util.constants as c
 TOOL_NAME = "sonar-projects"
 
 _EXPORT_IMPORT_TIMEOUT = 180
+_EXPORT_IMPORT_THREADS = 1
 
 
 def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
@@ -48,7 +49,10 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
     if ed in (c.CE, c.DE) and endpoint.version()[:2] < (9, 2):
         raise exceptions.UnsupportedOperation(f"Can't export projects on {ed} Edition before 9.2, aborting...")
     dump = projects.export_zips(
-        endpoint=endpoint, key_list=kwargs[options.KEYS], export_timeout=kwargs["exportTimeout"], threads=kwargs[options.NBR_THREADS]
+        endpoint=endpoint,
+        key_list=kwargs[options.KEYS],
+        export_timeout=kwargs.get("exportTimeout", _EXPORT_IMPORT_TIMEOUT),
+        threads=kwargs.get(options.NBR_THREADS, _EXPORT_IMPORT_THREADS),
     )
     export_data = {
         "exportSonarqubeEnvironment": {
@@ -89,7 +93,9 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
     except json.JSONDecodeError as e:
         raise options.ArgumentsError(f"JSON decoding error while reading file '{file}': {str(e)}")
     __check_sq_environments(endpoint, data["exportSonarqubeEnvironment"])
-    statuses = projects.import_zips(endpoint, file, kwargs[options.NBR_THREADS], import_timeout=kwargs["exportTimeout"])
+    statuses = projects.import_zips(
+        endpoint, file, kwargs.get(options.NBR_THREADS, _EXPORT_IMPORT_THREADS), import_timeout=kwargs.get("exportTimeout", _EXPORT_IMPORT_TIMEOUT)
+    )
     for proj in data["projects"]:
         if proj["key"] in statuses:
             proj |= statuses[proj["key"]]
@@ -112,7 +118,7 @@ def main() -> None:
         parser = options.set_key_arg(parser)
         parser = options.add_import_export_arg(parser, "projects zip")
         parser = options.set_output_file_args(parser, allowed_formats=("json",))
-        parser = options.add_thread_arg(parser, "projects zip export/import", default_value=1)
+        parser = options.add_thread_arg(parser, "projects zip export/import", default_value=_EXPORT_IMPORT_THREADS)
         parser.add_argument(
             "--exportTimeout",
             "--importTimeout",
