@@ -232,9 +232,11 @@ def set_url_arg(parser: ArgumentParser) -> ArgumentParser:
     return parser
 
 
-def add_thread_arg(parser: ArgumentParser, action: str) -> ArgumentParser:
+def add_thread_arg(parser: ArgumentParser, action: str, default_value=8) -> ArgumentParser:
     """Adds the threads argument for CLI"""
-    parser.add_argument(f"--{NBR_THREADS}", required=False, type=int, default=8, help=f"Define number of threads for {action}, default 8")
+    parser.add_argument(
+        f"--{NBR_THREADS}", required=False, type=int, default=default_value, help=f"Define number of threads for {action}, default {default_value}"
+    )
     return parser
 
 

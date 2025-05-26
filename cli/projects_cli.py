@@ -37,6 +37,8 @@ import sonar.util.constants as c
 
 TOOL_NAME = "sonar-projects"
 
+_EXPORT_IMPORT_TIMEOUT = 180
+
 
 def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
     """Exports a list (or all) of projects into zip files"""
@@ -110,13 +112,14 @@ def main() -> None:
         parser = options.set_key_arg(parser)
         parser = options.add_import_export_arg(parser, "projects zip")
         parser = options.set_output_file_args(parser, allowed_formats=("json",))
-        parser = options.add_thread_arg(parser, "projects zip export")
+        parser = options.add_thread_arg(parser, "projects zip export/import", default_value=1)
         parser.add_argument(
             "--exportTimeout",
+            "--importTimeout",
             required=False,
             type=int,
-            default=180,
-            help="Maximum wait time for export of 1 project",
+            default=_EXPORT_IMPORT_TIMEOUT,
+            help=f"Maximum wait time for export or import of a project (default {_EXPORT_IMPORT_TIMEOUT} seconds)",
         )
         kwargs = utilities.convert_args(options.parse_and_check(parser=parser, logger_name=TOOL_NAME))
         sq = platform.Platform(**kwargs)
