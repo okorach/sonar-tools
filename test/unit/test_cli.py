@@ -68,7 +68,7 @@ def test_import(get_json_file: Generator[str]) -> None:
 
         with open(export_file, "r", encoding="utf-8") as fd:
             data = json.load(fd)
-        data["project_exports"][0]["key"] = "TEMP-IMPORT_PROJECT-KEY"
+        data["projects"][0]["key"] = "TEMP-IMPORT_PROJECT-KEY"
         with open(export_file, "w", encoding="utf-8") as fd:
             print(json.dumps(data), file=fd)
         assert proj_cli.__import_projects(util.TEST_SQ, file=export_file) is None

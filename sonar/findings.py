@@ -169,6 +169,7 @@ class Finding(sq.SqObject):
         self.message = jsondata.get("message", None)
         if self.component:
             self.file = self.component.replace(f"{self.projectKey}:", "", 1)
+        self.branch, self.pull_request = self.get_branch_and_pr(jsondata)
         self.creation_date = util.string_to_date(jsondata["creationDate"])
         self.modification_date = util.string_to_date(jsondata["updateDate"])
 
@@ -218,12 +219,13 @@ class Finding(sq.SqObject):
         data = vars(self).copy()
         for old_name, new_name in _JSON_FIELDS_REMAPPED:
             data[new_name] = data.pop(old_name, None)
-
         data["file"] = self.file
         data["creationDate"] = self.creation_date.strftime(fmt)
         data["updateDate"] = self.modification_date.strftime(fmt)
         data["language"] = self.language()
         data["url"] = self.url()
+        if data["pullRequest"] is None and data["branch"] is None:
+            data["branch"] = projects.Project.get_object(self.endpoint, key=self.projectKey).main_branch_name()
         if data.get("resolution", None):
             data["status"] = data.pop("resolution")
         if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION:

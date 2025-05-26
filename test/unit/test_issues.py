@@ -87,11 +87,16 @@ def test_set_severity() -> None:
     issue = list(issues_d.values())[0]
     old_sev = issue.severity
     new_sev = "MINOR" if old_sev == "CRITICAL" else "CRITICAL"
-    assert issue.set_severity(new_sev)
-    issue.refresh()
-    assert issue.severity == new_sev
-    assert not issue.set_severity("NON_EXISTING")
-    issue.set_severity(old_sev)
+    if tutil.SQ.is_mqr_mode():
+        assert not issue.set_severity(new_sev)
+        issue.refresh()
+        assert issue.severity == old_sev
+    else:
+        assert issue.set_severity(new_sev)
+        issue.refresh()
+        assert issue.severity == new_sev
+        assert not issue.set_severity("NON_EXISTING")
+        issue.set_severity(old_sev)
 
 
 def test_add_remove_tag() -> None:
@@ -189,18 +194,18 @@ def test_multiple_changelogs():
     for cl in issue.changelog().values():
         (t, _) = cl.changelog_type()
         assert t is not None
-        results["ACCEPT"] = results["ACCEPT"] or cl.is_resolve_as_accept() or cl.is_resolve_as_wf()
-        results["CONFIRM"] = results["CONFIRM"] or cl.is_confirm()
-        results["UNCONFIRM"] = results["UNCONFIRM"] or cl.is_unconfirm()
+        results["ACCEPT"] |= cl.is_resolve_as_accept() or cl.is_resolve_as_wf()
+        results["CONFIRM"] |= cl.is_confirm()
+        results["UNCONFIRM"] |= cl.is_unconfirm()
         if cl.is_resolve_as_fp():
             results["FP"] = True
             assert cl.previous_state() in "OPEN", "REOPENED"
         if cl.is_assignment():
             results["ASSIGN"] = True
             assert len(cl.assignee()) > 0
-        results["UNASSIGN"] = results["UNASSIGN"] or cl.is_unassign()
-        results["SEVERITY"] = results["SEVERITY"] or cl.is_change_severity()
-        results["REOPEN"] = results["REOPEN"] or cl.is_reopen()
+        results["UNASSIGN"] |= cl.is_unassign()
+        results["SEVERITY"] |= cl.is_change_severity()
+        results["REOPEN"] |= cl.is_reopen()
     for s in state_list:
         if s != "REOPEN" or (s == "REOPEN" and tutil.SQ.version() < (10, 0, 0)):
             logging.debug("Checking that changelog %s was found", s)

@@ -730,6 +730,8 @@ class Project(components.Component):
             resp = self.post("project_dump/export", params={"key": self.key})
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"exporting zip of {str(self)}", catch_all=True)
+            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
+                raise exceptions.ObjectNotFound(self.key, f"Project key '{self.key}' not found")
             errmsg = str(e)
             if errmsg.startswith("403 Client Error"):
                 errmsg = ZIP_ERR_403
@@ -761,7 +763,8 @@ class Project(components.Component):
         except (ConnectionError, RequestException) as e:
             if "Dump file does not exist" in util.sonar_error(e.response):
                 return ZIP_FILE_MISSING
-            util.handle_error(e, f"importing zip of {str(self)} {mode}", catch_all=True)
+            util.handle_error(e, f"importing zip of {str(self)} {mode}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+            raise exceptions.ObjectNotFound(self.key, f"Project key '{self.key}' not found")
         if asynchronous:
             return ZIP_ASYNC_SUCCESS if resp.status_code == HTTPStatus.OK else "FAILED/HTTP_ERROR"
         data = json.loads(resp.text)
@@ -1727,7 +1730,7 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
     return data
 
 
-def export_zips(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, export_timeout: int = 30) -> dict[str, str]:
+def export_zips(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, export_timeout: int = 30) -> list[dict[str, str]]:
     """Export as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1792,7 +1795,7 @@ def import_zips(endpoint: pf.Platform, file: str, threads: int = 2, import_timeo
 
     :param Platform endpoint: reference to the SonarQube platform
     :param int threads: Number of parallel threads for export, defaults to 2
-    :param int import_timeout: Tiemout to import the project, defaults to 60 s
+    :param int import_timeout: Timeout to import the project, defaults to 60 s
     :return: import results
     """
 
