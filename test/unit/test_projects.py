@@ -167,18 +167,26 @@ def test_binding() -> None:
     assert proj.binding_key() is None
 
 
-def test_wrong_key(get_test_project: Generator[projects.Project]) -> None:
-    """test_wrong_key"""
-    if util.SQ.edition() not in (c.EE, c.DCE):
-        pytest.skip("Project import not available below Enterprise Edition")
+def test_export_wrong_key(get_test_project: Generator[projects.Project]) -> None:
+    """test_export_wrong_key"""
     proj = get_test_project
     proj.key = util.NON_EXISTING_KEY
-    res = proj.export_zip(asynchronous=True)
-    assert "error" in res["status"].lower()
-    res = proj.export_zip(asynchronous=False)
-    assert "error" in res["status"].lower()
-    assert proj.import_zip(asynchronous=True) != "SUCCESS"
-    assert proj.import_zip(asynchronous=False) != "SUCCESS"
+    with pytest.raises(exceptions.ObjectNotFound):
+        proj.export_zip(asynchronous=True)
+    with pytest.raises(exceptions.ObjectNotFound):
+        proj.export_zip(asynchronous=False)
+
+
+def test_import_wrong_key(get_test_project: Generator[projects.Project]) -> None:
+    """test_import_wrong_key"""
+    proj = get_test_project
+    proj.key = util.NON_EXISTING_KEY
+    expected_exception = exceptions.ObjectNotFound if util.SQ.edition() in (c.EE, c.DCE) else exceptions.UnsupportedOperation
+    if util.SQ.edition() in (c.EE, c.DCE):
+        with pytest.raises(expected_exception):
+            proj.import_zip(asynchronous=True)
+        with pytest.raises(expected_exception):
+            proj.import_zip(asynchronous=False)
 
 
 def test_ci(get_test_project: Generator[projects.Project]) -> None:
