@@ -21,6 +21,7 @@
 """ Update center utilities """
 
 from typing import Optional
+import datetime
 import requests
 import tempfile
 import jprops
@@ -57,12 +58,15 @@ def get_update_center_properties() -> Optional[dict[str, str]]:
     return _UPDATE_CENTER_PROPERTIES
 
 
-def get_release_date(release_string: str) -> str:
+def get_release_date(version: tuple[int, ...]) -> Optional[datetime.date]:
     """Get the release date from a SonarQube Server or Community Build release"""
-    splitted = release_string.strip().split(".")
-    max_length = min(len(splitted), 3)
-    formatted_release = ".".join(splitted)[:max_length]
-    return get_update_center_properties().get(f"{formatted_release}.date", "")
+    formatted_release = ".".join(version)[:min(len(version), 3)]
+    str_date = get_update_center_properties().get(f"{formatted_release}.date", "")
+    if str_date == "":
+        log.info("Release date for SonarQube version %s not found in update center properties", formatted_release)
+        return None
+    else:
+        return datetime.datetime.strptime(str_date, "%Y-%m-%d").date()
 
 
 def get_lta() -> tuple[int, int, int]:
