@@ -122,6 +122,14 @@ class Platform(object):
             log.debug("Version = %s", str(self._version))
         return self._version[0:3]
 
+    def release_date(self) -> Optional[datetime.date]:
+        """
+        :returns: the SonarQube platform release date if found in update center or None if SonarQube Cloud or if the date cannot be found
+        """
+        if self.is_sonarcloud():
+            return None
+        return update_center.get_release_date(self.version())
+
     def edition(self) -> str:
         """
         Returns the Sonar edition: "community", "developer", "enterprise", c.DCE or "sonarcloud"
