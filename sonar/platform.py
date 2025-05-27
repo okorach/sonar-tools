@@ -755,6 +755,8 @@ def _audit_setting_value(key: str, platform_settings: dict[str, any], audit_sett
         return []
     log.info("Auditing that setting %s has common/recommended value '%s'", v[0], v[1])
     s = platform_settings.get(v[0], "")
+    if isinstance(s, bool):
+        v[1] = util.convert_string(v[1])
     if s == v[1]:
         return []
     msg = f"Setting {v[0]} has potentially incorrect or unsafe value '{s}'"
