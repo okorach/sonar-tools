@@ -771,7 +771,7 @@ class Project(components.Component):
         import_task = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data)
         status = import_task.wait_for_completion(timeout=timeout)
         log.log(log.INFO if status == tasks.SUCCESS else log.ERROR, "%s import background task %s", str(self), status)
-        return ZIP_SUCCESS if status == tasks.SUCCESS else f"BACKGROUND_TASK_{status}/{import_task.short_error()}"
+        return ZIP_SUCCESS if status == tasks.SUCCESS else f"FAILED/BACKGROUND_TASK_{status}/{import_task.short_error()}"
 
     def get_branches_and_prs(self, filters: dict[str, str]) -> Optional[dict[str, object]]:
         """Get lists of branches and PR objects"""
@@ -1744,18 +1744,22 @@ def export_zips(endpoint: pf.Platform, key_list: types.KeyList = None, threads: 
     nbr_projects = len(projects_list)
     log.info("Exporting %d projects to export", nbr_projects)
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipExport") as executor:
-        futures = [executor.submit(__export_zip_thread, proj, export_timeout) for proj in projects_list.values()]
+        futures, futures_map = [], {}
+        for proj in projects_list.values():
+            future = executor.submit(__export_zip_thread, proj, export_timeout)
+            futures.append(future)
+            futures_map[future] = proj
         for future in concurrent.futures.as_completed(futures):
             try:
                 result = future.result(timeout=export_timeout + 10)  # Retrieve result or raise an exception
                 status = result["exportStatus"]
             except TimeoutError as e:
                 status = f"{ZIP_TIMEOUT}({export_timeout}s)"
-                result = {"key": "UNKNOWN", "exportStatus": status}
+                result = {"key": futures_map[future].key, "exportProjectUrl": futures_map[future].url(), "exportStatus": status}
                 log.error(f"Project Zip export timed out after {export_timeout} seconds for {str(future)}.")
             except Exception as e:
                 status = f"{ZIP_EXCEPTION}({e})"
-                result = {"key": "UNKNOWN", "exportStatus": status}
+                result = {"key": futures_map[future].key, "exportProjectUrl": futures_map[future].url(), "exportStatus": status}
 
             if re.match(r"\d\d\d .*", status):
                 status = f"FAILED/HTTP_ERROR {status[0:3]}"
@@ -1814,7 +1818,11 @@ def import_zips(endpoint: pf.Platform, file: str, threads: int = 2, import_timeo
     statuses_count = {}
     statuses = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipImport") as executor:
-        futures = [executor.submit(import_zip, endpoint, proj, import_timeout) for proj in project_list]
+        futures, futures_map = [], {}
+        for proj in project_list:
+            future = executor.submit(import_zip, endpoint, proj, import_timeout)
+            futures.append(future)
+            futures_map[future] = proj
         for future in concurrent.futures.as_completed(futures):
             o_proj = None
             try:
@@ -1825,12 +1833,14 @@ def import_zips(endpoint: pf.Platform, file: str, threads: int = 2, import_timeo
             except Exception as e:
                 status = f"EXCEPTION {e}"
             statuses_count[status] = statuses_count[status] + 1 if status in statuses_count else 1
-            if o_proj is not None:
-                statuses[o_proj.key] = {
-                    "importProjectUrl": o_proj.url(),
-                    "importStatus": status,
-                    "importDate": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                }
+            if o_proj is None:
+                o_proj = futures_map[future]
+                statuses[o_proj.key] = {}
+            else:
+                statuses[o_proj.key] = {"importDate": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+            statuses[o_proj.key]["importProjectUrl"] = o_proj.url()
+            statuses[o_proj.key]["importStatus"] = status
+
             i += 1
             log.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), o_proj.key, status)
             log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses_count.items()]))
