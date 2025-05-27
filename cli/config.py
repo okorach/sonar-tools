@@ -266,7 +266,7 @@ def main() -> None:
     """Main entry point for sonar-config"""
     start_time = utilities.start_clock()
     try:
-        kwargs = utilities.convert_args(__parse_args("Extract SonarQube platform configuration"))
+        kwargs = utilities.convert_args(__parse_args("Extract SonarQube Server or Cloud platform configuration"))
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")

@@ -476,7 +476,7 @@ class User(sqobject.SqObject):
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, User]:
-    """Searches users in SonarQube or SonarCloud
+    """Searches users in SonarQube Server or Cloud
 
     :param Platform endpoint: Reference to the SonarQube platform
     :param ApiParams params: list of parameters to narrow down the search
@@ -568,7 +568,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         log.info("No users to import")
         return
     if endpoint.is_sonarcloud():
-        raise exceptions.UnsupportedOperation("Can't import users in SonarCloud")
+        raise exceptions.UnsupportedOperation("Can't import users in SonarQube Cloud")
     log.info("Importing users")
     for login, data in config_data["users"].items():
         data["scmAccounts"] = util.csv_to_list(data.pop("scmAccounts", ""))

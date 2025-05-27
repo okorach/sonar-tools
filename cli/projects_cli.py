@@ -20,7 +20,7 @@
 #
 """
 
-    Exports all projects of a SonarQube platform
+    Exports/Imports all projects of a SonarQube Server platform
 
 """
 
@@ -45,7 +45,7 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
     """Exports a list (or all) of projects into zip files"""
     ed = endpoint.edition()
     if ed == "sonarcloud":
-        raise exceptions.UnsupportedOperation("Can't export projects on SonarCloud, aborting...")
+        raise exceptions.UnsupportedOperation("Can't export projects on SonarQube Cloud, aborting...")
     if ed in (c.CE, c.DE) and endpoint.version()[:2] < (9, 2):
         raise exceptions.UnsupportedOperation(f"Can't export projects on {ed} Edition before 9.2, aborting...")
     dump = projects.export_zips(
@@ -73,7 +73,7 @@ def __check_sq_environments(import_sq: platform.Platform, export_sq: dict[str, s
     exp_version = tuple(int(n) for n in export_sq["version"].split(".")[:2])
     if imp_version != exp_version:
         raise exceptions.UnsupportedOperation(
-            f"Export was not performed with same SonarQube version, aborting... ({utilities.version_to_string(exp_version)} vs {utilities.version_to_string(imp_version)})"
+            f"Export was not performed with same SonarQube Server version, aborting... ({utilities.version_to_string(exp_version)} vs {utilities.version_to_string(imp_version)})"
         )
     diff_plugins = set(export_sq["plugins"].items()) - set(import_sq.plugins().items())
     if len(diff_plugins) > 0:
@@ -83,7 +83,7 @@ def __check_sq_environments(import_sq: platform.Platform, export_sq: dict[str, s
 
 
 def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
-    """Imports a list of projects in SonarQube EE+"""
+    """Imports a list of projects in SonarQube Server EE+"""
     file = kwargs[options.REPORT_FILE]
     if not file:
         raise options.ArgumentsError(f"Option --{options.REPORT_FILE} is mandatory to import")
@@ -114,7 +114,7 @@ def main() -> None:
     """Main entry point of sonar-projects"""
     start_time = utilities.start_clock()
     try:
-        parser = options.set_common_args("Exports all projects of a SonarQube platform")
+        parser = options.set_common_args("Exports/Imports all projects of a SonarQube Server platform")
         parser = options.set_key_arg(parser)
         parser = options.add_import_export_arg(parser, "projects zip")
         parser = options.set_output_file_args(parser, allowed_formats=("json",))

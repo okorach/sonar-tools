@@ -212,7 +212,7 @@ def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_toke
         utilities.check_last_version(f"https://pypi.org/simple/{tool}")
     kwargs.pop(SKIP_VERSION_CHECK, None)
     if utilities.is_sonarcloud_url(kwargs[URL]) and kwargs[ORG] is None:
-        raise ArgumentsError(f"Organization (-{ORG_SHORT}) option is mandatory for SonarCloud")
+        raise ArgumentsError(f"Organization (-{ORG_SHORT}) option is mandatory for SonarQube Cloud")
     if URL_TARGET in kwargs and kwargs[URL_TARGET] is None:
         kwargs[URL_TARGET] = kwargs[URL]
     if TOKEN_TARGET in kwargs and kwargs[TOKEN_TARGET] is None:
@@ -220,7 +220,7 @@ def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_toke
     if ORG_TARGET in kwargs and kwargs[ORG_TARGET] is None:
         kwargs[ORG_TARGET] = kwargs[ORG]
     if URL_TARGET in kwargs and utilities.is_sonarcloud_url(kwargs[URL_TARGET]) and kwargs[ORG_TARGET] is None:
-        raise ArgumentsError(f"Organization (-{ORG_TARGET_SHORT}) option is mandatory for SonarCloud")
+        raise ArgumentsError(f"Organization (-{ORG_TARGET_SHORT}) option is mandatory for SonarQube Cloud")
     if verify_token:
         utilities.check_token(args.token, utilities.is_sonarcloud_url(kwargs[URL]))
     return args
@@ -309,14 +309,14 @@ def set_common_args(desc: str) -> ArgumentParser:
         f"--{URL}",
         required=False,
         default=os.getenv("SONAR_HOST_URL", "http://localhost:9000"),
-        help="""Root URL of the source SonarQube or SonarCloud server,
+        help="""Root URL of the source SonarQube Server or Cloud platfrom,
         default is environment variable $SONAR_HOST_URL or http://localhost:9000 if not set""",
     )
     parser.add_argument(
         f"-{ORG_SHORT}",
         f"--{ORG}",
         required=False,
-        help="SonarCloud organization when using sonar-tools with SonarCloud",
+        help="Organization when using sonar-tools with SonarQube Cloud",
     )
     parser.add_argument(
         f"-{VERBOSE_SHORT}",
@@ -385,7 +385,7 @@ def add_component_type_arg(parser: ArgumentParser, comp_types: tuple[str] = COMP
 
 
 def set_target_sonar_args(parser: ArgumentParser) -> ArgumentParser:
-    """Sets the target SonarQube CLI options"""
+    """Sets the target SonarQube Server or Cloud CLI options"""
     parser.add_argument(
         f"-{URL_TARGET_SHORT}",
         f"--{URL_TARGET}",
@@ -402,7 +402,7 @@ def set_target_sonar_args(parser: ArgumentParser) -> ArgumentParser:
         f"-{ORG_TARGET_SHORT}",
         f"--{ORG_TARGET}",
         required=False,
-        help="Organization when using sonar-findings-sync with SonarCloud as target platform",
+        help="Organization when using sonar-findings-sync with SonarQube Cloud as target platform",
     )
     return parser
 

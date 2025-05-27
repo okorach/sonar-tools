@@ -64,7 +64,7 @@ def main() -> None:
     """Main entry point for sonar-config"""
     start_time = utilities.start_clock()
     try:
-        kwargs = utilities.convert_args(__parse_args("Extract SonarQube to SonarCloud migration data"))
+        kwargs = utilities.convert_args(__parse_args("Extract SonarQube Server to Cloud migration data"))
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.MIGRATION_TOOL_VERSION}")

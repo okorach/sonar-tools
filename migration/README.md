@@ -1,5 +1,5 @@
 # sonar-migration
-Command line tool to collect SonarQube data to prepare eventual migration to SonarCloud.
+Command line tool to collect SonarQube data to prepare eventual migration to SonarQube Cloud.
 
 ![Downloads](https://img.shields.io/pypi/dm/sonar-migration?color=informational)
 ![Python-Versions](https://img.shields.io/pypi/pyversions/sonar-migration)
@@ -37,7 +37,7 @@ The default is environment variable `$SONAR_TOKEN`.
 Using login/password is not possible.
 The user corresponding to the token must have sufficiently elevated permissions to achieve the tool tasks
 - `-f`: Define the output file, if not specified, `migration.<SERVER_ID>.json` is generated
-- `-o` : Organization, for SonarCloud - Ignored if running against a SonarQube instance
+- `-o` : Organization, for SonarQube Cloud - Ignored if running against a SonarQube instance
 - `-v` : Logging verbosity level (`WARN`, `ÌNFO` or `DEBUG`). The default is `INFO`.
 `ERROR` and above is always active.
 - `-c` or `--clientCert` : Allows to specify an optional client certificate file (as .pem file)

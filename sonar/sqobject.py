@@ -65,7 +65,7 @@ class SqObject(object):
         :param op: The desired API operation
         :param endpoint: The SQS or SQC to invoke the API
         This function must be overloaded for classes that need specific treatment
-        e.g. API V1 or V2 depending on SonarQube version, different API for SonarCloud
+        e.g. API V1 or V2 depending on SonarQube version, different API for SonarQube Cloud
         """
         return cls.API[op] if op in cls.API else cls.API[c.LIST]
 

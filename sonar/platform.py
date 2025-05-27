@@ -120,7 +120,7 @@ class Platform(object):
 
     def version(self) -> tuple[int, int, int]:
         """
-        Returns the SonarQube platform version or 0.0.0 for SonarCloud
+        Returns the SonarQube platform version or 0.0.0 for SonarQube Cloud
         """
         if self.is_sonarcloud():
             return 0, 0, 0
@@ -167,7 +167,7 @@ class Platform(object):
 
     def is_sonarcloud(self) -> bool:
         """
-        Returns whether the target platform is SonarCloud
+        Returns whether the target platform is SonarQube Cloud
         """
         return util.is_sonarcloud_url(self.local_url)
 
@@ -458,7 +458,7 @@ class Platform(object):
                 continue
             (categ, subcateg) = s.category()
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
-                # What is reported as 3rd part are SonarCloud internal settings
+                # What is reported as 3rd part are SonarQube Cloud internal settings
                 continue
             if not s.is_global():
                 continue

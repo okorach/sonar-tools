@@ -26,10 +26,10 @@ from sonar import version
 print(f'''
 sonar-tools version {version.PACKAGE_VERSION}
 (c) Olivier Korach 2019-2025
-Collections of utilities for SonarQube and SonarCloud:
-- sonar-audit: Audits a SonarQube/SonarCloud platform for bad practices, performance, configuration problems
+Collections of utilities for SonarQube Server and Cloud:
+- sonar-audit: Audits a SonarQube Server or Cloud platform for bad practices, performance, configuration problems
 - sonar-housekeeper: Deletes projects that have not been analyzed since a given number of days
-- sonar-loc: Produces a list of projects with their LoC count as computed by the SonarQube/SonarCloud
+- sonar-loc: Produces a list of projects with their LoC count as computed by SonarQube Server or Cloud
   commercial licenses (ie taking the largest branch or PR)
 - sonar-measures-export: Exports measures/metrics of one, several or all projects of the platform in CSV or JSON
   (Can also export measures history)
@@ -39,7 +39,7 @@ Collections of utilities for SonarQube and SonarCloud:
   branches of 2 different projects (potentially on different platforms).
   (also available as sonar-issues-sync for backward compatibility, but deprecated)
 - sonar-projects: Exports / Imports projects to/from zip file (Import works for EE and higher)
-- sonar-config: Exports and imports an entire (or subsets of a) SonarQube/SonarCloud platform configuration as code (JSON)
+- sonar-config: Exports and imports an entire (or subsets of a) SonarQube Server or Cloud platform configuration as code (JSON)
 - sonar-rules: Exports Sonar rules
 See tools built-in -h help and https://github.com/okorach/sonar-tools for more documentation
 ''')

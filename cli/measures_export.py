@@ -288,11 +288,11 @@ def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[proje
 def __check_options_vs_edition(edition: str, params: dict[str, str]) -> dict[str, str]:
     """Checks and potentially modify params according to edition of the target platform"""
     if edition == c.CE and params[options.WITH_BRANCHES]:
-        log.warning("SonarQube instance is a community edition, branch option ignored")
+        log.warning("SonarQube Server instance is a community edition, branch option ignored")
         params[options.WITH_BRANCHES] = False
     if edition in (c.CE, c.DE) and params[options.COMPONENT_TYPE] == "portfolio":
-        log.warning("SonarQube instance is a %s edition, there are no portfolios", edition)
-        util.exit_fatal("SonarQube instance is a %s edition, there are no portfolios", exit_code=errcodes.UNSUPPORTED_OPERATION)
+        log.warning("SonarQube Server instance is a %s edition, there are no portfolios", edition)
+        util.exit_fatal("SonarQube Server instance is a %s edition, there are no portfolios", exit_code=errcodes.UNSUPPORTED_OPERATION)
     return params
 
 

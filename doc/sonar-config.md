@@ -1,10 +1,10 @@
 # sonar-config
 
-Command line tool to entirely export or import a SonarQube configuration.
+Command line tool to entirely export or import a SonarQube Server or Cloud configuration.
 The detail of what is exported or imported is listed at the bottom of this page
 
 During import:
-- When something (user, group, project, portfolio, application quality profile, quality gate, setting) does not exist in the target SonarQube platform, the object is created
+- When something (user, group, project, portfolio, application quality profile, quality gate, setting) does not exist in the target SonarQube Server or Cloud platform, the object is created
 - When the object already exists it is updated according to the config file
 - When an object exists in the target platform and is not defined in the config file, this object remains unmodified. As such the import of configuration is "additive" to the current config, it does not replace it.
 
@@ -77,7 +77,7 @@ sonar-config -i --what projects -f myconf.json
 - Rules that are instantiations of rule templates
 - Standard rules that have been modified with custom tags or extended description
 - Quality profiles, including inheritance, and quality profiles admin permissions
-- Quality gates, including quality gates admin permissions (SonarQube 9.3+)
+- Quality gates, including quality gates admin permissions (SonarQube Server 9.3+)
 - Groups
 - Users and their group memberships
 - Global permissions

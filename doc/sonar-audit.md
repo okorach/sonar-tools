@@ -30,7 +30,7 @@ When `--what` is not specified, everything is audited
 - `--what apps`: Audits applications
 - `-f <file>`: Sends audit output to `<file>`, `stdout` is the default. The output format is deducted from
   the file extension (JSON or CSV), except if `--format` is specified
-- `--sif <SystemInfoFile>`: Will audit the input SIF file, instead of connecting to a SonarQube platform.
+- `--sif <SystemInfoFile>`: Will audit the input SIF file, instead of connecting to a SonarQube Server or Cloud platform.
   In that case:
   - URL and token are not needed
   - Much less is audited (because SIF does not provide as much information as a live platform)
@@ -100,8 +100,8 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - `sonar.core.serverBaseURL` is not set
   - `sonar.global.exclusions` is not empty
   - Project default visibility is `public`
-  - SonarQube uses the built-in H2 database
-  - SonarQube uses an external database on same host as SonarQube itself
+  - SonarQube Server uses the built-in H2 database
+  - SonarQube Server uses an external database on same host as SonarQube Server itself
 - Global permissions: (if `audit.globalSettings.permission = yes`, default `yes`)
   - More than 3 users with global `admin`, `admin quality gates`, `admin quality profiles` or `create project` permission
   - More than 10 users with any global permissions (excluding groups)

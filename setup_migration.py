@@ -34,7 +34,7 @@ setuptools.setup(
     scripts=["migration/sonar_migration"],
     author="Olivier Korach",
     author_email="olivier.korach@gmail.com",
-    description="A SonarQube collection tool to use in the context of SonarQube to SonarCloud migration",
+    description="A SonarQube collection tool to use in the context of SonarQube Server to SonarQube Cloud migration",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/okorach/sonar-tools",
