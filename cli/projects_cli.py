@@ -58,6 +58,7 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
         "exportSonarqubeEnvironment": {
             "url": endpoint.url(),
             "version": ".".join([str(n) for n in endpoint.version()[:2]]),
+            "releaseDate": utilities.date_to_string(endpoint.release_date()),
             "plugins": endpoint.plugins(),
         },
         "projects": dump,
