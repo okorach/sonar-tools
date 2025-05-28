@@ -270,6 +270,10 @@ class Task(sq.SqObject):
             short_err = "ZIP_DOES_NOT_MATCH_PROJECT"
         elif "Can not unzip file" in errmsg:
             short_err = "CANNOT_UNZIP"
+        elif re.match(r"Project dump was generated with .* but .* is required", errmsg):
+            short_err = "INCOMPATIBLE_SQ_VERSION"
+        elif "Project dump can't be imported as installed plugins in the target SonarQube instance are not compatible with the dump" in errmsg:
+            short_err = "INCOMPATIBLE_PLUGINS"
         log.error("%s import error %s", str(self), errmsg)
         return short_err
 
