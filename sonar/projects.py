@@ -711,13 +711,12 @@ class Project(components.Component):
             write_q.put(problems)
         return problems
 
-    def export_zip(self, asynchronous: bool = False, timeout: int = 180) -> dict[str, str]:
+    def export_zip(self, asynchronous: bool = False, timeout: int = 180) -> tuple[str, Optional[str]]:
         """Exports project as zip file, synchronously
 
         :param bool asynchronous: Whether to export the project asynchronously or not (if async, export_zip returns immediately)
         :param int timeout: timeout in seconds to complete the export operation
-        :return: export status (success/failure/timeout), and zip file path
-        :rtype: dict
+        :returns: export status (success/failure/timeout), and zip file path
         """
         log.info("Exporting %s (%s)", str(self), "asynchronously" if asynchronous else "synchronously")
         if self.endpoint.version() < (9, 2, 0) and self.endpoint.edition() not in (c.EE, c.DCE):
@@ -730,19 +729,19 @@ class Project(components.Component):
             util.handle_error(e, f"exporting zip of {str(self)}", catch_all=True)
             if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(self.key, f"Project key '{self.key}' not found")
-            return {"status": f"FAILED/{util.http_error_string(resp.status_code)}"}
+            return "FAILED/{util.http_error_string(resp.status_code)}", None
         except ConnectionError as e:
-            return {"status": str(e)}
+            return str(e), None
         if asynchronous:
-            return {"status": ZIP_ASYNC_SUCCESS}
+            return ZIP_ASYNC_SUCCESS, None
         data = json.loads(resp.text)
         status = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data).wait_for_completion(timeout=timeout)
         if status != tasks.SUCCESS:
             log.error("%s export %s", str(self), status)
-            return {"status": status}
+            return status, None
         dump_file = json.loads(self.get("project_dump/status", params={"key": self.key}).text)["exportedDump"]
         log.debug("%s export %s, dump file %s", str(self), status, dump_file)
-        return {"status": tasks.SUCCESS, "file": dump_file}
+        return tasks.SUCCESS, dump_file
 
     def import_zip(self, asynchronous: bool = False, timeout: int = 180) -> str:
         """Imports a project zip file in SonarQube
@@ -1637,7 +1636,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
-    :return: list of projects settings
+    :returns: list of projects settings
     :rtype: ObjectJsonRepr
     """
 
@@ -1670,7 +1669,7 @@ def exists(key: str, endpoint: pf.Platform) -> bool:
     """
     :param str key: project key to check
     :param Platform endpoint: reference to the SonarQube platform
-    :return: whether the project exists
+    :returns: whether the project exists
     :rtype: bool
     """
     try:
@@ -1686,7 +1685,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     :param Platform endpoint: reference to the SonarQube platform
     :param ObjectJsonRepr config_data: the configuration to import
     :param KeyList key_list: List of project keys to be considered for the import, defaults to None (all projects)
-    :return: Nothing
+    :returns: Nothing
     """
     if "projects" not in config_data:
         log.info("No projects to import")
@@ -1717,15 +1716,14 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
 def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]:
     """Thread callable for project zip export"""
     try:
-        dump = project.export_zip(timeout=export_timeout)
+        status, file = project.export_zip(timeout=export_timeout)
     except exceptions.UnsupportedOperation:
         util.exit_fatal("Zip export unsupported on your SonarQube version", errcodes.UNSUPPORTED_OPERATION)
-    status = dump["status"]
     log.debug("Exporting thread for %s done, status: %s", str(project), status)
     data = {"key": project.key, "exportProjectUrl": project.url(), "exportStatus": status}
     if status == "SUCCESS":
-        data["file"] = os.path.basename(dump["file"])
-        data["exportPath"] = dump["file"]
+        data["file"] = os.path.basename(file)
+        data["exportPath"] = file
         data["exportDate"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log.debug("Exporting thread for %s returns %s", str(project), str(data))
     return data
@@ -1738,7 +1736,7 @@ def export_zips(endpoint: pf.Platform, key_list: types.KeyList = None, threads: 
     :param KeyList key_list: List of project keys to export, defaults to None (all projects)
     :param int threads: Number of parallel threads for export, defaults to 8
     :param int export_timeout: Tiemout to export the project, defaults to 30
-    :return: list of exported projects and platform version
+    :returns: list of exported projects and platform version
     """
     statuses, results = {}, []
     projects_list = get_list(endpoint, key_list, threads=threads)
