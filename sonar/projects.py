@@ -729,7 +729,7 @@ class Project(components.Component):
             util.handle_error(e, f"exporting zip of {str(self)}", catch_all=True)
             if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(self.key, f"Project key '{self.key}' not found")
-            return "FAILED/{util.http_error_string(resp.status_code)}", None
+            return f"FAILED/{util.http_error_string(e.response.status_code)}", None
         except ConnectionError as e:
             return str(e), None
         if asynchronous:
@@ -766,7 +766,7 @@ class Project(components.Component):
 
         if asynchronous:
             return ZIP_ASYNC_SUCCESS
-                
+
         data = json.loads(resp.text)
         import_task = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data)
         status = import_task.wait_for_completion(timeout=timeout)
