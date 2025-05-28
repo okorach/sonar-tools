@@ -66,12 +66,10 @@ _BIND_SEP = ":::"
 _AUDIT_BRANCHES_PARAM = "audit.projects.branches"
 AUDIT_MODE_PARAM = "audit.mode"
 
-ZIP_SUCCESS = "SUCCESS"
 ZIP_ASYNC_SUCCESS = "ASYNC_SUCCESS"
 ZIP_ERR_403 = "FAILED/INSUFFICIENT_PERMISSIONS"
 ZIP_CONFLICT = "FAILED/ZIP_CONFLICT"
 ZIP_PROJ_EXISTS = "FAILED/PROJECT_ALREADY_EXISTS"
-ZIP_FILE_MISSING = "FAILED/ZIP_FILE_MISSING"
 ZIP_TIMEOUT = "FAILED/TIMEOUT"
 ZIP_EXCEPTION = "FAILED/EXCEPTION"
 
@@ -728,14 +726,13 @@ class Project(components.Component):
             )
         try:
             resp = self.post("project_dump/export", params={"key": self.key})
-        except (ConnectionError, RequestException) as e:
+        except RequestException as e:
             util.handle_error(e, f"exporting zip of {str(self)}", catch_all=True)
             if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(self.key, f"Project key '{self.key}' not found")
-            errmsg = str(e)
-            if errmsg.startswith("403 Client Error"):
-                errmsg = ZIP_ERR_403
-            return {"status": errmsg}
+            return {"status": f"FAILED/{util.http_error_string(resp.status_code)}"}
+        except ConnectionError as e:
+            return {"status": str(e)}
         if asynchronous:
             return {"status": ZIP_ASYNC_SUCCESS}
         data = json.loads(resp.text)
@@ -745,7 +742,7 @@ class Project(components.Component):
             return {"status": status}
         dump_file = json.loads(self.get("project_dump/status", params={"key": self.key}).text)["exportedDump"]
         log.debug("%s export %s, dump file %s", str(self), status, dump_file)
-        return {"status": ZIP_SUCCESS, "file": dump_file}
+        return {"status": tasks.SUCCESS, "file": dump_file}
 
     def import_zip(self, asynchronous: bool = False, timeout: int = 180) -> str:
         """Imports a project zip file in SonarQube
@@ -760,18 +757,22 @@ class Project(components.Component):
             raise exceptions.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
         try:
             resp = self.post("project_dump/import", params={"key": self.key})
-        except (ConnectionError, RequestException) as e:
+        except RequestException as e:
             if "Dump file does not exist" in util.sonar_error(e.response):
-                return ZIP_FILE_MISSING
-            util.handle_error(e, f"importing zip of {str(self)} {mode}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(self.key, f"Project key '{self.key}' not found")
+                return f"FAILED/{tasks.ZIP_MISSING}"
+            util.handle_error(e, f"importing zip of {str(self)} {mode}", catch_all=True)
+            return f"FAILED/{util.http_error_string(e.response.status_code)}"
+        except ConnectionError as e:
+            return f"FAILED/{str(e)}"
+
         if asynchronous:
-            return ZIP_ASYNC_SUCCESS if resp.status_code == HTTPStatus.OK else "FAILED/HTTP_ERROR"
+            return ZIP_ASYNC_SUCCESS
+                
         data = json.loads(resp.text)
         import_task = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data)
         status = import_task.wait_for_completion(timeout=timeout)
         log.log(log.INFO if status == tasks.SUCCESS else log.ERROR, "%s import background task %s", str(self), status)
-        return ZIP_SUCCESS if status == tasks.SUCCESS else f"FAILED/BACKGROUND_TASK_{status}/{import_task.short_error()}"
+        return status if status == tasks.SUCCESS else f"FAILED/BACKGROUND_TASK_{status}/{import_task.short_error()}"
 
     def get_branches_and_prs(self, filters: dict[str, str]) -> Optional[dict[str, object]]:
         """Get lists of branches and PR objects"""
@@ -1770,7 +1771,7 @@ def export_zips(endpoint: pf.Platform, key_list: types.KeyList = None, threads: 
             try:
                 conflict = next(proj for proj in results if proj.get("file", "") == result.get("file", " "))
                 conflict["exportStatus"] = ZIP_CONFLICT
-                statuses[ZIP_SUCCESS] -= 1
+                statuses[tasks.SUCCESS] -= 1
                 log.critical("Zip file export conflict detected between project keys '%s' and '%s'", result["key"], conflict["key"])
                 statuses[ZIP_CONFLICT] = 1 if ZIP_CONFLICT not in statuses else statuses[ZIP_CONFLICT] + 1
             except StopIteration:
