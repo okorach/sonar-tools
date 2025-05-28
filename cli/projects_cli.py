@@ -67,21 +67,6 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
         print(utilities.json_dump(export_data), file=fd)
 
 
-def __check_sq_environments(import_sq: platform.Platform, export_sq: dict[str, str]) -> None:
-    """Checks if export and import environments are compatibles"""
-    imp_version = import_sq.version()[:2]
-    exp_version = tuple(int(n) for n in export_sq["version"].split(".")[:2])
-    if imp_version != exp_version:
-        raise exceptions.UnsupportedOperation(
-            f"Export was not performed with same SonarQube Server version, aborting... ({utilities.version_to_string(exp_version)} vs {utilities.version_to_string(imp_version)})"
-        )
-    diff_plugins = set(export_sq["plugins"].items()) - set(import_sq.plugins().items())
-    if len(diff_plugins) > 0:
-        raise exceptions.UnsupportedOperation(
-            f"Export platform has the following plugins ({str(diff_plugins)}) missing in the import platform, aborting..."
-        )
-
-
 def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
     """Imports a list of projects in SonarQube Server EE+"""
     file = kwargs[options.REPORT_FILE]
@@ -92,7 +77,6 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
             data = json.load(fd)
     except json.JSONDecodeError as e:
         raise options.ArgumentsError(f"JSON decoding error while reading file '{file}': {str(e)}")
-    __check_sq_environments(endpoint, data["exportSonarqubeEnvironment"])
     statuses = projects.import_zips(
         endpoint, file, kwargs.get(options.NBR_THREADS, _EXPORT_IMPORT_THREADS), import_timeout=kwargs.get("exportTimeout", _EXPORT_IMPORT_TIMEOUT)
     )

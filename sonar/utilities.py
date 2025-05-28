@@ -104,7 +104,7 @@ def format_date(somedate: datetime.datetime) -> str:
     return ISO_DATE_FORMAT % (somedate.year, somedate.month, somedate.day)
 
 
-def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, str]:
+def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, str, None]:
     """Converts a string date to a date"""
     try:
         return datetime.datetime.strptime(string, SQ_DATETIME_FORMAT)
@@ -112,7 +112,7 @@ def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, str]:
         try:
             return datetime.datetime.strptime(string, SQ_DATE_FORMAT).replace(tzinfo=datetime.timezone.utc)
         except (ValueError, TypeError):
-            return string
+            return None
 
 
 def date_to_string(date: Optional[datetime.datetime], with_time: bool = True) -> str:
@@ -732,3 +732,19 @@ def normalize_json_file(file: Optional[str], remove_empty: bool = True, remove_n
         json_data = remove_nones(json_data)
     with open_file(file, mode="w") as fd:
         print(json_dump(json_data), file=fd)
+
+
+def http_error_string(status: HTTPStatus) -> str:
+    """Returns the error string for a HTTPStatus code"""
+    if status == HTTPStatus.UNAUTHORIZED:
+        return "UNAUTHORIZED"
+    elif status == HTTPStatus.FORBIDDEN:
+        return "INSUFFICIENT_PERMISSIONS"
+    elif status == HTTPStatus.NOT_FOUND:
+        return "NOT_FOUND"
+    elif status == HTTPStatus.BAD_REQUEST:
+        return "BAD_REQUEST"
+    elif status == HTTPStatus.INTERNAL_SERVER_ERROR:
+        return "INTERNAL_SERVER_ERROR"
+    else:
+        return f"HTTP Error {status.value} - {status.phrase}"

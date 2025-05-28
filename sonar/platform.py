@@ -31,14 +31,12 @@ from typing import Optional
 import time
 import datetime
 import json
-import tempfile
 import requests
-import jprops
 from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.utilities as util
-from sonar.util import types
+from sonar.util import types, update_center
 import sonar.util.constants as c
 
 from sonar import errcodes, settings, devops, version, sif, exceptions
@@ -53,13 +51,8 @@ WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 
 _SONAR_TOOLS_AGENT = f"sonar-tools {version.PACKAGE_VERSION}"
-_UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-center-properties/master/update-center-source.properties"
 
 _APP_JSON = "application/json"
-LTA = None
-LATEST = None
-_HARDCODED_LTA = (2025, 1, 1)
-_HARDCODED_LATEST = (2025, 2, 0)
 
 _SERVER_ID_KEY = "Server ID"
 
@@ -128,6 +121,14 @@ class Platform(object):
             self._version = tuple(int(n) for n in self.get("/api/server/version").text.split("."))
             log.debug("Version = %s", str(self._version))
         return self._version[0:3]
+
+    def release_date(self) -> Optional[datetime.date]:
+        """
+        :returns: the SonarQube platform release date if found in update center or None if SonarQube Cloud or if the date cannot be found
+        """
+        if self.is_sonarcloud():
+            return None
+        return update_center.get_release_date(self.version())
 
     def edition(self) -> str:
         """
@@ -702,15 +703,15 @@ class Platform(object):
         if self.is_sonarcloud():
             return []
         sq_vers, v = self.version(), None
-        if sq_vers < lta()[:2]:
+        if sq_vers < update_center.get_lta()[:2]:
             rule = get_rule(RuleId.BELOW_LTA)
-            v = lta()
-        elif sq_vers < lta():
+            v = update_center.get_lta()
+        elif sq_vers < update_center.get_lta():
             rule = get_rule(RuleId.LTA_PATCH_MISSING)
-            v = lta()
-        elif sq_vers[:2] > lta()[:2] and sq_vers < latest()[:2]:
+            v = update_center.get_lta()
+        elif sq_vers[:2] > update_center.get_lta()[:2] and sq_vers < update_center.get_latest()[:2]:
             rule = get_rule(RuleId.BELOW_LATEST)
-            v = latest()
+            v = update_center.get_latest()
         if not v:
             return []
         # pylint: disable-next=E0606
@@ -854,53 +855,6 @@ def _get_multiple_values(n: int, setting: str, severity: sev.Severity, domain: t
     values[n - 1] = typ.to_type(values[n - 1])
     # TODO(okorach) Handle case of too many values
     return values
-
-
-def __lta_and_latest() -> tuple[tuple[int, int, int], tuple[int, int, int]]:
-    """Returns the current version of LTA and LATEST, if possible querying the update center,
-    using hardcoded values as fallback"""
-    global LTA
-    global LATEST
-    if LTA is None:
-        log.debug("Attempting to reach Sonar update center")
-        _, tmpfile = tempfile.mkstemp(prefix="sonar-tools", suffix=".txt", text=True)
-        try:
-            with open(tmpfile, "w", encoding="utf-8") as fp:
-                print(requests.get(_UPDATE_CENTER, headers={"user-agent": _SONAR_TOOLS_AGENT}, timeout=10).text, file=fp)
-            with open(tmpfile, "r", encoding="utf-8") as fp:
-                upd_center_props = jprops.load_properties(fp)
-            v = upd_center_props.get("ltaVersion", "2025.1.1").split(".")
-            if len(v) == 2:
-                v.append("0")
-            LTA = tuple(int(n) for n in v)
-            v = upd_center_props.get("sqs", "2025.2").split(",")[-1].split(".")
-            if len(v) == 2:
-                v.append("0")
-            LATEST = tuple(int(n) for n in v)
-            log.info("Sonar update center says LTA (ex-LTS) = %s, LATEST = %s", str(LTA), str(LATEST))
-        except (EnvironmentError, HTTPError):
-            LTA = _HARDCODED_LTA
-            LATEST = _HARDCODED_LATEST
-            log.info("Sonar update center read failed, hardcoding LTA (ex-LTS) = %s, LATEST = %s", str(LTA), str(LATEST))
-        try:
-            os.remove(tmpfile)
-        except EnvironmentError:
-            pass
-    return LTA, LATEST
-
-
-def lta() -> tuple[int, int, int]:
-    """
-    :return: the current SonarQube LTA (ex-LTS) version
-    """
-    return __lta_and_latest()[0]
-
-
-def latest() -> tuple[int, int, int]:
-    """
-    :return: the current SonarQube LATEST version
-    """
-    return __lta_and_latest()[1]
 
 
 def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
