@@ -26,7 +26,7 @@ import requests
 import tempfile
 import jprops
 import sonar.logging as log
-from sonar import version
+from sonar import version, utilities
 
 _UPDATE_CENTER_URL = "https://downloads.sonarsource.com/sonarqube/update/update-center-all-versions.properties"
 _HARDCODED_LTA = (2025, 1, 1)
@@ -66,7 +66,7 @@ def get_update_center_properties() -> Optional[dict[str, str]]:
 def get_release_date(version: tuple[int, ...]) -> Optional[datetime.date]:
     """Get the release date from a SonarQube Server or Community Build release
     :returns: The release date or None if not found"""
-    digits = min(len(version), 3)
+    digits = 2 if len(version) == 3 and version[2] == 0 else min(len(version), 3)
     formatted_release = ".".join(str(i) for i in version[:digits])
     str_date = get_update_center_properties().get(f"{formatted_release}.date", "")
     if str_date == "":
