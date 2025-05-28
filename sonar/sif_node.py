@@ -28,7 +28,7 @@ from dateutil.relativedelta import relativedelta
 
 import sonar.logging as log
 import sonar.utilities as util
-from sonar.util import types
+from sonar.util import types, update_center
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 from sonar import config
@@ -309,8 +309,10 @@ def audit_plugins(obj: object, obj_name: str, audit_settings: types.ConfigSettin
     if "Plugins" not in obj.json:
         log.info("Plugins entry not found for %s, audit of 3rd party plugins skipped...", obj_name)
         return []
-    whitelist = util.csv_to_list(audit_settings.get("audit.plugins.whitelist", ""))
-    log.info("Auditing 3rd part plugins with CSV whitelist '%s'", ", ".join(whitelist))
+    whitelist = set(util.csv_to_list(audit_settings.get("audit.plugins.whitelist", "")))
+    if audit_settings.get("audit.plugins.updateCenterWhitelist", True):
+        whitelist = set(list(whitelist) + update_center.get_registered_plugins())
+    log.info("Auditing 3rd part plugins with whitelist '%s'", ", ".join(whitelist))
     problems = []
     for key, name in obj.json["Plugins"].items():
         if key not in whitelist:
