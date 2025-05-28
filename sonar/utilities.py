@@ -732,3 +732,19 @@ def normalize_json_file(file: Optional[str], remove_empty: bool = True, remove_n
         json_data = remove_nones(json_data)
     with open_file(file, mode="w") as fd:
         print(json_dump(json_data), file=fd)
+
+
+def http_error_string(status: HTTPStatus) -> str:
+    """Returns the error string for a HTTPStatus code"""
+    if status == HTTPStatus.UNAUTHORIZED:
+        return "UNAUTHORIZED"
+    elif status == HTTPStatus.FORBIDDEN:
+        return "INSUFFICIENT_PERMISSION"
+    elif status == HTTPStatus.NOT_FOUND:
+        return "NOT_FOUND"
+    elif status == HTTPStatus.BAD_REQUEST:
+        return "BAD_REQUEST"
+    elif status == HTTPStatus.INTERNAL_SERVER_ERROR:
+        return "INTERNAL_SERVER_ERROR"
+    else:
+        return f"HTTP Error {status.value} - {status.phrase}"
