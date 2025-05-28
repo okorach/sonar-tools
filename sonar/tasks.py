@@ -47,6 +47,16 @@ TIMEOUT = "TIMEOUT"
 
 STATUSES = (SUCCESS, PENDING, IN_PROGRESS, FAILED, CANCELED)
 
+# Project import background task errors
+NO_ERROR = "NO_ERROR"
+ZIP_MISSING = "ZIP_MISSING"
+ZIP_CORRUPTED = "ZIP_CORRUPTED"
+ZIP_DOESNT_MATCH = "ZIP_DOES_NOT_MATCH_PROJECT"
+CANT_UNZIP = "CANNOT_UNZIP"
+INCOMPATIBLE_SQ = "INCOMPATIBLE_SQ_VERSION"
+INCOMPATIBLE_PLUGINS = "INCOMPATIBLE_PLUGINS"
+IMPORT_ERRORS = (ZIP_MISSING, ZIP_CORRUPTED, ZIP_DOESNT_MATCH, CANT_UNZIP, INCOMPATIBLE_SQ, INCOMPATIBLE_PLUGINS)
+
 SCANNER_VERSIONS = get_scanners_versions()
 
 
@@ -256,24 +266,27 @@ class Task(sq.SqObject):
         self._load_context(use_cache=use_cache)
         return self.sq_json.get("errorMessage", None)
 
-    def short_error(self) -> Optional[str]:
+    def short_error(self) -> str:
+        """Returns a short error message for the background task"""
         details = self.error_details(use_cache=False)[1]
         if not details:
-            return "NO_ERROR"
+            return NO_ERROR
         errmsg = details.split("\n")[0]
         short_err = errmsg
         if "Dump file does not exist" in errmsg:
-            short_err = "ZIP_MISSING"
+            # Actually this error should happen before the background task is created
+            # so it should never happen once the object exists
+            short_err = ZIP_MISSING
         elif "Missing metadata file" in errmsg:
-            short_err = "ZIP_CORRUPTED"
+            short_err = ZIP_CORRUPTED
         elif "Project key in dump file" in errmsg and "does not match" in errmsg:
-            short_err = "ZIP_DOES_NOT_MATCH_PROJECT"
+            short_err = ZIP_DOESNT_MATCH
         elif "Can not unzip file" in errmsg:
-            short_err = "CANNOT_UNZIP"
+            short_err = CANT_UNZIP
         elif re.match(r"Project dump was generated with .* but .* is required", errmsg):
-            short_err = "INCOMPATIBLE_SQ_VERSION"
+            short_err = INCOMPATIBLE_SQ
         elif "Project dump can't be imported as installed plugins in the target SonarQube instance are not compatible with the dump" in errmsg:
-            short_err = "INCOMPATIBLE_PLUGINS"
+            short_err = INCOMPATIBLE_PLUGINS
         log.error("%s import error %s", str(self), errmsg)
         return short_err
 
