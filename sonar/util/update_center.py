@@ -93,3 +93,13 @@ def get_latest() -> tuple[int, int, int]:
         return _HARDCODED_LATEST
     else:
         return tuple(int(s) for s in sqs.split("."))
+
+
+def get_registered_plugins() -> list[str]:
+    """
+    :returns: a list of registered plugin keys in the update center
+    """
+    plugins = get_update_center_properties().get("plugins", None)
+    if not plugins:
+        return []
+    return [p.strip() for p in plugins.split(",") if p.strip() != ""]
