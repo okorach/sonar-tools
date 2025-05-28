@@ -739,7 +739,7 @@ def http_error_string(status: HTTPStatus) -> str:
     if status == HTTPStatus.UNAUTHORIZED:
         return "UNAUTHORIZED"
     elif status == HTTPStatus.FORBIDDEN:
-        return "INSUFFICIENT_PERMISSION"
+        return "INSUFFICIENT_PERMISSIONS"
     elif status == HTTPStatus.NOT_FOUND:
         return "NOT_FOUND"
     elif status == HTTPStatus.BAD_REQUEST:
