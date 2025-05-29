@@ -7,7 +7,7 @@
   - Mutithread `sonar-projects` import
   - Diagnose import error based on background tasks results rather than (impossible) pre-checks
     (eg version check for Commuity Builds vs Commercial Editions)
-  - Averoll much more robust detection and reporting of export/import errors
+  - Overall much more robust detection and reporting of export/import errors
 
 * `sonar-audit`
   - Fix bug on checking proper value of boolean settings such as `sonar.cpd.cross_project` and `sonar.forceAuthentication`
