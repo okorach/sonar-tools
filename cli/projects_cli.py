@@ -53,6 +53,7 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
         key_list=kwargs[options.KEYS],
         export_timeout=kwargs.get("exportTimeout", _EXPORT_IMPORT_TIMEOUT),
         threads=kwargs.get(options.NBR_THREADS, _EXPORT_IMPORT_THREADS),
+        skip_zero_loc=kwargs.get("skipZeroLoc", False),
     )
     export_data = {
         "exportSonarqubeEnvironment": {
@@ -84,8 +85,16 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
     else:
         # 3.12 and lower format
         key, status_key = "project_exports", "status"
-    project_list = [projdata["key"] for projdata in data[key] if projdata.get(status_key, "") == "SUCCESS"]
-    log.info("Skipping import of %d projects since export was failed", len(data[key]) - len(project_list))
+    project_list = [projdata["key"] for projdata in data[key] if projdata.get(status_key, "").startswith("SUCCESS")]
+    log.info("Skipping import of %d projects since export was failed or skipped", len(data[key]) - len(project_list))
+    if kwargs.get("skipZeroLoc", False):
+        raw_count = len(project_list)
+        project_list = [
+            projdata["key"]
+            for projdata in data[key]
+            if projdata.get(status_key, "").startswith("SUCCESS") and "ZERO_LOC" not in projdata.get(status_key, "")
+        ]
+        log.info("Skipping import of %d projects since they have 0 LoC", raw_count - len(project_list))
 
     statuses = projects.import_zips(
         endpoint,
@@ -123,6 +132,13 @@ def main() -> None:
             type=int,
             default=_EXPORT_IMPORT_TIMEOUT,
             help=f"Maximum wait time for export or import of a project (default {_EXPORT_IMPORT_TIMEOUT} seconds)",
+        )
+        parser.add_argument(
+            "--skipZeroLoc",
+            action="store_true",
+            default=False,
+            required=False,
+            help="Skips export or import of projects with zero lines of code",
         )
         kwargs = utilities.convert_args(options.parse_and_check(parser=parser, logger_name=TOOL_NAME))
         sq = platform.Platform(**kwargs)
