@@ -1,3 +1,26 @@
+# Version 3.13
+
+* `sonar-projects` improvements
+  - Allow to export/import or not projects with 0 LoCs (projects that were only provisioned)
+  - Detect conflicts in project keys that generate the same zip file
+  - Add URL of source and target project in report
+  - Mutithread `sonar-projects` import
+  - Diagnose import error based on background tasks results rather than (impossible) pre-checks
+    (eg version check for Commuity Builds vs Commercial Editions)
+  - Averoll much more robust detection and reporting of export/import errors
+
+* `sonar-audit`
+  - Fix bug on checking proper value of boolean settings such as `sonar.cpd.cross_project` and `sonar.forceAuthentication`
+    Provide more synthetic result of the export or import result
+  - Don't raise issue when plugins that are registered on the update center are installed
+
+# Version 3.12
+
+* `sonar-projects` improvements
+  - Honor the `--threads` parameter
+  - General Hardening
+  - Provide more synthetic result of the export result
+
 # Version 3.11
 
 * `sonar-findings-sync`
