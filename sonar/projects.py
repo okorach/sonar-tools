@@ -1793,7 +1793,7 @@ def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30
     return o_proj, s
 
 
-def import_zips(endpoint: pf.Platform, file: str, threads: int = 2, import_timeout: int = 60) -> dict[Project, str]:
+def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60) -> dict[Project, str]:
     """Imports as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1804,17 +1804,10 @@ def import_zips(endpoint: pf.Platform, file: str, threads: int = 2, import_timeo
 
     if endpoint.edition() not in (c.EE, c.DCE):
         raise exceptions.UnsupportedOperation(f"Zip import unsupported on {endpoint.edition()} edition")
-    with open(file, "r", encoding="utf-8") as fd:
-        data = json.load(fd)
-    project_list = [projdata["key"] for projdata in data["projects"] if projdata.get("exportStatus", "") == "SUCCESS"]
-    failed_list = [projdata["key"] for projdata in data["projects"] if projdata.get("exportStatus", "") != "SUCCESS"]
-    log.info("Skipping import of %d projects since export was failed", len(failed_list))
-    # __check_sq_environments(endpoint, data["exportSonarqubeEnvironment"])
-
     nb_projects = len(project_list)
     log.info("Importing zip of %d projects", nb_projects)
     i = 0
-    statuses_count = {}
+    statuses_count = {tasks.SUCCESS: 0}
     statuses = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipImport") as executor:
         futures, futures_map = [], {}
