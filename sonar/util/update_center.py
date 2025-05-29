@@ -57,7 +57,7 @@ def get_update_center_properties() -> Optional[dict[str, str]]:
         with open(tmpfile, "r", encoding="utf-8") as fp:
             _UPDATE_CENTER_PROPERTIES = jprops.load_properties(fp)
         os.remove(tmpfile)
-    except (OSError, requests.RequestException) as e:
+    except OSError as e:
         log.warning("Sonar update center error %s, hardcoding LTA (ex-LTS) = %s, LATEST = %s", str(e), _HARDCODED_LTA_STR, _HARDCODED_LATEST_STR)
         _UPDATE_CENTER_PROPERTIES = {}
 
