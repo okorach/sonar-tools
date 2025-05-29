@@ -21,6 +21,7 @@
 
 """ update_center tests """
 
+import datetime
 import sonar.util.update_center as uc
 
 
@@ -30,12 +31,40 @@ def test_get_upd_center_data():
 
 
 def test_lta():
-    """Test the hardcoded LTA date"""
+    """Test the LTA"""
+    now = datetime.datetime.now()
+    year, month = now.year, now.month
+    if month == 1:
+        year -= 1
     lta = uc.get_lta()
-    assert lta[:2] == (2025, 1)
+    assert lta[:2] == (year, 1)
 
 
 def test_latest():
-    """Test the hardcoded LTA date"""
-    latest = uc.get_latest()
-    assert latest[0] == (2025, 3)
+    """Test the LATEST"""
+    now = datetime.datetime.now()
+    year, month = now.year, now.month
+    if month == 1:
+        month = 12
+        year -= 1
+    digit = month // 2
+    assert uc.get_latest()[:2] == (year, digit)
+
+
+def test_release_date():
+    """Test the release date"""
+    dates = {"10.2": "2023-09-01", "5.4": "2016-03-08", "8.0": "2019-10-16", "9.7.1": "2022-10-28", "2025.2": "2025-03-26", "25.2": "2025-02-03"}
+    for version, date_str in dates.items():
+        release_date = uc.get_release_date(tuple(version.split(".")))
+        assert release_date == datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+
+    assert uc.get_release_date((9, 10, 3)) is None
+
+
+def tes_get_registered_plugins():
+    """Test the registered plugins"""
+    plugin_list = ["authaad", "clover", "ecocodephp"]
+    plugins = uc.get_registered_plugins()
+    assert len(plugins) > 0
+    for plugin in plugin_list:
+        assert plugin in plugins

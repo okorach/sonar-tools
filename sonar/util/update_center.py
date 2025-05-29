@@ -57,7 +57,7 @@ def get_update_center_properties() -> Optional[dict[str, str]]:
         with open(tmpfile, "r", encoding="utf-8") as fp:
             _UPDATE_CENTER_PROPERTIES = jprops.load_properties(fp)
         os.remove(tmpfile)
-    except (OSError, requests.RequestException) as e:
+    except OSError as e:
         log.warning("Sonar update center error %s, hardcoding LTA (ex-LTS) = %s, LATEST = %s", str(e), _HARDCODED_LTA_STR, _HARDCODED_LATEST_STR)
         _UPDATE_CENTER_PROPERTIES = {}
 
@@ -86,7 +86,7 @@ def get_lta() -> tuple[int, ...]:
     return tuple(int(s) for s in get_update_center_properties().get("ltaVersion", _HARDCODED_LTA_STR).split("."))
 
 
-def get_latest() -> tuple[int, int, int]:
+def get_latest() -> tuple[int, ...]:
     """
     :returns: the current SonarQube LATEST version
     """
