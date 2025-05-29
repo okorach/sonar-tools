@@ -1747,10 +1747,12 @@ def export_zips(
     projects_list = get_list(endpoint, key_list, threads=threads)
     nbr_projects = len(projects_list)
     if skip_zero_loc:
-        results = [{"key": p.key, "exportProjectUrl": p.url(), "exportStatus": f"SKIPPED/{ZIP_ZERO_LOC}"} for p in projects_list.values() if p.loc() == 0]
+        results = [
+            {"key": p.key, "exportProjectUrl": p.url(), "exportStatus": f"SKIPPED/{ZIP_ZERO_LOC}"} for p in projects_list.values() if p.loc() == 0
+        ]
         statuses[f"SKIPPED/{ZIP_ZERO_LOC}"] = len(results)
         projects_list = {k: v for k, v in projects_list.items() if v.loc() > 0}
-        log.info("Skipping export of %d projects with zero LOC", nbr_projects - len(projects_list))
+        log.info("Skipping export of %d projects with 0 LoC", nbr_projects - len(projects_list))
         nbr_projects = len(projects_list)
     log.info("Exporting %d projects to export", nbr_projects)
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipExport") as executor:
@@ -1804,12 +1806,15 @@ def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30
     return o_proj, s
 
 
-def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60) -> dict[Project, str]:
+def import_zips(
+    endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60, skip_zero_loc: bool = False
+) -> dict[Project, str]:
     """Imports as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
     :param int threads: Number of parallel threads for export, defaults to 2
     :param int import_timeout: Timeout to import the project, defaults to 60 s
+    :param bool skip_zero_loc: Whether to skip projects with zero LOC, defaults to False
     :return: import results
     """
 
@@ -1845,7 +1850,7 @@ def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2
             statuses[o_proj.key]["importStatus"] = status
 
             i += 1
-            log.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), o_proj.key, status)
+            log.info("%d/%d imports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), o_proj.key, status)
             log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses_count.items()]))
     return statuses
 
