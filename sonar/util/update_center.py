@@ -86,7 +86,7 @@ def get_lta() -> tuple[int, ...]:
     return tuple(int(s) for s in get_update_center_properties().get("ltaVersion", _HARDCODED_LTA_STR).split("."))
 
 
-def get_latest() -> tuple[int, int, int]:
+def get_latest() -> tuple[int, ...]:
     """
     :returns: the current SonarQube LATEST version
     """
