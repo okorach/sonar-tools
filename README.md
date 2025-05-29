@@ -253,12 +253,16 @@ Exports (or imports) projects of a given Server instance to / from zip files (Th
 `sonar-projects` replaces the deprecated `sonar-projects-export` and `sonar-projects-import` commands
 
 Basic Usage:
-`sonar-projects -e [--exportTimeout <timeout>] -f exported_projects.json`
+`sonar-projects -e [--exportTimeout <timeout>] [--skipZeroLoC] -f exported_projects.json`
 - `--exportTimeout`: Defines timeout to export a single project in seconds,
                      by default 180 s (large projects can take time to export)
+- `--skipZeroLoc`    Skips export of projects with zero lines of code
 - `-f`: Defines the file for JSON output (default stdout)
 
-`sonar-projects -i -f exported_projects.json`
+`sonar-projects -i [--importTimeout <timeout>] -f exported_projects.json`
+- `--importTimeout`: Defines timeout to import a single project in seconds,
+                     by default 180 s (large projects can take time to import)
+- `--skipZeroLoc`    Skips import of projects with zero lines of code (if they were exported in the first place)
 
 :information_source: All zip files are generated in the SonarQube Server instance standard location (under `data/governance/project_dumps/export`). On a DCE, the export may be distributed over all the Application Nodes
 :warning: **sonar-tools** 2.7 or higher is required for compatibility with SonarQube Server 10
