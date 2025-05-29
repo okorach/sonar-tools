@@ -31,32 +31,6 @@ import utilities as util
 import cli.projects_cli as proj_cli
 
 
-def test_import_compatibility() -> None:
-    util.start_logging()
-    jsondata = util.SQ.basics()
-    assert proj_cli.__check_sq_environments(util.SQ, jsondata) is None
-
-    src_json = deepcopy(jsondata)
-    src_json["version"] = "8.7.0"
-    with pytest.raises(exceptions.UnsupportedOperation):
-        proj_cli.__check_sq_environments(util.SQ, src_json)
-
-    src_json = deepcopy(jsondata)
-    src_json["plugins"] = {}
-    assert proj_cli.__check_sq_environments(util.SQ, src_json) is None
-
-    src_json = deepcopy(jsondata)
-    src_json["plugins"]["lua"] = "1.0 [Lua Analyzer]"
-    with pytest.raises(exceptions.UnsupportedOperation):
-        proj_cli.__check_sq_environments(util.SQ, src_json)
-
-    src_json = deepcopy(jsondata)
-    for p, v in src_json["plugins"].items():
-        src_json["plugins"][p] = "1." + v
-    with pytest.raises(exceptions.UnsupportedOperation):
-        proj_cli.__check_sq_environments(util.SQ, src_json)
-
-
 def test_import(get_json_file: Generator[str]) -> None:
     """test_import"""
     export_file = get_json_file

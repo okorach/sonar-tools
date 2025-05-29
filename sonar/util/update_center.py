@@ -20,13 +20,14 @@
 
 """ Update center utilities """
 
+import os
 from typing import Optional
 import datetime
 import requests
 import tempfile
 import jprops
 import sonar.logging as log
-from sonar import version, utilities
+from sonar import version
 
 _UPDATE_CENTER_URL = "https://downloads.sonarsource.com/sonarqube/update/update-center-all-versions.properties"
 _HARDCODED_LTA = (2025, 1, 1)
@@ -55,6 +56,7 @@ def get_update_center_properties() -> Optional[dict[str, str]]:
             print(requests.get(_UPDATE_CENTER_URL, headers={"user-agent": _SONAR_TOOLS_AGENT}, timeout=10).text, file=fp)
         with open(tmpfile, "r", encoding="utf-8") as fp:
             _UPDATE_CENTER_PROPERTIES = jprops.load_properties(fp)
+        os.remove(tmpfile)
     except (OSError, requests.RequestException) as e:
         log.warning("Sonar update center error %s, hardcoding LTA (ex-LTS) = %s, LATEST = %s", str(e), _HARDCODED_LTA_STR, _HARDCODED_LATEST_STR)
         _UPDATE_CENTER_PROPERTIES = {}
@@ -77,7 +79,7 @@ def get_release_date(version: tuple[int, ...]) -> Optional[datetime.date]:
         return datetime.datetime.strptime(str_date, "%Y-%m-%d").date()
 
 
-def get_lta() -> tuple[int, int, int]:
+def get_lta() -> tuple[int, ...]:
     """
     :returns: the current SonarQube LTA (ex-LTS) version
     """

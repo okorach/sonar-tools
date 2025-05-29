@@ -1806,9 +1806,7 @@ def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30
     return o_proj, s
 
 
-def import_zips(
-    endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60
-) -> dict[Project, str]:
+def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60) -> dict[Project, str]:
     """Imports as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform

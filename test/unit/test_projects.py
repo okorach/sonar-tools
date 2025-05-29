@@ -91,7 +91,7 @@ def test_revision() -> None:
 def test_export_async() -> None:
     """test_export_async"""
     proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)
-    assert proj.export_zip(asynchronous=True) == {"status": "ASYNC_SUCCESS"}
+    assert proj.export_zip(asynchronous=True) == ("ASYNC_SUCCESS", None)
 
 
 def test_get_findings() -> None:
