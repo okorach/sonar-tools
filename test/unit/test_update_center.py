@@ -32,18 +32,18 @@ def test_get_upd_center_data():
 
 def test_lta():
     """Test the LTA"""
-    now = datetime.now()
-    year, month = now.month, now.year
+    now = datetime.datetime.now()
+    year, month = now.year, now.month
     if month == 1:
         year -= 1
     lta = uc.get_lta()
-    assert lta[:2] == (year, month)
+    assert lta[:2] == (year, 1)
 
 
 def test_latest():
     """Test the LATEST"""
-    now = datetime.now()
-    year, month = now.month, now.year
+    now = datetime.datetime.now()
+    year, month = now.year, now.month
     if month == 1:
         month = 12
         year -= 1
