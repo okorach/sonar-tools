@@ -66,6 +66,7 @@ _BIND_SEP = ":::"
 _AUDIT_BRANCHES_PARAM = "audit.projects.branches"
 AUDIT_MODE_PARAM = "audit.mode"
 
+ZIP_ZERO_LOC = "ZERO_LOC"
 ZIP_ASYNC_SUCCESS = "ASYNC_SUCCESS"
 ZIP_ERR_403 = "FAILED/INSUFFICIENT_PERMISSIONS"
 ZIP_CONFLICT = "FAILED/ZIP_CONFLICT"
@@ -741,6 +742,8 @@ class Project(components.Component):
             return status, None
         dump_file = json.loads(self.get("project_dump/status", params={"key": self.key}).text)["exportedDump"]
         log.debug("%s export %s, dump file %s", str(self), status, dump_file)
+        if self.loc() == 0:
+            return f"{tasks.SUCCESS}/{ZIP_ZERO_LOC}", dump_file
         return tasks.SUCCESS, dump_file
 
     def import_zip(self, asynchronous: bool = False, timeout: int = 180) -> str:
@@ -1721,7 +1724,7 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
         util.exit_fatal("Zip export unsupported on your SonarQube version", errcodes.UNSUPPORTED_OPERATION)
     log.debug("Exporting thread for %s done, status: %s", str(project), status)
     data = {"key": project.key, "exportProjectUrl": project.url(), "exportStatus": status}
-    if status == "SUCCESS":
+    if status.startswith(tasks.SUCCESS):
         data["file"] = os.path.basename(file)
         data["exportPath"] = file
         data["exportDate"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -1729,7 +1732,9 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
     return data
 
 
-def export_zips(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, export_timeout: int = 30) -> list[dict[str, str]]:
+def export_zips(
+    endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, export_timeout: int = 30, skip_zero_loc: bool = False
+) -> list[dict[str, str]]:
     """Export as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1738,9 +1743,15 @@ def export_zips(endpoint: pf.Platform, key_list: types.KeyList = None, threads: 
     :param int export_timeout: Tiemout to export the project, defaults to 30
     :returns: list of exported projects and platform version
     """
-    statuses, results = {}, []
+    statuses, results = {"SUCCESS": 0}, []
     projects_list = get_list(endpoint, key_list, threads=threads)
     nbr_projects = len(projects_list)
+    if skip_zero_loc:
+        results = [{"key": p.key, "exportProjectUrl": p.url(), "exportStatus": f"SKIPPED/{ZIP_ZERO_LOC}"} for p in projects_list.values() if p.loc() == 0]
+        statuses[f"SKIPPED/{ZIP_ZERO_LOC}"] = len(results)
+        projects_list = {k: v for k, v in projects_list.items() if v.loc() > 0}
+        log.info("Skipping export of %d projects with zero LOC", nbr_projects - len(projects_list))
+        nbr_projects = len(projects_list)
     log.info("Exporting %d projects to export", nbr_projects)
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipExport") as executor:
         futures, futures_map = [], {}
