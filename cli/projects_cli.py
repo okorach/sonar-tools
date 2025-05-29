@@ -77,12 +77,25 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
             data = json.load(fd)
     except json.JSONDecodeError as e:
         raise options.ArgumentsError(f"JSON decoding error while reading file '{file}': {str(e)}")
+
+    if "projects" in data:
+        # 3.13 and higher format
+        key, status_key = "projects", "exportStatus"
+    else:
+        # 3.12 and lower format
+        key, status_key = "project_exports", "status"
+    project_list = [projdata["key"] for projdata in data[key] if projdata.get(status_key, "") == "SUCCESS"]
+    log.info("Skipping import of %d projects since export was failed", len(data[key]) - len(project_list))
+
     statuses = projects.import_zips(
-        endpoint, file, kwargs.get(options.NBR_THREADS, _EXPORT_IMPORT_THREADS), import_timeout=kwargs.get("exportTimeout", _EXPORT_IMPORT_TIMEOUT)
+        endpoint,
+        project_list,
+        kwargs.get(options.NBR_THREADS, _EXPORT_IMPORT_THREADS),
+        import_timeout=kwargs.get("exportTimeout", _EXPORT_IMPORT_TIMEOUT),
     )
-    for proj in data["projects"]:
+    for proj in data[key]:
         if proj["key"] in statuses:
-            proj |= statuses[proj["key"]]
+            proj.update(statuses[proj["key"]])
         else:
             _ = [proj.pop(k, None) for k in ("importStatus", "importDate", "importProjectUrl")]
     data["importSonarqubeEnvironment"] = {
