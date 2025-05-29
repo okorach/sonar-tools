@@ -1807,14 +1807,13 @@ def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30
 
 
 def import_zips(
-    endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60, skip_zero_loc: bool = False
+    endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60
 ) -> dict[Project, str]:
     """Imports as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
     :param int threads: Number of parallel threads for export, defaults to 2
     :param int import_timeout: Timeout to import the project, defaults to 60 s
-    :param bool skip_zero_loc: Whether to skip projects with zero LOC, defaults to False
     :return: import results
     """
 
