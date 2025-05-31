@@ -212,9 +212,17 @@ def test_findings_filter_on_severity() -> None:
             if util.SQ.version() < c.MQR_INTRO_VERSION:
                 assert line[SEVERITY_COL] in ("BLOCKER", "CRITICAL")
             elif util.SQ.version() < (10, 7, 0):
-                assert "HIGH" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL] or "MEDIUM" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
+                assert (
+                    "HIGH" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
+                    or "MEDIUM" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
+                    or "HIGH(HOTSPOT)" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
+                )
             else:
-                assert "BLOCKER" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL] or "HIGH" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
+                assert (
+                    "BLOCKER" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
+                    or "HIGH" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
+                    or "HIGH(HOTSPOT)" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
+                )
     util.clean(util.CSV_FILE)
 
 

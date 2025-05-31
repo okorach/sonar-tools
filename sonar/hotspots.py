@@ -123,7 +123,11 @@ class Hotspot(findings.Finding):
         """
         data = super().to_json(without_time)
         if self.endpoint.version() >= c.MQR_INTRO_VERSION:
-            data.pop("type", None)
+            data["legacySeverity"] += "(HOTSPOT)"
+            data["securityImpact"] = data["legacySeverity"]
+        else:
+            data["severity"] += "(HOTSPOT)"
+            data["securityImpact"] = data["severity"]
         return data
 
     def _load(self, data: types.ApiPayload, from_export: bool = False) -> None:
@@ -131,7 +135,7 @@ class Hotspot(findings.Finding):
         super()._load(data, from_export)
         if not self.rule:
             self.rule = data.get("ruleKey", None)
-        self.severity = data.get("vulnerabilityProbability", "UNDEFINED") + "(HOTSPOT)"
+        self.severity = data.get("vulnerabilityProbability", "UNDEFINED")
         self.impacts = {"SECURITY": self.severity}
 
     def refresh(self) -> bool:
@@ -145,7 +149,7 @@ class Hotspot(findings.Finding):
                 self.__details = d
                 self.file = d["component"]["path"]
                 self.branch, self.pull_request = self.get_branch_and_pr(d["project"])
-                self.severity = d["rule"].get("vulnerabilityProbability", "UNDEFINED") + "(HOTSPOT)"
+                self.severity = d["rule"].get("vulnerabilityProbability", "UNDEFINED")
                 self.impacts = {"SECURITY": self.severity}
                 if not self.rule:
                     self.rule = d["rule"]["key"]
@@ -507,6 +511,8 @@ def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: types.ApiPara
             lang = rules.get_object(endpoint=finding.endpoint, key=finding.rule).language
             if lang not in filters["languages"]:
                 filtered_findings.pop(key, None)
+        if "severities" in filters and finding.severity not in filters["severities"]:
+            filtered_findings.pop(key, None)
         # pylint: disable-next=E0606
         if "createdAfter" in filters and finding.creation_date < min_date:
             filtered_findings.pop(key, None)
