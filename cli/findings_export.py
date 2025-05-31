@@ -239,7 +239,7 @@ def __verify_inputs(params: types.ApiParams) -> bool:
 
 def has_filter(params: types.ApiParams, type_of_filter: str, filter_values: list[str]) -> bool:
     """Checks if the search parameters contain any of the specified filters"""
-    return type_of_filter not in params and any(t in params[type_of_filter] for t in filter_values)
+    return type_of_filter not in params or any(t in params[type_of_filter] for t in filter_values)
 
 
 def needs_issue_search(params: types.ApiParams) -> bool:
