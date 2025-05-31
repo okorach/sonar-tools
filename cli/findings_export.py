@@ -44,6 +44,19 @@ import sonar.utilities as util
 TOOL_NAME = "sonar-findings"
 DATES_WITHOUT_TIME = False
 
+_SEARCH_CRITERIA = (
+    options.BRANCHES,
+    options.PULL_REQUESTS,
+    options.STATUSES,
+    options.DATE_AFTER,
+    options.DATE_BEFORE,
+    options.RESOLUTIONS,
+    options.SEVERITIES,
+    options.TYPES,
+    options.TAGS,
+    options.LANGUAGES,
+)
+
 SARIF_HEADER = """{
    "version": "2.1.0",
    "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.4.json",
@@ -249,21 +262,6 @@ def __get_component_findings(component: object, params: ConfigSettings) -> None:
         )
     else:
         new_params = params.copy()
-        for p in (
-            _SARIF_NO_CUSTOM_PROPERTIES,
-            options.NBR_THREADS,
-            options.CSV_SEPARATOR,
-            options.COMPONENT_TYPE,
-            options.DATES_WITHOUT_TIME,
-            options.REPORT_FILE,
-            options.WITH_LAST_ANALYSIS,
-            options.WITH_URL,
-            options.HTTP_TIMEOUT,
-            "http_timeout",
-            options.LOGFILE,
-            options.FORMAT,
-        ):
-            new_params.pop(p, None)
         if options.PULL_REQUESTS in new_params:
             new_params["pullRequest"] = new_params.pop(options.PULL_REQUESTS)
         if options.BRANCHES in new_params:
@@ -283,15 +281,20 @@ def __get_component_findings(component: object, params: ConfigSettings) -> None:
     return findings_list
 
 
-def store_findings(components_list: dict[str, object], endpoint: platform.Platform, params: ConfigSettings) -> input:
-    """Export all findings of a given project list"""
-    comp_params = {k: v for k, v in params.items() if k not in ("withUrl", "logfile", "datesWithoutTime", options.REPORT_FILE, "format")}
+def store_findings(components_list: dict[str, object], endpoint: platform.Platform, params: ConfigSettings) -> int:
+    """Export all findings of a given project list
 
+    :param components_list: Dict of components to export findings (components can be projects, applications, or portfolios)
+    :param endpoint: SonarQube or SonarCloud endpoint
+    :param params: Search filtering parameters for the export
+    :returns: Number of exported findings
+    """
+    comp_params = {k: v for k, v in params.items() if k in _SEARCH_CRITERIA}
     with util.open_file(file=params[options.REPORT_FILE]) as fd:
         __write_header(fd, endpoint=endpoint, **params)
     is_first = True
     total_findings = 0
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="FindingSearch") as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=params.get(options.NBR_THREADS, 4), thread_name_prefix="FindingSearch") as executor:
         futures, futures_map = [], {}
         for comp in components_list.values():
             future = executor.submit(__get_component_findings, comp, comp_params)
@@ -299,11 +302,11 @@ def store_findings(components_list: dict[str, object], endpoint: platform.Platfo
             futures_map[future] = comp
         for future in concurrent.futures.as_completed(futures):
             try:
-                findings = future.result(timeout=60)
-                total_findings += len(findings)
-                if len(findings) > 0:
+                found_findings = future.result(timeout=60)
+                total_findings += len(found_findings)
+                if len(found_findings) > 0:
                     with util.open_file(file=params[options.REPORT_FILE], mode="a") as fd:
-                        __write_findings(findings, fd, is_first, **params)
+                        __write_findings(found_findings, fd, is_first, **params)
                     is_first = False
             except TimeoutError as e:
                 comp = futures_map[future]
