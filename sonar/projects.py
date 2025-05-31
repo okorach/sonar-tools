@@ -834,7 +834,6 @@ class Project(components.Component):
             return {}
         findings_conflicts = {"SECURITY_HOTSPOT": 0, "BUG": 0, "CODE_SMELL": 0, "VULNERABILITY": 0}
         nbr_findings = {"SECURITY_HOTSPOT": 0, "BUG": 0, "CODE_SMELL": 0, "VULNERABILITY": 0}
-        log.debug(util.json_dump(data))
         for i in data:
             key = i["key"]
             if key in findings_list:
