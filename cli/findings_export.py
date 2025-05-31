@@ -237,7 +237,31 @@ def __verify_inputs(params: types.ApiParams) -> bool:
     return True
 
 
-def __get_component_findings(component: object, search_findings: bool, params: ConfigSettings) -> dict[str, findings.Finding]:
+def has_filter(params: types.ApiParams, type_of_filter: str, filter_values: list[str]) -> bool:
+    """Checks if the search parameters contain any of the specified filters"""
+    return type_of_filter not in params and any(t in params[type_of_filter] for t in filter_values)
+
+
+def needs_issue_search(params: types.ApiParams) -> bool:
+    """Returns whether an issue search is needed based on the parameters"""
+
+    return (
+        has_filter(params, options.TYPES, issues.OLD_TYPES + issues.NEW_TYPES)
+        or has_filter(params, options.STATUSES, issues.STATUSES)
+        or has_filter(params, options.RESOLUTIONS, issues.RESOLUTIONS)
+    )
+
+
+def needs_hotspot_search(params: types.ApiParams) -> bool:
+    """Returns whether an hotspot search is needed based on the parameters"""
+    return (
+        has_filter(params, options.TYPES, hotspots.TYPES)
+        or has_filter(params, options.STATUSES, hotspots.STATUSES)
+        or has_filter(params, options.RESOLUTIONS, hotspots.RESOLUTIONS)
+    )
+
+
+def get_component_findings(component: object, search_findings: bool, params: ConfigSettings) -> dict[str, findings.Finding]:
     """Gets the findings of a component and puts them in a writing queue"""
     try:
         _ = next(v for k, v in params.items() if k in _SEARCH_CRITERIA and v is not None)
@@ -250,27 +274,15 @@ def __get_component_findings(component: object, search_findings: bool, params: C
             component.endpoint, component.key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
         )
 
-    has_issues = options.TYPES not in params and options.STATUSES not in params and options.RESOLUTIONS not in params
-    has_hotspots = has_issues
-    if options.TYPES in params:
-        has_issues = any(t in params.get[options.TYPES] for t in issues.OLD_TYPES + issues.NEW_TYPES)
-        has_hotspots = any(t in params[options.TYPES] for t in hotspots.TYPES)
-    if options.STATUSES in params:
-        has_issues = has_issues or any(t in params[options.STATUSES] for t in issues.STATUSES)
-        has_hotspots = has_hotspots or any(t in params[options.STATUSES] for t in hotspots.STATUSES)
-    if options.RESOLUTIONS in params:
-        has_issues = has_issues or any(t in params[options.RESOLUTIONS] for t in issues.RESOLUTIONS)
-        has_hotspots = has_hotspots or any(t in params[options.RESOLUTIONS] for t in hotspots.RESOLUTIONS)
-
     new_params = params.copy()
     if options.PULL_REQUESTS in new_params:
         new_params["pullRequest"] = new_params.pop(options.PULL_REQUESTS)
     if options.BRANCHES in new_params:
         new_params["branch"] = new_params.pop(options.BRANCHES)
     findings_list = {}
-    if has_issues:
+    if needs_issue_search(params):
         findings_list = component.get_issues(filters=new_params)
-    if has_hotspots:
+    if needs_hotspot_search(params):
         findings_list |= component.get_hotspots(filters=new_params)
     return findings_list
 
@@ -293,12 +305,12 @@ def store_findings(components_list: dict[str, object], endpoint: platform.Platfo
     with concurrent.futures.ThreadPoolExecutor(max_workers=params.get(options.NBR_THREADS, 4), thread_name_prefix="FindingSearch") as executor:
         futures, futures_map = [], {}
         for comp in components_list.values():
-            future = executor.submit(__get_component_findings, comp, use_findings, comp_params)
+            future = executor.submit(get_component_findings, comp, use_findings, comp_params)
             futures.append(future)
             futures_map[future] = comp
         for future in concurrent.futures.as_completed(futures):
+            comp = futures_map[future]
             try:
-                comp = futures_map[future]
                 found_findings = future.result(timeout=60)
                 total_findings += len(found_findings)
                 if len(found_findings) > 0:
