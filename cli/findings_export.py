@@ -29,12 +29,8 @@ import sys
 import os
 import csv
 from typing import TextIO
-from queue import Queue
 import concurrent.futures
-from threading import Thread
 from argparse import Namespace
-
-from requests import RequestException
 
 from cli import options
 from sonar.util.types import ConfigSettings
@@ -46,7 +42,6 @@ from sonar.util import types
 import sonar.utilities as util
 
 TOOL_NAME = "sonar-findings"
-TOTAL_FINDINGS = 0
 DATES_WITHOUT_TIME = False
 
 SARIF_HEADER = """{
@@ -146,7 +141,7 @@ def parse_args(desc: str) -> Namespace:
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
-def __write_header(fd: TextIO, **kwargs) -> None:
+def __write_header(fd: TextIO, endpoint: platform.Platform, **kwargs) -> None:
     """Writes the file header"""
     if kwargs[options.FORMAT] == "sarif":
         print(SARIF_HEADER, file=fd)
@@ -154,7 +149,7 @@ def __write_header(fd: TextIO, **kwargs) -> None:
         print("[\n", file=fd)
     else:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
-        row = findings.to_csv_header(kwargs["sonar"])
+        row = findings.to_csv_header(endpoint)
         row[0] = "# " + row[0]
         if kwargs[options.WITH_URL]:
             row.append("URL")
@@ -196,41 +191,14 @@ def __write_csv_findings(findings_list: dict[str, findings.Finding], fd: TextIO,
         csvwriter.writerow(row)
 
 
-def __write_findings(queue: Queue[list[findings.Finding]], params: ConfigSettings) -> None:
-    """Writes a list of findings in an output file or stdout"""
-    global TOTAL_FINDINGS
-    TOTAL_FINDINGS = 0
-    is_first = True
-    file = params[options.REPORT_FILE]
-    with util.open_file(file=file) as fd:
-        __write_header(fd, **params)
-        while True:
-            findings_list = queue.get()
-            if findings_list == util.WRITE_END:
-                log.debug("End of write queue reached")
-                queue.task_done()
-                break
-
-            log.debug("Processing write queue for project")
-            if len(findings_list) == 0:
-                queue.task_done()
-                continue
-
-            if params[options.FORMAT] in ("sarif", "json") and not is_first:
-                print(",", file=fd)
-            is_first = False
-            log.info(
-                "Writing %d more findings to %s in format %s", len(findings_list), f"file '{file}'" if file else "stdout", params[options.FORMAT]
-            )
-            if params[options.FORMAT] in ("json", "sarif"):
-                __write_json_findings(findings_list=findings_list, fd=fd, **params)
-            else:
-                __write_csv_findings(findings_list=findings_list, fd=fd, **params)
-            TOTAL_FINDINGS += len(findings_list)
-            queue.task_done()
-        __write_footer(fd, params[options.FORMAT])
-
-    log.debug("End of write findings")
+def __write_findings(findings_list: list[findings.Finding], fd: TextIO, is_first: bool, **kwargs) -> None:
+    if kwargs[options.FORMAT] in ("sarif", "json") and not is_first:
+        print(",", file=fd)
+    log.info("Writing %d more findings in format %s", len(findings_list), kwargs[options.FORMAT])
+    if kwargs[options.FORMAT] in ("json", "sarif"):
+        __write_json_findings(findings_list=findings_list, fd=fd, **kwargs)
+    else:
+        __write_csv_findings(findings_list=findings_list, fd=fd, **kwargs)
 
 
 def __verify_inputs(params: types.ApiParams) -> bool:
@@ -256,115 +224,96 @@ def __verify_inputs(params: types.ApiParams) -> bool:
     return True
 
 
-def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_queue: Queue[dict[str, findings.Finding]]) -> None:
+def __get_component_findings(component: object, params: ConfigSettings) -> None:
     """Gets the findings of a component and puts them in a writing queue"""
-    while not queue.empty():
-        (component, params) = queue.get()
-        search_findings = params.pop(options.USE_FINDINGS)
-        status_list = util.csv_to_list(params.get(options.STATUSES, None))
-        i_statuses = util.intersection(status_list, issues.STATUSES)
-        h_statuses = util.intersection(status_list, hotspots.STATUSES)
-        resol_list = util.csv_to_list(params.get(options.RESOLUTIONS, None))
-        i_resols = util.intersection(resol_list, issues.RESOLUTIONS)
-        h_resols = util.intersection(resol_list, hotspots.RESOLUTIONS)
-        type_list = util.csv_to_list(params.get(options.TYPES, None))
-        i_types = util.intersection(type_list, issues.OLD_TYPES)
-        h_types = util.intersection(type_list, hotspots.TYPES)
-        sev_list = util.csv_to_list(params.get(options.SEVERITIES, None))
-        i_sevs = util.intersection(sev_list, issues.OLD_SEVERITIES)
-        h_sevs = util.intersection(sev_list, hotspots.SEVERITIES)
+    search_findings = params.pop(options.USE_FINDINGS, False)
+    status_list = util.csv_to_list(params.get(options.STATUSES, None))
+    i_statuses = util.intersection(status_list, issues.STATUSES)
+    h_statuses = util.intersection(status_list, hotspots.STATUSES)
+    resol_list = util.csv_to_list(params.get(options.RESOLUTIONS, None))
+    i_resols = util.intersection(resol_list, issues.RESOLUTIONS)
+    h_resols = util.intersection(resol_list, hotspots.RESOLUTIONS)
+    type_list = util.csv_to_list(params.get(options.TYPES, None))
+    i_types = util.intersection(type_list, issues.OLD_TYPES)
+    h_types = util.intersection(type_list, hotspots.TYPES)
+    sev_list = util.csv_to_list(params.get(options.SEVERITIES, None))
+    i_sevs = util.intersection(sev_list, issues.OLD_SEVERITIES)
+    h_sevs = util.intersection(sev_list, hotspots.SEVERITIES)
 
-        if status_list or resol_list or type_list or sev_list or options.LANGUAGES in params:
-            search_findings = False
+    if status_list or resol_list or type_list or sev_list or options.LANGUAGES in params:
+        search_findings = False
 
-        if search_findings:
-            try:
-                findings_list = findings.export_findings(
-                    component.endpoint, component.key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
-                )
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"exporting findings of {str(component)}, skipped", catch_all=True)
-            write_queue.put(findings_list)
+    if search_findings:
+        findings_list = findings.export_findings(
+            component.endpoint, component.key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
+        )
+    else:
+        new_params = params.copy()
+        for p in (
+            _SARIF_NO_CUSTOM_PROPERTIES,
+            options.NBR_THREADS,
+            options.CSV_SEPARATOR,
+            options.COMPONENT_TYPE,
+            options.DATES_WITHOUT_TIME,
+            options.REPORT_FILE,
+            options.WITH_LAST_ANALYSIS,
+            options.WITH_URL,
+            options.HTTP_TIMEOUT,
+            "http_timeout",
+            options.LOGFILE,
+            options.FORMAT,
+        ):
+            new_params.pop(p, None)
+        if options.PULL_REQUESTS in new_params:
+            new_params["pullRequest"] = new_params.pop(options.PULL_REQUESTS)
+        if options.BRANCHES in new_params:
+            new_params["branch"] = new_params.pop(options.BRANCHES)
+        findings_list = {}
+        if (i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list):
+            findings_list = component.get_issues(filters=new_params)
         else:
-            new_params = params.copy()
-            for p in (
-                _SARIF_NO_CUSTOM_PROPERTIES,
-                options.NBR_THREADS,
-                options.CSV_SEPARATOR,
-                options.COMPONENT_TYPE,
-                options.DATES_WITHOUT_TIME,
-                options.REPORT_FILE,
-                options.WITH_LAST_ANALYSIS,
-                options.WITH_URL,
-                options.HTTP_TIMEOUT,
-                "http_timeout",
-                options.LOGFILE,
-                options.FORMAT,
-            ):
-                new_params.pop(p, None)
-            if options.PULL_REQUESTS in new_params:
-                new_params["pullRequest"] = new_params.pop(options.PULL_REQUESTS)
-            if options.BRANCHES in new_params:
-                new_params["branch"] = new_params.pop(options.BRANCHES)
-            findings_list = {}
-            if (i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list):
-                try:
-                    findings_list = component.get_issues(filters=new_params)
-                except (ConnectionError, RequestException) as e:
-                    util.handle_error(e, f"exporting issues of {str(component)}", catch_all=True)
-            else:
-                log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(i_statuses), str(i_types), str(i_resols), str(i_sevs))
-                log.info("Selected types, severities, resolutions or statuses disables issue search")
+            log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(i_statuses), str(i_types), str(i_resols), str(i_sevs))
+            log.info("Selected types, severities, resolutions or statuses disables issue search")
 
-            if (h_statuses or not status_list) and (h_resols or not resol_list) and (h_types or not type_list) and (h_sevs or not sev_list):
-                try:
-                    findings_list.update(component.get_hotspots(filters=new_params))
-                except (ConnectionError, RequestException) as e:
-                    util.handle_error(e, f"exporting hotspots of {str(component)}", catch_all=True)
-            else:
-                log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
-                log.info("Selected types, severities, resolutions or statuses disables issue search")
-            log.debug("WRITE_QUEUE put ISSUES and HOTSPOTS for %s", str(component))
-            write_queue.put(findings_list)
-
-        log.debug("Queue %s task for %s done", str(queue), str(component))
-        queue.task_done()
+        if (h_statuses or not status_list) and (h_resols or not resol_list) and (h_types or not type_list) and (h_sevs or not sev_list):
+            findings_list.update(component.get_hotspots(filters=new_params))
+        else:
+            log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
+            log.info("Selected types, severities, resolutions or statuses disables issue search")
+    return findings_list
 
 
-def store_findings(components_list: dict[str, object], params: ConfigSettings) -> None:
+def store_findings(components_list: dict[str, object], endpoint: platform.Platform, params: ConfigSettings) -> input:
     """Export all findings of a given project list"""
-    comp_params = {k: v for k, v in params.items() if k not in ("withUrl", "logfile", "datesWithoutTime", "file", "format", "sonar")}
+    comp_params = {k: v for k, v in params.items() if k not in ("withUrl", "logfile", "datesWithoutTime", options.REPORT_FILE, "format")}
 
-    log.info("Starting finding writer thread 'findingWriter'")
-    write_queue = Queue(maxsize=0)
-    write_worker = Thread(target=__write_findings, args=[write_queue, params.copy()])
-    write_worker.setDaemon(True)
-    write_worker.setName("findingWriter")
-    write_worker.start()
+    with util.open_file(file=params[options.REPORT_FILE]) as fd:
+        __write_header(fd, endpoint=endpoint, **params)
+    is_first = True
+    total_findings = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="FindingSearch") as executor:
         futures, futures_map = [], {}
         for comp in components_list.values():
-            future = executor.submit(projects.Project.get_findings, comp)
+            future = executor.submit(__get_component_findings, comp, comp_params)
             futures.append(future)
             futures_map[future] = comp
         for future in concurrent.futures.as_completed(futures):
             try:
-                findings = future.result(timeout=180)
-                if isinstance(findings, dict):
-                    write_queue.put(findings)
-                else:
-                    log.error(f"Unexpected result type {type(findings)} for future {str(future)}")
+                findings = future.result(timeout=60)
+                total_findings += len(findings)
+                if len(findings) > 0:
+                    with util.open_file(file=params[options.REPORT_FILE], mode="a") as fd:
+                        __write_findings(findings, fd, is_first, **params)
+                    is_first = False
             except TimeoutError as e:
                 comp = futures_map[future]
                 log.error(f"Getting findings for {str(comp)} timed out after 180 seconds for {str(future)}.")
             except Exception as e:
                 comp = futures_map[future]
                 log.error(f"Exception {str(e)} when exporting findings of {str(comp)}.")
-
-    log.debug("WriteQueue %s task WRITE_END put", str(write_queue))
-    write_queue.put(util.WRITE_END)
-    write_queue.join()
-    log.debug("WriteQueue joined")
+    with util.open_file(file=params[options.REPORT_FILE], mode="a") as fd:
+        __write_footer(fd, params[options.FORMAT])
+    return total_findings
 
 
 def __turn_off_use_findings_if_needed(endpoint: object, params: dict[str, str]) -> dict[str, str]:
@@ -423,12 +372,19 @@ def main() -> None:
         os.remove(fname)
 
     log.info("Exporting findings for %d projects with params %s", len(components_list), str(params))
+    nb_findings = 0
     try:
-        params["sonar"] = sqenv
-        store_findings(components_list, params=params)
+        nb_findings = store_findings(components_list, endpoint=sqenv, params=params)
     except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while exporting findings: {e}", exit_code=errcodes.OS_ERROR)
-    log.info("%d returned findings from %s", TOTAL_FINDINGS, sqenv.local_url)
+
+    log.info(
+        "Exported %d findings to %s (%d components from URL %s)",
+        nb_findings,
+        util.filename(params[options.REPORT_FILE]),
+        len(components_list),
+        sqenv.local_url,
+    )
     util.stop_clock(start_time)
     sys.exit(0)
 
