@@ -196,6 +196,12 @@ class Finding(sq.SqObject):
         :return: The finding attributes as list
         """
         data = self.to_json(without_time)
+        if self.endpoint.is_mqr_mode():
+            data["securityImpact"] = data["impacts"].get("SECURITY", "")
+            data["reliabilityImpact"] = data["impacts"].get("RELIABILITY", "")
+            data["maintainabilityImpact"] = data["impacts"].get("MAINTAINABILITY", "")
+            data["otherImpact"] = data["impacts"].get("NONE", "")
+            data.pop("impacts", None)
         data["projectName"] = projects.Project.get_object(endpoint=self.endpoint, key=self.projectKey).name
         if self.endpoint.version() >= c.MQR_INTRO_VERSION:
             return [str(data.get(field, "")) for field in CSV_EXPORT_FIELDS]
