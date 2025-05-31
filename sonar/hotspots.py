@@ -122,12 +122,8 @@ class Hotspot(findings.Finding):
         :rtype: dict
         """
         data = super().to_json(without_time)
-        if self.endpoint.version() >= c.MQR_INTRO_VERSION:
-            data["legacySeverity"] += "(HOTSPOT)"
-            data["securityImpact"] = data["legacySeverity"]
-        else:
-            data["severity"] += "(HOTSPOT)"
-            data["securityImpact"] = data["severity"]
+        if self.endpoint.is_mqr_mode():
+            data["impacts"]["SECURITY"] += "(HOTSPOT)"
         return data
 
     def _load(self, data: types.ApiPayload, from_export: bool = False) -> None:
