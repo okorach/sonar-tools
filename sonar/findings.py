@@ -196,14 +196,14 @@ class Finding(sq.SqObject):
         :return: The finding attributes as list
         """
         data = self.to_json(without_time)
+        if self.endpoint.is_mqr_mode():
+            data["securityImpact"] = data["impacts"].get("SECURITY", "")
+            data["reliabilityImpact"] = data["impacts"].get("RELIABILITY", "")
+            data["maintainabilityImpact"] = data["impacts"].get("MAINTAINABILITY", "")
+            data["otherImpact"] = data["impacts"].get("NONE", "")
+            data.pop("impacts", None)
         data["projectName"] = projects.Project.get_object(endpoint=self.endpoint, key=self.projectKey).name
         if self.endpoint.version() >= c.MQR_INTRO_VERSION:
-            data["securityImpact"] = self.impacts.get("SECURITY", "")
-            data["reliabilityImpact"] = self.impacts.get("RELIABILITY", "")
-            data["maintainabilityImpact"] = self.impacts.get("MAINTAINABILITY", "")
-            data["otherImpact"] = self.impacts.get("NONE", "")
-            data["legacyType"] = data.pop("type", "")
-            data["legacySeverity"] = data.pop("severity", "")
             return [str(data.get(field, "")) for field in CSV_EXPORT_FIELDS]
         else:
             return [str(data.get(field, "")) for field in LEGACY_CSV_EXPORT_FIELDS]
@@ -230,6 +230,13 @@ class Finding(sq.SqObject):
             data["status"] = data.pop("resolution")
         if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION:
             data["status"] = STATUS_MAPPING.get(data["status"], data["status"])
+        if self.endpoint.version() >= c.MQR_INTRO_VERSION:
+            data["securityImpact"] = self.impacts.get("SECURITY", "")
+            data["reliabilityImpact"] = self.impacts.get("RELIABILITY", "")
+            data["maintainabilityImpact"] = self.impacts.get("MAINTAINABILITY", "")
+            data["otherImpact"] = self.impacts.get("NONE", "")
+            data["legacyType"] = data.pop("type", "")
+            data["legacySeverity"] = data.pop("severity", "")
         return {k: v for k, v in data.items() if v is not None and k not in _JSON_FIELDS_PRIVATE}
 
     def to_sarif(self, full: bool = True) -> dict[str, str]:

@@ -748,3 +748,8 @@ def http_error_string(status: HTTPStatus) -> str:
         return "INTERNAL_SERVER_ERROR"
     else:
         return f"HTTP Error {status.value} - {status.phrase}"
+
+
+def filename(file: Optional[str]) -> str:
+    """Returns the filename or stdout if None or -"""
+    return "stdout" if file is None or file == "-" else file
