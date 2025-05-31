@@ -30,6 +30,7 @@ import os
 import csv
 from typing import TextIO
 from queue import Queue
+import concurrent.futures
 from threading import Thread
 from argparse import Namespace
 
@@ -332,14 +333,7 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
 
 def store_findings(components_list: dict[str, object], params: ConfigSettings) -> None:
     """Export all findings of a given project list"""
-    components_queue = Queue(maxsize=0)
     comp_params = {k: v for k, v in params.items() if k not in ("withUrl", "logfile", "datesWithoutTime", "file", "format", "sonar")}
-    for comp in components_list.values():
-        try:
-            log.debug("Queue %s task %s put", str(components_queue), str(comp))
-            components_queue.put((comp, comp_params.copy()))
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"exporting issues of {str(comp)}", catch_all=True)
 
     log.info("Starting finding writer thread 'findingWriter'")
     write_queue = Queue(maxsize=0)
@@ -347,16 +341,26 @@ def store_findings(components_list: dict[str, object], params: ConfigSettings) -
     write_worker.setDaemon(True)
     write_worker.setName("findingWriter")
     write_worker.start()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="FindingSearch") as executor:
+        futures, futures_map = [], {}
+        for comp in components_list.values():
+            future = executor.submit(projects.Project.get_findings, comp)
+            futures.append(future)
+            futures_map[future] = comp
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                findings = future.result(timeout=180)
+                if isinstance(findings, dict):
+                    write_queue.put(findings)
+                else:
+                    log.error(f"Unexpected result type {type(findings)} for future {str(future)}")
+            except TimeoutError as e:
+                comp = futures_map[future]
+                log.error(f"Getting findings for {str(comp)} timed out after 180 seconds for {str(future)}.")
+            except Exception as e:
+                comp = futures_map[future]
+                log.error(f"Exception {str(e)} when exporting findings of {str(comp)}.")
 
-    threads = params.get(options.NBR_THREADS, 4)
-    for i in range(min(threads, len(components_list))):
-        log.debug("Starting finding search thread 'findingSearch%d'", i)
-        worker = Thread(target=__get_component_findings, args=[components_queue, write_queue])
-        worker.setDaemon(True)
-        worker.setName(f"findingSearch{i}")
-        worker.start()
-    components_queue.join()
-    # Tell the writer thread that writing is complete
     log.debug("WriteQueue %s task WRITE_END put", str(write_queue))
     write_queue.put(util.WRITE_END)
     write_queue.join()
