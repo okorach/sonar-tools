@@ -237,48 +237,25 @@ def __verify_inputs(params: types.ApiParams) -> bool:
     return True
 
 
-def __get_component_findings(component: object, params: ConfigSettings) -> None:
+def __get_component_findings(component: object, search_findings: bool, params: ConfigSettings) -> dict[str, findings.Finding]:
     """Gets the findings of a component and puts them in a writing queue"""
-    search_findings = params.pop(options.USE_FINDINGS, False)
-    status_list = util.csv_to_list(params.get(options.STATUSES, None))
-    i_statuses = util.intersection(status_list, issues.STATUSES)
-    h_statuses = util.intersection(status_list, hotspots.STATUSES)
-    resol_list = util.csv_to_list(params.get(options.RESOLUTIONS, None))
-    i_resols = util.intersection(resol_list, issues.RESOLUTIONS)
-    h_resols = util.intersection(resol_list, hotspots.RESOLUTIONS)
-    type_list = util.csv_to_list(params.get(options.TYPES, None))
-    i_types = util.intersection(type_list, issues.OLD_TYPES)
-    h_types = util.intersection(type_list, hotspots.TYPES)
-    sev_list = util.csv_to_list(params.get(options.SEVERITIES, None))
-    i_sevs = util.intersection(sev_list, issues.OLD_SEVERITIES)
-    h_sevs = util.intersection(sev_list, hotspots.SEVERITIES)
-
-    if status_list or resol_list or type_list or sev_list or options.LANGUAGES in params:
+    try:
+        _ = next(v for k, v in params.items() if k in _SEARCH_CRITERIA and v is not None)
         search_findings = False
+    except StopIteration:
+        pass
 
-    if search_findings:
-        findings_list = findings.export_findings(
+    if search_findings and not isinstance(component, (applications.Application, portfolios.Portfolio)):
+        return findings.export_findings(
             component.endpoint, component.key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
         )
-    else:
-        new_params = params.copy()
-        if options.PULL_REQUESTS in new_params:
-            new_params["pullRequest"] = new_params.pop(options.PULL_REQUESTS)
-        if options.BRANCHES in new_params:
-            new_params["branch"] = new_params.pop(options.BRANCHES)
-        findings_list = {}
-        if (i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list):
-            findings_list = component.get_issues(filters=new_params)
-        else:
-            log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(i_statuses), str(i_types), str(i_resols), str(i_sevs))
-            log.info("Selected types, severities, resolutions or statuses disables issue search")
 
-        if (h_statuses or not status_list) and (h_resols or not resol_list) and (h_types or not type_list) and (h_sevs or not sev_list):
-            findings_list.update(component.get_hotspots(filters=new_params))
-        else:
-            log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
-            log.info("Selected types, severities, resolutions or statuses disables issue search")
-    return findings_list
+    new_params = params.copy()
+    if options.PULL_REQUESTS in new_params:
+        new_params["pullRequest"] = new_params.pop(options.PULL_REQUESTS)
+    if options.BRANCHES in new_params:
+        new_params["branch"] = new_params.pop(options.BRANCHES)
+    return component.get_issues(filters=new_params) | component.get_hotspots(filters=new_params)
 
 
 def store_findings(components_list: dict[str, object], endpoint: platform.Platform, params: ConfigSettings) -> int:
@@ -289,6 +266,8 @@ def store_findings(components_list: dict[str, object], endpoint: platform.Platfo
     :param params: Search filtering parameters for the export
     :returns: Number of exported findings
     """
+
+    use_findings = params.get(options.USE_FINDINGS, False)
     comp_params = {k: v for k, v in params.items() if k in _SEARCH_CRITERIA}
     with util.open_file(file=params[options.REPORT_FILE]) as fd:
         __write_header(fd, endpoint=endpoint, **params)
@@ -297,7 +276,7 @@ def store_findings(components_list: dict[str, object], endpoint: platform.Platfo
     with concurrent.futures.ThreadPoolExecutor(max_workers=params.get(options.NBR_THREADS, 4), thread_name_prefix="FindingSearch") as executor:
         futures, futures_map = [], {}
         for comp in components_list.values():
-            future = executor.submit(__get_component_findings, comp, comp_params)
+            future = executor.submit(__get_component_findings, comp, use_findings, comp_params)
             futures.append(future)
             futures_map[future] = comp
         for future in concurrent.futures.as_completed(futures):
