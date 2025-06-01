@@ -299,7 +299,6 @@ class Setting(sqobject.SqObject):
                     break
         if val is None:
             val = ""
-        log.debug("to_json(%s: %s) = %s", self.key, str(self.value), str(val))
         return {self.key: val}
 
     def definition(self) -> Optional[dict[str, str]]:
