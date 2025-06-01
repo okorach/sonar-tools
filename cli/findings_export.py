@@ -239,24 +239,26 @@ def __verify_inputs(params: types.ApiParams) -> bool:
 
 def has_filter(params: types.ApiParams, type_of_filter: str, filter_values: list[str]) -> bool:
     """Checks if the search parameters contain any of the specified filters"""
-    return type_of_filter not in params and any(t in params[type_of_filter] for t in filter_values)
+    log.debug("Checking if filter '%s' with values %s is in params %s ", type_of_filter, str(filter_values), str(params))
+    return type_of_filter in params and any(t in params[type_of_filter] for t in filter_values)
 
 
 def needs_issue_search(params: types.ApiParams) -> bool:
     """Returns whether an issue search is needed based on the parameters"""
-
-    return (
+    return (options.TYPES not in params and options.STATUSES not in params and options.RESOLUTIONS not in params) or (
         has_filter(params, options.TYPES, issues.OLD_TYPES + issues.NEW_TYPES)
         or has_filter(params, options.STATUSES, issues.STATUSES)
+        or has_filter(params, options.SEVERITIES, issues.OLD_SEVERITIES + issues.NEW_SEVERITIES)
         or has_filter(params, options.RESOLUTIONS, issues.RESOLUTIONS)
     )
 
 
 def needs_hotspot_search(params: types.ApiParams) -> bool:
     """Returns whether an hotspot search is needed based on the parameters"""
-    return (
+    return (options.TYPES not in params and options.STATUSES not in params and options.RESOLUTIONS not in params) or (
         has_filter(params, options.TYPES, hotspots.TYPES)
         or has_filter(params, options.STATUSES, hotspots.STATUSES)
+        or has_filter(params, options.SEVERITIES, hotspots.SEVERITIES)
         or has_filter(params, options.RESOLUTIONS, hotspots.RESOLUTIONS)
     )
 
