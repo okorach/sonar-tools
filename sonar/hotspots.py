@@ -496,26 +496,25 @@ def split_search_filters(params: types.ApiParams) -> list[types.ApiParams]:
 
 def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: types.ApiParams) -> dict[str, Hotspot]:
     """Filters a dict of hotspots with provided filters"""
+    log.debug("Post filtering findings with %s - Starting with %d hotspots", str(filters), len(hotspots_dict))
     filtered_findings = hotspots_dict.copy()
-    log.debug("Post filtering findings with %s", str(filters))
+    if "severities" in filters:
+        filtered_findings = {k: v for k, v in filtered_findings.items() if v.severity in filters["severities"]}
+        log.debug("%d hotspots remaining after filtering by severities %s", len(filtered_findings), str(filters["severities"]))
     if "createdAfter" in filters:
         min_date = util.string_to_date(filters["createdAfter"])
+        filtered_findings = {k: v for k, v in filtered_findings.items() if v.creation_date >= min_date}
+        log.debug("%d hotspots remaining after filtering by createdAfter %s", len(filtered_findings), str(filters["createdAfter"]))
     if "createdBefore" in filters:
         max_date = util.string_to_date(filters["createdBefore"])
-    for key, finding in hotspots_dict.items():
-        if "languages" in filters and len(filters["languages"]) > 0:
-            lang = rules.get_object(endpoint=finding.endpoint, key=finding.rule).language
-            if lang not in filters["languages"]:
-                filtered_findings.pop(key, None)
-        if "severities" in filters and finding.severity not in filters["severities"]:
-            filtered_findings.pop(key, None)
-        # pylint: disable-next=E0606
-        if "createdAfter" in filters and finding.creation_date < min_date:
-            filtered_findings.pop(key, None)
-        # pylint: disable-next=E0606
-        if "createdBefore" in filters and finding.creation_date > max_date:
-            filtered_findings.pop(key, None)
-
+        filtered_findings = {k: v for k, v in filtered_findings.items() if v.creation_date <= max_date}
+        log.debug("%d hotspots remaining after filtering by createdBefore %s", len(filtered_findings), str(filters["createdBefore"]))
+    if "languages" in filters:
+        filtered_findings = {
+            k: v for k, v in filtered_findings.items() if rules.get_object(endpoint=v.endpoint, key=v.rule).language in filters["languages"]
+        }
+        log.debug("%d hotspots remaining after filtering by languages %s", len(filtered_findings), str(filters["languages"]))
+    log.debug("%d hotspots remaining after post search filtering", len(filtered_findings))
     return filtered_findings
 
 
