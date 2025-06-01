@@ -28,8 +28,8 @@ import json
 import re
 
 from typing import Union, Optional
-from queue import Queue
-from threading import Thread
+
+import concurrent.futures
 import requests.utils
 
 import sonar.logging as log
@@ -865,23 +865,22 @@ def search_all(endpoint: pf.Platform, params: ApiParams = None) -> dict[str, Iss
     return issue_list
 
 
-def __search_thread(queue: Queue) -> None:
-    """Callback function for multithreaded issue search"""
-    while not queue.empty():
-        (endpoint, api, issue_list, params, page) = queue.get()
-        page_params = params.copy()
-        page_params["p"] = page
-        log.debug("Threaded issue search params = %s", str(page_params))
-        try:
-            data = json.loads(endpoint.get(api, params=page_params).text)
-            for i in data["issues"]:
-                i["branch"] = page_params.get("branch", None)
-                i["pullRequest"] = page_params.get("pullRequest", None)
-                issue_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
-            log.debug("Added %d issues in threaded search page %d", len(data["issues"]), page)
-        except Exception as e:
-            log.error("%s while searching issues, search may be incomplete", util.error_msg(e))
-        queue.task_done()
+def __get_issue_list(endpoint: pf.Platform, data: ApiPayload, params) -> dict[str, Issue]:
+    """Returns a list of issues from the API payload"""
+    br, pr = params.get("branch", None), params.get("pullRequest", None)
+    for i in data["issues"]:
+        i["branch"], i["pullRequest"] = br, pr
+    return {i["key"]: get_object(endpoint=endpoint, key=i["key"], data=i) for i in data["issues"]}
+
+
+def __search_page(endpoint: pf.Platform, params: ApiParams, page: int) -> dict[str, Issue]:
+    """Searches a page of issues"""
+    page_params = params.copy()
+    page_params["p"] = page
+    log.debug("Issue search params = %s", str(page_params))
+    issue_list = __get_issue_list(endpoint, json.loads(endpoint.get(Issue.API[c.SEARCH], params=page_params).text), params=page_params)
+    log.debug("Added %d issues in search page %d", len(issue_list), page)
+    return issue_list
 
 
 def search_first(endpoint: pf.Platform, **params) -> Union[Issue, None]:
@@ -924,21 +923,19 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
             f"{nbr_issues} issues returned by api/{Issue.API[c.SEARCH]}, this is more than the max {Issue.MAX_SEARCH} possible",
         )
 
-    for i in data["issues"]:
-        i["branch"] = filters.get("branch", None)
-        i["pullRequest"] = filters.get("pullRequest", None)
-        issue_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
+    issue_list = __get_issue_list(endpoint, data, filters)
     if nbr_pages == 1:
         return issue_list
-    q = Queue(maxsize=0)
-    for page in range(2, nbr_pages + 1):
-        q.put((endpoint, Issue.API[c.SEARCH], issue_list, filters, page))
-    for i in range(threads):
-        log.debug("Starting issue search thread %d", i)
-        worker = Thread(target=__search_thread, args=[q])
-        worker.setDaemon(True)
-        worker.start()
-    q.join()
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="IssueSearch") as executor:
+        futures = [executor.submit(__search_page, endpoint, filters, page) for page in range(2, nbr_pages + 1)]
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                issue_list |= future.result(timeout=60)
+            except TimeoutError:
+                log.error("Timeout exporting issue page after 60 seconds - export may be incomplete.")
+            except Exception as e:
+                log.error(f"Exception while exporting issue page: str{e} - export may be incomplete.")
     log.debug("Issue search for %s completed with %d issues", str(params), len(issue_list))
     return issue_list
 
