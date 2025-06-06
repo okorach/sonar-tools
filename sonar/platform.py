@@ -723,9 +723,11 @@ class Platform(object):
         if self.is_sonarcloud():
             return []
         log.info("Auditing maximum token lifetime global setting")
-        max_lifetime = self.get_setting(settings.TOKEN_MAX_LIFETIME)
-        if max_lifetime == "No expiration":
-            return [Problem(get_rule(RuleId.TOKEN_MAX_LIFETIME), self.external_url)]
+        max_lifetime = util.to_days(self.get_setting(settings.TOKEN_MAX_LIFETIME))
+        if max_lifetime is None:
+            return [Problem(get_rule(RuleId.TOKEN_LIFETIME_UNLIMITED), self.external_url)]
+        if max_lifetime > audit_settings.get("audit.tokens.maxAge", 90):
+            return [Problem(get_rule(RuleId.TOKEN_LIFETIME_TOO_HIGH), self.external_url, max_lifetime, audit_settings.get("audit.tokens.maxAge", 90))]
         return []
 
     def is_mqr_mode(self) -> bool:
