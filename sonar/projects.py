@@ -762,6 +762,8 @@ class Project(components.Component):
         except RequestException as e:
             if "Dump file does not exist" in util.sonar_error(e.response):
                 return f"FAILED/{tasks.ZIP_MISSING}"
+            if e.response.status_code == HTTPStatus.NOT_FOUND:
+                raise exceptions.ObjectNotFound(self.key, f"Project key '{self.key}' not found")
             util.handle_error(e, f"importing zip of {str(self)} {mode}", catch_all=True)
             return f"FAILED/{util.http_error_string(e.response.status_code)}"
         except ConnectionError as e:
