@@ -574,6 +574,7 @@ class Platform(object):
             _audit_maintainability_rating_grid(platform_settings, audit_settings, settings_url)
             + self._audit_admin_password()
             + self._audit_lta_latest()
+            + self._audit_token_max_lifetime(audit_settings)
             + sif.Sif(pf_sif, self).audit(audit_settings)
         )
         return problems
@@ -715,7 +716,17 @@ class Platform(object):
         if not v:
             return []
         # pylint: disable-next=E0606
-        return [Problem(rule, self.local_url, ".".join([str(n) for n in sq_vers]), ".".join([str(n) for n in v]))]
+        return [Problem(rule, self.external_url, ".".join([str(n) for n in sq_vers]), ".".join([str(n) for n in v]))]
+
+    def _audit_token_max_lifetime(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits the maximum lifetime of a token"""
+        if self.is_sonarcloud():
+            return []
+        log.info("Auditing maximum token lifetime global setting")
+        max_lifetime = self.get_setting(settings.TOKEN_MAX_LIFETIME)
+        if max_lifetime == "No expiration":
+            return [Problem(get_rule(RuleId.TOKEN_MAX_LIFETIME), self.external_url)]
+        return []
 
     def is_mqr_mode(self) -> bool:
         """Returns whether the platform is in MQR mode"""
