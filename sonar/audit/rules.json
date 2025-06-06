@@ -607,6 +607,16 @@
         "object": "Token",
         "message": "{} has no expiration date, this is a security risk"
     },
+    "TOKEN_LIFETIME_UNLIMITED": {
+        "severity": "HIGH",
+        "type": "SECURITY",
+        "message": "Max token lifetime global setting is not limited, this is a security risk"
+    },
+    "TOKEN_LIFETIME_TOO_HIGH": {
+        "severity": "MEDIUM",
+        "type": "SECURITY",
+        "message": "Max token lifetime global setting ({} days) is higher than the recommended value of {} days, this is a security risk"
+    },
     "USER_UNUSED": {
         "severity": "MEDIUM",
         "type": "SECURITY",

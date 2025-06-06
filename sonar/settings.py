@@ -61,6 +61,7 @@ COMPONENT_VISIBILITY = "visibility"
 PROJECT_DEFAULT_VISIBILITY = "projects.default.visibility"
 AI_CODE_FIX = "sonar.ai.suggestions.enabled"
 MQR_ENABLED = "sonar.multi-quality-mode.enabled"
+TOKEN_MAX_LIFETIME = "sonar.auth.token.max.allowed.lifetime"
 
 DEFAULT_BRANCH = "-DEFAULT_BRANCH-"
 

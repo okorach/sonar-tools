@@ -753,3 +753,22 @@ def http_error_string(status: HTTPStatus) -> str:
 def filename(file: Optional[str]) -> str:
     """Returns the filename or stdout if None or -"""
     return "stdout" if file is None or file == "-" else file
+
+
+def to_days(time_expression: str) -> Optional[int]:
+    """Converts a time expression to days, e.g. '1 day', '2 weeks', '3 months', '1 year'"""
+    match = re.match(r"(\d+) (day|week|month|year)s?", time_expression)
+    if not match:
+        raise ValueError(f"Invalid time expression '{time_expression}'")
+    value, unit = match.groups()
+    value = int(value)
+    if unit == "day":
+        return value
+    elif unit == "week":
+        return value * 7
+    elif unit == "month":
+        return value * 30  # Approximate month length
+    elif unit == "year":
+        return value * 365  # Approximate year length
+    else:
+        return None
