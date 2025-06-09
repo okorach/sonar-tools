@@ -276,11 +276,9 @@ def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[proje
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
     nb_comp = len(object_list)
-    obj_list = []
     log.info("Collecting %s branches", comp_type)
-    if kwargs[options.WITH_BRANCHES] and comp_type in ("projects", "apps"):
-        for project in object_list.values():
-            obj_list += project.branches().values()
+    if kwargs[options.BRANCH_REGEXP] and comp_type in ("projects", "apps"):
+        obj_list = [b for p in object_list.values() for b in p.branches().values() if re.match(rf"^{kwargs[options.BRANCH_REGEXP]}$", b.name)]
     else:
         obj_list = object_list.values()
     return obj_list, nb_comp
