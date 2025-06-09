@@ -33,7 +33,7 @@ from requests import RequestException
 from cli import options
 
 from sonar import errcodes, exceptions, version
-from sonar.util import types
+from sonar.util import types, component_helper
 import sonar.logging as log
 from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, portfolios, applications, projects
 import sonar.utilities as util
@@ -143,12 +143,11 @@ def __parser_args(desc: str) -> object:
     return args
 
 
-def __check_keys_exist(key_list: list[str], sq: platform.Platform, what: list[str]) -> None:
+def __check_keys_exist(key_regexp: list[str], sq: platform.Platform, what: list[str]) -> None:
     """Checks if project keys exist"""
-    if key_list and len(key_list) > 0 and "projects" in what:
-        missing_proj = [key for key in key_list if not projects.exists(key, sq)]
-        if len(missing_proj) > 0:
-            raise exceptions.ObjectNotFound(missing_proj[0], f"Projects key {', '.join(missing_proj)} do(es) not exist")
+    if key_regexp and "projects" in what:
+        if len(component_helper.get_components(sq, "projects", key_regexp)) == 0:
+            raise exceptions.ObjectNotFound(f"No projects found with key matching regexp '{key_regexp}'")
 
 
 def main() -> None:
