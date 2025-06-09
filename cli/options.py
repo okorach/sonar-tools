@@ -145,7 +145,7 @@ WHAT_PROJECTS = "projects"
 WHAT_APPS = "applications"
 WHAT_PORTFOLIOS = "portfolios"
 
-MULTI_VALUED_OPTS = (KEYS, METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES, TAGS, BRANCHES, PULL_REQUESTS, WHAT)
+MULTI_VALUED_OPTS = (KEYS, METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES, TAGS, PULL_REQUESTS, WHAT)
 
 COMPONENT_TYPE = "compType"
 PROJECTS = "projects"
@@ -247,7 +247,7 @@ def add_branch_arg(parser: ArgumentParser) -> ArgumentParser:
         f"--{BRANCH_REGEXP}",
         required=False,
         type=str,
-        help="Regexp for branches for which data shold be extracted",
+        help="Regexp to select branches that should be extracted",
     )
     return parser
 
