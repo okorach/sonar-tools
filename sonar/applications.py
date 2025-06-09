@@ -24,7 +24,7 @@ Abstraction of the SonarQube "application" concept
 
 from __future__ import annotations
 from typing import Union
-
+import re
 import json
 from datetime import datetime
 from http import HTTPStatus
@@ -559,7 +559,8 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         return []
     log.info("--- Auditing applications ---")
     problems = []
-    for obj in get_list(endpoint, key_list=kwargs.get("key_list", None)).values():
+    key_regexp = kwargs.get("key_list", None) or ".*"
+    for obj in [o for o in get_list(endpoint) if not key_regexp or re.match(key_regexp, o.key)]:
         problems += obj.audit(audit_settings, **kwargs)
     return problems
 
