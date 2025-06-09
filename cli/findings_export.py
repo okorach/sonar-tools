@@ -38,7 +38,7 @@ import sonar.logging as log
 from sonar import platform, exceptions, errcodes, version
 from sonar import issues, hotspots, findings
 from sonar import projects, applications, portfolios
-from sonar.util import types
+from sonar.util import types, component_helper
 import sonar.utilities as util
 
 TOOL_NAME = "sonar-findings"
@@ -92,14 +92,7 @@ def parse_args(desc: str) -> Namespace:
     parser = options.set_output_file_args(parser, allowed_formats=("csv", "json", "sarif"))
     parser = options.add_thread_arg(parser, "findings search")
     parser = options.add_component_type_arg(parser)
-    parser.add_argument(
-        f"-{options.BRANCHES_SHORT}",
-        f"--{options.BRANCHES}",
-        required=False,
-        default=None,
-        help="Comma separated list of branches to export. Use * to export findings from all branches. "
-        "If not specified, only findings of the main branch will be exported",
-    )
+    parser = options.add_branch_arg(parser)
     parser.add_argument(
         f"-{options.PULL_REQUESTS_SHORT}",
         f"--{options.PULL_REQUESTS}",
@@ -279,8 +272,8 @@ def get_component_findings(component: object, search_findings: bool, params: Con
     new_params = params.copy()
     if options.PULL_REQUESTS in new_params:
         new_params["pullRequest"] = new_params.pop(options.PULL_REQUESTS)
-    if options.BRANCHES in new_params:
-        new_params["branch"] = new_params.pop(options.BRANCHES)
+    # if options.BRANCHES in new_params:
+    #    new_params["branch"] = new_params.pop(options.BRANCHES)
     findings_list = {}
     if needs_issue_search(params):
         findings_list = component.get_issues(filters=new_params)
@@ -289,7 +282,7 @@ def get_component_findings(component: object, search_findings: bool, params: Con
     return findings_list
 
 
-def store_findings(components_list: dict[str, object], endpoint: platform.Platform, params: ConfigSettings) -> int:
+def store_findings(components_list: list[object], endpoint: platform.Platform, params: ConfigSettings) -> int:
     """Export all findings of a given project list
 
     :param components_list: Dict of components to export findings (components can be projects, applications, or portfolios)
@@ -306,7 +299,7 @@ def store_findings(components_list: dict[str, object], endpoint: platform.Platfo
     total_findings = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=params.get(options.NBR_THREADS, 4), thread_name_prefix="FindingSearch") as executor:
         futures, futures_map = [], {}
-        for comp in components_list.values():
+        for comp in components_list:
             future = executor.submit(get_component_findings, comp, use_findings, comp_params)
             futures.append(future)
             futures_map[future] = comp
@@ -367,16 +360,21 @@ def main() -> None:
     params = __turn_off_use_findings_if_needed(sqenv, params=params)
 
     try:
-        if params[options.COMPONENT_TYPE] == "portfolios":
-            components_list = portfolios.get_list(endpoint=sqenv, key_list=params.get(options.KEYS, None))
-        elif params[options.COMPONENT_TYPE] == "apps":
-            components_list = applications.get_list(endpoint=sqenv, key_list=params.get(options.KEYS, None))
-        else:
-            components_list = projects.get_list(endpoint=sqenv, key_list=params.get(options.KEYS, None))
-    except exceptions.ObjectNotFound as e:
-        util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
+        components_list = component_helper.get_components(
+            endpoint=sqenv,
+            component_type=params[options.COMPONENT_TYPE],
+            key_regexp=params.get(options.KEY_REGEXP, None),
+            branch_regexp=params.get(options.BRANCH_REGEXP, None),
+        )
     except exceptions.UnsupportedOperation as e:
         util.exit_fatal(e.message, errcodes.UNSUPPORTED_OPERATION)
+
+    if len(components_list) == 0:
+        br = f"and branch matching regexp '{params[options.BRANCH_REGEXP]}'" if options.BRANCH_REGEXP in params else ""
+        util.exit_fatal(
+            f"No {params[options.COMPONENT_TYPE]} found with key matching regexp '{params.get(options.KEY_REGEXP, None)}' {br}",
+            errcodes.NO_SUCH_KEY,
+        )
 
     fmt, fname = params.get(options.FORMAT, None), params.get(options.REPORT_FILE, None)
     params[options.FORMAT] = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))
