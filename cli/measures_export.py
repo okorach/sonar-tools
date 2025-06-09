@@ -26,6 +26,7 @@
 """
 import sys
 import csv
+import re
 
 from typing import Union
 
@@ -178,7 +179,7 @@ def __get_ts(ts: str, **kwargs) -> str:
 def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
 
-    w_br, w_url = kwargs[options.WITH_BRANCHES], kwargs[options.WITH_URL]
+    w_br, w_url = kwargs[options.BRANCH_REGEXP], kwargs[options.WITH_URL]
     row = ["key", "date", "name"]
     if w_br:
         row.append("branch")
@@ -219,7 +220,7 @@ def __write_measures_history_csv_as_list(file: str, data: dict[str, str], **kwar
     """Writes measures history of object list in CSV format"""
 
     header_list = ["timestamp", "key"]
-    if kwargs[options.WITH_BRANCHES]:
+    if kwargs[options.BRANCH_REGEXP]:
         header_list.append("branch")
     header_list += ["metric", "value"]
     with util.open_file(file) as fd:
@@ -247,7 +248,7 @@ def __write_measures_csv(file: str, wanted_metrics: types.KeyList, data: dict[st
     header_list = ["key", "type"]
     if kwargs[options.WITH_NAME]:
         header_list.append("name")
-    if kwargs[options.WITH_BRANCHES]:
+    if kwargs[options.BRANCH_REGEXP]:
         header_list.append("branch")
     header_list.append("lastAnalysis")
     header_list += wanted_metrics
@@ -287,9 +288,9 @@ def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[proje
 
 def __check_options_vs_edition(edition: str, params: dict[str, str]) -> dict[str, str]:
     """Checks and potentially modify params according to edition of the target platform"""
-    if edition == c.CE and params[options.WITH_BRANCHES]:
+    if edition == c.CE and params[options.BRANCH_REGEXP]:
         log.warning("SonarQube Server instance is a community edition, branch option ignored")
-        params[options.WITH_BRANCHES] = False
+        params.pop(options.BRANCH_REGEXP, None)
     if edition in (c.CE, c.DE) and params[options.COMPONENT_TYPE] == "portfolio":
         log.warning("SonarQube Server instance is a %s edition, there are no portfolios", edition)
         util.exit_fatal("SonarQube Server instance is a %s edition, there are no portfolios", exit_code=errcodes.UNSUPPORTED_OPERATION)
