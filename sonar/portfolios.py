@@ -25,6 +25,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Optional
 import json
 from http import HTTPStatus
@@ -699,7 +700,8 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         return []
     log.info("--- Auditing portfolios ---")
     problems = []
-    for p in get_list(endpoint=endpoint, key_list=kwargs.get("key_list", None)).values():
+    key_regexp = kwargs.get("key_list", None) or ".*"
+    for p in [o for o in get_list(endpoint) if not key_regexp or re.match(key_regexp, o.key)]:
         problems += p.audit(audit_settings, **kwargs)
     return problems
 
