@@ -84,7 +84,7 @@ def test_measures_export_with_url() -> None:
     """test_measures_export_with_url"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.WITH_BRANCHES_SHORT}", f"-{opt.METRIC_KEYS_SHORT}", "_main", f"--{opt.WITH_URL}"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.BRANCH_REGEXP_SHORT}", f"-{opt.METRIC_KEYS_SHORT}", "_main", f"--{opt.WITH_URL}"]):
             measures_export.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
@@ -94,7 +94,7 @@ def test_measures_export_with_url() -> None:
 def test_measures_export_json() -> None:
     """test_measures_export_json"""
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.WITH_BRANCHES_SHORT}", f"--{opt.METRIC_KEYS}", "_main"]):
+        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.BRANCH_REGEXP_SHORT}", f"--{opt.METRIC_KEYS}", "_main"]):
             measures_export.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.JSON_FILE)
@@ -105,7 +105,7 @@ def test_measures_export_all() -> None:
     """test_measures_export_all"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.WITH_BRANCHES_SHORT}", f"-{opt.METRIC_KEYS_SHORT}", "_all"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.BRANCH_REGEXP_SHORT}", f"-{opt.METRIC_KEYS_SHORT}", "_all"]):
             measures_export.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
@@ -115,7 +115,7 @@ def test_measures_export_all() -> None:
 def test_measures_export_json_all() -> None:
     """test_measures_export_json_all"""
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.WITH_BRANCHES_SHORT}", f"-{opt.METRIC_KEYS_SHORT}", "_all"]):
+        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.BRANCH_REGEXP_SHORT}", f"-{opt.METRIC_KEYS_SHORT}", "_all"]):
             measures_export.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.JSON_FILE)
@@ -165,7 +165,7 @@ def test_measures_export_history_as_table_with_branch() -> None:
     """test_measures_export_history_as_table_with_url"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", f"-{opt.WITH_BRANCHES_SHORT}"]):
+        with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", f"-{opt.BRANCH_REGEXP_SHORT}"]):
             measures_export.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)

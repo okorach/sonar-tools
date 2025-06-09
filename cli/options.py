@@ -87,8 +87,8 @@ TAGS = "tags"
 PULL_REQUESTS_SHORT = "p"
 PULL_REQUESTS = "pullRequests"
 
-WITH_BRANCHES_SHORT = "b"
-WITH_BRANCHES = "withBranches"
+BRANCH_REGEXP_SHORT = "b"
+BRANCH_REGEXP = "branches"
 
 LANGUAGES = "languages"
 QP = "qualityProfiles"
@@ -243,11 +243,11 @@ def add_thread_arg(parser: ArgumentParser, action: str, default_value=8) -> Argu
 def add_branch_arg(parser: ArgumentParser) -> ArgumentParser:
     """Adds the branch argument to the parser"""
     parser.add_argument(
-        f"-{WITH_BRANCHES_SHORT}",
-        f"--{WITH_BRANCHES}",
+        f"-{BRANCH_REGEXP_SHORT}",
+        f"--{BRANCH_REGEXP}",
         required=False,
-        action="store_true",
-        help="Also extract desired information for branches",
+        type=str,
+        help="Regexp for branches for which data shold be extracted",
     )
     return parser
 

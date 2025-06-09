@@ -38,7 +38,7 @@ TOOL_NAME = "sonar-loc"
 def __get_csv_header_list(**kwargs) -> list[str]:
     """Returns CSV header"""
     arr = [f"# {kwargs[options.COMPONENT_TYPE][0:-1]} key"]
-    if kwargs[options.WITH_BRANCHES]:
+    if kwargs[options.BRANCH_REGEXP]:
         arr.append("branch")
     arr.append("ncloc")
     if kwargs[options.WITH_NAME]:
@@ -205,13 +205,13 @@ def __parse_args(desc: str) -> object:
 def __check_options(edition: str, kwargs: dict[str, str]) -> dict[str, str]:
     """Verifies a certain number of options for compatibility with edition"""
     kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE])
-    if kwargs[options.WITH_BRANCHES] and edition == c.CE:
+    if kwargs[options.BRANCH_REGEXP] and edition == c.CE:
         util.exit_fatal(f"No branches in {edition} edition, aborting...", errcodes.UNSUPPORTED_OPERATION)
     if kwargs[options.COMPONENT_TYPE] == "portfolios" and edition in (c.CE, c.DE):
         util.exit_fatal(f"No portfolios in {edition} edition, aborting...", errcodes.UNSUPPORTED_OPERATION)
-    if kwargs[options.COMPONENT_TYPE] == "portfolios" and kwargs[options.WITH_BRANCHES]:
+    if kwargs[options.COMPONENT_TYPE] == "portfolios" and kwargs[options.BRANCH_REGEXP]:
         log.warning("Portfolio LoC export selected, branch option is ignored")
-        kwargs[options.WITH_BRANCHES] = False
+        kwargs.pop(options.BRANCH_REGEXP, None)
     return kwargs
 
 
@@ -244,7 +244,7 @@ def main() -> None:
         else:
             objects_list = list(projects.search(endpoint).values())
 
-        if kwargs[options.WITH_BRANCHES]:
+        if kwargs[options.BRANCH_REGEXP]:
             branch_list = []
             for proj in objects_list:
                 branch_list += proj.branches().values()

@@ -74,12 +74,12 @@ PR_COL = fields.index("pullRequest")
 __GOOD_OPTS = [
     [f"--{opt.FORMAT}", "json", f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE],
     [f"--{opt.CSV_SEPARATOR}", ";", "-d", f"--{opt.TAGS}", "cwe,convention", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1}", f"-{opt.WITH_BRANCHES_SHORT}", '"*"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
-    [f"--{opt.KEYS}", "training:security", f"-{opt.WITH_BRANCHES_SHORT}", "main", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1}", f"-{opt.BRANCH_REGEXP_SHORT}", '"*"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"--{opt.KEYS}", "training:security", f"-{opt.BRANCH_REGEXP_SHORT}", "main", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
     [f"--{opt.USE_FINDINGS}", f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
     [f"--{opt.APPS}", f"-{opt.KEYS_SHORT}", "APP_TEST", f"--{opt.BRANCHES}", '"*"', f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
     [f"--{opt.PORTFOLIOS}", f"-{opt.KEYS_SHORT}", "Banking", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1}", f"-{opt.WITH_BRANCHES_SHORT}", '"*"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1}", f"-{opt.BRANCH_REGEXP_SHORT}", '"*"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
     [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.SEVERITIES}", "BLOCKER,CRITICAL", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
 ]
 
