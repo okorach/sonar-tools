@@ -24,6 +24,7 @@
 import sys
 import csv
 import datetime
+import re
 from requests import RequestException
 
 from cli import options
@@ -245,10 +246,8 @@ def main() -> None:
             objects_list = list(projects.search(endpoint).values())
 
         if kwargs[options.BRANCH_REGEXP]:
-            branch_list = []
-            for proj in objects_list:
-                branch_list += proj.branches().values()
-            objects_list = branch_list
+            # log.info("Filtering branches with regexp '%s'", kwargs[options.BRANCH_REGEXP])
+            objects_list = [b for p in objects_list for b in p.branches().values() if re.match(rf"^{kwargs[options.BRANCH_REGEXP]}$", b.name)]
         __dump_loc(objects_list, **kwargs)
     except exceptions.UnsupportedOperation as e:
         util.exit_fatal(err_msg=e.message, exit_code=errcodes.UNSUPPORTED_OPERATION)
