@@ -1585,7 +1585,8 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         log.info("Auditing projects is disabled, audit skipped...")
         return []
     log.info("--- Auditing projects ---")
-    plist = get_list(endpoint, kwargs.get("key_list", None), threads=audit_settings.get("threads", 8))
+    key_regexp = kwargs.get("key_list", None) or ".*"
+    plist = {k: v for k, v in get_list(endpoint, threads=audit_settings.get("threads", 8)).items() if not key_regexp or re.match(key_regexp, v.key)}
     write_q = kwargs.get("write_q", None)
     problems = []
     audit_settings["NBR_PROJECTS"] = len(plist)
