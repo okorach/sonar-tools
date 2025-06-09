@@ -52,7 +52,7 @@ def test_config_export_partial_2() -> None:
 
 def test_config_export_partial_3() -> None:
     """test_config_export_partial_3"""
-    util.run_success_cmd(config.main, f"{OPTS} -w projects -{opt.KEYS_SHORT} okorach_sonar-tools", True)
+    util.run_success_cmd(config.main, f"{OPTS} -w projects -{opt.KEY_REGEXP_SHORT} okorach_sonar-tools", True)
 
 
 def test_config_export_yaml() -> None:
@@ -67,7 +67,7 @@ def test_config_export_wrong() -> None:
 
 def test_config_non_existing_project() -> None:
     """test_config_non_existing_project"""
-    util.run_failed_cmd(config.main, f"{OPTS} -{opt.KEYS_SHORT} okorach_sonar-tools,bad_project", errcodes.NO_SUCH_KEY)
+    util.run_failed_cmd(config.main, f"{OPTS} -{opt.KEY_REGEXP_SHORT} okorach_sonar-tools,bad_project", errcodes.NO_SUCH_KEY)
 
 
 def test_config_inline_lists() -> None:

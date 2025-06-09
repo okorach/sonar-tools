@@ -182,9 +182,9 @@ def main() -> None:
             sq.verify_connection()
             sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
             settings["SERVER_ID"] = sq.server_id()
-            __check_keys_exist(kwargs[options.KEYS], sq, kwargs[options.WHAT])
+            __check_keys_exist(kwargs[options.KEY_REGEXP], sq, kwargs[options.WHAT])
             what = util.check_what(kwargs[options.WHAT], WHAT_AUDITABLE, "audited")
-            problems = _audit_sq(sq, settings, what_to_audit=what, key_list=kwargs[options.KEYS])
+            problems = _audit_sq(sq, settings, what_to_audit=what, key_list=kwargs[options.KEY_REGEXP])
             loglevel = log.WARNING if len(problems) > 0 else log.INFO
             log.log(loglevel, "%d issues found during audit", len(problems))
 

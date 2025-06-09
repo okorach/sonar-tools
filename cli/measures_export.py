@@ -268,11 +268,11 @@ def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[proje
     try:
         comp_type = kwargs.get("compType", "projects")
         if comp_type == "apps":
-            object_list = applications.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
+            object_list = applications.get_list(endpoint=endpoint, key_list=kwargs[options.KEY_REGEXP])
         elif comp_type == "portfolios":
-            object_list = portfolios.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
+            object_list = portfolios.get_list(endpoint=endpoint, key_list=kwargs[options.KEY_REGEXP])
         else:
-            object_list = projects.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
+            object_list = projects.get_list(endpoint=endpoint, key_list=kwargs[options.KEY_REGEXP])
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
     nb_comp = len(object_list)

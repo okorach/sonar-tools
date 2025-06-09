@@ -209,7 +209,7 @@ def test_non_existing_project() -> None:
     """test_non_existing_project"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools,bad_project"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEY_REGEXP_SHORT}", "okorach_sonar-tools,bad_project"]):
             measures_export.main()
     assert int(str(e.value)) == errcodes.NO_SUCH_KEY
     assert not os.path.isfile(util.CSV_FILE)
@@ -221,7 +221,7 @@ def test_specific_project_keys() -> None:
     util.clean(util.CSV_FILE)
     projects = ["okorach_sonar-tools", "project1", "project4"]
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEYS_SHORT}", ", ".join(projects)]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEY_REGEXP_SHORT}", ", ".join(projects)]):
             measures_export.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)

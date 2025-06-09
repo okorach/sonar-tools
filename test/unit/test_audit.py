@@ -79,12 +79,12 @@ def test_audit_json(get_json_file: Generator[str]) -> None:
 
 def test_audit_proj_key(get_csv_file: Generator[str]) -> None:
     """test_audit_proj_key"""
-    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {get_csv_file} --{opt.WHAT} projects --{opt.KEYS} okorach_sonar-tools", True)
+    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {get_csv_file} --{opt.WHAT} projects --{opt.KEY_REGEXP} okorach_sonar-tools", True)
 
 
 def test_audit_proj_non_existing_key() -> None:
     """test_audit_proj_non_existing_key"""
-    util.run_failed_cmd(audit.main, f"{CMD} --{opt.WHAT} projects --{opt.KEYS} okorach_sonar-tools,bad_key", errcodes.NO_SUCH_KEY)
+    util.run_failed_cmd(audit.main, f"{CMD} --{opt.WHAT} projects --{opt.KEY_REGEXP} okorach_sonar-tools,bad_key", errcodes.NO_SUCH_KEY)
 
 
 def test_sif_broken(get_csv_file: Generator[str]) -> None:

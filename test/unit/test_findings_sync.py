@@ -36,7 +36,7 @@ CMD = "sonar-findings-sync.py"
 
 PLAT_OPTS = f"{util.SQS_OPTS} -U {os.getenv('SONAR_HOST_URL_TEST')} -T {os.getenv('SONAR_TOKEN_SYNC_USER')}"
 SC_PLAT_OPTS = f"{util.SQS_OPTS} -U https://sonarcloud.io -T {os.getenv('SONAR_TOKEN_SONARCLOUD')} -O okorach"
-SYNC_OPTS = f"-{opt.KEYS_SHORT} {util.LIVE_PROJECT} -K TESTSYNC -b master"
+SYNC_OPTS = f"-{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT} -K TESTSYNC -b master"
 
 
 def test_sync_help() -> None:

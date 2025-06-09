@@ -171,8 +171,8 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
         export_settings["INLINE_LISTS"] = False
         export_settings[EXPORT_EMPTY] = True
     log.info("Exporting with settings: %s", utilities.json_dump(export_settings, redact_tokens=True))
-    if "projects" in what and kwargs[options.KEYS]:
-        non_existing_projects = [key for key in kwargs[options.KEYS] if not projects.exists(key, endpoint)]
+    if "projects" in what and kwargs[options.KEY_REGEXP]:
+        non_existing_projects = [key for key in kwargs[options.KEY_REGEXP] if not projects.exists(key, endpoint)]
         if len(non_existing_projects) > 0:
             utilities.exit_fatal(f"Project key(s) '{','.join(non_existing_projects)}' do(es) not exist", errcodes.NO_SUCH_KEY)
 
@@ -195,7 +195,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
             worker.name = f"Write{ndx[:1].upper()}{ndx[1:10]}"
             worker.start()
             try:
-                func(endpoint, export_settings=export_settings, key_list=kwargs[options.KEYS], write_q=write_q)
+                func(endpoint, export_settings=export_settings, key_list=kwargs[options.KEY_REGEXP], write_q=write_q)
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
                 if write_q:
@@ -239,7 +239,7 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
             data = json.loads(fd.read())
     except FileNotFoundError as e:
         utilities.exit_fatal(f"OS error while reading file: {e}", exit_code=errcodes.OS_ERROR)
-    key_list = kwargs[options.KEYS]
+    key_list = kwargs[options.KEY_REGEXP]
 
     calls = {
         options.WHAT_GROUPS: groups.import_config,

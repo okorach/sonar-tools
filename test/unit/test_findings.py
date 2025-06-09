@@ -43,7 +43,7 @@ CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
 CSV_OPTS_STR = " ".join(CSV_OPTS)
 JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
 JSON_OPTS_STR = " ".join(JSON_OPTS)
-LIVE_PROJ_KEY = f"--{opt.KEYS} {util.LIVE_PROJECT}"
+LIVE_PROJ_KEY = f"--{opt.KEY_REGEXP} {util.LIVE_PROJECT}"
 
 RULE_COL = 1
 LANG_COL = 2
@@ -72,14 +72,14 @@ BRANCH_COL = fields.index("branch")
 PR_COL = fields.index("pullRequest")
 
 __GOOD_OPTS = [
-    [f"--{opt.FORMAT}", "json", f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE],
+    [f"--{opt.FORMAT}", "json", f"-{opt.KEY_REGEXP_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE],
     [f"--{opt.CSV_SEPARATOR}", ";", "-d", f"--{opt.TAGS}", "cwe,convention", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1}", f"-{opt.BRANCH_REGEXP_SHORT}", '"*"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
-    [f"--{opt.KEYS}", "training:security", f"-{opt.BRANCH_REGEXP_SHORT}", "main", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"--{opt.USE_FINDINGS}", f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"--{opt.APPS}", f"-{opt.KEYS_SHORT}", "APP_TEST", f"--{opt.BRANCHES}", '"*"', f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"--{opt.PORTFOLIOS}", f"-{opt.KEYS_SHORT}", "Banking", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1}", f"-{opt.BRANCH_REGEXP_SHORT}", '"*"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"-{opt.KEY_REGEXP_SHORT}", f"{util.PROJECT_1}", f"-{opt.BRANCH_REGEXP_SHORT}", '"*"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"--{opt.KEY_REGEXP}", "training:security", f"-{opt.BRANCH_REGEXP_SHORT}", "main", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.USE_FINDINGS}", f"-{opt.KEY_REGEXP_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.APPS}", f"-{opt.KEY_REGEXP_SHORT}", "APP_TEST", f"--{opt.BRANCHES}", '"*"', f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.PORTFOLIOS}", f"-{opt.KEY_REGEXP_SHORT}", "Banking", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"-{opt.KEY_REGEXP_SHORT}", f"{util.PROJECT_1}", f"-{opt.BRANCH_REGEXP_SHORT}", '"*"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
     [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.SEVERITIES}", "BLOCKER,CRITICAL", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
 ]
 
@@ -99,9 +99,9 @@ __WRONG_FILTER_OPTS = [
 ]
 
 __WRONG_OPTS = [
-    [f"-{opt.KEYS_SHORT}", "non-existing-project-key"],
-    [f"--{opt.APPS}", f"-{opt.KEYS_SHORT}", util.LIVE_PROJECT],
-    [f"--{opt.PORTFOLIOS}", f"-{opt.KEYS_SHORT}", util.LIVE_PROJECT],
+    [f"-{opt.KEY_REGEXP_SHORT}", "non-existing-project-key"],
+    [f"--{opt.APPS}", f"-{opt.KEY_REGEXP_SHORT}", util.LIVE_PROJECT],
+    [f"--{opt.PORTFOLIOS}", f"-{opt.KEY_REGEXP_SHORT}", util.LIVE_PROJECT],
 ]
 
 
@@ -115,7 +115,9 @@ def test_findings_export_sarif_explicit() -> None:
 
 def test_findings_export_sarif_implicit() -> None:
     """Test SARIF export for a single project and implicit format"""
-    util.run_success_cmd(findings_export.main, f"{CMD} {util.SQS_OPTS} -{opt.KEYS_SHORT} {util.LIVE_PROJECT} -{opt.REPORT_FILE_SHORT} {SARIF_FILE}")
+    util.run_success_cmd(
+        findings_export.main, f"{CMD} {util.SQS_OPTS} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT} -{opt.REPORT_FILE_SHORT} {SARIF_FILE}"
+    )
     assert util.file_contains(SARIF_FILE, "schemas/json/sarif-2.1.0-rtm.4")
     util.clean(SARIF_FILE)
 
@@ -147,13 +149,13 @@ def test_findings_export_non_existing_branch() -> None:
     """test_findings_export_non_existing_branch"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "training:security", f"-{opt.BRANCHES_SHORT}", "non-existing-branch"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEY_REGEXP}", "training:security", f"-{opt.BRANCHES_SHORT}", "non-existing-branch"]):
             findings_export.main()
 
 
 def test_findings_filter_on_date_after() -> None:
     """test_findings_filter_on_type"""
-    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} -{opt.KEYS_SHORT} {util.LIVE_PROJECT} --{opt.DATE_AFTER} 2023-05-01")
+    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT} --{opt.DATE_AFTER} 2023-05-01")
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
@@ -164,7 +166,7 @@ def test_findings_filter_on_date_after() -> None:
 
 def test_findings_filter_on_date_before() -> None:
     """test_findings_filter_on_type"""
-    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} -{opt.KEYS_SHORT} {util.LIVE_PROJECT} --{opt.DATE_BEFORE} 2024-05-01")
+    util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT} --{opt.DATE_BEFORE} 2024-05-01")
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
@@ -285,7 +287,7 @@ def test_findings_filter_on_multiple_criteria_3() -> None:
 def test_findings_filter_on_hotspots_multi_1() -> None:
     """test_findings_filter_on_hotspots_multi_1"""
     util.run_success_cmd(
-        findings_export.main, f'{CSV_OPTS_STR} --{opt.RESOLUTIONS} "ACKNOWLEDGED, SAFE" -{opt.KEYS_SHORT} {util.PROJECT_1},{util.PROJECT_2}'
+        findings_export.main, f'{CSV_OPTS_STR} --{opt.RESOLUTIONS} "ACKNOWLEDGED, SAFE" -{opt.KEY_REGEXP_SHORT} {util.PROJECT_1},{util.PROJECT_2}'
     )
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
