@@ -99,10 +99,12 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - `sonar.cpd.cross_project` is `true`
   - `sonar.core.serverBaseURL` is not set
   - `sonar.global.exclusions` is not empty
+  - `sonar.auth.token.max.allowed.lifetime` setting is `No expiration`
+  - `sonar.auth.token.max.allowed.lifetime` setting is higher than the audit setting `audit.tokens.maxAge` (90 days by default)
   - Project default visibility is `public`
   - SonarQube Server uses the built-in H2 database
   - SonarQube Server uses an external database on same host as SonarQube Server itself
-- Global permissions: (if `audit.globalSettings.permission = yes`, default `yes`)
+- Global permissions: (if `audit.globalSettings.permissions = yes`, default `yes`)
   - More than 3 users with global `admin`, `admin quality gates`, `admin quality profiles` or `create project` permission
   - More than 10 users with any global permissions (excluding groups)
   - Group `Anyone` has some global permissions
