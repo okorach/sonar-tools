@@ -24,7 +24,6 @@
 import sys
 import csv
 import datetime
-import re
 from requests import RequestException
 
 from cli import options
