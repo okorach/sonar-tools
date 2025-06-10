@@ -32,6 +32,7 @@ import sonar.logging as log
 from sonar import platform, portfolios, applications, projects, errcodes, exceptions, version
 import sonar.utilities as util
 import sonar.util.constants as c
+from sonar.util import component_helper
 
 TOOL_NAME = "sonar-loc"
 
@@ -235,19 +236,13 @@ def main() -> None:
     kwargs = __check_options(endpoint.edition(), kwargs)
 
     try:
+        # FIXME: Handle topLevel portfolios only in get_components()
+        objects_list = component_helper.get_components(endpoint=endpoint, component_type=kwargs[options.COMPONENT_TYPE], key_regexp=kwargs[options.KEY_REGEXP], branch_regexp=kwargs[options.BRANCH_REGEXP])
         if kwargs[options.COMPONENT_TYPE] == "portfolios":
             params = {}
             if kwargs["topLevelOnly"]:
                 params["qualifiers"] = "VW"
             objects_list = list(portfolios.search(endpoint, params=params).values())
-        elif kwargs[options.COMPONENT_TYPE] == "apps":
-            objects_list = list(applications.search(endpoint).values())
-        else:
-            objects_list = list(projects.search(endpoint).values())
-
-        if kwargs[options.BRANCH_REGEXP]:
-            # log.info("Filtering branches with regexp '%s'", kwargs[options.BRANCH_REGEXP])
-            objects_list = [b for p in objects_list for b in p.branches().values() if re.match(rf"^{kwargs[options.BRANCH_REGEXP]}$", b.name)]
         __dump_loc(objects_list, **kwargs)
     except exceptions.UnsupportedOperation as e:
         util.exit_fatal(err_msg=e.message, exit_code=errcodes.UNSUPPORTED_OPERATION)
