@@ -46,6 +46,7 @@ class SqObject(object):
     def __init__(self, endpoint: object, key: str) -> None:
         self.key = key  #: Object unique key (unique in its class)
         self.endpoint = endpoint  #: Reference to the SonarQube platform
+        self.concerned_object = None
         self._tags = None
         self.sq_json = {}
 
