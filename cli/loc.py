@@ -212,7 +212,7 @@ def __check_options(edition: str, kwargs: dict[str, str]) -> dict[str, str]:
         util.exit_fatal(f"No portfolios in {edition} edition, aborting...", errcodes.UNSUPPORTED_OPERATION)
     if kwargs[options.COMPONENT_TYPE] == "portfolios" and kwargs[options.BRANCH_REGEXP]:
         log.warning("Portfolio LoC export selected, branch option is ignored")
-        kwargs.pop(options.BRANCH_REGEXP, None)
+        kwargs[options.BRANCH_REGEXP] = None
     return kwargs
 
 
