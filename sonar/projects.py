@@ -1644,10 +1644,10 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     """
 
     write_q = kwargs.get("write_q", None)
-    key_list = kwargs.get("key_list", None)
-
+    key_regexp = kwargs.get("key_list", ".*")
+    nb_threads = export_settings.get("THREADS", 8)
     _ = [qp.projects() for qp in qualityprofiles.get_list(endpoint).values()]
-    proj_list = get_list(endpoint=endpoint, key_list=key_list, threads=export_settings.get("THREADS", 8))
+    proj_list = {k: v for k, v in get_list(endpoint=endpoint, key_list=key_regexp, threads=nb_threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)}
     export_settings["NBR_PROJECTS"] = len(proj_list)
     export_settings["PROCESSED"] = 0
     log.info("Exporting %d projects", export_settings["NBR_PROJECTS"])
@@ -1733,18 +1733,18 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
 
 
 def export_zips(
-    endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, export_timeout: int = 30, skip_zero_loc: bool = False
+    endpoint: pf.Platform, key_regexp: Optional[str] = None, threads: int = 8, export_timeout: int = 30, skip_zero_loc: bool = False
 ) -> list[dict[str, str]]:
     """Export as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
-    :param KeyList key_list: List of project keys to export, defaults to None (all projects)
+    :param str key_regexp: Regexp to filter projects to export, defaults to None (all projects)
     :param int threads: Number of parallel threads for export, defaults to 8
     :param int export_timeout: Tiemout to export the project, defaults to 30
     :returns: list of exported projects and platform version
     """
     statuses, results = {"SUCCESS": 0}, []
-    projects_list = get_list(endpoint, key_list, threads=threads)
+    projects_list = {k: p for k, p in get_list(endpoint, threads=threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", p.key)}
     nbr_projects = len(projects_list)
     if skip_zero_loc:
         results = [
