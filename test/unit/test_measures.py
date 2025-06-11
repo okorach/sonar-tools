@@ -233,6 +233,7 @@ def test_specific_project_keys() -> None:
     assert lines == len(projects)
     util.clean(util.CSV_FILE)
 
+
 def test_apps_measures() -> None:
     """test_apps_measures"""
     EXISTING_KEY = "APP_TEST"
