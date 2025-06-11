@@ -561,7 +561,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     log.info("--- Auditing applications ---")
     problems = []
     key_regexp = kwargs.get("key_list", None) or ".*"
-    for obj in [o for o in get_list(endpoint) if not key_regexp or re.match(key_regexp, o.key)]:
+    for obj in [o for o in get_list(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
         problems += obj.audit(audit_settings, **kwargs)
     return problems
 
