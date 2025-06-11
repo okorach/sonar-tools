@@ -35,6 +35,7 @@ from sonar.util import types, constants as c
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
+from sonar.util import component_helper
 
 TOOL_NAME = "sonar-config"
 
@@ -172,9 +173,8 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
         export_settings[EXPORT_EMPTY] = True
     log.info("Exporting with settings: %s", utilities.json_dump(export_settings, redact_tokens=True))
     if "projects" in what and kwargs[options.KEY_REGEXP]:
-        non_existing_projects = [key for key in kwargs[options.KEY_REGEXP] if not projects.exists(key, endpoint)]
-        if len(non_existing_projects) > 0:
-            utilities.exit_fatal(f"Project key(s) '{','.join(non_existing_projects)}' do(es) not exist", errcodes.NO_SUCH_KEY)
+        if len(component_helper.get_components(endpoint, "projects", kwargs[options.KEY_REGEXP])) == 0:
+            utilities.exit_fatal(f"No projects matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.NO_SUCH_KEY)
 
     what.append(c.CONFIG_KEY_PLATFORM)
     log.info("Exporting configuration from %s", kwargs[options.URL])
