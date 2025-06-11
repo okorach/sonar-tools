@@ -1644,14 +1644,10 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     """
 
     write_q = kwargs.get("write_q", None)
-    key_regexp = kwargs.get("key_list", ".*")
+    key_regexp = kwargs.get("key_list", ".+")
     nb_threads = export_settings.get("THREADS", 8)
     _ = [qp.projects() for qp in qualityprofiles.get_list(endpoint).values()]
-    proj_list = {
-        k: v
-        for k, v in get_list(endpoint=endpoint, key_list=key_regexp, threads=nb_threads).items()
-        if not key_regexp or re.match(rf"^{key_regexp}$", k)
-    }
+    proj_list = {k: v for k, v in get_list(endpoint=endpoint, threads=nb_threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)}
     export_settings["NBR_PROJECTS"] = len(proj_list)
     export_settings["PROCESSED"] = 0
     log.info("Exporting %d projects", export_settings["NBR_PROJECTS"])
