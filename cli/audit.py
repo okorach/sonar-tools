@@ -147,7 +147,7 @@ def __check_keys_exist(key_regexp: list[str], sq: platform.Platform, what: list[
     """Checks if project keys exist"""
     if key_regexp and "projects" in what:
         if len(component_helper.get_components(sq, "projects", key_regexp)) == 0:
-            raise exceptions.ObjectNotFound(f"No projects found with key matching regexp '{key_regexp}'")
+            raise exceptions.ObjectNotFound(key_regexp, f"No projects found with key matching regexp '{key_regexp}'")
 
 
 def main() -> None:
