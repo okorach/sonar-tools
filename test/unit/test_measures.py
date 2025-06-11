@@ -28,7 +28,7 @@ from unittest.mock import patch
 import pytest
 
 import utilities as util
-from sonar import errcodes, logging
+from sonar import errcodes, logging, utilities
 import sonar.util.constants as c
 
 from cli import measures_export
@@ -220,8 +220,7 @@ def test_specific_project_keys() -> None:
     """test_non_existing_project"""
     util.clean(util.CSV_FILE)
     projects = ["okorach_sonar-tools", "project1", "project4"]
-    regexp = "(" + "|".join(projects) + ")"
-    util.run_success_cmd(measures_export.main, f"{CSV_OPTS_STR} -{opt.KEY_REGEXP_SHORT} {regexp}")
+    util.run_success_cmd(measures_export.main, f"{CSV_OPTS_STR} -{opt.KEY_REGEXP_SHORT} {utilities.list_to_regexp(projects)}")
     lines = 0
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         reader = csv.reader(fh)

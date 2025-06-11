@@ -72,14 +72,14 @@ BRANCH_COL = fields.index("branch")
 PR_COL = fields.index("pullRequest")
 
 __GOOD_OPTS = [
-    [f"--{opt.FORMAT}", "json", f"-{opt.KEY_REGEXP_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE],
+    [f"--{opt.FORMAT}", "json", f"-{opt.KEY_REGEXP_SHORT}", f"({util.PROJECT_1}|{util.PROJECT_2})", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE],
     [f"--{opt.CSV_SEPARATOR}", ";", "-d", f"--{opt.TAGS}", "cwe,convention", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"-{opt.KEY_REGEXP_SHORT}", f"{util.PROJECT_1}", f"-{opt.BRANCH_REGEXP_SHORT}", '"*"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"-{opt.KEY_REGEXP_SHORT}", f"{util.PROJECT_1}", f"-{opt.BRANCH_REGEXP_SHORT}", '".+"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
     [f"--{opt.KEY_REGEXP}", "training:security", f"-{opt.BRANCH_REGEXP_SHORT}", "main", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"--{opt.USE_FINDINGS}", f"-{opt.KEY_REGEXP_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"--{opt.APPS}", f"-{opt.KEY_REGEXP_SHORT}", "APP_TEST", f"--{opt.BRANCHES}", '"*"', f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.USE_FINDINGS}", f"-{opt.KEY_REGEXP_SHORT}", f"({util.PROJECT_1}|{util.PROJECT_2})", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.APPS}", f"-{opt.KEY_REGEXP_SHORT}", "APP_TEST", f"--{opt.BRANCH_REGEXP}", '".+"', f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
     [f"--{opt.PORTFOLIOS}", f"-{opt.KEY_REGEXP_SHORT}", "Banking", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"-{opt.KEY_REGEXP_SHORT}", f"{util.PROJECT_1}", f"-{opt.BRANCH_REGEXP_SHORT}", '"*"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"-{opt.KEY_REGEXP_SHORT}", util.PROJECT_1, f"-{opt.BRANCH_REGEXP_SHORT}", '".+"', f"--{opt.REPORT_FILE}", util.CSV_FILE],
     [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.SEVERITIES}", "BLOCKER,CRITICAL", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
 ]
 
@@ -149,7 +149,7 @@ def test_findings_export_non_existing_branch() -> None:
     """test_findings_export_non_existing_branch"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEY_REGEXP}", "training:security", f"-{opt.BRANCHES_SHORT}", "non-existing-branch"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEY_REGEXP}", "training:security", f"--{opt.BRANCH_REGEXP}", "non-existing-branch"]):
             findings_export.main()
 
 
@@ -286,15 +286,15 @@ def test_findings_filter_on_multiple_criteria_3() -> None:
 
 def test_findings_filter_on_hotspots_multi_1() -> None:
     """test_findings_filter_on_hotspots_multi_1"""
-    util.run_success_cmd(
-        findings_export.main, f'{CSV_OPTS_STR} --{opt.RESOLUTIONS} "ACKNOWLEDGED, SAFE" -{opt.KEY_REGEXP_SHORT} {util.PROJECT_1},{util.PROJECT_2}'
-    )
+    projs = [util.PROJECT_1, util.PROJECT_2]
+    regexp = utilities.list_to_regexp(projs)
+    util.run_success_cmd(findings_export.main, f'{CSV_OPTS_STR} --{opt.RESOLUTIONS} "ACKNOWLEDGED, SAFE" -{opt.KEY_REGEXP_SHORT} {regexp}')
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
         for line in csvreader:
             assert line[STATUS_COL] in ("ACKNOWLEDGED", "SAFE")
-            assert line[PROJECT_COL] in (util.LIVE_PROJECT, "pytorch")
+            assert line[PROJECT_COL] in projs
     util.clean(util.CSV_FILE)
 
 
@@ -428,9 +428,11 @@ def test_output_format_csv() -> None:
 
 def test_output_format_branch() -> None:
     """test_output_format_branch"""
+
     for br in "develop", "master,develop":
-        util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} {LIVE_PROJ_KEY} --{opt.BRANCHES} {br}")
         br_list = utilities.csv_to_list(br)
+        regexp = utilities.csv_to_regexp(br)
+        util.run_success_cmd(findings_export.main, f"{CSV_OPTS_STR} {LIVE_PROJ_KEY} --{opt.BRANCH_REGEXP} {regexp}")
         with open(util.CSV_FILE, encoding="utf-8") as fd:
             reader = csv.reader(fd)
             next(reader)
