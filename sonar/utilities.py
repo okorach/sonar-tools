@@ -245,6 +245,16 @@ def csv_to_list(string: Optional[str], separator: str = ",") -> list[str]:
     return [s.strip() for s in string.split(separator)]
 
 
+def csv_to_regexp(string: Optional[str], separator: str = ",") -> str:
+    """Converts a csv string to a regexp"""
+    return list_to_regexp([s.strip() for s in string.split(separator)])
+
+
+def list_to_regexp(str_list: list[str]) -> str:
+    """Converts a list to a regexp"""
+    return "(" + "|".join(str_list) + ")" if len(str_list) > 0 else ""
+
+
 def list_to_csv(array: Union[None, str, int, float, list[str]], separator: str = ",", check_for_separator: bool = False) -> Optional[str]:
     """Converts a list of strings to CSV"""
     if isinstance(array, str):
