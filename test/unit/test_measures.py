@@ -221,7 +221,7 @@ def test_specific_project_keys() -> None:
     util.clean(util.CSV_FILE)
     projects = ["okorach_sonar-tools", "project1", "project4"]
     regexp = "(" + "|".join(projects) + ")"
-    util.run_success_cmd(measures_export.main, f"{CSV_OPTS_STR} -{opt.KEY_REGEXP_SHORT} '{regexp}'")
+    util.run_success_cmd(measures_export.main, f"{CSV_OPTS_STR} -{opt.KEY_REGEXP_SHORT} {regexp}")
     lines = 0
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         reader = csv.reader(fh)
