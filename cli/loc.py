@@ -236,7 +236,12 @@ def main() -> None:
 
     try:
         # FIXME: Handle topLevel portfolios only in get_components()
-        objects_list = component_helper.get_components(endpoint=endpoint, component_type=kwargs[options.COMPONENT_TYPE], key_regexp=kwargs[options.KEY_REGEXP], branch_regexp=kwargs[options.BRANCH_REGEXP])
+        objects_list = component_helper.get_components(
+            endpoint=endpoint,
+            component_type=kwargs[options.COMPONENT_TYPE],
+            key_regexp=kwargs[options.KEY_REGEXP],
+            branch_regexp=kwargs[options.BRANCH_REGEXP],
+        )
         if kwargs[options.COMPONENT_TYPE] == "portfolios":
             params = {}
             if kwargs["topLevelOnly"]:
