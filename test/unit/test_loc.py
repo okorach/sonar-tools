@@ -33,55 +33,54 @@ from cli import loc
 import cli.options as opt
 
 CMD = "sonar-loc.py"
-CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
-JSON_OPTS = [CMD] + util.STD_OPTS + [f"--{opt.REPORT_FILE}", util.JSON_FILE]
+CSV_OPTS = f"{CMD} {util.SQS_OPTS} -{opt.REPORT_FILE_SHORT} {util.CSV_FILE}"
+JSON_OPTS = f"{CMD} {util.SQS_OPTS} --{opt.REPORT_FILE} {util.JSON_FILE}"
 
-ALL_OPTIONS = [f"-{opt.BRANCH_REGEXP_SHORT}", '.+', f"--{opt.WITH_LAST_ANALYSIS}", f"--{opt.WITH_NAME}", f"--{opt.WITH_URL}"]
+ALL_OPTIONS = f"-{opt.BRANCH_REGEXP_SHORT} .+ --{opt.WITH_LAST_ANALYSIS} --{opt.WITH_NAME} --{opt.WITH_URL}"
 
 
 def test_loc() -> None:
     """test_loc"""
-    util.run_success_cmd(loc.main, " ".join(CSV_OPTS), post_cleanup=True)
+    util.run_success_cmd(loc.main, CSV_OPTS, post_cleanup=True)
 
 def test_loc_json() -> None:
     """test_loc_json"""
-    util.run_success_cmd(loc.main, " ".join(JSON_OPTS), post_cleanup=True)
+    util.run_success_cmd(loc.main, JSON_OPTS, post_cleanup=True)
 
 
 def test_loc_json_fmt() -> None:
     """test_loc_json_fmt"""
-    cmd = " ".join(JSON_OPTS + [f"--{opt.FORMAT}", "json", f"--{opt.WITH_NAME}", f"-{opt.WITH_LAST_ANALYSIS_SHORT}", f"--{opt.WITH_URL}"])
+    cmd = f"{JSON_OPTS} --{opt.FORMAT} json --{opt.WITH_NAME} -{opt.WITH_LAST_ANALYSIS_SHORT} --{opt.WITH_URL}"
     util.run_success_cmd(loc.main, cmd, post_cleanup=True)
 
 
 def test_loc_project() -> None:
     """test_loc_project"""
-    cmd = " ".join(CSV_OPTS + [f"-{opt.KEY_REGEXP_SHORT}", util.LIVE_PROJECT])
+    cmd = f"{CSV_OPTS} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
     util.run_success_cmd(loc.main, cmd, post_cleanup=True)
 
 
 def test_loc_project_with_all_options() -> None:
     """test_loc_project_with_all_options"""
-    cmd = " ".join(CSV_OPTS
-            + [f"--{opt.KEY_REGEXP}", util.LIVE_PROJECT, f"--{opt.WITH_URL}", f"-{opt.WITH_NAME_SHORT}", f"-{opt.WITH_LAST_ANALYSIS_SHORT}"])
+    cmd = f"{CSV_OPTS} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --{opt.WITH_URL} -{opt.WITH_NAME_SHORT} -{opt.WITH_LAST_ANALYSIS_SHORT}"
     util.run_success_cmd(loc.main, cmd, post_cleanup=True)
 
 
 def test_loc_portfolios() -> None:
     """test_loc_portfolios"""
-    cmd = " ".join(CSV_OPTS + [f"--{opt.PORTFOLIOS}", "--topLevelOnly", f"--{opt.WITH_URL}"])
+    cmd = f"{CSV_OPTS} --{opt.PORTFOLIOS} --topLevelOnly --{opt.WITH_URL}"
     util.run_success_cmd(loc.main, cmd, post_cleanup=True)
 
 
 def test_loc_separator() -> None:
     """test_loc_separator"""
-    cmd = " ".join(CSV_OPTS + [f"--{opt.CSV_SEPARATOR}", "+"])
+    cmd = f"{CSV_OPTS} --{opt.CSV_SEPARATOR} +"
     util.run_success_cmd(loc.main, cmd, post_cleanup=True)
 
 
 def test_loc_branches() -> None:
     """test_loc_branches"""
-    cmd = " ".join(CSV_OPTS + ALL_OPTIONS)
+    cmd = f"{CSV_OPTS} {ALL_OPTIONS}"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
     else:
@@ -90,7 +89,7 @@ def test_loc_branches() -> None:
 
 def test_loc_branches_json() -> None:
     """test_loc"""
-    cmd = " ".join([CMD] + util.STD_OPTS + [f"--{opt.REPORT_FILE}", util.JSON_FILE] + ALL_OPTIONS)
+    cmd = f"{CMD} {util.SQS_OPTS} --{opt.REPORT_FILE} {util.JSON_FILE} {ALL_OPTIONS}"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
     else:
@@ -99,7 +98,7 @@ def test_loc_branches_json() -> None:
 
 def test_loc_proj_all_options() -> None:
     """test_loc_proj_all_options"""
-    cmd = " ".join(CSV_OPTS + ALL_OPTIONS)
+    cmd = f"{CSV_OPTS} {ALL_OPTIONS}"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
@@ -120,7 +119,7 @@ def test_loc_proj_all_options() -> None:
 
 def test_loc_apps_all_options() -> None:
     """test_loc_apps_all_options"""
-    cmd = " ".join(CSV_OPTS + ["--apps"] + ALL_OPTIONS)
+    cmd = f"{CSV_OPTS} --apps {ALL_OPTIONS}"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
@@ -141,7 +140,7 @@ def test_loc_apps_all_options() -> None:
 
 def test_loc_portfolios_all_options() -> None:
     """test_loc_portfolios_all_options"""
-    cmd = " ".join(CSV_OPTS + ["--portfolios"] + ALL_OPTIONS)
+    cmd = f"{CSV_OPTS} --portfolios {ALL_OPTIONS}"
     if util.SQ.edition() in (c.CE, c.DE):
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
@@ -161,7 +160,7 @@ def test_loc_portfolios_all_options() -> None:
 
 def test_loc_proj_all_options_json() -> None:
     """test_loc_proj_all_options_json"""
-    cmd = " ".join(JSON_OPTS + ALL_OPTIONS)
+    cmd = f"{JSON_OPTS} {ALL_OPTIONS}"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
@@ -181,7 +180,7 @@ def test_loc_proj_all_options_json() -> None:
 
 def test_loc_apps_all_options_json() -> None:
     """test_loc_apps_all_options_json"""
-    cmd = " ".join(JSON_OPTS + ALL_OPTIONS + ["--apps"])
+    cmd = f"{JSON_OPTS} {ALL_OPTIONS} --apps"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
@@ -201,7 +200,7 @@ def test_loc_apps_all_options_json() -> None:
 
 def test_loc_portfolios_all_options_json() -> None:
     """test_loc_portfolios_all_options_json"""
-    cmd = " ".join(JSON_OPTS + ALL_OPTIONS + ["--portfolios"])
+    cmd = f"{JSON_OPTS} {ALL_OPTIONS} --portfolios"
     if util.SQ.edition() in (c.CE, c.DE):
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
