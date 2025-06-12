@@ -42,6 +42,7 @@ def test_loc(csv_file: Generator[str]) -> None:
     """test_loc"""
     util.run_success_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file}")
 
+
 def test_loc_json(json_file: Generator[str]) -> None:
     """test_loc_json"""
     util.run_success_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {json_file}")

@@ -246,6 +246,7 @@ def txt_file() -> Generator[str]:
     yield file
     rm(file)
 
+
 @pytest.fixture
 def json_file() -> Generator[str]:
     """setup of tests"""

@@ -51,6 +51,4 @@ def test_sync(json_file: callable) -> None:
 
 def test_sync_scloud(json_file: callable) -> None:
     """test_sync"""
-    util.run_success_cmd(
-        findings_sync.main, f"{CMD} {SC_PLAT_OPTS} {SYNC_OPTS} -B master --threads 16 -{opt.REPORT_FILE_SHORT} {json_file}", True
-    )
+    util.run_success_cmd(findings_sync.main, f"{CMD} {SC_PLAT_OPTS} {SYNC_OPTS} -B master --threads 16 -{opt.REPORT_FILE_SHORT} {json_file}", True)
