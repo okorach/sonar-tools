@@ -240,7 +240,7 @@ def main() -> None:
             component_type=kwargs[options.COMPONENT_TYPE],
             key_regexp=kwargs[options.KEY_REGEXP],
             branch_regexp=kwargs[options.BRANCH_REGEXP],
-            topLevelOnly=kwargs["topLevelOnly"]
+            topLevelOnly=kwargs["topLevelOnly"],
         )
         if kwargs[options.COMPONENT_TYPE] == "portfolios":
             params = {}
