@@ -38,7 +38,7 @@ CMD = "sonar-loc.py"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
 JSON_OPTS = [CMD] + util.STD_OPTS + [f"--{opt.REPORT_FILE}", util.JSON_FILE]
 
-ALL_OPTIONS = [f"-{opt.BRANCH_REGEXP_SHORT}", ".+" f"--{opt.WITH_LAST_ANALYSIS}", f"--{opt.WITH_NAME}", f"--{opt.WITH_URL}"]
+ALL_OPTIONS = [f"-{opt.BRANCH_REGEXP_SHORT}", '.+', f"--{opt.WITH_LAST_ANALYSIS}", f"--{opt.WITH_NAME}", f"--{opt.WITH_URL}"]
 
 
 def test_loc() -> None:
