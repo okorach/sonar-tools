@@ -235,12 +235,12 @@ def main() -> None:
     kwargs = __check_options(endpoint.edition(), kwargs)
 
     try:
-        # FIXME: Handle topLevel portfolios only in get_components()
         objects_list = component_helper.get_components(
             endpoint=endpoint,
             component_type=kwargs[options.COMPONENT_TYPE],
             key_regexp=kwargs[options.KEY_REGEXP],
             branch_regexp=kwargs[options.BRANCH_REGEXP],
+            topLevelOnly=kwargs["topLevelOnly"]
         )
         if kwargs[options.COMPONENT_TYPE] == "portfolios":
             params = {}

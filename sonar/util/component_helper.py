@@ -25,7 +25,7 @@ from sonar import platform, components, projects, applications, portfolios, logg
 
 
 def get_components(
-    endpoint: platform.Platform, component_type: str, key_regexp: Optional[str] = None, branch_regexp: Optional[str] = None
+    endpoint: platform.Platform, component_type: str, key_regexp: Optional[str] = None, branch_regexp: Optional[str] = None, **kwargs
 ) -> list[components.Component]:
     """Returns list of components that match the filters"""
     key_regexp = key_regexp or ".*"
@@ -33,6 +33,8 @@ def get_components(
         components = [p for p in applications.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
     elif component_type == "portfolios":
         components = [p for p in portfolios.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
+        if kwargs.get("topLevelOnly", False):
+            components = [p for p in components if p.is_toplevel()]
     else:
         components = [p for p in projects.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
     if component_type != "portfolios" and branch_regexp:
