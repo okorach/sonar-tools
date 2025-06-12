@@ -38,7 +38,7 @@ CMD = "sonar-loc.py"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
 JSON_OPTS = [CMD] + util.STD_OPTS + [f"--{opt.REPORT_FILE}", util.JSON_FILE]
 
-ALL_OPTIONS = [f"-{opt.BRANCH_REGEXP_SHORT}", ".+", f"--{opt.WITH_LAST_ANALYSIS}", f"--{opt.WITH_NAME}", f"--{opt.WITH_URL}"]
+ALL_OPTIONS = [f"-{opt.BRANCH_REGEXP_SHORT}", '.+', f"--{opt.WITH_LAST_ANALYSIS}", f"--{opt.WITH_NAME}", f"--{opt.WITH_URL}"]
 
 
 def test_loc() -> None:
@@ -80,7 +80,7 @@ def test_loc_project() -> None:
     """test_loc_project"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEY_REGEXP_SHORT}", "okorach_sonar-tools"]):
             loc.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
@@ -94,7 +94,8 @@ def test_loc_project_with_all_options() -> None:
         with patch.object(
             sys,
             "argv",
-            CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools", f"--{opt.WITH_URL}", f"-{opt.WITH_NAME_SHORT}", f"-{opt.WITH_LAST_ANALYSIS_SHORT}"],
+            CSV_OPTS
+            + [f"--{opt.KEY_REGEXP}", "okorach_sonar-tools", f"--{opt.WITH_URL}", f"-{opt.WITH_NAME_SHORT}", f"-{opt.WITH_LAST_ANALYSIS_SHORT}"],
         ):
             loc.main()
     assert int(str(e.value)) == errcodes.OK

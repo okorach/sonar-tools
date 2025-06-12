@@ -35,6 +35,7 @@ from sonar.util import types, constants as c
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
+from sonar.util import component_helper
 
 TOOL_NAME = "sonar-config"
 
@@ -171,10 +172,9 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
         export_settings["INLINE_LISTS"] = False
         export_settings[EXPORT_EMPTY] = True
     log.info("Exporting with settings: %s", utilities.json_dump(export_settings, redact_tokens=True))
-    if "projects" in what and kwargs[options.KEYS]:
-        non_existing_projects = [key for key in kwargs[options.KEYS] if not projects.exists(key, endpoint)]
-        if len(non_existing_projects) > 0:
-            utilities.exit_fatal(f"Project key(s) '{','.join(non_existing_projects)}' do(es) not exist", errcodes.NO_SUCH_KEY)
+    if "projects" in what and kwargs[options.KEY_REGEXP]:
+        if len(component_helper.get_components(endpoint, "projects", kwargs[options.KEY_REGEXP])) == 0:
+            utilities.exit_fatal(f"No projects matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.NO_SUCH_KEY)
 
     what.append(c.CONFIG_KEY_PLATFORM)
     log.info("Exporting configuration from %s", kwargs[options.URL])
@@ -195,7 +195,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
             worker.name = f"Write{ndx[:1].upper()}{ndx[1:10]}"
             worker.start()
             try:
-                func(endpoint, export_settings=export_settings, key_list=kwargs[options.KEYS], write_q=write_q)
+                func(endpoint, export_settings=export_settings, key_list=kwargs[options.KEY_REGEXP], write_q=write_q)
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
                 if write_q:
@@ -239,7 +239,7 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
             data = json.loads(fd.read())
     except FileNotFoundError as e:
         utilities.exit_fatal(f"OS error while reading file: {e}", exit_code=errcodes.OS_ERROR)
-    key_list = kwargs[options.KEYS]
+    key_list = kwargs[options.KEY_REGEXP]
 
     calls = {
         options.WHAT_GROUPS: groups.import_config,

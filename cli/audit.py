@@ -33,7 +33,7 @@ from requests import RequestException
 from cli import options
 
 from sonar import errcodes, exceptions, version
-from sonar.util import types
+from sonar.util import types, component_helper
 import sonar.logging as log
 from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, portfolios, applications, projects
 import sonar.utilities as util
@@ -143,12 +143,11 @@ def __parser_args(desc: str) -> object:
     return args
 
 
-def __check_keys_exist(key_list: list[str], sq: platform.Platform, what: list[str]) -> None:
+def __check_keys_exist(key_regexp: list[str], sq: platform.Platform, what: list[str]) -> None:
     """Checks if project keys exist"""
-    if key_list and len(key_list) > 0 and "projects" in what:
-        missing_proj = [key for key in key_list if not projects.exists(key, sq)]
-        if len(missing_proj) > 0:
-            raise exceptions.ObjectNotFound(missing_proj[0], f"Projects key {', '.join(missing_proj)} do(es) not exist")
+    if key_regexp and "projects" in what:
+        if len(component_helper.get_components(sq, "projects", key_regexp)) == 0:
+            raise exceptions.ObjectNotFound(key_regexp, f"No projects found with key matching regexp '{key_regexp}'")
 
 
 def main() -> None:
@@ -182,9 +181,9 @@ def main() -> None:
             sq.verify_connection()
             sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
             settings["SERVER_ID"] = sq.server_id()
-            __check_keys_exist(kwargs[options.KEYS], sq, kwargs[options.WHAT])
+            __check_keys_exist(kwargs[options.KEY_REGEXP], sq, kwargs[options.WHAT])
             what = util.check_what(kwargs[options.WHAT], WHAT_AUDITABLE, "audited")
-            problems = _audit_sq(sq, settings, what_to_audit=what, key_list=kwargs[options.KEYS])
+            problems = _audit_sq(sq, settings, what_to_audit=what, key_list=kwargs[options.KEY_REGEXP])
             loglevel = log.WARNING if len(problems) > 0 else log.INFO
             log.log(loglevel, "%d issues found during audit", len(problems))
 

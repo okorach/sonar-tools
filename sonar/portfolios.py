@@ -25,6 +25,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Optional
 import json
 from http import HTTPStatus
@@ -699,7 +700,8 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         return []
     log.info("--- Auditing portfolios ---")
     problems = []
-    for p in get_list(endpoint=endpoint, key_list=kwargs.get("key_list", None)).values():
+    key_regexp = kwargs.get("key_list", None) or ".*"
+    for p in [o for o in get_list(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
         problems += p.audit(audit_settings, **kwargs)
     return problems
 
@@ -780,14 +782,15 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     :rtype: ObjectJsonRepr
     """
     write_q = kwargs.get("write_q", None)
-    key_list = kwargs.get("key_list", None)
+    key_regexp = kwargs.get("key_list", ".*")
     check_supported(endpoint)
 
     log.info("Exporting portfolios")
-    nb_portfolios = len(key_list) if key_list else count(endpoint=endpoint)
+    portfolio_list = {k: v for k, v in get_list(endpoint=endpoint).items() if not key_regexp or re.match(key_regexp, k)}
+    nb_portfolios = len(portfolio_list)
     i = 0
     exported_portfolios = {}
-    for k, p in get_list(endpoint=endpoint, key_list=key_list).items():
+    for k, p in portfolio_list.items():
         try:
             if not p.is_sub_portfolio():
                 exp = p.export(export_settings)

@@ -50,7 +50,7 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
         raise exceptions.UnsupportedOperation(f"Can't export projects on {ed} Edition before 9.2, aborting...")
     dump = projects.export_zips(
         endpoint=endpoint,
-        key_list=kwargs[options.KEYS],
+        key_regexp=kwargs[options.KEY_REGEXP],
         export_timeout=kwargs.get("exportTimeout", _EXPORT_IMPORT_TIMEOUT),
         threads=kwargs.get(options.NBR_THREADS, _EXPORT_IMPORT_THREADS),
         skip_zero_loc=kwargs.get("skipZeroLoc", False),

@@ -28,7 +28,7 @@ from unittest.mock import patch
 import pytest
 
 import utilities as util
-from sonar import errcodes, logging
+from sonar import errcodes, logging, utilities
 import sonar.util.constants as c
 
 from cli import measures_export
@@ -36,6 +36,7 @@ import cli.options as opt
 
 CMD = "sonar-measures-export.py"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
+CSV_OPTS_STR = " ".join(CSV_OPTS)
 JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
 
 TYPE_COL = 1
@@ -207,30 +208,28 @@ def test_non_existing_measure() -> None:
 
 def test_non_existing_project() -> None:
     """test_non_existing_project"""
+    util.run_success_cmd(measures_export.main, f"{CSV_OPTS_STR} -{opt.REPORT_FILE_SHORT} {util.CSV_FILE} -{opt.KEY_REGEXP_SHORT} 'bad_project'")
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        lines = len(fh.readlines())
     util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools,bad_project"]):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.NO_SUCH_KEY
-    assert not os.path.isfile(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    # Only the header
+    assert lines == 1
 
 
 def test_specific_project_keys() -> None:
     """test_non_existing_project"""
     util.clean(util.CSV_FILE)
     projects = ["okorach_sonar-tools", "project1", "project4"]
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEYS_SHORT}", ", ".join(projects)]):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
+    util.run_success_cmd(measures_export.main, f"{CSV_OPTS_STR} -{opt.KEY_REGEXP_SHORT} {utilities.list_to_regexp(projects)}")
+    lines = 0
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         reader = csv.reader(fh)
         next(reader)
         for line in reader:
             assert line[0] in projects
             assert line[TYPE_COL] == "PROJECT"
+            lines += 1
+    assert lines == len(projects)
     util.clean(util.CSV_FILE)
 
 

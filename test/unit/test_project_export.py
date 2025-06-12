@@ -44,25 +44,25 @@ def test_export_all_proj(get_json_file: Generator[str]) -> None:
 
 def test_export_single_proj(get_json_file: Generator[str]) -> None:
     """test_export_single_proj"""
-    args = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {get_json_file} -{opt.KEYS_SHORT} okorach_sonar-tools"
+    args = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {get_json_file} -{opt.KEY_REGEXP_SHORT} okorach_sonar-tools"
     util.run_success_cmd(projects_cli.main, args)
 
 
 def test_export_timeout(get_json_file: Generator[str]) -> None:
     """test_export_timeout"""
-    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {get_json_file} --{opt.KEYS} okorach_sonar-tools --exportTimeout 10"
+    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {get_json_file} --{opt.KEY_REGEXP} okorach_sonar-tools --exportTimeout 10"
     util.run_success_cmd(projects_cli.main, cmd, True)
 
 
 def test_export_no_file(get_json_file: Generator[str]) -> None:
     """test_export_timeout"""
-    cmd = f"{OPTS} --{opt.EXPORT} -{opt.KEYS_SHORT} okorach_sonar-tools"
+    cmd = f"{OPTS} --{opt.EXPORT} -{opt.KEY_REGEXP_SHORT} okorach_sonar-tools"
     util.run_success_cmd(projects_cli.main, cmd, True)
 
 
 def test_export_non_existing_project(get_json_file: Generator[str]) -> None:
     """test_config_non_existing_project"""
-    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {get_json_file} --{opt.KEYS_SHORT} okorach_sonar-tools,bad_project"
+    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {get_json_file} --{opt.KEY_REGEXP_SHORT} okorach_sonar-tools,bad_project"
     util.run_failed_cmd(projects_cli.main, cmd, errcodes.NO_SUCH_KEY)
 
 

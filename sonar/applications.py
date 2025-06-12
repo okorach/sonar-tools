@@ -24,7 +24,7 @@ Abstraction of the SonarQube "application" concept
 
 from __future__ import annotations
 from typing import Union
-
+import re
 import json
 from datetime import datetime
 from http import HTTPStatus
@@ -524,15 +524,16 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
 
     :param endpoint: Reference to the Sonar platform
     :param export_settings: Options to use for export
-    :param key_list: list of Application keys to export, defaults to all if None
+    :param key_regexp: Regexp to filter application keys to export, defaults to all if None
     :return: Dict of applications settings
     """
     check_supported(endpoint)
     write_q = kwargs.get("write_q", None)
-    key_list = kwargs.get("key_list", None)
+    key_regexp = kwargs.get("key_list", ".*")
 
+    app_list = {k: v for k, v in get_list(endpoint).items() if not key_regexp or re.match(key_regexp, k)}
     apps_settings = {}
-    for k, app in get_list(endpoint, key_list).items():
+    for k, app in app_list.items():
         app_json = app.export(export_settings)
         if write_q:
             write_q.put(app_json)
@@ -559,7 +560,8 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         return []
     log.info("--- Auditing applications ---")
     problems = []
-    for obj in get_list(endpoint, key_list=kwargs.get("key_list", None)).values():
+    key_regexp = kwargs.get("key_list", None) or ".*"
+    for obj in [o for o in get_list(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
         problems += obj.audit(audit_settings, **kwargs)
     return problems
 

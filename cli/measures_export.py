@@ -38,6 +38,7 @@ from sonar import metrics, platform, exceptions, errcodes, version, measures
 from sonar import projects, applications, portfolios
 import sonar.utilities as util
 import sonar.util.constants as c
+from sonar.util import component_helper
 
 TOOL_NAME = "sonar-measures"
 RATINGS = "letters"
@@ -263,27 +264,6 @@ def __write_measures_csv(file: str, wanted_metrics: types.KeyList, data: dict[st
             csvwriter.writerow(row)
 
 
-def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[projects.Project]:
-    """Returns the list of objects concerned by the measures export"""
-    try:
-        comp_type = kwargs.get("compType", "projects")
-        if comp_type == "apps":
-            object_list = applications.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
-        elif comp_type == "portfolios":
-            object_list = portfolios.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
-        else:
-            object_list = projects.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
-    except exceptions.ObjectNotFound as e:
-        util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
-    nb_comp = len(object_list)
-    log.info("Collecting %s branches", comp_type)
-    if kwargs[options.BRANCH_REGEXP] and comp_type in ("projects", "apps"):
-        obj_list = [b for p in object_list.values() for b in p.branches().values() if re.match(rf"^{kwargs[options.BRANCH_REGEXP]}$", b.name)]
-    else:
-        obj_list = object_list.values()
-    return obj_list, nb_comp
-
-
 def __check_options_vs_edition(edition: str, params: dict[str, str]) -> dict[str, str]:
     """Checks and potentially modify params according to edition of the target platform"""
     if edition == c.CE and params[options.BRANCH_REGEXP]:
@@ -327,7 +307,13 @@ def main() -> None:
     kwargs[options.WITH_NAME] = True
 
     try:
-        obj_list, nb_proj = __get_concerned_objects(endpoint=endpoint, **kwargs)
+        obj_list = component_helper.get_components(
+            endpoint=endpoint,
+            component_type=kwargs[options.COMPONENT_TYPE],
+            key_regexp=kwargs[options.KEY_REGEXP],
+            branch_regexp=kwargs[options.BRANCH_REGEXP],
+        )
+        nb_proj = len(set(obj.concerned_object for obj in obj_list if obj.concerned_object is not None and obj.concerned_object != obj))
         nb_branches = len(obj_list)
 
         measure_list = []

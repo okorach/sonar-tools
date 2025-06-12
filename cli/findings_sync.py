@@ -114,7 +114,7 @@ def __since_date(**kwargs) -> Optional[datetime.datetime]:
 
 def __check_comparison_params(source_env: pf.Platform, target_env: pf.Platform, **kwargs) -> tuple[str, str, Optional[str], Optional[str]]:
     """Check input parameters and verfiy they are correct for the desired comparison"""
-    source_key = kwargs[options.KEYS][0]
+    source_key = kwargs[options.KEY_REGEXP]
     target_key = kwargs.get("targetProjectKey", source_key)
     source_url = kwargs[options.URL]
     source_branch = kwargs.get("sourceBranch", None)

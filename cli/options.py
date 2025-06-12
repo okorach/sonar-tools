@@ -60,8 +60,8 @@ CERT = "clientCert"
 REPORT_FILE_SHORT = "f"
 REPORT_FILE = "file"
 
-KEYS_SHORT = "k"
-KEYS = "projectKeys"
+KEY_REGEXP_SHORT = "k"
+KEY_REGEXP = "projectKeys"
 
 EXPORT = "export"
 EXPORT_SHORT = "e"
@@ -145,7 +145,7 @@ WHAT_PROJECTS = "projects"
 WHAT_APPS = "applications"
 WHAT_PORTFOLIOS = "portfolios"
 
-MULTI_VALUED_OPTS = (KEYS, METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES, TAGS, PULL_REQUESTS, WHAT)
+MULTI_VALUED_OPTS = (METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES, TAGS, PULL_REQUESTS, WHAT)
 
 COMPONENT_TYPE = "compType"
 PROJECTS = "projects"
@@ -359,12 +359,13 @@ def set_common_args(desc: str) -> ArgumentParser:
 def set_key_arg(parser: ArgumentParser) -> ArgumentParser:
     """Adds the cmd line parameter to select object keys"""
     parser.add_argument(
-        f"-{KEYS_SHORT}",
-        f"--{KEYS}",
+        f"-{KEY_REGEXP_SHORT}",
+        f"--{KEY_REGEXP}",
         "--keys",
         "--projectKey",
         required=False,
-        help="Commas separated keys of the objects to select",
+        type=str,
+        help="Regexp to select projects, apps or portfolios keys",
     )
     return parser
 
