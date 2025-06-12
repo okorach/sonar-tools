@@ -23,10 +23,9 @@
     sonar-loc tests
 """
 
-import sys
 import csv, json
+from collections.abc import Generator
 from unittest.mock import patch
-import pytest
 import utilities as util
 from sonar import errcodes
 import sonar.util.constants as c
@@ -34,264 +33,202 @@ import sonar.util.constants as c
 from cli import loc
 import cli.options as opt
 
-CMD = "sonar-loc.py"
-CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
-JSON_OPTS = [CMD] + util.STD_OPTS + [f"--{opt.REPORT_FILE}", util.JSON_FILE]
-
-ALL_OPTIONS = [f"-{opt.BRANCH_REGEXP_SHORT}", '.+', f"--{opt.WITH_LAST_ANALYSIS}", f"--{opt.WITH_NAME}", f"--{opt.WITH_URL}"]
+CLI = "sonar-loc.py"
+CMD = f"{CLI} {util.SQS_OPTS}"
+ALL_OPTIONS = f"-{opt.BRANCH_REGEXP_SHORT} .+ --{opt.WITH_LAST_ANALYSIS} --{opt.WITH_NAME} --{opt.WITH_URL}"
 
 
-def test_loc() -> None:
+def test_loc(csv_file: Generator[str]) -> None:
     """test_loc"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS):
-            loc.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    util.run_success_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file}")
 
 
-def test_loc_json() -> None:
+def test_loc_json(json_file: Generator[str]) -> None:
     """test_loc_json"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS):
-            loc.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.JSON_FILE)
-    util.clean(util.JSON_FILE)
+    util.run_success_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {json_file}")
 
 
-def test_loc_json_fmt() -> None:
+def test_loc_json_fmt(txt_file: Generator[str]) -> None:
     """test_loc_json_fmt"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(
-            sys, "argv", JSON_OPTS + [f"--{opt.FORMAT}", "json", f"--{opt.WITH_NAME}", f"-{opt.WITH_LAST_ANALYSIS_SHORT}", f"--{opt.WITH_URL}"]
-        ):
-            loc.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.JSON_FILE)
-    util.clean(util.JSON_FILE)
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {txt_file} --{opt.FORMAT} json"
+    util.run_success_cmd(loc.main, cmd, post_cleanup=False)
+    # Verify that the file is a valid JSON file
+    with open(file=txt_file, mode="r", encoding="utf-8") as fh:
+        _ = json.loads(fh.read())
 
 
-def test_loc_project() -> None:
+def test_loc_csv_fmt(txt_file: Generator[str]) -> None:
+    """test_loc_csv_fmt"""
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {txt_file} --{opt.FORMAT} csv"
+    util.run_success_cmd(loc.main, cmd, post_cleanup=False)
+    # Verify that the file is a valid CSV file
+    with open(file=txt_file, mode="r", encoding="utf-8") as fh:
+        row = next(csv.reader(fh))
+    for k in "# project key", "ncloc":
+        assert k in row
+
+
+def test_loc_project(csv_file: Generator[str]) -> None:
     """test_loc_project"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEY_REGEXP_SHORT}", "okorach_sonar-tools"]):
-            loc.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
+    util.run_success_cmd(loc.main, cmd, post_cleanup=False)
+    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
+        reader = csv.reader(fh)
+        lines = 0
+        next(reader)  # Skip header
+        for line in reader:
+            assert line[0] == util.LIVE_PROJECT
+            lines += 1
+        assert lines == 1
 
 
-def test_loc_project_with_all_options() -> None:
+def test_loc_project_with_all_options(csv_file: Generator[str]) -> None:
     """test_loc_project_with_all_options"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(
-            sys,
-            "argv",
-            CSV_OPTS
-            + [f"--{opt.KEY_REGEXP}", "okorach_sonar-tools", f"--{opt.WITH_URL}", f"-{opt.WITH_NAME_SHORT}", f"-{opt.WITH_LAST_ANALYSIS_SHORT}"],
-        ):
-            loc.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --{opt.WITH_URL} -{opt.WITH_NAME_SHORT} -{opt.WITH_LAST_ANALYSIS_SHORT}"
+    util.run_success_cmd(loc.main, cmd)
 
 
-def test_loc_portfolios() -> None:
+def test_loc_portfolios(csv_file: Generator[str]) -> None:
     """test_loc_portfolios"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.PORTFOLIOS}", "--topLevelOnly", f"--{opt.WITH_URL}"]):
-            loc.main()
-    if util.SQ.edition() in (c.CE, c.DE):
-        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
-    else:
-        assert int(str(e.value)) == errcodes.OK
-        assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.PORTFOLIOS} --topLevelOnly --{opt.WITH_URL}"
+    util.run_success_cmd(loc.main, cmd)
 
 
-def test_loc_separator() -> None:
+def test_loc_separator(csv_file: Generator[str]) -> None:
     """test_loc_separator"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.CSV_SEPARATOR}", "+"]):
-            loc.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.CSV_SEPARATOR} +"
+    util.run_success_cmd(loc.main, cmd)
 
 
-def test_loc_branches() -> None:
-    """test_loc"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ALL_OPTIONS):
-            loc.main()
+def test_loc_branches(csv_file: Generator[str]) -> None:
+    """test_loc_branches"""
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} {ALL_OPTIONS}"
     if util.SQ.edition() == c.CE:
-        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+        util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
     else:
-        assert int(str(e.value)) == errcodes.OK
-    util.clean(util.CSV_FILE)
+        util.run_success_cmd(loc.main, cmd)
 
 
-def test_loc_branches_json() -> None:
+def test_loc_branches_json(json_file: Generator[str]) -> None:
     """test_loc"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"--{opt.REPORT_FILE}", util.JSON_FILE] + ALL_OPTIONS):
-            loc.main()
+    cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} {ALL_OPTIONS}"
     if util.SQ.edition() == c.CE:
-        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+        util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
     else:
-        assert int(str(e.value)) == errcodes.OK
-    util.clean(util.JSON_FILE)
+        util.run_success_cmd(loc.main, cmd)
 
 
-def test_loc_proj_all_options() -> None:
-    """test_loc"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ALL_OPTIONS):
-            loc.main()
+def test_loc_proj_all_options(csv_file: Generator[str]) -> None:
+    """test_loc_proj_all_options"""
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} {ALL_OPTIONS}"
     if util.SQ.edition() == c.CE:
-        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
-    else:
-        assert int(str(e.value)) == errcodes.OK
-        # Check file contents
-        with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-            reader = csv.reader(fh)
-            row = next(reader)
-            for k in "# project key", "ncloc", "project name", "last analysis", "URL":
-                assert k in row
-            if util.SQ.edition() != c.CE:
-                assert "branch" in row
-                offset = 0
-            else:
-                offset = -1
-            for line in reader:
-                assert util.is_url(line[5 + offset])
-                assert line[4 + offset] == "" or util.is_datetime(line[4 + offset])
-                assert util.is_integer(line[2])
-    util.clean(util.CSV_FILE)
+        util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+        return
+
+    util.run_success_cmd(loc.main, cmd)
+    # Check file contents
+    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
+        reader = csv.reader(fh)
+        row = next(reader)
+        for k in "# project key", "branch", "ncloc", "project name", "last analysis", "URL":
+            assert k in row
+        for line in reader:
+            assert util.is_url(line[5])
+            assert line[4] == "" or util.is_datetime(line[4])
+            assert util.is_integer(line[2])
 
 
-def test_loc_apps_all_options() -> None:
-    """test_loc"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--apps"] + ALL_OPTIONS):
-            loc.main()
+def test_loc_apps_all_options(csv_file: Generator[str]) -> None:
+    """test_loc_apps_all_options"""
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --apps {ALL_OPTIONS}"
     if util.SQ.edition() == c.CE:
-        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
-    else:
-        assert int(str(e.value)) == errcodes.OK
-        # Check file contents
-        with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-            reader = csv.reader(fh)
-            row = next(reader)
-            for k in "# app key", "branch", "ncloc", "app name", "last analysis", "URL":
-                assert k in row
-            for line in reader:
-                assert util.is_url(line[5])
-                assert line[4] == "" or util.is_datetime(line[4])
-                assert util.is_integer(line[2])
-    util.clean(util.CSV_FILE)
+        util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+        return
+
+    util.run_success_cmd(loc.main, cmd)
+    # Check file contents
+    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
+        reader = csv.reader(fh)
+        row = next(reader)
+        for k in "# app key", "branch", "ncloc", "app name", "last analysis", "URL":
+            assert k in row
+        for line in reader:
+            assert util.is_url(line[5])
+            assert line[4] == "" or util.is_datetime(line[4])
+            assert util.is_integer(line[2])
 
 
-def test_loc_portfolios_all_options() -> None:
-    """test_loc"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--portfolios"] + ALL_OPTIONS):
-            loc.main()
+def test_loc_portfolios_all_options(csv_file: Generator[str]) -> None:
+    """test_loc_portfolios_all_options"""
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --portfolios {ALL_OPTIONS}"
     if util.SQ.edition() in (c.CE, c.DE):
-        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
-    else:
-        assert int(str(e.value)) == errcodes.OK
-        # Check file contents
-        with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-            reader = csv.reader(fh)
-            row = next(reader)
-            for k in "# portfolio key", "ncloc", "portfolio name", "last analysis", "URL":
-                assert k in row
-            for line in reader:
-                assert util.is_url(line[4])
-                assert line[3] == "" or util.is_datetime(line[3])
-                assert util.is_integer(line[1])
-    util.clean(util.CSV_FILE)
+        util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+        return
+    util.run_success_cmd(loc.main, cmd)
+    # Check file contents
+    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
+        reader = csv.reader(fh)
+        row = next(reader)
+        for k in "# portfolio key", "ncloc", "portfolio name", "last analysis", "URL":
+            assert k in row
+        for line in reader:
+            assert util.is_url(line[4])
+            assert line[3] == "" or util.is_datetime(line[3])
+            assert util.is_integer(line[1])
 
 
-def test_loc_proj_all_options_json() -> None:
+def test_loc_proj_all_options_json(json_file: Generator[str]) -> None:
     """test_loc_proj_all_options_json"""
-    file = util.JSON_FILE
-    util.clean(file)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS):
-            loc.main()
+    cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} {ALL_OPTIONS}"
     if util.SQ.edition() == c.CE:
-        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
-    else:
-        assert int(str(e.value)) == errcodes.OK
-        # Check file contents
-        with open(file=file, mode="r", encoding="utf-8") as fh:
-            jsondata = json.loads(fh.read())
-        for component in jsondata:
-            for key in "branch", "lastAnalysis", "ncloc", "project", "projectName", "url":
-                assert key in component
-            assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
-            assert util.is_url(component["url"])
-            assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
-    util.clean(file)
+        util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+        return
+
+    util.run_success_cmd(loc.main, cmd)
+    # Check file contents
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+        jsondata = json.loads(fh.read())
+    for component in jsondata:
+        for key in "branch", "lastAnalysis", "ncloc", "project", "projectName", "url":
+            assert key in component
+        assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
+        assert util.is_url(component["url"])
+        assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
 
 
-def test_loc_apps_all_options_json() -> None:
+def test_loc_apps_all_options_json(json_file: Generator[str]) -> None:
     """test_loc_apps_all_options_json"""
-    file = util.JSON_FILE
-    util.clean(file)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS + ["--apps"]):
-            loc.main()
+    cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} {ALL_OPTIONS} --apps"
     if util.SQ.edition() == c.CE:
-        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
-    else:
-        assert int(str(e.value)) == errcodes.OK
-        # Check file contents
-        with open(file=file, mode="r", encoding="utf-8") as fh:
-            jsondata = json.loads(fh.read())
-        for component in jsondata:
-            for key in "branch", "lastAnalysis", "ncloc", "app", "appName", "url":
-                assert key in component
-            assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
-            assert util.is_url(component["url"])
-            assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
-    util.clean(file)
+        util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+        return
+
+    util.run_success_cmd(loc.main, cmd)
+    # Check file contents
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+        jsondata = json.loads(fh.read())
+    for component in jsondata:
+        for key in "branch", "lastAnalysis", "ncloc", "app", "appName", "url":
+            assert key in component
+        assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
+        assert util.is_url(component["url"])
+        assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
 
 
-def test_loc_portfolios_all_options_json() -> None:
+def test_loc_portfolios_all_options_json(json_file: Generator[str]) -> None:
     """test_loc_portfolios_all_options_json"""
-    file = util.JSON_FILE
-    util.clean(file)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS + ["--portfolios"]):
-            loc.main()
+    cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} {ALL_OPTIONS} --portfolios"
     if util.SQ.edition() in (c.CE, c.DE):
-        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
-    else:
-        assert int(str(e.value)) == errcodes.OK
-        # Check file contents
-        with open(file=file, mode="r", encoding="utf-8") as fh:
-            jsondata = json.loads(fh.read())
-        for component in jsondata:
-            for key in "lastAnalysis", "ncloc", "portfolio", "portfolioName", "url":
-                assert key in component
-            assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
-            assert util.is_url(component["url"])
-            assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
-    util.clean(file)
+        util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+        return
+
+    util.run_success_cmd(loc.main, cmd, post_cleanup=False)
+    # Check file contents
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+        jsondata = json.loads(fh.read())
+    for component in jsondata:
+        for key in "lastAnalysis", "ncloc", "portfolio", "portfolioName", "url":
+            assert key in component
+        assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
+        assert util.is_url(component["url"])
+        assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])

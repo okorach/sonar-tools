@@ -283,7 +283,7 @@ def test_export() -> None:
     assert len(yaml_exp) == len(json_exp)
 
 
-def test_import(get_json_file: Generator[str]) -> None:
+def test_import(json_file: Generator[str]) -> None:
     """test_import"""
 
     if util.SQ.edition() in (c.CE, c.DE):
