@@ -272,8 +272,6 @@ def get_component_findings(component: object, search_findings: bool, params: Con
     new_params = params.copy()
     if options.PULL_REQUESTS in new_params:
         new_params["pullRequest"] = new_params.pop(options.PULL_REQUESTS)
-    # if options.BRANCHES in new_params:
-    #    new_params["branch"] = new_params.pop(options.BRANCHES)
     findings_list = {}
     if needs_issue_search(params):
         findings_list = component.get_issues(filters=new_params)
