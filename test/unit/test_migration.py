@@ -37,14 +37,14 @@ CMD = f"migration.py {util.SQS_OPTS}"
 GLOBAL_ITEMS = ("platform", "globalSettings", "rules", "qualityProfiles", "qualityGates", "projects", "applications", "portfolios", "users", "groups")
 
 
-def test_migration_help(get_json_file: Generator[str]) -> None:
+def test_migration_help(json_file: Generator[str]) -> None:
     """test_migration_help"""
-    util.run_failed_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {get_json_file} -h", errcodes.ARGS_ERROR)
+    util.run_failed_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {json_file} -h", errcodes.ARGS_ERROR)
 
 
-def test_migration(get_json_file: Generator[str]) -> None:
+def test_migration(json_file: Generator[str]) -> None:
     """test_config_export"""
-    file = get_json_file
+    file = json_file
     util.run_success_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {file}")
     with open(file=file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
@@ -113,9 +113,9 @@ def test_migration(get_json_file: Generator[str]) -> None:
         assert "keys" in p["projects"]
 
 
-def test_migration_skip_issues(get_json_file: Generator[str]) -> None:
+def test_migration_skip_issues(json_file: Generator[str]) -> None:
     """test_migration_skip_issues"""
-    file = get_json_file
+    file = json_file
     util.run_success_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {file} --skipIssues")
     with open(file=file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())

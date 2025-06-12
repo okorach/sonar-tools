@@ -31,9 +31,9 @@ import utilities as util
 import cli.projects_cli as proj_cli
 
 
-def test_import(get_json_file: Generator[str]) -> None:
+def test_import(json_file: Generator[str]) -> None:
     """test_import"""
-    export_file = get_json_file
+    export_file = json_file
     cmd = f"projects_cli.py {util.SQS_OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {export_file} --{opt.KEY_REGEXP} project1"
     util.run_success_cmd(proj_cli.main, cmd)
 

@@ -109,7 +109,7 @@ def test_config_dont_inline_lists() -> None:
     util.clean(util.JSON_FILE)
 
 
-def test_config_import_portfolios(get_json_file: Generator[str]) -> None:
+def test_config_import_portfolios(json_file: Generator[str]) -> None:
     """test_config_non_existing_project"""
     with open("test/files/config.json", "r", encoding="utf-8") as f:
         json_config = json.loads(f.read())["portfolios"]

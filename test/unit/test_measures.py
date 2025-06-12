@@ -43,9 +43,9 @@ TYPE_COL = 1
 KEY_COL = 0
 
 
-def test_measures_export(get_csv_file: callable) -> None:
+def test_measures_export(csv_file: callable) -> None:
     """test_measures_export"""
-    file = get_csv_file
+    file = csv_file
     util.run_success_cmd(measures_export.main, f"{CMD} {util.SQS_OPTS} --withTags -{opt.REPORT_FILE_SHORT} {file}")
     with open(file=file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
@@ -61,11 +61,11 @@ def test_measures_export(get_csv_file: callable) -> None:
             assert line[pct_col_2] == "" or 0.0 <= float(line[pct_col_2]) <= 1.0
 
 
-def test_measures_conversion(get_csv_file: callable) -> None:
+def test_measures_conversion(csv_file: callable) -> None:
     """test_measures_conversion"""
     logging.set_logger("test.log")
     logging.set_debug_level("DEBUG")
-    file = get_csv_file
+    file = csv_file
     util.run_success_cmd(measures_export.main, f"{CMD} {util.SQS_OPTS} -r -p --withTags -{opt.REPORT_FILE_SHORT} {file}")
     with open(file=file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
@@ -134,9 +134,9 @@ def test_measures_export_history() -> None:
     util.clean(util.CSV_FILE)
 
 
-def test_measures_export_history_as_table(get_csv_file: callable) -> None:
+def test_measures_export_history_as_table(csv_file: callable) -> None:
     """test_measures_export_history_as_table"""
-    file = get_csv_file
+    file = csv_file
     util.run_success_cmd(measures_export.main, f"{CMD} {util.SQS_OPTS} --history --asTable -{opt.REPORT_FILE_SHORT} {file}")
 
 

@@ -232,7 +232,7 @@ def get_temp_filename(ext: str) -> str:
 
 
 @pytest.fixture
-def get_csv_file() -> Generator[str]:
+def csv_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("csv")
     yield file
@@ -240,7 +240,14 @@ def get_csv_file() -> Generator[str]:
 
 
 @pytest.fixture
-def get_json_file() -> Generator[str]:
+def txt_file() -> Generator[str]:
+    """setup of tests"""
+    file = get_temp_filename("txt")
+    yield file
+    rm(file)
+
+@pytest.fixture
+def json_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("json")
     yield file

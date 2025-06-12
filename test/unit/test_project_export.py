@@ -36,39 +36,39 @@ CMD = "projects_cli.py"
 OPTS = f"{CMD} {util.SQS_OPTS}"
 
 
-def test_export_all_proj(get_json_file: Generator[str]) -> None:
+def test_export_all_proj(json_file: Generator[str]) -> None:
     """test_export_all_proj"""
-    args = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {get_json_file} --{opt.NBR_THREADS} 16"
+    args = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.NBR_THREADS} 16"
     util.run_success_cmd(projects_cli.main, args)
 
 
-def test_export_single_proj(get_json_file: Generator[str]) -> None:
+def test_export_single_proj(json_file: Generator[str]) -> None:
     """test_export_single_proj"""
-    args = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {get_json_file} -{opt.KEY_REGEXP_SHORT} okorach_sonar-tools"
+    args = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} -{opt.KEY_REGEXP_SHORT} okorach_sonar-tools"
     util.run_success_cmd(projects_cli.main, args)
 
 
-def test_export_timeout(get_json_file: Generator[str]) -> None:
+def test_export_timeout(json_file: Generator[str]) -> None:
     """test_export_timeout"""
-    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {get_json_file} --{opt.KEY_REGEXP} okorach_sonar-tools --exportTimeout 10"
+    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.KEY_REGEXP} okorach_sonar-tools --exportTimeout 10"
     util.run_success_cmd(projects_cli.main, cmd, True)
 
 
-def test_export_no_file(get_json_file: Generator[str]) -> None:
+def test_export_no_file(json_file: Generator[str]) -> None:
     """test_export_timeout"""
     cmd = f"{OPTS} --{opt.EXPORT} -{opt.KEY_REGEXP_SHORT} okorach_sonar-tools"
     util.run_success_cmd(projects_cli.main, cmd, True)
 
 
-def test_export_non_existing_project(get_json_file: Generator[str]) -> None:
+def test_export_non_existing_project(json_file: Generator[str]) -> None:
     """test_config_non_existing_project"""
-    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {get_json_file} --{opt.KEY_REGEXP_SHORT} okorach_sonar-tools,bad_project"
+    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.KEY_REGEXP_SHORT} okorach_sonar-tools,bad_project"
     util.run_failed_cmd(projects_cli.main, cmd, errcodes.NO_SUCH_KEY)
 
 
-def test_export_sq_cloud(get_json_file: Generator[str]) -> None:
+def test_export_sq_cloud(json_file: Generator[str]) -> None:
     """test_export_sq_cloud"""
-    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {get_json_file} {util.SC_OPTS}"
+    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} {util.SC_OPTS}"
     util.run_failed_cmd(projects_cli.main, cmd, errcodes.UNSUPPORTED_OPERATION)
 
 
@@ -77,9 +77,9 @@ def test_import_no_file() -> None:
     util.run_failed_cmd(projects_cli.main, f"{OPTS} --{opt.IMPORT}", errcodes.ARGS_ERROR)
 
 
-def test_no_export_or_import(get_json_file: Generator[str]) -> None:
+def test_no_export_or_import(json_file: Generator[str]) -> None:
     """test_no_export_or_import"""
-    args = f"{OPTS} --{opt.REPORT_FILE} {get_json_file}"
+    args = f"{OPTS} --{opt.REPORT_FILE} {json_file}"
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", args.split(" ")):
             projects_cli.main()
