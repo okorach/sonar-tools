@@ -23,10 +23,8 @@
     sonar-loc tests
 """
 
-import sys
 import csv, json
 from unittest.mock import patch
-import pytest
 import utilities as util
 from sonar import errcodes
 import sonar.util.constants as c
