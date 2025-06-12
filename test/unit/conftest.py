@@ -256,7 +256,7 @@ def json_file() -> Generator[str]:
 
 
 @pytest.fixture
-def get_yaml_file() -> Generator[str]:
+def yaml_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("yaml")
     rm(file)
