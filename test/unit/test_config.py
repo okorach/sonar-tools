@@ -35,29 +35,27 @@ import cli.options as opt
 from cli import config
 
 CMD = "config.py"
-LIST_OPTS = [CMD] + util.STD_OPTS + ["-e", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
-OPTS = " ".join(LIST_OPTS)
-OPTS_IMPORT = [CMD] + util.TEST_OPTS + ["-i", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
+OPTS = f"{CMD} {util.SQS_OPTS} -{opt.EXPORT_SHORT}"
 
 
-def test_config_export_full() -> None:
+def test_config_export_full(json_file: Generator[str]) -> None:
     """test_config_export_full"""
-    util.run_success_cmd(config.main, f"{OPTS} --fullExport", True)
+    util.run_success_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --fullExport")
 
 
-def test_config_export_partial_2() -> None:
+def test_config_export_partial_2(json_file: Generator[str]) -> None:
     """test_config_export_partial_2"""
-    util.run_success_cmd(config.main, f"{OPTS} -w settings,portfolios,users", True)
+    util.run_success_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} -w settings,portfolios,users")
 
 
-def test_config_export_partial_3() -> None:
+def test_config_export_partial_3(json_file: Generator[str]) -> None:
     """test_config_export_partial_3"""
-    util.run_success_cmd(config.main, f"{OPTS} -w projects -{opt.KEY_REGEXP_SHORT} okorach_sonar-tools", True)
+    util.run_success_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} -w projects -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}")
 
 
-def test_config_export_yaml() -> None:
+def test_config_export_yaml(yaml_file: Generator[str]) -> None:
     """test_config_export_yaml"""
-    util.run_success_cmd(config.main, f"{CMD} {util.SQS_OPTS} --{opt.EXPORT} -{opt.REPORT_FILE_SHORT} {util.YAML_FILE}", True)
+    util.run_success_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {yaml_file}")
 
 
 def test_config_export_wrong() -> None:
@@ -67,13 +65,13 @@ def test_config_export_wrong() -> None:
 
 def test_config_non_existing_project() -> None:
     """test_config_non_existing_project"""
-    util.run_failed_cmd(config.main, f"{OPTS} -{opt.KEY_REGEXP_SHORT} okorach_sonar-tools,bad_project", errcodes.NO_SUCH_KEY)
+    util.run_failed_cmd(config.main, f"{OPTS} -{opt.KEY_REGEXP_SHORT} bad_project", errcodes.NO_SUCH_KEY)
 
 
-def test_config_inline_lists() -> None:
-    """test_config_inline_commas"""
-    util.run_success_cmd(config.main, OPTS)
-    with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
+def test_config_inline_lists(json_file: Generator[str]) -> None:
+    """test_config_inline_lists"""
+    util.run_success_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file}")
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], str)
     assert isinstance(json_config["globalSettings"]["permissionTemplates"]["Default template"]["permissions"]["groups"]["sonar-users"], str)
@@ -86,13 +84,12 @@ def test_config_inline_lists() -> None:
         if util.SQ.version() >= (10, 0, 0):
             assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["projects"]["manual"]["BANKING-PORTAL"], list)
         assert json_config["portfolios"]["All"]["portfolios"]["Banking"]["byReference"]
-    util.clean(util.JSON_FILE)
 
 
-def test_config_dont_inline_lists() -> None:
-    """test_config_no_inline_commas"""
-    util.run_success_cmd(config.main, f"{OPTS} --dontInlineLists")
-    with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
+def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
+    """test_config_dont_inline_lists"""
+    util.run_success_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --dontInlineLists")
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], list)
     assert isinstance(json_config["globalSettings"]["permissionTemplates"]["Default template"]["permissions"]["groups"]["sonar-users"], list)
@@ -106,11 +103,9 @@ def test_config_dont_inline_lists() -> None:
         assert "sonar.cfamily.ignoreHeaderComments" not in json_config["globalSettings"]["languages"]["cfamily"]
         assert "sonar.cfamily.ignoreHeaderComments" in json_config["projects"]["okorach_sonar-tools"]
 
-    util.clean(util.JSON_FILE)
 
-
-def test_config_import_portfolios(json_file: Generator[str]) -> None:
-    """test_config_non_existing_project"""
+def test_config_import_portfolios() -> None:
+    """test_config_import_portfolios"""
     with open("test/files/config.json", "r", encoding="utf-8") as f:
         json_config = json.loads(f.read())["portfolios"]
 
