@@ -82,7 +82,7 @@ def test_audit_proj_key(csv_file: Generator[str]) -> None:
 
 def test_audit_proj_non_existing_key() -> None:
     """test_audit_proj_non_existing_key"""
-    util.run_failed_cmd(audit.main, f"{CMD} --{opt.WHAT} projects --{opt.KEY_REGEXP} okorach_sonar-tools,bad_key", errcodes.NO_SUCH_KEY)
+    util.run_failed_cmd(audit.main, f"{CMD} --{opt.WHAT} projects --{opt.KEY_REGEXP} okorach_sonar-tools,bad_key", errcodes.ARGS_ERROR)
 
 
 def test_sif_broken(csv_file: Generator[str]) -> None:
