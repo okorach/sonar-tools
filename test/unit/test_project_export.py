@@ -22,9 +22,7 @@
 
 """ sonar-projects tests """
 
-import sys
 from collections.abc import Generator
-import pytest
 from unittest.mock import patch
 
 import utilities as util
