@@ -27,7 +27,9 @@ import sys
 import json
 import datetime
 from unittest.mock import patch
+from collections.abc import Generator
 import pytest
+
 import utilities as util
 from sonar import sif, errcodes
 from sonar.dce import app_nodes, search_nodes
@@ -36,63 +38,33 @@ import cli.options as opt
 import sonar.util.constants as c
 
 CMD = "sonar-audit.py"
-CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
-JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
 
 
-def test_audit_sif() -> None:
+def test_audit_sif(csv_file: Generator[str]) -> None:
     """test_audit_sif"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD, "--sif", f"{util.FILES_ROOT}/sif1.json", f"--{opt.REPORT_FILE}", util.CSV_FILE]):
-            audit.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} --sif {util.FILES_ROOT}/sif1.json --{opt.REPORT_FILE} {csv_file}"
+    util.run_success_cmd(audit.main, cmd)
 
-
-def test_audit_sif_dce1() -> None:
+def test_audit_sif_dce1(csv_file: Generator[str]) -> None:
     """test_audit_sif_dce1"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD, "--sif", f"{util.FILES_ROOT}/sif.dce.1.json", f"--{opt.REPORT_FILE}", util.CSV_FILE]):
-            audit.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} --sif {util.FILES_ROOT}/sif.dce.1.json --{opt.REPORT_FILE} {csv_file}"
+    util.run_success_cmd(audit.main, cmd)
+
+def test_audit_sif_dce3(csv_file: Generator[str]) -> None:
+    """test_audit_sif_dce1"""
+    cmd = f"{CMD} --sif {util.FILES_ROOT}/sif.dce.2.json --{opt.REPORT_FILE} {csv_file}"
+    util.run_success_cmd(audit.main, cmd)
 
 
-def test_audit_sif_dce2() -> None:
-    """test_audit_sif_dce2"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD, "--sif", f"{util.FILES_ROOT}/sif.dce.2.json", f"--{opt.REPORT_FILE}", util.CSV_FILE]):
-            audit.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
-
-
-def test_sif_1() -> None:
+def test_sif_1(csv_file: Generator[str]) -> None:
     """test_sif_1"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--sif", f"{util.FILES_ROOT}/sif1.json"]):
-            audit.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} --sif {util.FILES_ROOT}/sif1.json --{opt.REPORT_FILE} {csv_file}"
+    util.run_success_cmd(audit.main, cmd)
 
-
-def test_sif_2() -> None:
+def test_sif_2(json_file) -> None:
     """test_sif_2"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + ["--sif", f"{util.FILES_ROOT}/sif2.json"]):
-            audit.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.JSON_FILE)
-    util.clean(util.JSON_FILE)
+    cmd = f"{CMD} --sif {util.FILES_ROOT}/sif2.json --{opt.REPORT_FILE} {json_file}"
+    util.run_success_cmd(audit.main, cmd)
 
 
 def test_audit_sif_ut() -> None:

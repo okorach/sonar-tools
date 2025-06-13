@@ -23,8 +23,7 @@
 import os
 import sys
 from unittest.mock import patch
-import pytest
-
+from collections.abc import Generator
 import utilities as util
 from sonar import errcodes, exceptions
 from sonar import organizations
@@ -34,9 +33,9 @@ import cli.options as opt
 from cli import config
 
 CMD = "config.py"
-SC_OPTS = [f"-{opt.URL_SHORT}", "https://sonarcloud.io", f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_SONARCLOUD")]
+SC_OPTS = f'-{opt.URL_SHORT} https://sonarcloud.io -{opt.TOKEN_SHORT} {os.getenv("SONAR_TOKEN_SONARCLOUD")}'
 
-OPTS = [CMD] + SC_OPTS + [f"-{opt.EXPORT_SHORT}", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
+OPTS = f"{CMD} {SC_OPTS} -{opt.EXPORT_SHORT}"
 MY_ORG_1 = "okorach"
 MY_ORG_2 = "okorach-github"
 
@@ -46,25 +45,15 @@ def test_clear_cache() -> None:
     sonar_cache.clear()
 
 
-def test_sc_config_export() -> None:
+def test_sc_config_export(json_file: Generator[str]) -> None:
     """test_sc_config_export"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", OPTS + [f"-{opt.ORG_SHORT}", "okorach"]):
-            config.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.JSON_FILE)
-    util.clean(util.JSON_FILE)
+    cmd = f"{OPTS} -{opt.REPORT_FILE} {json_file} -{opt.ORG_SHORT} {MY_ORG_1}"
+    util.run_success_cmd(config.main, cmd)
 
 
 def test_sc_config_export_no_org() -> None:
     """test_sc_config_export"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", OPTS):
-            config.main()
-    assert int(str(e.value)) == errcodes.ARGS_ERROR
-    assert not os.path.isfile(util.JSON_FILE)
+    util.run_failed_cmd(config.main, SC_OPTS, errcodes.ARGS_ERROR)
 
 
 def test_org_search() -> None:
