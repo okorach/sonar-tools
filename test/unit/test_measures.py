@@ -37,7 +37,6 @@ import cli.options as opt
 
 CMD = "sonar-measures-export.py"
 OPTS = f"{CMD} {util.SQS_OPTS}"
-JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
 
 TYPE_COL = 1
 KEY_COL = 0
