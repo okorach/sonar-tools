@@ -21,8 +21,8 @@
 """ sonarcloud tests """
 
 import os
-import sys
 from unittest.mock import patch
+import pytest
 from collections.abc import Generator
 import utilities as util
 from sonar import errcodes, exceptions

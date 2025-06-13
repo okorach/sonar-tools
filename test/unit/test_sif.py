@@ -23,7 +23,6 @@
     sonar-audit SIF tests
 """
 
-import sys
 import json
 import datetime
 from unittest.mock import patch
@@ -31,7 +30,7 @@ from collections.abc import Generator
 import pytest
 
 import utilities as util
-from sonar import sif, errcodes
+from sonar import sif
 from sonar.dce import app_nodes, search_nodes
 from cli import audit
 import cli.options as opt
