@@ -163,7 +163,7 @@ def test_specific_project_keys(csv_file: Generator[str]) -> None:
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.KEY_REGEXP_SHORT} {utilities.list_to_regexp(projects)}"
     util.run_success_cmd(measures_export.main, cmd)
     lines = 0
-    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         reader = csv.reader(fh)
         next(reader)
         for line in reader:
@@ -171,7 +171,6 @@ def test_specific_project_keys(csv_file: Generator[str]) -> None:
             assert line[TYPE_COL] == "PROJECT"
             lines += 1
     assert lines == len(projects)
-    util.clean(util.CSV_FILE)
 
 
 def test_apps_measures(csv_file: Generator[str]) -> None:
@@ -232,7 +231,7 @@ def test_option_apps(csv_file: Generator[str]) -> None:
         return
 
     util.run_success_cmd(measures_export.main, cmd)
-    with open(util.CSV_FILE, encoding="utf-8") as fd:
+    with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         next(reader)
         for line in reader:
@@ -247,7 +246,7 @@ def test_option_portfolios(csv_file: Generator[str]) -> None:
         return
 
     util.run_success_cmd(measures_export.main, cmd)
-    with open(util.CSV_FILE, encoding="utf-8") as fd:
+    with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         next(reader)
         for line in reader:
