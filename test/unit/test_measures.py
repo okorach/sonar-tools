@@ -24,6 +24,7 @@
 import sys
 import os
 import csv
+from collections.abc import Generator
 from unittest.mock import patch
 import pytest
 
@@ -35,19 +36,16 @@ from cli import measures_export
 import cli.options as opt
 
 CMD = "sonar-measures-export.py"
-CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
-CSV_OPTS_STR = " ".join(CSV_OPTS)
-JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
+OPTS = f"{CMD} {util.SQS_OPTS}"
 
 TYPE_COL = 1
 KEY_COL = 0
 
 
-def test_measures_export(csv_file: callable) -> None:
+def test_measures_export(csv_file: Generator[str]) -> None:
     """test_measures_export"""
-    file = csv_file
-    util.run_success_cmd(measures_export.main, f"{CMD} {util.SQS_OPTS} --withTags -{opt.REPORT_FILE_SHORT} {file}")
-    with open(file=file, mode="r", encoding="utf-8") as fh:
+    util.run_success_cmd(measures_export.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --withTags")
+    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         line = next(csvreader)
         rating_col_1 = line.index("reliability_rating")
@@ -61,13 +59,10 @@ def test_measures_export(csv_file: callable) -> None:
             assert line[pct_col_2] == "" or 0.0 <= float(line[pct_col_2]) <= 1.0
 
 
-def test_measures_conversion(csv_file: callable) -> None:
+def test_measures_conversion(csv_file: Generator[str]) -> None:
     """test_measures_conversion"""
-    logging.set_logger("test.log")
-    logging.set_debug_level("DEBUG")
-    file = csv_file
-    util.run_success_cmd(measures_export.main, f"{CMD} {util.SQS_OPTS} -r -p --withTags -{opt.REPORT_FILE_SHORT} {file}")
-    with open(file=file, mode="r", encoding="utf-8") as fh:
+    util.run_success_cmd(measures_export.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -r -p --withTags")
+    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         line = next(csvreader)
         rating_col_1 = line.index("reliability_rating")
@@ -81,146 +76,92 @@ def test_measures_conversion(csv_file: callable) -> None:
             assert line[pct_col_2] == "" or line[pct_col_2].endswith("%")
 
 
-def test_measures_export_with_url() -> None:
+def test_measures_export_with_url(csv_file: Generator[str]) -> None:
     """test_measures_export_with_url"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.BRANCH_REGEXP_SHORT}", ".+", f"-{opt.METRIC_KEYS_SHORT}", "_main", f"--{opt.WITH_URL}"]):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.BRANCH_REGEXP_SHORT} .+ -{opt.METRIC_KEYS_SHORT} _main --{opt.WITH_URL}"
+    util.run_success_cmd(measures_export.main, cmd)
 
 
-def test_measures_export_json() -> None:
+def test_measures_export_json(json_file: Generator[str]) -> None:
     """test_measures_export_json"""
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.BRANCH_REGEXP_SHORT}", ".+", f"--{opt.METRIC_KEYS}", "_main"]):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.JSON_FILE)
-    util.clean(util.JSON_FILE)
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {json_file} -{opt.BRANCH_REGEXP_SHORT} .+ -{opt.METRIC_KEYS_SHORT} _main"
+    util.run_success_cmd(measures_export.main, cmd)
 
 
-def test_measures_export_all() -> None:
+def test_measures_export_all(csv_file: Generator[str]) -> None:
     """test_measures_export_all"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.BRANCH_REGEXP_SHORT}", ".+", f"-{opt.METRIC_KEYS_SHORT}", "_all"]):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.BRANCH_REGEXP_SHORT} .+ -{opt.METRIC_KEYS_SHORT} _all"
+    util.run_success_cmd(measures_export.main, cmd)
 
 
-def test_measures_export_json_all() -> None:
+def test_measures_export_json_all(json_file: Generator[str]) -> None:
     """test_measures_export_json_all"""
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.BRANCH_REGEXP_SHORT}", ".+", f"-{opt.METRIC_KEYS_SHORT}", "_all"]):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.JSON_FILE)
-    util.clean(util.JSON_FILE)
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {json_file} -{opt.BRANCH_REGEXP_SHORT} .+ --{opt.METRIC_KEYS} _all"
+    util.run_success_cmd(measures_export.main, cmd)
 
 
-def test_measures_export_history() -> None:
+def test_measures_export_history(csv_file: Generator[str]) -> None:
     """test_measures_export_history"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--history", f"--{opt.METRIC_KEYS}", "_all"]):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --history --{opt.METRIC_KEYS} _all"
+    util.run_success_cmd(measures_export.main, cmd)
 
 
-def test_measures_export_history_as_table(csv_file: callable) -> None:
+def test_measures_export_history_as_table(csv_file: Generator[str]) -> None:
     """test_measures_export_history_as_table"""
-    file = csv_file
-    util.run_success_cmd(measures_export.main, f"{CMD} {util.SQS_OPTS} --history --asTable -{opt.REPORT_FILE_SHORT} {file}")
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --history --asTable"
+    util.run_success_cmd(measures_export.main, cmd)
 
 
-def test_measures_export_history_as_table_no_time() -> None:
+def test_measures_export_history_as_table_no_time(csv_file: Generator[str]) -> None:
     """test_measures_export_history_as_table_no_time"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", "-d"]):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --history --asTable -d"
+    util.run_success_cmd(measures_export.main, cmd)
 
 
-def test_measures_export_history_as_table_with_url() -> None:
+def test_measures_export_history_as_table_with_url(csv_file: Generator[str]) -> None:
     """test_measures_export_history_as_table_with_url"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", f"--{opt.WITH_URL}"]):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --history --asTable --{opt.WITH_URL}"
+    util.run_success_cmd(measures_export.main, cmd)
 
 
-def test_measures_export_history_as_table_with_branch() -> None:
+def test_measures_export_history_as_table_with_branch(csv_file: Generator[str]) -> None:
     """test_measures_export_history_as_table_with_url"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", f"-{opt.BRANCH_REGEXP_SHORT}", ".+"]):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --history --asTable -{opt.BRANCH_REGEXP_SHORT} .+"
+    util.run_success_cmd(measures_export.main, cmd)
 
 
-def test_measures_export_dateonly() -> None:
+def test_measures_export_dateonly(csv_file: Generator[str]) -> None:
     """test_measures_export_dateonly"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["-d"]):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -d"
+    util.run_success_cmd(measures_export.main, cmd)
 
 
-def test_specific_measure() -> None:
+def test_specific_measure(csv_file: Generator[str]) -> None:
     """test_specific_measure"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.METRIC_KEYS_SHORT}", "ncloc,sqale_index,coverage"]):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.METRIC_KEYS_SHORT} ncloc,sqale_index,coverage"
+    util.run_success_cmd(measures_export.main, cmd)
 
 
-def test_non_existing_measure() -> None:
+def test_non_existing_measure(csv_file: Generator[str]) -> None:
     """test_non_existing_measure"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.METRIC_KEYS_SHORT}", "ncloc,sqale_index,bad_measure"]):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.NO_SUCH_KEY
-    assert not os.path.isfile(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.METRIC_KEYS_SHORT} ncloc,sqale_index,bad_measure"
+    util.run_failed_cmd(measures_export.main, cmd, errcodes.NO_SUCH_KEY)
 
 
-def test_non_existing_project() -> None:
+def test_non_existing_project(csv_file: Generator[str]) -> None:
     """test_non_existing_project"""
-    util.run_success_cmd(measures_export.main, f"{CSV_OPTS_STR} -{opt.REPORT_FILE_SHORT} {util.CSV_FILE} -{opt.KEY_REGEXP_SHORT} 'bad_project'")
-    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.KEY_REGEXP_SHORT} bad_project"
+    util.run_success_cmd(measures_export.main, cmd)
+    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         lines = len(fh.readlines())
-    util.clean(util.CSV_FILE)
-    # Only the header
-    assert lines == 1
+    assert lines == 1  # Only the header
 
 
-def test_specific_project_keys() -> None:
+def test_specific_project_keys(csv_file: Generator[str]) -> None:
     """test_non_existing_project"""
-    util.clean(util.CSV_FILE)
     projects = ["okorach_sonar-tools", "project1", "project4"]
-    util.run_success_cmd(measures_export.main, f"{CSV_OPTS_STR} -{opt.KEY_REGEXP_SHORT} {utilities.list_to_regexp(projects)}")
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.KEY_REGEXP_SHORT} {utilities.list_to_regexp(projects)}"
+    util.run_success_cmd(measures_export.main, cmd)
     lines = 0
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         reader = csv.reader(fh)
@@ -233,104 +174,81 @@ def test_specific_project_keys() -> None:
     util.clean(util.CSV_FILE)
 
 
-def test_apps_measures() -> None:
+def test_apps_measures(csv_file: Generator[str]) -> None:
     """test_apps_measures"""
     EXISTING_KEY = "APP_TEST"
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--apps", "-m", "ncloc"]):
-            measures_export.main()
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --apps -m ncloc"
     if util.SQ.edition() == c.CE:
-        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
-    else:
-        assert int(str(e.value)) == errcodes.OK
-        assert util.file_not_empty(util.CSV_FILE)
-        first = True
-        found = False
-        with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-            for line in csv.reader(fh):
-                if first:
-                    first = False
-                    continue
-                found = found or line[KEY_COL] == EXISTING_KEY
-                assert line[TYPE_COL] == "APPLICATION"
-                assert len(line) == 5
-        assert found
-    util.clean(util.CSV_FILE)
+        util.run_failed_cmd(measures_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+        return
+    util.run_success_cmd(measures_export.main, cmd)
+    found = False
+    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
+        reader = csv.reader(fh)
+        next(reader)
+        for line in reader:
+            found = found or line[KEY_COL] == EXISTING_KEY
+            assert line[TYPE_COL] == "APPLICATION"
+            assert len(line) == 5
+    assert found
 
 
-def test_portfolios_measures() -> None:
+def test_portfolios_measures(csv_file: Generator[str]) -> None:
     """test_portfolios_measures"""
     EXISTING_KEY = "PORTFOLIO_ALL"
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--portfolios", "-m", "ncloc"]):
-            measures_export.main()
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --portfolios -m ncloc"
     if util.SQ.edition() in (c.CE, c.DE):
-        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
-    else:
-        assert util.file_not_empty(util.CSV_FILE)
-        first = True
-        found = False
-        with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-            for line in csv.reader(fh):
-                if first:
-                    first = False
-                    continue
-                found = found or line[KEY_COL] == EXISTING_KEY
-                assert len(line) == 5
-                assert line[TYPE_COL] == "PORTFOLIO"
-        assert found
-    util.clean(util.CSV_FILE)
+        util.run_failed_cmd(measures_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+        return
+
+    util.run_success_cmd(measures_export.main, cmd)
+    found = False
+    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
+        reader = csv.reader(fh)
+        next(reader)
+        for line in reader:
+            found = found or line[KEY_COL] == EXISTING_KEY
+            assert line[TYPE_COL] == "PORTFOLIO"
+            assert len(line) == 5
+    assert found
 
 
-def test_basic() -> None:
+def test_basic(csv_file: Generator[str]) -> None:
     """Tests that basic invocation against a CE and DE works"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.OK
-    with open(util.CSV_FILE, encoding="utf-8") as fd:
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file}"
+    util.run_success_cmd(measures_export.main, cmd)
+    with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         next(reader)
         for line in reader:
             assert line[TYPE_COL] == "PROJECT"
 
 
-def test_option_apps() -> None:
+def test_option_apps(csv_file: Generator[str]) -> None:
     """Tests that using the --apps option works in the correct editions (DE and higher)"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--apps"]):
-            measures_export.main()
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --apps"
     if util.SQ.edition() == c.CE:
-        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
-        assert not os.path.isfile(util.CSV_FILE)
-    else:
-        assert int(str(e.value)) == errcodes.OK
-        with open(util.CSV_FILE, encoding="utf-8") as fd:
-            reader = csv.reader(fd)
-            next(reader)
-            for line in reader:
-                assert line[TYPE_COL] == "APPLICATION"
-    util.clean(util.CSV_FILE)
+        util.run_failed_cmd(measures_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+        return
+
+    util.run_success_cmd(measures_export.main, cmd)
+    with open(util.CSV_FILE, encoding="utf-8") as fd:
+        reader = csv.reader(fd)
+        next(reader)
+        for line in reader:
+            assert line[TYPE_COL] == "APPLICATION"
 
 
-def test_option_portfolios() -> None:
+def test_option_portfolios(csv_file: Generator[str]) -> None:
     """Tests that using the --portfolios option works in the correct editions (EE and higher)"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--portfolios"]):
-            measures_export.main()
-    if util.SQ.edition() in (c.DE, c.CE):
-        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
-        assert not os.path.isfile(util.CSV_FILE)
-    else:
-        assert int(str(e.value)) == errcodes.OK
-        with open(util.CSV_FILE, encoding="utf-8") as fd:
-            reader = csv.reader(fd)
-            next(reader)
-            for line in reader:
-                assert line[TYPE_COL] == "PORTFOLIO"
-    util.clean(util.CSV_FILE)
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --portfolios"
+    if util.SQ.edition() in (c.CE, c.DE):
+        util.run_failed_cmd(measures_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+        return
+
+    util.run_success_cmd(measures_export.main, cmd)
+    with open(util.CSV_FILE, encoding="utf-8") as fd:
+        reader = csv.reader(fd)
+        next(reader)
+        for line in reader:
+            assert line[TYPE_COL] == "PORTFOLIO"

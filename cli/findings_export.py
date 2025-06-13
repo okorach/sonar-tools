@@ -371,7 +371,7 @@ def main() -> None:
         br = f"and branch matching regexp '{params[options.BRANCH_REGEXP]}'" if options.BRANCH_REGEXP in params else ""
         util.exit_fatal(
             f"No {params[options.COMPONENT_TYPE]} found with key matching regexp '{params.get(options.KEY_REGEXP, None)}' {br}",
-            errcodes.NO_SUCH_KEY,
+            errcodes.WRONG_SEARCH_CRITERIA,
         )
 
     fmt, fname = params.get(options.FORMAT, None), params.get(options.REPORT_FILE, None)
