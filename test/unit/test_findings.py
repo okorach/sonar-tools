@@ -41,8 +41,8 @@ import cli.options as opt
 CMD = "sonar-findings-export.py"
 SARIF_FILE = "issues.sarif"
 CMD = f"{CMD} {util.SQS_OPTS}"
-CMD_CSV = f"{CMD} {util.SQS_OPTS} -{opt.REPORT_FILE_SHORT} {util.CSV_FILE}"
-JSON_OPTS_STR = f"{CMD} {util.SQS_OPTS} -{opt.REPORT_FILE_SHORT} {util.JSON_FILE}"
+CMD_CSV = f"{CMD} -{opt.REPORT_FILE_SHORT} {util.CSV_FILE}"
+JSON_OPTS_STR = f"{CMD} -{opt.REPORT_FILE_SHORT} {util.JSON_FILE}"
 
 RULE_COL = 1
 LANG_COL = 2
@@ -109,7 +109,7 @@ def test_findings_export_sarif_explicit(json_file: Generator[str]) -> None:
     cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --{opt.FORMAT} sarif"
     util.run_success_cmd(findings_export.main, cmd)
     assert util.file_contains(json_file, "schemas/json/sarif-2.1.0-rtm.4")
-    
+
 
 def test_findings_export_sarif_implicit(sarif_file: Generator[str]) -> None:
     """Test SARIF export for a single project and implicit format"""
@@ -168,6 +168,7 @@ def test_findings_filter_on_date_before(csv_file: Generator[str]) -> None:
         for line in csvreader:
             assert line[DATE_COL][:10] <= "2024-05-01"
 
+
 def test_findings_filter_on_type(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_type"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.TYPES} VULNERABILITY,BUG"
@@ -200,7 +201,7 @@ def test_findings_filter_on_resolution(csv_file: Generator[str]) -> None:
 
 def test_findings_filter_on_severity(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_severity"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.RESOLUTIONS} --{opt.SEVERITIES} BLOCKER,CRITICAL"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.SEVERITIES} BLOCKER,CRITICAL"
     util.run_success_cmd(findings_export.main, cmd)
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
@@ -245,7 +246,7 @@ def test_findings_filter_on_multiple_criteria_2(csv_file: Generator[str]) -> Non
     """test_findings_filter_on_multiple_criteria_2"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.DATE_AFTER} 2020-01-10 --{opt.DATE_BEFORE} 2020-12-31 --{opt.TYPES} SECURITY_HOTSPOT"
     util.run_success_cmd(findings_export.main, cmd)
-    with open(file=util.csv_file, mode="r", encoding="utf-8") as fh:
+    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
         for line in csvreader:
@@ -308,6 +309,7 @@ def test_findings_export() -> None:
         else:
             util.run_success_cmd(findings_export.main, f"{CMD_CSV} {opts}", True)
 
+
 def test_findings_export_long() -> None:
     """test_findings_export_long"""
     for opts in __GOOD_OPTS_LONG:
@@ -354,7 +356,7 @@ def test_search_too_many_issues() -> None:
 
 def test_output_format_sarif(sarif_file: Generator[str]) -> None:
     """test_output_format_sarif"""
-    cmd = f'{CMD} --{opt.REPORT_FILE} {sarif_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}'
+    cmd = f"{CMD} --{opt.REPORT_FILE} {sarif_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
     util.run_success_cmd(findings_export.main, cmd)
     with open(sarif_file, encoding="utf-8") as fh:
         sarif_json = json.loads(fh.read())
@@ -381,7 +383,7 @@ def test_output_format_sarif(sarif_file: Generator[str]) -> None:
 
 def test_output_format_json(json_file: Generator[str]) -> None:
     """test_output_format_json"""
-    cmd = f'{CMD} --{opt.REPORT_FILE} {json_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}'
+    cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
     util.run_success_cmd(findings_export.main, cmd)
     with open(json_file, encoding="utf-8") as fh:
         json_data = json.loads(fh.read())
@@ -403,7 +405,7 @@ def test_output_format_json(json_file: Generator[str]) -> None:
 
 def test_output_format_csv(csv_file: Generator[str]) -> None:
     """test_output_format_csv"""
-    cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}'
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
     util.run_success_cmd(findings_export.main, cmd)
     with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
