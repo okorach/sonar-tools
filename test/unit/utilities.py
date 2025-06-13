@@ -149,12 +149,15 @@ def __get_args_and_file(string_arguments: str) -> tuple[Optional[str], list[str]
             break
         except ValueError:
             pass
-    for option in (f"-{opt.REPORT_FILE_SHORT}", f"--{opt.REPORT_FILE}"):
-        try:
-            return args[args.index(option) + 1], args, imp_cmd
-        except ValueError:
-            pass
-    return None, args, imp_cmd
+    index = len(args)
+    file = None
+    for arg in reversed(args):
+        last = index
+        if arg in (f"-{opt.REPORT_FILE_SHORT}", f"--{opt.REPORT_FILE}"):
+            file = args[last] if last < len(args) else None
+            break
+        index -= 1
+    return file, args, imp_cmd
 
 
 def __split_args(string_arguments: str) -> list[str]:
