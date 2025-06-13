@@ -154,7 +154,7 @@ def test_non_existing_project(csv_file: Generator[str]) -> None:
     util.run_success_cmd(measures_export.main, cmd)
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         lines = len(fh.readlines())
-    assert lines == 1 # Only the header
+    assert lines == 1  # Only the header
 
 
 def test_specific_project_keys(csv_file: Generator[str]) -> None:
