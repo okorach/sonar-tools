@@ -56,15 +56,13 @@ def test_audit_disabled(csv_file: Generator[str]) -> None:
 
 def test_audit(csv_file: Generator[str]) -> None:
     """test_audit"""
-    file = csv_file
-    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {file}")
+    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}")
     # Ensure no duplicate alarms #1478
     lines = []
-    with open(util.CSV_FILE, mode="r", encoding="utf-8") as fd:
+    with open(csv_file, mode="r", encoding="utf-8") as fd:
         line = fd.readline()
         assert line not in lines
         lines.append(line)
-    util.clean(file)
 
 
 def test_audit_stdout() -> None:
@@ -74,7 +72,7 @@ def test_audit_stdout() -> None:
 
 def test_audit_json(json_file: Generator[str]) -> None:
     """test_audit_json"""
-    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {json_file}", True)
+    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {json_file}")
 
 
 def test_audit_proj_key(csv_file: Generator[str]) -> None:
