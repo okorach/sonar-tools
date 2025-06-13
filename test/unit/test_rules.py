@@ -65,7 +65,7 @@ def test_rules_filter_language(csv_file: Generator[str]) -> None:
 
 def test_rules_misspelled_language_1(csv_file: Generator[str]) -> None:
     """Tests that you can export rules for a single or a few languages, misspelled"""
-    cmd = f'{OPTS} --{opt.REPORT_FILE} {csv_file} --{opt.LANGUAGES} Python,TypeScript'
+    cmd = f"{OPTS} --{opt.REPORT_FILE} {csv_file} --{opt.LANGUAGES} Python,TypeScript"
     util.run_success_cmd(rules_cli.main, cmd)
     with open(csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
@@ -175,11 +175,11 @@ def test_new_taxo() -> None:
 
 
 def test_non_existing_qp() -> None:
-    util.run_failed_cmd(rules_cli.main, f'{OPTS} --{opt.QP} non-existing --{opt.LANGUAGES} java', errcodes.NO_SUCH_KEY)
+    util.run_failed_cmd(rules_cli.main, f"{OPTS} --{opt.QP} non-existing --{opt.LANGUAGES} java", errcodes.NO_SUCH_KEY)
 
 
 def test_non_existing_language() -> None:
-    util.run_failed_cmd(rules_cli.main, f'{OPTS} --{opt.LANGUAGES} assembly-lang', errcodes.NO_SUCH_KEY)
+    util.run_failed_cmd(rules_cli.main, f"{OPTS} --{opt.LANGUAGES} assembly-lang", errcodes.NO_SUCH_KEY)
 
 
 def test_qp_non_existing_language() -> None:
@@ -191,4 +191,4 @@ def test_qp_multiple_languages() -> None:
 
 
 def test_os_error() -> None:
-    util.run_failed_cmd(rules_cli.main, f'{OPTS} --{opt.LANGUAGES} java,c -f /rules.csv', errcodes.OS_ERROR)
+    util.run_failed_cmd(rules_cli.main, f"{OPTS} --{opt.LANGUAGES} java,c -f /rules.csv", errcodes.OS_ERROR)
