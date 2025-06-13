@@ -24,7 +24,6 @@
     sonar-rules tests
 """
 
-import sys
 import csv
 from unittest.mock import patch
 import utilities as util
