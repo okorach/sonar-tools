@@ -38,31 +38,31 @@ OPTS = f"{CMD} {util.SQS_OPTS}"
 
 def test_export_all_proj(json_file: Generator[str]) -> None:
     """test_export_all_proj"""
-    args = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.NBR_THREADS} 16"
-    util.run_success_cmd(projects_cli.main, args)
+    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.NBR_THREADS} 16"
+    util.run_success_cmd(projects_cli.main, cmd)
 
 
 def test_export_single_proj(json_file: Generator[str]) -> None:
     """test_export_single_proj"""
-    args = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} -{opt.KEY_REGEXP_SHORT} okorach_sonar-tools"
-    util.run_success_cmd(projects_cli.main, args)
+    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
+    util.run_success_cmd(projects_cli.main, cmd)
 
 
 def test_export_timeout(json_file: Generator[str]) -> None:
     """test_export_timeout"""
-    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.KEY_REGEXP} okorach_sonar-tools --exportTimeout 10"
+    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --exportTimeout 10"
     util.run_success_cmd(projects_cli.main, cmd, True)
 
 
 def test_export_no_file(json_file: Generator[str]) -> None:
     """test_export_timeout"""
-    cmd = f"{OPTS} --{opt.EXPORT} -{opt.KEY_REGEXP_SHORT} okorach_sonar-tools"
+    cmd = f"{OPTS} -{opt.EXPORT_SHORT} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
     util.run_success_cmd(projects_cli.main, cmd, True)
 
 
 def test_export_non_existing_project(json_file: Generator[str]) -> None:
     """test_config_non_existing_project"""
-    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.KEY_REGEXP_SHORT} okorach_sonar-tools,bad_project"
+    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} -{opt.KEY_REGEXP_SHORT} bad_project"
     util.run_failed_cmd(projects_cli.main, cmd, errcodes.NO_SUCH_KEY)
 
 
@@ -74,22 +74,17 @@ def test_export_sq_cloud(json_file: Generator[str]) -> None:
 
 def test_import_no_file() -> None:
     """test_import_no_file"""
-    util.run_failed_cmd(projects_cli.main, f"{OPTS} --{opt.IMPORT}", errcodes.ARGS_ERROR)
+    cmd = f"{OPTS} -{opt.EXPORT_SHORT}"
+    util.run_failed_cmd(projects_cli.main, cmd, errcodes.ARGS_ERROR)
 
 
 def test_no_export_or_import(json_file: Generator[str]) -> None:
     """test_no_export_or_import"""
-    args = f"{OPTS} --{opt.REPORT_FILE} {json_file}"
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", args.split(" ")):
-            projects_cli.main()
-    assert int(str(e.value)) == errcodes.ARGS_ERROR
+    cmd = f"{OPTS} --{opt.REPORT_FILE} {json_file}"
+    util.run_failed_cmd(projects_cli.main, cmd, errcodes.ARGS_ERROR)
 
 
 def test_no_import_file() -> None:
     """test_no_import_file"""
-    args = f"{OPTS} --{opt.REPORT_FILE} non-existing.json"
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", args.split(" ")):
-            projects_cli.main()
-    assert int(str(e.value)) == errcodes.ARGS_ERROR
+    cmd = f"{OPTS} --{opt.REPORT_FILE} non-existing.json"
+    util.run_failed_cmd(projects_cli.main, cmd, errcodes.ARGS_ERROR)
