@@ -265,7 +265,7 @@ def yaml_file() -> Generator[str]:
 
 
 @pytest.fixture
-def get_sarif_file() -> Generator[str]:
+def sarif_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("sarif")
     yield file
