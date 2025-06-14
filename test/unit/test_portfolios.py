@@ -27,7 +27,7 @@ import json
 import pytest
 
 import utilities as util
-from sonar import portfolios, projects, exceptions, settings, logging
+from sonar import portfolios as pf, projects, exceptions, settings, logging
 import sonar.util.constants as c
 
 EXISTING_PROJECT = "okorach_sonar-tools"
@@ -37,47 +37,47 @@ EXISTING_PORTFOLIO = "PORT_FAV_PROJECTS"
 SUPPORTED_EDITIONS = (c.EE, c.DCE)
 
 
-def test_get_object(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
+def test_get_object() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
-    if not util.verify_support(SUPPORTED_EDITIONS, portfolios.Portfolio.create, endpoint=util.SQ, key=util.TEMP_KEY, name=util.TEMP_KEY):
+    if not util.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.create, endpoint=util.SQ, key=util.TEMP_KEY, name=util.TEMP_KEY):
         return
-    portf = portfolios.Portfolio.get_object(endpoint=util.SQ, key=EXISTING_PORTFOLIO)
+    portf = pf.Portfolio.get_object(endpoint=util.SQ, key=EXISTING_PORTFOLIO)
     assert portf.key == EXISTING_PORTFOLIO
-    portf2 = portfolios.Portfolio.get_object(endpoint=util.SQ, key=EXISTING_PORTFOLIO)
+    portf2 = pf.Portfolio.get_object(endpoint=util.SQ, key=EXISTING_PORTFOLIO)
     assert portf2.key == EXISTING_PORTFOLIO
     assert portf is portf2
 
 
 def test_get_object_non_existing() -> None:
     """Test exception raised when providing non existing portfolio key"""
-    if not util.verify_support(SUPPORTED_EDITIONS, portfolios.Portfolio.get_object, endpoint=util.SQ, key="NON_EXISTING"):
+    if not util.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.get_object, endpoint=util.SQ, key="NON_EXISTING"):
         return
     with pytest.raises(exceptions.ObjectNotFound) as e:
-        _ = portfolios.Portfolio.get_object(endpoint=util.SQ, key="NON_EXISTING")
+        _ = pf.Portfolio.get_object(endpoint=util.SQ, key="NON_EXISTING")
     assert str(e.value).endswith("Portfolio key 'NON_EXISTING' not found")
 
 
 def test_exists() -> None:
     """Test exist"""
-    if not util.verify_support(SUPPORTED_EDITIONS, portfolios.exists, endpoint=util.SQ, key="PORT_FAV_PROJECTS"):
+    if not util.verify_support(SUPPORTED_EDITIONS, pf.exists, endpoint=util.SQ, key="PORT_FAV_PROJECTS"):
         return
-    assert portfolios.exists(endpoint=util.SQ, key="PORT_FAV_PROJECTS")
-    assert not portfolios.exists(endpoint=util.SQ, key="NON_EXISTING")
+    assert pf.exists(endpoint=util.SQ, key="PORT_FAV_PROJECTS")
+    assert not pf.exists(endpoint=util.SQ, key="NON_EXISTING")
 
 
 def test_get_list() -> None:
     """Test portfolio get_list"""
     k_list = ["PORT_FAV_PROJECTS", "PORTFOLIO_ALL"]
-    if not util.verify_support(SUPPORTED_EDITIONS, portfolios.get_list, endpoint=util.SQ, key_list=k_list):
+    if not util.verify_support(SUPPORTED_EDITIONS, pf.get_list, endpoint=util.SQ, key_list=k_list):
         return
 
-    p_dict = portfolios.get_list(endpoint=util.SQ, key_list=k_list)
+    p_dict = pf.get_list(endpoint=util.SQ, key_list=k_list)
     assert sorted(k_list) == sorted(list(p_dict.keys()))
 
 
-def test_create_delete(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
+def test_create_delete(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test portfolio create delete"""
-    if not util.verify_support(SUPPORTED_EDITIONS, portfolios.Portfolio.create, endpoint=util.SQ, key=util.TEMP_KEY):
+    if not util.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.create, endpoint=util.SQ, key=util.TEMP_KEY):
         return
     portfolio = get_test_portfolio
     assert portfolio is not None
@@ -86,12 +86,12 @@ def test_create_delete(get_test_portfolio: Generator[portfolios.Portfolio]) -> N
     assert portfolio.name == util.TEMP_KEY
     assert portfolio.is_toplevel()
     with pytest.raises(exceptions.ObjectAlreadyExists):
-        portfolios.Portfolio.create(endpoint=util.SQ, key=util.TEMP_KEY)
+        pf.Portfolio.create(endpoint=util.SQ, key=util.TEMP_KEY)
     portfolio.delete()
-    assert not portfolios.exists(endpoint=util.SQ, key=util.TEMP_KEY)
+    assert not pf.exists(endpoint=util.SQ, key=util.TEMP_KEY)
 
 
-def test_add_project(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
+def test_add_project(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test addition of a project in manual mode"""
     if util.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
@@ -118,7 +118,7 @@ def test_add_project(get_test_portfolio: Generator[portfolios.Portfolio]) -> Non
     assert p.recompute()
 
 
-def test_tags_mode(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
+def test_tags_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test tag mode"""
     if util.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
@@ -136,7 +136,7 @@ def test_tags_mode(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
     assert p.recompute()
 
 
-def test_regexp_mode(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
+def test_regexp_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test regexp mode"""
     if util.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
@@ -156,7 +156,7 @@ def test_regexp_mode(get_test_portfolio: Generator[portfolios.Portfolio]) -> Non
     assert p.recompute()
 
 
-def test_remaining_projects_mode(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
+def test_remaining_projects_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test regexp mode"""
     if util.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
@@ -167,7 +167,7 @@ def test_remaining_projects_mode(get_test_portfolio: Generator[portfolios.Portfo
     assert p._selection_mode == {"rest": True, "branch": "develop"}
 
 
-def test_none_mode(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
+def test_none_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test regexp mode"""
     if util.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
@@ -178,7 +178,7 @@ def test_none_mode(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
     assert p._selection_mode == {}
 
 
-def test_attributes(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
+def test_attributes(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test regexp mode"""
     if util.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
@@ -189,14 +189,14 @@ def test_attributes(get_test_portfolio: Generator[portfolios.Portfolio]) -> None
     assert p.name == new_name
     p.recompute()  # New name is not update in search if portfolio is not recomputed
     time.sleep(3)
-    data = portfolios.search_by_name(util.SQ, new_name)
+    data = pf.search_by_name(util.SQ, new_name)
     assert data["key"] == p.key
     p.set_description("some description of a portfolio")
     p.refresh()
     assert p._description == "some description of a portfolio"
 
 
-def test_permissions_1(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
+def test_permissions_1(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test permissions"""
     if util.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
@@ -205,7 +205,7 @@ def test_permissions_1(get_test_portfolio: Generator[portfolios.Portfolio]) -> N
     # assert p.permissions().to_json()["groups"] == {"sonar-users": ["user", "admin"], "sonar-administrators": ["user", "admin"]}
 
 
-def test_permissions_2(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
+def test_permissions_2(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test permissions"""
     if util.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
@@ -214,34 +214,34 @@ def test_permissions_2(get_test_portfolio: Generator[portfolios.Portfolio]) -> N
     # assert p.permissions().to_json()["groups"] == {"sonar-users": ["user"], "sonar-administrators": ["user", "admin"]}
 
 
-def test_audit(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
+def test_audit(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """test_audit"""
     if util.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
     p = get_test_portfolio
     audit_settings = {}
     assert len(p.audit(audit_settings)) > 0
-    audit_settings["audit.portfolios.empty"] = False
-    audit_settings["audit.portfolios.singleton"] = False
+    audit_settings["audit.pf.empty"] = False
+    audit_settings["audit.pf.singleton"] = False
     p.audit(audit_settings)
     audit_settings["audit.portfolios"] = False
-    assert len(portfolios.audit(util.SQ, audit_settings)) == 0
+    assert len(pf.audit(util.SQ, audit_settings)) == 0
 
 
-def test_add_standard_subp(get_test_subportfolio: Generator[portfolios.Portfolio]) -> None:
+def test_add_standard_subp(get_test_subportfolio: Generator[pf.Portfolio]) -> None:
     """test_standard_subp"""
     if util.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
     subp = get_test_subportfolio
     assert subp.parent_portfolio.key == util.TEMP_KEY
-    parent = portfolios.Portfolio.get_object(util.SQ, key=util.TEMP_KEY)
+    parent = pf.Portfolio.get_object(util.SQ, key=util.TEMP_KEY)
     subp_d = parent.sub_portfolios()
     assert len(subp_d) == 1
     assert list(subp_d.keys()) == [util.TEMP_KEY_3]
     assert list(subp_d.values())[0] == subp
 
 
-def test_add_standard_subp_2(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
+def test_add_standard_subp_2(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """test_add_standard_subp_2"""
     util.start_logging()
     if util.SQ.edition() not in SUPPORTED_EDITIONS:
@@ -259,7 +259,7 @@ def test_add_standard_subp_2(get_test_portfolio: Generator[portfolios.Portfolio]
     assert subp.is_subporfolio_of(parent.key)
 
 
-def test_add_ref_subp(get_test_portfolio: Generator[portfolios.Portfolio], get_test_portfolio_2: Generator[portfolios.Portfolio]) -> None:
+def test_add_ref_subp(get_test_portfolio: Generator[pf.Portfolio], get_test_portfolio_2: Generator[pf.Portfolio]) -> None:
     """test_add_standard_subp_2"""
     if util.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
@@ -276,8 +276,8 @@ def test_export() -> None:
     """test_export"""
     if util.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
-    json_exp = portfolios.export(util.SQ, {})
-    yaml_exp = portfolios.convert_for_yaml(json_exp)
+    json_exp = pf.export(util.SQ, {})
+    yaml_exp = pf.convert_for_yaml(json_exp)
     assert len(json_exp) > 0
     assert isinstance(json_exp, dict)
     assert isinstance(yaml_exp, list)
@@ -293,18 +293,18 @@ def test_import() -> None:
         json_exp = json.loads(f.read())["portfolios"]
     # delete all portfolios in test
     logging.info("Deleting all portfolios")
-    portfolios.Portfolio.clear_cache()
-    _ = [o.delete() for o in portfolios.get_list(util.TEST_SQ, use_cache=False).values() if o.is_toplevel()]
-    assert portfolios.import_config(util.TEST_SQ, {"portfolios": json_exp})
+    pf.Portfolio.clear_cache()
+    _ = [o.delete() for o in pf.get_list(util.TEST_SQ, use_cache=False).values() if o.is_toplevel()]
+    assert pf.import_config(util.TEST_SQ, {"portfolios": json_exp})
 
     # Compare portfolios
-    o_list = portfolios.get_list(util.TEST_SQ)
+    o_list = pf.get_list(util.TEST_SQ)
     assert len(o_list) == len(json_exp)
     assert sorted(list(o_list.keys())) == sorted(list(json_exp.keys()))
 
 
 def test_audit_disabled() -> None:
     """test_audit_disabled"""
-    if not util.verify_support(SUPPORTED_EDITIONS, portfolios.audit, endpoint=util.SQ, audit_settings={"audit.portfolios": False}):
+    if not util.verify_support(SUPPORTED_EDITIONS, pf.audit, endpoint=util.SQ, audit_settings={"audit.portfolios": False}):
         return
-    assert len(portfolios.audit(util.SQ, {"audit.portfolios": False})) == 0
+    assert len(pf.audit(util.SQ, {"audit.portfolios": False})) == 0
