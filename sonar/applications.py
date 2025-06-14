@@ -319,6 +319,7 @@ class Application(aggr.Aggregation):
 
     def _audit_singleton(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
         """Audits if an application contains a single project (makes littel sense)"""
+        log.debug("Auditing singleton for %s", self)
         if not audit_settings.get("audit.applications.singleton", True):
             log.debug("Auditing singleton applications is disabled, skipping...")
             return []
@@ -393,6 +394,7 @@ class Application(aggr.Aggregation):
                 util.handle_error(e, f"adding project '{proj}' to {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
                 Application.CACHE.pop(self)
                 ok = False
+        self.refresh()
         return ok
 
     def last_analysis(self) -> datetime:
