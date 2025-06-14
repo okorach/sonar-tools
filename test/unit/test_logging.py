@@ -42,6 +42,7 @@ def test_no_log_file(csv_file: Generator[str]) -> None:
     assert not os.path.isfile("sonar-tools.log")
     assert util.file_not_empty(csv_file)
 
+
 def test_custom_log_file(csv_file: Generator[str]) -> None:
     """Tests that when a specific log file is given, logs come in that file"""
     logfile = "sonar-loc-logging.log"

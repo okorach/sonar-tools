@@ -301,6 +301,7 @@ def test_findings_export(csv_file: Generator[str]) -> None:
         else:
             util.run_success_cmd(findings_export.main, f"{cmd_csv} {opts}", True)
 
+
 def test_findings_export_long(csv_file: Generator[str]) -> None:
     """test_findings_export_long"""
     cmd_csv = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file}"

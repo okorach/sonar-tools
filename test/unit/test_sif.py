@@ -44,10 +44,12 @@ def test_audit_sif(csv_file: Generator[str]) -> None:
     cmd = f"{CMD} --sif {util.FILES_ROOT}/sif1.json --{opt.REPORT_FILE} {csv_file}"
     util.run_success_cmd(audit.main, cmd)
 
+
 def test_audit_sif_dce1(csv_file: Generator[str]) -> None:
     """test_audit_sif_dce1"""
     cmd = f"{CMD} --sif {util.FILES_ROOT}/sif.dce.1.json --{opt.REPORT_FILE} {csv_file}"
     util.run_success_cmd(audit.main, cmd)
+
 
 def test_audit_sif_dce3(csv_file: Generator[str]) -> None:
     """test_audit_sif_dce1"""
@@ -59,6 +61,7 @@ def test_sif_1(csv_file: Generator[str]) -> None:
     """test_sif_1"""
     cmd = f"{CMD} --sif {util.FILES_ROOT}/sif1.json --{opt.REPORT_FILE} {csv_file}"
     util.run_success_cmd(audit.main, cmd)
+
 
 def test_sif_2(json_file) -> None:
     """test_sif_2"""
