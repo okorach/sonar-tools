@@ -77,20 +77,19 @@ class Aggregation(comp.Component):
                     self.ncloc = int(m["value"])
         return self._nbr_projects
 
-    def _audit_aggregation_cardinality(self, sizes: tuple[int], broken_rule: object) -> list[Problem]:
+    def _audit_aggregation_cardinality(self, sizes: tuple[int, int], broken_rule: object) -> list[Problem]:
         problems = []
         n = self.nbr_projects()
+        log.debug("Auditing %s cardinality: %d projects vs %s disallowed sizes", str(self), n, str(sizes))
         if n in sizes:
             problems.append(Problem(get_rule(broken_rule), self, str(self)))
-        else:
-            log.debug("%s has %d projects", str(self), n)
         return problems
 
     def _audit_empty_aggregation(self, broken_rule: object) -> list[Problem]:
         return self._audit_aggregation_cardinality((0, None), broken_rule)
 
     def _audit_singleton_aggregation(self, broken_rule: object) -> list[Problem]:
-        return self._audit_aggregation_cardinality((1, 1), broken_rule)
+        return self._audit_aggregation_cardinality((1,), broken_rule)
 
     def permissions(self) -> Optional[object]:
         """Should be implement in child classes"""
