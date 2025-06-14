@@ -695,6 +695,7 @@ def check_supported(endpoint: pf.Platform) -> None:
 
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[object]:
     """Audits all portfolios"""
+    check_supported(endpoint)
     if not audit_settings.get("audit.portfolios", True):
         log.debug("Auditing portfolios is disabled, skipping...")
         return []
