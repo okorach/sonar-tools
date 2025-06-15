@@ -143,7 +143,8 @@ class Hotspot(findings.Finding):
             if resp.ok:
                 d = json.loads(resp.text)
                 self.__details = d
-                self.file = d["component"]["path"]
+                if self.file is None and "path" in d["component"]:
+                    self.file = d["component"]["path"]
                 self.branch, self.pull_request = self.get_branch_and_pr(d["project"])
                 self.severity = d["rule"].get("vulnerabilityProbability", "UNDEFINED")
                 self.impacts = {"SECURITY": self.severity}
