@@ -31,7 +31,7 @@ from cli import projects_cli
 import cli.options as opt
 
 CMD = "projects_cli.py"
-OPTS = f"{CMD} {util.SQS_OPTS}"
+OPTS = f"{CMD} {util.SQS_OPTS} --{opt.NBR_THREADS} 8"
 
 
 def test_export_all_proj(json_file: Generator[str]) -> None:
