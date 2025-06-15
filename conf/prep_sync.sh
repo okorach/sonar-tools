@@ -20,5 +20,5 @@
 #
 
 # Deletes and recreates a fresh TESTSYNC project in SonarQube
-curl -X POST -u :$SONAR_TOKEN "http://localhost:20010/api/projects/delete?project=TESTSYNC"
+curl -X POST -u $SONAR_TOKEN: "http://localhost:20010/api/projects/delete?project=TESTSYNC"
 conf/scan.sh -Dsonar.host.url=http://localhost:20010 -Dsonar.projectKey=TESTSYNC -Dsonar.projectName=TESTSYNC
