@@ -37,8 +37,10 @@ from sonar.util.types import ConfigSettings
 import sonar.logging as log
 from sonar import platform, exceptions, errcodes, version
 from sonar import issues, hotspots, findings
-from sonar import projects, applications, portfolios
+from sonar import applications, portfolios
 from sonar.util import types, component_helper
+import sonar.util.constants as c
+
 import sonar.utilities as util
 
 TOOL_NAME = "sonar-findings"
@@ -356,13 +358,18 @@ def main() -> None:
     __verify_inputs(params)
 
     params = __turn_off_use_findings_if_needed(sqenv, params=params)
-
+    branch_regexp = params.get(options.BRANCH_REGEXP, None)
+    if sqenv.edition() == c.CE and branch_regexp is not None or params.get(options.PULL_REQUESTS, None) is not None:
+        util.exit_fatal(
+            f"Options '--{options.BRANCH_REGEXP}' and '--{options.PULL_REQUESTS}' shall not be used with Community Edition/Community Build",
+            errcodes.UNSUPPORTED_OPERATION,
+        )
     try:
         components_list = component_helper.get_components(
             endpoint=sqenv,
             component_type=params[options.COMPONENT_TYPE],
             key_regexp=params.get(options.KEY_REGEXP, None),
-            branch_regexp=params.get(options.BRANCH_REGEXP, None),
+            branch_regexp=branch_regexp,
         )
     except exceptions.UnsupportedOperation as e:
         util.exit_fatal(e.message, errcodes.UNSUPPORTED_OPERATION)
@@ -381,6 +388,7 @@ def main() -> None:
 
     log.info("Exporting findings for %d projects with params %s", len(components_list), str(params))
     nb_findings = 0
+
     try:
         nb_findings = store_findings(components_list, endpoint=sqenv, params=params)
     except (PermissionError, FileNotFoundError) as e:
