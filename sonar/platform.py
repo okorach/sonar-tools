@@ -720,9 +720,11 @@ class Platform(object):
 
     def _audit_token_max_lifetime(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits the maximum lifetime of a token"""
-        if self.is_sonarcloud():
-            return []
         log.info("Auditing maximum token lifetime global setting")
+        lifetime_setting = settings.get_object(self, settings.TOKEN_MAX_LIFETIME)
+        if lifetime_setting is None:
+            log.info("Token maximum lifetime setting not found, skipping audit")
+            return []
         max_lifetime = util.to_days(self.get_setting(settings.TOKEN_MAX_LIFETIME))
         if max_lifetime is None:
             return [Problem(get_rule(RuleId.TOKEN_LIFETIME_UNLIMITED), self.external_url)]
