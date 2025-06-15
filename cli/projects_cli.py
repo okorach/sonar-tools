@@ -55,6 +55,8 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
         threads=kwargs.get(options.NBR_THREADS, _EXPORT_IMPORT_THREADS),
         skip_zero_loc=kwargs.get("skipZeroLoc", False),
     )
+    if len(dump) == 0:
+        raise exceptions.ObjectNotFound(kwargs[options.KEY_REGEXP], "No project found matching the given key regexp")
     export_data = {
         "exportSonarqubeEnvironment": {
             "url": endpoint.url(),

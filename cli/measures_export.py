@@ -267,8 +267,7 @@ def __write_measures_csv(file: str, wanted_metrics: types.KeyList, data: dict[st
 def __check_options_vs_edition(edition: str, params: dict[str, str]) -> dict[str, str]:
     """Checks and potentially modify params according to edition of the target platform"""
     if edition == c.CE and params[options.BRANCH_REGEXP]:
-        log.warning("SonarQube Server instance is a community edition, branch option ignored")
-        params.pop(options.BRANCH_REGEXP, None)
+        util.exit_fatal("Branch parameter forbidden with Community Edition / Community Build", exit_code=errcodes.UNSUPPORTED_OPERATION)
     if edition in (c.CE, c.DE) and params[options.COMPONENT_TYPE] == "portfolio":
         log.warning("SonarQube Server instance is a %s edition, there are no portfolios", edition)
         util.exit_fatal("SonarQube Server instance is a %s edition, there are no portfolios", exit_code=errcodes.UNSUPPORTED_OPERATION)

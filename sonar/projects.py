@@ -763,6 +763,8 @@ class Project(components.Component):
             if "Dump file does not exist" in util.sonar_error(e.response):
                 return f"FAILED/{tasks.ZIP_MISSING}"
             util.handle_error(e, f"importing zip of {str(self)} {mode}", catch_all=True)
+            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
+                raise exceptions.ObjectNotFound(self.key, f"Project key '{self.key}' not found")
             return f"FAILED/{util.http_error_string(e.response.status_code)}"
         except ConnectionError as e:
             return f"FAILED/{str(e)}"
@@ -1754,7 +1756,7 @@ def export_zips(
         projects_list = {k: v for k, v in projects_list.items() if v.loc() > 0}
         log.info("Skipping export of %d projects with 0 LoC", nbr_projects - len(projects_list))
         nbr_projects = len(projects_list)
-    log.info("Exporting %d projects to export", nbr_projects)
+    log.info("Exporting %d projects", nbr_projects)
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipExport") as executor:
         futures, futures_map = [], {}
         for proj in projects_list.values():

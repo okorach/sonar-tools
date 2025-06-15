@@ -26,7 +26,6 @@ import os
 import csv
 from collections.abc import Generator
 from unittest.mock import patch
-import pytest
 
 import utilities as util
 from sonar import errcodes, logging, utilities
@@ -36,7 +35,7 @@ from cli import measures_export
 import cli.options as opt
 
 CMD = "sonar-measures-export.py"
-OPTS = f"{CMD} {util.SQS_OPTS}"
+CMD = f"{CMD} {util.SQS_OPTS}"
 
 TYPE_COL = 1
 KEY_COL = 0
@@ -79,24 +78,34 @@ def test_measures_conversion(csv_file: Generator[str]) -> None:
 def test_measures_export_with_url(csv_file: Generator[str]) -> None:
     """test_measures_export_with_url"""
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.BRANCH_REGEXP_SHORT} .+ -{opt.METRIC_KEYS_SHORT} _main --{opt.WITH_URL}"
-    util.run_success_cmd(measures_export.main, cmd)
+    if util.SQ.edition() == c.CE:
+        util.run_failed_cmd(measures_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+    else:
+        util.run_success_cmd(measures_export.main, cmd)
 
 
 def test_measures_export_json(json_file: Generator[str]) -> None:
     """test_measures_export_json"""
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {json_file} -{opt.BRANCH_REGEXP_SHORT} .+ -{opt.METRIC_KEYS_SHORT} _main"
-    util.run_success_cmd(measures_export.main, cmd)
+    if util.SQ.edition() == c.CE:
+        util.run_failed_cmd(measures_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+    else:
+        util.run_success_cmd(measures_export.main, cmd)
 
 
 def test_measures_export_all(csv_file: Generator[str]) -> None:
     """test_measures_export_all"""
-    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.BRANCH_REGEXP_SHORT} .+ -{opt.METRIC_KEYS_SHORT} _all"
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.METRIC_KEYS_SHORT} _all"
+    if util.SQ.edition() != c.CE:
+        cmd += f"-{opt.BRANCH_REGEXP_SHORT} .+"
     util.run_success_cmd(measures_export.main, cmd)
 
 
 def test_measures_export_json_all(json_file: Generator[str]) -> None:
     """test_measures_export_json_all"""
-    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {json_file} -{opt.BRANCH_REGEXP_SHORT} .+ --{opt.METRIC_KEYS} _all"
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {json_file} --{opt.METRIC_KEYS} _all"
+    if util.SQ.edition() != c.CE:
+        cmd += f"-{opt.BRANCH_REGEXP_SHORT} .+"
     util.run_success_cmd(measures_export.main, cmd)
 
 
@@ -125,8 +134,10 @@ def test_measures_export_history_as_table_with_url(csv_file: Generator[str]) -> 
 
 
 def test_measures_export_history_as_table_with_branch(csv_file: Generator[str]) -> None:
-    """test_measures_export_history_as_table_with_url"""
-    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --history --asTable -{opt.BRANCH_REGEXP_SHORT} .+"
+    """test_measures_export_history_as_table_with_branch"""
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --history --asTable"
+    if util.SQ.edition() != c.CE:
+        cmd += f"-{opt.BRANCH_REGEXP_SHORT} .+"
     util.run_success_cmd(measures_export.main, cmd)
 
 
@@ -176,7 +187,7 @@ def test_specific_project_keys(csv_file: Generator[str]) -> None:
 def test_apps_measures(csv_file: Generator[str]) -> None:
     """test_apps_measures"""
     EXISTING_KEY = "APP_TEST"
-    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --apps -m ncloc"
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --{opt.APPS} -m ncloc"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(measures_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
@@ -225,7 +236,7 @@ def test_basic(csv_file: Generator[str]) -> None:
 
 def test_option_apps(csv_file: Generator[str]) -> None:
     """Tests that using the --apps option works in the correct editions (DE and higher)"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --apps"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.APPS}"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(measures_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
@@ -240,7 +251,7 @@ def test_option_apps(csv_file: Generator[str]) -> None:
 
 def test_option_portfolios(csv_file: Generator[str]) -> None:
     """Tests that using the --portfolios option works in the correct editions (EE and higher)"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --portfolios"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.PORTFOLIOS}"
     if util.SQ.edition() in (c.CE, c.DE):
         util.run_failed_cmd(measures_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return

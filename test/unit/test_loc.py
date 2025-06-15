@@ -91,6 +91,9 @@ def test_loc_project_with_all_options(csv_file: Generator[str]) -> None:
 def test_loc_portfolios(csv_file: Generator[str]) -> None:
     """test_loc_portfolios"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.PORTFOLIOS} --topLevelOnly --{opt.WITH_URL}"
+    if util.SQ.edition() in (c.CE, c.DE):
+        util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+        return
     util.run_success_cmd(loc.main, cmd)
 
 

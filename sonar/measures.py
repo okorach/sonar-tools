@@ -21,8 +21,6 @@
 """Abstraction of the SonarQube measure concept"""
 from __future__ import annotations
 
-from typing import Union
-
 import json
 import re
 from http import HTTPStatus
