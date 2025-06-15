@@ -1754,7 +1754,7 @@ def export_zips(
         projects_list = {k: v for k, v in projects_list.items() if v.loc() > 0}
         log.info("Skipping export of %d projects with 0 LoC", nbr_projects - len(projects_list))
         nbr_projects = len(projects_list)
-    log.info("Exporting %d projects to export", nbr_projects)
+    log.info("Exporting %d projects", nbr_projects)
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipExport") as executor:
         futures, futures_map = [], {}
         for proj in projects_list.values():
