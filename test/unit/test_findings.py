@@ -449,7 +449,7 @@ def test_one_pr(csv_file: Generator[str]) -> None:
     for pr in list(proj.pull_requests().keys()):
         cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} -{opt.PULL_REQUESTS_SHORT} {pr}"
         util.run_success_cmd(findings_export.main, cmd)
-        with open(cmd, encoding="utf-8") as fd:
+        with open(csv_file, encoding="utf-8") as fd:
             reader = csv.reader(fd)
             try:
                 nbcol = len(next(reader))
