@@ -769,7 +769,7 @@ def to_days(time_expression: str) -> Optional[int]:
     """Converts a time expression to days, e.g. '1 day', '2 weeks', '3 months', '1 year'"""
     match = re.match(r"(\d+) (day|week|month|year)s?", time_expression)
     if not match:
-        raise ValueError(f"Invalid time expression '{time_expression}'")
+        return None
     value, unit = match.groups()
     value = int(value)
     if unit == "day":
