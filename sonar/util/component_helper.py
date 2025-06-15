@@ -21,7 +21,7 @@
 import re
 from typing import Optional
 
-from sonar import platform, components, projects, applications, portfolios, logging
+from sonar import platform, components, projects, applications, portfolios
 
 
 def get_components(
