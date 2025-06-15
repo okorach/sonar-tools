@@ -42,6 +42,15 @@ CMD = "sonar-findings-export.py"
 SARIF_FILE = "issues.sarif"
 CMD = f"{CMD} {util.SQS_OPTS}"
 
+CE_FORBIDDEN_OPTIONS = (
+    f"--{opt.APPS}",
+    f"--{opt.PORTFOLIOS}",
+    f"--{opt.BRANCH_REGEXP}",
+    f"-{opt.BRANCH_REGEXP_SHORT}",
+    f"--{opt.PULL_REQUESTS}",
+    f"-{opt.PULL_REQUESTS_SHORT}",
+)
+
 RULE_COL = 1
 LANG_COL = 2
 
@@ -137,7 +146,8 @@ def test_wrong_opts(csv_file: Generator[str]) -> None:
 def test_findings_export_non_existing_branch() -> None:
     """test_findings_export_non_existing_branch"""
     cmd = f"{CMD} --{opt.KEY_REGEXP} training:security --{opt.BRANCH_REGEXP} non-existing-branch"
-    util.run_failed_cmd(findings_export.main, cmd, errcodes.WRONG_SEARCH_CRITERIA)
+    err = errcodes.UNSUPPORTED_OPERATION if util.SQ.edition() == c.CE else errcodes.WRONG_SEARCH_CRITERIA
+    util.run_failed_cmd(findings_export.main, cmd, err)
 
 
 def test_findings_filter_on_date_after(csv_file: Generator[str]) -> None:
@@ -291,12 +301,16 @@ def test_findings_filter_on_lang(csv_file: Generator[str]) -> None:
 
 def test_findings_export(csv_file: Generator[str]) -> None:
     """test_findings_export"""
-    util.start_logging()
+    # util.start_logging()
     cmd_csv = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file}"
     for opts in __GOOD_OPTS:
-        if (util.SQ.edition() == c.CE and (f"--{opt.APPS}" in opts or f"--{opt.PORTFOLIOS}" in opts)) or (
-            util.SQ.edition() == c.DE and f"--{opt.PORTFOLIOS}" in opts
-        ):
+        fail = False
+        if util.SQ.edition() == c.CE:
+            fail = sum(1 for cli_option in CE_FORBIDDEN_OPTIONS if f" {cli_option} " in f" {opts}") > 0
+            print(f"fail = {fail} for opts = {opts}")
+        if util.SQ.edition() == c.DE:
+            fail = f"--{opt.PORTFOLIOS}" in opts
+        if fail:
             util.run_failed_cmd(findings_export.main, f"{cmd_csv} {opts}", errcodes.UNSUPPORTED_OPERATION)
         else:
             util.run_success_cmd(findings_export.main, f"{cmd_csv} {opts}", True)
@@ -415,6 +429,9 @@ def test_output_format_branch(csv_file: Generator[str]) -> None:
         br_list = utilities.csv_to_list(br)
         regexp = utilities.csv_to_regexp(br)
         cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --{opt.BRANCH_REGEXP} {regexp}"
+        if util.SQ.edition() == c.CE:
+            util.run_failed_cmd(findings_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+            continue
         util.run_success_cmd(findings_export.main, cmd)
         with open(csv_file, encoding="utf-8") as fd:
             reader = csv.reader(fd)
@@ -429,6 +446,9 @@ def test_output_format_branch(csv_file: Generator[str]) -> None:
 def test_all_prs(csv_file: Generator[str]) -> None:
     """Tests that findings extport for all PRs of a project works"""
     cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --{opt.PULL_REQUESTS} "*"'
+    if util.SQ.edition() == c.CE:
+        util.run_failed_cmd(findings_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+        return
     util.run_success_cmd(findings_export.main, cmd)
     with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
@@ -448,6 +468,9 @@ def test_one_pr(csv_file: Generator[str]) -> None:
     proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)
     for pr in list(proj.pull_requests().keys()):
         cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} -{opt.PULL_REQUESTS_SHORT} {pr}"
+        if util.SQ.edition() == c.CE:
+            util.run_failed_cmd(findings_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+            break
         util.run_success_cmd(findings_export.main, cmd)
         with open(csv_file, encoding="utf-8") as fd:
             reader = csv.reader(fd)
