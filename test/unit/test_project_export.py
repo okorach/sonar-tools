@@ -52,7 +52,7 @@ def test_export_timeout(json_file: Generator[str]) -> None:
     util.run_success_cmd(projects_cli.main, cmd, True)
 
 
-def test_export_no_file(json_file: Generator[str]) -> None:
+def test_export_no_file() -> None:
     """test_export_timeout"""
     cmd = f"{OPTS} -{opt.EXPORT_SHORT} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
     util.run_success_cmd(projects_cli.main, cmd, True)
@@ -72,7 +72,7 @@ def test_export_sq_cloud(json_file: Generator[str]) -> None:
 
 def test_import_no_file() -> None:
     """test_import_no_file"""
-    cmd = f"{OPTS} -{opt.EXPORT_SHORT}"
+    cmd = f"{OPTS} --{opt.IMPORT}"
     util.run_failed_cmd(projects_cli.main, cmd, errcodes.ARGS_ERROR)
 
 
