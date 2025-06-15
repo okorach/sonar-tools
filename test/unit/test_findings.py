@@ -128,7 +128,7 @@ def test_wrong_opts(csv_file: Generator[str]) -> None:
         with pytest.raises(SystemExit) as e:
             with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", csv_file] + bad_opts):
                 findings_export.main()
-        assert int(str(e.value)) == errcodes.NO_SUCH_KEY or (
+        assert int(str(e.value)) == errcodes.WRONG_SEARCH_CRITERIA or (
             int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION and util.SQ.edition() in (c.CE, c.DE)
         )
         assert not os.path.isfile(csv_file)
