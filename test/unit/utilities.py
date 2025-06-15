@@ -184,7 +184,7 @@ def __get_redacted_cmd(string_arguments: str) -> str:
 
 def run_cmd(func: callable, arguments: str, expected_code: int) -> Optional[str]:
     """Runs a sonar-tools command, verifies it raises the right exception, and returns the expected code"""
-    logging.info("RUNNING: %s", __get_redacted_cmd(arguments))
+    logging.info("RUNNING (expecting code %d): %s", expected_code, __get_redacted_cmd(arguments))
     file, args, import_cmd = __get_args_and_file(arguments)
     if not import_cmd:
         clean(file)
