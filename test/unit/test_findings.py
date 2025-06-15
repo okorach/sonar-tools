@@ -41,8 +41,6 @@ import cli.options as opt
 CMD = "sonar-findings-export.py"
 SARIF_FILE = "issues.sarif"
 CMD = f"{CMD} {util.SQS_OPTS}"
-CMD_CSV = f"{CMD} -{opt.REPORT_FILE_SHORT} {util.CSV_FILE}"
-JSON_OPTS_STR = f"{CMD} -{opt.REPORT_FILE_SHORT} {util.JSON_FILE}"
 
 RULE_COL = 1
 LANG_COL = 2
@@ -94,7 +92,7 @@ __WRONG_FILTER_OPTS = [
     f"--{opt.RESOLUTIONS} ACCEPTED,SAFE,DO_FIX,WONTFIX",
     f"--{opt.TYPES} BUG,VULN",
     f"--{opt.SEVERITIES} HIGH,SUPER_HIGH",
-    f"--{opt.CSV_SEPARATOR} ';' -d --{opt.TAGS} cwe,convention -{opt.REPORT_FILE_SHORT} {util.CSV_FILE}",
+    f"--{opt.CSV_SEPARATOR} ';' -d --{opt.TAGS} cwe,convention",
 ]
 
 __WRONG_OPTS = [
@@ -118,27 +116,22 @@ def test_findings_export_sarif_implicit(sarif_file: Generator[str]) -> None:
     assert util.file_contains(sarif_file, "schemas/json/sarif-2.1.0-rtm.4")
 
 
-def test_wrong_filters() -> None:
+def test_wrong_filters(csv_file: Generator[str]) -> None:
     """test_wrong_filters"""
-    util.clean(util.CSV_FILE, util.JSON_FILE)
     for bad_opts in __WRONG_FILTER_OPTS:
-        util.run_failed_cmd(findings_export.main, f"{CMD} {bad_opts}", errcodes.WRONG_SEARCH_CRITERIA)
-        assert not os.path.isfile(util.CSV_FILE)
-        assert not os.path.isfile(util.JSON_FILE)
+        util.run_failed_cmd(findings_export.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} {bad_opts}", errcodes.WRONG_SEARCH_CRITERIA)
 
 
-def test_wrong_opts() -> None:
+def test_wrong_opts(csv_file: Generator[str]) -> None:
     """test_wrong_opts"""
-    util.clean(util.CSV_FILE, util.JSON_FILE)
     for bad_opts in __WRONG_OPTS:
         with pytest.raises(SystemExit) as e:
-            with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE] + bad_opts):
+            with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", csv_file] + bad_opts):
                 findings_export.main()
         assert int(str(e.value)) == errcodes.NO_SUCH_KEY or (
             int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION and util.SQ.edition() in (c.CE, c.DE)
         )
-        assert not os.path.isfile(util.CSV_FILE)
-        assert not os.path.isfile(util.JSON_FILE)
+        assert not os.path.isfile(csv_file)
 
 
 def test_findings_export_non_existing_branch() -> None:
@@ -196,7 +189,6 @@ def test_findings_filter_on_resolution(csv_file: Generator[str]) -> None:
         next(csvreader)
         for line in csvreader:
             assert line[STATUS_COL] in statuses
-    util.clean(util.CSV_FILE)
 
 
 def test_findings_filter_on_severity(csv_file: Generator[str]) -> None:
@@ -239,7 +231,6 @@ def test_findings_filter_on_multiple_criteria(csv_file: Generator[str]) -> None:
                 assert line[MAINTAINABILITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
             else:
                 assert line[TYPE_COL] in ("BUG", "CODE_SMELL")
-    util.clean(util.CSV_FILE)
 
 
 def test_findings_filter_on_multiple_criteria_2(csv_file: Generator[str]) -> None:
@@ -298,22 +289,24 @@ def test_findings_filter_on_lang(csv_file: Generator[str]) -> None:
     util.run_success_cmd(findings_export.main, cmd)
 
 
-def test_findings_export() -> None:
+def test_findings_export(csv_file: Generator[str]) -> None:
     """test_findings_export"""
     util.start_logging()
+    cmd_csv = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file}"
     for opts in __GOOD_OPTS:
         if (util.SQ.edition() == c.CE and (f"--{opt.APPS}" in opts or f"--{opt.PORTFOLIOS}" in opts)) or (
             util.SQ.edition() == c.DE and f"--{opt.PORTFOLIOS}" in opts
         ):
-            util.run_failed_cmd(findings_export.main, f"{CMD_CSV} {opts}", errcodes.UNSUPPORTED_OPERATION)
+            util.run_failed_cmd(findings_export.main, f"{cmd_csv} {opts}", errcodes.UNSUPPORTED_OPERATION)
         else:
-            util.run_success_cmd(findings_export.main, f"{CMD_CSV} {opts}", True)
+            util.run_success_cmd(findings_export.main, f"{cmd_csv} {opts}", True)
 
 
-def test_findings_export_long() -> None:
+def test_findings_export_long(csv_file: Generator[str]) -> None:
     """test_findings_export_long"""
+    cmd_csv = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file}"
     for opts in __GOOD_OPTS_LONG:
-        util.run_success_cmd(findings_export.main, f"{CMD_CSV} {opts}", True)
+        util.run_success_cmd(findings_export.main, f"{cmd_csv} {opts}", True)
 
 
 def test_issues_count_0() -> None:
@@ -415,27 +408,29 @@ def test_output_format_csv(csv_file: Generator[str]) -> None:
             assert k in row
 
 
-def test_output_format_branch() -> None:
+def test_output_format_branch(csv_file: Generator[str]) -> None:
     """test_output_format_branch"""
 
     for br in "develop", "master,develop":
         br_list = utilities.csv_to_list(br)
         regexp = utilities.csv_to_regexp(br)
-        util.run_success_cmd(findings_export.main, f"{CMD_CSV} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --{opt.BRANCH_REGEXP} {regexp}")
-        with open(util.CSV_FILE, encoding="utf-8") as fd:
+        cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --{opt.BRANCH_REGEXP} {regexp}"
+        util.run_success_cmd(findings_export.main, cmd)
+        with open(csv_file, encoding="utf-8") as fd:
             reader = csv.reader(fd)
             next(reader)
             for line in reader:
                 assert line[BRANCH_COL] in br_list
                 assert line[PR_COL] == ""
                 assert line[PROJECT_COL] == util.LIVE_PROJECT
-    util.clean(util.CSV_FILE)
+        util.clean(csv_file)
 
 
-def test_all_prs() -> None:
+def test_all_prs(csv_file: Generator[str]) -> None:
     """Tests that findings extport for all PRs of a project works"""
-    util.run_success_cmd(findings_export.main, f'{CMD_CSV} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --{opt.PULL_REQUESTS} "*"')
-    with open(util.CSV_FILE, encoding="utf-8") as fd:
+    cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --{opt.PULL_REQUESTS} "*"'
+    util.run_success_cmd(findings_export.main, cmd)
+    with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         try:
             nbcol = len(next(reader))
@@ -446,15 +441,15 @@ def test_all_prs() -> None:
                 assert line[PROJECT_COL] == util.LIVE_PROJECT
         except StopIteration:
             pass
-    util.clean(util.CSV_FILE)
 
 
-def test_one_pr() -> None:
+def test_one_pr(csv_file: Generator[str]) -> None:
     """Tests that findings extport for a single name PR of a project works"""
     proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)
     for pr in list(proj.pull_requests().keys()):
-        util.run_success_cmd(findings_export.main, f"{CMD_CSV} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} -{opt.PULL_REQUESTS_SHORT} {pr}")
-        with open(util.CSV_FILE, encoding="utf-8") as fd:
+        cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} -{opt.PULL_REQUESTS_SHORT} {pr}"
+        util.run_success_cmd(findings_export.main, cmd)
+        with open(cmd, encoding="utf-8") as fd:
             reader = csv.reader(fd)
             try:
                 nbcol = len(next(reader))
@@ -465,4 +460,3 @@ def test_one_pr() -> None:
                     assert line[PROJECT_COL] == util.LIVE_PROJECT
             except StopIteration:
                 pass
-    util.clean(util.CSV_FILE)

@@ -32,7 +32,7 @@ from unittest.mock import patch
 import pytest
 
 import credentials as creds
-from sonar import errcodes, logging
+from sonar import errcodes, logging, exceptions
 from sonar import utilities as util
 from sonar import platform
 import cli.options as opt
@@ -218,3 +218,11 @@ def start_logging(level: str = "DEBUG") -> None:
         logging.set_logger(TEST_LOGFILE)
         logging.set_debug_level(level)
         LOGGER_COUNT = 1
+
+
+def verify_support(editions: tuple[str, ...], func: callable, **kwargs) -> bool:
+    if kwargs["endpoint"].edition() not in editions:
+        with pytest.raises(exceptions.UnsupportedOperation):
+            _ = func(**kwargs)
+        return False
+    return True
