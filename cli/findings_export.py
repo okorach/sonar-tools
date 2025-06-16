@@ -359,7 +359,7 @@ def main() -> None:
 
     params = __turn_off_use_findings_if_needed(sqenv, params=params)
     branch_regexp = params.get(options.BRANCH_REGEXP, None)
-    if sqenv.edition() == c.CE and branch_regexp is not None or params.get(options.PULL_REQUESTS, None) is not None:
+    if sqenv.edition() == c.CE and (branch_regexp is not None or params.get(options.PULL_REQUESTS, None) is not None):
         util.exit_fatal(
             f"Options '--{options.BRANCH_REGEXP}' and '--{options.PULL_REQUESTS}' shall not be used with Community Edition/Community Build",
             errcodes.UNSUPPORTED_OPERATION,
