@@ -35,7 +35,7 @@ import cli.options as opt
 
 CLI = "sonar-loc.py"
 CMD = f"{CLI} {util.SQS_OPTS}"
-ALL_OPTIONS = f"-{opt.BRANCH_REGEXP_SHORT} .+ --{opt.WITH_LAST_ANALYSIS} --{opt.WITH_NAME} --{opt.WITH_URL}"
+ALL_OPTIONS = f"-{opt.BRANCH_REGEXP_SHORT} .+ --{opt.WITH_LAST_ANALYSIS} --{opt.WITH_NAME} --{opt.WITH_TAGS} --{opt.WITH_URL}"
 
 
 def test_loc(csv_file: Generator[str]) -> None:
@@ -133,12 +133,15 @@ def test_loc_proj_all_options(csv_file: Generator[str]) -> None:
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         reader = csv.reader(fh)
         row = next(reader)
-        for k in "# project key", "branch", "ncloc", "project name", "last analysis", "URL":
+        for k in "# project key", "branch", "ncloc", "project name", "last analysis", "tags", "URL":
             assert k in row
+        found = False
         for line in reader:
-            assert util.is_url(line[5])
-            assert line[4] == "" or util.is_datetime(line[4])
             assert util.is_integer(line[2])
+            assert line[4] == "" or util.is_datetime(line[4])
+            found = found or line[5] != ""
+            assert util.is_url(line[6])
+        assert found    # At least one project with tags
 
 
 def test_loc_apps_all_options(csv_file: Generator[str]) -> None:
@@ -153,12 +156,15 @@ def test_loc_apps_all_options(csv_file: Generator[str]) -> None:
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         reader = csv.reader(fh)
         row = next(reader)
-        for k in "# app key", "branch", "ncloc", "app name", "last analysis", "URL":
+        for k in "# app key", "branch", "ncloc", "app name", "last analysis", "tags", "URL":
             assert k in row
+        found = False
         for line in reader:
-            assert util.is_url(line[5])
-            assert line[4] == "" or util.is_datetime(line[4])
             assert util.is_integer(line[2])
+            assert line[4] == "" or util.is_datetime(line[4])
+            found = found or line[5] != ""
+            assert util.is_url(line[6])
+        assert found    # At least one app with tags
 
 
 def test_loc_portfolios_all_options(csv_file: Generator[str]) -> None:
@@ -172,13 +178,14 @@ def test_loc_portfolios_all_options(csv_file: Generator[str]) -> None:
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         reader = csv.reader(fh)
         row = next(reader)
-        for k in "# portfolio key", "ncloc", "portfolio name", "last analysis", "URL":
+        for k in "# portfolio key", "ncloc", "portfolio name", "last analysis", "tags", "URL":
             assert k in row
         for line in reader:
-            assert util.is_url(line[4])
-            assert line[3] == "" or util.is_datetime(line[3])
             assert util.is_integer(line[1])
-
+            assert line[3] == "" or util.is_datetime(line[3])
+            assert line[4] == ""   # No tags for portfolios
+            assert util.is_url(line[5])
+            
 
 def test_loc_proj_all_options_json(json_file: Generator[str]) -> None:
     """test_loc_proj_all_options_json"""
@@ -191,12 +198,16 @@ def test_loc_proj_all_options_json(json_file: Generator[str]) -> None:
     # Check file contents
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         jsondata = json.loads(fh.read())
+    found = False
     for component in jsondata:
         for key in "branch", "lastAnalysis", "ncloc", "project", "projectName", "url":
             assert key in component
         assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
+        assert "tags" in component
+        found = found or len(component["tags"]) > 0
         assert util.is_url(component["url"])
         assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
+    assert found
 
 
 def test_loc_apps_all_options_json(json_file: Generator[str]) -> None:
@@ -210,12 +221,16 @@ def test_loc_apps_all_options_json(json_file: Generator[str]) -> None:
     # Check file contents
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         jsondata = json.loads(fh.read())
+    found = False
     for component in jsondata:
         for key in "branch", "lastAnalysis", "ncloc", "app", "appName", "url":
             assert key in component
         assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
+        assert "tags" in component
+        found = found or len(component["tags"]) > 0
         assert util.is_url(component["url"])
         assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
+    assert found
 
 
 def test_loc_portfolios_all_options_json(json_file: Generator[str]) -> None:
@@ -229,9 +244,12 @@ def test_loc_portfolios_all_options_json(json_file: Generator[str]) -> None:
     # Check file contents
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         jsondata = json.loads(fh.read())
+    found = False
     for component in jsondata:
         for key in "lastAnalysis", "ncloc", "portfolio", "portfolioName", "url":
             assert key in component
         assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
         assert util.is_url(component["url"])
+        found = found or len(component["tags"]) > 0
         assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
+    assert not found  # No tags for portfolios

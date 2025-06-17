@@ -46,6 +46,8 @@ def __get_csv_header_list(**kwargs) -> list[str]:
         arr.append(f"{kwargs[options.COMPONENT_TYPE][0:-1]} name")
     if kwargs[options.WITH_LAST_ANALYSIS]:
         arr.append("last analysis")
+    if kwargs[options.WITH_TAGS]:
+        arr.append("tags")
     if kwargs[options.WITH_URL]:
         arr.append("URL")
     return arr
@@ -72,6 +74,9 @@ def __get_csv_row(o: object, **kwargs) -> tuple[list[str], str]:
         if loc != "":
             last_ana = o.last_analysis()
         arr.append(last_ana)
+    if kwargs[options.WITH_TAGS]:
+        sep = "|" if kwargs[options.CSV_SEPARATOR] == "," else ","
+        arr.append(sep.join(o.get_tags()))
     if kwargs[options.WITH_URL]:
         arr.append(o.url())
     return arr, loc
@@ -94,7 +99,6 @@ def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
             writer.writerow(arr)
             nb_objects += 1
             if loc != "":
-                log.debug("arr = %s", str(arr))
                 nb_loc += loc
             if nb_objects % 50 != 0:
                 continue
@@ -127,6 +131,8 @@ def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
         d["lastAnalysis"] = ""
         if o.last_analysis() is not None:
             d["lastAnalysis"] = datetime.datetime.isoformat(o.last_analysis())
+    if kwargs[options.WITH_TAGS]:
+        d["tags"] = o.get_tags()
     if kwargs[options.WITH_URL]:
         d["url"] = o.url()
     return d
@@ -188,6 +194,13 @@ def __parse_args(desc: str) -> object:
         default=False,
         action="store_true",
         help="Also list the last analysis date on top of nbr of LoC",
+    )
+    parser.add_argument(
+        f"--{options.WITH_TAGS}",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Also include project tags in export",
     )
     options.add_url_arg(parser)
     options.add_branch_arg(parser)
