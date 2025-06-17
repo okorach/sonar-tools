@@ -244,9 +244,14 @@ class Branch(components.Component):
     def url(self) -> str:
         """
         :return: The branch URL in SonarQube as permalink
-        :rtype: str
         """
         return f"{self.base_url(local=False)}/dashboard?id={self.concerned_object.key}&branch={requests.utils.quote(self.name)}"
+
+    def get_tags(self) -> list[str]:
+        """
+        :return: The tags of the project corresponding to the branch
+        """
+        return self.concerned_object.get_tags()
 
     def rename(self, new_name: str) -> bool:
         """Renames a branch
