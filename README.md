@@ -129,7 +129,7 @@ sonar-housekeeper -u https://sonar.acme-corp.com -t 15ee09df11fb9b8234b7a1f1ac5f
 Exports all projects lines of code as they would be counted by the commercial licences.
 See `sonar-loc -h` for details
 
-Basic Usage: `sonar-loc [-f <file>] [--format csv|json] [-a] [-n] [--withURL] [--portfolios] [--topLevelOnly]`
+Basic Usage: `sonar-loc [-f <file>] [--format csv|json] [-a] [-n] [--withTags] [--withURL] [--apps] [--portfolios] [--topLevelOnly]`
 - `-f`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
 - `--format`: Choose export format between csv (default) and json
 - `--projects`: Output the LOC of projects (this is the default if nothing specified)
@@ -138,7 +138,8 @@ Basic Usage: `sonar-loc [-f <file>] [--format csv|json] [-a] [-n] [--withURL] [-
 - `--topLevelOnly`: For portfolios, only output LoCs for top level portfolios (Enterprise Edition only)
 - `-n | --withName`: Outputs the project or portfolio name in addition to the key
 - `-a | --withLastAnalysis`: Output the last analysis date (all branches and PR taken into account) in addition to the LOCs
-- `--withURL`: Outputs the URL of the project or portfolio for each record
+- `--withTags`: Outputs the tags of the project, app or portfolio
+- `--withURL`: Outputs the URL of the project, app or portfolio for each record
 - `-b`: Export LoCs for each branches of targeted objects (projects or applications)
 
 ## Required Permissions
