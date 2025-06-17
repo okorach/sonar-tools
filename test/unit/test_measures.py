@@ -97,7 +97,7 @@ def test_measures_export_all(csv_file: Generator[str]) -> None:
     """test_measures_export_all"""
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.METRIC_KEYS_SHORT} _all"
     if util.SQ.edition() != c.CE:
-        cmd += f"-{opt.BRANCH_REGEXP_SHORT} .+"
+        cmd += f" -{opt.BRANCH_REGEXP_SHORT} .+"
     util.run_success_cmd(measures_export.main, cmd)
 
 
@@ -105,7 +105,7 @@ def test_measures_export_json_all(json_file: Generator[str]) -> None:
     """test_measures_export_json_all"""
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {json_file} --{opt.METRIC_KEYS} _all"
     if util.SQ.edition() != c.CE:
-        cmd += f"-{opt.BRANCH_REGEXP_SHORT} .+"
+        cmd += f" -{opt.BRANCH_REGEXP_SHORT} .+"
     util.run_success_cmd(measures_export.main, cmd)
 
 
@@ -137,7 +137,7 @@ def test_measures_export_history_as_table_with_branch(csv_file: Generator[str]) 
     """test_measures_export_history_as_table_with_branch"""
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --history --asTable"
     if util.SQ.edition() != c.CE:
-        cmd += f"-{opt.BRANCH_REGEXP_SHORT} .+"
+        cmd += f" -{opt.BRANCH_REGEXP_SHORT} .+"
     util.run_success_cmd(measures_export.main, cmd)
 
 
