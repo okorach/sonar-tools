@@ -247,11 +247,11 @@ class Branch(components.Component):
         """
         return f"{self.base_url(local=False)}/dashboard?id={self.concerned_object.key}&branch={requests.utils.quote(self.name)}"
 
-    def get_tags(self) -> list[str]:
+    def get_tags(self, **kwargs) -> list[str]:
         """
         :return: The tags of the project corresponding to the branch
         """
-        return self.concerned_object.get_tags()
+        return self.concerned_object.get_tags(**kwargs)
 
     def rename(self, new_name: str) -> bool:
         """Renames a branch

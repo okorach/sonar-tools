@@ -70,11 +70,11 @@ class PullRequest(components.Component):
         """Returns the PR permalink (until PR is purged)"""
         return f"{self.base_url(local=False)}/dashboard?id={self.concerned_object.key}&pullRequest={requests.utils.quote(self.key)}"
 
-    def get_tags(self) -> list[str]:
+    def get_tags(self, **kwargs) -> list[str]:
         """
         :return: The tags of the project corresponding to the PR
         """
-        return self.concerned_object.get_tags()
+        return self.concerned_object.get_tags(**kwargs)
 
     def project(self) -> object:
         """Returns the project"""
