@@ -99,6 +99,7 @@ WITH_NAME_SHORT = "n"
 WITH_NAME = "withName"
 WITH_LAST_ANALYSIS_SHORT = "a"
 WITH_LAST_ANALYSIS = "withLastAnalysis"
+WITH_TAGS = "withTags"
 
 DATE_AFTER = "createdAfter"
 DATE_BEFORE = "createdBefore"
