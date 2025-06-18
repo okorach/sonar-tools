@@ -163,8 +163,8 @@ def __get_ts(ts: str, **kwargs) -> str:
 def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
 
-    map = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch", options.WITH_URL: "url"}
-    fields = ["key", "date"] + [map[k] for k in map if kwargs[k]] + wanted_metrics
+    mapping = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch", options.WITH_URL: "url"}
+    fields = ["key", "date"] + [v for k, v in mapping.items() if kwargs[k]] + wanted_metrics
 
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
@@ -179,15 +179,15 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyLi
                 if ts not in hist_data:
                     hist_data[ts] = {"date": ts} | {k: obj_data.get(k, "") for k in ("key", "name", "branch", "url")}
                 hist_data[ts] |= {key: val}
-            for _, data in sorted(hist_data.items()):
-                csvwriter.writerow([data.get(i, "") for i in fields])
+            for _, d in sorted(hist_data.items()):
+                csvwriter.writerow([d.get(i, "") for i in fields])
 
 
 def __write_measures_history_csv_as_list(file: str, data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
 
-    map = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch"}
-    header_list = ["timestamp", "key"] + [map[k] for k in map if kwargs[k]] + ["metric", "value"]
+    mapping = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch"}
+    header_list = ["timestamp", "key"] + [v for k, v in mapping.items() if kwargs[k]] + ["metric", "value"]
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         print("# ", file=fd, end="")
@@ -195,7 +195,7 @@ def __write_measures_history_csv_as_list(file: str, data: dict[str, str], **kwar
         for component_data in data:
             if "history" not in component_data:
                 continue
-            constant_data = [component_data["key"]] + [component_data[map[k]] for k in map if kwargs[k]]
+            constant_data = [component_data["key"]] + [component_data[v] for k, v in mapping.items() if kwargs[k]]
             for ts, key, val in component_data["history"]:
                 csvwriter.writerow([__get_ts(ts, **kwargs)] + constant_data + [key, val])
 
