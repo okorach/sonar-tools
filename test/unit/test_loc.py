@@ -141,7 +141,7 @@ def test_loc_proj_all_options(csv_file: Generator[str]) -> None:
             assert line[4] == "" or util.is_datetime(line[4])
             found = found or line[5] != ""
             assert util.is_url(line[6])
-        assert found    # At least one project with tags
+        assert found  # At least one project with tags
 
 
 def test_loc_apps_all_options(csv_file: Generator[str]) -> None:
@@ -164,7 +164,7 @@ def test_loc_apps_all_options(csv_file: Generator[str]) -> None:
             assert line[4] == "" or util.is_datetime(line[4])
             found = found or line[5] != ""
             assert util.is_url(line[6])
-        assert found    # At least one app with tags
+        assert found  # At least one app with tags
 
 
 def test_loc_portfolios_all_options(csv_file: Generator[str]) -> None:
@@ -183,9 +183,9 @@ def test_loc_portfolios_all_options(csv_file: Generator[str]) -> None:
         for line in reader:
             assert util.is_integer(line[1])
             assert line[3] == "" or util.is_datetime(line[3])
-            assert line[4] == ""   # No tags for portfolios
+            assert line[4] == ""  # No tags for portfolios
             assert util.is_url(line[5])
-            
+
 
 def test_loc_proj_all_options_json(json_file: Generator[str]) -> None:
     """test_loc_proj_all_options_json"""
