@@ -255,11 +255,6 @@ def main() -> None:
             branch_regexp=kwargs[options.BRANCH_REGEXP],
             topLevelOnly=kwargs["topLevelOnly"],
         )
-        if kwargs[options.COMPONENT_TYPE] == "portfolios":
-            params = {}
-            if kwargs["topLevelOnly"]:
-                params["qualifiers"] = "VW"
-            objects_list = list(portfolios.search(endpoint, params=params).values())
         __dump_loc(objects_list, **kwargs)
     except exceptions.UnsupportedOperation as e:
         util.exit_fatal(err_msg=e.message, exit_code=errcodes.UNSUPPORTED_OPERATION)
