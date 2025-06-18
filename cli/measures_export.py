@@ -47,21 +47,21 @@ DATEFMT = "datetime"
 CONVERT_OPTIONS = {"ratings": "letters", "percents": "float", "dates": "datetime"}
 
 
-def __get_json_measures_history(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
+def __get_measures_history(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the measure history of an object (project, branch, application, portfolio)"""
     data = obj.get_measures_history(wanted_metrics)
-    ratings = convert_options.get("ratings", "letters")
-    percents = convert_options.get("percents", "float")
     if data:
+        ratings = convert_options.get("ratings", "letters")
+        percents = convert_options.get("percents", "float")
         for m in data:
             m[2] = measures.format(obj.endpoint, m[1], m[2], ratings, percents)
-    return {"history": data}
+    return obj.component_data() | {"history": data}
 
 
-def __get_object_measures(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
+def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the list of requested measures of an object"""
     log.info("Getting measures for %s", str(obj))
-    measures_d = obj.get_measures(wanted_metrics)
+    measures_d = obj.component_data() | obj.get_measures(wanted_metrics)
     measures_d.pop("quality_gate_details", None)
     ratings = convert_options.get("ratings", "letters")
     percents = convert_options.get("percents", "float")
@@ -109,10 +109,10 @@ def __parse_args(desc: str) -> object:
     )
     options.add_branch_arg(parser)
     parser.add_argument(
-        "--withTags",
+        f"--{options.WITH_TAGS}",
         required=False,
         action="store_true",
-        help="Also extract project tags",
+        help="Also extract project or apps tags",
     )
     parser = options.add_component_type_arg(parser)
     parser.set_defaults(withBranches=False, withTags=False)
@@ -229,24 +229,16 @@ def __write_measures_history_csv(file: str, wanted_metrics: types.KeyList, data:
 
 def __write_measures_csv(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:
     """writes measures in CSV"""
+    map = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch", options.WITH_TAGS: "tags", options.WITH_URL: "url"}
     header_list = ["key", "type"]
-    if kwargs[options.WITH_NAME]:
-        header_list.append("name")
-    if kwargs[options.BRANCH_REGEXP]:
-        header_list.append("branch")
-    header_list.append("lastAnalysis")
-    if kwargs[options.WITH_TAGS]:
-        header_list.append("tags")
-    if kwargs[options.WITH_URL]:
-        header_list.append("url")
+    header_list += [v for k, v in map.items() if kwargs[k]]
     header_list += wanted_metrics
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         print("# ", file=fd, end="")
         csvwriter.writerow(header_list)
         for comp_data in data:
-            row = [comp_data.get(m, "") for m in header_list]
-            csvwriter.writerow(row)
+            csvwriter.writerow([comp_data.get(m, "") for m in header_list])
 
 
 def __check_options_vs_edition(edition: str, params: dict[str, str]) -> dict[str, str]:
@@ -257,21 +249,6 @@ def __check_options_vs_edition(edition: str, params: dict[str, str]) -> dict[str
         log.warning("SonarQube Server instance is a %s edition, there are no portfolios", edition)
         util.exit_fatal("SonarQube Server instance is a %s edition, there are no portfolios", exit_code=errcodes.UNSUPPORTED_OPERATION)
     return params
-
-
-def __get_measures(obj: object, wanted_metrics: types.KeyList, kwargs) -> Union[dict[str, any], None]:
-    """Returns object measures (last measures or history of measures)"""
-    hist = kwargs.get(options.WITH_HISTORY, False)
-    data = obj.component_data()
-    try:
-        if hist:
-            data.update(__get_json_measures_history(obj, wanted_metrics, kwargs))
-        else:
-            data.update(__get_object_measures(obj, wanted_metrics, kwargs))
-    except (ConnectionError, RequestException) as e:
-        util.handle_error(e, f"measure export of {str(obj)}, skipped", catch_all=True)
-        return None
-    return data
 
 
 def main() -> None:
@@ -301,25 +278,28 @@ def main() -> None:
             key_regexp=kwargs[options.KEY_REGEXP],
             branch_regexp=kwargs[options.BRANCH_REGEXP],
         )
-        nb_proj = len({obj.concerned_object if obj.concerned_object is not None else obj for obj in obj_list})
-        nb_branches = len(obj_list)
 
-        measure_list = []
-        for obj in obj_list:
-            data = __get_measures(obj, wanted_metrics, kwargs)
-            if data is not None:
-                measure_list += [data]
-
-        if fmt == "json":
-            with util.open_file(file) as fd:
-                print(util.json_dump(measure_list), file=fd)
-        elif kwargs["history"]:
-            __write_measures_history_csv(file, wanted_metrics, measure_list, **kwargs)
+        if kwargs["history"]:
+            measure_list = [__get_measures_history(obj, wanted_metrics, kwargs) for obj in obj_list]
+            measure_list = [o for o in measure_list if o]
+            if fmt == "json":
+                with util.open_file(file) as fd:
+                    print(util.json_dump(measure_list), file=fd)
+            else:
+                __write_measures_history_csv(file, wanted_metrics, measure_list, **kwargs)
         else:
-            __write_measures_csv(file=file, wanted_metrics=wanted_metrics, data=measure_list, **kwargs)
+            measure_list = [__get_measures(obj, wanted_metrics, kwargs) for obj in obj_list]
+            measure_list = [o for o in measure_list if o]
+            if fmt == "json":
+                with util.open_file(file) as fd:
+                    print(util.json_dump(measure_list), file=fd)
+            else:
+                __write_measures_csv(file=file, wanted_metrics=wanted_metrics, data=measure_list, **kwargs)
 
         if file:
             log.info("File '%s' created", file)
+        nb_proj = len({obj.concerned_object if obj.concerned_object is not None else obj for obj in obj_list})
+        nb_branches = len(obj_list)
         log.info("%d %s, %d branches exported from %s", nb_proj, kwargs[options.COMPONENT_TYPE], nb_branches, kwargs[options.URL])
     except exceptions.UnsupportedOperation as e:
         util.exit_fatal(e.message, errcodes.UNSUPPORTED_OPERATION)
