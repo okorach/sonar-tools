@@ -211,9 +211,7 @@ def __write_measures_history_csv(file: str, wanted_metrics: types.KeyList, data:
 def __write_measures_csv(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:
     """writes measures in CSV"""
     map = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch", options.WITH_TAGS: "tags", options.WITH_URL: "url"}
-    header_list = ["key", "type"]
-    header_list += [v for k, v in map.items() if kwargs[k]]
-    header_list += wanted_metrics
+    header_list = ["key", "type"] + [v for k, v in map.items() if kwargs[k]] + wanted_metrics
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         print("# ", file=fd, end="")
@@ -259,7 +257,6 @@ def main() -> None:
             key_regexp=kwargs[options.KEY_REGEXP],
             branch_regexp=kwargs[options.BRANCH_REGEXP],
         )
-
         if kwargs["history"]:
             measure_list = [__get_measures_history(obj, wanted_metrics, kwargs) for obj in obj_list]
             measure_list = [o for o in measure_list if o]
