@@ -163,11 +163,7 @@ def __get_ts(ts: str, **kwargs) -> str:
 def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
 
-    map = {
-        options.WITH_NAME: "name",
-        options.BRANCH_REGEXP: "branch",
-        options.WITH_URL: "url",
-    }
+    map = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch", options.WITH_URL: "url"}
     fields = ["key", "date"] + [map[k] for k in map if kwargs[k]] + wanted_metrics
 
     with util.open_file(file) as fd:
@@ -178,11 +174,11 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyLi
             hist_data = {}
             if "history" not in obj_data:
                 continue
-            for h in obj_data["history"]:
-                ts = __get_ts(h[0], **kwargs)
+            for ts, key, val in obj_data["history"]:
+                ts = __get_ts(ts, **kwargs)
                 if ts not in hist_data:
                     hist_data[ts] = {"date": ts} | {k: obj_data.get(k, "") for k in ("key", "name", "branch", "url")}
-                hist_data[ts].update({h[1]: h[2]})
+                hist_data[ts] |= {key: val}
             for _, data in sorted(hist_data.items()):
                 csvwriter.writerow([data.get(i, "") for i in fields])
 
@@ -196,14 +192,12 @@ def __write_measures_history_csv_as_list(file: str, data: dict[str, str], **kwar
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         print("# ", file=fd, end="")
         csvwriter.writerow(header_list)
-        rows = []
         for component_data in data:
             if "history" not in component_data:
                 continue
             constant_data = [component_data["key"]] + [component_data[map[k]] for k in map if kwargs[k]]
-
-            for metric_data in component_data["history"]:
-                csvwriter.writerow([__get_ts(metric_data[0], **kwargs)] + constant_data + [metric_data[1], metric_data[2]])
+            for ts, key, val in component_data["history"]:
+                csvwriter.writerow([__get_ts(ts, **kwargs)] + constant_data + [key, val])
 
 
 def __write_measures_history_csv(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:
