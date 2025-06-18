@@ -47,16 +47,6 @@ DATEFMT = "datetime"
 CONVERT_OPTIONS = {"ratings": "letters", "percents": "float", "dates": "datetime"}
 
 
-def __last_analysis(component: object) -> str:
-    """Returns the last analysis of a component as a string"""
-    last_analysis = component.last_analysis()
-    if last_analysis is None:
-        last_analysis = "Never"
-    else:
-        last_analysis = util.date_to_string(last_analysis, CONVERT_OPTIONS["dates"] != "dateonly")
-    return last_analysis
-
-
 def __get_json_measures_history(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the measure history of an object (project, branch, application, portfolio)"""
     data = obj.get_measures_history(wanted_metrics)
@@ -75,14 +65,13 @@ def __get_object_measures(obj: object, wanted_metrics: types.KeyList, convert_op
     measures_d.pop("quality_gate_details", None)
     ratings = convert_options.get("ratings", "letters")
     percents = convert_options.get("percents", "float")
-    final_measures = {}
-    for k, v in measures_d.items():
-        if v:
-            final_measures[k] = v.format(ratings, percents)
-        else:
-            final_measures[k] = None
-    final_measures["lastAnalysis"] = __last_analysis(obj)
-    return final_measures
+    measures_d = {k: v.format(ratings, percents) if v else None for k, v in measures_d.items()}
+    last_analysis = obj.last_analysis()
+    measures_d["lastAnalysis"] = util.date_to_string(last_analysis, convert_options["dates"] != "dateonly") if last_analysis else "Never"
+    if convert_options.get(options.WITH_TAGS, False):
+        sep = "|" if convert_options[options.CSV_SEPARATOR] == "," else ","
+        measures_d["tags"] = sep.join(obj.get_tags())
+    return measures_d
 
 
 def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyList) -> types.KeyList:
@@ -160,12 +149,6 @@ def __parse_args(desc: str) -> object:
     options.add_dateformat_arg(parser)
     options.add_url_arg(parser)
     args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
-    if args.ratingsAsNumbers:
-        CONVERT_OPTIONS["ratings"] = "numbers"
-    if args.percentsAsString:
-        CONVERT_OPTIONS["percents"] = "percents"
-    if args.datesWithoutTime:
-        CONVERT_OPTIONS["dates"] = "dateonly"
 
     return args
 
@@ -252,9 +235,11 @@ def __write_measures_csv(file: str, wanted_metrics: types.KeyList, data: dict[st
     if kwargs[options.BRANCH_REGEXP]:
         header_list.append("branch")
     header_list.append("lastAnalysis")
-    header_list += wanted_metrics
+    if kwargs[options.WITH_TAGS]:
+        header_list.append("tags")
     if kwargs[options.WITH_URL]:
         header_list.append("url")
+    header_list += wanted_metrics
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         print("# ", file=fd, end="")
@@ -274,14 +259,15 @@ def __check_options_vs_edition(edition: str, params: dict[str, str]) -> dict[str
     return params
 
 
-def __get_measures(obj: object, wanted_metrics: types.KeyList, hist: bool) -> Union[dict[str, any], None]:
+def __get_measures(obj: object, wanted_metrics: types.KeyList, kwargs) -> Union[dict[str, any], None]:
     """Returns object measures (last measures or history of measures)"""
+    hist = kwargs.get(options.WITH_HISTORY, False)
     data = obj.component_data()
     try:
         if hist:
-            data.update(__get_json_measures_history(obj, wanted_metrics, CONVERT_OPTIONS))
+            data.update(__get_json_measures_history(obj, wanted_metrics, kwargs))
         else:
-            data.update(__get_object_measures(obj, wanted_metrics, CONVERT_OPTIONS))
+            data.update(__get_object_measures(obj, wanted_metrics, kwargs))
     except (ConnectionError, RequestException) as e:
         util.handle_error(e, f"measure export of {str(obj)}, skipped", catch_all=True)
         return None
@@ -299,6 +285,9 @@ def main() -> None:
     except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         util.exit_fatal(e.message, e.errcode)
 
+    kwargs["ratings"] = "numbers" if kwargs["ratingsAsNumbers"] else "letters"
+    kwargs["percents"] = "percents" if kwargs["percentsAsString"] else "float"
+    kwargs["dates"] = "dateonly" if kwargs["datesWithoutTime"] else "datetime"
     wanted_metrics = __get_wanted_metrics(endpoint=endpoint, wanted_metrics=kwargs[options.METRIC_KEYS])
     file = kwargs.pop(options.REPORT_FILE)
     fmt = util.deduct_format(kwargs[options.FORMAT], file)
@@ -312,12 +301,12 @@ def main() -> None:
             key_regexp=kwargs[options.KEY_REGEXP],
             branch_regexp=kwargs[options.BRANCH_REGEXP],
         )
-        nb_proj = len(set(obj.concerned_object for obj in obj_list if obj.concerned_object is not None and obj.concerned_object != obj))
+        nb_proj = len({obj.concerned_object if obj.concerned_object is not None else obj for obj in obj_list})
         nb_branches = len(obj_list)
 
         measure_list = []
         for obj in obj_list:
-            data = __get_measures(obj, wanted_metrics, kwargs["history"])
+            data = __get_measures(obj, wanted_metrics, kwargs)
             if data is not None:
                 measure_list += [data]
 
