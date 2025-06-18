@@ -163,18 +163,17 @@ def __get_ts(ts: str, **kwargs) -> str:
 def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
 
-    w_br, w_url = kwargs[options.BRANCH_REGEXP], kwargs[options.WITH_URL]
-    row = ["key", "date", "name"]
-    if w_br:
-        row.append("branch")
-    row += wanted_metrics
-    if w_url:
-        row.append("url")
+    map = {
+        options.WITH_NAME: "name",
+        options.BRANCH_REGEXP: "branch",
+        options.WITH_URL: "url",
+    }
+    fields = ["key", "date"] + [map[k] for k in map if kwargs[k]] + wanted_metrics
 
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         print("# ", file=fd, end="")
-        csvwriter.writerow(row)
+        csvwriter.writerow(fields)
         for obj_data in data:
             hist_data = {}
             if "history" not in obj_data:
@@ -182,41 +181,29 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyLi
             for h in obj_data["history"]:
                 ts = __get_ts(h[0], **kwargs)
                 if ts not in hist_data:
-                    hist_data[ts] = {
-                        "key": obj_data["key"],
-                        "name": obj_data["name"],
-                        "branch": obj_data.get("branch", ""),
-                        "url": obj_data.get("url", ""),
-                    }
+                    hist_data[ts] = {"date": ts} | {k: obj_data.get(k, "") for k in ("key", "name", "branch", "url")}
                 hist_data[ts].update({h[1]: h[2]})
-
-            for ts, row_data in hist_data.items():
-                row = [row_data["key"], ts, row_data.get("name", "")]
-                if w_br:
-                    row.append(row_data.get("branch", ""))
-                row += [row_data.get(m, "") for m in wanted_metrics]
-                if w_url:
-                    row.append(row_data.get("url", ""))
-                csvwriter.writerow(row)
+            for _, data in sorted(hist_data.items()):
+                csvwriter.writerow([data.get(i, "") for i in fields])
 
 
 def __write_measures_history_csv_as_list(file: str, data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
 
-    header_list = ["timestamp", "key"]
-    if kwargs[options.BRANCH_REGEXP]:
-        header_list.append("branch")
-    header_list += ["metric", "value"]
+    map = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch"}
+    header_list = ["timestamp", "key"] + [map[k] for k in map if kwargs[k]] + ["metric", "value"]
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         print("# ", file=fd, end="")
         csvwriter.writerow(header_list)
+        rows = []
         for component_data in data:
-            key = component_data["key"]
             if "history" not in component_data:
                 continue
+            constant_data = [component_data["key"]] + [component_data[map[k]] for k in map if kwargs[k]]
+
             for metric_data in component_data["history"]:
-                csvwriter.writerow([__get_ts(metric_data[0], **kwargs), key, metric_data[1], metric_data[2]])
+                csvwriter.writerow([__get_ts(metric_data[0], **kwargs)] + constant_data + [metric_data[1], metric_data[2]])
 
 
 def __write_measures_history_csv(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:
