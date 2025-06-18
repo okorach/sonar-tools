@@ -301,7 +301,7 @@ def main() -> None:
             key_regexp=kwargs[options.KEY_REGEXP],
             branch_regexp=kwargs[options.BRANCH_REGEXP],
         )
-        nb_proj = len(set(obj.concerned_object for obj in obj_list if obj.concerned_object is not None and obj.concerned_object != obj))
+        nb_proj = len(set(obj.concerned_object if obj.concerned_object is not None else obj for obj in obj_list))
         nb_branches = len(obj_list)
 
         measure_list = []
