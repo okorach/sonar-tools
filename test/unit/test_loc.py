@@ -55,6 +55,7 @@ def test_loc_json(json_file: Generator[str]) -> None:
     for p in data:
         assert isinstance(int(p["ncloc"]), int)
 
+
 def test_loc_json_fmt(txt_file: Generator[str]) -> None:
     """test_loc_json_fmt"""
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {txt_file} --{opt.FORMAT} json"
@@ -81,7 +82,7 @@ def test_loc_project(csv_file: Generator[str]) -> None:
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
     util.run_success_cmd(loc.main, cmd, post_cleanup=False)
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        next(reader := csv.reader(fh)) # Skip header
+        next(reader := csv.reader(fh))  # Skip header
         lines = 0
         for line in reader:
             assert line[0] == util.LIVE_PROJECT

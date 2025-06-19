@@ -41,7 +41,9 @@ def test_measures_export(csv_file: Generator[str]) -> None:
     util.run_success_cmd(measures_export.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --withTags")
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
-        rating_col_1, rating_col_2, pct_col_1, pct_col_2 = util.get_cols(next(csvreader), "reliability_rating", "security_rating", "duplicated_lines_density", "sqale_debt_ratio")
+        rating_col_1, rating_col_2, pct_col_1, pct_col_2 = util.get_cols(
+            next(csvreader), "reliability_rating", "security_rating", "duplicated_lines_density", "sqale_debt_ratio"
+        )
         for line in csvreader:
             assert line[rating_col_1] == "" or "A" <= line[rating_col_1] <= "E"
             assert line[rating_col_2] == "" or "A" <= line[rating_col_2] <= "E"
