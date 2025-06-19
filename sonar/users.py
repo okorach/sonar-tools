@@ -384,10 +384,10 @@ class User(sqobject.SqObject):
         :rtype: bool
         """
         ok = True
-        for g in list(set(group_list) - set(self.groups())):
+        for g in set(group_list) - set(self.groups()):
             if g != "sonar-users":
                 ok = ok and self.add_to_group(g)
-        for g in list(set(self.groups()) - set(group_list)):
+        for g in set(self.groups()) - set(group_list):
             if g != "sonar-users":
                 ok = ok and self.remove_from_group(g)
         if not ok:

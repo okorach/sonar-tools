@@ -33,7 +33,8 @@ import requests
 from cli import options
 import sonar.logging as log
 from sonar import sif, errcodes
-from sonar.audit import problem, severities, config
+from sonar.audit import problem, audit_config
+from sonar.audit.severities import Severity
 import sonar.utilities as util
 
 PRIVATE_COMMENT = [{"key": "sd.public.comment", "value": {"internal": "true"}}]
@@ -136,6 +137,15 @@ def __get_sysinfo_from_ticket(**kwargs):
     return sif_list
 
 
+def sev_symbol(sev: Severity) -> str:
+    """Returns the symbol for the given severity"""
+    return "(x)" if sev in (Severity.HIGH, Severity.CRITICAL) else "(!)"
+
+
+def build_jira_comments(problems) -> str:
+    return "\n".join([f"{sev_symbol(p.severity)} {p.message}" for p in problems])
+
+
 def main():
     kwargs = vars(__get_args("Audits a Sonar ServiceDesk ticket (Searches for SIF attachment and audits SIF)"))
     kwargs["creds"] = (kwargs.pop("login"), kwargs.pop("password"))
@@ -146,7 +156,7 @@ def main():
         print(f"No SIF found in ticket {kwargs['ticket']}")
         sys.exit(2)
     problems = []
-    settings = config.load("sonar-audit")
+    settings = audit_config.load("sonar-audit")
     found_problems = False
     comment = ""
     for file, sysinfo in sif_list.items():
@@ -158,12 +168,10 @@ def main():
                 found_problems = True
                 log.warning("%d issues found during audit", len(problems))
                 problem.dump_report(problems, file=None, format="csv")
-                for p in problems:
-                    sev = "(x)" if p.severity in (severities.Severity.HIGH, severities.Severity.CRITICAL) else "(!)"
-                    comment += f"{sev} {p.message}\n"
+                comment += build_jira_comments(problems)
             else:
                 log.info("%d issues found during audit", len(problems))
-                print("No issues found is SIFs")
+                print("No issues found is SIF")
                 comment += "(y) No issues found\n"
 
         except sif.NotSystemInfo:

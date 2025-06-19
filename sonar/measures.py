@@ -145,7 +145,7 @@ def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, 
     except (ConnectionError, RequestException) as e:
         util.handle_error(e, f"getting measures {str(metrics_list)} of {str(concerned_object)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
         raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
-    m_dict = {m: None for m in metrics_list}
+    m_dict = dict.fromkeys(metrics_list, None)
     for m in data["component"]["measures"]:
         m_dict[m["metric"]] = Measure.load(data=m, concerned_object=concerned_object)
     log.debug("Returning measures %s", str(m_dict))

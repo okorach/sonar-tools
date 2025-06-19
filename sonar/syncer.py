@@ -161,7 +161,7 @@ def __sync_curated_list(
     src_findings: list[findings.Finding], tgt_findings: list[findings.Finding], settings: types.ConfigSettings
 ) -> tuple[list[dict[str, str]], dict[str, int]]:
     """Syncs 2 list of findings"""
-    counters = {k: 0 for k in (EXACT_MATCH, APPROX_MATCH, MODIFIED_MATCH, MULTIPLE_MATCHES, NO_MATCH, "timeout", "exception")}
+    counters = dict.fromkeys((EXACT_MATCH, APPROX_MATCH, MODIFIED_MATCH, MULTIPLE_MATCHES, NO_MATCH, "timeout", "exception"), 0)
     counters["nb_to_sync"] = len(src_findings)
     name = "finding" if len(src_findings) == 0 else util.class_name(src_findings[0]).lower()
     report = []
@@ -198,7 +198,7 @@ def sync_lists(
     findings.get_changelogs(issue_list=tgt_findings, added_after=min_date, threads=sync_settings[SYNC_THREADS])
 
     interesting_src_findings = []
-    counters = {k: 0 for k in ("nb_to_sync", "nb_applies", "nb_approx_match", "nb_tgt_has_changelog", "nb_multiple_matches")}
+    counters = dict.fromkeys(("nb_to_sync", "nb_applies", "nb_approx_match", "nb_tgt_has_changelog", "nb_multiple_matches"), 0)
     log.info("source has %d finding candidates to sync, target has %d", len(src_findings), len(tgt_findings))
     if len(src_findings) == 0 or len(tgt_findings) == 0:
         log.info("source or target list of findings to sync empty, skipping...")
