@@ -35,7 +35,6 @@ import sonar.util.constants as c
 
 CMD = "rules_cli.py"
 OPTS = f"{CMD} {util.SQS_OPTS}"
-LANGUAGE_COL = 1
 
 
 def test_rules(csv_file: Generator[str]) -> None:
@@ -55,12 +54,12 @@ def test_rules_filter_language(csv_file: Generator[str]) -> None:
     util.run_success_cmd(rules_cli.main, cmd)
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
-        line = next(csvreader)
+        (col,) = util.get_cols(line := next(csvreader), "language")
         assert line[0].startswith("# ")
         line[0] = line[0][2:]
         assert line == (rules.CSV_EXPORT_FIELDS if util.SQ.version() >= c.MQR_INTRO_VERSION else rules.LEGACY_CSV_EXPORT_FIELDS)
         for line in csvreader:
-            assert line[LANGUAGE_COL] in langs
+            assert line[col] in langs
 
 
 def test_rules_misspelled_language_1(csv_file: Generator[str]) -> None:
@@ -69,7 +68,7 @@ def test_rules_misspelled_language_1(csv_file: Generator[str]) -> None:
     util.run_success_cmd(rules_cli.main, cmd)
     with open(csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
-        line = next(csvreader)
+        (col,) = util.get_cols(line := next(csvreader), "language")
         assert line[0].startswith("# ")
         line[0] = line[0][2:]
         if util.SQ.version() >= c.MQR_INTRO_VERSION:
@@ -77,7 +76,7 @@ def test_rules_misspelled_language_1(csv_file: Generator[str]) -> None:
         else:
             assert line == rules.LEGACY_CSV_EXPORT_FIELDS
         for line in csvreader:
-            assert line[LANGUAGE_COL] in ("py", "ts")
+            assert line[col] in ("py", "ts")
 
 
 def test_rules_misspelled_language_2(csv_file: Generator[str]) -> None:

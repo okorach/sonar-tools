@@ -51,9 +51,6 @@ CE_FORBIDDEN_OPTIONS = (
     f"-{opt.PULL_REQUESTS_SHORT}",
 )
 
-RULE_COL = 1
-LANG_COL = 2
-
 if util.SQ.is_mqr_mode():
     fields = findings.CSV_EXPORT_FIELDS
     # 10.x MQR
@@ -68,14 +65,6 @@ else:
     fields = findings.LEGACY_CSV_EXPORT_FIELDS
     TYPE_COL = fields.index("type")
     SEVERITY_COL = fields.index("severity")
-
-
-STATUS_COL = fields.index("status")
-DATE_COL = fields.index("creationDate")
-PROJECT_COL = fields.index("projectKey")
-PROJECT_NAME_COL = fields.index("projectName")
-BRANCH_COL = fields.index("branch")
-PR_COL = fields.index("pullRequest")
 
 __GOOD_OPTS = [
     f"--{opt.FORMAT} json -{opt.KEY_REGEXP_SHORT} ({util.PROJECT_1}|{util.PROJECT_2}) -{opt.REPORT_FILE_SHORT} {util.JSON_FILE}",
@@ -156,9 +145,9 @@ def test_findings_filter_on_date_after(csv_file: Generator[str]) -> None:
     util.run_success_cmd(findings_export.main, cmd)
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
-        next(csvreader)
+        (date_col,) = util.get_cols(next(csvreader), "creationDate")
         for line in csvreader:
-            assert line[DATE_COL][:10] >= "2023-05-01"
+            assert line[date_col][:10] >= "2023-05-01"
 
 
 def test_findings_filter_on_date_before(csv_file: Generator[str]) -> None:
@@ -167,9 +156,9 @@ def test_findings_filter_on_date_before(csv_file: Generator[str]) -> None:
     util.run_success_cmd(findings_export.main, cmd)
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
-        next(csvreader)
+        (date_col,) = util.get_cols(next(csvreader), "creationDate")
         for line in csvreader:
-            assert line[DATE_COL][:10] <= "2024-05-01"
+            assert line[date_col][:10] <= "2024-05-01"
 
 
 def test_findings_filter_on_type(csv_file: Generator[str]) -> None:
@@ -196,9 +185,9 @@ def test_findings_filter_on_resolution(csv_file: Generator[str]) -> None:
         statuses = ("FALSE-POSITIVE", "ACCEPTED", "SAFE")
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
-        next(csvreader)
+        (status_col,) = util.get_cols(next(csvreader), "status")
         for line in csvreader:
-            assert line[STATUS_COL] in statuses
+            assert line[status_col] in statuses
 
 
 def test_findings_filter_on_severity(csv_file: Generator[str]) -> None:
@@ -231,12 +220,12 @@ def test_findings_filter_on_multiple_criteria(csv_file: Generator[str]) -> None:
     util.run_success_cmd(findings_export.main, cmd)
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
-        next(csvreader)
+        (status_col,) = util.get_cols(next(csvreader), "status")
         for line in csvreader:
             if util.SQ.version() < (10, 0, 0):
-                assert line[STATUS_COL] in ("FALSE-POSITIVE", "WONTFIX")
+                assert line[status_col] in ("FALSE-POSITIVE", "WONTFIX")
             else:
-                assert line[STATUS_COL] in ("FALSE-POSITIVE", "ACCEPTED")
+                assert line[status_col] in ("FALSE-POSITIVE", "ACCEPTED")
             if util.SQ.version() >= c.MQR_INTRO_VERSION:
                 assert line[MAINTAINABILITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
             else:
@@ -249,14 +238,14 @@ def test_findings_filter_on_multiple_criteria_2(csv_file: Generator[str]) -> Non
     util.run_success_cmd(findings_export.main, cmd)
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
-        next(csvreader)
+        (date_col,) = util.get_cols(next(csvreader), "creationDate")
         for line in csvreader:
             log.info(str(line))
             if util.SQ.version() >= c.MQR_INTRO_VERSION:
                 assert "HOTSPOT" in line[SECURITY_IMPACT_COL]
             else:
                 assert "HOTSPOT" in line[TYPE_COL]
-            assert line[DATE_COL].split("-")[0] == "2020"
+            assert line[date_col].split("-")[0] == "2020"
 
     # FIXME: findings-export ignores the branch option see https://github.com/okorach/sonar-tools/issues/1115
     # So passing a non existing branch succeeds
@@ -274,9 +263,9 @@ def test_findings_filter_on_multiple_criteria_3(csv_file: Generator[str]) -> Non
         statuses = ("ACCEPTED", "FALSE_POSITIVE", "FALSE-POSITIVE")
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
-        next(csvreader)
+        (status_col,) = util.get_cols(next(csvreader), "status")
         for line in csvreader:
-            assert line[STATUS_COL] in statuses
+            assert line[status_col] in statuses
 
 
 def test_findings_filter_on_hotspots_multi_1(csv_file: Generator[str]) -> None:
@@ -287,10 +276,11 @@ def test_findings_filter_on_hotspots_multi_1(csv_file: Generator[str]) -> None:
     util.run_success_cmd(findings_export.main, cmd)
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
+        status_col, proj_col = util.get_cols(next(csvreader), "status", "projectKey")
         next(csvreader)
         for line in csvreader:
-            assert line[STATUS_COL] in ("ACKNOWLEDGED", "SAFE")
-            assert line[PROJECT_COL] in projs
+            assert line[status_col] in ("ACKNOWLEDGED", "SAFE")
+            assert line[proj_col] in projs
 
 
 def test_findings_filter_on_lang(csv_file: Generator[str]) -> None:
@@ -435,12 +425,11 @@ def test_output_format_branch(csv_file: Generator[str]) -> None:
         util.run_success_cmd(findings_export.main, cmd)
         with open(csv_file, encoding="utf-8") as fd:
             reader = csv.reader(fd)
-            next(reader)
+            proj_col, branch_col, pr_col = util.get_cols(next(reader), "projectKey", "branch", "pullRequest")
             for line in reader:
-                assert line[BRANCH_COL] in br_list
-                assert line[PR_COL] == ""
-                assert line[PROJECT_COL] == util.LIVE_PROJECT
-        util.clean(csv_file)
+                assert line[branch_col] in br_list
+                assert line[pr_col] == ""
+                assert line[proj_col] == util.LIVE_PROJECT
 
 
 def test_all_prs(csv_file: Generator[str]) -> None:
@@ -453,12 +442,13 @@ def test_all_prs(csv_file: Generator[str]) -> None:
     with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         try:
-            nbcol = len(next(reader))
+            nbcol = len(header := next(reader))
+            proj_col, branch_col, pr_col = util.get_cols(header, "projectKey", "branch", "pullRequest")
             for line in reader:
                 assert len(line) == nbcol
-                assert line[BRANCH_COL] == ""
-                assert line[PR_COL] != ""
-                assert line[PROJECT_COL] == util.LIVE_PROJECT
+                assert line[branch_col] == ""
+                assert line[pr_col] != ""
+                assert line[proj_col] == util.LIVE_PROJECT
         except StopIteration:
             pass
 
@@ -475,11 +465,12 @@ def test_one_pr(csv_file: Generator[str]) -> None:
         with open(csv_file, encoding="utf-8") as fd:
             reader = csv.reader(fd)
             try:
-                nbcol = len(next(reader))
+                nbcol = len(header := next(reader))
+                proj_col, branch_col, pr_col = util.get_cols(header, "projectKey", "branch", "pullRequest")
                 for line in reader:
                     assert len(line) == nbcol
-                    assert line[BRANCH_COL] == ""
-                    assert line[PR_COL] == pr
-                    assert line[PROJECT_COL] == util.LIVE_PROJECT
+                    assert line[branch_col] == ""
+                    assert line[pr_col] == pr
+                    assert line[proj_col] == util.LIVE_PROJECT
             except StopIteration:
                 pass

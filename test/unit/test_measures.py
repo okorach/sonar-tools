@@ -21,8 +21,6 @@
 
 """ sonar-measures-export tests """
 
-import sys
-import os
 import csv
 from collections.abc import Generator
 from unittest.mock import patch
@@ -37,20 +35,13 @@ import cli.options as opt
 CMD = "sonar-measures-export.py"
 CMD = f"{CMD} {util.SQS_OPTS}"
 
-TYPE_COL = 1
-KEY_COL = 0
-
 
 def test_measures_export(csv_file: Generator[str]) -> None:
     """test_measures_export"""
     util.run_success_cmd(measures_export.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --withTags")
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
-        line = next(csvreader)
-        rating_col_1 = line.index("reliability_rating")
-        rating_col_2 = line.index("security_rating")
-        pct_col_1 = line.index("duplicated_lines_density")
-        pct_col_2 = line.index("sqale_debt_ratio")
+        rating_col_1, rating_col_2, pct_col_1, pct_col_2 = util.get_cols(next(csvreader), "reliability_rating", "security_rating", "duplicated_lines_density", "sqale_debt_ratio")
         for line in csvreader:
             assert line[rating_col_1] == "" or "A" <= line[rating_col_1] <= "E"
             assert line[rating_col_2] == "" or "A" <= line[rating_col_2] <= "E"
@@ -176,17 +167,17 @@ def test_specific_project_keys(csv_file: Generator[str]) -> None:
     lines = 0
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         reader = csv.reader(fh)
-        next(reader)
+        (type_col,) = util.get_cols(next(reader), "type")
         for line in reader:
             assert line[0] in projects
-            assert line[TYPE_COL] == "PROJECT"
+            assert line[type_col] == "PROJECT"
             lines += 1
     assert lines == len(projects)
 
 
 def test_apps_measures(csv_file: Generator[str]) -> None:
     """test_apps_measures"""
-    EXISTING_KEY = "APP_TEST"
+    existing_key = "APP_TEST"
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --{opt.APPS} -m ncloc"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(measures_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
@@ -195,18 +186,18 @@ def test_apps_measures(csv_file: Generator[str]) -> None:
     found = False
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         reader = csv.reader(fh)
-        next(reader)
+        key_col, type_col = util.get_cols(next(reader), "key", "type")
         for line in reader:
-            found = found or line[KEY_COL] == EXISTING_KEY
-            assert line[TYPE_COL] == "APPLICATION"
-            assert len(line) == 5
+            found = found or line[key_col] == existing_key
+            assert line[type_col] == "APPLICATION"
+            assert len(line) == 4
     assert found
 
 
 def test_portfolios_measures(csv_file: Generator[str]) -> None:
     """test_portfolios_measures"""
-    EXISTING_KEY = "PORTFOLIO_ALL"
-    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --portfolios -m ncloc"
+    existing_key = "PORTFOLIO_ALL"
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --{opt.PORTFOLIOS} -m ncloc"
     if util.SQ.edition() in (c.CE, c.DE):
         util.run_failed_cmd(measures_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
@@ -215,11 +206,11 @@ def test_portfolios_measures(csv_file: Generator[str]) -> None:
     found = False
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         reader = csv.reader(fh)
-        next(reader)
+        key_col, type_col = util.get_cols(next(reader), "key", "type")
         for line in reader:
-            found = found or line[KEY_COL] == EXISTING_KEY
-            assert line[TYPE_COL] == "PORTFOLIO"
-            assert len(line) == 5
+            found = found or line[key_col] == existing_key
+            assert line[type_col] == "PORTFOLIO"
+            assert len(line) == 4
     assert found
 
 
@@ -229,9 +220,10 @@ def test_basic(csv_file: Generator[str]) -> None:
     util.run_success_cmd(measures_export.main, cmd)
     with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
+        (type_col,) = util.get_cols(next(reader), "type")
         next(reader)
         for line in reader:
-            assert line[TYPE_COL] == "PROJECT"
+            assert line[type_col] == "PROJECT"
 
 
 def test_option_apps(csv_file: Generator[str]) -> None:
@@ -244,9 +236,9 @@ def test_option_apps(csv_file: Generator[str]) -> None:
     util.run_success_cmd(measures_export.main, cmd)
     with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
-        next(reader)
+        (type_col,) = util.get_cols(next(reader), "type")
         for line in reader:
-            assert line[TYPE_COL] == "APPLICATION"
+            assert line[type_col] == "APPLICATION"
 
 
 def test_option_portfolios(csv_file: Generator[str]) -> None:
@@ -259,6 +251,6 @@ def test_option_portfolios(csv_file: Generator[str]) -> None:
     util.run_success_cmd(measures_export.main, cmd)
     with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
-        next(reader)
+        (type_col,) = util.get_cols(next(reader), "type")
         for line in reader:
-            assert line[TYPE_COL] == "PORTFOLIO"
+            assert line[type_col] == "PORTFOLIO"
