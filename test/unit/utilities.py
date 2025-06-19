@@ -228,7 +228,7 @@ def verify_support(editions: tuple[str, ...], func: callable, **kwargs) -> bool:
     return True
 
 
-def get_cols(header_row: list[str], fields: tuple[str, ...]) -> tuple[int, ...]:
+def get_cols(header_row: list[str], *fields) -> tuple[int, ...]:
     h = header_row.copy()
     h[0] = h[0].lstrip("# ")
     return tuple([h.index(k) for k in fields])
