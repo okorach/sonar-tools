@@ -35,9 +35,6 @@ import cli.options as opt
 CMD = "sonar-measures-export.py"
 CMD = f"{CMD} {util.SQS_OPTS}"
 
-TYPE_COL = 1
-KEY_COL = 0
-
 
 def test_measures_export(csv_file: Generator[str]) -> None:
     """test_measures_export"""
