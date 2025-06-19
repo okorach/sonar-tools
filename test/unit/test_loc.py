@@ -34,19 +34,26 @@ from cli import loc
 import cli.options as opt
 
 CLI = "sonar-loc.py"
-CMD = f"{CLI} {util.SQS_OPTS}"
+CMD = f"{CLI} {util.SQS_OPTS} --skipVersionCheck"
 ALL_OPTIONS = f"-{opt.BRANCH_REGEXP_SHORT} .+ --{opt.WITH_LAST_ANALYSIS} --{opt.WITH_NAME} --{opt.WITH_TAGS} --{opt.WITH_URL}"
 
 
 def test_loc(csv_file: Generator[str]) -> None:
     """test_loc"""
     util.run_success_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file}")
+    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
+        (loc_col,) = util.get_cols(next(reader := csv.reader(fh)), "ncloc")
+        for line in reader:
+            assert isinstance(int(line[loc_col]), int)
 
 
 def test_loc_json(json_file: Generator[str]) -> None:
     """test_loc_json"""
     util.run_success_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {json_file}")
-
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+        data = json.loads(fh.read())
+    for p in data:
+        assert isinstance(int(p["ncloc"]), int)
 
 def test_loc_json_fmt(txt_file: Generator[str]) -> None:
     """test_loc_json_fmt"""
@@ -64,7 +71,8 @@ def test_loc_csv_fmt(txt_file: Generator[str]) -> None:
     # Verify that the file is a valid CSV file
     with open(file=txt_file, mode="r", encoding="utf-8") as fh:
         row = next(csv.reader(fh))
-    for k in "# project key", "ncloc":
+        row[0] = row[0][2:]
+    for k in "project key", "ncloc":
         assert k in row
 
 
@@ -73,9 +81,8 @@ def test_loc_project(csv_file: Generator[str]) -> None:
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
     util.run_success_cmd(loc.main, cmd, post_cleanup=False)
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        reader = csv.reader(fh)
+        next(reader := csv.reader(fh)) # Skip header
         lines = 0
-        next(reader)  # Skip header
         for line in reader:
             assert line[0] == util.LIVE_PROJECT
             lines += 1
@@ -131,16 +138,16 @@ def test_loc_proj_all_options(csv_file: Generator[str]) -> None:
     util.run_success_cmd(loc.main, cmd)
     # Check file contents
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        reader = csv.reader(fh)
-        row = next(reader)
+        row = next(reader := csv.reader(fh))
+        (loc_col, last_ana_col, tags_col, url_col) = util.get_cols(row, "ncloc", "last analysis", "tags", "URL")
         for k in "# project key", "branch", "ncloc", "project name", "last analysis", "tags", "URL":
             assert k in row
         found = False
         for line in reader:
-            assert util.is_integer(line[2])
-            assert line[4] == "" or util.is_datetime(line[4])
-            found = found or line[5] != ""
-            assert util.is_url(line[6])
+            assert util.is_integer(line[loc_col])
+            assert line[last_ana_col] == "" or util.is_datetime(line[last_ana_col])
+            found = found or line[tags_col] != ""
+            assert util.is_url(line[url_col])
         assert found  # At least one project with tags
 
 
@@ -154,16 +161,16 @@ def test_loc_apps_all_options(csv_file: Generator[str]) -> None:
     util.run_success_cmd(loc.main, cmd)
     # Check file contents
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        reader = csv.reader(fh)
-        row = next(reader)
+        row = next(reader := csv.reader(fh))
+        (loc_col, last_ana_col, tags_col, url_col) = util.get_cols(row, "ncloc", "last analysis", "tags", "URL")
         for k in "# app key", "branch", "ncloc", "app name", "last analysis", "tags", "URL":
             assert k in row
         found = False
         for line in reader:
-            assert util.is_integer(line[2])
-            assert line[4] == "" or util.is_datetime(line[4])
-            found = found or line[5] != ""
-            assert util.is_url(line[6])
+            assert util.is_integer(line[loc_col])
+            assert line[last_ana_col] == "" or util.is_datetime(line[last_ana_col])
+            found = found or line[tags_col] != ""
+            assert util.is_url(line[url_col])
         assert found  # At least one app with tags
 
 
@@ -176,15 +183,15 @@ def test_loc_portfolios_all_options(csv_file: Generator[str]) -> None:
     util.run_success_cmd(loc.main, cmd)
     # Check file contents
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        reader = csv.reader(fh)
-        row = next(reader)
+        row = next(reader := csv.reader(fh))
+        (loc_col, last_ana_col, tags_col, url_col) = util.get_cols(row, "ncloc", "last analysis", "tags", "URL")
         for k in "# portfolio key", "ncloc", "portfolio name", "last analysis", "tags", "URL":
             assert k in row
         for line in reader:
-            assert util.is_integer(line[1])
-            assert line[3] == "" or util.is_datetime(line[3])
-            assert line[4] == ""  # No tags for portfolios
-            assert util.is_url(line[5])
+            assert util.is_integer(line[loc_col])
+            assert line[last_ana_col] == "" or util.is_datetime(line[last_ana_col])
+            assert line[tags_col] == ""  # No tags for portfolios
+            assert util.is_url(line[url_col])
 
 
 def test_loc_proj_all_options_json(json_file: Generator[str]) -> None:
