@@ -210,8 +210,8 @@ def __write_measures_history_csv(file: str, wanted_metrics: types.KeyList, data:
 
 def __write_measures_csv(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:
     """writes measures in CSV"""
-    map = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch", options.WITH_TAGS: "tags", options.WITH_URL: "url"}
-    header_list = ["key", "type"] + [v for k, v in map.items() if kwargs[k]] + wanted_metrics
+    mapping = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch", options.WITH_TAGS: "tags", options.WITH_URL: "url"}
+    header_list = ["key", "type"] + [v for k, v in mapping.items() if kwargs[k]] + wanted_metrics
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         print("# ", file=fd, end="")
@@ -238,19 +238,16 @@ def main() -> None:
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
-        util.exit_fatal(e.message, e.errcode)
 
-    kwargs["ratings"] = "numbers" if kwargs["ratingsAsNumbers"] else "letters"
-    kwargs["percents"] = "percents" if kwargs["percentsAsString"] else "float"
-    kwargs["dates"] = "dateonly" if kwargs["datesWithoutTime"] else "datetime"
-    wanted_metrics = __get_wanted_metrics(endpoint=endpoint, wanted_metrics=kwargs[options.METRIC_KEYS])
-    file = kwargs.pop(options.REPORT_FILE)
-    fmt = util.deduct_format(kwargs[options.FORMAT], file)
-    kwargs = __check_options_vs_edition(edition=endpoint.edition(), params=kwargs)
-    kwargs[options.WITH_NAME] = True
+        kwargs["ratings"] = "numbers" if kwargs["ratingsAsNumbers"] else "letters"
+        kwargs["percents"] = "percents" if kwargs["percentsAsString"] else "float"
+        kwargs["dates"] = "dateonly" if kwargs["datesWithoutTime"] else "datetime"
+        wanted_metrics = __get_wanted_metrics(endpoint=endpoint, wanted_metrics=kwargs[options.METRIC_KEYS])
+        file = kwargs.pop(options.REPORT_FILE)
+        fmt = util.deduct_format(kwargs[options.FORMAT], file)
+        kwargs = __check_options_vs_edition(edition=endpoint.edition(), params=kwargs)
+        kwargs[options.WITH_NAME] = True
 
-    try:
         obj_list = component_helper.get_components(
             endpoint=endpoint,
             component_type=kwargs[options.COMPONENT_TYPE],
@@ -279,6 +276,8 @@ def main() -> None:
         nb_proj = len({obj.concerned_object if obj.concerned_object is not None else obj for obj in obj_list})
         nb_branches = len(obj_list)
         log.info("%d %s, %d branches exported from %s", nb_proj, kwargs[options.COMPONENT_TYPE], nb_branches, kwargs[options.URL])
+    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
+        util.exit_fatal(e.message, e.errcode)
     except exceptions.UnsupportedOperation as e:
         util.exit_fatal(e.message, errcodes.UNSUPPORTED_OPERATION)
     except (PermissionError, FileNotFoundError) as e:
