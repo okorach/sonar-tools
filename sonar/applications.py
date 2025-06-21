@@ -149,6 +149,7 @@ class Application(aggr.Aggregation):
         try:
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
             self.reload(json.loads(self.get(Application.API[c.GET], params=self.api_params(c.GET)).text)["application"])
+            self.projects()
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"refreshing {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             Application.CACHE.pop(self)
@@ -175,12 +176,13 @@ class Application(aggr.Aggregation):
         if self._projects is not None:
             return self._projects
         self._projects = {}
-        if self.sq_json is None or "projects" not in self.sq_json:
-            self.refresh()
+        self.refresh()
+        log.debug("Refreshing project list with %s", util.json_dump(self.sq_json["projects"]))
         for p in self.sq_json["projects"]:
             # TODO: Support several branches of same project in the Application
             # TODO: Return projects in an application branch
             self._projects[p["key"]] = p["branch"]
+        log.debug("Nbr of PROJ = %d", len(self._projects))
         return self._projects
 
     def branch_exists(self, branch: str) -> bool:
@@ -310,6 +312,9 @@ class Application(aggr.Aggregation):
                 findings_list = {**findings_list, **comp.get_issues()}
         return findings_list
 
+    def nbr_projects(self, use_cache: bool = False) -> int:
+        return len(self.projects())
+
     def _audit_empty(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
         """Audits if an application contains 0 projects"""
         if not audit_settings.get("audit.applications.empty", True):
@@ -394,7 +399,8 @@ class Application(aggr.Aggregation):
                 util.handle_error(e, f"adding project '{proj}' to {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
                 Application.CACHE.pop(self)
                 ok = False
-        self.refresh()
+        self._projects = None
+        self.projects()
         return ok
 
     def last_analysis(self) -> datetime:
