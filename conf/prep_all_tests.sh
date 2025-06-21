@@ -26,7 +26,5 @@ conf/scan.sh -Dsonar.host.url=http://localhost:20010 -Dsonar.projectKey=TESTSYNC
 sonar-scanner -Dsonar.host.url=http://localhost:10000 -Dsonar.pullrequest.key=5 -Dsonar.pullrequest.branch=feature/5
 sonar-scanner -Dsonar.host.url=http://localhost:10000 -Dsonar.pullrequest.key=7 -Dsonar.pullrequest.branch=feature/7
 
-sonar-scanner -Dsonar.host.url=http://localhost:9000 -Dsonar.pullrequest.key=5 -Dsonar.pullrequest.branch=feature/5 -Dsonar.login=$SONAR_TOKEN_9_ADMIN_ANALYSIS
-sonar-scanner -Dsonar.host.url=http://localhost:9000 -Dsonar.pullrequest.key=7 -Dsonar.pullrequest.branch=feature/7 -Dsonar.login=$SONAR_TOKEN_9_ADMIN_ANALYSIS
-
-
+sonar-scanner -Dsonar.host.url=http://localhost:9000 -Dsonar.pullrequest.key=5 -Dsonar.pullrequest.branch=feature/5 -Dsonar.login="$SONAR_TOKEN_9_ADMIN_ANALYSIS"
+sonar-scanner -Dsonar.host.url=http://localhost:9000 -Dsonar.pullrequest.key=7 -Dsonar.pullrequest.branch=feature/7 -Dsonar.login="$SONAR_TOKEN_9_ADMIN_ANALYSIS"
