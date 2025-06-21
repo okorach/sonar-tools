@@ -55,31 +55,10 @@ def __get_csv_header_list(**kwargs) -> list[str]:
 
 def __get_csv_row(o: object, **kwargs) -> tuple[list[str], str]:
     """Returns CSV row of object"""
-    try:
-        loc = o.loc()
-    except (ConnectionError, RequestException) as e:
-        util.handle_error(e, f"LoC export of {str(o)}, skipped", catch_all=True)
-        loc = ""
-    arr = [o.key, loc]
-    obj_type = type(o).__name__.lower()
-    if obj_type in ("branch", "applicationbranch"):
-        arr = [o.concerned_object.key, o.name, loc]
-    if kwargs[options.WITH_NAME]:
-        proj_name = o.name
-        if obj_type in ("branch", "applicationbranch"):
-            proj_name = o.concerned_object.name
-        arr.append(proj_name)
-    if kwargs[options.WITH_LAST_ANALYSIS]:
-        last_ana = ""
-        if loc != "":
-            last_ana = o.last_analysis()
-        arr.append(last_ana)
-    if kwargs[options.WITH_TAGS]:
-        sep = "|" if kwargs[options.CSV_SEPARATOR] == "," else ","
-        arr.append(sep.join(o.get_tags()))
-    if kwargs[options.WITH_URL]:
-        arr.append(o.url())
-    return arr, loc
+    d = __get_object_json_data(o, **kwargs)
+    parent_type = kwargs[options.COMPONENT_TYPE][:-1]
+    arr = [d[k] for k in (parent_type, "branch", "ncloc", f"{parent_type}Name", "lastAnalysis", "tags", "url") if k in d]
+    return arr, d["ncloc"]
 
 
 def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
@@ -114,25 +93,24 @@ def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
 
 def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
     """Returns the object data as JSON"""
-    obj_type = type(o).__name__.lower()
-    parent_type = kwargs[options.COMPONENT_TYPE][0:-1]
-    d = {parent_type: o.key, "ncloc": ""}
-    if obj_type in ("branch", "applicationbranch"):
-        d = {parent_type: o.concerned_object.key, "branch": o.name, "ncloc": ""}
+    parent_type = kwargs[options.COMPONENT_TYPE][:-1]
+    is_branch = type(o).__name__.lower() in ("branch", "applicationbranch")
+    parent_o = o.concerned_object if is_branch else o
+    d = {parent_type: parent_o.key, "ncloc": ""}
+    if is_branch:
+        d["branch"] = o.name
+    if kwargs[options.WITH_TAGS]:
+        d["tags"] = parent_o.get_tags()
     try:
         d["ncloc"] = o.loc()
     except (ConnectionError, RequestException) as e:
-        util.handle_error(e, f"LoC export of {str(o)}, skipped", catch_all=True)
+        util.handle_error(e, f"LoC extract of {str(o)} failed", catch_all=True)
     if kwargs[options.WITH_NAME]:
-        d[f"{parent_type}Name"] = o.name
-        if obj_type in ("branch", "applicationbranch"):
-            d[f"{parent_type}Name"] = o.concerned_object.name
+        d[f"{parent_type}Name"] = parent_o.name if is_branch else o.name
     if kwargs[options.WITH_LAST_ANALYSIS]:
         d["lastAnalysis"] = ""
         if o.last_analysis() is not None:
             d["lastAnalysis"] = datetime.datetime.isoformat(o.last_analysis())
-    if kwargs[options.WITH_TAGS]:
-        d["tags"] = o.get_tags()
     if kwargs[options.WITH_URL]:
         d["url"] = o.url()
     return d
