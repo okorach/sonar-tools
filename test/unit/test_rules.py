@@ -191,3 +191,9 @@ def test_qp_multiple_languages() -> None:
 
 def test_os_error() -> None:
     util.run_failed_cmd(rules_cli.main, f"{OPTS} --{opt.LANGUAGES} java,c -f /rules.csv", errcodes.OS_ERROR)
+
+
+def test_third_party() -> None:
+    third_party_rules = rules.third_party(util.SQ)
+    assert len(third_party_rules) > 0
+    assert sum(1 for r in third_party_rules if r.key.startswith("creedengo")) > 0

@@ -55,26 +55,19 @@ class Aggregation(comp.Component):
             if d in data:
                 self._description = self.sq_json[d]
 
-    def nbr_projects(self) -> int:
+    def nbr_projects(self, use_cache: bool = False) -> int:
         """Returns the number of projects of an Aggregation (Application or Portfolio)
         :return: The number of projects
-        :rtype: int
         """
-        if self._nbr_projects is None:
+        if self._nbr_projects is None or not use_cache:
             self._nbr_projects = 0
-            data = json.loads(
-                self.get(
-                    "measures/component",
-                    params={"component": self.key, "metricKeys": "projects,ncloc"},
-                ).text
-            )[
-                "component"
-            ]["measures"]
-            for m in data:
+            data = json.loads(self.get("measures/component", params={"component": self.key, "metricKeys": "projects,ncloc"}).text)
+            for m in data["component"]["measures"]:
                 if m["metric"] == "projects":
                     self._nbr_projects = int(m["value"])
                 elif m["metric"] == "ncloc":
                     self.ncloc = int(m["value"])
+        log.debug("Number of projects of %s is %d from %s", self, self._nbr_projects, data)
         return self._nbr_projects
 
     def _audit_aggregation_cardinality(self, sizes: tuple[int, int], broken_rule: object) -> list[Problem]:

@@ -31,7 +31,6 @@ from sonar.util import types
 from cli import options
 import sonar.logging as log
 from sonar import metrics, platform, exceptions, errcodes, version, measures
-from sonar import projects, applications, portfolios
 import sonar.utilities as util
 import sonar.util.constants as c
 from sonar.util import component_helper
@@ -60,8 +59,13 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: 
     measures_d = {k: v.format(ratings, percents) if v else None for k, v in measures_d.items()}
     last_analysis = obj.last_analysis()
     measures_d["lastAnalysis"] = util.date_to_string(last_analysis, convert_options["dates"] != "dateonly") if last_analysis else "Never"
-    if convert_options.get(options.WITH_TAGS, False):
-        sep = "|" if convert_options[options.CSV_SEPARATOR] == "," else ","
+    if not convert_options.get(options.WITH_TAGS, False):
+        return measures_d
+
+    sep = "|" if convert_options[options.CSV_SEPARATOR] == "," else ","
+    if obj.__class__.__name__ == "Branch":
+        measures_d["tags"] = sep.join(obj.concerned_object.get_tags())
+    else:
         measures_d["tags"] = sep.join(obj.get_tags())
     return measures_d
 

@@ -23,7 +23,6 @@
     sonar-loc tests
 """
 
-import csv, json
 from collections.abc import Generator
 from unittest.mock import patch
 import utilities as util
@@ -34,7 +33,7 @@ from cli import loc
 import cli.options as opt
 
 CLI = "sonar-loc.py"
-CMD = f"{CLI} {util.SQS_OPTS} --skipVersionCheck"
+CMD = f"{CLI} {util.SQS_OPTS}"
 ALL_OPTIONS = f"-{opt.BRANCH_REGEXP_SHORT} .+ --{opt.WITH_LAST_ANALYSIS} --{opt.WITH_NAME} --{opt.WITH_URL}"
 
 
