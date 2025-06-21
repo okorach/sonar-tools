@@ -105,7 +105,7 @@ def test_get_findings() -> None:
 
 def test_count_third_party_issues() -> None:
     """test_count_third_party_issues"""
-    proj = projects.Project.get_object(endpoint=util.SQ, key="third-party-issues")
+    proj = projects.Project.get_object(endpoint=util.SQ, key="creedengo-issues")
     filters = None
     if util.SQ.edition() != c.CE:
         filters = {"branch": "develop"}
