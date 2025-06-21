@@ -226,10 +226,6 @@ class Portfolio(aggregations.Aggregation):
         """Returns the object permalink"""
         return f"{self.base_url(local=False)}/portfolio?id={self.key}"
 
-    def get_tags(self, **kwargs) -> list[str]:
-        """Implementation needed for all Components, but no tags for portfolios"""
-        return []
-
     def projects(self) -> Optional[dict[str, str]]:
         """Returns list of projects and their branches if selection mode is manual, None otherwise"""
         if not self._selection_mode or _SELECTION_MODE_MANUAL not in self._selection_mode:

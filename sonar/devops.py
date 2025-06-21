@@ -92,7 +92,7 @@ class DevopsPlatform(sq.SqObject):
         params = {"key": key}
         try:
             if plt_type == "github":
-                params.update({k: _TO_BE_SET for k in ("appId", "clientId", "clientSecret", "privateKey")})
+                params.update(dict.fromkeys(("appId", "clientId", "clientSecret", "privateKey"), _TO_BE_SET))
                 params["url"] = url_or_workspace
                 endpoint.post(_CREATE_API_GITHUB, params=params)
             elif plt_type == "azure":

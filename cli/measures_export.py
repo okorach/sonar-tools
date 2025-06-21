@@ -26,11 +26,7 @@
 """
 import sys
 import csv
-import re
 
-from typing import Union
-
-from requests import RequestException
 from sonar.util import types
 from cli import options
 import sonar.logging as log
@@ -41,10 +37,6 @@ import sonar.util.constants as c
 from sonar.util import component_helper
 
 TOOL_NAME = "sonar-measures"
-RATINGS = "letters"
-PERCENTS = "float"
-DATEFMT = "datetime"
-CONVERT_OPTIONS = {"ratings": "letters", "percents": "float", "dates": "datetime"}
 
 
 def __get_measures_history(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
@@ -82,7 +74,7 @@ def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyL
         # Hack: With SonarQube 7.9 and below new_development_cost measure can't be retrieved
         if not endpoint.is_sonarcloud() and endpoint.version() < (8, 0, 0):
             all_metrics.remove("new_development_cost")
-        wanted_metrics = list(metrics.MAIN_METRICS) + sorted(tuple(set(all_metrics) - set(metrics.MAIN_METRICS)))
+        wanted_metrics = list(metrics.MAIN_METRICS) + sorted(set(all_metrics) - set(metrics.MAIN_METRICS))
     elif wanted_metrics[0] == "_main":
         wanted_metrics = list(metrics.MAIN_METRICS)
     else:
@@ -234,14 +226,18 @@ def main() -> None:
     """Entry point for sonar-measures-export"""
     start_time = util.start_clock()
     try:
-        kwargs = util.convert_args(__parse_args("Extract measures of projects"))
+        kwargs = util.convert_args(__parse_args("Extract measures of projects, apps or portfolios"))
+        kwargs["ratings"] = "numbers" if kwargs["ratingsAsNumbers"] else "letters"
+        kwargs["percents"] = "percents" if kwargs["percentsAsString"] else "float"
+        kwargs["dates"] = "dateonly" if kwargs["datesWithoutTime"] else "datetime"
+        if kwargs[options.COMPONENT_TYPE] == "portfolios" and kwargs[options.WITH_TAGS]:
+            util.exit_fatal(
+                f"Portfolios have no tags, can't use option --{options.WITH_TAGS} with --{options.PORTFOLIOS}", exit_code=errcodes.ARGS_ERROR
+            )
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
 
-        kwargs["ratings"] = "numbers" if kwargs["ratingsAsNumbers"] else "letters"
-        kwargs["percents"] = "percents" if kwargs["percentsAsString"] else "float"
-        kwargs["dates"] = "dateonly" if kwargs["datesWithoutTime"] else "datetime"
         wanted_metrics = __get_wanted_metrics(endpoint=endpoint, wanted_metrics=kwargs[options.METRIC_KEYS])
         file = kwargs.pop(options.REPORT_FILE)
         fmt = util.deduct_format(kwargs[options.FORMAT], file)

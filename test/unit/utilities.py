@@ -27,6 +27,7 @@ import os
 import sys
 import datetime
 import re
+import csv, json
 from typing import Optional, Union
 from unittest.mock import patch
 import pytest
@@ -120,8 +121,10 @@ def file_contains(file: str, string: str) -> bool:
     return string in content
 
 
-def is_datetime(value: str) -> bool:
+def is_datetime(value: str, allow_empty: bool = False) -> bool:
     """Checks if a string is a date + time"""
+    if allow_empty and value == "":
+        return True
     try:
         _ = datetime.datetime.fromisoformat(value)
     except (ValueError, TypeError):
@@ -129,14 +132,34 @@ def is_datetime(value: str) -> bool:
     return True
 
 
-def is_integer(value: str) -> bool:
-    """Returns whether a string contains an integer"""
-    return isinstance(int(value), int)
+def is_integer(value: str, allow_empty: bool = False) -> bool:
+    """Returns whether a string contains an integer or is empty"""
+    return (allow_empty and (value == "" or value is None)) or isinstance(int(value), int)
 
 
-def is_url(value: str) -> bool:
+def is_float(value: str, allow_empty: bool = False) -> bool:
+    """Returns whether a string contains a float"""
+    return (allow_empty and (value == "" or value is None)) or isinstance(float(value), float)
+
+
+def is_empty(value: str, allow_empty: bool = False) -> bool:
+    """Returns whether a value is empty"""
+    return value is None or value == ""
+
+
+def is_pct(value: str, allow_empty: bool = False) -> bool:
+    """Returns whether a string contains a float"""
+    return (allow_empty and (value == "" or value is None)) or re.match(value, r"(100.0|\d|[1-9]\d\.\d)%") is not None
+
+
+def is_float_pct(value: str, allow_empty: bool = False) -> bool:
+    """Returns whether a string contains a float between 0.0 and 1.0"""
+    return (allow_empty and (value == "" or value is None)) or (is_float(value) and 0 <= float(value) <= 1)
+
+
+def is_url(value: str, allow_empty: bool = False) -> bool:
     """Returns whether a string contains an URL"""
-    return value.startswith("http")
+    return (allow_empty and (value == "" or value is None)) or value.startswith("http")
 
 
 def __get_args_and_file(string_arguments: str) -> tuple[Optional[str], list[str], bool]:
@@ -232,3 +255,179 @@ def get_cols(header_row: list[str], *fields) -> tuple[int, ...]:
     h = header_row.copy()
     h[0] = h[0].lstrip("# ")
     return tuple([h.index(k) for k in fields])
+
+
+def csv_col_exist(csv_file: str, *col_names) -> bool:
+    """Verifies that given columns of a CSV exists"""
+    with open(csv_file, encoding="utf-8") as fd:
+        row = next(csv.reader(fd))
+    row[0] = row[0][2:]
+    return sum(1 for col in col_names if col not in row) == 0
+
+
+def csv_col_is_value(csv_file: str, col_name: str, *values) -> bool:
+    """Verifies that the column of a CSV is a given value for all rows"""
+    with open(csv_file, encoding="utf-8") as fd:
+        (col,) = get_cols(next(reader := csv.reader(fd)), col_name)
+        return sum(1 for row in reader if row[col] not in values) == 0
+
+
+def csv_col_has_values(csv_file: str, col_name: str, values: set[str]) -> bool:
+    values_to_search = values.copy()
+    with open(csv_file, encoding="utf-8") as fd:
+        (col,) = get_cols(next(reader := csv.reader(fd)), col_name)
+        for line in reader:
+            if line[col] in values_to_search:
+                values_to_search.remove(line[col])
+            if len(values_to_search) == 0:
+                return True
+        return False
+
+
+def csv_nbr_lines(csv_file: str) -> int:
+    """return nbr lines in a CSV file"""
+    with open(csv_file, encoding="utf-8") as fd:
+        reader = csv.reader(fd)
+        row = sum(1 for _ in reader) - 1  # skip header
+    return row
+
+
+def csv_nbr_cols(csv_file: str, nbr_cols: int) -> bool:
+    """return whether all rows of a CSV have the given number of columns"""
+    with open(csv_file, encoding="utf-8") as fd:
+        reader = csv.reader(fd)
+        return sum(1 for row in reader if len(row) != nbr_cols) == 0
+
+
+def csv_col_sorted(csv_file: str, col_name: str) -> bool:
+    """return whether a CSV file is sorted by a given column"""
+    with open(csv_file, encoding="utf-8") as fd:
+        (col,) = get_cols(next(reader := csv.reader(fd)), col_name)
+        next(reader)
+        last_value = ""
+        for row in reader:
+            if row[col] < last_value:
+                return False
+            last_value = row[col]
+        return True
+
+
+def csv_col_match(csv_file: str, col_name: str, regexp: str) -> bool:
+    """return whether a CSV column matches a regexp"""
+    with open(csv_file, encoding="utf-8") as fd:
+        (col,) = get_cols(next(reader := csv.reader(fd)), col_name)
+        next(reader)
+        return sum(1 for row in reader if not re.match(rf"{regexp}", row[col])) == 0
+
+
+def csv_col_condition(csv_file: str, col_name: str, func: callable, allow_empty: bool = False) -> bool:
+    """Return whether all lines of the CSV meet a condition on a column"""
+    with open(csv_file, encoding="utf-8") as fd:
+        (col,) = get_cols(next(reader := csv.reader(fd)), col_name)
+        return sum(1 for row in reader if not func(row[col], allow_empty)) == 0
+
+
+def csv_col_int(csv_file: str, col_name: str, allow_empty: bool = True) -> bool:
+    """return whether a CSV field is an integer"""
+    return csv_col_condition(csv_file, col_name, is_integer, allow_empty)
+
+
+def csv_col_float(csv_file: str, col_name: str, allow_empty: bool = True) -> bool:
+    """return whether a CSV col is a float"""
+    return csv_col_condition(csv_file, col_name, is_float)
+
+
+def csv_col_float_pct(csv_file: str, col_name: str, allow_empty: bool = True) -> bool:
+    """return whether a CSV col is a float between 0 and 1"""
+    return csv_col_condition(csv_file, col_name, is_float_pct, allow_empty)
+
+
+def csv_col_pct(csv_file: str, col_name: str, allow_empty: bool = True) -> bool:
+    """return whether a CSV col is an float between 0.0% and 100.0%"""
+    return csv_col_condition(csv_file, col_name, is_pct, allow_empty)
+
+
+def csv_col_datetime(csv_file: str, col_name: str, allow_empty: bool = True) -> bool:
+    """return whether a CSV col is a datetime or empty"""
+    return csv_col_condition(csv_file, col_name, is_datetime, allow_empty)
+
+
+def csv_col_url(csv_file: str, col_name: str, allow_empty: bool = False) -> bool:
+    """return whether a CSV col is and URL"""
+    return csv_col_condition(csv_file, col_name, is_url, allow_empty)
+
+
+def csv_col_not_all_empty(csv_file: str, col_name: str) -> bool:
+    """return whether not all values of a CSV column are empty"""
+    return not csv_col_condition(csv_file, col_name, is_empty)
+
+
+def json_field_sorted(json_file: str, field: str) -> bool:
+    """return whether a JSON file is sorted by a given field"""
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+        data = json.loads(fh.read())
+    last_key = ""
+    for p in data:
+        if last_key > p[field]:
+            return False
+        last_key = p[field]
+    return True
+
+
+def json_fields_exist(json_file: str, *fields) -> bool:
+    """return whether a JSON file exists for all elements of the JSON"""
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+        data = json.loads(fh.read())
+    return sum(1 for p in data for field in fields if field not in p) == 0
+
+
+def json_field_not_all_empty(csv_file: str, col_name: str) -> bool:
+    """return whether not all values of a JSON are empty"""
+    return not json_field_condition(csv_file, col_name, is_empty)
+
+
+def json_field_match(json_file: str, field: str, regexp: str, allow_null: bool = False) -> bool:
+    """return whether a JSON field matches a regexp"""
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+        data = json.loads(fh.read())
+    if allow_null:
+        return sum(1 for p in data if p[field] is not None and not re.match(rf"{regexp}", p[field])) == 0
+    else:
+        return sum(1 for p in data if not re.match(rf"{regexp}", p[field])) == 0
+
+
+def json_field_condition(json_file: str, field: str, func: callable, allow_null: bool = False) -> bool:
+    """return whether a JSON field matches a regexp"""
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+        data = json.loads(fh.read())
+    return sum(1 for p in data if not func(p[field], allow_null)) == 0
+
+
+def json_field_int(json_file: str, field: str, allow_null: bool = True) -> bool:
+    """return whether a JSON field is an integer"""
+    return json_field_condition(json_file, field, is_integer, allow_null)
+
+
+def json_field_float(json_file: str, field: str, allow_null: bool = True) -> bool:
+    """return whether a JSON field is a float"""
+    return json_field_condition(json_file, field, is_float, allow_null)
+
+
+def json_field_float_pct(json_file: str, field: str, allow_null: bool = True) -> bool:
+    """return whether a JSON field is a float between 0.0 and 1.0"""
+    return json_field_condition(json_file, field, is_float_pct, allow_null)
+
+
+def json_field_pct(json_file: str, field: str, allow_null: bool = True) -> bool:
+    """return whether a JSON field is a % between 0.0% and 100.0%"""
+    return json_field_condition(json_file, field, is_pct, allow_null)
+
+
+def json_field_datetime(json_file: str, field: str, allow_null: bool = True) -> bool:
+    """return whether a JSON field is a datetime or empty"""
+    return json_field_condition(json_file, field, is_datetime, allow_null)
+
+
+def json_field_url(json_file: str, field: str, allow_null: bool = False) -> bool:
+    """return whether a JSON field is and URL"""
+    return json_field_condition(json_file, field, is_url, allow_null)

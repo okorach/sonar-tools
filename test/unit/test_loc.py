@@ -35,64 +35,52 @@ import cli.options as opt
 
 CLI = "sonar-loc.py"
 CMD = f"{CLI} {util.SQS_OPTS} --skipVersionCheck"
-ALL_OPTIONS = f"-{opt.BRANCH_REGEXP_SHORT} .+ --{opt.WITH_LAST_ANALYSIS} --{opt.WITH_NAME} --{opt.WITH_TAGS} --{opt.WITH_URL}"
+ALL_OPTIONS = f"-{opt.BRANCH_REGEXP_SHORT} .+ --{opt.WITH_LAST_ANALYSIS} --{opt.WITH_NAME} --{opt.WITH_URL}"
 
 
 def test_loc(csv_file: Generator[str]) -> None:
     """test_loc"""
     util.run_success_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file}")
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        (loc_col,) = util.get_cols(next(reader := csv.reader(fh)), "ncloc")
-        for line in reader:
-            assert isinstance(int(line[loc_col]), int)
+    assert util.csv_nbr_lines(csv_file) > 0
+    assert util.csv_col_int(csv_file, "ncloc", False)
+    assert util.csv_col_sorted(csv_file, "project key")
 
 
 def test_loc_json(json_file: Generator[str]) -> None:
     """test_loc_json"""
     util.run_success_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {json_file}")
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
-        data = json.loads(fh.read())
-    for p in data:
-        assert isinstance(int(p["ncloc"]), int)
+    assert util.json_field_sorted(json_file, "project")
+    assert util.json_field_int(json_file, "ncloc", False)
+
 
 def test_loc_json_fmt(txt_file: Generator[str]) -> None:
     """test_loc_json_fmt"""
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {txt_file} --{opt.FORMAT} json"
-    util.run_success_cmd(loc.main, cmd, post_cleanup=False)
-    # Verify that the file is a valid JSON file
-    with open(file=txt_file, mode="r", encoding="utf-8") as fh:
-        _ = json.loads(fh.read())
+    util.run_success_cmd(loc.main, cmd)
+    assert util.json_field_sorted(txt_file, "project")
 
 
 def test_loc_csv_fmt(txt_file: Generator[str]) -> None:
     """test_loc_csv_fmt"""
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {txt_file} --{opt.FORMAT} csv"
-    util.run_success_cmd(loc.main, cmd, post_cleanup=False)
+    util.run_success_cmd(loc.main, cmd)
     # Verify that the file is a valid CSV file
-    with open(file=txt_file, mode="r", encoding="utf-8") as fh:
-        row = next(csv.reader(fh))
-        row[0] = row[0][2:]
-    for k in "project key", "ncloc":
-        assert k in row
+    assert util.csv_col_exist(txt_file, "project key", "ncloc")
 
 
 def test_loc_project(csv_file: Generator[str]) -> None:
     """test_loc_project"""
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
-    util.run_success_cmd(loc.main, cmd, post_cleanup=False)
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        next(reader := csv.reader(fh)) # Skip header
-        lines = 0
-        for line in reader:
-            assert line[0] == util.LIVE_PROJECT
-            lines += 1
-        assert lines == 1
+    util.run_success_cmd(loc.main, cmd)
+    assert util.csv_nbr_lines(csv_file) == 1
+    assert util.csv_col_is_value(csv_file, "project key", util.LIVE_PROJECT)
 
 
 def test_loc_project_with_all_options(csv_file: Generator[str]) -> None:
     """test_loc_project_with_all_options"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --{opt.WITH_URL} -{opt.WITH_NAME_SHORT} -{opt.WITH_LAST_ANALYSIS_SHORT}"
     util.run_success_cmd(loc.main, cmd)
+    assert util.csv_col_url(csv_file, "URL")
 
 
 def test_loc_portfolios(csv_file: Generator[str]) -> None:
@@ -102,6 +90,8 @@ def test_loc_portfolios(csv_file: Generator[str]) -> None:
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
     util.run_success_cmd(loc.main, cmd)
+    assert util.csv_col_sorted(csv_file, "portfolio key")
+    assert util.csv_col_int(csv_file, "ncloc", False)
 
 
 def test_loc_separator(csv_file: Generator[str]) -> None:
@@ -112,66 +102,55 @@ def test_loc_separator(csv_file: Generator[str]) -> None:
 
 def test_loc_branches(csv_file: Generator[str]) -> None:
     """test_loc_branches"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} {ALL_OPTIONS}"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} {ALL_OPTIONS} --{opt.WITH_TAGS}"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
-    else:
-        util.run_success_cmd(loc.main, cmd)
+        return
+    util.run_success_cmd(loc.main, cmd)
+    assert util.csv_col_match(csv_file, "branch", r"^[^\s]+$")
 
 
 def test_loc_branches_json(json_file: Generator[str]) -> None:
     """test_loc"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} {ALL_OPTIONS}"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} {ALL_OPTIONS} --{opt.WITH_TAGS}"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
-    else:
-        util.run_success_cmd(loc.main, cmd)
+        return
+    util.run_success_cmd(loc.main, cmd)
+    assert util.json_field_match(json_file, "branch", r"^[^\s]+$")
 
 
 def test_loc_proj_all_options(csv_file: Generator[str]) -> None:
     """test_loc_proj_all_options"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} {ALL_OPTIONS}"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} {ALL_OPTIONS} --{opt.WITH_TAGS}"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
 
     util.run_success_cmd(loc.main, cmd)
     # Check file contents
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        row = next(reader := csv.reader(fh))
-        (loc_col, last_ana_col, tags_col, url_col) = util.get_cols(row, "ncloc", "last analysis", "tags", "URL")
-        for k in "# project key", "branch", "ncloc", "project name", "last analysis", "tags", "URL":
-            assert k in row
-        found = False
-        for line in reader:
-            assert util.is_integer(line[loc_col])
-            assert line[last_ana_col] == "" or util.is_datetime(line[last_ana_col])
-            found = found or line[tags_col] != ""
-            assert util.is_url(line[url_col])
-        assert found  # At least one project with tags
+    assert util.csv_col_exist(csv_file, "project key", "branch", "project name", "tags")
+    assert util.csv_col_datetime(csv_file, "last analysis")
+    assert util.csv_col_int(csv_file, "ncloc", False)
+    assert util.csv_col_url(csv_file, "URL")
+    assert util.csv_col_datetime(csv_file, "last analysis")
+    assert util.csv_col_not_all_empty(csv_file, "tags")
 
 
 def test_loc_apps_all_options(csv_file: Generator[str]) -> None:
     """test_loc_apps_all_options"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --apps {ALL_OPTIONS}"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --apps {ALL_OPTIONS} --{opt.WITH_TAGS}"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
 
     util.run_success_cmd(loc.main, cmd)
     # Check file contents
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        row = next(reader := csv.reader(fh))
-        (loc_col, last_ana_col, tags_col, url_col) = util.get_cols(row, "ncloc", "last analysis", "tags", "URL")
-        for k in "# app key", "branch", "ncloc", "app name", "last analysis", "tags", "URL":
-            assert k in row
-        found = False
-        for line in reader:
-            assert util.is_integer(line[loc_col])
-            assert line[last_ana_col] == "" or util.is_datetime(line[last_ana_col])
-            found = found or line[tags_col] != ""
-            assert util.is_url(line[url_col])
-        assert found  # At least one app with tags
+    assert util.csv_col_exist(csv_file, "app key", "app name", "branch", "tags")
+    assert util.csv_col_int(csv_file, "ncloc", False)
+    assert util.csv_col_url(csv_file, "URL")
+    assert util.csv_col_datetime(csv_file, "last analysis")
+    assert util.csv_col_not_all_empty(csv_file, "tags")
 
 
 def test_loc_portfolios_all_options(csv_file: Generator[str]) -> None:
@@ -181,63 +160,42 @@ def test_loc_portfolios_all_options(csv_file: Generator[str]) -> None:
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
     util.run_success_cmd(loc.main, cmd)
-    # Check file contents
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        row = next(reader := csv.reader(fh))
-        (loc_col, last_ana_col, tags_col, url_col) = util.get_cols(row, "ncloc", "last analysis", "tags", "URL")
-        for k in "# portfolio key", "ncloc", "portfolio name", "last analysis", "tags", "URL":
-            assert k in row
-        for line in reader:
-            assert util.is_integer(line[loc_col])
-            assert line[last_ana_col] == "" or util.is_datetime(line[last_ana_col])
-            assert line[tags_col] == ""  # No tags for portfolios
-            assert util.is_url(line[url_col])
+    assert util.csv_col_exist(csv_file, "portfolio key", "portfolio name")
+    assert util.csv_col_int(csv_file, "ncloc", False)
+    assert util.csv_col_datetime(csv_file, "last analysis")
+    assert util.csv_col_url(csv_file, "URL")
 
 
 def test_loc_proj_all_options_json(json_file: Generator[str]) -> None:
     """test_loc_proj_all_options_json"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} {ALL_OPTIONS}"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} {ALL_OPTIONS} --{opt.WITH_TAGS}"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
 
     util.run_success_cmd(loc.main, cmd)
     # Check file contents
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
-        jsondata = json.loads(fh.read())
-    found = False
-    for component in jsondata:
-        for key in "branch", "lastAnalysis", "ncloc", "project", "projectName", "url":
-            assert key in component
-        assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
-        assert "tags" in component
-        found = found or len(component["tags"]) > 0
-        assert util.is_url(component["url"])
-        assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
-    assert found
+    assert util.json_fields_exist(json_file, "project", "projectName")
+    assert util.json_field_int(json_file, "ncloc", False)
+    assert util.json_field_url(json_file, "url")
+    assert util.json_field_datetime(json_file, "lastAnalysis")
+    assert util.json_field_not_all_empty(json_file, "tags")
 
 
 def test_loc_apps_all_options_json(json_file: Generator[str]) -> None:
     """test_loc_apps_all_options_json"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} {ALL_OPTIONS} --apps"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} {ALL_OPTIONS} --apps --{opt.WITH_TAGS}"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
 
     util.run_success_cmd(loc.main, cmd)
     # Check file contents
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
-        jsondata = json.loads(fh.read())
-    found = False
-    for component in jsondata:
-        for key in "branch", "lastAnalysis", "ncloc", "app", "appName", "url":
-            assert key in component
-        assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
-        assert "tags" in component
-        found = found or len(component["tags"]) > 0
-        assert util.is_url(component["url"])
-        assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
-    assert found
+    assert util.json_fields_exist(json_file, "app", "appName")
+    assert util.json_field_int(json_file, "ncloc", False)
+    assert util.json_field_url(json_file, "url")
+    assert util.json_field_datetime(json_file, "lastAnalysis")
+    assert util.json_field_not_all_empty(json_file, "tags")
 
 
 def test_loc_portfolios_all_options_json(json_file: Generator[str]) -> None:
@@ -248,15 +206,8 @@ def test_loc_portfolios_all_options_json(json_file: Generator[str]) -> None:
         return
 
     util.run_success_cmd(loc.main, cmd, post_cleanup=False)
+    assert util.json_fields_exist(json_file, "portfolio", "portfolioName")
+    assert util.json_field_int(json_file, "ncloc", False)
+    assert util.json_field_url(json_file, "url")
+    assert util.json_field_datetime(json_file, "lastAnalysis")
     # Check file contents
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
-        jsondata = json.loads(fh.read())
-    found = False
-    for component in jsondata:
-        for key in "lastAnalysis", "ncloc", "portfolio", "portfolioName", "url":
-            assert key in component
-        assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
-        assert util.is_url(component["url"])
-        found = found or len(component["tags"]) > 0
-        assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
-    assert not found  # No tags for portfolios
