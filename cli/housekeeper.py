@@ -34,7 +34,7 @@ import sonar.logging as log
 from sonar import platform, tokens, users, projects, branches, version, errcodes
 import sonar.utilities as util
 import sonar.exceptions as ex
-from sonar.audit import config, problem
+from sonar.audit import problem
 
 TOOL_NAME = "sonar-housekeeper"
 PROJ_MAX_AGE = "audit.projects.maxLastAnalysisAge"
