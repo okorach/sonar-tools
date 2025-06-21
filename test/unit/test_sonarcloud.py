@@ -47,7 +47,7 @@ def test_clear_cache() -> None:
 
 def test_sc_config_export(json_file: Generator[str]) -> None:
     """test_sc_config_export"""
-    cmd = f"{OPTS} -{opt.REPORT_FILE} {json_file} -{opt.ORG_SHORT} {MY_ORG_1}"
+    cmd = f"{OPTS} --{opt.REPORT_FILE} {json_file} -{opt.ORG_SHORT} {MY_ORG_1}"
     util.run_success_cmd(config.main, cmd)
 
 
