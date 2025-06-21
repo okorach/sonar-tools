@@ -34,38 +34,27 @@ import cli.options as opt
 
 CMD = "sonar-measures-export.py"
 CMD = f"{CMD} {util.SQS_OPTS}"
+_RATING_LETTER = r"^[A-E]?$"
+_RATING_NUMBER = r"^[1-5]?$"
 
 
 def test_measures_export(csv_file: Generator[str]) -> None:
     """test_measures_export"""
     util.run_success_cmd(measures_export.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --withTags")
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        csvreader = csv.reader(fh)
-        rating_col_1, rating_col_2, pct_col_1, pct_col_2 = util.get_cols(
-            next(csvreader), "reliability_rating", "security_rating", "duplicated_lines_density", "sqale_debt_ratio"
-        )
-        for line in csvreader:
-            assert line[rating_col_1] == "" or "A" <= line[rating_col_1] <= "E"
-            assert line[rating_col_2] == "" or "A" <= line[rating_col_2] <= "E"
-            assert line[pct_col_1] == "" or 0.0 <= float(line[pct_col_1]) <= 1.0
-            assert line[pct_col_2] == "" or 0.0 <= float(line[pct_col_2]) <= 1.0
+    assert util.csv_col_sorted(csv_file, "key")
+    assert util.csv_col_match(csv_file, "reliability_rating", _RATING_LETTER)
+    assert util.csv_col_match(csv_file, "security_rating", _RATING_LETTER)
+    assert util.csv_col_match(csv_file, "duplicated_lines_density", r"^(|[0-9.]+)$")
+    assert util.csv_col_match(csv_file, "sqale_debt_ratio", r"^(|[0-9.]+)$")
 
 
 def test_measures_conversion(csv_file: Generator[str]) -> None:
     """test_measures_conversion"""
     util.run_success_cmd(measures_export.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -r -p --withTags")
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        csvreader = csv.reader(fh)
-        line = next(csvreader)
-        rating_col_1 = line.index("reliability_rating")
-        rating_col_2 = line.index("security_rating")
-        pct_col_1 = line.index("duplicated_lines_density")
-        pct_col_2 = line.index("sqale_debt_ratio")
-        for line in csvreader:
-            assert line[rating_col_1] == "" or 1 <= int(line[rating_col_1]) <= 5
-            assert line[rating_col_2] == "" or 1 <= int(line[rating_col_2]) <= 5
-            assert line[pct_col_1] == "" or line[pct_col_1].endswith("%")
-            assert line[pct_col_2] == "" or line[pct_col_2].endswith("%")
+    assert util.csv_col_match(csv_file, "reliability_rating", _RATING_NUMBER)
+    assert util.csv_col_match(csv_file, "security_rating", _RATING_NUMBER)
+    assert util.csv_col_match(csv_file, "duplicated_lines_density", r"^(|.+%)$")
+    assert util.csv_col_match(csv_file, "sqale_debt_ratio", r"^(|.+%)$")
 
 
 def test_measures_export_with_url(csv_file: Generator[str]) -> None:
@@ -82,8 +71,13 @@ def test_measures_export_json(json_file: Generator[str]) -> None:
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {json_file} -{opt.BRANCH_REGEXP_SHORT} .+ -{opt.METRIC_KEYS_SHORT} _main"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(measures_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
-    else:
-        util.run_success_cmd(measures_export.main, cmd)
+        return
+    util.run_success_cmd(measures_export.main, cmd)
+    assert util.json_field_sorted(json_file, "key")
+    assert util.json_field_match(json_file, "reliability_rating", _RATING_LETTER, allow_null=True)
+    assert util.json_field_match(json_file, "security_rating", _RATING_LETTER, allow_null=True)
+    assert util.json_field_float(json_file, "duplicated_lines_density")
+    assert util.json_field_float(json_file, "sqale_debt_ratio")
 
 
 def test_measures_export_all(csv_file: Generator[str]) -> None:
@@ -142,8 +136,10 @@ def test_measures_export_dateonly(csv_file: Generator[str]) -> None:
 
 def test_specific_measure(csv_file: Generator[str]) -> None:
     """test_specific_measure"""
-    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.METRIC_KEYS_SHORT} ncloc,sqale_index,coverage"
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.METRIC_KEYS_SHORT} sqale_index,coverage"
     util.run_success_cmd(measures_export.main, cmd)
+    assert util.csv_col_int(csv_file, "sqale_index")
+    assert util.csv_col_float_pct(csv_file, "coverage")
 
 
 def test_non_existing_measure(csv_file: Generator[str]) -> None:
@@ -156,9 +152,7 @@ def test_non_existing_project(csv_file: Generator[str]) -> None:
     """test_non_existing_project"""
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.KEY_REGEXP_SHORT} bad_project"
     util.run_success_cmd(measures_export.main, cmd)
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        lines = len(fh.readlines())
-    assert lines == 1  # Only the header
+    assert util.csv_nbr_lines(csv_file) == 0
 
 
 def test_specific_project_keys(csv_file: Generator[str]) -> None:
@@ -166,15 +160,8 @@ def test_specific_project_keys(csv_file: Generator[str]) -> None:
     projects = ["okorach_sonar-tools", "project1", "project4"]
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.KEY_REGEXP_SHORT} {utilities.list_to_regexp(projects)}"
     util.run_success_cmd(measures_export.main, cmd)
-    lines = 0
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        reader = csv.reader(fh)
-        (type_col,) = util.get_cols(next(reader), "type")
-        for line in reader:
-            assert line[0] in projects
-            assert line[type_col] == "PROJECT"
-            lines += 1
-    assert lines == len(projects)
+    assert util.csv_nbr_lines(csv_file) == len(projects)
+    assert util.csv_col_is_value(csv_file, "key", *projects)
 
 
 def test_apps_measures(csv_file: Generator[str]) -> None:
@@ -185,15 +172,8 @@ def test_apps_measures(csv_file: Generator[str]) -> None:
         util.run_failed_cmd(measures_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
     util.run_success_cmd(measures_export.main, cmd)
-    found = False
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        reader = csv.reader(fh)
-        key_col, type_col = util.get_cols(next(reader), "key", "type")
-        for line in reader:
-            found = found or line[key_col] == existing_key
-            assert line[type_col] == "APPLICATION"
-            assert len(line) == 4
-    assert found
+    assert util.csv_nbr_cols(csv_file, 4)
+    assert util.csv_col_has_values(csv_file, "key", {existing_key})
 
 
 def test_portfolios_measures(csv_file: Generator[str]) -> None:
@@ -205,27 +185,21 @@ def test_portfolios_measures(csv_file: Generator[str]) -> None:
         return
 
     util.run_success_cmd(measures_export.main, cmd)
-    found = False
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        reader = csv.reader(fh)
-        key_col, type_col = util.get_cols(next(reader), "key", "type")
-        for line in reader:
-            found = found or line[key_col] == existing_key
-            assert line[type_col] == "PORTFOLIO"
-            assert len(line) == 4
-    assert found
+    assert util.csv_nbr_cols(csv_file, 4)
+    assert util.csv_col_has_values(csv_file, "key", {existing_key})
+
+
+def test_portfolios_with_tags(csv_file: Generator[str]) -> None:
+    """test_portfolios_with_tags"""
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --{opt.PORTFOLIOS} --{opt.WITH_TAGS} -m ncloc"
+    util.run_failed_cmd(measures_export.main, cmd, errcodes.ARGS_ERROR)
 
 
 def test_basic(csv_file: Generator[str]) -> None:
     """Tests that basic invocation against a CE and DE works"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file}"
     util.run_success_cmd(measures_export.main, cmd)
-    with open(csv_file, encoding="utf-8") as fd:
-        reader = csv.reader(fd)
-        (type_col,) = util.get_cols(next(reader), "type")
-        next(reader)
-        for line in reader:
-            assert line[type_col] == "PROJECT"
+    assert util.csv_col_is_value(csv_file, "type", "PROJECT")
 
 
 def test_option_apps(csv_file: Generator[str]) -> None:
@@ -236,11 +210,7 @@ def test_option_apps(csv_file: Generator[str]) -> None:
         return
 
     util.run_success_cmd(measures_export.main, cmd)
-    with open(csv_file, encoding="utf-8") as fd:
-        reader = csv.reader(fd)
-        (type_col,) = util.get_cols(next(reader), "type")
-        for line in reader:
-            assert line[type_col] == "APPLICATION"
+    assert util.csv_col_is_value(csv_file, "type", "APPLICATION")
 
 
 def test_option_portfolios(csv_file: Generator[str]) -> None:
@@ -251,8 +221,4 @@ def test_option_portfolios(csv_file: Generator[str]) -> None:
         return
 
     util.run_success_cmd(measures_export.main, cmd)
-    with open(csv_file, encoding="utf-8") as fd:
-        reader = csv.reader(fd)
-        (type_col,) = util.get_cols(next(reader), "type")
-        for line in reader:
-            assert line[type_col] == "PORTFOLIO"
+    assert util.csv_col_is_value(csv_file, "type", "PORTFOLIO")
