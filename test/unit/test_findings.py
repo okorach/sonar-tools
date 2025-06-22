@@ -124,11 +124,11 @@ def test_wrong_filters(csv_file: Generator[str]) -> None:
 def test_wrong_opts(csv_file: Generator[str]) -> None:
     """test_wrong_opts"""
     for bad_opts in __WRONG_OPTS:
-        with pytest.raises(SystemExit) as e:
+        with pytest.raises(SystemExit) as exc:
             with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", csv_file] + bad_opts):
                 findings_export.main()
-        assert int(str(e.value)) == e.WRONG_SEARCH_CRITERIA or (
-            int(str(e.value)) == e.UNSUPPORTED_OPERATION and util.SQ.edition() in (c.CE, c.DE)
+        assert int(str(exc.value)) == e.WRONG_SEARCH_CRITERIA or (
+            int(str(exc.value)) == e.UNSUPPORTED_OPERATION and util.SQ.edition() in (c.CE, c.DE)
         )
         assert not os.path.isfile(csv_file)
 
@@ -305,9 +305,9 @@ def test_findings_export(csv_file: Generator[str]) -> None:
 
 def test_findings_export_long(csv_file: Generator[str]) -> None:
     """test_findings_export_long"""
-    cmd_csv = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file}"
+    cmd_csv = f"{CMD} --{opt.REPORT_FILE} {csv_file}"
     for opts in __GOOD_OPTS_LONG:
-        assert util.run_cmd(findings_export.main, f"{cmd_csv} {opts}", True) == e.OK
+        assert util.run_cmd(findings_export.main, f"{cmd_csv} {opts}") == e.OK
 
 
 def test_issues_count_0() -> None:
