@@ -49,7 +49,7 @@ def test_audit_disabled(csv_file: Generator[str]) -> None:
     """test_audit_disabled"""
     with open(".sonar-audit.properties", mode="w", encoding="utf-8") as fd:
         print(AUDIT_DISABLED, file=fd)
-    assert util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}", e.OK)
+    assert util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}") == e.OK
     assert util.file_empty(csv_file)
     os.remove(".sonar-audit.properties")
 
