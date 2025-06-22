@@ -116,9 +116,8 @@ def test_config_import_portfolios() -> None:
     logging.info("Deleting all portfolios")
     _ = [p.delete() for p in portfolios.get_list(util.TEST_SQ, use_cache=False).values() if p.is_toplevel()]
     # Import config
-    assert util.run_cmd(
-        config.main, f"{CMD} {util.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} test/files/config.json --{opt.WHAT} {opt.WHAT_PORTFOLIOS}"
-    ) == e.OK
+    cmd = f"{CMD} {util.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} test/files/config.json --{opt.WHAT} {opt.WHAT_PORTFOLIOS}"
+    assert util.run_cmd(config.main, cmd) == e.OK
 
     # Compare portfolios
     portfolio_list = portfolios.get_list(util.TEST_SQ)
