@@ -215,7 +215,7 @@ def __get_redacted_cmd(string_arguments: str) -> str:
     return " ".join(args)
 
 
-def run_cmd(func: callable, arguments: str, delete_file: bool = False) -> tuple[int, Optional[str]]:
+def run_cmd(func: callable, arguments: str, delete_file: bool = False) -> int:
     """Runs a sonar-tools command, and returns the expected code"""
     logging.info("RUNNING: %s", __get_redacted_cmd(arguments))
     file, args, import_cmd = __get_args_and_file(arguments)
@@ -224,7 +224,7 @@ def run_cmd(func: callable, arguments: str, delete_file: bool = False) -> tuple[
             func()
     if delete_file and not import_cmd:
         clean(file)
-    return int(str(e.value)), file
+    return int(str(e.value))
 
 
 def run_success_cmd(func: callable, arguments: str, post_cleanup: bool = False) -> int:
