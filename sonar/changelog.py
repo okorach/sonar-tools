@@ -169,7 +169,7 @@ class Changelog(object):
         """Returns whether the changelog item is a technical change"""
         d = self.sq_json["diffs"][0]
         key = d.get("key", "")
-        return key in ("from_short_branch", "from_branch", "effort")
+        return key in ("from_short_branch", "from_branch", "effort", "cleanCodeAttribute")
 
     def is_manual_change(self) -> bool:
         """Returns whether the changelog item is a manual change"""
