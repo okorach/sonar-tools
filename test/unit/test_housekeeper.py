@@ -32,12 +32,7 @@ from sonar import errcodes
 from cli import housekeeper, options
 
 CMD = "sonar-housekeeper.py"
-__GOOD_OPTS = [
-    "",
-    f"--{options.NBR_THREADS} 1"
-    "-P 30",
-    f"--{options.HTTP_TIMEOUT} 100"
-]
+__GOOD_OPTS = ["", f"--{options.NBR_THREADS} 1", "-P 30", f"--{options.HTTP_TIMEOUT} 100"]
 
 
 def test_housekeeper() -> None:
