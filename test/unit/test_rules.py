@@ -40,11 +40,13 @@ OPTS = f"{CMD} {util.SQS_OPTS}"
 def test_rules(csv_file: Generator[str]) -> None:
     """test_rules"""
     assert util.run_cmd(rules_cli.main, f"{OPTS} --{opt.REPORT_FILE} {csv_file}") == e.OK
+    assert util.csv_cols_present(csv_file, "key", "language", "repo", "name", "ruleType")
 
 
 def test_rules_json_format(json_file: Generator[str]) -> None:
     """test_rules_json_format"""
     assert util.run_cmd(rules_cli.main, f"{OPTS} --{opt.REPORT_FILE} {json_file}") == e.OK
+    assert util.json_fields_present(json_file, "key", "language", "repo", "name", "ruleType")
 
 
 def test_rules_filter_language(csv_file: Generator[str]) -> None:
@@ -52,31 +54,14 @@ def test_rules_filter_language(csv_file: Generator[str]) -> None:
     langs = ("py", "cs") if util.SQ.edition() == c.CE else ("py", "apex")
     cmd = f"{OPTS} --{opt.REPORT_FILE} {csv_file} --{opt.LANGUAGES} {','.join(langs)}"
     assert util.run_cmd(rules_cli.main, cmd) == e.OK
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        csvreader = csv.reader(fh)
-        (col,) = util.get_cols(line := next(csvreader), "language")
-        assert line[0].startswith("# ")
-        line[0] = line[0][2:]
-        assert line == (rules.CSV_EXPORT_FIELDS if util.SQ.version() >= c.MQR_INTRO_VERSION else rules.LEGACY_CSV_EXPORT_FIELDS)
-        for line in csvreader:
-            assert line[col] in langs
+    assert util.csv_col_is_value(csv_file, "language", *langs)
 
 
 def test_rules_misspelled_language_1(csv_file: Generator[str]) -> None:
     """Tests that you can export rules for a single or a few languages, misspelled"""
     cmd = f"{OPTS} --{opt.REPORT_FILE} {csv_file} --{opt.LANGUAGES} Python,TypeScript"
     assert util.run_cmd(rules_cli.main, cmd) == e.OK
-    with open(csv_file, mode="r", encoding="utf-8") as fh:
-        csvreader = csv.reader(fh)
-        (col,) = util.get_cols(line := next(csvreader), "language")
-        assert line[0].startswith("# ")
-        line[0] = line[0][2:]
-        if util.SQ.version() >= c.MQR_INTRO_VERSION:
-            assert line == rules.CSV_EXPORT_FIELDS
-        else:
-            assert line == rules.LEGACY_CSV_EXPORT_FIELDS
-        for line in csvreader:
-            assert line[col] in ("py", "ts")
+    assert util.csv_col_is_value(csv_file, "language", "py", "ts")
 
 
 def test_rules_misspelled_language_2(csv_file: Generator[str]) -> None:

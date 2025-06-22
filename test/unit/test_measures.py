@@ -65,7 +65,8 @@ def test_measures_export_with_url(csv_file: Generator[str]) -> None:
         assert util.run_cmd(measures_export.main, cmd) == e.UNSUPPORTED_OPERATION
         return
     assert util.run_cmd(measures_export.main, cmd) == e.OK
-    assert util.csv_col_url(csv_file, "URL")
+    assert util.csv_col_url(csv_file, "url")
+
 
 def test_measures_export_json(json_file: Generator[str]) -> None:
     """test_measures_export_json"""
@@ -80,6 +81,7 @@ def test_measures_export_json(json_file: Generator[str]) -> None:
     assert util.json_field_float(json_file, "duplicated_lines_density")
     assert util.json_field_float(json_file, "sqale_debt_ratio")
     assert util.json_fields_absent(json_file, "statements", "ncloc_language_distribution")
+
 
 def test_measures_export_all(csv_file: Generator[str]) -> None:
     """test_measures_export_all"""
@@ -184,7 +186,7 @@ def test_apps_measures(csv_file: Generator[str]) -> None:
         assert util.run_cmd(measures_export.main, cmd) == e.UNSUPPORTED_OPERATION
         return
     assert util.run_cmd(measures_export.main, cmd) == e.OK
-    assert util.csv_nbr_cols(csv_file, 4)
+    assert util.csv_nbr_cols(csv_file, 5)
     assert util.csv_col_has_values(csv_file, "key", {existing_key})
 
 
@@ -197,7 +199,7 @@ def test_portfolios_measures(csv_file: Generator[str]) -> None:
         return
 
     assert util.run_cmd(measures_export.main, cmd) == e.OK
-    assert util.csv_nbr_cols(csv_file, 4)
+    assert util.csv_nbr_cols(csv_file, 5)
     assert util.csv_col_has_values(csv_file, "key", {existing_key})
 
 

@@ -123,7 +123,7 @@ def file_contains(file: str, string: str) -> bool:
 
 def is_datetime(value: str, allow_empty: bool = False) -> bool:
     """Checks if a string is a date + time"""
-    if allow_empty and value == "":
+    if allow_empty and value == "" or value == "Never":
         return True
     try:
         d = datetime.datetime.fromisoformat(value)
@@ -131,15 +131,17 @@ def is_datetime(value: str, allow_empty: bool = False) -> bool:
         return False
     return isinstance(d, datetime.datetime)
 
+
 def is_date(value: str, allow_empty: bool = False) -> bool:
     """Checks if a string is a date"""
-    if allow_empty and value == "":
+    if allow_empty and value == "" or value == "Never":
         return True
+    print(f"{value} {len(value)}")
     try:
-        d = datetime.datetime.fromisoformat(value)
+        _ = datetime.datetime.fromisoformat(value)
     except (ValueError, TypeError):
         return False
-    return isinstance(d, datetime.date)
+    return len(value) == 10
 
 
 def is_integer(value: str, allow_empty: bool = False) -> bool:
@@ -159,7 +161,7 @@ def is_empty(value: str, allow_empty: bool = False) -> bool:
 
 def is_pct(value: str, allow_empty: bool = False) -> bool:
     """Returns whether a string contains a float"""
-    return (allow_empty and (value == "" or value is None)) or re.match(value, r"(100.0|\d|[1-9]\d\.\d)%") is not None
+    return (allow_empty and (value == "" or value is None)) or re.match(r"^(100|[1-9]\d|\d)\.\d\%$", value) is not None
 
 
 def is_float_pct(value: str, allow_empty: bool = False) -> bool:
@@ -354,9 +356,11 @@ def csv_col_datetime(csv_file: str, col_name: str, allow_empty: bool = True) -> 
     """return whether a CSV col is a datetime or empty"""
     return csv_col_condition(csv_file, col_name, is_datetime, allow_empty)
 
+
 def csv_col_date(csv_file: str, col_name: str, allow_empty: bool = True) -> bool:
     """return whether a CSV col is a date or empty"""
     return csv_col_condition(csv_file, col_name, is_date, allow_empty)
+
 
 def csv_col_url(csv_file: str, col_name: str, allow_empty: bool = False) -> bool:
     """return whether a CSV col is and URL"""
@@ -385,6 +389,7 @@ def json_fields_present(json_file: str, *fields) -> bool:
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         data = json.loads(fh.read())
     return sum(1 for p in data for field in fields if field not in p) == 0
+
 
 def json_fields_absent(json_file: str, *fields) -> bool:
     """return whether a JSON file is absent for all elements of the JSON"""
@@ -439,10 +444,10 @@ def json_field_datetime(json_file: str, field: str, allow_null: bool = True) -> 
     """return whether a JSON field is a datetime or empty"""
     return json_field_condition(json_file, field, is_datetime, allow_null)
 
+
 def json_field_date(json_file: str, field: str, allow_null: bool = True) -> bool:
     """return whether a JSON field is a datetime or empty"""
     return json_field_condition(json_file, field, is_date, allow_null)
-
 
 
 def json_field_url(json_file: str, field: str, allow_null: bool = False) -> bool:
