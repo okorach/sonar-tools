@@ -215,33 +215,26 @@ def __get_redacted_cmd(string_arguments: str) -> str:
     return " ".join(args)
 
 
-def run_cmd(func: callable, arguments: str, expected_code: int) -> Optional[str]:
-    """Runs a sonar-tools command, verifies it raises the right exception, and returns the expected code"""
-    logging.info("RUNNING (expecting code %d): %s", expected_code, __get_redacted_cmd(arguments))
+def run_cmd(func: callable, arguments: str, delete_file: bool = False) -> tuple[int, Optional[str]]:
+    """Runs a sonar-tools command, and returns the expected code"""
+    logging.info("RUNNING: %s", __get_redacted_cmd(arguments))
     file, args, import_cmd = __get_args_and_file(arguments)
-    if not import_cmd:
-        clean(file)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", args):
             func()
-    assert int(str(e.value)) == expected_code
-    return file
+    if delete_file and not import_cmd:
+        clean(file)
+    return int(str(e.value)), file
 
 
-def run_success_cmd(func: callable, arguments: str, post_cleanup: bool = False) -> None:
+def run_success_cmd(func: callable, arguments: str, post_cleanup: bool = False) -> int:
     """Runs a command that's suppose to end in success"""
-    file = run_cmd(func, arguments, errcodes.OK)
+    code, file = run_cmd(func, arguments)
     if file:
         assert file_not_empty(file)
     if post_cleanup:
         clean(file)
-
-
-def run_failed_cmd(func: callable, arguments: str, expected_code: int) -> None:
-    """Runs a command that's suppose to end in failure"""
-    file = run_cmd(func, arguments, expected_code)
-    if file:
-        assert not os.path.isfile(file)
+    return code
 
 
 def start_logging(level: str = "DEBUG") -> None:

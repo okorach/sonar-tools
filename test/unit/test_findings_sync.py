@@ -27,7 +27,7 @@ import os
 from unittest.mock import patch
 
 import utilities as util
-from sonar import errcodes
+from sonar import errcodes as e
 from cli import findings_sync
 import cli.options as opt
 
@@ -41,14 +41,14 @@ SYNC_OPTS = f"-{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT} -K TESTSYNC -b master"
 
 def test_sync_help() -> None:
     """test_sync"""
-    util.run_failed_cmd(findings_sync.main, f"{CMD} -h", errcodes.ARGS_ERROR)
+    assert util.run_cmd(findings_sync.main, f"{CMD} -h") == e.ARGS_ERROR
 
 
 def test_sync(json_file: callable) -> None:
     """test_sync"""
-    util.run_success_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -B main -{opt.REPORT_FILE_SHORT} {json_file}", True)
+    assert util.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -B main -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
 
 
 def test_sync_scloud(json_file: callable) -> None:
     """test_sync"""
-    util.run_success_cmd(findings_sync.main, f"{CMD} {SC_PLAT_OPTS} {SYNC_OPTS} -B master --threads 16 -{opt.REPORT_FILE_SHORT} {json_file}", True)
+    assert util.run_cmd(findings_sync.main, f"{CMD} {SC_PLAT_OPTS} {SYNC_OPTS} -B master --threads 16 -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK

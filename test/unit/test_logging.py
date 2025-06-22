@@ -38,7 +38,7 @@ CMD = f"{CMD} {util.SQS_OPTS}"
 def test_no_log_file(csv_file: Generator[str]) -> None:
     """Tests that when no log file is specified, no file is produced"""
     util.clean("sonar-tools.log")
-    util.run_success_cmd(loc.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}")
+    assert util.run_cmd(loc.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}") == errcodes.OK
     assert not os.path.isfile("sonar-tools.log")
     assert util.file_not_empty(csv_file)
 
@@ -46,7 +46,7 @@ def test_no_log_file(csv_file: Generator[str]) -> None:
 def test_custom_log_file(csv_file: Generator[str]) -> None:
     """Tests that when a specific log file is given, logs come in that file"""
     logfile = "sonar-loc-logging.log"
-    util.run_success_cmd(loc.main, f"{CMD} -{opt.LOGFILE_SHORT} {logfile}")
+    assert util.run_cmd(loc.main, f"{CMD} -{opt.LOGFILE_SHORT} {logfile}") == errcodes.OK
     assert not os.path.isfile("sonar-tools.log")
     assert util.file_not_empty(logfile)
     with open(logfile, encoding="utf-8") as f:
@@ -57,4 +57,4 @@ def test_custom_log_file(csv_file: Generator[str]) -> None:
 
 def test_missing_log_filename() -> None:
     """Tests that correct error is raise when log file name is forgotten"""
-    util.run_failed_cmd(loc.main, f"{CMD} -{opt.LOGFILE_SHORT}", errcodes.ARGS_ERROR)
+    assert util.run_cmd(loc.main, f"{CMD} -{opt.LOGFILE_SHORT}") == errcodes.ARGS_ERROR

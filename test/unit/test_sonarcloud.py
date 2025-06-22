@@ -48,12 +48,12 @@ def test_clear_cache() -> None:
 def test_sc_config_export(json_file: Generator[str]) -> None:
     """test_sc_config_export"""
     cmd = f"{OPTS} --{opt.REPORT_FILE} {json_file} -{opt.ORG_SHORT} {MY_ORG_1}"
-    util.run_success_cmd(config.main, cmd)
+    assert util.run_cmd(config.main, cmd) == errcodes.OK
 
 
 def test_sc_config_export_no_org() -> None:
     """test_sc_config_export"""
-    util.run_failed_cmd(config.main, SC_OPTS, errcodes.ARGS_ERROR)
+    assert util.run_cmd(config.main, SC_OPTS) == errcodes.ARGS_ERROR
 
 
 def test_org_search() -> None:

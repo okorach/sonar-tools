@@ -30,7 +30,7 @@ from unittest.mock import patch
 import utilities as util
 from cli import rules_cli
 import cli.options as opt
-from sonar import rules, exceptions, errcodes
+from sonar import rules, exceptions, errcodes as e
 import sonar.util.constants as c
 
 CMD = "rules_cli.py"
@@ -39,19 +39,19 @@ OPTS = f"{CMD} {util.SQS_OPTS}"
 
 def test_rules(csv_file: Generator[str]) -> None:
     """test_rules"""
-    util.run_success_cmd(rules_cli.main, f"{OPTS} --{opt.REPORT_FILE} {csv_file}")
+    assert util.run_cmd(rules_cli.main, f"{OPTS} --{opt.REPORT_FILE} {csv_file}") == e.OK
 
 
 def test_rules_json_format(json_file: Generator[str]) -> None:
     """test_rules_json_format"""
-    util.run_success_cmd(rules_cli.main, f"{OPTS} --{opt.REPORT_FILE} {json_file}")
+    assert util.run_cmd(rules_cli.main, f"{OPTS} --{opt.REPORT_FILE} {json_file}") == e.OK
 
 
 def test_rules_filter_language(csv_file: Generator[str]) -> None:
     """Tests that you can export rules for a single or a few languages"""
     langs = ("py", "cs") if util.SQ.edition() == c.CE else ("py", "apex")
     cmd = f"{OPTS} --{opt.REPORT_FILE} {csv_file} --{opt.LANGUAGES} {','.join(langs)}"
-    util.run_success_cmd(rules_cli.main, cmd)
+    assert util.run_cmd(rules_cli.main, cmd) == e.OK
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         (col,) = util.get_cols(line := next(csvreader), "language")
@@ -65,7 +65,7 @@ def test_rules_filter_language(csv_file: Generator[str]) -> None:
 def test_rules_misspelled_language_1(csv_file: Generator[str]) -> None:
     """Tests that you can export rules for a single or a few languages, misspelled"""
     cmd = f"{OPTS} --{opt.REPORT_FILE} {csv_file} --{opt.LANGUAGES} Python,TypeScript"
-    util.run_success_cmd(rules_cli.main, cmd)
+    assert util.run_cmd(rules_cli.main, cmd) == e.OK
     with open(csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         (col,) = util.get_cols(line := next(csvreader), "language")
@@ -82,7 +82,7 @@ def test_rules_misspelled_language_1(csv_file: Generator[str]) -> None:
 def test_rules_misspelled_language_2(csv_file: Generator[str]) -> None:
     """test_rules_misspelled_language_2"""
     cmd = f'{OPTS} --{opt.REPORT_FILE} {csv_file} --{opt.LANGUAGES} "Python ,gosu,  aPex"'
-    util.run_failed_cmd(rules_cli.main, cmd, errcodes.NO_SUCH_KEY)
+    assert util.run_cmd(rules_cli.main, cmd) == e.NO_SUCH_KEY
 
 
 def test_get_rule() -> None:
@@ -174,23 +174,23 @@ def test_new_taxo() -> None:
 
 
 def test_non_existing_qp() -> None:
-    util.run_failed_cmd(rules_cli.main, f"{OPTS} --{opt.QP} non-existing --{opt.LANGUAGES} java", errcodes.NO_SUCH_KEY)
+    assert util.run_cmd(rules_cli.main, f"{OPTS} --{opt.QP} non-existing --{opt.LANGUAGES} java") == e.NO_SUCH_KEY
 
 
 def test_non_existing_language() -> None:
-    util.run_failed_cmd(rules_cli.main, f"{OPTS} --{opt.LANGUAGES} assembly-lang", errcodes.NO_SUCH_KEY)
+    assert util.run_cmd(rules_cli.main, f"{OPTS} --{opt.LANGUAGES} assembly-lang") == e.NO_SUCH_KEY
 
 
 def test_qp_non_existing_language() -> None:
-    util.run_failed_cmd(rules_cli.main, f'{OPTS} --{opt.QP} "Sonar way" --{opt.LANGUAGES} javac', errcodes.NO_SUCH_KEY)
+    assert util.run_cmd(rules_cli.main, f'{OPTS} --{opt.QP} "Sonar way" --{opt.LANGUAGES} javac') == e.NO_SUCH_KEY
 
 
 def test_qp_multiple_languages() -> None:
-    util.run_failed_cmd(rules_cli.main, f'{OPTS} --{opt.QP} "Sonar way" --{opt.LANGUAGES} java,c', errcodes.ARGS_ERROR)
+    assert util.run_cmd(rules_cli.main, f'{OPTS} --{opt.QP} "Sonar way" --{opt.LANGUAGES} java,c') == e.ARGS_ERROR
 
 
 def test_os_error() -> None:
-    util.run_failed_cmd(rules_cli.main, f"{OPTS} --{opt.LANGUAGES} java,c -f /rules.csv", errcodes.OS_ERROR)
+    assert util.run_cmd(rules_cli.main, f"{OPTS} --{opt.LANGUAGES} java,c -f /rules.csv") == e.OS_ERROR
 
 
 def test_third_party() -> None:

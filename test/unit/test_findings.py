@@ -32,7 +32,8 @@ import pytest
 import utilities as util
 import sonar.logging as log
 from sonar import utilities, projects
-from sonar import findings, issues, errcodes
+from sonar import findings, issues
+from sonar import errcodes as e
 import sonar.util.constants as c
 
 from cli import findings_export
@@ -103,21 +104,21 @@ __WRONG_OPTS = [
 def test_findings_export_sarif_explicit(json_file: Generator[str]) -> None:
     """Test SARIF export"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --{opt.FORMAT} sarif"
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
     assert util.file_contains(json_file, "schemas/json/sarif-2.1.0-rtm.4")
 
 
 def test_findings_export_sarif_implicit(sarif_file: Generator[str]) -> None:
     """Test SARIF export for a single project and implicit format"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {sarif_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --{opt.FORMAT} sarif"
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
     assert util.file_contains(sarif_file, "schemas/json/sarif-2.1.0-rtm.4")
 
 
 def test_wrong_filters(csv_file: Generator[str]) -> None:
     """test_wrong_filters"""
     for bad_opts in __WRONG_FILTER_OPTS:
-        util.run_failed_cmd(findings_export.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} {bad_opts}", errcodes.WRONG_SEARCH_CRITERIA)
+        assert util.run_cmd(findings_export.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} {bad_opts}") == e.WRONG_SEARCH_CRITERIA
 
 
 def test_wrong_opts(csv_file: Generator[str]) -> None:
@@ -126,8 +127,8 @@ def test_wrong_opts(csv_file: Generator[str]) -> None:
         with pytest.raises(SystemExit) as e:
             with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", csv_file] + bad_opts):
                 findings_export.main()
-        assert int(str(e.value)) == errcodes.WRONG_SEARCH_CRITERIA or (
-            int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION and util.SQ.edition() in (c.CE, c.DE)
+        assert int(str(e.value)) == e.WRONG_SEARCH_CRITERIA or (
+            int(str(e.value)) == e.UNSUPPORTED_OPERATION and util.SQ.edition() in (c.CE, c.DE)
         )
         assert not os.path.isfile(csv_file)
 
@@ -135,14 +136,14 @@ def test_wrong_opts(csv_file: Generator[str]) -> None:
 def test_findings_export_non_existing_branch() -> None:
     """test_findings_export_non_existing_branch"""
     cmd = f"{CMD} --{opt.KEY_REGEXP} training:security --{opt.BRANCH_REGEXP} non-existing-branch"
-    err = errcodes.UNSUPPORTED_OPERATION if util.SQ.edition() == c.CE else errcodes.WRONG_SEARCH_CRITERIA
-    util.run_failed_cmd(findings_export.main, cmd, err)
+    err = e.UNSUPPORTED_OPERATION if util.SQ.edition() == c.CE else e.WRONG_SEARCH_CRITERIA
+    assert util.run_cmd(findings_export.main, cmd) == err
 
 
 def test_findings_filter_on_date_after(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_type"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT} --{opt.DATE_AFTER} 2023-05-01"
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         (date_col,) = util.get_cols(next(csvreader), "creationDate")
@@ -153,7 +154,7 @@ def test_findings_filter_on_date_after(csv_file: Generator[str]) -> None:
 def test_findings_filter_on_date_before(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_type"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT} --{opt.DATE_BEFORE} 2024-05-01"
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         (date_col,) = util.get_cols(next(csvreader), "creationDate")
@@ -164,7 +165,7 @@ def test_findings_filter_on_date_before(csv_file: Generator[str]) -> None:
 def test_findings_filter_on_type(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_type"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.TYPES} VULNERABILITY,BUG"
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
@@ -178,7 +179,7 @@ def test_findings_filter_on_type(csv_file: Generator[str]) -> None:
 def test_findings_filter_on_resolution(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_resolution"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.RESOLUTIONS} FALSE-POSITIVE,ACCEPTED,SAFE"
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
     if util.SQ.version() < (10, 0, 0):
         statuses = ("FALSE-POSITIVE", "WONTFIX", "SAFE")
     else:
@@ -193,7 +194,7 @@ def test_findings_filter_on_resolution(csv_file: Generator[str]) -> None:
 def test_findings_filter_on_severity(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_severity"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.SEVERITIES} BLOCKER,CRITICAL"
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
@@ -217,7 +218,7 @@ def test_findings_filter_on_severity(csv_file: Generator[str]) -> None:
 def test_findings_filter_on_multiple_criteria(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_multiple_criteria"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.RESOLUTIONS} FALSE-POSITIVE,ACCEPTED --{opt.TYPES} BUG,CODE_SMELL"
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         (status_col,) = util.get_cols(next(csvreader), "status")
@@ -235,7 +236,7 @@ def test_findings_filter_on_multiple_criteria(csv_file: Generator[str]) -> None:
 def test_findings_filter_on_multiple_criteria_2(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_multiple_criteria_2"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.DATE_AFTER} 2020-01-10 --{opt.DATE_BEFORE} 2020-12-31 --{opt.TYPES} SECURITY_HOTSPOT"
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         (date_col,) = util.get_cols(next(csvreader), "creationDate")
@@ -249,14 +250,14 @@ def test_findings_filter_on_multiple_criteria_2(csv_file: Generator[str]) -> Non
 
     # FIXME: findings-export ignores the branch option see https://github.com/okorach/sonar-tools/issues/1115
     # So passing a non existing branch succeeds
-    # assert int(str(e.value)) == errcodes.ERR_NO_SUCH_KEY
+    # assert int(str(e.value)) == e.ERR_NO_SUCH_KEY
     # assert not os.path.isfile(testutil.CSV_FILE)
 
 
 def test_findings_filter_on_multiple_criteria_3(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_multiple_criteria_3"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.STATUSES} ACCEPTED --{opt.RESOLUTIONS} FALSE-POSITIVE"
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
     if util.SQ.version() < (10, 0, 0):
         statuses = ("WONTFIX", "FALSE_POSITIVE", "FALSE-POSITIVE")
     else:
@@ -273,7 +274,7 @@ def test_findings_filter_on_hotspots_multi_1(csv_file: Generator[str]) -> None:
     projs = [util.PROJECT_1, util.PROJECT_2]
     regexp = utilities.list_to_regexp(projs)
     cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.RESOLUTIONS} "ACKNOWLEDGED, SAFE" -{opt.KEY_REGEXP_SHORT} {regexp}'
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         status_col, proj_col = util.get_cols(next(csvreader), "status", "projectKey")
@@ -286,7 +287,7 @@ def test_findings_filter_on_hotspots_multi_1(csv_file: Generator[str]) -> None:
 def test_findings_filter_on_lang(csv_file: Generator[str]) -> None:
     """test_findings_filter_hotspot_on_lang"""
     cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.LANGUAGES} java,js"'
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
 
 
 def test_findings_export(csv_file: Generator[str]) -> None:
@@ -294,23 +295,19 @@ def test_findings_export(csv_file: Generator[str]) -> None:
     # util.start_logging()
     cmd_csv = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file}"
     for opts in __GOOD_OPTS:
-        fail = False
-        if util.SQ.edition() == c.CE:
-            fail = sum(1 for cli_option in CE_FORBIDDEN_OPTIONS if f" {cli_option} " in f" {opts}") > 0
-            print(f"fail = {fail} for opts = {opts}")
-        if util.SQ.edition() == c.DE:
-            fail = f"--{opt.PORTFOLIOS}" in opts
-        if fail:
-            util.run_failed_cmd(findings_export.main, f"{cmd_csv} {opts}", errcodes.UNSUPPORTED_OPERATION)
-        else:
-            util.run_success_cmd(findings_export.main, f"{cmd_csv} {opts}", True)
+        err = e.OK
+        if util.SQ.edition() == c.CE and sum(1 for cli_option in CE_FORBIDDEN_OPTIONS if f" {cli_option} " in f" {opts}") > 0:
+            err = e.UNSUPPORTED_OPERATION
+        if util.SQ.edition() == c.DE and f"--{opt.PORTFOLIOS}" in opts:
+            err = e.UNSUPPORTED_OPERATION
+        assert util.run_cmd(findings_export.main, f"{cmd_csv} {opts}", True) == err
 
 
 def test_findings_export_long(csv_file: Generator[str]) -> None:
     """test_findings_export_long"""
     cmd_csv = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file}"
     for opts in __GOOD_OPTS_LONG:
-        util.run_success_cmd(findings_export.main, f"{cmd_csv} {opts}", True)
+        assert util.run_cmd(findings_export.main, f"{cmd_csv} {opts}", True) == e.OK
 
 
 def test_issues_count_0() -> None:
@@ -354,7 +351,7 @@ def test_search_too_many_issues() -> None:
 def test_output_format_sarif(sarif_file: Generator[str]) -> None:
     """test_output_format_sarif"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {sarif_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
     with open(sarif_file, encoding="utf-8") as fh:
         sarif_json = json.loads(fh.read())
     assert sarif_json["$schema"] == "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.4.json"
@@ -381,7 +378,7 @@ def test_output_format_sarif(sarif_file: Generator[str]) -> None:
 def test_output_format_json(json_file: Generator[str]) -> None:
     """test_output_format_json"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
     with open(json_file, encoding="utf-8") as fh:
         json_data = json.loads(fh.read())
     for issue in json_data:
@@ -403,7 +400,7 @@ def test_output_format_json(json_file: Generator[str]) -> None:
 def test_output_format_csv(csv_file: Generator[str]) -> None:
     """test_output_format_csv"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
     with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         row = next(reader)
@@ -420,9 +417,9 @@ def test_output_format_branch(csv_file: Generator[str]) -> None:
         regexp = utilities.csv_to_regexp(br)
         cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --{opt.BRANCH_REGEXP} {regexp}"
         if util.SQ.edition() == c.CE:
-            util.run_failed_cmd(findings_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+            assert util.run_cmd(findings_export.main, cmd) == e.UNSUPPORTED_OPERATION
             continue
-        util.run_success_cmd(findings_export.main, cmd)
+        assert util.run_cmd(findings_export.main, cmd) == e.OK
         with open(csv_file, encoding="utf-8") as fd:
             reader = csv.reader(fd)
             proj_col, branch_col, pr_col = util.get_cols(next(reader), "projectKey", "branch", "pullRequest")
@@ -436,9 +433,9 @@ def test_all_prs(csv_file: Generator[str]) -> None:
     """Tests that findings extport for all PRs of a project works"""
     cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --{opt.PULL_REQUESTS} "*"'
     if util.SQ.edition() == c.CE:
-        util.run_failed_cmd(findings_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+        assert util.run_cmd(findings_export.main, cmd) == e.UNSUPPORTED_OPERATION
         return
-    util.run_success_cmd(findings_export.main, cmd)
+    assert util.run_cmd(findings_export.main, cmd) == e.OK
     with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         try:
@@ -459,9 +456,9 @@ def test_one_pr(csv_file: Generator[str]) -> None:
     for pr in list(proj.pull_requests().keys()):
         cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} -{opt.PULL_REQUESTS_SHORT} {pr}"
         if util.SQ.edition() == c.CE:
-            util.run_failed_cmd(findings_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
+            assert util.run_cmd(findings_export.main, cmd) == e.UNSUPPORTED_OPERATION
             break
-        util.run_success_cmd(findings_export.main, cmd)
+        assert util.run_cmd(findings_export.main, cmd) == e.OK
         with open(csv_file, encoding="utf-8") as fd:
             reader = csv.reader(fd)
             try:
