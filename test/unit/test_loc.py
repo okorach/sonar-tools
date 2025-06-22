@@ -64,7 +64,7 @@ def test_loc_csv_fmt(txt_file: Generator[str]) -> None:
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {txt_file} --{opt.FORMAT} csv"
     util.run_success_cmd(loc.main, cmd)
     # Verify that the file is a valid CSV file
-    assert util.csv_col_exist(txt_file, "project key", "ncloc")
+    assert util.csv_cols_present(txt_file, "project key", "ncloc")
 
 
 def test_loc_project(csv_file: Generator[str]) -> None:
@@ -128,7 +128,7 @@ def test_loc_proj_all_options(csv_file: Generator[str]) -> None:
 
     util.run_success_cmd(loc.main, cmd)
     # Check file contents
-    assert util.csv_col_exist(csv_file, "project key", "branch", "project name", "tags")
+    assert util.csv_cols_present(csv_file, "project key", "branch", "project name", "tags")
     assert util.csv_col_datetime(csv_file, "last analysis")
     assert util.csv_col_int(csv_file, "ncloc", False)
     assert util.csv_col_url(csv_file, "URL")
@@ -145,7 +145,7 @@ def test_loc_apps_all_options(csv_file: Generator[str]) -> None:
 
     util.run_success_cmd(loc.main, cmd)
     # Check file contents
-    assert util.csv_col_exist(csv_file, "app key", "app name", "branch", "tags")
+    assert util.csv_cols_present(csv_file, "app key", "app name", "branch", "tags")
     assert util.csv_col_int(csv_file, "ncloc", False)
     assert util.csv_col_url(csv_file, "URL")
     assert util.csv_col_datetime(csv_file, "last analysis")
@@ -159,7 +159,7 @@ def test_loc_portfolios_all_options(csv_file: Generator[str]) -> None:
         util.run_failed_cmd(loc.main, cmd, errcodes.UNSUPPORTED_OPERATION)
         return
     util.run_success_cmd(loc.main, cmd)
-    assert util.csv_col_exist(csv_file, "portfolio key", "portfolio name")
+    assert util.csv_cols_present(csv_file, "portfolio key", "portfolio name")
     assert util.csv_col_int(csv_file, "ncloc", False)
     assert util.csv_col_datetime(csv_file, "last analysis")
     assert util.csv_col_url(csv_file, "URL")
@@ -174,7 +174,7 @@ def test_loc_proj_all_options_json(json_file: Generator[str]) -> None:
 
     util.run_success_cmd(loc.main, cmd)
     # Check file contents
-    assert util.json_fields_exist(json_file, "project", "projectName")
+    assert util.json_fields_present(json_file, "project", "projectName")
     assert util.json_field_int(json_file, "ncloc", False)
     assert util.json_field_url(json_file, "url")
     assert util.json_field_datetime(json_file, "lastAnalysis")
@@ -190,7 +190,7 @@ def test_loc_apps_all_options_json(json_file: Generator[str]) -> None:
 
     util.run_success_cmd(loc.main, cmd)
     # Check file contents
-    assert util.json_fields_exist(json_file, "app", "appName")
+    assert util.json_fields_present(json_file, "app", "appName")
     assert util.json_field_int(json_file, "ncloc", False)
     assert util.json_field_url(json_file, "url")
     assert util.json_field_datetime(json_file, "lastAnalysis")
@@ -205,7 +205,7 @@ def test_loc_portfolios_all_options_json(json_file: Generator[str]) -> None:
         return
 
     util.run_success_cmd(loc.main, cmd, post_cleanup=False)
-    assert util.json_fields_exist(json_file, "portfolio", "portfolioName")
+    assert util.json_fields_present(json_file, "portfolio", "portfolioName")
     assert util.json_field_int(json_file, "ncloc", False)
     assert util.json_field_url(json_file, "url")
     assert util.json_field_datetime(json_file, "lastAnalysis")

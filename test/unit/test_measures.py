@@ -26,7 +26,7 @@ from collections.abc import Generator
 from unittest.mock import patch
 
 import utilities as util
-from sonar import errcodes, logging, utilities
+from sonar import errcodes, utilities
 import sonar.util.constants as c
 
 from cli import measures_export
@@ -44,8 +44,9 @@ def test_measures_export(csv_file: Generator[str]) -> None:
     assert util.csv_col_sorted(csv_file, "key")
     assert util.csv_col_match(csv_file, "reliability_rating", _RATING_LETTER)
     assert util.csv_col_match(csv_file, "security_rating", _RATING_LETTER)
-    assert util.csv_col_match(csv_file, "duplicated_lines_density", r"^(|[0-9.]+)$")
-    assert util.csv_col_match(csv_file, "sqale_debt_ratio", r"^(|[0-9.]+)$")
+    assert util.csv_col_float_pct(csv_file, "duplicated_lines_density", True)
+    assert util.csv_col_float_pct(csv_file, "sqale_debt_ratio", True)
+    assert not util.csv_cols_present(csv_file, "statements", "ncloc_language_distribution")
 
 
 def test_measures_conversion(csv_file: Generator[str]) -> None:
@@ -53,8 +54,8 @@ def test_measures_conversion(csv_file: Generator[str]) -> None:
     util.run_success_cmd(measures_export.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -r -p --withTags")
     assert util.csv_col_match(csv_file, "reliability_rating", _RATING_NUMBER)
     assert util.csv_col_match(csv_file, "security_rating", _RATING_NUMBER)
-    assert util.csv_col_match(csv_file, "duplicated_lines_density", r"^(|.+%)$")
-    assert util.csv_col_match(csv_file, "sqale_debt_ratio", r"^(|.+%)$")
+    assert util.csv_col_pct(csv_file, "duplicated_lines_density", True)
+    assert util.csv_col_pct(csv_file, "sqale_debt_ratio", True)
 
 
 def test_measures_export_with_url(csv_file: Generator[str]) -> None:
@@ -62,9 +63,9 @@ def test_measures_export_with_url(csv_file: Generator[str]) -> None:
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.BRANCH_REGEXP_SHORT} .+ -{opt.METRIC_KEYS_SHORT} _main --{opt.WITH_URL}"
     if util.SQ.edition() == c.CE:
         util.run_failed_cmd(measures_export.main, cmd, errcodes.UNSUPPORTED_OPERATION)
-    else:
-        util.run_success_cmd(measures_export.main, cmd)
-
+        return
+    util.run_success_cmd(measures_export.main, cmd)
+    assert util.csv_col_url(csv_file, "URL")
 
 def test_measures_export_json(json_file: Generator[str]) -> None:
     """test_measures_export_json"""
@@ -78,7 +79,7 @@ def test_measures_export_json(json_file: Generator[str]) -> None:
     assert util.json_field_match(json_file, "security_rating", _RATING_LETTER, allow_null=True)
     assert util.json_field_float(json_file, "duplicated_lines_density")
     assert util.json_field_float(json_file, "sqale_debt_ratio")
-
+    assert util.json_fields_absent(json_file, "statements", "ncloc_language_distribution")
 
 def test_measures_export_all(csv_file: Generator[str]) -> None:
     """test_measures_export_all"""
@@ -94,6 +95,8 @@ def test_measures_export_json_all(json_file: Generator[str]) -> None:
     if util.SQ.edition() != c.CE:
         cmd += f" -{opt.BRANCH_REGEXP_SHORT} .+"
     util.run_success_cmd(measures_export.main, cmd)
+    assert util.json_field_int(json_file, "statements")
+    assert util.json_fields_present(json_file, "ncloc_language_distribution")
 
 
 def test_measures_export_history(csv_file: Generator[str]) -> None:
@@ -132,6 +135,14 @@ def test_measures_export_dateonly(csv_file: Generator[str]) -> None:
     """test_measures_export_dateonly"""
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -d"
     util.run_success_cmd(measures_export.main, cmd)
+    assert util.csv_col_date(csv_file, "lastAnalysis")
+
+
+def test_measures_export_json_dateonly(json_file: Generator[str]) -> None:
+    """test_measures_export_json_dateonly"""
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {json_file} -d"
+    util.run_success_cmd(measures_export.main, cmd)
+    assert util.json_field_date(json_file, "lastAnalysis")
 
 
 def test_specific_measure(csv_file: Generator[str]) -> None:
@@ -140,6 +151,7 @@ def test_specific_measure(csv_file: Generator[str]) -> None:
     util.run_success_cmd(measures_export.main, cmd)
     assert util.csv_col_int(csv_file, "sqale_index")
     assert util.csv_col_float_pct(csv_file, "coverage")
+    assert not util.csv_cols_present(csv_file, "code_smells", "bugs", "security_rating")
 
 
 def test_non_existing_measure(csv_file: Generator[str]) -> None:
