@@ -27,7 +27,8 @@ import json
 from unittest.mock import patch
 
 import utilities as util
-from sonar import errcodes, portfolios
+from sonar import errcodes as e
+from sonar import portfolios
 from sonar import logging
 import sonar.util.constants as c
 
@@ -40,37 +41,37 @@ OPTS = f"{CMD} {util.SQS_OPTS} -{opt.EXPORT_SHORT}"
 
 def test_config_export_full(json_file: Generator[str]) -> None:
     """test_config_export_full"""
-    util.run_success_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --fullExport")
+    assert util.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --fullExport") == e.OK
 
 
 def test_config_export_partial_2(json_file: Generator[str]) -> None:
     """test_config_export_partial_2"""
-    util.run_success_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} -w settings,portfolios,users")
+    assert util.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} -w settings,portfolios,users") == e.OK
 
 
 def test_config_export_partial_3(json_file: Generator[str]) -> None:
     """test_config_export_partial_3"""
-    util.run_success_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} -w projects -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}")
+    assert util.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} -w projects -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}") == e.OK
 
 
 def test_config_export_yaml(yaml_file: Generator[str]) -> None:
     """test_config_export_yaml"""
-    util.run_success_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {yaml_file}")
+    assert util.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {yaml_file}") == e.OK
 
 
 def test_config_export_wrong() -> None:
     """test_config_export_wrong"""
-    util.run_failed_cmd(config.main, f"{OPTS} -w settings,wrong,users", errcodes.ARGS_ERROR)
+    assert util.run_cmd(config.main, f"{OPTS} -w settings,wrong,users") == e.ARGS_ERROR
 
 
 def test_config_non_existing_project() -> None:
     """test_config_non_existing_project"""
-    util.run_failed_cmd(config.main, f"{OPTS} -{opt.KEY_REGEXP_SHORT} bad_project", errcodes.NO_SUCH_KEY)
+    assert util.run_cmd(config.main, f"{OPTS} -{opt.KEY_REGEXP_SHORT} bad_project") == e.NO_SUCH_KEY
 
 
 def test_config_inline_lists(json_file: Generator[str]) -> None:
     """test_config_inline_lists"""
-    util.run_success_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file}")
+    assert util.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file}") == e.OK
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], str)
@@ -88,7 +89,7 @@ def test_config_inline_lists(json_file: Generator[str]) -> None:
 
 def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
     """test_config_dont_inline_lists"""
-    util.run_success_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --dontInlineLists")
+    assert util.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --dontInlineLists") == e.OK
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], list)
@@ -115,9 +116,8 @@ def test_config_import_portfolios() -> None:
     logging.info("Deleting all portfolios")
     _ = [p.delete() for p in portfolios.get_list(util.TEST_SQ, use_cache=False).values() if p.is_toplevel()]
     # Import config
-    util.run_success_cmd(
-        config.main, f"{CMD} {util.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} test/files/config.json --{opt.WHAT} {opt.WHAT_PORTFOLIOS}"
-    )
+    cmd = f"{CMD} {util.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} test/files/config.json --{opt.WHAT} {opt.WHAT_PORTFOLIOS}"
+    assert util.run_cmd(config.main, cmd) == e.OK
 
     # Compare portfolios
     portfolio_list = portfolios.get_list(util.TEST_SQ)

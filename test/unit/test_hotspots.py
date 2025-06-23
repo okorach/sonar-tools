@@ -27,7 +27,7 @@ from sonar.util import constants as c
 
 
 def test_transitions() -> None:
-    hotspot_d = hotspots.search(endpoint=tutil.SQ, filters={"project": "okorach_sonar-tools"})
+    hotspot_d = hotspots.search(endpoint=tutil.SQ, filters={"project": "pytorch"})
     hotspot = list(hotspot_d.values())[0]
 
     assert hotspot.mark_as_safe()

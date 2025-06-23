@@ -25,7 +25,8 @@ from collections.abc import Generator
 import json
 from copy import deepcopy
 import pytest
-from sonar import exceptions, projects, utilities as sutil
+from sonar import projects
+from sonar import errcodes
 from cli import options as opt
 import utilities as util
 import cli.projects_cli as proj_cli
@@ -33,27 +34,26 @@ import cli.projects_cli as proj_cli
 
 def test_import(json_file: Generator[str]) -> None:
     """test_import"""
-    export_file = json_file
-    cmd = f"projects_cli.py {util.SQS_OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {export_file} --{opt.KEY_REGEXP} project1"
-    util.run_success_cmd(proj_cli.main, cmd)
+    cmd = f"projects_cli.py {util.SQS_OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.KEY_REGEXP} project1"
+    assert util.run_cmd(proj_cli.main, cmd) == errcodes.OK
 
     if util.SQ.version() == util.TEST_SQ.version():
-        assert proj_cli.__import_projects(util.TEST_SQ, file=export_file) is None
+        assert proj_cli.__import_projects(util.TEST_SQ, file=json_file) is None
 
-        with open(export_file, "r", encoding="utf-8") as fd:
+        with open(json_file, "r", encoding="utf-8") as fd:
             data = json.load(fd)
         data["projects"][0]["key"] = "TEMP-IMPORT_PROJECT-KEY"
-        with open(export_file, "w", encoding="utf-8") as fd:
+        with open(json_file, "w", encoding="utf-8") as fd:
             print(json.dumps(data), file=fd)
-        assert proj_cli.__import_projects(util.TEST_SQ, file=export_file) is None
+        assert proj_cli.__import_projects(util.TEST_SQ, file=json_file) is None
         proj = projects.Project.get_object(util.TEST_SQ, "TEMP-IMPORT_PROJECT-KEY")
         proj.delete()
 
     # Mess up the JSON file and retry import
-    with open(export_file, "r", encoding="utf-8") as fd:
+    with open(json_file, "r", encoding="utf-8") as fd:
         data = fd.read()
     data += "]"
-    with open(export_file, "w", encoding="utf-8") as fd:
+    with open(json_file, "w", encoding="utf-8") as fd:
         print(data, file=fd)
     with pytest.raises(opt.ArgumentsError):
-        proj_cli.__import_projects(util.TEST_SQ, file=export_file)
+        proj_cli.__import_projects(util.TEST_SQ, file=json_file)

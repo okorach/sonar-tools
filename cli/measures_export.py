@@ -207,7 +207,7 @@ def __write_measures_history_csv(file: str, wanted_metrics: types.KeyList, data:
 def __write_measures_csv(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:
     """writes measures in CSV"""
     mapping = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch", options.WITH_TAGS: "tags", options.WITH_URL: "url"}
-    header_list = ["key", "type"] + [v for k, v in mapping.items() if kwargs[k]] + wanted_metrics
+    header_list = ["key", "type", "lastAnalysis"] + [v for k, v in mapping.items() if kwargs[k]] + wanted_metrics
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         print("# ", file=fd, end="")

@@ -123,13 +123,25 @@ def file_contains(file: str, string: str) -> bool:
 
 def is_datetime(value: str, allow_empty: bool = False) -> bool:
     """Checks if a string is a date + time"""
-    if allow_empty and value == "":
+    if allow_empty and value == "" or value == "Never":
         return True
+    try:
+        d = datetime.datetime.fromisoformat(value)
+    except (ValueError, TypeError):
+        return False
+    return isinstance(d, datetime.datetime)
+
+
+def is_date(value: str, allow_empty: bool = False) -> bool:
+    """Checks if a string is a date"""
+    if allow_empty and value == "" or value == "Never":
+        return True
+    print(f"{value} {len(value)}")
     try:
         _ = datetime.datetime.fromisoformat(value)
     except (ValueError, TypeError):
         return False
-    return True
+    return len(value) == 10
 
 
 def is_integer(value: str, allow_empty: bool = False) -> bool:
@@ -149,7 +161,7 @@ def is_empty(value: str, allow_empty: bool = False) -> bool:
 
 def is_pct(value: str, allow_empty: bool = False) -> bool:
     """Returns whether a string contains a float"""
-    return (allow_empty and (value == "" or value is None)) or re.match(value, r"(100.0|\d|[1-9]\d\.\d)%") is not None
+    return (allow_empty and (value == "" or value is None)) or re.match(r"^(100|[1-9]\d|\d)\.\d\%$", value) is not None
 
 
 def is_float_pct(value: str, allow_empty: bool = False) -> bool:
@@ -205,33 +217,26 @@ def __get_redacted_cmd(string_arguments: str) -> str:
     return " ".join(args)
 
 
-def run_cmd(func: callable, arguments: str, expected_code: int) -> Optional[str]:
-    """Runs a sonar-tools command, verifies it raises the right exception, and returns the expected code"""
-    logging.info("RUNNING (expecting code %d): %s", expected_code, __get_redacted_cmd(arguments))
+def run_cmd(func: callable, arguments: str, delete_file: bool = False) -> int:
+    """Runs a sonar-tools command, and returns the expected code"""
+    logging.info("RUNNING: %s", __get_redacted_cmd(arguments))
     file, args, import_cmd = __get_args_and_file(arguments)
-    if not import_cmd:
-        clean(file)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", args):
             func()
-    assert int(str(e.value)) == expected_code
-    return file
+    if delete_file and not import_cmd:
+        clean(file)
+    return int(str(e.value))
 
 
-def run_success_cmd(func: callable, arguments: str, post_cleanup: bool = False) -> None:
+def run_success_cmd(func: callable, arguments: str, post_cleanup: bool = False) -> int:
     """Runs a command that's suppose to end in success"""
-    file = run_cmd(func, arguments, errcodes.OK)
+    code, file = run_cmd(func, arguments)
     if file:
         assert file_not_empty(file)
     if post_cleanup:
         clean(file)
-
-
-def run_failed_cmd(func: callable, arguments: str, expected_code: int) -> None:
-    """Runs a command that's suppose to end in failure"""
-    file = run_cmd(func, arguments, expected_code)
-    if file:
-        assert not os.path.isfile(file)
+    return code
 
 
 def start_logging(level: str = "DEBUG") -> None:
@@ -257,7 +262,7 @@ def get_cols(header_row: list[str], *fields) -> tuple[int, ...]:
     return tuple([h.index(k) for k in fields])
 
 
-def csv_col_exist(csv_file: str, *col_names) -> bool:
+def csv_cols_present(csv_file: str, *col_names) -> bool:
     """Verifies that given columns of a CSV exists"""
     with open(csv_file, encoding="utf-8") as fd:
         row = next(csv.reader(fd))
@@ -352,6 +357,11 @@ def csv_col_datetime(csv_file: str, col_name: str, allow_empty: bool = True) -> 
     return csv_col_condition(csv_file, col_name, is_datetime, allow_empty)
 
 
+def csv_col_date(csv_file: str, col_name: str, allow_empty: bool = True) -> bool:
+    """return whether a CSV col is a date or empty"""
+    return csv_col_condition(csv_file, col_name, is_date, allow_empty)
+
+
 def csv_col_url(csv_file: str, col_name: str, allow_empty: bool = False) -> bool:
     """return whether a CSV col is and URL"""
     return csv_col_condition(csv_file, col_name, is_url, allow_empty)
@@ -374,11 +384,18 @@ def json_field_sorted(json_file: str, field: str) -> bool:
     return True
 
 
-def json_fields_exist(json_file: str, *fields) -> bool:
-    """return whether a JSON file exists for all elements of the JSON"""
+def json_fields_present(json_file: str, *fields) -> bool:
+    """return whether a JSON file is present for all elements of the JSON"""
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         data = json.loads(fh.read())
     return sum(1 for p in data for field in fields if field not in p) == 0
+
+
+def json_fields_absent(json_file: str, *fields) -> bool:
+    """return whether a JSON file is absent for all elements of the JSON"""
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+        data = json.loads(fh.read())
+    return sum(1 for p in data for field in fields if field in p) == 0
 
 
 def json_field_not_all_empty(csv_file: str, col_name: str) -> bool:
@@ -426,6 +443,11 @@ def json_field_pct(json_file: str, field: str, allow_null: bool = True) -> bool:
 def json_field_datetime(json_file: str, field: str, allow_null: bool = True) -> bool:
     """return whether a JSON field is a datetime or empty"""
     return json_field_condition(json_file, field, is_datetime, allow_null)
+
+
+def json_field_date(json_file: str, field: str, allow_null: bool = True) -> bool:
+    """return whether a JSON field is a datetime or empty"""
+    return json_field_condition(json_file, field, is_date, allow_null)
 
 
 def json_field_url(json_file: str, field: str, allow_null: bool = False) -> bool:

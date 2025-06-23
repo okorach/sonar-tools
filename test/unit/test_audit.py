@@ -26,7 +26,7 @@ from collections.abc import Generator
 import pytest
 
 import utilities as util
-from sonar import errcodes, utilities, logging
+from sonar import errcodes as e, utilities
 import cli.options as opt
 from cli import audit
 
@@ -49,14 +49,14 @@ def test_audit_disabled(csv_file: Generator[str]) -> None:
     """test_audit_disabled"""
     with open(".sonar-audit.properties", mode="w", encoding="utf-8") as fd:
         print(AUDIT_DISABLED, file=fd)
-    file = util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}", errcodes.OK)
-    assert util.file_empty(file)
+    assert util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}") == e.OK
+    assert util.file_empty(csv_file)
     os.remove(".sonar-audit.properties")
 
 
 def test_audit(csv_file: Generator[str]) -> None:
     """test_audit"""
-    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}")
+    assert util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}") == e.OK
     # Ensure no duplicate alarms #1478
     lines = []
     with open(csv_file, mode="r", encoding="utf-8") as fd:
@@ -67,27 +67,27 @@ def test_audit(csv_file: Generator[str]) -> None:
 
 def test_audit_stdout() -> None:
     """test_audit_stdout"""
-    util.run_success_cmd(audit.main, CMD, True)
+    assert util.run_cmd(audit.main, CMD) == e.OK
 
 
 def test_audit_json(json_file: Generator[str]) -> None:
     """test_audit_json"""
-    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {json_file}")
+    assert util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {json_file}") == e.OK
 
 
 def test_audit_proj_key(csv_file: Generator[str]) -> None:
     """test_audit_proj_key"""
-    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.WHAT} projects --{opt.KEY_REGEXP} okorach_sonar-tools", True)
+    assert util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.WHAT} projects --{opt.KEY_REGEXP} okorach_sonar-tools") == e.OK
 
 
 def test_audit_proj_non_existing_key() -> None:
     """test_audit_proj_non_existing_key"""
-    util.run_failed_cmd(audit.main, f"{CMD} --{opt.WHAT} projects --{opt.KEY_REGEXP} okorach_sonar-tools,bad_key", errcodes.ARGS_ERROR)
+    assert util.run_cmd(audit.main, f"{CMD} --{opt.WHAT} projects --{opt.KEY_REGEXP} okorach_sonar-tools,bad_key") == e.ARGS_ERROR
 
 
 def test_sif_broken(csv_file: Generator[str]) -> None:
     """test_sif_broken"""
-    util.run_failed_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --sif test/sif_broken.json", errcodes.SIF_AUDIT_ERROR)
+    assert util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --sif test/sif_broken.json") == e.SIF_AUDIT_ERROR
 
 
 def test_deduct_fmt() -> None:
@@ -103,7 +103,7 @@ def test_deduct_fmt() -> None:
 def test_sif_non_existing(csv_file: Generator[str]) -> None:
     """test_sif_non_existing"""
     non_existing_file = "test/sif_non_existing.json"
-    util.run_failed_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --sif {non_existing_file}", errcodes.SIF_AUDIT_ERROR)
+    assert util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --sif {non_existing_file}") == e.SIF_AUDIT_ERROR
 
 
 def test_sif_not_readable(json_file: Generator[str]) -> None:
@@ -112,7 +112,7 @@ def test_sif_not_readable(json_file: Generator[str]) -> None:
     NO_PERMS = ~stat.S_IRUSR & ~stat.S_IWUSR
     current_permissions = stat.S_IMODE(os.lstat(unreadable_file).st_mode)
     os.chmod(unreadable_file, current_permissions & NO_PERMS)
-    util.run_failed_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {json_file} --sif {unreadable_file}", errcodes.SIF_AUDIT_ERROR)
+    assert util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {json_file} --sif {unreadable_file}") == e.SIF_AUDIT_ERROR
     os.chmod(unreadable_file, current_permissions)
 
 
@@ -121,7 +121,7 @@ def test_configure() -> None:
     config_exists = os.path.exists(DEFAULT_CONFIG)
     if config_exists:
         os.rename(DEFAULT_CONFIG, f"{DEFAULT_CONFIG}.bak")
-    util.run_success_cmd(audit.main, f"{CMD} --config")
+    assert util.run_cmd(audit.main, f"{CMD} --config") == e.OK
     assert os.path.exists(DEFAULT_CONFIG)
     if config_exists:
         os.rename(f"{DEFAULT_CONFIG}.bak", DEFAULT_CONFIG)
@@ -132,5 +132,5 @@ def test_configure_stdout() -> None:
     if not os.path.exists(DEFAULT_CONFIG):
         pytest.skip("No $HOME config fule")
     last_change = os.stat(DEFAULT_CONFIG).st_ctime_ns
-    util.run_success_cmd(audit.main, f"{CMD} --config")
+    assert util.run_cmd(audit.main, f"{CMD} --config") == e.OK
     assert last_change == os.stat(DEFAULT_CONFIG).st_ctime_ns

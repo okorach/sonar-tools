@@ -78,7 +78,7 @@ def test_get_object_non_existing() -> None:
     assert str(e.value).endswith(f"Application key '{NON_EXISTING_KEY}' not found")
 
 
-def test_exists(get_test_app) -> None:
+def test_exists(get_test_app: Generator[App]) -> None:
     """Test exist"""
     if not util.verify_support(SUPPORTED_EDITIONS, apps.exists, endpoint=util.SQ, key=EXISTING_KEY) and not util.verify_support(
         SUPPORTED_EDITIONS, apps.exists, endpoint=util.SQ, key=NON_EXISTING_KEY
@@ -98,14 +98,14 @@ def test_get_list() -> None:
     assert sorted(k_list) == sorted(list(p_dict.keys()))
 
 
-def test_create_delete() -> None:
+def test_create_delete(get_test_app: Generator[App]) -> None:
     """Test portfolio create delete"""
     if not util.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=util.SQ, name=util.TEMP_NAME, key=util.TEMP_KEY):
         return
-    obj = App.create(endpoint=util.SQ, name=util.TEMP_NAME, key=util.TEMP_KEY)
+    obj = get_test_app
     assert obj is not None
     assert obj.key == util.TEMP_KEY
-    assert obj.name == util.TEMP_NAME
+    assert obj.name == util.TEMP_KEY
     obj.delete()
     assert not apps.exists(endpoint=util.SQ, key=util.TEMP_KEY)
 
@@ -116,7 +116,7 @@ def test_create_delete() -> None:
     assert not apps.exists(endpoint=util.SQ, key=util.TEMP_KEY)
 
 
-def test_permissions_1(get_test_app) -> None:
+def test_permissions_1(get_test_app: Generator[App]) -> None:
     """Test permissions"""
     if not util.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=util.SQ, name="An app", key=TEST_KEY):
         return
@@ -125,7 +125,7 @@ def test_permissions_1(get_test_app) -> None:
     # assert apps.permissions().to_json()["groups"] == {"sonar-users": ["user", "admin"], "sonar-administrators": ["user", "admin"]}
 
 
-def test_permissions_2(get_test_app) -> None:
+def test_permissions_2(get_test_app: Generator[App]) -> None:
     """Test permissions"""
     if not util.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=util.SQ, name=util.TEMP_NAME, key=util.TEMP_KEY):
         return

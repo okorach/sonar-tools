@@ -35,6 +35,7 @@ from sonar.dce import app_nodes, search_nodes
 from cli import audit
 import cli.options as opt
 import sonar.util.constants as c
+import sonar.errcodes as e
 
 CMD = "sonar-audit.py"
 
@@ -42,31 +43,31 @@ CMD = "sonar-audit.py"
 def test_audit_sif(csv_file: Generator[str]) -> None:
     """test_audit_sif"""
     cmd = f"{CMD} --sif {util.FILES_ROOT}/sif1.json --{opt.REPORT_FILE} {csv_file}"
-    util.run_success_cmd(audit.main, cmd)
+    assert util.run_cmd(audit.main, cmd) == e.OK
 
 
 def test_audit_sif_dce1(csv_file: Generator[str]) -> None:
     """test_audit_sif_dce1"""
     cmd = f"{CMD} --sif {util.FILES_ROOT}/sif.dce.1.json --{opt.REPORT_FILE} {csv_file}"
-    util.run_success_cmd(audit.main, cmd)
+    assert util.run_cmd(audit.main, cmd) == e.OK
 
 
 def test_audit_sif_dce3(csv_file: Generator[str]) -> None:
     """test_audit_sif_dce1"""
     cmd = f"{CMD} --sif {util.FILES_ROOT}/sif.dce.2.json --{opt.REPORT_FILE} {csv_file}"
-    util.run_success_cmd(audit.main, cmd)
+    assert util.run_cmd(audit.main, cmd) == e.OK
 
 
 def test_sif_1(csv_file: Generator[str]) -> None:
     """test_sif_1"""
     cmd = f"{CMD} --sif {util.FILES_ROOT}/sif1.json --{opt.REPORT_FILE} {csv_file}"
-    util.run_success_cmd(audit.main, cmd)
+    assert util.run_cmd(audit.main, cmd) == e.OK
 
 
 def test_sif_2(json_file) -> None:
     """test_sif_2"""
     cmd = f"{CMD} --sif {util.FILES_ROOT}/sif2.json --{opt.REPORT_FILE} {json_file}"
-    util.run_success_cmd(audit.main, cmd)
+    assert util.run_cmd(audit.main, cmd) == e.OK
 
 
 def test_audit_sif_ut() -> None:

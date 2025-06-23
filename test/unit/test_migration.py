@@ -39,13 +39,13 @@ GLOBAL_ITEMS = ("platform", "globalSettings", "rules", "qualityProfiles", "quali
 
 def test_migration_help(json_file: Generator[str]) -> None:
     """test_migration_help"""
-    util.run_failed_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {json_file} -h", errcodes.ARGS_ERROR)
+    assert util.run_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {json_file} -h") == errcodes.ARGS_ERROR
 
 
 def test_migration(json_file: Generator[str]) -> None:
     """test_config_export"""
     file = json_file
-    util.run_success_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {file}")
+    assert util.run_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {file}") == errcodes.OK
     with open(file=file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
 
@@ -116,7 +116,7 @@ def test_migration(json_file: Generator[str]) -> None:
 def test_migration_skip_issues(json_file: Generator[str]) -> None:
     """test_migration_skip_issues"""
     file = json_file
-    util.run_success_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {file} --skipIssues")
+    assert util.run_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {file} --skipIssues") == errcodes.OK
     with open(file=file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
 
