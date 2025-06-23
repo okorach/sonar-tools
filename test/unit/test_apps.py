@@ -105,7 +105,7 @@ def test_create_delete(get_test_app: Generator[App]) -> None:
     obj = get_test_app
     assert obj is not None
     assert obj.key == util.TEMP_KEY
-    assert obj.name == util.TEMP_NAME
+    assert obj.name == util.TEMP_KEY
     obj.delete()
     assert not apps.exists(endpoint=util.SQ, key=util.TEMP_KEY)
 

@@ -46,7 +46,7 @@ def test_rules(csv_file: Generator[str]) -> None:
 def test_rules_json_format(json_file: Generator[str]) -> None:
     """test_rules_json_format"""
     assert util.run_cmd(rules_cli.main, f"{OPTS} --{opt.REPORT_FILE} {json_file}") == e.OK
-    assert util.json_fields_present(json_file, "key", "language", "repo", "name", "ruleType")
+    assert util.json_fields_present(json_file, "key", "lang", "repo", "name", "isTemplate")
 
 
 def test_rules_filter_language(csv_file: Generator[str]) -> None:
