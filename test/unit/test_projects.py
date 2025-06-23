@@ -157,7 +157,8 @@ def test_already_exists() -> None:
 
 def test_binding() -> None:
     """test_binding"""
-    util.start_logging()
+    if util.SQ.edition() == c.CE:
+        pytest.skip("Bindings unsupported in SonarQube Community Edition")
     proj = projects.Project.get_object(util.SQ, util.TEST_KEY)
     assert proj.has_binding()
     assert proj.binding() is not None
