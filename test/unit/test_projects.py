@@ -303,6 +303,7 @@ def test_wrong_key_2(get_test_project: Generator[projects.Project]) -> None:
 def test_set_permissions(get_test_project: Generator[projects.Project]) -> None:
     """test_set_permissions"""
     proj = get_test_project
+    perms = proj.permissions().to_json()
     assert "tech-leads" in perms["groups"]
     proj.set_permissions({"users": {"admin": ["admin", "user"], "olivier": ["user"]}})
     # TODO @okorach: If project default visibility is Public the permission count is different
