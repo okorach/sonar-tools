@@ -267,14 +267,14 @@ def csv_cols_present(csv_file: str, *col_names) -> bool:
     with open(csv_file, encoding="utf-8") as fd:
         row = next(csv.reader(fd))
     row[0] = row[0][2:]
-    return sum(1 for col in col_names if col not in row) == 0
+    return all(col in row for col in col_names)
 
 
 def csv_col_is_value(csv_file: str, col_name: str, *values) -> bool:
     """Verifies that the column of a CSV is a given value for all rows"""
     with open(csv_file, encoding="utf-8") as fd:
         (col,) = get_cols(next(reader := csv.reader(fd)), col_name)
-        return sum(1 for row in reader if row[col] not in values) == 0
+        return all(row[col] in values for row in reader)
 
 
 def csv_col_has_values(csv_file: str, col_name: str, values: set[str]) -> bool:
@@ -292,16 +292,13 @@ def csv_col_has_values(csv_file: str, col_name: str, values: set[str]) -> bool:
 def csv_nbr_lines(csv_file: str) -> int:
     """return nbr lines in a CSV file"""
     with open(csv_file, encoding="utf-8") as fd:
-        reader = csv.reader(fd)
-        row = sum(1 for _ in reader) - 1  # skip header
-    return row
+        return len(fd.readlines()) - 1 # skip header
 
 
 def csv_nbr_cols(csv_file: str, nbr_cols: int) -> bool:
     """return whether all rows of a CSV have the given number of columns"""
     with open(csv_file, encoding="utf-8") as fd:
-        reader = csv.reader(fd)
-        return sum(1 for row in reader if len(row) != nbr_cols) == 0
+        return all(len(row) == nbr_cols for row in csv.reader(fd))
 
 
 def csv_col_sorted(csv_file: str, col_name: str) -> bool:
@@ -322,14 +319,14 @@ def csv_col_match(csv_file: str, col_name: str, regexp: str) -> bool:
     with open(csv_file, encoding="utf-8") as fd:
         (col,) = get_cols(next(reader := csv.reader(fd)), col_name)
         next(reader)
-        return sum(1 for row in reader if not re.match(rf"{regexp}", row[col])) == 0
+        return all(re.match(rf"{regexp}", row[col]) for row in reader)
 
 
 def csv_col_condition(csv_file: str, col_name: str, func: callable, allow_empty: bool = False) -> bool:
     """Return whether all lines of the CSV meet a condition on a column"""
     with open(csv_file, encoding="utf-8") as fd:
         (col,) = get_cols(next(reader := csv.reader(fd)), col_name)
-        return sum(1 for row in reader if not func(row[col], allow_empty)) == 0
+        return all(func(row[col], allow_empty) for row in reader)
 
 
 def csv_col_int(csv_file: str, col_name: str, allow_empty: bool = True) -> bool:
