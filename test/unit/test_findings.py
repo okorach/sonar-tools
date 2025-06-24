@@ -283,7 +283,7 @@ def test_findings_filter_on_lang(csv_file: Generator[str]) -> None:
     """test_findings_filter_hotspot_on_lang"""
     cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.LANGUAGES} java,js"'
     assert util.run_cmd(findings_export.main, cmd) == e.OK
-    assert util.csv_col_is_value(csv_file, "lang", "java", "js")
+    assert util.csv_col_is_value(csv_file, "language", "java", "js")
 
 
 def test_findings_export(csv_file: Generator[str]) -> None:
