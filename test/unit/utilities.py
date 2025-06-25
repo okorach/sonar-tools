@@ -292,7 +292,7 @@ def csv_col_has_values(csv_file: str, col_name: str, values: set[str]) -> bool:
 def csv_nbr_lines(csv_file: str) -> int:
     """return nbr lines in a CSV file"""
     with open(csv_file, encoding="utf-8") as fd:
-        return len(fd.readlines()) - 1 # skip header
+        return len(fd.readlines()) - 1  # skip header
 
 
 def csv_nbr_cols(csv_file: str, nbr_cols: int) -> bool:
