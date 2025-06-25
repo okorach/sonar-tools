@@ -45,12 +45,12 @@ DEVELOPER_GLOBAL_PERMISSIONS = {**COMMUNITY_GLOBAL_PERMISSIONS, **{"applicationc
 ENTERPRISE_GLOBAL_PERMISSIONS = {**DEVELOPER_GLOBAL_PERMISSIONS, **{"portfoliocreator": "Create Portfolios"}}
 
 PROJECT_PERMISSIONS = {
+    "admin": "Administer Project",
     "user": "Browse",
     "codeviewer": "See source code",
     "issueadmin": "Administer Issues",
     "securityhotspotadmin": "Create Projects",
     "scan": "Execute Analysis",
-    "admin": "Administer Project",
 }
 
 _GLOBAL = 0
@@ -190,6 +190,11 @@ class Permissions(ABC):
             if p not in allowed_perms:
                 log.warning("Can't set permission '%s' on a %s edition", p, ed)
                 perms.remove(p)
+        if "admin" in perms:
+            # Set admin permission before anything
+            old_perms = perms.copy()
+            perms = ["admin"] + [p for p in old_perms if p != "admin"]
+            return perms
         return perms
 
     def audit_nbr_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:

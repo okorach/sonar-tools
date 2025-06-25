@@ -275,19 +275,15 @@ def test_findings_filter_on_hotspots_multi_1(csv_file: Generator[str]) -> None:
     regexp = utilities.list_to_regexp(projs)
     cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.RESOLUTIONS} "ACKNOWLEDGED, SAFE" -{opt.KEY_REGEXP_SHORT} {regexp}'
     assert util.run_cmd(findings_export.main, cmd) == e.OK
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        csvreader = csv.reader(fh)
-        status_col, proj_col = util.get_cols(next(csvreader), "status", "projectKey")
-        next(csvreader)
-        for line in csvreader:
-            assert line[status_col] in ("ACKNOWLEDGED", "SAFE")
-            assert line[proj_col] in projs
+    assert util.csv_col_is_value(csv_file, "projectKey", *projs)
+    assert util.csv_col_is_value(csv_file, "status", "ACKNOWLEDGED", "SAFE")
 
 
 def test_findings_filter_on_lang(csv_file: Generator[str]) -> None:
     """test_findings_filter_hotspot_on_lang"""
     cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.LANGUAGES} java,js"'
     assert util.run_cmd(findings_export.main, cmd) == e.OK
+    assert util.csv_col_is_value(csv_file, "language", "java", "js")
 
 
 def test_findings_export(csv_file: Generator[str]) -> None:
