@@ -347,7 +347,8 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, G
     :params Platform endpoint: Reference to the SonarQube platform
     :return: dict of groups with group name as key
     """
-    return sq.search_objects(endpoint=endpoint, object_class=Group, params=params, api_version=2)
+    api_version = 1 if endpoint.version() < c.GROUP_API_V2_INTRO_VERSION else 2
+    return sq.search_objects(endpoint=endpoint, object_class=Group, params=params, api_version=api_version)
 
 
 def get_list(endpoint: pf.Platform) -> dict[str, Group]:
