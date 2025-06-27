@@ -471,28 +471,16 @@ def sanitize_search_filters(endpoint: pf.Platform, params: types.ApiParams) -> t
     return criterias
 
 
-def split_filter(params: types.ApiParams, criteria: str) -> list[types.ApiParams]:
+def __split_filter(params: types.ApiParams, criteria: str) -> list[types.ApiParams]:
     """Creates a list of filters from a single one that has values that requires multiple hotspot searches"""
-    crit_list = util.csv_to_list(params.get(criteria, None))
-    if not crit_list or len(crit_list) <= 1:
-        return [params]
-    new_params = params.copy()
-    new_params.pop(criteria)
-    search_filters_list = []
-    for crit in crit_list:
-        new_params[criteria] = crit
-        search_filters_list.append(new_params.copy())
-    return search_filters_list
+    crits = params.pop(criteria, None)
+    return [{**params, criteria: crit} for crit in util.csv_to_list(crits)]
 
 
 def split_search_filters(params: types.ApiParams) -> list[types.ApiParams]:
     """Split search filters for which you can only pass 1 value at a time in api/hotspots/search"""
-    search_filters_list_1 = split_filter(params, "resolution")
-    search_filters_list_2 = []
-    for f in search_filters_list_1:
-        search_filters_list_2 += split_filter(f, "status")
-    log.debug("Returning hotspot search filter split %s", str(search_filters_list_2))
-    return search_filters_list_2
+    list_2d = [__split_filter(f, "status") for f in __split_filter(params, "resolution")]
+    return [crit2 for crit1 in list_2d for crit2 in crit1]
 
 
 def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: types.ApiParams) -> dict[str, Hotspot]:
