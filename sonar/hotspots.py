@@ -490,7 +490,7 @@ def split_search_filters(params: types.ApiParams) -> list[types.ApiParams]:
     search_filters_list_1 = split_filter(params, "resolution")
     search_filters_list_2 = []
     for f in search_filters_list_1:
-        search_filters_list_2 = split_filter(f, "status")
+        search_filters_list_2 += split_filter(f, "status")
     log.debug("Returning hotspot search filter split %s", str(search_filters_list_2))
     return search_filters_list_2
 
