@@ -407,13 +407,12 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
     hotspots_list = {}
     new_params = sanitize_search_filters(endpoint=endpoint, params=filters)
     log.debug("Search hotspots with params %s", str(new_params))
-    filters_iterations = split_search_filters(new_params)
     ps = Hotspot.MAX_PAGE_SIZE if "ps" not in new_params else new_params["ps"]
-    for inline_filters in filters_iterations:
-        p = 1
+    for inline_filters in split_search_filters(new_params):
+        p, nbr_pages = 1, 1
         inline_filters["ps"] = ps
         log.debug("Searching hotspots with sanitized filters %s", str(inline_filters))
-        while True:
+        while p <= nbr_pages:
             inline_filters["p"] = p
             try:
                 data = json.loads(endpoint.get(Hotspot.API[c.SEARCH], params=inline_filters, mute=(HTTPStatus.NOT_FOUND,)).text)
@@ -423,21 +422,24 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
                 nbr_hotspots = 0
                 return {}
             nbr_pages = util.nbr_pages(data)
-            log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, inline_filters["p"], nbr_pages)
+            log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, p, nbr_pages)
             if nbr_hotspots > Hotspot.MAX_SEARCH:
                 raise TooManyHotspotsError(
                     nbr_hotspots,
                     f"{nbr_hotspots} hotpots returned by api/{Hotspot.API[c.SEARCH]}, this is more than the max {Hotspot.MAX_SEARCH} possible",
                 )
 
-            for i in data["hotspots"]:
-                if "branch" in inline_filters:
-                    i["branch"] = inline_filters["branch"]
-                if "pullRequest" in inline_filters:
-                    i["pullRequest"] = inline_filters["pullRequest"]
-                hotspots_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
-            if p >= nbr_pages:
-                break
+            if "branch" in inline_filters:
+                data = [{**ele, "branch": inline_filters["branch"]} for idx, ele in enumerate(data)]
+            if "pullRequest" in inline_filters:
+                data = [{**ele, "branch": inline_filters["branch"]} for idx, ele in enumerate(data)]
+            # for i in data["hotspots"]:
+            #    if "branch" in inline_filters:
+            #        i["branch"] = inline_filters["branch"]
+            #    if "pullRequest" in inline_filters:
+            #        i["pullRequest"] = inline_filters["pullRequest"]
+            #    hotspots_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
+            hotspots_list += [get_object(endpoint=endpoint, key=i["key"], data=i) for i in data["hotspots"]]
             p += 1
     return post_search_filter(hotspots_list, filters)
 
