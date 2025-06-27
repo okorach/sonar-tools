@@ -433,7 +433,7 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
 
             for enrichment in "branch", "pullRequest":
                 if enrichment in inline_filters:
-                    data = [{**ele, **{enrichment: inline_filters[enrichment]}} for _, ele in enumerate(data)]
+                    data["hotspots"] = [{**ele, enrichment: inline_filters[enrichment]} for _, ele in enumerate(data["hotspots"])]
             hotspots_list |= {i["key"]: get_object(endpoint=endpoint, key=i["key"], data=i) for i in data["hotspots"]}
             p += 1
     return post_search_filter(hotspots_list, filters)
