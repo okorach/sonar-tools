@@ -407,13 +407,14 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
     hotspots_list = {}
     new_params = sanitize_search_filters(endpoint=endpoint, params=filters)
     log.debug("Search hotspots with params %s", str(new_params))
-    filters_iterations = split_search_filters(new_params)
     ps = Hotspot.MAX_PAGE_SIZE if "ps" not in new_params else new_params["ps"]
-    for inline_filters in filters_iterations:
-        p = 1
+    split_filters = split_search_filters(new_params)
+    log.debug("Split search filters = %s", split_filters)
+    for inline_filters in split_filters:
+        p, nbr_pages = 1, 1
         inline_filters["ps"] = ps
         log.debug("Searching hotspots with sanitized filters %s", str(inline_filters))
-        while True:
+        while p <= nbr_pages:
             inline_filters["p"] = p
             try:
                 data = json.loads(endpoint.get(Hotspot.API[c.SEARCH], params=inline_filters, mute=(HTTPStatus.NOT_FOUND,)).text)
@@ -423,21 +424,17 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
                 nbr_hotspots = 0
                 return {}
             nbr_pages = util.nbr_pages(data)
-            log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, inline_filters["p"], nbr_pages)
+            log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, p, nbr_pages)
             if nbr_hotspots > Hotspot.MAX_SEARCH:
                 raise TooManyHotspotsError(
                     nbr_hotspots,
                     f"{nbr_hotspots} hotpots returned by api/{Hotspot.API[c.SEARCH]}, this is more than the max {Hotspot.MAX_SEARCH} possible",
                 )
 
-            for i in data["hotspots"]:
-                if "branch" in inline_filters:
-                    i["branch"] = inline_filters["branch"]
-                if "pullRequest" in inline_filters:
-                    i["pullRequest"] = inline_filters["pullRequest"]
-                hotspots_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
-            if p >= nbr_pages:
-                break
+            for enrichment in "branch", "pullRequest":
+                if enrichment in inline_filters:
+                    data["hotspots"] = [{**ele, enrichment: inline_filters[enrichment]} for _, ele in enumerate(data["hotspots"])]
+            hotspots_list |= {i["key"]: get_object(endpoint=endpoint, key=i["key"], data=i) for i in data["hotspots"]}
             p += 1
     return post_search_filter(hotspots_list, filters)
 
@@ -471,28 +468,17 @@ def sanitize_search_filters(endpoint: pf.Platform, params: types.ApiParams) -> t
     return criterias
 
 
-def split_filter(params: types.ApiParams, criteria: str) -> list[types.ApiParams]:
+def __split_filter(params: types.ApiParams, criteria: str) -> list[types.ApiParams]:
     """Creates a list of filters from a single one that has values that requires multiple hotspot searches"""
-    crit_list = util.csv_to_list(params.get(criteria, None))
-    if not crit_list or len(crit_list) <= 1:
+    if (crits := params.pop(criteria, None)) is None:
         return [params]
-    new_params = params.copy()
-    new_params.pop(criteria)
-    search_filters_list = []
-    for crit in crit_list:
-        new_params[criteria] = crit
-        search_filters_list.append(new_params.copy())
-    return search_filters_list
+    return [{**params, criteria: crit} for crit in util.csv_to_list(crits)]
 
 
 def split_search_filters(params: types.ApiParams) -> list[types.ApiParams]:
     """Split search filters for which you can only pass 1 value at a time in api/hotspots/search"""
-    search_filters_list_1 = split_filter(params, "resolution")
-    search_filters_list_2 = []
-    for f in search_filters_list_1:
-        search_filters_list_2 = split_filter(f, "status")
-    log.debug("Returning hotspot search filter split %s", str(search_filters_list_2))
-    return search_filters_list_2
+    list_2d = [__split_filter(f, "status") for f in __split_filter(params, "resolution")]
+    return [crit2 for crit1 in list_2d for crit2 in crit1]
 
 
 def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: types.ApiParams) -> dict[str, Hotspot]:
