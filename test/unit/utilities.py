@@ -277,7 +277,7 @@ def csv_col_is_value(csv_file: str, col_name: str, *values) -> bool:
         return all(row[col] in values for row in reader)
 
 
-def csv_col_has_values(csv_file: str, col_name: str, values: set[str]) -> bool:
+def csv_col_has_values(csv_file: str, col_name: str, *values) -> bool:
     values_to_search = values.copy()
     with open(csv_file, encoding="utf-8") as fd:
         (col,) = get_cols(next(reader := csv.reader(fd)), col_name)
