@@ -39,9 +39,7 @@ import sonar.util.constants as c
 from cli import findings_export
 import cli.options as opt
 
-CMD = "sonar-findings-export.py"
-SARIF_FILE = "issues.sarif"
-CMD = f"{CMD} {util.SQS_OPTS}"
+CMD = f"sonar-findings-export.py {util.SQS_OPTS}"
 
 CE_FORBIDDEN_OPTIONS = (
     f"--{opt.APPS}",
@@ -51,21 +49,6 @@ CE_FORBIDDEN_OPTIONS = (
     f"--{opt.PULL_REQUESTS}",
     f"-{opt.PULL_REQUESTS_SHORT}",
 )
-
-if util.SQ.is_mqr_mode():
-    fields = findings.CSV_EXPORT_FIELDS
-    # 10.x MQR
-    SECURITY_IMPACT_COL = fields.index("securityImpact")
-    RELIABILITY_IMPACT_COL = fields.index("reliabilityImpact")
-    MAINTAINABILITY_IMPACT_COL = fields.index("maintainabilityImpact")
-    OTHER_IMPACT_COL = fields.index("otherImpact")
-    TYPE_COL = fields.index("legacyType")
-    SEVERITY_COL = fields.index("legacySeverity")
-else:
-    # 9.9
-    fields = findings.LEGACY_CSV_EXPORT_FIELDS
-    TYPE_COL = fields.index("type")
-    SEVERITY_COL = fields.index("severity")
 
 __GOOD_OPTS = [
     f"--{opt.FORMAT} json -{opt.KEY_REGEXP_SHORT} ({util.PROJECT_1}|{util.PROJECT_2}) -{opt.REPORT_FILE_SHORT} {util.JSON_FILE}",
@@ -166,13 +149,8 @@ def test_findings_filter_on_type(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_type"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.TYPES} VULNERABILITY,BUG"
     assert util.run_cmd(findings_export.main, cmd) == e.OK
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        next(csvreader := csv.reader(fh))
-        for line in csvreader:
-            if util.SQ.is_mqr_mode():
-                assert line[SECURITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
-            else:
-                assert line[TYPE_COL] in ("BUG", "VULNERABILITY")
+    col_name = "legacyType" if util.SQ.version() >= c.MQR_INTRO_VERSION else "type"
+    util.csv_col_is_value(csv_file, col_name, "VULNERABILITY", "BUG")
 
 
 def test_findings_filter_on_resolution(csv_file: Generator[str]) -> None:
@@ -180,50 +158,41 @@ def test_findings_filter_on_resolution(csv_file: Generator[str]) -> None:
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.RESOLUTIONS} FALSE-POSITIVE,ACCEPTED,SAFE"
     assert util.run_cmd(findings_export.main, cmd) == e.OK
     statuses = ("FALSE-POSITIVE", "SAFE")
-    statuses += ("ACCEPTED",) if util.SQ.version() >= (10, 0, 0) else ("WONTFIX",)
-    assert util.csv_col_is_value(csv_file, "resolution", *statuses)
+    statuses += ("ACCEPTED",) if util.SQ.version() >= c.ACCEPT_INTRO_VERSION else ("WONTFIX",)
+    assert util.csv_col_is_value(csv_file, "status", *statuses)
 
 
 def test_findings_filter_on_severity(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_severity"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.SEVERITIES} BLOCKER,CRITICAL"
     assert util.run_cmd(findings_export.main, cmd) == e.OK
+    if util.SQ.version() < c.MQR_INTRO_VERSION:
+        assert util.csv_col_is_value(csv_file, "severity", "BLOCKER", "CRITICAL")
+        return
+    assert util.csv_col_is_value(csv_file, "legacySeverity", "BLOCKER", "CRITICAL")
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        csvreader = csv.reader(fh)
-        next(csvreader)
+        (sec, other, legacy) = util.get_cols(next(csvreader := csv.reader(fh)), "securityImpact", "otherImpact", "legacySeverity")
+        other += 1
         for line in csvreader:
-            if not util.SQ.is_mqr_mode():
-                assert line[SEVERITY_COL] in ("BLOCKER", "CRITICAL")
-            elif util.SQ.version() < (10, 7, 0):
-                assert (
-                    "HIGH" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
-                    or "MEDIUM" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
-                    or "HIGH(HOTSPOT)" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
-                )
+            if util.SQ.version() < (10, 7, 0):
+                sev1, sev2, sev3 = "HIGH", "MEDIUM", "HIGH(HOTSPOT)"
             else:
-                assert (
-                    "BLOCKER" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
-                    or "HIGH" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
-                    or "HIGH(HOTSPOT)" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
-                )
+                sev1, sev2, sev3 = "BLOCKER", "HIGH", "HIGH(HOTSPOT)"
+            assert sev1 in line[sec:other] or sev2 in line[sec:other] or sev3 in line[sec:other] or line[legacy] in ("BLOCKER", "CRITICAL")
 
 
 def test_findings_filter_on_multiple_criteria(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_multiple_criteria"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.RESOLUTIONS} FALSE-POSITIVE,ACCEPTED --{opt.TYPES} BUG,CODE_SMELL"
     assert util.run_cmd(findings_export.main, cmd) == e.OK
+    assert util.csv_col_is_value(csv_file, "type" if util.SQ.version() < c.MQR_INTRO_VERSION else "legacyType", "BUG", "CODE_SMELL")
+    assert util.csv_col_is_value(csv_file, "status", "FALSE-POSITIVE", "WONTFIX" if util.SQ.version() < c.ACCEPT_INTRO_VERSION else "ACCEPTED")
+    if util.SQ.version() < c.MQR_INTRO_VERSION:
+        return
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
-        csvreader = csv.reader(fh)
-        (status_col,) = util.get_cols(next(csvreader), "status")
+        (maint_col, rel_col) = util.get_cols(next(csvreader := csv.reader(fh)), "maintainabilityImpact", "reliabilityImpact")
         for line in csvreader:
-            if util.SQ.version() < (10, 0, 0):
-                assert line[status_col] in ("FALSE-POSITIVE", "WONTFIX")
-            else:
-                assert line[status_col] in ("FALSE-POSITIVE", "ACCEPTED")
-            if util.SQ.version() >= c.MQR_INTRO_VERSION:
-                assert line[MAINTAINABILITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
-            else:
-                assert line[TYPE_COL] in ("BUG", "CODE_SMELL")
+            assert line[maint_col] != "" or line[rel_col] != ""
 
 
 def test_findings_filter_on_multiple_criteria_2(csv_file: Generator[str]) -> None:
@@ -231,7 +200,7 @@ def test_findings_filter_on_multiple_criteria_2(csv_file: Generator[str]) -> Non
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.DATE_AFTER} 2020-01-10 --{opt.DATE_BEFORE} 2020-12-31 --{opt.TYPES} SECURITY_HOTSPOT"
     assert util.run_cmd(findings_export.main, cmd) == e.OK
     assert util.csv_col_match(csv_file, "creationDate", r"2020-\d\d-\d\d")
-    colname = "legacyType" if util.SQ.is_mqr_mode() else "type"
+    colname = "legacyType" if util.SQ.version() >= c.MQR_INTRO_VERSION else "type"
     assert util.csv_col_is_value(csv_file, colname, "SECURITY_HOTSPOT")
 
 
@@ -240,7 +209,7 @@ def test_findings_filter_on_multiple_criteria_3(csv_file: Generator[str]) -> Non
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.STATUSES} ACCEPTED --{opt.RESOLUTIONS} FALSE-POSITIVE"
     assert util.run_cmd(findings_export.main, cmd) == e.OK
     statuses = ("FALSE_POSITIVE", "FALSE-POSITIVE")
-    statuses += ("ACCEPTED",) if util.SQ.version() < (10, 0, 0) else ("WONTFIX",)
+    statuses += ("ACCEPTED",) if util.SQ.version() >= c.ACCEPT_INTRO_VERSION else ("WONTFIX",)
     assert util.csv_col_is_value(csv_file, "status", *statuses)
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
@@ -271,7 +240,7 @@ def test_findings_filter_on_hotspot_type(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_hotspot_type"""
     cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.TYPES} SECURITY_HOTSPOT'
     assert util.run_cmd(findings_export.main, cmd) == e.OK
-    col = "legacyType" if util.SQ.is_mqr_mode() else "type"
+    col = "legacyType" if util.SQ.version() >= c.MQR_INTRO_VERSION else "type"
     assert util.csv_col_is_value(csv_file, col, "SECURITY_HOTSPOT")
 
 
@@ -342,7 +311,9 @@ def test_output_format_sarif(sarif_file: Generator[str]) -> None:
     assert sarif_json["$schema"] == "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.4.json"
     run = sarif_json["runs"][0]
     assert run["tool"]["driver"]["name"] == "SonarQube"
+    type_for_issue = "legacyType" if util.SQ.version() >= c.MQR_INTRO_VERSION else "type"
     for issue in run["results"]:
+        print(f"{utilities.json_dump(issue)}")
         for k in "message", "locations", "ruleId", "level":
             assert k in issue
         loc = issue["locations"][0]["physicalLocation"]
@@ -352,10 +323,8 @@ def test_output_format_sarif(sarif_file: Generator[str]) -> None:
             assert k in loc["region"]
         for k in "creationDate", "key", "projectKey", "updateDate":
             assert k in issue["properties"]
-        if util.SQ.is_mqr_mode():
-            assert "effort" in issue["properties"] or "HOTSPOT" in issue["properties"]["impacts"].get("SECURITY", "")
-        else:
-            assert "effort" in issue["properties"] or issue["properties"]["type"] == "SECURITY_HOTSPOT"
+        assert "impacts" in issue["properties"]
+        assert "effort" in issue["properties"] or issue["properties"][type_for_issue] == "SECURITY_HOTSPOT"
         assert "language" in issue["properties"] or issue["ruleId"].startswith("external")
         assert issue["level"] in ("warning", "error")
 
@@ -366,17 +335,13 @@ def test_output_format_json(json_file: Generator[str]) -> None:
     assert util.run_cmd(findings_export.main, cmd) == e.OK
     with open(json_file, encoding="utf-8") as fh:
         json_data = json.loads(fh.read())
+    type_for_issue = "legacyType" if util.SQ.version() >= c.MQR_INTRO_VERSION else "type"
     for issue in json_data:
-        log.info("ISSUE = %s", json.dumps(issue))
+        print(f"{json.dumps(issue)}")
         for k in "creationDate", "file", "key", "message", "projectKey", "rule", "updateDate":
             assert k in issue
-        if util.SQ.is_mqr_mode():
-            assert "impacts" in issue
-            assert "effort" in issue or "HOTSPOT" in issue["impacts"].get("SECURITY", "")
-        else:
-            assert "type" in issue
-            assert "effort" in issue or issue["type"] == "SECURITY_HOTSPOT"
-
+        assert "impacts" in issue
+        assert "effort" in issue or issue[type_for_issue] == "SECURITY_HOTSPOT"
         assert "language" in issue or issue["rule"].startswith("external")
         # Some issues have no author so we cannot expect the below assertion to succeed all the time
         # assert issue["status"] in ("FIXED", "CLOSED") or "author" in issue
@@ -422,6 +387,7 @@ def test_one_pr(csv_file: Generator[str]) -> None:
     proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)
     for pr in list(proj.pull_requests().keys()):
         cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} -{opt.PULL_REQUESTS_SHORT} {pr}"
+        print(cmd)
         if util.SQ.edition() == c.CE:
             assert util.run_cmd(findings_export.main, cmd) == e.UNSUPPORTED_OPERATION
             break
