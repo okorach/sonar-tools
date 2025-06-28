@@ -42,6 +42,16 @@ MAIN_METRICS = (
     "security_rating",
     "sqale_rating",
     "security_review_rating",
+    "accepted_issues",
+    "false_positive_issues",
+    "prioritized_rule_issues",
+    "violations",
+    "blocker_violations",
+    "critical_violations",
+    "software_quality_blocker_issues",
+    "software_quality_high_issues",
+    "contains_ai_code",
+    "sca_count_any_issue",
     "sqale_debt_ratio",
     "sqale_index",
     "coverage",
@@ -60,7 +70,9 @@ MAIN_METRICS = (
     "new_coverage",
     "new_duplicated_lines_density",
     "new_security_hotspots_reviewed",
+    "new_sca_count_any_issue",
     "ncloc",
+    "last_commit_date",
 )
 
 #: Dict of metric grouped by type (INT, FLOAT, WORK_DUR etc...)
