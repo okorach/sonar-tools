@@ -61,6 +61,22 @@ MAIN_METRICS = (
     "new_duplicated_lines_density",
     "new_security_hotspots_reviewed",
     "ncloc",
+    "false_positive_issues",
+    "blocker_violations",
+    "critical_violations",
+)
+
+ENTERPRISE_10_MAIN_METRICS = (
+    "accepted_issues",
+    "prioritized_rule_issues",
+    "software_quality_blocker_issues",
+    "software_quality_high_issues",
+)
+
+ENTERPRISE_2025_3_MAIN_METRICS = (
+    "contains_ai_code",
+    "sca_count_any_issue",
+    "new_sca_count_any_issue",
 )
 
 #: Dict of metric grouped by type (INT, FLOAT, WORK_DUR etc...)

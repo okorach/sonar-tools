@@ -72,15 +72,21 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: 
 
 def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyList) -> types.KeyList:
     """Returns an ordered list of metrics based on CLI inputs"""
+    main_metrics = list(metrics.MAIN_METRICS)
+    if endpoint.edition() in (c.EE, c.DCE):
+        if endpoint.version() >= c.MQR_INTRO_VERSION:
+            main_metrics += list(metrics.ENTERPRISE_10_MAIN_METRICS)
+        if endpoint.version() >= (2025, 3, 0):
+            main_metrics += list(metrics.ENTERPRISE_2025_3_MAIN_METRICS)
     if wanted_metrics[0] in ("_all", "*"):
         all_metrics = list(metrics.search(endpoint).keys())
         all_metrics.remove("quality_gate_details")
         # Hack: With SonarQube 7.9 and below new_development_cost measure can't be retrieved
         if not endpoint.is_sonarcloud() and endpoint.version() < (8, 0, 0):
             all_metrics.remove("new_development_cost")
-        wanted_metrics = list(metrics.MAIN_METRICS) + sorted(set(all_metrics) - set(metrics.MAIN_METRICS))
+        wanted_metrics = main_metrics + sorted(set(all_metrics) - set(metrics.MAIN_METRICS))
     elif wanted_metrics[0] == "_main":
-        wanted_metrics = list(metrics.MAIN_METRICS)
+        wanted_metrics = main_metrics
     else:
         # Verify that requested metrics do exist
         non_existing_metrics = util.difference(wanted_metrics, metrics.search(endpoint).keys())
