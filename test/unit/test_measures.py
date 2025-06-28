@@ -47,6 +47,10 @@ def test_measures_export(csv_file: Generator[str]) -> None:
     assert util.csv_col_float_pct(csv_file, "duplicated_lines_density", True)
     assert util.csv_col_float_pct(csv_file, "sqale_debt_ratio", True)
     assert not util.csv_cols_present(csv_file, "statements", "ncloc_language_distribution")
+    assert util.csv_cols_present(csv_file, "last_commit_date", "accepted_issues", "false_positive_issues", "prioritized_rule_issues")
+    assert util.csv_col_int(csv_file, "accepted_issues")
+    assert util.csv_col_int(csv_file, "false_positive_issues")
+    assert util.csv_col_int(csv_file, "prioritized_rule_issues")
 
 
 def test_measures_conversion(csv_file: Generator[str]) -> None:
@@ -81,6 +85,10 @@ def test_measures_export_json(json_file: Generator[str]) -> None:
     assert util.json_field_float(json_file, "duplicated_lines_density")
     assert util.json_field_float(json_file, "sqale_debt_ratio")
     assert util.json_fields_absent(json_file, "statements", "ncloc_language_distribution")
+    assert util.json_fields_present(json_file, "last_commit_date", "accepted_issues", "false_positive_issues", "prioritized_rule_issues")
+    assert util.json_field_int(json_file, "accepted_issues")
+    assert util.json_field_int(json_file, "false_positive_issues")
+    assert util.json_field_int(json_file, "prioritized_rule_issues")
 
 
 def test_measures_export_all(csv_file: Generator[str]) -> None:
