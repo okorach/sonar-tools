@@ -51,7 +51,7 @@ def test_measures_export(csv_file: Generator[str]) -> None:
     if util.SQ.version() >= c.MQR_INTRO_VERSION:
         col_list += ("accepted_issues",)
         if util.SQ.edition() in (c.EE, c.DCE):
-            col_list += "prioritized_rule_issues"
+            col_list += ("prioritized_rule_issues",)
     assert util.csv_cols_present(csv_file, *col_list)
     for col in col_list:
         assert util.csv_col_int(csv_file, col)
@@ -93,7 +93,7 @@ def test_measures_export_json(json_file: Generator[str]) -> None:
     if util.SQ.version() >= c.MQR_INTRO_VERSION:
         col_list += ("accepted_issues",)
         if util.SQ.edition() in (c.EE, c.DCE):
-            col_list += "prioritized_rule_issues"
+            col_list += ("prioritized_rule_issues",)
     assert util.json_fields_present(json_file, *col_list)
     for col in col_list:
         assert util.json_field_int(json_file, col)
