@@ -230,7 +230,7 @@ def test_findings_filter_on_hotspots_multi_1(csv_file: Generator[str]) -> None:
 
 def test_findings_filter_on_lang(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_lang"""
-    cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.LANGUAGES} java,js'
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.LANGUAGES} java,js"
     assert util.run_cmd(findings_export.main, cmd) == e.OK
     assert util.csv_col_is_value(csv_file, "language", "java", "js")
     assert util.csv_col_has_values(csv_file, "language", "java", "js")
@@ -238,7 +238,7 @@ def test_findings_filter_on_lang(csv_file: Generator[str]) -> None:
 
 def test_findings_filter_on_hotspot_type(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_hotspot_type"""
-    cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.TYPES} SECURITY_HOTSPOT'
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.TYPES} SECURITY_HOTSPOT"
     assert util.run_cmd(findings_export.main, cmd) == e.OK
     col = "legacyType" if util.SQ.version() >= c.MQR_INTRO_VERSION else "type"
     assert util.csv_col_is_value(csv_file, col, "SECURITY_HOTSPOT")
@@ -351,7 +351,9 @@ def test_output_format_csv(csv_file: Generator[str]) -> None:
     """test_output_format_csv"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
     assert util.run_cmd(findings_export.main, cmd) == e.OK
-    assert util.csv_cols_present(csv_file, "creationDate", "effort", "file", "key", "line", "language", "author", "message", "projectKey", "rule", "updateDate")
+    assert util.csv_cols_present(
+        csv_file, "creationDate", "effort", "file", "key", "line", "language", "author", "message", "projectKey", "rule", "updateDate"
+    )
 
 
 def test_output_format_branch(csv_file: Generator[str]) -> None:
