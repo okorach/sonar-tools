@@ -84,7 +84,7 @@ def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyS
         # Hack: With SonarQube 7.9 and below new_development_cost measure can't be retrieved
         if not endpoint.is_sonarcloud() and endpoint.version() < (8, 0, 0):
             all_metrics.remove("new_development_cost")
-        wanted_metrics = main_metrics | set(sorted(all_metrics - main_metrics))
+        wanted_metrics = set(list(main_metrics) + sorted(all_metrics - main_metrics))
     elif "_main" in wanted_metrics:
         wanted_metrics = main_metrics
     else:
