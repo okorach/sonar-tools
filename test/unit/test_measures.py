@@ -199,7 +199,7 @@ def test_apps_measures(csv_file: Generator[str]) -> None:
         return
     assert util.run_cmd(measures_export.main, cmd) == e.OK
     assert util.csv_nbr_cols(csv_file, 5)
-    assert util.csv_col_has_values(csv_file, "key", {existing_key})
+    assert util.csv_col_has_values(csv_file, "key", existing_key)
 
 
 def test_portfolios_measures(csv_file: Generator[str]) -> None:
@@ -212,7 +212,7 @@ def test_portfolios_measures(csv_file: Generator[str]) -> None:
 
     assert util.run_cmd(measures_export.main, cmd) == e.OK
     assert util.csv_nbr_cols(csv_file, 5)
-    assert util.csv_col_has_values(csv_file, "key", {existing_key})
+    assert util.csv_col_has_values(csv_file, "key", existing_key)
 
 
 def test_portfolios_with_tags(csv_file: Generator[str]) -> None:
