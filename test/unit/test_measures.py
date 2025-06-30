@@ -49,7 +49,9 @@ def test_measures_export(csv_file: Generator[str]) -> None:
     assert not util.csv_cols_present(csv_file, "statements", "ncloc_language_distribution")
     col_list = ("false_positive_issues",)
     if util.SQ.version() >= c.MQR_INTRO_VERSION:
-        col_list += ("accepted_issues", "prioritized_rule_issues")
+        col_list += ("accepted_issues",)
+        if util.SQ.edition() in (c.EE, c.DCE):
+            col_list += "prioritized_rule_issues"
     assert util.csv_cols_present(csv_file, *col_list)
     for col in col_list:
         assert util.csv_col_int(csv_file, col)
@@ -89,7 +91,9 @@ def test_measures_export_json(json_file: Generator[str]) -> None:
     assert util.json_fields_absent(json_file, "statements", "ncloc_language_distribution")
     col_list = col_list = ("false_positive_issues",)
     if util.SQ.version() >= c.MQR_INTRO_VERSION:
-        col_list += ("accepted_issues", "prioritized_rule_issues")
+        col_list += ("accepted_issues",)
+        if util.SQ.edition() in (c.EE, c.DCE):
+            col_list += "prioritized_rule_issues"
     assert util.json_fields_present(json_file, *col_list)
     for col in col_list:
         assert util.json_field_int(json_file, col)

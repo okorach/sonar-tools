@@ -73,11 +73,13 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: 
 def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeySet) -> types.KeySet:
     """Returns an ordered list of metrics based on CLI inputs"""
     main_metrics = set(metrics.MAIN_METRICS)
+    if endpoint.version() >= c.ACCEPT_INTRO_VERSION:
+        main_metrics |= set(metrics.MAIN_METRICS_10)
     if endpoint.edition() in (c.EE, c.DCE):
-        if endpoint.version() >= c.MQR_INTRO_VERSION:
-            main_metrics |= set(metrics.ENTERPRISE_10_MAIN_METRICS)
+        if endpoint.version() >= (10, 0, 0):
+            main_metrics |= set(metrics.MAIN_METRICS_ENTERPRISE_10)
         if endpoint.version() >= (2025, 3, 0):
-            main_metrics |= set(metrics.ENTERPRISE_2025_3_MAIN_METRICS)
+            main_metrics |= set(metrics.MAIN_METRICS_ENTERPRISE_2025_3)
     if "_all" in wanted_metrics or "*" in wanted_metrics:
         all_metrics = set(metrics.search(endpoint).keys())
         all_metrics.remove("quality_gate_details")
