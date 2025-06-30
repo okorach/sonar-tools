@@ -70,26 +70,26 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: 
     return measures_d
 
 
-def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyList) -> types.KeyList:
+def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeySet) -> types.KeySet:
     """Returns an ordered list of metrics based on CLI inputs"""
-    main_metrics = list(metrics.MAIN_METRICS)
+    main_metrics = set(metrics.MAIN_METRICS)
     if endpoint.edition() in (c.EE, c.DCE):
         if endpoint.version() >= c.MQR_INTRO_VERSION:
-            main_metrics += list(metrics.ENTERPRISE_10_MAIN_METRICS)
+            main_metrics |= set(metrics.ENTERPRISE_10_MAIN_METRICS)
         if endpoint.version() >= (2025, 3, 0):
-            main_metrics += list(metrics.ENTERPRISE_2025_3_MAIN_METRICS)
-    if wanted_metrics[0] in ("_all", "*"):
-        all_metrics = list(metrics.search(endpoint).keys())
+            main_metrics |= set(metrics.ENTERPRISE_2025_3_MAIN_METRICS)
+    if "_all" in wanted_metrics or "*" in wanted_metrics:
+        all_metrics = set(metrics.search(endpoint).keys())
         all_metrics.remove("quality_gate_details")
         # Hack: With SonarQube 7.9 and below new_development_cost measure can't be retrieved
         if not endpoint.is_sonarcloud() and endpoint.version() < (8, 0, 0):
             all_metrics.remove("new_development_cost")
-        wanted_metrics = main_metrics + sorted(set(all_metrics) - set(metrics.MAIN_METRICS))
-    elif wanted_metrics[0] == "_main":
+        wanted_metrics = main_metrics | set(sorted(all_metrics - main_metrics))
+    elif "_main" in wanted_metrics:
         wanted_metrics = main_metrics
     else:
         # Verify that requested metrics do exist
-        non_existing_metrics = util.difference(wanted_metrics, metrics.search(endpoint).keys())
+        non_existing_metrics = util.difference(list(wanted_metrics), metrics.search(endpoint).keys())
         if len(non_existing_metrics) > 0:
             miss = ",".join(non_existing_metrics)
             util.exit_fatal(f"Requested metric keys '{miss}' don't exist", errcodes.NO_SUCH_KEY)
@@ -213,7 +213,7 @@ def __write_measures_history_csv(file: str, wanted_metrics: types.KeyList, data:
 def __write_measures_csv(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:
     """writes measures in CSV"""
     mapping = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch", options.WITH_TAGS: "tags", options.WITH_URL: "url"}
-    header_list = ["key", "type", "lastAnalysis"] + [v for k, v in mapping.items() if kwargs[k]] + wanted_metrics
+    header_list = ["key", "type", "lastAnalysis"] + [v for k, v in mapping.items() if kwargs[k]] + list(wanted_metrics)
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         print("# ", file=fd, end="")
@@ -248,7 +248,7 @@ def main() -> None:
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
 
-        wanted_metrics = __get_wanted_metrics(endpoint=endpoint, wanted_metrics=kwargs[options.METRIC_KEYS])
+        wanted_metrics = __get_wanted_metrics(endpoint=endpoint, wanted_metrics=set(kwargs[options.METRIC_KEYS]))
         file = kwargs.pop(options.REPORT_FILE)
         fmt = util.deduct_format(kwargs[options.FORMAT], file)
         kwargs = __check_options_vs_edition(edition=endpoint.edition(), params=kwargs)
