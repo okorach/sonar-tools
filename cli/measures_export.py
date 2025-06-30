@@ -166,7 +166,7 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyLi
     """Writes measures history of object list in CSV format"""
 
     mapping = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch", options.WITH_URL: "url"}
-    fields = ["key", "date"] + [v for k, v in mapping.items() if kwargs[k]] + wanted_metrics
+    fields = ["key", "date"] + [v for k, v in mapping.items() if kwargs[k]] + list(wanted_metrics)
 
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
