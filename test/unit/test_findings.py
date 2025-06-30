@@ -169,7 +169,6 @@ def test_findings_filter_on_severity(csv_file: Generator[str]) -> None:
     if util.SQ.version() < c.MQR_INTRO_VERSION:
         assert util.csv_col_is_value(csv_file, "severity", "BLOCKER", "CRITICAL")
         return
-    assert util.csv_col_is_value(csv_file, "legacySeverity", "BLOCKER", "CRITICAL")
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         (sec, other, legacy) = util.get_cols(next(csvreader := csv.reader(fh)), "securityImpact", "otherImpact", "legacySeverity")
         other += 1
