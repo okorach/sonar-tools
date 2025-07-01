@@ -1,3 +1,18 @@
+# Version 3.14
+
+* Most tools (`sonar-loc`, `sonar-measures-export`, `sonar-findings-export`, `sonar-projects`, `sonar-config`, `sonar-audit`) now select project keys and/or branches with regexp instead of comma separated list. This is more flexible. Old "key1,key2,key3" equivalent is "(key1|key2|key3)" 
+
+* `sonar-audit`: Added check that tokens max lifetime is bound (Add check on `sonar.auth.token.max.allowed.lifetime` is not confired as "no expiration")
+
+* `sonar-measures-export`: Updated list of default "main" metrics in line with new SonarQube 2025.x release
+
+
+* Hardening:
+- Bug fixes (#1752 #1764 #1789 #1786 #1798)
+- Improved tests: Verify that export output is as per expectations
+
+See https://github.com/okorach/sonar-tools/milestone/48 for details
+
 # Version 3.13
 
 * `sonar-projects` improvements
