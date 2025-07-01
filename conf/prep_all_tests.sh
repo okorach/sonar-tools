@@ -29,4 +29,7 @@ sonar-scanner -Dsonar.host.url=http://localhost:10000 -Dsonar.pullrequest.key=7 
 sonar-scanner -Dsonar.host.url=http://localhost:9000 -Dsonar.pullrequest.key=5 -Dsonar.pullrequest.branch=feature/5 -Dsonar.login="$SONAR_TOKEN_9_ADMIN_ANALYSIS"
 sonar-scanner -Dsonar.host.url=http://localhost:9000 -Dsonar.pullrequest.key=7 -Dsonar.pullrequest.branch=feature/7 -Dsonar.login="$SONAR_TOKEN_9_ADMIN_ANALYSIS"
 
+sonar-scanner -Dsonar.host.url=http://localhost:8000 -Dsonar.pullrequest.key=5 -Dsonar.pullrequest.branch=feature/5 -Dsonar.login="$SONAR_TOKEN_LTS_ADMIN_ANALYSIS"
+sonar-scanner -Dsonar.host.url=http://localhost:8000 -Dsonar.pullrequest.key=7 -Dsonar.pullrequest.branch=feature/7 -Dsonar.login="$SONAR_TOKEN_LTS_ADMIN_ANALYSIS"
+
 sonar-scanner -Dsonar.host.url=http://localhost:7000 -Dsonar.login="$SONAR_TOKEN_CB_ADMIN_ANALYSIS"

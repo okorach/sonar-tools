@@ -34,6 +34,8 @@ ApiPayload = Optional[dict[str, any]]
 
 KeyList = Optional[list[str]]
 
+KeySet = Optional[set[str]]
+
 ObjectDict = Optional[dict[str, object]]
 
 CliParams = Optional[dict[str, Union[str, int, float, list[str]]]]

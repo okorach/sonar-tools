@@ -66,18 +66,9 @@ MAIN_METRICS = (
     "critical_violations",
 )
 
-ENTERPRISE_10_MAIN_METRICS = (
-    "accepted_issues",
-    "prioritized_rule_issues",
-    "software_quality_blocker_issues",
-    "software_quality_high_issues",
-)
-
-ENTERPRISE_2025_3_MAIN_METRICS = (
-    "contains_ai_code",
-    "sca_count_any_issue",
-    "new_sca_count_any_issue",
-)
+MAIN_METRICS_10 = ("accepted_issues", "software_quality_blocker_issues", "software_quality_high_issues")
+MAIN_METRICS_ENTERPRISE_10 = ("prioritized_rule_issues",)
+MAIN_METRICS_ENTERPRISE_2025_3 = ("contains_ai_code", "sca_count_any_issue", "new_sca_count_any_issue")
 
 #: Dict of metric grouped by type (INT, FLOAT, WORK_DUR etc...)
 METRICS_BY_TYPE = {}
