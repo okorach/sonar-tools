@@ -1,3 +1,5 @@
+# Version 3.15 - under development
+
 # Version 3.14
 
 * Most tools (`sonar-loc`, `sonar-measures-export`, `sonar-findings-export`, `sonar-projects`, `sonar-config`, `sonar-audit`) now select project keys and/or branches with regexp instead of comma separated list. This is more flexible. Old "key1,key2,key3" equivalent is "(key1|key2|key3)" 
