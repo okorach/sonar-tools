@@ -25,6 +25,7 @@
 
 from typing import Optional
 import json
+from collections.abc import Generator
 from http import HTTPStatus
 from queue import Queue
 from threading import Thread
@@ -251,3 +252,46 @@ def search_objects(endpoint: object, object_class: any, params: types.ApiParams,
             except Exception as e:
                 log.error(f"Error {e} while searching {cname}.")
     return objects_list
+
+
+def search_generator(endpoint: object, object_class: any, params: types.ApiParams, threads: int = 8, api_version: int = 1) -> Generator[SqObject]:
+    """Runs a multi-threaded object search for searchable Sonar Objects"""
+    api = object_class.api_for(c.SEARCH, endpoint)
+    returned_field = object_class.SEARCH_RETURN_FIELD
+    new_params = {} if params is None else params.copy()
+    p_field = "pageIndex" if api_version == 2 else "p"
+    ps_field = "pageSize" if api_version == 2 else "ps"
+    if ps_field not in new_params:
+        new_params[ps_field] = 500
+
+    objects_list = []
+    cname = object_class.__name__.lower()
+
+    data = __get(endpoint, api, {**new_params, p_field: 1})
+    nb_pages = utilities.nbr_pages(data, api_version)
+    nb_objects = max(len(data[returned_field]), utilities.nbr_total_elements(data, api_version))
+    log.info(
+        "Searching %d %ss, %d pages of %d elements, %d pages in parallel...",
+        nb_objects,
+        cname,
+        nb_pages,
+        len(data[returned_field]),
+        threads,
+    )
+    if utilities.nbr_total_elements(data) > 0 and len(data[returned_field]) == 0:
+        log.fatal(msg := f"Index on {cname} is corrupted, please reindex before using API")
+        raise exceptions.SonarException(msg)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f"{cname}Search") as executor:
+        objects_list = list(__load(endpoint, object_class, data[returned_field]).values())
+        futures = [executor.submit(__get, endpoint, api, {**new_params, p_field: page}) for page in range(2, nb_pages + 1)]
+        while len(objects_list) > 0:
+            yield objects_list.pop(0)
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                data = future.result(timeout=60)
+                objects_list = list(__load(endpoint, object_class, data[returned_field]).values())
+                while len(objects_list) > 0:
+                    yield objects_list.pop(0)
+            except Exception as e:
+                log.error(f"Error {e} while searching {cname}.")
