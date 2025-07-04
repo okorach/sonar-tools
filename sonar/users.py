@@ -20,7 +20,9 @@
 
 """Abstraction of the SonarQube User concept"""
 from __future__ import annotations
-from typing import Union, Optional
+
+import concurrent.futures
+from typing import Optional
 import datetime as dt
 import json
 
@@ -526,17 +528,25 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings audit_settings: Configuration of audit
     :return: list of problems found
-    :rtype: list[Problem]
     """
     if not audit_settings.get("audit.users", True):
         log.info("Auditing users is disabled, skipping...")
         return []
-    log.info("--- Auditing users ---")
+    log.info("--- Auditing users: START ---")
     problems = []
-    for u in search(endpoint=endpoint).values():
-        problems += u.audit(audit_settings)
+    futures, futures_map = [], {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="UserAudit") as executor:
+        for user in search(endpoint=endpoint).values():
+            futures.append(future := executor.submit(User.audit, user, audit_settings))
+            futures_map[future] = user
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                problems += future.result(timeout=60)
+            except (TimeoutError, RequestException) as e:
+                log.error(f"Exception {str(e)} when auditing {str(futures_map[future])}.")
     if "write_q" in kwargs:
         kwargs["write_q"].put(problems)
+    log.info("--- Auditing users: END ---")
     return problems
 
 
