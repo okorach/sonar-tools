@@ -236,13 +236,20 @@ def json_dump(jsondata: Union[list[str], dict[str, str]], indent: int = 3, redac
 
 def csv_to_list(string: Optional[str], separator: str = ",") -> list[str]:
     """Converts a csv string to a list"""
-    if isinstance(string, list):
-        return string
-    if isinstance(string, tuple):
+    if isinstance(string, (list, tuple, set)):
         return list(string)
     if not string or re.match(r"^\s*$", string):
         return []
     return [s.strip() for s in string.split(separator)]
+
+
+def csv_to_set(string: Optional[str], separator: str = ",") -> set[str]:
+    """Converts a csv string to a set"""
+    if isinstance(string, (list, tuple, set)):
+        return set(string)
+    if not string or re.match(r"^\s*$", string):
+        return set()
+    return set(s.strip() for s in string.split(separator))
 
 
 def csv_to_regexp(string: Optional[str], separator: str = ",") -> str:
@@ -255,7 +262,9 @@ def list_to_regexp(str_list: list[str]) -> str:
     return "(" + "|".join(str_list) + ")" if len(str_list) > 0 else ""
 
 
-def list_to_csv(array: Union[None, str, int, float, list[str]], separator: str = ",", check_for_separator: bool = False) -> Optional[str]:
+def list_to_csv(
+    array: Union[None, str, int, float, list[str], set[str], tuple[str]], separator: str = ",", check_for_separator: bool = False
+) -> Optional[str]:
     """Converts a list of strings to CSV"""
     if isinstance(array, str):
         return csv_normalize(array, separator) if " " in array else array
