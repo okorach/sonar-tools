@@ -211,7 +211,6 @@ class User(sqobject.SqObject):
                 self.last_login = max(dt1, dt2)
             self.id = data["id"]
         self.__tokens = None
-        self._groups = self.groups(data)
         self.sq_json = data
 
     def groups(self, data: types.ApiPayload = None, **kwargs) -> types.KeyList:
