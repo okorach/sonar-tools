@@ -681,7 +681,7 @@ class Project(components.Component):
             return []
         return [Problem(get_rule(RuleId.PROJ_WRONG_SCANNER), self, str(self), proj_type, scanner)]
 
-    def audit(self, audit_settings: types.ConfigSettings, write_q: Queue[list[Problem]]) -> list[Problem]:
+    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits a project and returns the list of problems found
 
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
@@ -708,8 +708,6 @@ class Project(components.Component):
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"auditing {str(self)}", catch_all=True)
 
-        if write_q:
-            write_q.put(problems)
         return problems
 
     def export_zip(self, asynchronous: bool = False, timeout: int = 180) -> tuple[str, Optional[str]]:
@@ -1516,36 +1514,27 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
     return {key: Project.get_object(endpoint, key) for key in sorted(key_list)}
 
 
-def __audit_thread(
-    queue: Queue[Project],
-    results: list[Problem],
+def __new_audit(
+    project: Project,
     audit_settings: types.ConfigSettings,
     bindings: dict[str, str],
-    write_q: Optional[Queue[list[Problem]]],
 ) -> None:
     """Audit callback function for multitheaded audit"""
     audit_bindings = audit_settings.get("audit.projects.bindings", True)
-    while not queue.empty():
-        log.debug("Picking from the queue")
-        project = queue.get()
-        problems = project.audit(audit_settings, write_q)
-        try:
-            if project.endpoint.edition() == c.CE or not audit_bindings or project.is_part_of_monorepo():
-                queue.task_done()
-                log.debug("%s audit done", str(project))
-                continue
-            if audit_settings.get(AUDIT_MODE_PARAM, "") != "housekeeper":
-                bindkey = project.binding_key()
-                if bindkey and bindkey in bindings:
-                    problems.append(Problem(get_rule(RuleId.PROJ_DUPLICATE_BINDING), project, str(project), str(bindings[bindkey])))
-                else:
-                    bindings[bindkey] = project
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"auditing {str(project)}", catch_all=True)
-        __increment_processed(audit_settings)
-        results += problems
-        queue.task_done()
-    log.debug("Project audit queue empty, ending thread")
+    problems = project.audit(audit_settings)
+    try:
+        if project.endpoint.edition() == c.CE or not audit_bindings or project.is_part_of_monorepo():
+            return problems
+        if audit_settings.get(AUDIT_MODE_PARAM, "") != "housekeeper":
+            bindkey = project.binding_key()
+            if bindkey and bindkey in bindings:
+                problems.append(Problem(get_rule(RuleId.PROJ_DUPLICATE_BINDING), project, str(project), str(bindings[bindkey])))
+            else:
+                bindings[bindkey] = project
+    except (ConnectionError, RequestException) as e:
+        util.handle_error(e, f"auditing {str(project)}", catch_all=True)
+    __increment_processed(audit_settings)
+    return problems
 
 
 def __similar_keys(key1: str, key2: str) -> bool:
@@ -1575,6 +1564,27 @@ def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.
     return []
 
 
+def __audit_bindings(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
+    """Audits for duplicate project bindings"""
+    if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+        return []
+    if not audit_settings.get("audit.projects.bindings", True):
+        log.info("Project bindings auditing was disabled by configuration")
+        return []
+
+    log.info("Auditing for duplicate project bindings")
+    bindings = {}
+    problems = []
+    for project in projects_list.values():
+        bindkey = project.binding_key()
+        if not bindkey:
+            continue
+        if bindkey in bindings:
+            problems.append(Problem(get_rule(RuleId.PROJ_DUPLICATE_BINDING), project, str(project), str(bindings[bindkey])))
+        bindings[bindkey] = project
+    return problems
+
+
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
     """Audits all or a list of projects
 
@@ -1586,29 +1596,37 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     if not audit_settings.get("audit.projects", True):
         log.info("Auditing projects is disabled, audit skipped...")
         return []
-    log.info("--- Auditing projects ---")
+    log.info("--- Auditing projects: START ---")
     key_regexp = kwargs.get("key_list", None) or ".*"
-    plist = {k: v for k, v in get_list(endpoint, threads=audit_settings.get("threads", 8)).items() if not key_regexp or re.match(key_regexp, v.key)}
+    threads = audit_settings.get("threads", 1)
+    plist = {k: v for k, v in get_list(endpoint, threads=threads).items() if not key_regexp or re.match(key_regexp, v.key)}
     write_q = kwargs.get("write_q", None)
-    problems = []
     audit_settings["NBR_PROJECTS"] = len(plist)
     audit_settings["PROCESSED"] = 0
-    audit_q = Queue(maxsize=0)
-    _ = [audit_q.put(p) for p in plist.values()]
-    log.info("%d projects to audit, %d in queue", len(plist), audit_q.qsize())
-    bindings = {}
-    for i in range(audit_settings.get("threads", 1)):
-        log.debug("Starting project audit thread %d", i)
-        worker = Thread(target=__audit_thread, args=(audit_q, problems, audit_settings, bindings, write_q))
-        worker.setDaemon(True)
-        worker.setName(f"ProjectAudit{i}")
-        worker.start()
-    audit_q.join()
+    problems = []
+    futures, futures_map = [], {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjectAudit") as executor:
+        for project in plist.values():
+            futures.append(future := executor.submit(Project.audit, project, audit_settings))
+            futures_map[future] = project
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                proj_pbs = future.result(timeout=60)
+                problems += proj_pbs
+                if write_q:
+                    write_q.put(proj_pbs)
+            except (TimeoutError, RequestException) as e:
+                log.error(f"Exception {str(e)} when auditing {str(futures_map[future])}.")
     log.debug("Projects audit complete")
     duplicates = __audit_duplicates(plist, audit_settings)
-    if "write_q" in kwargs:
-        kwargs["write_q"].put(duplicates)
     problems += duplicates
+    if write_q:
+        write_q.put(duplicates)
+    bindings_problems = __audit_bindings(plist, audit_settings)
+    problems += bindings_problems
+    if write_q:
+        write_q.put(bindings_problems)
+    log.info("--- Auditing projects: END ---")
     return problems
 
 
