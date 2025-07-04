@@ -22,7 +22,7 @@
 from __future__ import annotations
 
 import concurrent.futures
-from typing import Optional
+from typing import Optional, Union
 import datetime as dt
 import json
 
@@ -529,8 +529,9 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     log.info("--- Auditing users: START ---")
     problems = []
     futures, futures_map = [], {}
+    api_version = 2 if endpoint.version() >= c.USER_API_V2_INTRO_VERSION else 1
     with concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="UserAudit") as executor:
-        for user in search(endpoint=endpoint).values():
+        for user in sqobject.search_generator(endpoint=endpoint, object_class=User, params={}, api_version=api_version):
             futures.append(future := executor.submit(User.audit, user, audit_settings))
             futures_map[future] = user
         for future in concurrent.futures.as_completed(futures):
