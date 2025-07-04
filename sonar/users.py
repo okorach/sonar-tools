@@ -430,24 +430,19 @@ class User(sqobject.SqObject):
 
     def audit(self, settings: types.ConfigSettings = None) -> list[Problem]:
         """Audits a user (user last connection date and tokens) and
-        returns the list of problems found (too old)
+        returns the list of problems found
 
-        :param settings: Options of what to audit and thresholds to raise problems
-        :type settings: dict
+        :param ConfigSettings settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
-        :rtype: list[Problem]
         """
         log.debug("Auditing %s", str(self))
-        protected_users = util.csv_to_list(settings.get("audit.tokens.neverExpire", ""))
+        protected_users = util.csv_to_set(settings.get("audit.tokens.neverExpire", ""))
         if self.login in protected_users:
             log.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
             return []
 
         today = dt.datetime.now(dt.timezone.utc).astimezone()
-        problems = []
-        for t in self.tokens():
-            problems += t.audit(settings=settings, today=today)
-
+        problems = [p for t in self.tokens() for p in t.audit(settings=settings, today=today)]
         if self.last_login:
             age = util.age(self.last_login, now=today)
             if age > settings.get("audit.users.maxLoginAge", 180):
