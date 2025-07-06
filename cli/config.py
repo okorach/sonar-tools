@@ -130,8 +130,7 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
     print(f'"{object_type}": ' + "{", file=fd)
     while not done:
         obj_json = queue.get()
-        done = obj_json is utilities.WRITE_END
-        if not done:
+        if not (done := obj_json is utilities.WRITE_END):
             if object_type == "groups":
                 obj_json = __prep_json_for_write(obj_json, {**export_settings, EXPORT_EMPTY: True})
             else:
@@ -163,7 +162,6 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
             "EXPORT_DEFAULTS": True,
             "FULL_EXPORT": kwargs.get(FULL_EXPORT, False),
             "MODE": mode,
-            "THREADS": kwargs[options.NBR_THREADS],
             "SKIP_ISSUES": kwargs.get("skipIssues", False),
         }
     )
