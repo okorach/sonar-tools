@@ -499,8 +499,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
-    :return: list of users JSON representation
-    :rtype: ObjectJsonRepr
+    :returns: list of users JSON representation
     """
     log.info("Exporting users")
     write_q = kwargs.get("write_q", None)
@@ -520,7 +519,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings audit_settings: Configuration of audit
-    :return: list of problems found
+    :returns: list of problems found
     """
     if not audit_settings.get("audit.users", True):
         log.info("Auditing users is disabled, skipping...")
@@ -549,8 +548,7 @@ def get_login_from_name(endpoint: pf.Platform, name: str) -> Union[str, None]:
 
     :param Platform endpoint: reference to the SonarQube platform
     :param str name: User name
-    :return: User login or None if name not found
-    :rtype: str or None
+    :returns: User login or None if name not found
     """
     u_list = search(endpoint=endpoint, params={"q": name})
     if not u_list:
