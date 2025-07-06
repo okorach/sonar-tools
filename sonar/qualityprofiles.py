@@ -629,8 +629,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None, **
         if nb_qp > 5:
             rule = get_rule(RuleId.QP_TOO_MANY_QP)
             problems.append(Problem(rule, f"{endpoint.external_url}/profiles?language={lang}", nb_qp, lang, 5))
-    if "write_q" in kwargs:
-        kwargs["write_q"].put(problems)
+    "write_q" in kwargs and kwargs["write_q"].put(problems)
     return problems
 
 
@@ -714,8 +713,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
             qp_list[lang] = {}
         qp_list[lang][name] = json_data
     qp_list = hierarchize(qp_list, endpoint=endpoint)
-    write_q = kwargs.get("write_q", None)
-    if write_q:
+    if write_q := kwargs.get("write_q", None):
         write_q.put(qp_list)
         write_q.put(util.WRITE_END)
     return dict(sorted(qp_list.items()))

@@ -415,8 +415,8 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
         rule_list["standard"] = other_rules
     if export_settings.get("MODE", "") == "MIGRATION":
         rule_list["thirdParty"] = {r.key: r.export() for r in third_party(endpoint=endpoint)}
-    write_q = kwargs.get("write_q", None)
-    if write_q:
+
+    if write_q := kwargs.get("write_q", None):
         write_q.put(rule_list)
         write_q.put(utilities.WRITE_END)
     return rule_list

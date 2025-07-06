@@ -918,8 +918,7 @@ def export(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs) 
     :rtype: ObjectJsonRepr
     """
     exp = endpoint.export(export_settings)
-    write_q = kwargs.get("write_q", None)
-    if write_q:
+    if write_q := kwargs.get("write_q", None):
         write_q.put(exp)
         write_q.put(util.WRITE_END)
     return exp
@@ -928,8 +927,7 @@ def export(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs) 
 def basics(endpoint: Platform, **kwargs) -> types.ObjectJsonRepr:
     """Returns an endpooint basic info (license, edition, version etc..)"""
     exp = endpoint.basics()
-    write_q = kwargs.get("write_q", None)
-    if write_q:
+    if write_q := kwargs.get("write_q", None):
         write_q.put(exp)
         write_q.put(util.WRITE_END)
     return exp
@@ -941,6 +939,5 @@ def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs) ->
         log.info("Auditing global settings is disabled, audit skipped...")
         return []
     pbs = endpoint.audit(audit_settings)
-    if "write_q" in kwargs:
-        kwargs["write_q"].put(pbs)
+    "write_q" in kwargs and kwargs["write_q"].put(pbs)
     return pbs

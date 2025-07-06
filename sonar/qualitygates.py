@@ -370,8 +370,7 @@ def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = N
         problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_GATES), f"{endpoint.external_url}/quality_gates", nb_qg, 5))
     for qg in quality_gates_list.values():
         problems += qg.audit(audit_settings)
-    if "write_q" in kwargs:
-        kwargs["write_q"].put(problems)
+    "write_q" in kwargs and kwargs["write_q"].put(problems)
     return problems
 
 

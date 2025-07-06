@@ -342,8 +342,7 @@ class Portfolio(aggregations.Aggregation):
             + self._audit_singleton(audit_settings)
             + self._audit_bg_task(audit_settings)
         )
-        if "write_q" in kwargs:
-            kwargs["write_q"].put(problems)
+        "write_q" in kwargs and kwargs["write_q"].put(problems)
         return problems
 
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
@@ -808,8 +807,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
         i += 1
         if i % 10 == 0 or i == nb_portfolios:
             log.info("Exported %d/%d portfolios (%d%%)", i, nb_portfolios, (i * 100) // nb_portfolios)
-    if write_q:
-        write_q.put(util.WRITE_END)
+    write_q and write_q.put(util.WRITE_END)
     return dict(sorted(exported_portfolios.items()))
 
 

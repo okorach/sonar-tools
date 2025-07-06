@@ -511,8 +511,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
             write_q.put(u_list[u_login])
         else:
             u_list[u_login].pop("login", None)
-    if write_q:
-        write_q.put(util.WRITE_END)
+    write_q and write_q.put(util.WRITE_END)
     return u_list
 
 
@@ -539,8 +538,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
                 problems += future.result(timeout=60)
             except (TimeoutError, RequestException) as e:
                 log.error(f"Exception {str(e)} when auditing {str(futures_map[future])}.")
-    if "write_q" in kwargs:
-        kwargs["write_q"].put(problems)
+    "write_q" in kwargs and kwargs["write_q"].put(problems)
     log.info("--- Auditing users: END ---")
     return problems
 

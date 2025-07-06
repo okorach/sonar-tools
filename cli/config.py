@@ -196,8 +196,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
                 func(endpoint, export_settings=export_settings, key_list=kwargs[options.KEY_REGEXP], write_q=write_q)
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
-                if write_q:
-                    write_q.put(utilities.WRITE_END)
+                write_q and write_q.put(utilities.WRITE_END)
             write_q.join()
         print("\n}", file=fd)
     if kwargs[options.FORMAT] == "yaml":
