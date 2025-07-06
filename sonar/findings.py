@@ -23,9 +23,6 @@ from __future__ import annotations
 import concurrent.futures
 import datetime
 from typing import Optional
-
-from queue import Queue
-from threading import Thread
 from requests import RequestException
 import Levenshtein
 

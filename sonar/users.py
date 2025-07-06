@@ -22,7 +22,7 @@
 from __future__ import annotations
 
 import concurrent.futures
-from typing import Optional
+from typing import Optional, Union
 import datetime as dt
 import json
 
@@ -430,24 +430,19 @@ class User(sqobject.SqObject):
 
     def audit(self, settings: types.ConfigSettings = None) -> list[Problem]:
         """Audits a user (user last connection date and tokens) and
-        returns the list of problems found (too old)
+        returns the list of problems found
 
-        :param settings: Options of what to audit and thresholds to raise problems
-        :type settings: dict
+        :param ConfigSettings settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
-        :rtype: list[Problem]
         """
         log.debug("Auditing %s", str(self))
-        protected_users = util.csv_to_list(settings.get("audit.tokens.neverExpire", ""))
+        protected_users = util.csv_to_set(settings.get("audit.tokens.neverExpire", ""))
         if self.login in protected_users:
             log.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
             return []
 
         today = dt.datetime.now(dt.timezone.utc).astimezone()
-        problems = []
-        for t in self.tokens():
-            problems += t.audit(settings=settings, today=today)
-
+        problems = [p for t in self.tokens() for p in t.audit(settings=settings, today=today)]
         if self.last_login:
             age = util.age(self.last_login, now=today)
             if age > settings.get("audit.users.maxLoginAge", 180):
@@ -504,8 +499,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
-    :return: list of users JSON representation
-    :rtype: ObjectJsonRepr
+    :returns: list of users JSON representation
     """
     log.info("Exporting users")
     write_q = kwargs.get("write_q", None)
@@ -516,8 +510,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
             write_q.put(u_list[u_login])
         else:
             u_list[u_login].pop("login", None)
-    if write_q:
-        write_q.put(util.WRITE_END)
+    write_q and write_q.put(util.WRITE_END)
     return u_list
 
 
@@ -526,7 +519,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings audit_settings: Configuration of audit
-    :return: list of problems found
+    :returns: list of problems found
     """
     if not audit_settings.get("audit.users", True):
         log.info("Auditing users is disabled, skipping...")
@@ -534,8 +527,9 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     log.info("--- Auditing users: START ---")
     problems = []
     futures, futures_map = [], {}
+    api_version = 2 if endpoint.version() >= c.USER_API_V2_INTRO_VERSION else 1
     with concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="UserAudit") as executor:
-        for user in search(endpoint=endpoint).values():
+        for user in sqobject.search_objects(endpoint=endpoint, object_class=User, params={}, api_version=api_version):
             futures.append(future := executor.submit(User.audit, user, audit_settings))
             futures_map[future] = user
         for future in concurrent.futures.as_completed(futures):
@@ -543,8 +537,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
                 problems += future.result(timeout=60)
             except (TimeoutError, RequestException) as e:
                 log.error(f"Exception {str(e)} when auditing {str(futures_map[future])}.")
-    if "write_q" in kwargs:
-        kwargs["write_q"].put(problems)
+    "write_q" in kwargs and kwargs["write_q"].put(problems)
     log.info("--- Auditing users: END ---")
     return problems
 
@@ -555,8 +548,7 @@ def get_login_from_name(endpoint: pf.Platform, name: str) -> Union[str, None]:
 
     :param Platform endpoint: reference to the SonarQube platform
     :param str name: User name
-    :return: User login or None if name not found
-    :rtype: str or None
+    :returns: User login or None if name not found
     """
     u_list = search(endpoint=endpoint, params={"q": name})
     if not u_list:

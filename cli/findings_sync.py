@@ -174,7 +174,7 @@ def main() -> None:
             syncer.SYNC_IGNORE_COMPONENTS: False,
             syncer.SYNC_SERVICE_ACCOUNT: params["login"],
             syncer.SYNC_SINCE_DATE: __since_date(**params),
-            syncer.SYNC_THREADS: params["threads"],
+            syncer.SYNC_THREADS: params[options.NBR_THREADS],
         }
 
         report = []
