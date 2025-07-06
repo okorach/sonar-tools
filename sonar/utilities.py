@@ -249,7 +249,7 @@ def csv_to_set(string: Optional[str], separator: str = ",") -> set[str]:
         return set(string)
     if not string or re.match(r"^\s*$", string):
         return set()
-    return set(s.strip() for s in string.split(separator))
+    return {s.strip() for s in string.split(separator)}
 
 
 def csv_to_regexp(string: Optional[str], separator: str = ",") -> str:
