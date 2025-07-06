@@ -1608,7 +1608,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
 
     write_q = kwargs.get("write_q", None)
     key_regexp = kwargs.get("key_list", ".+")
-    nb_threads = export_settings.get("THREADS", 8)
+    nb_threads = export_settings.get("threads", 8)
     _ = [qp.projects() for qp in qualityprofiles.get_list(endpoint).values()]
     proj_list = {k: v for k, v in get_list(endpoint=endpoint, threads=nb_threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)}
     total, current = len(proj_list), 0
