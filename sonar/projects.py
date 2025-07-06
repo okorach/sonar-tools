@@ -1650,16 +1650,18 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
         for future in concurrent.futures.as_completed(futures):
             try:
                 exp_json = future.result(timeout=60)
+                project = futures_map[future]
                 if write_q:
                     write_q.put(exp_json)
                 results[project.key] = exp_json
-                results[project.key].pop("key", None)
             except (TimeoutError, RequestException) as e:
-                log.error(f"Exception {str(e)} when exporting {str(futures_map[future])}.")
+                log.error(f"Exception {str(e)} when exporting {str(project)}.")
             current += 1
             lvl = log.INFO if current % 10 == 0 or total - current < 10 else log.DEBUG
             log.log(lvl, "%d/%d projects exported (%d%%)", current, total, (current * 100) // total)
     log.debug("Projects export complete")
+    if write_q:
+        write_q.put(util.WRITE_END)
     return dict(sorted(results.items()))
 
 
