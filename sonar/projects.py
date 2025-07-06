@@ -1588,7 +1588,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
                 log.error(f"Exception {str(e)} when auditing {str(futures_map[future])}.")
             current += 1
             lvl = log.INFO if current % 10 == 0 or total - current < 10 else log.DEBUG
-            log.log(lvl, "%d/%d projects processed (%d%%)", current, total, (total * 100) // total)
+            log.log(lvl, "%d/%d projects audited (%d%%)", current, total, (current * 100) // total)
     log.debug("Projects audit complete, auditing bindings and duplicates")
     for audit_func in __audit_bindings, __audit_duplicates:
         problems += (more_pbs := audit_func(plist, audit_settings))
@@ -1636,24 +1636,31 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     nb_threads = export_settings.get("THREADS", 8)
     _ = [qp.projects() for qp in qualityprofiles.get_list(endpoint).values()]
     proj_list = {k: v for k, v in get_list(endpoint=endpoint, threads=nb_threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)}
-    export_settings["NBR_PROJECTS"] = len(proj_list)
-    export_settings["PROCESSED"] = 0
-    log.info("Exporting %d projects", export_settings["NBR_PROJECTS"])
-
-    export_q = Queue(maxsize=0)
-    _ = [export_q.put(p) for p in proj_list.values()]
-    log.info("%d projects to export, %d in queue", len(proj_list), export_q.qsize())
-    project_settings = {}
-    for i in range(export_settings.get("THREADS", 8)):
-        log.debug("Starting project export thread %d", i)
-        worker = Thread(target=__export_thread, args=(export_q, project_settings, export_settings, write_q))
-        worker.daemon = True
-        worker.name = f"ProjectExport{i}"
-        worker.start()
-    export_q.join()
-    if write_q:
-        write_q.put(util.WRITE_END)
-    return dict(sorted(project_settings.items()))
+    total, current = len(proj_list), 0
+    log.info("Exporting %d projects", total)
+    log.info("--- Export projects: START ---")
+    key_regexp = kwargs.get("key_list", None) or ".*"
+    threads = export_settings.get("threads", 4)
+    results = {}
+    futures, futures_map = [], {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjectExport") as executor:
+        for project in proj_list.values():
+            futures.append(future := executor.submit(Project.export, project, export_settings, None))
+            futures_map[future] = project
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                exp_json = future.result(timeout=60)
+                if write_q:
+                    write_q.put(exp_json)
+                results[project.key] = exp_json
+                results[project.key].pop("key", None)
+            except (TimeoutError, RequestException) as e:
+                log.error(f"Exception {str(e)} when exporting {str(futures_map[future])}.")
+            current += 1
+            lvl = log.INFO if current % 10 == 0 or total - current < 10 else log.DEBUG
+            log.log(lvl, "%d/%d projects exported (%d%%)", current, total, (current * 100) // total)
+    log.debug("Projects export complete")
+    return dict(sorted(results.items()))
 
 
 def exists(key: str, endpoint: pf.Platform) -> bool:
