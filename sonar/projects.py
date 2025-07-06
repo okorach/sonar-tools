@@ -1598,30 +1598,6 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     return problems
 
 
-def __increment_processed(counters: dict[str, str]) -> None:
-    """Increments the counter of processed projects and display log"""
-    with _CLASS_LOCK:
-        counters["PROCESSED"] += 1
-    nb, tot = counters["PROCESSED"], counters["NBR_PROJECTS"]
-    lvl = log.INFO if nb % 10 == 0 or tot - nb < 10 else log.DEBUG
-    log.log(lvl, "%d/%d projects processed (%d%%)", nb, tot, (nb * 100) // tot)
-
-
-def __export_thread(queue: Queue[Project], results: dict[str, str], export_settings: types.ConfigSettings, write_q: Optional[Queue] = None) -> None:
-    """Project export callback function for multitheaded export"""
-    while not queue.empty():
-        project = queue.get()
-        exp_json = project.export(export_settings=export_settings)
-        if write_q:
-            write_q.put(exp_json)
-        else:
-            results[project.key] = exp_json
-            results[project.key].pop("key", None)
-        __increment_processed(export_settings)
-        queue.task_done()
-    log.info("Project export queue empty, export complete")
-
-
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports all or a list of projects configuration as dict
 
