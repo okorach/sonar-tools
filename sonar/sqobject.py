@@ -27,8 +27,6 @@ from typing import Optional
 import json
 from collections.abc import Generator
 from http import HTTPStatus
-from queue import Queue
-from threading import Thread
 import concurrent.futures
 import requests
 from requests import RequestException
