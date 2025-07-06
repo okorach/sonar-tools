@@ -33,8 +33,7 @@ from datetime import datetime
 
 from typing import Optional
 from http import HTTPStatus
-from threading import Thread, Lock
-from queue import Queue
+from threading import Lock
 from requests import HTTPError, RequestException
 import Levenshtein
 
