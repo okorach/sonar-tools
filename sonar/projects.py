@@ -1567,8 +1567,8 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         log.info("Auditing projects is disabled, audit skipped...")
         return []
     log.info("--- Auditing projects: START ---")
-    key_regexp = kwargs.get("key_list", None) or ".*"
-    threads = audit_settings.get("threads", 1)
+    key_regexp = kwargs.get("key_list", ".+")
+    threads = audit_settings.get("threads", 4)
     plist = {k: v for k, v in get_list(endpoint, threads=threads).items() if not key_regexp or re.match(key_regexp, v.key)}
     write_q = kwargs.get("write_q", None)
     total, current = len(plist), 0
@@ -1610,23 +1610,19 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     proj_list = {k: v for k, v in get_list(endpoint=endpoint, threads=nb_threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)}
     total, current = len(proj_list), 0
     log.info("Exporting %d projects", total)
-    log.info("--- Export projects: START ---")
-    key_regexp = kwargs.get("key_list", None) or ".*"
-    threads = export_settings.get("threads", 4)
     results = {}
     futures, futures_map = [], {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjectExport") as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=nb_threads, thread_name_prefix="ProjectExport") as executor:
         for project in proj_list.values():
             futures.append(future := executor.submit(Project.export, project, export_settings, None))
             futures_map[future] = project
         for future in concurrent.futures.as_completed(futures):
             try:
                 exp_json = future.result(timeout=60)
-                project = futures_map[future]
                 write_q and write_q.put(exp_json)
-                results[project.key] = exp_json
+                results[futures_map[future].key] = exp_json
             except (TimeoutError, RequestException) as e:
-                log.error(f"Exception {str(e)} when exporting {str(project)}.")
+                log.error(f"Exception {str(e)} when exporting {str(futures_map[future])}.")
             current += 1
             lvl = log.INFO if current % 10 == 0 or total - current < 10 else log.DEBUG
             log.log(lvl, "%d/%d projects exported (%d%%)", current, total, (current * 100) // total)
