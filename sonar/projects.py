@@ -686,7 +686,6 @@ class Project(components.Component):
 
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
-        :rtype: list[Problem]
         """
         log.debug("Auditing %s", str(self))
         problems = []
@@ -1514,29 +1513,6 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
     return {key: Project.get_object(endpoint, key) for key in sorted(key_list)}
 
 
-def __new_audit(
-    project: Project,
-    audit_settings: types.ConfigSettings,
-    bindings: dict[str, str],
-) -> None:
-    """Audit callback function for multitheaded audit"""
-    audit_bindings = audit_settings.get("audit.projects.bindings", True)
-    problems = project.audit(audit_settings)
-    try:
-        if project.endpoint.edition() == c.CE or not audit_bindings or project.is_part_of_monorepo():
-            return problems
-        if audit_settings.get(AUDIT_MODE_PARAM, "") != "housekeeper":
-            bindkey = project.binding_key()
-            if bindkey and bindkey in bindings:
-                problems.append(Problem(get_rule(RuleId.PROJ_DUPLICATE_BINDING), project, str(project), str(bindings[bindkey])))
-            else:
-                bindings[bindkey] = project
-    except (ConnectionError, RequestException) as e:
-        util.handle_error(e, f"auditing {str(project)}", catch_all=True)
-    __increment_processed(audit_settings)
-    return problems
-
-
 def __similar_keys(key1: str, key2: str) -> bool:
     """Returns whether 2 project keys are similar"""
     if key1 == key2:
@@ -1550,18 +1526,17 @@ def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.
         return []
     if not audit_settings.get("audit.projects.duplicates", True):
         log.info("Project duplicates auditing was disabled by configuration")
-    else:
-        log.info("Auditing for potential duplicate projects")
-        duplicates = []
-        pair_set = set()
-        for key1, p in projects_list.items():
-            for key2 in projects_list:
-                pair = " ".join(sorted([key1, key2]))
-                if __similar_keys(key1, key2) and pair not in pair_set:
-                    duplicates.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
-                    pair_set.add(pair)
-        return duplicates
-    return []
+        return []
+    log.info("Auditing for potential duplicate projects")
+    duplicates = []
+    pair_set = set()
+    for key1, p in projects_list.items():
+        for key2 in projects_list:
+            pair = " ".join(sorted([key1, key2]))
+            if __similar_keys(key1, key2) and pair not in pair_set:
+                duplicates.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
+            pair_set.add(pair)
+    return duplicates
 
 
 def __audit_bindings(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
@@ -1576,10 +1551,7 @@ def __audit_bindings(projects_list: dict[str, Project], audit_settings: types.Co
     bindings = {}
     problems = []
     for project in projects_list.values():
-        bindkey = project.binding_key()
-        if not bindkey:
-            continue
-        if bindkey in bindings:
+        if (bindkey := project.binding_key()) is not None and bindkey in bindings:
             problems.append(Problem(get_rule(RuleId.PROJ_DUPLICATE_BINDING), project, str(project), str(bindings[bindkey])))
         bindings[bindkey] = project
     return problems
@@ -1590,8 +1562,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings audit_settings: Configuration of audit
-    ::return: list of problems found
-    :rtype: list[Problem]
+    :returns: list of problems found
     """
     if not audit_settings.get("audit.projects", True):
         log.info("Auditing projects is disabled, audit skipped...")
@@ -1601,8 +1572,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     threads = audit_settings.get("threads", 1)
     plist = {k: v for k, v in get_list(endpoint, threads=threads).items() if not key_regexp or re.match(key_regexp, v.key)}
     write_q = kwargs.get("write_q", None)
-    audit_settings["NBR_PROJECTS"] = len(plist)
-    audit_settings["PROCESSED"] = 0
+    total, current = len(plist), 0
     problems = []
     futures, futures_map = [], {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjectAudit") as executor:
@@ -1611,21 +1581,19 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
             futures_map[future] = project
         for future in concurrent.futures.as_completed(futures):
             try:
-                proj_pbs = future.result(timeout=60)
-                problems += proj_pbs
+                problems += (proj_pbs := future.result(timeout=60))
                 if write_q:
                     write_q.put(proj_pbs)
             except (TimeoutError, RequestException) as e:
                 log.error(f"Exception {str(e)} when auditing {str(futures_map[future])}.")
-    log.debug("Projects audit complete")
-    duplicates = __audit_duplicates(plist, audit_settings)
-    problems += duplicates
-    if write_q:
-        write_q.put(duplicates)
-    bindings_problems = __audit_bindings(plist, audit_settings)
-    problems += bindings_problems
-    if write_q:
-        write_q.put(bindings_problems)
+            current += 1
+            lvl = log.INFO if current % 10 == 0 or total - current < 10 else log.DEBUG
+            log.log(lvl, "%d/%d projects processed (%d%%)", current, total, (total * 100) // total)
+    log.debug("Projects audit complete, auditing bindings and duplicates")
+    for audit_func in __audit_bindings, __audit_duplicates:
+        problems += (more_pbs := audit_func(plist, audit_settings))
+        if write_q:
+            write_q.put(more_pbs)
     log.info("--- Auditing projects: END ---")
     return problems
 
