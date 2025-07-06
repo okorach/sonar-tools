@@ -208,7 +208,7 @@ def main() -> None:
             "audit.projects.branches.maxLastAnalysisAge": branch_age,
             "audit.projects.pullRequests.maxLastAnalysisAge": pr_age,
             projects.AUDIT_MODE_PARAM: "housekeeper",
-            "threads": kwargs[options.NBR_THREADS],
+            options.NBR_THREADS: kwargs[options.NBR_THREADS],
         }
         log.info("Housekeeper settings = %s", util.json_dump(settings))
         problems = []
