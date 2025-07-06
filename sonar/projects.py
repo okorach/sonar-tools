@@ -1581,7 +1581,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         for future in concurrent.futures.as_completed(futures):
             try:
                 problems += (proj_pbs := future.result(timeout=60))
-                write_q.put(proj_pbs) if write_q else None
+                write_q and write_q.put(proj_pbs)
             except (TimeoutError, RequestException) as e:
                 log.error(f"Exception {str(e)} when auditing {str(futures_map[future])}.")
             current += 1
@@ -1590,7 +1590,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     log.debug("Projects audit complete, auditing bindings and duplicates")
     for audit_func in __audit_bindings, __audit_duplicates:
         problems += (more_pbs := audit_func(plist, audit_settings))
-        write_q.put(more_pbs) if write_q else None
+        write_q and write_q.put(more_pbs)
     log.info("--- Auditing projects: END ---")
     return problems
 
@@ -1623,7 +1623,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
             try:
                 exp_json = future.result(timeout=60)
                 project = futures_map[future]
-                write_q.put(exp_json) if write_q else None
+                write_q and write_q.put(exp_json)
                 results[project.key] = exp_json
             except (TimeoutError, RequestException) as e:
                 log.error(f"Exception {str(e)} when exporting {str(project)}.")
@@ -1631,7 +1631,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
             lvl = log.INFO if current % 10 == 0 or total - current < 10 else log.DEBUG
             log.log(lvl, "%d/%d projects exported (%d%%)", current, total, (current * 100) // total)
     log.debug("Projects export complete")
-    write_q.put(util.WRITE_END) if write_q else None
+    write_q and write_q.put(util.WRITE_END)
     return dict(sorted(results.items()))
 
 
