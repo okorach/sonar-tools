@@ -89,6 +89,8 @@ _IMPORTABLE_PROPERTIES = (
     "aiCodeFix",
 )
 
+_PROJECT_QUALIFIER = "qualifier=TRK"
+
 _UNNEEDED_CONTEXT_DATA = (
     "sonar.announcement.message",
     "sonar.auth.github.allowUsersToSignUp",
@@ -141,12 +143,10 @@ class Project(components.Component):
     API = {
         c.CREATE: "projects/create",
         c.DELETE: "projects/delete",
-        # c.SEARCH: "projects/search",
         c.SEARCH: "components/search_projects",
         c.SET_TAGS: "project_tags/set",
         c.GET_TAGS: "components/show",
     }
-    # SEARCH_API = "components/search_projects" - This one does not require admin permission but returns APPs too
 
     def __init__(self, endpoint: pf.Platform, key: str) -> None:
         """
@@ -654,7 +654,7 @@ class Project(components.Component):
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
-            data = self.endpoint.get_paginated(api="components/search_projects", params={"filter": "qualifier=TRK"}, return_field="components")
+            data = self.endpoint.get_paginated(api=Project.API[c.SEARCH], params={"filter": _PROJECT_QUALIFIER}, return_field="components")
             p_data = next((p for p in data["components"] if p["key"] == self.key), None)
             if p_data:
                 self.sq_json.update(p_data)
@@ -1476,14 +1476,12 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
 def search(endpoint: pf.Platform, params: types.ApiParams = None, threads: int = 8) -> dict[str, Project]:
     """Searches projects in SonarQube
 
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param dict params: list of parameters to narrow down the search
-    :return: list of projects
-    :rtype: dict{key: Project}
+    :param endpoint: Reference to the SonarQube platform
+    :param params: list of parameters to narrow down the search
+    :returns: list of projects
     """
     new_params = {} if params is None else params.copy()
-    # new_params["qualifiers"] = "TRK"
-    return sqobject.search_objects(endpoint=endpoint, object_class=Project, params={**new_params, "filter": "qualifier=TRK"}, threads=threads)
+    return sqobject.search_objects(endpoint=endpoint, object_class=Project, params={**new_params, "filter": _PROJECT_QUALIFIER}, threads=threads)
 
 
 def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, use_cache: bool = True) -> dict[str, Project]:
@@ -1501,7 +1499,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
             global_setting = settings.Setting.read(key=settings.AI_CODE_FIX, endpoint=endpoint)
             if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
                 return p_list
-            for d in endpoint.get_paginated(api="components/search_projects", params={"filter": "qualifier=TRK"}, return_field="components")[
+            for d in endpoint.get_paginated(api=Project.API[c.SEARCH], params={"filter": _PROJECT_QUALIFIER}, return_field="components")[
                 "components"
             ]:
                 if d["key"] in p_list:
@@ -1831,28 +1829,3 @@ def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRep
     for proj in util.dict_to_list(clean_json, "key"):
         new_json.append(convert_proj_for_yaml(proj))
     return new_json
-
-
-def get_list_new(endpoint: pf.Platform) -> dict[str, Project]:
-    """
-    Fetches a list of projects from SonarQube and returns them as a dictionary.
-
-    :param Platform endpoint: reference to the SonarQube platform
-    :returns: Dictionary with project keys as keys and Project objects as values
-    """
-    projects_dict = {}
-    try:
-        # Fetch projects using the SonarQube API
-        response = endpoint.api_request("api/components/search_projects")
-        projects = response.get("components", [])
-
-        # Iterate through the projects and populate the dictionary
-        for project in projects:
-            project_key = project.get("key")
-            if project_key:
-                projects_dict[project_key] = Project(endpoint, project_key, project)
-    except Exception as e:
-        log.error("Failed to fetch projects: %s", str(e))
-        raise
-
-    return projects_dict
