@@ -115,25 +115,25 @@ do
 
     logmsg "=====> IT sonar-measures-export $env"
 
-    f="measures-$env-unrel.csv"; run_test "$f" sonar-measures-export -b -m _main --withURL
-    f="measures-$env-2.csv";     run_test_stdout "$f" sonar-measures-export -b -m _main --withURL
-    f="measures-$env-3.csv";     run_test_stdout "$f" sonar-measures-export -b -p -r -d -m _all
+    f="measures-$env-unrel.csv"; run_test "$f" sonar-measures-export -b '.+' -m _main --withURL
+    f="measures-$env-2.csv";     run_test_stdout "$f" sonar-measures-export -b '.+' -m _main --withURL
+    f="measures-$env-3.csv";     run_test_stdout "$f" sonar-measures-export -b '.+' -p -r -d -m _all
 
-    f="measures-$env-1.json";    run_test "$f" sonar-measures-export -b -m _all
-    f="measures-$env-2.json";    run_test_stdout "$f" sonar-measures-export -b -p -r -d -m _all --format json
-    f="measures-$env-3.csv";     run_test "$f" sonar-measures-export -b --csvSeparator '+' -m _main
+    f="measures-$env-1.json";    run_test "$f" sonar-measures-export -b '.+' -m _all
+    f="measures-$env-2.json";    run_test_stdout "$f" sonar-measures-export -b '.+' -p -r -d -m _all --format json
+    f="measures-$env-3.csv";     run_test "$f" sonar-measures-export -b '.+' --csvSeparator '+' -m _main
 
-    f="measures-history-$env-1.csv";     run_test "$f" sonar-measures-export -b --history
-    f="measures-history-$env-2.csv";     run_test "$f" sonar-measures-export -b -k okorach_sonar-tools --history --asTable
-    f="measures-history-$env-3.json";    run_test "$f" sonar-measures-export -b --history
+    f="measures-history-$env-1.csv";     run_test "$f" sonar-measures-export -b '.+' --history
+    f="measures-history-$env-2.csv";     run_test "$f" sonar-measures-export -b '.+' -k okorach_sonar-tools --history --asTable
+    f="measures-history-$env-3.json";    run_test "$f" sonar-measures-export -b '.+' --history
 
     logmsg "=====> IT sonar-findings-export $env"
 
     f="findings-$env-unrel.csv";  run_test "$f" sonar-findings-export -v DEBUG
     f="findings-$env-1.json";     run_test "$f" sonar-findings-export
-    f="findings-$env-2.json";     run_test_stdout "$f" sonar-findings-export -v DEBUG --format json -k okorach_audio-video-tools,okorach_sonar-tools
-    f="findings-$env-3.json";     run_test_stdout "$f" sonar-findings-export -v DEBUG --format json -k okorach_audio-video-tools,okorach_sonar-tools --useFindings
-    f="findings-$env-4.csv";      run_test_stdout "$f" sonar-findings-export --format csv -k okorach_audio-video-tools,okorach_sonar-tools --csvSeparator '+'
+    f="findings-$env-2.json";     run_test_stdout "$f" sonar-findings-export -v DEBUG --format json -k '(okorach_audio-video-tools|okorach_sonar-tools)'
+    f="findings-$env-3.json";     run_test_stdout "$f" sonar-findings-export -v DEBUG --format json -k '(okorach_audio-video-tools|okorach_sonar-tools)' --useFindings
+    f="findings-$env-4.csv";      run_test_stdout "$f" sonar-findings-export --format csv -k '(okorach_audio-video-tools|okorach_sonar-tools)' --csvSeparator '+'
 
 
     if [ "$env" = "sonarcloud" ]; then
@@ -162,7 +162,7 @@ do
     f="rules-$env-4.json";        run_test "$f" sonar-rules -e
 
     logmsg "=====> IT sonar-config $env"
-    f="config-$env-1.json";       run_test_stdout "$f" sonar-config -e -w "qualitygates, qualityprofiles, projects" -k okorach_audio-video-tools,okorach_sonar-tools
+    f="config-$env-1.json";       run_test_stdout "$f" sonar-config -e -w "qualitygates, qualityprofiles, projects" -k '(okorach_audio-video-tools|okorach_sonar-tools)'
     f="config-$env-2.json";       run_test_stdout "$f" sonar-config --export
     f="config-$env-unrel.json";   run_test "$f" sonar-config --export
 
@@ -177,7 +177,7 @@ do
     fi
 
     logmsg "=====> IT sonar-findings-export $env ADMIN export"
-    f1="findings-$env-admin.csv";   run_test "$f1" sonar-findings-export -v DEBUG -k okorach_audio-video-tools,okorach_sonar-tools
+    f1="findings-$env-admin.csv";   run_test "$f1" sonar-findings-export -v DEBUG -k '(okorach_audio-video-tools|okorach_sonar-tools)'
 
     #--------------------------------------------------------------------------
     source "$DIR"/it-docker.sh "$env"
@@ -191,7 +191,7 @@ do
             logmsg "Using LTS token"
             export SONAR_TOKEN=$SONAR_TOKEN_LTS_USER_USER
         fi
-        f2="findings-$env-user.csv";    run_test "$f2" sonar-findings-export -v DEBUG -k okorach_audio-video-tools,okorach_sonar-tools
+        f2="findings-$env-user.csv";    run_test "$f2" sonar-findings-export -v DEBUG -k '(okorach_audio-video-tools|okorach_sonar-tools)'
     fi
 
     # Restore admin token as long as previous version is 2.9 or less
@@ -205,7 +205,7 @@ do
         export SONAR_TOKEN=$SONAR_TOKEN_LTS_ADMIN_USER
     fi
     logmsg "=====> IT released tools $env"
-    f="measures-$env-rel.csv"; run_test "$f" sonar-measures-export -b -m _main --withURL
+    f="measures-$env-rel.csv"; run_test "$f" sonar-measures-export -b '.+' -m _main --withURL
     f="findings-$env-rel.csv"; run_test "$f" sonar-findings-export
     # Breaks in version 3.3
     # f="audit-$env-rel.csv"; run_test "$f" sonar-audit -f "audit-$env-rel.csv"

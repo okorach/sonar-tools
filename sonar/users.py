@@ -529,7 +529,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     futures, futures_map = [], {}
     api_version = 2 if endpoint.version() >= c.USER_API_V2_INTRO_VERSION else 1
     with concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="UserAudit") as executor:
-        for user in sqobject.search_objects(endpoint=endpoint, object_class=User, params={}, api_version=api_version):
+        for user in sqobject.search_objects(endpoint=endpoint, object_class=User, params={}, api_version=api_version).values():
             futures.append(future := executor.submit(User.audit, user, audit_settings))
             futures_map[future] = user
         for future in concurrent.futures.as_completed(futures):

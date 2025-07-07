@@ -49,7 +49,7 @@ To be able to audit everything, the token provided to `sonar-audit` should have 
 
 `sonar-audit` can be configured with a configuration file to select what to audit and some different
 other audit parameters.
-You can create a default config file in the home directory by running `sonar-audit --config`
+You can create a default config file in the user home directory by running `sonar-audit --config >.sonar-audit.properties`
 
 See [sonar-audit configuration](https://github.com/okorach/sonar-tools/blob/master/doc/audit-settings.md) for the details of parameters
 

@@ -331,9 +331,10 @@ class Component(sq.SqObject):
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
         """
+
         loc_min = audit_settings.get("audit.projects.minLocSize", 10000)
-        fp_min = audit_settings.get("minLocPerFalsePositiveIssue", 500)
-        accepted_min = audit_settings.get("minLocPerAcceptedIssue", 500)
+        fp_min = audit_settings.get("audit.projects.minLocPerFalsePositiveIssue", 500)
+        accepted_min = audit_settings.get("audit.projects.minLocPerAcceptedIssue", 500)
         m_list = ["ncloc", "false_positive_issues", "accepted_issues" if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION else "wont_fix_issues"]
         d = {k: int(v.value) if v is not None else 0 for k, v in self.get_measures(m_list).items()}
         ncloc, nb_accepted, nb_fp = (
