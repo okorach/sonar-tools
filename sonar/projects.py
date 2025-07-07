@@ -154,8 +154,8 @@ class Project(components.Component):
         :param str key: The project key
         """
         super().__init__(endpoint=endpoint, key=key)
-        self._last_analysis = "undefined"
-        self._branches_last_analysis = "undefined"
+        self._last_analysis = None
+        self._branches_last_analysis = None
         self._permissions = None
         self._branches = None
         self._pull_requests = None
@@ -283,18 +283,17 @@ class Project(components.Component):
         """
         return f"{self.base_url(local=False)}/dashboard?id={self.key}"
 
-    def last_analysis(self, include_branches: bool = False) -> datetime:
+    def last_analysis(self, include_branches: bool = False) -> Optional[datetime]:
         """
         :param include_branches: Take into account branch to determine last analysis, defaults to False
         :type include_branches: bool, optional
-        :return: Project last analysis date
-        :rtype: datetime
+        :returns: Project last analysis date or None if never analyzed
         """
-        if self._last_analysis == "undefined":
-            self.refresh()
+        if not self._last_analysis:
+            self.reload(self.get_navigation_data())
         if not include_branches:
             return self._last_analysis
-        if self._branches_last_analysis != "undefined":
+        if self._branches_last_analysis:
             return self._branches_last_analysis
 
         self._branches_last_analysis = self._last_analysis
@@ -302,14 +301,9 @@ class Project(components.Component):
             # Starting from 9.2 project last analysis date takes into account branches and PR
             return self._branches_last_analysis
 
-        log.debug("Branches = %s", str(self.branches().values()))
-        log.debug("PR = %s", str(self.pull_requests().values()))
-        for b in list(self.branches().values()) + list(self.pull_requests().values()):
-            if b.last_analysis() is None:
-                continue
-            b_ana_date = b.last_analysis()
-            if self._branches_last_analysis is None or b_ana_date > self._branches_last_analysis:
-                self._branches_last_analysis = b_ana_date
+        self._branches_last_analysis = max(
+            b.last_analysis() for b in list(self.branches().values()) + list(self.pull_requests().values()) if b.last_analysis()
+        )
         return self._branches_last_analysis
 
     def loc(self) -> int:
