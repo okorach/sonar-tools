@@ -551,11 +551,13 @@ class Project(components.Component):
     def __audit_zero_loc(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project utility projects with 0 LoCs
 
-        :param audit_settings: Settings (thresholds) to raise problems
-        :type audit_settings: dict
-        :return: List of problems found, or empty list
-        :rtype: list[Problem]
+        :param ConfigSettings audit_settings: Settings (thresholds) to raise problems
+        :returns: List of problems found, or empty list
         """
+        if not audit_settings.get("audit.projects.zeroLoC", True):
+            log.info("Zero LoC audit disabled by configuration, skipping")
+            return []
+
         if (
             (not audit_settings.get(_AUDIT_BRANCHES_PARAM, True) or self.endpoint.edition() == c.CE)
             and self.last_analysis() is not None
@@ -572,6 +574,7 @@ class Project(components.Component):
             return []
         elif not audit_settings.get("audit.projects.bindings", True):
             log.info("%s binding validation disabled, skipped", str(self))
+            return []
         elif not self.has_binding():
             log.info("%s has no binding, skipping binding validation...", str(self))
             return []
@@ -686,7 +689,7 @@ class Project(components.Component):
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
         """
-        log.debug("Auditing %s", str(self))
+        log.debug("Auditing %s with settings %s", str(self), util.json_dump(audit_settings))
         problems = []
         try:
             problems = self.__audit_last_analysis(audit_settings)

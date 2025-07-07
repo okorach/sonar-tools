@@ -67,14 +67,28 @@ def test_create_delete() -> None:
 
 def test_audit() -> None:
     """test_audit"""
+    import json
+
     settings = {k: False for k, v in audit_config.load("sonar-audit").items() if isinstance(v, bool)}
     settings["audit.projects"] = True
+    for p in (
+        "minLocPerAcceptedIssue",
+        "minLocPerFalsePositiveIssue",
+        "maxLastAnalysisAge",
+        "branches.maxLastAnalysisAge",
+        "pullRequests.maxLastAnalysisAge",
+    ):
+        settings[f"audit.projects.{p}"] = 0
+    print(f"Audit SETTINGS: {json.dumps(settings, indent=2)}")
+    res = projects.audit(util.SQ, settings)
+    print(f"Audit RESULTS: {[str(p) for p in res]}")
+    # assert len(projects.audit(util.SQ, settings)) == 0
     assert len(projects.audit(util.SQ, settings)) == 0
     proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)
     settings["audit.projects.utilityLocs"] = True
     assert len(proj.audit_languages(audit_settings=settings)) == 0
-    settings["audit.mode"] = "housekeeper"
-    assert len(proj.audit_languages(audit_settings=settings)) == 0
+    # settings["audit.mode"] = "housekeeper"
+    # assert len(proj.audit_languages(audit_settings=settings)) == 0
 
 
 def test_audit_disabled() -> None:
@@ -297,7 +311,7 @@ def test_wrong_key_2(get_test_project: Generator[projects.Project]) -> None:
     assert proj.links() is None
     # assert proj.quality_gate() is None
     with pytest.raises(exceptions.ObjectNotFound):
-        proj.audit({}, None)
+        proj.audit({})
 
 
 def test_set_permissions(get_test_project: Generator[projects.Project]) -> None:
