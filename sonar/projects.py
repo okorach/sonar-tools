@@ -141,7 +141,8 @@ class Project(components.Component):
     API = {
         c.CREATE: "projects/create",
         c.DELETE: "projects/delete",
-        c.SEARCH: "projects/search",
+        # c.SEARCH: "projects/search",
+        c.SEARCH: "components/search_projects",
         c.SET_TAGS: "project_tags/set",
         c.GET_TAGS: "components/show",
     }
@@ -1487,8 +1488,8 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None, threads: int =
     :rtype: dict{key: Project}
     """
     new_params = {} if params is None else params.copy()
-    new_params["qualifiers"] = "TRK"
-    return sqobject.search_objects(endpoint=endpoint, object_class=Project, params=new_params, threads=threads)
+    # new_params["qualifiers"] = "TRK"
+    return sqobject.search_objects(endpoint=endpoint, object_class=Project, params={**new_params, "filter": "qualifier=TRK"}, threads=threads)
 
 
 def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, use_cache: bool = True) -> dict[str, Project]:
@@ -1836,3 +1837,28 @@ def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRep
     for proj in util.dict_to_list(clean_json, "key"):
         new_json.append(convert_proj_for_yaml(proj))
     return new_json
+
+
+def get_list_new(endpoint: pf.Platform) -> dict[str, Project]:
+    """
+    Fetches a list of projects from SonarQube and returns them as a dictionary.
+
+    :param Platform endpoint: reference to the SonarQube platform
+    :returns: Dictionary with project keys as keys and Project objects as values
+    """
+    projects_dict = {}
+    try:
+        # Fetch projects using the SonarQube API
+        response = endpoint.api_request("api/components/search_projects")
+        projects = response.get("components", [])
+
+        # Iterate through the projects and populate the dictionary
+        for project in projects:
+            project_key = project.get("key")
+            if project_key:
+                projects_dict[project_key] = Project(endpoint, project_key, project)
+    except Exception as e:
+        log.error("Failed to fetch projects: %s", str(e))
+        raise
+
+    return projects_dict
