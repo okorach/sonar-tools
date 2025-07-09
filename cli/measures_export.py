@@ -81,12 +81,12 @@ def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyS
         if endpoint.version() >= (2025, 3, 0):
             main_metrics += metrics.MAIN_METRICS_ENTERPRISE_2025_3
     if "_all" in wanted_metrics or "*" in wanted_metrics:
-        all_metrics = metrics.search(endpoint).keys()
+        all_metrics = list(metrics.search(endpoint).keys())
         all_metrics.remove("quality_gate_details")
         # Hack: With SonarQube 7.9 and below new_development_cost measure can't be retrieved
         if not endpoint.is_sonarcloud() and endpoint.version() < (8, 0, 0):
             all_metrics.remove("new_development_cost")
-        wanted_metrics = main_metrics + sorted(all_metrics - main_metrics)
+        wanted_metrics = main_metrics + sorted(set(all_metrics) - set(main_metrics))
     elif "_main" in wanted_metrics:
         wanted_metrics = main_metrics
     else:
