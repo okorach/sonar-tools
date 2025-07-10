@@ -142,6 +142,7 @@ class Project(components.Component):
     SEARCH_RETURN_FIELD = "components"
     API = {
         c.CREATE: "projects/create",
+        c.GET: "components/show",
         c.DELETE: "projects/delete",
         c.SEARCH: "components/search_projects",
         c.SET_TAGS: "project_tags/set",
@@ -181,17 +182,11 @@ class Project(components.Component):
         if o:
             return o
         try:
-            data = json.loads(endpoint.get(Project.API[c.SEARCH], params={"projects": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
-            if len(data["components"]) == 0:
-                log.error("Project key '%s' not found", key)
-                raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
-            return cls.load(endpoint, data["components"][0])
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting project '{key}'", catch_http_errors=(HTTPStatus.FORBIDDEN,))
-            data = json.loads(endpoint.get(_NAV_API, params={"component": key}).text)
-            if "errors" in data:
-                raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
-            return cls.load(endpoint, data)
+            data = json.loads(endpoint.get(Project.API[c.GET], params={"component": key}).text)
+        except RequestException as e:
+            util.handle_error(e, f"Getting project {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
+        return cls.load(endpoint, data["component"])
 
     @classmethod
     def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Project:
@@ -247,11 +242,13 @@ class Project(components.Component):
         :return: self
         :rtype: Project
         """
-        data = json.loads(self.get(Project.API[c.SEARCH], params={"projects": self.key}).text)
-        if len(data["components"]) == 0:
+        try:
+            data = json.loads(self.get(Project.API[c.GET], params={"component": self.key}).text)
+        except RequestException as e:
+            util.handle_error(e, f"searching project {self.key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             Project.CACHE.pop(self)
             raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
-        return self.reload(data["components"][0])
+        return self.reload(data["component"])
 
     def reload(self, data: types.ApiPayload) -> Project:
         """Reloads a project with JSON data coming from api/components/search request
@@ -1456,7 +1453,7 @@ class Project(components.Component):
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.GET: {"project": self.key}}
+        ops = {c.GET: {"component": self.key}, c.DELETE: {"project": self.key}}
         return ops[op] if op in ops else ops[c.GET]
 
 

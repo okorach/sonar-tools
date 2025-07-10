@@ -16,6 +16,7 @@ tmp/
 *.yml
 .venv/
 .DS_Store
+!sonar/api/api.json
 
 !sonar/config.json
 !test/config.json
