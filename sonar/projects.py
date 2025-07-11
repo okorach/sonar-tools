@@ -548,24 +548,6 @@ class Project(components.Component):
         log.debug("%s utility LoCs count (%d) seems reasonable", str(self), utility_locs)
         return []
 
-    def __audit_zero_loc(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        """Audits project utility projects with 0 LoCs
-
-        :param ConfigSettings audit_settings: Settings (thresholds) to raise problems
-        :returns: List of problems found, or empty list
-        """
-        if not audit_settings.get("audit.projects.zeroLoC", True):
-            log.info("Zero LoC audit disabled by configuration, skipping")
-            return []
-
-        if (
-            (not audit_settings.get(_AUDIT_BRANCHES_PARAM, True) or self.endpoint.edition() == c.CE)
-            and self.last_analysis() is not None
-            and self.loc() == 0
-        ):
-            return [Problem(get_rule(RuleId.PROJ_ZERO_LOC), self, str(self))]
-        return []
-
     def __audit_binding_valid(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
@@ -694,18 +676,18 @@ class Project(components.Component):
         try:
             problems = self.__audit_last_analysis(audit_settings)
             problems += self.__audit_visibility(audit_settings)
-            problems += self.__audit_zero_loc(audit_settings)
+            problems += self.__audit_binding_valid(audit_settings)
             # Skip language audit, as this can be problematic
             # problems += self.__audit_languages(audit_settings)
             if audit_settings.get(AUDIT_MODE_PARAM, "") != "housekeeper":
                 problems += self.permissions().audit(audit_settings)
-            problems += self.__audit_branches(audit_settings)
-            problems += self.__audit_pull_requests(audit_settings)
-            problems += self._audit_bg_task(audit_settings)
-            problems += self.__audit_binding_valid(audit_settings)
+
             problems += self.__audit_scanner(audit_settings)
-            problems += self._audit_history_retention(audit_settings)
-            problems += self._audit_accepted_or_fp_issues(audit_settings)
+            problems += self._audit_component(audit_settings)
+            if self.endpoint.edition() != c.CE and audit_settings.get("audit.project.branches", True):
+                problems += self.__audit_branches(audit_settings)
+                problems += self.__audit_pull_requests(audit_settings)
+
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"auditing {str(self)}", catch_all=True)
 

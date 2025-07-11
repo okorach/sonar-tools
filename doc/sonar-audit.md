@@ -191,16 +191,17 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
     - Above patterns and exceptions are configurable
   - Projects with `sonar.scm.disabled` set to `true`
   - Projects with both a `main` and a `master` branch
-  - Analysis warnings on all branches analysis
-  - Last background task with failed SCM detection
-  - Last background task on main branch `FAILED`
+  - Project, branches or PRs last background task with analysis warnings
+  - Project, branches or PRs last background task with failed SCM detection
+  - Project, branches or PRs last background task `FAILED`
   - Last analysis with an obsolete scanner version (by default more than 2 years old)
   - Last analysis was with Scanner for .Net 9.2.x that has a vulnerability
   - Projects analyzed with apparently a wrong scanner (Can't be certain in all cases)
-  - Projects with too many analysis history data points (due to wrong housekeeping settings
+  - Projects or branches with too many analysis history data points (due to wrong housekeeping settings
     or wrong usage of `sonar.projectVersion`)
-  - Projects with too many accepted or false positive issues (Projects > 10K LoC and more than 1 accepted/FP issue
+  - Projects or branches with too many accepted or false positive issues (Projects > 10K LoC and more than 1 accepted/FP issue
     per 500 LoC)
+  - Project or branches with new code is too much code (More than 25,000 lines by default, configurable)
 - Branches: (if `audit.project.branches = yes`, default `yes`)
   - Branches never analyzed but marked as "keep when inactive"
 - Portfolios: (if `audit.applications = yes`, default `yes`)

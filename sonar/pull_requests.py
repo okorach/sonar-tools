@@ -86,11 +86,11 @@ class PullRequest(components.Component):
         return self._last_analysis
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        age = util.age(self.last_analysis())
-        if age is None:  # Main branch not analyzed yet
-            return []
+        """Audits the pull request according to the audit settings"""
+        problems = self._audit_component(audit_settings)
+        if (age := util.age(self.last_analysis())) is None:  # Main branch not analyzed yet
+            return problems
         max_age = audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)
-        problems = []
         if age > max_age:
             problems.append(Problem(get_rule(RuleId.PULL_REQUEST_LAST_ANALYSIS), self, str(self), age))
         else:

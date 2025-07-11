@@ -278,12 +278,6 @@ class Branch(components.Component):
         Branch.CACHE.put(self)
         return True
 
-    def __audit_zero_loc(self) -> list[Problem]:
-        """Audits whether a branch has 0 LoC"""
-        if self.last_analysis() and self.loc() == 0:
-            return [Problem(get_rule(RuleId.PROJ_ZERO_LOC), self, str(self))]
-        return []
-
     def __audit_never_analyzed(self) -> list[Problem]:
         """Detects branches that have never been analyzed are are kept when inactive"""
         if not self.last_analysis() and self.is_kept_when_inactive():
@@ -344,15 +338,15 @@ class Branch(components.Component):
         return (report, counters)
 
     def __audit_last_analysis(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        age = util.age(self.last_analysis())
-        if self.is_main() or age is None:
-            # Main branch (not purgeable) or branch not analyzed yet
+        if self.is_main():
+            log.debug("%s is main (not purgeable)", str(self))
+            return []
+        if (age := util.age(self.last_analysis())) is None:
+            log.debug("%s last analysis audit is disabled, skipped...", str(self))
             return []
         max_age = audit_settings.get("audit.projects.branches.maxLastAnalysisAge", 30)
         problems = []
-        if self.is_main():
-            log.debug("%s is main (not purgeable)", str(self))
-        elif self.is_kept_when_inactive():
+        if self.is_kept_when_inactive():
             log.debug("%s is kept when inactive (not purgeable)", str(self))
         elif age > max_age:
             problems.append(Problem(get_rule(RuleId.BRANCH_LAST_ANALYSIS), self, str(self), age))
@@ -371,14 +365,7 @@ class Branch(components.Component):
             return []
         log.debug("Auditing %s", str(self))
         try:
-            return (
-                self.__audit_last_analysis(audit_settings)
-                + self.__audit_zero_loc()
-                + self.__audit_never_analyzed()
-                + self._audit_bg_task(audit_settings)
-                + self._audit_history_retention(audit_settings)
-                + self._audit_accepted_or_fp_issues(audit_settings)
-            )
+            return self.__audit_last_analysis(audit_settings) + self.__audit_never_analyzed() + self._audit_component(audit_settings)
         except Exception as e:
             log.error("%s while auditing %s, audit skipped", util.error_msg(e), str(self))
         return []

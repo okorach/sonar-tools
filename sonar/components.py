@@ -290,6 +290,7 @@ class Component(sq.SqObject):
         """Audits project background tasks"""
         if audit_settings.get("audit.mode", "") == "housekeeper":
             return []
+        # Cutting short if background task audit is disabled because getting last task is costly
         if (
             not audit_settings.get("audit.projects.exclusions", True)
             and not audit_settings.get("audit.projects.analysisWarnings", True)
@@ -299,13 +300,13 @@ class Component(sq.SqObject):
             log.debug("%s: Background task audit disabled, audit skipped", str(self))
             return []
         log.debug("Auditing last background task of %s", str(self))
-        last_task = self.last_task()
-        if last_task:
+
+        if last_task := self.last_task():
             last_task.concerned_object = self
             return last_task.audit(audit_settings)
         return []
 
-    def _audit_history_retention(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_history_retention(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits whether a project has an excessive number of history data points
 
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
@@ -325,7 +326,7 @@ class Component(sq.SqObject):
             return [Problem(get_rule(RuleId.PROJ_HISTORY_COUNT), self, str(self), history_len)]
         return []
 
-    def _audit_accepted_or_fp_issues(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_accepted_or_fp_issues(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits whether a project or branch has too many accepted or FP issues
 
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
@@ -350,6 +351,40 @@ class Component(sq.SqObject):
         if nb_fp * fp_min > ncloc:
             problems.append(Problem(get_rule(RuleId.PROJ_TOO_MANY_FP), self, str(self), nb_fp, ncloc))
         return problems
+
+    def __audit_new_code(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits whether the object (project, branch, PR) new code does not exceed a certain amount
+
+        :param ConfigSettings audit_settings: Options of what to audit and thresholds to raise problems
+        :return: List of problems found, or empty list
+        """
+        new_lines = self.get_measure("new_lines", 0)
+        if new_lines > audit_settings.get("audit.projects.maxNewCodeLines", 25000):
+            return [Problem(get_rule(RuleId.PROJ_TOO_MUCH_NEW_CODE), self, str(self), new_lines)]
+        return []
+
+    def _audit_component(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits a component (project, branch, PR) for various issues
+
+        :param ConfigSettings audit_settings: Options of what to audit and thresholds to raise problems
+        :return: List of problems found, or empty list
+        """
+        return (
+            self._audit_bg_task(audit_settings)
+            + self.__audit_history_retention(audit_settings)
+            + self.__audit_accepted_or_fp_issues(audit_settings)
+            + self.__audit_new_code(audit_settings)
+            + self.__audit_zero_loc(audit_settings)
+        )
+
+    def __audit_zero_loc(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits whether a component (project, branch, PR) has 0 LoC"""
+        if audit_settings.get("audit.projects.zeroLoc", True):
+            log.debug("Auditing %s zero LOC disabled, skipped...", str(self))
+            return []
+        if self.last_analysis() and self.loc() == 0:
+            return [Problem(get_rule(RuleId.PROJ_ZERO_LOC), self, str(self))]
+        return []
 
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
