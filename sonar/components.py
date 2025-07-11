@@ -290,6 +290,7 @@ class Component(sq.SqObject):
         """Audits project background tasks"""
         if audit_settings.get("audit.mode", "") == "housekeeper":
             return []
+        # Cutting short if background task audit is disabled because getting last task is costly
         if (
             not audit_settings.get("audit.projects.exclusions", True)
             and not audit_settings.get("audit.projects.analysisWarnings", True)
@@ -299,8 +300,8 @@ class Component(sq.SqObject):
             log.debug("%s: Background task audit disabled, audit skipped", str(self))
             return []
         log.debug("Auditing last background task of %s", str(self))
-        last_task = self.last_task()
-        if last_task:
+
+        if last_task := self.last_task():
             last_task.concerned_object = self
             return last_task.audit(audit_settings)
         return []
@@ -361,6 +362,20 @@ class Component(sq.SqObject):
         if new_lines > audit_settings.get("audit.projects.maxNewCodeLines", 25000):
             return [Problem(get_rule(RuleId.PROJ_TOO_MUCH_NEW_CODE), self, str(self), new_lines)]
         return []
+
+    def _audit_component(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits a component (project, branch, PR) for various issues
+
+        :param ConfigSettings audit_settings: Options of what to audit and thresholds to raise problems
+        :return: List of problems found, or empty list
+        """
+        return (
+            self._audit_bg_task(audit_settings)
+            + self._audit_history_retention(audit_settings)
+            + self._audit_accepted_or_fp_issues(audit_settings)
+            + self._audit_new_code(audit_settings)
+            + self._audit_zero_loc()
+        )
 
     def _audit_zero_loc(self) -> list[Problem]:
         """Audits whether a component (project, branch, PR) has 0 LoC"""
