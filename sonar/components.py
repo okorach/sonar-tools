@@ -374,11 +374,14 @@ class Component(sq.SqObject):
             + self._audit_history_retention(audit_settings)
             + self._audit_accepted_or_fp_issues(audit_settings)
             + self._audit_new_code(audit_settings)
-            + self._audit_zero_loc()
+            + self._audit_zero_loc(audit_settings)
         )
 
-    def _audit_zero_loc(self) -> list[Problem]:
+    def _audit_zero_loc(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits whether a component (project, branch, PR) has 0 LoC"""
+        if audit_settings.get("audit.projects.zeroLoc", True):
+            log.debug("Auditing %s zero LOC disabled, skipped...", str(self))
+            return []
         if self.last_analysis() and self.loc() == 0:
             return [Problem(get_rule(RuleId.PROJ_ZERO_LOC), self, str(self))]
         return []
