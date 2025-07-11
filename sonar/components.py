@@ -306,7 +306,7 @@ class Component(sq.SqObject):
             return last_task.audit(audit_settings)
         return []
 
-    def _audit_history_retention(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_history_retention(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits whether a project has an excessive number of history data points
 
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
@@ -326,7 +326,7 @@ class Component(sq.SqObject):
             return [Problem(get_rule(RuleId.PROJ_HISTORY_COUNT), self, str(self), history_len)]
         return []
 
-    def _audit_accepted_or_fp_issues(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_accepted_or_fp_issues(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits whether a project or branch has too many accepted or FP issues
 
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
@@ -352,7 +352,7 @@ class Component(sq.SqObject):
             problems.append(Problem(get_rule(RuleId.PROJ_TOO_MANY_FP), self, str(self), nb_fp, ncloc))
         return problems
 
-    def _audit_new_code(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_new_code(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits whether the object (project, branch, PR) new code does not exceed a certain amount
 
         :param ConfigSettings audit_settings: Options of what to audit and thresholds to raise problems
@@ -371,13 +371,13 @@ class Component(sq.SqObject):
         """
         return (
             self._audit_bg_task(audit_settings)
-            + self._audit_history_retention(audit_settings)
-            + self._audit_accepted_or_fp_issues(audit_settings)
-            + self._audit_new_code(audit_settings)
-            + self._audit_zero_loc(audit_settings)
+            + self.__audit_history_retention(audit_settings)
+            + self.__audit_accepted_or_fp_issues(audit_settings)
+            + self.__audit_new_code(audit_settings)
+            + self.__audit_zero_loc(audit_settings)
         )
 
-    def _audit_zero_loc(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_zero_loc(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits whether a component (project, branch, PR) has 0 LoC"""
         if audit_settings.get("audit.projects.zeroLoc", True):
             log.debug("Auditing %s zero LOC disabled, skipped...", str(self))
