@@ -681,18 +681,18 @@ class Project(components.Component):
             # problems += self.__audit_languages(audit_settings)
             if audit_settings.get(AUDIT_MODE_PARAM, "") != "housekeeper":
                 problems += self.permissions().audit(audit_settings)
-            
+
             problems += self.__audit_scanner(audit_settings)
             if self.endpoint.edition() == c.CE or not audit_settings.get("audit.project.branches", True):
                 problems += self._audit_accepted_or_fp_issues(audit_settings)
                 problems += self._audit_bg_task(audit_settings)
                 problems += self._audit_zero_loc(audit_settings)
                 problems += self._audit_history_retention(audit_settings)
-                problems += self._audit_new_code(audit_settings)    
+                problems += self._audit_new_code(audit_settings)
             else:
                 problems += self.__audit_branches(audit_settings)
                 problems += self.__audit_pull_requests(audit_settings)
-            
+
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"auditing {str(self)}", catch_all=True)
 
