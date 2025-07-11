@@ -476,6 +476,12 @@
         "object": "Project",
         "message": "{} seems to be a {} project by is analyzed with the Scanner {}"
     },
+    "PROJ_TOO_MUCH_NEW_CODE": {
+        "severity": "MEDIUM",
+        "type": "GOVERNANCE",
+        "object": "Project",
+        "message": "{} has {} lines in new code, this is potentially too much for CaYC to be efficient"
+    },
     "BG_TASK_FAILED": {
         "severity": "MEDIUM",
         "type": "OPERATIONS",

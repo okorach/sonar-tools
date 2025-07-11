@@ -278,12 +278,6 @@ class Branch(components.Component):
         Branch.CACHE.put(self)
         return True
 
-    def __audit_zero_loc(self) -> list[Problem]:
-        """Audits whether a branch has 0 LoC"""
-        if self.last_analysis() and self.loc() == 0:
-            return [Problem(get_rule(RuleId.PROJ_ZERO_LOC), self, str(self))]
-        return []
-
     def __audit_never_analyzed(self) -> list[Problem]:
         """Detects branches that have never been analyzed are are kept when inactive"""
         if not self.last_analysis() and self.is_kept_when_inactive():
@@ -373,11 +367,13 @@ class Branch(components.Component):
         try:
             return (
                 self.__audit_last_analysis(audit_settings)
-                + self.__audit_zero_loc()
+                + self._audit_zero_loc()
                 + self.__audit_never_analyzed()
                 + self._audit_bg_task(audit_settings)
                 + self._audit_history_retention(audit_settings)
                 + self._audit_accepted_or_fp_issues(audit_settings)
+                + self._audit_new_code(audit_settings)
+                + self._audit_new_code(audit_settings) 
             )
         except Exception as e:
             log.error("%s while auditing %s, audit skipped", util.error_msg(e), str(self))

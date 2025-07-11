@@ -351,6 +351,23 @@ class Component(sq.SqObject):
             problems.append(Problem(get_rule(RuleId.PROJ_TOO_MANY_FP), self, str(self), nb_fp, ncloc))
         return problems
 
+    def _audit_new_code(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits whether the object (project, branch, PR) new code does not exceed a certain amount
+
+        :param ConfigSettings audit_settings: Options of what to audit and thresholds to raise problems
+        :return: List of problems found, or empty list
+        """
+        new_lines = self.get_measure("new_lines", 0)
+        if new_lines > audit_settings.get("audit.projects.maxNewCodeLines", 25000):
+            return [Problem(get_rule(RuleId.PROJ_TOO_MUCH_NEW_CODE), self, str(self), new_lines)]
+        return []
+
+    def _audit_zero_loc(self) -> list[Problem]:
+        """Audits whether a component (project, branch, PR) has 0 LoC"""
+        if self.last_analysis() and self.loc() == 0:
+            return [Problem(get_rule(RuleId.PROJ_ZERO_LOC), self, str(self))]
+        return []
+
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
         return tasks.search_last(component_key=self.key, endpoint=self.endpoint)
