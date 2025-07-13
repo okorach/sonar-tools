@@ -1416,41 +1416,40 @@ class Project(components.Component):
         params["repositoryName"] = params.pop("repository")
         return self.post("alm_settings/set_azure_binding", params=params).ok
 
-    def update(self, data: types.ObjectJsonRepr) -> None:
+    def update(self, config: types.ObjectJsonRepr) -> None:
         """Updates a project with a whole configuration set
 
-        :param dict data: JSON of configuration settings
-        :return: Nothing
+        :param config: JSON of configuration settings
         """
-        if "permissions" in data:
-            decoded_perms = {}
-            for ptype in perms.PERMISSION_TYPES:
-                if ptype not in data["permissions"]:
-                    continue
-                decoded_perms[ptype] = {u: perms.decode(v) for u, v in data["permissions"][ptype].items()}
+        if "permissions" in config:
+            decoded_perms = {
+                p: {u: perms.decode(v) for u, v in config["permissions"][p].items()} for p in perms.PERMISSION_TYPES if p in config["permissions"]
+            }
             self.set_permissions(decoded_perms)
-        self.set_links(data)
-        self.set_tags(util.csv_to_list(data.get("tags", None)))
-        self.set_quality_gate(data.get("qualityGate", None))
-        for lang, qp_name in data.get("qualityProfiles", {}).items():
-            self.set_quality_profile(language=lang, quality_profile=qp_name)
-        for bname, bdata in data.get("branches", {}).items():
-            if bdata.get("isMain", False):
-                self.rename_main_branch(bname)
-                break
-        if "binding" in data:
+        self.set_links(config)
+        self.set_tags(util.csv_to_list(config.get("tags", None)))
+        self.set_quality_gate(config.get("qualityGate", None))
+
+        _ = [self.set_quality_profile(language=lang, quality_profile=qp_name) for lang, qp_name in config.get("qualityProfiles", {}).items()]
+        if branches := config.get("branches", None):
             try:
-                self.set_devops_binding(data["binding"])
+                bname = next(bname for bname, bdata in branches.items() if bdata.get("isMain", False))
+                self.rename_main_branch(bname)
+            except StopIteration:
+                log.warning("No main branch defined in %s configuration", self)
+        if "binding" in config:
+            try:
+                self.set_devops_binding(config["binding"])
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
         else:
             log.debug("%s has no devops binding, skipped", str(self))
-        settings_to_apply = {k: v for k, v in data.items() if k not in _SETTINGS_WITH_SPECIFIC_IMPORT}
+        settings_to_apply = {k: v for k, v in config.items() if k not in _SETTINGS_WITH_SPECIFIC_IMPORT}
         self.set_settings(settings_to_apply)
-        if "aiCodeAssurance" in data:
+        if "aiCodeAssurance" in config:
             log.warning("'aiCodeAssurance' project setting is deprecated, please use '%s' instead", _CONTAINS_AI_CODE)
-        self.set_contains_ai_code(data.get(_CONTAINS_AI_CODE, data.get("aiCodeAssurance", False)))
-        if visi := data.get("visibility", None):
+        self.set_contains_ai_code(config.get(_CONTAINS_AI_CODE, config.get("aiCodeAssurance", False)))
+        if visi := config.get("visibility", None):
             self.set_visibility(visi)
         # TODO: Set branch settings See https://github.com/okorach/sonar-tools/issues/1828
 
