@@ -608,7 +608,7 @@
         "message": "{} has been created {} days ago but never used, it should be revoked"
     },
     "TOKEN_WITHOUT_EXPIRATION": {
-        "severity": "MEDIUM",
+        "severity": "HIGH",
         "type": "SECURITY",
         "object": "Token",
         "message": "{} has no expiration date, this is a security risk"
@@ -616,16 +616,19 @@
     "TOKEN_LIFETIME_UNLIMITED": {
         "severity": "HIGH",
         "type": "SECURITY",
+        "object": "Token",
         "message": "Max token lifetime global setting is not limited, this is a security risk"
     },
     "TOKEN_LIFETIME_TOO_HIGH": {
         "severity": "MEDIUM",
         "type": "SECURITY",
+        "object": "Token",
         "message": "Max token lifetime global setting ({} days) is higher than the recommended value of {} days, this is a security risk"
     },
     "TOKEN_EXPIRED": {
         "severity": "LOW",
         "type": "OPERATIONS",
+        "object": "Token",
         "message": "{} is expired and should be deleted as an housekeeping best practice"
     },
     "USER_UNUSED": {
