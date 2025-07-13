@@ -1431,9 +1431,9 @@ class Project(components.Component):
         self.set_quality_gate(config.get("qualityGate", None))
 
         _ = [self.set_quality_profile(language=lang, quality_profile=qp_name) for lang, qp_name in config.get("qualityProfiles", {}).items()]
-        if branches := config.get("branches", None):
+        if branch_config := config.get("branches", None):
             try:
-                bname = next(bname for bname, bdata in branches.items() if bdata.get("isMain", False))
+                bname = next(bname for bname, bdata in branch_config.items() if bdata.get("isMain", False))
                 self.rename_main_branch(bname)
             except StopIteration:
                 log.warning("No main branch defined in %s configuration", self)
