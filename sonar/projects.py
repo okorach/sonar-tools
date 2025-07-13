@@ -1433,11 +1433,16 @@ class Project(components.Component):
         else:
             log.debug("%s has no devops binding, skipped", str(self))
         settings_to_apply = {
-            k: v for k, v in data.items() if k not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding", "name")
+            k: v
+            for k, v in data.items()
+            if k
+            not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding", "name", "visibility", "branches", _CONTAINS_AI_CODE)
         }
         if "aiCodeAssurance" in data:
             log.warning("'aiCodeAssurance' project setting is deprecated, please use '%s' instead", _CONTAINS_AI_CODE)
         self.set_contains_ai_code(data.get(_CONTAINS_AI_CODE, data.get("aiCodeAssurance", False)))
+        if visi := data.get("visibility", None):
+            self.set_visibility(visi)
         # TODO: Set branch settings
         self.set_settings(settings_to_apply)
 
