@@ -1412,7 +1412,7 @@ class Project(components.Component):
         params["projectName"] = slug
         params["repositoryName"] = params.pop("repository")
         return self.post("alm_settings/set_azure_binding", params=params).ok
-    
+
     def update(self, data: types.ObjectJsonRepr) -> None:
         """Updates a project with a whole configuration set
     
