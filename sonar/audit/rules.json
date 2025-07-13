@@ -623,6 +623,11 @@
         "type": "SECURITY",
         "message": "Max token lifetime global setting ({} days) is higher than the recommended value of {} days, this is a security risk"
     },
+    "TOKEN_EXPIRED": {
+        "severity": "LOW",
+        "type": "OPERATIONS",
+        "message": "{} is expired and should be deleted as an housekeeping best practice"
+    },
     "USER_UNUSED": {
         "severity": "MEDIUM",
         "type": "SECURITY",
