@@ -140,6 +140,7 @@ _SETTINGS_WITH_SPECIFIC_IMPORT = (
     "name",
 )
 
+
 class Project(components.Component):
     """
     Abstraction of the SonarQube project concept
