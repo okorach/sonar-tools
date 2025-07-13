@@ -126,8 +126,7 @@ class ProjectPermissions(permissions.Permissions):
                 problems.append(Problem(rule, self.concerned_object, str(self.concerned_object)))
 
         max_perms = audit_settings.get("audit.projects.permissions.maxGroups", 5)
-        counter = self.count(perm_type="groups", perm_filter=permissions.PROJECT_PERMISSIONS)
-        if counter > max_perms:
+        if (counter := len(groups)) > max_perms:
             rule = get_rule(RuleId.PROJ_PERM_MAX_GROUPS)
             problems.append(Problem(rule, self.concerned_object, str(self.concerned_object), counter, max_perms))
 
