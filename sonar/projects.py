@@ -129,6 +129,19 @@ _UNNEEDED_TASK_DATA = (
     "type",
 )
 
+_SETTINGS_WITH_SPECIFIC_IMPORT = (
+    "permissions",
+    "tags",
+    "links",
+    "qualityGate",
+    "qualityProfiles",
+    "binding",
+    "name",
+    "visibility",
+    "branches",
+    _CONTAINS_AI_CODE,
+)
+
 
 class Project(components.Component):
     """
@@ -1432,19 +1445,14 @@ class Project(components.Component):
                 log.warning(e.message)
         else:
             log.debug("%s has no devops binding, skipped", str(self))
-        settings_to_apply = {
-            k: v
-            for k, v in data.items()
-            if k
-            not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding", "name", "visibility", "branches", _CONTAINS_AI_CODE)
-        }
+        settings_to_apply = {k: v for k, v in data.items() if k not in _SETTINGS_WITH_SPECIFIC_IMPORT}
+        self.set_settings(settings_to_apply)
         if "aiCodeAssurance" in data:
             log.warning("'aiCodeAssurance' project setting is deprecated, please use '%s' instead", _CONTAINS_AI_CODE)
         self.set_contains_ai_code(data.get(_CONTAINS_AI_CODE, data.get("aiCodeAssurance", False)))
         if visi := data.get("visibility", None):
             self.set_visibility(visi)
-        # TODO: Set branch settings
-        self.set_settings(settings_to_apply)
+        # TODO: Set branch settings See https://github.com/okorach/sonar-tools/issues/1828
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
