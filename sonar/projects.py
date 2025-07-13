@@ -129,6 +129,7 @@ _UNNEEDED_TASK_DATA = (
     "type",
 )
 
+# Keys to exclude when applying settings in update()
 _SETTINGS_WITH_SPECIFIC_IMPORT = (
     "permissions",
     "tags",
@@ -137,9 +138,6 @@ _SETTINGS_WITH_SPECIFIC_IMPORT = (
     "qualityProfiles",
     "binding",
     "name",
-    "visibility",
-    "branches",
-    _CONTAINS_AI_CODE,
 )
 
 
@@ -1509,11 +1507,12 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
     return {key: Project.get_object(endpoint, key) for key in sorted(key_list)}
 
 
-def __similar_keys(key1: str, key2: str) -> bool:
+def __similar_keys(key1: str, key2: str, max_distance: int = 5) -> bool:
     """Returns whether 2 project keys are similar"""
     if key1 == key2:
         return False
-    return len(key2) >= 7 and (re.match(key2, key1)) or Levenshtein.distance(key1, key2, score_cutoff=6) <= 5
+    max_distance = min(len(key1) // 2, len(key2) // 2, max_distance)
+    return len(key2) >= 7 and (re.match(key2, key1)) or Levenshtein.distance(key1, key2, score_cutoff=6) <= max_distance
 
 
 def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
@@ -1529,7 +1528,7 @@ def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.
     for key1, p in projects_list.items():
         for key2 in projects_list:
             pair = " ".join(sorted([key1, key2]))
-            if __similar_keys(key1, key2) and pair not in pair_set:
+            if __similar_keys(key1, key2, audit_settings.get("audit.projects.duplicates.maxDifferences", 4)) and pair not in pair_set:
                 duplicates.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
             pair_set.add(pair)
     return duplicates
