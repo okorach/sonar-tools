@@ -52,6 +52,7 @@ class UserToken(sq.SqObject):
         super().__init__(endpoint=endpoint, key=login)
         self.login = login  #: User login
         self.name = name  #: Token name
+        self.sq_json = json_data  #: JSON data returned by the API
         if self.name is None:
             self.name = json_data.get("name", None)
         self.created_at = util.string_to_date(json_data["createdAt"]) if "createdAt" in json_data else None
@@ -67,7 +68,6 @@ class UserToken(sq.SqObject):
         :param endpoint: Reference to the SonarQube platform
         :param login: User for which the token must be created
         :param name: Token name
-        :return: The UserToken
         """
         try:
             data = json.loads(endpoint.post(UserToken.API[c.CREATE], {"name": name, "login": login}).text)
@@ -98,6 +98,8 @@ class UserToken(sq.SqObject):
 
         :return: List of problem found
         """
+        if self.sq_json.get("isExpired", False):
+            return [Problem(get_rule(RuleId.TOKEN_EXPIRED), self, str(self))]
         problems = []
         mode = settings.get("audit.mode", "")
         if not today:
