@@ -129,19 +129,6 @@ _UNNEEDED_TASK_DATA = (
     "type",
 )
 
-_SETTINGS_WITH_SPECIFIC_IMPORT = (
-    "permissions",
-    "tags",
-    "links",
-    "qualityGate",
-    "qualityProfiles",
-    "binding",
-    "name",
-    "visibility",
-    "branches",
-    _CONTAINS_AI_CODE,
-)
-
 
 class Project(components.Component):
     """
@@ -1416,42 +1403,43 @@ class Project(components.Component):
         params["repositoryName"] = params.pop("repository")
         return self.post("alm_settings/set_azure_binding", params=params).ok
 
-    def update(self, config: types.ObjectJsonRepr) -> None:
+    def update(self, data: types.ObjectJsonRepr) -> None:
         """Updates a project with a whole configuration set
 
-        :param config: JSON of configuration settings
+        :param dict data: JSON of configuration settings
+        :return: Nothing
         """
-        if "permissions" in config:
-            decoded_perms = {
-                p: {u: perms.decode(v) for u, v in config["permissions"][p].items()} for p in perms.PERMISSION_TYPES if p in config["permissions"]
-            }
+        if "permissions" in data:
+            decoded_perms = {}
+            for ptype in perms.PERMISSION_TYPES:
+                if ptype not in data["permissions"]:
+                    continue
+                decoded_perms[ptype] = {u: perms.decode(v) for u, v in data["permissions"][ptype].items()}
             self.set_permissions(decoded_perms)
-        self.set_links(config)
-        self.set_tags(util.csv_to_list(config.get("tags", None)))
-        self.set_quality_gate(config.get("qualityGate", None))
-
-        _ = [self.set_quality_profile(language=lang, quality_profile=qp_name) for lang, qp_name in config.get("qualityProfiles", {}).items()]
-        if branch_config := config.get("branches", None):
-            try:
-                bname = next(bname for bname, bdata in branch_config.items() if bdata.get("isMain", False))
+        self.set_links(data)
+        self.set_tags(util.csv_to_list(data.get("tags", None)))
+        self.set_quality_gate(data.get("qualityGate", None))
+        for lang, qp_name in data.get("qualityProfiles", {}).items():
+            self.set_quality_profile(language=lang, quality_profile=qp_name)
+        for bname, bdata in data.get("branches", {}).items():
+            if bdata.get("isMain", False):
                 self.rename_main_branch(bname)
-            except StopIteration:
-                log.warning("No main branch defined in %s configuration", self)
-        if "binding" in config:
+                break
+        if "binding" in data:
             try:
-                self.set_devops_binding(config["binding"])
+                self.set_devops_binding(data["binding"])
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
         else:
             log.debug("%s has no devops binding, skipped", str(self))
-        settings_to_apply = {k: v for k, v in config.items() if k not in _SETTINGS_WITH_SPECIFIC_IMPORT}
-        self.set_settings(settings_to_apply)
-        if "aiCodeAssurance" in config:
+        settings_to_apply = {
+            k: v for k, v in data.items() if k not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding", "name")
+        }
+        if "aiCodeAssurance" in data:
             log.warning("'aiCodeAssurance' project setting is deprecated, please use '%s' instead", _CONTAINS_AI_CODE)
-        self.set_contains_ai_code(config.get(_CONTAINS_AI_CODE, config.get("aiCodeAssurance", False)))
-        if visi := config.get("visibility", None):
-            self.set_visibility(visi)
-        # TODO: Set branch settings See https://github.com/okorach/sonar-tools/issues/1828
+        self.set_contains_ai_code(data.get(_CONTAINS_AI_CODE, data.get("aiCodeAssurance", False)))
+        # TODO: Set branch settings
+        self.set_settings(settings_to_apply)
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
@@ -1509,11 +1497,12 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
     return {key: Project.get_object(endpoint, key) for key in sorted(key_list)}
 
 
-def __similar_keys(key1: str, key2: str) -> bool:
+def __similar_keys(key1: str, key2: str, max_distance: int = 5) -> bool:
     """Returns whether 2 project keys are similar"""
     if key1 == key2:
         return False
-    return len(key2) >= 7 and (re.match(key2, key1)) or Levenshtein.distance(key1, key2, score_cutoff=6) <= 5
+    max_distance = min(len(key1) // 2, len(key2) // 2, max_distance)
+    return len(key2) >= 7 and (re.match(key2, key1)) or Levenshtein.distance(key1, key2, score_cutoff=6) <= max_distance
 
 
 def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
@@ -1529,7 +1518,7 @@ def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.
     for key1, p in projects_list.items():
         for key2 in projects_list:
             pair = " ".join(sorted([key1, key2]))
-            if __similar_keys(key1, key2) and pair not in pair_set:
+            if __similar_keys(key1, key2, audit_settings.get("audit.projects.duplicates.maxDifferences", 4)) and pair not in pair_set:
                 duplicates.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
             pair_set.add(pair)
     return duplicates
