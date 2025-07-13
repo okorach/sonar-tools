@@ -129,6 +129,16 @@ _UNNEEDED_TASK_DATA = (
     "type",
 )
 
+# Keys to exclude when applying settings in update()
+_SETTINGS_WITH_SPECIFIC_IMPORT = (
+    "permissions",
+    "tags",
+    "links",
+    "qualityGate",
+    "qualityProfiles",
+    "binding",
+    "name",
+)
 
 class Project(components.Component):
     """
@@ -1402,10 +1412,10 @@ class Project(components.Component):
         params["projectName"] = slug
         params["repositoryName"] = params.pop("repository")
         return self.post("alm_settings/set_azure_binding", params=params).ok
-
+    
     def update(self, data: types.ObjectJsonRepr) -> None:
         """Updates a project with a whole configuration set
-
+    
         :param dict data: JSON of configuration settings
         :return: Nothing
         """
@@ -1432,14 +1442,12 @@ class Project(components.Component):
                 log.warning(e.message)
         else:
             log.debug("%s has no devops binding, skipped", str(self))
-        settings_to_apply = {
-            k: v for k, v in data.items() if k not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding", "name")
-        }
+        settings_to_apply = {k: v for k, v in data.items() if k not in _SETTINGS_WITH_SPECIFIC_IMPORT}
+        self.set_settings(settings_to_apply)
         if "aiCodeAssurance" in data:
             log.warning("'aiCodeAssurance' project setting is deprecated, please use '%s' instead", _CONTAINS_AI_CODE)
         self.set_contains_ai_code(data.get(_CONTAINS_AI_CODE, data.get("aiCodeAssurance", False)))
-        # TODO: Set branch settings
-        self.set_settings(settings_to_apply)
+        # TODO: Set branch settings - see https://github.com/okorach/sonar-tools/issues/1828
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
