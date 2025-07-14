@@ -505,11 +505,7 @@ class Platform(object):
             return False
         ok = True
         config_data = config_data["globalSettings"]
-        sections = [
-            s
-            for s in config_data
-            if s in config_data and s in ("generalSettings", "authentication", "analysisScope", "linters", "sastConfig", "tests", "thirdParty")
-        ]
+        sections = [s for s in ("generalSettings", "authentication", "analysisScope", "linters", "sastConfig", "tests", "thirdParty") if s in config_data]
         ok = ok and all(self.set_webhooks(v) for section in sections for k, v in config_data[section].items() if k == "webhooks")
         ok = ok and all(self.set_setting(k, v) for section in sections for k, v in config_data[section].items() if k != "webhooks")
         ok = ok and all(self.set_setting(s, v) for setting_value in config_data.get("languages", {}).values() for s, v in setting_value.items())
