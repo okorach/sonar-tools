@@ -128,7 +128,7 @@ class User(sqobject.SqObject):
         try:
             endpoint.post(User.api_for(c.CREATE, endpoint), params=params)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating user '{login}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            util.handle_error(e, f"creating user '{login}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(login, util.sonar_error(e.response))
         return cls.get_object(endpoint=endpoint, login=login)
 
@@ -169,7 +169,7 @@ class User(sqobject.SqObject):
             data = json.loads(endpoint.get(f"/api/v2/users-management/users/{id}", mute=()).text)
             return cls.load(endpoint, data)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting user id '{id}'", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+            util.handle_error(e, f"getting user id '{id}'", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(id, f"User id '{id}' not found")
 
     @classmethod
@@ -365,7 +365,7 @@ class User(sqobject.SqObject):
                 log.info("Removing from %s cache", str(self.__class__.__name__))
                 self.__class__.CACHE.pop(self)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"deleting {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+            util.handle_error(e, f"deleting {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
         return ok
 

@@ -134,7 +134,7 @@ class QualityProfile(sq.SqObject):
         try:
             endpoint.post(QualityProfile.API[c.CREATE], params={"name": name, "language": language})
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating quality profile '{language}:{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            util.handle_error(e, f"creating quality profile '{language}:{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(f"{language}:{name}", e.response.text)
         return cls.read(endpoint=endpoint, name=name, language=language)
 
@@ -157,7 +157,7 @@ class QualityProfile(sq.SqObject):
         try:
             endpoint.post("qualityprofiles/copy", params={"toName": name, "fromKey": original_qp.key})
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"cloning {str(original_qp)} into name '{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            util.handle_error(e, f"cloning {str(original_qp)} into name '{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(f"{language}:{name}", e.response.text)
         return cls.read(endpoint=endpoint, name=name, language=language)
 
