@@ -461,9 +461,7 @@ def convert_for_export(rule: types.ObjectJsonRepr, qp_lang: str, with_template_k
     """Converts rule data for export"""
     d = {"severity": rule.get("severity", "")}
     if len(rule.get("params", {})) > 0:
-        d["params"] = rule["params"]
-        if not full:
-            d["params"] = {p["key"]: p.get("defaultValue", "") for p in rule["params"]}
+        d["params"] = rule["params"] if full else {p["key"]: p.get("defaultValue", "") for p in rule["params"]}
     if rule["isTemplate"]:
         d["isTemplate"] = True
     if "tags" in rule and len(rule["tags"]) > 0:
@@ -483,18 +481,14 @@ def convert_for_export(rule: types.ObjectJsonRepr, qp_lang: str, with_template_k
 
 
 def convert_rule_list_for_yaml(rule_list: types.ObjectJsonRepr) -> list[types.ObjectJsonRepr]:
-    """Converts a rule dict (key: data) from a dict to a list ["key": key, **data]"""
+    """Converts a rule dict (key: data) to prepare for yaml by adding severity and key"""
     return utilities.dict_to_list(rule_list, "key", "severity")
 
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
     clean_json = utilities.remove_nones(original_json)
-    new_json = {}
-    for category in ("instantiated", "extended"):
-        if category in clean_json:
-            new_json[category] = convert_rule_list_for_yaml(clean_json[category])
-    return new_json
+    return {category: convert_rule_list_for_yaml(clean_json[category]) for category in ("instantiated", "extended") if category in clean_json}
 
 
 def third_party(endpoint: platform.Platform) -> list[Rule]:
