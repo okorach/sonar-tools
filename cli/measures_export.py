@@ -96,7 +96,7 @@ def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyS
             miss = ",".join(non_existing_metrics)
             util.exit_fatal(f"Requested metric keys '{miss}' don't exist", errcodes.NO_SUCH_KEY)
     log.info("Exporting %s metrics", len(wanted_metrics))
-    return wanted_metrics
+    return list(dict.fromkeys(wanted_metrics))
 
 
 def __parse_args(desc: str) -> object:
