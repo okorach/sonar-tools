@@ -197,7 +197,7 @@ class Project(components.Component):
                 raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
             return cls.load(endpoint, data["components"][0])
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting project '{key}'", catch_http_statuses=(HTTPStatus.FORBIDDEN,))
+            util.handle_error(e, f"getting project '{key}'", catch_http_errors=True)
             data = json.loads(endpoint.get(_NAV_API, params={"component": key}).text)
             if "errors" in data:
                 raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
