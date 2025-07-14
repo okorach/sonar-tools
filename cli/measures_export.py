@@ -274,6 +274,7 @@ def main() -> None:
             measure_list = [__get_measures(obj, wanted_metrics, kwargs) for obj in obj_list]
             measure_list = [o for o in measure_list if o]
             if fmt == "json":
+                measure_list = [util.remove_nones(m) for m in measure_list]
                 with util.open_file(file) as fd:
                     print(util.json_dump(measure_list), file=fd)
             else:
