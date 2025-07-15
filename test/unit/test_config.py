@@ -40,6 +40,7 @@ OPTS = f"{CMD} {util.SQS_OPTS} -{opt.EXPORT_SHORT}"
 
 _DEFAULT_TEMPLATE = "0. Default template"
 
+
 def test_config_export_full(json_file: Generator[str]) -> None:
     """test_config_export_full"""
     assert util.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --fullExport") == e.OK
