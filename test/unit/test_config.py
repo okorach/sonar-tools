@@ -38,6 +38,7 @@ from cli import config
 CMD = "config.py"
 OPTS = f"{CMD} {util.SQS_OPTS} -{opt.EXPORT_SHORT}"
 
+_DEFAULT_TEMPLATE = "0. Default template"
 
 def test_config_export_full(json_file: Generator[str]) -> None:
     """test_config_export_full"""
@@ -71,12 +72,13 @@ def test_config_non_existing_project() -> None:
 
 def test_config_inline_lists(json_file: Generator[str]) -> None:
     """test_config_inline_lists"""
+
     assert util.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file}") == e.OK
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], str)
-    assert isinstance(json_config["globalSettings"]["permissionTemplates"]["Default template"]["permissions"]["groups"]["sonar-users"], str)
-    assert isinstance(json_config["projects"]["okorach_sonar-tools"]["permissions"]["groups"]["sonar-users"], str)
+    assert isinstance(json_config["globalSettings"]["permissionTemplates"][_DEFAULT_TEMPLATE]["permissions"]["groups"]["sonar-users"], str)
+    assert isinstance(json_config["projects"][util.LIVE_PROJECT]["permissions"]["groups"]["sonar-users"], str)
 
     if util.SQ.edition() not in (c.CE, c.DE):
         assert isinstance(json_config["portfolios"]["PORTFOLIO_ALL"]["permissions"]["groups"]["sonar-administrators"], str)
@@ -93,8 +95,8 @@ def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], list)
-    assert isinstance(json_config["globalSettings"]["permissionTemplates"]["Default template"]["permissions"]["groups"]["sonar-users"], list)
-    assert isinstance(json_config["projects"]["okorach_sonar-tools"]["permissions"]["groups"]["sonar-users"], list)
+    assert isinstance(json_config["globalSettings"]["permissionTemplates"][_DEFAULT_TEMPLATE]["permissions"]["groups"]["sonar-users"], list)
+    assert isinstance(json_config["projects"][util.LIVE_PROJECT]["permissions"]["groups"]["sonar-users"], list)
     if util.SQ.edition() not in (c.CE, c.DE):
         assert isinstance(json_config["portfolios"]["PORTFOLIO_ALL"]["permissions"]["groups"]["sonar-administrators"], list)
         assert isinstance(json_config["portfolios"]["PORTFOLIO_TAGS"]["projects"]["tags"], list)
@@ -102,7 +104,7 @@ def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
             assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["projects"]["manual"]["BANKING-PORTAL"], list)
     if util.SQ.edition() != c.CE and util.SQ.version() > (10, 0, 0):
         assert "sonar.cfamily.ignoreHeaderComments" not in json_config["globalSettings"]["languages"]["cfamily"]
-        assert "sonar.cfamily.ignoreHeaderComments" in json_config["projects"]["okorach_sonar-tools"]
+        assert "sonar.cfamily.ignoreHeaderComments" in json_config["projects"][util.LIVE_PROJECT]
 
 
 def test_config_import_portfolios() -> None:
