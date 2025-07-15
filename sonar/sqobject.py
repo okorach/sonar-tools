@@ -194,9 +194,12 @@ class SqObject(object):
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
         if not kwargs.get(c.USE_CACHE, True) or self._tags is None:
-            data = json.loads(self.get(api, params=self.get_tags_params()).text)
-            self.sq_json.update(data["component"])
-            self._tags = self.sq_json["tags"]
+            try:
+                data = json.loads(self.get(api, params=self.get_tags_params()).text)
+                self.sq_json.update(data["component"])
+                self._tags = self.sq_json["tags"]
+            except (ConnectionError, RequestException):
+                self._tags = []
         return self._tags
 
 
