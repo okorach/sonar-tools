@@ -40,11 +40,7 @@ TOOL_NAME = "sonar-measures"
 
 def __get_measures_history(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the measure history of an object (project, branch, application, portfolio)"""
-    try:
-        data = obj.get_measures_history(wanted_metrics)
-    except Exception as e:
-        log.error("Error while getting measures history for %s: %s", str(obj), e)
-        return {}
+    data = obj.get_measures_history(wanted_metrics)
     if data:
         ratings = convert_options.get("ratings", "letters")
         percents = convert_options.get("percents", "float")
@@ -267,7 +263,12 @@ def main() -> None:
             branch_regexp=kwargs[options.BRANCH_REGEXP],
         )
         if kwargs["history"]:
-            measure_list = [__get_measures_history(obj, wanted_metrics, kwargs) for obj in obj_list]
+            measure_list = []
+            for obj in obj_list:
+                try:
+                    measure_list.append(__get_measures_history(obj, wanted_metrics, kwargs))
+                except Exception:
+                    continue
             measure_list = [o for o in measure_list if o]
             if fmt == "json":
                 with util.open_file(file) as fd:
@@ -278,7 +279,7 @@ def main() -> None:
             measure_list = [__get_measures(obj, wanted_metrics, kwargs) for obj in obj_list]
             measure_list = [o for o in measure_list if o]
             if fmt == "json":
-                measure_list = [util.remove_nones(m) for m in measure_list]
+                measure_list = [util.none_to_zero(m, "^.*(issues|violations)$") for m in measure_list]
                 with util.open_file(file) as fd:
                     print(util.json_dump(measure_list), file=fd)
             else:
