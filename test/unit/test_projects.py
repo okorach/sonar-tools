@@ -77,18 +77,15 @@ def test_audit() -> None:
         "maxLastAnalysisAge",
         "branches.maxLastAnalysisAge",
         "pullRequests.maxLastAnalysisAge",
+        "maxNewCodeLines",
     ):
         settings[f"audit.projects.{p}"] = 0
-    print(f"Audit SETTINGS: {json.dumps(settings, indent=2)}")
-    res = projects.audit(util.SQ, settings)
-    print(f"Audit RESULTS: {[str(p) for p in res]}")
-    # assert len(projects.audit(util.SQ, settings)) == 0
     assert len(projects.audit(util.SQ, settings)) == 0
     proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)
     settings["audit.projects.utilityLocs"] = True
     assert len(proj.audit_languages(audit_settings=settings)) == 0
-    # settings["audit.mode"] = "housekeeper"
-    # assert len(proj.audit_languages(audit_settings=settings)) == 0
+    settings["audit.mode"] = "housekeeper"
+    assert len(proj.audit_languages(audit_settings=settings)) == 0
 
 
 def test_audit_disabled() -> None:
