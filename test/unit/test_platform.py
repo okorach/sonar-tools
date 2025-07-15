@@ -88,7 +88,7 @@ def test_wrong_url() -> None:
 
 
 def test_set_webhooks() -> None:
-    assert util.SQ.set_webhooks(None) is None
+    assert not util.SQ.set_webhooks(None)
 
 
 def test_normalize_api() -> None:
