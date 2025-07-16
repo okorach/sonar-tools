@@ -866,7 +866,7 @@ def _get_multiple_values(n: int, setting: str, severity: sev.Severity, domain: t
     return values
 
 
-def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
+def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports a configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -874,7 +874,7 @@ def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_lis
     :param KeyList key_list: Unused
     :return: Nothing
     """
-    endpoint.import_config(config_data)
+    return endpoint.import_config(config_data)
 
 
 def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:

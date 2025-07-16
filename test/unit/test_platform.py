@@ -63,10 +63,10 @@ def test_import() -> None:
     with open("test/files/config.json", "r", encoding="utf-8") as f:
         json_config = json.load(f)
     json_config["globalSettings"]["generalSettings"][settings.NEW_CODE_PERIOD] = 60
-    assert platform.import_config(util.TEST_SQ, json_config) is None
+    platform.import_config(util.TEST_SQ, json_config)
 
     json_config.pop("globalSettings")
-    assert util.TEST_SQ.import_config(json_config) is None
+    util.TEST_SQ.import_config(json_config)
 
 
 def test_sys_info() -> None:
