@@ -197,7 +197,7 @@ class Project(components.Component):
                 raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
             return cls.load(endpoint, data["components"][0])
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting project '{key}'", catch_http_errors=(HTTPStatus.FORBIDDEN,))
+            util.handle_error(e, f"getting project '{key}'", catch_http_errors=True)
             data = json.loads(endpoint.get(_NAV_API, params={"component": key}).text)
             if "errors" in data:
                 raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
@@ -233,7 +233,7 @@ class Project(components.Component):
         try:
             endpoint.post(Project.API[c.CREATE], params={"project": key, "name": name})
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating project '{key}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            util.handle_error(e, f"creating project '{key}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(key, e.response.text)
         o = cls(endpoint, key)
         o.name = name
@@ -413,7 +413,7 @@ class Project(components.Component):
                 self._binding = {"has_binding": True, "binding": json.loads(resp.text)}
             except (ConnectionError, RequestException) as e:
                 util.handle_error(
-                    e, f"getting binding of {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST), log_level=log.DEBUG
+                    e, f"getting binding of {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST), log_level=log.DEBUG
                 )
                 # Hack: 8.9 returns 404, 9.x returns 400
                 self._binding = {"has_binding": False}
@@ -995,7 +995,7 @@ class Project(components.Component):
             data = json.loads(self.get(api="qualitygates/get_by_project", params={"project": self.key}).text)
             return data["qualityGate"]["name"], data["qualityGate"]["default"]
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting quality gate of {str(self)}", catch_http_errors=(HTTPStatus.FORBIDDEN,))
+            util.handle_error(e, f"getting quality gate of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN,))
             return "Error - Insufficient Permissions", False
 
     def webhooks(self) -> dict[str, webhooks.WebHook]:
@@ -1007,7 +1007,7 @@ class Project(components.Component):
         try:
             return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_errors=(HTTPStatus.FORBIDDEN,))
+            util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN,))
             return None
 
     def links(self) -> Optional[list[dict[str, str]]]:
@@ -1018,7 +1018,7 @@ class Project(components.Component):
         try:
             data = json.loads(self.get(api="project_links/search", params={"projectKey": self.key}).text)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting links of {str(self)}", catch_http_errors=(HTTPStatus.FORBIDDEN,))
+            util.handle_error(e, f"getting links of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN,))
             return None
         link_list = None
         for link in data["links"]:
@@ -1105,7 +1105,7 @@ class Project(components.Component):
             try:
                 hooks = webhooks.export(self.endpoint, self.key)
             except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_errors=(HTTPStatus.FORBIDDEN,))
+                util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN,))
                 hooks = None
             if hooks is not None:
                 json_data["webhooks"] = hooks
@@ -1165,7 +1165,7 @@ class Project(components.Component):
             self.permissions().set(desired_permissions)
             return True
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting permissions of {str(self)}", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            util.handle_error(e, f"setting permissions of {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             return False
 
     def set_links(self, desired_links: types.ObjectJsonRepr) -> bool:
@@ -1184,7 +1184,7 @@ class Project(components.Component):
                 params.update(link)
                 ok = ok and self.post("project_links/create", params=params).ok
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting links of {str(self)}", catch_http_errors=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
+            util.handle_error(e, f"setting links of {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
             return False
         return ok
 
