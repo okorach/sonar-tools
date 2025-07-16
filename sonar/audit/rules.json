@@ -64,25 +64,10 @@
         "type": "SECURITY",
         "message": "Compute Engine is not protected against the log4shell vulnerability"
     },
-    "SETTING_FORCE_AUTH": {
-        "severity": "HIGH",
-        "type": "SECURITY",
-        "message": "'sonar.forceAuthentation' is set to 'false', this is a security risk"
-    },
     "SETTING_PROJ_DEFAULT_VISIBILITY": {
         "severity": "HIGH",
         "type": "SECURITY",
         "message": "Projects default visibility is 'Public', this is a security risk"
-    },
-    "SETTING_CPD_CROSS_PROJECT": {
-        "severity": "MEDIUM",
-        "type": "PERFORMANCE",
-        "message": "Cross project duplication is set to 'true', this can have a negative performance impact"
-    },
-    "SETTING_BASE_URL": {
-        "severity": "HIGH",
-        "type": "OPERATIONS",
-        "message": "'sonar.core.serverBaseURL' is not set, this may break some features"
     },
     "SETTING_NOT_SET": {
         "severity": "MEDIUM",
@@ -149,6 +134,11 @@
         "type": "PERFORMANCE",
         "message": "{} ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, too low for index size of {} MB"
     },
+    "ES_HEAP_TOO_HIGH": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "{} heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, above the max {} MB recommended"
+    },
     "LOGS_IN_TRACE_MODE": {
         "severity": "CRITICAL",
         "type": "PERFORMANCE",
@@ -158,11 +148,6 @@
         "severity": "HIGH",
         "type": "PERFORMANCE",
         "message": "Log level of {} set to DEBUG, this very negatively affects platform performance, reverting to INFO is required"
-    },
-    "ES_HEAP_TOO_HIGH": {
-        "severity": "HIGH",
-        "type": "PERFORMANCE",
-        "message": "{} heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, above the max {} MB recommended"
     },
     "SETTING_WEB_WRONG_JAVA_VERSION": {
         "severity": "HIGH",
@@ -198,11 +183,6 @@
         "severity": "HIGH",
         "type": "PERFORMANCE",
         "message": "CE has {} workers configured, more than the max {} recommended"
-    },
-    "SETTING_TD_LOC_COST": {
-        "severity": "MEDIUM",
-        "type": "GOVERNANCE",
-        "message": "Time to develop 1 line of code '{} min' is outside of recommended range [{}-{}]"
     },
     "ANYONE_WITH_GLOBAL_PERMS": {
         "severity": "CRITICAL",
@@ -286,7 +266,7 @@
     },
     "PROJ_LAST_ANALYSIS": {
         "severity": "MEDIUM",
-        "type": "PERFORMANCE",
+        "type": "HOUSEKEEPING",
         "object": "Project",
         "message": "{} with {} LoCs is stale, it has not been analyzed since {} days, it could be deleted"
     },
@@ -310,25 +290,25 @@
     },
     "BRANCH_NEVER_ANALYZED": {
         "severity": "LOW",
-        "type": "PERFORMANCE",
+        "type": "HOUSEKEEPING",
         "object": "Branch",
         "message": "{} has never been analyzed and is kept even if inactive, this is suspicious"
     },
     "BRANCH_LAST_ANALYSIS": {
         "severity": "LOW",
-        "type": "PERFORMANCE",
+        "type": "HOUSEKEEPING",
         "object": "Branch",
         "message": "{} is stale, has not been analyzed since {} days, it could be deleted"
     },
     "PULL_REQUEST_LAST_ANALYSIS": {
         "severity": "LOW",
-        "type": "PERFORMANCE",
+        "type": "HOUSEKEEPING",
         "object": "Project",
         "message": "{} is stale, has not been analyzed since {} days, it could be deleted"
     },
     "PROJ_NOT_ANALYZED": {
         "severity": "LOW",
-        "type": "PERFORMANCE",
+        "type": "HOUSEKEEPING",
         "object": "Project",
         "message": "{} has been created but never analyzed, it could be deleted"
     },
@@ -531,13 +511,13 @@
     },
     "QG_NOT_USED": {
         "severity": "MEDIUM",
-        "type": "OPERATIONS",
+        "type": "HOUSEKEEPING",
         "object": "QualityGate",
         "message": "{} is not used, it should be deleted"
     },
     "QG_TOO_MANY_GATES": {
         "severity": "MEDIUM",
-        "type": "GOVERNANCE",
+        "type": "HOUSEKEEPING",
         "object": "QualityGate",
         "message": "There are {} non built-in Quality Gates defined, this is more than the max {} recommended"
     },
@@ -555,19 +535,19 @@
     },
     "QP_TOO_MANY_QP": {
         "severity": "MEDIUM",
-        "type": "GOVERNANCE",
+        "type": "HOUSEKEEPING",
         "object": "QualityProfile",
         "message": "There are {} Quality Profiles defined for language '{}', this is more than the max {} recommended"
     },
     "QP_LAST_USED_DATE": {
         "severity": "MEDIUM",
-        "type": "OPERATIONS",
+        "type": "HOUSEKEEPING",
         "object": "QualityProfile",
         "message": "{} has not been used since {} days, it should be deleted"
     },
     "QP_LAST_CHANGE_DATE": {
         "severity": "MEDIUM",
-        "type": "GOVERNANCE",
+        "type": "HOUSEKEEPING",
         "object": "QualityProfile",
         "message": "{} has not been updated since {} days, it should be updated"
     },
@@ -579,13 +559,13 @@
     },
     "QP_NOT_USED": {
         "severity": "MEDIUM",
-        "type": "OPERATIONS",
+        "type": "HOUSEKEEPING",
         "object": "QualityProfile",
         "message": "{} is not used, it should be deleted"
     },
     "QP_USE_DEPRECATED_RULES": {
         "severity": "MEDIUM",
-        "type": "GOVERNANCE",
+        "type": "HOUSEKEEPING",
         "object": "QualityProfile",
         "message": "{} uses {} deprecated rules, it should be updated"
     },
@@ -627,13 +607,13 @@
     },
     "TOKEN_EXPIRED": {
         "severity": "LOW",
-        "type": "OPERATIONS",
+        "type": "HOUSEKEEPING",
         "object": "Token",
         "message": "{} is expired and should be deleted as an housekeeping best practice"
     },
     "USER_UNUSED": {
         "severity": "MEDIUM",
-        "type": "SECURITY",
+        "type": "HOUSEKEEPING",
         "object": "User",
         "message": "{} did not connect since {} days, it should be deactivated"
     },
@@ -663,7 +643,7 @@
     },
     "GROUP_EMPTY": {
         "severity": "LOW",
-        "type": "OPERATIONS",
+        "type": "HOUSEKEEPING",
         "object": "Group",
         "message": "{} is empty, it should have members added or be deleted"
     },
