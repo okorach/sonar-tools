@@ -412,9 +412,7 @@ class Project(components.Component):
                 log.debug("RESP = %s", resp.text)
                 self._binding = {"has_binding": True, "binding": json.loads(resp.text)}
             except (ConnectionError, RequestException) as e:
-                util.handle_error(
-                    e, f"getting binding of {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST), log_level=log.DEBUG
-                )
+                util.handle_error(e, f"getting binding of {str(self)}", catch_http_errors=True, log_level=log.DEBUG)
                 # Hack: 8.9 returns 404, 9.x returns 400
                 self._binding = {"has_binding": False}
         log.debug("%s binding = %s", str(self), str(self._binding.get("binding", None)))
