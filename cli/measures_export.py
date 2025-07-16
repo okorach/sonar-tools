@@ -27,6 +27,7 @@
 import sys
 import csv
 
+from requests import RequestException
 from sonar.util import types
 from cli import options
 import sonar.logging as log
@@ -40,7 +41,11 @@ TOOL_NAME = "sonar-measures"
 
 def __get_measures_history(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the measure history of an object (project, branch, application, portfolio)"""
-    data = obj.get_measures_history(wanted_metrics)
+    try:
+        data = obj.get_measures_history(wanted_metrics)
+    except RequestException as e:
+        log.error("Error while getting measures history for %s: %s", str(obj), e)
+        return {}
     if data:
         ratings = convert_options.get("ratings", "letters")
         percents = convert_options.get("percents", "float")

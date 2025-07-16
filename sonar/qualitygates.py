@@ -164,7 +164,7 @@ class QualityGate(sq.SqObject):
         try:
             endpoint.post(QualityGate.API[c.CREATE], params={"name": name})
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating quality gate '{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            util.handle_error(e, f"creating quality gate '{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(name, e.response.text)
         return cls.get_object(endpoint, name)
 
@@ -205,7 +205,7 @@ class QualityGate(sq.SqObject):
             try:
                 resp = self.get(QualityGate.API["get_projects"], params=params)
             except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting projects of {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+                util.handle_error(e, f"getting projects of {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
                 QualityGate.CACHE.pop(self)
                 raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
             data = json.loads(resp.text)

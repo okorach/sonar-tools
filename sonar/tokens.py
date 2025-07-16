@@ -72,7 +72,7 @@ class UserToken(sq.SqObject):
         try:
             data = json.loads(endpoint.post(UserToken.API[c.CREATE], {"name": name, "login": login}).text)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating token '{name}' for user '{login}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            util.handle_error(e, f"creating token '{name}' for user '{login}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(name, e.response.text)
         return UserToken(endpoint=endpoint, login=data["login"], json_data=data, name=name)
 

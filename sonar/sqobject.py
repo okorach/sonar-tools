@@ -160,7 +160,7 @@ class SqObject(object):
                 log.info("Removing from %s cache", str(self.__class__.__name__))
                 self.__class__.CACHE.pop(self)
         except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"deleting {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+            utilities.handle_error(e, f"deleting {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
         except (AttributeError, KeyError):
             raise exceptions.UnsupportedOperation(f"Can't delete {self.__class__.__name__.lower()}s")
@@ -179,7 +179,7 @@ class SqObject(object):
             if r.ok:
                 self._tags = sorted(utilities.csv_to_list(my_tags))
         except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"setting tags of {str(self)}", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            utilities.handle_error(e, f"setting tags of {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             return False
         except (AttributeError, KeyError):
             raise exceptions.UnsupportedOperation(f"Can't set tags on {self.__class__.__name__.lower()}s")
@@ -194,9 +194,12 @@ class SqObject(object):
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
         if not kwargs.get(c.USE_CACHE, True) or self._tags is None:
-            data = json.loads(self.get(api, params=self.get_tags_params()).text)
-            self.sq_json.update(data["component"])
-            self._tags = self.sq_json["tags"]
+            try:
+                data = json.loads(self.get(api, params=self.get_tags_params()).text)
+                self.sq_json.update(data["component"])
+                self._tags = self.sq_json["tags"]
+            except (ConnectionError, RequestException) as e:
+                utilities.handle_error(e, f"getting tags for '{self}'", catch_http_errors=True)
         return self._tags
 
 
