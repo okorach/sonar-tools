@@ -539,7 +539,7 @@
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "object": "QualityGate",
-        "message": "There are {} Quality Gates defined, this is more than the max {} recommended"
+        "message": "There are {} non built-in Quality Gates defined, this is more than the max {} recommended"
     },
     "QG_WRONG_METRIC": {
         "severity": "HIGH",
