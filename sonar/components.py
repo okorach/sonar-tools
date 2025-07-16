@@ -358,8 +358,8 @@ class Component(sq.SqObject):
         :param ConfigSettings audit_settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
         """
-        new_lines = self.get_measure("new_lines", 0)
-        if new_lines > audit_settings.get("audit.projects.maxNewCodeLines", 25000):
+        max_new_lines = audit_settings.get("audit.projects.maxNewCodeLines", 25000)
+        if max_new_lines != 0 and (new_lines := self.get_measure("new_lines", 0)) > max_new_lines:
             return [Problem(get_rule(RuleId.PROJ_TOO_MUCH_NEW_CODE), self, str(self), new_lines)]
         return []
 
@@ -379,7 +379,7 @@ class Component(sq.SqObject):
 
     def __audit_zero_loc(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits whether a component (project, branch, PR) has 0 LoC"""
-        if audit_settings.get("audit.projects.zeroLoc", True):
+        if not audit_settings.get("audit.projects.zeroLoc", True):
             log.debug("Auditing %s zero LOC disabled, skipped...", str(self))
             return []
         if self.last_analysis() and self.loc() == 0:

@@ -198,8 +198,8 @@ class SqObject(object):
                 data = json.loads(self.get(api, params=self.get_tags_params()).text)
                 self.sq_json.update(data["component"])
                 self._tags = self.sq_json["tags"]
-            except (ConnectionError, RequestException) as e:
-                utilities.handle_error(e, f"getting tags for '{self}'", catch_http_errors=True)
+            except (ConnectionError, RequestException):
+                self._tags = []
         return self._tags
 
 

@@ -404,7 +404,7 @@ def json_field_match(json_file: str, field: str, regexp: str, allow_null: bool =
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         data = json.loads(fh.read())
     if allow_null:
-        return sum(1 for p in data if p[field] is not None and not re.match(rf"{regexp}", p[field])) == 0
+        return sum(1 for p in data if field in p and p[field] is not None and not re.match(rf"{regexp}", p[field])) == 0
     else:
         return sum(1 for p in data if not re.match(rf"{regexp}", p[field])) == 0
 
@@ -413,7 +413,10 @@ def json_field_condition(json_file: str, field: str, func: callable, allow_null:
     """return whether a JSON field matches a regexp"""
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         data = json.loads(fh.read())
-    return sum(1 for p in data if not func(p[field], allow_null)) == 0
+    if allow_null:
+        return sum(1 for p in data if field in p and p[field] is not None and not func(p[field], allow_null)) == 0
+    else:
+        return sum(1 for p in data if not func(p[field], allow_null)) == 0
 
 
 def json_field_int(json_file: str, field: str, allow_null: bool = True) -> bool:

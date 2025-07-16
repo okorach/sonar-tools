@@ -201,7 +201,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
     or wrong usage of `sonar.projectVersion`)
   - Projects or branches with too many accepted or false positive issues (Projects > 10K LoC and more than 1 accepted/FP issue
     per 500 LoC)
-  - Project or branches with new code is too much code (More than 25,000 lines by default, configurable)
+  - Project or branches with too much new code (More than 25,000 lines by default, configurable)
 - Branches: (if `audit.project.branches = yes`, default `yes`)
   - Branches never analyzed but marked as "keep when inactive"
 - Portfolios: (if `audit.applications = yes`, default `yes`)

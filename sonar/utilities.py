@@ -169,7 +169,7 @@ def convert_to_type(value: any) -> any:
     return value
 
 
-def remove_nones(d: dict[str, str]) -> dict[str, str]:
+def remove_nones(d: dict[str, any]) -> dict[str, any]:
     """Removes elements of the dict that are None values"""
     new_d = d.copy()
     for k, v in d.items():
@@ -178,6 +178,19 @@ def remove_nones(d: dict[str, str]) -> dict[str, str]:
             continue
         if isinstance(v, dict):
             new_d[k] = remove_nones(v)
+    return new_d
+
+
+def none_to_zero(d: dict[str, any], key_match: str = "^.+$") -> dict[str, any]:
+    """Replaces None values in a dict with 0"""
+    new_d = d.copy()
+    for k, v in d.items():
+        if v is None and re.match(key_match, k):
+            new_d[k] = 0
+        elif isinstance(v, dict):
+            new_d[k] = none_to_zero(v)
+        elif isinstance(v, list):
+            new_d[k] = [none_to_zero(elem) if isinstance(elem, dict) else elem for elem in v]
     return new_d
 
 

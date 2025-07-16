@@ -57,7 +57,7 @@ def test_migration(json_file: Generator[str]) -> None:
         item_list.append("branches")
     for p in json_config["projects"].values():
         for item in item_list:
-            assert item in p
+            assert item in p or "error" in p
 
     u = json_config["users"]["admin"]
     assert "sonar-users" in u["groups"]

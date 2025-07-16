@@ -21,7 +21,6 @@
 
 """ sonar-measures-export tests """
 
-import csv
 from collections.abc import Generator
 from unittest.mock import patch
 

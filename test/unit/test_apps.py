@@ -31,7 +31,7 @@ from sonar.applications import Application as App
 import sonar.util.constants as c
 
 EXISTING_KEY = "APP_TEST"
-EXISTING_KEY_2 = "APP_TEST_2"
+EXISTING_KEY_2 = "FE-BE"
 NON_EXISTING_KEY = "NON_EXISTING"
 TEST_KEY = "MY_APPPP"
 
