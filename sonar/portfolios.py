@@ -342,6 +342,8 @@ class Portfolio(aggregations.Aggregation):
             + self._audit_singleton(audit_settings)
             + self._audit_bg_task(audit_settings)
         )
+        if not self.is_sub_portfolio():
+            problems += self.permissions().audit(audit_settings)
         "write_q" in kwargs and kwargs["write_q"].put(problems)
         return problems
 
