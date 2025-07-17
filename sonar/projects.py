@@ -505,26 +505,6 @@ class Project(components.Component):
             problems += pr.audit(audit_settings)
         return problems
 
-    def __audit_visibility(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        """Audits project visibility and return problems if project is public
-
-        :param audit_settings: Options and Settings (thresholds) to raise problems
-        :type audit_settings: dict
-        :return: List of problems found, or empty list
-        :rtype: list[Problem]
-        """
-        if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
-            return []
-        if not audit_settings.get("audit.projects.visibility", True):
-            log.debug("Project visibility audit is disabled by configuration, skipping...")
-            return []
-        log.debug("Auditing %s visibility", str(self))
-        visi = self.visibility()
-        if visi != "private":
-            return [Problem(get_rule(RuleId.PROJ_VISIBILITY), self, str(self), visi)]
-        log.debug("%s visibility is 'private'", str(self))
-        return []
-
     def audit_languages(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project utility languages and returns problems if too many LoCs of these
 
@@ -682,7 +662,7 @@ class Project(components.Component):
         problems = []
         try:
             problems = self.__audit_last_analysis(audit_settings)
-            problems += self.__audit_visibility(audit_settings)
+            problems += self.audit_visibility(audit_settings)
             problems += self.__audit_binding_valid(audit_settings)
             # Skip language audit, as this can be problematic
             # problems += self.__audit_languages(audit_settings)
