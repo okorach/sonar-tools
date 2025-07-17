@@ -344,6 +344,7 @@ class Portfolio(aggregations.Aggregation):
         )
         if not self.is_sub_portfolio():
             problems += self.permissions().audit(audit_settings)
+            problems += self.audit_visibility(audit_settings)
         "write_q" in kwargs and kwargs["write_q"].put(problems)
         return problems
 
