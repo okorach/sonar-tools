@@ -63,7 +63,6 @@ APP_QUALIFIER = "APP"
 _CONTAINS_AI_CODE = "containsAiCode"
 _BIND_SEP = ":::"
 _AUDIT_BRANCHES_PARAM = "audit.projects.branches"
-AUDIT_MODE_PARAM = "audit.mode"
 
 ZIP_ZERO_LOC = "ZERO_LOC"
 ZIP_ASYNC_SUCCESS = "ASYNC_SUCCESS"
@@ -481,7 +480,7 @@ class Project(components.Component):
         main_br_count = 0
         for branch in self.branches().values():
             problems += branch.audit(audit_settings)
-            if audit_settings.get(AUDIT_MODE_PARAM, "") != "housekeeper" and branch.name in ("main", "master"):
+            if audit_settings.get(c.AUDIT_MODE_PARAM, "") != "housekeeper" and branch.name in ("main", "master"):
                 main_br_count += 1
                 if main_br_count > 1:
                     problems.append(Problem(get_rule(RuleId.PROJ_MAIN_AND_MASTER), self, str(self)))
@@ -495,7 +494,7 @@ class Project(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+        if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
         max_age = audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)
         if max_age == 0:
@@ -514,7 +513,7 @@ class Project(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+        if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
         if not audit_settings.get("audit.projects.visibility", True):
             log.debug("Project visibility audit is disabled by configuration, skipping...")
@@ -534,7 +533,7 @@ class Project(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+        if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
         if not audit_settings.get("audit.projects.utilityLocs", False):
             log.debug("Utility LoCs audit disabled by configuration, skipping")
@@ -557,7 +556,7 @@ class Project(components.Component):
         return []
 
     def __audit_binding_valid(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+        if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
         if self.endpoint.edition() == c.CE:
             log.info("Community edition, skipping binding validation...")
@@ -656,7 +655,7 @@ class Project(components.Component):
         return self.sq_json.get("isAiCodeFixEnabled", None)
 
     def __audit_scanner(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+        if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
         if not audit_settings.get("audit.projects.scanner", True):
             log.debug("%s: Background task audit disabled, audit skipped", str(self))
@@ -687,7 +686,7 @@ class Project(components.Component):
             problems += self.__audit_binding_valid(audit_settings)
             # Skip language audit, as this can be problematic
             # problems += self.__audit_languages(audit_settings)
-            if audit_settings.get(AUDIT_MODE_PARAM, "") != "housekeeper":
+            if audit_settings.get(c.AUDIT_MODE_PARAM, "") != "housekeeper":
                 problems += self.permissions().audit(audit_settings)
 
             problems += self.__audit_scanner(audit_settings)
@@ -1514,7 +1513,7 @@ def __similar_keys(key1: str, key2: str, max_distance: int = 5) -> bool:
 
 def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
     """Audits for suspected duplicate projects"""
-    if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+    if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
         return []
     if not audit_settings.get("audit.projects.duplicates", True):
         log.info("Project duplicates auditing was disabled by configuration")
@@ -1533,7 +1532,7 @@ def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.
 
 def __audit_bindings(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
     """Audits for duplicate project bindings"""
-    if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+    if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
         return []
     if not audit_settings.get("audit.projects.bindings", True):
         log.info("Project bindings auditing was disabled by configuration")
