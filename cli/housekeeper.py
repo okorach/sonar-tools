@@ -32,6 +32,7 @@ from requests import RequestException
 from cli import options
 import sonar.logging as log
 from sonar import platform, tokens, users, projects, branches, version, errcodes
+import sonar.util.constants as c
 import sonar.utilities as util
 import sonar.exceptions as ex
 from sonar.audit import problem
@@ -207,7 +208,7 @@ def main() -> None:
             PROJ_MAX_AGE: proj_age,
             "audit.projects.branches.maxLastAnalysisAge": branch_age,
             "audit.projects.pullRequests.maxLastAnalysisAge": pr_age,
-            projects.AUDIT_MODE_PARAM: "housekeeper",
+            c.AUDIT_MODE_PARAM: "housekeeper",
             options.NBR_THREADS: kwargs[options.NBR_THREADS],
         }
         log.info("Housekeeper settings = %s", util.json_dump(settings))

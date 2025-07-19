@@ -363,6 +363,24 @@ class Component(sq.SqObject):
             return [Problem(get_rule(RuleId.PROJ_TOO_MUCH_NEW_CODE), self, str(self), new_lines)]
         return []
 
+    def audit_visibility(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits project visibility and return problems if project is public
+
+        :param audit_settings: Options and Settings (thresholds) to raise problems
+        :return: List of problems found, or empty list
+        """
+        if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
+            return []
+        if not audit_settings.get("audit.projects.visibility", True):
+            log.debug("Project/App/Portfolio visibility audit is disabled by configuration, skipping...")
+            return []
+        log.debug("Auditing %s visibility", str(self))
+        visi = self.visibility()
+        if visi != "private":
+            return [Problem(get_rule(RuleId.PROJ_VISIBILITY), self, str(self), visi)]
+        log.debug("%s visibility is 'private'", str(self))
+        return []
+
     def _audit_component(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits a component (project, branch, PR) for various issues
 

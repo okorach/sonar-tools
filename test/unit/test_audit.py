@@ -22,6 +22,8 @@
 """ sonar-audit tests """
 
 import os, stat
+import csv
+import re
 from collections.abc import Generator
 import pytest
 
@@ -45,6 +47,22 @@ audit.logs = no
 audit.plugins = no"""
 
 
+def problems_present(csv_file: str, problems: list[tuple[str, str]]) -> bool:
+    """Check if the problems are present in the audit output"""
+    unfound_problems = problems.copy()
+    with open(csv_file, encoding="utf-8") as fd:
+        reader = csv.reader(fd)
+        for row in reader:
+            for pb in problems:
+                string = row[4]
+                if row[1] == pb[0] and re.match(pb[1], string):
+                    unfound_problems.remove(pb)
+                    break
+            if len(unfound_problems) == 0:
+                break
+    return len(unfound_problems) == 0
+
+
 def test_audit_disabled(csv_file: Generator[str]) -> None:
     """test_audit_disabled"""
     with open(".sonar-audit.properties", mode="w", encoding="utf-8") as fd:
@@ -56,13 +74,16 @@ def test_audit_disabled(csv_file: Generator[str]) -> None:
 
 def test_audit(csv_file: Generator[str]) -> None:
     """test_audit"""
-    assert util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}") == e.OK
+    assert util.run_cmd(audit.main, f"{CMD} --{opt.URL} {util.SQS_AUDIT} --{opt.REPORT_FILE} {csv_file}") == e.OK
     # Ensure no duplicate alarms #1478
-    lines = []
-    with open(csv_file, mode="r", encoding="utf-8") as fd:
-        line = fd.readline()
-        assert line not in lines
-        lines.append(line)
+    problems = []
+    regexp = re.compile(r"\d+\\ days")
+    with open("test/files/audit.csv", mode="r", encoding="utf-8") as fd:
+        reader = csv.reader(fd)
+        for row in reader:
+            #prefix = re.sub(r"(token|project|Group|portfolio|application|subportfolio|user|quality gate|quality profile|branch|pull request)() \'[^' ]+\').*", "\1", row[4])
+            problems.append((row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4]))))
+    assert problems_present(csv_file, problems)
 
 
 def test_audit_stdout() -> None:
