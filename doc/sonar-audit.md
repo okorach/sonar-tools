@@ -158,6 +158,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - QG thresholds for the above metrics not consistent (non `A` for ratings on new code, non `0` for numeric count of issues,
     coverage not between 20% and 90%, duplication not between 1% and 3%, security and reliability on overall code lower than D)
   - More than 5 quality gates
+  - More than `audit.permissions.maxAdminUsers` users with admin permission on a QG (default 2)
 - Quality Profiles: (if `audit.qualityProfiles = yes`, default `yes`)
   - Non built-in QP not modified in 6 months
   - QP with less than 50% of all the available rules activated
@@ -165,6 +166,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - QP not used since more than 6 months
   - QP using deprecated rules
   - More than 5 QP for a given language
+  - More than `audit.permissions.maxAdminUsers` users with admin permission on a QP (default 2)
 - Projects: (if `audit.projects = yes`, default `yes`)
   - Projects provisioned but never analyzed
   - Projects not analyzed since `audit.projects.maxLastAnalysisAge` days (on any branch) (default 180 days)
