@@ -117,10 +117,10 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
     - More than `audit.permissions.maxUsers` different users with direct permissions (default 5)
     - More than `audit.permissions.maxAdminUsers` users with Project  admin permission (default 2)
     - More than `audit.permissions.maxGroups` different groups with permissions on project (default 5)
+    - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
     - More than `audit.projects.permissions.maxScanGroups` group with execute analysis permission (default 1)
     - More than `audit.projects.permissions.maxIssueAdminGroups` groups with issue admin permission (default 2)
     - More than `audit.projects.permissions.maxHotspotAdminGroups` groups with hotspot admin permission (default 2)
-    - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
     - `sonar-users` group with elevated project permissions
     - `Anyone` group with any project permissions
     - No projectKeyPattern for a template that is not a default
