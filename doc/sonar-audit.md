@@ -114,9 +114,9 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - More than 10 groups with any global permissions
 - Permission Templates: (if `audit.projects.permissions = yes`, default `yes`)
     - Permissions Templates with no permissions granted
-    - More than `audit.projects.permissions.maxUsers` different users with direct permissions (default 5)
-    - More than `audit.projects.permissions.maxAdminUsers` users with Project admin permission (default 2)
-    - More than `audit.projects.permissions.maxGroups` different groups with permissions on project (default 5)
+    - More than `audit.permissions.maxUsers` different users with direct permissions (default 5)
+    - More than `audit.permissions.maxAdminUsers` users with Project  admin permission (default 2)
+    - More than `audit.permissions.maxGroups` different groups with permissions on project (default 5)
     - More than `audit.projects.permissions.maxScanGroups` group with execute analysis permission (default 1)
     - More than `audit.projects.permissions.maxIssueAdminGroups` groups with issue admin permission (default 2)
     - More than `audit.projects.permissions.maxHotspotAdminGroups` groups with hotspot admin permission (default 2)
@@ -172,13 +172,13 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - Pull requests not analyzed since `audit.projects.pullRequests.maxLastAnalysisAge`(default 30 days)
   - Projects with `public` visibility
   - Permissions: (if `audit.projects.permissions = yes`, default `yes`)
-    - More than `audit.projects.permissions.maxUsers` different users with direct permissions (default 5)
-    - More than `audit.projects.permissions.maxAdminUsers` users with Project admin permission (default 2)
-    - More than `audit.projects.permissions.maxGroups` different groups with permissions on project (default 5)
+    - More than `audit.permissions.maxUsers` different users with direct permissions (default 5)
+    - More than `audit.permissions.maxAdminUsers` users with Project admin permission (default 2)
+    - More than `audit.permissions.maxGroups` different groups with permissions on project (default 5)
+    - More than `audit.permissions.maxAdminGroups` groups with project admin permission (default 2)
     - More than `audit.projects.permissions.maxScanGroups` group with execute analysis permission (default 1)
     - More than `audit.projects.permissions.maxIssueAdminGroups` groups with issue admin permission (default 2)
     - More than `audit.projects.permissions.maxHotspotAdminGroups` groups with hotspot admin permission (default 2)
-    - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
     - `sonar-users` group with elevated project permissions
     - `Anyone` group with any project permissions
   - Project bindings (if `audit.projects.bindings = yes`, default `yes`)
