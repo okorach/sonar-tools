@@ -346,7 +346,6 @@ class Application(aggr.Aggregation):
             + self._audit_empty(audit_settings)
             + self._audit_singleton(audit_settings)
             + self._audit_bg_task(audit_settings)
-            + self.permissions().audit(audit_settings)
             + self.audit_visibility(audit_settings)
         )
         "write_q" in kwargs and kwargs["write_q"].put(problems)
