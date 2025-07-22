@@ -99,11 +99,6 @@ class ProjectPermissions(permissions.Permissions):
     def __audit_user_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project user permissions"""
         problems = []
-        user_count = self.count("users")
-        max_users = audit_settings.get("audit.projects.permissions.maxUsers", 5)
-        if user_count > max_users:
-            problems.append(Problem(get_rule(RuleId.PROJ_PERM_MAX_USERS), self, str(self.concerned_object), user_count))
-
         max_admins = audit_settings.get("audit.projects.permissions.maxAdminUsers", 2)
         admin_count = self.count("users", ("admin",))
         if admin_count > max_admins:
@@ -124,12 +119,6 @@ class ProjectPermissions(permissions.Permissions):
             ):
                 rule = get_rule(RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
                 problems.append(Problem(rule, self.concerned_object, str(self.concerned_object)))
-
-        max_perms = audit_settings.get("audit.projects.permissions.maxGroups", 5)
-        if (counter := len(groups)) > max_perms:
-            rule = get_rule(RuleId.PROJ_PERM_MAX_GROUPS)
-            problems.append(Problem(rule, self.concerned_object, str(self.concerned_object), counter, max_perms))
-
         max_scan = audit_settings.get("audit.projects.permissions.maxScanGroups", 1)
         counter = self.count(perm_type="groups", perm_filter=("scan",))
         if counter > max_scan:

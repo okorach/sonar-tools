@@ -206,8 +206,17 @@ class Permissions(ABC):
             return [Problem(get_rule(RuleId.OBJECT_WITH_NO_ADMIN_PERMISSION), self.concerned_object, str(self.concerned_object))]
         return []
 
+    def __audit_user_and_group_count(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits maximum number of user permissions"""
+        problems = []
+        if (count := self.count("users")) > audit_settings.get("audit.permissions.maxUsers", 5):
+            problems.append(Problem(get_rule(RuleId.PROJ_PERM_MAX_USERS), self, str(self.concerned_object), count))
+        if (count := self.count("groups")) > audit_settings.get("audit.permissions.maxGroups", 5):
+            problems.append(Problem(get_rule(RuleId.PROJ_PERM_MAX_GROUPS), self, str(self.concerned_object), count))
+        return problems
+    
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        return self.audit_nbr_permissions(audit_settings)
+        return self.audit_nbr_permissions(audit_settings) + self.__audit_user_and_group_count(audit_settings)
 
     def count(self, perm_type: Optional[str] = None, perm_filter: Optional[list[str]] = None) -> int:
         """Counts number of permissions of an object
