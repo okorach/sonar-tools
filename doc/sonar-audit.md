@@ -115,7 +115,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
 - Permission Templates: (if `audit.projects.permissions = yes`, default `yes`)
     - Permissions Templates with no permissions granted
     - More than `audit.permissions.maxUsers` different users with direct permissions (default 5)
-    - More than `audit.permissions.maxAdminUsers` users with Project  admin permission (default 2)
+    - More than `audit.permissions.maxAdminUsers` users with Project admin permission (default 2)
     - More than `audit.permissions.maxGroups` different groups with permissions on project (default 5)
     - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
     - More than `audit.projects.permissions.maxScanGroups` group with execute analysis permission (default 1)
