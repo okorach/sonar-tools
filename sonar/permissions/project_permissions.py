@@ -102,7 +102,7 @@ class ProjectPermissions(permissions.Permissions):
         max_admins = audit_settings.get("audit.projects.permissions.maxAdminUsers", 2)
         admin_count = self.count("users", ("admin",))
         if admin_count > max_admins:
-            rule = get_rule(RuleId.PROJ_PERM_MAX_ADM_USERS)
+            rule = get_rule(RuleId.PERM_MAX_ADM_USERS)
             problems.append(Problem(rule, self, str(self.concerned_object), admin_count, max_admins))
 
         return problems
@@ -140,6 +140,6 @@ class ProjectPermissions(permissions.Permissions):
         max_admins = audit_settings.get("audit.projects.permissions.maxAdminGroups", 2)
         counter = self.count(perm_type="groups", perm_filter=("admin",))
         if counter > max_admins:
-            rule = get_rule(RuleId.PROJ_PERM_MAX_ADM_GROUPS)
+            rule = get_rule(RuleId.PERM_MAX_ADM_GROUPS)
             problems.append(Problem(rule, self.concerned_object, str(self.concerned_object), counter, max_admins))
         return problems
