@@ -372,7 +372,7 @@
         "object": "Project",
         "message": "{} has {} groups with analysis permission, this is more than the max {} recommended"
     },
-    "PROJ_PERM_SONAR_USERS_ELEVATED_PERMS": {
+    "SONAR_USERS_ELEVATED_PERMS": {
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "object": "Project",

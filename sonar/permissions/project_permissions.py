@@ -106,7 +106,7 @@ class ProjectPermissions(permissions.Permissions):
             if gr_name == "sonar-users" and (
                 "issueadmin" in gr_perms or "scan" in gr_perms or "securityhotspotadmin" in gr_perms or "admin" in gr_perms
             ):
-                rule = get_rule(RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
+                rule = get_rule(RuleId.SONAR_USERS_ELEVATED_PERMS)
                 problems.append(Problem(rule, self.concerned_object, str(self.concerned_object)))
         max_scan = audit_settings.get("audit.projects.permissions.maxScanGroups", 1)
         counter = self.count(perm_type="groups", perm_filter=("scan",))
