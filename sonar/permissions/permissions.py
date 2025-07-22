@@ -209,40 +209,44 @@ class Permissions(ABC):
     def __audit_user_and_group_count(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits maximum number of user permissions"""
         problems = []
-        if (count := self.count("users")) > audit_settings.get("audit.permissions.maxUsers", 5):
-            problems.append(Problem(get_rule(RuleId.PERM_MAX_USERS), self.concerned_object, str(self.concerned_object), count))
-        if (count := self.count("groups")) > audit_settings.get("audit.permissions.maxGroups", 5):
-            problems.append(Problem(get_rule(RuleId.PERM_MAX_GROUPS), self.concerned_object, str(self.concerned_object), count))
+        o = self.concerned_object
+        data = self.to_json()
+        for t in PERMISSION_TYPES:
+            max_count = audit_settings.get(f"audit.permissions.max{t.capitalize()}", 5)
+            count = len(data.get(t, {}))
+            log.info("Auditing that %s has no more than %d %s with permissions (it has %d)", o, max_count, t, count)
+            if count > max_count:
+                problems.append(Problem(get_rule(RuleId.PERM_MAX_USERS_OR_GROUPS), o, o, count, t, max_count))
         return problems
-    
+
     def audit_admin_permissions_count(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits maximum number of admin permissions"""
         problems = []
-        if (count := self.count(perm_type="users", perm_filter=["admin"])) > audit_settings.get("audit.permissions.maxAdminUsers", 2):
-            problems.append(Problem(get_rule(RuleId.PERM_MAX_ADM_USERS), self.concerned_object, str(self.concerned_object), count))
-        if (count := self.count(perm_type="groups", perm_filter=["admin"])) > audit_settings.get("audit.permissions.maxAdminGroups", 2):
-            problems.append(Problem(get_rule(RuleId.PERM_MAX_ADM_GROUPS), self.concerned_object, str(self.concerned_object), count))
+        o = self.concerned_object
+        for t in PERMISSION_TYPES:
+            max_count = audit_settings.get(f"audit.permissions.maxAdmin{t.capitalize()}", 2)
+            count = self.count(perm_type=t, perm_filter=["admin"])
+            log.info("Auditing that %s has no more than %d %s with admin permissions (It has %d)", o, max_count, t, count)
+            if count > max_count:
+                problems.append(Problem(get_rule(RuleId.PERM_MAX_ADM_USERS_OR_GROUPS), o, o, count, t, max_count))
         return problems
-    
+
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         return self.audit_nbr_permissions(audit_settings) + self.__audit_user_and_group_count(audit_settings)
 
     def count(self, perm_type: Optional[str] = None, perm_filter: Optional[list[str]] = None) -> int:
         """Counts number of permissions of an object
 
-        :param Optional[str] perm_type: Optional "users" or "groups", both assumed if not specified.
-        :param Optional[list[str]] perm_filter: Optional filter to count only specific types of permissions, defaults to None.
+        :param perm_type: Optional "users" or "groups", both assumed if not specified.
+        :param perm_filter: Optional filter to count only specific types of permissions, defaults to None.
         :return: The number of permissions.
         """
         perms = PERMISSION_TYPES if perm_type is None else (perm_type,)
-        elem_counter, perm_counter = 0, 0
+        perm_counter = 0
         for ptype in perms:
             for elem_perms in self.permissions.get(ptype, {}).values():
-                elem_counter += 1
-                if perm_filter is None:
-                    continue
-                perm_counter += len([1 for p in elem_perms if p in perm_filter])
-        return elem_counter if perm_filter is None else perm_counter
+                perm_counter += sum(1 for p in elem_perms if perm_filter is None or p in perm_filter)
+        return perm_counter
 
     def _get_api(self, api: str, perm_type: str, ret_field: str, **extra_params) -> types.JsonPermissions:
         perms = {}
