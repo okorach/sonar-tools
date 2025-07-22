@@ -206,8 +206,8 @@ class Permissions(ABC):
             return [Problem(get_rule(RuleId.OBJECT_WITH_NO_ADMIN_PERMISSION), self.concerned_object, str(self.concerned_object))]
         return []
 
-    def __audit_user_and_group_count(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        """Audits maximum number of user permissions"""
+    def audit_max_users_or_groups_with_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits maximum number of user or groups with permissions"""
         problems = []
         o = self.concerned_object
         data = self.to_json()
@@ -218,6 +218,21 @@ class Permissions(ABC):
             if count > max_count:
                 problems.append(Problem(get_rule(RuleId.PERM_MAX_USERS_OR_GROUPS), o, o, count, t, max_count))
         return problems
+
+    def audit_sonar_users_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits that sonar-users group has no sensitive permissions"""
+        __SENSITIVE_PERMISSIONS = ["issueadmin", "scan", "securityhotspotadmin", "admin", "gateadmin", "profileadmin"]
+        groups = self.to_json(perm_type="groups")
+        if any(gr_name == "sonar-users" and any(p in gr_perms for p in __SENSITIVE_PERMISSIONS) for gr_name, gr_perms in groups.items()):
+            return [Problem(get_rule(RuleId.SONAR_USERS_ELEVATED_PERMS), self.concerned_object, str(self.concerned_object))]
+        return []
+
+    def audit_anyone_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits that Anyone group has no permissions"""
+        groups = self.to_json(perm_type="groups")
+        if any(gr_name == "Anyone" for gr_name in groups):
+            return [Problem(get_rule(RuleId.PROJ_PERM_ANYONE), self.concerned_object, str(self.concerned_object))]
+        return []
 
     def audit_admin_permissions_count(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits maximum number of admin permissions"""
@@ -232,7 +247,14 @@ class Permissions(ABC):
         return problems
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        return self.audit_nbr_permissions(audit_settings) + self.__audit_user_and_group_count(audit_settings)
+        """Audits permissions of the object"""
+        self.read()
+        return (
+            self.audit_nbr_permissions(audit_settings)
+            + self.audit_sonar_users_permissions(audit_settings)
+            + self.audit_anyone_permissions(audit_settings)
+            + self.audit_max_users_or_groups_with_permissions(audit_settings)
+        )
 
     def count(self, perm_type: Optional[str] = None, perm_filter: Optional[list[str]] = None) -> int:
         """Counts number of permissions of an object
