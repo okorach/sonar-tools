@@ -206,25 +206,69 @@ class Permissions(ABC):
             return [Problem(get_rule(RuleId.OBJECT_WITH_NO_ADMIN_PERMISSION), self.concerned_object, str(self.concerned_object))]
         return []
 
+    def audit_max_users_or_groups_with_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits maximum number of user or groups with permissions"""
+        problems = []
+        o = self.concerned_object
+        data = self.to_json()
+        for t in PERMISSION_TYPES:
+            max_count = audit_settings.get(f"audit.permissions.max{t.capitalize()}", 5)
+            count = len(data.get(t, {}))
+            log.info("Auditing that %s has no more than %d %s with permissions (it has %d)", o, max_count, t, count)
+            if count > max_count:
+                problems.append(Problem(get_rule(RuleId.PERM_MAX_USERS_OR_GROUPS), o, o, count, t, max_count))
+        return problems
+
+    def audit_sonar_users_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits that sonar-users group has no sensitive permissions"""
+        __SENSITIVE_PERMISSIONS = ["issueadmin", "scan", "securityhotspotadmin", "admin", "gateadmin", "profileadmin"]
+        groups = self.to_json(perm_type="groups")
+        if any(gr_name == "sonar-users" and any(p in gr_perms for p in __SENSITIVE_PERMISSIONS) for gr_name, gr_perms in groups.items()):
+            return [Problem(get_rule(RuleId.SONAR_USERS_ELEVATED_PERMS), self.concerned_object, str(self.concerned_object))]
+        return []
+
+    def audit_anyone_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits that Anyone group has no permissions"""
+        groups = self.to_json(perm_type="groups")
+        if any(gr_name == "Anyone" for gr_name in groups):
+            return [Problem(get_rule(RuleId.PROJ_PERM_ANYONE), self.concerned_object, str(self.concerned_object))]
+        return []
+
+    def audit_admin_permissions_count(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits maximum number of admin permissions"""
+        problems = []
+        o = self.concerned_object
+        for t in PERMISSION_TYPES:
+            max_count = audit_settings.get(f"audit.permissions.maxAdmin{t.capitalize()}", 2)
+            count = self.count(perm_type=t, perm_filter=["admin"])
+            log.info("Auditing that %s has no more than %d %s with admin permissions (It has %d)", o, max_count, t, count)
+            if count > max_count:
+                problems.append(Problem(get_rule(RuleId.PERM_MAX_ADM_USERS_OR_GROUPS), o, o, count, t, max_count))
+        return problems
+
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        return self.audit_nbr_permissions(audit_settings)
+        """Audits permissions of the object"""
+        self.read()
+        return (
+            self.audit_nbr_permissions(audit_settings)
+            + self.audit_sonar_users_permissions(audit_settings)
+            + self.audit_anyone_permissions(audit_settings)
+            + self.audit_max_users_or_groups_with_permissions(audit_settings)
+        )
 
     def count(self, perm_type: Optional[str] = None, perm_filter: Optional[list[str]] = None) -> int:
         """Counts number of permissions of an object
 
-        :param Optional[str] perm_type: Optional "users" or "groups", both assumed if not specified.
-        :param Optional[list[str]] perm_filter: Optional filter to count only specific types of permissions, defaults to None.
+        :param perm_type: Optional "users" or "groups", both assumed if not specified.
+        :param perm_filter: Optional filter to count only specific types of permissions, defaults to None.
         :return: The number of permissions.
         """
         perms = PERMISSION_TYPES if perm_type is None else (perm_type,)
-        elem_counter, perm_counter = 0, 0
+        perm_counter = 0
         for ptype in perms:
             for elem_perms in self.permissions.get(ptype, {}).values():
-                elem_counter += 1
-                if perm_filter is None:
-                    continue
-                perm_counter += len([1 for p in elem_perms if p in perm_filter])
-        return elem_counter if perm_filter is None else perm_counter
+                perm_counter += sum(1 for p in elem_perms if perm_filter is None or p in perm_filter)
+        return perm_counter
 
     def _get_api(self, api: str, perm_type: str, ret_field: str, **extra_params) -> types.JsonPermissions:
         perms = {}

@@ -131,13 +131,18 @@ audit.globalSettings.permissions.maxScanGroups = 2
 audit.globalSettings.permissions.maxCreateProjectUsers = 3
 audit.globalSettings.permissions.maxCreateProjectGroups = 3
 
+#----------------------------- PROJECT/APP/PORTFOLIO/QP/QG MAX PERMISSIONS ----------------------------
+audit.permissions.maxUsers = 5
+audit.permissions.maxGroups = 5
+
+#----------------------------- PROJECT/APP/PORTFOLIO MAX ADMIN PERMISSIONS ----------------------------
+audit.permissions.maxAdminUsers = 2
+audit.permissions.maxAdminGroups = 2
+
 #----------------------------- PROJECT PERMISSIONS ----------------------------
 # Project permission audit
 # Max sure there are not too many users/groups with given project permissions
-audit.projects.permissions.maxUsers = 5
-audit.projects.permissions.maxAdminUsers = 2
-audit.projects.permissions.maxGroups = 5
-audit.projects.permissions.maxAdminGroups = 2
+
 audit.projects.permissions.maxScanGroups = 1
 audit.projects.permissions.maxIssueAdminGroups = 2
 audit.projects.permissions.maxHotspotAdminGroups = 2

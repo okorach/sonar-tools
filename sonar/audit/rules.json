@@ -324,17 +324,17 @@
         "object": "Project",
         "message": "{} and project '{}' are potential duplicates, one could be deleted if confirmed"
     },
-    "PROJ_PERM_MAX_USERS": {
+    "PERM_MAX_USERS_OR_GROUPS": {
         "severity": "MEDIUM",
         "type": "OPERATIONS",
         "object": "Project",
-        "message": "{} has {} users with permissions, this is too much, use groups instead"
+        "message": "{} has {} {} with permissions, this is too much"
     },
-    "PROJ_PERM_MAX_ADM_USERS": {
+    "PERM_MAX_ADM_USERS_OR_GROUPS": {
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "object": "Project",
-        "message": "{} has {} users with admin permission, this is more than the max {} recommended"
+        "message": "{} has {} {} with admin permission, this is more than the max {} recommended"
     },
     "PROJ_PERM_MAX_ISSUE_ADM_USERS": {
         "severity": "MEDIUM",
@@ -354,18 +354,6 @@
         "object": "Project",
         "message": "{} has {} users with analysis permission, this is more than the max {} recommended"
     },
-    "PROJ_PERM_MAX_GROUPS": {
-        "severity": "MEDIUM",
-        "type": "GOVERNANCE",
-        "object": "Project",
-        "message": "{} has {} groups with permissions, this is more than the {} recommended"
-    },
-    "PROJ_PERM_MAX_ADM_GROUPS": {
-        "severity": "MEDIUM",
-        "type": "GOVERNANCE",
-        "object": "Project",
-        "message": "{} has {} groups with admin permission, this is more than the max {} recommended"
-    },
     "PROJ_PERM_MAX_ISSUE_ADM_GROUPS": {
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
@@ -384,7 +372,7 @@
         "object": "Project",
         "message": "{} has {} groups with analysis permission, this is more than the max {} recommended"
     },
-    "PROJ_PERM_SONAR_USERS_ELEVATED_PERMS": {
+    "SONAR_USERS_ELEVATED_PERMS": {
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "object": "Project",
