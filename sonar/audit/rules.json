@@ -324,7 +324,7 @@
         "object": "Project",
         "message": "{} and project '{}' are potential duplicates, one could be deleted if confirmed"
     },
-    "PROJ_PERM_MAX_USERS": {
+    "PERM_MAX_USERS": {
         "severity": "MEDIUM",
         "type": "OPERATIONS",
         "object": "Project",
@@ -354,7 +354,7 @@
         "object": "Project",
         "message": "{} has {} users with analysis permission, this is more than the max {} recommended"
     },
-    "PROJ_PERM_MAX_GROUPS": {
+    "PERM_MAX_GROUPS": {
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "object": "Project",

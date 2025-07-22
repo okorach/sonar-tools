@@ -210,9 +210,9 @@ class Permissions(ABC):
         """Audits maximum number of user permissions"""
         problems = []
         if (count := self.count("users")) > audit_settings.get("audit.permissions.maxUsers", 5):
-            problems.append(Problem(get_rule(RuleId.PROJ_PERM_MAX_USERS), self, str(self.concerned_object), count))
+            problems.append(Problem(get_rule(RuleId.PERM_MAX_USERS), self, str(self.concerned_object), count))
         if (count := self.count("groups")) > audit_settings.get("audit.permissions.maxGroups", 5):
-            problems.append(Problem(get_rule(RuleId.PROJ_PERM_MAX_GROUPS), self, str(self.concerned_object), count))
+            problems.append(Problem(get_rule(RuleId.PERM_MAX_GROUPS), self, str(self.concerned_object), count))
         return problems
     
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
