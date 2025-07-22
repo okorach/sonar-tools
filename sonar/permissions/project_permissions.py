@@ -94,18 +94,7 @@ class ProjectPermissions(permissions.Permissions):
             log.debug("Auditing project permissions is disabled by configuration, skipping")
             return []
         log.debug("Auditing %s", str(self))
-        return super().audit(audit_settings) + self.__audit_user_permissions(audit_settings) + self.__audit_group_permissions(audit_settings)
-
-    def __audit_user_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        """Audits project user permissions"""
-        problems = []
-        max_admins = audit_settings.get("audit.projects.permissions.maxAdminUsers", 2)
-        admin_count = self.count("users", ("admin",))
-        if admin_count > max_admins:
-            rule = get_rule(RuleId.PERM_MAX_ADM_USERS)
-            problems.append(Problem(rule, self, str(self.concerned_object), admin_count, max_admins))
-
-        return problems
+        return super().audit(audit_settings) + self.audit_admin_permissions_count(audit_settings) + self.__audit_group_permissions(audit_settings)
 
     def __audit_group_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project group permissions"""
@@ -136,10 +125,4 @@ class ProjectPermissions(permissions.Permissions):
         if counter > max_spots_adm:
             rule = get_rule(RuleId.PROJ_PERM_MAX_HOTSPOT_ADM_GROUPS)
             problems.append(Problem(rule, self.concerned_object, str(self.concerned_object), counter, max_spots_adm))
-
-        max_admins = audit_settings.get("audit.projects.permissions.maxAdminGroups", 2)
-        counter = self.count(perm_type="groups", perm_filter=("admin",))
-        if counter > max_admins:
-            rule = get_rule(RuleId.PERM_MAX_ADM_GROUPS)
-            problems.append(Problem(rule, self.concerned_object, str(self.concerned_object), counter, max_admins))
         return problems

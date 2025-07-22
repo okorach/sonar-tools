@@ -210,9 +210,18 @@ class Permissions(ABC):
         """Audits maximum number of user permissions"""
         problems = []
         if (count := self.count("users")) > audit_settings.get("audit.permissions.maxUsers", 5):
-            problems.append(Problem(get_rule(RuleId.PERM_MAX_USERS), self, str(self.concerned_object), count))
+            problems.append(Problem(get_rule(RuleId.PERM_MAX_USERS), self.concerned_object, str(self.concerned_object), count))
         if (count := self.count("groups")) > audit_settings.get("audit.permissions.maxGroups", 5):
-            problems.append(Problem(get_rule(RuleId.PERM_MAX_GROUPS), self, str(self.concerned_object), count))
+            problems.append(Problem(get_rule(RuleId.PERM_MAX_GROUPS), self.concerned_object, str(self.concerned_object), count))
+        return problems
+    
+    def audit_admin_permissions_count(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits maximum number of admin permissions"""
+        problems = []
+        if (count := self.count(perm_type="users", perm_filter=["admin"])) > audit_settings.get("audit.permissions.maxAdminUsers", 2):
+            problems.append(Problem(get_rule(RuleId.PERM_MAX_ADM_USERS), self.concerned_object, str(self.concerned_object), count))
+        if (count := self.count(perm_type="groups", perm_filter=["admin"])) > audit_settings.get("audit.permissions.maxAdminGroups", 2):
+            problems.append(Problem(get_rule(RuleId.PERM_MAX_ADM_GROUPS), self.concerned_object, str(self.concerned_object), count))
         return problems
     
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
