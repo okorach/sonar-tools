@@ -80,7 +80,7 @@ def test_migration(json_file: Generator[str]) -> None:
         assert u["externalLogin"] == "okorach"
         assert u["email"] == "olivier.korach@gmail.com"
 
-    p = json_config["projects"]["okorach_sonar-tools"]
+    p = json_config["projects"][util.LIVE_PROJECT]
     assert "lastTaskScannerContext" in p["backgroundTasks"]
     for elem in "detectedCi", "lastAnalysis", "revision":
         assert elem in p

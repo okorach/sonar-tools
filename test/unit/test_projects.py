@@ -294,7 +294,7 @@ def test_branch_and_pr() -> None:
 
 def test_audit_languages(get_test_project: Generator[projects.Project]) -> None:
     """test_audit_languages"""
-    proj = projects.Project.get_object(util.SQ, "okorach_sonar-tools")
+    proj = projects.Project.get_object(util.SQ, util.LIVE_PROJECT)
     assert proj.audit_languages({"audit.projects.utilityLocs": False}) == []
     proj = get_test_project
     assert proj.audit_languages({"audit.projects.utilityLocs": True}) == []

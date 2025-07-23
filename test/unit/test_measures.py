@@ -186,7 +186,7 @@ def test_non_existing_project(csv_file: Generator[str]) -> None:
 
 def test_specific_project_keys(csv_file: Generator[str]) -> None:
     """test_non_existing_project"""
-    projects = ["okorach_sonar-tools", "project1", "project4"]
+    projects = [util.LIVE_PROJECT, util.PROJECT_1, util.PROJECT_4]
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.KEY_REGEXP_SHORT} {utilities.list_to_regexp(projects)}"
     assert util.run_cmd(measures_export.main, cmd) == e.OK
     assert util.csv_nbr_lines(csv_file) == len(projects)

@@ -55,9 +55,21 @@ CSV_FILE = f"temp.{os.getpid()}.csv"
 JSON_FILE = f"temp.{os.getpid()}.json"
 YAML_FILE = f"temp.{os.getpid()}.yaml"
 
-PROJECT_1 = "okorach_sonar-tools"
-PROJECT_2 = "project1"
-LIVE_PROJECT = PROJECT_1
+PROJECT_0 = "okorach_sonar-tools"
+PROJECT_1 = "project1"
+PROJECT_2 = "project2"
+PROJECT_3 = "project3"
+PROJECT_4 = "project4"
+PROJECT_5 = "project5"
+
+LIVE_PROJECT = PROJECT_0
+PROJ_WITH_BRANCHES = PROJECT_1
+BRANCH_MAIN = "main"
+BRANCH_2 = "develop"
+BRANCH_3 = "some-branch"
+BRANCH_4 = "feature/new-feature"
+BRANCH_5 = "comma,branch"
+
 NON_EXISTING_KEY = "non-existing"
 
 TEST_KEY = "TEST"
