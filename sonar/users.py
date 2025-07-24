@@ -312,19 +312,18 @@ class User(sqobject.SqObject):
         """Adds group membership to the user
 
         :param str group_name: Group to add membership
+        :raises UnsupportedOperation: if trying to remove a user from built-in groups ("sonar-users" only for now)
+        :raises ObjectNotFound: if group name not found
         :return: Whether operation succeeded
-        :rtype: bool
         """
-        try:
-            group = groups.Group.read(endpoint=self.endpoint, name=group_name)
-        except exceptions.ObjectNotFound:
-            log.warning("Group '%s' does not exists, can't add membership for %s", group_name, str(self))
-            raise
-        ok = group.add_user(self)
-        if ok:
+        group = groups.Group.read(endpoint=self.endpoint, name=group_name)
+        if group.is_default():
+            raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't remove membership for {str(self)}")
+        if group.add_user(self):
             self._groups.append(group_name)
             self._groups = sorted(self._groups)
-        return ok
+            return True
+        return False
 
     def remove_from_group(self, group_name: str) -> bool:
         """Removes group membership to the user
@@ -333,15 +332,14 @@ class User(sqobject.SqObject):
         :raises UnsupportedOperation: if trying to remove a user from built-in groups ("sonar-users" only for now)
         :raises ObjectNotFound: if group name not found
         :return: Whether operation succeeded
-        :rtype: bool
         """
         group = groups.Group.read(endpoint=self.endpoint, name=group_name)
         if group.is_default():
             raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't remove membership for {str(self)}")
-        ok = group.remove_user(self)
-        if ok:
+        if group.remove_user(self):
             self._groups.remove(group_name)
-        return ok
+            return True
+        return False
 
     def deactivate(self) -> bool:
         """Deactivates the user
@@ -384,13 +382,8 @@ class User(sqobject.SqObject):
         :return: Whether all group membership were OK
         :rtype: bool
         """
-        ok = True
-        for g in set(group_list) - set(self.groups()):
-            if g != "sonar-users":
-                ok = ok and self.add_to_group(g)
-        for g in set(self.groups()) - set(group_list):
-            if g != "sonar-users":
-                ok = ok and self.remove_from_group(g)
+        ok = all(self.add_to_group(g) for g in set(group_list) - set(self.groups()) if g != "sonar-users")
+        ok = ok and all(self.remove_from_group(g) for g in set(self.groups()) - set(group_list) if g != "sonar-users")
         if not ok:
             self.refresh()
         return ok
