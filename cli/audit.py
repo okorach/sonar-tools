@@ -92,6 +92,21 @@ def write_problems(queue: Queue[list[problem.Problem]], fd: TextIO, settings: ty
     log.info("Writing audit problems complete")
 
 
+def clear_cache() -> None:
+    """Clears the cache"""
+    log.info("Clearing cache")
+    for a_class in (
+        users.User,
+        groups.Group,
+        qualityprofiles.QualityProfile,
+        qualitygates.QualityGate,
+        portfolios.Portfolio,
+        applications.Application,
+        projects.Project,
+    ):
+        a_class.CACHE.clear()
+
+
 def _audit_sq(
     sq: platform.Platform, settings: types.ConfigSettings, what_to_audit: list[str] = None, key_list: types.KeyList = None
 ) -> list[problem.Problem]:
@@ -190,20 +205,28 @@ def main() -> None:
         # problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=util.deduct_format(kwargs[options.FORMAT], ofile))
 
     except exceptions.ConnectionError as e:
+        clear_cache()
         util.exit_fatal(e.message, e.errcode)
     except exceptions.ObjectNotFound as e:
+        clear_cache()
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
     except (PermissionError, FileNotFoundError) as e:
+        clear_cache()
         util.exit_fatal(f"OS error while writing file '{file}': {e}", errcode)
     except options.ArgumentsError as e:
+        clear_cache()
         util.exit_fatal(e.message, e.errcode)
     except json.decoder.JSONDecodeError:
+        clear_cache()
         util.exit_fatal(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...", errcodes.SIF_AUDIT_ERROR)
     except sif.NotSystemInfo:
+        clear_cache()
         util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", errcodes.SIF_AUDIT_ERROR)
     except RequestException as e:
+        clear_cache()
         util.exit_fatal(f"HTTP error while auditing: {str(e)}", errcodes.SONAR_API)
     util.stop_clock(start_time)
+    clear_cache()
     sys.exit(errcodes.OK)
 
 
