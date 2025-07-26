@@ -170,7 +170,7 @@ def test_binding() -> None:
     """test_binding"""
     if util.SQ.edition() == c.CE:
         pytest.skip("Bindings unsupported in SonarQube Community Edition")
-    proj = projects.Project.get_object(util.SQ, 'demo:github-actions-maven')
+    proj = projects.Project.get_object(util.SQ, "demo:github-actions-maven")
     assert proj.has_binding()
     assert proj.binding() is not None
     assert proj.binding_key().startswith("github:::okorach/demo-actions-maven")
