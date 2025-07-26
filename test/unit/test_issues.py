@@ -224,7 +224,7 @@ def test_request_error() -> None:
 
 def test_transitions() -> None:
     """test_transitions"""
-    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1, params={"status": "OPEN"})
     issue = list(issues_d.values())[0]
 
     assert issue.confirm()
