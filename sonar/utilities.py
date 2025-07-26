@@ -37,7 +37,7 @@ import requests
 
 import sonar.logging as log
 from sonar import version, errcodes
-from sonar.util import types
+from sonar.util import types, cache_helper
 import cli.options as opt
 
 
@@ -379,6 +379,7 @@ def exit_fatal(err_msg: str, exit_code: int) -> None:
     """Fatal exit with error msg"""
     log.fatal(err_msg)
     print(f"FATAL: {err_msg}", file=sys.stderr)
+    cache_helper.clear_cache()
     sys.exit(exit_code)
 
 
