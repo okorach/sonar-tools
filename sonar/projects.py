@@ -985,7 +985,7 @@ class Project(components.Component):
         try:
             return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN,))
+            util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN, HTTPStatus.NOT_FOUND))
             return None
 
     def links(self) -> Optional[list[dict[str, str]]]:
@@ -996,7 +996,7 @@ class Project(components.Component):
         try:
             data = json.loads(self.get(api="project_links/search", params={"projectKey": self.key}).text)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting links of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN,))
+            util.handle_error(e, f"getting links of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN, HTTPStatus.NOT_FOUND))
             return None
         link_list = None
         for link in data["links"]:
