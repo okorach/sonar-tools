@@ -23,6 +23,7 @@ from __future__ import annotations
 import concurrent.futures
 import datetime
 from typing import Optional
+from http import HTTPStatus
 from requests import RequestException
 import Levenshtein
 
@@ -462,7 +463,7 @@ class Finding(sq.SqObject):
         try:
             return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"applying transition {transition}")
+            util.handle_error(e, f"applying transition {transition}", catch_http_statuses=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
         return False
 
     def get_branch_and_pr(self, data: types.ApiPayload) -> tuple[Optional[str], Optional[str]]:

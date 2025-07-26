@@ -38,7 +38,7 @@ import sonar.logging as log
 from sonar import platform, exceptions, errcodes, version
 from sonar import issues, hotspots, findings
 from sonar import applications, portfolios
-from sonar.util import types, component_helper
+from sonar.util import types, component_helper, cache_helper
 import sonar.util.constants as c
 
 import sonar.utilities as util
@@ -402,6 +402,7 @@ def main() -> None:
         sqenv.local_url,
     )
     util.stop_clock(start_time)
+    cache_helper.clear_cache()
     sys.exit(0)
 
 

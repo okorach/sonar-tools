@@ -98,12 +98,12 @@ def test_audit_json(json_file: Generator[str]) -> None:
 
 def test_audit_proj_key(csv_file: Generator[str]) -> None:
     """test_audit_proj_key"""
-    assert util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.WHAT} projects --{opt.KEY_REGEXP} okorach_sonar-tools") == e.OK
+    assert util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.WHAT} projects --{opt.KEY_REGEXP} {util.LIVE_PROJECT}") == e.OK
 
 
 def test_audit_proj_non_existing_key() -> None:
     """test_audit_proj_non_existing_key"""
-    assert util.run_cmd(audit.main, f"{CMD} --{opt.WHAT} projects --{opt.KEY_REGEXP} okorach_sonar-tools,bad_key") == e.ARGS_ERROR
+    assert util.run_cmd(audit.main, f"{CMD} --{opt.WHAT} projects --{opt.KEY_REGEXP} {util.LIVE_PROJECT},bad_key") == e.ARGS_ERROR
 
 
 def test_sif_broken(csv_file: Generator[str]) -> None:

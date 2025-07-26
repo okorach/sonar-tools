@@ -233,7 +233,7 @@ class Group(sq.SqObject):
                 params = {"login": user.login, "name": self.name}
             r = self.post(Group.api_for(ADD_USER, self.endpoint), params=params)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, "adding user to group")
+            util.handle_error(e, "adding user to group", catch_http_statuses=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
             if isinstance(e, HTTPError):
                 code = e.response.status_code
                 if code == HTTPStatus.BAD_REQUEST:

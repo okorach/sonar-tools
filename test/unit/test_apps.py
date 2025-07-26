@@ -111,7 +111,7 @@ def test_create_delete(get_test_app: Generator[App]) -> None:
 
     # Test delete with 1 project in the app
     obj = App.create(endpoint=util.SQ, name=util.TEMP_NAME, key=util.TEMP_KEY)
-    obj.add_projects(["okorach_sonar-tools"])
+    obj.add_projects([util.LIVE_PROJECT])
     obj.delete()
     assert not apps.exists(endpoint=util.SQ, key=util.TEMP_KEY)
 
@@ -245,27 +245,29 @@ def test_app_branches(get_test_app: Generator[App]) -> None:
     if util.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     obj = get_test_app
+    APP_BRANCH_MAIN, APP_BRANCH_2 = "BRANCH foo", "Other Branch"
     definition = {
         "branches": {
-            "Other Branch": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "demo:java-security": "main"}},
-            "BRANCH foo": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "demo:java-security": "main"}, "isMain": True},
+            APP_BRANCH_2: {"projects": {util.PROJ_WITH_BRANCHES: util.BRANCH_MAIN, "demo:jcl": "main", "demo:java-security": "main"}},
+            APP_BRANCH_MAIN: {"projects": {util.PROJ_WITH_BRANCHES: util.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"}, "isMain": True},
         }
     }
     obj.update(definition)
     br = obj.branches()
-    assert set(br.keys()) == {"BRANCH foo", "Other Branch"}
-    assert obj.main_branch().name == "BRANCH foo"
+    assert set(br.keys()) == {APP_BRANCH_MAIN, APP_BRANCH_2}
+    assert obj.main_branch().name == APP_BRANCH_MAIN
+    APP_BRANCH_MAIN, APP_BRANCH_2, APP_BRANCH_3 = "Main Branch", "Master", "MiBranch"
     definition = {
         "branches": {
-            "MiBranch": {"projects": {"TESTSYNC": "main", "demo:jcl": "main", "demo:java-security": "main"}},
-            "Master": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "demo:java-security": "main"}},
-            "Main Branch": {"projects": {"TESTSYNC": "some-branch", "demo:jcl": "main", "demo:java-security": "main"}, "isMain": True},
+            APP_BRANCH_2: {"projects": {util.PROJ_WITH_BRANCHES: util.BRANCH_MAIN, "demo:jcl": "main", "demo:java-security": "main"}},
+            APP_BRANCH_3: {"projects": {util.PROJ_WITH_BRANCHES: util.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"}},
+            APP_BRANCH_MAIN: {"projects": {util.PROJ_WITH_BRANCHES: util.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"}, "isMain": True},
         }
     }
     obj.update(definition)
     br = obj.branches()
-    assert set(br.keys()) >= {"Main Branch", "Master", "MiBranch"}
-    assert obj.main_branch().name == "Main Branch"
+    assert set(br.keys()) >= {APP_BRANCH_MAIN, APP_BRANCH_2, APP_BRANCH_3}
+    assert obj.main_branch().name == APP_BRANCH_MAIN
 
 
 def test_convert_for_yaml() -> None:

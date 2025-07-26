@@ -30,7 +30,6 @@ import utilities as util
 from sonar import portfolios as pf, projects, exceptions, settings, logging
 import sonar.util.constants as c
 
-EXISTING_PROJECT = "okorach_sonar-tools"
 EXISTING_PORTFOLIO = "PORT_FAV_PROJECTS"
 
 

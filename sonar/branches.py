@@ -377,7 +377,9 @@ class Branch(components.Component):
 
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
-        return tasks.search_last(component_key=self.concerned_object.key, endpoint=self.endpoint, type="REPORT", branch=self.name)
+        if task := tasks.search_last(component_key=self.concerned_object.key, endpoint=self.endpoint, type="REPORT", branch=self.name):
+            task.concerned_object = self
+        return task
 
 
 def get_list(project: projects.Project) -> dict[str, Branch]:

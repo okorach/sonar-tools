@@ -36,6 +36,7 @@ import sonar.util.constants as c
 import sonar.utilities as util
 import sonar.exceptions as ex
 from sonar.audit import problem
+from sonar.util import cache_helper
 
 TOOL_NAME = "sonar-housekeeper"
 PROJ_MAX_AGE = "audit.projects.maxLastAnalysisAge"
@@ -238,6 +239,7 @@ def main() -> None:
         util.exit_fatal(e.message, e.errcode)
     except RequestException as e:
         util.exit_fatal(f"HTTP error while housekeeping: {str(e)}", errcodes.SONAR_API)
+    cache_helper.clear_cache()
     sys.exit(0)
 
 

@@ -585,7 +585,9 @@ class Project(components.Component):
 
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
-        return tasks.search_last(component_key=self.key, endpoint=self.endpoint, type="REPORT")
+        if task := tasks.search_last(component_key=self.key, endpoint=self.endpoint, type="REPORT"):
+            task.concerned_object = self
+        return task
 
     def task_history(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
@@ -983,7 +985,7 @@ class Project(components.Component):
         try:
             return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN,))
+            util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN, HTTPStatus.NOT_FOUND))
             return None
 
     def links(self) -> Optional[list[dict[str, str]]]:
@@ -994,7 +996,7 @@ class Project(components.Component):
         try:
             data = json.loads(self.get(api="project_links/search", params={"projectKey": self.key}).text)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting links of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN,))
+            util.handle_error(e, f"getting links of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN, HTTPStatus.NOT_FOUND))
             return None
         link_list = None
         for link in data["links"]:

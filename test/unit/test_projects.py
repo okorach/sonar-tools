@@ -170,7 +170,7 @@ def test_binding() -> None:
     """test_binding"""
     if util.SQ.edition() == c.CE:
         pytest.skip("Bindings unsupported in SonarQube Community Edition")
-    proj = projects.Project.get_object(util.SQ, util.TEST_KEY)
+    proj = projects.Project.get_object(util.SQ, "demo:github-actions-maven")
     assert proj.has_binding()
     assert proj.binding() is not None
     assert proj.binding_key().startswith("github:::okorach/demo-actions-maven")
@@ -294,7 +294,7 @@ def test_branch_and_pr() -> None:
 
 def test_audit_languages(get_test_project: Generator[projects.Project]) -> None:
     """test_audit_languages"""
-    proj = projects.Project.get_object(util.SQ, "okorach_sonar-tools")
+    proj = projects.Project.get_object(util.SQ, util.LIVE_PROJECT)
     assert proj.audit_languages({"audit.projects.utilityLocs": False}) == []
     proj = get_test_project
     assert proj.audit_languages({"audit.projects.utilityLocs": True}) == []

@@ -33,7 +33,7 @@ from requests import RequestException
 from cli import options
 
 from sonar import errcodes, exceptions, version
-from sonar.util import types, component_helper
+from sonar.util import types, component_helper, cache_helper
 import sonar.logging as log
 from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, portfolios, applications, projects
 import sonar.utilities as util
@@ -204,6 +204,7 @@ def main() -> None:
     except RequestException as e:
         util.exit_fatal(f"HTTP error while auditing: {str(e)}", errcodes.SONAR_API)
     util.stop_clock(start_time)
+    cache_helper.clear_cache()
     sys.exit(errcodes.OK)
 
 

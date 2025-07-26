@@ -83,7 +83,7 @@ def test_config_inline_lists(json_file: Generator[str]) -> None:
 
     if util.SQ.edition() not in (c.CE, c.DE):
         assert isinstance(json_config["portfolios"]["PORTFOLIO_ALL"]["permissions"]["groups"]["sonar-administrators"], str)
-        assert isinstance(json_config["portfolios"]["PORTFOLIO_TAGS"]["projects"]["tags"], str)
+        assert isinstance(json_config["portfolios"]["PORTFOLIO-PYTHON"]["projects"]["tags"], str)
         # This is a list because there is a comma in one of the branches
         if util.SQ.version() >= (10, 0, 0):
             assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["projects"]["manual"]["BANKING-PORTAL"], list)
@@ -100,7 +100,7 @@ def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
     assert isinstance(json_config["projects"][util.LIVE_PROJECT]["permissions"]["groups"]["sonar-users"], list)
     if util.SQ.edition() not in (c.CE, c.DE):
         assert isinstance(json_config["portfolios"]["PORTFOLIO_ALL"]["permissions"]["groups"]["sonar-administrators"], list)
-        assert isinstance(json_config["portfolios"]["PORTFOLIO_TAGS"]["projects"]["tags"], list)
+        assert isinstance(json_config["portfolios"]["PORTFOLIO-PYTHON"]["projects"]["tags"], list)
         if util.SQ.version() >= (10, 0, 0):
             assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["projects"]["manual"]["BANKING-PORTAL"], list)
     if util.SQ.edition() != c.CE and util.SQ.version() > (10, 0, 0):

@@ -172,7 +172,6 @@ def get_test_subportfolio() -> Generator[portfolios.Portfolio]:
 @pytest.fixture
 def get_test_qp() -> Generator[qualityprofiles.QualityProfile]:
     """setup of tests"""
-    util.start_logging()
     try:
         o = qualityprofiles.get_object(endpoint=util.SQ, name=util.TEMP_KEY, language="py")
         if o.is_default:
@@ -198,7 +197,6 @@ def get_test_issue() -> Generator[issues.Issue]:
 @pytest.fixture
 def get_test_user() -> Generator[users.User]:
     """setup of tests"""
-    util.start_logging()
     try:
         o = users.User.get_object(endpoint=util.SQ, login=util.TEMP_KEY)
     except exceptions.ObjectNotFound:
@@ -275,7 +273,6 @@ def sarif_file() -> Generator[str]:
 @pytest.fixture
 def get_test_quality_gate() -> Generator[qualitygates.QualityGate]:
     """setup of tests"""
-    util.start_logging()
     sonar_way = qualitygates.QualityGate.get_object(util.SQ, util.SONAR_WAY)
     o = sonar_way.copy(util.TEMP_KEY)
     yield o
@@ -288,7 +285,6 @@ def get_test_quality_gate() -> Generator[qualitygates.QualityGate]:
 @pytest.fixture
 def get_test_group() -> Generator[groups.Group]:
     """setup of tests"""
-    util.start_logging()
     try:
         o = groups.Group.get_object(endpoint=util.SQ, name=util.TEMP_KEY)
     except exceptions.ObjectNotFound:
@@ -302,7 +298,6 @@ def get_test_group() -> Generator[groups.Group]:
 
 @pytest.fixture
 def get_60_groups() -> Generator[list[groups.Group]]:
-    util.start_logging()
     group_list = []
     for i in range(60):
         gr_name = f"Group-{util.TEMP_KEY}{i}"
@@ -318,7 +313,6 @@ def get_60_groups() -> Generator[list[groups.Group]]:
 
 @pytest.fixture
 def get_60_users() -> Generator[list[users.User]]:
-    util.start_logging()
     user_list = []
     for i in range(60):
         u_name = f"User-{util.TEMP_KEY}{i}"

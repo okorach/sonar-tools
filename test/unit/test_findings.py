@@ -51,14 +51,14 @@ CE_FORBIDDEN_OPTIONS = (
 )
 
 __GOOD_OPTS = [
-    f"--{opt.FORMAT} json -{opt.KEY_REGEXP_SHORT} ({util.PROJECT_1}|{util.PROJECT_2}) -{opt.REPORT_FILE_SHORT} {util.JSON_FILE}",
+    f"--{opt.FORMAT} json -{opt.KEY_REGEXP_SHORT} ({util.PROJECT_0}|{util.PROJECT_1}) -{opt.REPORT_FILE_SHORT} {util.JSON_FILE}",
     f"--{opt.CSV_SEPARATOR} ; -d --{opt.TAGS} cwe,convention",
-    f"-{opt.KEY_REGEXP_SHORT} {util.PROJECT_1} -{opt.BRANCH_REGEXP_SHORT} .+",
+    f"-{opt.KEY_REGEXP_SHORT} {util.PROJECT_0} -{opt.BRANCH_REGEXP_SHORT} .+",
     f"--{opt.KEY_REGEXP} training:security -{opt.BRANCH_REGEXP_SHORT} main",
-    f"--{opt.USE_FINDINGS} -{opt.KEY_REGEXP_SHORT} ({util.PROJECT_1}|{util.PROJECT_2})",
+    f"--{opt.USE_FINDINGS} -{opt.KEY_REGEXP_SHORT} ({util.PROJECT_0}|{util.PROJECT_1})",
     f"--{opt.APPS} -{opt.KEY_REGEXP_SHORT} APP_TEST --{opt.BRANCH_REGEXP} .+",
     f"--{opt.PORTFOLIOS} -{opt.KEY_REGEXP_SHORT} Banking -{opt.REPORT_FILE_SHORT} {util.CSV_FILE}",
-    f"-{opt.KEY_REGEXP_SHORT} {util.PROJECT_1} -{opt.BRANCH_REGEXP_SHORT} .+",
+    f"-{opt.KEY_REGEXP_SHORT} {util.PROJECT_0} -{opt.BRANCH_REGEXP_SHORT} .+",
     f"--{opt.STATUSES} OPEN,CLOSED --{opt.SEVERITIES} BLOCKER,CRITICAL",
 ]
 
@@ -219,7 +219,7 @@ def test_findings_filter_on_multiple_criteria_3(csv_file: Generator[str]) -> Non
 
 def test_findings_filter_on_hotspots_multi_1(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_hotspots_multi_1"""
-    projs = [util.PROJECT_1, util.PROJECT_2]
+    projs = [util.PROJECT_0, util.PROJECT_1]
     regexp = utilities.list_to_regexp(projs)
     cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.RESOLUTIONS} "ACKNOWLEDGED, SAFE" -{opt.KEY_REGEXP_SHORT} {regexp}'
     assert util.run_cmd(findings_export.main, cmd) == e.OK
