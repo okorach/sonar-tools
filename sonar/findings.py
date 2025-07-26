@@ -23,8 +23,8 @@ from __future__ import annotations
 import concurrent.futures
 import datetime
 from typing import Optional
-from requests import RequestException
 from http import HTTPStatus
+from requests import RequestException
 import Levenshtein
 
 import sonar.logging as log
