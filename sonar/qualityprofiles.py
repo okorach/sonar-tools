@@ -45,7 +45,7 @@ from sonar.audit.problem import Problem
 _KEY_PARENT = "parent"
 _CHILDREN_KEY = "children"
 
-_IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefault", "rules", "permissions")
+_IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefault", "rules", "permissions", "prioritizedRules")
 
 _CLASS_LOCK = Lock()
 
@@ -384,7 +384,7 @@ class QualityProfile(sq.SqObject):
 
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """
-        :param bool full: If True, exports all properties, including those that can't be set
+        :param export_settings: Settings for export, such as whether to export all rules or only the active ones
         :return: the quality profile properties as JSON dict
         """
         json_data = self.sq_json.copy()
@@ -396,6 +396,8 @@ class QualityProfile(sq.SqObject):
             json_data.pop("isBuiltIn", None)
             json_data["rules"] = {k: v.export(full) for k, v in self.rules().items()}
         json_data["permissions"] = self.permissions().export(export_settings)
+        json_data["prioritizedRules"] = [rule for rule in self.rules() if self.rule_is_prioritized(rule)]
+        log.debug("%s prioritized rules = %s", self, json_data["prioritizedRules"])
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
     def compare(self, another_qp: QualityProfile) -> dict[str, str]:
@@ -476,11 +478,6 @@ class QualityProfile(sq.SqObject):
             diff_rules["removedRules"] = self._treat_removed_rules(compare_result["inRight"])
         elif self.endpoint.version() >= (10, 3, 0):
             diff_rules["removedRules"] = {}
-        for rule in self.rules():
-            if self.rule_is_prioritized(rule) and not another_qp.rule_is_prioritized(rule):
-                if "prioritizedRules" not in diff_rules:
-                    diff_rules["prioritizedRules"] = []
-                diff_rules["prioritizedRules"].append(rule)
 
         log.debug("Returning QP diff %s", str(diff_rules))
         for index in ("addedRules", "modifiedRules", "removedRules"):
@@ -490,7 +487,6 @@ class QualityProfile(sq.SqObject):
                 qp_json_data[index] = {}
             for k, v in diff_rules[index].items():
                 qp_json_data[index][k] = v if isinstance(v, str) or "templateKey" not in v else v["severity"]
-        qp_json_data["prioritizedRules"] = diff_rules.get("prioritizedRules", None)
         return (diff_rules, qp_json_data)
 
     def projects(self) -> types.KeyList:
@@ -553,13 +549,6 @@ class QualityProfile(sq.SqObject):
         rule = rules.Rule.get_object(self.endpoint, rule_key)
         rule.refresh()
         active_data = next((d for d in rule.sq_json.get("actives", {}) if d["qProfile"] == self.key), None)
-        log.debug("Rule data = %s", util.json_dump(rule.sq_json))
-        log.debug(
-            "Checking if rule %s is prioritized in %s: %s",
-            rule_key,
-            str(self),
-            str(active_data is not None and active_data.get("prioritizedRule", False)),
-        )
         return active_data is not None and active_data.get("prioritizedRule", False)
 
     def permissions(self) -> permissions.QualityProfilePermissions:
