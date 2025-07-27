@@ -108,8 +108,6 @@ class Branch(components.Component):
         :param projects.Project concerned_object: the projects.Project the branch belonsg to
         :param str branch_name: Name of the branch
         :param dict data: Data received from API call
-        :raises UnsupportedOperation: If trying to manipulate branches on a community edition
-        :raises ObjectNotFound: If project key or branch name not found in SonarQube
         :return: The Branch object
         :rtype: Branch
         """
@@ -241,6 +239,63 @@ class Branch(components.Component):
         data = util.remove_nones(data)
         return None if len(data) == 0 else data
 
+    def set_keep_when_inactive(self, keep: bool) -> bool:
+        """Sets whether the branch is kept when inactive
+
+        :param bool keep: Whether to keep the branch when inactive
+        :return: Whether the operation was successful
+        """
+        log.info("Setting %s keep when inactive to %s", self, keep)
+        try:
+            self.post("project_branches/set_automatic_deletion_protection", params=self.api_params() | {"value": str(keep).lower()})
+            self._keep_when_inactive = keep
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"setting {str(self)} keep when inactive to {keep}", catch_all=True)
+            return False
+        return True
+
+    def set_as_main(self) -> bool:
+        """Sets the branch as the main branch of the project
+
+        :return: Whether the operation was successful
+        """
+        try:
+            self.post("api/project_branches/set_main", params=self.api_params())
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"setting {str(self)} as main branch", catch_all=True)
+            return False
+        for b in self.concerned_object.branches().values():
+            b._is_main = b.name == self.name
+        return True
+
+    def set_new_code(self, new_code_type: str, additional_data: Optional[any]) -> bool:
+        """Sets the branch new code period
+
+        :param str new_code_type: PREVIOUS_VERSION, NUMBER_OF_DAYS, REFERENCE_BRANCH, SPECIFIC_ANALYSIS
+        :param additional_data: Additional data depending on the new code type
+        :return: Whether the operation was successful
+        """
+        log.info("Setting %s new code to %s / %s", self, new_code_type, additional_data)
+        return settings.set_new_code_period(
+            endpoint=self.endpoint, nc_type=new_code_type, nc_value=additional_data, project_key=self.concerned_object.key, branch=self.name
+        )
+
+    def import_config(self, config_data: types.ObjectJsonRepr) -> None:
+        """Imports a branch configuration
+
+        :param config_data: The branch configuration to import
+        """
+        log.debug("Importing %s with %s", str(self), config_data)
+        if config_data.get("isMain", False):
+            self.set_as_main()
+        self.set_keep_when_inactive(config_data.get("keepWhenInactive", False))
+        if settings.NEW_CODE_PERIOD in config_data:
+            new_code = settings.string_to_new_code(config_data[settings.NEW_CODE_PERIOD])
+            param = None
+            if len(new_code) > 1:
+                (new_code, param) = new_code
+            self.set_new_code(new_code, param)
+
     def url(self) -> str:
         """
         :return: The branch URL in SonarQube as permalink
@@ -277,12 +332,6 @@ class Branch(components.Component):
         self.name = new_name
         Branch.CACHE.put(self)
         return True
-
-    def __audit_never_analyzed(self) -> list[Problem]:
-        """Detects branches that have never been analyzed are are kept when inactive"""
-        if not self.last_analysis() and self.is_kept_when_inactive():
-            return [Problem(get_rule(RuleId.BRANCH_NEVER_ANALYZED), self, str(self))]
-        return []
 
     def get_findings(self) -> dict[str, object]:
         """Returns a branch list of findings
@@ -336,6 +385,12 @@ class Branch(components.Component):
         report += tmp_report
         counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
+
+    def __audit_never_analyzed(self) -> list[Problem]:
+        """Detects branches that have never been analyzed are are kept when inactive"""
+        if not self.last_analysis() and self.is_kept_when_inactive():
+            return [Problem(get_rule(RuleId.BRANCH_NEVER_ANALYZED), self, str(self))]
+        return []
 
     def __audit_last_analysis(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         if self.is_main():

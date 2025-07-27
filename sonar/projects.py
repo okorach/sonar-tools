@@ -1226,10 +1226,8 @@ class Project(components.Component):
     def rename_main_branch(self, main_branch_name: str) -> bool:
         """Renames the project main branch
 
-        :param main_branch_name: New main branch name
-        :type main_branch_name: str
+        :param str main_branch_name: New main branch name
         :return: Whether the operation was successful
-        :rtype: bool
         """
         br = self.main_branch()
         if br:
@@ -1413,6 +1411,12 @@ class Project(components.Component):
                 self.rename_main_branch(bname)
             except StopIteration:
                 log.warning("No main branch defined in %s configuration", self)
+            for branch_name, branch_data in branch_config.items():
+                try:
+                    branch = branches.Branch.get_object(self, branch_name)
+                    branch.import_config(branch_data)
+                except exceptions.ObjectNotFound:
+                    log.warning("Branch %s does not exist in %s, skipping update", branch_name, str(self))
         if "binding" in config:
             try:
                 self.set_devops_binding(config["binding"])
