@@ -384,10 +384,8 @@ class QualityProfile(sq.SqObject):
 
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """
-        :param full: If True, exports all properties, including those that can't be set
-        :type full: bool
+        :param bool full: If True, exports all properties, including those that can't be set
         :return: the quality profile properties as JSON dict
-        :rtype: dict
         """
         json_data = self.sq_json.copy()
         json_data.update({"name": self.name, "language": self.language, "parentName": self.parent_name})
@@ -402,10 +400,8 @@ class QualityProfile(sq.SqObject):
 
     def compare(self, another_qp: QualityProfile) -> dict[str, str]:
         """Compares 2 quality profiles rulesets
-        :param another_qp: The second quality profile to compare with self
-        :type another_qp: QualityProfile
+        :param QualityProfile another_qp: The second quality profile to compare with self
         :return: dict result of the compare ("inLeft", "inRight", "same", "modified")
-        :rtype: dict
         """
         data = json.loads(self.get("qualityprofiles/compare", params={"leftKey": self.key, "rightKey": another_qp.key}).text)
         for r in data["inLeft"] + data["same"] + data["inRight"] + data["modified"]:
@@ -480,6 +476,11 @@ class QualityProfile(sq.SqObject):
             diff_rules["removedRules"] = self._treat_removed_rules(compare_result["inRight"])
         elif self.endpoint.version() >= (10, 3, 0):
             diff_rules["removedRules"] = {}
+        for rule in self.rules():
+            if self.rule_is_prioritized(rule) and not another_qp.rule_is_prioritized(rule):
+                if "prioritizedRules" not in diff_rules:
+                    diff_rules["prioritizedRules"] = []
+                diff_rules["prioritizedRules"].append(rule)
 
         log.debug("Returning QP diff %s", str(diff_rules))
         for index in ("addedRules", "modifiedRules", "removedRules"):
@@ -489,7 +490,7 @@ class QualityProfile(sq.SqObject):
                 qp_json_data[index] = {}
             for k, v in diff_rules[index].items():
                 qp_json_data[index][k] = v if isinstance(v, str) or "templateKey" not in v else v["severity"]
-
+        qp_json_data["prioritizedRules"] = diff_rules.get("prioritizedRules", None)
         return (diff_rules, qp_json_data)
 
     def projects(self) -> types.KeyList:
@@ -526,29 +527,61 @@ class QualityProfile(sq.SqObject):
         """
         return project.key in self.projects()
 
+    def rule_has_custom_severity(self, rule_key: str) -> tuple[bool, str]:
+        """Checks whether the rule has a custom severity in the quality profile
+
+        :param str rule_key: The rule key to check
+        :return: Whether the rule has a custom severity in the quality profile, and this severity. In MQR mode, a dict of multiple severities is returned
+        """
+        rule = rules.Rule.get_object(self.endpoint, rule_key)
+        active_data = next((d for d in rule.sq_json.get("actives", {}) if d["qProfile"] == self.key), None)
+        if active_data is None or active_data.get("inherit", "NONE") == "NONE":
+            log.debug("Checking if rule %s has custom severity in %s: False")
+            return False, None
+        log.debug("Checking if rule %s has custom severity in %s: True/%s", rule_key, str(self), active_data)
+        if self.endpoint.is_mqr_mode():
+            return True, {impact["softwareQuality"]: impact["severity"] for impact in active_data.get("impacts", [])}
+        else:
+            return True, active_data.get("severity", None)
+
+    def rule_is_prioritized(self, rule_key: str) -> bool:
+        """Checks whether the rule is prioritized in the quality profile
+
+        :param str rule_key: The rule key to check
+        :return: Whether the rule is prioritized in the quality profile
+        """
+        rule = rules.Rule.get_object(self.endpoint, rule_key)
+        rule.refresh()
+        active_data = next((d for d in rule.sq_json.get("actives", {}) if d["qProfile"] == self.key), None)
+        log.debug("Rule data = %s", util.json_dump(rule.sq_json))
+        log.debug(
+            "Checking if rule %s is prioritized in %s: %s",
+            rule_key,
+            str(self),
+            str(active_data is not None and active_data.get("prioritizedRule", False)),
+        )
+        return active_data is not None and active_data.get("prioritizedRule", False)
+
     def permissions(self) -> permissions.QualityProfilePermissions:
         """
         :return: The list of users and groups that can edit the quality profile
-        :rtype: dict{"users": <users comma separated>, "groups": <groups comma separated>}
         """
         if self._permissions is None:
             self._permissions = permissions.QualityProfilePermissions(self)
         return self._permissions
 
-    def set_permissions(self, perms: types.ObjectJsonRepr) -> None:
+    def set_permissions(self, perms: types.ObjectJsonRepr) -> bool:
         """Sets the list of users and groups that can can edit the quality profile
-        :params perms:
-        :type perms: dict{"users": <users comma separated>, "groups": <groups comma separated>}
-        :return: Nothing
+        :params perms: Dict of permissions to set ({"users": <users comma separated>, "groups": <groups comma separated>})
+        :return: Whether the operation was successful
         """
-        self.permissions().set(perms)
+        return self.permissions().set(perms)
 
     def audit(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
         """Audits a quality profile and return list of problems found
 
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
-        :rtype: list[Problem]
         """
         log.info("Auditing %s", str(self))
         if self.is_built_in:
@@ -819,10 +852,7 @@ def convert_one_qp_yaml(qp: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     if _CHILDREN_KEY in qp:
         qp[_CHILDREN_KEY] = {k: convert_one_qp_yaml(q) for k, q in qp[_CHILDREN_KEY].items()}
         qp[_CHILDREN_KEY] = util.dict_to_list(qp[_CHILDREN_KEY], "name")
-    for rule_group in "rules", "modifiedRules", "addedRules", "removedRules":
-        if rule_group in qp:
-            qp[rule_group] = rules.convert_rule_list_for_yaml(qp[rule_group])
-    return qp
+    return {gr: rules.convert_for_yaml(gr) for gr in ("rules", "modifiedRules", "addedRules", "removedRules", "prioritizedRules") if gr in qp}
 
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
