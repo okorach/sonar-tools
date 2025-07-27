@@ -265,7 +265,7 @@ class Branch(components.Component):
             util.handle_error(e, f"setting {str(self)} as main branch", catch_all=True)
             return False
         for b in self.concerned_object.branches().values():
-            b._is_main = b.name != self.name
+            b._is_main = b.name == self.name
         return True
 
     def set_new_code(self, new_code_type: str, additional_data: Optional[any]) -> bool:
