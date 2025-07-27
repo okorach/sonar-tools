@@ -197,7 +197,7 @@ class Rule(sq.SqObject):
         if o:
             return o
         try:
-            r = endpoint.get(Rule.API[c.GET], params={"key": key})
+            r = endpoint.get(Rule.API[c.GET], params={"key": key, "actives": "true"})
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"getting rule {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
@@ -248,6 +248,23 @@ class Rule(sq.SqObject):
 
     def __str__(self) -> str:
         return f"rule key '{self.key}'"
+
+    def refresh(self, use_cache: bool = True) -> bool:
+        """Refreshes a rule object from the platform
+        :param use_cache: If True, will use the cache to avoid unnecessary calls
+        :return: True if the rule was actually refreshed, False cache was used"""
+        if use_cache and "actives" in self.sq_json:
+            return False
+
+        try:
+            data = json.loads(self.get(Rule.API[c.GET], params={"key": self.key, "actives": "true"}).text)
+        except (ConnectionError, RequestException) as e:
+            utilities.handle_error(e, f"Reading {self}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            Rule.CACHE.pop(self)
+            raise exceptions.ObjectNotFound(key=self.key, message=f"{self} does not exist")
+        self.sq_json.update(data["rule"])
+        self.sq_json["actives"] = data["actives"]
+        return True
 
     def to_json(self) -> types.ObjectJsonRepr:
         return self.sq_json
