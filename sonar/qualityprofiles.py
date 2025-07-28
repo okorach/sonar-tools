@@ -394,10 +394,17 @@ class QualityProfile(sq.SqObject):
             json_data.pop("isDefault", None)
         if not self.is_built_in:
             json_data.pop("isBuiltIn", None)
-            json_data["rules"] = {k: v.export(full) for k, v in self.rules().items()}
+            json_data["rules"] = {}
+            for rule in self.rules().values():
+                data = rule.export(full)
+                if self.rule_is_prioritized(rule.key):
+                    data["prioritized"] = True
+                custom, values = self.rule_has_custom_severity(rule.key)
+                if custom:
+                    data["customSeverities"] = values
+                json_data["rules"][rule.key] = data
+            # json_data["rules"] = {k: v.export(full) for k, v in self.rules().items()}
         json_data["permissions"] = self.permissions().export(export_settings)
-        json_data["prioritizedRules"] = [rule for rule in self.rules() if self.rule_is_prioritized(rule)]
-        log.debug("%s prioritized rules = %s", self, json_data["prioritizedRules"])
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
     def compare(self, another_qp: QualityProfile) -> dict[str, str]:
@@ -550,6 +557,19 @@ class QualityProfile(sq.SqObject):
         rule.refresh()
         active_data = next((d for d in rule.sq_json.get("actives", {}) if d["qProfile"] == self.key), None)
         return active_data is not None and active_data.get("prioritizedRule", False)
+
+    def rule_custom_severities(self, rule_key: str) -> Optional[dict[str, str]]:
+        """Returns the rule custom severities in the quality profile if any
+
+        :param str rule_key: The rule key to check
+        :return: The severities as dict
+        """
+        rule = rules.Rule.get_object(self.endpoint, rule_key)
+        rule.refresh()
+        active_data = next((d for d in rule.sq_json.get("actives", {}) if d["qProfile"] == self.key), None)
+        if not active_data or active_data.get("inherit", "NONE") == "NONE":
+            return None
+        return {i["softwareQuality"]: i["severity"] for i in active_data.get("impacts", [])}
 
     def permissions(self) -> permissions.QualityProfilePermissions:
         """
