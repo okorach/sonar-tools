@@ -197,7 +197,7 @@ class Rule(sq.SqObject):
         if o:
             return o
         try:
-            r = endpoint.get(Rule.API[c.GET], params={"key": key})
+            r = endpoint.get(Rule.API[c.GET], params={"key": key, "actives": "true"})
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"getting rule {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
@@ -249,6 +249,23 @@ class Rule(sq.SqObject):
     def __str__(self) -> str:
         return f"rule key '{self.key}'"
 
+    def refresh(self, use_cache: bool = True) -> bool:
+        """Refreshes a rule object from the platform
+        :param use_cache: If True, will use the cache to avoid unnecessary calls
+        :return: True if the rule was actually refreshed, False cache was used"""
+        if use_cache and "actives" in self.sq_json:
+            return False
+
+        try:
+            data = json.loads(self.get(Rule.API[c.GET], params={"key": self.key, "actives": "true"}).text)
+        except (ConnectionError, RequestException) as e:
+            utilities.handle_error(e, f"Reading {self}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            Rule.CACHE.pop(self)
+            raise exceptions.ObjectNotFound(key=self.key, message=f"{self} does not exist")
+        self.sq_json.update(data["rule"])
+        self.sq_json["actives"] = data["actives"]
+        return True
+
     def to_json(self) -> types.ObjectJsonRepr:
         return self.sq_json
 
@@ -275,7 +292,21 @@ class Rule(sq.SqObject):
 
     def export(self, full: bool = False) -> types.ObjectJsonRepr:
         """Returns the JSON corresponding to a rule export"""
-        return convert_for_export(self.to_json(), self.language, full=full)
+        rule = self.to_json()
+        if self.endpoint.is_mqr_mode():
+            d = {"severities": {impact["softwareQuality"]: impact["severity"] for impact in self.sq_json.get("impacts", [])}}
+        else:
+            d = {"severity": rule.get("severity", "")}
+        if len(rule.get("params", {})) > 0:
+            d["params"] = rule["params"] if full else {p["key"]: p.get("defaultValue", "") for p in rule["params"]}
+        mapping = {"isTemplate": "isTemplate", "tags": "tags", "mdNote": "description", "lang": "language"}
+        for oldkey, newkey in mapping.items():
+            if oldkey in rule and rule[oldkey] is not None:
+                d[newkey] = rule[oldkey]
+        if full:
+            d.update({f"_{k}": v for k, v in rule.items() if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "lang")})
+            d.pop("_key", None)
+        return d
 
     def set_tags(self, tags: list[str]) -> bool:
         """Sets rule custom tags"""
@@ -308,9 +339,35 @@ class Rule(sq.SqObject):
         """Returns the rule clean code attributes"""
         return self._clean_code_attribute
 
-    def impacts(self) -> dict[str, str]:
+    def impacts(self, quality_profile_id: Optional[str] = None, substitute_with_default: bool = True) -> dict[str, str]:
         """Returns the rule clean code attributes"""
-        return self._impacts
+        found_qp = None
+        if quality_profile_id:
+            self.refresh()
+            found_qp = next((qp for qp in self.sq_json.get("actives", []) if quality_profile_id and qp["qProfile"] == quality_profile_id), None)
+        if not found_qp:
+            return self._impacts if self.endpoint.is_mqr_mode() else {TYPE_TO_QUALITY[self.type]: self.severity}
+        if self.endpoint.is_mqr_mode():
+            qp_impacts = {imp["softwareQuality"]: imp["severity"] for imp in found_qp["impacts"]}
+            default_impacts = self._impacts
+        else:
+            qp_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
+            default_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
+
+        if substitute_with_default:
+            return {k: c.DEFAULT if qp_impacts[k] == default_impacts[k] else v for k, v in qp_impacts.items()}
+        else:
+            return qp_impacts
+
+    def is_prioritized_in_quality_profile(self, quality_profile_id: str) -> bool:
+        """Returns True if the rule is a prioritized rule in a given quality profile, False otherwise"""
+        found_qp = None
+        if quality_profile_id:
+            self.refresh()
+            found_qp = next((qp for qp in self.sq_json.get("actives", []) if qp["qProfile"] == quality_profile_id), None)
+        if not found_qp:
+            return False
+        return found_qp.get("prioritizedRule", False)
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
@@ -475,8 +532,6 @@ def convert_for_export(rule: types.ObjectJsonRepr, qp_lang: str, with_template_k
     if full:
         d.update({f"_{k}": v for k, v in rule.items() if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "templateKey", "lang")})
         d.pop("_key", None)
-    if len(d) == 1:
-        return d["severity"]
     return d
 
 
@@ -499,3 +554,11 @@ def third_party(endpoint: platform.Platform) -> list[Rule]:
 def instantiated(endpoint: platform.Platform) -> list[Rule]:
     """Returns the list of rules that are instantiated"""
     return [r for r in get_list(endpoint=endpoint).values() if r.template_key is not None]
+
+
+def severities(endpoint: platform.Platform, json_data: dict[str, any]) -> Optional[dict[str, str]]:
+    """Returns the list of severities from a given rule JSON data"""
+    if endpoint.is_mqr_mode():
+        return {impact["softwareQuality"]: impact["severity"] for impact in json_data.get("impacts", [])}
+    else:
+        return json_data.get("severity", None)

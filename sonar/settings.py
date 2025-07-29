@@ -63,8 +63,6 @@ AI_CODE_FIX = "sonar.ai.suggestions.enabled"
 MQR_ENABLED = "sonar.multi-quality-mode.enabled"
 TOKEN_MAX_LIFETIME = "sonar.auth.token.max.allowed.lifetime"
 
-DEFAULT_BRANCH = "-DEFAULT_BRANCH-"
-
 _GLOBAL_SETTINGS_WITHOUT_DEF = (AI_CODE_FIX, MQR_ENABLED)
 
 _SQ_INTERNAL_SETTINGS = (
