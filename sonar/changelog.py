@@ -29,7 +29,8 @@ from sonar.util import types
 class Changelog(object):
     """Abstraction of SonarQube finding (issue or hotspot) changelog"""
 
-    def __init__(self, jsonlog: types.ApiPayload) -> None:
+    def __init__(self, jsonlog: types.ApiPayload, concerned_object: object) -> None:
+        self.concerned_object = concerned_object
         self.sq_json = jsonlog
         self._change_type = None
 
@@ -144,8 +145,8 @@ class Changelog(object):
         """Returns the new severity (std and MQR) of a change issue severity changelog"""
         if self.is_change_severity():
             try:
-                d_std = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "severity")
-                d_mqr = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "impactSeverity")
+                d_std = next((d for d in self.sq_json["diffs"] if d.get("key", "") == "severity"), {})
+                d_mqr = next((d for d in self.sq_json["diffs"] if d.get("key", "") == "impactSeverity"), {})
                 return d_std.get("newValue", None), d_mqr.get("newValue", None)
             except StopIteration:
                 log.warning("No severity change found in changelog %s", str(self))
@@ -159,7 +160,7 @@ class Changelog(object):
         """Returns the new type of a change issue type changelog"""
         if self.is_change_type():
             try:
-                d = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "type")
+                d = next((d for d in self.sq_json["diffs"] if d.get("key", "") == "type"), {})
                 return d.get("newValue", None)
             except StopIteration:
                 log.warning("No type change found in changelog %s", str(self))
