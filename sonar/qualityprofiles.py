@@ -396,12 +396,11 @@ class QualityProfile(sq.SqObject):
             json_data.pop("isBuiltIn", None)
             json_data["rules"] = {}
             for rule in self.rules().values():
-                data = rule.export(full)
+                data = {k: v for k, v in rule.export(full).items() if k not in ("isTemplate", "templateKey", "language")}
                 if self.rule_is_prioritized(rule.key):
                     data["prioritized"] = True
-                custom, values = self.rule_has_custom_severity(rule.key)
-                if custom:
-                    data["customSeverities"] = values
+                if self.rule_has_custom_severities(rule.key):
+                    data["severities"] = self.get_rule_impacts(rule.key, substitute_with_default=True)
                 json_data["rules"][rule.key] = data
             # json_data["rules"] = {k: v.export(full) for k, v in self.rules().items()}
         json_data["permissions"] = self.permissions().export(export_settings)
@@ -426,45 +425,42 @@ class QualityProfile(sq.SqObject):
         }
         return operations[op] if op in operations else operations[c.GET]
 
-    def _treat_added_rules(self, added_rules: dict[str:str], added_flag: bool = True) -> dict[str:str]:
+    def get_rule_impacts(self, rule_key: str, substitute_with_default: bool = True) -> dict[str, str]:
+        """Returns the severities of a rule in the quality profile
+
+        :param str rule_key: The rule key to get severities for
+        :return: The severities of the rule in the quality profile
+        :rtype: dict[str, str]
+        """
+        return rules.get_object(self.endpoint, rule_key).impacts(self.key, substitute_with_default=substitute_with_default)
+
+    def _treat_added_rules(self, added_rules: dict[str:str]) -> dict[str:str]:
         diff_rules = {}
         my_rules = self.rules()
         for r in added_rules:
             r_key = r.pop("key")
             diff_rules[r_key] = r
-            if (added_flag and r_key in my_rules) or (not added_flag and r_key not in my_rules):
-                rule_obj = rules.get_object(endpoint=self.endpoint, key=r_key)
-                diff_rules[r_key] = rules.convert_for_export(rule_obj.to_json(), rule_obj.language)
-            if "severity" in r:
-                if isinstance(diff_rules[r_key], str):
-                    diff_rules[r_key] = r["severity"]
-                else:
-                    diff_rules[r_key]["severity"] = r["severity"]
+            if r_key in my_rules:
+                diff_rules[r_key] = {
+                    k: v for k, v in my_rules[r_key].export().items() if k not in ("isTemplate", "templateKey", "language", "severities", "severity")
+                }
+                diff_rules[r_key]["severities"] = self.get_rule_impacts(r_key, substitute_with_default=True)
         return diff_rules
 
     def _treat_removed_rules(self, removed_rules: dict[str:str]) -> dict[str:str]:
-        return self._treat_added_rules(removed_rules, added_flag=False)
+        return {r["key"]: True for r in removed_rules}
 
     def _treat_modified_rules(self, modified_rules: dict[str:str]) -> dict[str:str]:
         diff_rules = {}
-        my_rules = self.rules()
         for r in modified_rules:
-            r_key, r_left, r_right = r["key"], r["left"], r["right"]
+            r_key, r_left = r["key"], r["left"]
             diff_rules[r_key] = {}
-            parms = None
-            if r_left["severity"] != r_right["severity"]:
-                diff_rules[r_key]["severity"] = r_left["severity"]
+            if self.rule_has_custom_severities(r_key):
+                diff_rules[r_key]["severities"] = self.get_rule_impacts(r_key, substitute_with_default=True)
+            if self.rule_is_prioritized(r_key):
+                diff_rules[r_key]["prioritized"] = True
             if len(r_left.get("params", {})) > 0:
                 diff_rules[r_key]["params"] = r_left["params"]
-                parms = r_left["params"]
-            if r_key not in my_rules:
-                continue
-            data = rules.convert_for_export(my_rules[r_key].to_json(), my_rules[r_key].language)
-            if "templateKey" in data:
-                diff_rules[r_key]["templateKey"] = data["templateKey"]
-                diff_rules[r_key]["params"] = data["params"]
-                if parms:
-                    diff_rules[r_key]["params"].update(parms)
         return diff_rules
 
     def diff(self, another_qp: QualityProfile, qp_json_data: dict[str:str]) -> tuple[dict[str:str], dict[str:str]]:
@@ -530,22 +526,14 @@ class QualityProfile(sq.SqObject):
         """
         return project.key in self.projects()
 
-    def rule_has_custom_severity(self, rule_key: str) -> tuple[bool, str]:
+    def rule_has_custom_severities(self, rule_key: str) -> bool:
         """Checks whether the rule has a custom severity in the quality profile
 
         :param str rule_key: The rule key to check
-        :return: Whether the rule has a custom severity in the quality profile, and this severity. In MQR mode, a dict of multiple severities is returned
+        :return: Whether the rule has a some custom severities in the quality profile
         """
         rule = rules.Rule.get_object(self.endpoint, rule_key)
-        active_data = next((d for d in rule.sq_json.get("actives", {}) if d["qProfile"] == self.key), None)
-        if active_data is None or active_data.get("inherit", "NONE") == "NONE":
-            log.debug("Checking if rule %s has custom severity in %s: False")
-            return False, None
-        log.debug("Checking if rule %s has custom severity in %s: True/%s", rule_key, str(self), active_data)
-        if self.endpoint.is_mqr_mode():
-            return True, {impact["softwareQuality"]: impact["severity"] for impact in active_data.get("impacts", [])}
-        else:
-            return True, active_data.get("severity", None)
+        return not all(v == c.DEFAULT for v in rule.impacts(quality_profile_id=self.key, substitute_with_default=True).values())
 
     def rule_is_prioritized(self, rule_key: str) -> bool:
         """Checks whether the rule is prioritized in the quality profile
@@ -553,23 +541,7 @@ class QualityProfile(sq.SqObject):
         :param str rule_key: The rule key to check
         :return: Whether the rule is prioritized in the quality profile
         """
-        rule = rules.Rule.get_object(self.endpoint, rule_key)
-        rule.refresh()
-        active_data = next((d for d in rule.sq_json.get("actives", {}) if d["qProfile"] == self.key), None)
-        return active_data is not None and active_data.get("prioritizedRule", False)
-
-    def rule_custom_severities(self, rule_key: str) -> Optional[dict[str, str]]:
-        """Returns the rule custom severities in the quality profile if any
-
-        :param str rule_key: The rule key to check
-        :return: The severities as dict
-        """
-        rule = rules.Rule.get_object(self.endpoint, rule_key)
-        rule.refresh()
-        active_data = next((d for d in rule.sq_json.get("actives", {}) if d["qProfile"] == self.key), None)
-        if not active_data or active_data.get("inherit", "NONE") == "NONE":
-            return None
-        return {i["softwareQuality"]: i["severity"] for i in active_data.get("impacts", [])}
+        return rules.Rule.get_object(self.endpoint, rule_key).is_prioritized_in_quality_profile(self.key)
 
     def permissions(self) -> permissions.QualityProfilePermissions:
         """
