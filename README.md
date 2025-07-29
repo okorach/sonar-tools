@@ -68,7 +68,7 @@ The user corresponding to the token must have enough permissions to achieve the 
 - `-v` : Logging verbosity level (`WARN`, `ÌNFO` or `DEBUG`). The default is `INFO`.
 `ERROR` and above is always active.
 - `-c` or `--clientCert` : Allows to specify an optional client certificate file (as .pem file)
-- `--httpTimeout` : Sets the timeout for HTTP(S) requests to the SonarQube Server or Cloud platform
+- `--httpTimeout` : Sets the timeout for HTTP(S) requests to the SonarQube Server or Cloud platform, in seconds
 - `--skipVersionCheck` : Starting with **sonar-tools** 2.11, by default all sonar tools occasionnally check on pypi.org if there is a new version of **sonar-tools** available, and output a warning log if that is the case. You can skip this check with this option.
 - `-l <logFile>` : Send logs to **<logFile>**, stdout by default
 

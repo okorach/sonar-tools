@@ -41,7 +41,7 @@ The user corresponding to the token must have sufficiently elevated permissions 
 - `-v` : Logging verbosity level (`WARN`, `ÌNFO` or `DEBUG`). The default is `INFO`.
 `ERROR` and above is always active.
 - `-c` or `--clientCert` : Allows to specify an optional client certificate file (as .pem file)
-- `--httpTimeout` : Sets the timeout for HTTP(S) requests to the SonarQube platform
+- `--httpTimeout` : Sets the timeout for HTTP(S) requests to the SonarQube platform, in seconds
 - `--skipIssues` : Skips the "expensive" issue count extract from the migration. This reduces by a factor of 2 to 3 the extract duration and the number of API calls
 - `--skipVersionCheck` : `sonar-migration` occasionnally checks on pypi.org if there is a new version of **sonar-migration** available, and output a warning log if that is the case. You can skip this check with this option.
 - `-l <logFile>` : Send logs to **<logFile>**, stdout by default
