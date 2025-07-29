@@ -241,10 +241,10 @@ def has_filter(params: types.ApiParams, type_of_filter: str, filter_values: list
 def needs_issue_search(params: types.ApiParams) -> bool:
     """Returns whether an issue search is needed based on the parameters"""
     return (options.TYPES not in params and options.STATUSES not in params and options.RESOLUTIONS not in params) or (
-        has_filter(params, options.TYPES, issues.OLD_TYPES + issues.NEW_TYPES)
-        or has_filter(params, options.STATUSES, issues.STATUSES)
-        or has_filter(params, options.SEVERITIES, issues.OLD_SEVERITIES + issues.NEW_SEVERITIES)
-        or has_filter(params, options.RESOLUTIONS, issues.RESOLUTIONS)
+        has_filter(params, options.TYPES, idefs.STD_TYPES + idefs.MQR_QUALITIES)
+        or has_filter(params, options.STATUSES, idefs.STATUSES)
+        or has_filter(params, options.SEVERITIES, idefs.STD_SEVERITIES + idefs.MQR_SEVERITIES)
+        or has_filter(params, options.RESOLUTIONS, idefs.RESOLUTIONS)
     )
 
 
