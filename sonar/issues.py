@@ -539,7 +539,12 @@ class Issue(findings.Finding):
         if event_type == "SEVERITY":
             std_severity, mqr_severity = data
             if self.endpoint.is_mqr_mode():
-                sw_quality, severity = mqr_severity.split(":")
+                if mqr_severity is None:
+                    log.warning("Original issue severity was in standard experience, converting to MQR on target")
+                    severity = idefs.std_to_mqr_severity(std_severity)
+                    sw_quality = idefs.QUALITY_MAINTAINABILITY  # TODO: Find a more accurate quality than hardcoding MAINTAINABILITY
+                else:
+                    sw_quality, severity = mqr_severity.split(":")
                 self.set_mqr_severity(sw_quality, severity)
                 if self.endpoint.is_sonarcloud():
                     self.add_comment(
