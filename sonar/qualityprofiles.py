@@ -394,14 +394,14 @@ class QualityProfile(sq.SqObject):
             json_data.pop("isDefault", None)
         if not self.is_built_in:
             json_data.pop("isBuiltIn", None)
-            json_data["rules"] = {}
+            json_data["rules"] = []
             for rule in self.rules().values():
-                data = {k: v for k, v in rule.export(full).items() if k not in ("isTemplate", "templateKey", "language")}
+                data = {k: v for k, v in rule.export(full).items() if k not in ("isTemplate", "templateKey", "language", "tags", "severities")}
                 if self.rule_is_prioritized(rule.key):
                     data["prioritized"] = True
                 if self.rule_has_custom_severities(rule.key):
-                    data["severities"] = self.get_rule_impacts(rule.key, substitute_with_default=True)
-                json_data["rules"][rule.key] = data
+                    data["severities"] = self.rule_impacts(rule.key, substitute_with_default=True)
+                json_data["rules"].append({"key": rule.key, **data})
             # json_data["rules"] = {k: v.export(full) for k, v in self.rules().items()}
         json_data["permissions"] = self.permissions().export(export_settings)
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
@@ -425,7 +425,7 @@ class QualityProfile(sq.SqObject):
         }
         return operations[op] if op in operations else operations[c.GET]
 
-    def get_rule_impacts(self, rule_key: str, substitute_with_default: bool = True) -> dict[str, str]:
+    def rule_impacts(self, rule_key: str, substitute_with_default: bool = True) -> dict[str, str]:
         """Returns the severities of a rule in the quality profile
 
         :param str rule_key: The rule key to get severities for
@@ -434,37 +434,21 @@ class QualityProfile(sq.SqObject):
         """
         return rules.get_object(self.endpoint, rule_key).impacts(self.key, substitute_with_default=substitute_with_default)
 
-    def _treat_added_rules(self, added_rules: dict[str:str]) -> dict[str:str]:
+    def __process_rules_diff(self, rules: dict[str:str]) -> dict[str:str]:
         diff_rules = {}
-        my_rules = self.rules()
-        for r in added_rules:
-            r_key = r.pop("key")
+        for rule in rules:
+            r_key = rule["key"]
             diff_rules[r_key] = {}
             if self.rule_has_custom_severities(r_key):
-                diff_rules[r_key]["severities"] = self.get_rule_impacts(r_key, substitute_with_default=True)
+                diff_rules[r_key]["severities"] = self.rule_impacts(r_key, substitute_with_default=True)
             if self.rule_is_prioritized(r_key):
                 diff_rules[r_key]["prioritized"] = True
-            if len(r.get("params", {})) > 0:
-                diff_rules[r_key]["params"] = r["params"]
-        return diff_rules
+            rule_params = rule["left"].get("params", {}) if "left" in rule else rule.get("params", {})
+            if len(rule_params) > 0:
+                diff_rules[r_key]["params"] = rule_params
+        return [{"key": k, **v} for k, v in diff_rules.items()]
 
-    def _treat_removed_rules(self, removed_rules: dict[str:str]) -> dict[str:str]:
-        return {r["key"]: True for r in removed_rules}
-
-    def _treat_modified_rules(self, modified_rules: dict[str:str]) -> dict[str:str]:
-        diff_rules = {}
-        for r in modified_rules:
-            r_key, r_left = r["key"], r["left"]
-            diff_rules[r_key] = {}
-            if self.rule_has_custom_severities(r_key):
-                diff_rules[r_key]["severities"] = self.get_rule_impacts(r_key, substitute_with_default=True)
-            if self.rule_is_prioritized(r_key):
-                diff_rules[r_key]["prioritized"] = True
-            if len(r_left.get("params", {})) > 0:
-                diff_rules[r_key]["params"] = r_left["params"]
-        return diff_rules
-
-    def diff(self, another_qp: QualityProfile, qp_json_data: dict[str:str]) -> tuple[dict[str:str], dict[str:str]]:
+    def diff(self, another_qp: QualityProfile) -> dict[str:str]:
         """Returns the list of rules added or modified in self compared to another_qp (for inheritance)
         :param another_qp: The second quality profile to diff
         :type another_qp: QualityProfile
@@ -475,23 +459,14 @@ class QualityProfile(sq.SqObject):
         compare_result = self.compare(another_qp)
         diff_rules = {"addedRules": {}, "modifiedRules": {}}
         if len(compare_result["inLeft"]) > 0:
-            diff_rules["addedRules"] = self._treat_added_rules(compare_result["inLeft"])
+            diff_rules["addedRules"] = self.__process_rules_diff(compare_result["inLeft"])
         if len(compare_result["modified"]) > 0:
-            diff_rules["modifiedRules"] = self._treat_modified_rules(compare_result["modified"])
+            diff_rules["modifiedRules"] = self.__process_rules_diff(compare_result["modified"])
         if len(compare_result["inRight"]) > 0:
-            diff_rules["removedRules"] = self._treat_removed_rules(compare_result["inRight"])
+            diff_rules["removedRules"] = {r["key"]: True for r in compare_result["inRight"]}
         elif self.endpoint.version() >= (10, 3, 0):
             diff_rules["removedRules"] = {}
-
-        log.debug("Returning QP diff %s", str(diff_rules))
-        for index in ("addedRules", "modifiedRules", "removedRules"):
-            if index not in diff_rules:
-                continue
-            if index not in qp_json_data:
-                qp_json_data[index] = {}
-            for k, v in diff_rules[index].items():
-                qp_json_data[index][k] = v if isinstance(v, str) or "templateKey" not in v else v["severity"]
-        return (diff_rules, qp_json_data)
+        return diff_rules
 
     def projects(self) -> types.KeyList:
         """Returns the list of projects keys using this quality profile
@@ -670,9 +645,9 @@ def hierarchize_language(qp_list: dict[str, str], endpoint: pf.Platform, languag
             if _CHILDREN_KEY not in parent_qp:
                 parent_qp[_CHILDREN_KEY] = {}
             this_qp = get_object(endpoint=endpoint, name=qp_name, language=language)
-            (_, diff_data) = this_qp.diff(get_object(endpoint=endpoint, name=parent_qp_name, language=language), qp_json_data)
-            diff_data.pop("rules", None)
-            parent_qp[_CHILDREN_KEY][qp_name] = diff_data
+            qp_json_data |= this_qp.diff(get_object(endpoint=endpoint, name=parent_qp_name, language=language))
+            qp_json_data.pop("rules", None)
+            parent_qp[_CHILDREN_KEY][qp_name] = qp_json_data
             to_remove.append(qp_name)
     for qp_name in to_remove:
         hierarchy.pop(qp_name)
@@ -688,10 +663,7 @@ def hierarchize(qp_list: types.ObjectJsonRepr, endpoint: pf.Platform) -> types.O
     :rtype: {<language>: {<qp_name>: {"children": <qp_list>; <qp_data>}}}
     """
     log.info("Organizing quality profiles in hierarchy")
-    hierarchy = {}
-    for lang, lang_qp_list in qp_list.items():
-        hierarchy[lang] = hierarchize_language(lang_qp_list, endpoint=endpoint, language=lang)
-    return hierarchy
+    return {lang: hierarchize_language(lang_qp_list, endpoint=endpoint, language=lang) for lang, lang_qp_list in qp_list.items()}
 
 
 def flatten_language(language: str, qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
