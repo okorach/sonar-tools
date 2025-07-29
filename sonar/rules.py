@@ -532,8 +532,6 @@ def convert_for_export(rule: types.ObjectJsonRepr, qp_lang: str, with_template_k
     if full:
         d.update({f"_{k}": v for k, v in rule.items() if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "templateKey", "lang")})
         d.pop("_key", None)
-    # if len(d) == 1:
-    #    return d["severity"]
     return d
 
 

@@ -402,7 +402,6 @@ class QualityProfile(sq.SqObject):
                 if self.rule_has_custom_severities(rule.key):
                     data["severities"] = self.rule_impacts(rule.key, substitute_with_default=True)
                 json_data["rules"].append({"key": rule.key, **data})
-            # json_data["rules"] = {k: v.export(full) for k, v in self.rules().items()}
         json_data["permissions"] = self.permissions().export(export_settings)
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
@@ -434,9 +433,9 @@ class QualityProfile(sq.SqObject):
         """
         return rules.get_object(self.endpoint, rule_key).impacts(self.key, substitute_with_default=substitute_with_default)
 
-    def __process_rules_diff(self, rules: dict[str:str]) -> dict[str:str]:
+    def __process_rules_diff(self, rule_set: dict[str:str]) -> dict[str:str]:
         diff_rules = {}
-        for rule in rules:
+        for rule in rule_set:
             r_key = rule["key"]
             diff_rules[r_key] = {}
             if self.rule_has_custom_severities(r_key):
