@@ -439,12 +439,13 @@ class QualityProfile(sq.SqObject):
         my_rules = self.rules()
         for r in added_rules:
             r_key = r.pop("key")
-            diff_rules[r_key] = r
-            if r_key in my_rules:
-                diff_rules[r_key] = {
-                    k: v for k, v in my_rules[r_key].export().items() if k not in ("isTemplate", "templateKey", "language", "severities", "severity")
-                }
+            diff_rules[r_key] = {}
+            if self.rule_has_custom_severities(r_key):
                 diff_rules[r_key]["severities"] = self.get_rule_impacts(r_key, substitute_with_default=True)
+            if self.rule_is_prioritized(r_key):
+                diff_rules[r_key]["prioritized"] = True
+            if len(r.get("params", {})) > 0:
+                diff_rules[r_key]["params"] = r["params"]
         return diff_rules
 
     def _treat_removed_rules(self, removed_rules: dict[str:str]) -> dict[str:str]:
@@ -533,7 +534,14 @@ class QualityProfile(sq.SqObject):
         :return: Whether the rule has a some custom severities in the quality profile
         """
         rule = rules.Rule.get_object(self.endpoint, rule_key)
-        return not all(v == c.DEFAULT for v in rule.impacts(quality_profile_id=self.key, substitute_with_default=True).values())
+        log.debug(
+            "Checking if rule %s has custom severities in %s: %s - result %s",
+            rule_key,
+            str(self),
+            str(rule.impacts(quality_profile_id=self.key, substitute_with_default=True)),
+            any(sev != c.DEFAULT for sev in rule.impacts(quality_profile_id=self.key, substitute_with_default=True).values()),
+        )
+        return any(sev != c.DEFAULT for sev in rule.impacts(quality_profile_id=self.key, substitute_with_default=True).values())
 
     def rule_is_prioritized(self, rule_key: str) -> bool:
         """Checks whether the rule is prioritized in the quality profile
