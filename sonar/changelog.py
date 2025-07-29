@@ -154,7 +154,9 @@ class Changelog(object):
         d_mqr = next((d for d in self.sq_json["diffs"] if d.get("key", "") == "impactSeverity"), {})
         if d_mqr == {}:
             log.warning("No MQR severity change found in changelog %s, approximating with std mode severity", self)
-            d_mqr = {"newValue": f"{idefs.type_to_mqr_quality(self.concerned_object.type)}:{idefs.std_to_mqr_severity(self.concerned_object.severity)}"}
+            d_mqr = {
+                "newValue": f"{idefs.type_to_mqr_quality(self.concerned_object.type)}:{idefs.std_to_mqr_severity(self.concerned_object.severity)}"
+            }
         elif d_std == {}:
             log.warning("No std mode severity change found in changelog %s, approximating with MQR mode severity", self)
             d_std = {"newValue": idefs.mqr_to_std_severity(d_mqr.get("newValue", idefs.SEVERITY_NONE))}
