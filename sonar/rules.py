@@ -159,7 +159,7 @@ class Rule(sq.SqObject):
         if "impacts" in data:
             self._impacts = {imp["softwareQuality"]: imp["severity"] for imp in data["impacts"]}
         else:
-            if self.type in idefs.OLD_TYPES:
+            if self.type in idefs.STD_TYPES:
                 self._impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
 
         self.tags = None if len(data.get("tags", [])) == 0 else data["tags"]
@@ -272,7 +272,7 @@ class Rule(sq.SqObject):
         if self.endpoint.version() >= c.MQR_INTRO_VERSION:
             data["legacySeverity"] = data.pop("severity", "")
             data["legacyType"] = data.pop("type", "")
-            for qual in idefs.NEW_TYPES:
+            for qual in idefs.MQR_QUALITIES:
                 data[qual.lower() + "Impact"] = self._impacts.get(qual, "")
             data = [data[key] for key in CSV_EXPORT_FIELDS]
         else:

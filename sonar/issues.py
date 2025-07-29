@@ -693,7 +693,7 @@ def search_by_type(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by issue types")
-    types = idefs.NEW_TYPES if endpoint.is_mqr_mode() else idefs.OLD_TYPES
+    types = idefs.MQR_QUALITIES if endpoint.is_mqr_mode() else idefs.STD_TYPES
     for issue_type in types:
         try:
             new_params[type_search_field(endpoint)] = [issue_type]
@@ -710,7 +710,7 @@ def search_by_severity(endpoint: pf.Platform, params: ApiParams) -> dict[str, Is
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by severities")
-    severities = idefs.NEW_SEVERITIES if endpoint.is_mqr_mode() else idefs.OLD_SEVERITIES
+    severities = idefs.MQR_SEVERITIES if endpoint.is_mqr_mode() else idefs.STD_SEVERITIES
     for sev in severities:
         try:
             new_params[severity_search_field(endpoint)] = [sev]

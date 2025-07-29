@@ -125,12 +125,12 @@ def parse_args(desc: str) -> Namespace:
     parser.add_argument(
         f"--{options.SEVERITIES}",
         required=False,
-        help="Comma separated severities among" + util.list_to_csv(idefs.OLD_SEVERITIES + hotspots.SEVERITIES),
+        help="Comma separated severities among" + util.list_to_csv(idefs.STD_SEVERITIES + hotspots.SEVERITIES),
     )
     parser.add_argument(
         f"--{options.TYPES}",
         required=False,
-        help="Comma separated types among " + util.list_to_csv(idefs.OLD_TYPES + hotspots.TYPES),
+        help="Comma separated types among " + util.list_to_csv(idefs.STD_TYPES + hotspots.TYPES),
     )
     parser.add_argument(f"--{options.TAGS}", help="Comma separated findings tags", required=False)
     parser.add_argument(
@@ -219,11 +219,11 @@ def __verify_inputs(params: types.ApiParams) -> bool:
     if diff:
         util.exit_fatal(f"Statuses {str(diff)} are not legit statuses", errcodes.WRONG_SEARCH_CRITERIA)
 
-    diff = util.difference(util.csv_to_list(params.get(options.SEVERITIES, None)), idefs.OLD_SEVERITIES + hotspots.SEVERITIES)
+    diff = util.difference(util.csv_to_list(params.get(options.SEVERITIES, None)), idefs.STD_SEVERITIES + hotspots.SEVERITIES)
     if diff:
         util.exit_fatal(f"Severities {str(diff)} are not legit severities", errcodes.WRONG_SEARCH_CRITERIA)
 
-    diff = util.difference(util.csv_to_list(params.get(options.TYPES, None)), idefs.OLD_TYPES + hotspots.TYPES)
+    diff = util.difference(util.csv_to_list(params.get(options.TYPES, None)), idefs.STD_TYPES + hotspots.TYPES)
     if diff:
         util.exit_fatal(f"Types {str(diff)} are not legit types", errcodes.WRONG_SEARCH_CRITERIA)
     if len(params[options.CSV_SEPARATOR]) > 1:

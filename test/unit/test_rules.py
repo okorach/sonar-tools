@@ -148,14 +148,14 @@ def test_new_taxo() -> None:
     my_rule = rules.get_object(endpoint=util.SQ, key="java:S127")
     if util.SQ.version() >= c.MQR_INTRO_VERSION:
         for qual, sev in my_rule.impacts().items():
-            assert qual in idefs.NEW_TYPES
-            assert sev in idefs.NEW_SEVERITIES
+            assert qual in idefs.MQR_QUALITIES
+            assert sev in idefs.MQR_SEVERITIES
         attr = my_rule.clean_code_attribute()
         assert "attribute" in attr
         assert "attribute_category" in attr
     else:
-        assert my_rule.severity in idefs.OLD_SEVERITIES
-        assert my_rule.type in idefs.OLD_TYPES
+        assert my_rule.severity in idefs.STD_SEVERITIES
+        assert my_rule.type in idefs.STD_TYPES
 
 
 def test_non_existing_qp() -> None:
