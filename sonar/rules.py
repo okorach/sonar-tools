@@ -30,26 +30,15 @@ from requests import RequestException
 
 import sonar.logging as log
 import sonar.sqobject as sq
-from sonar.util import types, cache, constants as c
+from sonar.util import types, cache, constants as c, issue_defs as idefs
 from sonar import platform, utilities, exceptions, languages
 
-_BUG = "BUG"
-_VULN = "VULNERABILITY"
-_CODE_SMELL = "CODE_SMELL"
-_HOTSPOT = "SECURITY_HOTSPOT"
-
-LEGACY_TYPES = (_BUG, _VULN, _CODE_SMELL, _HOTSPOT)
-
-LEGACY_SEVERITIES = ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO")
-SEVERITIES = ("BLOCKER", "HIGH", "MEDIUM", "LOW", "INFO")
-
-_QUAL_SECURITY = "SECURITY"
-_QUAL_RELIABILITY = "RELIABILITY"
-_QUAL_MAINT = "MAINTAINABILITY"
-
-QUALITIES = (_QUAL_SECURITY, _QUAL_RELIABILITY, _QUAL_MAINT)
-
-TYPE_TO_QUALITY = {_BUG: _QUAL_RELIABILITY, _VULN: _QUAL_SECURITY, _HOTSPOT: _QUAL_SECURITY, _CODE_SMELL: _QUAL_MAINT}
+TYPE_TO_QUALITY = {
+    idefs.TYPE_BUG: idefs.QUALITY_RELIABILITY,
+    idefs.TYPE_VULN: idefs.QUALITY_SECURITY,
+    idefs.TYPE_HOTSPOT: idefs.QUALITY_SECURITY,
+    idefs.TYPE_CODE_SMELL: idefs.QUALITY_MAINTAINABILITY,
+}
 
 SONAR_REPOS = {
     "abap",
@@ -170,7 +159,7 @@ class Rule(sq.SqObject):
         if "impacts" in data:
             self._impacts = {imp["softwareQuality"]: imp["severity"] for imp in data["impacts"]}
         else:
-            if self.type in LEGACY_TYPES:
+            if self.type in idefs.OLD_TYPES:
                 self._impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
 
         self.tags = None if len(data.get("tags", [])) == 0 else data["tags"]
@@ -283,7 +272,7 @@ class Rule(sq.SqObject):
         if self.endpoint.version() >= c.MQR_INTRO_VERSION:
             data["legacySeverity"] = data.pop("severity", "")
             data["legacyType"] = data.pop("type", "")
-            for qual in QUALITIES:
+            for qual in idefs.NEW_TYPES:
                 data[qual.lower() + "Impact"] = self._impacts.get(qual, "")
             data = [data[key] for key in CSV_EXPORT_FIELDS]
         else:

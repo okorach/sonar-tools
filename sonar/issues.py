@@ -221,7 +221,9 @@ class Issue(findings.Finding):
         if self.endpoint.version() >= c.MQR_INTRO_VERSION:
             self.impacts = {i["softwareQuality"]: i["severity"] for i in data.get("impacts", {})}
         else:
-            self.impacts = {idefs.TYPE_QUALITY_MAPPING[data.get("type", idefs.TYPE_NONE)]: idefs.SEVERITY_MAPPING[data.get("severity", idefs.SEVERITY_NONE)]}
+            self.impacts = {
+                idefs.TYPE_QUALITY_MAPPING[data.get("type", idefs.TYPE_NONE)]: idefs.SEVERITY_MAPPING[data.get("severity", idefs.SEVERITY_NONE)]
+            }
 
     def changelog(self, manual_only: bool = True) -> dict[str, str]:
         """
