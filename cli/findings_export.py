@@ -38,7 +38,7 @@ import sonar.logging as log
 from sonar import platform, exceptions, errcodes, version
 from sonar import issues, hotspots, findings
 from sonar import applications, portfolios
-from sonar.util import types, component_helper, cache_helper
+from sonar.util import issue_defs as idefs, types, component_helper, cache_helper
 import sonar.util.constants as c
 
 import sonar.utilities as util
@@ -105,7 +105,7 @@ def parse_args(desc: str) -> Namespace:
     parser.add_argument(
         f"--{options.STATUSES}",
         required=False,
-        help="comma separated status among " + util.list_to_csv(issues.STATUSES + hotspots.STATUSES),
+        help="comma separated status among " + util.list_to_csv(idefs.STATUSES + hotspots.STATUSES),
     )
     parser.add_argument(
         f"--{options.DATE_AFTER}",
@@ -120,17 +120,17 @@ def parse_args(desc: str) -> Namespace:
     parser.add_argument(
         f"--{options.RESOLUTIONS}",
         required=False,
-        help="Comma separated resolution of the findings among " + util.list_to_csv(issues.RESOLUTIONS + hotspots.RESOLUTIONS),
+        help="Comma separated resolution of the findings among " + util.list_to_csv(idefs.RESOLUTIONS + hotspots.RESOLUTIONS),
     )
     parser.add_argument(
         f"--{options.SEVERITIES}",
         required=False,
-        help="Comma separated severities among" + util.list_to_csv(issues.OLD_SEVERITIES + hotspots.SEVERITIES),
+        help="Comma separated severities among" + util.list_to_csv(idefs.OLD_SEVERITIES + hotspots.SEVERITIES),
     )
     parser.add_argument(
         f"--{options.TYPES}",
         required=False,
-        help="Comma separated types among " + util.list_to_csv(issues.OLD_TYPES + hotspots.TYPES),
+        help="Comma separated types among " + util.list_to_csv(idefs.OLD_TYPES + hotspots.TYPES),
     )
     parser.add_argument(f"--{options.TAGS}", help="Comma separated findings tags", required=False)
     parser.add_argument(
@@ -211,19 +211,19 @@ def __write_findings(findings_list: list[findings.Finding], fd: TextIO, is_first
 
 def __verify_inputs(params: types.ApiParams) -> bool:
     """Verifies if findings-export inputs are correct"""
-    diff = util.difference(util.csv_to_list(params.get(options.RESOLUTIONS, None)), issues.RESOLUTIONS + hotspots.RESOLUTIONS)
+    diff = util.difference(util.csv_to_list(params.get(options.RESOLUTIONS, None)), idefs.RESOLUTIONS + hotspots.RESOLUTIONS)
     if diff:
         util.exit_fatal(f"Resolutions {str(diff)} are not legit resolutions", errcodes.WRONG_SEARCH_CRITERIA)
 
-    diff = util.difference(util.csv_to_list(params.get(options.STATUSES, None)), issues.STATUSES + hotspots.STATUSES)
+    diff = util.difference(util.csv_to_list(params.get(options.STATUSES, None)), idefs.STATUSES + hotspots.STATUSES)
     if diff:
         util.exit_fatal(f"Statuses {str(diff)} are not legit statuses", errcodes.WRONG_SEARCH_CRITERIA)
 
-    diff = util.difference(util.csv_to_list(params.get(options.SEVERITIES, None)), issues.OLD_SEVERITIES + hotspots.SEVERITIES)
+    diff = util.difference(util.csv_to_list(params.get(options.SEVERITIES, None)), idefs.OLD_SEVERITIES + hotspots.SEVERITIES)
     if diff:
         util.exit_fatal(f"Severities {str(diff)} are not legit severities", errcodes.WRONG_SEARCH_CRITERIA)
 
-    diff = util.difference(util.csv_to_list(params.get(options.TYPES, None)), issues.OLD_TYPES + hotspots.TYPES)
+    diff = util.difference(util.csv_to_list(params.get(options.TYPES, None)), idefs.OLD_TYPES + hotspots.TYPES)
     if diff:
         util.exit_fatal(f"Types {str(diff)} are not legit types", errcodes.WRONG_SEARCH_CRITERIA)
     if len(params[options.CSV_SEPARATOR]) > 1:

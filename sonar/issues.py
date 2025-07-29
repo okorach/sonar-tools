@@ -36,6 +36,7 @@ import sonar.logging as log
 import sonar.platform as pf
 from sonar.util import cache
 import sonar.util.constants as c
+from sonar.util import issue_defs as idefs
 
 from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
@@ -102,39 +103,7 @@ _SEARCH_CRITERIAS = (
     "directories",
 )
 
-OLD_TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL")
-NEW_TYPES = ("RELIABILITY", "SECURITY", "MAINTAINABILITY")
-OLD_SEVERITIES = ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO")
-NEW_SEVERITIES = ("BLOCKER", "HIGH", "MEDIUM", "LOW", "INFO")
-STATUSES = ("OPEN", "CONFIRMED", "REOPENED", "RESOLVED", "CLOSED", "ACCEPTED", "FALSE_POSITIVE")
-RESOLUTIONS = ("FALSE-POSITIVE", "WONTFIX", "FIXED", "REMOVED", "ACCEPTED")
-
 _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
-
-SEVERITY_NONE = "NONE"
-
-TYPE_VULN = "VULNERABILITY"
-TYPE_BUG = "BUG"
-TYPE_CODE_SMELL = "CODE_SMELL"
-TYPE_HOTSPOT = "SECURITY_HOTSPOT"
-TYPE_NONE = "NONE"
-
-QUALITY_SECURITY = "SECURITY"
-QUALITY_RELIABILITY = "RELIABILITY"
-QUALITY_MAINTAINABILITY = "MAINTAINABILITY"
-QUALITY_NONE = "NONE"
-
-# Mapping between old issues type and new software qualities
-TYPE_QUALITY_MAPPING = {
-    TYPE_CODE_SMELL: QUALITY_MAINTAINABILITY,
-    TYPE_BUG: QUALITY_RELIABILITY,
-    TYPE_VULN: QUALITY_SECURITY,
-    TYPE_HOTSPOT: QUALITY_SECURITY,
-    TYPE_NONE: QUALITY_NONE,
-}
-
-# Mapping between old and new severities
-SEVERITY_MAPPING = {"BLOCKER": "BLOCKER", "CRITICAL": "HIGH", "MAJOR": "MEDIUM", "MINOR": "LOW", "INFO": "INFO", "NONE": "NONE"}
 
 
 class TooManyIssuesError(Exception):
@@ -252,7 +221,7 @@ class Issue(findings.Finding):
         if self.endpoint.version() >= c.MQR_INTRO_VERSION:
             self.impacts = {i["softwareQuality"]: i["severity"] for i in data.get("impacts", {})}
         else:
-            self.impacts = {TYPE_QUALITY_MAPPING[data.get("type", TYPE_NONE)]: SEVERITY_MAPPING[data.get("severity", SEVERITY_NONE)]}
+            self.impacts = {idefs.TYPE_QUALITY_MAPPING[data.get("type", idefs.TYPE_NONE)]: idefs.SEVERITY_MAPPING[data.get("severity", idefs.SEVERITY_NONE)]}
 
     def changelog(self, manual_only: bool = True) -> dict[str, str]:
         """
@@ -541,8 +510,8 @@ class Issue(findings.Finding):
             if self.endpoint.is_mqr_mode():
                 if mqr_severity is None:
                     log.warning("Original issue severity was in standard experience, converting to MQR on target")
-                    severity = std_to_mqr_severity(std_severity)
-                    sw_quality = QUALITY_MAINTAINABILITY  # TODO: Find a more accurate quality than hardcoding MAINTAINABILITY
+                    severity = idefs.std_to_mqr_severity(std_severity)
+                    sw_quality = idefs.QUALITY_MAINTAINABILITY  # TODO: Find a more accurate quality than hardcoding MAINTAINABILITY
                 else:
                     sw_quality, severity = mqr_severity.split(":")
                 self.set_mqr_severity(sw_quality, severity)
@@ -722,7 +691,7 @@ def search_by_type(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by issue types")
-    types = NEW_TYPES if endpoint.is_mqr_mode() else OLD_TYPES
+    types = idefs.NEW_TYPES if endpoint.is_mqr_mode() else idefs.OLD_TYPES
     for issue_type in types:
         try:
             new_params[type_search_field(endpoint)] = [issue_type]
@@ -739,7 +708,7 @@ def search_by_severity(endpoint: pf.Platform, params: ApiParams) -> dict[str, Is
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by severities")
-    severities = NEW_SEVERITIES if endpoint.is_mqr_mode() else OLD_SEVERITIES
+    severities = idefs.NEW_SEVERITIES if endpoint.is_mqr_mode() else idefs.OLD_SEVERITIES
     for sev in severities:
         try:
             new_params[severity_search_field(endpoint)] = [sev]
@@ -1049,23 +1018,3 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
     filters = {k: util.list_to_csv(v) for k, v in filters.items() if v}
     log.debug("Sanitized issue search filters %s", str(filters))
     return filters
-
-
-def std_to_mqr_severity(std_severity: str) -> str:
-    """Converts standard severity to MQR severity"""
-    return SEVERITY_MAPPING.get(std_severity, SEVERITY_NONE)
-
-
-def mqr_to_std_severity(mqr_severity: str) -> str:
-    """Converts MQR severity to standard severity"""
-    return next((sev for sev, mqr_sev in SEVERITY_MAPPING.items() if mqr_sev == mqr_severity), SEVERITY_NONE)
-
-
-def type_to_mqr_quality(issue_type: str) -> str:
-    """Converts issue type to MQR software quality"""
-    return TYPE_QUALITY_MAPPING.get(issue_type, QUALITY_NONE)
-
-
-def mqr_quality_to_type(sw_quality: str) -> str:
-    """Converts MQR software quality to issue type"""
-    return next((issue_type for issue_type, quality in TYPE_QUALITY_MAPPING.items() if quality == sw_quality), TYPE_NONE)
