@@ -341,8 +341,10 @@ class Rule(sq.SqObject):
 
     def impacts(self, quality_profile_id: Optional[str] = None, substitute_with_default: bool = True) -> dict[str, str]:
         """Returns the rule clean code attributes"""
-        self.refresh()
-        found_qp = next((qp for qp in self.sq_json.get("actives", []) if quality_profile_id and qp["qProfile"] == quality_profile_id), None)
+        found_qp = None
+        if quality_profile_id:
+            self.refresh()
+            found_qp = next((qp for qp in self.sq_json.get("actives", []) if quality_profile_id and qp["qProfile"] == quality_profile_id), None)
         if not found_qp:
             return self._impacts if self.endpoint.is_mqr_mode() else {TYPE_TO_QUALITY[self.type]: self.severity}
         if self.endpoint.is_mqr_mode():
@@ -359,11 +361,13 @@ class Rule(sq.SqObject):
 
     def is_prioritized_in_quality_profile(self, quality_profile_id: str) -> bool:
         """Returns True if the rule is a prioritized rule in a given quality profile, False otherwise"""
-        self.refresh()
-        qp_found = next((qp for qp in self.sq_json.get("actives", []) if qp["qProfile"] == quality_profile_id), None)
-        if not qp_found:
+        found_qp = None
+        if quality_profile_id:
+            self.refresh()
+            found_qp = next((qp for qp in self.sq_json.get("actives", []) if qp["qProfile"] == quality_profile_id), None)
+        if not found_qp:
             return False
-        return qp_found.get("prioritizedRule", False)
+        return found_qp.get("prioritizedRule", False)
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
