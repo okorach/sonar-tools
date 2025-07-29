@@ -36,10 +36,8 @@ When `--what` is not specified, everything is audited
   - Much less is audited (because SIF does not provide as much information as a live platform)
 - `--format [json|csv]`: Generates output in JSON or CSV format (CSV is the default)
 - `--csvSeparator <separator>`: Allows to select the separator character for CSV, `,` is the default
-- `--threads <nbThreads>`: Allows to define number of threads for projects auditing (default 1). More threads
-  will stress SonarQube APIs more but will be much faster on large platforms with many projects
 - `-h`: Displays help and exits
-- `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
+- `-u`, `-t`, `-h`, `-v`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](../README.md#common-params)
 
 ## Required Permissions
 
