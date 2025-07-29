@@ -32,9 +32,9 @@ import pytest
 import utilities as util
 import sonar.logging as log
 from sonar import utilities, projects
-from sonar import findings, issues
+from sonar import issues
 from sonar import errcodes as e
-import sonar.util.constants as c
+from sonar.util import constants as c, issue_defs as idefs
 
 from cli import findings_export
 import cli.options as opt
@@ -59,7 +59,7 @@ __GOOD_OPTS = [
     f"--{opt.APPS} -{opt.KEY_REGEXP_SHORT} APP_TEST --{opt.BRANCH_REGEXP} .+",
     f"--{opt.PORTFOLIOS} -{opt.KEY_REGEXP_SHORT} Banking -{opt.REPORT_FILE_SHORT} {util.CSV_FILE}",
     f"-{opt.KEY_REGEXP_SHORT} {util.PROJECT_0} -{opt.BRANCH_REGEXP_SHORT} .+",
-    f"--{opt.STATUSES} OPEN,CLOSED --{opt.SEVERITIES} BLOCKER,CRITICAL",
+    f"--{opt.STATUSES} OPEN,CLOSED --{opt.SEVERITIES} {idefs.STD_SEVERITY_BLOCKER},{idefs.STD_SEVERITY_CRITICAL}",
 ]
 
 __GOOD_OPTS_LONG = [
@@ -147,10 +147,10 @@ def test_findings_filter_on_date_before(csv_file: Generator[str]) -> None:
 
 def test_findings_filter_on_type(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_type"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.TYPES} VULNERABILITY,BUG"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.TYPES} {idefs.TYPE_VULN},{idefs.TYPE_BUG}"
     assert util.run_cmd(findings_export.main, cmd) == e.OK
     col_name = "legacyType" if util.SQ.version() >= c.MQR_INTRO_VERSION else "type"
-    util.csv_col_is_value(csv_file, col_name, "VULNERABILITY", "BUG")
+    util.csv_col_is_value(csv_file, col_name, {idefs.TYPE_VULN}, idefs.TYPE_BUG)
 
 
 def test_findings_filter_on_resolution(csv_file: Generator[str]) -> None:
@@ -164,10 +164,10 @@ def test_findings_filter_on_resolution(csv_file: Generator[str]) -> None:
 
 def test_findings_filter_on_severity(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_severity"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.SEVERITIES} BLOCKER,CRITICAL"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.SEVERITIES} {idefs.STD_SEVERITY_BLOCKER},{idefs.STD_SEVERITY_BLOCKER}"
     assert util.run_cmd(findings_export.main, cmd) == e.OK
     if util.SQ.version() < c.MQR_INTRO_VERSION:
-        assert util.csv_col_is_value(csv_file, "severity", "BLOCKER", "CRITICAL")
+        assert util.csv_col_is_value(csv_file, "severity", {idefs.STD_SEVERITY_BLOCKER}, {idefs.STD_SEVERITY_BLOCKER})
         return
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         (sec, other, legacy) = util.get_cols(next(csvreader := csv.reader(fh)), "securityImpact", "otherImpact", "legacySeverity")
@@ -176,15 +176,20 @@ def test_findings_filter_on_severity(csv_file: Generator[str]) -> None:
             if util.SQ.version() < (10, 7, 0):
                 sev1, sev2, sev3 = "HIGH", "MEDIUM", "HIGH(HOTSPOT)"
             else:
-                sev1, sev2, sev3 = "BLOCKER", "HIGH", "HIGH(HOTSPOT)"
-            assert sev1 in line[sec:other] or sev2 in line[sec:other] or sev3 in line[sec:other] or line[legacy] in ("BLOCKER", "CRITICAL")
+                sev1, sev2, sev3 = idefs.MQR_SEVERITY_BLOCKER, idefs.MQR_SEVERITY_HIGH, "HIGH(HOTSPOT)"
+            assert (
+                sev1 in line[sec:other]
+                or sev2 in line[sec:other]
+                or sev3 in line[sec:other]
+                or line[legacy] in (idefs.STD_SEVERITY_BLOCKER, idefs.STD_SEVERITY_CRITICAL)
+            )
 
 
 def test_findings_filter_on_multiple_criteria(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_multiple_criteria"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.RESOLUTIONS} FALSE-POSITIVE,ACCEPTED --{opt.TYPES} BUG,CODE_SMELL"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.RESOLUTIONS} FALSE-POSITIVE,ACCEPTED --{opt.TYPES} {idefs.TYPE_BUG},{idefs.TYPE_CODE_SMELL}"
     assert util.run_cmd(findings_export.main, cmd) == e.OK
-    assert util.csv_col_is_value(csv_file, "type" if util.SQ.version() < c.MQR_INTRO_VERSION else "legacyType", "BUG", "CODE_SMELL")
+    assert util.csv_col_is_value(csv_file, "type" if util.SQ.version() < c.MQR_INTRO_VERSION else "legacyType", idefs.TYPE_BUG, idefs.TYPE_CODE_SMELL)
     assert util.csv_col_is_value(csv_file, "status", "FALSE-POSITIVE", "WONTFIX" if util.SQ.version() < c.ACCEPT_INTRO_VERSION else "ACCEPTED")
     if util.SQ.version() < c.MQR_INTRO_VERSION:
         return
@@ -196,11 +201,11 @@ def test_findings_filter_on_multiple_criteria(csv_file: Generator[str]) -> None:
 
 def test_findings_filter_on_multiple_criteria_2(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_multiple_criteria_2"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.DATE_AFTER} 2020-01-10 --{opt.DATE_BEFORE} 2020-12-31 --{opt.TYPES} SECURITY_HOTSPOT"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.DATE_AFTER} 2020-01-10 --{opt.DATE_BEFORE} 2020-12-31 --{opt.TYPES} {idefs.TYPE_HOTSPOT}"
     assert util.run_cmd(findings_export.main, cmd) == e.OK
     assert util.csv_col_match(csv_file, "creationDate", r"2020-\d\d-\d\d")
     colname = "legacyType" if util.SQ.version() >= c.MQR_INTRO_VERSION else "type"
-    assert util.csv_col_is_value(csv_file, colname, "SECURITY_HOTSPOT")
+    assert util.csv_col_is_value(csv_file, colname, idefs.TYPE_HOTSPOT)
 
 
 def test_findings_filter_on_multiple_criteria_3(csv_file: Generator[str]) -> None:
@@ -237,10 +242,10 @@ def test_findings_filter_on_lang(csv_file: Generator[str]) -> None:
 
 def test_findings_filter_on_hotspot_type(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_hotspot_type"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.TYPES} SECURITY_HOTSPOT"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.TYPES} {idefs.TYPE_HOTSPOT}"
     assert util.run_cmd(findings_export.main, cmd) == e.OK
     col = "legacyType" if util.SQ.version() >= c.MQR_INTRO_VERSION else "type"
-    assert util.csv_col_is_value(csv_file, col, "SECURITY_HOTSPOT")
+    assert util.csv_col_is_value(csv_file, col, idefs.TYPE_HOTSPOT)
 
 
 def test_findings_export(csv_file: Generator[str]) -> None:
@@ -271,13 +276,13 @@ def test_issues_count_0() -> None:
 def test_issues_count_1() -> None:
     """test_issues_count_1"""
     total = issues.count(util.SQ)
-    assert issues.count(util.SQ, severities=["BLOCKER"]) < int(total / 3)
+    assert issues.count(util.SQ, severities=[idefs.MQR_SEVERITY_BLOCKER]) < int(total / 3)
 
 
 def test_issues_count_2() -> None:
     """test_issues_count_2"""
     total = issues.count(util.SQ)
-    assert issues.count(util.SQ, types=["VULNERABILITY"]) < int(total / 10)
+    assert issues.count(util.SQ, types=[idefs.TYPE_VULN]) < int(total / 10)
 
 
 def test_issues_count_3() -> None:
@@ -323,7 +328,7 @@ def test_output_format_sarif(sarif_file: Generator[str]) -> None:
         for k in "creationDate", "key", "projectKey", "updateDate":
             assert k in issue["properties"]
         assert "impacts" in issue["properties"]
-        assert "effort" in issue["properties"] or issue["properties"][type_for_issue] == "SECURITY_HOTSPOT"
+        assert "effort" in issue["properties"] or issue["properties"][type_for_issue] == idefs.TYPE_HOTSPOT
         assert "language" in issue["properties"] or issue["ruleId"].startswith("external")
         assert issue["level"] in ("warning", "error")
 
@@ -340,7 +345,7 @@ def test_output_format_json(json_file: Generator[str]) -> None:
         for k in "creationDate", "file", "key", "message", "projectKey", "rule", "updateDate":
             assert k in issue
         assert "impacts" in issue
-        assert "effort" in issue or issue[type_for_issue] == "SECURITY_HOTSPOT"
+        assert "effort" in issue or issue[type_for_issue] == idefs.TYPE_HOTSPOT
         assert "language" in issue or issue["rule"].startswith("external")
         # Some issues have no author so we cannot expect the below assertion to succeed all the time
         # assert issue["status"] in ("FIXED", "CLOSED") or "author" in issue

@@ -31,7 +31,7 @@ import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
 from sonar.util import types
-import sonar.util.constants as c
+from sonar.util import constants as c, issue_defs as idefs
 
 import sonar.utilities as util
 from sonar import projects, rules
@@ -244,7 +244,11 @@ class Finding(sq.SqObject):
         :rtype: dict
         """
         data = {"level": "warning", "ruleId": self.rule, "message": {"text": self.message}}
-        if self.is_bug() or self.is_vulnerability() or self.severity in ("CRITICAL", "BLOCKER", "HIGH"):
+        if (
+            self.is_bug()
+            or self.is_vulnerability()
+            or self.severity in (idefs.STD_SEVERITY_BLOCKER, idefs.STD_SEVERITY_CRITICAL, idefs.STD_SEVERITY_MAJOR)
+        ):
             data["level"] = "error"
         data["properties"] = {"url": self.url()}
         try:

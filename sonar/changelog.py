@@ -24,12 +24,18 @@ from typing import Optional
 
 import sonar.logging as log
 from sonar.util import types
+from sonar.util import issue_defs as idefs
 
 
 class Changelog(object):
     """Abstraction of SonarQube finding (issue or hotspot) changelog"""
 
-    def __init__(self, jsonlog: types.ApiPayload) -> None:
+    def __init__(self, jsonlog: types.ApiPayload, concerned_object: object) -> None:
+        """Constructor
+        :param ApiPayload another_qp: The second quality profile to compare with self
+        :return: dict result of the compare ("inLeft", "inRight", "same", "modified")
+        """
+        self.concerned_object = concerned_object
         self.sq_json = jsonlog
         self._change_type = None
 
@@ -142,14 +148,19 @@ class Changelog(object):
 
     def new_severity(self) -> tuple[Optional[str], Optional[str]]:
         """Returns the new severity (std and MQR) of a change issue severity changelog"""
-        if self.is_change_severity():
-            try:
-                d_std = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "severity")
-                d_mqr = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "impactSeverity")
-                return d_std.get("newValue", None), d_mqr.get("newValue", None)
-            except StopIteration:
-                log.warning("No severity change found in changelog %s", str(self))
-        return None, None
+        if not self.is_change_severity():
+            return None, None
+        d_std = next((d for d in self.sq_json["diffs"] if d.get("key", "") == "severity"), {})
+        d_mqr = next((d for d in self.sq_json["diffs"] if d.get("key", "") == "impactSeverity"), {})
+        if d_mqr == {}:
+            log.warning("No MQR severity change found in changelog %s, approximating with std mode severity", self)
+            d_mqr = {
+                "newValue": f"{idefs.type_to_mqr_quality(self.concerned_object.type)}:{idefs.std_to_mqr_severity(self.concerned_object.severity)}"
+            }
+        elif d_std == {}:
+            log.warning("No std mode severity change found in changelog %s, approximating with MQR mode severity", self)
+            d_std = {"newValue": idefs.mqr_to_std_severity(d_mqr.get("newValue", idefs.SEVERITY_NONE))}
+        return d_std.get("newValue", None), d_mqr.get("newValue", None)
 
     def is_change_type(self) -> bool:
         """Returns whether the changelog item is a change of issue type"""
@@ -157,13 +168,12 @@ class Changelog(object):
 
     def new_type(self) -> Optional[str]:
         """Returns the new type of a change issue type changelog"""
-        if self.is_change_type():
-            try:
-                d = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "type")
-                return d.get("newValue", None)
-            except StopIteration:
-                log.warning("No type change found in changelog %s", str(self))
-        return None
+        if not self.is_change_type():
+            return None
+        d = next((d for d in self.sq_json["diffs"] if d.get("key", "") == "type"), {})
+        if d == {}:
+            log.warning("No type change found in changelog %s", str(self))
+        return d.get("newValue", None)
 
     def is_technical_change(self) -> bool:
         """Returns whether the changelog item is a technical change"""
@@ -190,13 +200,12 @@ class Changelog(object):
 
     def assignee(self, new: bool = True) -> Optional[str]:
         """Returns the new assignee of a change assignment changelog"""
-        if self.is_assignment():
-            try:
-                d = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "assignee")
-                return d.get("newValue" if new else "oldValue", None)
-            except StopIteration:
-                log.warning("No assignment found in changelog %s", str(self))
-        return None
+        if not self.is_assignment():
+            return None
+        d = next((d for d in self.sq_json["diffs"] if d.get("key", "") == "assignee"), {})
+        if d == {}:
+            log.warning("No assignment found in changelog %s", str(self))
+        return d.get("newValue" if new else "oldValue", None)
 
     def previous_state(self) -> str:
         """Returns the previous state of a state change changelog"""
@@ -221,7 +230,7 @@ class Changelog(object):
     def get_tags(self) -> Optional[str]:
         """Returns the changelog tags for issue tagging items"""
         try:
-            d = next(d for d in self.sq_json["diffs"] if d.get("key", "") == "tags")
+            d = next((d for d in self.sq_json["diffs"] if d.get("key", "") == "tags"), {})
             return d.get("newValue", "").split()
         except StopIteration:
             return None
