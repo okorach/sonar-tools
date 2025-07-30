@@ -34,9 +34,8 @@ import requests.utils
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import cache
+from sonar.util import cache, issue_defs as idefs
 import sonar.util.constants as c
-from sonar.util import issue_defs as idefs
 
 from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
@@ -362,7 +361,7 @@ class Issue(findings.Finding):
         """
         log.debug("Adding tag '%s' to %s", tag, str(self))
         tags = [] if not self._tags else self._tags.copy()
-        if tag not in self._tags:
+        if tag not in tags:
             tags.append(tag)
         return self.set_tags(tags)
 
@@ -555,9 +554,8 @@ class Issue(findings.Finding):
         elif event_type == "ASSIGN":
             if settings[syncer.SYNC_ASSIGN]:
                 u = users.get_login_from_name(endpoint=self.endpoint, name=data)
-                if u is None:
-                    u = settings[syncer.SYNC_SERVICE_ACCOUNT]
-                self.assign(u)
+                if u:
+                    self.assign(u)
                 # self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "UNASSIGN":
             self.unassign()
@@ -595,12 +593,16 @@ class Issue(findings.Finding):
         # FIXME: There can be a glitch if there are non manual changes in the changelog
         start_change = len(self.changelog()) + 1
         log.info("Applying changelog of %s to %s, from change %d", str(source_issue), str(self), start_change)
+        tags = source_issue.get_tags() or []
+        # Apply all tags at once, plus synchronized tag
+        self.set_tags(tags + ["synchronized"])
         for key in sorted(events.keys()):
             change_nbr += 1
             if change_nbr < start_change:
                 log.debug("Skipping change already applied in a previous sync: %s", str(events[key]))
                 continue
-            self.__apply_event(events[key], settings)
+            if events[key] != "TAG":
+                self.__apply_event(events[key], settings)
 
         comments = source_issue.comments()
         if len(self.comments()) == 0 and settings[syncer.SYNC_ADD_LINK]:

@@ -97,22 +97,22 @@ def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
     is_branch = type(o).__name__.lower() in ("branch", "applicationbranch")
     parent_o = o.concerned_object if is_branch else o
     d = {parent_type: parent_o.key, "ncloc": ""}
-    if is_branch:
-        d["branch"] = o.name
-    if kwargs[options.WITH_TAGS]:
-        d["tags"] = parent_o.get_tags()
     try:
         d["ncloc"] = o.loc()
+        if is_branch:
+            d["branch"] = o.name
+        if kwargs[options.WITH_TAGS]:
+            d["tags"] = util.list_to_csv(parent_o.get_tags())
+        if kwargs[options.WITH_NAME]:
+            d[f"{parent_type}Name"] = parent_o.name if is_branch else o.name
+        if kwargs[options.WITH_LAST_ANALYSIS]:
+            d["lastAnalysis"] = ""
+            if o.last_analysis() is not None:
+                d["lastAnalysis"] = datetime.datetime.isoformat(o.last_analysis())
+        if kwargs[options.WITH_URL]:
+            d["url"] = o.url()
     except (ConnectionError, RequestException) as e:
         util.handle_error(e, f"LoC extract of {str(o)} failed", catch_all=True)
-    if kwargs[options.WITH_NAME]:
-        d[f"{parent_type}Name"] = parent_o.name if is_branch else o.name
-    if kwargs[options.WITH_LAST_ANALYSIS]:
-        d["lastAnalysis"] = ""
-        if o.last_analysis() is not None:
-            d["lastAnalysis"] = datetime.datetime.isoformat(o.last_analysis())
-    if kwargs[options.WITH_URL]:
-        d["url"] = o.url()
     return d
 
 
