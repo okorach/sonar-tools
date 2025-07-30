@@ -616,6 +616,8 @@ def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Quality
 
 def __audit_duplicates(qp_list: dict[str, QualityProfile], audit_settings: types.ConfigSettings = None) -> list[Problem]:
     """Audits for duplicate quality profiles"""
+    if not audit_settings.get("audit.qualityProfiles.duplicates", True):
+        return []
     problems = []
     langs = set(qp.language for qp in qp_list)
     for lang in sorted(langs):
