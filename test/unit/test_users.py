@@ -240,4 +240,4 @@ def test_deactivate(get_test_user: Generator[users.User]) -> None:
 def test_login_from_name_not_found() -> None:
     """test_login_from_name_not_found"""
     assert users.get_login_from_name(util.SQ, "nonexisting") is None
-    olivier = users.get_login_from_name(util.SQ, "olivier")
+    assert users.get_login_from_name(util.SQ, "olivier") == "olivier"
