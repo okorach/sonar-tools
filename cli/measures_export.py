@@ -28,7 +28,6 @@ import sys
 import csv
 from requests import RequestException
 
-from requests import RequestException
 from sonar.util import types
 from cli import options
 import sonar.logging as log
