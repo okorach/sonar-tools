@@ -70,12 +70,15 @@ Findings synchronization includes:
 - Issue re-opened
 - Issue assignments
 - Issue comments
+- Issue custom tags
 **Hotspots**
 - Custom tags added to issues
 - Hotspot marked as Safe, Acknowledged or Fixed
 - Hotspots re-opened as To Review
 - Hotspots assignments
 - Hotspots comments
+
+Synchronized target issues have the `synchronized` tag added (not hotspots since there are no tags on hotpots)
 
 # What cannot always be synchronized
 
