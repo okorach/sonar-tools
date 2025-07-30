@@ -561,7 +561,7 @@
         "severity": "LOW",
         "type": "HOUSEKEEPING",
         "object": "QualityProfile",
-        "message": "{} and {} are duplicates, one should be removed"
+        "message": "Quality profiles '{}' and '{}' of language '{}' are duplicates, one should be removed"
     },
     "TOKEN_TOO_OLD": {
         "severity": "HIGH",
