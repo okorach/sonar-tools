@@ -391,7 +391,7 @@ class Issue(findings.Finding):
         """
         log.debug("Adding tag '%s' to %s", tag, str(self))
         tags = [] if not self._tags else self._tags.copy()
-        if tag not in self._tags:
+        if tag not in tags:
             tags.append(tag)
         return self.set_tags(tags)
 
@@ -623,13 +623,16 @@ class Issue(findings.Finding):
         # FIXME: There can be a glitch if there are non manual changes in the changelog
         start_change = len(self.changelog()) + 1
         log.info("Applying changelog of %s to %s, from change %d", str(source_issue), str(self), start_change)
-        self.add_tag("synchronized")
+        tags = source_issue.get_tags() or []
+        # Apply all tags at once, plus synchronized tag
+        self.set_tags(tags + ["synchronized"])
         for key in sorted(events.keys()):
             change_nbr += 1
             if change_nbr < start_change:
                 log.debug("Skipping change already applied in a previous sync: %s", str(events[key]))
                 continue
-            self.__apply_event(events[key], settings)
+            if events[key] != "TAG":
+                self.__apply_event(events[key], settings)
 
         comments = source_issue.comments()
         if len(self.comments()) == 0 and settings[syncer.SYNC_ADD_LINK]:
