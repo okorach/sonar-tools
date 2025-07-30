@@ -615,23 +615,23 @@ def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Quality
 
 
 def __audit_duplicates(qp_list: dict[str, QualityProfile], audit_settings: types.ConfigSettings = None) -> list[Problem]:
-    """Audits for duplicate quality profiles"""
+    """Audits for duplicate quality profiles
+    :param qp_list: dict of QP indexed with their key
+    :param audit_settings: Audit settings to use
+    """
     if not audit_settings.get("audit.qualityProfiles.duplicates", True):
         return []
     problems = []
-    langs = set(qp.language for qp in qp_list)
+    langs = {qp.language for qp in qp_list.values()}
     for lang in sorted(langs):
         log.info("Auditing for duplicate quality profiles for language %s", lang)
-        lang_qp_list = [qp for qp in qp_list if qp.language == lang]
-        match_pairs = []
-        for qp1 in lang_qp_list:
-            for qp2 in lang_qp_list:
-                if qp1.key == qp2.key or sorted((qp1.key, qp2.key)) in match_pairs:
-                    continue
-                log.debug("Comparing %s and %s", qp1, qp2)
-                if qp2.is_identical_to(qp1):
-                    problems.append(Problem(get_rule(RuleId.QP_DUPLICATES), qp1, str(qp1), str(qp2)))
-                match_pairs.append(sorted((qp1.key, qp2.key)))
+        lang_qp_list = {k: qp for k, qp in qp_list.items() if qp.language == lang}
+        pairs = {(key1, key2) if key1 < key2 else (key2, key1) for key1 in lang_qp_list.keys() for key2 in lang_qp_list.keys() if key1 != key2}
+        for key1, key2 in pairs:
+            qp1, qp2 = lang_qp_list[key1], lang_qp_list[key2]
+            log.debug("Comparing %s and %s", qp1, qp2)
+            if qp2.is_identical_to(qp1):
+                problems.append(Problem(get_rule(RuleId.QP_DUPLICATES), qp1, qp1.name, qp2.name, lang))
     return problems
 
 
@@ -643,7 +643,7 @@ def __audit_nbr_of_qp(qp_list: dict[str, QualityProfile], audit_settings: types.
     log.info("Auditing for number of quality profiles per language, max %d", max_qp)
     langs = {}
     problems = []
-    for qp in qp_list:
+    for qp in qp_list.values():
         endpoint = qp.endpoint
         langs[qp.language] = langs.get(qp.language, 0) + 1
     for lang, nb_qp in langs.items():
@@ -656,10 +656,9 @@ def __audit_nbr_of_qp(qp_list: dict[str, QualityProfile], audit_settings: types.
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None, **kwargs) -> list[Problem]:
     """Audits all quality profiles and return list of problems found
 
-    :param Platform endpoint: reference to the SonarQube platform
-    :param dict audit_settings: Configuration of audit
+    :param endpoint: reference to the SonarQube platform
+    :param audit_settings: Configuration of audit
     :return: list of problems found
-    :rtype: list[Problem]
     """
     if not audit_settings.get("audit.qualityProfiles", True):
         log.info("Auditing quality profiles is disabled, audit skipped...")
@@ -667,8 +666,8 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None, **
     log.info("--- Auditing quality profiles ---")
     rules.get_list(endpoint=endpoint)
     problems = []
-    qp_list = search(endpoint=endpoint).values()
-    for qp in qp_list:
+    qp_list = search(endpoint=endpoint)
+    for qp in qp_list.values():
         problems += qp.audit(audit_settings)
     problems += __audit_nbr_of_qp(qp_list=qp_list, audit_settings=audit_settings)
     problems += __audit_duplicates(qp_list=qp_list, audit_settings=audit_settings)
