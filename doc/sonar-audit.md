@@ -167,6 +167,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - More than 5 QP for a given language
   - More than `audit.permissions.maxAdminUsers` users with admin permission on a QP (default 2)
   - Group `sonar-users` has admin permission on a QP
+  - Duplicate quality profiles
 - Projects: (if `audit.projects = yes`, default `yes`)
   - Projects provisioned but never analyzed
   - Projects not analyzed since `audit.projects.maxLastAnalysisAge` days (on any branch) (default 180 days)
