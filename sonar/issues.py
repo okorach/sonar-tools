@@ -34,7 +34,7 @@ import requests.utils
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import cache
+from sonar.util import cache, issue_defs as idefs
 import sonar.util.constants as c
 
 from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
