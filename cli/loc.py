@@ -102,7 +102,7 @@ def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
         if is_branch:
             d["branch"] = o.name
         if kwargs[options.WITH_TAGS]:
-            d["tags"] = parent_o.get_tags()
+            d["tags"] = util.list_to_csv(parent_o.get_tags())
         if kwargs[options.WITH_NAME]:
             d[f"{parent_type}Name"] = parent_o.name if is_branch else o.name
         if kwargs[options.WITH_LAST_ANALYSIS]:
