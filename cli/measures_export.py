@@ -26,6 +26,7 @@
 """
 import sys
 import csv
+from requests import RequestException
 
 from sonar.util import types
 from cli import options
@@ -40,33 +41,42 @@ TOOL_NAME = "sonar-measures"
 
 def __get_measures_history(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the measure history of an object (project, branch, application, portfolio)"""
-    data = obj.get_measures_history(wanted_metrics)
-    if data:
-        ratings = convert_options.get("ratings", "letters")
-        percents = convert_options.get("percents", "float")
-        for m in data:
-            m[2] = measures.format(obj.endpoint, m[1], m[2], ratings, percents)
-    return obj.component_data() | {"history": data}
+    try:
+        data = obj.get_measures_history(wanted_metrics)
+        if data:
+            ratings = convert_options.get("ratings", "letters")
+            percents = convert_options.get("percents", "float")
+            for m in data:
+                m[2] = measures.format(obj.endpoint, m[1], m[2], ratings, percents)
+        return obj.component_data() | {"history": data}
+    except (ConnectionError, RequestException, exceptions.ObjectNotFound) as e:
+        util.handle_error(e, f"Measures history extract of {str(obj)} failed", catch_all=True)
+        return {}
 
 
 def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the list of requested measures of an object"""
     log.info("Getting measures for %s", str(obj))
-    measures_d = obj.component_data() | obj.get_measures(wanted_metrics)
-    measures_d.pop("quality_gate_details", None)
-    ratings = convert_options.get("ratings", "letters")
-    percents = convert_options.get("percents", "float")
-    measures_d = {k: v.format(ratings, percents) if v else None for k, v in measures_d.items()}
-    last_analysis = obj.last_analysis()
-    measures_d["lastAnalysis"] = util.date_to_string(last_analysis, convert_options["dates"] != "dateonly") if last_analysis else "Never"
-    if not convert_options.get(options.WITH_TAGS, False):
-        return measures_d
+    measures_d = {}
+    try:
+        measures_d = obj.component_data() | obj.get_measures(wanted_metrics)
+        measures_d.pop("quality_gate_details", None)
+        ratings = convert_options.get("ratings", "letters")
+        percents = convert_options.get("percents", "float")
+        measures_d = {k: v.format(ratings, percents) if v else None for k, v in measures_d.items()}
+        last_analysis = obj.last_analysis()
+        measures_d["lastAnalysis"] = util.date_to_string(last_analysis, convert_options["dates"] != "dateonly") if last_analysis else "Never"
+        if not convert_options.get(options.WITH_TAGS, False):
+            return measures_d
 
-    sep = "|" if convert_options[options.CSV_SEPARATOR] == "," else ","
-    if obj.__class__.__name__ == "Branch":
-        measures_d["tags"] = sep.join(obj.concerned_object.get_tags())
-    else:
-        measures_d["tags"] = sep.join(obj.get_tags())
+        sep = "|" if convert_options[options.CSV_SEPARATOR] == "," else ","
+        if obj.__class__.__name__ == "Branch":
+            measures_d["tags"] = sep.join(obj.concerned_object.get_tags())
+        else:
+            measures_d["tags"] = sep.join(obj.get_tags())
+    except (ConnectionError, RequestException) as e:
+        util.handle_error(e, f"Measures extract of {str(obj)} failed", catch_all=True)
+        return {}
     return measures_d
 
 
