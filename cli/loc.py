@@ -98,11 +98,11 @@ def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
     parent_o = o.concerned_object if is_branch else o
     d = {parent_type: parent_o.key, "ncloc": ""}
     try:
+        d["ncloc"] = o.loc()
         if is_branch:
             d["branch"] = o.name
         if kwargs[options.WITH_TAGS]:
             d["tags"] = parent_o.get_tags()
-        d["ncloc"] = o.loc()
         if kwargs[options.WITH_NAME]:
             d[f"{parent_type}Name"] = parent_o.name if is_branch else o.name
         if kwargs[options.WITH_LAST_ANALYSIS]:
