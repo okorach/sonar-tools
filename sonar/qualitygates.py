@@ -415,15 +415,15 @@ def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = N
         return []
     log.info("--- Auditing quality gates ---")
     problems = []
-    all_qg = {k: qg for k, qg in get_list(endpoint).items()}
-    quality_gates_list = {k: qg for k, qg in all_qg.items() if not qg.is_built_in}
+    all_qg = get_list(endpoint)
+    custom_qg = {k: qg for k, qg in all_qg.items() if not qg.is_built_in}
     max_qg = util.get_setting(audit_settings, "audit.qualitygates.maxNumber", 5)
     log.debug("Auditing that there are no more than %d quality gates", max_qg)
-    if (nb_qg := len(quality_gates_list)) > max_qg:
+    if (nb_qg := len(custom_qg)) > max_qg:
         problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_GATES), f"{endpoint.external_url}/quality_gates", nb_qg, max_qg))
-    for qg in quality_gates_list.values():
+    for qg in custom_qg.values():
         problems += qg.audit(audit_settings)
-    problems += __audit_duplicates(quality_gates_list, audit_settings)
+    problems += __audit_duplicates(custom_qg, audit_settings)
     "write_q" in kwargs and kwargs["write_q"].put(problems)
     return problems
 
