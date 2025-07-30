@@ -328,6 +328,13 @@ class QualityGate(sq.SqObject):
             self.set_as_default()
         return ok
 
+    def is_identical_to(self, other_qg: QualityGate) -> bool:
+        """Checks whether the quality gate is identical to another one
+        :param other_qg: The other quality gate to compare with
+        :return: True if identical, False otherwise
+        """
+        return sorted(self.conditions(encoded=True)) == sorted(other_qg.conditions(encoded=True))
+
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {c.GET: {"name": self.name}}
@@ -384,6 +391,23 @@ class QualityGate(sq.SqObject):
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
 
+def __audit_duplicates(qg_list: dict[str, QualityGate], audit_settings: types.ConfigSettings = None) -> list[Problem]:
+    """Audits for duplicate quality gates
+    :param qg_list: dict of QP indexed with their key
+    :param audit_settings: Audit settings to use
+    """
+    if not audit_settings.get("audit.qualityGates.duplicates", True):
+        return []
+    problems = []
+    pairs = {(key1, key2) if key1 < key2 else (key2, key1) for key1 in qg_list.keys() for key2 in qg_list.keys() if key1 != key2}
+    for key1, key2 in pairs:
+        qg1, qg2 = qg_list[key1], qg_list[key2]
+        log.debug("Comparing %s and %s", qg1, qg2)
+        if qg2.is_identical_to(qg1):
+            problems.append(Problem(get_rule(RuleId.QG_DUPLICATES), f"{qg1.endpoint.external_url}/quality_gates", qg1.name, qg2.name))
+    return problems
+
+
 def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = None, **kwargs) -> list[Problem]:
     """Audits Sonar platform quality gates, returns found problems"""
     if not audit_settings.get("audit.qualityGates", True):
@@ -391,13 +415,15 @@ def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = N
         return []
     log.info("--- Auditing quality gates ---")
     problems = []
-    quality_gates_list = {k: qg for k, qg in get_list(endpoint).items() if not qg.is_built_in}
+    all_qg = {k: qg for k, qg in get_list(endpoint).items()}
+    quality_gates_list = {k: qg for k, qg in all_qg.items() if not qg.is_built_in}
     max_qg = util.get_setting(audit_settings, "audit.qualitygates.maxNumber", 5)
     log.debug("Auditing that there are no more than %d quality gates", max_qg)
     if (nb_qg := len(quality_gates_list)) > max_qg:
-        problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_GATES), f"{endpoint.external_url}/quality_gates", nb_qg, 5))
+        problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_GATES), f"{endpoint.external_url}/quality_gates", nb_qg, max_qg))
     for qg in quality_gates_list.values():
         problems += qg.audit(audit_settings)
+    problems += __audit_duplicates(quality_gates_list, audit_settings)
     "write_q" in kwargs and kwargs["write_q"].put(problems)
     return problems
 
