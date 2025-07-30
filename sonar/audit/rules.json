@@ -557,6 +557,12 @@
         "object": "QualityProfile",
         "message": "{} uses {} deprecated rules, it should be updated"
     },
+    "QP_DUPLICATES": {
+        "severity": "LOW",
+        "type": "HOUSEKEEPING",
+        "object": "QualityProfile",
+        "message": "{} and {} are duplicates, one should be removed"
+    },
     "TOKEN_TOO_OLD": {
         "severity": "HIGH",
         "type": "SECURITY",
