@@ -576,6 +576,17 @@ class QualityProfile(sq.SqObject):
                 problems.append(Problem(get_rule(RuleId.QP_USE_DEPRECATED_RULES), self, str(self), self.nbr_deprecated_rules))
         return problems
 
+    def is_identical_to(self, another_qp: QualityProfile) -> bool:
+        """Checks whether the quality profile is identical to another quality profile
+
+        :param QualityProfile another_qp: The other quality profile to compare with
+        :return: Whether the quality profiles are identical
+        :rtype: bool
+        """
+        data = self.compare(another_qp)
+        log.debug("Comparing %s and %s: %s", str(self), str(another_qp), util.json_dump(data))
+        return all(data.get(k, []) == [] for k in ("inLeft", "inRight", "modified"))
+
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, QualityProfile]:
     """Searches projects in SonarQube
@@ -603,6 +614,25 @@ def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Quality
     return QualityProfile.CACHE.objects
 
 
+def __audit_duplicates(qp_list: dict[str, QualityProfile], audit_settings: types.ConfigSettings = None) -> list[Problem]:
+    """Audits for duplicate quality profiles"""
+    problems = []
+    langs = set(qp.language for qp in qp_list)
+    for lang in sorted(langs):
+        log.info("Auditing for duplicate quality profiles for language %s", lang)
+        lang_qp_list = [qp for qp in qp_list if qp.language == lang]
+        match_pairs = []
+        for qp1 in lang_qp_list:
+            for qp2 in lang_qp_list:
+                if qp1.key == qp2.key or sorted((qp1.key, qp2.key)) in match_pairs:
+                    continue
+                log.debug("Comparing %s and %s", qp1, qp2)
+                if qp2.is_identical_to(qp1):
+                    problems.append(Problem(get_rule(RuleId.QP_DUPLICATES), qp1, str(qp1), str(qp2)))
+                match_pairs.append(sorted((qp1.key, qp2.key)))
+    return problems
+
+
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None, **kwargs) -> list[Problem]:
     """Audits all quality profiles and return list of problems found
 
@@ -618,13 +648,15 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None, **
     rules.get_list(endpoint=endpoint)
     problems = []
     langs = {}
-    for qp in search(endpoint=endpoint).values():
+    qp_list = search(endpoint=endpoint).values()
+    for qp in qp_list:
         problems += qp.audit(audit_settings)
         langs[qp.language] = langs.get(qp.language, 0) + 1
     for lang, nb_qp in langs.items():
         if nb_qp > 5:
             rule = get_rule(RuleId.QP_TOO_MANY_QP)
             problems.append(Problem(rule, f"{endpoint.external_url}/profiles?language={lang}", nb_qp, lang, 5))
+    problems += __audit_duplicates(qp_list=qp_list, audit_settings=audit_settings)
     "write_q" in kwargs and kwargs["write_q"].put(problems)
     return problems
 
