@@ -635,6 +635,24 @@ def __audit_duplicates(qp_list: dict[str, QualityProfile], audit_settings: types
     return problems
 
 
+def __audit_nbr_of_qp(qp_list: dict[str, QualityProfile], audit_settings: types.ConfigSettings = None) -> list[Problem]:
+    """Audits for duplicate quality profiles"""
+    if (max_qp := audit_settings.get("audit.qualityProfiles.maxPerLanguage", 5)) == 0:
+        log.info("Auditing for number of quality profiles per disabled, skipping...")
+        return []
+    log.info("Auditing for number of quality profiles per language, max %d", max_qp)
+    langs = {}
+    problems = []
+    for qp in qp_list:
+        endpoint = qp.endpoint
+        langs[qp.language] = langs.get(qp.language, 0) + 1
+    for lang, nb_qp in langs.items():
+        if nb_qp > max_qp:
+            rule = get_rule(RuleId.QP_TOO_MANY_QP)
+            problems.append(Problem(rule, f"{endpoint.external_url}/profiles?language={lang}", nb_qp, lang, max_qp))
+    return problems
+
+
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None, **kwargs) -> list[Problem]:
     """Audits all quality profiles and return list of problems found
 
@@ -649,15 +667,10 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None, **
     log.info("--- Auditing quality profiles ---")
     rules.get_list(endpoint=endpoint)
     problems = []
-    langs = {}
     qp_list = search(endpoint=endpoint).values()
     for qp in qp_list:
         problems += qp.audit(audit_settings)
-        langs[qp.language] = langs.get(qp.language, 0) + 1
-    for lang, nb_qp in langs.items():
-        if nb_qp > 5:
-            rule = get_rule(RuleId.QP_TOO_MANY_QP)
-            problems.append(Problem(rule, f"{endpoint.external_url}/profiles?language={lang}", nb_qp, lang, 5))
+    problems += __audit_nbr_of_qp(qp_list=qp_list, audit_settings=audit_settings)
     problems += __audit_duplicates(qp_list=qp_list, audit_settings=audit_settings)
     "write_q" in kwargs and kwargs["write_q"].put(problems)
     return problems
