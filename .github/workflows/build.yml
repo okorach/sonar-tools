@@ -36,8 +36,8 @@ jobs:
         # Keep this stage so that the test dirs exists and scanner is happy with sonar.tests property
         working-directory: .
         run: |
-          chmod +x conf/prep_tests.sh
-          conf/prep_tests.sh
+          chmod +x conf/build_tests.sh
+          conf/build_tests.sh
       
       # - name: Run tests
       #  working-directory: .

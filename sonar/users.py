@@ -20,7 +20,9 @@
 
 """Abstraction of the SonarQube User concept"""
 from __future__ import annotations
-from typing import Union, Optional
+
+import concurrent.futures
+from typing import Optional, Union
 import datetime as dt
 import json
 
@@ -126,7 +128,7 @@ class User(sqobject.SqObject):
         try:
             endpoint.post(User.api_for(c.CREATE, endpoint), params=params)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating user '{login}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            util.handle_error(e, f"creating user '{login}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(login, util.sonar_error(e.response))
         return cls.get_object(endpoint=endpoint, login=login)
 
@@ -167,7 +169,7 @@ class User(sqobject.SqObject):
             data = json.loads(endpoint.get(f"/api/v2/users-management/users/{id}", mute=()).text)
             return cls.load(endpoint, data)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting user id '{id}'", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+            util.handle_error(e, f"getting user id '{id}'", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(id, f"User id '{id}' not found")
 
     @classmethod
@@ -209,7 +211,6 @@ class User(sqobject.SqObject):
                 self.last_login = max(dt1, dt2)
             self.id = data["id"]
         self.__tokens = None
-        self._groups = self.groups(data)
         self.sq_json = data
 
     def groups(self, data: types.ApiPayload = None, **kwargs) -> types.KeyList:
@@ -311,19 +312,18 @@ class User(sqobject.SqObject):
         """Adds group membership to the user
 
         :param str group_name: Group to add membership
+        :raises UnsupportedOperation: if trying to remove a user from built-in groups ("sonar-users" only for now)
+        :raises ObjectNotFound: if group name not found
         :return: Whether operation succeeded
-        :rtype: bool
         """
-        try:
-            group = groups.Group.read(endpoint=self.endpoint, name=group_name)
-        except exceptions.ObjectNotFound:
-            log.warning("Group '%s' does not exists, can't add membership for %s", group_name, str(self))
-            raise
-        ok = group.add_user(self)
-        if ok:
+        group = groups.Group.read(endpoint=self.endpoint, name=group_name)
+        if group.is_default():
+            raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't remove membership for {str(self)}")
+        if group.add_user(self):
             self._groups.append(group_name)
             self._groups = sorted(self._groups)
-        return ok
+            return True
+        return False
 
     def remove_from_group(self, group_name: str) -> bool:
         """Removes group membership to the user
@@ -332,15 +332,14 @@ class User(sqobject.SqObject):
         :raises UnsupportedOperation: if trying to remove a user from built-in groups ("sonar-users" only for now)
         :raises ObjectNotFound: if group name not found
         :return: Whether operation succeeded
-        :rtype: bool
         """
         group = groups.Group.read(endpoint=self.endpoint, name=group_name)
         if group.is_default():
             raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't remove membership for {str(self)}")
-        ok = group.remove_user(self)
-        if ok:
+        if group.remove_user(self):
             self._groups.remove(group_name)
-        return ok
+            return True
+        return False
 
     def deactivate(self) -> bool:
         """Deactivates the user
@@ -364,7 +363,7 @@ class User(sqobject.SqObject):
                 log.info("Removing from %s cache", str(self.__class__.__name__))
                 self.__class__.CACHE.pop(self)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"deleting {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+            util.handle_error(e, f"deleting {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
         return ok
 
@@ -383,13 +382,8 @@ class User(sqobject.SqObject):
         :return: Whether all group membership were OK
         :rtype: bool
         """
-        ok = True
-        for g in set(group_list) - set(self.groups()):
-            if g != "sonar-users":
-                ok = ok and self.add_to_group(g)
-        for g in set(self.groups()) - set(group_list):
-            if g != "sonar-users":
-                ok = ok and self.remove_from_group(g)
+        ok = all(self.add_to_group(g) for g in set(group_list) - set(self.groups()) if g != "sonar-users")
+        ok = ok and all(self.remove_from_group(g) for g in set(self.groups()) - set(group_list) if g != "sonar-users")
         if not ok:
             self.refresh()
         return ok
@@ -429,24 +423,19 @@ class User(sqobject.SqObject):
 
     def audit(self, settings: types.ConfigSettings = None) -> list[Problem]:
         """Audits a user (user last connection date and tokens) and
-        returns the list of problems found (too old)
+        returns the list of problems found
 
-        :param settings: Options of what to audit and thresholds to raise problems
-        :type settings: dict
+        :param ConfigSettings settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
-        :rtype: list[Problem]
         """
         log.debug("Auditing %s", str(self))
-        protected_users = util.csv_to_list(settings.get("audit.tokens.neverExpire", ""))
+        protected_users = util.csv_to_set(settings.get("audit.tokens.neverExpire", ""))
         if self.login in protected_users:
             log.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
             return []
 
         today = dt.datetime.now(dt.timezone.utc).astimezone()
-        problems = []
-        for t in self.tokens():
-            problems += t.audit(settings=settings, today=today)
-
+        problems = [p for t in self.tokens() for p in t.audit(settings=settings, today=today)]
         if self.last_login:
             age = util.age(self.last_login, now=today)
             if age > settings.get("audit.users.maxLoginAge", 180):
@@ -503,8 +492,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
-    :return: list of users JSON representation
-    :rtype: ObjectJsonRepr
+    :returns: list of users JSON representation
     """
     log.info("Exporting users")
     write_q = kwargs.get("write_q", None)
@@ -515,8 +503,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
             write_q.put(u_list[u_login])
         else:
             u_list[u_login].pop("login", None)
-    if write_q:
-        write_q.put(util.WRITE_END)
+    write_q and write_q.put(util.WRITE_END)
     return u_list
 
 
@@ -525,18 +512,26 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings audit_settings: Configuration of audit
-    :return: list of problems found
-    :rtype: list[Problem]
+    :returns: list of problems found
     """
     if not audit_settings.get("audit.users", True):
         log.info("Auditing users is disabled, skipping...")
         return []
-    log.info("--- Auditing users ---")
+    log.info("--- Auditing users: START ---")
     problems = []
-    for u in search(endpoint=endpoint).values():
-        problems += u.audit(audit_settings)
-    if "write_q" in kwargs:
-        kwargs["write_q"].put(problems)
+    futures, futures_map = [], {}
+    api_version = 2 if endpoint.version() >= c.USER_API_V2_INTRO_VERSION else 1
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="UserAudit") as executor:
+        for user in sqobject.search_objects(endpoint=endpoint, object_class=User, params={}, api_version=api_version).values():
+            futures.append(future := executor.submit(User.audit, user, audit_settings))
+            futures_map[future] = user
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                problems += future.result(timeout=60)
+            except (TimeoutError, RequestException) as e:
+                log.error(f"Exception {str(e)} when auditing {str(futures_map[future])}.")
+    "write_q" in kwargs and kwargs["write_q"].put(problems)
+    log.info("--- Auditing users: END ---")
     return problems
 
 
@@ -546,8 +541,7 @@ def get_login_from_name(endpoint: pf.Platform, name: str) -> Union[str, None]:
 
     :param Platform endpoint: reference to the SonarQube platform
     :param str name: User name
-    :return: User login or None if name not found
-    :rtype: str or None
+    :returns: User login or None if name not found
     """
     u_list = search(endpoint=endpoint, params={"q": name})
     if not u_list:

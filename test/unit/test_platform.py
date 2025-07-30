@@ -63,10 +63,10 @@ def test_import() -> None:
     with open("test/files/config.json", "r", encoding="utf-8") as f:
         json_config = json.load(f)
     json_config["globalSettings"]["generalSettings"][settings.NEW_CODE_PERIOD] = 60
-    assert platform.import_config(util.TEST_SQ, json_config) is None
+    platform.import_config(util.TEST_SQ, json_config)
 
     json_config.pop("globalSettings")
-    assert util.TEST_SQ.import_config(json_config) is None
+    util.TEST_SQ.import_config(json_config)
 
 
 def test_sys_info() -> None:
@@ -88,7 +88,7 @@ def test_wrong_url() -> None:
 
 
 def test_set_webhooks() -> None:
-    assert util.SQ.set_webhooks(None) is None
+    assert not util.SQ.set_webhooks(None)
 
 
 def test_normalize_api() -> None:

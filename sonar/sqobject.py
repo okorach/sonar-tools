@@ -25,9 +25,9 @@
 
 from typing import Optional
 import json
+from collections.abc import Generator
 from http import HTTPStatus
-from queue import Queue
-from threading import Thread
+import concurrent.futures
 import requests
 from requests import RequestException
 
@@ -61,12 +61,13 @@ class SqObject(object):
 
     @classmethod
     def api_for(cls, op: str, endpoint: object) -> Optional[str]:
-        """Returns the API to use for a particular operation
+        """Returns the API to use for a particular operation.
+        This function must be overloaded for classes that need specific treatment. e.g. API V1 or V2
+        depending on SonarQube version, different API for SonarQube Cloud
 
         :param op: The desired API operation
         :param endpoint: The SQS or SQC to invoke the API
-        This function must be overloaded for classes that need specific treatment
-        e.g. API V1 or V2 depending on SonarQube version, different API for SonarQube Cloud
+        :return: The API to use for the operation, or None if not defined
         """
         return cls.API[op] if op in cls.API else cls.API[c.LIST]
 
@@ -159,7 +160,7 @@ class SqObject(object):
                 log.info("Removing from %s cache", str(self.__class__.__name__))
                 self.__class__.CACHE.pop(self)
         except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"deleting {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+            utilities.handle_error(e, f"deleting {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
         except (AttributeError, KeyError):
             raise exceptions.UnsupportedOperation(f"Can't delete {self.__class__.__name__.lower()}s")
@@ -178,7 +179,7 @@ class SqObject(object):
             if r.ok:
                 self._tags = sorted(utilities.csv_to_list(my_tags))
         except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"setting tags of {str(self)}", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            utilities.handle_error(e, f"setting tags of {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             return False
         except (AttributeError, KeyError):
             raise exceptions.UnsupportedOperation(f"Can't set tags on {self.__class__.__name__.lower()}s")
@@ -193,68 +194,63 @@ class SqObject(object):
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
         if not kwargs.get(c.USE_CACHE, True) or self._tags is None:
-            data = json.loads(self.get(api, params=self.get_tags_params()).text)
-            self.sq_json.update(data["component"])
-            self._tags = self.sq_json["tags"]
+            try:
+                data = json.loads(self.get(api, params=self.get_tags_params()).text)
+                self.sq_json.update(data["component"])
+                self._tags = self.sq_json["tags"]
+            except (ConnectionError, RequestException):
+                self._tags = []
         return self._tags
 
 
-def __search_thread(queue: Queue) -> None:
-    """Performs a search for a given object"""
-    while not queue.empty():
-        (endpoint, api, objects, key_field, returned_field, object_class, params) = queue.get()
-        page_params = params.copy()
-        log.debug("Threaded search: API = %s params = %s", api, str(params))
-        try:
-            data = json.loads(endpoint.get(api, params=page_params).text)
-            for obj in data[returned_field]:
-                if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization"):
-                    objects[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
-                else:
-                    objects[obj[key_field]] = object_class(endpoint, obj[key_field], data=obj)
-        except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"searching {object_class.__name__}", catch_all=True)
-        queue.task_done()
+def __get(endpoint: object, api: str, params: types.ApiParams) -> requests.Response:
+    """Returns a Sonar object from its key"""
+    return json.loads(endpoint.get(api, params=params).text)
+
+
+def __load(endpoint: object, object_class: any, data: types.ObjectJsonRepr) -> dict[str, object]:
+    key_field = object_class.SEARCH_KEY_FIELD
+    if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization"):
+        return {obj[key_field]: object_class.load(endpoint=endpoint, data=obj) for obj in data}
+    else:
+        return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}
 
 
 def search_objects(endpoint: object, object_class: any, params: types.ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
     """Runs a multi-threaded object search for searchable Sonar Objects"""
     api = object_class.api_for(c.SEARCH, endpoint)
-    key_field = object_class.SEARCH_KEY_FIELD
     returned_field = object_class.SEARCH_RETURN_FIELD
-
     new_params = {} if params is None else params.copy()
     p_field = "pageIndex" if api_version == 2 else "p"
     ps_field = "pageSize" if api_version == 2 else "ps"
     if ps_field not in new_params:
         new_params[ps_field] = 500
-    new_params[p_field] = 1
+
     objects_list = {}
-    data = json.loads(endpoint.get(api, params=new_params).text)
+    cname = object_class.__name__.lower()
+    data = __get(endpoint, api, {**new_params, p_field: 1})
     nb_pages = utilities.nbr_pages(data, api_version)
     nb_objects = max(len(data[returned_field]), utilities.nbr_total_elements(data, api_version))
-    log.debug("Loading %d %ss page of %d elements...", nb_objects, object_class.__name__, len(data[returned_field]))
+    log.info(
+        "Searching %d %ss, %d pages of %d elements, %d pages in parallel...",
+        nb_objects,
+        cname,
+        nb_pages,
+        len(data[returned_field]),
+        threads,
+    )
     if utilities.nbr_total_elements(data) > 0 and len(data[returned_field]) == 0:
-        msg = f"Index on {object_class.__name__} is corrupted, please reindex before using API"
-        log.fatal(msg)
+        log.fatal(msg := f"Index on {cname} is corrupted, please reindex before using API")
         raise exceptions.SonarException(msg)
-    for obj in data[returned_field]:
-        if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization"):
-            objects_list[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
-        else:
-            objects_list[obj[key_field]] = object_class(endpoint, obj[key_field], data=obj)
-    if nb_pages == 1:
-        # If everything is returned on the 1st page, no multi-threading needed
-        return objects_list
-    q = Queue(maxsize=0)
-    for page in range(2, nb_pages + 1):
-        new_params[p_field] = page
-        q.put((endpoint, api, objects_list, key_field, returned_field, object_class, new_params.copy()))
-    for i in range(threads):
-        log.debug("Starting %s search thread %d", object_class.__name__, i)
-        worker = Thread(target=__search_thread, args=[q])
-        worker.setDaemon(True)
-        worker.setName(f"Search{i}")
-        worker.start()
-    q.join()
+
+    objects_list |= __load(endpoint, object_class, data[returned_field])
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f"{cname}Search") as executor:
+        futures = [executor.submit(__get, endpoint, api, {**new_params, p_field: page}) for page in range(2, nb_pages + 1)]
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                data = future.result(timeout=60)
+                objects_list |= __load(endpoint, object_class, data[returned_field])
+            except Exception as e:
+                log.error(f"Error {e} while searching {cname}.")
     return objects_list

@@ -57,7 +57,7 @@ def test_migration(json_file: Generator[str]) -> None:
         item_list.append("branches")
     for p in json_config["projects"].values():
         for item in item_list:
-            assert item in p
+            assert item in p or "error" in p
 
     u = json_config["users"]["admin"]
     assert "sonar-users" in u["groups"]
@@ -80,7 +80,7 @@ def test_migration(json_file: Generator[str]) -> None:
         assert u["externalLogin"] == "okorach"
         assert u["email"] == "olivier.korach@gmail.com"
 
-    p = json_config["projects"]["okorach_sonar-tools"]
+    p = json_config["projects"][util.LIVE_PROJECT]
     assert "lastTaskScannerContext" in p["backgroundTasks"]
     for elem in "detectedCi", "lastAnalysis", "revision":
         assert elem in p

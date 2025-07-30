@@ -1,3 +1,5 @@
+# Version 3.15 - under development
+
 # Version 3.14.1
 
 * `sonar-findings-sync`: Fix #1871 - Sync may not happen when an issue has old transition data generated before MQR mode

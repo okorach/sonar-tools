@@ -36,10 +36,8 @@ When `--what` is not specified, everything is audited
   - Much less is audited (because SIF does not provide as much information as a live platform)
 - `--format [json|csv]`: Generates output in JSON or CSV format (CSV is the default)
 - `--csvSeparator <separator>`: Allows to select the separator character for CSV, `,` is the default
-- `--threads <nbThreads>`: Allows to define number of threads for projects auditing (default 1). More threads
-  will stress SonarQube APIs more but will be much faster on large platforms with many projects
 - `-h`: Displays help and exits
-- `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
+- `-u`, `-t`, `-h`, `-v`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](../README.md#common-params)
 
 ## Required Permissions
 
@@ -49,7 +47,7 @@ To be able to audit everything, the token provided to `sonar-audit` should have 
 
 `sonar-audit` can be configured with a configuration file to select what to audit and some different
 other audit parameters.
-You can create a default config file in the home directory by running `sonar-audit --config`
+You can create a default config file in the user home directory by running `sonar-audit --config >.sonar-audit.properties`
 
 See [sonar-audit configuration](https://github.com/okorach/sonar-tools/blob/master/doc/audit-settings.md) for the details of parameters
 
@@ -114,13 +112,13 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - More than 10 groups with any global permissions
 - Permission Templates: (if `audit.projects.permissions = yes`, default `yes`)
     - Permissions Templates with no permissions granted
-    - More than `audit.projects.permissions.maxUsers` different users with direct permissions (default 5)
-    - More than `audit.projects.permissions.maxAdminUsers` users with Project admin permission (default 2)
-    - More than `audit.projects.permissions.maxGroups` different groups with permissions on project (default 5)
+    - More than `audit.permissions.maxUsers` different users with direct permissions (default 5)
+    - More than `audit.permissions.maxAdminUsers` users with Project admin permission (default 2)
+    - More than `audit.permissions.maxGroups` different groups with permissions on project (default 5)
+    - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
     - More than `audit.projects.permissions.maxScanGroups` group with execute analysis permission (default 1)
     - More than `audit.projects.permissions.maxIssueAdminGroups` groups with issue admin permission (default 2)
     - More than `audit.projects.permissions.maxHotspotAdminGroups` groups with hotspot admin permission (default 2)
-    - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
     - `sonar-users` group with elevated project permissions
     - `Anyone` group with any project permissions
     - No projectKeyPattern for a template that is not a default
@@ -158,6 +156,8 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - QG thresholds for the above metrics not consistent (non `A` for ratings on new code, non `0` for numeric count of issues,
     coverage not between 20% and 90%, duplication not between 1% and 3%, security and reliability on overall code lower than D)
   - More than 5 quality gates
+  - More than `audit.permissions.maxAdminUsers` users with admin permission on a QG (default 2)
+  - Group `sonar-users` has admin permission on a QP
 - Quality Profiles: (if `audit.qualityProfiles = yes`, default `yes`)
   - Non built-in QP not modified in 6 months
   - QP with less than 50% of all the available rules activated
@@ -165,6 +165,8 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - QP not used since more than 6 months
   - QP using deprecated rules
   - More than 5 QP for a given language
+  - More than `audit.permissions.maxAdminUsers` users with admin permission on a QP (default 2)
+  - Group `sonar-users` has admin permission on a QP
 - Projects: (if `audit.projects = yes`, default `yes`)
   - Projects provisioned but never analyzed
   - Projects not analyzed since `audit.projects.maxLastAnalysisAge` days (on any branch) (default 180 days)
@@ -172,15 +174,15 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - Pull requests not analyzed since `audit.projects.pullRequests.maxLastAnalysisAge`(default 30 days)
   - Projects with `public` visibility
   - Permissions: (if `audit.projects.permissions = yes`, default `yes`)
-    - More than `audit.projects.permissions.maxUsers` different users with direct permissions (default 5)
-    - More than `audit.projects.permissions.maxAdminUsers` users with Project admin permission (default 2)
-    - More than `audit.projects.permissions.maxGroups` different groups with permissions on project (default 5)
+    - More than `audit.permissions.maxUsers` different users with direct permissions (default 5)
+    - More than `audit.permissions.maxAdminUsers` users with Project admin permission (default 2)
+    - More than `audit.permissions.maxGroups` different groups with permissions on project (default 5)
+    - More than `audit.permissions.maxAdminGroups` groups with project admin permission (default 2)
     - More than `audit.projects.permissions.maxScanGroups` group with execute analysis permission (default 1)
     - More than `audit.projects.permissions.maxIssueAdminGroups` groups with issue admin permission (default 2)
     - More than `audit.projects.permissions.maxHotspotAdminGroups` groups with hotspot admin permission (default 2)
-    - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
-    - `sonar-users` group with elevated project permissions
-    - `Anyone` group with any project permissions
+    - Group `sonar-users` has elevated permissions on a project (Admin, Admin Issue, Admin hotspots or Analyze)
+    - Group `Anyone` has any project permissions
   - Project bindings (if `audit.projects.bindings = yes`, default `yes`)
     - 2 projects (not part of same monorepo) bound to the same DevOps platform repository
     - Invalid project binding (if `audit.projects.bindings = yes`, default `false`).
@@ -191,16 +193,17 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
     - Above patterns and exceptions are configurable
   - Projects with `sonar.scm.disabled` set to `true`
   - Projects with both a `main` and a `master` branch
-  - Analysis warnings on all branches analysis
-  - Last background task with failed SCM detection
-  - Last background task on main branch `FAILED`
+  - Project, branches or PRs last background task with analysis warnings
+  - Project, branches or PRs last background task with failed SCM detection
+  - Project, branches or PRs last background task `FAILED`
   - Last analysis with an obsolete scanner version (by default more than 2 years old)
   - Last analysis was with Scanner for .Net 9.2.x that has a vulnerability
   - Projects analyzed with apparently a wrong scanner (Can't be certain in all cases)
-  - Projects with too many analysis history data points (due to wrong housekeeping settings
+  - Projects or branches with too many analysis history data points (due to wrong housekeeping settings
     or wrong usage of `sonar.projectVersion`)
-  - Projects with too many accepted or false positive issues (Projects > 10K LoC and more than 1 accepted/FP issue
+  - Projects or branches with too many accepted or false positive issues (Projects > 10K LoC and more than 1 accepted/FP issue
     per 500 LoC)
+  - Project or branches with too much new code (More than 25,000 lines by default, configurable)
 - Branches: (if `audit.project.branches = yes`, default `yes`)
   - Branches never analyzed but marked as "keep when inactive"
 - Portfolios: (if `audit.applications = yes`, default `yes`)
@@ -208,11 +211,15 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - Portfolios composed of a single project if `audit.portfolios.singleton` is `yes`
   - Last recomputation `FAILED`
   - Portfolios with no permissions
+  - Group `sonar-users` has admin permission on a portfolio
+  - Group `Anyone` has any portfolio permissions
 - Applications: (if `audit.applications = yes`, default `yes`)
   - Empty applications (with no projects) if `audit.applications.empty` is `yes`
   - Applications composed of a single project if `audit.applications.singleton` is `yes`
   - Last recomputation `FAILED`
   - Applications with no permissions
+  - Group `sonar-users` has admin permission on an App
+  - Group `Anyone` has any app permissions
 - Users: (if `audit.users = yes`, default `yes`)
   - Users that did not login on the platform since `audit.users.maxLoginAge` days (default 180 days)
   - Tokens older than `audit.tokens.maxAge` days (default 90 days)

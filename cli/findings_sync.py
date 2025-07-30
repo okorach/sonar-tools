@@ -37,6 +37,7 @@ import sonar.logging as log
 import sonar.platform as pf
 from sonar import syncer, exceptions, projects, branches, version
 import sonar.utilities as util
+from sonar.util import cache_helper
 
 TOOL_NAME = "sonar-findings-sync"
 
@@ -174,7 +175,7 @@ def main() -> None:
             syncer.SYNC_IGNORE_COMPONENTS: False,
             syncer.SYNC_SERVICE_ACCOUNT: params["login"],
             syncer.SYNC_SINCE_DATE: __since_date(**params),
-            syncer.SYNC_THREADS: params["threads"],
+            syncer.SYNC_THREADS: params[options.NBR_THREADS],
         }
 
         report = []
@@ -204,6 +205,7 @@ def main() -> None:
         util.exit_fatal(e.message, e.errcode)
 
     util.stop_clock(start_time)
+    cache_helper.clear_cache()
     sys.exit(0)
 
 

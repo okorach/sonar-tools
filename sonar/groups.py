@@ -117,7 +117,7 @@ class Group(sq.SqObject):
         try:
             data = json.loads(endpoint.post(Group.api_for(c.CREATE, endpoint), params={"name": name, "description": description}).text)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating group '{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            util.handle_error(e, f"creating group '{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(name, util.sonar_error(e.response))
         o = cls.read(endpoint=endpoint, name=name)
         o.sq_json.update(data)
@@ -170,7 +170,7 @@ class Group(sq.SqObject):
                 log.info("Removing from %s cache", str(self.__class__.__name__))
                 self.__class__.CACHE.pop(self)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"deleting {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+            util.handle_error(e, f"deleting {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
         return ok
 
@@ -233,7 +233,7 @@ class Group(sq.SqObject):
                 params = {"login": user.login, "name": self.name}
             r = self.post(Group.api_for(ADD_USER, self.endpoint), params=params)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, "adding user to group")
+            util.handle_error(e, "adding user to group", catch_http_statuses=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
             if isinstance(e, HTTPError):
                 code = e.response.status_code
                 if code == HTTPStatus.BAD_REQUEST:
@@ -371,14 +371,13 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     """
 
     log.info("Exporting groups")
-    write_q = kwargs.get("write_q", None)
     g_list = {}
     for g_name, g_obj in get_list(endpoint=endpoint).items():
         if not export_settings.get("FULL_EXPORT", False) and g_obj.is_default():
             continue
         g_list[g_name] = "" if g_obj.description is None else g_obj.description
     log.info("%s groups to export", len(g_list))
-    if write_q:
+    if write_q := kwargs.get("write_q", None):
         write_q.put(g_list)
         write_q.put(util.WRITE_END)
     return g_list

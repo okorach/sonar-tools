@@ -31,7 +31,7 @@ import yaml
 
 from cli import options
 from sonar import exceptions, errcodes, utilities, version
-from sonar.util import types, constants as c
+from sonar.util import types, constants as c, cache_helper
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
@@ -130,8 +130,7 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
     print(f'"{object_type}": ' + "{", file=fd)
     while not done:
         obj_json = queue.get()
-        done = obj_json is utilities.WRITE_END
-        if not done:
+        if not (done := obj_json is utilities.WRITE_END):
             if object_type == "groups":
                 obj_json = __prep_json_for_write(obj_json, {**export_settings, EXPORT_EMPTY: True})
             else:
@@ -163,7 +162,6 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
             "EXPORT_DEFAULTS": True,
             "FULL_EXPORT": kwargs.get(FULL_EXPORT, False),
             "MODE": mode,
-            "THREADS": kwargs[options.NBR_THREADS],
             "SKIP_ISSUES": kwargs.get("skipIssues", False),
         }
     )
@@ -198,8 +196,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
                 func(endpoint, export_settings=export_settings, key_list=kwargs[options.KEY_REGEXP], write_q=write_q)
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
-                if write_q:
-                    write_q.put(utilities.WRITE_END)
+                write_q and write_q.put(utilities.WRITE_END)
             write_q.join()
         print("\n}", file=fd)
     if kwargs[options.FORMAT] == "yaml":
@@ -291,6 +288,7 @@ def main() -> None:
             utilities.exit_fatal("--file is mandatory to import configuration", errcodes.ARGS_ERROR)
         __import_config(endpoint, what, **kwargs)
     utilities.stop_clock(start_time)
+    cache_helper.clear_cache()
     sys.exit(0)
 
 

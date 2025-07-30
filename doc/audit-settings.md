@@ -24,6 +24,16 @@ audit.groups = yes
 audit.portfolios = yes
 audit.applications = yes
 
+# Logs audit
+audit.logs = yes
+
+# Plugins audit
+audit.plugins = yes
+# Whether plugins listed in SonarQube update center should be whitelisted
+audit.plugins.updateCenterWhitelist = Yes
+# Additional plugins listed below with no raise any audit issue
+audit.plugins.whitelist = 
+
 #===================== GLOBAL SETTINGS AUDIT CONFIGURATION ====================
 
 #----------------------- GLOBAL SETTINGS CONFIGURATION ------------------------
@@ -72,13 +82,14 @@ audit.globalSettings.range.5 = sonar.dbcleaner.weeksBeforeDeletingAllSnapshots, 
 audit.globalSettings.range.6 = sonar.dbcleaner.daysBeforeDeletingInactiveBranches, 10, 60, MEDIUM, PERFORMANCE
 audit.globalSettings.range.7 = sonar.dbcleaner.daysBeforeDeletingInactiveBranchesAndPRs, 10, 60, MEDIUM, PERFORMANCE
 
+
 #------------------- TECH DEBT SETTINGS AUDIT CONFIGURATION -------------------
 
 # Audit for suspicious technical debt thresholds, listed further below
 audit.globalSettings.technicalDebt = yes
 
 # Audit if dev cost of 1 line is not within expected range (affects Tech Debt ratio and Maintainability rating metrics)
-audit.globalSettings.range.7 = sonar.technicalDebt.developmentCost, 20, 30, MEDIUM, CONFIGURATION
+audit.globalSettings.range.8 = sonar.technicalDebt.developmentCost, 20, 30, MEDIUM, CONFIGURATION
 
 # Audit if maintainaibility rating thresholds are not within normal ranges
 audit.globalSettings.maintainabilityRating.A.range.1 = 0.03, 0.05, MEDIUM, CONFIGURATION
@@ -120,20 +131,24 @@ audit.globalSettings.permissions.maxScanGroups = 2
 audit.globalSettings.permissions.maxCreateProjectUsers = 3
 audit.globalSettings.permissions.maxCreateProjectGroups = 3
 
+#----------------------------- PROJECT/APP/PORTFOLIO/QP/QG MAX PERMISSIONS ----------------------------
+audit.permissions.maxUsers = 5
+audit.permissions.maxGroups = 5
+
+#----------------------------- PROJECT/APP/PORTFOLIO MAX ADMIN PERMISSIONS ----------------------------
+audit.permissions.maxAdminUsers = 2
+audit.permissions.maxAdminGroups = 2
+
 #----------------------------- PROJECT PERMISSIONS ----------------------------
 # Project permission audit
 # Max sure there are not too many users/groups with given project permissions
-audit.projects.permissions.maxUsers = 5
-audit.projects.permissions.maxAdminUsers = 2
-audit.projects.permissions.maxGroups = 5
-audit.projects.permissions.maxAdminGroups = 2
+
 audit.projects.permissions.maxScanGroups = 1
 audit.projects.permissions.maxIssueAdminGroups = 2
 audit.projects.permissions.maxHotspotAdminGroups = 2
 # audit.projects.permissions.anyone = yes
 
 #========================= PROJECT AUDIT CONFIGURATION ========================
-
 
 # Audit (and warn) for projects likely to be duplicates
 # Duplicate projects are detected from project keys that are similar
@@ -209,6 +224,9 @@ audit.projects.scannerMaxAge = 730
 
 # Audits projects scanner consistency with project type
 audit.projects.scanner = yes
+
+# Audits projects or branches with zero LoC
+audit.projects.zeroLoc = yes
 
 #====================== QUALITY GATES AUDIT CONFIGURATION =====================
 

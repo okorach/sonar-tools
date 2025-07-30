@@ -30,7 +30,6 @@ import utilities as util
 from sonar import portfolios as pf, projects, exceptions, settings, logging
 import sonar.util.constants as c
 
-EXISTING_PROJECT = "okorach_sonar-tools"
 EXISTING_PORTFOLIO = "PORT_FAV_PROJECTS"
 
 
@@ -106,14 +105,14 @@ def test_add_project(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     p.add_projects({project.key})
     mode = p.selection_mode()
     assert "manual" in mode
-    assert mode["manual"] == {util.LIVE_PROJECT: {settings.DEFAULT_BRANCH}}
-    assert p.projects() == {util.LIVE_PROJECT: {settings.DEFAULT_BRANCH}}
+    assert mode["manual"] == {util.LIVE_PROJECT: {c.DEFAULT_BRANCH}}
+    assert p.projects() == {util.LIVE_PROJECT: {c.DEFAULT_BRANCH}}
     components = p.get_components()
     # assert len(components) == 1
     # assert list(components.keys()) == [util.LIVE_PROJECT]
     assert p.has_project(project.key)
 
-    p.add_project_branches(project.key, [settings.DEFAULT_BRANCH, "develop"])
+    p.add_project_branches(project.key, [c.DEFAULT_BRANCH, "develop"])
     p.add_project_branches(project.key, ["comma,branch", "develop"])
     assert p.recompute()
 
@@ -127,7 +126,7 @@ def test_tags_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     p.set_tags_mode(in_tags)
     mode = p.selection_mode()
     assert "tags" in mode and mode["tags"].sort() == in_tags.sort()
-    assert mode["branch"] == settings.DEFAULT_BRANCH
+    assert mode["branch"] == c.DEFAULT_BRANCH
 
     p.set_tags_mode(tags=in_tags, branch="some_branch")
     mode = p.selection_mode()
@@ -145,7 +144,7 @@ def test_regexp_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     p.set_regexp_mode(in_regexp)
     mode = p.selection_mode()
     assert "regexp" in mode and mode["regexp"] == in_regexp
-    assert "branch" in mode and mode["branch"] == settings.DEFAULT_BRANCH
+    assert "branch" in mode and mode["branch"] == c.DEFAULT_BRANCH
     assert p.recompute()
 
     in_regexp = "^BRANCH_FAVORITES.*$"
@@ -162,7 +161,7 @@ def test_remaining_projects_mode(get_test_portfolio: Generator[pf.Portfolio]) ->
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
     p = get_test_portfolio
     p.set_remaining_projects_mode()
-    assert p._selection_mode == {"rest": True, "branch": settings.DEFAULT_BRANCH}
+    assert p._selection_mode == {"rest": True, "branch": c.DEFAULT_BRANCH}
     p.set_remaining_projects_mode("develop")
     assert p._selection_mode == {"rest": True, "branch": "develop"}
 
@@ -173,7 +172,7 @@ def test_none_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
     p = get_test_portfolio
     p.set_remaining_projects_mode()
-    assert p._selection_mode == {"rest": True, "branch": settings.DEFAULT_BRANCH}
+    assert p._selection_mode == {"rest": True, "branch": c.DEFAULT_BRANCH}
     p.set_none_mode()
     assert p._selection_mode == {}
 

@@ -94,9 +94,8 @@ class Measure(sq.SqObject):
     def search_history(self, params: ApiParams = None) -> dict[str, any]:
         """Searches the history of the measure
 
-        :param dict params: List of search parameters to narrow down the search, defaults to None
-        :return: The history of the metric, attached to the givene component
-        :rtype dict: {<date_str>: <value>}
+        :param params: List of search parameters to narrow down the search, defaults to None
+        :return: The history of the metric, attached to the given component
         """
         __MAX_PAGE_SIZE = 1000
         measures = {}
@@ -172,7 +171,11 @@ def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> li
     try:
         data = json.loads(concerned_object.endpoint.get(Measure.API_HISTORY, params={**kwargs, **params}).text)
     except (ConnectionError, RequestException) as e:
-        util.handle_error(e, f"getting measures {str(metrics_list)} history of {str(concerned_object)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        util.handle_error(
+            e,
+            f"getting measures {str(metrics_list)} history of {str(concerned_object)}",
+            catch_http_statuses=(HTTPStatus.NOT_FOUND,),
+        )
         raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
     res_list = []
     for m in reversed(data["measures"]):

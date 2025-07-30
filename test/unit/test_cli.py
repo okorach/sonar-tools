@@ -34,7 +34,7 @@ import cli.projects_cli as proj_cli
 
 def test_import(json_file: Generator[str]) -> None:
     """test_import"""
-    cmd = f"projects_cli.py {util.SQS_OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.KEY_REGEXP} project1"
+    cmd = f"projects_cli.py {util.SQS_OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.KEY_REGEXP} {util.PROJECT_1}"
     assert util.run_cmd(proj_cli.main, cmd) == errcodes.OK
 
     if util.SQ.version() == util.TEST_SQ.version():

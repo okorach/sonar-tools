@@ -346,9 +346,9 @@ class Application(aggr.Aggregation):
             + self._audit_empty(audit_settings)
             + self._audit_singleton(audit_settings)
             + self._audit_bg_task(audit_settings)
+            + self.audit_visibility(audit_settings)
         )
-        if "write_q" in kwargs:
-            kwargs["write_q"].put(problems)
+        "write_q" in kwargs and kwargs["write_q"].put(problems)
         return problems
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
@@ -548,8 +548,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
         else:
             app_json.pop("key")
             apps_settings[k] = app_json
-    if write_q:
-        write_q.put(util.WRITE_END)
+    write_q and write_q.put(util.WRITE_END)
     return apps_settings
 
 
