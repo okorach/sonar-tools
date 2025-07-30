@@ -584,9 +584,8 @@ class Issue(findings.Finding):
         elif event_type == "ASSIGN":
             if settings[syncer.SYNC_ASSIGN]:
                 u = users.get_login_from_name(endpoint=self.endpoint, name=data)
-                if u is None:
-                    u = settings[syncer.SYNC_SERVICE_ACCOUNT]
-                self.assign(u)
+                if u:
+                    self.assign(u)
                 # self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "UNASSIGN":
             self.unassign()
@@ -624,6 +623,7 @@ class Issue(findings.Finding):
         # FIXME: There can be a glitch if there are non manual changes in the changelog
         start_change = len(self.changelog()) + 1
         log.info("Applying changelog of %s to %s, from change %d", str(source_issue), str(self), start_change)
+        self.add_tag("synchronized")
         for key in sorted(events.keys()):
             change_nbr += 1
             if change_nbr < start_change:
