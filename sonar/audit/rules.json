@@ -521,6 +521,12 @@
         "object": "QualityGate",
         "message": "{} threshold {} on metric '{}', is outside of the recommended range [{}-{}]. {}"
     },
+    "QG_DUPLICATES": {
+        "severity": "LOW",
+        "type": "HOUSEKEEPING",
+        "object": "QualityGate",
+        "message": "Quality gates '{}' and '{}' are duplicates, one should be removed"
+    },
     "QP_TOO_MANY_QP": {
         "severity": "MEDIUM",
         "type": "HOUSEKEEPING",
