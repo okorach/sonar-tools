@@ -574,6 +574,7 @@ class QualityProfile(sq.SqObject):
                 max_deprecated_rules = parent_qp.nbr_deprecated_rules
             if self.nbr_deprecated_rules > max_deprecated_rules:
                 problems.append(Problem(get_rule(RuleId.QP_USE_DEPRECATED_RULES), self, str(self), self.nbr_deprecated_rules))
+        problems += self.permissions().audit(audit_settings)
         return problems
 
     def is_identical_to(self, another_qp: QualityProfile) -> bool:
@@ -584,7 +585,7 @@ class QualityProfile(sq.SqObject):
         :rtype: bool
         """
         data = self.compare(another_qp)
-        log.debug("Comparing %s and %s: %s", str(self), str(another_qp), util.json_dump(data))
+        log.debug("Comparing %s and %s", str(self), str(another_qp))
         return all(data.get(k, []) == [] for k in ("inLeft", "inRight", "modified"))
 
 
