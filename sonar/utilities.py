@@ -805,3 +805,16 @@ def to_days(time_expression: str) -> Optional[int]:
         return value * 365  # Approximate year length
     else:
         return None
+
+
+def pretty_print_json(file: str) -> bool:
+    """Opens and reformats a JSON file"""
+    try:
+        with open_file(file, mode="r") as fd:
+            json_data = json.loads(fd.read())
+        with open_file(file, mode="w") as fd:
+            print(json_dump(json_data), file=fd)
+    except json.decoder.JSONDecodeError:
+        log.warning("File %s is not correct JSON, cannot pretty print", file)
+        return False
+    return True
