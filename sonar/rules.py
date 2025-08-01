@@ -24,6 +24,7 @@
 """
 from __future__ import annotations
 import json
+import concurrent.futures
 from typing import Optional
 from http import HTTPStatus
 from requests import RequestException
@@ -370,7 +371,7 @@ def get_facet(facet: str, endpoint: platform.Platform) -> dict[str, str]:
     return {f["val"]: f["count"] for f in data["facets"][0]["values"]}
 
 
-def search(endpoint: platform.Platform, **params) -> dict[str, Rule]:
+def search(endpoint: platform.Platform, params) -> dict[str, Rule]:
     """Searches rules with optional filters"""
     return sq.search_objects(endpoint=endpoint, object_class=Rule, params=params, threads=4)
 
@@ -410,9 +411,15 @@ def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> d
             if not languages.exists(endpoint, lang_key):
                 raise exceptions.ObjectNotFound(key=lang_key, message=f"Language '{lang_key}' does not exist")
         log.info("Getting rules for %d languages", len(lang_list))
-        for lang_key in lang_list:
-            for inc in incl_ext:
-                rule_list.update(search(endpoint, include_external=inc, **params, languages=lang_key))
+        futures = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="RulesList") as executor:
+            for lang_key in lang_list:
+                futures += [executor.submit(search, endpoint, params | {"languages": lang_key, "include_external": inc}) for inc in incl_ext]
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    rule_list.update(future.result(timeout=30))
+                except Exception as e:
+                    log.error(f"{str(e)} for {str(future)}.")
         log.info("Returning a list of %d rules", len(rule_list))
         return rule_list
     return Rule.CACHE.objects
