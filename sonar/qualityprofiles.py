@@ -24,6 +24,7 @@ from typing import Optional
 import json
 from datetime import datetime
 from http import HTTPStatus
+import concurrent.futures
 
 from queue import Queue
 from threading import Thread, Lock
@@ -614,6 +615,12 @@ def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Quality
     return QualityProfile.CACHE.objects
 
 
+def __audit_duplicate(qp1: QualityProfile, qp2: QualityProfile) -> list[Problem]:
+    if qp2.is_identical_to(qp1):
+        return [Problem(get_rule(RuleId.QP_DUPLICATES), qp1, qp1.name, qp2.name, qp1.language)]
+    return []
+
+
 def __audit_duplicates(qp_list: dict[str, QualityProfile], audit_settings: types.ConfigSettings = None) -> list[Problem]:
     """Audits for duplicate quality profiles
     :param qp_list: dict of QP indexed with their key
@@ -621,16 +628,22 @@ def __audit_duplicates(qp_list: dict[str, QualityProfile], audit_settings: types
     """
     if not audit_settings.get("audit.qualityProfiles.duplicates", True):
         return []
+    log.info("Auditing for duplicate quality profiles")
     problems = []
     langs = {qp.language for qp in qp_list.values()}
+    pairs = set()
     for lang in sorted(langs):
-        log.info("Auditing for duplicate quality profiles for language %s", lang)
         lang_qp_list = {k: qp for k, qp in qp_list.items() if qp.language == lang}
-        pairs = {(key1, key2) if key1 < key2 else (key2, key1) for key1 in lang_qp_list.keys() for key2 in lang_qp_list.keys() if key1 != key2}
-        for key1, key2 in pairs:
-            qp1, qp2 = lang_qp_list[key1], lang_qp_list[key2]
-            if qp2.is_identical_to(qp1):
-                problems.append(Problem(get_rule(RuleId.QP_DUPLICATES), qp1, qp1.name, qp2.name, lang))
+        pairs |= {(key1, key2) if key1 < key2 else (key2, key1) for key1 in lang_qp_list.keys() for key2 in lang_qp_list.keys() if key1 != key2}
+
+    threads = audit_settings.get("threads", 1)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="QPDuplication") as executor:
+        futures = [executor.submit(__audit_duplicate, qp_list[key1], qp_list[key2]) for (key1, key2) in pairs]
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                problems += future.result(timeout=30)
+            except Exception as e:
+                log.error(f"{str(e)} for {str(future)}.")
     return problems
 
 
