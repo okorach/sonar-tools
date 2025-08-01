@@ -94,7 +94,7 @@ class ProjectPermissions(permissions.Permissions):
             log.debug("Auditing project permissions is disabled by configuration, skipping")
             return []
         log.debug("Auditing %s", str(self))
-        return super().audit(audit_settings) + self.audit_admin_permissions_count(audit_settings) + self.__audit_group_permissions(audit_settings)
+        return super().audit(audit_settings) + self.__audit_group_permissions(audit_settings)
 
     def __audit_group_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project group permissions"""

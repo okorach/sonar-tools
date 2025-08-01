@@ -328,7 +328,7 @@
         "severity": "MEDIUM",
         "type": "OPERATIONS",
         "object": "Project",
-        "message": "{} has {} {} with permissions, this is too much"
+        "message": "{} has {} {} with permissions, this more than the max {} recommended"
     },
     "PERM_MAX_ADM_USERS_OR_GROUPS": {
         "severity": "MEDIUM",

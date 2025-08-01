@@ -370,6 +370,7 @@ class QualityGate(sq.SqObject):
         elif nb_conditions > max_cond:
             problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_COND), self, my_name, nb_conditions, max_cond))
         problems += self.__audit_conditions()
+        problems += self.permissions().audit(audit_settings)
         if not self.is_default and len(self.projects()) == 0:
             problems.append(Problem(get_rule(RuleId.QG_NOT_USED), self, my_name))
         return problems
@@ -422,7 +423,7 @@ def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = N
     if (nb_qg := len(custom_qg)) > max_qg:
         problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_GATES), f"{endpoint.external_url}/quality_gates", nb_qg, max_qg))
     for qg in custom_qg.values():
-        problems += qg.audit(audit_settings)
+        problems += qg.audit(audit_settings | {"audit.permissions.zeroPermissions": False})
     problems += __audit_duplicates(custom_qg, audit_settings)
     "write_q" in kwargs and kwargs["write_q"].put(problems)
     return problems
