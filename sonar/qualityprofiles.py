@@ -870,7 +870,7 @@ def convert_one_qp_yaml(qp: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     if _CHILDREN_KEY in qp:
         qp[_CHILDREN_KEY] = {k: convert_one_qp_yaml(q) for k, q in qp[_CHILDREN_KEY].items()}
         qp[_CHILDREN_KEY] = util.dict_to_list(qp[_CHILDREN_KEY], "name")
-    return {gr: rules.convert_for_yaml(gr) for gr in ("rules", "modifiedRules", "addedRules", "removedRules", "prioritizedRules") if gr in qp}
+    return qp
 
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
