@@ -508,6 +508,8 @@ class QualityProfile(sq.SqObject):
         :param str rule_key: The rule key to check
         :return: Whether the rule has a some custom severities in the quality profile
         """
+        if self.endpoint.is_sonarcloud():
+            return False
         rule = rules.Rule.get_object(self.endpoint, rule_key)
         log.debug(
             "Checking if rule %s has custom severities in %s: %s - result %s",
