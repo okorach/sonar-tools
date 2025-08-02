@@ -508,6 +508,8 @@ class QualityProfile(sq.SqObject):
         :param str rule_key: The rule key to check
         :return: Whether the rule has a some custom severities in the quality profile
         """
+        if self.endpoint.is_sonarcloud():
+            return False
         rule = rules.Rule.get_object(self.endpoint, rule_key)
         log.debug(
             "Checking if rule %s has custom severities in %s: %s - result %s",
@@ -870,7 +872,7 @@ def convert_one_qp_yaml(qp: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     if _CHILDREN_KEY in qp:
         qp[_CHILDREN_KEY] = {k: convert_one_qp_yaml(q) for k, q in qp[_CHILDREN_KEY].items()}
         qp[_CHILDREN_KEY] = util.dict_to_list(qp[_CHILDREN_KEY], "name")
-    return {gr: rules.convert_for_yaml(gr) for gr in ("rules", "modifiedRules", "addedRules", "removedRules", "prioritizedRules") if gr in qp}
+    return qp
 
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
