@@ -78,22 +78,22 @@ def write_problems(queue: Queue[list[problem.Problem]], fd: TextIO, settings: ty
     """
     server_id = settings.get("SERVER_ID", None)
     with_url = settings.get("WITH_URL", False)
-    format = settings.get("format", "csv")
+    fmt = settings.get("format", "csv")
     comma = ""
-    if format == "json":
+    if fmt == "json":
         print("[", file=fd)
     else:
         csvwriter = csv.writer(fd, delimiter=settings.get("CSV_DELIMITER", ","))
     while True:
         problems = queue.get()
         if problems is util.WRITE_END:
-            if format == "json":
+            if fmt == "json":
                 print("]", file=fd)
             queue.task_done()
             break
         for p in problems:
             json_data = p.to_json(with_url)
-            if format == "json":
+            if fmt == "json":
                 print(f"{comma}{util.json_dump(json_data)}", file=fd)
                 comma = ","
             else:
@@ -115,7 +115,7 @@ def _audit_sq(
     problems = []
     write_q = Queue(maxsize=0)
     file = settings.get("FILE", None)
-    format = settings.get("format", "csv")
+    fmt = settings.get("format", "csv")
     with util.open_file(file=file, mode="w") as fd:
         worker = Thread(target=write_problems, args=(write_q, fd, settings))
         worker.daemon = True
@@ -131,7 +131,7 @@ def _audit_sq(
                         log.warning(e.message)
         write_q.put(None)
         write_q.join()
-    if file and format == "json":
+    if file and fmt == "json":
         util.pretty_print_json(file)
     return problems
 
@@ -173,14 +173,14 @@ def main() -> None:
         kwargs = util.convert_args(__parser_args("Audits a SonarQube Server or Cloud platform or a SIF (Support Info File or System Info File)"))
         settings = audit_conf.load(TOOL_NAME)
         file = ofile = kwargs.pop(options.REPORT_FILE)
-        format = util.deduct_format(kwargs[options.FORMAT], ofile)
+        fmt = util.deduct_format(kwargs[options.FORMAT], ofile)
         settings.update(
             {
                 "FILE": file,
                 "CSV_DELIMITER": kwargs[options.CSV_SEPARATOR],
                 "WITH_URL": kwargs[options.WITH_URL],
                 "threads": kwargs[options.NBR_THREADS],
-                "format": format,
+                "format": fmt,
             }
         )
         if kwargs.get("config", False):
@@ -191,7 +191,7 @@ def main() -> None:
             file = kwargs["sif"]
             errcode = errcodes.SIF_AUDIT_ERROR
             (settings["SERVER_ID"], problems) = _audit_sif(file, settings)
-            problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=format)
+            problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=fmt)
 
         else:
             sq = platform.Platform(**kwargs)
