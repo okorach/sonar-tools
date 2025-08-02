@@ -355,7 +355,7 @@ class QualityGate(sq.SqObject):
                 problems.append(Problem(rule, self, str(self), val, m, mini, maxi, precise_msg))
         return problems
 
-    def audit(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
+    def audit(self, audit_settings: types.ConfigSettings = {}) -> list[Problem]:
         """Audits a quality gate, returns found problems"""
         my_name = str(self)
         log.debug("Auditing %s", my_name)
