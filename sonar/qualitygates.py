@@ -359,9 +359,10 @@ class QualityGate(sq.SqObject):
         """Audits a quality gate, returns found problems"""
         my_name = str(self)
         log.debug("Auditing %s", my_name)
-        problems = []
         if self.is_built_in:
-            return problems
+            return []
+        problems = []
+        audit_settings = audit_settings or {}
         max_cond = int(util.get_setting(audit_settings, "audit.qualitygates.maxConditions", 8))
         nb_conditions = len(self.conditions())
         log.debug("Auditing %s number of conditions (%d) is OK", my_name, nb_conditions)

@@ -30,7 +30,7 @@ from sonar import utilities as util
 from sonar.util import constants as c
 
 
-ISSUE_FP = "402452b7-fd3a-4487-97cc-1c996697b397"
+ISSUE_FP = "ffbe8a34-cef6-4d5b-849d-bb2c25951c51"
 ISSUE_FP_V9_9 = "AZNT89kklhFmauJ_HQSK"
 ISSUE_ACCEPTED = "c99ac40e-c2c5-43ef-bcc5-4cd077d1052f"
 ISSUE_ACCEPTED_V9_9 = "AZI6frkTuTfDeRt_hspx"

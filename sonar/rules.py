@@ -345,7 +345,7 @@ class Rule(sq.SqObject):
             default_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
 
         if substitute_with_default:
-            return {k: c.DEFAULT if qp_impacts[k] == default_impacts[k] else v for k, v in qp_impacts.items()}
+            return {k: c.DEFAULT if qp_impacts[k] == default_impacts.get(k, qp_impacts[k]) else v for k, v in qp_impacts.items()}
         else:
             return qp_impacts
 
