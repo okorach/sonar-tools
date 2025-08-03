@@ -150,8 +150,9 @@ class Project(components.Component):
     SEARCH_RETURN_FIELD = "components"
     API = {
         c.CREATE: "projects/create",
+        c.READ: "projects/search",
         c.DELETE: "projects/delete",
-        c.SEARCH: "projects/search",
+        c.LIST: "components/search_projects",
         c.SET_TAGS: "project_tags/set",
         c.GET_TAGS: "components/show",
     }
@@ -630,7 +631,7 @@ class Project(components.Component):
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
-            data = self.endpoint.get_paginated(api="components/search_projects", params={"filter": "qualifier=TRK"}, return_field="components")
+            data = self.endpoint.get_paginated(api=Project.API[c.LIST], params={"filter": "qualifier=TRK"}, return_field="components")
             p_data = next((p for p in data["components"] if p["key"] == self.key), None)
             if p_data:
                 self.sq_json.update(p_data)
@@ -1448,8 +1449,8 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
     :rtype: int
     """
     new_params = {} if params is None else params.copy()
-    new_params.update({"ps": 1, "p": 1})
-    return util.nbr_total_elements(json.loads(endpoint.get(Project.API[c.SEARCH], params=params).text))
+    new_params.update({"ps": 1, "p": 1, "filter": "qualifier=TRK"})
+    return util.nbr_total_elements(json.loads(endpoint.get(Project.API[c.LIST], params=params).text))
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None, threads: int = 8) -> dict[str, Project]:
@@ -1480,9 +1481,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
             global_setting = settings.Setting.read(key=settings.AI_CODE_FIX, endpoint=endpoint)
             if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
                 return p_list
-            for d in endpoint.get_paginated(api="components/search_projects", params={"filter": "qualifier=TRK"}, return_field="components")[
-                "components"
-            ]:
+            for d in endpoint.get_paginated(api=Project.API[c.LIST], params={"filter": "qualifier=TRK"}, return_field="components")["components"]:
                 if d["key"] in p_list:
                     p_list[d["key"]].sq_json.update(d)
             return p_list
