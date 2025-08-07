@@ -42,27 +42,56 @@ from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 
 
-__NEW_ISSUES_SHOULD_BE_ZERO = "Any numeric threshold on new issues should be 0 or should be removed from QG conditions"
+__MAX_ISSUES_SHOULD_BE_ZERO = "Any numeric threshold on number of issues should be 0 or should be removed from QG conditions"
+__THRESHOLD_ON_OVERALL_CODE = "Threshold on overall code should not be too strict or passing the QG will often be impossible"
+__RATING_A = "Any rating other than A would let vulnerabilities slip through in new code"
 
 GOOD_QG_CONDITIONS = {
-    "new_reliability_rating": (1, 1, "Any rating other than A would let bugs slip through in new code"),
-    "new_security_rating": (1, 1, "Any rating other than A would let vulnerabilities slip through in new code"),
+    "new_reliability_rating": (1, 1, __RATING_A),
+    "new_reliability_rating_with_aica": (1, 1, __RATING_A),
+    "new_software_quality_reliability_rating": (1, 1, __RATING_A),
+    "new_software_quality_maintainability_rating": (1, 1, __RATING_A),
+    "new_software_quality_security_rating": (1, 1, __RATING_A),
+    "new_security_rating": (1, 1, __RATING_A),
+    "new_security_rating_with_aica": (1, 1, __RATING_A),
     "new_maintainability_rating": (1, 1, "Expectation is that code smells density on new code is low enough to get A rating"),
     "new_coverage": (20, 90, "Coverage below 20% is a too low bar, above 90% is overkill"),
-    "new_bugs": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
-    "new_vulnerabilities": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
-    "new_violations": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
-    "new_software_quality_blocker_issues": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
-    "new_software_quality_high_issues": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
-    "new_software_quality_medium_issues": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
-    "new_security_hotspots": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
-    "new_blocker_violations": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
-    "new_critical_violations": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
-    "new_major_violations": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
     "new_duplicated_lines_density": (1, 5, "Duplication on new code of less than 1% is overkill, more than 5% is too relaxed"),
+    "new_vulnerabilities": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_bugs": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_code_smells": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_security_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_reliability_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_maintainability_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_violations": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_blocker_violations": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_critical_violations": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_major_violations": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_minor_violations": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_software_quality_security_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_software_quality_reliability_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_software_quality_maintainability_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_software_quality_blocker_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_software_quality_high_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_software_quality_medium_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_software_quality_low_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_software_quality_maintainability_debt_ratio": (1.0, 20.0, "Maintainability debt ratio should be between 1% and 20% to be acceptable"),
+    "new_security_hotspots": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
     "new_security_hotspots_reviewed": (100, 100, "All hotspots on new code must be reviewed, any other condition than 100% make little sense"),
-    "reliability_rating": (4, 4, "Threshold on overall code should not be too strict or passing the QG will be often impossible"),
-    "security_rating": (4, 4, "Threshold on overall code should not be too strict or passing the QG will be often impossible"),
+    "security_rating": (4, 4, __THRESHOLD_ON_OVERALL_CODE),
+    "reliability_rating": (4, 4, __THRESHOLD_ON_OVERALL_CODE),
+    "software_quality_security_rating": (3, 4, __THRESHOLD_ON_OVERALL_CODE),
+    "software_quality_reliability_rating": (3, 4, __THRESHOLD_ON_OVERALL_CODE),
+    "sca_severity_licensing": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "sca_severity_vulnerability": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_sca_severity_licensing": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_sca_severity_any_issue": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "new_sca_severity_vulnerability": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "blocker_violations": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "critical_violations": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "software_quality_blocker_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "software_quality_high_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "prioritized_rule_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
 }
 
 _IMPORTABLE_PROPERTIES = ("isDefault", "isBuiltIn", "conditions", "permissions")
@@ -139,7 +168,7 @@ class QualityGate(sq.SqObject):
         try:
             endpoint.post(QualityGate.API[c.CREATE], params={"name": name})
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating quality gate '{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            util.handle_error(e, f"creating quality gate '{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(name, e.response.text)
         return cls.get_object(endpoint, name)
 
@@ -180,7 +209,7 @@ class QualityGate(sq.SqObject):
             try:
                 resp = self.get(QualityGate.API["get_projects"], params=params)
             except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting projects of {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+                util.handle_error(e, f"getting projects of {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
                 QualityGate.CACHE.pop(self)
                 raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
             data = json.loads(resp.text)
@@ -299,6 +328,13 @@ class QualityGate(sq.SqObject):
             self.set_as_default()
         return ok
 
+    def is_identical_to(self, other_qg: QualityGate) -> bool:
+        """Checks whether the quality gate is identical to another one
+        :param other_qg: The other quality gate to compare with
+        :return: True if identical, False otherwise
+        """
+        return sorted(self.conditions(encoded=True)) == sorted(other_qg.conditions(encoded=True))
+
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {c.GET: {"name": self.name}}
@@ -323,9 +359,10 @@ class QualityGate(sq.SqObject):
         """Audits a quality gate, returns found problems"""
         my_name = str(self)
         log.debug("Auditing %s", my_name)
-        problems = []
         if self.is_built_in:
-            return problems
+            return []
+        problems = []
+        audit_settings = audit_settings or {}
         max_cond = int(util.get_setting(audit_settings, "audit.qualitygates.maxConditions", 8))
         nb_conditions = len(self.conditions())
         log.debug("Auditing %s number of conditions (%d) is OK", my_name, nb_conditions)
@@ -334,6 +371,7 @@ class QualityGate(sq.SqObject):
         elif nb_conditions > max_cond:
             problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_COND), self, my_name, nb_conditions, max_cond))
         problems += self.__audit_conditions()
+        problems += self.permissions().audit(audit_settings)
         if not self.is_default and len(self.projects()) == 0:
             problems.append(Problem(get_rule(RuleId.QG_NOT_USED), self, my_name))
         return problems
@@ -355,6 +393,23 @@ class QualityGate(sq.SqObject):
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
 
+def __audit_duplicates(qg_list: dict[str, QualityGate], audit_settings: types.ConfigSettings = None) -> list[Problem]:
+    """Audits for duplicate quality gates
+    :param qg_list: dict of QP indexed with their key
+    :param audit_settings: Audit settings to use
+    """
+    if not audit_settings.get("audit.qualityGates.duplicates", True):
+        return []
+    problems = []
+    pairs = {(key1, key2) if key1 < key2 else (key2, key1) for key1 in qg_list.keys() for key2 in qg_list.keys() if key1 != key2}
+    for key1, key2 in pairs:
+        qg1, qg2 = qg_list[key1], qg_list[key2]
+        log.debug("Comparing %s and %s", qg1, qg2)
+        if qg2.is_identical_to(qg1):
+            problems.append(Problem(get_rule(RuleId.QG_DUPLICATES), f"{qg1.endpoint.external_url}/quality_gates", qg1.name, qg2.name))
+    return problems
+
+
 def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = None, **kwargs) -> list[Problem]:
     """Audits Sonar platform quality gates, returns found problems"""
     if not audit_settings.get("audit.qualityGates", True):
@@ -362,14 +417,15 @@ def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = N
         return []
     log.info("--- Auditing quality gates ---")
     problems = []
-    quality_gates_list = get_list(endpoint)
+    all_qg = get_list(endpoint)
+    custom_qg = {k: qg for k, qg in all_qg.items() if not qg.is_built_in}
     max_qg = util.get_setting(audit_settings, "audit.qualitygates.maxNumber", 5)
-    nb_qg = len(quality_gates_list)
-    log.debug("Auditing that there are no more than %s quality gates", str(max_qg))
-    if nb_qg > max_qg:
-        problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_GATES), f"{endpoint.external_url}/quality_gates", nb_qg, 5))
-    for qg in quality_gates_list.values():
-        problems += qg.audit(audit_settings)
+    log.debug("Auditing that there are no more than %d quality gates", max_qg)
+    if (nb_qg := len(custom_qg)) > max_qg:
+        problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_GATES), f"{endpoint.external_url}/quality_gates", nb_qg, max_qg))
+    for qg in custom_qg.values():
+        problems += qg.audit(audit_settings | {"audit.permissions.zeroPermissions": False})
+    problems += __audit_duplicates(custom_qg, audit_settings)
     "write_q" in kwargs and kwargs["write_q"].put(problems)
     return problems
 

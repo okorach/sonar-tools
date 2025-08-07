@@ -23,6 +23,7 @@ from __future__ import annotations
 import concurrent.futures
 import datetime
 from typing import Optional
+from http import HTTPStatus
 from requests import RequestException
 import Levenshtein
 
@@ -30,7 +31,7 @@ import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
 from sonar.util import types
-import sonar.util.constants as c
+from sonar.util import constants as c, issue_defs as idefs
 
 import sonar.utilities as util
 from sonar import projects, rules
@@ -243,7 +244,11 @@ class Finding(sq.SqObject):
         :rtype: dict
         """
         data = {"level": "warning", "ruleId": self.rule, "message": {"text": self.message}}
-        if self.is_bug() or self.is_vulnerability() or self.severity in ("CRITICAL", "BLOCKER", "HIGH"):
+        if (
+            self.is_bug()
+            or self.is_vulnerability()
+            or self.severity in (idefs.STD_SEVERITY_BLOCKER, idefs.STD_SEVERITY_CRITICAL, idefs.STD_SEVERITY_MAJOR)
+        ):
             data["level"] = "error"
         data["properties"] = {"url": self.url()}
         try:
@@ -462,7 +467,7 @@ class Finding(sq.SqObject):
         try:
             return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"applying transition {transition}")
+            util.handle_error(e, f"applying transition {transition}", catch_http_statuses=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
         return False
 
     def get_branch_and_pr(self, data: types.ApiPayload) -> tuple[Optional[str], Optional[str]]:

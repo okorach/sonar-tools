@@ -29,6 +29,7 @@ from requests import RequestException
 from sonar.util import types
 import sonar.logging as log
 from sonar import utilities
+from sonar.audit.problem import Problem
 from sonar.permissions import permissions
 
 MAX_PERMS = 25
@@ -63,6 +64,15 @@ class QualityPermissions(permissions.Permissions):
             if dperms is not None and len(dperms) > 0:
                 perms[p] = permissions.encode(self.permissions.get(p, None))
         return perms if len(perms) > 0 else None
+
+    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits permissions of the object"""
+        self.read()
+        return (
+            self.audit_sonar_users_permissions(audit_settings)
+            + self.audit_anyone_permissions(audit_settings)
+            + self.audit_max_users_or_groups_with_admin_permissions(audit_settings)
+        )
 
     def _get_api(self, api: str, perm_type: tuple[str, ...], ret_field: str, **extra_params) -> list[str]:
         perms = []

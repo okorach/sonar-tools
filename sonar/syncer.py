@@ -21,6 +21,7 @@
 """Findings syncer"""
 
 import concurrent.futures
+import traceback
 
 import sonar.logging as log
 import sonar.utilities as util
@@ -180,6 +181,8 @@ def __sync_curated_list(
             except Exception as e:
                 counters["exception"] += 1
                 log.error(f"Task raised an exception: {e}")
+                traceback.print_exc()
+
     log.debug("Curated list sync results: %s", util.json_dump(counters))
     return (report, counters)
 

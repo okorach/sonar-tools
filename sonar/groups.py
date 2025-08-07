@@ -117,7 +117,7 @@ class Group(sq.SqObject):
         try:
             data = json.loads(endpoint.post(Group.api_for(c.CREATE, endpoint), params={"name": name, "description": description}).text)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating group '{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            util.handle_error(e, f"creating group '{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(name, util.sonar_error(e.response))
         o = cls.read(endpoint=endpoint, name=name)
         o.sq_json.update(data)
@@ -170,7 +170,7 @@ class Group(sq.SqObject):
                 log.info("Removing from %s cache", str(self.__class__.__name__))
                 self.__class__.CACHE.pop(self)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"deleting {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+            util.handle_error(e, f"deleting {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
         return ok
 
@@ -233,7 +233,7 @@ class Group(sq.SqObject):
                 params = {"login": user.login, "name": self.name}
             r = self.post(Group.api_for(ADD_USER, self.endpoint), params=params)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, "adding user to group")
+            util.handle_error(e, "adding user to group", catch_http_statuses=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
             if isinstance(e, HTTPError):
                 code = e.response.status_code
                 if code == HTTPStatus.BAD_REQUEST:

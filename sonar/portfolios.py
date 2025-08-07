@@ -195,11 +195,11 @@ class Portfolio(aggregations.Aggregation):
         mode = self.sq_json.get(_API_SELECTION_MODE_FIELD, None)
         if mode is None:
             return
-        branch = self.sq_json.get("branch", settings.DEFAULT_BRANCH)
+        branch = self.sq_json.get("branch", c.DEFAULT_BRANCH)
         if mode == _SELECTION_MODE_MANUAL:
             self._selection_mode = {mode: {}}
             for projdata in self.sq_json.get("selectedProjects", {}):
-                branch_list = projdata.get("selectedBranches", [settings.DEFAULT_BRANCH])
+                branch_list = projdata.get("selectedBranches", [c.DEFAULT_BRANCH])
                 self._selection_mode[mode].update({projdata["projectKey"]: set(branch_list)})
         elif mode == _SELECTION_MODE_REGEXP:
             self._selection_mode = {mode: self.sq_json["regexp"], "branch": branch}
@@ -244,7 +244,7 @@ class Portfolio(aggregations.Aggregation):
             for branch in app_data["selectedBranches"]:
                 if app_branches.ApplicationBranch.get_object(app=app_o, branch_name=branch).is_main():
                     app_data["selectedBranches"].remove(branch)
-                    app_data["selectedBranches"].insert(0, settings.DEFAULT_BRANCH)
+                    app_data["selectedBranches"].insert(0, c.DEFAULT_BRANCH)
             self._applications[app_data["originalKey"]] = app_data["selectedBranches"]
         return self._applications
 
@@ -342,6 +342,9 @@ class Portfolio(aggregations.Aggregation):
             + self._audit_singleton(audit_settings)
             + self._audit_bg_task(audit_settings)
         )
+        if not self.is_sub_portfolio():
+            problems += self.permissions().audit(audit_settings)
+            problems += self.audit_visibility(audit_settings)
         "write_q" in kwargs and kwargs["write_q"].put(problems)
         return problems
 
@@ -408,7 +411,7 @@ class Portfolio(aggregations.Aggregation):
         for key in projects:
             try:
                 self.post("views/add_project", params={"key": self.key, "project": key}, mute=(HTTPStatus.BAD_REQUEST,))
-                self._selection_mode[_SELECTION_MODE_MANUAL][key] = {settings.DEFAULT_BRANCH}
+                self._selection_mode[_SELECTION_MODE_MANUAL][key] = {c.DEFAULT_BRANCH}
             except (ConnectionError, RequestException) as e:
                 util.handle_error(e, f"adding projects to {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST))
                 if e.response.status_code == HTTPStatus.BAD_REQUEST:
@@ -422,7 +425,7 @@ class Portfolio(aggregations.Aggregation):
         """Adds projects branches to a portfolio"""
         log.debug("Adding all project branches %s to %s", str(branches), str(self))
         for branch in branches:
-            if branch == settings.DEFAULT_BRANCH:
+            if branch == c.DEFAULT_BRANCH:
                 continue
             self.add_project_branch(project_key, branch)
         return self
@@ -439,7 +442,7 @@ class Portfolio(aggregations.Aggregation):
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"adding projects to {str(self)}")
         if project_key in self._selection_mode[_SELECTION_MODE_MANUAL]:
-            self._selection_mode[_SELECTION_MODE_MANUAL][project_key].discard(settings.DEFAULT_BRANCH)
+            self._selection_mode[_SELECTION_MODE_MANUAL][project_key].discard(c.DEFAULT_BRANCH)
             self._selection_mode[_SELECTION_MODE_MANUAL][project_key].add(branch)
         else:
             self._selection_mode[_SELECTION_MODE_MANUAL][project_key] = {branch}
@@ -455,7 +458,7 @@ class Portfolio(aggregations.Aggregation):
     def set_tags_mode(self, tags: list[str], branch: Optional[str] = None) -> Portfolio:
         """Sets a portfolio to tags mode"""
         if branch is None:
-            branch = settings.DEFAULT_BRANCH
+            branch = c.DEFAULT_BRANCH
         self.post("views/set_tags_mode", params={"portfolio": self.key, "tags": util.list_to_csv(tags), "branch": get_api_branch(branch)})
         self._selection_mode = {_SELECTION_MODE_TAGS: tags, "branch": branch}
         return self
@@ -463,7 +466,7 @@ class Portfolio(aggregations.Aggregation):
     def set_regexp_mode(self, regexp: str, branch: Optional[str] = None) -> Portfolio:
         """Sets a portfolio to regexp mode"""
         if branch is None:
-            branch = settings.DEFAULT_BRANCH
+            branch = c.DEFAULT_BRANCH
         self.post("views/set_regexp_mode", params={"portfolio": self.key, "regexp": regexp, "branch": get_api_branch(branch)})
         self._selection_mode = {_SELECTION_MODE_REGEXP: regexp, "branch": branch}
         return self
@@ -471,7 +474,7 @@ class Portfolio(aggregations.Aggregation):
     def set_remaining_projects_mode(self, branch: Optional[str] = None) -> Portfolio:
         """Sets a portfolio to remaining projects mode"""
         if branch is None:
-            branch = settings.DEFAULT_BRANCH
+            branch = c.DEFAULT_BRANCH
         self.post("views/set_remaining_projects_mode", params={"portfolio": self.key, "branch": get_api_branch(branch)})
         self._selection_mode = {"rest": True, "branch": branch}
         return self
@@ -522,12 +525,12 @@ class Portfolio(aggregations.Aggregation):
         return self
 
     def add_application(self, app_key: str) -> bool:
-        self.add_application_branch(app_key=app_key, branch=settings.DEFAULT_BRANCH)
+        self.add_application_branch(app_key=app_key, branch=c.DEFAULT_BRANCH)
 
-    def add_application_branch(self, app_key: str, branch: str = settings.DEFAULT_BRANCH) -> bool:
+    def add_application_branch(self, app_key: str, branch: str = c.DEFAULT_BRANCH) -> bool:
         app = applications.Application.get_object(self.endpoint, app_key)
         try:
-            if branch == settings.DEFAULT_BRANCH:
+            if branch == c.DEFAULT_BRANCH:
                 log.info("%s: Adding %s default branch", str(self), str(app))
                 self.post("views/add_application", params={"portfolio": self.key, "application": app_key}, mute=(HTTPStatus.BAD_REQUEST,))
             else:
@@ -852,7 +855,7 @@ def __create_portfolio_hierarchy(endpoint: pf.Platform, data: types.ApiPayload, 
 
 def get_api_branch(branch: str) -> str:
     """Returns the value to pass to the API for the branch parameter"""
-    return branch if branch != settings.DEFAULT_BRANCH else None
+    return branch if branch != c.DEFAULT_BRANCH else None
 
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:

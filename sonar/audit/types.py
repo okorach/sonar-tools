@@ -33,6 +33,7 @@ class Type(enum.Enum):
     PERFORMANCE = 4
     BAD_PRACTICE = 5
     OPERATIONS = 6
+    HOUSEKEEPING = 7
 
     def __str__(self) -> str:
         """str() implementation"""

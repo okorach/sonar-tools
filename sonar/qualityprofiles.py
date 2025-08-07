@@ -24,6 +24,7 @@ from typing import Optional
 import json
 from datetime import datetime
 from http import HTTPStatus
+import concurrent.futures
 
 from queue import Queue
 from threading import Thread, Lock
@@ -45,7 +46,7 @@ from sonar.audit.problem import Problem
 _KEY_PARENT = "parent"
 _CHILDREN_KEY = "children"
 
-_IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefault", "rules", "permissions")
+_IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefault", "rules", "permissions", "prioritizedRules")
 
 _CLASS_LOCK = Lock()
 
@@ -134,7 +135,7 @@ class QualityProfile(sq.SqObject):
         try:
             endpoint.post(QualityProfile.API[c.CREATE], params={"name": name, "language": language})
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating quality profile '{language}:{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            util.handle_error(e, f"creating quality profile '{language}:{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(f"{language}:{name}", e.response.text)
         return cls.read(endpoint=endpoint, name=name, language=language)
 
@@ -157,7 +158,7 @@ class QualityProfile(sq.SqObject):
         try:
             endpoint.post("qualityprofiles/copy", params={"toName": name, "fromKey": original_qp.key})
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"cloning {str(original_qp)} into name '{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            util.handle_error(e, f"cloning {str(original_qp)} into name '{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(f"{language}:{name}", e.response.text)
         return cls.read(endpoint=endpoint, name=name, language=language)
 
@@ -384,10 +385,8 @@ class QualityProfile(sq.SqObject):
 
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """
-        :param full: If True, exports all properties, including those that can't be set
-        :type full: bool
+        :param export_settings: Settings for export, such as whether to export all rules or only the active ones
         :return: the quality profile properties as JSON dict
-        :rtype: dict
         """
         json_data = self.sq_json.copy()
         json_data.update({"name": self.name, "language": self.language, "parentName": self.parent_name})
@@ -396,16 +395,21 @@ class QualityProfile(sq.SqObject):
             json_data.pop("isDefault", None)
         if not self.is_built_in:
             json_data.pop("isBuiltIn", None)
-            json_data["rules"] = {k: v.export(full) for k, v in self.rules().items()}
+            json_data["rules"] = []
+            for rule in self.rules().values():
+                data = {k: v for k, v in rule.export(full).items() if k not in ("isTemplate", "templateKey", "language", "tags", "severities")}
+                if self.rule_is_prioritized(rule.key):
+                    data["prioritized"] = True
+                if self.rule_has_custom_severities(rule.key):
+                    data["severities"] = self.rule_impacts(rule.key, substitute_with_default=True)
+                json_data["rules"].append({"key": rule.key, **data})
         json_data["permissions"] = self.permissions().export(export_settings)
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
     def compare(self, another_qp: QualityProfile) -> dict[str, str]:
         """Compares 2 quality profiles rulesets
-        :param another_qp: The second quality profile to compare with self
-        :type another_qp: QualityProfile
+        :param QualityProfile another_qp: The second quality profile to compare with self
         :return: dict result of the compare ("inLeft", "inRight", "same", "modified")
-        :rtype: dict
         """
         data = json.loads(self.get("qualityprofiles/compare", params={"leftKey": self.key, "rightKey": another_qp.key}).text)
         for r in data["inLeft"] + data["same"] + data["inRight"] + data["modified"]:
@@ -421,48 +425,30 @@ class QualityProfile(sq.SqObject):
         }
         return operations[op] if op in operations else operations[c.GET]
 
-    def _treat_added_rules(self, added_rules: dict[str:str], added_flag: bool = True) -> dict[str:str]:
-        diff_rules = {}
-        my_rules = self.rules()
-        for r in added_rules:
-            r_key = r.pop("key")
-            diff_rules[r_key] = r
-            if (added_flag and r_key in my_rules) or (not added_flag and r_key not in my_rules):
-                rule_obj = rules.get_object(endpoint=self.endpoint, key=r_key)
-                diff_rules[r_key] = rules.convert_for_export(rule_obj.to_json(), rule_obj.language)
-            if "severity" in r:
-                if isinstance(diff_rules[r_key], str):
-                    diff_rules[r_key] = r["severity"]
-                else:
-                    diff_rules[r_key]["severity"] = r["severity"]
-        return diff_rules
+    def rule_impacts(self, rule_key: str, substitute_with_default: bool = True) -> dict[str, str]:
+        """Returns the severities of a rule in the quality profile
 
-    def _treat_removed_rules(self, removed_rules: dict[str:str]) -> dict[str:str]:
-        return self._treat_added_rules(removed_rules, added_flag=False)
+        :param str rule_key: The rule key to get severities for
+        :return: The severities of the rule in the quality profile
+        :rtype: dict[str, str]
+        """
+        return rules.get_object(self.endpoint, rule_key).impacts(self.key, substitute_with_default=substitute_with_default)
 
-    def _treat_modified_rules(self, modified_rules: dict[str:str]) -> dict[str:str]:
+    def __process_rules_diff(self, rule_set: dict[str:str]) -> dict[str:str]:
         diff_rules = {}
-        my_rules = self.rules()
-        for r in modified_rules:
-            r_key, r_left, r_right = r["key"], r["left"], r["right"]
+        for rule in rule_set:
+            r_key = rule["key"]
             diff_rules[r_key] = {}
-            parms = None
-            if r_left["severity"] != r_right["severity"]:
-                diff_rules[r_key]["severity"] = r_left["severity"]
-            if len(r_left.get("params", {})) > 0:
-                diff_rules[r_key]["params"] = r_left["params"]
-                parms = r_left["params"]
-            if r_key not in my_rules:
-                continue
-            data = rules.convert_for_export(my_rules[r_key].to_json(), my_rules[r_key].language)
-            if "templateKey" in data:
-                diff_rules[r_key]["templateKey"] = data["templateKey"]
-                diff_rules[r_key]["params"] = data["params"]
-                if parms:
-                    diff_rules[r_key]["params"].update(parms)
-        return diff_rules
+            if self.rule_has_custom_severities(r_key):
+                diff_rules[r_key]["severities"] = self.rule_impacts(r_key, substitute_with_default=True)
+            if self.rule_is_prioritized(r_key):
+                diff_rules[r_key]["prioritized"] = True
+            rule_params = rule["left"].get("params", {}) if "left" in rule else rule.get("params", {})
+            if len(rule_params) > 0:
+                diff_rules[r_key]["params"] = rule_params
+        return [{"key": k, **v} for k, v in diff_rules.items()]
 
-    def diff(self, another_qp: QualityProfile, qp_json_data: dict[str:str]) -> tuple[dict[str:str], dict[str:str]]:
+    def diff(self, another_qp: QualityProfile) -> dict[str:str]:
         """Returns the list of rules added or modified in self compared to another_qp (for inheritance)
         :param another_qp: The second quality profile to diff
         :type another_qp: QualityProfile
@@ -473,24 +459,14 @@ class QualityProfile(sq.SqObject):
         compare_result = self.compare(another_qp)
         diff_rules = {"addedRules": {}, "modifiedRules": {}}
         if len(compare_result["inLeft"]) > 0:
-            diff_rules["addedRules"] = self._treat_added_rules(compare_result["inLeft"])
+            diff_rules["addedRules"] = self.__process_rules_diff(compare_result["inLeft"])
         if len(compare_result["modified"]) > 0:
-            diff_rules["modifiedRules"] = self._treat_modified_rules(compare_result["modified"])
+            diff_rules["modifiedRules"] = self.__process_rules_diff(compare_result["modified"])
         if len(compare_result["inRight"]) > 0:
-            diff_rules["removedRules"] = self._treat_removed_rules(compare_result["inRight"])
+            diff_rules["removedRules"] = {r["key"]: True for r in compare_result["inRight"]}
         elif self.endpoint.version() >= (10, 3, 0):
             diff_rules["removedRules"] = {}
-
-        log.debug("Returning QP diff %s", str(diff_rules))
-        for index in ("addedRules", "modifiedRules", "removedRules"):
-            if index not in diff_rules:
-                continue
-            if index not in qp_json_data:
-                qp_json_data[index] = {}
-            for k, v in diff_rules[index].items():
-                qp_json_data[index][k] = v if isinstance(v, str) or "templateKey" not in v else v["severity"]
-
-        return (diff_rules, qp_json_data)
+        return diff_rules
 
     def projects(self) -> types.KeyList:
         """Returns the list of projects keys using this quality profile
@@ -526,29 +502,52 @@ class QualityProfile(sq.SqObject):
         """
         return project.key in self.projects()
 
+    def rule_has_custom_severities(self, rule_key: str) -> bool:
+        """Checks whether the rule has a custom severity in the quality profile
+
+        :param str rule_key: The rule key to check
+        :return: Whether the rule has a some custom severities in the quality profile
+        """
+        if self.endpoint.is_sonarcloud():
+            return False
+        rule = rules.Rule.get_object(self.endpoint, rule_key)
+        log.debug(
+            "Checking if rule %s has custom severities in %s: %s - result %s",
+            rule_key,
+            str(self),
+            str(rule.impacts(quality_profile_id=self.key, substitute_with_default=True)),
+            any(sev != c.DEFAULT for sev in rule.impacts(quality_profile_id=self.key, substitute_with_default=True).values()),
+        )
+        return any(sev != c.DEFAULT for sev in rule.impacts(quality_profile_id=self.key, substitute_with_default=True).values())
+
+    def rule_is_prioritized(self, rule_key: str) -> bool:
+        """Checks whether the rule is prioritized in the quality profile
+
+        :param str rule_key: The rule key to check
+        :return: Whether the rule is prioritized in the quality profile
+        """
+        return rules.Rule.get_object(self.endpoint, rule_key).is_prioritized_in_quality_profile(self.key)
+
     def permissions(self) -> permissions.QualityProfilePermissions:
         """
         :return: The list of users and groups that can edit the quality profile
-        :rtype: dict{"users": <users comma separated>, "groups": <groups comma separated>}
         """
         if self._permissions is None:
             self._permissions = permissions.QualityProfilePermissions(self)
         return self._permissions
 
-    def set_permissions(self, perms: types.ObjectJsonRepr) -> None:
+    def set_permissions(self, perms: types.ObjectJsonRepr) -> bool:
         """Sets the list of users and groups that can can edit the quality profile
-        :params perms:
-        :type perms: dict{"users": <users comma separated>, "groups": <groups comma separated>}
-        :return: Nothing
+        :params perms: Dict of permissions to set ({"users": <users comma separated>, "groups": <groups comma separated>})
+        :return: Whether the operation was successful
         """
-        self.permissions().set(perms)
+        return self.permissions().set(perms)
 
     def audit(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
         """Audits a quality profile and return list of problems found
 
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
-        :rtype: list[Problem]
         """
         log.info("Auditing %s", str(self))
         if self.is_built_in:
@@ -578,7 +577,18 @@ class QualityProfile(sq.SqObject):
                 max_deprecated_rules = parent_qp.nbr_deprecated_rules
             if self.nbr_deprecated_rules > max_deprecated_rules:
                 problems.append(Problem(get_rule(RuleId.QP_USE_DEPRECATED_RULES), self, str(self), self.nbr_deprecated_rules))
+        problems += self.permissions().audit(audit_settings)
         return problems
+
+    def is_identical_to(self, another_qp: QualityProfile) -> bool:
+        """Checks whether the quality profile is identical to another quality profile
+
+        :param QualityProfile another_qp: The other quality profile to compare with
+        :return: Whether the quality profiles are identical
+        :rtype: bool
+        """
+        data = self.compare(another_qp)
+        return all(data.get(k, []) == [] for k in ("inLeft", "inRight", "modified"))
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, QualityProfile]:
@@ -607,13 +617,62 @@ def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Quality
     return QualityProfile.CACHE.objects
 
 
+def __audit_duplicate(qp1: QualityProfile, qp2: QualityProfile) -> list[Problem]:
+    if qp2.is_identical_to(qp1):
+        return [Problem(get_rule(RuleId.QP_DUPLICATES), qp1, qp1.name, qp2.name, qp1.language)]
+    return []
+
+
+def __audit_duplicates(qp_list: dict[str, QualityProfile], audit_settings: types.ConfigSettings = None) -> list[Problem]:
+    """Audits for duplicate quality profiles
+    :param qp_list: dict of QP indexed with their key
+    :param audit_settings: Audit settings to use
+    """
+    if not audit_settings.get("audit.qualityProfiles.duplicates", True):
+        return []
+    log.info("Auditing for duplicate quality profiles")
+    problems = []
+    langs = {qp.language for qp in qp_list.values()}
+    pairs = set()
+    for lang in sorted(langs):
+        lang_qp_list = {k: qp for k, qp in qp_list.items() if qp.language == lang}
+        pairs |= {(key1, key2) if key1 < key2 else (key2, key1) for key1 in lang_qp_list.keys() for key2 in lang_qp_list.keys() if key1 != key2}
+
+    threads = audit_settings.get("threads", 1)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="QPDuplication") as executor:
+        futures = [executor.submit(__audit_duplicate, qp_list[key1], qp_list[key2]) for (key1, key2) in pairs]
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                problems += future.result(timeout=30)
+            except Exception as e:
+                log.error(f"{str(e)} for {str(future)}.")
+    return problems
+
+
+def __audit_nbr_of_qp(qp_list: dict[str, QualityProfile], audit_settings: types.ConfigSettings = None) -> list[Problem]:
+    """Audits for duplicate quality profiles"""
+    if (max_qp := audit_settings.get("audit.qualityProfiles.maxPerLanguage", 5)) == 0:
+        log.info("Auditing for number of quality profiles per disabled, skipping...")
+        return []
+    log.info("Auditing for number of quality profiles per language, max %d", max_qp)
+    langs = {}
+    problems = []
+    for qp in qp_list.values():
+        endpoint = qp.endpoint
+        langs[qp.language] = langs.get(qp.language, 0) + 1
+    for lang, nb_qp in langs.items():
+        if nb_qp > max_qp:
+            rule = get_rule(RuleId.QP_TOO_MANY_QP)
+            problems.append(Problem(rule, f"{endpoint.external_url}/profiles?language={lang}", nb_qp, lang, max_qp))
+    return problems
+
+
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None, **kwargs) -> list[Problem]:
     """Audits all quality profiles and return list of problems found
 
-    :param Platform endpoint: reference to the SonarQube platform
-    :param dict audit_settings: Configuration of audit
+    :param endpoint: reference to the SonarQube platform
+    :param audit_settings: Configuration of audit
     :return: list of problems found
-    :rtype: list[Problem]
     """
     if not audit_settings.get("audit.qualityProfiles", True):
         log.info("Auditing quality profiles is disabled, audit skipped...")
@@ -621,14 +680,11 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None, **
     log.info("--- Auditing quality profiles ---")
     rules.get_list(endpoint=endpoint)
     problems = []
-    langs = {}
-    for qp in search(endpoint=endpoint).values():
+    qp_list = search(endpoint=endpoint)
+    for qp in qp_list.values():
         problems += qp.audit(audit_settings)
-        langs[qp.language] = langs.get(qp.language, 0) + 1
-    for lang, nb_qp in langs.items():
-        if nb_qp > 5:
-            rule = get_rule(RuleId.QP_TOO_MANY_QP)
-            problems.append(Problem(rule, f"{endpoint.external_url}/profiles?language={lang}", nb_qp, lang, 5))
+    problems += __audit_nbr_of_qp(qp_list=qp_list, audit_settings=audit_settings)
+    problems += __audit_duplicates(qp_list=qp_list, audit_settings=audit_settings)
     "write_q" in kwargs and kwargs["write_q"].put(problems)
     return problems
 
@@ -648,9 +704,9 @@ def hierarchize_language(qp_list: dict[str, str], endpoint: pf.Platform, languag
             if _CHILDREN_KEY not in parent_qp:
                 parent_qp[_CHILDREN_KEY] = {}
             this_qp = get_object(endpoint=endpoint, name=qp_name, language=language)
-            (_, diff_data) = this_qp.diff(get_object(endpoint=endpoint, name=parent_qp_name, language=language), qp_json_data)
-            diff_data.pop("rules", None)
-            parent_qp[_CHILDREN_KEY][qp_name] = diff_data
+            qp_json_data |= this_qp.diff(get_object(endpoint=endpoint, name=parent_qp_name, language=language))
+            qp_json_data.pop("rules", None)
+            parent_qp[_CHILDREN_KEY][qp_name] = qp_json_data
             to_remove.append(qp_name)
     for qp_name in to_remove:
         hierarchy.pop(qp_name)
@@ -666,10 +722,7 @@ def hierarchize(qp_list: types.ObjectJsonRepr, endpoint: pf.Platform) -> types.O
     :rtype: {<language>: {<qp_name>: {"children": <qp_list>; <qp_data>}}}
     """
     log.info("Organizing quality profiles in hierarchy")
-    hierarchy = {}
-    for lang, lang_qp_list in qp_list.items():
-        hierarchy[lang] = hierarchize_language(lang_qp_list, endpoint=endpoint, language=lang)
-    return hierarchy
+    return {lang: hierarchize_language(lang_qp_list, endpoint=endpoint, language=lang) for lang, lang_qp_list in qp_list.items()}
 
 
 def flatten_language(language: str, qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
@@ -819,9 +872,6 @@ def convert_one_qp_yaml(qp: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     if _CHILDREN_KEY in qp:
         qp[_CHILDREN_KEY] = {k: convert_one_qp_yaml(q) for k, q in qp[_CHILDREN_KEY].items()}
         qp[_CHILDREN_KEY] = util.dict_to_list(qp[_CHILDREN_KEY], "name")
-    for rule_group in "rules", "modifiedRules", "addedRules", "removedRules":
-        if rule_group in qp:
-            qp[rule_group] = rules.convert_rule_list_for_yaml(qp[rule_group])
     return qp
 
 

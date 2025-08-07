@@ -26,6 +26,7 @@
 """
 import sys
 import csv
+from requests import RequestException
 
 from sonar.util import types
 from cli import options
@@ -33,14 +34,18 @@ import sonar.logging as log
 from sonar import metrics, platform, exceptions, errcodes, version, measures
 import sonar.utilities as util
 import sonar.util.constants as c
-from sonar.util import component_helper
+from sonar.util import component_helper, cache_helper
 
 TOOL_NAME = "sonar-measures"
 
 
 def __get_measures_history(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the measure history of an object (project, branch, application, portfolio)"""
-    data = obj.get_measures_history(wanted_metrics)
+    try:
+        data = obj.get_measures_history(wanted_metrics)
+    except RequestException as e:
+        log.error("Error while getting measures history for %s: %s", str(obj), e)
+        return {}
     if data:
         ratings = convert_options.get("ratings", "letters")
         percents = convert_options.get("percents", "float")
@@ -52,21 +57,26 @@ def __get_measures_history(obj: object, wanted_metrics: types.KeyList, convert_o
 def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the list of requested measures of an object"""
     log.info("Getting measures for %s", str(obj))
-    measures_d = obj.component_data() | obj.get_measures(wanted_metrics)
-    measures_d.pop("quality_gate_details", None)
-    ratings = convert_options.get("ratings", "letters")
-    percents = convert_options.get("percents", "float")
-    measures_d = {k: v.format(ratings, percents) if v else None for k, v in measures_d.items()}
-    last_analysis = obj.last_analysis()
-    measures_d["lastAnalysis"] = util.date_to_string(last_analysis, convert_options["dates"] != "dateonly") if last_analysis else "Never"
-    if not convert_options.get(options.WITH_TAGS, False):
-        return measures_d
+    measures_d = {}
+    try:
+        measures_d = obj.component_data() | obj.get_measures(wanted_metrics)
+        measures_d.pop("quality_gate_details", None)
+        ratings = convert_options.get("ratings", "letters")
+        percents = convert_options.get("percents", "float")
+        measures_d = {k: v.format(ratings, percents) if v else None for k, v in measures_d.items()}
+        last_analysis = obj.last_analysis()
+        measures_d["lastAnalysis"] = util.date_to_string(last_analysis, convert_options["dates"] != "dateonly") if last_analysis else "Never"
+        if not convert_options.get(options.WITH_TAGS, False):
+            return measures_d
 
-    sep = "|" if convert_options[options.CSV_SEPARATOR] == "," else ","
-    if obj.__class__.__name__ == "Branch":
-        measures_d["tags"] = sep.join(obj.concerned_object.get_tags())
-    else:
-        measures_d["tags"] = sep.join(obj.get_tags())
+        sep = "|" if convert_options[options.CSV_SEPARATOR] == "," else ","
+        if obj.__class__.__name__ == "Branch":
+            measures_d["tags"] = sep.join(obj.concerned_object.get_tags())
+        else:
+            measures_d["tags"] = sep.join(obj.get_tags())
+    except (ConnectionError, RequestException) as e:
+        util.handle_error(e, f"Measures extract of {str(obj)} failed", catch_all=True)
+        return {}
     return measures_d
 
 
@@ -96,7 +106,7 @@ def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyS
             miss = ",".join(non_existing_metrics)
             util.exit_fatal(f"Requested metric keys '{miss}' don't exist", errcodes.NO_SUCH_KEY)
     log.info("Exporting %s metrics", len(wanted_metrics))
-    return wanted_metrics
+    return list(dict.fromkeys(wanted_metrics))
 
 
 def __parse_args(desc: str) -> object:
@@ -263,7 +273,12 @@ def main() -> None:
             branch_regexp=kwargs[options.BRANCH_REGEXP],
         )
         if kwargs["history"]:
-            measure_list = [__get_measures_history(obj, wanted_metrics, kwargs) for obj in obj_list]
+            measure_list = []
+            for obj in obj_list:
+                try:
+                    measure_list.append(__get_measures_history(obj, wanted_metrics, kwargs))
+                except Exception:
+                    continue
             measure_list = [o for o in measure_list if o]
             if fmt == "json":
                 with util.open_file(file) as fd:
@@ -274,6 +289,7 @@ def main() -> None:
             measure_list = [__get_measures(obj, wanted_metrics, kwargs) for obj in obj_list]
             measure_list = [o for o in measure_list if o]
             if fmt == "json":
+                measure_list = [util.none_to_zero(m, "^.*(issues|violations)$") for m in measure_list]
                 with util.open_file(file) as fd:
                     print(util.json_dump(measure_list), file=fd)
             else:
@@ -291,6 +307,7 @@ def main() -> None:
     except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while writing LoCs: {e}", exit_code=errcodes.OS_ERROR)
     util.stop_clock(start_time)
+    cache_helper.clear_cache()
     sys.exit(0)
 
 

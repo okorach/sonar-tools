@@ -32,9 +32,11 @@ from requests import RequestException
 from cli import options
 import sonar.logging as log
 from sonar import platform, tokens, users, projects, branches, version, errcodes
+import sonar.util.constants as c
 import sonar.utilities as util
 import sonar.exceptions as ex
 from sonar.audit import problem
+from sonar.util import cache_helper
 
 TOOL_NAME = "sonar-housekeeper"
 PROJ_MAX_AGE = "audit.projects.maxLastAnalysisAge"
@@ -207,7 +209,7 @@ def main() -> None:
             PROJ_MAX_AGE: proj_age,
             "audit.projects.branches.maxLastAnalysisAge": branch_age,
             "audit.projects.pullRequests.maxLastAnalysisAge": pr_age,
-            projects.AUDIT_MODE_PARAM: "housekeeper",
+            c.AUDIT_MODE_PARAM: "housekeeper",
             options.NBR_THREADS: kwargs[options.NBR_THREADS],
         }
         log.info("Housekeeper settings = %s", util.json_dump(settings))
@@ -237,6 +239,7 @@ def main() -> None:
         util.exit_fatal(e.message, e.errcode)
     except RequestException as e:
         util.exit_fatal(f"HTTP error while housekeeping: {str(e)}", errcodes.SONAR_API)
+    cache_helper.clear_cache()
     sys.exit(0)
 
 

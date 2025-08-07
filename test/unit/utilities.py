@@ -49,14 +49,27 @@ LTS = LTA
 LATEST_TEST = "http://localhost:20010"
 
 CB = "http://localhost:7000"
+SQS_AUDIT = "http://localhost:10050"
 
 CSV_FILE = f"temp.{os.getpid()}.csv"
 JSON_FILE = f"temp.{os.getpid()}.json"
 YAML_FILE = f"temp.{os.getpid()}.yaml"
 
-PROJECT_1 = "okorach_sonar-tools"
-PROJECT_2 = "project1"
-LIVE_PROJECT = PROJECT_1
+PROJECT_0 = "okorach_sonar-tools"
+PROJECT_1 = "project1"
+PROJECT_2 = "project2"
+PROJECT_3 = "project3"
+PROJECT_4 = "project4"
+PROJECT_5 = "project5"
+
+LIVE_PROJECT = PROJECT_0
+PROJ_WITH_BRANCHES = PROJECT_1
+BRANCH_MAIN = "main"
+BRANCH_2 = "develop"
+BRANCH_3 = "some-branch"
+BRANCH_4 = "feature/new-feature"
+BRANCH_5 = "comma,branch"
+
 NON_EXISTING_KEY = "non-existing"
 
 TEST_KEY = "TEST"
@@ -404,7 +417,7 @@ def json_field_match(json_file: str, field: str, regexp: str, allow_null: bool =
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         data = json.loads(fh.read())
     if allow_null:
-        return sum(1 for p in data if p[field] is not None and not re.match(rf"{regexp}", p[field])) == 0
+        return sum(1 for p in data if field in p and p[field] is not None and not re.match(rf"{regexp}", p[field])) == 0
     else:
         return sum(1 for p in data if not re.match(rf"{regexp}", p[field])) == 0
 
@@ -413,7 +426,10 @@ def json_field_condition(json_file: str, field: str, func: callable, allow_null:
     """return whether a JSON field matches a regexp"""
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         data = json.loads(fh.read())
-    return sum(1 for p in data if not func(p[field], allow_null)) == 0
+    if allow_null:
+        return sum(1 for p in data if field in p and p[field] is not None and not func(p[field], allow_null)) == 0
+    else:
+        return sum(1 for p in data if not func(p[field], allow_null)) == 0
 
 
 def json_field_int(json_file: str, field: str, allow_null: bool = True) -> bool:

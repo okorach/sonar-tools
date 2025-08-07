@@ -31,7 +31,7 @@ import yaml
 
 from cli import options
 from sonar import exceptions, errcodes, utilities, version
-from sonar.util import types, constants as c
+from sonar.util import types, constants as c, cache_helper
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
@@ -288,6 +288,7 @@ def main() -> None:
             utilities.exit_fatal("--file is mandatory to import configuration", errcodes.ARGS_ERROR)
         __import_config(endpoint, what, **kwargs)
     utilities.stop_clock(start_time)
+    cache_helper.clear_cache()
     sys.exit(0)
 
 

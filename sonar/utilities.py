@@ -37,7 +37,7 @@ import requests
 
 import sonar.logging as log
 from sonar import version, errcodes
-from sonar.util import types
+from sonar.util import types, cache_helper
 import cli.options as opt
 
 
@@ -169,7 +169,7 @@ def convert_to_type(value: any) -> any:
     return value
 
 
-def remove_nones(d: dict[str, str]) -> dict[str, str]:
+def remove_nones(d: dict[str, any]) -> dict[str, any]:
     """Removes elements of the dict that are None values"""
     new_d = d.copy()
     for k, v in d.items():
@@ -178,6 +178,19 @@ def remove_nones(d: dict[str, str]) -> dict[str, str]:
             continue
         if isinstance(v, dict):
             new_d[k] = remove_nones(v)
+    return new_d
+
+
+def none_to_zero(d: dict[str, any], key_match: str = "^.+$") -> dict[str, any]:
+    """Replaces None values in a dict with 0"""
+    new_d = d.copy()
+    for k, v in d.items():
+        if v is None and re.match(key_match, k):
+            new_d[k] = 0
+        elif isinstance(v, dict):
+            new_d[k] = none_to_zero(v)
+        elif isinstance(v, list):
+            new_d[k] = [none_to_zero(elem) if isinstance(elem, dict) else elem for elem in v]
     return new_d
 
 
@@ -366,6 +379,7 @@ def exit_fatal(err_msg: str, exit_code: int) -> None:
     """Fatal exit with error msg"""
     log.fatal(err_msg)
     print(f"FATAL: {err_msg}", file=sys.stderr)
+    cache_helper.clear_cache()
     sys.exit(exit_code)
 
 
@@ -525,7 +539,7 @@ def handle_error(e: Exception, context: str, **kwargs) -> None:
     if kwargs.get("catch_all", False):
         log.log(kwargs.get("log_level", log.ERROR), LOG_FORMAT, error_msg(e), context)
         return
-    catch_http = kwargs.get("catch_http_errors", True)
+    catch_http = kwargs.get("catch_http_errors", False)
     catch_statuses = kwargs.get("catch_http_statuses", ())
     if isinstance(e, requests.HTTPError) and (catch_http or e.response.status_code in catch_statuses):
         log.log(kwargs.get("log_level", log.ERROR), LOG_FORMAT, error_msg(e), context)
@@ -791,3 +805,16 @@ def to_days(time_expression: str) -> Optional[int]:
         return value * 365  # Approximate year length
     else:
         return None
+
+
+def pretty_print_json(file: str) -> bool:
+    """Opens and reformats a JSON file"""
+    try:
+        with open_file(file, mode="r") as fd:
+            json_data = json.loads(fd.read())
+        with open_file(file, mode="w") as fd:
+            print(json_dump(json_data), file=fd)
+    except json.decoder.JSONDecodeError:
+        log.warning("File %s is not correct JSON, cannot pretty print", file)
+        return False
+    return True

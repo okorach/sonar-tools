@@ -478,61 +478,55 @@ class Platform(object):
             json_data[settings.DEVOPS_INTEGRATION] = devops.export(self, export_settings=export_settings)
         return json_data
 
-    def set_webhooks(self, webhooks_data: types.ObjectJsonRepr) -> None:
+    def set_webhooks(self, webhooks_data: types.ObjectJsonRepr) -> bool:
         """Sets global webhooks with a list of webhooks represented as JSON
 
         :param webhooks_data: the webhooks JSON representation
-        :return: Nothing
+        :return: Whether the operation succeeded or not
         """
         if webhooks_data is None:
-            return
+            return False
         current_wh = self.webhooks()
         # FIXME: Handle several webhooks with same name
         current_wh_names = [wh.name for wh in current_wh.values()]
         wh_map = {wh.name: k for k, wh in current_wh.items()}
-        log.debug("Current WH %s", str(current_wh_names))
-        for wh_name, wh in webhooks_data.items():
-            log.debug("Updating wh with name %s", wh_name)
-            if wh_name in current_wh_names:
-                current_wh[wh_map[wh_name]].update(name=wh_name, **wh)
-            # else:
-            #     webhooks.update(name=wh_name, endpoint=self, project=None, **wh)
+        log.debug("Current webhooks = %s", str(current_wh_names))
+        _ = [current_wh[wh_map[wh_name]].update(name=wh_name, **wh) for wh_name, wh in webhooks_data.items() if wh_name in current_wh_names]
+        return True
 
-    def import_config(self, config_data: types.ObjectJsonRepr) -> None:
+    def import_config(self, config_data: types.ObjectJsonRepr) -> bool:
         """Imports a whole SonarQube platform global configuration represented as JSON
 
         :param config_data: the sonar-config configuration representation of the platform
+        :return: Whether the import was entirely successful or not
         """
         if "globalSettings" not in config_data:
             log.info("No global settings to import")
-            return
+            return False
+        ok = True
         config_data = config_data["globalSettings"]
-        for section in ("analysisScope", "authentication", "generalSettings", "linters", "sastConfig", "tests", "thirdParty"):
-            if section not in config_data:
-                continue
-            for setting_key, setting_value in config_data[section].items():
-                if setting_key == "webhooks":
-                    self.set_webhooks(setting_value)
-                else:
-                    self.set_setting(setting_key, setting_value)
+        sections = [
+            s for s in ("generalSettings", "authentication", "analysisScope", "linters", "sastConfig", "tests", "thirdParty") if s in config_data
+        ]
+        ok = ok and all(self.set_webhooks(v) for section in sections for k, v in config_data[section].items() if k == "webhooks")
+        ok = ok and all(self.set_setting(k, v) for section in sections for k, v in config_data[section].items() if k != "webhooks")
+        ok = ok and all(self.set_setting(s, v) for setting_value in config_data.get("languages", {}).values() for s, v in setting_value.items())
 
-        if "languages" in config_data:
-            for setting_value in config_data["languages"].values():
-                for s, v in setting_value.items():
-                    self.set_setting(s, v)
-
-        if settings.NEW_CODE_PERIOD in config_data["generalSettings"]:
+        if settings.NEW_CODE_PERIOD in config_data.get("generalSettings", {}):
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data["generalSettings"][settings.NEW_CODE_PERIOD])
             try:
                 settings.set_new_code_period(self, nc_type, nc_val)
             except exceptions.UnsupportedOperation as e:
                 log.error(e.message)
+                ok = False
         permission_templates.import_config(self, config_data)
         global_permissions.import_config(self, config_data)
         try:
             devops.import_config(self, config_data)
         except exceptions.UnsupportedOperation as e:
             log.warning(e.message)
+            ok = False
+        return ok
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits a global platform configuration and returns the list of problems found
@@ -872,7 +866,7 @@ def _get_multiple_values(n: int, setting: str, severity: sev.Severity, domain: t
     return values
 
 
-def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
+def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports a configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -880,7 +874,7 @@ def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_lis
     :param KeyList key_list: Unused
     :return: Nothing
     """
-    endpoint.import_config(config_data)
+    return endpoint.import_config(config_data)
 
 
 def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:

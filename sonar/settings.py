@@ -63,8 +63,6 @@ AI_CODE_FIX = "sonar.ai.suggestions.enabled"
 MQR_ENABLED = "sonar.multi-quality-mode.enabled"
 TOKEN_MAX_LIFETIME = "sonar.auth.token.max.allowed.lifetime"
 
-DEFAULT_BRANCH = "-DEFAULT_BRANCH-"
-
 _GLOBAL_SETTINGS_WITHOUT_DEF = (AI_CODE_FIX, MQR_ENABLED)
 
 _SQ_INTERNAL_SETTINGS = (
@@ -529,19 +527,19 @@ def set_visibility(endpoint: pf.Platform, visibility: str, component: object = N
 
 def set_setting(endpoint: pf.Platform, key: str, value: any, component: object = None) -> bool:
     """Sets a setting to a particular value"""
-    s = get_object(endpoint=endpoint, key=key, component=component)
-    if not s:
-        log.warning("Setting '%s' does not exist on target platform, it cannot be set", key)
+
+    try:
+        s = get_object(endpoint=endpoint, key=key, component=component)
+        if not s:
+            log.warning("Setting '%s' does not exist on target platform, it cannot be set", key)
+            return False
+        s.set(value)
+    except (ConnectionError, RequestException) as e:
+        util.handle_error(e, f"setting setting '{key}' of {str(component)}", catch_all=True)
         return False
-    else:
-        try:
-            s.set(value)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting setting '{key}' of {str(component)}", catch_all=True)
-            return False
-        except exceptions.UnsupportedOperation as e:
-            log.error("Setting '%s' cannot be set: %s", key, e.message)
-            return False
+    except exceptions.UnsupportedOperation as e:
+        log.error("Setting '%s' cannot be set: %s", key, e.message)
+        return False
     return True
 
 

@@ -30,6 +30,7 @@ import sys
 from cli import options
 import sonar.logging as log
 from sonar import custom_measures, platform, utilities, errcodes, exceptions, version
+from sonar.util import cache_helper
 
 TOOL_NAME = "sonar-custom-measures"
 
@@ -68,6 +69,7 @@ def main():
             description=params.get("description", None),
         )
     utilities.stop_clock(start_time)
+    cache_helper.clear_cache()
     sys.exit(0)
 
 

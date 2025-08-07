@@ -33,7 +33,7 @@ from requests import RequestException
 from cli import options
 
 from sonar import errcodes, exceptions, version
-from sonar.util import types, component_helper
+from sonar.util import types, component_helper, cache_helper
 import sonar.logging as log
 from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, portfolios, applications, projects
 import sonar.utilities as util
@@ -76,18 +76,30 @@ def write_problems(queue: Queue[list[problem.Problem]], fd: TextIO, settings: ty
     """
     Thread to write problems in a CSV file
     """
-    csvwriter = csv.writer(fd, delimiter=settings.get("CSV_DELIMITER", ","))
     server_id = settings.get("SERVER_ID", None)
     with_url = settings.get("WITH_URL", False)
+    fmt = settings.get("format", "csv")
+    comma = ""
+    if fmt == "json":
+        print("[", file=fd)
+    else:
+        csvwriter = csv.writer(fd, delimiter=settings.get("CSV_DELIMITER", ","))
     while True:
         problems = queue.get()
         if problems is util.WRITE_END:
+            if fmt == "json":
+                print("]", file=fd)
             queue.task_done()
             break
         for p in problems:
-            data = [] if not server_id else [server_id]
-            data += list(p.to_json(with_url).values())
-            csvwriter.writerow(data)
+            json_data = p.to_json(with_url)
+            if fmt == "json":
+                print(f"{comma}{util.json_dump(json_data)}", file=fd)
+                comma = ","
+            else:
+                data = [] if not server_id else [server_id]
+                data += list(json_data.values())
+                csvwriter.writerow(data)
         queue.task_done()
     log.info("Writing audit problems complete")
 
@@ -102,8 +114,9 @@ def _audit_sq(
 
     problems = []
     write_q = Queue(maxsize=0)
-
-    with util.open_file(settings.get("FILE", None), mode="w") as fd:
+    file = settings.get("FILE", None)
+    fmt = settings.get("format", "csv")
+    with util.open_file(file=file, mode="w") as fd:
         worker = Thread(target=write_problems, args=(write_q, fd, settings))
         worker.daemon = True
         worker.name = "AuditWriter"
@@ -118,6 +131,8 @@ def _audit_sq(
                         log.warning(e.message)
         write_q.put(None)
         write_q.join()
+    if file and fmt == "json":
+        util.pretty_print_json(file)
     return problems
 
 
@@ -158,12 +173,14 @@ def main() -> None:
         kwargs = util.convert_args(__parser_args("Audits a SonarQube Server or Cloud platform or a SIF (Support Info File or System Info File)"))
         settings = audit_conf.load(TOOL_NAME)
         file = ofile = kwargs.pop(options.REPORT_FILE)
+        fmt = util.deduct_format(kwargs[options.FORMAT], ofile)
         settings.update(
             {
                 "FILE": file,
                 "CSV_DELIMITER": kwargs[options.CSV_SEPARATOR],
                 "WITH_URL": kwargs[options.WITH_URL],
                 "threads": kwargs[options.NBR_THREADS],
+                "format": fmt,
             }
         )
         if kwargs.get("config", False):
@@ -174,7 +191,7 @@ def main() -> None:
             file = kwargs["sif"]
             errcode = errcodes.SIF_AUDIT_ERROR
             (settings["SERVER_ID"], problems) = _audit_sif(file, settings)
-            problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=util.deduct_format(kwargs[options.FORMAT], ofile))
+            problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=fmt)
 
         else:
             sq = platform.Platform(**kwargs)
@@ -204,6 +221,7 @@ def main() -> None:
     except RequestException as e:
         util.exit_fatal(f"HTTP error while auditing: {str(e)}", errcodes.SONAR_API)
     util.stop_clock(start_time)
+    cache_helper.clear_cache()
     sys.exit(errcodes.OK)
 
 

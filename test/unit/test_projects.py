@@ -77,18 +77,15 @@ def test_audit() -> None:
         "maxLastAnalysisAge",
         "branches.maxLastAnalysisAge",
         "pullRequests.maxLastAnalysisAge",
+        "maxNewCodeLines",
     ):
         settings[f"audit.projects.{p}"] = 0
-    print(f"Audit SETTINGS: {json.dumps(settings, indent=2)}")
-    res = projects.audit(util.SQ, settings)
-    print(f"Audit RESULTS: {[str(p) for p in res]}")
-    # assert len(projects.audit(util.SQ, settings)) == 0
     assert len(projects.audit(util.SQ, settings)) == 0
     proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)
     settings["audit.projects.utilityLocs"] = True
     assert len(proj.audit_languages(audit_settings=settings)) == 0
-    # settings["audit.mode"] = "housekeeper"
-    # assert len(proj.audit_languages(audit_settings=settings)) == 0
+    settings["audit.mode"] = "housekeeper"
+    assert len(proj.audit_languages(audit_settings=settings)) == 0
 
 
 def test_audit_disabled() -> None:
@@ -173,7 +170,7 @@ def test_binding() -> None:
     """test_binding"""
     if util.SQ.edition() == c.CE:
         pytest.skip("Bindings unsupported in SonarQube Community Edition")
-    proj = projects.Project.get_object(util.SQ, util.TEST_KEY)
+    proj = projects.Project.get_object(util.SQ, "demo:github-actions-maven")
     assert proj.has_binding()
     assert proj.binding() is not None
     assert proj.binding_key().startswith("github:::okorach/demo-actions-maven")
@@ -297,7 +294,7 @@ def test_branch_and_pr() -> None:
 
 def test_audit_languages(get_test_project: Generator[projects.Project]) -> None:
     """test_audit_languages"""
-    proj = projects.Project.get_object(util.SQ, "okorach_sonar-tools")
+    proj = projects.Project.get_object(util.SQ, util.LIVE_PROJECT)
     assert proj.audit_languages({"audit.projects.utilityLocs": False}) == []
     proj = get_test_project
     assert proj.audit_languages({"audit.projects.utilityLocs": True}) == []

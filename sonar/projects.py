@@ -63,7 +63,6 @@ APP_QUALIFIER = "APP"
 _CONTAINS_AI_CODE = "containsAiCode"
 _BIND_SEP = ":::"
 _AUDIT_BRANCHES_PARAM = "audit.projects.branches"
-AUDIT_MODE_PARAM = "audit.mode"
 
 ZIP_ZERO_LOC = "ZERO_LOC"
 ZIP_ASYNC_SUCCESS = "ASYNC_SUCCESS"
@@ -129,6 +128,17 @@ _UNNEEDED_TASK_DATA = (
     "submittedAt",
     "executedAt",
     "type",
+)
+
+# Keys to exclude when applying settings in update()
+_SETTINGS_WITH_SPECIFIC_IMPORT = (
+    "permissions",
+    "tags",
+    "links",
+    "qualityGate",
+    "qualityProfiles",
+    "binding",
+    "name",
 )
 
 
@@ -218,7 +228,7 @@ class Project(components.Component):
         try:
             endpoint.post(Project.API[c.CREATE], params={"project": key, "name": name})
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating project '{key}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            util.handle_error(e, f"creating project '{key}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(key, e.response.text)
         o = cls(endpoint, key)
         o.name = name
@@ -390,12 +400,9 @@ class Project(components.Component):
         if not self._binding:
             try:
                 resp = self.get("alm_settings/get_binding", params={"project": self.key}, mute=(HTTPStatus.NOT_FOUND,))
-                log.debug("RESP = %s", resp.text)
                 self._binding = {"has_binding": True, "binding": json.loads(resp.text)}
             except (ConnectionError, RequestException) as e:
-                util.handle_error(
-                    e, f"getting binding of {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST), log_level=log.DEBUG
-                )
+                util.handle_error(e, f"getting binding of {str(self)}", catch_http_errors=True, log_level=log.DEBUG)
                 # Hack: 8.9 returns 404, 9.x returns 400
                 self._binding = {"has_binding": False}
         log.debug("%s binding = %s", str(self), str(self._binding.get("binding", None)))
@@ -465,7 +472,7 @@ class Project(components.Component):
         main_br_count = 0
         for branch in self.branches().values():
             problems += branch.audit(audit_settings)
-            if audit_settings.get(AUDIT_MODE_PARAM, "") != "housekeeper" and branch.name in ("main", "master"):
+            if audit_settings.get(c.AUDIT_MODE_PARAM, "") != "housekeeper" and branch.name in ("main", "master"):
                 main_br_count += 1
                 if main_br_count > 1:
                     problems.append(Problem(get_rule(RuleId.PROJ_MAIN_AND_MASTER), self, str(self)))
@@ -479,7 +486,7 @@ class Project(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+        if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
         max_age = audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)
         if max_age == 0:
@@ -490,26 +497,6 @@ class Project(components.Component):
             problems += pr.audit(audit_settings)
         return problems
 
-    def __audit_visibility(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        """Audits project visibility and return problems if project is public
-
-        :param audit_settings: Options and Settings (thresholds) to raise problems
-        :type audit_settings: dict
-        :return: List of problems found, or empty list
-        :rtype: list[Problem]
-        """
-        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
-            return []
-        if not audit_settings.get("audit.projects.visibility", True):
-            log.debug("Project visibility audit is disabled by configuration, skipping...")
-            return []
-        log.debug("Auditing %s visibility", str(self))
-        visi = self.visibility()
-        if visi != "private":
-            return [Problem(get_rule(RuleId.PROJ_VISIBILITY), self, str(self), visi)]
-        log.debug("%s visibility is 'private'", str(self))
-        return []
-
     def audit_languages(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project utility languages and returns problems if too many LoCs of these
 
@@ -518,7 +505,7 @@ class Project(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+        if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
         if not audit_settings.get("audit.projects.utilityLocs", False):
             log.debug("Utility LoCs audit disabled by configuration, skipping")
@@ -540,26 +527,8 @@ class Project(components.Component):
         log.debug("%s utility LoCs count (%d) seems reasonable", str(self), utility_locs)
         return []
 
-    def __audit_zero_loc(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        """Audits project utility projects with 0 LoCs
-
-        :param ConfigSettings audit_settings: Settings (thresholds) to raise problems
-        :returns: List of problems found, or empty list
-        """
-        if not audit_settings.get("audit.projects.zeroLoC", True):
-            log.info("Zero LoC audit disabled by configuration, skipping")
-            return []
-
-        if (
-            (not audit_settings.get(_AUDIT_BRANCHES_PARAM, True) or self.endpoint.edition() == c.CE)
-            and self.last_analysis() is not None
-            and self.loc() == 0
-        ):
-            return [Problem(get_rule(RuleId.PROJ_ZERO_LOC), self, str(self))]
-        return []
-
     def __audit_binding_valid(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+        if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
         if self.endpoint.edition() == c.CE:
             log.info("Community edition, skipping binding validation...")
@@ -608,7 +577,9 @@ class Project(components.Component):
 
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
-        return tasks.search_last(component_key=self.key, endpoint=self.endpoint, type="REPORT")
+        if task := tasks.search_last(component_key=self.key, endpoint=self.endpoint, type="REPORT"):
+            task.concerned_object = self
+        return task
 
     def task_history(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
@@ -658,7 +629,7 @@ class Project(components.Component):
         return self.sq_json.get("isAiCodeFixEnabled", None)
 
     def __audit_scanner(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+        if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
         if not audit_settings.get("audit.projects.scanner", True):
             log.debug("%s: Background task audit disabled, audit skipped", str(self))
@@ -685,19 +656,19 @@ class Project(components.Component):
         problems = []
         try:
             problems = self.__audit_last_analysis(audit_settings)
-            problems += self.__audit_visibility(audit_settings)
-            problems += self.__audit_zero_loc(audit_settings)
+            problems += self.audit_visibility(audit_settings)
+            problems += self.__audit_binding_valid(audit_settings)
             # Skip language audit, as this can be problematic
             # problems += self.__audit_languages(audit_settings)
-            if audit_settings.get(AUDIT_MODE_PARAM, "") != "housekeeper":
+            if audit_settings.get(c.AUDIT_MODE_PARAM, "") != "housekeeper":
                 problems += self.permissions().audit(audit_settings)
-            problems += self.__audit_branches(audit_settings)
-            problems += self.__audit_pull_requests(audit_settings)
-            problems += self._audit_bg_task(audit_settings)
-            problems += self.__audit_binding_valid(audit_settings)
+
             problems += self.__audit_scanner(audit_settings)
-            problems += self._audit_history_retention(audit_settings)
-            problems += self._audit_accepted_or_fp_issues(audit_settings)
+            problems += self._audit_component(audit_settings)
+            if self.endpoint.edition() != c.CE and audit_settings.get("audit.project.branches", True):
+                problems += self.__audit_branches(audit_settings)
+                problems += self.__audit_pull_requests(audit_settings)
+
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"auditing {str(self)}", catch_all=True)
 
@@ -994,7 +965,7 @@ class Project(components.Component):
             data = json.loads(self.get(api="qualitygates/get_by_project", params={"project": self.key}).text)
             return data["qualityGate"]["name"], data["qualityGate"]["default"]
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting quality gate of {str(self)}", catch_http_errors=(HTTPStatus.FORBIDDEN,))
+            util.handle_error(e, f"getting quality gate of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN,))
             return "Error - Insufficient Permissions", False
 
     def webhooks(self) -> dict[str, webhooks.WebHook]:
@@ -1006,7 +977,7 @@ class Project(components.Component):
         try:
             return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_errors=(HTTPStatus.FORBIDDEN,))
+            util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN, HTTPStatus.NOT_FOUND))
             return None
 
     def links(self) -> Optional[list[dict[str, str]]]:
@@ -1017,7 +988,7 @@ class Project(components.Component):
         try:
             data = json.loads(self.get(api="project_links/search", params={"projectKey": self.key}).text)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting links of {str(self)}", catch_http_errors=(HTTPStatus.FORBIDDEN,))
+            util.handle_error(e, f"getting links of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN, HTTPStatus.NOT_FOUND))
             return None
         link_list = None
         for link in data["links"]:
@@ -1104,7 +1075,7 @@ class Project(components.Component):
             try:
                 hooks = webhooks.export(self.endpoint, self.key)
             except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_errors=(HTTPStatus.FORBIDDEN,))
+                util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN,))
                 hooks = None
             if hooks is not None:
                 json_data["webhooks"] = hooks
@@ -1164,7 +1135,7 @@ class Project(components.Component):
             self.permissions().set(desired_permissions)
             return True
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting permissions of {str(self)}", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            util.handle_error(e, f"setting permissions of {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             return False
 
     def set_links(self, desired_links: types.ObjectJsonRepr) -> bool:
@@ -1183,7 +1154,7 @@ class Project(components.Component):
                 params.update(link)
                 ok = ok and self.post("project_links/create", params=params).ok
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting links of {str(self)}", catch_http_errors=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
+            util.handle_error(e, f"setting links of {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
             return False
         return ok
 
@@ -1247,10 +1218,8 @@ class Project(components.Component):
     def rename_main_branch(self, main_branch_name: str) -> bool:
         """Renames the project main branch
 
-        :param main_branch_name: New main branch name
-        :type main_branch_name: str
+        :param str main_branch_name: New main branch name
         :return: Whether the operation was successful
-        :rtype: bool
         """
         br = self.main_branch()
         if br:
@@ -1413,43 +1382,48 @@ class Project(components.Component):
         params["repositoryName"] = params.pop("repository")
         return self.post("alm_settings/set_azure_binding", params=params).ok
 
-    def update(self, data: types.ObjectJsonRepr) -> None:
+    def update(self, config: types.ObjectJsonRepr) -> None:
         """Updates a project with a whole configuration set
 
-        :param dict data: JSON of configuration settings
-        :return: Nothing
+        :param config: JSON of configuration settings
         """
-        if "permissions" in data:
-            decoded_perms = {}
-            for ptype in perms.PERMISSION_TYPES:
-                if ptype not in data["permissions"]:
-                    continue
-                decoded_perms[ptype] = {u: perms.decode(v) for u, v in data["permissions"][ptype].items()}
+        if "permissions" in config:
+            decoded_perms = {
+                p: {u: perms.decode(v) for u, v in config["permissions"][p].items()} for p in perms.PERMISSION_TYPES if p in config["permissions"]
+            }
             self.set_permissions(decoded_perms)
-        self.set_links(data)
-        self.set_tags(util.csv_to_list(data.get("tags", None)))
-        self.set_quality_gate(data.get("qualityGate", None))
-        for lang, qp_name in data.get("qualityProfiles", {}).items():
-            self.set_quality_profile(language=lang, quality_profile=qp_name)
-        for bname, bdata in data.get("branches", {}).items():
-            if bdata.get("isMain", False):
-                self.rename_main_branch(bname)
-                break
-        if "binding" in data:
+        self.set_links(config)
+        self.set_tags(util.csv_to_list(config.get("tags", None)))
+        self.set_quality_gate(config.get("qualityGate", None))
+
+        _ = [self.set_quality_profile(language=lang, quality_profile=qp_name) for lang, qp_name in config.get("qualityProfiles", {}).items()]
+        if branch_config := config.get("branches", None):
             try:
-                self.set_devops_binding(data["binding"])
+                bname = next(bname for bname, bdata in branch_config.items() if bdata.get("isMain", False))
+                self.rename_main_branch(bname)
+            except StopIteration:
+                log.warning("No main branch defined in %s configuration", self)
+            for branch_name, branch_data in branch_config.items():
+                try:
+                    branch = branches.Branch.get_object(self, branch_name)
+                    branch.import_config(branch_data)
+                except exceptions.ObjectNotFound:
+                    log.warning("Branch %s does not exist in %s, skipping update", branch_name, str(self))
+        if "binding" in config:
+            try:
+                self.set_devops_binding(config["binding"])
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
         else:
             log.debug("%s has no devops binding, skipped", str(self))
-        settings_to_apply = {
-            k: v for k, v in data.items() if k not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding", "name")
-        }
-        if "aiCodeAssurance" in data:
-            log.warning("'aiCodeAssurance' project setting is deprecated, please use '%s' instead", _CONTAINS_AI_CODE)
-        self.set_contains_ai_code(data.get(_CONTAINS_AI_CODE, data.get("aiCodeAssurance", False)))
-        # TODO: Set branch settings
+        settings_to_apply = {k: v for k, v in config.items() if k not in _SETTINGS_WITH_SPECIFIC_IMPORT}
         self.set_settings(settings_to_apply)
+        if "aiCodeAssurance" in config:
+            log.warning("'aiCodeAssurance' project setting is deprecated, please use '%s' instead", _CONTAINS_AI_CODE)
+        self.set_contains_ai_code(config.get(_CONTAINS_AI_CODE, config.get("aiCodeAssurance", False)))
+        if visi := config.get("visibility", None):
+            self.set_visibility(visi)
+        # TODO: Set branch settings See https://github.com/okorach/sonar-tools/issues/1828
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
@@ -1505,16 +1479,17 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
     return {key: Project.get_object(endpoint, key) for key in sorted(key_list)}
 
 
-def __similar_keys(key1: str, key2: str) -> bool:
+def __similar_keys(key1: str, key2: str, max_distance: int = 5) -> bool:
     """Returns whether 2 project keys are similar"""
     if key1 == key2:
         return False
-    return len(key2) >= 7 and (re.match(key2, key1)) or Levenshtein.distance(key1, key2, score_cutoff=6) <= 5
+    max_distance = min(len(key1) // 2, len(key2) // 2, max_distance)
+    return len(key2) >= 7 and (re.match(key2, key1)) or Levenshtein.distance(key1, key2, score_cutoff=6) <= max_distance
 
 
 def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
     """Audits for suspected duplicate projects"""
-    if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+    if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
         return []
     if not audit_settings.get("audit.projects.duplicates", True):
         log.info("Project duplicates auditing was disabled by configuration")
@@ -1525,7 +1500,7 @@ def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.
     for key1, p in projects_list.items():
         for key2 in projects_list:
             pair = " ".join(sorted([key1, key2]))
-            if __similar_keys(key1, key2) and pair not in pair_set:
+            if __similar_keys(key1, key2, audit_settings.get("audit.projects.duplicates.maxDifferences", 4)) and pair not in pair_set:
                 duplicates.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
             pair_set.add(pair)
     return duplicates
@@ -1533,7 +1508,7 @@ def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.
 
 def __audit_bindings(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
     """Audits for duplicate project bindings"""
-    if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+    if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
         return []
     if not audit_settings.get("audit.projects.bindings", True):
         log.info("Project bindings auditing was disabled by configuration")
