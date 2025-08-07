@@ -150,7 +150,7 @@ class Project(components.Component):
     SEARCH_RETURN_FIELD = "components"
     API = {
         c.CREATE: "projects/create",
-        c.READ: "projects/search",
+        c.READ: "navigation/component",
         c.DELETE: "projects/delete",
         c.LIST: "components/search_projects",
         c.SET_TAGS: "project_tags/set",
@@ -191,17 +191,12 @@ class Project(components.Component):
         if o:
             return o
         try:
-            data = json.loads(endpoint.get(Project.API[c.SEARCH], params={"projects": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
-            if len(data["components"]) == 0:
-                log.error("Project key '%s' not found", key)
-                raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
-            return cls.load(endpoint, data["components"][0])
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting project '{key}'", catch_http_errors=True)
-            data = json.loads(endpoint.get(_NAV_API, params={"component": key}).text)
+            data = json.loads(endpoint.get(Project.API[c.READ], params={"component": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
             if "errors" in data:
                 raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
             return cls.load(endpoint, data)
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"getting project '{key}'")
 
     @classmethod
     def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Project:
@@ -1434,10 +1429,10 @@ class Project(components.Component):
             self.set_visibility(visi)
         # TODO: Set branch settings See https://github.com/okorach/sonar-tools/issues/1828
 
-    def api_params(self, op: str = c.GET) -> types.ApiParams:
+    def api_params(self, op: str = c.READ) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.GET: {"project": self.key}}
-        return ops[op] if op in ops else ops[c.GET]
+        ops = {c.READ: {"project": self.key}}
+        return ops[op] if op in ops else ops[c.READ]
 
 
 def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
