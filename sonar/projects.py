@@ -194,11 +194,9 @@ class Project(components.Component):
             return o
         try:
             data = json.loads(endpoint.get(Project.API[c.READ], params={"component": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
-            if "errors" in data:
-                raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
             return cls.load(endpoint, data)
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting project '{key}'", catch_http_status=(HTTPStatus.NOT_FOUND,))
+            util.handle_error(e, f"getting project '{key}'", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(key, e.response.text)
 
     @classmethod
