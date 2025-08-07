@@ -88,6 +88,8 @@ _IMPORTABLE_PROPERTIES = (
     "aiCodeFix",
 )
 
+_PROJECT_QUALIFIER = "qualifier=TRK"
+
 _UNNEEDED_CONTEXT_DATA = (
     "sonar.announcement.message",
     "sonar.auth.github.allowUsersToSignUp",
@@ -150,12 +152,12 @@ class Project(components.Component):
     SEARCH_RETURN_FIELD = "components"
     API = {
         c.CREATE: "projects/create",
+        c.GET: "components/show",
         c.DELETE: "projects/delete",
-        c.SEARCH: "projects/search",
+        c.SEARCH: "components/search_projects",
         c.SET_TAGS: "project_tags/set",
         c.GET_TAGS: "components/show",
     }
-    # SEARCH_API = "components/search_projects" - This one does not require admin permission but returns APPs too
 
     def __init__(self, endpoint: pf.Platform, key: str) -> None:
         """
@@ -163,8 +165,8 @@ class Project(components.Component):
         :param str key: The project key
         """
         super().__init__(endpoint=endpoint, key=key)
-        self._last_analysis = "undefined"
-        self._branches_last_analysis = "undefined"
+        self._last_analysis = None
+        self._branches_last_analysis = None
         self._permissions = None
         self._branches = None
         self._pull_requests = None
@@ -190,17 +192,11 @@ class Project(components.Component):
         if o:
             return o
         try:
-            data = json.loads(endpoint.get(Project.API[c.SEARCH], params={"projects": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
-            if len(data["components"]) == 0:
-                log.error("Project key '%s' not found", key)
-                raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
-            return cls.load(endpoint, data["components"][0])
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting project '{key}'", catch_http_errors=True)
-            data = json.loads(endpoint.get(_NAV_API, params={"component": key}).text)
-            if "errors" in data:
-                raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
-            return cls.load(endpoint, data)
+            data = json.loads(endpoint.get(Project.API[c.GET], params={"component": key}).text)
+        except RequestException as e:
+            util.handle_error(e, f"Getting project {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
+        return cls.load(endpoint, data["component"])
 
     @classmethod
     def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Project:
@@ -256,11 +252,13 @@ class Project(components.Component):
         :return: self
         :rtype: Project
         """
-        data = json.loads(self.get(Project.API[c.SEARCH], params={"projects": self.key}).text)
-        if len(data["components"]) == 0:
+        try:
+            data = json.loads(self.get(Project.API[c.GET], params={"component": self.key}).text)
+        except RequestException as e:
+            util.handle_error(e, f"searching project {self.key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             Project.CACHE.pop(self)
             raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
-        return self.reload(data["components"][0])
+        return self.reload(data["component"])
 
     def reload(self, data: types.ApiPayload) -> Project:
         """Reloads a project with JSON data coming from api/components/search request
@@ -292,18 +290,17 @@ class Project(components.Component):
         """
         return f"{self.base_url(local=False)}/dashboard?id={self.key}"
 
-    def last_analysis(self, include_branches: bool = False) -> datetime:
+    def last_analysis(self, include_branches: bool = False) -> Optional[datetime]:
         """
         :param include_branches: Take into account branch to determine last analysis, defaults to False
         :type include_branches: bool, optional
-        :return: Project last analysis date
-        :rtype: datetime
+        :returns: Project last analysis date or None if never analyzed
         """
-        if self._last_analysis == "undefined":
-            self.refresh()
+        if not self._last_analysis:
+            self.reload(self.get_navigation_data())
         if not include_branches:
             return self._last_analysis
-        if self._branches_last_analysis != "undefined":
+        if self._branches_last_analysis:
             return self._branches_last_analysis
 
         self._branches_last_analysis = self._last_analysis
@@ -311,14 +308,9 @@ class Project(components.Component):
             # Starting from 9.2 project last analysis date takes into account branches and PR
             return self._branches_last_analysis
 
-        log.debug("Branches = %s", str(self.branches().values()))
-        log.debug("PR = %s", str(self.pull_requests().values()))
-        for b in list(self.branches().values()) + list(self.pull_requests().values()):
-            if b.last_analysis() is None:
-                continue
-            b_ana_date = b.last_analysis()
-            if self._branches_last_analysis is None or b_ana_date > self._branches_last_analysis:
-                self._branches_last_analysis = b_ana_date
+        self._branches_last_analysis = max(
+            b.last_analysis() for b in list(self.branches().values()) + list(self.pull_requests().values()) if b.last_analysis()
+        )
         return self._branches_last_analysis
 
     def loc(self) -> int:
@@ -630,7 +622,7 @@ class Project(components.Component):
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
-            data = self.endpoint.get_paginated(api="components/search_projects", params={"filter": "qualifier=TRK"}, return_field="components")
+            data = self.endpoint.get_paginated(api=Project.API[c.SEARCH], params={"filter": _PROJECT_QUALIFIER}, return_field="components")
             p_data = next((p for p in data["components"] if p["key"] == self.key), None)
             if p_data:
                 self.sq_json.update(p_data)
@@ -1435,7 +1427,7 @@ class Project(components.Component):
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.GET: {"project": self.key}}
+        ops = {c.GET: {"component": self.key}, c.DELETE: {"project": self.key}}
         return ops[op] if op in ops else ops[c.GET]
 
 
@@ -1455,14 +1447,12 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
 def search(endpoint: pf.Platform, params: types.ApiParams = None, threads: int = 8) -> dict[str, Project]:
     """Searches projects in SonarQube
 
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param dict params: list of parameters to narrow down the search
-    :return: list of projects
-    :rtype: dict{key: Project}
+    :param endpoint: Reference to the SonarQube platform
+    :param params: list of parameters to narrow down the search
+    :returns: list of projects
     """
     new_params = {} if params is None else params.copy()
-    new_params["qualifiers"] = "TRK"
-    return sqobject.search_objects(endpoint=endpoint, object_class=Project, params=new_params, threads=threads)
+    return sqobject.search_objects(endpoint=endpoint, object_class=Project, params={**new_params, "filter": _PROJECT_QUALIFIER}, threads=threads)
 
 
 def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, use_cache: bool = True) -> dict[str, Project]:
@@ -1480,7 +1470,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
             global_setting = settings.Setting.read(key=settings.AI_CODE_FIX, endpoint=endpoint)
             if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
                 return p_list
-            for d in endpoint.get_paginated(api="components/search_projects", params={"filter": "qualifier=TRK"}, return_field="components")[
+            for d in endpoint.get_paginated(api=Project.API[c.SEARCH], params={"filter": _PROJECT_QUALIFIER}, return_field="components")[
                 "components"
             ]:
                 if d["key"] in p_list:
