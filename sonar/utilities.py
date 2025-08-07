@@ -533,18 +533,23 @@ def error_msg(exception: Exception) -> str:
         return str(exception)
 
 
-def handle_error(e: Exception, context: str, **kwargs) -> None:
+def handle_error(
+    e: Exception,
+    context: str,
+    catch_http_statuses: tuple[HTTPStatus, ...] = (),
+    catch_http_errors: bool = False,
+    catch_all: bool = False,
+    log_level: int = log.ERROR,
+) -> None:
     """General handler for errors"""
-    LOG_FORMAT = "%s while %s"
-    if kwargs.get("catch_all", False):
-        log.log(kwargs.get("log_level", log.ERROR), LOG_FORMAT, error_msg(e), context)
+    __LOG_FORMAT = "%s while %s"
+    if catch_all:
+        log.log(log_level, __LOG_FORMAT, error_msg(e), context)
         return
-    catch_http = kwargs.get("catch_http_errors", False)
-    catch_statuses = kwargs.get("catch_http_statuses", ())
-    if isinstance(e, requests.HTTPError) and (catch_http or e.response.status_code in catch_statuses):
-        log.log(kwargs.get("log_level", log.ERROR), LOG_FORMAT, error_msg(e), context)
+    if isinstance(e, requests.HTTPError) and (catch_http_errors or e.response.status_code in catch_http_statuses):
+        log.log(log_level, __LOG_FORMAT, error_msg(e), context)
         return
-    log.error(LOG_FORMAT, error_msg(e), context)
+    log.error(__LOG_FORMAT, error_msg(e), context)
     raise e
 
 
