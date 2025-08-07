@@ -139,6 +139,8 @@ _SETTINGS_WITH_SPECIFIC_IMPORT = (
     "name",
 )
 
+_PROJECT_FILTER = {"filter": "qualifier=TRK"}
+
 
 class Project(components.Component):
     """
@@ -150,8 +152,9 @@ class Project(components.Component):
     SEARCH_RETURN_FIELD = "components"
     API = {
         c.CREATE: "projects/create",
+        c.READ: "navigation/component",
         c.DELETE: "projects/delete",
-        c.SEARCH: "projects/search",
+        c.LIST: "components/search_projects",
         c.SET_TAGS: "project_tags/set",
         c.GET_TAGS: "components/show",
     }
@@ -190,17 +193,11 @@ class Project(components.Component):
         if o:
             return o
         try:
-            data = json.loads(endpoint.get(Project.API[c.SEARCH], params={"projects": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
-            if len(data["components"]) == 0:
-                log.error("Project key '%s' not found", key)
-                raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
-            return cls.load(endpoint, data["components"][0])
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting project '{key}'", catch_http_errors=True)
-            data = json.loads(endpoint.get(_NAV_API, params={"component": key}).text)
-            if "errors" in data:
-                raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
+            data = json.loads(endpoint.get(Project.API[c.READ], params={"component": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
             return cls.load(endpoint, data)
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"getting project '{key}'", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            raise exceptions.ObjectNotFound(key, e.response.text)
 
     @classmethod
     def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Project:
@@ -630,7 +627,7 @@ class Project(components.Component):
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
-            data = self.endpoint.get_paginated(api="components/search_projects", params={"filter": "qualifier=TRK"}, return_field="components")
+            data = self.endpoint.get_paginated(api=Project.API[c.LIST], params=_PROJECT_FILTER, return_field="components")
             p_data = next((p for p in data["components"] if p["key"] == self.key), None)
             if p_data:
                 self.sq_json.update(p_data)
@@ -1433,10 +1430,10 @@ class Project(components.Component):
             self.set_visibility(visi)
         # TODO: Set branch settings See https://github.com/okorach/sonar-tools/issues/1828
 
-    def api_params(self, op: str = c.GET) -> types.ApiParams:
+    def api_params(self, op: str = c.READ) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.GET: {"project": self.key}}
-        return ops[op] if op in ops else ops[c.GET]
+        ops = {c.READ: {"project": self.key}}
+        return ops[op] if op in ops else ops[c.READ]
 
 
 def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
@@ -1448,8 +1445,8 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
     :rtype: int
     """
     new_params = {} if params is None else params.copy()
-    new_params.update({"ps": 1, "p": 1})
-    return util.nbr_total_elements(json.loads(endpoint.get(Project.API[c.SEARCH], params=params).text))
+    new_params.update({"ps": 1, "p": 1} | _PROJECT_FILTER)
+    return util.nbr_total_elements(json.loads(endpoint.get(Project.API[c.LIST], params=new_params).text))
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None, threads: int = 8) -> dict[str, Project]:
@@ -1461,8 +1458,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None, threads: int =
     :rtype: dict{key: Project}
     """
     new_params = {} if params is None else params.copy()
-    new_params["qualifiers"] = "TRK"
-    return sqobject.search_objects(endpoint=endpoint, object_class=Project, params=new_params, threads=threads)
+    return sqobject.search_objects(endpoint=endpoint, object_class=Project, params=new_params | _PROJECT_FILTER, threads=threads)
 
 
 def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, use_cache: bool = True) -> dict[str, Project]:
@@ -1480,9 +1476,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
             global_setting = settings.Setting.read(key=settings.AI_CODE_FIX, endpoint=endpoint)
             if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
                 return p_list
-            for d in endpoint.get_paginated(api="components/search_projects", params={"filter": "qualifier=TRK"}, return_field="components")[
-                "components"
-            ]:
+            for d in endpoint.get_paginated(api=Project.API[c.LIST], params=_PROJECT_FILTER, return_field="components")["components"]:
                 if d["key"] in p_list:
                     p_list[d["key"]].sq_json.update(d)
             return p_list
