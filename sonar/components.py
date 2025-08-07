@@ -251,7 +251,8 @@ class Component(sq.SqObject):
 
     def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None) -> types.ApiPayload:
         """Returns a component analyses"""
-        data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", params=self.api_params(c.GET))["analyses"]
+        params = utilities.dict_remap(self.api_params(c.READ), {"component": "project"})
+        data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", params=params)["analyses"]
         if filter_in and len(filter_in) > 0:
             data = [d for d in data if any(e["category"] in filter_in for e in d["events"])]
         if filter_out and len(filter_out) > 0:
@@ -277,7 +278,8 @@ class Component(sq.SqObject):
         if self.endpoint.version() >= (2025, 1, 0):
             api = "project_branches/get_ai_code_assurance"
         try:
-            return str(json.loads(self.get(api, params=self.api_params(c.GET)).text)["aiCodeAssurance"]).upper()
+            params = utilities.dict_remap(self.api_params(c.READ), {"component": "project"})
+            return str(json.loads(self.get(api, params=params).text)["aiCodeAssurance"]).upper()
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"getting AI code assurance of {str(self)}", catch_all=True)
             if "Unknown url" in utilities.error_msg(e):
