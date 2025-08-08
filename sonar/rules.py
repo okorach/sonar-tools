@@ -25,6 +25,7 @@
 from __future__ import annotations
 import json
 import concurrent.futures
+from threading import Lock
 from typing import Optional
 from http import HTTPStatus
 from requests import RequestException
@@ -138,6 +139,8 @@ CSV_EXPORT_FIELDS = [
 
 LEGACY_CSV_EXPORT_FIELDS = ["key", "language", "repo", "type", "severity", "name", "ruleType", "tags"]
 
+_CLASS_LOCK = Lock()
+
 
 class Rule(sq.SqObject):
     """
@@ -153,7 +156,7 @@ class Rule(sq.SqObject):
     def __init__(self, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)
         log.debug("Creating rule object '%s'", key)  # utilities.json_dump(data))
-        self.sq_json = data
+        self.sq_json = data.copy()
         self.severity = data.get("severity", None)
         self.repo = data.get("repo", None)
         self.type = data.get("type", None)
@@ -178,7 +181,8 @@ class Rule(sq.SqObject):
             "attribute": data.get("cleanCodeAttribute", None),
             "attribute_category": data.get("cleanCodeAttributeCategory", None),
         }
-        Rule.CACHE.put(self)
+        with _CLASS_LOCK:
+            Rule.CACHE.put(self)
 
     @classmethod
     def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
@@ -253,7 +257,7 @@ class Rule(sq.SqObject):
             Rule.CACHE.pop(self)
             raise exceptions.ObjectNotFound(key=self.key, message=f"{self} does not exist")
         self.sq_json.update(data["rule"])
-        self.sq_json["actives"] = data["actives"]
+        self.sq_json["actives"] = data["actives"].copy()
         return True
 
     def to_json(self) -> types.ObjectJsonRepr:
@@ -433,9 +437,6 @@ def get_object(endpoint: platform.Platform, key: str) -> Optional[Rule]:
     :param str key: The rule key
     :rtype: Rule or None
     """
-    o = Rule.CACHE.get(key, endpoint.local_url)
-    if o:
-        return o
     try:
         return Rule.get_object(key=key, endpoint=endpoint)
     except exceptions.ObjectNotFound:

@@ -212,6 +212,8 @@ def __load(endpoint: object, object_class: any, data: types.ObjectJsonRepr) -> d
     key_field = object_class.SEARCH_KEY_FIELD
     if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization"):
         return {obj[key_field]: object_class.load(endpoint=endpoint, data=obj) for obj in data}
+    elif object_class.__name__ in ("Rule"):
+        return {obj[key_field]: object_class.load(endpoint=endpoint, key=obj[key_field], data=obj) for obj in data}
     else:
         return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}
 
