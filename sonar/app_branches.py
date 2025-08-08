@@ -21,12 +21,12 @@
 """ Abstraction of Sonar Application Branch """
 
 from __future__ import annotations
+from typing import Optional
 
 import json
 from http import HTTPStatus
 from requests import RequestException
 from requests.utils import quote
-from typing import Optional
 
 import sonar.logging as log
 from sonar.util import types, cache
