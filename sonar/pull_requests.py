@@ -97,10 +97,10 @@ class PullRequest(components.Component):
             log.debug("%s age is %d days", str(self), age)
         return problems
 
-    def api_params(self, op: str = c.GET) -> types.ApiParams:
+    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.GET: {"project": self.concerned_object.key, "pullRequest": self.key}}
-        return ops[op] if op in ops else ops[c.GET]
+        ops = {c.READ: {"project": self.concerned_object.key, "pullRequest": self.key}}
+        return ops[op] if op and op in ops else ops[c.READ]
 
 
 def get_object(pull_request_key: str, project: object, data: types.ApiPayload = None) -> Optional[PullRequest]:

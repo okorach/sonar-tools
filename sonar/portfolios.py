@@ -652,10 +652,10 @@ class Portfolio(aggregations.Aggregation):
                     o_subp = self.add_subportfolio(key=key, name=subp_data["name"], by_ref=False)
                 o_subp.update(data=subp_data, recurse=True)
 
-    def api_params(self, op: str = c.GET) -> types.ApiParams:
+    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.GET: {"key": self.key}}
-        return ops[op] if op in ops else ops[c.GET]
+        ops = {c.READ: {"key": self.key}}
+        return ops[op] if op and op in ops else ops[c.READ]
 
 
 def count(endpoint: pf.Platform) -> int:

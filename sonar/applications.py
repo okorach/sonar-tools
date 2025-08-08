@@ -23,7 +23,7 @@ Abstraction of the SonarQube "application" concept
 """
 
 from __future__ import annotations
-from typing import Union
+from typing import Union, Optional
 import re
 import json
 from datetime import datetime
@@ -435,9 +435,9 @@ class Application(aggr.Aggregation):
         for name, branch_data in data.get("branches", {}).items():
             self.set_branches(name, branch_data)
 
-    def api_params(self, op: str = c.GET) -> types.ApiParams:
-        ops = {c.GET: {"application": self.key}}
-        return ops[op] if op in ops else ops[c.GET]
+    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
+        ops = {c.READ: {"application": self.key}}
+        return ops[op] if op and op in ops else ops[c.READ]
 
     def __get_project_branches(self, branch_definition: types.ObjectJsonRepr):
         project_branches = []

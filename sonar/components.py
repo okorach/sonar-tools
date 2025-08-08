@@ -118,7 +118,7 @@ class Component(sq.SqObject):
         from sonar.issues import search_all
 
         log.info("Searching issues for %s with filters %s", str(self), str(filters))
-        params = self.api_params(c.GET)
+        params = self.api_params()
         if filters is not None:
             params.update(filters)
         params["additionalFields"] = "comments"
@@ -130,7 +130,7 @@ class Component(sq.SqObject):
         """Returns the count of issues of a component for a given ruleset"""
         from sonar.issues import count_by_rule
 
-        params = self.api_params(c.GET)
+        params = self.api_params()
         if filters is not None:
             params.update(filters)
         params["facets"] = "rules"
@@ -414,14 +414,14 @@ class Component(sq.SqObject):
         """Returns the history of a project metrics"""
         return measures.get_history(self, metrics_list)
 
-    def api_params(self, op: str = c.LIST) -> types.ApiParams:
+    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         from sonar.issues import component_search_field
 
         ops = {
-            c.GET: {"component": self.key},
+            c.READ: {"component": self.key},
             c.LIST: {component_search_field(self.endpoint): self.key},
         }
-        return ops[op] if op in ops else ops[c.LIST]
+        return ops[op] if op and op in ops else ops[c.LIST]
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""
