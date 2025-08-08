@@ -512,9 +512,10 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
         Rule.instantiate(endpoint=endpoint, key=key, template_key=template_rule.key, data=instantiation_data)
     return True
 
+
 def get_all_rules_details(endpoint: platform.Platform, threads: int = 8) -> bool:
     """Collects all rules details
-    
+
     :param Platform endpoint: The SonarQube Server or Cloud platform
     :param int threads: Number of threads to parallelize the process
     :return: Whether all rules collection succeeded
@@ -534,6 +535,7 @@ def get_all_rules_details(endpoint: platform.Platform, threads: int = 8) -> bool
                 log.error(f"{str(e)} for {str(future)}.")
                 ok = False
     return ok
+
 
 def convert_for_export(rule: types.ObjectJsonRepr, qp_lang: str, with_template_key: bool = True, full: bool = False) -> types.ObjectJsonRepr:
     """Converts rule data for export"""
