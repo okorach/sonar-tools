@@ -1440,7 +1440,9 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
     :rtype: int
     """
     new_params = {} if params is None else params.copy()
-    new_params.update({"ps": 1, "p": 1, "filter": _PROJECT_QUALIFIER})
+    new_params.update({"ps": 1, "p": 1})
+    if not endpoint.is_sonarcloud():
+        new_params["filter"] = _PROJECT_QUALIFIER
     return util.nbr_total_elements(json.loads(endpoint.get(Project.API[c.LIST], params=params).text))
 
 
@@ -1452,7 +1454,9 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None, threads: int =
     :returns: list of projects
     """
     new_params = {} if params is None else params.copy()
-    return sqobject.search_objects(endpoint=endpoint, object_class=Project, params={**new_params, "filter": _PROJECT_QUALIFIER}, threads=threads)
+    if not endpoint.is_sonarcloud():
+        new_params["filter"] = _PROJECT_QUALIFIER
+    return sqobject.search_objects(endpoint=endpoint, object_class=Project, params=new_params, threads=threads)
 
 
 def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, use_cache: bool = True) -> dict[str, Project]:
@@ -1467,12 +1471,6 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
         if key_list is None or len(key_list) == 0 or not use_cache:
             log.info("Listing projects")
             p_list = dict(sorted(search(endpoint=endpoint, threads=threads).items()))
-            global_setting = settings.Setting.read(key=settings.AI_CODE_FIX, endpoint=endpoint)
-            if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
-                return p_list
-            for d in endpoint.get_paginated(api=Project.API[c.LIST], params={"filter": _PROJECT_QUALIFIER}, return_field="components")["components"]:
-                if d["key"] in p_list:
-                    p_list[d["key"]].sq_json.update(d)
             return p_list
     return {key: Project.get_object(endpoint, key) for key in sorted(key_list)}
 
