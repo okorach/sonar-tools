@@ -757,6 +757,19 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     """
     log.info("Exporting quality profiles")
     qp_list = {}
+    threads = export_settings.get("threads", 8)
+    rule_list = rules.get_list(endpoint=endpoint, include_external=False).values()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="RuleDetails") as executor:
+        futures = [executor.submit(rules.Rule.refresh, rule, True) for rule in rule_list]
+        i, nb_rules = 0, len(futures)
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result(timeout=1)
+                i += 1
+                if i % 100 == 0 or i == nb_rules:
+                    log.info("Collected rules details for %d rules out of %d (%d%%)", i, nb_rules, int(100 * i / nb_rules))
+            except Exception as e:
+                log.error(f"{str(e)} for {str(future)}.")
     for qp in get_list(endpoint=endpoint).values():
         log.info("Exporting %s", str(qp))
         json_data = qp.to_json(export_settings=export_settings)
