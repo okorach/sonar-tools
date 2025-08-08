@@ -448,6 +448,8 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     log.info("Exporting rules")
     full = export_settings.get("FULL_EXPORT", False)
     rule_list, other_rules, instantiated_rules, extended_rules = {}, {}, {}, {}
+    threads = 16 if endpoint.is_sonarcloud() else 8
+    get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", threads))
     for rule_key, rule in get_list(endpoint=endpoint, use_cache=False, include_external=False).items():
         rule_export = rule.export(full)
         if rule.template_key is not None:
