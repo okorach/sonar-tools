@@ -148,7 +148,7 @@ class Rule(sq.SqObject):
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "rules"
 
-    API = {c.CREATE: "rules/create", c.GET: "rules/show", c.UPDATE: "rules/update", c.DELETE: "rules/delete", c.SEARCH: "rules/search"}
+    API = {c.CREATE: "rules/create", c.READ: "rules/show", c.UPDATE: "rules/update", c.DELETE: "rules/delete", c.LIST: "rules/search"}
 
     def __init__(self, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)
@@ -187,7 +187,7 @@ class Rule(sq.SqObject):
         if o:
             return o
         try:
-            r = endpoint.get(Rule.API[c.GET], params={"key": key, "actives": "true"})
+            r = endpoint.get(Rule.API[c.READ], params={"key": key, "actives": "true"})
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"getting rule {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
@@ -247,7 +247,7 @@ class Rule(sq.SqObject):
             return False
 
         try:
-            data = json.loads(self.get(Rule.API[c.GET], params={"key": self.key, "actives": "true"}).text)
+            data = json.loads(self.get(Rule.API[c.READ], params={"key": self.key, "actives": "true"}).text)
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"Reading {self}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             Rule.CACHE.pop(self)
@@ -359,10 +359,10 @@ class Rule(sq.SqObject):
             return False
         return found_qp.get("prioritizedRule", False)
 
-    def api_params(self, op: str = c.GET) -> types.ApiParams:
+    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.GET: {"key": self.key}}
-        return ops[op] if op in ops else ops[c.GET]
+        ops = {c.READ: {"key": self.key}}
+        return ops[op] if op and op in ops else ops[c.READ]
 
 
 def get_facet(facet: str, endpoint: platform.Platform) -> dict[str, str]:
@@ -405,8 +405,10 @@ def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> d
         lang_list = params.pop("languages", None)
         if not lang_list:
             lang_list = languages.get_list(endpoint).keys()
-        incl_ext = params.pop("include_external", None)
-        incl_ext = [incl_ext] if incl_ext else ["false", "true"]
+        if "include_external" in params:
+            incl_ext = [str(params["include_external"]).lower()]
+        else:
+            incl_ext = ["false", "true"]
         for lang_key in lang_list:
             if not languages.exists(endpoint, lang_key):
                 raise exceptions.ObjectNotFound(key=lang_key, message=f"Language '{lang_key}' does not exist")
