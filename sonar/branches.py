@@ -425,10 +425,10 @@ class Branch(components.Component):
             log.error("%s while auditing %s, audit skipped", util.error_msg(e), str(self))
         return []
 
-    def api_params(self, op: str = c.GET) -> types.ApiParams:
+    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.GET: {"project": self.concerned_object.key, "branch": self.name}, c.LIST: {"project": self.concerned_object.key}}
-        return ops[op] if op in ops else ops[c.GET]
+        ops = {c.READ: {"project": self.concerned_object.key, "branch": self.name}, c.LIST: {"project": self.concerned_object.key}}
+        return ops[op] if op and op in ops else ops[c.READ]
 
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""

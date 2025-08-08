@@ -21,6 +21,7 @@
 """ Abstraction of Sonar Application Branch """
 
 from __future__ import annotations
+from typing import Optional
 
 import json
 from http import HTTPStatus
@@ -219,10 +220,10 @@ class ApplicationBranch(Component):
         """
         return self.update(name=self.name, project_branches=new_project_branches)
 
-    def api_params(self, op: str = c.GET) -> types.ApiParams:
+    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.GET: {"application": self.concerned_object.key, "branch": self.name}}
-        return ops[op] if op in ops else ops[c.GET]
+        ops = {c.READ: {"application": self.concerned_object.key, "branch": self.name}}
+        return ops[op] if op and op in ops else ops[c.READ]
 
     def component_data(self) -> types.Obj:
         """Returns key data"""

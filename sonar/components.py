@@ -118,7 +118,7 @@ class Component(sq.SqObject):
         from sonar.issues import search_all
 
         log.info("Searching issues for %s with filters %s", str(self), str(filters))
-        params = self.api_params(c.GET)
+        params = self.api_params()
         if filters is not None:
             params.update(filters)
         params["additionalFields"] = "comments"
@@ -130,7 +130,7 @@ class Component(sq.SqObject):
         """Returns the count of issues of a component for a given ruleset"""
         from sonar.issues import count_by_rule
 
-        params = self.api_params(c.GET)
+        params = self.api_params()
         if filters is not None:
             params.update(filters)
         params["facets"] = "rules"
@@ -251,7 +251,8 @@ class Component(sq.SqObject):
 
     def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None) -> types.ApiPayload:
         """Returns a component analyses"""
-        data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", params=self.api_params(c.GET))["analyses"]
+        params = utilities.dict_remap(self.api_params(c.READ), {"component": "project"})
+        data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", params=params)["analyses"]
         if filter_in and len(filter_in) > 0:
             data = [d for d in data if any(e["category"] in filter_in for e in d["events"])]
         if filter_out and len(filter_out) > 0:
@@ -277,7 +278,8 @@ class Component(sq.SqObject):
         if self.endpoint.version() >= (2025, 1, 0):
             api = "project_branches/get_ai_code_assurance"
         try:
-            return str(json.loads(self.get(api, params=self.api_params(c.GET)).text)["aiCodeAssurance"]).upper()
+            params = utilities.dict_remap(self.api_params(c.READ), {"component": "project"})
+            return str(json.loads(self.get(api, params=params).text)["aiCodeAssurance"]).upper()
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"getting AI code assurance of {str(self)}", catch_all=True)
             if "Unknown url" in utilities.error_msg(e):
@@ -412,14 +414,14 @@ class Component(sq.SqObject):
         """Returns the history of a project metrics"""
         return measures.get_history(self, metrics_list)
 
-    def api_params(self, op: str = c.LIST) -> types.ApiParams:
+    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         from sonar.issues import component_search_field
 
         ops = {
-            c.GET: {"component": self.key},
+            c.READ: {"component": self.key},
             c.LIST: {component_search_field(self.endpoint): self.key},
         }
-        return ops[op] if op in ops else ops[c.LIST]
+        return ops[op] if op and op in ops else ops[c.LIST]
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""
