@@ -753,9 +753,9 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
 
     :param ConfigSettings export_settings: Export parameters
     :return: Dict of quality profiles JSON representation
-    :rtype: ObjectJsonRepr
     """
     log.info("Exporting quality profiles")
+    rules.get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", 8))
     qp_list = {}
     for qp in get_list(endpoint=endpoint).values():
         log.info("Exporting %s", str(qp))

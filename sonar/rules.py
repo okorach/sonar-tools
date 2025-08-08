@@ -25,6 +25,7 @@
 from __future__ import annotations
 import json
 import concurrent.futures
+from threading import Lock
 from typing import Optional
 from http import HTTPStatus
 from requests import RequestException
@@ -138,6 +139,8 @@ CSV_EXPORT_FIELDS = [
 
 LEGACY_CSV_EXPORT_FIELDS = ["key", "language", "repo", "type", "severity", "name", "ruleType", "tags"]
 
+_CLASS_LOCK = Lock()
+
 
 class Rule(sq.SqObject):
     """
@@ -148,12 +151,12 @@ class Rule(sq.SqObject):
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "rules"
 
-    API = {c.CREATE: "rules/create", c.GET: "rules/show", c.UPDATE: "rules/update", c.DELETE: "rules/delete", c.SEARCH: "rules/search"}
+    API = {c.CREATE: "rules/create", c.READ: "rules/show", c.UPDATE: "rules/update", c.DELETE: "rules/delete", c.LIST: "rules/search"}
 
     def __init__(self, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)
         log.debug("Creating rule object '%s'", key)  # utilities.json_dump(data))
-        self.sq_json = data
+        self.sq_json = data.copy()
         self.severity = data.get("severity", None)
         self.repo = data.get("repo", None)
         self.type = data.get("type", None)
@@ -178,7 +181,8 @@ class Rule(sq.SqObject):
             "attribute": data.get("cleanCodeAttribute", None),
             "attribute_category": data.get("cleanCodeAttributeCategory", None),
         }
-        Rule.CACHE.put(self)
+        with _CLASS_LOCK:
+            Rule.CACHE.put(self)
 
     @classmethod
     def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
@@ -187,7 +191,7 @@ class Rule(sq.SqObject):
         if o:
             return o
         try:
-            r = endpoint.get(Rule.API[c.GET], params={"key": key, "actives": "true"})
+            r = endpoint.get(Rule.API[c.READ], params={"key": key, "actives": "true"})
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"getting rule {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
@@ -247,13 +251,13 @@ class Rule(sq.SqObject):
             return False
 
         try:
-            data = json.loads(self.get(Rule.API[c.GET], params={"key": self.key, "actives": "true"}).text)
+            data = json.loads(self.get(Rule.API[c.READ], params={"key": self.key, "actives": "true"}).text)
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"Reading {self}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             Rule.CACHE.pop(self)
             raise exceptions.ObjectNotFound(key=self.key, message=f"{self} does not exist")
         self.sq_json.update(data["rule"])
-        self.sq_json["actives"] = data["actives"]
+        self.sq_json["actives"] = data["actives"].copy()
         return True
 
     def to_json(self) -> types.ObjectJsonRepr:
@@ -359,10 +363,10 @@ class Rule(sq.SqObject):
             return False
         return found_qp.get("prioritizedRule", False)
 
-    def api_params(self, op: str = c.GET) -> types.ApiParams:
+    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.GET: {"key": self.key}}
-        return ops[op] if op in ops else ops[c.GET]
+        ops = {c.READ: {"key": self.key}}
+        return ops[op] if op and op in ops else ops[c.READ]
 
 
 def get_facet(facet: str, endpoint: platform.Platform) -> dict[str, str]:
@@ -405,8 +409,10 @@ def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> d
         lang_list = params.pop("languages", None)
         if not lang_list:
             lang_list = languages.get_list(endpoint).keys()
-        incl_ext = params.pop("include_external", None)
-        incl_ext = [incl_ext] if incl_ext else ["false", "true"]
+        if "include_external" in params:
+            incl_ext = [str(params["include_external"]).lower()]
+        else:
+            incl_ext = ["false", "true"]
         for lang_key in lang_list:
             if not languages.exists(endpoint, lang_key):
                 raise exceptions.ObjectNotFound(key=lang_key, message=f"Language '{lang_key}' does not exist")
@@ -431,9 +437,6 @@ def get_object(endpoint: platform.Platform, key: str) -> Optional[Rule]:
     :param str key: The rule key
     :rtype: Rule or None
     """
-    o = Rule.CACHE.get(key, endpoint.local_url)
-    if o:
-        return o
     try:
         return Rule.get_object(key=key, endpoint=endpoint)
     except exceptions.ObjectNotFound:
@@ -508,6 +511,30 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
             continue
         Rule.instantiate(endpoint=endpoint, key=key, template_key=template_rule.key, data=instantiation_data)
     return True
+
+
+def get_all_rules_details(endpoint: platform.Platform, threads: int = 8) -> bool:
+    """Collects all rules details
+
+    :param Platform endpoint: The SonarQube Server or Cloud platform
+    :param int threads: Number of threads to parallelize the process
+    :return: Whether all rules collection succeeded
+    """
+    rule_list = get_list(endpoint=endpoint, include_external=False).values()
+    ok = True
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="RuleDetails") as executor:
+        futures = [executor.submit(Rule.refresh, rule, True) for rule in rule_list]
+        i, nb_rules = 0, len(futures)
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result(timeout=1)
+                i += 1
+                if i % 100 == 0 or i == nb_rules:
+                    log.info("Collected rules details for %d rules out of %d (%d%%)", i, nb_rules, int(100 * i / nb_rules))
+            except Exception as e:
+                log.error(f"{str(e)} for {str(future)}.")
+                ok = False
+    return ok
 
 
 def convert_for_export(rule: types.ObjectJsonRepr, qp_lang: str, with_template_key: bool = True, full: bool = False) -> types.ObjectJsonRepr:
