@@ -57,8 +57,6 @@ _CLASS_LOCK = Lock()
 
 MAX_PAGE_SIZE = 500
 _TREE_API = "components/tree"
-PRJ_QUALIFIER = "TRK"
-APP_QUALIFIER = "APP"
 _CONTAINS_AI_CODE = "containsAiCode"
 _BIND_SEP = ":::"
 _AUDIT_BRANCHES_PARAM = "audit.projects.branches"
@@ -1442,7 +1440,7 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
     :rtype: int
     """
     new_params = {} if params is None else params.copy()
-    new_params.update({"ps": 1, "p": 1})
+    new_params.update({"ps": 1, "p": 1, "filter": _PROJECT_QUALIFIER})
     return util.nbr_total_elements(json.loads(endpoint.get(Project.API[c.LIST], params=params).text))
 
 
