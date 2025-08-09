@@ -329,13 +329,15 @@ class QualityProfile(sq.SqObject):
         self.rules(use_cache=False)
         return ok
 
-    def activate_rules(self, ruleset: dict[str, str]) -> bool:
+    def activate_rules(self, ruleset: list[dict[str, str]]) -> bool:
         """Activates a list of rules in the quality profile
         :return: Whether the activation of all rules was successful
         :rtype: bool
         """
         ok = True
-        for r_key, r_data in ruleset.items():
+        ruleset_d = {r["key"]: r for r in ruleset}
+        log.info("%s: Activating rules %s", self, util.json_dump(ruleset_d))
+        for r_key, r_data in ruleset_d.items():
             sev = r_data if isinstance(r_data, str) else r_data.get("severity", None)
             if "params" in r_data:
                 ok = ok and self.activate_rule(rule_key=r_key, severity=sev, **r_data["params"])
@@ -344,7 +346,7 @@ class QualityProfile(sq.SqObject):
         self.rules(use_cache=False)
         return ok
 
-    def set_rules(self, ruleset: dict[str, str]) -> bool:
+    def set_rules(self, ruleset: list[dict[str, str]]) -> bool:
         """Sets the quality profile with a set of rules. If the quality profile current has rules
         not in the ruleset these rules are deactivated
         :return: Whether the quality profile was set with all the given rules
@@ -353,9 +355,11 @@ class QualityProfile(sq.SqObject):
         if not ruleset:
             return False
         current_rules = list(self.rules(use_cache=False).keys())
-        keys_to_activate = util.difference(list(ruleset.keys()), current_rules)
-        rules_to_activate = {k: ruleset[k] for k in keys_to_activate}
-        rules_to_deactivate = util.difference(current_rules, list(ruleset.keys()))
+        ruleset_d = {r["key"]: r for r in ruleset}
+        log.info("%s: Setting rules %s", self, util.json_dump(ruleset_d))
+        keys_to_activate = util.difference(list(ruleset_d.keys()), current_rules)
+        rules_to_activate = [ruleset_d[k] for k in keys_to_activate]
+        rules_to_deactivate = util.difference(current_rules, list(ruleset_d.keys()))
         log.info("set_rules: Activating %d rules and deactivating %d rules", len(rules_to_activate), len(rules_to_deactivate))
         ok = self.activate_rules(rules_to_activate)
         ok = ok and self.deactivate_rules(rules_to_deactivate)
@@ -374,7 +378,8 @@ class QualityProfile(sq.SqObject):
                 self.name = data["name"]
                 QualityProfile.CACHE.put(self)
             self.set_parent(data.pop(_KEY_PARENT, None))
-            self.set_rules(data.get("rules", []))
+            self.set_rules(data.get("rules", []) + data.get("addedRules", []))
+            self.activate_rules(data.get("modifiedRules", []))
             self.set_permissions(data.get("permissions", []))
             self.is_built_in = data.get("isBuiltIn", False)
             if data.get("isDefault", False):
