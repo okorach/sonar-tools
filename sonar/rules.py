@@ -375,7 +375,7 @@ def get_facet(facet: str, endpoint: platform.Platform) -> dict[str, str]:
     return {f["val"]: f["count"] for f in data["facets"][0]["values"]}
 
 
-def search(endpoint: platform.Platform, params) -> dict[str, Rule]:
+def search(endpoint: platform.Platform, params: dict[str, str]) -> dict[str, Rule]:
     """Searches rules with optional filters"""
     return sq.search_objects(endpoint=endpoint, object_class=Rule, params=params, threads=4)
 
@@ -448,6 +448,8 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     log.info("Exporting rules")
     full = export_settings.get("FULL_EXPORT", False)
     rule_list, other_rules, instantiated_rules, extended_rules = {}, {}, {}, {}
+    threads = 16 if endpoint.is_sonarcloud() else 8
+    get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", threads))
     for rule_key, rule in get_list(endpoint=endpoint, use_cache=False, include_external=False).items():
         rule_export = rule.export(full)
         if rule.template_key is not None:
