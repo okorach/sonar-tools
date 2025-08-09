@@ -41,8 +41,8 @@ class QualityProfilePermissions(quality_permissions.QualityPermissions):
     API_SET_FIELD = {"users": "login", "groups": "group"}
 
     def read(self) -> QualityProfilePermissions:
-        if self.endpoint.version() < (9, 2, 0):
-            log.debug("Can't read %s on SonarQube < 9.2", str(self))
+        if not self.endpoint.is_sonarcloud() and self.endpoint.version() < (9, 2, 0):
+            log.warning("Can't read %s on SonarQube Server < 9.2", str(self))
             return self
         self._read_perms(
             QualityProfilePermissions.APIS,
