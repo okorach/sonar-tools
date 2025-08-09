@@ -136,6 +136,7 @@ _SETTINGS_WITH_SPECIFIC_IMPORT = (
     "qualityProfiles",
     "binding",
     "name",
+    "visibility",
 )
 
 
@@ -1387,6 +1388,8 @@ class Project(components.Component):
 
         :param config: JSON of configuration settings
         """
+        if visi := config.get("visibility", None):
+            self.set_visibility(visi)
         if "permissions" in config:
             decoded_perms = {
                 p: {u: perms.decode(v) for u, v in config["permissions"][p].items()} for p in perms.PERMISSION_TYPES if p in config["permissions"]
@@ -1421,8 +1424,6 @@ class Project(components.Component):
         if "aiCodeAssurance" in config:
             log.warning("'aiCodeAssurance' project setting is deprecated, please use '%s' instead", _CONTAINS_AI_CODE)
         self.set_contains_ai_code(config.get(_CONTAINS_AI_CODE, config.get("aiCodeAssurance", False)))
-        if visi := config.get("visibility", None):
-            self.set_visibility(visi)
         # TODO: Set branch settings See https://github.com/okorach/sonar-tools/issues/1828
 
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:
