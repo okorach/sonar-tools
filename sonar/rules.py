@@ -375,7 +375,7 @@ def get_facet(facet: str, endpoint: platform.Platform) -> dict[str, str]:
     return {f["val"]: f["count"] for f in data["facets"][0]["values"]}
 
 
-def search(endpoint: platform.Platform, params) -> dict[str, Rule]:
+def search(endpoint: platform.Platform, params: dict[str, str]) -> dict[str, Rule]:
     """Searches rules with optional filters"""
     return sq.search_objects(endpoint=endpoint, object_class=Rule, params=params, threads=4)
 
