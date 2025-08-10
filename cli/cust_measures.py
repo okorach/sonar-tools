@@ -55,7 +55,7 @@ def main():
             raise exceptions.UnsupportedOperation("Custom measures are no longer supported after 8.9.x")
         if sqenv.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Custom measures are not supported on SonarQube Cloud")
-        
+
         log.warning("Custom measures are are deprecated in 8.9 and lower and are dropped starting from SonarQube 9.0")
         params = utilities.remove_nones(kwargs).update({"env": sqenv})
         if params.get("value", None) is not None:
