@@ -192,7 +192,7 @@ def main() -> None:
         log.info("%d issues+hotspots could not be synchronized because the match was approximate", counters.get("nb_approx_match", 0))
         log.info("%d issues+hotspots could not be synchronized because target issue already had a changelog", counters.get("nb_tgt_has_changelog", 0))
 
-    except (exceptions.SonarException, options.ArgumentsError) as e:
+    except exceptions.SonarException as e:
         util.exit_fatal(e.message, e.errcode)
 
     util.stop_clock(start_time)

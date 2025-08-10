@@ -99,7 +99,7 @@ def main() -> int:
             __write_rules_csv(file=file, rule_list=rule_list, separator=kwargs[options.CSV_SEPARATOR])
         else:
             __write_rules_json(file=file, rule_list=rule_list)
-    except (exceptions.SonarException, options.ArgumentsError) as e:
+    except exceptions.SonarException as e:
         util.exit_fatal(e.message, e.errcode)
     except OSError as e:
         util.exit_fatal(f"OS error: {e}", exit_code=errcodes.OS_ERROR)

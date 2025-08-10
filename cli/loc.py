@@ -234,7 +234,7 @@ def main() -> None:
         if len(objects_list) == 0:
             raise exceptions.SonarException(f"No object matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
         __dump_loc(objects_list, **kwargs)
-    except (exceptions.SonarException, options.ArgumentsError, exceptions.ConnectionError) as e:
+    except exceptions.SonarException as e:
         util.exit_fatal(err_msg=e.message, exit_code=e.errcode)
     except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while writing LoCs: {e}", exit_code=errcodes.OS_ERROR)

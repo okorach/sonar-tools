@@ -302,7 +302,7 @@ def main() -> None:
         nb_proj = len({obj.concerned_object if obj.concerned_object is not None else obj for obj in obj_list})
         nb_branches = len(obj_list)
         log.info("%d %s, %d branches exported from %s", nb_proj, kwargs[options.COMPONENT_TYPE], nb_branches, kwargs[options.URL])
-    except (options.ArgumentsError, exceptions.SonarException) as e:
+    except exceptions.SonarException as e:
         util.exit_fatal(e.message, e.errcode)
     except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while writing LoCs: {e}", exit_code=errcodes.OS_ERROR)

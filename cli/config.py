@@ -281,7 +281,7 @@ def main() -> None:
             if kwargs["file"] is None:
                 utilities.exit_fatal("--file is mandatory to import configuration", errcodes.ARGS_ERROR)
             __import_config(endpoint, what, **kwargs)
-    except (exceptions.SonarException, options.ArgumentsError) as e:
+    except exceptions.SonarException as e:
         utilities.exit_fatal(e.message, e.errcode)
     except (PermissionError, FileNotFoundError) as e:
         utilities.exit_fatal(f"OS error while exporting config: {e}", exit_code=errcodes.OS_ERROR)

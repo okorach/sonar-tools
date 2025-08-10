@@ -68,19 +68,15 @@ def main() -> None:
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.MIGRATION_TOOL_VERSION}")
-    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
-        utilities.exit_fatal(e.message, e.errcode)
-
-    what = utilities.check_what(kwargs.pop(options.WHAT, None), config.WHAT_EVERYTHING, "exported")
-    if options.WHAT_PROFILES in what and options.WHAT_RULES not in what:
-        what.append(options.WHAT_RULES)
-    kwargs[options.FORMAT] = "json"
-    if kwargs[options.REPORT_FILE] is None:
-        kwargs[options.REPORT_FILE] = f"sonar-migration.{endpoint.server_id()}.json"
-    try:
+        what = utilities.check_what(kwargs.pop(options.WHAT, None), config.WHAT_EVERYTHING, "exported")
+        if options.WHAT_PROFILES in what and options.WHAT_RULES not in what:
+            what.append(options.WHAT_RULES)
+        kwargs[options.FORMAT] = "json"
+        if kwargs[options.REPORT_FILE] is None:
+            kwargs[options.REPORT_FILE] = f"sonar-migration.{endpoint.server_id()}.json"
         config.export_config(endpoint, what, mode="MIGRATION", **kwargs)
-    except exceptions.ObjectNotFound as e:
-        utilities.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
+    except exceptions.SonarException as e:
+        utilities.exit_fatal(e.message, e.errcode)
     except (PermissionError, FileNotFoundError) as e:
         utilities.exit_fatal(f"OS error while exporting config: {e}", exit_code=errcodes.OS_ERROR)
     log.info("Exporting SQ to SC migration data from %s completed", kwargs[options.URL])
