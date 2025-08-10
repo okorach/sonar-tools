@@ -40,8 +40,13 @@ CLIS_DATA = [
     ["loc.py", loc.main, ""],
     ["rules_cli.py", rules_cli.main, ""],
     ["findings_sync.py", findings_sync.main, f"{util.SQS_OPTS} --{opt.KEY_REGEXP} TESTSYNC -U {util.SC_URL} -T {util.SC_TOKEN} -K TESTSYNC"],
-    ["findings_sync.py", findings_sync.main, f"{util.SC_OPTS_NO_ORG} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} -U {creds.TARGET_PLATFORM} -T {creds.TARGET_TOKEN} -K TESTSYNC"],
+    [
+        "findings_sync.py",
+        findings_sync.main,
+        f"{util.SC_OPTS_NO_ORG} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} -U {creds.TARGET_PLATFORM} -T {creds.TARGET_TOKEN} -K TESTSYNC",
+    ],
 ]
+
 
 def test_import(json_file: Generator[str]) -> None:
     """test_import"""
@@ -81,6 +86,7 @@ def test_bad_org(json_file: Generator[str]):
             cmd += f" -O {__NON_EXISTING_ORG}"
         assert util.run_cmd(func, cmd) == errcodes.NO_SUCH_KEY
 
+
 def test_bad_arg(json_file: Generator[str]):
     """Test that passing a wrong argument to any CLI tool fails fast"""
     for cli_data in CLIS_DATA:
@@ -89,6 +95,7 @@ def test_bad_arg(json_file: Generator[str]):
         assert util.run_cmd(func, cmd) == errcodes.ARGS_ERROR
         cmd = f"{pyfile} {util.SC_OPTS} {extra_args} -Q something"
         assert util.run_cmd(func, cmd) == errcodes.ARGS_ERROR
+
 
 def test_bad_project_key(json_file: Generator[str]):
     """Test that passing a wrong argument to any CLI tool fails fast"""
