@@ -217,15 +217,13 @@ def main() -> None:
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-    except (options.ArgumentsError, exceptions.ConnectionError) as e:
-        util.exit_fatal(e.message, e.errcode)
-    portfolios.Portfolio.CACHE.clear()
-    applications.Application.CACHE.clear()
-    projects.Project.CACHE.clear()
 
-    kwargs = __check_options(endpoint.edition(), kwargs)
+        portfolios.Portfolio.CACHE.clear()
+        applications.Application.CACHE.clear()
+        projects.Project.CACHE.clear()
 
-    try:
+        kwargs = __check_options(endpoint.edition(), kwargs)
+
         objects_list = component_helper.get_components(
             endpoint=endpoint,
             component_type=kwargs[options.COMPONENT_TYPE],
@@ -234,8 +232,8 @@ def main() -> None:
             topLevelOnly=kwargs["topLevelOnly"],
         )
         __dump_loc(objects_list, **kwargs)
-    except exceptions.UnsupportedOperation as e:
-        util.exit_fatal(err_msg=e.message, exit_code=errcodes.UNSUPPORTED_OPERATION)
+    except (exceptions.SonarException, options.ArgumentsError, exceptions.ConnectionError) as e:
+        util.exit_fatal(err_msg=e.message, exit_code=e.errcode)
     except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while writing LoCs: {e}", exit_code=errcodes.OS_ERROR)
     util.stop_clock(start_time)
