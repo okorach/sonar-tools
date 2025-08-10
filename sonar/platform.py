@@ -39,7 +39,7 @@ import sonar.utilities as util
 from sonar.util import types, update_center
 import sonar.util.constants as c
 
-from sonar import errcodes, settings, devops, version, sif, exceptions
+from sonar import errcodes, settings, devops, version, sif, exceptions, organizations
 from sonar.permissions import permissions, global_permissions, permission_templates
 from sonar.audit.rules import get_rule, RuleId
 import sonar.audit.severities as sev
@@ -97,7 +97,12 @@ class Platform(object):
         try:
             log.info("Connecting to %s", self.local_url)
             self.get("server/version")
-            if not self.is_sonarcloud():
+            if self.is_sonarcloud():
+                if not organizations.exists(self, self.organization):
+                    raise exceptions.ObjectNotFound(
+                        self.organization, f"Organization '{self.organization}' does not exist or user is not member of it"
+                    )
+            else:
                 s = self.get_setting(key="sonar.core.serverBaseURL")
                 if s not in (None, ""):
                     self.external_url = s
