@@ -172,7 +172,6 @@ def main() -> None:
 
         report = []
         counters = {}
-
         if source_branch and target_branch:
             log.info("Syncing findings between 2 branches")
             src_branch = branches.Branch.get_object(projects.Project.get_object(source_env, source_key), source_branch)
