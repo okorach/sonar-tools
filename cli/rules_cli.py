@@ -85,9 +85,9 @@ def main() -> int:
 
         if kwargs[options.QP] is not None:
             if kwargs[options.LANGUAGES] is None and kwargs[options.QP] is not None:
-                util.exit_fatal(f"Option --{options.QP} requires --{options.LANGUAGES}", errcodes.ARGS_ERROR)
+                raise exceptions.SonarException(f"Option --{options.QP} requires --{options.LANGUAGES}", errcodes.ARGS_ERROR)
             if len(kwargs[options.LANGUAGES]) > 1:
-                util.exit_fatal(f"Option --{options.QP} requires a single --{options.LANGUAGES} value", errcodes.ARGS_ERROR)
+                raise exceptions.SonarException(f"Option --{options.QP} requires a single --{options.LANGUAGES} value", errcodes.ARGS_ERROR)
             qp = qualityprofiles.get_object(endpoint=endpoint, name=kwargs[options.QP], language=kwargs[options.LANGUAGES][0])
             rule_list = qp.rules()
         else:
@@ -99,14 +99,13 @@ def main() -> int:
             __write_rules_csv(file=file, rule_list=rule_list, separator=kwargs[options.CSV_SEPARATOR])
         else:
             __write_rules_json(file=file, rule_list=rule_list)
-
-        log.info("%d rules exported from %s", len(rule_list), endpoint.local_url)
-        util.stop_clock(start_time)
-        sys.exit(0)
-    except exceptions.SonarException as e:
+    except (exceptions.SonarException, options.ArgumentsError) as e:
         util.exit_fatal(e.message, e.errcode)
     except OSError as e:
         util.exit_fatal(f"OS error: {e}", exit_code=errcodes.OS_ERROR)
+    log.info("%d rules exported from %s", len(rule_list), endpoint.local_url)
+    util.stop_clock(start_time)
+    sys.exit(0)
 
 
 if __name__ == "__main__":

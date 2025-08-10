@@ -347,52 +347,49 @@ def main() -> None:
         sqenv = platform.Platform(**kwargs)
         sqenv.verify_connection()
         sqenv.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
-        util.exit_fatal(e.message, e.errcode)
-    del kwargs[options.TOKEN]
-    kwargs.pop(options.HTTP_TIMEOUT, None)
-    del kwargs[options.URL]
-    DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
-    params = util.remove_nones(kwargs.copy())
-    params[options.REPORT_FILE] = kwargs[options.REPORT_FILE]
-    __verify_inputs(params)
 
-    params = __turn_off_use_findings_if_needed(sqenv, params=params)
-    branch_regexp = params.get(options.BRANCH_REGEXP, None)
-    if sqenv.edition() == c.CE and (branch_regexp is not None or params.get(options.PULL_REQUESTS, None) is not None):
-        util.exit_fatal(
-            f"Options '--{options.BRANCH_REGEXP}' and '--{options.PULL_REQUESTS}' shall not be used with Community Edition/Community Build",
-            errcodes.UNSUPPORTED_OPERATION,
-        )
-    try:
+        del kwargs[options.TOKEN]
+        kwargs.pop(options.HTTP_TIMEOUT, None)
+        del kwargs[options.URL]
+        DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
+        params = util.remove_nones(kwargs.copy())
+        params[options.REPORT_FILE] = kwargs[options.REPORT_FILE]
+        __verify_inputs(params)
+
+        params = __turn_off_use_findings_if_needed(sqenv, params=params)
+        branch_regexp = params.get(options.BRANCH_REGEXP, None)
+        if sqenv.edition() == c.CE and (branch_regexp is not None or params.get(options.PULL_REQUESTS, None) is not None):
+            util.exit_fatal(
+                f"Options '--{options.BRANCH_REGEXP}' and '--{options.PULL_REQUESTS}' shall not be used with Community Edition/Community Build",
+                errcodes.UNSUPPORTED_OPERATION,
+            )
+
         components_list = component_helper.get_components(
             endpoint=sqenv,
             component_type=params[options.COMPONENT_TYPE],
             key_regexp=params.get(options.KEY_REGEXP, None),
             branch_regexp=branch_regexp,
         )
-    except exceptions.UnsupportedOperation as e:
-        util.exit_fatal(e.message, errcodes.UNSUPPORTED_OPERATION)
+        if len(components_list) == 0:
+            br = f"and branch matching regexp '{params[options.BRANCH_REGEXP]}'" if options.BRANCH_REGEXP in params else ""
+            raise exceptions.SonarException(
+                f"No {params[options.COMPONENT_TYPE]} found with key matching regexp '{params.get(options.KEY_REGEXP, None)}' {br}",
+                errcodes.WRONG_SEARCH_CRITERIA,
+            )
 
-    if len(components_list) == 0:
-        br = f"and branch matching regexp '{params[options.BRANCH_REGEXP]}'" if options.BRANCH_REGEXP in params else ""
-        util.exit_fatal(
-            f"No {params[options.COMPONENT_TYPE]} found with key matching regexp '{params.get(options.KEY_REGEXP, None)}' {br}",
-            errcodes.WRONG_SEARCH_CRITERIA,
-        )
+        fmt, fname = params.get(options.FORMAT, None), params.get(options.REPORT_FILE, None)
+        params[options.FORMAT] = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))
+        if fname is not None and os.path.exists(fname):
+            os.remove(fname)
 
-    fmt, fname = params.get(options.FORMAT, None), params.get(options.REPORT_FILE, None)
-    params[options.FORMAT] = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))
-    if fname is not None and os.path.exists(fname):
-        os.remove(fname)
+        log.info("Exporting findings for %d projects with params %s", len(components_list), str(params))
+        nb_findings = 0
 
-    log.info("Exporting findings for %d projects with params %s", len(components_list), str(params))
-    nb_findings = 0
-
-    try:
         nb_findings = store_findings(components_list, endpoint=sqenv, params=params)
     except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while exporting findings: {e}", exit_code=errcodes.OS_ERROR)
+    except exceptions.SonarException as e:
+        util.exit_fatal(e.message, e.errcode)
 
     log.info(
         "Exported %d findings to %s (%d components from URL %s)",
