@@ -102,7 +102,7 @@ def test_bad_project_key(json_file: Generator[str]):
     for cli_data in CLIS_DATA:
         pyfile, func, extra_args = cli_data
         cmd = f"{pyfile} {util.SQS_OPTS} {extra_args} --{opt.REPORT_FILE} {json_file} --{opt.KEY_REGEXP} non-existing-project"
-        if pyfile in ("audit.py", "housekeeper.py"):
+        if pyfile in ("audit.py", "housekeeper.py", "rules_cli.py"):
             continue  # Audit does not only audit projects, housekeeper has no project selection
         if pyfile != "findings_sync.py":
             assert util.run_cmd(func, cmd) == errcodes.WRONG_SEARCH_CRITERIA
