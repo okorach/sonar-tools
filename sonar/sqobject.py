@@ -25,7 +25,7 @@
 
 from typing import Optional
 import json
-from collections.abc import Generator
+
 from http import HTTPStatus
 import concurrent.futures
 import requests
@@ -34,7 +34,7 @@ from requests import RequestException
 import sonar.logging as log
 from sonar.util import types, cache
 from sonar.util import constants as c
-from sonar import utilities, exceptions
+from sonar import utilities, exceptions, errcodes
 
 
 class SqObject(object):
@@ -243,7 +243,7 @@ def search_objects(endpoint: object, object_class: any, params: types.ApiParams,
     )
     if utilities.nbr_total_elements(data) > 0 and len(data[returned_field]) == 0:
         log.fatal(msg := f"Index on {cname} is corrupted, please reindex before using API")
-        raise exceptions.SonarException(msg)
+        raise exceptions.SonarException(msg, errcodes.SONAR_INTERNAL_ERROR)
 
     objects_list |= __load(endpoint, object_class, data[returned_field])
 
