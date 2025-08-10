@@ -172,7 +172,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
     log.info("Exporting with settings: %s", utilities.json_dump(export_settings, redact_tokens=True))
     if "projects" in what and kwargs[options.KEY_REGEXP]:
         if len(component_helper.get_components(endpoint, "projects", kwargs[options.KEY_REGEXP])) == 0:
-            utilities.exit_fatal(f"No projects matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.NO_SUCH_KEY)
+            utilities.exit_fatal(f"No projects matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
 
     what.append(c.CONFIG_KEY_PLATFORM)
     log.info("Exporting configuration from %s", kwargs[options.URL])
@@ -279,8 +279,8 @@ def main() -> None:
     if kwargs[options.EXPORT]:
         try:
             export_config(endpoint, what, **kwargs)
-        except exceptions.ObjectNotFound as e:
-            utilities.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
+        except exceptions.SonarException as e:
+            utilities.exit_fatal(e.message, e.errcode)
         except (PermissionError, FileNotFoundError) as e:
             utilities.exit_fatal(f"OS error while exporting config: {e}", exit_code=errcodes.OS_ERROR)
     if kwargs["import"]:
