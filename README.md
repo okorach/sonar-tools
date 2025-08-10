@@ -394,6 +394,8 @@ When tools complete successfully they return exit code 0. En case of fatal error
 - Code 13: Some operation attempted to create a Sonar object that already exists
 - Code 14: Sonar connection error
 - Code 15: Miscellaneous OS errors
+- Code 16: Object not found during a search
+- Code 17: Sonar Server internal error
 
 # License
 
