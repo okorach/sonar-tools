@@ -13,7 +13,7 @@ Note: Replaces `sonar-issues-sync`, which deprecated
 
 ## Usage
 
-`sonar-findings-sync -k <projectKey> [-b <sourceBranch>] [-B <targetBranch>] [-K <targetProjectKey>] [-B <targetBranch>] [-U <targetUrl> [-T <targetToken>] [-f <file>] [--nolink] [--nocomment] [--since <YYYY-MM-DD>] [-h] [-u <sqUrl>] [-t <token>] [-v <debugLevel>]`
+`sonar-findings-sync -k <projectKey> [-b <sourceBranch>] [-B <targetBranch>] [-K <targetProjectKey>] [-B <targetBranch>] [-U <targetUrl> [-T <targetToken>] [-f <file>] [--nolink] [--since <YYYY-MM-DD>] [-h] [-u <sqUrl>] [-t <token>] [-v <debugLevel>]`
 
 - `-k <projectKey>`: Key of the source project.
 - `-K <projectKey>`: Optional. Key of the target project. If not specified, the same project key as the source is assumed
@@ -26,6 +26,7 @@ Note: Replaces `sonar-issues-sync`, which deprecated
 - `--since <YYYY-MM-DD>`: Only sync issues modified since a give date in the source project/branch. This generally allows to significantly reduce the number of issues involved in the sync, and therefore to significantly accelerate the sync process
 - `-f <file>`: Sends a summary report of synchronization to `<file>`, `stdout` is the default. The output format is JSON
 the target token.
+- `--nolink`: Do not add a HTTP link comment in the source and target findings (that point at each other)
 - `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
 
 :warning: Note about `-t` and `-T`: It is **strongly recommended** to run `sonar-findings-sync` with the credentials of a specific service account dedicated to issues synchronization on the target. This will allow to recognize automatic synchronization changes by the author of those changes. This token is either the one provided with `-t` when the synchronization is within the same SonarQube Server or Cloud (for instance 2 branches of a same project), or `-T` when synchronizing between 2 different SonarQube Server or Cloud instances (The `-T <token>` corresponding to a user on the **target** SonarQube Server or Cloud in that case)
@@ -60,35 +61,27 @@ Synchronizes issues changelog between:
   `sonar-issue-sync -k myProject -u https://sonar.acme.com -t <sourceToken> -K myProject -U https://sonarcloud.io -T <targetToken> -O myOrganization`
 
 
-# What is synchronized
+# Selection of source findings for synchronization
 
-Findings synchronization includes:
-**Issues**
-- Change of issue type, for standard experience
-- Change of issue severity - both for standard experience and MQR mode - (except when target is SonarQube Cloud, issue severity can't be changed)
-- Issue marked as False positive or Accepted (or Won't fix for older SonarQube Server instances)
-- Issue re-opened
-- Issue assignments
-- Issue comments
-- Issue custom tags
-**Hotspots**
-- Custom tags added to issues
-- Hotspot marked as Safe, Acknowledged or Fixed
-- Hotspots re-opened as To Review
-- Hotspots assignments
-- Hotspots comments
+## Source findings
 
-Synchronized target issues have the `synchronized` tag added (not hotspots since there are no tags on hotpots)
+In order to not uselessly consider to many issues for synchronization, the sync algorithm only selects, in the source project or branch, findings that:
+- Have comments or
+- Have a changelog 
+  - Change of issue type, severity, marked as false positive, accepted or won't fix, confirmed or fixed, re-opened for issues
+  - Change of status (Acknowledged, Safe or Fixed or back to To Review) for Hotspots
 
-# What cannot always be synchronized
+Findings that were only (re-)assigned or that were only added tags are not synchronized. (tagged issues may be synchronized in the future)
 
-- On SonarQube Cloud, Hotspots can't be acknowledged. This hotspot status does not exists
-- On SonarQube Cloud, issues severity can't be changed
-- If the assignee does not exists on the target instance, Issue and hotspot assignment can't happen
-- On SonarQube Server in MQR mode and on SonarQube Cloud, issues can't be changed of type (Vulnerability, Bug or Code Smell).
-  This is only possible with SonarQube Server in standard experience. And this is however deprecated and may no lonbger be possible in the future.
-- When multiple findings approximately match the source finding, none are synchronized and the list of possible matches is listed so that humans can manually find and synchronized the finding (this is a rare corner case)
-- If the code was not analyzed with the same environment or with the same exact code, some findings may be present in the source and not in the target in which case the source can't be synchronized
+## Target findings
+
+In the target, the synchronization algorithm with only select findings to sync if:
+- They have not changelog or
+- All changes and comments were performed with the account that is used for the sync (it is strongly recommended to use a specific service account with `sonar-findings-sync`)
+
+Once the set of source and target findings is determined, the sync matching algorithm is applied, between the source and target set.
+Note that there is a separate source and target set for issues and hotspots, because it cannot be that an issue matches a hotspot and vice versa.
+
 
 ## Matching algorithm
 
@@ -112,11 +105,41 @@ Matching algorithm to synchronize findings:
 When an issue could not be synchronized because of one of the above reasons, this is reported in the `sonar-findings-sync` report.
 Whenever a close enough issue was found but not sync'ed (because not 100% certain to be identical), the close issue is provided in the report to complete synchronization manually if desired.
 
+# What is synchronized
+
+When 2 findings match, depending on the source and target platform all or only some elemengts of the source finding will be synchronized:
+
+Findings synchronization includes:
+**Issues**
+- Change of issue type, for standard experience. In MQR mode the change of issue type does not exist anymore
+- Change of issue severity - both for standard experience and MQR mode - (except when target is SonarQube Cloud, issue severity can't be changed)
+- Issue marked as False positive or Accepted (or Won't fix for older SonarQube Server instances)
+- Issue re-opened
+- Issue assignments (if the same user can be matched in source and target instance. To avoid the problem of different issue ids, the match is performed on the user name)
+- Issue comments
+- Issue custom tags
+**Hotspots**
+- Custom tags added to issues
+- Hotspot marked as Safe, Acknowledged or Fixed
+- Hotspots re-opened as To Review
+- Hotspots assignments
+- Hotspots comments
+
+Synchronized target issues have the `synchronized` tag added (not hotspots since there are no tags on hotpots)
+
+# What cannot always be synchronized
+
+- On SonarQube Cloud, Hotspots can't be acknowledged. This hotspot status does not exists
+- On SonarQube Cloud, issues severity can't be changed
+- If the assignee does not exists on the target instance, Issue and hotspot assignment can't happen
+- On SonarQube Server in MQR mode and on SonarQube Cloud, issues can't be changed of type (Vulnerability, Bug or Code Smell).
+  This is only possible with SonarQube Server in standard experience. And this is however deprecated and may no longer be possible in the future.
+- When multiple target findings approximately match the source finding, none are synchronized and the list of possible matches is listed so that humans can manually find and synchronized the finding (this is a rare corner case)
+- If the code was not analyzed with the same environment or with the same exact code, some findings may be present in the source and not in the target in which case the source can't be synchronized
+
 ## Configurable behaviors
 
 When an issue is synchronized, a special comment is added on the target issue with a link to the source one, for cross checking purposes. This comment can be disabled by using the `--nolink` option
-
-On all changes of an issue that is synchronized, a special comment is added on the target issue the original login of the user that made the change, for information. Indeed, all issues automatically synchronized will be reported as modified by the same service account. It's possible to disable these comments by using the `--nocomment` option
 
 ## Output report
 
