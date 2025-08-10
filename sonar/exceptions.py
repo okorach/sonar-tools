@@ -31,10 +31,10 @@ class SonarException(Exception):
     sonar-tools exceptions
     """
 
-    def __init__(self, message: str) -> None:
+    def __init__(self, message: str, code: int) -> None:
         super().__init__()
         self.message = message
-        self.errcode = None
+        self.errcode = code
 
     def __str__(self) -> str:
         return f"ERROR {self.errcode}: {self.message}"
@@ -46,9 +46,8 @@ class ObjectNotFound(SonarException):
     """
 
     def __init__(self, key: str, message: str) -> None:
-        super().__init__(message)
+        super().__init__(message, errcodes.NO_SUCH_KEY)
         self.key = key
-        self.errcode = errcodes.NO_SUCH_KEY
 
 
 class ObjectAlreadyExists(SonarException):
@@ -57,9 +56,8 @@ class ObjectAlreadyExists(SonarException):
     """
 
     def __init__(self, key: str, message: str) -> None:
-        super().__init__(message)
+        super().__init__(message, errcodes.OBJECT_ALREADY_EXISTS)
         self.key = key
-        self.errcode = errcodes.OBJECT_ALREADY_EXISTS
 
 
 class UnsupportedOperation(SonarException):
@@ -68,13 +66,11 @@ class UnsupportedOperation(SonarException):
     """
 
     def __init__(self, message: str) -> None:
-        super().__init__(message)
-        self.errcode = errcodes.UNSUPPORTED_OPERATION
+        super().__init__(message, errcodes.UNSUPPORTED_OPERATION)
 
 
 class ConnectionError(SonarException):
     """ConnectionError error"""
 
     def __init__(self, message: str) -> None:
-        super().__init__(message)
-        self.errcode = errcodes.CONNECTION_ERROR
+        super().__init__(message, errcodes.CONNECTION_ERROR)

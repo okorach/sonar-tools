@@ -126,7 +126,7 @@ def _audit_sq(
                 try:
                     pbs = func(endpoint=sq, audit_settings=settings, write_q=write_q, key_list=key_list)
                     problems += pbs
-                except exceptions.UnsupportedOperation as e:
+                except exceptions.SonarException as e:
                     if not everything:
                         log.warning(e.message)
         write_q.put(None)
@@ -206,13 +206,9 @@ def main() -> None:
 
         # problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=util.deduct_format(kwargs[options.FORMAT], ofile))
 
-    except exceptions.ConnectionError as e:
-        util.exit_fatal(e.message, e.errcode)
-    except exceptions.ObjectNotFound as e:
-        util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
     except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while writing file '{file}': {e}", errcode)
-    except options.ArgumentsError as e:
+    except exceptions.SonarException as e:
         util.exit_fatal(e.message, e.errcode)
     except json.decoder.JSONDecodeError:
         util.exit_fatal(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...", errcodes.SIF_AUDIT_ERROR)

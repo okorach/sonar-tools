@@ -172,7 +172,6 @@ def main() -> None:
 
         report = []
         counters = {}
-
         if source_branch and target_branch:
             log.info("Syncing findings between 2 branches")
             src_branch = branches.Branch.get_object(projects.Project.get_object(source_env, source_key), source_branch)
@@ -193,7 +192,7 @@ def main() -> None:
         log.info("%d issues+hotspots could not be synchronized because the match was approximate", counters.get("nb_approx_match", 0))
         log.info("%d issues+hotspots could not be synchronized because target issue already had a changelog", counters.get("nb_tgt_has_changelog", 0))
 
-    except (exceptions.SonarException, options.ArgumentsError) as e:
+    except exceptions.SonarException as e:
         util.exit_fatal(e.message, e.errcode)
 
     util.stop_clock(start_time)

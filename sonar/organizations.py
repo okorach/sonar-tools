@@ -185,3 +185,15 @@ def export(endpoint: pf.Platform, key_list: types.KeyList = None) -> types.Objec
         # remove key from JSON value, it's already the dict key
         org_settings[k].pop("key")
     return org_settings
+
+
+def exists(endpoint: pf.Platform, org_key: str) -> bool:
+    """Tells whether an organization exists with that user as member"""
+    log.info("Verifying that organization '%s' exists", org_key)
+    try:
+        _ = Organization.get_object(endpoint=endpoint, key=org_key)
+        log.warning("Organization '%s' does not exist or user is not a member", org_key)
+    except exceptions.ObjectNotFound:
+        return False
+    log.debug("Organization '%s' exists and user is a member", org_key)
+    return True

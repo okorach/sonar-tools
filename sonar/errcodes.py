@@ -67,3 +67,5 @@ OS_ERROR = 15
 
 # Request to manipulate an object that was not found
 OBJECT_NOT_FOUND = 16
+
+SONAR_INTERNAL_ERROR = 17

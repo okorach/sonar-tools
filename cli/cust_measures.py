@@ -51,23 +51,22 @@ def main():
         sqenv = platform.Platform(**kwargs)
         sqenv.verify_connection()
         sqenv.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
-        utilities.exit_fatal(e.message, e.errcode)
-    if sqenv.version() >= (9, 0, 0):
-        utilities.exit_fatal("Custom measures are no longer supported after 8.9.x", errcodes.UNSUPPORTED_OPERATION)
-    elif sqenv.is_sonarcloud():
-        utilities.exit_fatal("Custom measures are not supported on SonarQube Cloud", errcodes.UNSUPPORTED_OPERATION)
-    else:
-        log.warning("Custom measures are are deprecated in 8.9 and lower and are dropped starting from SonarQube 9.0")
+        if sqenv.version() >= (9, 0, 0):
+            raise exceptions.UnsupportedOperation("Custom measures are no longer supported after 8.9.x")
+        if sqenv.is_sonarcloud():
+            raise exceptions.UnsupportedOperation("Custom measures are not supported on SonarQube Cloud")
 
-    params = utilities.remove_nones(kwargs).update({"env": sqenv})
-    if params.get("value", None) is not None:
-        custom_measures.update(
-            project_key=params["componentKeys"],
-            metric_key=params["metricKey"],
-            value=params["value"],
-            description=params.get("description", None),
-        )
+        log.warning("Custom measures are are deprecated in 8.9 and lower and are dropped starting from SonarQube 9.0")
+        params = utilities.remove_nones(kwargs).update({"env": sqenv})
+        if params.get("value", None) is not None:
+            custom_measures.update(
+                project_key=params["componentKeys"],
+                metric_key=params["metricKey"],
+                value=params["value"],
+                description=params.get("description", None),
+            )
+    except exceptions.SonarException as e:
+        utilities.exit_fatal(e.message, e.errcode)
     utilities.stop_clock(start_time)
     cache_helper.clear_cache()
     sys.exit(0)

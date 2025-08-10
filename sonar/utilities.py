@@ -377,9 +377,9 @@ def dict_add(dict1: dict[str, int], dict2: dict[str, int]) -> dict[str, int]:
 
 def exit_fatal(err_msg: str, exit_code: int) -> None:
     """Fatal exit with error msg"""
+    cache_helper.clear_cache()
     log.fatal(err_msg)
     print(f"FATAL: {err_msg}", file=sys.stderr)
-    cache_helper.clear_cache()
     sys.exit(exit_code)
 
 

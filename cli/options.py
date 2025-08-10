@@ -161,8 +161,7 @@ class ArgumentsError(exceptions.SonarException):
     """
 
     def __init__(self, message: str) -> None:
-        super().__init__(message)
-        self.errcode = errcodes.ARGS_ERROR
+        super().__init__(message, errcodes.ARGS_ERROR)
 
 
 def __convert_args_to_lists(kwargs: dict[str, str]) -> dict[str, str]:

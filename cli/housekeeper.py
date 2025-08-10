@@ -235,7 +235,7 @@ def main() -> None:
 
     except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while housekeeping: {str(e)}", errcodes.OS_ERROR)
-    except (ex.ConnectionError, options.ArgumentsError, ex.ObjectNotFound) as e:
+    except ex.SonarException as e:
         util.exit_fatal(e.message, e.errcode)
     except RequestException as e:
         util.exit_fatal(f"HTTP error while housekeeping: {str(e)}", errcodes.SONAR_API)

@@ -33,7 +33,7 @@ from unittest.mock import patch
 import pytest
 
 import credentials as creds
-from sonar import errcodes, logging, exceptions
+from sonar import logging, exceptions
 from sonar import utilities as util
 from sonar import platform
 import cli.options as opt
@@ -90,10 +90,14 @@ SQS_TEST_OPTS = " ".join(TEST_OPTS)
 
 CE_OPTS = [f"-{opt.URL_SHORT}", CB, f"-{opt.TOKEN_SHORT}", creds.TARGET_TOKEN]
 
-SC_OPTS = f'--{opt.URL} https://sonarcloud.io --{opt.TOKEN} {os.getenv("SONAR_TOKEN_SONARCLOUD")} --{opt.ORG} okorach'
+SC_TOKEN = os.getenv("SONAR_TOKEN_SONARCLOUD")
+SC_URL = "https://sonarcloud.io"
+SC_ORG = "okorach"
+SC_OPTS_NO_ORG = f"--{opt.URL} {SC_URL} --{opt.TOKEN} {SC_TOKEN}"
+SC_OPTS = f"{SC_OPTS_NO_ORG} --{opt.ORG} {SC_ORG}"
 
 SQ = platform.Platform(url=creds.TARGET_PLATFORM, token=creds.TARGET_TOKEN)
-SC = platform.Platform(url="https://sonarcloud.io", token=os.getenv("SONAR_TOKEN_SONARCLOUD"), org="okorach")
+SC = platform.Platform(url=SC_URL, token=SC_TOKEN, org="okorach")
 TEST_SQ = platform.Platform(url=LATEST_TEST, token=os.getenv("SONAR_TOKEN_TEST_ADMIN_USER"))
 
 TAGS = ["foo", "bar"]

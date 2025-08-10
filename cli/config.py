@@ -172,7 +172,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
     log.info("Exporting with settings: %s", utilities.json_dump(export_settings, redact_tokens=True))
     if "projects" in what and kwargs[options.KEY_REGEXP]:
         if len(component_helper.get_components(endpoint, "projects", kwargs[options.KEY_REGEXP])) == 0:
-            utilities.exit_fatal(f"No projects matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.NO_SUCH_KEY)
+            utilities.exit_fatal(f"No projects matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
 
     what.append(c.CONFIG_KEY_PLATFORM)
     log.info("Exporting configuration from %s", kwargs[options.URL])
@@ -267,26 +267,24 @@ def main() -> None:
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
-        utilities.exit_fatal(e.message, e.errcode)
-    if not kwargs[options.EXPORT] and not kwargs[options.IMPORT]:
-        utilities.exit_fatal(f"One of --{options.EXPORT} or --{options.IMPORT} option must be chosen", exit_code=errcodes.ARGS_ERROR)
 
-    what = utilities.check_what(kwargs.pop(options.WHAT, None), WHAT_EVERYTHING, "exported or imported")
-    if options.WHAT_PROFILES in what and options.WHAT_RULES not in what:
-        what.append(options.WHAT_RULES)
-    kwargs[options.FORMAT] = utilities.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE], allowed_formats=("json", "yaml"))
-    if kwargs[options.EXPORT]:
-        try:
+        if not kwargs[options.EXPORT] and not kwargs[options.IMPORT]:
+            raise exceptions.SonarException(f"One of --{options.EXPORT} or --{options.IMPORT} option must be chosen", errcodes.ARGS_ERROR)
+
+        what = utilities.check_what(kwargs.pop(options.WHAT, None), WHAT_EVERYTHING, "exported or imported")
+        if options.WHAT_PROFILES in what and options.WHAT_RULES not in what:
+            what.append(options.WHAT_RULES)
+        kwargs[options.FORMAT] = utilities.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE], allowed_formats=("json", "yaml"))
+        if kwargs[options.EXPORT]:
             export_config(endpoint, what, **kwargs)
-        except exceptions.ObjectNotFound as e:
-            utilities.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
-        except (PermissionError, FileNotFoundError) as e:
-            utilities.exit_fatal(f"OS error while exporting config: {e}", exit_code=errcodes.OS_ERROR)
-    if kwargs["import"]:
-        if kwargs["file"] is None:
-            utilities.exit_fatal("--file is mandatory to import configuration", errcodes.ARGS_ERROR)
-        __import_config(endpoint, what, **kwargs)
+        elif kwargs[options.IMPORT]:
+            if kwargs["file"] is None:
+                utilities.exit_fatal("--file is mandatory to import configuration", errcodes.ARGS_ERROR)
+            __import_config(endpoint, what, **kwargs)
+    except exceptions.SonarException as e:
+        utilities.exit_fatal(e.message, e.errcode)
+    except (PermissionError, FileNotFoundError) as e:
+        utilities.exit_fatal(f"OS error while exporting config: {e}", exit_code=errcodes.OS_ERROR)
     utilities.stop_clock(start_time)
     cache_helper.clear_cache()
     sys.exit(0)
