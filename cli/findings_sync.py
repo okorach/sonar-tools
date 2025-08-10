@@ -64,13 +64,6 @@ def __parse_args(desc: str) -> object:
         help="""key of the target project when synchronizing 2 projects or 2 branches on a same platform""",
     )
     parser.add_argument(
-        "--nocomment",
-        required=False,
-        default=False,
-        action="store_true",
-        help="If specified, will not comment related to the sync in the target issue",
-    )
-    parser.add_argument(
         "--sinceDate",
         required=False,
         default=None,
@@ -169,7 +162,6 @@ def main() -> None:
             raise options.ArgumentsError("sonar-findings-sync should not be run with 'admin' user token, but with an account dedicated to sync")
 
         settings = {
-            syncer.SYNC_ADD_COMMENTS: not params["nocomment"],
             syncer.SYNC_ADD_LINK: not params["nolink"],
             syncer.SYNC_ASSIGN: True,
             syncer.SYNC_IGNORE_COMPONENTS: False,

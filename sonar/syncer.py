@@ -31,7 +31,6 @@ from sonar import findings
 
 SYNC_IGNORE_COMPONENTS = "ignore_components"
 SYNC_ADD_LINK = "add_link"
-SYNC_ADD_COMMENTS = "add_comments"
 SYNC_COMMENTS = "sync_comments"
 SYNC_ASSIGN = "sync_assignments"
 SYNC_SERVICE_ACCOUNT = "sync_service_account"
