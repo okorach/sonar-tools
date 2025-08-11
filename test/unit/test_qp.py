@@ -132,10 +132,10 @@ def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]
     ruleset = [{"key": RULE1, "severities": {"MAINTAINABILITY": "MAJOR"}}, {"key": RULE2, "severities": {"MAINTAINABILITY": "MAJOR"}}]
     qp.activate_rules(ruleset)
     qp_rules = qp.rules()
-    assert sorted(list(qp_rules.keys())) == sorted([r['key'] for r in ruleset])
+    assert sorted(list(qp_rules.keys())) == sorted([r["key"] for r in ruleset])
     qp.activate_rule(RULE3, "MAJOR")
     ruleset.append({"key": RULE3, "severities": {"MAINTAINABILITY": "MAJOR"}})
-    assert sorted(list(qp.rules().keys())) == sorted([r['key'] for r in ruleset])
+    assert sorted(list(qp.rules().keys())) == sorted([r["key"] for r in ruleset])
 
     assert len(qp.rules()) == 3
     qp.set_rules([{"key": RULE1}, {"key": RULE2}])
