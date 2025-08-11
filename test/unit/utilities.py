@@ -114,6 +114,7 @@ def clean(*files: Optional[str]) -> None:
         except FileNotFoundError:
             pass
 
+
 def file_empty(file: str) -> bool:
     """Returns whether a file exists and is empty"""
     return file_exists(file) and os.stat(file).st_size == 0
