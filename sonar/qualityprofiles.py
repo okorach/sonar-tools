@@ -820,35 +820,32 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
 
     :param Platform endpoint: reference to the SonarQube platform
     :param dict config_data: the configuration to import
-    :param threads: Number of threads (quality profiles import) to run in parallel
-    :type threads: int
-    :return: Nothing
+    :return: Whether the operation succeeded
     """
     threads = 8
     if "qualityProfiles" not in config_data:
         log.info("No quality profiles to import")
         return False
     log.info("Importing quality profiles")
-    ok = True
     get_list(endpoint=endpoint)
-    for lang, lang_data in config_data["qualityProfiles"].items():
-        if not languages.exists(endpoint=endpoint, language=lang):
-            log.warning("Language '%s' does not exist, quality profiles import skipped for this language", lang)
-            continue
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="QPImport") as executor:
-            futures, futures_map = [], {}
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="QPImport") as executor:
+        futures, futures_map = [], {}
+        for lang, lang_data in config_data["qualityProfiles"].items():
+            if not languages.exists(endpoint=endpoint, language=lang):
+                log.warning("Language '%s' does not exist, quality profiles import skipped for this language", lang)
+                continue
             for name, qp_data in lang_data.items():
-                future = executor.submit(import_qp, endpoint, name, lang, qp_data)
-                futures.append(future)
+                futures.append(future := executor.submit(import_qp, endpoint, name, lang, qp_data))
                 futures_map[future] = f"quality profile '{name}' of language '{lang}'"
-            for future in concurrent.futures.as_completed(futures):
-                qp = futures_map[future]
-                try:
-                    _ = future.result(timeout=60)
-                except TimeoutError as e:
-                    log.error(f"Importing {qp} timed out after 60 seconds for {str(future)}.")
-                except Exception as e:
-                    log.error(f"Exception {str(e)} when importing {qp} or its chilren.")
+        for future in concurrent.futures.as_completed(futures):
+            qp = futures_map[future]
+            try:
+                _ = future.result(timeout=60)
+            except TimeoutError as e:
+                log.error(f"Importing {qp} timed out after 60 seconds for {str(future)}.")
+            except Exception as e:
+                log.error(f"Exception {str(e)} when importing {qp} or its chilren.")
     return True
 
 
