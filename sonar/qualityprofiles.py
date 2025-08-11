@@ -365,7 +365,7 @@ class QualityProfile(sq.SqObject):
         ok = ok and self.deactivate_rules(rules_to_deactivate)
         return ok
 
-    def update(self, data: types.ObjectJsonRepr, queue: Queue) -> QualityProfile:
+    def update(self, data: types.ObjectJsonRepr) -> QualityProfile:
         """Updates a QP with data coming from sonar-config"""
         if self.is_built_in:
             log.debug("Not updating built-in %s", str(self))
@@ -385,7 +385,12 @@ class QualityProfile(sq.SqObject):
             if data.get("isDefault", False):
                 self.set_as_default()
 
-        _create_or_update_children(name=self.name, language=self.language, endpoint=self.endpoint, children=data.get(_CHILDREN_KEY, {}), queue=queue)
+        for child_name, child_data in data.get(_CHILDREN_KEY, {}).items():
+            try:
+                child_qp = get_object(self.endpoint, child_name, self.language)
+            except exceptions.ObjectNotFound:
+                child_qp = QualityProfile.create(self.endpoint, child_name, self.language)
+            child_qp.update(child_data | {_KEY_PARENT: self.name})
         return self
 
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
@@ -793,36 +798,21 @@ def get_object(endpoint: pf.Platform, name: str, language: str) -> Optional[Qual
     return o
 
 
-def _create_or_update_children(name: str, language: str, endpoint: pf.Platform, children: dict[str, StopAsyncIteration], queue: Queue) -> None:
-    """Updates or creates all children of a QP"""
-    for qp_name, qp_data in children.items():
-        qp_data[_KEY_PARENT] = name
-        log.debug("Adding child profile '%s' to update queue", qp_name)
-        queue.put((qp_name, language, endpoint, qp_data))
-
-
-def __import_thread(queue: Queue) -> None:
-    """Callback function for multithreaded QP import"""
-    while not queue.empty():
-        (name, lang, endpoint, qp_data) = queue.get()
+def import_qp(endpoint: pf.Platform, name: str, lang: str, qp_data: types.ObjectJsonRepr) -> bool:
+    """Function for multithreaded QP import"""
+    try:
+        o = get_object(endpoint=endpoint, name=name, language=lang)
+    except exceptions.ObjectNotFound:
+        log.info("Quality profile '%s' of language '%s' does not exist, creating it", name, lang)
         try:
-            o = get_object(endpoint=endpoint, name=name, language=lang)
-        except exceptions.ObjectNotFound:
-            if qp_data.get("isBuiltIn", False):
-                log.info("Won't import built-in quality profile '%s'", name)
-                queue.task_done()
-                continue
-            log.info("Quality profile '%s' of language '%s' does not exist, creating it", name, lang)
-            try:
-                # Statistically a new QP is close to Sonar way so better start with the Sonar way ruleset and
-                # add/remove a few rules, than adding all rules from 0
-                o = QualityProfile.clone(endpoint=endpoint, name=name, language=lang, original_qp_name="Sonar way")
-            except Exception:
-                o = QualityProfile.create(endpoint=endpoint, name=name, language=lang)
-        log.info("Importing quality profile '%s' of language '%s'", name, lang)
-        o.update(qp_data, queue)
-        log.info("Imported quality profile '%s' of language '%s'", name, lang)
-        queue.task_done()
+            # Statistically a new QP is close to Sonar way so better start with the Sonar way ruleset and
+            # add/remove a few rules, than adding all rules from 0
+            o = QualityProfile.clone(endpoint=endpoint, name=name, language=lang, original_qp_name="Sonar way")
+        except Exception:
+            o = QualityProfile.create(endpoint=endpoint, name=name, language=lang)
+    log.info("Importing %s", o)
+    o.update(qp_data)
+    log.info("Imported %s", o)
 
 
 def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
@@ -830,29 +820,32 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
 
     :param Platform endpoint: reference to the SonarQube platform
     :param dict config_data: the configuration to import
-    :param threads: Number of threads (quality profiles import) to run in parallel
-    :type threads: int
-    :return: Nothing
+    :return: Whether the operation succeeded
     """
     threads = 8
     if "qualityProfiles" not in config_data:
         log.info("No quality profiles to import")
         return False
     log.info("Importing quality profiles")
-    q = Queue(maxsize=0)
     get_list(endpoint=endpoint)
-    for lang, lang_data in config_data["qualityProfiles"].items():
-        if not languages.exists(endpoint=endpoint, language=lang):
-            log.warning("Language '%s' does not exist, quality profiles import skipped for this language", lang)
-            continue
-        for name, qp_data in lang_data.items():
-            q.put((name, lang, endpoint, qp_data))
-    for i in range(threads):
-        log.debug("Starting quality profile import thread %d", i)
-        worker = Thread(target=__import_thread, args=[q])
-        worker.setDaemon(True)
-        worker.start()
-    q.join()
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="QPImport") as executor:
+        futures, futures_map = [], {}
+        for lang, lang_data in config_data["qualityProfiles"].items():
+            if not languages.exists(endpoint=endpoint, language=lang):
+                log.warning("Language '%s' does not exist, quality profiles import skipped for this language", lang)
+                continue
+            for name, qp_data in lang_data.items():
+                futures.append(future := executor.submit(import_qp, endpoint, name, lang, qp_data))
+                futures_map[future] = f"quality profile '{name}' of language '{lang}'"
+        for future in concurrent.futures.as_completed(futures):
+            qp = futures_map[future]
+            try:
+                _ = future.result(timeout=60)
+            except TimeoutError as e:
+                log.error(f"Importing {qp} timed out after 60 seconds for {str(future)}.")
+            except Exception as e:
+                log.error(f"Exception {str(e)} when importing {qp} or its chilren.")
     return True
 
 

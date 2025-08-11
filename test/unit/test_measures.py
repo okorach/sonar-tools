@@ -180,8 +180,8 @@ def test_non_existing_measure(csv_file: Generator[str]) -> None:
 def test_non_existing_project(csv_file: Generator[str]) -> None:
     """test_non_existing_project"""
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.KEY_REGEXP_SHORT} bad_project"
-    assert util.run_cmd(measures_export.main, cmd) == e.OK
-    assert util.csv_nbr_lines(csv_file) == 0
+    assert util.run_cmd(measures_export.main, cmd) == e.WRONG_SEARCH_CRITERIA
+    assert not util.file_exists(csv_file)
 
 
 def test_specific_project_keys(csv_file: Generator[str]) -> None:

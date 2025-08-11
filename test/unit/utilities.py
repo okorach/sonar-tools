@@ -117,9 +117,12 @@ def clean(*files: Optional[str]) -> None:
 
 def file_empty(file: str) -> bool:
     """Returns whether a file exists and is empty"""
-    if not os.path.isfile(file):
-        return False
-    return os.stat(file).st_size == 0
+    return file_exists(file) and os.stat(file).st_size == 0
+
+
+def file_exists(file: str) -> bool:
+    """Returns whether a file exists"""
+    return os.path.isfile(file)
 
 
 def file_not_empty(file: str) -> bool:

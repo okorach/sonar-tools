@@ -151,11 +151,11 @@ def test_changelog() -> None:
     assert issue.is_false_positive()
     changelog_l = list(issue.changelog(manual_only=False).values())
     if tutil.SQ.version() >= (25, 1, 0):
-        nb_changes = 3
+        nb_changes = 8
     else:
         nb_changes = 1
     assert len(changelog_l) == nb_changes
-    changelog = changelog_l[0]
+    changelog = changelog_l[-1]
     assert changelog.is_resolve_as_fp()
     assert not changelog.is_closed()
     assert not changelog.is_resolve_as_wf()
@@ -174,10 +174,10 @@ def test_changelog() -> None:
     assert not changelog.is_assignment()
     assert changelog.assignee() is None
     assert changelog.assignee(False) is None
-    assert datetime(2024, 10, 20) <= util.string_to_date(changelog.date()).replace(tzinfo=None) < datetime(2024, 12, 26)
-    assert changelog.author() == "admin"
+    assert datetime(2025, 2, 12) <= util.string_to_date(changelog.date()).replace(tzinfo=None) < datetime(2025, 2, 14)
+    assert changelog.author() is None
     assert not changelog.is_tag()
-    assert changelog.get_tags() is None
+    assert changelog.get_tags() == []
 
 
 def test_multiple_changelogs():

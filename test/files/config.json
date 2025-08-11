@@ -18,31 +18,31 @@
          "branches": {
             "BRANCH foo": {
                "projects": {
-                  "TESTSYNC": "some-branch",
-                  "demo:jcl": "main",
-                  "training:security": "main"
+                  "BANKING-AFRICA-OPS": "main",
+                  "ai-code-fix": "main",
+                  "dvpa": "main"
                }
             },
             "Other Branch": {
                "projects": {
-                  "TESTSYNC": "some-branch",
-                  "demo:jcl": "main",
-                  "training:security": "main"
+                  "BANKING-AFRICA-OPS": "main",
+                  "ai-code-fix": "main",
+                  "dvpa": "main"
                }
             },
             "main": {
                "isMain": true,
                "projects": {
-                  "TESTSYNC": "main",
-                  "demo:jcl": "main",
-                  "training:security": "main"
+                  "BANKING-AFRICA-OPS": "main",
+                  "ai-code-fix": "main",
+                  "dvpa": "main"
                }
             },
             "some-branch": {
                "projects": {
-                  "TESTSYNC": "main",
-                  "demo:jcl": "main",
-                  "training:security": "main"
+                  "BANKING-AFRICA-OPS": "main",
+                  "ai-code-fix": "main",
+                  "dvpa": "main"
                }
             }
          },
@@ -56,43 +56,6 @@
          "tags": "africa",
          "visibility": "private"
       },
-      "APP_TEST_2": {
-         "branches": {
-            "principal": {
-               "isMain": true,
-               "projects": {
-                  "TESTSYNC": "main",
-                  "no-scm": "main",
-                  "okorach_sonar-tools": "master",
-                  "secrets-leak": "main"
-               }
-            },
-            "some,funky\"branch": {
-               "projects": {
-                  "TESTSYNC": "some-branch",
-                  "no-scm": "main",
-                  "okorach_sonar-tools": "master",
-                  "secrets-leak": "main"
-               }
-            },
-            "some-app-branch": {
-               "projects": {
-                  "TESTSYNC": "some-branch",
-                  "no-scm": "main",
-                  "okorach_sonar-tools": "master",
-                  "secrets-leak": "main"
-               }
-            }
-         },
-         "name": "App Test 2",
-         "permissions": {
-            "groups": {
-               "sonar-administrators": "admin, user",
-               "sonar-users": "user"
-            }
-         },
-         "visibility": "private"
-      },
       "App_with_no_perms": {
          "branches": {
             "main": {
@@ -101,6 +64,33 @@
          },
          "name": "App with no perms",
          "permissions": {
+            "groups": {},
+            "users": {
+               "admin": "admin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "FE-BE": {
+         "branches": {
+            "main": {
+               "isMain": true,
+               "projects": {
+                  "web-backend": "main",
+                  "web-frontend": "main"
+               }
+            }
+         },
+         "description": "A web app with a separate front-end and back-end project",
+         "name": "Front-end / Back-end",
+         "permissions": {
+            "groups": {
+               "developers": "user",
+               "project-admins": "admin, user",
+               "security-auditors": "user",
+               "sonar-administrators": "admin, user",
+               "tech-leads": "user"
+            },
             "users": {
                "admin": "admin, user"
             }
@@ -112,9 +102,11 @@
             "main": {
                "isMain": true,
                "projects": {
-                  "demo:jcl": "main",
-                  "demo:target-awareness": "main",
-                  "exclusions-2": "main"
+                  "project1": "main",
+                  "project2": "main",
+                  "project3": "main",
+                  "project4": "main",
+                  "proyecto5": "main"
                }
             }
          },
@@ -129,13 +121,16 @@
       }
    },
    "globalSettings": {
+      "analysisScope": {
+         "sonar.global.exclusions": "**/vendor/**, **/lib/**"
+      },
       "authentication": {
          "sonar.auth.bitbucket.allowUsersToSignUp": true,
          "sonar.auth.bitbucket.enabled": false,
          "sonar.auth.github.allowUsersToSignUp": true,
          "sonar.auth.github.apiUrl": "https://api.github.com/",
          "sonar.auth.github.appId": 946173,
-         "sonar.auth.github.enabled": false,
+         "sonar.auth.github.enabled": true,
          "sonar.auth.github.groupsSync": false,
          "sonar.auth.github.organizations": "okorach-org",
          "sonar.auth.github.webUrl": "https://github.com/",
@@ -148,7 +143,7 @@
          "sonar.auth.saml.enabled": false,
          "sonar.auth.saml.providerName": "SAML",
          "sonar.auth.saml.signature.enabled": false,
-         "sonar.auth.token.max.allowed.lifetime": "No expiration",
+         "sonar.auth.token.max.allowed.lifetime": "1 year",
          "sonar.forceAuthentication": true
       },
       "devopsIntegration": {
@@ -176,10 +171,11 @@
       "generalSettings": {
          "provisioning.github.project.visibility.enabled": true,
          "provisioning.gitlab.enabled": false,
-         "sonar.ai.suggestions.enabled": "ENABLED_FOR_SOME_PROJECTS",
+         "sonar.ai.suggestions.enabled": "ENABLED_FOR_ALL_PROJECTS",
          "sonar.allowPermissionManagementForProjectAdmins": false,
          "sonar.announcement.displayMessage": false,
          "sonar.announcement.message": "You are on LATEST",
+         "sonar.autodetect.ai.code": true,
          "sonar.builtInQualityProfiles.disableNotificationOnUpdate": false,
          "sonar.ce.parallelProjectTasks": false,
          "sonar.core.serverBaseURL": "https://latest.olivierk.ngrok.io",
@@ -205,16 +201,21 @@
          "sonar.governance.report.project.branch.frequency": "Monthly",
          "sonar.governance.report.view.frequency": "Monthly",
          "sonar.kubernetes.activate": true,
+         "sonar.kubernetes.helm.activate": true,
          "sonar.lf.enableGravatar": false,
          "sonar.lf.gravatarServerUrl": "https://secure.gravatar.com/avatar/{EMAIL_MD5}.jpg?s={SIZE}&d=identicon",
+         "sonar.login.displayMessage": true,
+         "sonar.login.message": "Welcome to <a href=\"https://www.spuerbank.com\" target=\"_blank\" rel=\"noopener noreferrer\">superbank.com</a> SonarQube.<br/>Please log in using your GitHub account, Welcome to [superbank.com](https://www.spuerbank.com) SonarQube.\nPlease log in using your GitHub account",
+         "sonar.multi-quality-mode.enabled": true,
+         "sonar.pdf.confidential.header.enabled": true,
          "sonar.plugins.downloadOnlyRequired": true,
-         "sonar.portfolios.confidential.header": true,
          "sonar.projectCreation.mainBranchName": "main",
-         "sonar.qualityProfiles.allowDisableInheritedRules": true,
+         "sonar.qualityProfiles.allowDisableInheritedRules": false,
          "sonar.qualitygate.ignoreSmallChanges": true,
+         "sonar.scanner.skipNodeProvisioning": false,
          "sonar.scm.disabled": false,
          "sonar.technicalDebt.developmentCost": 30,
-         "sonar.technicalDebt.ratingGrid": "0.05,0.1,0.2,0.5",
+         "sonar.technicalDebt.ratingGrid": "0.03,0.07,0.2,0.5",
          "sonar.validateWebhooks": true,
          "webhooks": {
             "Jenkins": {
@@ -225,6 +226,9 @@
       "languages": {
          "abap": {
             "sonar.abap.file.suffixes": ".ab4, .abap, .asprog, .flow"
+         },
+         "ansible": {
+            "sonar.ansible.activate": true
          },
          "apex": {
             "sonar.apex.file.suffixes": ".cls, .trigger"
@@ -301,6 +305,7 @@
             "sonar.jcl.file.suffixes": ".jcl"
          },
          "json": {
+            "sonar.json.activate": false,
             "sonar.json.file.suffixes": ".json"
          },
          "jsp": {
@@ -328,7 +333,7 @@
          "python": {
             "sonar.python.coverage.reportPaths": "coverage-reports/*coverage-*.xml",
             "sonar.python.file.suffixes": "py",
-            "sonar.python.xunit.reportPath": "xunit-reports/xunit-result-*.xml",
+            "sonar.python.xunit.reportPath": "build//xunit-results*.xml",
             "sonar.python.xunit.skipDetails": false
          },
          "rpg": {
@@ -352,7 +357,7 @@
          },
          "text": {
             "sonar.text.activate": true,
-            "sonar.text.inclusions": "**/*, **/*.bash, **/*.conf, **/*.config, **/*.ksh, **/*.pem, **/*.properties, **/*.ps1, **/*.sh, **/*.zsh, .aws/config, .env",
+            "sonar.text.inclusions": "**/*.sh, **/*.bash, **/*.zsh, **/*.ksh, **/*.ps1, **/*.properties, **/*.conf, **/*.pem, **/*.config, .env, .aws/config",
             "sonar.text.inclusions.activate": true
          },
          "tsql": {
@@ -375,17 +380,13 @@
             "sonar.xml.file.suffixes": ".xml, .xsd, .xsl"
          },
          "yaml": {
+            "sonar.yaml.activate": false,
             "sonar.yaml.file.suffixes": ".yaml, .yml"
          }
       },
       "linters": {
          "sonar.checkstyle.filters": "<module name=\"SuppressWarningsFilter\" />",
-         "sonar.checkstyle.treewalkerfilters": "<module name=\"SuppressionCommentFilter\" />",
-         "sonar.findbugs.allowuncompiledcode": false,
-         "sonar.findbugs.analyzeTests": true,
-         "sonar.findbugs.confidenceLevel": "medium",
-         "sonar.findbugs.effort": "Default",
-         "sonar.findbugs.timeout": 600000
+         "sonar.checkstyle.treewalkerfilters": "<module name=\"SuppressionCommentFilter\" />"
       },
       "permissionTemplates": {
          "0. Default Template for portfolio": {
@@ -425,22 +426,44 @@
                }
             }
          },
-         "9. Bad Template - No permissions and bad pattern": {
-            "description": "A wrong template with no permission and whsoe projectKeyPattern would select a single project",
-            "pattern": "my_favorite_project"
-         },
-         "9. Bad Template with wildcard instead of regexp": {
-            "description": "Bad template that uses wildcard project key pattern instead of regexp",
-            "pattern": "BANKING-INVEST-.*"
-         },
-         "Default template": {
-            "description": "Default",
+         "9. Bad Template - Bad pattern": {
+            "description": "A wrong template whose projectKeyPattern would select a single project... at best. This is probably not the intended behavior. Templates make sense only if used for multiple projects",
+            "pattern": "my_favorite_project",
             "permissions": {
                "groups": {
-                  "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
-                  "sonar-users": "user"
+                  "ci-tools": "scan",
+                  "developers": "codeviewer, user",
+                  "quality-managers": "issueadmin, securityhotspotadmin",
+                  "security-auditors": "issueadmin, securityhotspotadmin",
+                  "tech-leads": "codeviewer, issueadmin, securityhotspotadmin, user"
                }
             }
+         },
+         "9. Bad template - Permission templates granted to users": {
+            "description": "A bad perm template with perms granted directly to user",
+            "pattern": "badbadbad.*",
+            "permissions": {
+               "users": {
+                  "james": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+                  "michal": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+                  "olivier": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user"
+               }
+            }
+         },
+         "9. Bad template - Permissions granted to Anyone": {
+            "description": "A permission template that grants permissions to Anyone (ie unauthenticated users), this is a bad practice",
+            "pattern": "BAD9.*",
+            "permissions": {
+               "groups": {
+                  "Anyone": "user",
+                  "ci-tools": "scan",
+                  "developers": "codeviewer, user"
+               }
+            }
+         },
+         "9. Bad template - no permissions": {
+            "description": "A template with no permissions granted. This makes little sense",
+            "pattern": "FOOBAR.*"
          }
       },
       "permissions": {
@@ -452,8 +475,9 @@
             "sonar-users": "applicationcreator, portfoliocreator"
          }
       },
+      "sastConfig": {},
+      "tests": {},
       "thirdParty": {
-         "sonar.ansible.activate": true,
          "sonar.dependencyCheck.htmlReportPath": "${WORKSPACE}/dependency-check-report.html",
          "sonar.dependencyCheck.jsonReportPath": "${WORKSPACE}/dependency-check-report.json",
          "sonar.dependencyCheck.securityHotspot": false,
@@ -463,30 +487,39 @@
          "sonar.dependencyCheck.skip": false,
          "sonar.dependencyCheck.summarize": false,
          "sonar.dependencyCheck.useFilePath": false,
-         "sonar.scanner.skipNodeProvisioning": false
+         "sonar.enforceAzureOpenAiDomainValidation": true,
+         "sonar.jasmin.enabled": false,
+         "sonar.rust.clippy.enabled": true,
+         "sonar.rust.file.suffixes": ".rs",
+         "sonar.sca.enabled": true,
+         "sonar.sca.rescan.branch_type": "Kept branches only",
+         "sonar.sca.rescan.frequency": "Daily"
       }
    },
    "groups": {
       "ci-tools": "Service accounts for CI tools",
       "developers": "Developers",
+      "gl-admins": "",
+      "gl-admins/gl-devs": "",
       "language-experts": "Language experts in charge of defining the company governance in terms of Quality Profiles (rulesets enforced in the company)",
       "project-admins": "Project administrators in charge of project configuration",
       "quality-managers": "Quality Managers in charge of defining company governance in terms of quality gates",
       "security-auditors": "Security Auditors in charge of reviewing security issues",
       "sonar-administrators": "SonarQube administrators",
-      "tech-leads": "Senior developers in charge of reviewing issues"
+      "tech-leads": "Senior developers in charge of reviewing issues",
+      "z comma , group": ""
    },
    "platform": {
       "edition": "enterprise",
       "plugins": {
          "checkstyle": "10.17.0 [Checkstyle]",
+         "creedengojava": "2.1.1 [creedengo - Java language]",
          "dependencycheck": "5.0.0 [Dependency-Check]",
-         "ecocodephp": "1.4.4 [ecoCode - PHP language]",
-         "findbugs": "4.2.9 [Findbugs]"
+         "ecocodephp": "1.4.4 [ecoCode - PHP language]"
       },
       "serverId": "243B8A4D-AY5SFSbmgIK8PCmM81th",
       "url": "https://latest.olivierk.ngrok.io",
-      "version": "10.8.0"
+      "version": "2025.4.2"
    },
    "portfolios": {
       "All": {
@@ -534,11 +567,7 @@
                   },
                   "Corporate_loans": {
                      "name": "Corporate loans",
-                     "projects": {
-                        "manual": {
-                           "no-scm": "-DEFAULT_BRANCH-"
-                        }
-                     }
+                     "projects": {}
                   }
                },
                "projects": {
@@ -557,11 +586,7 @@
                }
             }
          },
-         "projects": {
-            "manual": {
-               "BANKING-PORTAL": "-DEFAULT_BRANCH-"
-            }
-         },
+         "projects": {},
          "visibility": "private"
       },
       "CEO_Strategic_Projects": {
@@ -572,14 +597,7 @@
                "sonar-users": "user"
             }
          },
-         "projects": {
-            "manual": {
-               "BANKING-ASIA-OPS": "-DEFAULT_BRANCH-",
-               "TEST": "-DEFAULT_BRANCH-",
-               "demo:jcl": "-DEFAULT_BRANCH-",
-               "okorach_sonar-tools": "develop, master"
-            }
-         },
+         "projects": {},
          "visibility": "private"
       },
       "CORP-INSURANCE": {
@@ -598,11 +616,7 @@
             },
             "Other_Insurance": {
                "name": "Other Insurance",
-               "projects": {
-                  "manual": {
-                     "TESTSYNC": "-DEFAULT_BRANCH-"
-                  }
-               }
+               "projects": {}
             }
          },
          "visibility": "public"
@@ -636,14 +650,29 @@
          },
          "projects": {
             "manual": {
-               "demo:jcl": "-DEFAULT_BRANCH-",
-               "okorach_audio-video-tools": "-DEFAULT_BRANCH-"
+               "INSURANCE-LIFE": "-DEFAULT_BRANCH-",
+               "INSURANCE-PET": "-DEFAULT_BRANCH-"
             }
          },
          "visibility": "public"
       },
+      "DEMOS": {
+         "description": "Demo projects gathered by tag",
+         "name": "Demo projects",
+         "permissions": {
+            "groups": {
+               "sonar-users": "admin"
+            }
+         },
+         "projects": {
+            "branch": "-DEFAULT_BRANCH-",
+            "tags": "demo"
+         },
+         "visibility": "public"
+      },
       "PORTFOLIO-OLIVIER": {
-         "name": "Olivier's project",
+         "description": "Portfolios of all Olivier's projects",
+         "name": "Olivier's projects",
          "permissions": {
             "groups": {
                "sonar-administrators": "admin"
@@ -672,14 +701,15 @@
          "name": "All projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin"
+               "sonar-administrators": "admin, user",
+               "sonar-users": "user"
             }
          },
          "projects": {
             "branch": "-DEFAULT_BRANCH-",
             "rest": true
          },
-         "visibility": "public"
+         "visibility": "private"
       },
       "PORTFOLIO_APPS": {
          "applications": {
@@ -705,28 +735,16 @@
          },
          "projects": {
             "manual": {
+               "BANKING-INVESTMENT-EQUITY": "-DEFAULT_BRANCH-",
+               "BANKING-INVESTMENT-MERGER": "-DEFAULT_BRANCH-",
                "BANKING-PORTAL": [
                   "comma,branch",
                   "main",
                   "release-3.2"
-               ],
-               "demo:github-actions-cli": "-DEFAULT_BRANCH-"
+               ]
             }
          },
          "visibility": "private"
-      },
-      "PORTFOLIO_TAGS": {
-         "name": "Portfolio of python projects",
-         "permissions": {
-            "groups": {
-               "sonar-administrators": "admin"
-            }
-         },
-         "projects": {
-            "branch": "-DEFAULT_BRANCH-",
-            "tags": "python"
-         },
-         "visibility": "public"
       },
       "PORT_FAV_PROJECTS": {
          "name": "My favorite projects",
@@ -738,17 +756,13 @@
          },
          "projects": {
             "manual": {
-               "okorach_audio-video-tools": "-DEFAULT_BRANCH-",
-               "okorach_sonar-tools": "-DEFAULT_BRANCH-"
-            }
-         },
-         "visibility": "private"
-      },
-      "Portfolio_with_no_perms": {
-         "name": "Portfolio with no perms",
-         "permissions": {
-            "users": {
-               "admin": "admin, user"
+               "ai-code-fix": "-DEFAULT_BRANCH-",
+               "code-variants": "-DEFAULT_BRANCH-",
+               "creedengo-issues": "-DEFAULT_BRANCH-",
+               "demo-rules": "-DEFAULT_BRANCH-",
+               "demo:autoconfig": "-DEFAULT_BRANCH-",
+               "demo:coverage": "-DEFAULT_BRANCH-",
+               "mute-in-ide": "-DEFAULT_BRANCH-"
             }
          },
          "visibility": "private"
@@ -768,9 +782,55 @@
       }
    },
    "projects": {
+      "25k-issues": {
+         "name": "25k-issues",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "BANKING-ACQUISITIONS": {
+         "name": "BANKING-ACQUISITIONS",
+         "permissions": {
+            "groups": {
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "olivier-k31581": "admin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "BANKING-ACQUISITIONS-DILIGENCE": {
+         "name": "BANKING-ACQUISITIONS-DILIGENCE",
+         "permissions": {
+            "groups": {
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "olivier-k31581": "admin, user"
+            }
+         },
+         "visibility": "private"
+      },
       "BANKING-AFRICA-OPS": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -781,38 +841,21 @@
          "name": "Banking Africa operations",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "africa",
-         "visibility": "public"
-      },
-      "BANKING-ASIA-OPS": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "links": [
-            {
-               "name": "homepage",
-               "type": "homepage",
-               "url": "http://maven.apache.org"
-            }
-         ],
-         "name": "Banking Asia Operations",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "tags": "asia, operations",
-         "visibility": "public"
+         "visibility": "private"
       },
       "BANKING-INVESTMENT-EQUITY": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -820,20 +863,21 @@
                "url": "http://maven.apache.org"
             }
          ],
-         "name": "Equity management",
+         "name": "BANKING-INVESTMENT-EQUITY",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "olivier-k31581": "admin, user"
             }
          },
-         "tags": "banking",
-         "visibility": "public"
+         "visibility": "private"
       },
       "BANKING-INVESTMENT-MERGER": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -841,19 +885,36 @@
                "url": "http://maven.apache.org"
             }
          ],
-         "name": "Mergers and Acquisitions",
+         "name": "BANKING-INVESTMENT-MERGER",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "olivier-k31581": "admin, user"
             }
          },
-         "tags": "americas, banking",
-         "visibility": "public"
+         "visibility": "private"
+      },
+      "BANKING-MERGERS": {
+         "name": "BANKING-MERGERS",
+         "permissions": {
+            "groups": {
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "olivier-k31581": "admin, user"
+            }
+         },
+         "visibility": "private"
       },
       "BANKING-PORTAL": {
-         "aiCodeFix": false,
          "branches": {
             "comma,branch": {
                "keepWhenInactive": true
@@ -865,7 +926,6 @@
                "keepWhenInactive": true
             }
          },
-         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -873,19 +933,21 @@
                "url": "http://maven.apache.org"
             }
          ],
-         "name": "Banking portal",
+         "name": "BANKING-PORTAL",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "olivier-k31581": "admin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
       },
       "BANKING-PRIVATE-ASSETS": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -893,19 +955,21 @@
                "url": "http://maven.apache.org"
             }
          ],
-         "name": "Assets Management",
+         "name": "BANKING-PRIVATE-ASSETS",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "olivier-k31581": "admin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
       },
       "BANKING-PRIVATE-WEALTH": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -916,16 +980,21 @@
          "name": "Wealth Management",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "banking, private-banking",
-         "visibility": "public"
+         "visibility": "private"
       },
       "BANKING-RETAIL-ATM": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -936,17 +1005,21 @@
          "name": "Retail - ATM",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "banking, retail",
-         "visibility": "public"
+         "visibility": "private"
       },
       "BANKING-RETAIL-CLERK": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -957,17 +1030,21 @@
          "name": "Retail Clerk",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "banking, retail",
-         "visibility": "public"
+         "visibility": "private"
       },
       "BANKING-TRADING-EURO": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -975,20 +1052,21 @@
                "url": "http://maven.apache.org"
             }
          ],
-         "name": "Eurostoxx trading",
+         "name": "BANKING-TRADING-EURO",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "olivier-k31581": "admin, user"
             }
          },
-         "tags": "europe, trading",
-         "visibility": "public"
+         "visibility": "private"
       },
       "BANKING-TRADING-JAPAN": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -996,20 +1074,21 @@
                "url": "http://maven.apache.org"
             }
          ],
-         "name": "Japan trading",
+         "name": "BANKING-TRADING-JAPAN",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "olivier-k31581": "admin, user"
             }
          },
-         "tags": "asia, trading",
-         "visibility": "public"
+         "visibility": "private"
       },
       "BANKING-TRADING-NASDAQ": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1017,109 +1096,92 @@
                "url": "http://maven.apache.org"
             }
          ],
-         "name": "Nasdaq trading",
+         "name": "BANKING-TRADING-NASDAQ",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "olivier-k31581": "admin, user"
             }
          },
-         "tags": "americas, trading",
-         "visibility": "public"
+         "visibility": "private"
+      },
+      "INSURANCE-HEALTH": {
+         "name": "INSURANCE-HEALTH",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin"
+            }
+         },
+         "visibility": "private"
       },
       "INSURANCE-HOME": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "links": [
-            {
-               "name": "homepage",
-               "type": "homepage",
-               "url": "http://maven.apache.org"
-            }
-         ],
-         "name": "Home Insurance",
+         "name": "INSURANCE-HOME",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "tags": "insurance",
-         "visibility": "public"
+         "visibility": "private"
       },
       "INSURANCE-LIFE": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "links": [
-            {
-               "name": "homepage",
-               "type": "homepage",
-               "url": "http://maven.apache.org"
-            }
-         ],
-         "name": "Life Insurance",
+         "name": "INSURANCE-LIFE",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "tags": "insurance, life-insurance",
-         "visibility": "public"
+         "visibility": "private"
       },
       "INSURANCE-PET": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "links": [
-            {
-               "name": "homepage",
-               "type": "homepage",
-               "url": "http://maven.apache.org"
-            }
-         ],
-         "name": "Pet Insurance",
+         "name": "INSURANCE-PET",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "tags": "insurance",
-         "visibility": "public"
-      },
-      "Project-with-no-perms": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "Project with no perms",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "RETAIL-ATM": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "Retail - ATM",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
+         "visibility": "private"
       },
       "RETAIL-WEB": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1130,242 +1192,119 @@
          "name": "Retail Web",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "banking, retail",
-         "visibility": "public"
+         "visibility": "private"
       },
       "TEST": {
-         "aiCodeFix": false,
-         "binding": {
-            "key": "GitHub okorach-org",
-            "repository": "okorach-org/demo-github-azdo",
-            "summaryCommentEnabled": true
-         },
-         "containsAiCode": false,
-         "links": [
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "Google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            },
-            {
-               "name": "google",
-               "type": "google",
-               "url": "https://google.com"
-            }
-         ],
-         "name": "demo-github-azdo",
+         "name": "name",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin"
             }
          },
-         "qualityGate": "Sonar way",
-         "visibility": "public",
-         "webhooks": {
-            "Jenkins": {
-               "url": "https://jenkins.acme.com"
-            }
-         }
+         "visibility": "private"
       },
       "TESTSYNC": {
-         "aiCodeFix": false,
-         "branches": {
-            "main": {
-               "keepWhenInactive": true
-            },
-            "some-branch": {
-               "isMain": true
-            }
-         },
-         "containsAiCode": false,
          "name": "TESTSYNC",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin"
             }
          },
-         "visibility": "public"
-      },
-      "TESTSYNC2": {
-         "aiCodeFix": false,
-         "branches": {
-            "main-branch": {
-               "isMain": true
-            }
-         },
-         "containsAiCode": false,
-         "name": "TESTSYNC2",
-         "permissions": {
-            "groups": {
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
+         "visibility": "private"
       },
       "ai-code-fix": {
-         "aiCodeFix": true,
-         "branches": {
-            "main": {
-               "isMain": true
-            }
-         },
-         "containsAiCode": true,
          "name": "AI CodeFix examples",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "sonar.autodetect.ai.code": false,
+         "tags": "demo",
+         "visibility": "private"
+      },
+      "autoconf-protobuf": {
+         "name": "autoconf-protobuf",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "sonar.cfamily.customTargetArch": "aarch64_32",
+         "sonar.cfamily.customTargetEnv": "gnuabi64",
+         "sonar.cfamily.customTargetSystem": "cuda",
+         "sonar.cfamily.customTargetVendor": "nvidia",
+         "visibility": "private"
+      },
+      "bad:stale-project": {
+         "links": [
+            {
+               "name": "homepage",
+               "type": "homepage",
+               "url": "http://maven.apache.org"
+            }
+         ],
+         "name": "BANKING-ASIA-OPS",
+         "permissions": {
+            "groups": {
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "olivier-k31581": "admin, user"
+            }
+         },
+         "visibility": "private"
       },
       "checkstyle-issues": {
-         "aiCodeFix": false,
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -1374,7 +1313,6 @@
                "isMain": true
             }
          },
-         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1385,266 +1323,49 @@
          "name": "Project with checkstyle issues",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "demo-rules": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "Demo rules",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "demo:ado-cli": {
-         "aiCodeFix": false,
-         "binding": {
-            "key": "ADO",
-            "repository": "demo-ado-cli",
-            "slug": "Demos"
-         },
-         "containsAiCode": false,
-         "name": "demo-ado-cli",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "demo:autoconfig": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "Demo Autoconfig",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "demo:autoconfig:carbon": {
-         "aiCodeFix": false,
-         "branches": {
-            "develop": {
-               "isMain": true
-            }
-         },
-         "containsAiCode": false,
-         "name": "Demo Autoconfig Carbon",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "demo:github-actions-cli": {
-         "aiCodeFix": false,
-         "binding": {
-            "key": "GitHub okorach-org",
-            "repository": "okorach-org/demo-actions-cli",
-            "summaryCommentEnabled": true
-         },
-         "containsAiCode": false,
-         "name": "GitHub / Actions / CLI",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "demo:github-actions-maven": {
-         "aiCodeFix": false,
-         "binding": {
-            "key": "GitHub okorach",
-            "repository": "okorach/demo-actions-maven",
-            "summaryCommentEnabled": true
-         },
-         "containsAiCode": false,
-         "name": "GitHub / Actions / Maven",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
             },
             "users": {
-               "admin": "scan"
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "qualityGate": "Siemens Healthineers QG",
-         "visibility": "public"
+         "qualityProfiles": {
+            "java": "Sonar Way + Checkstyle"
+         },
+         "visibility": "private"
       },
-      "demo:github-actions-mono-cli": {
-         "aiCodeFix": false,
-         "binding": {
-            "key": "GitHub okorach",
-            "monorepo": true,
-            "repository": "okorach/demo-actions-monorepo",
-            "summaryCommentEnabled": true
-         },
-         "branches": {
-            "master": {
-               "isMain": true
-            }
-         },
-         "containsAiCode": false,
-         "name": "GitHub / Actions / monorepo CLI",
+      "code-variants": {
+         "name": "code-variants",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
       },
-      "demo:github-actions-mono-dotnet": {
-         "aiCodeFix": false,
-         "binding": {
-            "key": "GitHub okorach",
-            "monorepo": true,
-            "repository": "okorach/demo-actions-monorepo",
-            "summaryCommentEnabled": true
-         },
+      "creedengo-issues": {
          "branches": {
-            "master": {
-               "isMain": true
-            }
-         },
-         "containsAiCode": false,
-         "name": "GitHub / Actions / monorepo .Net Core",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "demo:github-actions-mono-gradle": {
-         "aiCodeFix": false,
-         "binding": {
-            "key": "GitHub okorach",
-            "monorepo": true,
-            "repository": "okorach/demo-actions-monorepo",
-            "summaryCommentEnabled": true
-         },
-         "branches": {
-            "master": {
-               "isMain": true
-            }
-         },
-         "containsAiCode": false,
-         "name": "GitHub / Actions / monorepo Gradle",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "qualityGate": "Sonar way w/o coverage",
-         "visibility": "public"
-      },
-      "demo:github-actions-mono-maven": {
-         "aiCodeFix": false,
-         "binding": {
-            "key": "GitHub okorach",
-            "monorepo": true,
-            "repository": "okorach/demo-actions-monorepo",
-            "summaryCommentEnabled": true
-         },
-         "branches": {
+            "develop": {
+               "keepWhenInactive": true
+            },
             "main": {
                "isMain": true
-            },
-            "master": {
-               "keepWhenInactive": true
             }
          },
-         "containsAiCode": false,
-         "name": "GitHub / Actions / monorepo Maven",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "tags": "africa, insurance",
-         "visibility": "public"
-      },
-      "demo:gitlab-ci-maven": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "GitLab-CI / Maven",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "demo:gitlab:gradle": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "GitLab / Gradle",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "demo:gitlab:scanner-cli": {
-         "aiCodeFix": false,
-         "branches": {
-            "main": {
-               "isMain": true
-            },
-            "master": {
-               "keepWhenInactive": true
-            }
-         },
-         "containsAiCode": false,
-         "name": "GitLab / Scanner CLI",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "demo:java-security": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -1652,125 +1373,561 @@
                "url": "http://maven.apache.org"
             }
          ],
-         "name": "Java Web App",
+         "name": "Creedengo",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "sonar.coverage.exclusions": "**/*.css, **/.htm*",
+         "visibility": "private"
+      },
+      "demo-autoconfig": {
+         "name": "demo-autoconfig",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo-rules": {
+         "name": "demo-rules",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo:ado-cli": {
+         "name": "demo:ado-cli",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo:autoconfig": {
+         "name": "demo:autoconfig",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo:autoconfig:carbon": {
+         "branches": {
+            "develop": {
+               "isMain": true
+            }
+         },
+         "name": "demo:autoconfig:carbon",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo:coverage": {
+         "name": "demo:coverage",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo:github-actions-cli": {
+         "name": "GitHub / Actions / CLI",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo:github-actions-maven": {
+         "binding": {
+            "key": "GitHub okorach",
+            "repository": "okorach/demo-actions-maven",
+            "summaryCommentEnabled": true
+         },
+         "name": "demo:github-actions-maven",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo:github-actions-mono-cli": {
+         "branches": {
+            "master": {
+               "isMain": true
+            }
+         },
+         "name": "GitHub / Actions / monorepo CLI",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo:github-actions-mono-dotnet": {
+         "branches": {
+            "master": {
+               "isMain": true
+            }
+         },
+         "name": "GitHub / Actions / monorepo .Net Core",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo:github-actions-mono-gradle": {
+         "branches": {
+            "master": {
+               "isMain": true
+            }
+         },
+         "name": "GitHub / Actions / monorepo Gradle",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo:github-actions-mono-maven": {
+         "branches": {
+            "main": {
+               "isMain": true
+            },
+            "master": {
+               "keepWhenInactive": true
+            }
+         },
+         "name": "demo:github-actions-mono-maven",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo:gitlab-ci-maven": {
+         "name": "GitLab-CI / Maven",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo:gitlab:gradle": {
+         "name": "demo:gitlab:gradle",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo:gitlab:scanner-cli": {
+         "binding": {
+            "key": "gitlab.com",
+            "repository": "30584574"
+         },
+         "branches": {
+            "main": {
+               "isMain": true
+            },
+            "master": {
+               "keepWhenInactive": true
+            }
+         },
+         "name": "demo:gitlab:scanner-cli",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo:java-security": {
+         "links": [
+            {
+               "name": "homepage",
+               "type": "homepage",
+               "url": "http://maven.apache.org"
+            }
+         ],
+         "name": "security",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user"
+            }
+         },
+         "visibility": "private"
       },
       "demo:jcl": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "Demo JCL",
+         "name": "JCL Demo",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
+      },
+      "demo:juice-shop": {
+         "links": [
+            {
+               "name": "homepage",
+               "type": "homepage",
+               "url": "https://owasp-juice.shop"
+            },
+            {
+               "name": "scm",
+               "type": "scm",
+               "url": "https://github.com/juice-shop/juice-shop.git"
+            },
+            {
+               "name": "issue",
+               "type": "issue",
+               "url": "https://github.com/juice-shop/juice-shop/issues"
+            }
+         ],
+         "name": "juice-shop",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin"
+            }
+         },
+         "visibility": "private"
+      },
+      "demo:sca-log4shell-detect-maven": {
+         "branches": {
+            "main": {
+               "isMain": true
+            }
+         },
+         "links": [
+            {
+               "name": "scm",
+               "type": "scm",
+               "url": "https://github.com/okorach/log4shell-detect"
+            },
+            {
+               "name": "homepage",
+               "type": "homepage",
+               "url": "https://github.com/okorach/log4shell-detect"
+            }
+         ],
+         "name": "SCA demo - Log4shell detect - Maven",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
       },
       "demo:secrets": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "Demo Secrets Detection",
+         "name": "Secrets detection",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "qualityProfiles": {
+            "secrets": "Corp Way"
+         },
+         "sonar.text.inclusions": "**/*, **/*.bash, **/*.conf, **/*.config, **/*.ksh, **/*.pem, **/*.properties, **/*.ps1, **/*.sh, **/*.zsh, .aws/config, .env, **/*.xml",
+         "tags": "demo",
+         "visibility": "private"
       },
       "demo:target-awareness": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "Demo: Target awareness",
+         "name": "demo:target-awareness",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
       },
       "dotnet-with-cli": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "name": "dotnet-with-cli",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
       },
       "dvpa": {
-         "aiCodeFix": false,
-         "containsAiCode": true,
          "name": "dvpa",
          "newCodePeriod": "NUMBER_OF_DAYS = 30",
          "permissions": {
             "groups": {
-               "project-admins": "admin, user",
-               "sonar-administrators": "admin",
-               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "qualityGate": "Sonar way",
          "sonar.cfamily.generateComputedConfig": false,
          "visibility": "private"
       },
       "exclusions-2": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "example-2",
+         "name": "exclusions-2",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
-      },
-      "foobar": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "Super long long project name that makes me crazy",
-         "permissions": {
-            "groups": {
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
+         "visibility": "private"
       },
       "gradle-with-cli": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "name": "gradle-with-cli",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
       },
       "juice-shop": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "links": [
             {
                "name": "scm",
@@ -1791,42 +1948,75 @@
          "name": "juice-shop",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
       },
       "maven-with-cli": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "Maven project analyzed with Scanner CLI",
+         "name": "maven-with-cli",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
+      },
+      "mute-in-ide": {
+         "name": "Mute issue in IDE",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
       },
       "no-scm": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "No SCM",
+         "name": "no-scm",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "tags": "retail-banking",
-         "visibility": "public"
+         "visibility": "private"
       },
       "okorach-org_pr-demo_3a1857ec-cebc-49f2-96ac-9bbc99111469": {
-         "aiCodeFix": false,
          "binding": {
             "key": "GitHub okorach-org",
             "repository": "okorach-org/pr-demo",
@@ -1837,83 +2027,116 @@
                "isMain": true
             }
          },
-         "containsAiCode": false,
          "name": "pr-demo",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
       },
       "okorach_audio-video-tools": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "Audio Video Tools",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "tags": "python",
-         "visibility": "public"
-      },
-      "okorach_demo-gitlabci-cli_e81d5112-e681-44b2-aee4-62b56c8ac5cb": {
-         "aiCodeFix": false,
-         "binding": {
-            "key": "gitlab.com",
-            "repository": "30584574",
-            "summaryCommentEnabled": true
-         },
          "branches": {
-            "master": {
-               "isMain": true
-            }
-         },
-         "containsAiCode": false,
-         "name": "Demo GitLab-CI CLI",
-         "permissions": {
-            "users": {
-               "olivier-korach22656": "admin, issueadmin, scan, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "okorach_demo-gitlabci-maven": {
-         "aiCodeFix": false,
-         "binding": {
-            "key": "gitlab.com",
-            "repository": "30599779",
-            "summaryCommentEnabled": true
-         },
-         "containsAiCode": false,
-         "name": "Demo Gitlab Maven",
-         "permissions": {
-            "users": {
-               "admin": "admin",
-               "olivier-korach22656": "admin, issueadmin, scan, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "okorach_sonar-tools": {
-         "aiCodeFix": false,
-         "branches": {
-            "comma,branch": {
-               "keepWhenInactive": true
-            },
             "develop": {
                "keepWhenInactive": true
             },
+            "main": {
+               "isMain": true
+            }
+         },
+         "name": "okorach_audio-video-tools",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "okorach_demo-gitlabci-cli_e81d5112-e681-44b2-aee4-62b56c8ac5cb": {
+         "name": "okorach_demo-gitlabci-cli_e81d5112-e681-44b2-aee4-62b56c8ac5cb",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "okorach_demo-gitlabci-maven": {
+         "name": "okorach_demo-gitlabci-maven",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "okorach_docker-hello-world": {
+         "name": "okorach_docker-hello-world",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "okorach_sonar-tools": {
+         "branches": {
+            "comma,branch": {
+               "keepWhenInactive": true,
+               "newCodePeriod": "REFERENCE_BRANCH = develop"
+            },
+            "develop": {
+               "keepWhenInactive": true,
+               "newCodePeriod": "REFERENCE_BRANCH = master"
+            },
             "master": {
                "isMain": true
             }
          },
-         "containsAiCode": false,
          "name": "Sonar Tools",
          "permissions": {
             "groups": {
@@ -1923,7 +2146,15 @@
                "sonar-administrators": "admin, codeviewer, user",
                "sonar-users": "user",
                "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
+         },
+         "qualityGate": "\ud83e\udd47 1 - Corp Gold",
+         "qualityProfiles": {
+            "py": "Olivier Way"
          },
          "sonar.cfamily.ignoreHeaderComments": false,
          "sonar.issue.ignore.multicriteria": [
@@ -1936,78 +2167,138 @@
                "ruleKey": "python:S211"
             }
          ],
-         "tags": "asia, favorites, insurance",
+         "tags": "python",
          "visibility": "private"
       },
-      "okorach_sonar-tools_a9480a73-8778-4aea-8796-240cc13686fb": {
-         "aiCodeFix": false,
-         "binding": {
-            "key": "GitHub okorach",
-            "repository": "okorach/sonar-tools",
-            "summaryCommentEnabled": true
-         },
+      "okorach_sonar-tools-target": {
          "branches": {
+            "comma,branch": {
+               "keepWhenInactive": true
+            },
+            "develop": {
+               "keepWhenInactive": true
+            },
             "master": {
                "isMain": true
             }
          },
-         "containsAiCode": false,
-         "name": "sonar-tools",
+         "name": "Sonar Tools Target",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
             },
             "users": {
-               "admin": "scan"
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
+      },
+      "org.owasp.webgoat:webgoat": {
+         "branches": {
+            "main": {
+               "isMain": true
+            }
+         },
+         "links": [
+            {
+               "name": "scm",
+               "type": "scm",
+               "url": "https://github.com/WebGoat/WebGoat"
+            },
+            {
+               "name": "homepage",
+               "type": "homepage",
+               "url": "https://github.com/WebGoat/WebGoat"
+            },
+            {
+               "name": "issue",
+               "type": "issue",
+               "url": "https://github.com/WebGoat/WebGoat/issues"
+            }
+         ],
+         "name": "WebGoat",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "qualityProfiles": {
+            "java": "Security Max"
+         },
+         "visibility": "private"
       },
       "project-without-analyses": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "name": "Project without analyses",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
       },
       "project1": {
-         "aiCodeFix": false,
          "branches": {
             "develop": {
-               "keepWhenInactive": true
+               "keepWhenInactive": true,
+               "newCodePeriod": "REFERENCE_BRANCH = main"
+            },
+            "feature/new-feature": {
+               "newCodePeriod": "REFERENCE_BRANCH = develop"
             },
             "main": {
-               "isMain": true
+               "isMain": true,
+               "newCodePeriod": "PREVIOUS_VERSION"
+            },
+            "release-3.x": {
+               "keepWhenInactive": true,
+               "newCodePeriod": "NUMBER_OF_DAYS = 80"
+            },
+            "some-branch": {
+               "newCodePeriod": "NUMBER_OF_DAYS = 30"
             }
          },
-         "containsAiCode": false,
-         "links": [
-            {
-               "name": "homepage",
-               "type": "homepage",
-               "url": "http://maven.apache.org"
-            }
-         ],
          "name": "Project 1",
+         "newCodePeriod": "PREVIOUS_VERSION",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "sonar.coverage.jacoco.xmlReportPaths": "**/*jacoco*.xml",
-         "visibility": "public"
+         "visibility": "private"
       },
       "project2": {
-         "aiCodeFix": false,
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -2016,26 +2307,23 @@
                "isMain": true
             }
          },
-         "containsAiCode": false,
-         "links": [
-            {
-               "name": "homepage",
-               "type": "homepage",
-               "url": "http://maven.apache.org"
-            }
-         ],
          "name": "Project 2",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
       },
       "project3": {
-         "aiCodeFix": false,
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -2044,26 +2332,23 @@
                "isMain": true
             }
          },
-         "containsAiCode": false,
-         "links": [
-            {
-               "name": "homepage",
-               "type": "homepage",
-               "url": "http://maven.apache.org"
-            }
-         ],
          "name": "Project 3",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
       },
       "project4": {
-         "aiCodeFix": false,
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -2072,24 +2357,21 @@
                "isMain": true
             }
          },
-         "containsAiCode": false,
-         "links": [
-            {
-               "name": "homepage",
-               "type": "homepage",
-               "url": "http://maven.apache.org"
-            }
-         ],
          "name": "Project 4",
          "permissions": {
             "groups": {
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
       },
       "proyecto5": {
-         "aiCodeFix": false,
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -2098,27 +2380,24 @@
                "isMain": true
             }
          },
-         "containsAiCode": false,
-         "links": [
-            {
-               "name": "homepage",
-               "type": "homepage",
-               "url": "http://maven.apache.org"
-            }
-         ],
          "name": "Project 5",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "tags": "python",
+         "visibility": "private"
       },
       "pytorch": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
          "name": "pytorch",
          "permissions": {
             "groups": {
@@ -2129,102 +2408,33 @@
          },
          "visibility": "private"
       },
-      "rem7annum": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "rem",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "ren6annum3": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "wdfefr",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "secrets-leak": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "secrets-leak",
-         "permissions": {
-            "groups": {
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "testsonar-tools": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "Sonar Tools Test",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "training:complexity": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "Training: Cyclomatic vs Cognitive complexity",
-         "permissions": {
-            "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "training:coverage": {
-         "aiCodeFix": false,
+      "source-key": {
          "branches": {
-            "main": {
+            "develop": {
+               "keepWhenInactive": true
+            },
+            "master": {
                "isMain": true
             }
          },
-         "containsAiCode": false,
-         "name": "Training: Coverage",
+         "name": "Source",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "visibility": "public"
+         "visibility": "private"
       },
-      "training:external-issues": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "Training: External issues import",
-         "permissions": {
-            "groups": {
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "training:security": {
-         "aiCodeFix": false,
+      "third-party-issues": {
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -2233,7 +2443,6 @@
                "isMain": true
             }
          },
-         "containsAiCode": false,
          "links": [
             {
                "name": "homepage",
@@ -2241,101 +2450,173 @@
                "url": "http://maven.apache.org"
             }
          ],
-         "name": "Java Web App",
+         "name": "Third party issues",
          "permissions": {
             "groups": {
-               "project-admins": "admin",
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         },
-         "visibility": "public"
-      },
-      "vscode": {
-         "aiCodeFix": false,
-         "containsAiCode": false,
-         "name": "vscode",
-         "permissions": {
-            "groups": {
-               "sonar-administrators": "admin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
             },
             "users": {
-               "admin": "admin"
+               "admin": "admin, codeviewer, user"
             }
          },
-         "tags": "private-banking",
-         "visibility": "public"
+         "visibility": "private"
+      },
+      "training:complexity": {
+         "name": "Training: Cyclomatic vs Cognitive complexity",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "training:external-issues": {
+         "name": "Training: External issues import",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "training:security": {
+         "links": [
+            {
+               "name": "homepage",
+               "type": "homepage",
+               "url": "http://maven.apache.org"
+            }
+         ],
+         "name": "training:security",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "web-backend": {
+         "name": "Web back-end",
+         "permissions": {
+            "groups": {
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user"
+            }
+         },
+         "visibility": "private"
+      },
+      "web-frontend": {
+         "links": [
+            {
+               "name": "homepage",
+               "type": "homepage",
+               "url": "https://owasp-juice.shop"
+            },
+            {
+               "name": "scm",
+               "type": "scm",
+               "url": "https://github.com/juice-shop/juice-shop.git"
+            },
+            {
+               "name": "issue",
+               "type": "issue",
+               "url": "https://github.com/juice-shop/juice-shop/issues"
+            }
+         ],
+         "name": "Web front-end",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            },
+            "users": {
+               "admin": "admin, codeviewer, user"
+            }
+         },
+         "tags": "3ds",
+         "visibility": "private"
       }
    },
    "qualityGates": {
-      "BU Blah blah": {
-         "conditions": [
-            "new_coverage <= 10",
-            "new_duplicated_lines_density >= 3",
-            "new_security_hotspots_reviewed <= 100",
-            "new_violations >= 0"
-         ]
+      "Sonar way": {
+         "isBuiltIn": true,
+         "isDefault": true
       },
-      "Corp way": {
+      "Sonar way + SCA": {
          "conditions": [
             "new_coverage <= 80",
             "new_duplicated_lines_density >= 3",
             "new_security_hotspots_reviewed <= 100",
             "new_violations >= 0",
-            "test_success_density <= 100"
-         ],
-         "isDefault": true
-      },
-      "QG with no perms": {
-         "conditions": [
-            "new_coverage <= 80",
-            "new_duplicated_lines_density >= 3",
-            "new_security_hotspots_reviewed <= 100",
-            "new_violations >= 0"
-         ]
-      },
-      "Siemens Healthineers QG": {
-         "conditions": [
-            "new_coverage <= 80",
-            "new_duplicated_lines_density >= 3",
-            "new_security_hotspots_reviewed <= 100",
-            "new_software_quality_blocker_issues >= 0",
-            "new_software_quality_high_issues >= 0",
-            "new_software_quality_low_issues >= 0",
-            "new_software_quality_medium_issues >= 0"
-         ]
-      },
-      "Sonar way": {
-         "isBuiltIn": true
-      },
-      "Sonar way (legacy)": {
-         "conditions": [
-            "new_coverage <= 80",
-            "new_duplicated_lines_density >= 3",
-            "new_maintainability_rating >= A",
-            "new_reliability_rating >= A",
-            "new_security_hotspots_reviewed <= 100",
-            "new_security_rating >= A"
+            "sca_severity_licensing >= 19",
+            "sca_severity_vulnerability >= 19"
          ]
       },
       "Sonar way for AI Code": {
          "isBuiltIn": true
       },
-      "Sonar way w/o coverage": {
+      "\ud83e\udd47 1 - Corp Gold": {
          "conditions": [
-            "new_coverage <= 0",
-            "new_duplicated_lines_density >= 3",
+            "new_coverage <= 80",
+            "new_duplicated_lines_density >= 2",
             "new_security_hotspots_reviewed <= 100",
-            "new_violations >= 0"
+            "new_violations >= 0",
+            "prioritized_rule_issues >= 0",
+            "sca_severity_any_issue >= 19",
+            "software_quality_blocker_issues >= 0",
+            "software_quality_reliability_rating >= C",
+            "software_quality_security_rating >= C"
          ]
       },
-      "TEST": {
+      "\ud83e\udd48 2 - Corp Silver": {
          "conditions": [
-            "new_coverage <= 70",
+            "new_coverage <= 50",
             "new_duplicated_lines_density >= 3",
             "new_security_hotspots_reviewed <= 100",
-            "new_violations >= 0"
+            "new_violations >= 0",
+            "prioritized_rule_issues >= 0",
+            "software_quality_security_rating >= C"
+         ]
+      },
+      "\ud83e\udd49 3 - Corp base": {
+         "conditions": [
+            "new_duplicated_lines_density >= 3",
+            "new_software_quality_maintainability_rating >= A",
+            "new_software_quality_reliability_issues >= 0",
+            "new_software_quality_security_issues >= 0"
          ]
       }
    },
@@ -2348,6 +2629,9 @@
       },
       "ansible": {
          "Sonar way": {
+            "children": {
+               "Test": {}
+            },
             "isBuiltIn": true,
             "isDefault": true
          }
@@ -2392,423 +2676,9 @@
          }
       },
       "cs": {
-         "Corp Way": {
-            "children": {
-               "Team A": {
-                  "addedRules": {
-                     "csharpsquid:S126": "CRITICAL",
-                     "csharpsquid:S3447": "CRITICAL",
-                     "csharpsquid:S3962": "MINOR"
-                  }
-               }
-            },
-            "isDefault": true,
-            "permissions": {
-               "groups": [
-                  "z comma , group"
-               ],
-               "users": "michal"
-            },
-            "rules": {
-               "csharpsquid:S1006": "CRITICAL",
-               "csharpsquid:S101": "MINOR",
-               "csharpsquid:S1048": "BLOCKER",
-               "csharpsquid:S1066": "MAJOR",
-               "csharpsquid:S107": {
-                  "params": {
-                     "max": "7"
-                  },
-                  "severity": "MAJOR"
-               },
-               "csharpsquid:S1075": "MINOR",
-               "csharpsquid:S108": "MAJOR",
-               "csharpsquid:S110": {
-                  "params": {
-                     "max": "5"
-                  },
-                  "severity": "MAJOR"
-               },
-               "csharpsquid:S1104": "MINOR",
-               "csharpsquid:S1110": "MAJOR",
-               "csharpsquid:S1116": "MINOR",
-               "csharpsquid:S1117": "MAJOR",
-               "csharpsquid:S1118": "MAJOR",
-               "csharpsquid:S112": "MAJOR",
-               "csharpsquid:S1121": "MAJOR",
-               "csharpsquid:S1123": "MAJOR",
-               "csharpsquid:S1125": "MINOR",
-               "csharpsquid:S1133": "INFO",
-               "csharpsquid:S1134": "MAJOR",
-               "csharpsquid:S1135": "INFO",
-               "csharpsquid:S1144": "MAJOR",
-               "csharpsquid:S1155": "MINOR",
-               "csharpsquid:S1163": "CRITICAL",
-               "csharpsquid:S1168": "MAJOR",
-               "csharpsquid:S1172": "MAJOR",
-               "csharpsquid:S1185": "MINOR",
-               "csharpsquid:S1186": "CRITICAL",
-               "csharpsquid:S1192": {
-                  "params": {
-                     "threshold": "3"
-                  },
-                  "severity": "MINOR"
-               },
-               "csharpsquid:S1199": "MINOR",
-               "csharpsquid:S1206": "MINOR",
-               "csharpsquid:S1210": "MINOR",
-               "csharpsquid:S1215": "CRITICAL",
-               "csharpsquid:S1244": "MAJOR",
-               "csharpsquid:S125": "MAJOR",
-               "csharpsquid:S1264": "MINOR",
-               "csharpsquid:S127": "MAJOR",
-               "csharpsquid:S1313": "MAJOR",
-               "csharpsquid:S1450": "MINOR",
-               "csharpsquid:S1479": {
-                  "params": {
-                     "maximum": "30"
-                  },
-                  "severity": "MAJOR"
-               },
-               "csharpsquid:S1481": "MINOR",
-               "csharpsquid:S1607": "MAJOR",
-               "csharpsquid:S1643": "MINOR",
-               "csharpsquid:S1656": "MAJOR",
-               "csharpsquid:S1696": "MAJOR",
-               "csharpsquid:S1699": "CRITICAL",
-               "csharpsquid:S1751": "MAJOR",
-               "csharpsquid:S1764": "MAJOR",
-               "csharpsquid:S1848": "MAJOR",
-               "csharpsquid:S1854": "MAJOR",
-               "csharpsquid:S1862": "MAJOR",
-               "csharpsquid:S1871": "MAJOR",
-               "csharpsquid:S1905": "MINOR",
-               "csharpsquid:S1939": "MINOR",
-               "csharpsquid:S1940": "MINOR",
-               "csharpsquid:S1944": "CRITICAL",
-               "csharpsquid:S1994": "CRITICAL",
-               "csharpsquid:S2053": "CRITICAL",
-               "csharpsquid:S2068": {
-                  "params": {
-                     "credentialWords": "password, passwd, pwd, passphrase"
-                  },
-                  "severity": "BLOCKER"
-               },
-               "csharpsquid:S2077": "MAJOR",
-               "csharpsquid:S2092": "MINOR",
-               "csharpsquid:S2094": "MINOR",
-               "csharpsquid:S2114": "MAJOR",
-               "csharpsquid:S2115": "BLOCKER",
-               "csharpsquid:S2123": "MAJOR",
-               "csharpsquid:S2139": "MAJOR",
-               "csharpsquid:S2166": "MAJOR",
-               "csharpsquid:S2178": "BLOCKER",
-               "csharpsquid:S2183": "MINOR",
-               "csharpsquid:S2184": "MINOR",
-               "csharpsquid:S2187": "BLOCKER",
-               "csharpsquid:S2190": "BLOCKER",
-               "csharpsquid:S2198": "CRITICAL",
-               "csharpsquid:S2201": "MAJOR",
-               "csharpsquid:S2219": "MINOR",
-               "csharpsquid:S2222": "CRITICAL",
-               "csharpsquid:S2223": "CRITICAL",
-               "csharpsquid:S2225": "MAJOR",
-               "csharpsquid:S2234": "MAJOR",
-               "csharpsquid:S2245": "CRITICAL",
-               "csharpsquid:S2251": "MAJOR",
-               "csharpsquid:S2252": "MAJOR",
-               "csharpsquid:S2257": "CRITICAL",
-               "csharpsquid:S2259": "MAJOR",
-               "csharpsquid:S2275": "BLOCKER",
-               "csharpsquid:S2290": "CRITICAL",
-               "csharpsquid:S2291": "CRITICAL",
-               "csharpsquid:S2292": "MINOR",
-               "csharpsquid:S2326": "MAJOR",
-               "csharpsquid:S2328": "MINOR",
-               "csharpsquid:S2342": {
-                  "params": {
-                     "flagsAttributeFormat": "^([A-Z]{1,3}[a-z0-9]+)*([A-Z]{2})?s$",
-                     "format": "^([A-Z]{1,3}[a-z0-9]+)*([A-Z]{2})?$"
-                  },
-                  "severity": "MINOR"
-               },
-               "csharpsquid:S2344": "MINOR",
-               "csharpsquid:S2345": "MINOR",
-               "csharpsquid:S2346": "CRITICAL",
-               "csharpsquid:S2365": "CRITICAL",
-               "csharpsquid:S2368": "BLOCKER",
-               "csharpsquid:S2372": "MAJOR",
-               "csharpsquid:S2376": "MAJOR",
-               "csharpsquid:S2386": "MINOR",
-               "csharpsquid:S2436": {
-                  "params": {
-                     "max": "2",
-                     "maxMethod": "3"
-                  },
-                  "severity": "MAJOR"
-               },
-               "csharpsquid:S2437": "BLOCKER",
-               "csharpsquid:S2445": "MAJOR",
-               "csharpsquid:S2479": "CRITICAL",
-               "csharpsquid:S2486": "MINOR",
-               "csharpsquid:S2551": "CRITICAL",
-               "csharpsquid:S2583": "MAJOR",
-               "csharpsquid:S2589": "MAJOR",
-               "csharpsquid:S2612": "MAJOR",
-               "csharpsquid:S2629": "MAJOR",
-               "csharpsquid:S2681": "MAJOR",
-               "csharpsquid:S2688": "MAJOR",
-               "csharpsquid:S2692": "CRITICAL",
-               "csharpsquid:S2696": "CRITICAL",
-               "csharpsquid:S2699": "BLOCKER",
-               "csharpsquid:S2701": "CRITICAL",
-               "csharpsquid:S2737": "MINOR",
-               "csharpsquid:S2743": "MAJOR",
-               "csharpsquid:S2755": "BLOCKER",
-               "csharpsquid:S2757": "MAJOR",
-               "csharpsquid:S2761": "MAJOR",
-               "csharpsquid:S2857": "BLOCKER",
-               "csharpsquid:S2925": "MAJOR",
-               "csharpsquid:S2930": "BLOCKER",
-               "csharpsquid:S2933": "MAJOR",
-               "csharpsquid:S2934": "MINOR",
-               "csharpsquid:S2953": "BLOCKER",
-               "csharpsquid:S2955": "MINOR",
-               "csharpsquid:S2970": "BLOCKER",
-               "csharpsquid:S2971": "MAJOR",
-               "csharpsquid:S2995": "MAJOR",
-               "csharpsquid:S2996": "MAJOR",
-               "csharpsquid:S2997": "MAJOR",
-               "csharpsquid:S3005": "MAJOR",
-               "csharpsquid:S3010": "MAJOR",
-               "csharpsquid:S3011": "MAJOR",
-               "csharpsquid:S3060": "BLOCKER",
-               "csharpsquid:S3063": "MAJOR",
-               "csharpsquid:S3168": "MAJOR",
-               "csharpsquid:S3169": "MAJOR",
-               "csharpsquid:S3172": "MAJOR",
-               "csharpsquid:S3217": "CRITICAL",
-               "csharpsquid:S3218": "CRITICAL",
-               "csharpsquid:S3220": "MINOR",
-               "csharpsquid:S3236": "MINOR",
-               "csharpsquid:S3237": "BLOCKER",
-               "csharpsquid:S3241": "MINOR",
-               "csharpsquid:S3244": "MAJOR",
-               "csharpsquid:S3246": "MAJOR",
-               "csharpsquid:S3247": "MINOR",
-               "csharpsquid:S3249": "MAJOR",
-               "csharpsquid:S3251": "MINOR",
-               "csharpsquid:S3256": "MINOR",
-               "csharpsquid:S3260": "MINOR",
-               "csharpsquid:S3261": "MINOR",
-               "csharpsquid:S3262": "MAJOR",
-               "csharpsquid:S3263": "MAJOR",
-               "csharpsquid:S3264": "MAJOR",
-               "csharpsquid:S3265": "CRITICAL",
-               "csharpsquid:S3267": "MINOR",
-               "csharpsquid:S3329": "CRITICAL",
-               "csharpsquid:S3330": "MINOR",
-               "csharpsquid:S3343": "MAJOR",
-               "csharpsquid:S3346": "MAJOR",
-               "csharpsquid:S3358": "MAJOR",
-               "csharpsquid:S3363": "MINOR",
-               "csharpsquid:S3376": "MINOR",
-               "csharpsquid:S3397": "MINOR",
-               "csharpsquid:S3398": "MINOR",
-               "csharpsquid:S3400": "MINOR",
-               "csharpsquid:S3415": "MAJOR",
-               "csharpsquid:S3427": "BLOCKER",
-               "csharpsquid:S3433": "BLOCKER",
-               "csharpsquid:S3440": "MINOR",
-               "csharpsquid:S3442": "MAJOR",
-               "csharpsquid:S3443": "BLOCKER",
-               "csharpsquid:S3444": "MINOR",
-               "csharpsquid:S3445": "MAJOR",
-               "csharpsquid:S3449": "CRITICAL",
-               "csharpsquid:S3450": "MINOR",
-               "csharpsquid:S3451": "CRITICAL",
-               "csharpsquid:S3453": "MAJOR",
-               "csharpsquid:S3456": "MINOR",
-               "csharpsquid:S3457": "MAJOR",
-               "csharpsquid:S3458": "MINOR",
-               "csharpsquid:S3459": "MINOR",
-               "csharpsquid:S3464": "BLOCKER",
-               "csharpsquid:S3466": "MAJOR",
-               "csharpsquid:S3597": "MAJOR",
-               "csharpsquid:S3598": "MAJOR",
-               "csharpsquid:S3600": "CRITICAL",
-               "csharpsquid:S3603": "MAJOR",
-               "csharpsquid:S3604": "MINOR",
-               "csharpsquid:S3610": "MAJOR",
-               "csharpsquid:S3626": "MINOR",
-               "csharpsquid:S3655": "MAJOR",
-               "csharpsquid:S3776": {
-                  "params": {
-                     "propertyThreshold": "3",
-                     "threshold": "15"
-                  },
-                  "severity": "CRITICAL"
-               },
-               "csharpsquid:S3869": "BLOCKER",
-               "csharpsquid:S3871": "CRITICAL",
-               "csharpsquid:S3875": "BLOCKER",
-               "csharpsquid:S3877": "BLOCKER",
-               "csharpsquid:S3878": "MINOR",
-               "csharpsquid:S3881": "MAJOR",
-               "csharpsquid:S3885": "MAJOR",
-               "csharpsquid:S3887": "MINOR",
-               "csharpsquid:S3889": "BLOCKER",
-               "csharpsquid:S3897": "MINOR",
-               "csharpsquid:S3903": "MAJOR",
-               "csharpsquid:S3904": "CRITICAL",
-               "csharpsquid:S3923": "MAJOR",
-               "csharpsquid:S3925": "MAJOR",
-               "csharpsquid:S3926": "MAJOR",
-               "csharpsquid:S3927": "MAJOR",
-               "csharpsquid:S3928": "MAJOR",
-               "csharpsquid:S3949": "MAJOR",
-               "csharpsquid:S3963": "MINOR",
-               "csharpsquid:S3966": "MAJOR",
-               "csharpsquid:S3971": "MAJOR",
-               "csharpsquid:S3972": "CRITICAL",
-               "csharpsquid:S3973": "CRITICAL",
-               "csharpsquid:S3981": "MAJOR",
-               "csharpsquid:S3984": "MAJOR",
-               "csharpsquid:S3998": "CRITICAL",
-               "csharpsquid:S4015": "CRITICAL",
-               "csharpsquid:S4019": "CRITICAL",
-               "csharpsquid:S4035": "MAJOR",
-               "csharpsquid:S4036": "MINOR",
-               "csharpsquid:S4061": "MINOR",
-               "csharpsquid:S4070": "MAJOR",
-               "csharpsquid:S4136": "MINOR",
-               "csharpsquid:S4143": "MAJOR",
-               "csharpsquid:S4144": "MAJOR",
-               "csharpsquid:S4158": "MINOR",
-               "csharpsquid:S4159": "BLOCKER",
-               "csharpsquid:S4200": "MAJOR",
-               "csharpsquid:S4201": "MINOR",
-               "csharpsquid:S4210": "MAJOR",
-               "csharpsquid:S4211": "MAJOR",
-               "csharpsquid:S4220": "MAJOR",
-               "csharpsquid:S4260": "MAJOR",
-               "csharpsquid:S4275": "CRITICAL",
-               "csharpsquid:S4277": "CRITICAL",
-               "csharpsquid:S4423": "CRITICAL",
-               "csharpsquid:S4426": "CRITICAL",
-               "csharpsquid:S4428": "MAJOR",
-               "csharpsquid:S4433": "CRITICAL",
-               "csharpsquid:S4456": "MAJOR",
-               "csharpsquid:S4487": "CRITICAL",
-               "csharpsquid:S4502": "CRITICAL",
-               "csharpsquid:S4507": "MINOR",
-               "csharpsquid:S4524": "CRITICAL",
-               "csharpsquid:S4545": "MAJOR",
-               "csharpsquid:S4581": "MAJOR",
-               "csharpsquid:S4583": "CRITICAL",
-               "csharpsquid:S4586": "CRITICAL",
-               "csharpsquid:S4635": "CRITICAL",
-               "csharpsquid:S4663": "MINOR",
-               "csharpsquid:S4790": "CRITICAL",
-               "csharpsquid:S4830": "CRITICAL",
-               "csharpsquid:S5034": "CRITICAL",
-               "csharpsquid:S5042": "CRITICAL",
-               "csharpsquid:S5122": "MINOR",
-               "csharpsquid:S5332": "CRITICAL",
-               "csharpsquid:S5443": "CRITICAL",
-               "csharpsquid:S5445": "CRITICAL",
-               "csharpsquid:S5542": "CRITICAL",
-               "csharpsquid:S5547": "CRITICAL",
-               "csharpsquid:S5659": "CRITICAL",
-               "csharpsquid:S5693": {
-                  "params": {
-                     "fileUploadSizeLimit": "8388608"
-                  },
-                  "severity": "MAJOR"
-               },
-               "csharpsquid:S5753": "MAJOR",
-               "csharpsquid:S5766": "MAJOR",
-               "csharpsquid:S5773": "MAJOR",
-               "csharpsquid:S5856": "CRITICAL",
-               "csharpsquid:S6419": "MAJOR",
-               "csharpsquid:S6420": "MAJOR",
-               "csharpsquid:S6422": "BLOCKER",
-               "csharpsquid:S6424": "BLOCKER",
-               "csharpsquid:S6444": "MAJOR",
-               "csharpsquid:S6561": "MAJOR",
-               "csharpsquid:S6562": "MAJOR",
-               "csharpsquid:S6575": "MAJOR",
-               "csharpsquid:S6580": "MAJOR",
-               "csharpsquid:S6588": "MINOR",
-               "csharpsquid:S6602": "MINOR",
-               "csharpsquid:S6603": "MINOR",
-               "csharpsquid:S6605": "MINOR",
-               "csharpsquid:S6607": "MINOR",
-               "csharpsquid:S6608": "MINOR",
-               "csharpsquid:S6609": "MINOR",
-               "csharpsquid:S6610": "MINOR",
-               "csharpsquid:S6612": "MINOR",
-               "csharpsquid:S6613": "MINOR",
-               "csharpsquid:S6617": "MINOR",
-               "csharpsquid:S6618": "MINOR",
-               "csharpsquid:S6640": "MAJOR",
-               "csharpsquid:S6664": {
-                  "params": {
-                     "debugThreshold": "4",
-                     "errorThreshold": "1",
-                     "informationThreshold": "2",
-                     "warningThreshold": "1"
-                  },
-                  "severity": "MINOR"
-               },
-               "csharpsquid:S6667": "MINOR",
-               "csharpsquid:S6668": "MINOR",
-               "csharpsquid:S6669": {
-                  "params": {
-                     "format": "^_?[Ll]og(ger)?$"
-                  },
-                  "severity": "MINOR"
-               },
-               "csharpsquid:S6670": "MINOR",
-               "csharpsquid:S6672": "MINOR",
-               "csharpsquid:S6673": "MAJOR",
-               "csharpsquid:S6674": "CRITICAL",
-               "csharpsquid:S6675": "MINOR",
-               "csharpsquid:S6677": "MAJOR",
-               "csharpsquid:S6678": "MINOR",
-               "csharpsquid:S6797": "MAJOR",
-               "csharpsquid:S6798": "MAJOR",
-               "csharpsquid:S6800": "MAJOR",
-               "csharpsquid:S6803": "MAJOR",
-               "csharpsquid:S6930": "MAJOR",
-               "csharpsquid:S6931": "MAJOR",
-               "csharpsquid:S6934": "MAJOR",
-               "csharpsquid:S818": "MINOR",
-               "csharpsquid:S907": "MAJOR",
-               "csharpsquid:S927": "CRITICAL",
-               "roslyn.sonaranalyzer.security.cs:S2076": "BLOCKER",
-               "roslyn.sonaranalyzer.security.cs:S2078": "BLOCKER",
-               "roslyn.sonaranalyzer.security.cs:S2083": "BLOCKER",
-               "roslyn.sonaranalyzer.security.cs:S2091": "BLOCKER",
-               "roslyn.sonaranalyzer.security.cs:S2631": "CRITICAL",
-               "roslyn.sonaranalyzer.security.cs:S3649": "BLOCKER",
-               "roslyn.sonaranalyzer.security.cs:S5131": "BLOCKER",
-               "roslyn.sonaranalyzer.security.cs:S5135": "BLOCKER",
-               "roslyn.sonaranalyzer.security.cs:S5144": "MAJOR",
-               "roslyn.sonaranalyzer.security.cs:S5145": "MINOR",
-               "roslyn.sonaranalyzer.security.cs:S5146": "BLOCKER",
-               "roslyn.sonaranalyzer.security.cs:S5334": "BLOCKER",
-               "roslyn.sonaranalyzer.security.cs:S5883": "MINOR",
-               "roslyn.sonaranalyzer.security.cs:S6096": "BLOCKER",
-               "roslyn.sonaranalyzer.security.cs:S6173": "MAJOR",
-               "roslyn.sonaranalyzer.security.cs:S6287": "MAJOR",
-               "roslyn.sonaranalyzer.security.cs:S6350": "MAJOR",
-               "roslyn.sonaranalyzer.security.cs:S6399": "MAJOR",
-               "roslyn.sonaranalyzer.security.cs:S6639": "MAJOR",
-               "roslyn.sonaranalyzer.security.cs:S6641": "MAJOR"
-            }
-         },
          "Sonar way": {
-            "isBuiltIn": true
+            "isBuiltIn": true,
+            "isDefault": true
          }
       },
       "css": {
@@ -2819,6 +2689,40 @@
       },
       "dart": {
          "Sonar way": {
+            "children": {
+               "Corp Way": {
+                  "children": {
+                     "Critical projects": {
+                        "addedRules": [
+                           {
+                              "key": "dart:S106"
+                           },
+                           {
+                              "key": "dart:S1541"
+                           },
+                           {
+                              "key": "dart:S7084"
+                           },
+                           {
+                              "key": "dart:S113"
+                           },
+                           {
+                              "key": "dart:S115"
+                           },
+                           {
+                              "key": "dart:S7103",
+                              "severities": {
+                                 "MAINTAINABILITY": "HIGH"
+                              }
+                           },
+                           {
+                              "key": "dart:S1854"
+                           }
+                        ]
+                     }
+                  }
+               }
+            },
             "isBuiltIn": true,
             "isDefault": true
          }
@@ -2848,87 +2752,202 @@
          }
       },
       "java": {
-         "FindBugs": {
-            "isBuiltIn": true
-         },
-         "FindBugs + FB-Contrib": {
-            "isBuiltIn": true
-         },
-         "FindBugs Security Audit": {
-            "isBuiltIn": true
-         },
-         "FindBugs Security Minimal": {
-            "isBuiltIn": true
-         },
          "Sonar way": {
             "children": {
-               "Sonar way and complexity": {
-                  "addedRules": {
-                     "java:S1541": {
-                        "params": {
-                           "Threshold": "10"
-                        },
-                        "severity": "CRITICAL"
+               "Security Max": {
+                  "addedRules": [
+                     {
+                        "key": "java:S2647"
+                     },
+                     {
+                        "key": "java:S2658"
+                     },
+                     {
+                        "key": "java:S6374"
+                     },
+                     {
+                        "key": "java:Don_t_be_rude"
                      }
-                  },
-                  "children": {
-                     "With Checkstyle": {
-                        "addedRules": {
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.NoCodeInFileCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.OuterTypeFilenameCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.UpperEllCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.annotation.PackageAnnotationCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.AvoidDoubleBraceInitializationCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.AvoidInlineConditionalsCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.AvoidNoArgumentSuperConstructorCallCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.ConstructorsDeclarationGroupingCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.CovariantEqualsCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.EmptyStatementCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.EqualsHashCodeCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.InnerAssignmentCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.MissingCtorCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.MissingSwitchDefaultCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.MultipleVariableDeclarationsCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoArrayTrailingCommaCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoCloneCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoEnumTrailingCommaCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoFinalizerCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.OverloadMethodsDeclarationOrderCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.ParameterAssignmentCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SimplifyBooleanExpressionCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SimplifyBooleanReturnCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.StringLiteralEqualityCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SuperCloneCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SuperFinalizeCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.UnnecessarySemicolonInEnumerationCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.UnusedLocalVariableCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.FinalClassCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.HideUtilityClassConstructorCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.InnerTypeLastCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.OneTopLevelClassCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.imports.RedundantImportCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.javadoc.InvalidJavadocPositionCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocPackageCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.modifier.ModifierOrderCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.whitespace.GenericWhitespaceCheck": "MINOR",
-                           "checkstyle:com.puppycrawl.tools.checkstyle.checks.whitespace.NoWhitespaceBeforeCaseDefaultColonCheck": "MINOR"
-                        }
+                  ]
+               },
+               "Sonar Way + Checkstyle": {
+                  "addedRules": [
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.InnerAssignmentCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.AvoidDoubleBraceInitializationCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.whitespace.GenericWhitespaceCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.ParameterAssignmentCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.AvoidNoArgumentSuperConstructorCallCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.InnerTypeLastCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.MissingCtorCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.MissingSwitchDefaultCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.MultipleVariableDeclarationsCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.FinalClassCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocPackageCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.CovariantEqualsCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.UpperEllCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.AvoidInlineConditionalsCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.imports.RedundantImportCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SuperCloneCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.HideUtilityClassConstructorCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.annotation.PackageAnnotationCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.OuterTypeFilenameCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoFinalizerCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.ConstructorsDeclarationGroupingCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.javadoc.InvalidJavadocPositionCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SimplifyBooleanReturnCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.whitespace.NoWhitespaceBeforeCaseDefaultColonCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.OverloadMethodsDeclarationOrderCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.UnusedLocalVariableCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoCloneCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.StringLiteralEqualityCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.EmptyStatementCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SuperFinalizeCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.EqualsHashCodeCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.design.OneTopLevelClassCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.modifier.ModifierOrderCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SimplifyBooleanExpressionCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoEnumTrailingCommaCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.UnnecessarySemicolonInEnumerationCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoArrayTrailingCommaCheck"
+                     },
+                     {
+                        "key": "checkstyle:com.puppycrawl.tools.checkstyle.checks.NoCodeInFileCheck"
                      }
-                  },
-                  "isDefault": true
+                  ]
                }
             },
-            "isBuiltIn": true
+            "isBuiltIn": true,
+            "isDefault": true
          }
       },
       "jcl": {
          "Sonar way": {
+            "children": {
+               "All rules": {
+                  "addedRules": [
+                     {
+                        "key": "jcl:S2260"
+                     },
+                     {
+                        "key": "jcl:S6945"
+                     },
+                     {
+                        "key": "jcl:S6935"
+                     },
+                     {
+                        "key": "jcl:S6947"
+                     },
+                     {
+                        "key": "jcl:S6942"
+                     },
+                     {
+                        "key": "jcl:S6977"
+                     },
+                     {
+                        "key": "jcl:Track_usage_of_rogue_programs",
+                        "severities": {
+                           "MAINTAINABILITY": "-DEFAULT-",
+                           "RELIABILITY": "-DEFAULT-",
+                           "SECURITY": "INFO"
+                        }
+                     }
+                  ]
+               }
+            },
             "isBuiltIn": true,
             "isDefault": true
          }
       },
       "js": {
          "Sonar way": {
+            "children": {
+               "security-max": {
+                  "addedRules": [
+                     {
+                        "key": "javascript:S2817"
+                     },
+                     {
+                        "key": "javascript:S1442"
+                     },
+                     {
+                        "key": "javascript:S1525"
+                     }
+                  ]
+               }
+            },
             "isBuiltIn": true,
             "isDefault": true
          }
@@ -2940,15 +2959,19 @@
          }
       },
       "jsp": {
-         "FindBugs Security JSP": {
+         "Sonar way": {
             "isBuiltIn": true,
             "isDefault": true
-         },
-         "Sonar way": {
-            "isBuiltIn": true
          }
       },
       "kotlin": {
+         "No rules": {
+            "rules": [
+               {
+                  "key": "kotlin:S3329"
+               }
+            ]
+         },
          "Sonar way": {
             "isBuiltIn": true,
             "isDefault": true
@@ -2991,7 +3014,1025 @@
          }
       },
       "py": {
+         "Prioritized": {
+            "rules": [
+               {
+                  "key": "python:BackticksUsage"
+               },
+               {
+                  "key": "python:ExecStatementUsage"
+               },
+               {
+                  "key": "python:InequalityUsage",
+                  "prioritized": true
+               },
+               {
+                  "key": "python:PreIncrementDecrement"
+               },
+               {
+                  "key": "python:PrintStatementUsage"
+               },
+               {
+                  "key": "python:S100",
+                  "params": {
+                     "format": "^[a-z_][a-z0-9_]*$"
+                  }
+               },
+               {
+                  "key": "python:S101",
+                  "params": {
+                     "format": "^_?([A-Z_][a-zA-Z0-9]*|[a-z_][a-z0-9_]*)$"
+                  }
+               },
+               {
+                  "key": "python:S1045"
+               },
+               {
+                  "key": "python:S1066"
+               },
+               {
+                  "key": "python:S107",
+                  "params": {
+                     "max": "13"
+                  }
+               },
+               {
+                  "key": "python:S108"
+               },
+               {
+                  "key": "python:S1110"
+               },
+               {
+                  "key": "python:S112"
+               },
+               {
+                  "key": "python:S1134"
+               },
+               {
+                  "key": "python:S1135"
+               },
+               {
+                  "key": "python:S1143"
+               },
+               {
+                  "key": "python:S1144"
+               },
+               {
+                  "key": "python:S116",
+                  "params": {
+                     "format": "^[_a-z][_a-z0-9]*$"
+                  }
+               },
+               {
+                  "key": "python:S117",
+                  "params": {
+                     "format": "^[_a-z][a-z0-9_]*$"
+                  }
+               },
+               {
+                  "key": "python:S1172"
+               },
+               {
+                  "key": "python:S1186"
+               },
+               {
+                  "key": "python:S1192",
+                  "params": {
+                     "exclusionRegex": "",
+                     "threshold": "3"
+                  }
+               },
+               {
+                  "key": "python:S1226"
+               },
+               {
+                  "key": "python:S1244"
+               },
+               {
+                  "key": "python:S125",
+                  "params": {
+                     "exception": "(fmt|py\\w+):.*"
+                  }
+               },
+               {
+                  "key": "python:S1313"
+               },
+               {
+                  "key": "python:S1481",
+                  "params": {
+                     "regex": "(_[a-zA-Z0-9_]*|dummy|unused|ignored)"
+                  }
+               },
+               {
+                  "key": "python:S1515"
+               },
+               {
+                  "key": "python:S1542",
+                  "params": {
+                     "format": "^[a-z_][a-z0-9_]*$"
+                  }
+               },
+               {
+                  "key": "python:S1607"
+               },
+               {
+                  "key": "python:S1656"
+               },
+               {
+                  "key": "python:S1700"
+               },
+               {
+                  "key": "python:S1716"
+               },
+               {
+                  "key": "python:S1751"
+               },
+               {
+                  "key": "python:S1763"
+               },
+               {
+                  "key": "python:S1764"
+               },
+               {
+                  "key": "python:S1845"
+               },
+               {
+                  "key": "python:S1854"
+               },
+               {
+                  "key": "python:S1862"
+               },
+               {
+                  "key": "python:S1871"
+               },
+               {
+                  "key": "python:S1940"
+               },
+               {
+                  "key": "python:S2053"
+               },
+               {
+                  "key": "python:S2068",
+                  "params": {
+                     "credentialWords": "password,passwd,pwd,passphrase"
+                  }
+               },
+               {
+                  "key": "python:S2077"
+               },
+               {
+                  "key": "python:S2092"
+               },
+               {
+                  "key": "python:S2115"
+               },
+               {
+                  "key": "python:S2159"
+               },
+               {
+                  "key": "python:S2190"
+               },
+               {
+                  "key": "python:S2201"
+               },
+               {
+                  "key": "python:S2208"
+               },
+               {
+                  "key": "python:S2245"
+               },
+               {
+                  "key": "python:S2257"
+               },
+               {
+                  "key": "python:S2275"
+               },
+               {
+                  "key": "python:S2612"
+               },
+               {
+                  "key": "python:S2638"
+               },
+               {
+                  "key": "python:S2710",
+                  "params": {
+                     "classParameterNames": "cls,mcs,metacls"
+                  }
+               },
+               {
+                  "key": "python:S2711",
+                  "prioritized": true
+               },
+               {
+                  "key": "python:S2734",
+                  "prioritized": true
+               },
+               {
+                  "key": "python:S2737"
+               },
+               {
+                  "key": "python:S2755"
+               },
+               {
+                  "key": "python:S2757"
+               },
+               {
+                  "key": "python:S2761"
+               },
+               {
+                  "key": "python:S2772"
+               },
+               {
+                  "key": "python:S2823"
+               },
+               {
+                  "key": "python:S2836"
+               },
+               {
+                  "key": "python:S2876"
+               },
+               {
+                  "key": "python:S3329"
+               },
+               {
+                  "key": "python:S3330"
+               },
+               {
+                  "key": "python:S3358"
+               },
+               {
+                  "key": "python:S3403"
+               },
+               {
+                  "key": "python:S3457"
+               },
+               {
+                  "key": "python:S3516"
+               },
+               {
+                  "key": "python:S3626"
+               },
+               {
+                  "key": "python:S3699"
+               },
+               {
+                  "key": "python:S3752"
+               },
+               {
+                  "key": "python:S3776",
+                  "params": {
+                     "threshold": "15"
+                  }
+               },
+               {
+                  "key": "python:S3827"
+               },
+               {
+                  "key": "python:S3862"
+               },
+               {
+                  "key": "python:S3923"
+               },
+               {
+                  "key": "python:S3981"
+               },
+               {
+                  "key": "python:S3984"
+               },
+               {
+                  "key": "python:S3985"
+               },
+               {
+                  "key": "python:S4143"
+               },
+               {
+                  "key": "python:S4144"
+               },
+               {
+                  "key": "python:S4423"
+               },
+               {
+                  "key": "python:S4426"
+               },
+               {
+                  "key": "python:S4433"
+               },
+               {
+                  "key": "python:S4487",
+                  "params": {
+                     "enableSingleUnderscoreIssues": "false"
+                  }
+               },
+               {
+                  "key": "python:S4502"
+               },
+               {
+                  "key": "python:S4507"
+               },
+               {
+                  "key": "python:S4790"
+               },
+               {
+                  "key": "python:S4828"
+               },
+               {
+                  "key": "python:S4830"
+               },
+               {
+                  "key": "python:S5042"
+               },
+               {
+                  "key": "python:S5122"
+               },
+               {
+                  "key": "python:S5247"
+               },
+               {
+                  "key": "python:S5332"
+               },
+               {
+                  "key": "python:S5344"
+               },
+               {
+                  "key": "python:S5361"
+               },
+               {
+                  "key": "python:S5443"
+               },
+               {
+                  "key": "python:S5445"
+               },
+               {
+                  "key": "python:S5527"
+               },
+               {
+                  "key": "python:S5542"
+               },
+               {
+                  "key": "python:S5547"
+               },
+               {
+                  "key": "python:S5549"
+               },
+               {
+                  "key": "python:S5603"
+               },
+               {
+                  "key": "python:S5607"
+               },
+               {
+                  "key": "python:S5632"
+               },
+               {
+                  "key": "python:S5642"
+               },
+               {
+                  "key": "python:S5644"
+               },
+               {
+                  "key": "python:S5655"
+               },
+               {
+                  "key": "python:S5659"
+               },
+               {
+                  "key": "python:S5685"
+               },
+               {
+                  "key": "python:S5704"
+               },
+               {
+                  "key": "python:S5706"
+               },
+               {
+                  "key": "python:S5707"
+               },
+               {
+                  "key": "python:S5708"
+               },
+               {
+                  "key": "python:S5709"
+               },
+               {
+                  "key": "python:S5712"
+               },
+               {
+                  "key": "python:S5713"
+               },
+               {
+                  "key": "python:S5714"
+               },
+               {
+                  "key": "python:S5717"
+               },
+               {
+                  "key": "python:S5719"
+               },
+               {
+                  "key": "python:S5720",
+                  "params": {
+                     "ignoredDecorators": "abstractmethod"
+                  }
+               },
+               {
+                  "key": "python:S5722"
+               },
+               {
+                  "key": "python:S5724"
+               },
+               {
+                  "key": "python:S5727"
+               },
+               {
+                  "key": "python:S5747"
+               },
+               {
+                  "key": "python:S5754"
+               },
+               {
+                  "key": "python:S5756"
+               },
+               {
+                  "key": "python:S5780"
+               },
+               {
+                  "key": "python:S5781"
+               },
+               {
+                  "key": "python:S5795"
+               },
+               {
+                  "key": "python:S5796"
+               },
+               {
+                  "key": "python:S5797"
+               },
+               {
+                  "key": "python:S5799"
+               },
+               {
+                  "key": "python:S5806"
+               },
+               {
+                  "key": "python:S5807"
+               },
+               {
+                  "key": "python:S5828"
+               },
+               {
+                  "key": "python:S5842"
+               },
+               {
+                  "key": "python:S5843",
+                  "params": {
+                     "maxComplexity": "20"
+                  }
+               },
+               {
+                  "key": "python:S5845"
+               },
+               {
+                  "key": "python:S5850"
+               },
+               {
+                  "key": "python:S5852"
+               },
+               {
+                  "key": "python:S5855"
+               },
+               {
+                  "key": "python:S5857"
+               },
+               {
+                  "key": "python:S5860"
+               },
+               {
+                  "key": "python:S5864"
+               },
+               {
+                  "key": "python:S5868"
+               },
+               {
+                  "key": "python:S5869"
+               },
+               {
+                  "key": "python:S5886"
+               },
+               {
+                  "key": "python:S5890"
+               },
+               {
+                  "key": "python:S5899"
+               },
+               {
+                  "key": "python:S5905"
+               },
+               {
+                  "key": "python:S5906"
+               },
+               {
+                  "key": "python:S5914"
+               },
+               {
+                  "key": "python:S5915"
+               },
+               {
+                  "key": "python:S5918"
+               },
+               {
+                  "key": "python:S5994"
+               },
+               {
+                  "key": "python:S5996"
+               },
+               {
+                  "key": "python:S6001"
+               },
+               {
+                  "key": "python:S6002"
+               },
+               {
+                  "key": "python:S6019"
+               },
+               {
+                  "key": "python:S6035"
+               },
+               {
+                  "key": "python:S6252"
+               },
+               {
+                  "key": "python:S6265"
+               },
+               {
+                  "key": "python:S6270"
+               },
+               {
+                  "key": "python:S6275"
+               },
+               {
+                  "key": "python:S6281"
+               },
+               {
+                  "key": "python:S6302"
+               },
+               {
+                  "key": "python:S6303"
+               },
+               {
+                  "key": "python:S6304"
+               },
+               {
+                  "key": "python:S6308"
+               },
+               {
+                  "key": "python:S6317"
+               },
+               {
+                  "key": "python:S6319"
+               },
+               {
+                  "key": "python:S6321"
+               },
+               {
+                  "key": "python:S6323"
+               },
+               {
+                  "key": "python:S6326"
+               },
+               {
+                  "key": "python:S6327"
+               },
+               {
+                  "key": "python:S6328"
+               },
+               {
+                  "key": "python:S6329"
+               },
+               {
+                  "key": "python:S6330"
+               },
+               {
+                  "key": "python:S6331"
+               },
+               {
+                  "key": "python:S6332"
+               },
+               {
+                  "key": "python:S6333"
+               },
+               {
+                  "key": "python:S6353"
+               },
+               {
+                  "key": "python:S6377"
+               },
+               {
+                  "key": "python:S6395"
+               },
+               {
+                  "key": "python:S6396"
+               },
+               {
+                  "key": "python:S6397"
+               },
+               {
+                  "key": "python:S6418",
+                  "params": {
+                     "credentialWords": "api[_.-]?key,auth,credential,secret,token",
+                     "randomnessSensibility": "3.0"
+                  }
+               },
+               {
+                  "key": "python:S6437"
+               },
+               {
+                  "key": "python:S6463"
+               },
+               {
+                  "key": "python:S6468"
+               },
+               {
+                  "key": "python:S6537"
+               },
+               {
+                  "key": "python:S6546"
+               },
+               {
+                  "key": "python:S6552"
+               },
+               {
+                  "key": "python:S6553"
+               },
+               {
+                  "key": "python:S6556"
+               },
+               {
+                  "key": "python:S6559"
+               },
+               {
+                  "key": "python:S6560"
+               },
+               {
+                  "key": "python:S6659"
+               },
+               {
+                  "key": "python:S6660"
+               },
+               {
+                  "key": "python:S6662"
+               },
+               {
+                  "key": "python:S6663"
+               },
+               {
+                  "key": "python:S6709"
+               },
+               {
+                  "key": "python:S6711"
+               },
+               {
+                  "key": "python:S6714"
+               },
+               {
+                  "key": "python:S6725"
+               },
+               {
+                  "key": "python:S6727"
+               },
+               {
+                  "key": "python:S6729"
+               },
+               {
+                  "key": "python:S6730"
+               },
+               {
+                  "key": "python:S6734"
+               },
+               {
+                  "key": "python:S6735"
+               },
+               {
+                  "key": "python:S6741"
+               },
+               {
+                  "key": "python:S6742"
+               },
+               {
+                  "key": "python:S6779"
+               },
+               {
+                  "key": "python:S6781"
+               },
+               {
+                  "key": "python:S6785"
+               },
+               {
+                  "key": "python:S6786"
+               },
+               {
+                  "key": "python:S6792"
+               },
+               {
+                  "key": "python:S6794"
+               },
+               {
+                  "key": "python:S6795"
+               },
+               {
+                  "key": "python:S6796"
+               },
+               {
+                  "key": "python:S6799"
+               },
+               {
+                  "key": "python:S6882"
+               },
+               {
+                  "key": "python:S6883"
+               },
+               {
+                  "key": "python:S6887"
+               },
+               {
+                  "key": "python:S6890"
+               },
+               {
+                  "key": "python:S6894"
+               },
+               {
+                  "key": "python:S6900"
+               },
+               {
+                  "key": "python:S6903"
+               },
+               {
+                  "key": "python:S6908"
+               },
+               {
+                  "key": "python:S6911"
+               },
+               {
+                  "key": "python:S6918"
+               },
+               {
+                  "key": "python:S6919"
+               },
+               {
+                  "key": "python:S6925"
+               },
+               {
+                  "key": "python:S6928"
+               },
+               {
+                  "key": "python:S6929"
+               },
+               {
+                  "key": "python:S6969"
+               },
+               {
+                  "key": "python:S6971"
+               },
+               {
+                  "key": "python:S6972"
+               },
+               {
+                  "key": "python:S6973"
+               },
+               {
+                  "key": "python:S6974"
+               },
+               {
+                  "key": "python:S6978"
+               },
+               {
+                  "key": "python:S6979"
+               },
+               {
+                  "key": "python:S6982"
+               },
+               {
+                  "key": "python:S6983"
+               },
+               {
+                  "key": "python:S6984"
+               },
+               {
+                  "key": "python:S6985"
+               },
+               {
+                  "key": "python:S905",
+                  "params": {
+                     "ignoredOperators": "<<,>>,|",
+                     "reportOnStrings": "false"
+                  }
+               },
+               {
+                  "key": "python:S930"
+               },
+               {
+                  "key": "python:S935"
+               },
+               {
+                  "key": "pythonbugs:S2259"
+               },
+               {
+                  "key": "pythonbugs:S2583"
+               },
+               {
+                  "key": "pythonbugs:S2589"
+               },
+               {
+                  "key": "pythonbugs:S3518"
+               },
+               {
+                  "key": "pythonbugs:S5633"
+               },
+               {
+                  "key": "pythonbugs:S6417"
+               },
+               {
+                  "key": "pythonbugs:S6464"
+               },
+               {
+                  "key": "pythonbugs:S6465"
+               },
+               {
+                  "key": "pythonbugs:S6466",
+                  "prioritized": true
+               },
+               {
+                  "key": "pythonbugs:S6886"
+               },
+               {
+                  "key": "pythonbugs:S6899"
+               },
+               {
+                  "key": "pythonenterprise:S7181"
+               },
+               {
+                  "key": "pythonenterprise:S7182"
+               },
+               {
+                  "key": "pythonenterprise:S7187"
+               },
+               {
+                  "key": "pythonenterprise:S7189"
+               },
+               {
+                  "key": "pythonenterprise:S7191"
+               },
+               {
+                  "key": "pythonenterprise:S7192"
+               },
+               {
+                  "key": "pythonenterprise:S7193"
+               },
+               {
+                  "key": "pythonenterprise:S7195"
+               },
+               {
+                  "key": "pythonenterprise:S7196",
+                  "params": {
+                     "comparisonThreshold": "5",
+                     "nestedCallThreshold": "5"
+                  }
+               },
+               {
+                  "key": "pythonenterprise:S7468"
+               },
+               {
+                  "key": "pythonenterprise:S7469"
+               },
+               {
+                  "key": "pythonenterprise:S7470"
+               },
+               {
+                  "key": "pythonenterprise:S7471"
+               },
+               {
+                  "key": "pythonsecurity:S2076"
+               },
+               {
+                  "key": "pythonsecurity:S2078"
+               },
+               {
+                  "key": "pythonsecurity:S2083"
+               },
+               {
+                  "key": "pythonsecurity:S2091"
+               },
+               {
+                  "key": "pythonsecurity:S2631"
+               },
+               {
+                  "key": "pythonsecurity:S3649"
+               },
+               {
+                  "key": "pythonsecurity:S5131"
+               },
+               {
+                  "key": "pythonsecurity:S5135"
+               },
+               {
+                  "key": "pythonsecurity:S5144"
+               },
+               {
+                  "key": "pythonsecurity:S5145"
+               },
+               {
+                  "key": "pythonsecurity:S5146"
+               },
+               {
+                  "key": "pythonsecurity:S5147"
+               },
+               {
+                  "key": "pythonsecurity:S5334"
+               },
+               {
+                  "key": "pythonsecurity:S5496"
+               },
+               {
+                  "key": "pythonsecurity:S6287"
+               },
+               {
+                  "key": "pythonsecurity:S6350"
+               },
+               {
+                  "key": "pythonsecurity:S6639"
+               },
+               {
+                  "key": "pythonsecurity:S6680"
+               },
+               {
+                  "key": "pythonsecurity:S6776"
+               },
+               {
+                  "key": "pythonsecurity:S6839"
+               },
+               {
+                  "key": "pythonsecurity:S7044"
+               }
+            ]
+         },
          "Sonar way": {
+            "children": {
+               "Olivier Way": {
+                  "addedRules": [
+                     {
+                        "key": "python:S4784"
+                     },
+                     {
+                        "key": "python:S1451"
+                     },
+                     {
+                        "key": "python:S6543"
+                     },
+                     {
+                        "key": "python:S5856"
+                     },
+                     {
+                        "key": "python:NoSonar"
+                     },
+                     {
+                        "key": "python:S4721"
+                     },
+                     {
+                        "key": "python:S5953"
+                     },
+                     {
+                        "key": "python:S2712"
+                     },
+                     {
+                        "key": "python:S134"
+                     },
+                     {
+                        "key": "python:S1128",
+                        "prioritized": true,
+                        "severities": {
+                           "MAINTAINABILITY": "MEDIUM"
+                        }
+                     },
+                     {
+                        "key": "python:S4823"
+                     }
+                  ],
+                  "modifiedRules": [
+                     {
+                        "key": "python:InequalityUsage",
+                        "prioritized": true,
+                        "severities": {
+                           "MAINTAINABILITY": "HIGH"
+                        }
+                     },
+                     {
+                        "key": "python:S3776",
+                        "params": {
+                           "threshold": "20"
+                        }
+                     }
+                  ]
+               }
+            },
             "isBuiltIn": true,
             "isDefault": true
          }
@@ -3008,10 +4049,13 @@
             "isDefault": true
          }
       },
+      "rust": {
+         "Sonar way": {
+            "isBuiltIn": true,
+            "isDefault": true
+         }
+      },
       "scala": {
-         "FindBugs Security Scala": {
-            "isBuiltIn": true
-         },
          "Sonar way": {
             "isBuiltIn": true,
             "isDefault": true
@@ -3020,14 +4064,22 @@
       "secrets": {
          "Sonar way": {
             "children": {
-               "Super Way": {
-                  "addedRules": {
-                     "secrets:My_custom_secret_rule": "BLOCKER"
-                  },
-                  "isDefault": true
+               "Corp Way": {
+                  "addedRules": [
+                     {
+                        "key": "secrets:Corp_secrets_should_not_leak"
+                     },
+                     {
+                        "key": "secrets:My_custom_secret_rule",
+                        "severities": {
+                           "SECURITY": "BLOCKER"
+                        }
+                     }
+                  ]
                }
             },
-            "isBuiltIn": true
+            "isBuiltIn": true,
+            "isDefault": true
          }
       },
       "swift": {
@@ -3093,6 +4145,9 @@
    },
    "rules": {
       "extended": {
+         "csharpsquid:S3884": {
+            "tags": "ubs-critical"
+         },
          "java:S115": {
             "description": "En Francais: Les constantes doivent suivre des conventions de nommage"
          },
@@ -3111,58 +4166,95 @@
          }
       },
       "instantiated": {
+         "java:Don_t_be_rude": {
+            "isTemplate": false,
+            "language": "java",
+            "params": {
+               "regularExpression": "(fuck|shit|merde)"
+            },
+            "severities": {
+               "MAINTAINABILITY": "MEDIUM",
+               "SECURITY": "LOW"
+            }
+         },
          "jcl:Track_usage_of_rogue_programs": {
+            "isTemplate": false,
+            "language": "jcl",
             "params": {
                "programName": "ROGUEPROG",
                "replacementProgramName": "OKPROG"
             },
-            "severity": "INFO",
-            "templateKey": "jcl:S3688"
+            "severities": {
+               "MAINTAINABILITY": "LOW",
+               "RELIABILITY": "MEDIUM",
+               "SECURITY": "HIGH"
+            }
          },
          "python:Do_not_use_offending_words_for_symbols_or_comments": {
+            "isTemplate": false,
+            "language": "py",
             "params": {
                "message": "Don't write fuck or shit in code",
                "regularExpression": "(fuck|shit)"
             },
-            "severity": "MAJOR",
-            "templateKey": "python:CommentRegularExpression"
+            "severities": {
+               "MAINTAINABILITY": "MEDIUM"
+            }
          },
          "python:Do_not_use_offensive_words_in_comments": {
+            "isTemplate": false,
+            "language": "py",
             "params": {
                "message": "Don't use shit or fuck in comments",
                "regularExpression": "(shit|fuck)"
             },
-            "severity": "MAJOR",
-            "templateKey": "python:CommentRegularExpression"
+            "severities": {
+               "MAINTAINABILITY": "MEDIUM"
+            }
+         },
+         "secrets:Corp_secrets_should_not_leak": {
+            "isTemplate": false,
+            "language": "secrets",
+            "params": {
+               "detectionSpecification": "matching:\n  pattern: \"\\\\bCORP_SECRET_\\\\d{10}\\\\b\""
+            },
+            "severities": {
+               "SECURITY": "BLOCKER"
+            }
          },
          "secrets:My_custom_secret_rule": {
+            "isTemplate": false,
+            "language": "secrets",
             "params": {
-               "detectionSpecification": "matching:\n  pattern: \"SECRET_\\\\d{10}\""
+               "detectionSpecification": "matching:\n  pattern: \"\\\\bCORP_SECRET_\\\\d{10}\\\\b\"\n  context:\n     patternAround:\n         pattern: \"<CorpConnectionSpec>\"\n         maxLineDistance: 10\n         maxCharDistance: 500"
             },
-            "severity": "BLOCKER",
-            "templateKey": "secrets:S6784"
+            "severities": {
+               "SECURITY": "HIGH"
+            }
          }
       }
    },
    "users": {
-      "TEMP_ADMIN": {
-         "local": true,
-         "name": "User name TEMP_ADMIN"
-      },
       "admin": {
          "email": "admin@acme.com",
-         "groups": "sonar-administrators, tech-leads",
+         "groups": "ci-tools, security-auditors, sonar-administrators, tech-leads",
          "local": true,
          "name": "Administrator",
          "scmAccounts": "admin-acme, administrator-acme"
       },
       "ado": {
+         "groups": "ci-tools",
          "local": true,
          "name": "Azure DevOps Service Account"
       },
       "bbTEMPaa": {
          "local": true,
          "name": "User name bbTEMPaa"
+      },
+      "james": {
+         "groups": "sonar-administrators",
+         "local": true,
+         "name": "James Amable"
       },
       "michal": {
          "groups": "language-experts, tech-leads",
@@ -3185,7 +4277,7 @@
          "name": "Olivier Korach"
       },
       "syncer": {
-         "groups": "developers, sonar-administrators",
+         "groups": "developers, language-experts, quality-managers, security-auditors, sonar-administrators, tech-leads",
          "local": true,
          "name": "syncer"
       }

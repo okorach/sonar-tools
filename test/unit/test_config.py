@@ -68,7 +68,7 @@ def test_config_export_wrong() -> None:
 
 def test_config_non_existing_project() -> None:
     """test_config_non_existing_project"""
-    assert util.run_cmd(config.main, f"{OPTS} -{opt.KEY_REGEXP_SHORT} bad_project") == e.NO_SUCH_KEY
+    assert util.run_cmd(config.main, f"{OPTS} -{opt.KEY_REGEXP_SHORT} bad_project") == e.WRONG_SEARCH_CRITERIA
 
 
 def test_config_inline_lists(json_file: Generator[str]) -> None:
