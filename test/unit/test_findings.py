@@ -188,7 +188,9 @@ def test_findings_filter_on_multiple_criteria(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_multiple_criteria"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.RESOLUTIONS} FALSE-POSITIVE,ACCEPTED --{opt.TYPES} {idefs.TYPE_BUG},{idefs.TYPE_CODE_SMELL}"
     assert tutil.run_cmd(findings_export.main, cmd) == e.OK
-    assert tutil.csv_col_is_value(csv_file, "type" if tutil.SQ.version() < c.MQR_INTRO_VERSION else "legacyType", idefs.TYPE_BUG, idefs.TYPE_CODE_SMELL)
+    assert tutil.csv_col_is_value(
+        csv_file, "type" if tutil.SQ.version() < c.MQR_INTRO_VERSION else "legacyType", idefs.TYPE_BUG, idefs.TYPE_CODE_SMELL
+    )
     assert tutil.csv_col_is_value(csv_file, "status", "FALSE-POSITIVE", "WONTFIX" if tutil.SQ.version() < c.ACCEPT_INTRO_VERSION else "ACCEPTED")
     if tutil.SQ.version() < c.MQR_INTRO_VERSION:
         return

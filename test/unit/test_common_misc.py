@@ -24,6 +24,7 @@
 from sonar import utilities
 from sonar.util import sonar_cache
 
+
 def test_deduct_fmt() -> None:
     """test_deduct_fmt"""
     assert utilities.deduct_format("csv", None) == "csv"
@@ -33,7 +34,7 @@ def test_deduct_fmt() -> None:
     assert utilities.deduct_format(None, "file.csv") == "csv"
     assert utilities.deduct_format(None, "file.txt") == "csv"
 
+
 def test_clear_cache() -> None:
     """Clears the SonarQube caches before running tests on SC"""
     sonar_cache.clear()
-

@@ -249,7 +249,10 @@ def test_app_branches(get_test_app: Generator[App]) -> None:
     definition = {
         "branches": {
             APP_BRANCH_2: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_MAIN, "demo:jcl": "main", "demo:java-security": "main"}},
-            APP_BRANCH_MAIN: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"}, "isMain": True},
+            APP_BRANCH_MAIN: {
+                "projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"},
+                "isMain": True,
+            },
         }
     }
     obj.update(definition)
@@ -261,7 +264,10 @@ def test_app_branches(get_test_app: Generator[App]) -> None:
         "branches": {
             APP_BRANCH_2: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_MAIN, "demo:jcl": "main", "demo:java-security": "main"}},
             APP_BRANCH_3: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"}},
-            APP_BRANCH_MAIN: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"}, "isMain": True},
+            APP_BRANCH_MAIN: {
+                "projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"},
+                "isMain": True,
+            },
         }
     }
     obj.update(definition)

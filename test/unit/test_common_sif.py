@@ -39,6 +39,7 @@ import sonar.errcodes as e
 
 CMD = "sonar-audit.py"
 
+
 def test_sif_broken(csv_file: Generator[str]) -> None:
     """test_sif_broken"""
     assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --sif {tutil.FILES_ROOT}/sif_broken.json") == e.SIF_AUDIT_ERROR

@@ -38,6 +38,7 @@ OPTS = f"{CMD} {SC_OPTS} -{opt.EXPORT_SHORT}"
 MY_ORG_1 = "okorach"
 MY_ORG_2 = "okorach-github"
 
+
 def test_sc_config_export(json_file: Generator[str]) -> None:
     """test_sc_config_export"""
     cmd = f"{OPTS} --{opt.REPORT_FILE} {json_file} -{opt.ORG_SHORT} {MY_ORG_1}"
