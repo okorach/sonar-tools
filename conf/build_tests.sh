@@ -28,20 +28,26 @@ GEN_LOC=test/gen
 echo ""
 echo "Generating edition / version specific tests"
 
-for target in lts latest cb 9 9-ce
+for target in lts latest cb 9 9-ce common
 do
     echo "Generating tests for $target"
     rm -rf "$ROOTDIR/$GEN_LOC/$target"
     mkdir -p "$ROOTDIR/$GEN_LOC/$target" 2>/dev/null
-    for f in *.py
-    do
+    if [ "$target" == "common" ]; then
         b=$(basename "$f" .py)
-        cp "$f" "$ROOTDIR/$GEN_LOC/$target/${b}_${target}.py"
-    done
-    cp "credentials-$target.py" "$ROOTDIR/$GEN_LOC/$target/credentials.py"
-    mv "$ROOTDIR/$GEN_LOC/$target/conftest_${target}.py" "$ROOTDIR/$GEN_LOC/$target/conftest.py"
-    mv "$ROOTDIR/$GEN_LOC/$target/utilities_${target}.py" "$ROOTDIR/$GEN_LOC/$target/utilities.py"
-    if [ "$target" != "latest" ]; then
-        rm "$ROOTDIR/$GEN_LOC/$target/"test_sonarcloud*.py
+        cp conftest.py "$ROOTDIR/$GEN_LOC/$target"
+        cp utilities.py "$ROOTDIR/$GEN_LOC/$target"
+        cp test_common*.py "$ROOTDIR/$GEN_LOC/$target"
+    else
+        for f in *.py
+        do
+            b=$(basename "$f" .py)
+            cp "$f" "$ROOTDIR/$GEN_LOC/$target/${b}_${target}.py"
+        done
+        cp "credentials-$target.py" "$ROOTDIR/$GEN_LOC/$target/credentials.py"
+        mv "$ROOTDIR/$GEN_LOC/$target/conftest_${target}.py" "$ROOTDIR/$GEN_LOC/$target/conftest.py"
+        mv "$ROOTDIR/$GEN_LOC/$target/utilities_${target}.py" "$ROOTDIR/$GEN_LOC/$target/utilities.py"
+        rm "$ROOTDIR/$GEN_LOC/$target/"test_common*.py
     fi
 done
+
