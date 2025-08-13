@@ -174,7 +174,10 @@ def test_changelog() -> None:
     assert not changelog.is_assignment()
     assert changelog.assignee() is None
     assert changelog.assignee(False) is None
-    assert datetime(2025, 2, 12) <= util.string_to_date(changelog.date()).replace(tzinfo=None) < datetime(2025, 2, 14)
+    if tutil.SQ.version() >= (10, 0, 0):
+        assert datetime(2025, 2, 12) <= util.string_to_date(changelog.date()).replace(tzinfo=None) < datetime(2025, 2, 14)
+    else:
+        assert datetime(2021, 12, 24) <= util.string_to_date(changelog.date()).replace(tzinfo=None) < datetime(2024, 12, 26)
     assert changelog.author() is None
     assert not changelog.is_tag()
     assert changelog.get_tags() == []
