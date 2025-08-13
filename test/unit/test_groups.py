@@ -25,7 +25,7 @@ from collections.abc import Generator
 
 import pytest
 
-import utilities as util
+import utilities as tutil
 from sonar import exceptions
 from sonar import groups, users
 from sonar.util import constants as c
@@ -37,61 +37,61 @@ GROUP2 = "sonar-administrators"
 def test_get_object() -> None:
     """Test group get_obejct"""
     for name in GROUP1, GROUP2:
-        gr = groups.Group.get_object(endpoint=util.SQ, name=name)
+        gr = groups.Group.get_object(endpoint=tutil.SQ, name=name)
         assert gr.name == name
         assert str(gr) == f"group '{name}'"
 
-    gr2 = groups.Group.get_object(endpoint=util.SQ, name=GROUP2)
+    gr2 = groups.Group.get_object(endpoint=tutil.SQ, name=GROUP2)
     assert gr is gr2
 
-    gr3 = groups.Group.read(endpoint=util.SQ, name=GROUP2)
+    gr3 = groups.Group.read(endpoint=tutil.SQ, name=GROUP2)
     assert gr3 is gr
 
     with pytest.raises(exceptions.ObjectNotFound):
-        groups.Group.get_object(endpoint=util.SQ, name=util.NON_EXISTING_KEY)
+        groups.Group.get_object(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY)
 
 
 def test_more_than_50_groups(get_60_groups: Generator[list[groups.Group]]) -> None:
     # Count groups first
     group_list = get_60_groups
     groups.Group.clear_cache()
-    new_group_list = groups.get_list(util.SQ)
+    new_group_list = groups.get_list(tutil.SQ)
     assert len(new_group_list) > 60
     assert set(new_group_list.keys()) > set(g.name for g in group_list)
 
 
 def test_read_non_existing() -> None:
     with pytest.raises(exceptions.ObjectNotFound):
-        groups.Group.read(endpoint=util.SQ, name=util.NON_EXISTING_KEY)
+        groups.Group.read(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY)
 
 
 def test_create_already_exists(get_test_group: Generator[groups.Group]) -> None:
     gr = get_test_group
     with pytest.raises(exceptions.ObjectAlreadyExists):
-        groups.Group.create(endpoint=util.SQ, name=gr.name)
+        groups.Group.create(endpoint=tutil.SQ, name=gr.name)
 
 
 def test_size() -> None:
-    gr = groups.Group.get_object(endpoint=util.SQ, name="sonar-users")
+    gr = groups.Group.get_object(endpoint=tutil.SQ, name="sonar-users")
     assert gr.size() > 4
 
 
 def test_url() -> None:
-    gr = groups.Group.get_object(endpoint=util.SQ, name="sonar-users")
-    assert gr.url() == f"{util.SQ.external_url}/admin/groups"
+    gr = groups.Group.get_object(endpoint=tutil.SQ, name="sonar-users")
+    assert gr.url() == f"{tutil.SQ.external_url}/admin/groups"
 
 
 def test_add_non_existing_user(get_test_group: Generator[groups.Group], get_test_user: Generator[users.User]) -> None:
     gr = get_test_group
     u = get_test_user
-    u.login = util.NON_EXISTING_KEY
-    u.id = util.NON_EXISTING_KEY
+    u.login = tutil.NON_EXISTING_KEY
+    u.id = tutil.NON_EXISTING_KEY
     with pytest.raises(exceptions.ObjectNotFound):
         gr.add_user(u)
 
 
 def test_remove_non_existing_user(get_test_group: Generator[groups.Group], get_test_user: Generator[users.User]) -> None:
-    util.start_logging()
+    tutil.start_logging()
     gr = get_test_group
     u = get_test_user
     try:
@@ -99,8 +99,8 @@ def test_remove_non_existing_user(get_test_group: Generator[groups.Group], get_t
     except exceptions.ObjectNotFound:
         pass
     gr.add_user(u)
-    u.id = util.NON_EXISTING_KEY
-    u.login = util.NON_EXISTING_KEY
+    u.id = tutil.NON_EXISTING_KEY
+    u.login = tutil.NON_EXISTING_KEY
     with pytest.raises(exceptions.ObjectNotFound):
         gr.remove_user(u)
 
@@ -114,7 +114,7 @@ def test_audit_empty(get_test_group: Generator[groups.Group]) -> None:
 def test_to_json(get_test_group: Generator[groups.Group]) -> None:
     gr = get_test_group
     json_data = gr.to_json()
-    assert json_data["name"] == util.TEMP_KEY
+    assert json_data["name"] == tutil.TEMP_KEY
     assert "description" not in json_data
 
     assert gr.set_description("A test group")
@@ -124,17 +124,17 @@ def test_to_json(get_test_group: Generator[groups.Group]) -> None:
     assert not gr.set_description(None)
     assert json_data["description"] == "A test group"
 
-    if util.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
+    if tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
         assert "id" in gr.to_json(True)
 
-    sonar_users = groups.Group.get_object(util.SQ, "sonar-users")
+    sonar_users = groups.Group.get_object(tutil.SQ, "sonar-users")
     json_exp = sonar_users.to_json()
     assert "default" in json_exp
 
 
 def test_import() -> None:
     data = {}
-    groups.import_config(util.SQ, data)
+    groups.import_config(tutil.SQ, data)
     data = {
         "groups": {
             "Group1": "This is Group1",
@@ -142,16 +142,16 @@ def test_import() -> None:
             "Group3": "This is Group3",
         }
     }
-    groups.import_config(util.SQ, data)
+    groups.import_config(tutil.SQ, data)
     for g in "Group1", "Group2", "Group3":
-        assert groups.exists(endpoint=util.SQ, name=g)
-        o_g = groups.Group.get_object(endpoint=util.SQ, name=g)
+        assert groups.exists(endpoint=tutil.SQ, name=g)
+        o_g = groups.Group.get_object(endpoint=tutil.SQ, name=g)
         assert o_g.description == f"This is {g}"
         o_g.delete()
 
 
 def test_convert_yaml() -> None:
-    data = groups.export(util.SQ, {})
+    data = groups.export(tutil.SQ, {})
     yaml_list = groups.convert_for_yaml(data)
     assert len(yaml_list) == len(data)
     assert len(yaml_list[0]) == 2
@@ -159,36 +159,36 @@ def test_convert_yaml() -> None:
 
 def test_set_name(get_test_group: Generator[groups.Group]) -> None:
     gr = get_test_group
-    assert gr.name == util.TEMP_KEY
+    assert gr.name == tutil.TEMP_KEY
     assert not gr.set_name(gr.name)
     assert not gr.set_name(None)
-    assert gr.name == util.TEMP_KEY
+    assert gr.name == tutil.TEMP_KEY
     gr.set_name("FOOBAR")
     assert gr.name == "FOOBAR"
 
 
 def test_create_or_update(get_test_group: Generator[groups.Group]) -> None:
     gr = get_test_group
-    gr2 = groups.create_or_update(util.SQ, gr.name, "Some new group description")
+    gr2 = groups.create_or_update(tutil.SQ, gr.name, "Some new group description")
     assert gr2 is gr
     assert gr.description == "Some new group description"
 
 
 def test_api_params(get_test_group: Generator[groups.Group]) -> None:
     gr = get_test_group
-    if util.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
+    if tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
         assert gr.api_params(c.GET) == {}
         assert gr.api_params(c.CREATE) == {}
     else:
-        assert gr.api_params(c.GET) == {"name": util.TEMP_KEY}
-        assert gr.api_params(c.CREATE) == {"name": util.TEMP_KEY}
+        assert gr.api_params(c.GET) == {"name": tutil.TEMP_KEY}
+        assert gr.api_params(c.CREATE) == {"name": tutil.TEMP_KEY}
 
 
 def test_get_from_id(get_test_group: Generator[groups.Group]) -> None:
     gr = get_test_group
-    if util.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
-        gr2 = groups.get_object_from_id(util.SQ, gr.id)
+    if tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
+        gr2 = groups.get_object_from_id(tutil.SQ, gr.id)
         assert gr2 is gr
     else:
         with pytest.raises(exceptions.UnsupportedOperation):
-            _ = groups.get_object_from_id(util.SQ, gr.id)
+            _ = groups.get_object_from_id(tutil.SQ, gr.id)

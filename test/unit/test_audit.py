@@ -24,12 +24,12 @@
 import os
 from collections.abc import Generator
 
-import utilities as util
+import utilities as tutil
 from sonar import errcodes as e
 import cli.options as opt
 from cli import audit
 
-CMD = f"sonar-audit.py {util.SQS_OPTS}"
+CMD = f"sonar-audit.py {tutil.SQS_OPTS}"
 
 AUDIT_DISABLED = """
 audit.globalSettings = no
@@ -48,26 +48,26 @@ def test_audit_disabled(csv_file: Generator[str]) -> None:
     """test_audit_disabled"""
     with open(".sonar-audit.properties", mode="w", encoding="utf-8") as fd:
         print(AUDIT_DISABLED, file=fd)
-    assert util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}") == e.OK
-    assert util.file_empty(csv_file)
+    assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}") == e.OK
+    assert tutil.file_empty(csv_file)
     os.remove(".sonar-audit.properties")
 
 
 def test_audit_stdout() -> None:
     """test_audit_stdout"""
-    assert util.run_cmd(audit.main, CMD) == e.OK
+    assert tutil.run_cmd(audit.main, CMD) == e.OK
 
 
 def test_audit_json(json_file: Generator[str]) -> None:
     """test_audit_json"""
-    assert util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {json_file}") == e.OK
+    assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {json_file}") == e.OK
 
 
 def test_audit_proj_key(csv_file: Generator[str]) -> None:
     """test_audit_proj_key"""
-    assert util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.WHAT} projects --{opt.KEY_REGEXP} {util.LIVE_PROJECT}") == e.OK
+    assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.WHAT} projects --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT}") == e.OK
 
 
 def test_audit_proj_non_existing_key() -> None:
     """test_audit_proj_non_existing_key"""
-    assert util.run_cmd(audit.main, f"{CMD} --{opt.WHAT} projects --{opt.KEY_REGEXP} {util.LIVE_PROJECT},bad_key") == e.ARGS_ERROR
+    assert tutil.run_cmd(audit.main, f"{CMD} --{opt.WHAT} projects --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT},bad_key") == e.ARGS_ERROR

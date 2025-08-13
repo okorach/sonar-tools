@@ -25,27 +25,27 @@ from collections.abc import Generator
 
 import json
 
-import utilities as util
+import utilities as tutil
 from sonar import errcodes
 import sonar.util.constants as c
 
 import cli.options as opt
 from migration import migration
 
-CMD = f"migration.py {util.SQS_OPTS}"
+CMD = f"migration.py {tutil.SQS_OPTS}"
 
 GLOBAL_ITEMS = ("platform", "globalSettings", "rules", "qualityProfiles", "qualityGates", "projects", "applications", "portfolios", "users", "groups")
 
 
 def test_migration_help(json_file: Generator[str]) -> None:
     """test_migration_help"""
-    assert util.run_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {json_file} -h") == errcodes.ARGS_ERROR
+    assert tutil.run_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {json_file} -h") == errcodes.ARGS_ERROR
 
 
 def test_migration(json_file: Generator[str]) -> None:
     """test_config_export"""
     file = json_file
-    assert util.run_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {file}") == errcodes.OK
+    assert tutil.run_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {file}") == errcodes.OK
     with open(file=file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
 
@@ -53,7 +53,7 @@ def test_migration(json_file: Generator[str]) -> None:
         assert item in json_config
 
     item_list = ["backgroundTasks", "detectedCi", "lastAnalysis", "issues", "hotspots", "name", "ncloc", "permissions", "revision", "visibility"]
-    if util.SQ.edition() != c.CE:
+    if tutil.SQ.edition() != c.CE:
         item_list.append("branches")
     for p in json_config["projects"].values():
         for item in item_list:
@@ -62,7 +62,7 @@ def test_migration(json_file: Generator[str]) -> None:
     u = json_config["users"]["admin"]
     assert "sonar-users" in u["groups"]
     assert u["local"] and u["active"]
-    if util.SQ.version() >= (10, 0, 0):
+    if tutil.SQ.version() >= (10, 0, 0):
         assert "sonarQubeLastConnectionDate" in u
         assert "sonarLintLastConnectionDate" in u
     else:
@@ -70,26 +70,26 @@ def test_migration(json_file: Generator[str]) -> None:
     assert json_config["users"]["olivier"]["externalProvider"] == "sonarqube"
 
     GH_USER = "olivier-korach65532"
-    GL_USER = "olivier-korach22656" if util.SQ.version() > (10, 0, 0) else "olivier-korach82556"
+    GL_USER = "olivier-korach22656" if tutil.SQ.version() > (10, 0, 0) else "olivier-korach82556"
     USER = GL_USER
     u = json_config["users"][USER]
     assert u["name"] == "Olivier Korach"
     assert not u["local"]
     assert u["externalProvider"] == ("gitlab" if USER == GL_USER else "github")
-    if util.SQ.version() >= (10, 0, 0):
+    if tutil.SQ.version() >= (10, 0, 0):
         assert u["externalLogin"] == "okorach"
         assert u["email"] == "olivier.korach@gmail.com"
 
-    p = json_config["projects"][util.LIVE_PROJECT]
+    p = json_config["projects"][tutil.LIVE_PROJECT]
     assert "lastTaskScannerContext" in p["backgroundTasks"]
     for elem in "detectedCi", "lastAnalysis", "revision":
         assert elem in p
     assert p["ncloc"]["py"] > 0
     assert p["ncloc"]["total"] > 0
 
-    if util.SQ.edition() != c.CE:
+    if tutil.SQ.edition() != c.CE:
         iss = p["branches"]["master"]["issues"]
-        if util.SQ.version() >= (10, 0, 0):
+        if tutil.SQ.version() >= (10, 0, 0):
             assert iss["accepted"] > 0
         else:
             assert iss["wontFix"] > 0
@@ -102,10 +102,10 @@ def test_migration(json_file: Generator[str]) -> None:
 
     p = json_config["projects"]["checkstyle-issues"]
 
-    if util.SQ.version() >= (10, 0, 0):
+    if tutil.SQ.version() >= (10, 0, 0):
         assert json_config["projects"]["demo:gitlab-ci-maven"]["detectedCi"] == "Gitlab CI"
         assert json_config["projects"]["demo:github-actions-cli"]["detectedCi"] == "Github Actions"
-        if util.SQ.edition() != c.CE:
+        if tutil.SQ.edition() != c.CE:
             assert sum([v for v in p["branches"]["main"]["issues"]["thirdParty"].values()]) > 0
 
     for p in json_config["portfolios"].values():
@@ -116,7 +116,7 @@ def test_migration(json_file: Generator[str]) -> None:
 def test_migration_skip_issues(json_file: Generator[str]) -> None:
     """test_migration_skip_issues"""
     file = json_file
-    assert util.run_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {file} --skipIssues") == errcodes.OK
+    assert tutil.run_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {file} --skipIssues") == errcodes.OK
     with open(file=file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
 

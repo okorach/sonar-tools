@@ -26,7 +26,7 @@
 import os
 from unittest.mock import patch
 
-import utilities as util
+import utilities as tutil
 from sonar import errcodes as e
 from cli import findings_sync
 import cli.options as opt
@@ -34,21 +34,21 @@ import cli.options as opt
 
 CMD = "sonar-findings-sync.py"
 
-PLAT_OPTS = f"{util.SQS_OPTS} -U {os.getenv('SONAR_HOST_URL_TEST')} -T {os.getenv('SONAR_TOKEN_SYNC_USER')}"
-SC_PLAT_OPTS = f"{util.SQS_OPTS} -U https://sonarcloud.io -T {os.getenv('SONAR_TOKEN_SONARCLOUD')} -O okorach"
-SYNC_OPTS = f"-{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT} -K TESTSYNC -b master"
+PLAT_OPTS = f"{tutil.SQS_OPTS} -U {os.getenv('SONAR_HOST_URL_TEST')} -T {os.getenv('SONAR_TOKEN_SYNC_USER')}"
+SC_PLAT_OPTS = f"{tutil.SQS_OPTS} -U https://sonarcloud.io -T {os.getenv('SONAR_TOKEN_SONARCLOUD')} -O okorach"
+SYNC_OPTS = f"-{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT} -K TESTSYNC -b master"
 
 
 def test_sync_help() -> None:
     """test_sync"""
-    assert util.run_cmd(findings_sync.main, f"{CMD} -h") == e.ARGS_ERROR
+    assert tutil.run_cmd(findings_sync.main, f"{CMD} -h") == e.ARGS_ERROR
 
 
 def test_sync(json_file: callable) -> None:
     """test_sync"""
-    assert util.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -B main -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
+    assert tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -B main -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
 
 
 def test_sync_scloud(json_file: callable) -> None:
     """test_sync"""
-    assert util.run_cmd(findings_sync.main, f"{CMD} {SC_PLAT_OPTS} {SYNC_OPTS} -B master --threads 16 -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
+    assert tutil.run_cmd(findings_sync.main, f"{CMD} {SC_PLAT_OPTS} {SYNC_OPTS} -B master --threads 16 -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK

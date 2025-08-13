@@ -25,7 +25,7 @@
 
 from collections.abc import Generator
 from unittest.mock import patch
-import utilities as util
+import utilities as tutil
 from sonar import errcodes as e
 import sonar.util.constants as c
 
@@ -33,180 +33,180 @@ from cli import loc
 import cli.options as opt
 
 CLI = "sonar-loc.py"
-CMD = f"{CLI} {util.SQS_OPTS}"
+CMD = f"{CLI} {tutil.SQS_OPTS}"
 ALL_OPTIONS = f"-{opt.BRANCH_REGEXP_SHORT} .+ --{opt.WITH_LAST_ANALYSIS} --{opt.WITH_NAME} --{opt.WITH_URL}"
 
 
 def test_loc(csv_file: Generator[str]) -> None:
     """test_loc"""
-    assert util.run_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file}") == e.OK
-    assert util.csv_nbr_lines(csv_file) > 0
-    assert util.csv_col_int(csv_file, "ncloc", False)
-    assert util.csv_col_sorted(csv_file, "project key")
+    assert tutil.run_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file}") == e.OK
+    assert tutil.csv_nbr_lines(csv_file) > 0
+    assert tutil.csv_col_int(csv_file, "ncloc", False)
+    assert tutil.csv_col_sorted(csv_file, "project key")
 
 
 def test_loc_json(json_file: Generator[str]) -> None:
     """test_loc_json"""
-    assert util.run_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
-    assert util.json_field_sorted(json_file, "project")
-    assert util.json_field_int(json_file, "ncloc", False)
+    assert tutil.run_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
+    assert tutil.json_field_sorted(json_file, "project")
+    assert tutil.json_field_int(json_file, "ncloc", False)
 
 
 def test_loc_json_fmt(txt_file: Generator[str]) -> None:
     """test_loc_json_fmt"""
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {txt_file} --{opt.FORMAT} json"
-    assert util.run_cmd(loc.main, cmd) == e.OK
-    assert util.json_field_sorted(txt_file, "project")
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.json_field_sorted(txt_file, "project")
 
 
 def test_loc_csv_fmt(txt_file: Generator[str]) -> None:
     """test_loc_csv_fmt"""
     cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {txt_file} --{opt.FORMAT} csv"
-    assert util.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
     # Verify that the file is a valid CSV file
-    assert util.csv_cols_present(txt_file, "project key", "ncloc")
+    assert tutil.csv_cols_present(txt_file, "project key", "ncloc")
 
 
 def test_loc_project(csv_file: Generator[str]) -> None:
     """test_loc_project"""
-    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
-    assert util.run_cmd(loc.main, cmd) == e.OK
-    assert util.csv_nbr_lines(csv_file) == 1
-    assert util.csv_col_is_value(csv_file, "project key", util.LIVE_PROJECT)
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT}"
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.csv_nbr_lines(csv_file) == 1
+    assert tutil.csv_col_is_value(csv_file, "project key", tutil.LIVE_PROJECT)
 
 
 def test_loc_project_with_all_options(csv_file: Generator[str]) -> None:
     """test_loc_project_with_all_options"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --{opt.WITH_URL} -{opt.WITH_NAME_SHORT} -{opt.WITH_LAST_ANALYSIS_SHORT}"
-    assert util.run_cmd(loc.main, cmd) == e.OK
-    assert util.csv_col_url(csv_file, "URL")
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} --{opt.WITH_URL} -{opt.WITH_NAME_SHORT} -{opt.WITH_LAST_ANALYSIS_SHORT}"
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.csv_col_url(csv_file, "URL")
 
 
 def test_loc_portfolios(csv_file: Generator[str]) -> None:
     """test_loc_portfolios"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.PORTFOLIOS} --topLevelOnly --{opt.WITH_URL}"
-    if util.SQ.edition() in (c.CE, c.DE):
-        assert util.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
+    if tutil.SQ.edition() in (c.CE, c.DE):
+        assert tutil.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
         return
-    assert util.run_cmd(loc.main, cmd) == e.OK
-    assert util.csv_col_sorted(csv_file, "portfolio key")
-    assert util.csv_col_int(csv_file, "ncloc", False)
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.csv_col_sorted(csv_file, "portfolio key")
+    assert tutil.csv_col_int(csv_file, "ncloc", False)
 
 
 def test_loc_separator(csv_file: Generator[str]) -> None:
     """test_loc_separator"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.CSV_SEPARATOR} +"
-    assert util.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
 
 
 def test_loc_branches(csv_file: Generator[str]) -> None:
     """test_loc_branches"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} {ALL_OPTIONS} --{opt.WITH_TAGS}"
-    if util.SQ.edition() == c.CE:
-        assert util.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
+    if tutil.SQ.edition() == c.CE:
+        assert tutil.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
         return
-    assert util.run_cmd(loc.main, cmd) == e.OK
-    assert util.csv_col_match(csv_file, "branch", r"^[^\s]+$")
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.csv_col_match(csv_file, "branch", r"^[^\s]+$")
 
 
 def test_loc_branches_json(json_file: Generator[str]) -> None:
     """test_loc"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} {ALL_OPTIONS} --{opt.WITH_TAGS}"
-    if util.SQ.edition() == c.CE:
-        assert util.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
+    if tutil.SQ.edition() == c.CE:
+        assert tutil.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
         return
-    assert util.run_cmd(loc.main, cmd) == e.OK
-    assert util.json_field_match(json_file, "branch", r"^[^\s]+$")
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.json_field_match(json_file, "branch", r"^[^\s]+$")
 
 
 def test_loc_proj_all_options(csv_file: Generator[str]) -> None:
     """test_loc_proj_all_options"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} {ALL_OPTIONS} --{opt.WITH_TAGS}"
-    if util.SQ.edition() == c.CE:
-        assert util.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
+    if tutil.SQ.edition() == c.CE:
+        assert tutil.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
         return
 
-    assert util.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
     # Check file contents
-    assert util.csv_cols_present(csv_file, "project key", "branch", "project name", "tags")
-    assert util.csv_col_datetime(csv_file, "last analysis")
-    assert util.csv_col_int(csv_file, "ncloc", False)
-    assert util.csv_col_url(csv_file, "URL")
-    assert util.csv_col_datetime(csv_file, "last analysis")
-    assert util.csv_col_not_all_empty(csv_file, "tags")
+    assert tutil.csv_cols_present(csv_file, "project key", "branch", "project name", "tags")
+    assert tutil.csv_col_datetime(csv_file, "last analysis")
+    assert tutil.csv_col_int(csv_file, "ncloc", False)
+    assert tutil.csv_col_url(csv_file, "URL")
+    assert tutil.csv_col_datetime(csv_file, "last analysis")
+    assert tutil.csv_col_not_all_empty(csv_file, "tags")
 
 
 def test_loc_apps_all_options(csv_file: Generator[str]) -> None:
     """test_loc_apps_all_options"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --apps {ALL_OPTIONS} --{opt.WITH_TAGS}"
-    if util.SQ.edition() == c.CE:
-        assert util.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
+    if tutil.SQ.edition() == c.CE:
+        assert tutil.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
         return
 
-    assert util.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
     # Check file contents
-    assert util.csv_cols_present(csv_file, "app key", "app name", "branch", "tags")
-    assert util.csv_col_int(csv_file, "ncloc", False)
-    assert util.csv_col_url(csv_file, "URL")
-    assert util.csv_col_datetime(csv_file, "last analysis")
-    assert util.csv_col_not_all_empty(csv_file, "tags")
+    assert tutil.csv_cols_present(csv_file, "app key", "app name", "branch", "tags")
+    assert tutil.csv_col_int(csv_file, "ncloc", False)
+    assert tutil.csv_col_url(csv_file, "URL")
+    assert tutil.csv_col_datetime(csv_file, "last analysis")
+    assert tutil.csv_col_not_all_empty(csv_file, "tags")
 
 
 def test_loc_portfolios_all_options(csv_file: Generator[str]) -> None:
     """test_loc_portfolios_all_options"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --portfolios {ALL_OPTIONS}"
-    if util.SQ.edition() in (c.CE, c.DE):
-        assert util.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
+    if tutil.SQ.edition() in (c.CE, c.DE):
+        assert tutil.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
         return
-    assert util.run_cmd(loc.main, cmd) == e.OK
-    assert util.csv_cols_present(csv_file, "portfolio key", "portfolio name")
-    assert util.csv_col_int(csv_file, "ncloc", False)
-    assert util.csv_col_datetime(csv_file, "last analysis")
-    assert util.csv_col_url(csv_file, "URL")
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.csv_cols_present(csv_file, "portfolio key", "portfolio name")
+    assert tutil.csv_col_int(csv_file, "ncloc", False)
+    assert tutil.csv_col_datetime(csv_file, "last analysis")
+    assert tutil.csv_col_url(csv_file, "URL")
 
 
 def test_loc_proj_all_options_json(json_file: Generator[str]) -> None:
     """test_loc_proj_all_options_json"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} {ALL_OPTIONS} --{opt.WITH_TAGS}"
-    if util.SQ.edition() == c.CE:
-        assert util.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
+    if tutil.SQ.edition() == c.CE:
+        assert tutil.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
         return
 
-    assert util.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
     # Check file contents
-    assert util.json_fields_present(json_file, "project", "projectName")
-    assert util.json_field_int(json_file, "ncloc", False)
-    assert util.json_field_url(json_file, "url")
-    assert util.json_field_datetime(json_file, "lastAnalysis")
-    assert util.json_field_not_all_empty(json_file, "tags")
+    assert tutil.json_fields_present(json_file, "project", "projectName")
+    assert tutil.json_field_int(json_file, "ncloc", False)
+    assert tutil.json_field_url(json_file, "url")
+    assert tutil.json_field_datetime(json_file, "lastAnalysis")
+    assert tutil.json_field_not_all_empty(json_file, "tags")
 
 
 def test_loc_apps_all_options_json(json_file: Generator[str]) -> None:
     """test_loc_apps_all_options_json"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} {ALL_OPTIONS} --apps --{opt.WITH_TAGS}"
-    if util.SQ.edition() == c.CE:
-        assert util.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
+    if tutil.SQ.edition() == c.CE:
+        assert tutil.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
         return
 
-    assert util.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
     # Check file contents
-    assert util.json_fields_present(json_file, "app", "appName")
-    assert util.json_field_int(json_file, "ncloc", False)
-    assert util.json_field_url(json_file, "url")
-    assert util.json_field_datetime(json_file, "lastAnalysis")
-    assert util.json_field_not_all_empty(json_file, "tags")
+    assert tutil.json_fields_present(json_file, "app", "appName")
+    assert tutil.json_field_int(json_file, "ncloc", False)
+    assert tutil.json_field_url(json_file, "url")
+    assert tutil.json_field_datetime(json_file, "lastAnalysis")
+    assert tutil.json_field_not_all_empty(json_file, "tags")
 
 
 def test_loc_portfolios_all_options_json(json_file: Generator[str]) -> None:
     """test_loc_portfolios_all_options_json"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} {ALL_OPTIONS} --portfolios"
-    if util.SQ.edition() in (c.CE, c.DE):
-        assert util.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
+    if tutil.SQ.edition() in (c.CE, c.DE):
+        assert tutil.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
         return
 
-    assert util.run_cmd(loc.main, cmd) == e.OK
-    assert util.json_fields_present(json_file, "portfolio", "portfolioName")
-    assert util.json_field_int(json_file, "ncloc", False)
-    assert util.json_field_url(json_file, "url")
-    assert util.json_field_datetime(json_file, "lastAnalysis")
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.json_fields_present(json_file, "portfolio", "portfolioName")
+    assert tutil.json_field_int(json_file, "ncloc", False)
+    assert tutil.json_field_url(json_file, "url")
+    assert tutil.json_field_datetime(json_file, "lastAnalysis")
     # Check file contents

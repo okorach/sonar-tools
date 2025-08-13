@@ -25,64 +25,64 @@
 from collections.abc import Generator
 from unittest.mock import patch
 
-import utilities as util
+import utilities as tutil
 from sonar import errcodes as e
 from cli import projects_cli
 import cli.options as opt
 
 CMD = "projects_cli.py"
-OPTS = f"{CMD} {util.SQS_OPTS} --{opt.NBR_THREADS} 8"
+OPTS = f"{CMD} {tutil.SQS_OPTS} --{opt.NBR_THREADS} 8"
 
 
 def test_export_all_proj(json_file: Generator[str]) -> None:
     """test_export_all_proj"""
     cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.NBR_THREADS} 16"
-    assert util.run_cmd(projects_cli.main, cmd) == e.OK
+    assert tutil.run_cmd(projects_cli.main, cmd) == e.OK
 
 
 def test_export_single_proj(json_file: Generator[str]) -> None:
     """test_export_single_proj"""
-    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
-    assert util.run_cmd(projects_cli.main, cmd) == e.OK
+    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} -{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT}"
+    assert tutil.run_cmd(projects_cli.main, cmd) == e.OK
 
 
 def test_export_timeout(json_file: Generator[str]) -> None:
     """test_export_timeout"""
-    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.KEY_REGEXP} {util.LIVE_PROJECT} --exportTimeout 10"
-    assert util.run_cmd(projects_cli.main, cmd) == e.OK
+    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} --exportTimeout 10"
+    assert tutil.run_cmd(projects_cli.main, cmd) == e.OK
 
 
 def test_export_no_file() -> None:
     """test_export_timeout"""
-    cmd = f"{OPTS} -{opt.EXPORT_SHORT} -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}"
-    assert util.run_cmd(projects_cli.main, cmd) == e.OK
+    cmd = f"{OPTS} -{opt.EXPORT_SHORT} -{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT}"
+    assert tutil.run_cmd(projects_cli.main, cmd) == e.OK
 
 
 def test_export_non_existing_project(json_file: Generator[str]) -> None:
     """test_config_non_existing_project"""
     cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} -{opt.KEY_REGEXP_SHORT} bad_project"
-    assert util.run_cmd(projects_cli.main, cmd) == e.NO_SUCH_KEY
+    assert tutil.run_cmd(projects_cli.main, cmd) == e.NO_SUCH_KEY
 
 
 def test_export_sq_cloud(json_file: Generator[str]) -> None:
     """test_export_sq_cloud"""
-    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} {util.SC_OPTS}"
-    assert util.run_cmd(projects_cli.main, cmd) == e.UNSUPPORTED_OPERATION
+    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} {tutil.SC_OPTS}"
+    assert tutil.run_cmd(projects_cli.main, cmd) == e.UNSUPPORTED_OPERATION
 
 
 def test_import_no_file() -> None:
     """test_import_no_file"""
     cmd = f"{OPTS} --{opt.IMPORT}"
-    assert util.run_cmd(projects_cli.main, cmd) == e.ARGS_ERROR
+    assert tutil.run_cmd(projects_cli.main, cmd) == e.ARGS_ERROR
 
 
 def test_no_export_or_import(json_file: Generator[str]) -> None:
     """test_no_export_or_import"""
     cmd = f"{OPTS} --{opt.REPORT_FILE} {json_file}"
-    assert util.run_cmd(projects_cli.main, cmd) == e.ARGS_ERROR
+    assert tutil.run_cmd(projects_cli.main, cmd) == e.ARGS_ERROR
 
 
 def test_no_import_file() -> None:
     """test_no_import_file"""
     cmd = f"{OPTS} --{opt.REPORT_FILE} non-existing.json"
-    assert util.run_cmd(projects_cli.main, cmd) == e.ARGS_ERROR
+    assert tutil.run_cmd(projects_cli.main, cmd) == e.ARGS_ERROR
