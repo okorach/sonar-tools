@@ -81,7 +81,6 @@ def test_audit(csv_file: Generator[str]) -> None:
     with open("test/files/audit.csv", mode="r", encoding="utf-8") as fd:
         reader = csv.reader(fd)
         for row in reader:
-            # prefix = re.sub(r"(token|project|Group|portfolio|application|subportfolio|user|quality gate|quality profile|branch|pull request)() \'[^' ]+\').*", "\1", row[4])
             problems.append((row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4]))))
     assert problems_present(csv_file, problems)
 
