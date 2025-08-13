@@ -437,7 +437,7 @@ def get_bulk(
         o = get_visibility(endpoint, component)
         settings_dict[o.key] = o
     except exceptions.UnsupportedOperation as e:
-        log.info("%s", str(e))
+        log.warning("%s", e.message)
 
     if not endpoint.is_sonarcloud():
         o = get_new_code_period(endpoint, component)
