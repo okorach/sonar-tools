@@ -54,7 +54,7 @@ def problems_present(csv_file: str, problems: list[tuple[str, str]]) -> bool:
 
 def test_audit(csv_file: Generator[str]) -> None:
     """test_audit"""
-    assert tutil.run_cmd(audit.main, f"{CMD_ONLY} --{opt.URL} {tutil.SQS_AUDIT} --{opt.REPORT_FILE} {csv_file}") == e.OK
+    assert tutil.run_cmd(audit.main, f"{CMD_ONLY} --{opt.URL} {tutil.LATEST_TEST} --{opt.REPORT_FILE} {csv_file}") == e.OK
     # Ensure no duplicate alarms #1478
     problems = []
     regexp = re.compile(r"\d+\\ days")
