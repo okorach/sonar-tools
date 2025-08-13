@@ -45,11 +45,8 @@ FILES_ROOT = "test/files/"
 LATEST = "http://localhost:10000"
 LTA = "http://localhost:8000"
 LTS = LTA
-
 LATEST_TEST = "http://localhost:20010"
-
 CB = "http://localhost:7000"
-SQS_AUDIT = "http://localhost:10050"
 
 CSV_FILE = f"temp.{os.getpid()}.csv"
 JSON_FILE = f"temp.{os.getpid()}.json"
