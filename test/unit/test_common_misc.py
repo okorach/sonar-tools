@@ -21,17 +21,8 @@
 
 """ Common tests, independent of SonarQube version """
 
-import os, stat
-import csv
-import re
-from collections.abc import Generator
-import pytest
-
-import test.unit.utilities as tutil
-from sonar import errcodes as e, utilities
+from sonar import utilities
 from sonar.util import sonar_cache
-import cli.options as opt
-from cli import audit
 
 def test_deduct_fmt() -> None:
     """test_deduct_fmt"""
