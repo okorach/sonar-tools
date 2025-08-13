@@ -524,12 +524,15 @@ def get_all_rules_details(endpoint: platform.Platform, threads: int = 8) -> bool
     """
     rule_list = get_list(endpoint=endpoint, include_external=False).values()
     ok = True
+    if endpoint.is_sonarcloud():
+        threads = max(threads, 20)
+    log.info("Collecting rules details for %d rules with %d threads", len(rule_list), threads)
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="RuleDetails") as executor:
         futures = [executor.submit(Rule.refresh, rule, True) for rule in rule_list]
         i, nb_rules = 0, len(futures)
         for future in concurrent.futures.as_completed(futures):
             try:
-                future.result(timeout=1)
+                future.result(timeout=10)
                 i += 1
                 if i % 100 == 0 or i == nb_rules:
                     log.info("Collected rules details for %d rules out of %d (%d%%)", i, nb_rules, int(100 * i / nb_rules))
