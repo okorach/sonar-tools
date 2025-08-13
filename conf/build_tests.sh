@@ -23,7 +23,7 @@ ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 
 cd "$ROOTDIR/test/unit" || exit 1
 
-GEN_LOC=test/gen
+export GEN_LOC=test/gen
 
 echo ""
 echo "Generating edition / version specific tests"
@@ -35,8 +35,7 @@ do
     mkdir -p "$ROOTDIR/$GEN_LOC/$target" 2>/dev/null
     if [ "$target" == "common" ]; then
         b=$(basename "$f" .py)
-        cp conftest.py "$ROOTDIR/$GEN_LOC/$target"
-        cp utilities.py "$ROOTDIR/$GEN_LOC/$target"
+        cp conftest.py utilities.py credentials.py "$ROOTDIR/$GEN_LOC/$target"
         cp test_common*.py "$ROOTDIR/$GEN_LOC/$target"
     else
         for f in *.py
