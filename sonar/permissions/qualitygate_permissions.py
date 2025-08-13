@@ -41,7 +41,10 @@ class QualityGatePermissions(quality_permissions.QualityPermissions):
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
     def read(self) -> QualityGatePermissions:
-        if not self.endpoint.is_sonarcloud() and self.endpoint.version() < (9, 2, 0):
+        if self.endpoint.is_sonarcloud():
+            log.debug("No quality gate permissions on SonarQube Cloud")
+            return self
+        elif self.endpoint.version() < (9, 2, 0):
             log.debug("Can't read %s on SonarQube < 9.2", str(self))
             return self
         self._read_perms(QualityGatePermissions.APIS, QualityGatePermissions.API_GET_FIELD, gateName=self.concerned_object.name)
