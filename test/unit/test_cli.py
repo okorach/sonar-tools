@@ -87,7 +87,7 @@ def test_bad_org(json_file: Generator[str]):
         assert tutil.run_cmd(func, cmd) == errcodes.NO_SUCH_KEY
 
 
-def test_bad_arg(json_file: Generator[str]):
+def test_bad_arg():
     """Test that passing a wrong argument to any CLI tool fails fast"""
     for cli_data in CLIS_DATA:
         pyfile, func, extra_args = cli_data
