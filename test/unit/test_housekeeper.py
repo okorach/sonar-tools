@@ -24,7 +24,6 @@
     sonar-housekeeper tests
 """
 
-from unittest.mock import patch
 import utilities as tutil
 from sonar import errcodes
 from cli import housekeeper, options

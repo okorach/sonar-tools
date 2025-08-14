@@ -25,7 +25,6 @@
 """
 
 from collections.abc import Generator
-from unittest.mock import patch
 import utilities as tutil
 from cli import rules_cli
 import cli.options as opt

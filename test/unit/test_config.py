@@ -24,7 +24,6 @@
 from collections.abc import Generator
 
 import json
-from unittest.mock import patch
 
 import utilities as tutil
 from sonar import errcodes as e
@@ -125,4 +124,4 @@ def test_config_import_portfolios() -> None:
     # Compare portfolios
     portfolio_list = portfolios.get_list(tutil.TEST_SQ)
     assert len(portfolio_list) == len(json_config)
-    assert sorted(list(portfolio_list.keys())) == sorted(list(json_config.keys()))
+    assert sorted(portfolio_list.keys()) == sorted(json_config.keys())

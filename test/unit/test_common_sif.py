@@ -26,7 +26,6 @@ from collections.abc import Generator
 
 import json
 import datetime
-from unittest.mock import patch
 import pytest
 
 import utilities as tutil

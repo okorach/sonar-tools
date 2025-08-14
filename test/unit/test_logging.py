@@ -22,7 +22,6 @@
 """ Logging tests """
 
 import os
-from unittest.mock import patch
 from collections.abc import Generator
 
 import utilities as tutil

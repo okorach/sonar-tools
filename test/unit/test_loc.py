@@ -24,7 +24,6 @@
 """
 
 from collections.abc import Generator
-from unittest.mock import patch
 import utilities as tutil
 from sonar import errcodes as e
 import sonar.util.constants as c

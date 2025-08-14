@@ -21,7 +21,6 @@
 """ sonarcloud tests """
 
 import os
-from unittest.mock import patch
 import pytest
 from collections.abc import Generator
 import utilities as tutil

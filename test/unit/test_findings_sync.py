@@ -24,7 +24,6 @@
 """
 
 import os
-from unittest.mock import patch
 
 import utilities as tutil
 from sonar import errcodes as e
