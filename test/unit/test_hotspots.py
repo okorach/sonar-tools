@@ -23,8 +23,6 @@
 
 import utilities as tutil
 from sonar import hotspots
-from sonar.util import constants as c
-
 
 def test_transitions() -> None:
     hotspot_d = hotspots.search(endpoint=tutil.SQ, filters={"project": "pytorch"})

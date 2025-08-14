@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
-# sonar-tools
-# Copyright (C) 2019-2025 Olivier Korach
+# sonar-tools tests
+# Copyright (C) 2025 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -18,27 +18,23 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
 
-    Imports a list of projects to a SonarQube platform
+""" Common tests, independent of SonarQube version """
 
-"""
-import sys
-from unittest.mock import patch
-
-from cli import options, projects_cli
-import sonar.logging as log
+from sonar import utilities
+from sonar.util import sonar_cache
 
 
-def main() -> None:
-    """Deprecated entry point for sonar-projects-import"""
-    log.warning("\n*** sonar-projects-import is deprecated, please use 'sonar-projects -i' instead ***\n")
-    args = sys.argv.copy()
-    args[0] = "sonar-projects"
-    args.append(f"-{options.IMPORT_SHORT}")
-    with patch.object(sys, "argv", args):
-        projects_cli.main()
+def test_deduct_fmt() -> None:
+    """test_deduct_fmt"""
+    assert utilities.deduct_format("csv", None) == "csv"
+    assert utilities.deduct_format("foo", "file.csv") == "csv"
+    assert utilities.deduct_format("foo", "file.json") == "csv"
+    assert utilities.deduct_format(None, "file.json") == "json"
+    assert utilities.deduct_format(None, "file.csv") == "csv"
+    assert utilities.deduct_format(None, "file.txt") == "csv"
 
 
-if __name__ == "__main__":
-    main()
+def test_clear_cache() -> None:
+    """Clears the SonarQube caches before running tests on SC"""
+    sonar_cache.clear()

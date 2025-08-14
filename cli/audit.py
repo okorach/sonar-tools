@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 #
 # sonar-tools
 # Copyright (C) 2019-2025 Olivier Korach

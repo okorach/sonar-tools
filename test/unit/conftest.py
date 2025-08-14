@@ -25,7 +25,7 @@ import os
 from collections.abc import Generator
 import pytest
 
-import utilities as util
+import utilities as tutil
 from sonar import projects, applications, portfolios, qualityprofiles, qualitygates, exceptions, logging, issues, users, groups
 import sonar.util.constants as c
 
@@ -40,27 +40,27 @@ TEST_ISSUE = "a1fddba4-9e70-46c6-ac95-e815104ead59"
 def create_test_object(a_class: type, key: str) -> any:
     """Creates a SonarQube test object of a given class"""
     try:
-        o = a_class.get_object(endpoint=util.SQ, key=key)
+        o = a_class.get_object(endpoint=tutil.SQ, key=key)
     except exceptions.ObjectNotFound:
-        o = a_class.create(endpoint=util.SQ, key=key, name=key)
+        o = a_class.create(endpoint=tutil.SQ, key=key, name=key)
     return o
 
 
 @pytest.fixture(autouse=True)
 def run_around_tests():
-    util.start_logging()
-    url = util.TEST_SQ.local_url
+    tutil.start_logging()
+    url = tutil.TEST_SQ.local_url
     yield
-    util.TEST_SQ.local_url = url
+    tutil.TEST_SQ.local_url = url
 
 
 @pytest.fixture
 def get_test_project() -> Generator[projects.Project]:
     """setup of tests"""
-    o = create_test_object(projects.Project, key=util.TEMP_KEY)
+    o = create_test_object(projects.Project, key=tutil.TEMP_KEY)
     yield o
     # Teardown: Clean up resources (if any) after the test
-    o.key = util.TEMP_KEY
+    o.key = tutil.TEMP_KEY
     try:
         o.delete()
     except exceptions.ObjectNotFound:
@@ -71,15 +71,15 @@ def get_test_project() -> Generator[projects.Project]:
 def get_empty_qg() -> Generator[qualitygates.QualityGate]:
     """setup of tests"""
     try:
-        o = qualitygates.QualityGate.get_object(endpoint=util.SQ, name=util.TEMP_KEY)
+        o = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
     except exceptions.ObjectNotFound:
-        o = qualitygates.QualityGate.create(endpoint=util.SQ, name=util.TEMP_KEY)
+        o = qualitygates.QualityGate.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
     o.clear_conditions()
     yield o
     # Teardown: Clean up resources (if any) after the test
-    o.key = util.TEMP_KEY
+    o.key = tutil.TEMP_KEY
     try:
-        sw = qualitygates.QualityGate.get_object(endpoint=util.SQ, name=util.SONAR_WAY)
+        sw = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY)
         sw.set_as_default()
         o.delete()
     except exceptions.ObjectNotFound:
@@ -90,13 +90,13 @@ def get_empty_qg() -> Generator[qualitygates.QualityGate]:
 def get_loaded_qg() -> Generator[qualitygates.QualityGate]:
     """setup of tests"""
     try:
-        o = qualitygates.QualityGate.get_object(endpoint=util.SQ, name=util.TEMP_KEY)
+        o = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
     except exceptions.ObjectNotFound:
-        o = qualitygates.QualityGate.create(endpoint=util.SQ, name=util.TEMP_KEY)
+        o = qualitygates.QualityGate.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
     yield o
-    o.key = util.TEMP_KEY
+    o.key = tutil.TEMP_KEY
     try:
-        sw = qualitygates.QualityGate.get_object(endpoint=util.SQ, name=util.SONAR_WAY)
+        sw = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY)
         sw.set_as_default()
         o.delete()
     except exceptions.ObjectNotFound:
@@ -107,11 +107,11 @@ def get_loaded_qg() -> Generator[qualitygates.QualityGate]:
 def get_test_app() -> Generator[applications.Application]:
     """setup of tests"""
     o = None
-    if util.SQ.edition() in (c.DE, c.EE, c.DCE):
-        o = create_test_object(applications.Application, key=util.TEMP_KEY)
+    if tutil.SQ.edition() in (c.DE, c.EE, c.DCE):
+        o = create_test_object(applications.Application, key=tutil.TEMP_KEY)
     yield o
-    if util.SQ.edition() in (c.DE, c.EE, c.DCE):
-        o.key = util.TEMP_KEY
+    if tutil.SQ.edition() in (c.DE, c.EE, c.DCE):
+        o.key = tutil.TEMP_KEY
         try:
             o.delete()
         except exceptions.ObjectNotFound:
@@ -122,11 +122,11 @@ def get_test_app() -> Generator[applications.Application]:
 def get_test_portfolio() -> Generator[portfolios.Portfolio]:
     """setup of tests"""
     o = None
-    if util.SQ.edition() in (c.EE, c.DCE):
-        o = create_test_object(portfolios.Portfolio, key=util.TEMP_KEY)
+    if tutil.SQ.edition() in (c.EE, c.DCE):
+        o = create_test_object(portfolios.Portfolio, key=tutil.TEMP_KEY)
     yield o
-    if util.SQ.edition() in (c.EE, c.DCE):
-        o.key = util.TEMP_KEY
+    if tutil.SQ.edition() in (c.EE, c.DCE):
+        o.key = tutil.TEMP_KEY
         try:
             o.delete()
         except exceptions.ObjectNotFound:
@@ -137,11 +137,11 @@ def get_test_portfolio() -> Generator[portfolios.Portfolio]:
 def get_test_portfolio_2() -> Generator[portfolios.Portfolio]:
     """setup of tests"""
     o = None
-    if util.SQ.edition() in (c.EE, c.DCE):
-        o = create_test_object(portfolios.Portfolio, key=util.TEMP_KEY_2)
+    if tutil.SQ.edition() in (c.EE, c.DCE):
+        o = create_test_object(portfolios.Portfolio, key=tutil.TEMP_KEY_2)
     yield o
-    if util.SQ.edition() in (c.EE, c.DCE):
-        o.key = util.TEMP_KEY_2
+    if tutil.SQ.edition() in (c.EE, c.DCE):
+        o.key = tutil.TEMP_KEY_2
         try:
             o.delete()
         except exceptions.ObjectNotFound:
@@ -152,17 +152,17 @@ def get_test_portfolio_2() -> Generator[portfolios.Portfolio]:
 def get_test_subportfolio() -> Generator[portfolios.Portfolio]:
     """setup of tests"""
     subp = None
-    if util.SQ.edition() in (c.EE, c.DCE):
-        parent = create_test_object(portfolios.Portfolio, key=util.TEMP_KEY)
-        subp = parent.add_standard_subportfolio(key=util.TEMP_KEY_3, name=util.TEMP_KEY_3)
+    if tutil.SQ.edition() in (c.EE, c.DCE):
+        parent = create_test_object(portfolios.Portfolio, key=tutil.TEMP_KEY)
+        subp = parent.add_standard_subportfolio(key=tutil.TEMP_KEY_3, name=tutil.TEMP_KEY_3)
     yield subp
-    if util.SQ.edition() in (c.EE, c.DCE):
-        subp.key = util.TEMP_KEY_3
+    if tutil.SQ.edition() in (c.EE, c.DCE):
+        subp.key = tutil.TEMP_KEY_3
         try:
             subp.delete()
         except exceptions.ObjectNotFound:
             pass
-        parent.key = util.TEMP_KEY
+        parent.key = tutil.TEMP_KEY
         try:
             parent.delete()
         except exceptions.ObjectNotFound:
@@ -173,12 +173,12 @@ def get_test_subportfolio() -> Generator[portfolios.Portfolio]:
 def get_test_qp() -> Generator[qualityprofiles.QualityProfile]:
     """setup of tests"""
     try:
-        o = qualityprofiles.get_object(endpoint=util.SQ, name=util.TEMP_KEY, language="py")
+        o = qualityprofiles.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
         if o.is_default:
-            sw = qualityprofiles.get_object(endpoint=util.SQ, name=util.SONAR_WAY, language="py")
+            sw = qualityprofiles.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY, language="py")
             sw.set_as_default()
     except exceptions.ObjectNotFound:
-        o = qualityprofiles.QualityProfile.create(endpoint=util.SQ, name=util.TEMP_KEY, language="py")
+        o = qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
     yield o
     try:
         o.delete()
@@ -189,7 +189,7 @@ def get_test_qp() -> Generator[qualityprofiles.QualityProfile]:
 @pytest.fixture
 def get_test_issue() -> Generator[issues.Issue]:
     """setup of tests"""
-    issues_d = issues.search_by_project(endpoint=util.SQ, project_key=util.LIVE_PROJECT)
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
     yield issues_d[TEST_ISSUE]
     # Teardown: Clean up resources (if any) after the test - Nothing in that case
 
@@ -198,9 +198,9 @@ def get_test_issue() -> Generator[issues.Issue]:
 def get_test_user() -> Generator[users.User]:
     """setup of tests"""
     try:
-        o = users.User.get_object(endpoint=util.SQ, login=util.TEMP_KEY)
+        o = users.User.get_object(endpoint=tutil.SQ, login=tutil.TEMP_KEY)
     except exceptions.ObjectNotFound:
-        o = users.User.create(endpoint=util.SQ, login=util.TEMP_KEY, name=f"User name {util.TEMP_KEY}")
+        o = users.User.create(endpoint=tutil.SQ, login=tutil.TEMP_KEY, name=f"User name {tutil.TEMP_KEY}")
     (uid, uname, ulogin) = (o.name, o.id, o.login)
     _ = [o.remove_from_group(g) for g in o.groups() if g != "sonar-users"]
     yield o
@@ -273,8 +273,8 @@ def sarif_file() -> Generator[str]:
 @pytest.fixture
 def get_test_quality_gate() -> Generator[qualitygates.QualityGate]:
     """setup of tests"""
-    sonar_way = qualitygates.QualityGate.get_object(util.SQ, util.SONAR_WAY)
-    o = sonar_way.copy(util.TEMP_KEY)
+    sonar_way = qualitygates.QualityGate.get_object(tutil.SQ, tutil.SONAR_WAY)
+    o = sonar_way.copy(tutil.TEMP_KEY)
     yield o
     try:
         o.delete()
@@ -286,9 +286,9 @@ def get_test_quality_gate() -> Generator[qualitygates.QualityGate]:
 def get_test_group() -> Generator[groups.Group]:
     """setup of tests"""
     try:
-        o = groups.Group.get_object(endpoint=util.SQ, name=util.TEMP_KEY)
+        o = groups.Group.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
     except exceptions.ObjectNotFound:
-        o = groups.Group.create(endpoint=util.SQ, name=util.TEMP_KEY)
+        o = groups.Group.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
     yield o
     try:
         o.delete()
@@ -300,11 +300,11 @@ def get_test_group() -> Generator[groups.Group]:
 def get_60_groups() -> Generator[list[groups.Group]]:
     group_list = []
     for i in range(60):
-        gr_name = f"Group-{util.TEMP_KEY}{i}"
+        gr_name = f"Group-{tutil.TEMP_KEY}{i}"
         try:
-            o_gr = groups.Group.get_object(endpoint=util.SQ, name=gr_name)
+            o_gr = groups.Group.get_object(endpoint=tutil.SQ, name=gr_name)
         except exceptions.ObjectNotFound:
-            o_gr = groups.Group.create(endpoint=util.SQ, name=gr_name, description=gr_name)
+            o_gr = groups.Group.create(endpoint=tutil.SQ, name=gr_name, description=gr_name)
         group_list.append(o_gr)
     yield group_list
     for g in group_list:
@@ -315,11 +315,11 @@ def get_60_groups() -> Generator[list[groups.Group]]:
 def get_60_users() -> Generator[list[users.User]]:
     user_list = []
     for i in range(60):
-        u_name = f"User-{util.TEMP_KEY}{i}"
+        u_name = f"User-{tutil.TEMP_KEY}{i}"
         try:
-            o_user = users.User.get_object(endpoint=util.SQ, login=u_name)
+            o_user = users.User.get_object(endpoint=tutil.SQ, login=u_name)
         except exceptions.ObjectNotFound:
-            o_user = users.User.create(endpoint=util.SQ, login=u_name, name=u_name)
+            o_user = users.User.create(endpoint=tutil.SQ, login=u_name, name=u_name)
         user_list.append(o_user)
     yield user_list
     for u in user_list:

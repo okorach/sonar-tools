@@ -28,6 +28,7 @@ def stop_clock(start_time: datetime.datetime) -> None:
 def main(max_nbr: int) -> None:
     """sonar-loc entry point"""
     start_time = start_clock()
+    nbr_primes = 0
     primes = [i for i in range(max_nbr) if is_prime(i)]
     print(f"Primes = {', '.join([str(i) for i in primes])}")
     stop_clock(start_time)

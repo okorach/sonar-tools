@@ -28,13 +28,14 @@ buildDir="$ROOTDIR/build"
 
 echo "Running tests"
 
-"$CONFDIR/prep_tests.sh"
+. "$CONFDIR/build_tests.sh"
+
 
 for target in latest cb 9 cloud
 do
     sonar start -i $target && sleep 30
-    if [ -d "$ROOTDIR/test/$target/" ]; then
-        coverage run --branch --source="$ROOTDIR" -m pytest "$ROOTDIR/test/$target/" --junit-xml="$buildDir/xunit-results-$target.xml"
+    if [ -d "$ROOTDIR/$GEN_LOC/$target/" ]; then
+        coverage run --branch --source="$ROOTDIR" -m pytest "$ROOTDIR/$GEN_LOC/$target/" --junit-xml="$buildDir/xunit-results-$target.xml"
         coverage xml -o "$buildDir/coverage-$target.xml"
     fi
     if [ "$target" != "latest" ]; then

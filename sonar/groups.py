@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # sonar-tools
 # Copyright (C) 2022-2025 Olivier Korach
@@ -260,7 +261,7 @@ class Group(sq.SqObject):
                 params = {"login": user.login, "name": self.name}
                 return self.post(Group.api_for(REMOVE_USER, self.endpoint), params=params).ok
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, "removing user from group")
+            util.handle_error(e, "removing user from group", catch_http_statuses=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
             if isinstance(e, HTTPError):
                 code = e.response.status_code
                 if code == HTTPStatus.BAD_REQUEST:

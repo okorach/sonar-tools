@@ -22,23 +22,22 @@
 """ quality gates tests """
 
 from collections.abc import Generator
-import json
 import pytest
 
-import utilities as util
+import utilities as tutil
 from sonar import qualitygates, exceptions, logging
 
 
 def test_get_object(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
     qg = get_loaded_qg
-    assert qg.name == util.TEMP_KEY
-    assert str(qg) == f"quality gate '{util.TEMP_KEY}'"
-    if util.SQ.version() < (10, 0, 0):
-        assert qg.url() == f"{util.SQ.external_url}/quality_gates/show/{qg.key}"
+    assert qg.name == tutil.TEMP_KEY
+    assert str(qg) == f"quality gate '{tutil.TEMP_KEY}'"
+    if tutil.SQ.version() < (10, 0, 0):
+        assert qg.url() == f"{tutil.SQ.external_url}/quality_gates/show/{qg.key}"
     else:
-        assert qg.url() == f"{util.SQ.external_url}/quality_gates/show/{util.TEMP_KEY}"
-    qg2 = qualitygates.QualityGate.get_object(endpoint=util.SQ, name=util.TEMP_KEY)
+        assert qg.url() == f"{tutil.SQ.external_url}/quality_gates/show/{tutil.TEMP_KEY}"
+    qg2 = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
     assert qg.projects() == {}
     assert qg2 is qg
 
@@ -47,20 +46,20 @@ def test_get_object_non_existing() -> None:
     """Test exception raised when providing non existing portfolio key"""
 
     with pytest.raises(exceptions.ObjectNotFound) as e:
-        _ = qualitygates.QualityGate.get_object(endpoint=util.SQ, name=util.NON_EXISTING_KEY)
-    assert str(e.value).endswith(f"Quality gate '{util.NON_EXISTING_KEY}' not found")
+        _ = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY)
+    assert str(e.value).endswith(f"Quality gate '{tutil.NON_EXISTING_KEY}' not found")
 
 
 def test_exists(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """Test exist"""
     _ = get_loaded_qg
-    assert qualitygates.exists(endpoint=util.SQ, gate_name=util.TEMP_KEY)
-    assert not qualitygates.exists(endpoint=util.SQ, gate_name=util.NON_EXISTING_KEY)
+    assert qualitygates.exists(endpoint=tutil.SQ, gate_name=tutil.TEMP_KEY)
+    assert not qualitygates.exists(endpoint=tutil.SQ, gate_name=tutil.NON_EXISTING_KEY)
 
 
 def test_get_list() -> None:
     """Test QP get_list"""
-    qgs = qualitygates.get_list(endpoint=util.SQ)
+    qgs = qualitygates.get_list(endpoint=tutil.SQ)
     assert len(qgs) >= 5
 
 
@@ -70,15 +69,15 @@ def test_create_delete(get_loaded_qg: Generator[qualitygates.QualityGate]) -> No
     assert qp is not None
 
     with pytest.raises(exceptions.ObjectAlreadyExists):
-        qualitygates.QualityGate.create(endpoint=util.SQ, name=util.TEMP_KEY)
+        qualitygates.QualityGate.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
     qp.delete()
-    assert not qualitygates.exists(endpoint=util.SQ, gate_name=util.TEMP_KEY)
+    assert not qualitygates.exists(endpoint=tutil.SQ, gate_name=tutil.TEMP_KEY)
 
 
 def test_set_conditions(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """test_set_conditions"""
     qg = get_loaded_qg
-    sw = qualitygates.QualityGate.get_object(util.SQ, util.SONAR_WAY)
+    sw = qualitygates.QualityGate.get_object(tutil.SQ, tutil.SONAR_WAY)
     assert sorted(qg.conditions(encoded=True)) == sorted(sw.conditions(encoded=True))
     qg.clear_conditions()
     assert qg.set_conditions(None)
@@ -95,7 +94,7 @@ def test_set_conditions(get_loaded_qg: Generator[qualitygates.QualityGate]) -> N
 
 def test_clear_conditions(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """test_clear_conditions"""
-    sw = qualitygates.QualityGate.get_object(util.SQ, util.SONAR_WAY)
+    sw = qualitygates.QualityGate.get_object(tutil.SQ, tutil.SONAR_WAY)
     assert not sw.clear_conditions()
     assert len(sw.conditions()) >= 3
 
@@ -125,7 +124,7 @@ def test_copy(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
 def test_set_as_default(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """test_set_as_default"""
     qg = get_loaded_qg
-    sw = qualitygates.QualityGate.get_object(util.SQ, util.SONAR_WAY)
+    sw = qualitygates.QualityGate.get_object(tutil.SQ, tutil.SONAR_WAY)
     assert sw.is_built_in
     qg.set_conditions(["new_coverage <= 50", "new_violations >= 0", "test_success_density <= 100"])
     assert qg.set_as_default()
@@ -154,17 +153,17 @@ def test_audit(get_empty_qg: Generator[qualitygates.QualityGate]) -> None:
 
 
 def test_count():
-    count = qualitygates.count(util.SQ)
+    count = qualitygates.count(tutil.SQ)
     assert count >= 5
-    qg = qualitygates.QualityGate.create(util.SQ, util.TEMP_KEY)
-    assert qualitygates.count(util.SQ) == count + 1
+    qg = qualitygates.QualityGate.create(tutil.SQ, tutil.TEMP_KEY)
+    assert qualitygates.count(tutil.SQ) == count + 1
     qg.delete()
-    assert qualitygates.count(util.SQ) == count
+    assert qualitygates.count(tutil.SQ) == count
 
 
 def test_export() -> None:
     """test_export"""
-    json_exp = qualitygates.export(endpoint=util.SQ, export_settings={})
+    json_exp = qualitygates.export(endpoint=tutil.SQ, export_settings={})
     yaml_exp = qualitygates.convert_for_yaml(json_exp)
     assert len(json_exp) > 0
     assert isinstance(json_exp, dict)
@@ -174,4 +173,4 @@ def test_export() -> None:
 
 def test_audit_disabled() -> None:
     """test_audit_disabled"""
-    assert len(qualitygates.audit(util.SQ, {"audit.qualityGates": False})) == 0
+    assert len(qualitygates.audit(tutil.SQ, {"audit.qualityGates": False})) == 0

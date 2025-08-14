@@ -25,7 +25,7 @@ import datetime
 from collections.abc import Generator
 import pytest
 
-import utilities as util
+import utilities as tutil
 from sonar import applications as apps, exceptions
 from sonar.applications import Application as App
 import sonar.util.constants as c
@@ -40,27 +40,27 @@ SUPPORTED_EDITIONS = (c.DE, c.EE, c.DCE)
 
 def test_get_object() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
-    if not util.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=util.SQ, key=EXISTING_KEY):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=tutil.SQ, key=EXISTING_KEY):
         return
-    obj = App.get_object(endpoint=util.SQ, key=EXISTING_KEY)
+    obj = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
     assert obj.key == EXISTING_KEY
-    obj2 = App.get_object(endpoint=util.SQ, key=EXISTING_KEY)
+    obj2 = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
     assert obj2.key == EXISTING_KEY
     assert obj == obj2
 
 
 def test_count() -> None:
     """Verify count works"""
-    if not util.verify_support(SUPPORTED_EDITIONS, apps.count, endpoint=util.SQ):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.count, endpoint=tutil.SQ):
         return
-    assert apps.count(util.SQ) > 0
+    assert apps.count(tutil.SQ) > 0
 
 
 def test_search() -> None:
     """Verify that search with criterias work"""
-    if not util.verify_support(SUPPORTED_EDITIONS, apps.search, endpoint=util.SQ, params={"s": "analysisDate"}):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.search, endpoint=tutil.SQ, params={"s": "analysisDate"}):
         return
-    res_list = apps.search(endpoint=util.SQ, params={"s": "analysisDate"})
+    res_list = apps.search(endpoint=tutil.SQ, params={"s": "analysisDate"})
     oldest = datetime.datetime(1970, 1, 1).replace(tzinfo=datetime.timezone.utc)
     for obj in res_list.values():
         app_date = obj.last_analysis()
@@ -71,54 +71,54 @@ def test_search() -> None:
 
 def test_get_object_non_existing() -> None:
     """Test exception raised when providing non existing portfolio key"""
-    if not util.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=util.SQ, key=NON_EXISTING_KEY):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=tutil.SQ, key=NON_EXISTING_KEY):
         return
     with pytest.raises(exceptions.ObjectNotFound) as e:
-        _ = App.get_object(endpoint=util.SQ, key=NON_EXISTING_KEY)
+        _ = App.get_object(endpoint=tutil.SQ, key=NON_EXISTING_KEY)
     assert str(e.value).endswith(f"Application key '{NON_EXISTING_KEY}' not found")
 
 
 def test_exists(get_test_app: Generator[App]) -> None:
     """Test exist"""
-    if not util.verify_support(SUPPORTED_EDITIONS, apps.exists, endpoint=util.SQ, key=EXISTING_KEY) and not util.verify_support(
-        SUPPORTED_EDITIONS, apps.exists, endpoint=util.SQ, key=NON_EXISTING_KEY
+    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.exists, endpoint=tutil.SQ, key=EXISTING_KEY) and not tutil.verify_support(
+        SUPPORTED_EDITIONS, apps.exists, endpoint=tutil.SQ, key=NON_EXISTING_KEY
     ):
         return
     obj = get_test_app
-    assert apps.exists(endpoint=util.SQ, key=obj.key)
-    assert not apps.exists(endpoint=util.SQ, key=NON_EXISTING_KEY)
+    assert apps.exists(endpoint=tutil.SQ, key=obj.key)
+    assert not apps.exists(endpoint=tutil.SQ, key=NON_EXISTING_KEY)
 
 
 def test_get_list() -> None:
     """Test portfolio get_list"""
     k_list = [EXISTING_KEY, EXISTING_KEY_2]
-    if not util.verify_support(SUPPORTED_EDITIONS, apps.get_list, endpoint=util.SQ, key_list=k_list):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.get_list, endpoint=tutil.SQ, key_list=k_list):
         return
-    p_dict = apps.get_list(endpoint=util.SQ, key_list=k_list)
+    p_dict = apps.get_list(endpoint=tutil.SQ, key_list=k_list)
     assert sorted(k_list) == sorted(list(p_dict.keys()))
 
 
 def test_create_delete(get_test_app: Generator[App]) -> None:
     """Test portfolio create delete"""
-    if not util.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=util.SQ, name=util.TEMP_NAME, key=util.TEMP_KEY):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name=tutil.TEMP_NAME, key=tutil.TEMP_KEY):
         return
     obj = get_test_app
     assert obj is not None
-    assert obj.key == util.TEMP_KEY
-    assert obj.name == util.TEMP_KEY
+    assert obj.key == tutil.TEMP_KEY
+    assert obj.name == tutil.TEMP_KEY
     obj.delete()
-    assert not apps.exists(endpoint=util.SQ, key=util.TEMP_KEY)
+    assert not apps.exists(endpoint=tutil.SQ, key=tutil.TEMP_KEY)
 
     # Test delete with 1 project in the app
-    obj = App.create(endpoint=util.SQ, name=util.TEMP_NAME, key=util.TEMP_KEY)
-    obj.add_projects([util.LIVE_PROJECT])
+    obj = App.create(endpoint=tutil.SQ, name=tutil.TEMP_NAME, key=tutil.TEMP_KEY)
+    obj.add_projects([tutil.LIVE_PROJECT])
     obj.delete()
-    assert not apps.exists(endpoint=util.SQ, key=util.TEMP_KEY)
+    assert not apps.exists(endpoint=tutil.SQ, key=tutil.TEMP_KEY)
 
 
 def test_permissions_1(get_test_app: Generator[App]) -> None:
     """Test permissions"""
-    if not util.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=util.SQ, name="An app", key=TEST_KEY):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name="An app", key=TEST_KEY):
         return
     obj = get_test_app
     obj.set_permissions({"groups": {"sonar-users": ["user", "admin"], "sonar-administrators": ["user", "admin"]}})
@@ -127,7 +127,7 @@ def test_permissions_1(get_test_app: Generator[App]) -> None:
 
 def test_permissions_2(get_test_app: Generator[App]) -> None:
     """Test permissions"""
-    if not util.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=util.SQ, name=util.TEMP_NAME, key=util.TEMP_KEY):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name=tutil.TEMP_NAME, key=tutil.TEMP_KEY):
         return
     obj = get_test_app
     obj.set_permissions({"groups": {"sonar-users": ["user"], "sonar-administrators": ["user", "admin"]}})
@@ -136,9 +136,9 @@ def test_permissions_2(get_test_app: Generator[App]) -> None:
 
 def test_get_projects() -> None:
     """test_get_projects"""
-    if not util.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=util.SQ, key=EXISTING_KEY):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=tutil.SQ, key=EXISTING_KEY):
         return
-    obj = App.get_object(endpoint=util.SQ, key=EXISTING_KEY)
+    obj = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
     count = len(obj.projects())
     assert count > 0
     assert len(obj.projects()) == count
@@ -146,9 +146,9 @@ def test_get_projects() -> None:
 
 def test_get_branches() -> None:
     """test_get_projects"""
-    if not util.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=util.SQ, key=EXISTING_KEY):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=tutil.SQ, key=EXISTING_KEY):
         return
-    obj = App.get_object(endpoint=util.SQ, key=EXISTING_KEY)
+    obj = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
     count = len(obj.branches())
     assert count > 0
     assert len(obj.branches()) == count
@@ -156,23 +156,23 @@ def test_get_branches() -> None:
 
 def test_no_audit(get_test_app: Generator[App]) -> None:
     """Check stop fast when audit params are disabled"""
-    if not util.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=util.SQ, key=EXISTING_KEY):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=tutil.SQ, key=EXISTING_KEY):
         return
     obj = get_test_app
     assert len(obj.audit({"audit.applications": False})) == 0
     assert len(obj._audit_empty({"audit.applications.empty": True})) == 1
     assert len(obj._audit_empty({"audit.applications.empty": False})) == 0
-    obj.add_projects([util.LIVE_PROJECT])
+    obj.add_projects([tutil.LIVE_PROJECT])
     assert len(obj._audit_singleton({"audit.applications.singleton": True})) == 1
     assert len(obj._audit_singleton({"audit.applications.singleton": False})) == 0
 
 
 def test_search_by_name() -> None:
     """test_search_by_name"""
-    if not util.verify_support(SUPPORTED_EDITIONS, apps.search_by_name, endpoint=util.SQ, name="TEST_APP"):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.search_by_name, endpoint=tutil.SQ, name="TEST_APP"):
         return
-    obj = App.get_object(endpoint=util.SQ, key=EXISTING_KEY)
-    other_apps = apps.search_by_name(endpoint=util.SQ, name=obj.name)
+    obj = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
+    other_apps = apps.search_by_name(endpoint=tutil.SQ, name=obj.name)
 
     assert len(other_apps) == 1
     first_app = list(other_apps.values())[0]
@@ -181,12 +181,12 @@ def test_search_by_name() -> None:
 
 def test_set_tags(get_test_app: Generator[App]) -> None:
     """test_set_tags"""
-    if util.SQ.edition() not in (c.DE, c.EE, c.DCE):
+    if tutil.SQ.edition() not in (c.DE, c.EE, c.DCE):
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     obj = get_test_app
 
-    assert obj.set_tags(util.TAGS)
-    assert obj.get_tags() == sorted(util.TAGS)
+    assert obj.set_tags(tutil.TAGS)
+    assert obj.get_tags() == sorted(tutil.TAGS)
     assert obj.set_tags(["foo"])
     assert obj.get_tags() == ["foo"]
     assert obj.set_tags([])
@@ -196,7 +196,7 @@ def test_set_tags(get_test_app: Generator[App]) -> None:
 
 def test_not_found(get_test_app: Generator[App]) -> None:
     """test_not_found"""
-    if util.SQ.edition() not in SUPPORTED_EDITIONS:
+    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     obj = get_test_app
     obj.key = "mess-me-up"
@@ -205,15 +205,15 @@ def test_not_found(get_test_app: Generator[App]) -> None:
 
 
 def test_already_exists(get_test_app: Generator[App]) -> None:
-    if util.SQ.edition() not in SUPPORTED_EDITIONS:
+    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     obj = get_test_app
     with pytest.raises(exceptions.ObjectAlreadyExists):
-        _ = App.create(endpoint=util.SQ, key=obj.key, name="Foo Bar")
+        _ = App.create(endpoint=tutil.SQ, key=obj.key, name="Foo Bar")
 
 
 def test_branch_exists(get_test_app: Generator[App]) -> None:
-    if util.SQ.edition() not in SUPPORTED_EDITIONS:
+    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     obj = get_test_app
     assert obj.branch_exists("main")
@@ -221,7 +221,7 @@ def test_branch_exists(get_test_app: Generator[App]) -> None:
 
 
 def test_branch_is_main(get_test_app: Generator[App]) -> None:
-    if util.SQ.edition() not in SUPPORTED_EDITIONS:
+    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     obj = get_test_app
     assert obj.branch_is_main("main")
@@ -230,7 +230,7 @@ def test_branch_is_main(get_test_app: Generator[App]) -> None:
 
 
 def test_get_issues(get_test_app: Generator[App]) -> None:
-    if util.SQ.edition() not in SUPPORTED_EDITIONS:
+    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     obj = get_test_app
     assert len(obj.get_issues()) == 0
@@ -238,18 +238,21 @@ def test_get_issues(get_test_app: Generator[App]) -> None:
 
 def test_audit_disabled() -> None:
     """test_audit_disabled"""
-    assert len(apps.audit(util.SQ, {"audit.applications": False})) == 0
+    assert len(apps.audit(tutil.SQ, {"audit.applications": False})) == 0
 
 
 def test_app_branches(get_test_app: Generator[App]) -> None:
-    if util.SQ.edition() not in SUPPORTED_EDITIONS:
+    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
     obj = get_test_app
     APP_BRANCH_MAIN, APP_BRANCH_2 = "BRANCH foo", "Other Branch"
     definition = {
         "branches": {
-            APP_BRANCH_2: {"projects": {util.PROJ_WITH_BRANCHES: util.BRANCH_MAIN, "demo:jcl": "main", "demo:java-security": "main"}},
-            APP_BRANCH_MAIN: {"projects": {util.PROJ_WITH_BRANCHES: util.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"}, "isMain": True},
+            APP_BRANCH_2: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_MAIN, "demo:jcl": "main", "demo:java-security": "main"}},
+            APP_BRANCH_MAIN: {
+                "projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"},
+                "isMain": True,
+            },
         }
     }
     obj.update(definition)
@@ -259,9 +262,12 @@ def test_app_branches(get_test_app: Generator[App]) -> None:
     APP_BRANCH_MAIN, APP_BRANCH_2, APP_BRANCH_3 = "Main Branch", "Master", "MiBranch"
     definition = {
         "branches": {
-            APP_BRANCH_2: {"projects": {util.PROJ_WITH_BRANCHES: util.BRANCH_MAIN, "demo:jcl": "main", "demo:java-security": "main"}},
-            APP_BRANCH_3: {"projects": {util.PROJ_WITH_BRANCHES: util.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"}},
-            APP_BRANCH_MAIN: {"projects": {util.PROJ_WITH_BRANCHES: util.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"}, "isMain": True},
+            APP_BRANCH_2: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_MAIN, "demo:jcl": "main", "demo:java-security": "main"}},
+            APP_BRANCH_3: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"}},
+            APP_BRANCH_MAIN: {
+                "projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"},
+                "isMain": True,
+            },
         }
     }
     obj.update(definition)
@@ -271,8 +277,8 @@ def test_app_branches(get_test_app: Generator[App]) -> None:
 
 
 def test_convert_for_yaml() -> None:
-    if util.SQ.edition() not in SUPPORTED_EDITIONS:
+    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
-    data = apps.export(util.SQ, {})
+    data = apps.export(tutil.SQ, {})
     yaml_list = apps.convert_for_yaml(data)
     assert len(yaml_list) == len(data)

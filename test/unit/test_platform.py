@@ -25,70 +25,70 @@ import json
 from requests import RequestException
 
 import pytest
-import utilities as util
+import utilities as tutil
 from sonar import platform, settings
 
 
 def test_system_id() -> None:
-    server_id = util.SQ.server_id()
-    assert server_id == util.SQ.server_id()
-    assert server_id == util.SQ.server_id()
+    server_id = tutil.SQ.server_id()
+    assert server_id == tutil.SQ.server_id()
+    assert server_id == tutil.SQ.server_id()
 
 
 def test_db() -> None:
-    assert util.SC.database().lower() == "postgresql"
-    assert util.SQ.database().lower() == "postgresql"
+    assert tutil.SC.database().lower() == "postgresql"
+    assert tutil.SQ.database().lower() == "postgresql"
 
 
 def test_plugins() -> None:
-    assert util.SC.plugins() == {}
+    assert tutil.SC.plugins() == {}
 
 
 def test_get_set_reset_settings() -> None:
     # util.start_logging()
-    assert util.SQ.reset_setting("sonar.exclusions")
-    assert util.SQ.get_setting("sonar.exclusions") == ""
+    assert tutil.SQ.reset_setting("sonar.exclusions")
+    assert tutil.SQ.get_setting("sonar.exclusions") == ""
 
-    assert util.SQ.set_setting("sonar.exclusions", ["**/*.foo"])
-    assert util.SQ.get_setting("sonar.exclusions") == "**/*.foo"
+    assert tutil.SQ.set_setting("sonar.exclusions", ["**/*.foo"])
+    assert tutil.SQ.get_setting("sonar.exclusions") == "**/*.foo"
 
-    assert util.SQ.set_setting("sonar.exclusions", ["**/*.foo", "**/*.bar"])
-    assert util.SQ.get_setting("sonar.exclusions") == "**/*.foo, **/*.bar"
+    assert tutil.SQ.set_setting("sonar.exclusions", ["**/*.foo", "**/*.bar"])
+    assert tutil.SQ.get_setting("sonar.exclusions") == "**/*.foo, **/*.bar"
 
-    assert util.SQ.reset_setting("sonar.exclusions")
-    assert util.SQ.get_setting("sonar.exclusions") == ""
+    assert tutil.SQ.reset_setting("sonar.exclusions")
+    assert tutil.SQ.get_setting("sonar.exclusions") == ""
 
 
 def test_import() -> None:
     with open("test/files/config.json", "r", encoding="utf-8") as f:
         json_config = json.load(f)
     json_config["globalSettings"]["generalSettings"][settings.NEW_CODE_PERIOD] = 60
-    platform.import_config(util.TEST_SQ, json_config)
+    platform.import_config(tutil.TEST_SQ, json_config)
 
     json_config.pop("globalSettings")
-    util.TEST_SQ.import_config(json_config)
+    tutil.TEST_SQ.import_config(json_config)
 
 
 def test_sys_info() -> None:
-    data = util.SC.sys_info()
+    data = tutil.SC.sys_info()
     assert data == {"System": {"Server ID": "sonarcloud"}}
 
-    data = util.SQ.sys_info()
+    data = tutil.SQ.sys_info()
     assert "System" in data
 
 
 def test_wrong_url() -> None:
-    util.TEST_SQ.local_url = "http://localhost:3337"
+    tutil.TEST_SQ.local_url = "http://localhost:3337"
 
-    util.TEST_SQ._sys_info = None
+    tutil.TEST_SQ._sys_info = None
     with pytest.raises(RequestException):
-        util.TEST_SQ.sys_info()
+        tutil.TEST_SQ.sys_info()
 
-    util.TEST_SQ.global_permissions()
+    tutil.TEST_SQ.global_permissions()
 
 
 def test_set_webhooks() -> None:
-    assert not util.SQ.set_webhooks(None)
+    assert not tutil.SQ.set_webhooks(None)
 
 
 def test_normalize_api() -> None:

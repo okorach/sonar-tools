@@ -21,40 +21,38 @@
 
 """ Logging tests """
 
-import sys
 import os
-from unittest.mock import patch
 from collections.abc import Generator
 
-import utilities as util
+import utilities as tutil
 from sonar import errcodes
 from cli import loc
 import cli.options as opt
 
 CMD = "sonar-loc.py"
-CMD = f"{CMD} {util.SQS_OPTS}"
+CMD = f"{CMD} {tutil.SQS_OPTS}"
 
 
 def test_no_log_file(csv_file: Generator[str]) -> None:
     """Tests that when no log file is specified, no file is produced"""
-    util.clean("sonar-tools.log")
-    assert util.run_cmd(loc.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}") == errcodes.OK
+    tutil.clean("sonar-tools.log")
+    assert tutil.run_cmd(loc.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}") == errcodes.OK
     assert not os.path.isfile("sonar-tools.log")
-    assert util.file_not_empty(csv_file)
+    assert tutil.file_not_empty(csv_file)
 
 
 def test_custom_log_file(csv_file: Generator[str]) -> None:
     """Tests that when a specific log file is given, logs come in that file"""
     logfile = "sonar-loc-logging.log"
-    assert util.run_cmd(loc.main, f"{CMD} -{opt.LOGFILE_SHORT} {logfile}") == errcodes.OK
+    assert tutil.run_cmd(loc.main, f"{CMD} -{opt.LOGFILE_SHORT} {logfile}") == errcodes.OK
     assert not os.path.isfile("sonar-tools.log")
-    assert util.file_not_empty(logfile)
+    assert tutil.file_not_empty(logfile)
     with open(logfile, encoding="utf-8") as f:
         first_line = f.readline()
     assert "| sonar-loc |" in first_line
-    util.clean(logfile)
+    tutil.clean(logfile)
 
 
 def test_missing_log_filename() -> None:
     """Tests that correct error is raise when log file name is forgotten"""
-    assert util.run_cmd(loc.main, f"{CMD} -{opt.LOGFILE_SHORT}") == errcodes.ARGS_ERROR
+    assert tutil.run_cmd(loc.main, f"{CMD} -{opt.LOGFILE_SHORT}") == errcodes.ARGS_ERROR

@@ -174,7 +174,10 @@ def test_changelog() -> None:
     assert not changelog.is_assignment()
     assert changelog.assignee() is None
     assert changelog.assignee(False) is None
-    assert datetime(2025, 2, 12) <= util.string_to_date(changelog.date()).replace(tzinfo=None) < datetime(2025, 2, 14)
+    if tutil.SQ.version() >= (10, 0, 0):
+        assert datetime(2025, 2, 12) <= util.string_to_date(changelog.date()).replace(tzinfo=None) < datetime(2025, 2, 14)
+    else:
+        assert datetime(2021, 12, 24) <= util.string_to_date(changelog.date()).replace(tzinfo=None) < datetime(2024, 12, 26)
     assert changelog.author() is None
     assert not changelog.is_tag()
     assert changelog.get_tags() == []
@@ -190,7 +193,7 @@ def test_multiple_changelogs():
     assert issue_key in issues_d
     issue = issues_d[issue_key]
     state_list = ("ACCEPT", "CONFIRM", "UNCONFIRM", "FP", "REOPEN", "SEVERITY", "ASSIGN", "UNASSIGN", "SEVERITY")
-    results = {s: False for s in state_list}
+    results = dict.fromkeys(state_list, False)
     for cl in issue.changelog().values():
         (t, _) = cl.changelog_type()
         assert t is not None

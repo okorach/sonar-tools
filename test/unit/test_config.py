@@ -24,9 +24,8 @@
 from collections.abc import Generator
 
 import json
-from unittest.mock import patch
 
-import utilities as util
+import utilities as tutil
 from sonar import errcodes as e
 from sonar import portfolios
 from sonar import logging
@@ -36,76 +35,76 @@ import cli.options as opt
 from cli import config
 
 CMD = "config.py"
-OPTS = f"{CMD} {util.SQS_OPTS} -{opt.EXPORT_SHORT}"
+OPTS = f"{CMD} {tutil.SQS_OPTS} -{opt.EXPORT_SHORT}"
 
 _DEFAULT_TEMPLATE = "0. Default template"
 
 
 def test_config_export_full(json_file: Generator[str]) -> None:
     """test_config_export_full"""
-    assert util.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --fullExport") == e.OK
+    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --fullExport") == e.OK
 
 
 def test_config_export_partial_2(json_file: Generator[str]) -> None:
     """test_config_export_partial_2"""
-    assert util.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} -w settings,portfolios,users") == e.OK
+    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} -w settings,portfolios,users") == e.OK
 
 
 def test_config_export_partial_3(json_file: Generator[str]) -> None:
     """test_config_export_partial_3"""
-    assert util.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} -w projects -{opt.KEY_REGEXP_SHORT} {util.LIVE_PROJECT}") == e.OK
+    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} -w projects -{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT}") == e.OK
 
 
 def test_config_export_yaml(yaml_file: Generator[str]) -> None:
     """test_config_export_yaml"""
-    assert util.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {yaml_file}") == e.OK
+    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {yaml_file}") == e.OK
 
 
 def test_config_export_wrong() -> None:
     """test_config_export_wrong"""
-    assert util.run_cmd(config.main, f"{OPTS} -w settings,wrong,users") == e.ARGS_ERROR
+    assert tutil.run_cmd(config.main, f"{OPTS} -w settings,wrong,users") == e.ARGS_ERROR
 
 
 def test_config_non_existing_project() -> None:
     """test_config_non_existing_project"""
-    assert util.run_cmd(config.main, f"{OPTS} -{opt.KEY_REGEXP_SHORT} bad_project") == e.WRONG_SEARCH_CRITERIA
+    assert tutil.run_cmd(config.main, f"{OPTS} -{opt.KEY_REGEXP_SHORT} bad_project") == e.WRONG_SEARCH_CRITERIA
 
 
 def test_config_inline_lists(json_file: Generator[str]) -> None:
     """test_config_inline_lists"""
 
-    assert util.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file}") == e.OK
+    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file}") == e.OK
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], str)
     assert isinstance(json_config["globalSettings"]["permissionTemplates"][_DEFAULT_TEMPLATE]["permissions"]["groups"]["sonar-users"], str)
-    assert isinstance(json_config["projects"][util.LIVE_PROJECT]["permissions"]["groups"]["sonar-users"], str)
+    assert isinstance(json_config["projects"][tutil.LIVE_PROJECT]["permissions"]["groups"]["sonar-users"], str)
 
-    if util.SQ.edition() not in (c.CE, c.DE):
+    if tutil.SQ.edition() not in (c.CE, c.DE):
         assert isinstance(json_config["portfolios"]["PORTFOLIO_ALL"]["permissions"]["groups"]["sonar-administrators"], str)
         assert isinstance(json_config["portfolios"]["PORTFOLIO-PYTHON"]["projects"]["tags"], str)
         # This is a list because there is a comma in one of the branches
-        if util.SQ.version() >= (10, 0, 0):
+        if tutil.SQ.version() >= (10, 0, 0):
             assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["projects"]["manual"]["BANKING-PORTAL"], list)
         assert json_config["portfolios"]["All"]["portfolios"]["Banking"]["byReference"]
 
 
 def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
     """test_config_dont_inline_lists"""
-    assert util.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --dontInlineLists") == e.OK
+    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --dontInlineLists") == e.OK
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], list)
     assert isinstance(json_config["globalSettings"]["permissionTemplates"][_DEFAULT_TEMPLATE]["permissions"]["groups"]["sonar-users"], list)
-    assert isinstance(json_config["projects"][util.LIVE_PROJECT]["permissions"]["groups"]["sonar-users"], list)
-    if util.SQ.edition() not in (c.CE, c.DE):
+    assert isinstance(json_config["projects"][tutil.LIVE_PROJECT]["permissions"]["groups"]["sonar-users"], list)
+    if tutil.SQ.edition() not in (c.CE, c.DE):
         assert isinstance(json_config["portfolios"]["PORTFOLIO_ALL"]["permissions"]["groups"]["sonar-administrators"], list)
         assert isinstance(json_config["portfolios"]["PORTFOLIO-PYTHON"]["projects"]["tags"], list)
-        if util.SQ.version() >= (10, 0, 0):
+        if tutil.SQ.version() >= (10, 0, 0):
             assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["projects"]["manual"]["BANKING-PORTAL"], list)
-    if util.SQ.edition() != c.CE and util.SQ.version() > (10, 0, 0):
+    if tutil.SQ.edition() != c.CE and tutil.SQ.version() > (10, 0, 0):
         assert "sonar.cfamily.ignoreHeaderComments" not in json_config["globalSettings"]["languages"]["cfamily"]
-        assert "sonar.cfamily.ignoreHeaderComments" in json_config["projects"][util.LIVE_PROJECT]
+        assert "sonar.cfamily.ignoreHeaderComments" in json_config["projects"][tutil.LIVE_PROJECT]
 
 
 def test_config_import_portfolios() -> None:
@@ -114,15 +113,15 @@ def test_config_import_portfolios() -> None:
         json_config = json.loads(f.read())["portfolios"]
 
     # delete all portfolios in test
-    p_list = portfolios.get_list(util.TEST_SQ, use_cache=False)
+    p_list = portfolios.get_list(tutil.TEST_SQ, use_cache=False)
     logging.info("PORTFOLIOS = %s", str(list(p_list.keys())))
     logging.info("Deleting all portfolios")
-    _ = [p.delete() for p in portfolios.get_list(util.TEST_SQ, use_cache=False).values() if p.is_toplevel()]
+    _ = [p.delete() for p in portfolios.get_list(tutil.TEST_SQ, use_cache=False).values() if p.is_toplevel()]
     # Import config
-    cmd = f"{CMD} {util.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} test/files/config.json --{opt.WHAT} {opt.WHAT_PORTFOLIOS}"
-    assert util.run_cmd(config.main, cmd) == e.OK
+    cmd = f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} test/files/config.json --{opt.WHAT} {opt.WHAT_PORTFOLIOS}"
+    assert tutil.run_cmd(config.main, cmd) == e.OK
 
     # Compare portfolios
-    portfolio_list = portfolios.get_list(util.TEST_SQ)
+    portfolio_list = portfolios.get_list(tutil.TEST_SQ)
     assert len(portfolio_list) == len(json_config)
-    assert sorted(list(portfolio_list.keys())) == sorted(list(json_config.keys()))
+    assert sorted(portfolio_list.keys()) == sorted(json_config.keys())

@@ -24,10 +24,7 @@
     sonar-housekeeper tests
 """
 
-import sys
-from unittest.mock import patch
-import pytest
-import utilities as util
+import utilities as tutil
 from sonar import errcodes
 from cli import housekeeper, options
 
@@ -38,4 +35,4 @@ __GOOD_OPTS = ["", f"--{options.NBR_THREADS} 1", "-P 30", f"--{options.HTTP_TIME
 def test_housekeeper() -> None:
     """test_housekeeper"""
     for opts in __GOOD_OPTS:
-        assert util.run_cmd(housekeeper.main, f"{CMD} {util.SQS_OPTS} {opts}") == errcodes.OK
+        assert tutil.run_cmd(housekeeper.main, f"{CMD} {tutil.SQS_OPTS} {opts}") == errcodes.OK
