@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # sonar-tools
 # Copyright (C) 2019-2025 Olivier Korach
@@ -404,31 +405,31 @@ def count(endpoint: platform.Platform, **params) -> int:
 
 def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> dict[str, Rule]:
     """Returns a list of rules corresponding to certain search filters"""
-    if not use_cache or params or len(Rule.CACHE.objects) < 1000:
-        rule_list = {}
-        lang_list = params.pop("languages", None)
-        if not lang_list:
-            lang_list = languages.get_list(endpoint).keys()
-        if "include_external" in params:
-            incl_ext = [str(params["include_external"]).lower()]
-        else:
-            incl_ext = ["false", "true"]
+    if use_cache and not params and len(Rule.CACHE.objects) > 1000:
+        return Rule.CACHE.objects
+    rule_list = {}
+    lang_list = params.pop("languages", None)
+    if not lang_list:
+        lang_list = languages.get_list(endpoint).keys()
+    if "include_external" in params:
+        incl_ext = [str(params["include_external"]).lower()]
+    else:
+        incl_ext = ["false", "true"]
+    for lang_key in lang_list:
+        if not languages.exists(endpoint, lang_key):
+            raise exceptions.ObjectNotFound(key=lang_key, message=f"Language '{lang_key}' does not exist")
+    log.info("Getting rules for %d languages", len(lang_list))
+    futures = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="RulesList") as executor:
         for lang_key in lang_list:
-            if not languages.exists(endpoint, lang_key):
-                raise exceptions.ObjectNotFound(key=lang_key, message=f"Language '{lang_key}' does not exist")
-        log.info("Getting rules for %d languages", len(lang_list))
-        futures = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="RulesList") as executor:
-            for lang_key in lang_list:
-                futures += [executor.submit(search, endpoint, params | {"languages": lang_key, "include_external": inc}) for inc in incl_ext]
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    rule_list.update(future.result(timeout=30))
-                except Exception as e:
-                    log.error(f"{str(e)} for {str(future)}.")
-        log.info("Returning a list of %d rules", len(rule_list))
-        return rule_list
-    return Rule.CACHE.objects
+            futures += [executor.submit(search, endpoint, params | {"languages": lang_key, "include_external": inc}) for inc in incl_ext]
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                rule_list.update(future.result(timeout=30))
+            except Exception as e:
+                log.error(f"{str(e)} for {str(future)}.")
+    log.info("Returning a list of %d rules", len(rule_list))
+    return rule_list
 
 
 def get_object(endpoint: platform.Platform, key: str) -> Optional[Rule]:
