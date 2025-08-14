@@ -392,7 +392,7 @@ def test_all_prs(csv_file: Generator[str]) -> None:
 def test_one_pr(csv_file: Generator[str]) -> None:
     """Tests that findings export for a single name PR of a project works"""
     proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
-    for pr in list(proj.pull_requests().keys()):
+    for pr in proj.pull_requests().keys():
         cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} -{opt.PULL_REQUESTS_SHORT} {pr}"
         print(cmd)
         if tutil.SQ.edition() == c.CE:

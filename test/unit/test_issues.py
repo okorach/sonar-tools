@@ -193,7 +193,7 @@ def test_multiple_changelogs():
     assert issue_key in issues_d
     issue = issues_d[issue_key]
     state_list = ("ACCEPT", "CONFIRM", "UNCONFIRM", "FP", "REOPEN", "SEVERITY", "ASSIGN", "UNASSIGN", "SEVERITY")
-    results = {s: False for s in state_list}
+    results = dict.fromkeys(state_list, False)
     for cl in issue.changelog().values():
         (t, _) = cl.changelog_type()
         assert t is not None

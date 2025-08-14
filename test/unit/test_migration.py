@@ -106,7 +106,7 @@ def test_migration(json_file: Generator[str]) -> None:
         assert json_config["projects"]["demo:gitlab-ci-maven"]["detectedCi"] == "Gitlab CI"
         assert json_config["projects"]["demo:github-actions-cli"]["detectedCi"] == "Github Actions"
         if tutil.SQ.edition() != c.CE:
-            assert sum([v for v in p["branches"]["main"]["issues"]["thirdParty"].values()]) > 0
+            assert sum(list(p["branches"]["main"]["issues"]["thirdParty"].values())) > 0
 
     for p in json_config["portfolios"].values():
         assert "projects" in p

@@ -132,10 +132,10 @@ def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]
     ruleset = [{"key": RULE1, "severities": {"MAINTAINABILITY": "MAJOR"}}, {"key": RULE2, "severities": {"MAINTAINABILITY": "MAJOR"}}]
     qp.activate_rules(ruleset)
     qp_rules = qp.rules()
-    assert sorted(list(qp_rules.keys())) == sorted([r["key"] for r in ruleset])
+    assert sorted(qp_rules.keys()) == sorted([r["key"] for r in ruleset])
     qp.activate_rule(RULE3, "MAJOR")
     ruleset.append({"key": RULE3, "severities": {"MAINTAINABILITY": "MAJOR"}})
-    assert sorted(list(qp.rules().keys())) == sorted([r["key"] for r in ruleset])
+    assert sorted(qp.rules().keys()) == sorted([r["key"] for r in ruleset])
 
     assert len(qp.rules()) == 3
     qp.set_rules([{"key": RULE1}, {"key": RULE2}])
@@ -158,7 +158,7 @@ def test_import() -> None:
     rules.get_list(tutil.TEST_SQ)
     # delete all quality profiles in test
     _ = [qp.set_as_default() for qp in qualityprofiles.get_list(tutil.TEST_SQ).values() if qp.name == tutil.SONAR_WAY]
-    qp_list = set(o for o in qualityprofiles.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in and not o.is_default)
+    qp_list = {o for o in qualityprofiles.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in and not o.is_default}
     _ = [o.delete() for o in qp_list]
     with open("test/files/config.json", "r", encoding="utf-8") as f:
         json_exp = json.loads(f.read())["qualityProfiles"]

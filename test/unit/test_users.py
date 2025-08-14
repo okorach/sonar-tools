@@ -116,7 +116,7 @@ def test_scm_accounts(get_test_user: Generator[users.User]) -> None:
     user.set_scm_accounts(scm_2)
     assert sorted(user.scm_accounts) == sorted(scm_2)
     user.add_scm_accounts(scm_1)
-    assert sorted(user.scm_accounts) == sorted(list(set(scm_1) | set(scm_2)))
+    assert sorted(user.scm_accounts) == sorted(set(scm_1) | set(scm_2))
 
 
 def test_audit_user() -> None:
@@ -165,7 +165,7 @@ def test_more_than_50_users(get_60_users: Generator[list[users.User]]) -> None:
     users.User.clear_cache()
     new_user_list = users.get_list(tutil.SQ)
     assert len(new_user_list) > 60
-    assert set(new_user_list.keys()) > set(u.name for u in user_list)
+    assert set(new_user_list.keys()) > {u.name for u in user_list}
 
 
 def test_update(get_test_user: Generator[users.User]) -> None:

@@ -71,7 +71,7 @@ def test_get_list() -> None:
         return
 
     p_dict = pf.get_list(endpoint=tutil.SQ, key_list=k_list)
-    assert sorted(k_list) == sorted(list(p_dict.keys()))
+    assert sorted(k_list) == sorted(p_dict.keys())
 
 
 def test_create_delete(get_test_portfolio: Generator[pf.Portfolio]) -> None:
@@ -107,7 +107,7 @@ def test_add_project(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     assert "manual" in mode
     assert mode["manual"] == {tutil.LIVE_PROJECT: {c.DEFAULT_BRANCH}}
     assert p.projects() == {tutil.LIVE_PROJECT: {c.DEFAULT_BRANCH}}
-    components = p.get_components()
+    # components = p.get_components()
     # assert len(components) == 1
     # assert list(components.keys()) == [util.LIVE_PROJECT]
     assert p.has_project(project.key)
@@ -299,7 +299,7 @@ def test_import() -> None:
     # Compare portfolios
     o_list = pf.get_list(tutil.TEST_SQ)
     assert len(o_list) == len(json_exp)
-    assert sorted(list(o_list.keys())) == sorted(list(json_exp.keys()))
+    assert sorted(o_list.keys()) == sorted(json_exp.keys())
 
 
 def test_audit_disabled() -> None:
