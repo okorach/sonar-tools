@@ -216,7 +216,7 @@ def __split_args(string_arguments: str) -> list[str]:
     return [s.strip('"') for s in re.findall(r'(?:[^\s\*"]|"(?:\\.|[^"])*")+', string_arguments)]
 
 
-def __get_option_index(args: Union[str, list], option: str) -> Optional[str]:
+def __get_option_index(args: Union[str, list[str]], option: str) -> Optional[str]:
     if isinstance(args, str):
         args = __split_args(args)
     return args.index(option) + 1
@@ -246,16 +246,6 @@ def run_cmd(func: callable, arguments: str, delete_file: bool = False) -> int:
     return int(str(e.value))
 
 
-def run_success_cmd(func: callable, arguments: str, post_cleanup: bool = False) -> int:
-    """Runs a command that's suppose to end in success"""
-    code, file = run_cmd(func, arguments)
-    if file:
-        assert file_not_empty(file)
-    if post_cleanup:
-        clean(file)
-    return code
-
-
 def start_logging(level: str = "DEBUG") -> None:
     """start_logging"""
     global LOGGER_COUNT
@@ -276,7 +266,7 @@ def verify_support(editions: tuple[str, ...], func: callable, **kwargs) -> bool:
 def get_cols(header_row: list[str], *fields) -> tuple[int, ...]:
     h = header_row.copy()
     h[0] = h[0].lstrip("# ")
-    return tuple([h.index(k) for k in fields])
+    return (h.index(k) for k in fields)
 
 
 def csv_cols_present(csv_file: str, *col_names) -> bool:
@@ -352,7 +342,7 @@ def csv_col_int(csv_file: str, col_name: str, allow_empty: bool = True) -> bool:
 
 def csv_col_float(csv_file: str, col_name: str, allow_empty: bool = True) -> bool:
     """return whether a CSV col is a float"""
-    return csv_col_condition(csv_file, col_name, is_float)
+    return csv_col_condition(csv_file, col_name, is_float, allow_empty)
 
 
 def csv_col_float_pct(csv_file: str, col_name: str, allow_empty: bool = True) -> bool:
