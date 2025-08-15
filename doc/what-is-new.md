@@ -1,4 +1,31 @@
-# Version 3.15 - under development
+# Version 3.15
+
+* General performance (speed) improvements
+* Allow to run tools with non admin tokens when possible (`sonar-measures-export`, `sonar-findings-export`, `sonar-loc`)
+* Misc hardening
+
+* `sonar-findings-sync`:
+  - Fix #1871 - Sync may not happen when an issue has old transition data generated before MQR mode
+  - Added precise doc about what issues are sync'ed
+  - Fail fast with clear message if organization and/or project does not exists
+
+* `sonar-config`:
+  - /!\ Modification of export/import format for Quality Profiles
+  - Export of rules custom severities
+  - Export of prioritized rules
+  - Export quality profiles permissions on SonarQube Cloud
+  - Performance improvements
+  - Fix on import of project visibility
+
+* `sonar-audit`:
+  - Fix to allow audit report in JSON format
+  - Raise issue when duplicate quality gates or profiles
+  - Raise issue when the new code period is too long (more than 90 days, configurable)
+  - Raise issue when the `sonar-users` group has admin permission on QP, QG, App or Portfolio
+  - Raise issue when an app or portfolio is Public
+  - Raise issue when too many groups or users have permissions on anything
+  - Raise issue when permissions on permission templates granted to users (instead of groups)
+  - Make the project key comparison for duplicate less aggressive (was creating to many false positives)
 
 # Version 3.14.1
 
