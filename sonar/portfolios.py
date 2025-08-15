@@ -37,7 +37,7 @@ import sonar.platform as pf
 from sonar.util import types, cache
 import sonar.util.constants as c
 
-from sonar import aggregations, exceptions, settings, applications, app_branches
+from sonar import aggregations, exceptions, applications, app_branches
 import sonar.permissions.permissions as perms
 import sonar.permissions.portfolio_permissions as pperms
 import sonar.sqobject as sq
