@@ -30,7 +30,7 @@ echo "Running tests"
 
 . "$CONFDIR/build_tests.sh"
 
-
+cd "$ROOTDIR"
 for target in latest cb 9 cloud
 do
     sonar start -i $target && sleep 30
