@@ -31,7 +31,7 @@ import sonar.logging as log
 from sonar import platform, portfolios, applications, projects, errcodes, exceptions, version
 import sonar.utilities as util
 import sonar.util.constants as c
-from sonar.util import component_helper, cache_helper
+from sonar.util import component_helper
 
 TOOL_NAME = "sonar-loc"
 
@@ -198,9 +198,9 @@ def __check_options(edition: str, kwargs: dict[str, str]) -> dict[str, str]:
     """Verifies a certain number of options for compatibility with edition"""
     kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE])
     if kwargs[options.BRANCH_REGEXP] and edition == c.CE:
-        util.exit_fatal(f"No branches in {edition} edition, aborting...", errcodes.UNSUPPORTED_OPERATION)
+        util.final_exit(errcodes.UNSUPPORTED_OPERATION, f"No branches in {edition} edition, aborting...")
     if kwargs[options.COMPONENT_TYPE] == "portfolios" and edition in (c.CE, c.DE):
-        util.exit_fatal(f"No portfolios in {edition} edition, aborting...", errcodes.UNSUPPORTED_OPERATION)
+        util.final_exit(errcodes.UNSUPPORTED_OPERATION, f"No portfolios in {edition} edition, aborting...")
     if kwargs[options.COMPONENT_TYPE] == "portfolios" and kwargs[options.BRANCH_REGEXP]:
         log.warning("Portfolio LoC export selected, branch option is ignored")
         kwargs[options.BRANCH_REGEXP] = None
@@ -235,12 +235,11 @@ def main() -> None:
             raise exceptions.SonarException(f"No object matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
         __dump_loc(objects_list, **kwargs)
     except exceptions.SonarException as e:
-        util.exit_fatal(err_msg=e.message, exit_code=e.errcode)
+        util.final_exit(e.errcode, e.message)
     except (PermissionError, FileNotFoundError) as e:
-        util.exit_fatal(f"OS error while writing LoCs: {e}", exit_code=errcodes.OS_ERROR)
-    util.stop_clock(start_time)
-    cache_helper.clear_cache()
-    sys.exit(0)
+        util.final_exit(errcodes.OS_ERROR, f"OS error while writing LoCs: {e}")
+
+    util.final_exit(0, start_time=start_time)
 
 
 if __name__ == "__main__":

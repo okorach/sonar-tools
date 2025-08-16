@@ -34,7 +34,7 @@ import sonar.logging as log
 from sonar import metrics, platform, exceptions, errcodes, version, measures
 import sonar.utilities as util
 import sonar.util.constants as c
-from sonar.util import component_helper, cache_helper
+from sonar.util import component_helper
 
 TOOL_NAME = "sonar-measures"
 
@@ -104,7 +104,7 @@ def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyS
         non_existing_metrics = util.difference(list(wanted_metrics), metrics.search(endpoint).keys())
         if len(non_existing_metrics) > 0:
             miss = ",".join(non_existing_metrics)
-            util.exit_fatal(f"Requested metric keys '{miss}' don't exist", errcodes.NO_SUCH_KEY)
+            util.final_exit(errcodes.NO_SUCH_KEY, f"Requested metric keys '{miss}' don't exist")
     log.info("Exporting %s metrics", len(wanted_metrics))
     return list(dict.fromkeys(wanted_metrics))
 
@@ -237,10 +237,10 @@ def __write_measures_csv(file: str, wanted_metrics: types.KeyList, data: dict[st
 def __check_options_vs_edition(edition: str, params: dict[str, str]) -> dict[str, str]:
     """Checks and potentially modify params according to edition of the target platform"""
     if edition == c.CE and params[options.BRANCH_REGEXP]:
-        util.exit_fatal("Branch parameter forbidden with Community Edition / Community Build", exit_code=errcodes.UNSUPPORTED_OPERATION)
+        util.final_exit(errcodes.UNSUPPORTED_OPERATION, "Branch parameter forbidden with Community Edition / Community Build")
     if edition in (c.CE, c.DE) and params[options.COMPONENT_TYPE] == "portfolio":
         log.warning("SonarQube Server instance is a %s edition, there are no portfolios", edition)
-        util.exit_fatal("SonarQube Server instance is a %s edition, there are no portfolios", exit_code=errcodes.UNSUPPORTED_OPERATION)
+        util.final_exit(errcodes.UNSUPPORTED_OPERATION, "SonarQube Server instance is a %s edition, there are no portfolios")
     return params
 
 
@@ -253,9 +253,7 @@ def main() -> None:
         kwargs["percents"] = "percents" if kwargs["percentsAsString"] else "float"
         kwargs["dates"] = "dateonly" if kwargs["datesWithoutTime"] else "datetime"
         if kwargs[options.COMPONENT_TYPE] == "portfolios" and kwargs[options.WITH_TAGS]:
-            util.exit_fatal(
-                f"Portfolios have no tags, can't use option --{options.WITH_TAGS} with --{options.PORTFOLIOS}", exit_code=errcodes.ARGS_ERROR
-            )
+            util.final_exit(errcodes.ARGS_ERROR, f"Portfolios have no tags, can't use option --{options.WITH_TAGS} with --{options.PORTFOLIOS}")
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
@@ -273,7 +271,7 @@ def main() -> None:
             branch_regexp=kwargs[options.BRANCH_REGEXP],
         )
         if len(obj_list) == 0:
-            util.exit_fatal(f"No components matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
+            util.final_exit(errcodes.WRONG_SEARCH_CRITERIA, f"No components matching regexp '{kwargs[options.KEY_REGEXP]}'")
         if kwargs["history"]:
             measure_list = []
             for obj in obj_list:
@@ -303,12 +301,11 @@ def main() -> None:
         nb_branches = len(obj_list)
         log.info("%d %s, %d branches exported from %s", nb_proj, kwargs[options.COMPONENT_TYPE], nb_branches, kwargs[options.URL])
     except exceptions.SonarException as e:
-        util.exit_fatal(e.message, e.errcode)
+        util.final_exit(e.errcode, e.message)
     except (PermissionError, FileNotFoundError) as e:
-        util.exit_fatal(f"OS error while writing LoCs: {e}", exit_code=errcodes.OS_ERROR)
-    util.stop_clock(start_time)
-    cache_helper.clear_cache()
-    sys.exit(0)
+        util.final_exit(errcodes.OS_ERROR, f"OS error while writing LoCs: {e}")
+
+    util.final_exit(0, start_time=start_time)
 
 
 if __name__ == "__main__":

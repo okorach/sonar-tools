@@ -78,14 +78,14 @@ def token_type(token: str) -> str:
 def check_token(token: Optional[str], is_sonarcloud: bool = False) -> None:
     """Verifies if a proper user token has been provided"""
     if token is None:
-        exit_fatal(
-            "Token is missing (Argument -t/--token)",
+        final_exit(
             errcodes.SONAR_API_AUTHENTICATION,
+            "Token is missing (Argument -t/--token)",
         )
     if not is_sonarcloud and token_type(token) != "user":
-        exit_fatal(
-            f"The provided token {redacted_token(token)} is a {token_type(token)} token, a user token is required for sonar-tools",
+        final_exit(
             errcodes.TOKEN_NOT_SUITED,
+            f"The provided token {redacted_token(token)} is a {token_type(token)} token, a user token is required for sonar-tools",
         )
 
 
@@ -375,11 +375,14 @@ def dict_add(dict1: dict[str, int], dict2: dict[str, int]) -> dict[str, int]:
     return {k: dict1.get(k, 0) + dict2.get(k, 0) for k in dict1.keys() | dict2.keys()}
 
 
-def exit_fatal(err_msg: str, exit_code: int) -> None:
+def final_exit(exit_code: int, err_msg: Optional[str] = None, start_time: Optional[datetime.datetime] = None) -> None:
     """Fatal exit with error msg"""
     cache_helper.clear_cache()
-    log.fatal(err_msg)
-    print(f"FATAL: {err_msg}", file=sys.stderr)
+    if exit_code != errcodes.OK:
+        log.fatal(err_msg)
+        print(f"FATAL: {err_msg}", file=sys.stderr)
+    if start_time:
+        log.info("Total execution time: %s", str(datetime.datetime.now() - start_time))
     sys.exit(exit_code)
 
 
@@ -561,12 +564,11 @@ def check_what(what: Union[str, list[str]], allowed_values: list[str], operation
     if what == "":
         return allowed_values
     what = csv_to_list(what)
-    for w in what:
-        if w in allowed_values:
-            continue
-        exit_fatal(
+    w = next((w for w in what if w not in allowed_values), None)
+    if w:
+        final_exit(
+            errcodes.ARGS_ERROR,
             f"'{w}' is not something that can be {operation}, chose among {','.join(allowed_values)}",
-            exit_code=errcodes.ARGS_ERROR,
         )
     return what
 
@@ -665,11 +667,6 @@ def convert_args(args: object, second_platform: bool = False) -> dict[str, str]:
 def start_clock() -> datetime.datetime:
     """Returns the now timestamp"""
     return datetime.datetime.now()
-
-
-def stop_clock(start_time: datetime.datetime) -> None:
-    """Logs execution time"""
-    log.info("Total execution time: %s", str(datetime.datetime.now() - start_time))
 
 
 def deduct_format(fmt: Union[str, None], filename: Union[str, None], allowed_formats: tuple[str] = ("csv", "json")) -> str:

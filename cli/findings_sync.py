@@ -28,7 +28,6 @@
     Only issues with a 100% match are synchronized. When there's a doubt, nothing is done
 """
 
-import sys
 import datetime
 from typing import Optional
 
@@ -37,7 +36,6 @@ import sonar.logging as log
 import sonar.platform as pf
 from sonar import syncer, exceptions, projects, branches, version
 import sonar.utilities as util
-from sonar.util import cache_helper
 
 TOOL_NAME = "sonar-findings-sync"
 
@@ -194,11 +192,8 @@ def main() -> None:
             log.info("%d %s could not be synchronized because target issue already had a changelog", counters.get(f"{t}_nb_tgt_has_changelog", 0), t)
 
     except exceptions.SonarException as e:
-        util.exit_fatal(e.message, e.errcode)
-
-    util.stop_clock(start_time)
-    cache_helper.clear_cache()
-    sys.exit(0)
+        util.final_exit(e.errcode, e.message)
+    util.final_exit(0, start_time=start_time)
 
 
 if __name__ == "__main__":

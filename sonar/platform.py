@@ -651,7 +651,7 @@ class Platform(object):
             else:
                 log.info("User 'admin' default password has been changed")
         except requests.RequestException as e:
-            util.exit_fatal(str(e), errcodes.SONAR_API)
+            util.final_exit(errcodes.SONAR_API, str(e))
         return problems
 
     def __audit_group_permissions(self) -> list[Problem]:

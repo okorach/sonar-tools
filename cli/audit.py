@@ -33,7 +33,7 @@ from requests import RequestException
 from cli import options
 
 from sonar import errcodes, exceptions, version
-from sonar.util import types, component_helper, cache_helper
+from sonar.util import types, component_helper
 import sonar.logging as log
 from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, portfolios, applications, projects
 import sonar.utilities as util
@@ -185,7 +185,7 @@ def main() -> None:
         )
         if kwargs.get("config", False):
             audit_conf.configure()
-            sys.exit(errcodes.OK)
+            util.final_exit(errcodes.OK, start_time=start_time)
 
         if kwargs["sif"]:
             file = kwargs["sif"]
@@ -207,18 +207,16 @@ def main() -> None:
         # problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=util.deduct_format(kwargs[options.FORMAT], ofile))
 
     except (PermissionError, FileNotFoundError) as e:
-        util.exit_fatal(f"OS error while writing file '{file}': {e}", errcode)
+        util.final_exit(errcode, f"OS error while writing file '{file}': {e}")
     except exceptions.SonarException as e:
-        util.exit_fatal(e.message, e.errcode)
+        util.final_exit(e.errcode, e.message)
     except json.decoder.JSONDecodeError:
-        util.exit_fatal(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...", errcodes.SIF_AUDIT_ERROR)
+        util.final_exit(errcodes.SIF_AUDIT_ERROR, f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...")
     except sif.NotSystemInfo:
-        util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", errcodes.SIF_AUDIT_ERROR)
+        util.final_exit(errcodes.SIF_AUDIT_ERROR, f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...")
     except RequestException as e:
-        util.exit_fatal(f"HTTP error while auditing: {str(e)}", errcodes.SONAR_API)
-    util.stop_clock(start_time)
-    cache_helper.clear_cache()
-    sys.exit(errcodes.OK)
+        util.final_exit(errcodes.SONAR_API, f"HTTP error while auditing: {str(e)}")
+    util.final_exit(errcodes.OK, start_time=start_time)
 
 
 if __name__ == "__main__":

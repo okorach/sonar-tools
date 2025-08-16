@@ -79,7 +79,7 @@ def __get_args(desc):
     parser.add_argument("-t", "--ticket", required=True, help="Support ticket to audit, in format SUPPORT-XXXXX or XXXXX")
     args = parser.parse_args()
     if not args.login or not args.password:
-        util.exit_fatal("Login and Password are required to authenticate to ServiceDesk", errcodes.TOKEN_MISSING)
+        util.final_exit(errcodes.TOKEN_MISSING, "Login and Password are required to authenticate to ServiceDesk")
     return args
 
 
@@ -92,7 +92,7 @@ def __get_issue_id(**kwargs):
         if r.status_code == HTTPStatus.NOT_FOUND:
             return None
         else:
-            util.exit_fatal(f"Ticket {tix}: URL '{url}' status code {r.status_code}", errcodes.SONAR_API)
+            util.final_exit(errcodes.SONAR_API, f"Ticket {tix}: URL '{url}' status code {r.status_code}")
     return json.loads(r.text)["issueId"]
 
 
@@ -108,10 +108,9 @@ def __get_sysinfo_from_ticket(**kwargs):
     r = requests.get(url, auth=kwargs["creds"], timeout=10)
     if not r.ok:
         if r.status_code == HTTPStatus.NOT_FOUND:
-            print(f"Ticket {tix} not found")
-            sys.exit(3)
+            util.final_exit(3, f"Ticket {tix} not found")
         else:
-            util.exit_fatal(f"Ticket {tix}: URL '{url}' status code {r.status_code}", errcodes.SONAR_API)
+            util.final_exit(errcodes.SONAR_API, f"Ticket {tix}: URL '{url}' status code {r.status_code}")
 
     data = json.loads(r.text)
     log.debug("Ticket %s found: searching SIF", tix)
@@ -128,7 +127,7 @@ def __get_sysinfo_from_ticket(**kwargs):
             log.info("Ticket %s: Verifying attachment '%s' found", tix, attachment_file)
             r = requests.get(attachment_url, auth=kwargs["creds"], timeout=10)
             if not r.ok:
-                util.exit_fatal(f"ERROR: Ticket {tix} get attachment status code {r.status_code}", errcodes.SONAR_API)
+                util.final_exit(errcodes.SONAR_API, f"ERROR: Ticket {tix} get attachment status code {r.status_code}")
             try:
                 sif_list[attachment_file] = json.loads(r.text)
             except json.decoder.JSONDecodeError:
@@ -153,8 +152,7 @@ def main():
         kwargs["ticket"] = f'SUPPORT-{kwargs["ticket"]}'
     sif_list = __get_sysinfo_from_ticket(**kwargs)
     if len(sif_list) == 0:
-        print(f"No SIF found in ticket {kwargs['ticket']}")
-        sys.exit(2)
+        util.final_exit(2, f"No SIF found in ticket {kwargs['ticket']}")
     problems = []
     settings = audit_config.load("sonar-audit")
     found_problems = False

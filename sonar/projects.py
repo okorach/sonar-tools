@@ -1649,7 +1649,7 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
     try:
         status, file = project.export_zip(timeout=export_timeout)
     except exceptions.UnsupportedOperation:
-        util.exit_fatal("Zip export unsupported on your SonarQube version", errcodes.UNSUPPORTED_OPERATION)
+        util.final_exit(errcodes.UNSUPPORTED_OPERATION, "Zip export unsupported on your SonarQube version")
     log.debug("Exporting thread for %s done, status: %s", str(project), status)
     data = {"key": project.key, "exportProjectUrl": project.url(), "exportStatus": status}
     if status.startswith(tasks.SUCCESS):
