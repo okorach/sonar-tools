@@ -561,9 +561,8 @@ def check_what(what: Union[str, list[str]], allowed_values: list[str], operation
     if what == "":
         return allowed_values
     what = csv_to_list(what)
-    for w in what:
-        if w in allowed_values:
-            continue
+    w = next((w for w in what if w not in allowed_values), None)
+    if w:
         final_exit(
             errcodes.ARGS_ERROR,
             f"'{w}' is not something that can be {operation}, chose among {','.join(allowed_values)}",
