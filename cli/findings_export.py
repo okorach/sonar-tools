@@ -149,24 +149,27 @@ def parse_args(desc: str) -> Namespace:
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
-def __write_header(fd: TextIO, endpoint: platform.Platform, **kwargs) -> None:
+def __write_header(file: str, endpoint: platform.Platform, **kwargs) -> None:
     """Writes the file header"""
-    if kwargs[options.FORMAT] == "sarif":
-        print(SARIF_HEADER, file=fd)
-    elif kwargs[options.FORMAT] == "json":
-        print("[\n", file=fd)
-    else:
-        csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
-        row = findings.to_csv_header(endpoint)
-        row[0] = "# " + row[0]
-        if kwargs[options.WITH_URL]:
-            row.append("URL")
-        csvwriter.writerow(row)
+    with util.open_file(file=file) as fd:
+        if kwargs[options.FORMAT] == "sarif":
+            print(SARIF_HEADER, file=fd)
+        elif kwargs[options.FORMAT] == "json":
+            print("[\n", file=fd)
+        else:
+            csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
+            row = findings.to_csv_header(endpoint)
+            row[0] = "# " + row[0]
+            if kwargs[options.WITH_URL]:
+                row.append("URL")
+            csvwriter.writerow(row)
 
 
-def __write_footer(fd: TextIO, format: str) -> None:
+def __write_footer(file: str, format: str) -> None:
     """Writes the closing characters of export file depending on export format"""
-    if format in ("json", "sarif"):
+    if format not in ("json", "sarif"):
+        return
+    with util.open_file(file=file, mode="a") as fd:
         closing_sequence = "\n]\n}\n]\n}" if format == "sarif" else "\n]"
         print(f"{closing_sequence}", file=fd)
 
@@ -199,14 +202,17 @@ def __write_csv_findings(findings_list: dict[str, findings.Finding], fd: TextIO,
         csvwriter.writerow(row)
 
 
-def __write_findings(findings_list: list[findings.Finding], fd: TextIO, is_first: bool, **kwargs) -> None:
-    if kwargs[options.FORMAT] in ("sarif", "json") and not is_first:
-        print(",", file=fd)
-    log.info("Writing %d more findings in format %s", len(findings_list), kwargs[options.FORMAT])
-    if kwargs[options.FORMAT] in ("json", "sarif"):
-        __write_json_findings(findings_list=findings_list, fd=fd, **kwargs)
-    else:
-        __write_csv_findings(findings_list=findings_list, fd=fd, **kwargs)
+def __write_findings(findings_list: list[findings.Finding], file: str, is_first: bool, **kwargs) -> None:
+    if len(findings_list) == 0:
+        return
+    with util.open_file(file=file, mode="a") as fd:
+        if kwargs[options.FORMAT] in ("sarif", "json") and not is_first:
+            print(",", file=fd)
+        log.info("Writing %d more findings in format %s", len(findings_list), kwargs[options.FORMAT])
+        if kwargs[options.FORMAT] in ("json", "sarif"):
+            __write_json_findings(findings_list=findings_list, fd=fd, **kwargs)
+        else:
+            __write_csv_findings(findings_list=findings_list, fd=fd, **kwargs)
 
 
 def __verify_inputs(params: types.ApiParams) -> bool:
@@ -293,8 +299,9 @@ def store_findings(components_list: list[object], endpoint: platform.Platform, p
 
     use_findings = params.get(options.USE_FINDINGS, False)
     comp_params = {k: v for k, v in params.items() if k in _SEARCH_CRITERIA}
-    with util.open_file(file=params[options.REPORT_FILE]) as fd:
-        __write_header(fd, endpoint=endpoint, **params)
+    local_params = params.copy()
+    file = local_params.pop(options.REPORT_FILE)
+    __write_header(file, endpoint=endpoint, **local_params)
     is_first = True
     total_findings = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=params.get(options.NBR_THREADS, 4), thread_name_prefix="FindingSearch") as executor:
@@ -308,16 +315,13 @@ def store_findings(components_list: list[object], endpoint: platform.Platform, p
             try:
                 found_findings = future.result(timeout=60)
                 total_findings += len(found_findings)
-                if len(found_findings) > 0:
-                    with util.open_file(file=params[options.REPORT_FILE], mode="a") as fd:
-                        __write_findings(found_findings, fd, is_first, **params)
-                    is_first = False
+                __write_findings(found_findings, file, is_first, **local_params)
+                is_first = False
             except TimeoutError as e:
                 log.error(f"Getting findings for {str(comp)} timed out after 180 seconds for {str(future)}.")
             except Exception as e:
                 log.error(f"Exception {str(e)} when exporting findings of {str(comp)}.")
-    with util.open_file(file=params[options.REPORT_FILE], mode="a") as fd:
-        __write_footer(fd, params[options.FORMAT])
+    __write_footer(file, local_params[options.FORMAT])
     return total_findings
 
 
