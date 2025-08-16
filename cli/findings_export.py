@@ -399,7 +399,7 @@ def main() -> None:
         len(components_list),
         sqenv.local_url,
     )
-    util.final_exit(errcodes.OK, start_clock=start_time)
+    util.final_exit(errcodes.OK, start_time=start_time)
 
 
 if __name__ == "__main__":

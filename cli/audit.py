@@ -185,7 +185,7 @@ def main() -> None:
         )
         if kwargs.get("config", False):
             audit_conf.configure()
-            util.final_exit(errcodes.OK, start_clock=start_time)
+            util.final_exit(errcodes.OK, start_time=start_time)
 
         if kwargs["sif"]:
             file = kwargs["sif"]
@@ -216,7 +216,7 @@ def main() -> None:
         util.final_exit(errcodes.SIF_AUDIT_ERROR, f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...")
     except RequestException as e:
         util.final_exit(errcodes.SONAR_API, f"HTTP error while auditing: {str(e)}")
-    util.final_exit(errcodes.OK, start_clock=start_time)
+    util.final_exit(errcodes.OK, start_time=start_time)
 
 
 if __name__ == "__main__":

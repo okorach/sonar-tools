@@ -66,7 +66,7 @@ def main():
             )
     except exceptions.SonarException as e:
         utilities.final_exit(e.errcode, e.message)
-    utilities.final_exit(0, start_clock=start_time)
+    utilities.final_exit(0, start_time=start_time)
 
 
 if __name__ == "__main__":

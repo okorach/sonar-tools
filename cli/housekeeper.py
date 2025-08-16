@@ -237,7 +237,7 @@ def main() -> None:
         util.final_exit(e.message, e.errcode)
     except RequestException as e:
         util.final_exit(errcodes.SONAR_API, f"HTTP error while housekeeping: {str(e)}")
-    util.final_exit(0, start_clock=start_time)
+    util.final_exit(0, start_time=start_time)
 
 
 if __name__ == "__main__":

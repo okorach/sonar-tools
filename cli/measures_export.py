@@ -305,7 +305,7 @@ def main() -> None:
     except (PermissionError, FileNotFoundError) as e:
         util.final_exit(errcodes.OS_ERROR, f"OS error while writing LoCs: {e}")
 
-    util.final_exit(0, start_clock=start_time)
+    util.final_exit(0, start_time=start_time)
 
 
 if __name__ == "__main__":

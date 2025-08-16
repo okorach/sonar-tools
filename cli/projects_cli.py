@@ -159,7 +159,7 @@ def main() -> None:
         utilities.final_exit(e.errcode, e.message)
     except RequestException as e:
         utilities.final_exit(errcodes.SONAR_API, f'HTTP error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {str(e)}')
-    utilities.final_exit(errcodes.OK, start_clock=start_time)
+    utilities.final_exit(errcodes.OK, start_time=start_time)
 
 
 if __name__ == "__main__":

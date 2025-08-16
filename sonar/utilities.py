@@ -375,14 +375,14 @@ def dict_add(dict1: dict[str, int], dict2: dict[str, int]) -> dict[str, int]:
     return {k: dict1.get(k, 0) + dict2.get(k, 0) for k in dict1.keys() | dict2.keys()}
 
 
-def final_exit(exit_code: int, err_msg: Optional[str] = None, start_clock: Optional[datetime.datetime] = None) -> None:
+def final_exit(exit_code: int, err_msg: Optional[str] = None, start_time: Optional[datetime.datetime] = None) -> None:
     """Fatal exit with error msg"""
     cache_helper.clear_cache()
     if exit_code != errcodes.OK:
         log.fatal(err_msg)
         print(f"FATAL: {err_msg}", file=sys.stderr)
-    if start_clock:
-        log.info("Total execution time: %s", str(datetime.datetime.now() - start_clock))
+    if start_time:
+        log.info("Total execution time: %s", str(datetime.datetime.now() - start_time))
     sys.exit(exit_code)
 
 
