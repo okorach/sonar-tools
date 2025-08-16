@@ -78,12 +78,12 @@ def token_type(token: str) -> str:
 def check_token(token: Optional[str], is_sonarcloud: bool = False) -> None:
     """Verifies if a proper user token has been provided"""
     if token is None:
-        exit_fatal(
+        final_exit(
             "Token is missing (Argument -t/--token)",
             errcodes.SONAR_API_AUTHENTICATION,
         )
     if not is_sonarcloud and token_type(token) != "user":
-        exit_fatal(
+        final_exit(
             f"The provided token {redacted_token(token)} is a {token_type(token)} token, a user token is required for sonar-tools",
             errcodes.TOKEN_NOT_SUITED,
         )
@@ -375,7 +375,7 @@ def dict_add(dict1: dict[str, int], dict2: dict[str, int]) -> dict[str, int]:
     return {k: dict1.get(k, 0) + dict2.get(k, 0) for k in dict1.keys() | dict2.keys()}
 
 
-def exit_fatal(err_msg: str, exit_code: int) -> None:
+def final_exit(err_msg: str, exit_code: int) -> None:
     """Fatal exit with error msg"""
     cache_helper.clear_cache()
     log.fatal(err_msg)
@@ -564,7 +564,7 @@ def check_what(what: Union[str, list[str]], allowed_values: list[str], operation
     for w in what:
         if w in allowed_values:
             continue
-        exit_fatal(
+        final_exit(
             f"'{w}' is not something that can be {operation}, chose among {','.join(allowed_values)}",
             exit_code=errcodes.ARGS_ERROR,
         )

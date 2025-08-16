@@ -207,15 +207,15 @@ def main() -> None:
         # problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=util.deduct_format(kwargs[options.FORMAT], ofile))
 
     except (PermissionError, FileNotFoundError) as e:
-        util.exit_fatal(f"OS error while writing file '{file}': {e}", errcode)
+        util.final_exit(f"OS error while writing file '{file}': {e}", errcode)
     except exceptions.SonarException as e:
-        util.exit_fatal(e.message, e.errcode)
+        util.final_exit(e.message, e.errcode)
     except json.decoder.JSONDecodeError:
-        util.exit_fatal(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...", errcodes.SIF_AUDIT_ERROR)
+        util.final_exit(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...", errcodes.SIF_AUDIT_ERROR)
     except sif.NotSystemInfo:
-        util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", errcodes.SIF_AUDIT_ERROR)
+        util.final_exit(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", errcodes.SIF_AUDIT_ERROR)
     except RequestException as e:
-        util.exit_fatal(f"HTTP error while auditing: {str(e)}", errcodes.SONAR_API)
+        util.final_exit(f"HTTP error while auditing: {str(e)}", errcodes.SONAR_API)
     util.stop_clock(start_time)
     cache_helper.clear_cache()
     sys.exit(errcodes.OK)

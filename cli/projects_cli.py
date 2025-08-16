@@ -154,11 +154,11 @@ def main() -> None:
         else:
             raise options.ArgumentsError(f"One of --{options.EXPORT} or --{options.IMPORT} option must be chosen")
     except (PermissionError, FileNotFoundError) as e:
-        utilities.exit_fatal(f'OS error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {str(e)}', errcodes.OS_ERROR)
+        utilities.final_exit(f'OS error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {str(e)}', errcodes.OS_ERROR)
     except exceptions.SonarException as e:
-        utilities.exit_fatal(e.message, e.errcode)
+        utilities.final_exit(e.message, e.errcode)
     except RequestException as e:
-        utilities.exit_fatal(f'HTTP error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {str(e)}', errcodes.SONAR_API)
+        utilities.final_exit(f'HTTP error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {str(e)}', errcodes.SONAR_API)
     utilities.stop_clock(start_time)
     sys.exit(errcodes.OK)
 

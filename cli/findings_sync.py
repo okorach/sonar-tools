@@ -193,7 +193,7 @@ def main() -> None:
         log.info("%d issues+hotspots could not be synchronized because target issue already had a changelog", counters.get("nb_tgt_has_changelog", 0))
 
     except exceptions.SonarException as e:
-        util.exit_fatal(e.message, e.errcode)
+        util.final_exit(e.message, e.errcode)
 
     util.stop_clock(start_time)
     cache_helper.clear_cache()

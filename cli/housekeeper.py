@@ -234,11 +234,11 @@ def main() -> None:
         util.stop_clock(start_time)
 
     except (PermissionError, FileNotFoundError) as e:
-        util.exit_fatal(f"OS error while housekeeping: {str(e)}", errcodes.OS_ERROR)
+        util.final_exit(f"OS error while housekeeping: {str(e)}", errcodes.OS_ERROR)
     except ex.SonarException as e:
-        util.exit_fatal(e.message, e.errcode)
+        util.final_exit(e.message, e.errcode)
     except RequestException as e:
-        util.exit_fatal(f"HTTP error while housekeeping: {str(e)}", errcodes.SONAR_API)
+        util.final_exit(f"HTTP error while housekeeping: {str(e)}", errcodes.SONAR_API)
     cache_helper.clear_cache()
     sys.exit(0)
 

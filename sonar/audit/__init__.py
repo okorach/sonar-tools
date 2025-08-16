@@ -27,4 +27,4 @@ config.load_config_data()
 try:
     rules.load()
 except rules.RuleConfigError as e:
-    utilities.exit_fatal(e.message, errcodes.RULES_LOADING_FAILED)
+    utilities.final_exit(e.message, errcodes.RULES_LOADING_FAILED)

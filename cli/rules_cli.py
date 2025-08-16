@@ -100,9 +100,9 @@ def main() -> int:
         else:
             __write_rules_json(file=file, rule_list=rule_list)
     except exceptions.SonarException as e:
-        util.exit_fatal(e.message, e.errcode)
+        util.final_exit(e.message, e.errcode)
     except OSError as e:
-        util.exit_fatal(f"OS error: {e}", exit_code=errcodes.OS_ERROR)
+        util.final_exit(f"OS error: {e}", exit_code=errcodes.OS_ERROR)
     log.info("%d rules exported from %s", len(rule_list), endpoint.local_url)
     util.stop_clock(start_time)
     sys.exit(0)

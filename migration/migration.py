@@ -76,9 +76,9 @@ def main() -> None:
             kwargs[options.REPORT_FILE] = f"sonar-migration.{endpoint.server_id()}.json"
         config.export_config(endpoint, what, mode="MIGRATION", **kwargs)
     except exceptions.SonarException as e:
-        utilities.exit_fatal(e.message, e.errcode)
+        utilities.final_exit(e.message, e.errcode)
     except (PermissionError, FileNotFoundError) as e:
-        utilities.exit_fatal(f"OS error while exporting config: {e}", exit_code=errcodes.OS_ERROR)
+        utilities.final_exit(f"OS error while exporting config: {e}", exit_code=errcodes.OS_ERROR)
     log.info("Exporting SQ to SC migration data from %s completed", kwargs[options.URL])
     log.info("Migration file '%s' created", kwargs[options.REPORT_FILE])
     utilities.stop_clock(start_time)
