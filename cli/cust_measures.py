@@ -29,7 +29,7 @@ import sys
 
 from cli import options
 import sonar.logging as log
-from sonar import custom_measures, platform, utilities, errcodes, exceptions, version
+from sonar import custom_measures, platform, utilities, exceptions, version
 from sonar.util import cache_helper
 
 TOOL_NAME = "sonar-custom-measures"

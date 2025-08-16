@@ -26,8 +26,7 @@ from datetime import datetime
 from http import HTTPStatus
 import concurrent.futures
 
-from queue import Queue
-from threading import Thread, Lock
+from threading import Lock
 from requests import RequestException
 import requests.utils
 

@@ -35,7 +35,7 @@ import sonar.utilities as util
 from sonar.util import types, cache, constants as c
 
 from sonar import syncer, users
-from sonar import findings, rules, changelog, projects
+from sonar import findings, rules, changelog
 
 PROJECT_FILTER = "project"
 PROJECT_FILTER_OLD = "projectKey"
