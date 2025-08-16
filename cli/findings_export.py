@@ -180,15 +180,15 @@ def __write_json_findings(findings_list: dict[str, findings.Finding], fd: TextIO
     i = len(findings_list)
     comma = ","
     for finding in findings_list.values():
-        i -= 1
-        if i == 0:
-            comma = ""
         if kwargs[options.FORMAT] == "json":
             json_data = finding.to_json(DATES_WITHOUT_TIME)
         else:
             json_data = finding.to_sarif(not kwargs.get(_SARIF_NO_CUSTOM_PROPERTIES, True))
         if not kwargs[options.WITH_URL]:
             json_data.pop("url", None)
+        i -= 1
+        if i == 0:
+            comma = ""
         print(f"{util.json_dump(json_data, indent=1)}{comma}", file=fd)
 
 
@@ -203,13 +203,12 @@ def __write_csv_findings(findings_list: dict[str, findings.Finding], fd: TextIO,
 
 
 def __write_findings(findings_list: list[findings.Finding], file: str, is_first: bool, **kwargs) -> None:
-    if len(findings_list) == 0:
-        return
+    """Writes a list of findings in a file"""
+    log.info("Writing %d more findings in format %s", len(findings_list), kwargs[options.FORMAT])
     with util.open_file(file=file, mode="a") as fd:
-        if kwargs[options.FORMAT] in ("sarif", "json") and not is_first:
-            print(",", file=fd)
-        log.info("Writing %d more findings in format %s", len(findings_list), kwargs[options.FORMAT])
-        if kwargs[options.FORMAT] in ("json", "sarif"):
+        if kwargs[options.FORMAT] in ("sarif", "json"):
+            if not is_first:
+                print(",", file=fd)
             __write_json_findings(findings_list=findings_list, fd=fd, **kwargs)
         else:
             __write_csv_findings(findings_list=findings_list, fd=fd, **kwargs)
@@ -291,32 +290,30 @@ def get_component_findings(component: object, search_findings: bool, params: Con
 def store_findings(components_list: list[object], endpoint: platform.Platform, params: ConfigSettings) -> int:
     """Export all findings of a given project list
 
-    :param components_list: Dict of components to export findings (components can be projects, applications, or portfolios)
-    :param endpoint: SonarQube or SonarCloud endpoint
-    :param params: Search filtering parameters for the export
+    :param list[Components] components_list: Components to export findings (components can be projects, branches, PRs, applications, or portfolios)
+    :param Platform endpoint: SonarQube or SonarCloud endpoint
+    :param ConfigSettings params: Search filtering parameters for the export
     :returns: Number of exported findings
     """
-
-    use_findings = params.get(options.USE_FINDINGS, False)
     comp_params = {k: v for k, v in params.items() if k in _SEARCH_CRITERIA}
     local_params = params.copy()
     file = local_params.pop(options.REPORT_FILE)
     __write_header(file, endpoint=endpoint, **local_params)
-    is_first = True
     total_findings = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=params.get(options.NBR_THREADS, 4), thread_name_prefix="FindingSearch") as executor:
         futures, futures_map = [], {}
         for comp in components_list:
-            future = executor.submit(get_component_findings, comp, use_findings, comp_params)
+            future = executor.submit(get_component_findings, comp, params.get(options.USE_FINDINGS, False), comp_params)
             futures.append(future)
             futures_map[future] = comp
         for future in concurrent.futures.as_completed(futures):
             comp = futures_map[future]
             try:
                 found_findings = future.result(timeout=60)
+                if len(found_findings) == 0:
+                    continue
+                __write_findings(found_findings, file, total_findings == 0, **local_params)
                 total_findings += len(found_findings)
-                __write_findings(found_findings, file, is_first, **local_params)
-                is_first = False
             except TimeoutError as e:
                 log.error(f"Getting findings for {str(comp)} timed out after 180 seconds for {str(future)}.")
             except Exception as e:
