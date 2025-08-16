@@ -80,7 +80,7 @@ def check_token(token: Optional[str], is_sonarcloud: bool = False) -> None:
     if token is None:
         final_exit(
             errcodes.SONAR_API_AUTHENTICATION,
-            "Token is missing (Argument -t/--token)",            
+            "Token is missing (Argument -t/--token)",
         )
     if not is_sonarcloud and token_type(token) != "user":
         final_exit(

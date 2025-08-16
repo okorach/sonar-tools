@@ -253,9 +253,7 @@ def main() -> None:
         kwargs["percents"] = "percents" if kwargs["percentsAsString"] else "float"
         kwargs["dates"] = "dateonly" if kwargs["datesWithoutTime"] else "datetime"
         if kwargs[options.COMPONENT_TYPE] == "portfolios" and kwargs[options.WITH_TAGS]:
-            util.final_exit(
-                errcodes.ARGS_ERROR, f"Portfolios have no tags, can't use option --{options.WITH_TAGS} with --{options.PORTFOLIOS}"
-            )
+            util.final_exit(errcodes.ARGS_ERROR, f"Portfolios have no tags, can't use option --{options.WITH_TAGS} with --{options.PORTFOLIOS}")
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")

@@ -192,7 +192,7 @@ def main() -> None:
 
     except exceptions.SonarException as e:
         util.final_exit(e.errcode, e.message)
-    util.final_exit(0, start_clock=start_time) 
+    util.final_exit(0, start_clock=start_time)
 
 
 if __name__ == "__main__":
