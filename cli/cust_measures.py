@@ -66,7 +66,7 @@ def main():
                 description=params.get("description", None),
             )
     except exceptions.SonarException as e:
-        utilities.final_exit(e.message, e.errcode)
+        utilities.final_exit(e.errcode, e.message)
     utilities.stop_clock(start_time)
     cache_helper.clear_cache()
     sys.exit(0)

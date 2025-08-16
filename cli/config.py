@@ -172,7 +172,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
     log.info("Exporting with settings: %s", utilities.json_dump(export_settings, redact_tokens=True))
     if "projects" in what and kwargs[options.KEY_REGEXP]:
         if len(component_helper.get_components(endpoint, "projects", kwargs[options.KEY_REGEXP])) == 0:
-            utilities.final_exit(f"No projects matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
+            utilities.final_exit(errcodes.WRONG_SEARCH_CRITERIA, f"No projects matching regexp '{kwargs[options.KEY_REGEXP]}'")
 
     what.append(c.CONFIG_KEY_PLATFORM)
     log.info("Exporting configuration from %s", kwargs[options.URL])
@@ -235,7 +235,7 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         with open(kwargs[options.REPORT_FILE], "r", encoding="utf-8") as fd:
             data = json.loads(fd.read())
     except FileNotFoundError as e:
-        utilities.final_exit(f"OS error while reading file: {e}", exit_code=errcodes.OS_ERROR)
+        utilities.final_exit(errcodes.OS_ERROR, f"OS error while reading file: {e}")
     key_list = kwargs[options.KEY_REGEXP]
 
     calls = {
@@ -279,12 +279,12 @@ def main() -> None:
             export_config(endpoint, what, **kwargs)
         elif kwargs[options.IMPORT]:
             if kwargs["file"] is None:
-                utilities.final_exit("--file is mandatory to import configuration", errcodes.ARGS_ERROR)
+                utilities.final_exit(errcodes.ARGS_ERROR, "--file is mandatory to import configuration")
             __import_config(endpoint, what, **kwargs)
     except exceptions.SonarException as e:
-        utilities.final_exit(e.message, e.errcode)
+        utilities.final_exit(e.errcode, e.message)
     except (PermissionError, FileNotFoundError) as e:
-        utilities.final_exit(f"OS error while exporting config: {e}", exit_code=errcodes.OS_ERROR)
+        utilities.final_exit(errcodes.OS_ERROR, f"OS error while exporting config: {e}")
     utilities.stop_clock(start_time)
     cache_helper.clear_cache()
     sys.exit(0)
