@@ -372,19 +372,20 @@ class Branch(components.Component):
             another_branch,
             sync_settings=sync_settings,
         )
-        log.info("Issue sync result = %s", util.json_dump(counters))
+        issue_counters = {f"issues_{k}": v for k, v in counters.items()}
+        log.info("%s issue sync result = %s", self, util.json_dump(issue_counters))
         log.info("Syncing %s (%s) and %s (%s) hotspots", str(self), self.base_url(), str(another_branch), another_branch.endpoint.local_url)
-        (tmp_report, tmp_counts) = sync_lists(
+        (tmp_report, counters) = sync_lists(
             list(self.get_hotspots().values()),
             list(another_branch.get_hotspots().values()),
             self,
             another_branch,
             sync_settings=sync_settings,
         )
-        log.info("Hotspots sync result = %s", util.json_dump(tmp_counts))
+        hotspot_counters = {f"hotspots_{k}": v for k, v in counters.items()}
+        log.info("%s hotspots sync result = %s", self, util.json_dump(hotspot_counters))
         report += tmp_report
-        counters = util.dict_add(counters, tmp_counts)
-        return (report, counters)
+        return (report, issue_counters | hotspot_counters)
 
     def __audit_never_analyzed(self) -> list[Problem]:
         """Detects branches that have never been analyzed are are kept when inactive"""
