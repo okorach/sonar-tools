@@ -821,7 +821,6 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     :param dict config_data: the configuration to import
     :return: Whether the operation succeeded
     """
-    threads = 8
     if "qualityProfiles" not in config_data:
         log.info("No quality profiles to import")
         return False
