@@ -108,8 +108,7 @@ def __get_sysinfo_from_ticket(**kwargs):
     r = requests.get(url, auth=kwargs["creds"], timeout=10)
     if not r.ok:
         if r.status_code == HTTPStatus.NOT_FOUND:
-            print(f"Ticket {tix} not found")
-            sys.exit(3)
+            util.final_exit(3, f"Ticket {tix} not found")
         else:
             util.final_exit(errcodes.SONAR_API, f"Ticket {tix}: URL '{url}' status code {r.status_code}")
 
@@ -153,8 +152,7 @@ def main():
         kwargs["ticket"] = f'SUPPORT-{kwargs["ticket"]}'
     sif_list = __get_sysinfo_from_ticket(**kwargs)
     if len(sif_list) == 0:
-        print(f"No SIF found in ticket {kwargs['ticket']}")
-        sys.exit(2)
+        util.final_exit(2, f"No SIF found in ticket {kwargs['ticket']}")
     problems = []
     settings = audit_config.load("sonar-audit")
     found_problems = False

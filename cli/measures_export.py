@@ -34,7 +34,7 @@ import sonar.logging as log
 from sonar import metrics, platform, exceptions, errcodes, version, measures
 import sonar.utilities as util
 import sonar.util.constants as c
-from sonar.util import component_helper, cache_helper
+from sonar.util import component_helper
 
 TOOL_NAME = "sonar-measures"
 
@@ -306,9 +306,8 @@ def main() -> None:
         util.final_exit(e.errcode, e.message)
     except (PermissionError, FileNotFoundError) as e:
         util.final_exit(errcodes.OS_ERROR, f"OS error while writing LoCs: {e}")
-    util.stop_clock(start_time)
-    cache_helper.clear_cache()
-    sys.exit(0)
+
+    util.final_exit(0, start_clock=start_time)
 
 
 if __name__ == "__main__":

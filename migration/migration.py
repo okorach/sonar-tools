@@ -81,8 +81,7 @@ def main() -> None:
         utilities.final_exit(errcodes.OS_ERROR, f"OS error while exporting config: {e}")
     log.info("Exporting SQ to SC migration data from %s completed", kwargs[options.URL])
     log.info("Migration file '%s' created", kwargs[options.REPORT_FILE])
-    utilities.stop_clock(start_time)
-    sys.exit(0)
+    utilities.final_exit(0, start_clock=start_time)
 
 
 if __name__ == "__main__":

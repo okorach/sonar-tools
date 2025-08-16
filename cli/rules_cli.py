@@ -104,8 +104,7 @@ def main() -> int:
     except OSError as e:
         util.final_exit(errcodes.OS_ERROR, f"OS error: {e}")
     log.info("%d rules exported from %s", len(rule_list), endpoint.local_url)
-    util.stop_clock(start_time)
-    sys.exit(0)
+    util.final_exit(0, start_clock=start_time)
 
 
 if __name__ == "__main__":

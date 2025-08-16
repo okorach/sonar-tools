@@ -190,8 +190,8 @@ def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_toke
     """Parses arguments, applies default settings and perform common environment checks"""
     try:
         args = parser.parse_args()
-    except SystemExit:
-        sys.exit(errcodes.ARGS_ERROR)
+    except SystemExit as e:
+        utilities.final_exit(errcodes.ARGS_ERROR, str(e))
 
     kwargs = vars(args)
     log.set_logger(filename=kwargs[LOGFILE], logger_name=logger_name)

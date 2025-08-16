@@ -38,7 +38,7 @@ import sonar.logging as log
 from sonar import platform, exceptions, errcodes, version
 from sonar import hotspots, findings
 from sonar import applications, portfolios
-from sonar.util import issue_defs as idefs, types, component_helper, cache_helper
+from sonar.util import issue_defs as idefs, types, component_helper
 import sonar.util.constants as c
 
 import sonar.utilities as util
@@ -399,9 +399,7 @@ def main() -> None:
         len(components_list),
         sqenv.local_url,
     )
-    util.stop_clock(start_time)
-    cache_helper.clear_cache()
-    sys.exit(0)
+    util.final_exit(errcodes.OK, start_clock=start_time)
 
 
 if __name__ == "__main__":

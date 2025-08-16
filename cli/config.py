@@ -285,9 +285,8 @@ def main() -> None:
         utilities.final_exit(e.errcode, e.message)
     except (PermissionError, FileNotFoundError) as e:
         utilities.final_exit(errcodes.OS_ERROR, f"OS error while exporting config: {e}")
-    utilities.stop_clock(start_time)
-    cache_helper.clear_cache()
-    sys.exit(0)
+
+    utilities.final_exit(errcodes.OK, "", start_time)
 
 
 if __name__ == "__main__":

@@ -36,7 +36,6 @@ import sonar.util.constants as c
 import sonar.utilities as util
 import sonar.exceptions as ex
 from sonar.audit import problem
-from sonar.util import cache_helper
 
 TOOL_NAME = "sonar-housekeeper"
 PROJ_MAX_AGE = "audit.projects.maxLastAnalysisAge"
@@ -231,7 +230,6 @@ def main() -> None:
         log.info("%d branches older than %d days %s", deleted_branches, branch_age, op)
         log.info("%d pull requests older than %d days %s", deleted_prs, pr_age, op)
         log.info("%d tokens older than %d days %s", revoked_tokens, token_age, "revoked" if mode == "deleted" else "to revoke")
-        util.stop_clock(start_time)
 
     except (PermissionError, FileNotFoundError) as e:
         util.final_exit(errcodes.OS_ERROR, f"OS error while housekeeping: {str(e)}")
@@ -239,8 +237,7 @@ def main() -> None:
         util.final_exit(e.message, e.errcode)
     except RequestException as e:
         util.final_exit(errcodes.SONAR_API, f"HTTP error while housekeeping: {str(e)}")
-    cache_helper.clear_cache()
-    sys.exit(0)
+    util.final_exit(0, start_clock=start_time)
 
 
 if __name__ == "__main__":

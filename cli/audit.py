@@ -33,7 +33,7 @@ from requests import RequestException
 from cli import options
 
 from sonar import errcodes, exceptions, version
-from sonar.util import types, component_helper, cache_helper
+from sonar.util import types, component_helper
 import sonar.logging as log
 from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, portfolios, applications, projects
 import sonar.utilities as util
@@ -185,7 +185,7 @@ def main() -> None:
         )
         if kwargs.get("config", False):
             audit_conf.configure()
-            sys.exit(errcodes.OK)
+            util.final_exit(errcodes.OK, start_clock=start_time)
 
         if kwargs["sif"]:
             file = kwargs["sif"]
@@ -216,9 +216,7 @@ def main() -> None:
         util.final_exit(errcodes.SIF_AUDIT_ERROR, f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...")
     except RequestException as e:
         util.final_exit(errcodes.SONAR_API, f"HTTP error while auditing: {str(e)}")
-    util.stop_clock(start_time)
-    cache_helper.clear_cache()
-    sys.exit(errcodes.OK)
+    util.final_exit(errcodes.OK, start_clock=start_time)
 
 
 if __name__ == "__main__":
