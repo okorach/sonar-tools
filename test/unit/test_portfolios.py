@@ -288,7 +288,7 @@ def test_import() -> None:
 
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
-    with open("test/files/config.json", "r", encoding="utf-8") as f:
+    with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
         json_exp = json.loads(f.read())["portfolios"]
     # delete all portfolios in test
     logging.info("Deleting all portfolios")

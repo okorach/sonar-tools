@@ -149,7 +149,7 @@ def test_findings_filter_on_type(csv_file: Generator[str]) -> None:
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.TYPES} {idefs.TYPE_VULN},{idefs.TYPE_BUG}"
     assert tutil.run_cmd(findings_export.main, cmd) == e.OK
     col_name = "legacyType" if tutil.SQ.version() >= c.MQR_INTRO_VERSION else "type"
-    tutil.csv_col_is_value(csv_file, col_name, {idefs.TYPE_VULN}, idefs.TYPE_BUG)
+    tutil.csv_col_is_value(csv_file, col_name, idefs.TYPE_VULN, idefs.TYPE_BUG)
 
 
 def test_findings_filter_on_resolution(csv_file: Generator[str]) -> None:
@@ -163,10 +163,10 @@ def test_findings_filter_on_resolution(csv_file: Generator[str]) -> None:
 
 def test_findings_filter_on_severity(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_severity"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.SEVERITIES} {idefs.STD_SEVERITY_BLOCKER},{idefs.STD_SEVERITY_BLOCKER}"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.SEVERITIES} {idefs.STD_SEVERITY_BLOCKER},{idefs.STD_SEVERITY_CRITICAL}"
     assert tutil.run_cmd(findings_export.main, cmd) == e.OK
     if tutil.SQ.version() < c.MQR_INTRO_VERSION:
-        assert tutil.csv_col_is_value(csv_file, "severity", {idefs.STD_SEVERITY_BLOCKER}, {idefs.STD_SEVERITY_BLOCKER})
+        assert tutil.csv_col_is_value(csv_file, "severity", idefs.STD_SEVERITY_BLOCKER, idefs.STD_SEVERITY_CRITICAL)
         return
     with open(file=csv_file, mode="r", encoding="utf-8") as fh:
         (sec, other, legacy) = tutil.get_cols(next(csvreader := csv.reader(fh)), "securityImpact", "otherImpact", "legacySeverity")

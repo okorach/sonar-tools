@@ -31,7 +31,7 @@ from sonar.util import constants as c
 
 
 ISSUE_FP = "ffbe8a34-cef6-4d5b-849d-bb2c25951c51"
-ISSUE_FP_V9_9 = "AZNT89kklhFmauJ_HQSK"
+ISSUE_FP_V9_9 = "AZi22OzWCMRVk7bHctjy"
 ISSUE_ACCEPTED = "c99ac40e-c2c5-43ef-bcc5-4cd077d1052f"
 ISSUE_ACCEPTED_V9_9 = "AZI6frkTuTfDeRt_hspx"
 ISSUE_W_MULTIPLE_CHANGELOGS = "6ae41c3b-c3d2-422f-a505-d355e7b0a268"
@@ -70,7 +70,7 @@ def test_issue() -> None:
 
 def test_add_comments() -> None:
     """Test issue comments manipulations"""
-    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1, params={"statuses": "OPEN"})
     issue = list(issues_d.values())[0]
     comment = f"NOW is {str(datetime.now())}"
     assert issue.add_comment(comment)
@@ -83,7 +83,7 @@ def test_add_comments() -> None:
 
 def test_set_severity() -> None:
     """Test issue severity"""
-    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1, params={"statuses": "OPEN"})
     issue = list(issues_d.values())[0]
     old_sev = issue.severity
     new_sev = "MINOR" if old_sev == "CRITICAL" else "CRITICAL"
@@ -101,7 +101,7 @@ def test_set_severity() -> None:
 
 def test_add_remove_tag() -> None:
     """test_add_remove_tag"""
-    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1, params={"statuses": "OPEN"})
     issue = list(issues_d.values())[0]
     tag = "test-tag"
     issue.remove_tag(tag)
@@ -113,7 +113,7 @@ def test_add_remove_tag() -> None:
 
 def test_set_type() -> None:
     """test_set_type"""
-    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1, params={"statuses": "OPEN"})
     issue = list(issues_d.values())[0]
     old_type = issue.type
     new_type = c.VULN if old_type == c.BUG else c.BUG
@@ -130,7 +130,7 @@ def test_set_type() -> None:
 
 def test_assign() -> None:
     """test_assign"""
-    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1, params={"statuses": "OPEN"})
     issue = list(issues_d.values())[0]
     old_assignee = issue.assignee
     new_assignee = "olivier" if old_assignee is None or old_assignee != "olivier" else "michal"
@@ -176,9 +176,10 @@ def test_changelog() -> None:
     assert changelog.assignee(False) is None
     if tutil.SQ.version() >= (10, 0, 0):
         assert datetime(2025, 2, 12) <= util.string_to_date(changelog.date()).replace(tzinfo=None) < datetime(2025, 2, 14)
+        assert changelog.author() is None
     else:
-        assert datetime(2021, 12, 24) <= util.string_to_date(changelog.date()).replace(tzinfo=None) < datetime(2024, 12, 26)
-    assert changelog.author() is None
+        assert datetime(2025, 8, 16) <= util.string_to_date(changelog.date()).replace(tzinfo=None) < datetime(2025, 8, 18)
+        assert changelog.author() == "admin"
     assert not changelog.is_tag()
     assert changelog.get_tags() == []
 
@@ -227,7 +228,7 @@ def test_request_error() -> None:
 
 def test_transitions() -> None:
     """test_transitions"""
-    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1, params={"status": "OPEN"})
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1, params={"statuses": "OPEN"})
     issue = list(issues_d.values())[0]
 
     assert issue.confirm()

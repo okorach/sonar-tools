@@ -20,19 +20,22 @@
 #
 
 # Deletes and recreates a fresh TESTSYNC project in SonarQube
-curl -X POST -u "$SONAR_TOKEN:" "http://localhost:20010/api/projects/delete?project=TESTSYNC"
-conf/scan.sh -Dsonar.host.url=http://localhost:20010 -Dsonar.projectKey=TESTSYNC -Dsonar.projectName=TESTSYNC
+curl -X POST -u "$SONAR_TOKEN_LATEST_ADMIN_USER:" "http://localhost:20010/api/projects/delete?project=TESTSYNC"
+conf/scan.sh -Dsonar.host.url=http://localhost:20010 -Dsonar.projectKey=TESTSYNC -Dsonar.projectName=TESTSYNC -Dsonar.token="$SONAR_TOKEN_LATEST_ADMIN_ANALYSIS"
 
 curl -X POST -u "$SONAR_TOKEN_SONARCLOUD:" "https://sonarcloud.io/api/projects/delete?project=TESTSYNC"
-conf/scan.sh -Dsonar.host.url=https://sonarcloud.io -Dsonar.projectKey=TESTSYNC -Dsonar.projectName=TESTSYNC -Dsonar.organization=okorach -Dsonar.login="$SONAR_TOKEN_SONARCLOUD" -Dsonar.token="$SONAR_TOKEN_SONARCLOUD"
+sonar-scanner -Dsonar.host.url=https://sonarcloud.io -Dsonar.projectKey=TESTSYNC -Dsonar.projectName=TESTSYNC -Dsonar.organization=okorach -Dsonar.login="$SONAR_TOKEN_SONARCLOUD" -Dsonar.token="$SONAR_TOKEN_SONARCLOUD"
 
 sonar-scanner -Dsonar.host.url=http://localhost:10000 -Dsonar.pullrequest.key=5 -Dsonar.pullrequest.branch=feature/5
 sonar-scanner -Dsonar.host.url=http://localhost:10000 -Dsonar.pullrequest.key=7 -Dsonar.pullrequest.branch=feature/7
-
-sonar-scanner -Dsonar.host.url=http://localhost:9000 -Dsonar.pullrequest.key=5 -Dsonar.pullrequest.branch=feature/5 -Dsonar.login="$SONAR_TOKEN_9_ADMIN_ANALYSIS"
-sonar-scanner -Dsonar.host.url=http://localhost:9000 -Dsonar.pullrequest.key=7 -Dsonar.pullrequest.branch=feature/7 -Dsonar.login="$SONAR_TOKEN_9_ADMIN_ANALYSIS"
 
 sonar-scanner -Dsonar.host.url=http://localhost:8000 -Dsonar.pullrequest.key=5 -Dsonar.pullrequest.branch=feature/5 -Dsonar.login="$SONAR_TOKEN_LTS_ADMIN_ANALYSIS"
 sonar-scanner -Dsonar.host.url=http://localhost:8000 -Dsonar.pullrequest.key=7 -Dsonar.pullrequest.branch=feature/7 -Dsonar.login="$SONAR_TOKEN_LTS_ADMIN_ANALYSIS"
 
 sonar-scanner -Dsonar.host.url=http://localhost:7000 -Dsonar.login="$SONAR_TOKEN_CB_ADMIN_ANALYSIS"
+
+# Format for 10.x and 9.x is different, file was generated for 10.x, so removing for 9.9
+rm build/external-issues*
+sonar-scanner -Dsonar.host.url=http://localhost:9000 -Dsonar.pullrequest.key=5 -Dsonar.pullrequest.branch=feature/5 -Dsonar.login="$SONAR_TOKEN_9_ADMIN_ANALYSIS"
+sonar-scanner -Dsonar.host.url=http://localhost:9000 -Dsonar.pullrequest.key=7 -Dsonar.pullrequest.branch=feature/7 -Dsonar.login="$SONAR_TOKEN_9_ADMIN_ANALYSIS"
+

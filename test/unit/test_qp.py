@@ -26,7 +26,7 @@ import json
 import pytest
 
 import utilities as tutil
-from sonar import qualityprofiles, rules, exceptions, logging
+from sonar import qualityprofiles, languages, rules, exceptions, logging
 
 
 def test_get_object(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
@@ -156,11 +156,13 @@ def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]
 def test_import() -> None:
     """test_import"""
     rules.get_list(tutil.TEST_SQ)
+    languages.Language.CACHE.clear()
+    qualityprofiles.QualityProfile.CACHE.clear()
     # delete all quality profiles in test
     _ = [qp.set_as_default() for qp in qualityprofiles.get_list(tutil.TEST_SQ).values() if qp.name == tutil.SONAR_WAY]
     qp_list = {o for o in qualityprofiles.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in and not o.is_default}
     _ = [o.delete() for o in qp_list]
-    with open("test/files/config.json", "r", encoding="utf-8") as f:
+    with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
         json_exp = json.loads(f.read())["qualityProfiles"]
     assert qualityprofiles.import_config(tutil.TEST_SQ, {"qualityProfiles": json_exp})
 
@@ -170,6 +172,8 @@ def test_import() -> None:
     logging.debug("Imported  list = %s", str(json_name_list))
     logging.debug("SonarQube list = %s", str(qp_name_list))
     assert json_name_list == qp_name_list
+    languages.Language.CACHE.clear()
+    qualityprofiles.QualityProfile.CACHE.clear()
 
 
 def test_audit_disabled() -> None:

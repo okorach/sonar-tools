@@ -60,7 +60,7 @@ def test_get_set_reset_settings() -> None:
 
 
 def test_import() -> None:
-    with open("test/files/config.json", "r", encoding="utf-8") as f:
+    with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
         json_config = json.load(f)
     json_config["globalSettings"]["generalSettings"][settings.NEW_CODE_PERIOD] = 60
     platform.import_config(tutil.TEST_SQ, json_config)
@@ -98,7 +98,7 @@ def test_normalize_api() -> None:
 
 
 def test_convert_for_yaml() -> None:
-    with open("test/files/config.json", "r", encoding="utf-8") as f:
+    with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
         json_config = json.load(f)["globalSettings"]
     yaml_json = platform.convert_for_yaml(json_config.copy())
     assert len(yaml_json) == len(json_config)
