@@ -109,7 +109,7 @@ def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
 
 def test_config_import_portfolios() -> None:
     """test_config_import_portfolios"""
-    with open("test/files/config.json", "r", encoding="utf-8") as f:
+    with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
         json_config = json.loads(f.read())["portfolios"]
 
     # delete all portfolios in test
@@ -118,7 +118,7 @@ def test_config_import_portfolios() -> None:
     logging.info("Deleting all portfolios")
     _ = [p.delete() for p in portfolios.get_list(tutil.TEST_SQ, use_cache=False).values() if p.is_toplevel()]
     # Import config
-    cmd = f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} test/files/config.json --{opt.WHAT} {opt.WHAT_PORTFOLIOS}"
+    cmd = f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} ${tutil.FILES_ROOT}/config.json --{opt.WHAT} {opt.WHAT_PORTFOLIOS}"
     assert tutil.run_cmd(config.main, cmd) == e.OK
 
     # Compare portfolios
