@@ -160,7 +160,7 @@ def test_import() -> None:
     _ = [qp.set_as_default() for qp in qualityprofiles.get_list(tutil.TEST_SQ).values() if qp.name == tutil.SONAR_WAY]
     qp_list = {o for o in qualityprofiles.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in and not o.is_default}
     _ = [o.delete() for o in qp_list]
-    with open("test/files/config.json", "r", encoding="utf-8") as f:
+    with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
         json_exp = json.loads(f.read())["qualityProfiles"]
     assert qualityprofiles.import_config(tutil.TEST_SQ, {"qualityProfiles": json_exp})
 
