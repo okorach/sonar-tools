@@ -2,11 +2,13 @@
 import sys
 import datetime
 
-TOOL_NAME = "sonar-loc"
+TOOL_NAME = "main.py"
 
 
 def is_prime(n: int) -> bool:
     """Check if a number is prime."""
+
+    # TODO: Make the algorithm faster
     if n <= 1:
         return False
     for i in range(2, int(n**0.5) + 1):
@@ -26,12 +28,12 @@ def stop_clock(start_time: datetime.datetime) -> None:
 
 
 def main(max_nbr: int) -> None:
-    """sonar-loc entry point"""
-    start_time = start_clock()
+    """entry point"""
+    startTime = start_clock()
     nbr_primes = 0
     primes = [i for i in range(max_nbr) if is_prime(i)]
     print(f"Primes = {', '.join([str(i) for i in primes])}")
-    stop_clock(start_time)
+    stop_clock(startTime)
 
 
 if __name__ == "__main__":
