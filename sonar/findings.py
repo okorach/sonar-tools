@@ -420,14 +420,10 @@ class Finding(sq.SqObject):
         approx_matches = []
         match_but_modified = []
         log.info("Searching for an exact match of %s", str(self))
+        candidates = [f for f in findings_list if f is not self and f.strictly_identical_to(self, ignore_component, **kwargs)]
         candidate_match = None
         line_gap = None
-        for finding in findings_list:
-            if self is finding:
-                log.debug("%s and %s are the same issue", str(self), str(finding))
-                continue
-            if not finding.strictly_identical_to(self, ignore_component, **kwargs):
-                continue
+        for finding in candidates:
             if line_gap is None or abs(finding.line - self.line) < line_gap:
                 line_gap = abs(finding.line - self.line)
                 candidate_match = finding
@@ -444,10 +440,8 @@ class Finding(sq.SqObject):
             return exact_matches, approx_matches, match_but_modified
 
         log.info("No exact match, searching for an approximate match of %s", str(self))
-        for finding in findings_list:
-            if not finding.almost_identical_to(self, ignore_component, **kwargs):
-                log.debug("%s and %s do not match at all", str(self), str(finding))
-                continue
+        candidates = [f for f in findings_list if f.almost_identical_to(self, ignore_component, **kwargs)]
+        for finding in candidates:
             if finding.can_be_synced(sync_user):
                 log.info("%s and %s are approximate match and could be synced", str(self), str(finding))
                 approx_matches.append(finding)
