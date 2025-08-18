@@ -190,6 +190,7 @@ def main() -> None:
             log.info("%d %s could not be synchronized because there were multiple matches", counters.get(f"{t}_nb_multiple_matches", 0), t)
             log.info("%d %s could not be synchronized because the match was approximate", counters.get(f"{t}_nb_approx_match", 0), t)
             log.info("%d %s could not be synchronized because target issue already had a changelog", counters.get(f"{t}_nb_tgt_has_changelog", 0), t)
+            log.info("%d %s could not be synchronized because of unexpected exception", counters.get(f"{t}_exception", 0), t)
 
     except exceptions.SonarException as e:
         util.final_exit(e.errcode, e.message)
