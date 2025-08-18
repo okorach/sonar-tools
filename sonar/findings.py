@@ -434,7 +434,7 @@ class Finding(sq.SqObject):
                 log.info("%s and %s are exact match with a line gap of %d", str(self), str(candidate_match), line_gap)
             if line_gap == 0:
                 break
-        if line_gap is not None:
+        if candidate_match is not None:
             if candidate_match.can_be_synced(sync_user):
                 log.info("%s and %s are exact match and can be synced", str(self), str(candidate_match))
                 exact_matches.append(candidate_match)
@@ -445,15 +445,16 @@ class Finding(sq.SqObject):
 
         log.info("No exact match, searching for an approximate match of %s", str(self))
         for finding in findings_list:
-            if finding.almost_identical_to(self, ignore_component, **kwargs):
-                if finding.can_be_synced(sync_user):
-                    log.info("%s and %s are approximate match and could be synced", str(self), str(finding))
-                    approx_matches.append(finding)
-                else:
-                    log.info("%s and %s are approximate match but target already has changes, cannot be synced", str(self), str(finding))
-                    match_but_modified.append(finding)
-            else:
+            if not finding.almost_identical_to(self, ignore_component, **kwargs):
                 log.debug("%s and %s do not match at all", str(self), str(finding))
+                continue
+            if finding.can_be_synced(sync_user):
+                log.info("%s and %s are approximate match and could be synced", str(self), str(finding))
+                approx_matches.append(finding)
+            else:
+                log.info("%s and %s are approximate match but target already has changes, cannot be synced", str(self), str(finding))
+                match_but_modified.append(finding)
+
         if len(approx_matches) + len(match_but_modified) == 0:
             log.info("No approximate match found for %s", str(self))
         return exact_matches, approx_matches, match_but_modified
