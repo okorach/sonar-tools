@@ -509,11 +509,15 @@ def get_changelogs(issue_list: list[Finding], added_after: datetime.datetime = N
     """Performs a mass, multithreaded collection of finding changelogs (one API call per issue)"""
     if len(issue_list) == 0:
         return
-    log.info("Mass changelog collection for %d findings on %d threads", len(issue_list), threads)
+    count, total = 0, len(issue_list)
+    log.info("Mass changelog collection for %d findings on %d threads", total, threads)
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="GetChangelog") as executor:
         futures = [executor.submit(__get_changelog, finding, added_after) for finding in issue_list]
         for future in concurrent.futures.as_completed(futures):
             try:
+                count += 1
                 _ = future.result(timeout=30)
+                if count % 100 == 0:
+                    log.info("Collected changelog for %d of %d findings (%d%%)", count, total, count * 100 // total)
             except Exception as e:
                 log.error(f"Changelog collection error {str(e)} for {str(future)}.")
