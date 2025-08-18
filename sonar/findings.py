@@ -428,8 +428,8 @@ class Finding(sq.SqObject):
                 continue
             if not finding.strictly_identical_to(self, ignore_component, **kwargs):
                 continue
-            if line_gap is None or abs(self.line - finding.line) < line_gap:
-                line_gap = abs(self.line - finding.line)
+            if line_gap is None or abs(finding.line - self.line) < line_gap:
+                line_gap = abs(finding.line - self.line)
                 candidate_match = finding
                 log.info("%s and %s are exact match with a line gap of %d", str(self), str(candidate_match), line_gap)
             if line_gap == 0:
