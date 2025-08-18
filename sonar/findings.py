@@ -121,7 +121,7 @@ class Finding(sq.SqObject):
         self._changelog = None
         self._comments = None
         self.file = None  #: File (str)
-        self.line = None  #: Line (int)
+        self.line = 0  #: Line (int)
         self.component = None
         self.message = None  #: Message
         self.creation_date = None  #: Creation date (datetime)
@@ -149,20 +149,15 @@ class Finding(sq.SqObject):
         self.resolution = jsondata.get("resolution", None)
         if not self.rule:
             self.rule = jsondata.get("rule", jsondata.get("ruleReference", None))
-        self.line = jsondata.get("line", jsondata.get("lineNumber", None))
-        if self.line == "null":
-            self.line = None
-        if self.line is not None:
-            try:
-                self.line = int(self.line)
-            except ValueError:
-                pass
+        try:
+            self.line = int(jsondata.get("line", jsondata.get("lineNumber", 0)))
+        except ValueError:
+            self.line = 0
 
     def _load_from_search(self, jsondata: types.ApiPayload) -> None:
         self._load_common(jsondata)
         self.projectKey = jsondata.get("project", None)
         self.component = jsondata.get("component", None)
-        self.line = jsondata.get("line", None)
         self.status = jsondata.get("status", None)
         self.message = jsondata.get("message", None)
         if self.component:
@@ -425,21 +420,17 @@ class Finding(sq.SqObject):
         approx_matches = []
         match_but_modified = []
         log.info("Searching for an exact match of %s", str(self))
+        candidates = [f for f in findings_list if f is not self and f.strictly_identical_to(self, ignore_component, **kwargs)]
         candidate_match = None
         line_gap = None
-        for finding in findings_list:
-            if self is finding:
-                log.debug("%s and %s are the same issue", str(self), str(finding))
-                continue
-            if not finding.strictly_identical_to(self, ignore_component, **kwargs):
-                continue
+        for finding in candidates:
             if line_gap is None or abs(finding.line - self.line) < line_gap:
                 line_gap = abs(finding.line - self.line)
                 candidate_match = finding
                 log.info("%s and %s are exact match with a line gap of %d", str(self), str(candidate_match), line_gap)
             if line_gap == 0:
                 break
-        if line_gap is not None:
+        if candidate_match is not None:
             if candidate_match.can_be_synced(sync_user):
                 log.info("%s and %s are exact match and can be synced", str(self), str(candidate_match))
                 exact_matches.append(candidate_match)
@@ -449,16 +440,15 @@ class Finding(sq.SqObject):
             return exact_matches, approx_matches, match_but_modified
 
         log.info("No exact match, searching for an approximate match of %s", str(self))
-        for finding in findings_list:
-            if finding.almost_identical_to(self, ignore_component, **kwargs):
-                if finding.can_be_synced(sync_user):
-                    log.info("%s and %s are approximate match and could be synced", str(self), str(finding))
-                    approx_matches.append(finding)
-                else:
-                    log.info("%s and %s are approximate match but target already has changes, cannot be synced", str(self), str(finding))
-                    match_but_modified.append(finding)
+        candidates = [f for f in findings_list if f.almost_identical_to(self, ignore_component, **kwargs)]
+        for finding in candidates:
+            if finding.can_be_synced(sync_user):
+                log.info("%s and %s are approximate match and could be synced", str(self), str(finding))
+                approx_matches.append(finding)
             else:
-                log.debug("%s and %s do not match at all", str(self), str(finding))
+                log.info("%s and %s are approximate match but target already has changes, cannot be synced", str(self), str(finding))
+                match_but_modified.append(finding)
+
         if len(approx_matches) + len(match_but_modified) == 0:
             log.info("No approximate match found for %s", str(self))
         return exact_matches, approx_matches, match_but_modified
@@ -514,11 +504,15 @@ def get_changelogs(issue_list: list[Finding], added_after: datetime.datetime = N
     """Performs a mass, multithreaded collection of finding changelogs (one API call per issue)"""
     if len(issue_list) == 0:
         return
-    log.info("Mass changelog collection for %d findings on %d threads", len(issue_list), threads)
+    count, total = 0, len(issue_list)
+    log.info("Mass changelog collection for %d findings on %d threads", total, threads)
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="GetChangelog") as executor:
         futures = [executor.submit(__get_changelog, finding, added_after) for finding in issue_list]
         for future in concurrent.futures.as_completed(futures):
             try:
+                count += 1
                 _ = future.result(timeout=30)
+                if count % 100 == 0:
+                    log.info("Collected changelog for %d of %d findings (%d%%)", count, total, count * 100 // total)
             except Exception as e:
                 log.error(f"Changelog collection error {str(e)} for {str(future)}.")

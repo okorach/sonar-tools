@@ -185,11 +185,15 @@ def main() -> None:
         __dump_report(report, args.file)
         for t in "issues", "hotspots":
             log.info("%d %s needed to be synchronized", counters.get(f"{t}_nb_to_sync", 0), t)
-            log.info("%d %s were synchronized successfully", counters.get(f"{t}_nb_applies", 0), t)
-            log.info("%d %s could not be synchronized because no match was found in target", counters.get(f"{t}_nb_no_match", 0), t)
-            log.info("%d %s could not be synchronized because there were multiple matches", counters.get(f"{t}_nb_multiple_matches", 0), t)
-            log.info("%d %s could not be synchronized because the match was approximate", counters.get(f"{t}_nb_approx_match", 0), t)
-            log.info("%d %s could not be synchronized because target issue already had a changelog", counters.get(f"{t}_nb_tgt_has_changelog", 0), t)
+            if counters.get(f"{t}_nb_to_sync", 0) > 0:
+                log.info("   %d %s were synchronized successfully", counters.get(f"{t}_nb_applies", 0), t)
+                log.info("   %d %s could not be synchronized because no match was found in target", counters.get(f"{t}_nb_no_match", 0), t)
+                log.info("   %d %s could not be synchronized because there were multiple matches", counters.get(f"{t}_nb_multiple_matches", 0), t)
+                log.info("   %d %s could not be synchronized because the match was approximate", counters.get(f"{t}_nb_approx_match", 0), t)
+                log.info(
+                    "   %d %s could not be synchronized because target issue already had a changelog", counters.get(f"{t}_nb_tgt_has_changelog", 0), t
+                )
+                log.info("   %d %s could not be synchronized because of unexpected exception", counters.get(f"{t}_exception", 0), t)
 
     except exceptions.SonarException as e:
         util.final_exit(e.errcode, e.message)
