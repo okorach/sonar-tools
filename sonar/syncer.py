@@ -198,7 +198,7 @@ def sync_lists(
     findings.get_changelogs(issue_list=tgt_findings, added_after=min_date, threads=sync_settings[SYNC_THREADS])
 
     interesting_src_findings = []
-    counters = dict.fromkeys(("nb_to_sync", "nb_applies", "nb_approx_match", "nb_tgt_has_changelog", "nb_multiple_matches"), 0)
+    counters = dict.fromkeys(("nb_to_sync", "nb_applies", "nb_approx_match", "nb_tgt_has_changelog", "nb_multiple_matches", "exception"), 0)
     log.info("source has %d finding candidates to sync, target has %d", len(src_findings), len(tgt_findings))
     if len(src_findings) == 0 or len(tgt_findings) == 0:
         log.info("source or target list of findings to sync empty, skipping...")
