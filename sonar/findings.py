@@ -121,7 +121,7 @@ class Finding(sq.SqObject):
         self._changelog = None
         self._comments = None
         self.file = None  #: File (str)
-        self.line = None  #: Line (int)
+        self.line = 0  #: Line (int)
         self.component = None
         self.message = None  #: Message
         self.creation_date = None  #: Creation date (datetime)
@@ -149,20 +149,15 @@ class Finding(sq.SqObject):
         self.resolution = jsondata.get("resolution", None)
         if not self.rule:
             self.rule = jsondata.get("rule", jsondata.get("ruleReference", None))
-        self.line = jsondata.get("line", jsondata.get("lineNumber", None))
-        if self.line == "null":
-            self.line = None
-        if self.line is not None:
-            try:
-                self.line = int(self.line)
-            except ValueError:
-                pass
+        try:
+            self.line = int(jsondata.get("line", jsondata.get("lineNumber", 0)))
+        except ValueError:
+            self.line = 0
 
     def _load_from_search(self, jsondata: types.ApiPayload) -> None:
         self._load_common(jsondata)
         self.projectKey = jsondata.get("project", None)
         self.component = jsondata.get("component", None)
-        self.line = jsondata.get("line", None)
         self.status = jsondata.get("status", None)
         self.message = jsondata.get("message", None)
         if self.component:
@@ -433,8 +428,8 @@ class Finding(sq.SqObject):
                 continue
             if not finding.strictly_identical_to(self, ignore_component, **kwargs):
                 continue
-            if line_gap is None or abs(finding.line - self.line) < line_gap:
-                line_gap = abs(finding.line - self.line)
+            if line_gap is None or abs(self.line - finding.line) < line_gap:
+                line_gap = abs(self.line - finding.line)
                 candidate_match = finding
                 log.info("%s and %s are exact match with a line gap of %d", str(self), str(candidate_match), line_gap)
             if line_gap == 0:
