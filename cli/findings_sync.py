@@ -186,10 +186,10 @@ def main() -> None:
         for t in "issues", "hotspots":
             log.info("%d %s needed to be synchronized", counters.get(f"{t}_nb_to_sync", 0), t)
             if counters.get(f"{t}_nb_to_sync", 0) > 0:
-                log.info("   %d %s were synchronized successfully", counters.get(f"{t}_nb_applies", 0), t)
-                log.info("   %d %s could not be synchronized because no match was found in target", counters.get(f"{t}_nb_no_match", 0), t)
-                log.info("   %d %s could not be synchronized because there were multiple matches", counters.get(f"{t}_nb_multiple_matches", 0), t)
-                log.info("   %d %s could not be synchronized because the match was approximate", counters.get(f"{t}_nb_approx_match", 0), t)
+                log.info("   %d %s were synchronized successfully", counters.get(f"{t}_{syncer.EXACT_MATCH}", 0), t)
+                log.info("   %d %s could not be synchronized because no match was found in target", counters.get(f"{t}_{syncer.NO_MATCH}", 0), t)
+                log.info("   %d %s could not be synchronized because there were multiple matches", counters.get(f"{t}_{syncer.MULTIPLE_MATCHES}", 0), t)
+                log.info("   %d %s could not be synchronized because the match was approximate", counters.get(f"{t}_{syncer.APPROX_MATCH}", 0), t)
                 log.info(
                     "   %d %s could not be synchronized because target issue already had a changelog", counters.get(f"{t}_nb_tgt_has_changelog", 0), t
                 )
