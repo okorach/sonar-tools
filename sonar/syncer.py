@@ -40,6 +40,7 @@ TGT = "target"
 KEY = "FindingKey"
 PROJECT = "Project"
 BRANCH = "Branch"
+PR = "PullRequest"
 URL = "FindingUrl"
 
 SYNC_MSG = "syncMessage"
@@ -63,8 +64,7 @@ def __get_findings(findings_list: list[findings.Finding]) -> list[dict[str, str]
 def __issue_data(finding: findings.Finding, prefix: str) -> dict[str, str]:
     """Builds a dict of issue data for sync report"""
     data = {f"{prefix}{KEY}": finding.key, f"{prefix}{URL}": finding.url()}
-    data[f"{prefix}{PROJECT}"] = finding.sq_json.get("project", None)
-    data[f"{prefix}{BRANCH}"] = finding.sq_json.get("branch", None)
+    data |= {f"{prefix}{PROJECT}": finding.projectKey, f"{prefix}{BRANCH}": finding.branch, f"{prefix}{PR}": finding.pull_request}
     return {k: v for k, v in data.items() if v is not None}
 
 
