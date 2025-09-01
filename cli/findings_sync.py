@@ -39,15 +39,6 @@ import sonar.utilities as util
 
 TOOL_NAME = "sonar-findings-sync"
 
-_COUNTER_MAP = {
-    syncer.EXACT_MATCH: "were synchronized successfully",
-    syncer.APPROX_MATCH: "could not be synchronized because the match was approximate",
-    syncer.MULTIPLE_MATCHES: "could not be synchronized because there were multiple matches",
-    syncer.NO_MATCH: "could not be synchronized because no match was found in target",
-    "nb_tgt_has_changelog": "could not be synchronized because target issue already had a changelog",
-    "exception": "could not be synchronized because of unexpected exception",
-}
-
 
 def __parse_args(desc: str) -> object:
     """Defines CLI arguments and parses them"""
@@ -192,10 +183,18 @@ def main() -> None:
             (report, counters) = src_project.sync(tgt_project, sync_settings=settings)
 
         __dump_report(report, args.file)
+        __COUNTER_MAP = {
+            syncer.EXACT_MATCH: "were synchronized successfully",
+            syncer.APPROX_MATCH: "could not be synchronized because the match was approximate",
+            syncer.MULTIPLE_MATCHES: "could not be synchronized because there were multiple matches",
+            syncer.NO_MATCH: "could not be synchronized because no match was found in target",
+            "nb_tgt_has_changelog": "could not be synchronized because target issue already had a changelog",
+            "exception": "could not be synchronized because of unexpected exception",
+        }
         for t in "issues", "hotspots":
             log.info("%d %s needed to be synchronized", counters.get(f"{t}_nb_to_sync", 0), t)
             if counters.get(f"{t}_nb_to_sync", 0) > 0:
-                for key, desc in _COUNTER_MAP.items():
+                for key, desc in __COUNTER_MAP.items():
                     log.info("   %d %s %s", counters.get(f"{t}_{key}", 0), t, desc)
 
     except exceptions.SonarException as e:
