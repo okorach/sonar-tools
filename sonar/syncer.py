@@ -35,16 +35,18 @@ SYNC_COMMENTS = "sync_comments"
 SYNC_ASSIGN = "sync_assignments"
 SYNC_SERVICE_ACCOUNT = "sync_service_account"
 
-SRC = "source"
-TGT = "target"
-KEY = "FindingKey"
-PROJECT = "Project"
-BRANCH = "Branch"
-URL = "FindingUrl"
+_SRC = "source"
+_TGT = "target"
+_KEY = "FindingKey"
+_PROJECT = "Project"
+_BRANCH = "Branch"
+_PR = "PullRequest"
+_URL = "FindingUrl"
 
-SYNC_MSG = "syncMessage"
-SYNC_MATCHES = "matches"
-SYNC_STATUS = "syncStatus"
+_SYNC_MSG = "syncMessage"
+_SYNC_MATCHES = "matches"
+_SYNC_STATUS = "syncStatus"
+
 SYNC_SINCE_DATE = "syncSinceDate"
 SYNC_THREADS = "threads"
 
@@ -57,14 +59,13 @@ NO_MATCH = "nb_no_match"
 
 def __get_findings(findings_list: list[findings.Finding]) -> list[dict[str, str]]:
     """Returns a list of finding keys and their URLS"""
-    return [{f"{TGT}{KEY}": f.key, f"{TGT}{URL}": f.url()} for f in findings_list]
+    return [{f"{_TGT}{_KEY}": f.key, f"{_TGT}{_URL}": f.url()} for f in findings_list]
 
 
 def __issue_data(finding: findings.Finding, prefix: str) -> dict[str, str]:
     """Builds a dict of issue data for sync report"""
-    data = {f"{prefix}{KEY}": finding.key, f"{prefix}{URL}": finding.url()}
-    data[f"{prefix}{PROJECT}"] = finding.sq_json.get("project", None)
-    data[f"{prefix}{BRANCH}"] = finding.sq_json.get("branch", None)
+    data = {f"{prefix}{_KEY}": finding.key, f"{prefix}{_URL}": finding.url()}
+    data |= {f"{prefix}{_PROJECT}": finding.projectKey, f"{prefix}{_BRANCH}": finding.branch, f"{prefix}{_PR}": finding.pull_request}
     return {k: v for k, v in data.items() if v is not None}
 
 
@@ -75,14 +76,14 @@ def __process_exact_sibling(finding: findings.Finding, sibling: findings.Finding
         msg = f"Source {util.class_name(finding).lower()} changelog applied successfully"
     else:
         msg = f"Source {util.class_name(finding).lower()} has no changelog"
-    return __issue_data(finding, SRC) | __issue_data(sibling, TGT) | {SYNC_STATUS: "synchronized", SYNC_MSG: msg}
+    return __issue_data(finding, _SRC) | __issue_data(sibling, _TGT) | {_SYNC_STATUS: "synchronized", _SYNC_MSG: msg}
 
 
 def __process_no_match(finding: findings.Finding) -> dict[str, str]:
     """Returns data about no finding match"""
-    return __issue_data(finding, SRC) | {
-        SYNC_STATUS: "no match",
-        SYNC_MSG: f"Source {util.class_name(finding).lower()} has no match in target project",
+    return __issue_data(finding, _SRC) | {
+        _SYNC_STATUS: "no match",
+        _SYNC_MSG: f"Source {util.class_name(finding).lower()} has no match in target project",
     }
 
 
@@ -102,20 +103,20 @@ def __process_multiple_exact_siblings(finding: findings.Finding, siblings: list[
             f"Sync did not happen due to multiple matches. [This original {name}]({finding.url()}) "
             f"corresponds to this {name},\nbut also to these other {name}s: {comment[:-2]}"
         )
-    return __issue_data(finding, SRC) | {
-        SYNC_STATUS: "unsynchronized",
-        SYNC_MSG: "Multiple matches",
-        SYNC_MATCHES: __get_findings(siblings),
+    return __issue_data(finding, _SRC) | {
+        _SYNC_STATUS: "unsynchronized",
+        _SYNC_MSG: "Multiple matches",
+        _SYNC_MATCHES: __get_findings(siblings),
     }
 
 
 def __process_approx_siblings(finding: findings.Finding, siblings: list[findings.Finding]) -> dict[str, str]:
     """Returns data about unsync finding because of multiple approximate matches"""
     log.info("Found %d approximate matches for %s, cannot automatically apply changelog", len(siblings), str(finding))
-    return __issue_data(finding, SRC) | {
-        SYNC_STATUS: "unsynchronized",
-        SYNC_MSG: "Approximate matches only",
-        SYNC_MATCHES: __get_findings(siblings),
+    return __issue_data(finding, _SRC) | {
+        _SYNC_STATUS: "unsynchronized",
+        _SYNC_MSG: "Approximate matches only",
+        _SYNC_MATCHES: __get_findings(siblings),
     }
 
 
@@ -123,11 +124,11 @@ def __process_modified_siblings(finding: findings.Finding, siblings: list[findin
     """Returns data about unsync finding because match already has a change log"""
     log.info("Found %d match(es) for %s, but they already have a changelog, cannot automatically apply changelog", len(siblings), str(finding))
     return (
-        __issue_data(finding, SRC)
-        | __issue_data(siblings[0], TGT)
+        __issue_data(finding, _SRC)
+        | __issue_data(siblings[0], _TGT)
         | {
-            SYNC_STATUS: "unsynchronized",
-            SYNC_MSG: f"Target {util.class_name(finding).lower()} already has a changelog",
+            _SYNC_STATUS: "unsynchronized",
+            _SYNC_MSG: f"Target {util.class_name(finding).lower()} already has a changelog",
         }
     )
 

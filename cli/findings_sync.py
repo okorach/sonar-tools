@@ -183,17 +183,19 @@ def main() -> None:
             (report, counters) = src_project.sync(tgt_project, sync_settings=settings)
 
         __dump_report(report, args.file)
+        __COUNTER_MAP = {
+            syncer.EXACT_MATCH: "were synchronized successfully",
+            syncer.APPROX_MATCH: "could not be synchronized because the match was approximate",
+            syncer.MULTIPLE_MATCHES: "could not be synchronized because there were multiple matches",
+            syncer.NO_MATCH: "could not be synchronized because no match was found in target",
+            "nb_tgt_has_changelog": "could not be synchronized because target issue already had a changelog",
+            "exception": "could not be synchronized because of unexpected exception",
+        }
         for t in "issues", "hotspots":
             log.info("%d %s needed to be synchronized", counters.get(f"{t}_nb_to_sync", 0), t)
             if counters.get(f"{t}_nb_to_sync", 0) > 0:
-                log.info("   %d %s were synchronized successfully", counters.get(f"{t}_nb_applies", 0), t)
-                log.info("   %d %s could not be synchronized because no match was found in target", counters.get(f"{t}_nb_no_match", 0), t)
-                log.info("   %d %s could not be synchronized because there were multiple matches", counters.get(f"{t}_nb_multiple_matches", 0), t)
-                log.info("   %d %s could not be synchronized because the match was approximate", counters.get(f"{t}_nb_approx_match", 0), t)
-                log.info(
-                    "   %d %s could not be synchronized because target issue already had a changelog", counters.get(f"{t}_nb_tgt_has_changelog", 0), t
-                )
-                log.info("   %d %s could not be synchronized because of unexpected exception", counters.get(f"{t}_exception", 0), t)
+                for key, desc in __COUNTER_MAP.items():
+                    log.info("   %d %s %s", counters.get(f"{t}_{key}", 0), t, desc)
 
     except exceptions.SonarException as e:
         util.final_exit(e.errcode, e.message)
