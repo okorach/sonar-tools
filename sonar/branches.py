@@ -367,7 +367,7 @@ class Branch(components.Component):
         log.info("Syncing %s (%s) and %s (%s) issues", str(self), self.base_url(), str(another_branch), another_branch.endpoint.local_url)
         (report, counters) = sync_lists(
             list(self.get_issues().values()),
-            list(another_branch.get_issues().values()),
+            list(another_branch.get_issues({"issueStatuses": ["OPEN", "REOPENED", "CONFIRMED", "FALSE_POSITIVE", "CONFIRMED", "FIXED"]}).values()),
             self,
             another_branch,
             sync_settings=sync_settings,
