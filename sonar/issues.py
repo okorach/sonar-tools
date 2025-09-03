@@ -102,6 +102,12 @@ _SEARCH_CRITERIAS = (
     "directories",
 )
 
+_ALLOWED_VALUES = {
+    _OLD_SEARCH_STATUS_FIELD: ("FALSE-POSITIVE", "WONTFIX", "FIXED", "REMOVED"),
+    "statuses": ("OPEN", "CONFIRMED", "REOPENED", "RESOLVED", "CLOSED"),
+    _NEW_SEARCH_STATUS_FIELD: ("OPEN", "CONFIRMED", "FALSE_POSITIVE", "ACCEPTED", "FIXED"),
+}
+
 _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
 
 
@@ -993,6 +999,15 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
     comp_filter = component_search_field(endpoint)
     filters = util.dict_remap(original_dict=params, remapping={"project": comp_filter, "application": comp_filter, "portfolio": comp_filter})
     filters = util.dict_subset(util.remove_nones(filters), _SEARCH_CRITERIAS)
+    statuses = util.csv_to_list(filters.get("statuses", [])) + util.csv_to_list(filters.get(_OLD_SEARCH_STATUS_FIELD, []))
+    if "FALSE_POSITIVE" in statuses or "FALSE-POSITIVE" in statuses:
+        statuses += ["FALSE-POSITIVE", "FALSE_POSITIVE"]
+    if "CLOSED" in statuses or "FIXED" in statuses:
+        statuses += ["CLOSED", "FIXED"]
+    statuses = list(set(statuses))
+    filters["statuses"] = statuses
+    filters[_NEW_SEARCH_STATUS_FIELD] = statuses
+    filters[_OLD_SEARCH_STATUS_FIELD] = statuses
     if endpoint.is_mqr_mode():
         mapping = {
             _NEW_SEARCH_TYPE: _OLD_SEARCH_TYPE_FIELD,
@@ -1005,6 +1020,8 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
             _OLD_SEARCH_SEVERITY_FIELD: _NEW_SEARCH_SEVERITY_FIELD,
             _OLD_SEARCH_STATUS_FIELD: _NEW_SEARCH_STATUS_FIELD,
         }
+    for k, v in _ALLOWED_VALUES.items():
+        filters[k] = util.allowed_values_string(filters.get(k, []), v)
     for new, old in mapping.items():
         crit = filters.pop(old, []) + filters.pop(new, [])
         filters[new] = util.list_remap(crit, config.get_issues_map(old))
@@ -1012,6 +1029,10 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
     if endpoint.version() < c.NEW_ISSUE_SEARCH_INTRO_VERSION:
         # Starting from 10.2 - "componentKeys" was renamed "components"
         filters = util.dict_remap(original_dict=filters, remapping={_NEW_SEARCH_COMPONENT_FIELD: _OLD_SEARCH_COMPONENT_FIELD})
+        filters.pop(_NEW_SEARCH_COMPONENT_FIELD, None)
+    else:
+        filters.pop("statuses", None)
+        filters.pop(_OLD_SEARCH_STATUS_FIELD, None)
 
     filters = {k: v for k, v in filters.items() if v is not None and (not isinstance(v, (list, set, str, tuple)) or len(v) > 0)}
     for field in filters:
