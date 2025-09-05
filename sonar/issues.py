@@ -986,7 +986,7 @@ def get_object(endpoint: pf.Platform, key: str, data: ApiPayload = None, from_ex
 
 
 def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
-    """Returns the filtered list of params that are allowed for api/issue/search"""
+    """Returns the filtered list of params that are allowed for api/issues/search"""
     if not params:
         return {}
     log.debug("Sanitizing issue search filters %s", str(params))
@@ -995,23 +995,20 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
     filters = util.dict_subset(util.remove_nones(filters), _SEARCH_CRITERIAS)
     val_equiv = config.get_issues_search_values_equivalences()
     key_equiv = config.get_issues_search_fields_equivalences()
-    for k, v in filters.copy().items():
-        if not isinstance(v, (list, set, str, tuple)):
-            continue
+    filters_to_patch = {k: v for k, v in filters.items() if isinstance(v, (list, set, str, tuple))}
+    for k, v in filters_to_patch.items():
         for value_list in val_equiv:
             if any(value in value_list for value in v):
                 filters[k] += value_list
-    for k in filters.copy().keys():
-        for key_list in key_equiv:
-            if k in key_list:
-                for key in key_list:
-                    filters[key] = filters[k].copy()
+        # for k in filters.copy().keys():
+        for key_list in [kl for kl in key_equiv if k in kl]:
+            for key in key_list:
+                filters[key] = filters[k].copy()
 
     filters = {k: v for k, v in filters.items() if v is not None and (not isinstance(v, (list, set, str, tuple)) or len(v) > 0)}
 
     old_or_new = "new" if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else "old"
     for field in filters:
-        log.debug("Checking field %s", field)
         allowed = config.get_issue_search_allowed_values(field, old_or_new)
         if allowed is not None and filters[field] is not None:
             filters[field] = list(set(util.intersection(filters[field], allowed)))
