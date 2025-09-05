@@ -27,7 +27,6 @@ from typing import Optional
 
 _CONFIG_DATA = None
 _ISSUES_SECTION = "issuesSearch"
-_MAPS = "maps"
 
 
 def load_config_data() -> None:
@@ -51,19 +50,21 @@ def get_scanners_versions() -> dict[int, list[tuple[int, int, int]]]:
     return data
 
 
-def get_issues_map(section: str) -> Optional[dict[str, str]]:
-    return _CONFIG_DATA[_ISSUES_SECTION][_MAPS].get(section, None)
-
-
 def get_issues_search_values_equivalences() -> dict[str, dict[str, str]]:
+    """Return the equivalences for issue search fields values between old API and new API."""
     return _CONFIG_DATA[_ISSUES_SECTION]["equivalences"]["values"]
 
 
 def get_issues_search_fields_equivalences() -> dict[str, dict[str, str]]:
+    """Return the equivalences for issue search fields between old API and new API."""
     return _CONFIG_DATA[_ISSUES_SECTION]["equivalences"]["fields"]
 
 
-def get_issue_search_allowed_values(field: str, old_or_new: str) -> Optional[set[str]]:
+def get_issue_search_allowed_values(field: str, old_or_new: str) -> Optional[list[str]]:
+    """Return the allowed values for issue search fields on old API and new API.
+    Returns None if any value is allowed
+    Returns [] if the field is not allowed for any value
+    """
     if old_or_new not in ("old", "new"):
         raise ValueError("old_or_new must be 'old' or 'new'")
     return _CONFIG_DATA[_ISSUES_SECTION]["allowedValues"][old_or_new].get(field, None)
