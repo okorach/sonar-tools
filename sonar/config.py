@@ -36,16 +36,8 @@ def load_config_data() -> None:
     with open(config_data_file, "r", encoding="utf-8") as fh:
         text = fh.read()
     _CONFIG_DATA = json.loads(text)
-
-    i_map = _CONFIG_DATA[_ISSUES_SECTION]
-    i_map["allowedValues"] = {}
-    new_fields_map = {}
-    for old_field_name, new_field_name in i_map[_MAPS]["fields"].items():
-        i_map["allowedValues"][old_field_name] = list(set(i_map[_MAPS][old_field_name].keys()))
-        if new_field_name != "":
-            i_map["allowedValues"][new_field_name] = list(set(i_map[_MAPS][old_field_name].values()))
-            new_fields_map[new_field_name] = {v: k for k, v in i_map[_MAPS][old_field_name].items()}
-    i_map[_MAPS].update(new_fields_map)
+    if _CONFIG_DATA is None:
+        raise RuntimeError("Could not load configuration data")
 
 
 def get_java_compatibility() -> dict[int, list[tuple[int, int, int]]]:
@@ -63,5 +55,15 @@ def get_issues_map(section: str) -> Optional[dict[str, str]]:
     return _CONFIG_DATA[_ISSUES_SECTION][_MAPS].get(section, None)
 
 
-def get_issue_search_allowed_values(field: str) -> Optional[set[str]]:
-    return _CONFIG_DATA[_ISSUES_SECTION]["allowedValues"].get(field, None)
+def get_issues_search_values_equivalences() -> dict[str, dict[str, str]]:
+    return _CONFIG_DATA[_ISSUES_SECTION]["equivalences"]["values"]
+
+
+def get_issues_search_fields_equivalences() -> dict[str, dict[str, str]]:
+    return _CONFIG_DATA[_ISSUES_SECTION]["equivalences"]["fields"]
+
+
+def get_issue_search_allowed_values(field: str, old_or_new: str) -> Optional[set[str]]:
+    if old_or_new not in ("old", "new"):
+        raise ValueError("old_or_new must be 'old' or 'new'")
+    return _CONFIG_DATA[_ISSUES_SECTION]["allowedValues"][old_or_new].get(field, None)
