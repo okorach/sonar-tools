@@ -202,6 +202,42 @@
                 "FALSE-POSITIVE": "FALSE_POSITIVE",
                 "WONTFIX": "ACCEPTED"
             }
+        },
+        "allowedValues": {
+            "old": {
+                "types": ["BUG", "VULNERABILITY", "CODE_SMELL"],
+                "severities": ["BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO"],
+                "resolutions": ["FALSE-POSITIVE", "WONTFIX", "FIXED", "REMOVED"],
+                "statuses": ["OPEN", "CONFIRMED", "REOPENED", "CLOSED"],
+                "issueStatuses": [],
+                "impactSeverities": [],
+                "impactSoftwareQualities": []
+            },
+            "new": {
+                "types": ["BUG", "VULNERABILITY", "CODE_SMELL"],
+                "impactSoftwareQualities": ["RELIABILITY", "SECURITY", "MAINTAINABILITY"],
+                "severities": ["BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO"],
+                "resolutions": ["FALSE-POSITIVE", "WONTFIX", "FIXED", "REMOVED"],
+                "issueStatuses": ["OPEN", "CONFIRMED", "FALSE_POSITIVE", "ACCEPTED", "FIXED"],
+                "impactSeverities": ["INFO", "LOW", "MEDIUM", "HIGH", "BLOCKER"],
+                "statuses": []
+            }
+        },
+        "equivalences": {
+            "values": [
+                ["FALSE-POSITIVE", "FALSE_POSITIVE"],
+                ["WONTFIX", "ACCEPTED"],
+                ["FIXED", "CLOSED"],
+                ["OPEN", "REOPENED"],
+                ["CRITICAL", "HIGH"],
+                ["MAJOR", "MEDIUM"],
+                ["MINOR", "LOW"]
+            ],
+            "fields": [
+                ["severities", "impactSeverities"],
+                ["types", "impactSoftwareQualities"],
+                ["resolutions", "issueStatuses", "statuses"]
+            ]
         }
     }
 }
