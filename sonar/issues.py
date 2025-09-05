@@ -1003,7 +1003,7 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
         # for k in filters.copy().keys():
         for key_list in [kl for kl in key_equiv if k in kl]:
             for key in key_list:
-                filters[key] = filters[k].copy()
+                filters[key] = filters[k]
 
     filters = {k: v for k, v in filters.items() if v is not None and (not isinstance(v, (list, set, str, tuple)) or len(v) > 0)}
 
