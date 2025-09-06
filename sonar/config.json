@@ -211,7 +211,8 @@
                 "statuses": ["OPEN", "CONFIRMED", "REOPENED", "CLOSED"],
                 "issueStatuses": [],
                 "impactSeverities": [],
-                "impactSoftwareQualities": []
+                "impactSoftwareQualities": [],
+                "components": []
             },
             "new": {
                 "types": ["BUG", "VULNERABILITY", "CODE_SMELL"],
@@ -220,7 +221,8 @@
                 "resolutions": ["FALSE-POSITIVE", "WONTFIX", "FIXED", "REMOVED"],
                 "issueStatuses": ["OPEN", "CONFIRMED", "FALSE_POSITIVE", "ACCEPTED", "FIXED"],
                 "impactSeverities": ["INFO", "LOW", "MEDIUM", "HIGH", "BLOCKER"],
-                "statuses": []
+                "statuses": [],
+                "componentKeys": []
             }
         },
         "equivalences": {
@@ -235,6 +237,7 @@
             ],
             "fields": [
                 ["severities", "impactSeverities"],
+                ["components", "componentKeys"],
                 ["types", "impactSoftwareQualities"],
                 ["resolutions", "issueStatuses", "statuses"]
             ]
