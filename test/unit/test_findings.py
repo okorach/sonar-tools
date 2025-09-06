@@ -209,6 +209,13 @@ def test_findings_filter_on_multiple_criteria_2(csv_file: Generator[str]) -> Non
     assert tutil.csv_col_is_value(csv_file, colname, idefs.TYPE_HOTSPOT)
 
 
+def test_findings_filter_on_status(csv_file: Generator[str]) -> None:
+    """test_findings_filter_on_multiple_criteria_2"""
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.STATUSES} FALSE_POSITIVE,ACCEPTED"
+    assert tutil.run_cmd(findings_export.main, cmd) == e.OK
+    assert tutil.csv_col_is_value(csv_file, "status", "FALSE-POSITIVE", "ACCEPTED", "WONTFIX")
+
+
 def test_findings_filter_on_multiple_criteria_3(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_multiple_criteria_3"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.STATUSES} ACCEPTED --{opt.RESOLUTIONS} FALSE-POSITIVE"

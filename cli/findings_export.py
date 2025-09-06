@@ -25,12 +25,12 @@
 
 """
 
-import sys
 import os
 import csv
 from typing import TextIO
 import concurrent.futures
 from argparse import Namespace
+import traceback
 
 from cli import options
 from sonar.util.types import ConfigSettings
@@ -240,7 +240,7 @@ def __verify_inputs(params: types.ApiParams) -> bool:
 
 def has_filter(params: types.ApiParams, type_of_filter: str, filter_values: list[str]) -> bool:
     """Checks if the search parameters contain any of the specified filters"""
-    log.debug("Checking if filter '%s' with values %s is in params %s ", type_of_filter, str(filter_values), str(params))
+    log.debug("Checking if filter '%s' with allowed values %s is in params %s ", type_of_filter, str(filter_values), str(params))
     return type_of_filter in params and any(t in params[type_of_filter] for t in filter_values)
 
 
@@ -318,6 +318,7 @@ def store_findings(components_list: list[object], endpoint: platform.Platform, p
             except TimeoutError as e:
                 log.error(f"Getting findings for {str(comp)} timed out after 180 seconds for {str(future)}.")
             except Exception as e:
+                traceback.print_exc()
                 log.error(f"Exception {str(e)} when exporting findings of {str(comp)}.")
     __write_footer(file, local_params[options.FORMAT])
     return total_findings
