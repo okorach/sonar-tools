@@ -877,6 +877,7 @@ class Project(components.Component):
         """
         from sonar import syncer
 
+        log.info("Syncing %s with %s", str(self), str(another_project))
         if self.endpoint.edition() == c.CE or another_project.endpoint.edition() == c.CE or isinstance(another_project, branches.Branch):
             # Sync the project main branch only
             return syncer.sync_objects(self, another_project, sync_settings=sync_settings)
@@ -1454,6 +1455,19 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
             p_list = dict(sorted(search(endpoint=endpoint, threads=threads).items()))
             return p_list
     return {key: Project.get_object(endpoint, key) for key in sorted(key_list)}
+
+
+def get_matching_list(endpoint: pf.Platform, pattern: str, threads: int = 8) -> dict[str, Project]:
+    """
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param str pattern: Regular expression to match project keys
+    :return: the list of all projects matching the pattern
+    :rtype: dict{key: Project}
+    """
+    if not pattern or pattern == ".*":
+        return get_list(endpoint, threads=threads)
+    log.info("Listing projects matching '%s'", pattern)
+    return {k: v for k, v in get_list(endpoint, threads=threads).items() if re.match(pattern, k)}
 
 
 def __similar_keys(key1: str, key2: str, max_distance: int = 5) -> bool:
