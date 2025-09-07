@@ -156,7 +156,7 @@ def __sync_one_finding(
         code, report = MODIFIED_MATCH, __process_modified_siblings(src_finding, modified_siblings)
     else:
         code, report = NO_MATCH, __process_no_match(src_finding)
-    log.info("Syncing %s: result = %s", str(src_finding), code)
+    log.debug("Syncing %s: result = %s", str(src_finding), code)
     return code, report
 
 
