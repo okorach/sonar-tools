@@ -19,12 +19,23 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-# Deletes and recreates a fresh TESTSYNC project in SonarQube
-curl -X POST -u "$SONAR_TOKEN_LATEST_ADMIN_USER:" "http://localhost:20010/api/projects/delete?project=TESTSYNC"
-conf/scan.sh -Dsonar.host.url=http://localhost:20010 -Dsonar.projectKey=TESTSYNC -Dsonar.projectName=TESTSYNC -Dsonar.token="$SONAR_TOKEN_LATEST_ADMIN_ANALYSIS"
+SYNC_PROJECT_KEY="TESTSYNC"
 
-curl -X POST -u "$SONAR_TOKEN_SONARCLOUD:" "https://sonarcloud.io/api/projects/delete?project=TESTSYNC"
-sonar-scanner -Dsonar.host.url=https://sonarcloud.io -Dsonar.projectKey=TESTSYNC -Dsonar.projectName=TESTSYNC -Dsonar.organization=okorach -Dsonar.login="$SONAR_TOKEN_SONARCLOUD" -Dsonar.token="$SONAR_TOKEN_SONARCLOUD"
+# Deletes and recreates a fresh $SYNC_PROJECT_KEY project in SonarQube
+curl -X POST -u "$SONAR_TOKEN_LATEST_ADMIN_USER:" "http://localhost:20010/api/projects/delete?project=$SYNC_PROJECT_KEY"
+conf/scan.sh -Dsonar.host.url=http://localhost:20010 -Dsonar.projectKey=$SYNC_PROJECT_KEY -Dsonar.projectName=$SYNC_PROJECT_KEY -Dsonar.token="$SONAR_TOKEN_LATEST_ADMIN_ANALYSIS"
+
+curl -X POST -u "$SONAR_TOKEN_LATEST_ADMIN_USER:" "http://localhost:10000/api/projects/delete?project=$SYNC_PROJECT_KEY"
+sonar-scanner -Dsonar.host.url=http://localhost:10000 -Dsonar.projectKey=$SYNC_PROJECT_KEY -Dsonar.projectName=$SYNC_PROJECT_KEY -Dsonar.login="$SONAR_TOKEN_LATEST_ADMIN_ANALYSIS" -Dsonar.token="$SONAR_TOKEN_LATEST_ADMIN_ANALYSIS"
+curl -X POST -u "$SONAR_TOKEN_LATEST_ADMIN_USER:" "http://localhost:20010/api/projects/delete?project=$SYNC_PROJECT_KEY"
+sonar-scanner -Dsonar.host.url=http://localhost:20010 -Dsonar.projectKey=$SYNC_PROJECT_KEY -Dsonar.projectName=$SYNC_PROJECT_KEY -Dsonar.login="$SONAR_TOKEN_LATEST_ADMIN_ANALYSIS" -Dsonar.token="$SONAR_TOKEN_LATEST_ADMIN_ANALYSIS"
+curl -X POST -u "$SONAR_TOKEN_LATEST_ADMIN_USER:" "http://localhost:7000/api/projects/delete?project=$SYNC_PROJECT_KEY"
+sonar-scanner -Dsonar.host.url=http://localhost:7000 -Dsonar.projectKey=$SYNC_PROJECT_KEY -Dsonar.projectName=$SYNC_PROJECT_KEY -Dsonar.login="$SONAR_TOKEN_LATEST_ADMIN_ANALYSIS" -Dsonar.token="$SONAR_TOKEN_LATEST_ADMIN_ANALYSIS"
+curl -X POST -u "$SONAR_TOKEN_9_ADMIN_USER:" "http://localhost:9000/api/projects/delete?project=$SYNC_PROJECT_KEY"
+sonar-scanner -Dsonar.host.url=http://localhost:9000 -Dsonar.projectKey=$SYNC_PROJECT_KEY -Dsonar.projectName=$SYNC_PROJECT_KEY -Dsonar.login="$SONAR_TOKEN_9_ADMIN_ANALYSIS" -Dsonar.token="$SONAR_TOKEN_9_ADMIN_ANALYSIS"
+
+curl -X POST -u "$SONAR_TOKEN_SONARCLOUD:" "https://sonarcloud.io/api/projects/delete?project=$SYNC_PROJECT_KEY"
+sonar-scanner -Dsonar.host.url=https://sonarcloud.io -Dsonar.projectKey=$SYNC_PROJECT_KEY -Dsonar.projectName=$SYNC_PROJECT_KEY -Dsonar.organization=okorach -Dsonar.login="$SONAR_TOKEN_SONARCLOUD" -Dsonar.token="$SONAR_TOKEN_SONARCLOUD"
 
 sonar-scanner -Dsonar.host.url=http://localhost:10000 -Dsonar.pullrequest.key=5 -Dsonar.pullrequest.branch=feature/5
 sonar-scanner -Dsonar.host.url=http://localhost:10000 -Dsonar.pullrequest.key=7 -Dsonar.pullrequest.branch=feature/7
