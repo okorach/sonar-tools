@@ -861,7 +861,7 @@ class Project(components.Component):
         log.debug("Issues count = %s", str(issue_counts))
         return issue_counts
 
-    def __sync_community(self, another_project: object, sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
+    def __sync_community(self, another_project: Project, sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs 2 projects findings on a community edition"""
         from sonar import syncer
 
@@ -894,7 +894,7 @@ class Project(components.Component):
         :return: sync report as tuple, with counts of successful and unsuccessful issue syncs
         :rtype: tuple(report, counters)
         """
-        if self.endpoint.edition() == c.CE:
+        if self.endpoint.edition() == c.CE or another_project.endpoint.edition() == c.CE:
             return self.__sync_community(another_project, sync_settings)
 
         src_branches = self.branches()
