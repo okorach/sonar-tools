@@ -238,16 +238,16 @@ def sync_lists(
 def sync_objects(src_object: Union[Project, Branch], tgt_object: Union[Project, Branch], sync_settings: types.ConfigSettings = None) -> tuple[list[dict[str, str]], dict[str, int]]:
     """Syncs findings from a source object into a target object"""
     log.info("Syncing %s and %s issues", str(src_object), str(tgt_object))
-    (report, counters) = sync_lists(
+    (report, issue_counters) = sync_lists(
         list(src_object.get_issues().values()),
         list(tgt_object.get_issues().values()),
         src_object,
         tgt_object,
         sync_settings=sync_settings,
     )
-    counters = {f"issues_{k}": v for k, v in counters.items()}
+    issue_counters = {f"issues_{k}": v for k, v in issue_counters.items()}
     log.info("Syncing %s and %s hotspots", str(src_object), str(tgt_object))
-    (tmp_report, tmp_counts) = sync_lists(
+    (tmp_report, hotspot_counters) = sync_lists(
         list(src_object.get_hotspots().values()),
         list(tgt_object.get_hotspots().values()),
         src_object,
@@ -255,6 +255,5 @@ def sync_objects(src_object: Union[Project, Branch], tgt_object: Union[Project, 
         sync_settings=sync_settings,
     )
     report += tmp_report
-    tmp_counts = {f"hotspots_{k}": v for k, v in tmp_counts.items()}
-    counters = util.dict_add(counters, tmp_counts)
-    return report, counters
+    hotspot_counters = {f"hotspots_{k}": v for k, v in hotspot_counters.items()}
+    return report, issue_counters | hotspot_counters
