@@ -865,7 +865,9 @@ class Project(components.Component):
         log.debug("Issues count = %s", str(issue_counts))
         return issue_counts
 
-    def sync(self, another_project: Union[Project, branches.Branch], sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
+    def sync(
+        self, another_project: Union[Project, branches.Branch], sync_settings: types.ConfigSettings
+    ) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs project findings with another project
 
         :param Project|Branch another_project: other project to sync findings into

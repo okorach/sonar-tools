@@ -235,7 +235,9 @@ def sync_lists(
     return __sync_curated_list(interesting_src_findings, tgt_findings, sync_settings)
 
 
-def sync_objects(src_object: Union[Project, Branch], tgt_object: Union[Project, Branch], sync_settings: types.ConfigSettings = None) -> tuple[list[dict[str, str]], dict[str, int]]:
+def sync_objects(
+    src_object: Union[Project, Branch], tgt_object: Union[Project, Branch], sync_settings: types.ConfigSettings = None
+) -> tuple[list[dict[str, str]], dict[str, int]]:
     """Syncs findings from a source object into a target object"""
     log.info("Syncing %s and %s issues", str(src_object), str(tgt_object))
     (report, issue_counters) = sync_lists(

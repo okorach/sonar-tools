@@ -366,6 +366,7 @@ class Branch(components.Component):
         :rtype: tuple(report, counters)
         """
         from sonar.syncer import sync_objects
+
         return sync_objects(self, another_branch, sync_settings=sync_settings)
 
     def __audit_never_analyzed(self) -> list[Problem]:
