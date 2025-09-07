@@ -353,6 +353,10 @@ class Branch(components.Component):
             "url": self.url(),
         }
 
+    def project_key(self) -> str:
+        """Returns the project key"""
+        return self.concerned_object.key
+
     def sync(self, another_branch: Branch, sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs branch findings with another branch
 
