@@ -865,7 +865,6 @@ class Project(components.Component):
         log.debug("Issues count = %s", str(issue_counts))
         return issue_counts
 
-
     def sync(self, another_project: Union[Project, branches.Branch], sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs project findings with another project
 
@@ -884,25 +883,23 @@ class Project(components.Component):
         tgt_branches = another_project.branches()
         src_branches_list = list(src_branches.keys())
         tgt_branches_list = list(tgt_branches.keys())
-        if isinstance(another_project, Project):
-            diff = list(set(src_branches_list) - set(tgt_branches_list))
-            if len(diff) > 0:
-                log.warning(
-                    "Source %s has branches that do not exist for target %s, these branches will be ignored: %s",
-                    str(self),
-                    str(another_project),
-                    ", ".join(diff),
-                )
-            diff = list(set(tgt_branches_list) - set(src_branches_list))
-            if len(diff) > 0:
-                log.warning(
-                    "Target %s has branches that do not exist for source %s, these branches will be ignored: %s",
-                    str(another_project),
-                    str(self),
-                    ", ".join(diff),
-                )
-        report = []
-        counters = {}
+        diff = list(set(src_branches_list) - set(tgt_branches_list))
+        if len(diff) > 0:
+            log.warning(
+                "Source %s has branches that do not exist for target %s, these branches will be ignored: %s",
+                str(self),
+                str(another_project),
+                ", ".join(diff),
+            )
+        diff = list(set(tgt_branches_list) - set(src_branches_list))
+        if len(diff) > 0:
+            log.warning(
+                "Target %s has branches that do not exist for source %s, these branches will be ignored: %s",
+                str(another_project),
+                str(self),
+                ", ".join(diff),
+            )
+        report, counters = [], {}
         intersect = list(set(src_branches_list) & set(tgt_branches_list))
         for branch_name in intersect:
             (tmp_report, tmp_counts) = src_branches[branch_name].sync(tgt_branches[branch_name], sync_settings=sync_settings)
