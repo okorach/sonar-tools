@@ -874,6 +874,7 @@ class Project(components.Component):
             another_project,
             sync_settings=sync_settings,
         )
+        counters = {f"issues_{k}": v for k, v in counters.items()}
         log.info("Syncing %s and %s hotspots", str(self), str(another_project))
         (tmp_report, tmp_counts) = syncer.sync_lists(
             list(self.get_hotspots().values()),
@@ -883,6 +884,7 @@ class Project(components.Component):
             sync_settings=sync_settings,
         )
         report += tmp_report
+        tmp_counts = {f"hotspots_{k}": v for k, v in tmp_counts.items()}
         counters = util.dict_add(counters, tmp_counts)
         return report, counters
 
