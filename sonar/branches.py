@@ -360,36 +360,13 @@ class Branch(components.Component):
     def sync(self, another_branch: Branch, sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs branch findings with another branch
 
-        :param Branch another_branch: other branch to sync issues into (not necesssarily of same project)
+        :param Branch another_branch: other branch to sync issues into (not necessarily of same project)
         :param dict sync_settings: Parameters to configure the sync
         :return: sync report as tuple, with counts of successful and unsuccessful issue syncs
         :rtype: tuple(report, counters)
         """
-        from sonar.syncer import sync_lists
-
-        report, counters = [], {}
-        log.info("Syncing %s (%s) and %s (%s) issues", str(self), self.base_url(), str(another_branch), another_branch.endpoint.local_url)
-        (report, counters) = sync_lists(
-            list(self.get_issues().values()),
-            list(another_branch.get_issues({"issueStatuses": ["OPEN", "REOPENED", "CONFIRMED", "FALSE_POSITIVE", "CONFIRMED", "FIXED"]}).values()),
-            self,
-            another_branch,
-            sync_settings=sync_settings,
-        )
-        issue_counters = {f"issues_{k}": v for k, v in counters.items()}
-        log.info("%s issue sync result = %s", self, util.json_dump(issue_counters))
-        log.info("Syncing %s (%s) and %s (%s) hotspots", str(self), self.base_url(), str(another_branch), another_branch.endpoint.local_url)
-        (tmp_report, counters) = sync_lists(
-            list(self.get_hotspots().values()),
-            list(another_branch.get_hotspots().values()),
-            self,
-            another_branch,
-            sync_settings=sync_settings,
-        )
-        hotspot_counters = {f"hotspots_{k}": v for k, v in counters.items()}
-        log.info("%s hotspots sync result = %s", self, util.json_dump(hotspot_counters))
-        report += tmp_report
-        return (report, issue_counters | hotspot_counters)
+        from sonar.syncer import sync_objects
+        return sync_objects(self, another_branch, sync_settings=sync_settings)
 
     def __audit_never_analyzed(self) -> list[Problem]:
         """Detects branches that have never been analyzed are are kept when inactive"""
