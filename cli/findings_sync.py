@@ -105,7 +105,7 @@ def __since_date(**kwargs) -> Optional[datetime.datetime]:
 
 
 def __check_comparison_params(source_env: pf.Platform, target_env: pf.Platform, **kwargs) -> tuple[str, str, Optional[str], Optional[str]]:
-    """Check input parameters and verfiy they are correct for the desired comparison"""
+    """Check input parameters and verify they are correct for the desired comparison"""
     source_key = kwargs[options.KEY_REGEXP]
     target_key = kwargs.get("targetProjectKey", source_key)
     source_url = kwargs[options.URL]
@@ -138,8 +138,8 @@ def main() -> None:
     start_time = util.start_clock()
     try:
         args = __parse_args(
-            "Synchronizes issues changelog of different branches of same or different projects, "
-            "see: https://pypi.org/project/sonar-tools/#sonar-issues-sync"
+            "Synchronizes findings changelog of different branches of same or different projects, "
+            "see: https://pypi.org/project/sonar-tools/#sonar-findings-sync"
         )
         params = util.convert_args(args)
         source_env = pf.Platform(**params)
