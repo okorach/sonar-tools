@@ -49,7 +49,7 @@ _OLD_SEARCH_STATUS_FIELD = "resolutions"
 _NEW_SEARCH_STATUS_FIELD = "issueStatuses"
 
 _OLD_SEARCH_TYPE_FIELD = "types"
-_NEW_SEARCH_TYPE = "impactSoftwareQualities"
+_NEW_SEARCH_TYPE_FIELD = "impactSoftwareQualities"
 
 _OLD_SEARCH_SEVERITY_FIELD = "severities"
 _NEW_SEARCH_SEVERITY_FIELD = "impactSeverities"
@@ -57,29 +57,38 @@ _NEW_SEARCH_SEVERITY_FIELD = "impactSeverities"
 OLD_FP = "FALSE-POSITIVE"
 NEW_FP = "FALSE_POSITIVE"
 
-_SEARCH_CRITERIAS = (
+_COMMA_CRITERIAS = (
     _OLD_SEARCH_COMPONENT_FIELD,
     _NEW_SEARCH_COMPONENT_FIELD,
     _OLD_SEARCH_TYPE_FIELD,
-    _NEW_SEARCH_TYPE,
+    _NEW_SEARCH_TYPE_FIELD,
     _OLD_SEARCH_SEVERITY_FIELD,
     _NEW_SEARCH_SEVERITY_FIELD,
     _OLD_SEARCH_STATUS_FIELD,
     _NEW_SEARCH_STATUS_FIELD,
+    "assignees",
+    "additionalFields",
+    "facets",
+    "issues",
+    "languages",
+    "rules",
+    "scopes",
+    "statuses",
+    "tags",
+)
+
+_SEARCH_CRITERIAS = _COMMA_CRITERIAS + (
     "createdAfter",
     "createdBefore",
     "createdInLast",
     "createdAt",
     "branch",
     "pullRequest",
-    "statuses",
-    "tags",
     "inNewCodePeriod",
     "sinceLeakPeriod",
     "p",
     "page",
     "ps",
-    "facets",
     "onComponentOnly",
     "s",
     "timeZone",
@@ -91,13 +100,8 @@ _SEARCH_CRITERIAS = (
     "additionalFields",
     "asc",
     "assigned",
-    "assignees",
     "author",
-    "issues",
-    "languages",
     "resolved",
-    "rules",
-    "scopes",
     "files",
     "directories",
 )
@@ -633,7 +637,7 @@ def component_search_field(endpoint: pf.Platform) -> str:
 
 
 def type_search_field(endpoint: pf.Platform) -> str:
-    return _OLD_SEARCH_TYPE_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_TYPE
+    return _OLD_SEARCH_TYPE_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_TYPE_FIELD
 
 
 def severity_search_field(endpoint: pf.Platform) -> str:
@@ -989,6 +993,7 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
     comp_filter = component_search_field(endpoint)
     filters = util.dict_remap(original_dict=params, remapping={"project": comp_filter, "application": comp_filter, "portfolio": comp_filter})
     filters = util.dict_subset(util.remove_nones(filters), _SEARCH_CRITERIAS)
+    filters = {k: v if k not in _COMMA_CRITERIAS else util.csv_to_list(v) for k, v in filters.items()}
     val_equiv = config.get_issues_search_values_equivalences()
     key_equiv = config.get_issues_search_fields_equivalences()
     filters_to_patch = {k: v for k, v in filters.items() if isinstance(v, (list, set, str, tuple))}
