@@ -129,7 +129,8 @@ def __get_objects_pairs_to_sync(
             src_obj = branches.Branch.get_object(src_obj, source_branch)
         if target_branch:
             tgt_obj = branches.Branch.get_object(tgt_obj, source_branch)
-        return (src_obj, tgt_obj)
+        return ((src_obj, tgt_obj),)
+    return ((None, None),)
 
 
 def main() -> None:
@@ -171,7 +172,7 @@ def main() -> None:
         for source_obj, target_obj in pairs:
             log.info("Syncing findings between %s with %s - Global progress = %d/%d = %d%%", source_obj, target_obj, i, total, (i * 100) // total)
             if source_obj is None or target_obj is None:
-                raise exceptions.SonarException(1, "Could not get source or target object, aborting...")
+                raise options.ArgumentsError("Provided arguments do not select any projects or branches to sync, aborting...")
             settings[syncer.SYNC_IGNORE_COMPONENTS] = source_obj.project_key() != target_obj.project_key()
             (obj_report, obj_counters) = source_obj.sync(target_obj, sync_settings=settings)
             report += obj_report
