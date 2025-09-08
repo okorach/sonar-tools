@@ -646,13 +646,11 @@ def status_search_field(endpoint: pf.Platform) -> str:
 
 def search_by_directory(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by directory to avoid exceeding the 10K limit"""
-    new_params = params.copy()
-    if "components" in params:
-        new_params[component_search_field(endpoint)] = params["components"]
+    new_params = pre_search_filters(endpoint, params)
     proj_key = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-    log.info("Splitting search by directories with %s", util.json_dump(new_params))
+    log.info("Splitting search by directories with %s", str(new_params))
     facets = _get_facets(endpoint=endpoint, project_key=proj_key, facets="directories", params=new_params)
-    log.debug("FAcets %s", util.json_dump(facets))
+    log.debug("Facets %s", util.json_dump(facets))
     issue_list = {}
     for d in facets["directories"]:
         try:
@@ -668,11 +666,9 @@ def search_by_directory(endpoint: pf.Platform, params: ApiParams) -> dict[str, I
 
 def search_by_file(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by directory to avoid exceeding the 10K limit"""
-    new_params = params.copy()
-    if "components" in params:
-        new_params[component_search_field(endpoint)] = params["components"]
+    new_params = pre_search_filters(endpoint, params)
     proj_key = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-    log.info("Splitting search by files with %s", util.json_dump(new_params))
+    log.info("Splitting search by files with %s", str(new_params))
     facets = _get_facets(endpoint=endpoint, project_key=proj_key, facets="files", params=new_params)
     log.debug("Facets %s", util.json_dump(facets))
     issue_list = {}
@@ -693,7 +689,7 @@ def search_by_file(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]
 def search_by_type(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by type to avoid exceeding the 10K limit"""
     issue_list = {}
-    new_params = params.copy()
+    new_params = pre_search_filters(endpoint, params)
     log.info("Splitting search by issue types")
     types = idefs.MQR_QUALITIES if endpoint.is_mqr_mode() else idefs.STD_TYPES
     for issue_type in types:
@@ -710,7 +706,7 @@ def search_by_type(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]
 def search_by_severity(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by severity to avoid exceeding the 10K limit"""
     issue_list = {}
-    new_params = params.copy()
+    new_params = pre_search_filters(endpoint, params)
     log.info("Splitting search by severities")
     severities = idefs.MQR_SEVERITIES if endpoint.is_mqr_mode() else idefs.STD_SEVERITIES
     for sev in severities:
@@ -726,7 +722,7 @@ def search_by_severity(endpoint: pf.Platform, params: ApiParams) -> dict[str, Is
 
 def search_by_date(endpoint: pf.Platform, params: ApiParams, date_start: Optional[date] = None, date_stop: Optional[date] = None) -> dict[str, Issue]:
     """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
-    new_params = params.copy()
+    new_params = pre_search_filters(endpoint, params)
     if date_start is None:
         date_start = get_oldest_issue(endpoint=endpoint, params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
         if isinstance(date_start, datetime):
@@ -737,7 +733,7 @@ def search_by_date(endpoint: pf.Platform, params: ApiParams, date_start: Optiona
             date_stop = date_stop.date()
     log.info(
         "Project '%s' Splitting search by date between [%s - %s]",
-        params["project"],
+        new_params.get(component_search_field(endpoint), "None"),
         util.date_to_string(date_start, False),
         util.date_to_string(date_stop, False),
     )
@@ -763,7 +759,7 @@ def search_by_date(endpoint: pf.Platform, params: ApiParams, date_start: Optiona
     if date_start is not None and date_stop is not None:
         log.debug(
             "Project '%s' has %d issues between %s and %s",
-            params["project"],
+            new_params.get(component_search_field(endpoint), "None"),
             len(issue_list),
             util.date_to_string(date_start, False),
             util.date_to_string(date_stop, False),
@@ -773,7 +769,7 @@ def search_by_date(endpoint: pf.Platform, params: ApiParams, date_start: Optiona
 
 def __search_all_by_project(endpoint: pf.Platform, project_key: str, params: ApiParams = None) -> dict[str, Issue]:
     """Search issues by project"""
-    new_params = {} if params is None else params.copy()
+    new_params = pre_search_filters(endpoint, params)
     new_params["project"] = project_key
     issue_list = {}
     log.debug("Searching for issues of project '%s'", project_key)
@@ -824,7 +820,7 @@ def search_all(endpoint: pf.Platform, params: ApiParams = None) -> dict[str, Iss
     :rtype: dict{<key>: <Issue>}
     """
     issue_list = {}
-    new_params = params.copy() if params else {}
+    new_params = pre_search_filters(endpoint, params)
     new_params["ps"] = Issue.MAX_PAGE_SIZE
     try:
         issue_list = search(endpoint=endpoint, params=new_params.copy())
