@@ -29,11 +29,12 @@
 """
 
 import datetime
-from typing import Optional
+from typing import Optional, Union
 
 from cli import options
 import sonar.logging as log
 import sonar.platform as pf
+import sonar.util.constants as c
 from sonar import syncer, exceptions, projects, branches, version
 import sonar.utilities as util
 
@@ -104,33 +105,32 @@ def __since_date(**kwargs) -> Optional[datetime.datetime]:
     return since
 
 
-def __check_comparison_params(source_env: pf.Platform, target_env: pf.Platform, **kwargs) -> tuple[str, str, Optional[str], Optional[str]]:
-    """Check input parameters and verfiy they are correct for the desired comparison"""
-    source_key = kwargs[options.KEY_REGEXP]
-    target_key = kwargs.get("targetProjectKey", source_key)
-    source_url = kwargs[options.URL]
-    source_branch = kwargs.get("sourceBranch", None)
-    target_branch = kwargs.get("targetBranch", None)
-
-    if source_url == kwargs.get("urlTarget", source_url):
-        if source_key == target_key:
-            if source_branch is None or target_branch is None:
-                raise options.ArgumentsError("Branches must be specified when sync'ing within a same project")
-            if source_branch == target_branch:
-                raise options.ArgumentsError("Specified branches must different when sync'ing within a same project")
-        else:
-            if source_branch and not target_branch or not source_branch and target_branch:
-                raise options.ArgumentsError("One branch or no branch should be specified for each source and target project, aborting...")
-    else:
-        if source_branch and not target_branch or not source_branch and target_branch:
-            raise options.ArgumentsError("One branch or no branch should be specified for each source and target project, aborting...")
-
-    if not projects.exists(source_key, endpoint=source_env):
-        raise exceptions.ObjectNotFound(source_key, f"Project key '{source_key}' does not exist")
-    if not projects.exists(target_key, endpoint=target_env):
-        raise exceptions.ObjectNotFound(target_key, f"Project key '{target_key}' does not exist")
-
-    return source_key, target_key, source_branch, target_branch
+def __get_objects_pairs_to_sync(
+    source_env: pf.Platform, target_env: pf.Platform, **kwargs
+) -> tuple[Union[projects.Project, branches.Branch], Union[projects.Project, branches.Branch]]:
+    """Returns the 2 objects to compare (projects or branches)"""
+    source_pattern = kwargs.get(options.KEY_REGEXP, ".+")
+    source_projects = projects.get_matching_list(endpoint=source_env, pattern=source_pattern)
+    target_pattern = kwargs.get("targetProjectKey", source_pattern)
+    target_projects = projects.get_matching_list(endpoint=target_env, pattern=target_pattern)
+    sync_list = ()
+    if len(source_projects) > 1:
+        for src_proj in source_projects.values():
+            tgt_proj = next((p for p in target_projects.values() if p.key == src_proj.key), None)
+            if tgt_proj:
+                sync_list += ((src_proj, tgt_proj),)
+        return sync_list
+    elif len(source_projects) == 1 and len(target_projects) == 1:
+        src_obj = source_projects[0]
+        tgt_obj = target_projects[0]
+        source_branch = kwargs.get("sourceBranch", None)
+        target_branch = kwargs.get("targetBranch", None)
+        if source_branch:
+            src_obj = branches.Branch.get_object(src_obj, source_branch)
+        if target_branch:
+            tgt_obj = branches.Branch.get_object(tgt_obj, source_branch)
+        return ((src_obj, tgt_obj),)
+    return ((None, None),)
 
 
 def main() -> None:
@@ -138,8 +138,8 @@ def main() -> None:
     start_time = util.start_clock()
     try:
         args = __parse_args(
-            "Synchronizes issues changelog of different branches of same or different projects, "
-            "see: https://pypi.org/project/sonar-tools/#sonar-issues-sync"
+            "Synchronizes findings changelog of different branches of same or different projects, "
+            "see: https://pypi.org/project/sonar-tools/#sonar-findings-sync"
         )
         params = util.convert_args(args)
         source_env = pf.Platform(**params)
@@ -152,8 +152,6 @@ def main() -> None:
         target_env = pf.Platform(**target_params)
         target_env.verify_connection()
         target_env.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-
-        source_key, target_key, source_branch, target_branch = __check_comparison_params(source_env, target_env, **params)
 
         params["login"] = target_env.user()
         if params["login"] == "admin":
@@ -168,19 +166,18 @@ def main() -> None:
             syncer.SYNC_THREADS: params[options.NBR_THREADS],
         }
 
-        report = []
-        counters = {}
-        if source_branch and target_branch:
-            log.info("Syncing findings between 2 branches")
-            src_branch = branches.Branch.get_object(projects.Project.get_object(source_env, source_key), source_branch)
-            tgt_branch = branches.Branch.get_object(projects.Project.get_object(target_env, target_key), target_branch)
-            (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
-        else:
-            log.info("Syncing findings between 2 projects (branch by branch)")
-            settings[syncer.SYNC_IGNORE_COMPONENTS] = target_key != source_key
-            src_project = projects.Project.get_object(key=source_key, endpoint=source_env)
-            tgt_project = projects.Project.get_object(key=target_key, endpoint=target_env)
-            (report, counters) = src_project.sync(tgt_project, sync_settings=settings)
+        report, counters = [], {}
+        pairs = __get_objects_pairs_to_sync(source_env, target_env, **params)
+        i, total = 0, len(pairs)
+        for source_obj, target_obj in pairs:
+            log.info("Syncing findings between %s with %s - Global progress = %d/%d = %d%%", source_obj, target_obj, i, total, (i * 100) // total)
+            if source_obj is None or target_obj is None:
+                raise options.ArgumentsError("Provided arguments do not select any projects or branches to sync, aborting...")
+            settings[syncer.SYNC_IGNORE_COMPONENTS] = source_obj.project_key() != target_obj.project_key()
+            (obj_report, obj_counters) = source_obj.sync(target_obj, sync_settings=settings)
+            report += obj_report
+            counters = util.dict_add(counters, obj_counters)
+            i += 1
 
         __dump_report(report, args.file)
         __COUNTER_MAP = {

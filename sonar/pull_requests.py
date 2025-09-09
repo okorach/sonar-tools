@@ -97,6 +97,10 @@ class PullRequest(components.Component):
             log.debug("%s age is %d days", str(self), age)
         return problems
 
+    def project_key(self) -> str:
+        """Returns the project key"""
+        return self.concerned_object.key
+
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {c.READ: {"project": self.concerned_object.key, "pullRequest": self.key}}

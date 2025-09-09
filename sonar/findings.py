@@ -419,7 +419,7 @@ class Finding(sq.SqObject):
         exact_matches = []
         approx_matches = []
         match_but_modified = []
-        log.info("Searching for an exact match of %s", str(self))
+        log.debug("Searching for an exact match of %s", str(self))
         candidates = [f for f in findings_list if f is not self and f.strictly_identical_to(self, ignore_component, **kwargs)]
         candidate_match = None
         line_gap = None
@@ -506,13 +506,15 @@ def get_changelogs(issue_list: list[Finding], added_after: datetime.datetime = N
         return
     count, total = 0, len(issue_list)
     log.info("Mass changelog collection for %d findings on %d threads", total, threads)
+    log_frequency = max(total // 50, 100)
+    log_frequency = 1000 if log_frequency >= 1000 else 500 if log_frequency >= 500 else 200 if log_frequency >= 200 else 100
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="GetChangelog") as executor:
         futures = [executor.submit(__get_changelog, finding, added_after) for finding in issue_list]
         for future in concurrent.futures.as_completed(futures):
             try:
                 count += 1
                 _ = future.result(timeout=30)
-                if count % 100 == 0:
+                if count % log_frequency == 0 or count == total:
                     log.info("Collected changelog for %d of %d findings (%d%%)", count, total, count * 100 // total)
             except Exception as e:
                 log.error(f"Changelog collection error {str(e)} for {str(future)}.")

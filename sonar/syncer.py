@@ -23,10 +23,14 @@
 import concurrent.futures
 import traceback
 
+from typing import Union
+
 import sonar.logging as log
 import sonar.utilities as util
 from sonar.util import types
 from sonar import findings
+from sonar.projects import Project
+from sonar.branches import Branch
 
 
 SYNC_IGNORE_COMPONENTS = "ignore_components"
@@ -152,7 +156,7 @@ def __sync_one_finding(
         code, report = MODIFIED_MATCH, __process_modified_siblings(src_finding, modified_siblings)
     else:
         code, report = NO_MATCH, __process_no_match(src_finding)
-    log.info("Syncing %s: result = %s", str(src_finding), code)
+    log.debug("Syncing %s: result = %s", str(src_finding), code)
     return code, report
 
 
@@ -229,3 +233,29 @@ def sync_lists(
 
     log.info("Found %d %ss with manual changes in %s", len(interesting_src_findings), name, str(src_object))
     return __sync_curated_list(interesting_src_findings, tgt_findings, sync_settings)
+
+
+def sync_objects(
+    src_object: Union[Project, Branch], tgt_object: Union[Project, Branch], sync_settings: types.ConfigSettings = None
+) -> tuple[list[dict[str, str]], dict[str, int]]:
+    """Syncs findings from a source object into a target object"""
+    log.info("Syncing %s and %s issues", str(src_object), str(tgt_object))
+    (report, issue_counters) = sync_lists(
+        list(src_object.get_issues().values()),
+        list(tgt_object.get_issues().values()),
+        src_object,
+        tgt_object,
+        sync_settings=sync_settings,
+    )
+    issue_counters = {f"issues_{k}": v for k, v in issue_counters.items()}
+    log.info("Syncing %s and %s hotspots", str(src_object), str(tgt_object))
+    (tmp_report, hotspot_counters) = sync_lists(
+        list(src_object.get_hotspots().values()),
+        list(tgt_object.get_hotspots().values()),
+        src_object,
+        tgt_object,
+        sync_settings=sync_settings,
+    )
+    report += tmp_report
+    hotspot_counters = {f"hotspots_{k}": v for k, v in hotspot_counters.items()}
+    return report, issue_counters | hotspot_counters

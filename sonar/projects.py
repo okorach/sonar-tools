@@ -31,7 +31,7 @@ import json
 import concurrent.futures
 from datetime import datetime
 
-from typing import Optional
+from typing import Optional, Union
 from http import HTTPStatus
 from threading import Lock
 from requests import HTTPError, RequestException
@@ -613,6 +613,10 @@ class Project(components.Component):
             self.ci()
         return self._revision
 
+    def project_key(self) -> str:
+        """Returns the project key"""
+        return self.key
+
     def ai_code_fix(self) -> Optional[str]:
         """Returns whether this project is enabled for AI Code Fix (if only enabled per project)"""
         log.debug("Getting project AI Code Fix suggestion flag for %s", str(self))
@@ -861,41 +865,22 @@ class Project(components.Component):
         log.debug("Issues count = %s", str(issue_counts))
         return issue_counts
 
-    def __sync_community(self, another_project: object, sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
-        """Syncs 2 projects findings on a community edition"""
-        from sonar import syncer
-
-        report, counters = [], {}
-        log.info("Syncing %s and %s issues", str(self), str(another_project))
-        (report, counters) = syncer.sync_lists(
-            list(self.get_issues().values()),
-            list(another_project.get_issues().values()),
-            self,
-            another_project,
-            sync_settings=sync_settings,
-        )
-        log.info("Syncing %s and %s hotspots", str(self), str(another_project))
-        (tmp_report, tmp_counts) = syncer.sync_lists(
-            list(self.get_hotspots().values()),
-            list(another_project.get_hotspots().values()),
-            self,
-            another_project,
-            sync_settings=sync_settings,
-        )
-        report += tmp_report
-        counters = util.dict_add(counters, tmp_counts)
-        return report, counters
-
-    def sync(self, another_project: Project, sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
+    def sync(
+        self, another_project: Union[Project, branches.Branch], sync_settings: types.ConfigSettings
+    ) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs project findings with another project
 
-        :param Project another_project: other project to sync findings into
+        :param Project|Branch another_project: other project to sync findings into
         :param dict sync_settings: Parameters to configure the sync
         :return: sync report as tuple, with counts of successful and unsuccessful issue syncs
         :rtype: tuple(report, counters)
         """
-        if self.endpoint.edition() == c.CE:
-            return self.__sync_community(another_project, sync_settings)
+        from sonar import syncer
+
+        log.info("Syncing %s with %s", str(self), str(another_project))
+        if self.endpoint.edition() == c.CE or another_project.endpoint.edition() == c.CE or isinstance(another_project, branches.Branch):
+            # Sync the project main branch only
+            return syncer.sync_objects(self, another_project, sync_settings=sync_settings)
 
         src_branches = self.branches()
         tgt_branches = another_project.branches()
@@ -917,8 +902,7 @@ class Project(components.Component):
                 str(self),
                 ", ".join(diff),
             )
-        report = []
-        counters = {}
+        report, counters = [], {}
         intersect = list(set(src_branches_list) & set(tgt_branches_list))
         for branch_name in intersect:
             (tmp_report, tmp_counts) = src_branches[branch_name].sync(tgt_branches[branch_name], sync_settings=sync_settings)
@@ -926,20 +910,17 @@ class Project(components.Component):
             counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
 
-    def sync_branches(self, sync_settings: types.ConfigSettings) -> tuple[list[str], dict[str, int]]:
+    def sync_branches(self, sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs project issues across all its branches
 
         :param dict sync_settings: Parameters to configure the sync
         :return: sync report as tuple, with counts of successful and unsuccessful issue syncs
         :rtype: tuple(report, counters)
         """
-        my_branches = self.branches()
-        report = []
-        counters = {}
-        for b_src in my_branches.values():
-            for b_tgt in my_branches.values():
-                if b_src.name == b_tgt.name:
-                    continue
+        my_branches = self.branches().values()
+        report, counters = [], {}
+        for b_src in my_branches:
+            for b_tgt in [b for b in my_branches if b.name != b_src.name]:
                 (tmp_report, tmp_counts) = b_src.sync(b_tgt, sync_settings=sync_settings)
                 report += tmp_report
                 counters = util.dict_add(counters, tmp_counts)
@@ -1474,6 +1455,19 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
             p_list = dict(sorted(search(endpoint=endpoint, threads=threads).items()))
             return p_list
     return {key: Project.get_object(endpoint, key) for key in sorted(key_list)}
+
+
+def get_matching_list(endpoint: pf.Platform, pattern: str, threads: int = 8) -> dict[str, Project]:
+    """
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param str pattern: Regular expression to match project keys
+    :return: the list of all projects matching the pattern
+    :rtype: dict{key: Project}
+    """
+    if not pattern or pattern == ".*":
+        return get_list(endpoint, threads=threads)
+    log.info("Listing projects matching '%s'", pattern)
+    return {k: v for k, v in get_list(endpoint, threads=threads).items() if re.match(pattern, k)}
 
 
 def __similar_keys(key1: str, key2: str, max_distance: int = 5) -> bool:
