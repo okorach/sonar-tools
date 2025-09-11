@@ -262,7 +262,7 @@ class Rule(sq.SqObject):
         return True
 
     def to_json(self) -> types.ObjectJsonRepr:
-        return self.sq_json
+        return utilities.remove_nones(self.sq_json | {"templateKey": self.template_key})
 
     def to_csv(self) -> list[str]:
         data = vars(self)
@@ -294,10 +294,9 @@ class Rule(sq.SqObject):
             d = {"severity": rule.get("severity", "")}
         if len(rule.get("params", {})) > 0:
             d["params"] = rule["params"] if full else {p["key"]: p.get("defaultValue", "") for p in rule["params"]}
-        mapping = {"isTemplate": "isTemplate", "tags": "tags", "mdNote": "description", "lang": "language"}
-        for oldkey, newkey in mapping.items():
-            if oldkey in rule and rule[oldkey] is not None:
-                d[newkey] = rule[oldkey]
+        mapping = {"isTemplate": "isTemplate", "tags": "tags", "mdNote": "description", "lang": "language", "templateKey": "templateKey"}
+        d |= {newkey: rule[oldkey] for oldkey, newkey in mapping.items() if oldkey in rule}
+        log.debug("Exporting rule '%s': %s", self.key, utilities.json_dump(d))
         if full:
             d.update({f"_{k}": v for k, v in rule.items() if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "lang")})
             d.pop("_key", None)
