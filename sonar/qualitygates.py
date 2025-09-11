@@ -116,6 +116,7 @@ class QualityGate(sq.SqObject):
         """Constructor, don't use directly, use class methods instead"""
         super().__init__(endpoint=endpoint, key=name)
         self.name = name  #: Object name
+        log.debug("Loading %s with data %s", self, util.json_dump(data))
         self.is_built_in = False  #: Whether the quality gate is built in
         self.is_default = False  #: Whether the quality gate is the default
         self._conditions = None  #: Quality gate conditions
@@ -230,6 +231,7 @@ class QualityGate(sq.SqObject):
         if self._conditions is None:
             self._conditions = []
             data = json.loads(self.get(QualityGate.API[c.GET], params=self.api_params()).text)
+            log.debug("Loading %s with conditions %s", self, util.json_dump(data))
             for cond in data.get("conditions", []):
                 self._conditions.append(cond)
         if encoded:
@@ -268,7 +270,11 @@ class QualityGate(sq.SqObject):
         ok = True
         for cond in conditions_list:
             (params["metric"], params["op"], params["error"]) = _decode_condition(cond)
-            ok = ok and self.post("qualitygates/create_condition", params=params).ok
+            try:
+                ok = ok and self.post("qualitygates/create_condition", params=params).ok
+            except (ConnectionError, RequestException) as e:
+                util.handle_error(e, f"adding condition '{cond}' to {str(self)}", catch_all=True)
+                ok = False
         self._conditions = None
         self.conditions()
         return ok
@@ -315,6 +321,10 @@ class QualityGate(sq.SqObject):
         """Updates a quality gate
         :param dict data: Considered keys: "name", "conditions", "permissions"
         """
+        log.debug("Updating %s with data %s", str(self), util.json_dump(data))
+        if self.is_built_in:
+            log.debug("Can't update built-in %s", str(self))
+            return True
         if "name" in data and data["name"] != self.name:
             log.info("Renaming %s with %s", str(self), data["name"])
             self.post(QualityGate.API[c.RENAME], params={"id": self.key, "name": data["name"]})
@@ -323,9 +333,9 @@ class QualityGate(sq.SqObject):
             self.key = data["name"]
             QualityGate.CACHE.put(self)
         ok = self.set_conditions(data.get("conditions", []))
-        ok = ok and self.set_permissions(data.get("permissions", []))
+        ok = self.set_permissions(data.get("permissions", [])) and ok
         if data.get("isDefault", False):
-            self.set_as_default()
+            ok = self.set_as_default() and ok
         return ok
 
     def is_identical_to(self, other_qg: QualityGate) -> bool:
@@ -488,7 +498,8 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         except exceptions.ObjectNotFound:
             log.debug("QG %s not found, creating it", name)
             o = QualityGate.create(endpoint, name)
-        ok = ok and o.update(**data)
+        log.debug("Importing %s with %s", str(o), util.json_dump(data))
+        ok = o.update(**data) and ok
     return ok
 
 
@@ -534,8 +545,10 @@ def _encode_condition(cond: dict[str, str]) -> str:
         op = ">="
     elif op == "LT":
         op = "<="
-    if metric.endswith("rating"):
+    if "rating" in metric:
         val = measures.get_rating_letter(val)
+    elif metric.startswith("sca_severity") and f"{val}" == "19":
+        val = "High"
     if any(d in metric for d in _PERCENTAGE_METRICS):
         val = f"{val}%"
     return f"{metric} {op} {val}"
@@ -548,8 +561,10 @@ def _decode_condition(cond: str) -> tuple[str, str, str]:
         op = "GT"
     elif op in ("<", "<="):
         op = "LT"
-    if metric.endswith("rating"):
+    if "rating" in metric:
         val = measures.get_rating_number(val)
+    elif metric.startswith("sca_severity") and val == "High":
+        val = 19
     if any(d in metric for d in _PERCENTAGE_METRICS) and val.endswith("%"):
         val = val[:-1]
     return (metric, op, val)
