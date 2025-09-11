@@ -156,11 +156,12 @@ class Rule(sq.SqObject):
 
     def __init__(self, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)
-        log.debug("Creating rule object '%s'", key)  # utilities.json_dump(data))
+        log.debug("Loading rule object '%s'", key)
         self.sq_json = data.copy()
         self.severity = data.get("severity", None)
         self.repo = data.get("repo", None)
         self.type = data.get("type", None)
+        self._impacts = {}
         if "impacts" in data:
             self._impacts = {imp["softwareQuality"]: imp["severity"] for imp in data["impacts"]}
         else:
@@ -237,7 +238,7 @@ class Rule(sq.SqObject):
             endpoint=endpoint,
             templateKey=template_key,
             name=data.get("name", key),
-            impacts=data.get("severities", None),
+            impacts=data.get("severities", data.get("impacts", None)),
             severity=data.get("severity", None),
             params=rule_params,
             markdownDescription=data.get("description", "NO DESCRIPTION"),
@@ -262,6 +263,14 @@ class Rule(sq.SqObject):
         self.sq_json.update(data["rule"])
         self.sq_json["actives"] = data["actives"].copy()
         return True
+
+    def is_extended(self) -> bool:
+        """Returns True if the rule has been extended with tags or a custom description, False otherwise"""
+        return self.tags is not None or self.custom_desc is not None
+
+    def is_instantiated(self) -> bool:
+        """Returns True if the rule is instantiated from a template, False otherwise"""
+        return self.template_key is not None
 
     def to_json(self) -> types.ObjectJsonRepr:
         return utilities.remove_nones(self.sq_json | {"templateKey": self.template_key})
@@ -290,19 +299,17 @@ class Rule(sq.SqObject):
     def export(self, full: bool = False) -> types.ObjectJsonRepr:
         """Returns the JSON corresponding to a rule export"""
         rule = self.to_json()
-        if self.endpoint.is_mqr_mode():
-            d = {"severities": {impact["softwareQuality"]: impact["severity"] for impact in self.sq_json.get("impacts", [])}}
-        else:
-            d = {"severity": rule.get("severity", "")}
+        d = {"severity": rule.get("severity", ""), "impacts": self.impacts(), "description": self.custom_desc}
         if len(rule.get("params", {})) > 0:
             d["params"] = rule["params"] if full else {p["key"]: p.get("defaultValue", "") for p in rule["params"]}
-        mapping = {"isTemplate": "isTemplate", "tags": "tags", "mdNote": "description", "lang": "language", "templateKey": "templateKey"}
+        mapping = {"isTemplate": "isTemplate", "tags": "tags", "lang": "language", "templateKey": "templateKey"}
         d |= {newkey: rule[oldkey] for oldkey, newkey in mapping.items() if oldkey in rule}
-        log.debug("Exporting rule '%s': %s", self.key, utilities.json_dump(d))
+        if not d["isTemplate"]:
+            d.pop("isTemplate", None)
         if full:
             d.update({f"_{k}": v for k, v in rule.items() if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "lang")})
             d.pop("_key", None)
-        return d
+        return utilities.remove_nones(d)
 
     def set_tags(self, tags: list[str]) -> bool:
         """Sets rule custom tags"""
@@ -342,7 +349,7 @@ class Rule(sq.SqObject):
             self.refresh()
             found_qp = next((qp for qp in self.sq_json.get("actives", []) if quality_profile_id and qp["qProfile"] == quality_profile_id), None)
         if not found_qp:
-            return self._impacts if self.endpoint.is_mqr_mode() else {TYPE_TO_QUALITY[self.type]: self.severity}
+            return self._impacts if len(self._impacts) > 0 else {TYPE_TO_QUALITY[self.type]: self.severity}
         if self.endpoint.is_mqr_mode():
             qp_impacts = {imp["softwareQuality"]: imp["severity"] for imp in found_qp["impacts"]}
             default_impacts = self._impacts
@@ -454,9 +461,9 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", threads))
     for rule_key, rule in get_list(endpoint=endpoint, use_cache=False, include_external=False).items():
         rule_export = rule.export(full)
-        if rule.template_key is not None:
+        if rule.is_instantiated():
             instantiated_rules[rule_key] = rule_export
-        elif rule.tags is not None or rule.custom_desc is not None:
+        elif rule.is_extended():
             if full:
                 extended_rules[rule_key] = rule_export
                 continue
