@@ -456,33 +456,25 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     """Returns a JSON export of all rules"""
     log.info("Exporting rules")
     full = export_settings.get("FULL_EXPORT", False)
-    rule_list, other_rules, instantiated_rules, extended_rules = {}, {}, {}, {}
     threads = 16 if endpoint.is_sonarcloud() else 8
     get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", threads))
-    for rule_key, rule in get_list(endpoint=endpoint, use_cache=False, include_external=False).items():
-        rule_export = rule.export(full)
-        if rule.is_instantiated():
-            instantiated_rules[rule_key] = rule_export
-        elif rule.is_extended():
-            if full:
-                extended_rules[rule_key] = rule_export
-                continue
-            extended_rules[rule_key] = {}
-            if rule.tags is not None:
-                extended_rules[rule_key]["tags"] = rule_export["tags"]
-            if rule.custom_desc is not None:
-                extended_rules[rule_key]["description"] = rule_export["description"]
-        else:
-            other_rules[rule_key] = rule_export
-    if len(instantiated_rules) > 0:
-        rule_list["instantiated"] = instantiated_rules
-    if len(extended_rules) > 0:
-        rule_list["extended"] = extended_rules
-    if len(other_rules) > 0 and full:
-        rule_list["standard"] = other_rules
+
+    all_rules = get_list(endpoint=endpoint, use_cache=False, include_external=False).items()
+    rule_list = {}
+    rule_list["instantiated"] = {k: rule.export(full) for k, rule in all_rules if rule.is_instantiated()}
+    rule_list["extended"] = {k: rule.export(full) for k, rule in all_rules if rule.is_extended()}
+    if not full:
+        rule_list["extended"] = utilities.remove_nones(
+            {k: {"tags": v["tags"], "description": v["description"]} for k, v in rule_list["extended"].items() if "tags" in v or "description" in v}
+        )
+    if full:
+        rule_list["standard"] = {k: rule.export(full) for k, rule in all_rules if not rule.is_instantiated() and not rule.is_extended()}
     if export_settings.get("MODE", "") == "MIGRATION":
         rule_list["thirdParty"] = {r.key: r.export() for r in third_party(endpoint=endpoint)}
 
+    for k in ("instantiated", "extended", "standard", "thirdParty"):
+        if len(rule_list.get(k, {})) == 0:
+            rule_list.pop(k, None)
     if write_q := kwargs.get("write_q", None):
         write_q.put(rule_list)
         write_q.put(utilities.WRITE_END)
