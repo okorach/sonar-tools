@@ -223,19 +223,17 @@ class Permissions(ABC):
         """Audits that default user group has no sensitive permissions"""
         __SENSITIVE_PERMISSIONS = ["issueadmin", "scan", "securityhotspotadmin", "admin", "gateadmin", "profileadmin"]
         groups = self.to_json(perm_type="groups")
-        if not groups:
-            return []
         if isinstance(groups, list):
             groups = {u: ["admin"] for u in groups}
         default_gr = self.endpoint.default_user_group()
-        if any(gr_name == default_gr and any(p in gr_perms for p in __SENSITIVE_PERMISSIONS) for gr_name, gr_perms in groups.items()):
-            return [Problem(get_rule(RuleId.SONAR_USERS_ELEVATED_PERMS), self.concerned_object, str(self.concerned_object))]
+        if groups and any(gr_name == default_gr and any(p in gr_perms for p in __SENSITIVE_PERMISSIONS) for gr_name, gr_perms in groups.items()):
+            return [Problem(get_rule(RuleId.SONAR_USERS_ELEVATED_PERMS), self.concerned_object, default_gr, str(self.concerned_object))]
         return []
 
     def audit_anyone_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits that Anyone group has no permissions"""
         groups = self.to_json(perm_type="groups")
-        if any(gr_name == "Anyone" for gr_name in groups):
+        if groups and any(gr_name == "Anyone" for gr_name in groups):
             return [Problem(get_rule(RuleId.PROJ_PERM_ANYONE), self.concerned_object, str(self.concerned_object))]
         return []
 
@@ -271,6 +269,10 @@ class Permissions(ABC):
         """
         perms = PERMISSION_TYPES if perm_type is None else (perm_type,)
         perm_counter = 0
+        if not self.permissions:
+            self.read()
+        if not self.permissions:
+            return 0
         for ptype in perms:
             perms = self.permissions.get(ptype, {}).copy()
             if isinstance(perms, list):
