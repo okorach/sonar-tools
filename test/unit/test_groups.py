@@ -30,7 +30,7 @@ from sonar import exceptions
 from sonar import groups, users
 from sonar.util import constants as c
 
-GROUP1 = "sonar-users"
+GROUP1 = tutil.SQ.default_user_group()
 GROUP2 = "sonar-administrators"
 
 
@@ -72,12 +72,12 @@ def test_create_already_exists(get_test_group: Generator[groups.Group]) -> None:
 
 
 def test_size() -> None:
-    gr = groups.Group.get_object(endpoint=tutil.SQ, name="sonar-users")
+    gr = groups.Group.get_object(endpoint=tutil.SQ, name=tutil.SQ.default_user_group())
     assert gr.size() > 4
 
 
 def test_url() -> None:
-    gr = groups.Group.get_object(endpoint=tutil.SQ, name="sonar-users")
+    gr = groups.Group.get_object(endpoint=tutil.SQ, name=tutil.SQ.default_user_group())
     assert gr.url() == f"{tutil.SQ.external_url}/admin/groups"
 
 
@@ -127,7 +127,7 @@ def test_to_json(get_test_group: Generator[groups.Group]) -> None:
     if tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
         assert "id" in gr.to_json(True)
 
-    sonar_users = groups.Group.get_object(tutil.SQ, "sonar-users")
+    sonar_users = groups.Group.get_object(tutil.SQ, tutil.SQ.default_user_group())
     json_exp = sonar_users.to_json()
     assert "default" in json_exp
 
