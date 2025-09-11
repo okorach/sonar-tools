@@ -306,11 +306,10 @@ class Rule(sq.SqObject):
         d |= {newkey: rule[oldkey] for oldkey, newkey in mapping.items() if oldkey in rule}
         if not d["isTemplate"]:
             d.pop("isTemplate", None)
-        log.debug("Exporting rule '%s': %s", self.key, utilities.json_dump(d))
         if full:
             d.update({f"_{k}": v for k, v in rule.items() if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "lang")})
             d.pop("_key", None)
-        return d
+        return utilities.remove_nones(d)
 
     def set_tags(self, tags: list[str]) -> bool:
         """Sets rule custom tags"""
