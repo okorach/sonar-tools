@@ -78,7 +78,12 @@ def __parse_args(desc: str) -> object:
         action="store_true",
         help="If specified, will not add a link to source issue in the target issue comments",
     )
-
+    parser.add_argument(
+        "--tag",
+        required=False,
+        default="synchronized",
+        help="tag to set on synchronized issues, default is 'synchronized', set to '' if you don't want any tag",
+    )
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
@@ -121,14 +126,12 @@ def __get_objects_pairs_to_sync(
                 sync_list += ((src_proj, tgt_proj),)
         return sync_list
     elif len(source_projects) == 1 and len(target_projects) == 1:
-        src_obj = source_projects[0]
-        tgt_obj = target_projects[0]
-        source_branch = kwargs.get("sourceBranch", None)
-        target_branch = kwargs.get("targetBranch", None)
-        if source_branch:
+        src_obj = list(source_projects.values())[0]
+        tgt_obj = list(target_projects.values())[0]
+        if source_branch := kwargs.get("sourceBranch", None):
             src_obj = branches.Branch.get_object(src_obj, source_branch)
-        if target_branch:
-            tgt_obj = branches.Branch.get_object(tgt_obj, source_branch)
+        if target_branch := kwargs.get("targetBranch", None):
+            tgt_obj = branches.Branch.get_object(tgt_obj, target_branch)
         return ((src_obj, tgt_obj),)
     return ((None, None),)
 
@@ -164,6 +167,7 @@ def main() -> None:
             syncer.SYNC_SERVICE_ACCOUNT: params["login"],
             syncer.SYNC_SINCE_DATE: __since_date(**params),
             syncer.SYNC_THREADS: params[options.NBR_THREADS],
+            syncer.SYNC_TAG: params.get("tag", ""),
         }
 
         report, counters = [], {}

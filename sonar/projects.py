@@ -1466,8 +1466,10 @@ def get_matching_list(endpoint: pf.Platform, pattern: str, threads: int = 8) -> 
     """
     if not pattern or pattern == ".*":
         return get_list(endpoint, threads=threads)
-    log.info("Listing projects matching '%s'", pattern)
-    return {k: v for k, v in get_list(endpoint, threads=threads).items() if re.match(pattern, k)}
+    log.info("Listing projects matching regexp '%s'", pattern)
+    matches = {k: v for k, v in get_list(endpoint, threads=threads).items() if re.match(rf"^{pattern}$", k)}
+    log.info("%d project key matching regexp '%s'", len(matches), pattern)
+    return matches
 
 
 def __similar_keys(key1: str, key2: str, max_distance: int = 5) -> bool:

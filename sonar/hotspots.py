@@ -34,7 +34,7 @@ import sonar.platform as pf
 import sonar.utilities as util
 from sonar.util import types, cache, constants as c
 
-from sonar import syncer, users
+from sonar import users
 from sonar import findings, rules, changelog
 
 PROJECT_FILTER = "project"
@@ -248,6 +248,8 @@ class Hotspot(findings.Finding):
 
     def __apply_event(self, event: object, settings: types.ConfigSettings) -> bool:
         """Applies a changelog event (transition, comment, assign) to the hotspot"""
+        from sonar import syncer
+
         log.debug("Applying event %s", str(event))
         # origin = f"originally by *{event['userName']}* on original branch"
         (event_type, data) = event.changelog_type()
@@ -267,9 +269,7 @@ class Hotspot(findings.Finding):
             # self.add_comment(f"Hotspot marked as acknowledged {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "ASSIGN":
             if settings[syncer.SYNC_ASSIGN]:
-                u = users.get_login_from_name(endpoint=self.endpoint, name=data)
-                if u is None:
-                    u = settings[syncer.SYNC_SERVICE_ACCOUNT]
+                u = users.get_login_from_name(endpoint=self.endpoint, name=data) or settings[syncer.SYNC_SERVICE_ACCOUNT]
                 self.assign(u)
                 # self.add_comment(f"Hotspot assigned assigned {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "UNASSIGN":
@@ -303,14 +303,12 @@ class Hotspot(findings.Finding):
             self.__apply_event(events[key], settings)
 
         comments = source_hotspot.comments()
-        if len(self.comments()) == 0 and settings[syncer.SYNC_ADD_LINK]:
-            log.info("Target %s has 0 comments, adding sync link comment", str(self))
-            start_change = 1
-            self.add_comment(f"Automatically synchronized from [this original hotspot]({source_hotspot.url()})")
-        else:
-            start_change = len(self.comments())
-            log.info("Target %s already has %d comments", str(self), start_change)
+        start_change = len(self.comments())
+        log.info("Target %s already has %d comments", str(self), start_change)
         log.info("Applying comments of %s to %s, from comment %d", str(source_hotspot), str(self), start_change)
+        if start_change > 0:
+            # Account for the link comment
+            start_change += 1
         change_nbr = 0
         for key in sorted(comments.keys()):
             change_nbr += 1
