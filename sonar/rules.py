@@ -458,13 +458,15 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     full = export_settings.get("FULL_EXPORT", False)
     threads = 16 if endpoint.is_sonarcloud() else 8
     get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", threads))
-    
+
     all_rules = get_list(endpoint=endpoint, use_cache=False, include_external=False).items()
     rule_list = {}
     rule_list["instantiated"] = {k: rule.export(full) for k, rule in all_rules if rule.is_instantiated()}
     rule_list["extended"] = {k: rule.export(full) for k, rule in all_rules if rule.is_extended()}
     if not full:
-        rule_list["extended"] = {k: {"tags": v["tags"], "description": v["description"]} for k, v in rule_list["extended"].items() if v.get("tags") or v.get("description")}
+        rule_list["extended"] = utilities.remove_nones(
+            {k: {"tags": v["tags"], "description": v["description"]} for k, v in rule_list["extended"].items() if "tags" in v or "description" in v}
+        )
     if full:
         rule_list["standard"] = {k: rule.export(full) for k, rule in all_rules if not rule.is_instantiated() and not rule.is_extended()}
     if export_settings.get("MODE", "") == "MIGRATION":
