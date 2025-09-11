@@ -185,6 +185,7 @@ def test_third_party() -> None:
 def test_export_fields() -> None:
     """test_export_fields"""
     rule_list = rules.export(endpoint=tutil.SQ, export_settings={})
+    assert "standard" not in rule_list
     assert len(rule_list["extended"]) > 0
     for r in rule_list["extended"].values():
         assert any(key in r for key in ("description", "tags", "params"))
