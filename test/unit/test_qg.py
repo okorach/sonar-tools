@@ -83,13 +83,15 @@ def test_set_conditions(get_loaded_qg: Generator[qualitygates.QualityGate]) -> N
     assert qg.set_conditions(None)
     assert qg.set_conditions([])
     assert qg.set_conditions(["new_coverage <= 80"])
-    assert qg.conditions(encoded=True) == ["new_coverage <= 80"]
+    assert qg.conditions(encoded=True) == ["new_coverage <= 80%"]
+    assert qg.set_conditions(["new_coverage <= 75%"])
+    assert qg.conditions(encoded=True) == ["new_coverage <= 75%"]
     qg.clear_conditions()
     assert qg.conditions() == []
-    assert qg.set_conditions(["new_coverage <= 80"])
-    assert qg.conditions(encoded=True) == ["new_coverage <= 80"]
-    assert qg.set_conditions(["new_coverage <= 50", "new_violations >= 0", "test_success_density <= 100"])
-    assert qg.conditions(encoded=True) == ["new_coverage <= 50", "new_violations >= 0", "test_success_density <= 100"]
+    assert qg.set_conditions(["new_coverage <= 80%"])
+    assert qg.conditions(encoded=True) == ["new_coverage <= 80%"]
+    assert qg.set_conditions(["new_coverage <= 50%", "new_violations >= 0", "test_success_density <= 100"])
+    assert qg.conditions(encoded=True) == ["new_coverage <= 50%", "new_violations >= 0", "test_success_density <= 100%"]
 
 
 def test_clear_conditions(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
@@ -114,10 +116,10 @@ def test_permissions(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None
 def test_copy(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """test_copy"""
     qg = get_loaded_qg
-    assert qg.set_conditions(["new_coverage <= 50", "new_violations >= 0", "test_success_density <= 100"])
+    assert qg.set_conditions(["new_coverage <= 50", "new_violations >= 0", "test_success_density <= 100%"])
 
     qg2 = qg.copy("TEMP_NAME2")
-    assert qg2.conditions(encoded=True) == ["new_coverage <= 50", "new_violations >= 0", "test_success_density <= 100"]
+    assert qg2.conditions(encoded=True) == ["new_coverage <= 50%", "new_violations >= 0", "test_success_density <= 100%"]
     qg2.delete()
 
 
@@ -126,7 +128,7 @@ def test_set_as_default(get_loaded_qg: Generator[qualitygates.QualityGate]) -> N
     qg = get_loaded_qg
     sw = qualitygates.QualityGate.get_object(tutil.SQ, tutil.SONAR_WAY)
     assert sw.is_built_in
-    qg.set_conditions(["new_coverage <= 50", "new_violations >= 0", "test_success_density <= 100"])
+    qg.set_conditions(["new_coverage <= 50", "new_violations >= 0", "test_success_density <= 100%"])
     assert qg.set_as_default()
     assert not sw.is_default
     assert sw.is_built_in
@@ -164,6 +166,12 @@ def test_count():
 def test_export() -> None:
     """test_export"""
     json_exp = qualitygates.export(endpoint=tutil.SQ, export_settings={})
+    _PERCENTAGE_METRICS = ("density", "ratio", "percent", "security_hotspots_reviewed", "coverage")
+    for qg in json_exp.values():
+        for cond in qg.get("conditions", []):
+            if any(d in cond for d in _PERCENTAGE_METRICS):
+                assert cond.endswith("%")
+
     yaml_exp = qualitygates.convert_for_yaml(json_exp)
     assert len(json_exp) > 0
     assert isinstance(json_exp, dict)
