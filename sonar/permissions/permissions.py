@@ -220,12 +220,15 @@ class Permissions(ABC):
         return problems
 
     def audit_sonar_users_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        """Audits that sonar-users group has no sensitive permissions"""
+        """Audits that default user group has no sensitive permissions"""
         __SENSITIVE_PERMISSIONS = ["issueadmin", "scan", "securityhotspotadmin", "admin", "gateadmin", "profileadmin"]
         groups = self.to_json(perm_type="groups")
+        if not groups:
+            return []
         if isinstance(groups, list):
             groups = {u: ["admin"] for u in groups}
-        if any(gr_name == "sonar-users" and any(p in gr_perms for p in __SENSITIVE_PERMISSIONS) for gr_name, gr_perms in groups.items()):
+        default_gr = self.endpoint.default_user_group()
+        if any(gr_name == default_gr and any(p in gr_perms for p in __SENSITIVE_PERMISSIONS) for gr_name, gr_perms in groups.items()):
             return [Problem(get_rule(RuleId.SONAR_USERS_ELEVATED_PERMS), self.concerned_object, str(self.concerned_object))]
         return []
 
