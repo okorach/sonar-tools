@@ -54,11 +54,11 @@ class QualityPermissions(permissions.Permissions):
 
     def to_json(self, perm_type: Optional[tuple[str, ...]] = None, csv: bool = False) -> types.ObjectJsonRepr:
         """Returns the JSON representation of permissions"""
-        if not csv:
-            return self.permissions[perm_type] if permissions.is_valid(perm_type) else self.permissions
-        perms = {}
         if not self.permissions:
             return None
+        if not csv:
+            return self.permissions[perm_type] if permissions.is_valid(perm_type) and perm_type in self.permissions else self.permissions
+        perms = {}
         for p in permissions.normalize(perm_type):
             dperms = self.permissions.get(p, None)
             if dperms is not None and len(dperms) > 0:

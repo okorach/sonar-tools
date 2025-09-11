@@ -376,7 +376,7 @@
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "object": "Project",
-        "message": "Group 'sonar-users' has admin, admin QG, admin QP or create project permissions on {}, this is not recommended"
+        "message": "Group '{}' has admin, admin QG, admin QP or create project permissions on {}, this is not recommended"
     },
     "PROJ_PERM_ANYONE": {
         "severity": "HIGH",

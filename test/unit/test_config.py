@@ -77,8 +77,10 @@ def test_config_inline_lists(json_file: Generator[str]) -> None:
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], str)
-    assert isinstance(json_config["globalSettings"]["permissionTemplates"][_DEFAULT_TEMPLATE]["permissions"]["groups"]["sonar-users"], str)
-    assert isinstance(json_config["projects"][tutil.LIVE_PROJECT]["permissions"]["groups"]["sonar-users"], str)
+    assert isinstance(
+        json_config["globalSettings"]["permissionTemplates"][_DEFAULT_TEMPLATE]["permissions"]["groups"][tutil.SQ.default_user_group()], str
+    )
+    assert isinstance(json_config["projects"][tutil.LIVE_PROJECT]["permissions"]["groups"][tutil.SQ.default_user_group()], str)
 
     if tutil.SQ.edition() not in (c.CE, c.DE):
         assert isinstance(json_config["portfolios"]["PORTFOLIO_ALL"]["permissions"]["groups"]["sonar-administrators"], str)
@@ -95,8 +97,10 @@ def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], list)
-    assert isinstance(json_config["globalSettings"]["permissionTemplates"][_DEFAULT_TEMPLATE]["permissions"]["groups"]["sonar-users"], list)
-    assert isinstance(json_config["projects"][tutil.LIVE_PROJECT]["permissions"]["groups"]["sonar-users"], list)
+    assert isinstance(
+        json_config["globalSettings"]["permissionTemplates"][_DEFAULT_TEMPLATE]["permissions"]["groups"][tutil.SQ.default_user_group()], list
+    )
+    assert isinstance(json_config["projects"][tutil.LIVE_PROJECT]["permissions"]["groups"][tutil.SQ.default_user_group()], list)
     if tutil.SQ.edition() not in (c.CE, c.DE):
         assert isinstance(json_config["portfolios"]["PORTFOLIO_ALL"]["permissions"]["groups"]["sonar-administrators"], list)
         assert isinstance(json_config["portfolios"]["PORTFOLIO-PYTHON"]["projects"]["tags"], list)

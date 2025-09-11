@@ -60,7 +60,7 @@ def test_migration(json_file: Generator[str]) -> None:
             assert item in p or "error" in p
 
     u = json_config["users"]["admin"]
-    assert "sonar-users" in u["groups"]
+    assert tutil.SQ.default_user_group() in u["groups"]
     assert u["local"] and u["active"]
     if tutil.SQ.version() >= (10, 0, 0):
         assert "sonarQubeLastConnectionDate" in u

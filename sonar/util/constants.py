@@ -70,3 +70,6 @@ AUDIT_MODE_PARAM = "audit.mode"
 
 DEFAULT = "-DEFAULT-"
 DEFAULT_BRANCH = "-DEFAULT_BRANCH-"
+
+SQS_USERS = "sonar-users"  # SonarQube Server users default group name
+SQC_USERS = "Members"  # SonarQube Cloud users default group name

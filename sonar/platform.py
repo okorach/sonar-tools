@@ -242,6 +242,19 @@ class Platform(object):
         """
         return self.__run_request(requests.delete, api, params, **kwargs)
 
+    def default_user_group(self) -> str:
+        """
+        :return: the built-in default group name on that platform
+        """
+        return c.SQC_USERS if self.is_sonarcloud() else c.SQS_USERS
+
+    def is_default_user_group(self, group_name: str) -> bool:
+        """
+        :param str group_name: group name to check
+        :return: whether the group is a built-in default group
+        """
+        return group_name == self.default_user_group()
+
     def __run_request(self, request: callable, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
         mute = kwargs.pop("mute", ())
@@ -665,7 +678,7 @@ class Platform(object):
         for gr_name, gr_perms in groups.items():
             if gr_name == "Anyone":
                 problems.append(Problem(get_rule(RuleId.ANYONE_WITH_GLOBAL_PERMS), perms_url))
-            if gr_name == "sonar-users" and (
+            if self.is_default_user_group(gr_name) and (
                 "admin" in gr_perms or "gateadmin" in gr_perms or "profileadmin" in gr_perms or "provisioning" in gr_perms
             ):
                 problems.append(Problem(get_rule(RuleId.SONAR_USERS_WITH_ELEVATED_PERMS), perms_url))

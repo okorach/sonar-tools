@@ -40,7 +40,7 @@ def test_get_object() -> None:
         user = users.User.get_object(endpoint=tutil.SQ, login=USER)
         assert str(user) == f"user '{USER}'"
         assert "sonar-administrators" in user.groups()
-        assert "sonar-users" in user.groups()
+        assert tutil.SQ.default_user_group() in user.groups()
 
     with pytest.raises(exceptions.ObjectNotFound):
         users.User.get_object(endpoint=tutil.SQ, login="non-exitsing-user")
@@ -50,7 +50,7 @@ def test_create_delete(get_test_user: Generator[users.User]) -> None:
     """test_create_delete"""
     user = get_test_user
     assert user.login == tutil.TEMP_KEY
-    assert "sonar-users" in user.groups()
+    assert tutil.SQ.default_user_group() in user.groups()
 
     u = users.User.get_object(tutil.SQ, login=tutil.TEMP_KEY)
     assert u is user
@@ -69,7 +69,7 @@ def test_add_to_group(get_test_user: Generator[users.User]) -> None:
         user.add_to_group("non-existing-group")
 
     with pytest.raises(exceptions.UnsupportedOperation):
-        user.add_to_group("sonar-users")
+        user.add_to_group(tutil.SQ.default_user_group())
 
     assert user.add_to_group("sonar-administrators")
     user.refresh()
@@ -84,7 +84,7 @@ def test_remove_from_group(get_test_user: Generator[users.User]) -> None:
     user = get_test_user
 
     with pytest.raises(exceptions.UnsupportedOperation):
-        user.remove_from_group("sonar-users")
+        user.remove_from_group(tutil.SQ.default_user_group())
 
     with pytest.raises(exceptions.ObjectNotFound):
         user.remove_from_group("non-existing-group")
@@ -171,12 +171,12 @@ def test_more_than_50_users(get_60_users: Generator[list[users.User]]) -> None:
 def test_update(get_test_user: Generator[users.User]) -> None:
     # test_update
     user = get_test_user
-    assert user.groups() == ["sonar-users"]
+    assert user.groups() == [tutil.SQ.default_user_group()]
     assert user.login == tutil.TEMP_KEY
     assert user.name == f"User name {tutil.TEMP_KEY}"
 
     user.update(groups=["sonar-administrators"])
-    assert sorted(user.groups()) == ["sonar-administrators", "sonar-users"]
+    assert sorted(user.groups()) == ["sonar-administrators", tutil.SQ.default_user_group()]
 
     assert user.scm_accounts == []
 
@@ -202,10 +202,10 @@ def test_set_groups(get_test_user: Generator[users.User]) -> None:
     """test_set_groups"""
     user = get_test_user
     user.set_groups(["sonar-administrators", "language-experts"])
-    assert sorted(user.groups()) == sorted(["sonar-users", "sonar-administrators", "language-experts"])
+    assert sorted(user.groups()) == sorted([tutil.SQ.default_user_group(), "sonar-administrators", "language-experts"])
 
     user.set_groups(["language-experts", "security-auditors", "developers"])
-    assert sorted(user.groups()) == sorted(["sonar-users", "language-experts", "security-auditors", "developers"])
+    assert sorted(user.groups()) == sorted([tutil.SQ.default_user_group(), "language-experts", "security-auditors", "developers"])
 
 
 def test_import() -> None:
