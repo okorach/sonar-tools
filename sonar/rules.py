@@ -161,6 +161,7 @@ class Rule(sq.SqObject):
         self.severity = data.get("severity", None)
         self.repo = data.get("repo", None)
         self.type = data.get("type", None)
+        self._impacts = {}
         if "impacts" in data:
             self._impacts = {imp["softwareQuality"]: imp["severity"] for imp in data["impacts"]}
         else:
