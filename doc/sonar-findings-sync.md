@@ -1,7 +1,9 @@
 # <a name="sonar-findings-sync"></a>sonar-findings-sync
 Note: Replaces `sonar-issues-sync`, which deprecated
 
-`sonar-findings-sync` synchronizes issues and hotspots changelog between branches, projects within a same SonarQube instance or across different SonarQube instances
+`sonar-findings-sync` synchronizes issues and hotspots changelog between branches, projects within a same SonarQube instance or across different SonarQube instances (Server or Cloud).
+Sync works both with Commercial Editions (Developer, Enterprise, Data Center) and Community Edition/Community Build.
+When the source or target is a Community Edition/Build then only the main branch is synchronized.
 
 ## Requirements and Installation
 
@@ -13,12 +15,12 @@ Note: Replaces `sonar-issues-sync`, which deprecated
 
 ## Usage
 
-`sonar-findings-sync -k <projectKey> [-b <sourceBranch>] [-B <targetBranch>] [-K <targetProjectKey>] [-B <targetBranch>] [-U <targetUrl> [-T <targetToken>] [-f <file>] [--nolink] [--since <YYYY-MM-DD>] [-h] [-u <sqUrl>] [-t <token>] [-v <debugLevel>]`
+`sonar-findings-sync -k <projectKeyPattern> [-b <sourceBranch>] [-B <targetBranch>] [-K <targetProjectKey>] [-B <targetBranch>] [-U <targetUrl> [-T <targetToken>] [-f <file>] [--nolink] [--since <YYYY-MM-DD>] [-h] [-u <sqUrl>] [-t <token>] [-v <debugLevel>]`
 
-- `-k <projectKey>`: Key of the source project.
+- `-k <projectKeyPattern>`: Project key regexp pattern of the source projects to sync. If the pattern selects more than 1 project then the `-K` option shall not be speciified and the sync happens 1-to-1 for all project keys matching the pattern in the source platform. A same project key must exist on the target.
 - `-K <projectKey>`: Optional. Key of the target project. If not specified, the same project key as the source is assumed
 - `-b <sourceBranch>`: Optional. Name of the source branch. Only required when doing synchronization between 2 branches of a same project of a same instance.
-- `-o <sourceOrganization>`: Optional. If source project is on SonarQube Cloud.
+- `-o <sourceOrganization>`: Optional. If source is SonarQube Cloud.
 - `-B <targetBranch>`: Optional. Name of the target branch. Only required when doing synchronization between 2 branches of a same project of a same instance.
 - `-U <targetUrl>`: Optional. URL of the target SonarQube Server or SonarQube Cloud, when synchronizing between 2 different instances. If not specified, the same URL as the source is assumed.
 - `-T <targetToken>`: Optional. Token if the synchronization service account on the target SonarQube Server or Cloud, when sync'ing between 2 instances. If not specified, the same token as the source is assumed.
@@ -40,25 +42,28 @@ To be able to perform the sync, the token provided to `sonar-findings-sync` shou
 
 ## Example
 
-:warning: The `sonar-issue-sync` tool MUST be run with a specific service account (to be named on the command line) so that `sonar-issue-sync` can recognize past synchronizations and complement them if some updates happened on an issue that has already been synchronized before with the same service account.
+:warning: The `sonar-findings-sync` tool MUST be run with a specific service account (to be named on the command line) so that `sonar-findings-sync` can recognize past synchronizations and complement them if some updates happened on an issue that has already been synchronized before with the same service account.
 `sonar-findings-sync -t <tokenOfServiceAccount> ...` when syncing within a same instance
 `sonar-findings-sync -T <tokenOfServiceAccount> ...` when syncing between 2 instances
 
-Synchronizes issues changelog between:
-- All branches of a same project:
-  `sonar-issue-sync -u https://sonar.acme.com -t abcdefghij -k <projectKey>`
-- 2 different branches of a same project
+Example of synchronization options
+(There qre no requirements on the 2 SonarQube Server or Cloud instances: They do not need to be of same edition, version or have the same list of plugins)
+- Synchronize all branches of a same project with key `myproject`:
+  `sonar-findings-sync -u https://sonar.acme.com -t squ_xxxx -k myproject`
+- Synchronize branch `develop` into branch `main` of project `myproject`
    (URL is read from `$SONAR_HOST_URL` and `http://localhost:9000` otherwise, token is read from `$SONAR_TOKEN`)
-  `sonar-issue-sync -k <projectKey> -b <sourceBranch> -B <targetBranch>`
-- All branches with same name between 2 different projects of a same SonarQube Server or Cloud instance:
-  `sonar-issue-sync -k <sourceProjectKey> -K <targetProject>`
-- 2 branches of 2 different projects of a same SonarQube Server or Cloud instance:
-  `sonar-issue-sync -k <sourceProjectKey> -b <sourceBranch> -K <targetProject> -B <targetBranch>`
+  `sonar-findings-sync -k myproject -b develop -B main`
+- Synchronize 2 branches of 2 different projects of a same SonarQube Server or Cloud instance:
+  `sonar-findings-sync -k <sourceProjectKey> -b <sourceBranch> -K <targetProject> -B <targetBranch>`
 - All branches with same name between 2 projects from different SonarQube Server or Cloud instances:
-  `sonar-issue-sync -k <sourceProjectKey> -u <sourceUrl> -t <sourceToken> -K <targetProjectKey> -U <targetUrl> -T <targetToken>`
-  There is no requirements on the 2 SonarQube Server or Cloud instances: They do not need to be of same edition, version or have the same list of plugins
+  `sonar-findings-sync -k <sourceProjectKey> -u <sourceUrl> -t <sourceToken> -K <targetProjectKey> -U <targetUrl> -T <targetToken>`
+- Synchronize all branches with same name between 2 different projects of a same SonarQube Server or Cloud instance:
+  `sonar-findings-sync -k <sourceProjectKey> -K <targetProject>`
+- Synchronize all projects whose keys are matching regexp `demo:.*` from a different source and target platform:
+  (Be conscious that if there are many projects selected by the regexp pattern, the synchronization may time quite some time)
+  `sonar-findings-sync -u https://sonar1.acme.com -t squ_xxxx -U https://sonar2.acme.com -T squ_xxxx -k "demo:.*"`
 - **main** branch of a source project key **myProject** in a SonarQube Server instance and **master** branch of the same project in SonarQube Cloud:
-  `sonar-issue-sync -k myProject -u https://sonar.acme.com -t <sourceToken> -K myProject -U https://sonarcloud.io -T <targetToken> -O myOrganization`
+  `sonar-findings-sync -k myProject -u https://sonar.acme.com -t <sourceToken> -K myProject -U https://sonarcloud.io -T <targetToken> -O myOrganization`
 
 
 # Selection of source findings for synchronization
