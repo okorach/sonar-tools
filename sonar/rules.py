@@ -465,7 +465,11 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     rule_list["extended"] = {k: rule.export(full) for k, rule in all_rules if rule.is_extended()}
     if not full:
         rule_list["extended"] = utilities.remove_nones(
-            {k: {"tags": v["tags"], "description": v["description"]} for k, v in rule_list["extended"].items() if "tags" in v or "description" in v}
+            {
+                k: {"tags": v.get("tags", None), "description": v.get("description", None)}
+                for k, v in rule_list["extended"].items()
+                if "tags" in v or "description" in v
+            }
         )
     if full:
         rule_list["standard"] = {k: rule.export(full) for k, rule in all_rules if not rule.is_instantiated() and not rule.is_extended()}
