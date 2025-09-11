@@ -456,9 +456,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
 
     :param Platform endpoint: Reference to the Sonar platform
     :param ConfigSetting export_settings: Options to use for export
-    :param KeyList key_list: Unused
     :return: Quality gates representations as JSON
-    :rtype: ObjectJsonRepr
     """
     log.info("Exporting quality gates")
     qg_list = {k: qg.to_json(export_settings) for k, qg in get_list(endpoint).items()}
@@ -526,6 +524,9 @@ def _encode_conditions(conds: list[dict[str, str]]) -> list[str]:
     return simple_conds
 
 
+_PERCENTAGE_METRICS = ("density", "ratio", "percent", "security_hotspots_reviewed", "coverage")
+
+
 def _encode_condition(cond: dict[str, str]) -> str:
     """Encode one dict conditions in a string"""
     metric, op, val = cond["metric"], cond["op"], cond["error"]
@@ -535,6 +536,8 @@ def _encode_condition(cond: dict[str, str]) -> str:
         op = "<="
     if metric.endswith("rating"):
         val = measures.get_rating_letter(val)
+    if any(d in metric for d in _PERCENTAGE_METRICS):
+        val = f"{val}%"
     return f"{metric} {op} {val}"
 
 
@@ -547,6 +550,8 @@ def _decode_condition(cond: str) -> tuple[str, str, str]:
         op = "LT"
     if metric.endswith("rating"):
         val = measures.get_rating_number(val)
+    if any(d in metric for d in _PERCENTAGE_METRICS) and val.endswith("%"):
+        val = val[:-1]
     return (metric, op, val)
 
 
