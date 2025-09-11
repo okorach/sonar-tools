@@ -156,7 +156,7 @@ class Rule(sq.SqObject):
 
     def __init__(self, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)
-        log.debug("Creating rule object '%s'", key)  # utilities.json_dump(data))
+        log.debug("Loading rule object '%s'", key)
         self.sq_json = data.copy()
         self.severity = data.get("severity", None)
         self.repo = data.get("repo", None)
@@ -174,7 +174,7 @@ class Rule(sq.SqObject):
         if not self.language:
             log.debug("Guessing rule '%s' language from repo '%s'", self.key, str(data.get("repo", "")))
             self.language = EXTERNAL_REPOS.get(data.get("repo", ""), "UNKNOWN")
-        self.custom_desc = data.get("mdNote", None)
+        self.custom_desc = data.get("mdNote", data.get("mdDesc"))
         self.created_at = data["createdAt"]
         self.is_template = data.get("isTemplate", False)
         self.template_key = data.get("templateKey", None)
@@ -290,14 +290,15 @@ class Rule(sq.SqObject):
     def export(self, full: bool = False) -> types.ObjectJsonRepr:
         """Returns the JSON corresponding to a rule export"""
         rule = self.to_json()
+        d = {"severity": rule.get("severity", ""), "description": self.custom_desc}
         if self.endpoint.is_mqr_mode():
-            d = {"severities": {impact["softwareQuality"]: impact["severity"] for impact in self.sq_json.get("impacts", [])}}
-        else:
-            d = {"severity": rule.get("severity", "")}
+            d["impacts"] = self.impacts()
         if len(rule.get("params", {})) > 0:
             d["params"] = rule["params"] if full else {p["key"]: p.get("defaultValue", "") for p in rule["params"]}
-        mapping = {"isTemplate": "isTemplate", "tags": "tags", "mdNote": "description", "lang": "language", "templateKey": "templateKey"}
+        mapping = {"isTemplate": "isTemplate", "tags": "tags", "lang": "language", "templateKey": "templateKey"}
         d |= {newkey: rule[oldkey] for oldkey, newkey in mapping.items() if oldkey in rule}
+        if not d["isTemplate"]:
+            d.pop("isTemplate", None)
         log.debug("Exporting rule '%s': %s", self.key, utilities.json_dump(d))
         if full:
             d.update({f"_{k}": v for k, v in rule.items() if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "lang")})
