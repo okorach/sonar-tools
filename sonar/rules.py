@@ -175,7 +175,7 @@ class Rule(sq.SqObject):
         if not self.language:
             log.debug("Guessing rule '%s' language from repo '%s'", self.key, str(data.get("repo", "")))
             self.language = EXTERNAL_REPOS.get(data.get("repo", ""), "UNKNOWN")
-        self.custom_desc = data.get("mdNote", data.get("mdDesc"))
+        self.custom_desc = data.get("mdNote", None)
         self.created_at = data["createdAt"]
         self.is_template = data.get("isTemplate", False)
         self.template_key = data.get("templateKey", None)
@@ -263,6 +263,14 @@ class Rule(sq.SqObject):
         self.sq_json.update(data["rule"])
         self.sq_json["actives"] = data["actives"].copy()
         return True
+
+    def is_extended(self) -> bool:
+        """Returns True if the rule has been extended with tags or a custom description, False otherwise"""
+        return self.tags is not None or self.custom_desc is not None
+
+    def is_instantiated(self) -> bool:
+        """Returns True if the rule is instantiated from a template, False otherwise"""
+        return self.template_key is not None
 
     def to_json(self) -> types.ObjectJsonRepr:
         return utilities.remove_nones(self.sq_json | {"templateKey": self.template_key})
@@ -454,9 +462,9 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", threads))
     for rule_key, rule in get_list(endpoint=endpoint, use_cache=False, include_external=False).items():
         rule_export = rule.export(full)
-        if rule.template_key is not None:
+        if rule.is_instantiated():
             instantiated_rules[rule_key] = rule_export
-        elif rule.tags is not None or rule.custom_desc is not None:
+        elif rule.is_extended():
             if full:
                 extended_rules[rule_key] = rule_export
                 continue
