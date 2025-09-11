@@ -303,14 +303,12 @@ class Hotspot(findings.Finding):
             self.__apply_event(events[key], settings)
 
         comments = source_hotspot.comments()
-        if len(self.comments()) == 0 and settings[syncer.SYNC_ADD_LINK]:
-            log.info("Target %s has 0 comments, adding sync link comment", str(self))
-            start_change = 1
-            self.add_comment(f"Automatically synchronized from [this original hotspot]({source_hotspot.url()})")
-        else:
-            start_change = len(self.comments())
-            log.info("Target %s already has %d comments", str(self), start_change)
+        start_change = len(self.comments())
+        log.info("Target %s already has %d comments", str(self), start_change)
         log.info("Applying comments of %s to %s, from comment %d", str(source_hotspot), str(self), start_change)
+        if start_change > 0:
+            # Account for the link comment
+            start_change += 1
         change_nbr = 0
         for key in sorted(comments.keys()):
             change_nbr += 1

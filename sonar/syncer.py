@@ -38,6 +38,7 @@ SYNC_ADD_LINK = "add_link"
 SYNC_COMMENTS = "sync_comments"
 SYNC_ASSIGN = "sync_assignments"
 SYNC_SERVICE_ACCOUNT = "sync_service_account"
+SYNC_TAG = "tag"
 
 _SRC = "source"
 _TGT = "target"
@@ -75,11 +76,19 @@ def __issue_data(finding: findings.Finding, prefix: str) -> dict[str, str]:
 
 def __process_exact_sibling(finding: findings.Finding, sibling: findings.Finding, settings: types.ConfigSettings) -> dict[str, str]:
     """Returns data about an exact finding match"""
+    finding_type = util.class_name(finding).lower()
     if finding.has_changelog() or finding.has_comments():
+        if settings.get(SYNC_ADD_LINK, True):
+            sibling.add_comment(f"Automatically synchronized from [this original {finding_type}]({finding.url()})")
         sibling.apply_changelog(finding, settings)
-        msg = f"Source {util.class_name(finding).lower()} changelog applied successfully"
+        if (tag := settings.get(SYNC_TAG, "")) != "":
+            log.info("Adding TTATAG %s to %s", tag, sibling)
+            sibling.add_tag(tag)
+        else:
+            log.debug("No tag to add in synced finding")
+        msg = f"Source {finding_type} changelog applied successfully"
     else:
-        msg = f"Source {util.class_name(finding).lower()} has no changelog"
+        msg = f"Source {finding_type} has no changelog"
     return __issue_data(finding, _SRC) | __issue_data(sibling, _TGT) | {_SYNC_STATUS: "synchronized", _SYNC_MSG: msg}
 
 

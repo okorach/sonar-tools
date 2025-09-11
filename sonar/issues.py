@@ -364,10 +364,7 @@ class Issue(findings.Finding):
         :rtype: bool
         """
         log.debug("Adding tag '%s' to %s", tag, str(self))
-        tags = [] if not self._tags else self._tags.copy()
-        if tag not in tags:
-            tags.append(tag)
-        return self.set_tags(tags)
+        return self.set_tags((self._tags or []) + [tag])
 
     def remove_tag(self, tag: str) -> bool:
         """Removes a tag from an issue
@@ -586,7 +583,6 @@ class Issue(findings.Finding):
         """
         :meta private:
         """
-        from sonar import syncer
 
         events = source_issue.changelog()
         if events is None or not events:
@@ -597,9 +593,7 @@ class Issue(findings.Finding):
         # FIXME: There can be a glitch if there are non manual changes in the changelog
         start_change = len(self.changelog()) + 1
         log.info("Applying changelog of %s to %s, from change %d", str(source_issue), str(self), start_change)
-        tags = source_issue.get_tags() or []
         # Apply all tags at once, plus synchronized tag
-        self.set_tags(tags + ["synchronized"])
         for key in sorted(events.keys()):
             change_nbr += 1
             if change_nbr < start_change:
@@ -609,14 +603,12 @@ class Issue(findings.Finding):
                 self.__apply_event(events[key], settings)
 
         comments = source_issue.comments()
-        if len(self.comments()) == 0 and settings[syncer.SYNC_ADD_LINK]:
-            log.info("Target %s has 0 comments, adding sync link comment", str(self))
-            start_change = 1
-            self.add_comment(f"Automatically synchronized from [this original issue]({source_issue.url()})")
-        else:
-            start_change = len(self.comments())
-            log.info("Target %s already has %d comments", str(self), start_change)
+        start_change = len(self.comments())
+        log.info("Target %s already has %d comments", str(self), start_change)
         log.info("Applying comments of %s to %s, from comment %d", str(source_issue), str(self), start_change)
+        if start_change > 0:
+            # Account for the link comment
+            start_change += 1
         change_nbr = 0
         for key in sorted(comments.keys()):
             change_nbr += 1
