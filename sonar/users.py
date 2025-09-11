@@ -224,9 +224,7 @@ class User(sqobject.SqObject):
         elif self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             if data is None:
                 data = self.sq_json
-            self._groups = data.get("groups", [])
-            if "sonar-users" not in self._groups:
-                self._groups.append("sonar-users")
+            self._groups = list(set(data.get("groups", []) + [self.endpoint.default_user_group()]))
             log.debug("Updated %s groups = %s", str(self), str(self._groups))
         else:
             data = json.loads(self.get(User.API["GROUP_MEMBERSHIPS"], {"userId": self.id, "pageSize": 500}).text)["groupMemberships"]
@@ -312,7 +310,7 @@ class User(sqobject.SqObject):
         """Adds group membership to the user
 
         :param str group_name: Group to add membership
-        :raises UnsupportedOperation: if trying to remove a user from built-in groups ("sonar-users" only for now)
+        :raises UnsupportedOperation: if trying to remove a user from built-in user groups
         :raises ObjectNotFound: if group name not found
         :return: Whether operation succeeded
         """
@@ -320,8 +318,7 @@ class User(sqobject.SqObject):
         if group.is_default():
             raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't remove membership for {str(self)}")
         if group.add_user(self):
-            self._groups.append(group_name)
-            self._groups = sorted(self._groups)
+            self._groups = sorted(set(self._groups + [group_name]))
             return True
         return False
 
@@ -329,7 +326,7 @@ class User(sqobject.SqObject):
         """Removes group membership to the user
 
         :param str group_name: Group to remove membership
-        :raises UnsupportedOperation: if trying to remove a user from built-in groups ("sonar-users" only for now)
+        :raises UnsupportedOperation: if trying to remove a user from built-in groups
         :raises ObjectNotFound: if group name not found
         :return: Whether operation succeeded
         """
@@ -382,8 +379,8 @@ class User(sqobject.SqObject):
         :return: Whether all group membership were OK
         :rtype: bool
         """
-        ok = all(self.add_to_group(g) for g in set(group_list) - set(self.groups()) if g != "sonar-users")
-        ok = ok and all(self.remove_from_group(g) for g in set(self.groups()) - set(group_list) if g != "sonar-users")
+        ok = all(self.add_to_group(g) for g in set(group_list) - set(self.groups()) if not self.endpoint.is_default_user_group(g))
+        ok = ok and all(self.remove_from_group(g) for g in set(self.groups()) - set(group_list) if not self.endpoint.is_default_user_group(g))
         if not ok:
             self.refresh()
         return ok
@@ -454,8 +451,8 @@ class User(sqobject.SqObject):
         json_data["groups"] = self.groups().copy()
         if export_settings.get("MODE", "") == "MIGRATION":
             return json_data
-        if "sonar-users" in json_data["groups"]:
-            json_data["groups"].remove("sonar-users")
+        if self.endpoint.default_user_group() in json_data["groups"]:
+            json_data["groups"].remove(self.endpoint.default_user_group())
 
         if not self.endpoint.is_sonarcloud() and not export_settings["FULL_EXPORT"] and not json_data["local"]:
             json_data.pop("local")

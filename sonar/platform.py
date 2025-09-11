@@ -678,7 +678,7 @@ class Platform(object):
         for gr_name, gr_perms in groups.items():
             if gr_name == "Anyone":
                 problems.append(Problem(get_rule(RuleId.ANYONE_WITH_GLOBAL_PERMS), perms_url))
-            if gr_name == "sonar-users" and (
+            if self.is_default_user_group(gr_name) and (
                 "admin" in gr_perms or "gateadmin" in gr_perms or "profileadmin" in gr_perms or "provisioning" in gr_perms
             ):
                 problems.append(Problem(get_rule(RuleId.SONAR_USERS_WITH_ELEVATED_PERMS), perms_url))
