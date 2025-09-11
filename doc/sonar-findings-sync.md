@@ -15,7 +15,7 @@ When the source or target is a Community Edition/Build then only the main branch
 
 ## Usage
 
-`sonar-findings-sync -k <projectKeyPattern> [-b <sourceBranch>] [-B <targetBranch>] [-K <targetProjectKey>] [-B <targetBranch>] [-U <targetUrl> [-T <targetToken>] [-f <file>] [--nolink] [--since <YYYY-MM-DD>] [-h] [-u <sqUrl>] [-t <token>] [-v <debugLevel>]`
+`sonar-findings-sync -k <projectKeyPattern> [-b <sourceBranch>] [-B <targetBranch>] [-K <targetProjectKey>] [-B <targetBranch>] [-U <targetUrl> [-T <targetToken>] [-f <file>] [--nolink] [--since <YYYY-MM-DD>] [--tag <tag>]`
 
 - `-k <projectKeyPattern>`: Project key regexp pattern of the source projects to sync. If the pattern selects more than 1 project then the `-K` option shall not be speciified and the sync happens 1-to-1 for all project keys matching the pattern in the source platform. A same project key must exist on the target.
 - `-K <projectKey>`: Optional. Key of the target project. If not specified, the same project key as the source is assumed
@@ -29,6 +29,7 @@ When the source or target is a Community Edition/Build then only the main branch
 - `-f <file>`: Sends a summary report of synchronization to `<file>`, `stdout` is the default. The output format is JSON
 the target token.
 - `--nolink`: Do not add a HTTP link comment in the source and target findings (that point at each other)
+- `--tag`: Defines the tag applied to synchronized issues, default is `synchronized`. Use `--tag ''` to not tag the issues
 - `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
 
 :warning: Note about `-t` and `-T`: It is **strongly recommended** to run `sonar-findings-sync` with the credentials of a specific service account dedicated to issues synchronization on the target. This will allow to recognize automatic synchronization changes by the author of those changes. This token is either the one provided with `-t` when the synchronization is within the same SonarQube Server or Cloud (for instance 2 branches of a same project), or `-T` when synchronizing between 2 different SonarQube Server or Cloud instances (The `-T <token>` corresponding to a user on the **target** SonarQube Server or Cloud in that case)
