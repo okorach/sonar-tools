@@ -205,6 +205,7 @@ class Rule(sq.SqObject):
             raise exceptions.UnsupportedOperation("Can't create or extend rules on SonarQube Cloud")
         params = kwargs.copy()
         (_, params["customKey"]) = key.split(":")
+        params["impacts"] = ";".join([f"{k}={v}" for k, v in params.get("impacts", {}).items()])
         log.debug("Creating rule key '%s'", key)
         if not endpoint.post(cls.API[c.CREATE], params=params).ok:
             return None
@@ -236,7 +237,8 @@ class Rule(sq.SqObject):
             endpoint=endpoint,
             templateKey=template_key,
             name=data.get("name", key),
-            severity=data.get("severity", "MEDIUM"),
+            impacts=data.get("severities", None),
+            severity=data.get("severity", None),
             params=rule_params,
             markdownDescription=data.get("description", "NO DESCRIPTION"),
         )
