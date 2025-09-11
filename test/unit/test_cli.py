@@ -108,6 +108,6 @@ def test_bad_project_key(json_file: Generator[str]):
             assert tutil.run_cmd(func, cmd) == errcodes.WRONG_SEARCH_CRITERIA
             continue
         cmd = f"{pyfile} {tutil.SC_OPTS} {extra_args} --{opt.KEY_REGEXP} non-existing-project"
-        assert tutil.run_cmd(func, cmd) == errcodes.NO_SUCH_KEY
+        assert tutil.run_cmd(func, cmd) == errcodes.ARGS_ERROR
         cmd = f"{pyfile} {tutil.SC_OPTS} {extra_args} -K non-existing-project"
-        assert tutil.run_cmd(func, cmd) == errcodes.NO_SUCH_KEY
+        assert tutil.run_cmd(func, cmd) == errcodes.ARGS_ERROR
