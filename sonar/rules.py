@@ -511,6 +511,9 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
         except exceptions.ObjectNotFound:
             log.warning("Rule template key '%s' does not exist, can't instantiate it", key)
             continue
+        except KeyError:
+            log.warning("Template key information is mission in config JSON for instantiated rule '%s', rule creation skipped", key)
+            continue
         Rule.instantiate(endpoint=endpoint, key=key, template_key=template_rule.key, data=instantiation_data)
     return True
 
