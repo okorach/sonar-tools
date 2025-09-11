@@ -270,7 +270,11 @@ class QualityGate(sq.SqObject):
         ok = True
         for cond in conditions_list:
             (params["metric"], params["op"], params["error"]) = _decode_condition(cond)
-            ok = ok and self.post("qualitygates/create_condition", params=params).ok
+            try:
+                ok = ok and self.post("qualitygates/create_condition", params=params).ok
+            except (ConnectionError, RequestException) as e:
+                util.handle_error(e, f"adding condition '{cond}' to {str(self)}", catch_all=True)
+                ok = False
         self._conditions = None
         self.conditions()
         return ok
@@ -317,6 +321,10 @@ class QualityGate(sq.SqObject):
         """Updates a quality gate
         :param dict data: Considered keys: "name", "conditions", "permissions"
         """
+        log.debug("Updating %s with data %s", str(self), util.json_dump(data))
+        if self.is_built_in:
+            log.debug("Can't update built-in %s", str(self))
+            return True
         if "name" in data and data["name"] != self.name:
             log.info("Renaming %s with %s", str(self), data["name"])
             self.post(QualityGate.API[c.RENAME], params={"id": self.key, "name": data["name"]})
@@ -325,9 +333,9 @@ class QualityGate(sq.SqObject):
             self.key = data["name"]
             QualityGate.CACHE.put(self)
         ok = self.set_conditions(data.get("conditions", []))
-        ok = ok and self.set_permissions(data.get("permissions", []))
+        ok = self.set_permissions(data.get("permissions", [])) and ok
         if data.get("isDefault", False):
-            self.set_as_default()
+            ok = self.set_as_default() and ok
         return ok
 
     def is_identical_to(self, other_qg: QualityGate) -> bool:
@@ -490,7 +498,8 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         except exceptions.ObjectNotFound:
             log.debug("QG %s not found, creating it", name)
             o = QualityGate.create(endpoint, name)
-        ok = ok and o.update(**data)
+        log.debug("Importing %s with %s", str(o), util.json_dump(data))
+        ok = o.update(**data) and ok
     return ok
 
 
