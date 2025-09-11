@@ -545,27 +545,6 @@ def get_all_rules_details(endpoint: platform.Platform, threads: int = 8) -> bool
     return ok
 
 
-def convert_for_export(rule: types.ObjectJsonRepr, qp_lang: str, with_template_key: bool = True, full: bool = False) -> types.ObjectJsonRepr:
-    """Converts rule data for export"""
-    d = {"severity": rule.get("severity", "")}
-    if len(rule.get("params", {})) > 0:
-        d["params"] = rule["params"] if full else {p["key"]: p.get("defaultValue", "") for p in rule["params"]}
-    if rule["isTemplate"]:
-        d["isTemplate"] = True
-    if "tags" in rule and len(rule["tags"]) > 0:
-        d["tags"] = rule["tags"]
-    if rule.get("mdNote", None) is not None:
-        d["description"] = rule["mdNote"]
-    if with_template_key and "templateKey" in rule:
-        d["templateKey"] = rule["templateKey"]
-    if "lang" in rule and rule["lang"] != qp_lang:
-        d["language"] = rule["lang"]
-    if full:
-        d.update({f"_{k}": v for k, v in rule.items() if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "templateKey", "lang")})
-        d.pop("_key", None)
-    return d
-
-
 def convert_rule_list_for_yaml(rule_list: types.ObjectJsonRepr) -> list[types.ObjectJsonRepr]:
     """Converts a rule dict (key: data) to prepare for yaml by adding severity and key"""
     return utilities.dict_to_list(rule_list, "key", "severity")
