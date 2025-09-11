@@ -180,3 +180,14 @@ def test_third_party() -> None:
     third_party_rules = rules.third_party(tutil.SQ)
     assert len(third_party_rules) > 0
     assert sum(1 for r in third_party_rules if r.key.startswith("creedengo")) > 0
+
+
+def test_export_fields() -> None:
+    """test_export_fields"""
+    rule_list = rules.export(endpoint=tutil.SQ, export_settings={})
+    assert len(rule_list["extended"]) > 0
+    for r in rule_list["extended"]:
+        assert any(key in r for key in ("description", "tags", "params", "severity", "impacts"))
+    assert len(rule_list["instantiated"]) > 0
+    for r in rule_list["instantiated"]:
+        assert all(key in r for key in ("key", "language", "params", "severity", "impacts", "templateKey"))
