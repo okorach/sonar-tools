@@ -599,7 +599,10 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             o = Application.get_object(endpoint, key)
         except exceptions.ObjectNotFound:
             o = Application.create(endpoint, key, data["name"])
-        o.update(data)
+        try:
+            o.update(data)
+        except exceptions.ObjectNotFound as e:
+            log.error("%s configuration incomplete: %s", str(o), e.message)
     return True
 
 
