@@ -116,6 +116,7 @@ class QualityGate(sq.SqObject):
         """Constructor, don't use directly, use class methods instead"""
         super().__init__(endpoint=endpoint, key=name)
         self.name = name  #: Object name
+        log.debug("Loading %s with data %s", self, util.json_dump(data))
         self.is_built_in = False  #: Whether the quality gate is built in
         self.is_default = False  #: Whether the quality gate is the default
         self._conditions = None  #: Quality gate conditions
@@ -230,6 +231,7 @@ class QualityGate(sq.SqObject):
         if self._conditions is None:
             self._conditions = []
             data = json.loads(self.get(QualityGate.API[c.GET], params=self.api_params()).text)
+            log.debug("Loading %s with conditions %s", self, util.json_dump(data))
             for cond in data.get("conditions", []):
                 self._conditions.append(cond)
         if encoded:
@@ -534,8 +536,10 @@ def _encode_condition(cond: dict[str, str]) -> str:
         op = ">="
     elif op == "LT":
         op = "<="
-    if metric.endswith("rating"):
+    if "rating" in metric:
         val = measures.get_rating_letter(val)
+    elif metric.startswith("sca_severity") and f"{val}" == "19":
+        val = "High"
     if any(d in metric for d in _PERCENTAGE_METRICS):
         val = f"{val}%"
     return f"{metric} {op} {val}"
@@ -548,8 +552,10 @@ def _decode_condition(cond: str) -> tuple[str, str, str]:
         op = "GT"
     elif op in ("<", "<="):
         op = "LT"
-    if metric.endswith("rating"):
+    if "rating" in metric:
         val = measures.get_rating_number(val)
+    elif metric.startswith("sca_severity") and val == "High":
+        val = 19
     if any(d in metric for d in _PERCENTAGE_METRICS) and val.endswith("%"):
         val = val[:-1]
     return (metric, op, val)
