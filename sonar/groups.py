@@ -38,7 +38,6 @@ from sonar.audit import rules
 from sonar.audit.problem import Problem
 from sonar.util import types, cache, constants as c
 
-SONAR_USERS = "sonar-users"
 ADD_USER = "ADD_USER"
 REMOVE_USER = "REMOVE_USER"
 GROUPS_API = "v2/authorizations/groups"
@@ -192,7 +191,7 @@ class Group(sq.SqObject):
 
     def is_default(self) -> bool:
         """
-        :return: whether the group is a default group (sonar-users only for now) or not
+        :return: whether the group is a default group (sonar-users on SQS, Mambers on SQC) or not
         """
         return self.__is_default
 
