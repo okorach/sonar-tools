@@ -83,7 +83,6 @@ def __process_exact_sibling(finding: findings.Finding, sibling: findings.Finding
             sibling.add_comment(f"Automatically synchronized from [this original {finding_type}]({finding.url()})")
         sibling.apply_changelog(finding, settings)
         if (tag := settings.get(SYNC_TAG, "")) != "":
-            log.info("Adding TTATAG %s to %s", tag, sibling)
             try:
                 sibling.add_tag(tag)
             except exceptions.UnsupportedOperation:
