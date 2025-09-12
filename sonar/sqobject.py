@@ -173,13 +173,10 @@ class SqObject(object):
         """
         if tags is None:
             return False
-        if (api := self.__class__.API.get(c.SET_TAGS, None)) is None:
-            log.debug("No set_tags API for %s", utilities.class_name(self))
-            return False
         tags = list(set(utilities.csv_to_list(tags)))
         log.info("Settings tags %s to %s", tags, str(self))
         try:
-            r = self.post(api, params={**self.api_params(c.SET_TAGS), "tags": utilities.list_to_csv(tags)})
+            r = self.post(self.__class__.API.get[c.SET_TAGS], params={**self.api_params(c.SET_TAGS), "tags": utilities.list_to_csv(tags)})
             if r.ok:
                 self._tags = sorted(tags)
         except (ConnectionError, RequestException) as e:

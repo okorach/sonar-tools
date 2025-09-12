@@ -31,6 +31,7 @@ from sonar.util import types
 from sonar import findings
 from sonar.projects import Project
 from sonar.branches import Branch
+from sonar import exceptions
 
 
 SYNC_IGNORE_COMPONENTS = "ignore_components"
@@ -83,7 +84,11 @@ def __process_exact_sibling(finding: findings.Finding, sibling: findings.Finding
         sibling.apply_changelog(finding, settings)
         if (tag := settings.get(SYNC_TAG, "")) != "":
             log.info("Adding TTATAG %s to %s", tag, sibling)
-            sibling.add_tag(tag)
+            try:
+                sibling.add_tag(tag)
+            except exceptions.UnsupportedOperation:
+                # Setting tags on hotspots is currently not supported
+                pass
         else:
             log.debug("No tag to add in synced finding")
         msg = f"Source {finding_type} changelog applied successfully"
