@@ -21,7 +21,7 @@
 
 from __future__ import annotations
 import concurrent.futures
-import datetime
+from datetime import datetime
 from typing import Optional
 from http import HTTPStatus
 from requests import RequestException
@@ -288,13 +288,23 @@ class Finding(sq.SqObject):
     def is_closed(self) -> bool:
         return self.status == "CLOSED"
 
-    def changelog(self, manual_only: bool = True) -> bool:
+    def changelog(self, after: Optional[datetime] = None, manual_only: bool = True) -> bool:
         # Implemented in subclasses, should not reach this
         raise NotImplementedError()
 
-    def comments(self) -> dict[str, str]:
+    def last_changelog_date(self) -> Optional[datetime]:
+        """Returns the date of the last changelog entry, or None if no changelog"""
+        ch = self.changelog(manual_only=True)
+        return list(ch.values())[-1].date_time() if len(ch) > 0 else None
+
+    def comments(self, after: Optional[datetime] = None) -> dict[str, str]:
         # Implemented in subclasses, should not reach this
         raise NotImplementedError()
+
+    def last_comment_date(self) -> Optional[datetime]:
+        """Returns the date of the last comment, or None if no comment"""
+        ch = self.comments()
+        return list(ch.values())[-1]["date"] if len(ch) > 0 else None
 
     def unassign(self) -> bool:
         """Unassigns an issue
@@ -303,30 +313,31 @@ class Finding(sq.SqObject):
         """
         return self.assign(None)
 
-    def has_changelog(self, added_after: Optional[datetime.datetime] = None, manual_only: bool = True) -> bool:
+    def has_changelog(self, after: Optional[datetime] = None, manual_only: Optional[bool] = True) -> bool:
         """
+        :param Optional[datetime] after: If set, only changelogs after that date will be considered
         :param manual_only: Whether to check only manual changes
         :return: Whether the finding has a changelog
         :rtype: bool
         """
         # log.debug("%s has %d changelogs", str(self), len(self.changelog()))
-        if added_after is not None and added_after > self.modification_date:
+        if after is not None and after > self.modification_date:
             return False
-        return len(self.changelog(manual_only)) > 0
+        return len(self.changelog(after=after, manual_only=manual_only)) > 0
 
-    def has_comments(self) -> bool:
+    def has_comments(self, after: Optional[datetime] = None) -> bool:
         """
         :return: Whether the finding has comments
         :rtype: bool
         """
-        return len(self.comments()) > 0
+        return len(self.comments(after=after)) > 0
 
-    def modifiers(self) -> set[str]:
+    def modifiers(self, after: Optional[datetime] = None) -> set[str]:
         """
         :return: the set of users that modified the finding
         :rtype: set(str)
         """
-        return {c.author() for c in self.changelog().values()}
+        return {c.author() for c in self.changelog(after=after).values()}
 
     def commenters(self) -> set[str]:
         """
@@ -423,6 +434,7 @@ class Finding(sq.SqObject):
         candidates = [f for f in findings_list if f is not self and f.strictly_identical_to(self, ignore_component, **kwargs)]
         candidate_match = None
         line_gap = None
+        last_change = self.last_changelog_date()
         for finding in candidates:
             if line_gap is None or abs(finding.line - self.line) < line_gap:
                 line_gap = abs(finding.line - self.line)
@@ -431,22 +443,24 @@ class Finding(sq.SqObject):
             if line_gap == 0:
                 break
         if candidate_match is not None:
-            if candidate_match.can_be_synced(sync_user):
+            if candidate_match.last_changelog_date() is None or (last_change is not None and candidate_match.last_changelog_date() < last_change):
                 log.info("%s and %s are exact match and can be synced", str(self), str(candidate_match))
                 exact_matches.append(candidate_match)
             else:
-                log.info("%s and %s are exact match but target already has changes, cannot be synced", str(self), str(candidate_match))
+                log.info(
+                    "%s and %s are exact match but target has more recent changes than source, cannot be synced", str(self), str(candidate_match)
+                )
                 match_but_modified.append(candidate_match)
             return exact_matches, approx_matches, match_but_modified
 
         log.info("No exact match, searching for an approximate match of %s", str(self))
         candidates = [f for f in findings_list if f.almost_identical_to(self, ignore_component, **kwargs)]
         for finding in candidates:
-            if finding.can_be_synced(sync_user):
+            if finding.last_changelog_date() is None or (last_change is not None and finding.last_changelog_date() < last_change):
                 log.info("%s and %s are approximate match and could be synced", str(self), str(finding))
                 approx_matches.append(finding)
             else:
-                log.info("%s and %s are approximate match but target already has changes, cannot be synced", str(self), str(finding))
+                log.info("%s and %s are approximate match but target has more recent changes than source, cannot be synced", str(self), str(finding))
                 match_but_modified.append(finding)
 
         if len(approx_matches) + len(match_but_modified) == 0:
@@ -493,14 +507,14 @@ def to_csv_header(endpoint: pf.Platform) -> list[str]:
         return list(LEGACY_CSV_EXPORT_FIELDS)
 
 
-def __get_changelog(finding: Finding, added_after: Optional[datetime.datetime] = None) -> Finding:
+def __get_changelog(finding: Finding, after: Optional[datetime] = None) -> Finding:
     """Collect the changelog and comments of an issue"""
-    finding.has_changelog(added_after=added_after)
-    finding.has_comments()
+    finding.has_changelog(after=after, manual_only=True)
+    finding.has_comments(after=after)
     return finding
 
 
-def get_changelogs(issue_list: list[Finding], added_after: datetime.datetime = None, threads: int = 8) -> None:
+def get_changelogs(issue_list: list[Finding], added_after: Optional[datetime] = None, threads: int = 8) -> None:
     """Performs a mass, multithreaded collection of finding changelogs (one API call per issue)"""
     if len(issue_list) == 0:
         return

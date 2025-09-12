@@ -176,7 +176,7 @@ class SqObject(object):
         tags = list(set(utilities.csv_to_list(tags)))
         log.info("Settings tags %s to %s", tags, str(self))
         try:
-            r = self.post(self.__class__.API.get[c.SET_TAGS], params={**self.api_params(c.SET_TAGS), "tags": utilities.list_to_csv(tags)})
+            r = self.post(self.__class__.API[c.SET_TAGS], params={**self.api_params(c.SET_TAGS), "tags": utilities.list_to_csv(tags)})
             if r.ok:
                 self._tags = sorted(tags)
         except (ConnectionError, RequestException) as e:

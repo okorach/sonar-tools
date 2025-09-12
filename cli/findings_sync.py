@@ -189,7 +189,7 @@ def main() -> None:
             syncer.APPROX_MATCH: "could not be synchronized because the match was approximate",
             syncer.MULTIPLE_MATCHES: "could not be synchronized because there were multiple matches",
             syncer.NO_MATCH: "could not be synchronized because no match was found in target",
-            "nb_tgt_has_changelog": "could not be synchronized because target issue already had a changelog",
+            "nb_tgt_has_changelog": "were not synchronized because target finding has a more recent changelog",
             "exception": "could not be synchronized because of unexpected exception",
         }
         for t in "issues", "hotspots":
