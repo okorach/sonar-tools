@@ -21,7 +21,7 @@
 """Abstraction of SonarQube finding (issue or hotspot) changelog"""
 
 from typing import Optional
-
+from datetime import datetime
 import sonar.logging as log
 from sonar.util import types
 from sonar.util import issue_defs as idefs
@@ -215,9 +215,13 @@ class Changelog(object):
                 return d.get("oldValue", "")
         return ""
 
-    def date(self) -> str:
+    def date_str(self) -> str:
         """Returns the changelog item date"""
         return self.sq_json["creationDate"]
+
+    def date_time(self) -> datetime:
+        """Returns the changelog item date as a datetime object"""
+        return datetime.strptime(self.sq_json["creationDate"], "%Y-%m-%dT%H:%M:%S%z")
 
     def author(self) -> Optional[str]:
         """Returns the changelog item author"""
