@@ -228,11 +228,12 @@ class Issue(findings.Finding):
                 idefs.TYPE_QUALITY_MAPPING[data.get("type", idefs.TYPE_NONE)]: idefs.SEVERITY_MAPPING[data.get("severity", idefs.SEVERITY_NONE)]
             }
 
-    def changelog(self, manual_only: bool = True) -> dict[str, str]:
+    def changelog(self, after: Optional[datetime] = None, manual_only: Optional[bool] = True) -> dict[str, changelog.Changelog]:
         """
-        :param bool manual_only: Whether the only manual changes should be returned or all changes
+        :param Optional[datetime] after: If set, only changes after that date are returned
+        :param Optional[bool] manual_only: Whether the only manual changes should be returned or all changes, defaults to True
         :return: The issue changelog
-        :rtype: dict{"<date>_<sequence_nbr>": <event>}
+        :rtype: dict{"<date>_<sequence_nbr>": Changelog}
         """
         if self._changelog is None:
             data = json.loads(self.get("issues/changelog", {"issue": self.key, "format": "json"}).text)
@@ -251,11 +252,14 @@ class Issue(findings.Finding):
                     continue
                 log.debug("%s: Changelog item Changelog ADDED = %s", str(self), str(d))
                 seq += 1
-                self._changelog[f"{d.date()}_{seq:03d}"] = d
+                self._changelog[f"{d.date_str()}_{seq:03d}"] = d
+        if after is not None:
+            return {k: v for k, v in self._changelog.items() if v.date_time() > after}
         return self._changelog
 
-    def comments(self) -> dict[str, str]:
+    def comments(self, after: Optional[datetime] = None) -> dict[str, str]:
         """
+        :param Optional[datetime] after: If set will only return comments after this date, else all
         :return: The issue comments
         :rtype: dict{"<date>_<sequence_nbr>": <comment>}
         """
@@ -267,12 +271,14 @@ class Issue(findings.Finding):
             for cmt in self.sq_json["comments"]:
                 seq += 1
                 self._comments[f"{cmt['createdAt']}_{seq:03}"] = {
-                    "date": cmt["createdAt"],
+                    "date": datetime.strptime(cmt["createdAt"], "%Y-%m-%dT%H:%M:%S%z"),
                     "event": "comment",
                     "value": cmt["markdown"],
                     "user": cmt["login"],
                     "userName": cmt["login"],
                 }
+        if after is not None:
+            return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > after}
         return self._comments
 
     def add_comment(self, comment: str) -> bool:
@@ -579,45 +585,35 @@ class Issue(findings.Finding):
             return False
         return True
 
-    def apply_changelog(self, source_issue: Issue, settings: ConfigSettings) -> bool:
+    def apply_changelog(self, source_issue: Issue, settings: ConfigSettings) -> int:
         """
-        :meta private:
+        Applies a changelog and comments from a source to a target issue
+        :param Issue source_hotspot: The source issues to take changes from
+        :return: Number of changes applied
         """
+        count = 0
+        last_target_change = self.last_changelog_date()
+        events = source_issue.changelog(after=last_target_change, manual_only=True)
+        if len(events) == 0:
+            log.info("Source %s has no changelog added after target %s last change (%s), no changelg applied", source_issue, self, last_target_change)
+        else:
+            log.info("Applying %d changelogs of %s to %s, from %s", len(events), source_issue, self, last_target_change)
+            # Apply all tags at once, plus synchronized tag
+            for key in sorted(events.keys()):
+                if events[key] != "TAG":
+                    self.__apply_event(events[key], settings)
+                    count += 1
 
-        events = source_issue.changelog()
-        if events is None or not events:
-            log.debug("Sibling %s has no changelog, no action taken", source_issue.key)
-            return False
-
-        change_nbr = 0
-        # FIXME: There can be a glitch if there are non manual changes in the changelog
-        start_change = len(self.changelog()) + 1
-        log.info("Applying changelog of %s to %s, from change %d", str(source_issue), str(self), start_change)
-        # Apply all tags at once, plus synchronized tag
-        for key in sorted(events.keys()):
-            change_nbr += 1
-            if change_nbr < start_change:
-                log.debug("Skipping change already applied in a previous sync: %s", str(events[key]))
-                continue
-            if events[key] != "TAG":
-                self.__apply_event(events[key], settings)
-
-        comments = source_issue.comments()
-        start_change = len(self.comments())
-        log.info("Target %s already has %d comments", str(self), start_change)
-        log.info("Applying comments of %s to %s, from comment %d", str(source_issue), str(self), start_change)
-        if start_change > 0:
-            # Account for the link comment
-            start_change += 1
-        change_nbr = 0
-        for key in sorted(comments.keys()):
-            change_nbr += 1
-            if change_nbr < start_change:
-                log.debug("Skipping comment already applied in a previous sync: %s", str(comments[key]))
-                continue
-            # origin = f"originally by *{event['userName']}* on original branch"
-            self.add_comment(comments[key]["value"])
-        return True
+        last_target_change = self.last_comment_date()
+        events = source_issue.comments(after=last_target_change)
+        if len(events) == 0:
+            log.info("Source %s has no comments added after target %s last change (%s), no comment added", source_issue, self, last_target_change)
+        else:
+            log.info("Applying %d comments of %s to %s, from %s", len(events), source_issue, self, last_target_change)
+            for key in sorted(events.keys()):
+                self.add_comment(events[key]["value"])
+                count += 1
+        return count
 
 
 # ------------------------------- Static methods --------------------------------------
