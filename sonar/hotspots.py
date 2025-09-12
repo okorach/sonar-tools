@@ -288,7 +288,7 @@ class Hotspot(findings.Finding):
         :param Hotspot source_hotspot: The source hotspot to take changes from
         :return: Number of changes applied
         """
-        count = 0
+        counter = 0
         last_target_change = self.last_changelog_date()
         events = source_hotspot.changelog(after=last_target_change)
         if len(events) == 0:
@@ -299,7 +299,7 @@ class Hotspot(findings.Finding):
             log.info("Applying %d changelogs of %s to %s, from %s", len(events), source_hotspot, self, last_target_change)
             for key in sorted(events.keys()):
                 self.__apply_event(events[key], settings)
-                count += 1
+                counter += 1
 
         last_target_change = self.last_comment_date()
         events = source_hotspot.comments(after=last_target_change)
@@ -309,13 +309,13 @@ class Hotspot(findings.Finding):
             log.info("Applying %d comments of %s to %s, from %s", len(events), source_hotspot, self, last_target_change)
             for key in sorted(events.keys()):
                 self.add_comment(events[key]["value"])
-                count += 1
-        return count
+                counter += 1
+        return counter
 
-    def changelog(self, manual_only: bool = True, after: Optional[datetime] = None) -> dict[str, changelog.Changelog]:
+    def changelog(self, after: Optional[datetime] = None, manual_only: bool = True) -> dict[str, changelog.Changelog]:
         """
-        :param bool manual_only: Whether the only manual changes should be returned or all changes
         :param Optional[datetime] after: If set, only changes after that date are returned
+        :param bool manual_only: Whether the only manual changes should be returned or all changes
         :return: The hotspot changelog
         :rtype: dict{"<date>_<sequence_nbr>": Changelog}
         """
