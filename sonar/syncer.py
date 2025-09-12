@@ -78,19 +78,25 @@ def __issue_data(finding: findings.Finding, prefix: str) -> dict[str, str]:
 def __process_exact_sibling(finding: findings.Finding, sibling: findings.Finding, settings: types.ConfigSettings) -> dict[str, str]:
     """Returns data about an exact finding match"""
     finding_type = util.class_name(finding).lower()
-    if finding.has_changelog() or finding.has_comments():
+    last_target_change = sibling.last_changelog_date()
+    if finding.has_changelog(after=last_target_change) or finding.has_comments(after=last_target_change):
         if settings.get(SYNC_ADD_LINK, True):
             sibling.add_comment(f"Automatically synchronized from [this original {finding_type}]({finding.url()})")
-        sibling.apply_changelog(finding, settings)
-        if (tag := settings.get(SYNC_TAG, "")) != "":
-            try:
-                sibling.add_tag(tag)
-            except exceptions.UnsupportedOperation:
-                # Setting tags on hotspots is currently not supported
-                pass
-        else:
-            log.debug("No tag to add in synced finding")
-        msg = f"Source {finding_type} changelog applied successfully"
+        count = sibling.apply_changelog(finding, settings)
+        try:
+            tags = finding.get_tags()
+            if (tag := settings.get(SYNC_TAG, "")) != "":
+                tags += [tag]
+            else:
+                log.debug("No tag to add in synced finding")
+            if len(tags) > 0:
+                sibling.set_tags(tags)
+        except exceptions.UnsupportedOperation:
+            # Setting tags on hotspots is currently not supported
+            pass
+        msg = f"Source {finding_type} changelog applied successfully ({count} changes)"
+    elif last_target_change:
+        msg = f"Source {finding_type} has no changelog more recent than target last changelog {last_target_change}"
     else:
         msg = f"Source {finding_type} has no changelog"
     return __issue_data(finding, _SRC) | __issue_data(sibling, _TGT) | {_SYNC_STATUS: "synchronized", _SYNC_MSG: msg}
@@ -228,7 +234,7 @@ def sync_lists(
         if finding.is_closed():
             log.debug("%s is closed, so it will not be synchronized despite having a changelog", str(finding))
             continue
-        if not (finding.has_changelog(added_after=min_date) or finding.has_comments()):
+        if not (finding.has_changelog(after=min_date) or finding.has_comments()):
             log.debug("%s has no manual changelog or comments added after %s, skipped in sync", str(finding), str(min_date))
             continue
 
