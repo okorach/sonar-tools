@@ -591,7 +591,7 @@ class Issue(findings.Finding):
         :param Issue source_hotspot: The source issues to take changes from
         :return: Number of changes applied
         """
-        count = 0
+        counter = 0
         last_target_change = self.last_changelog_date()
         events = source_issue.changelog(after=last_target_change, manual_only=True)
         if len(events) == 0:
@@ -602,7 +602,7 @@ class Issue(findings.Finding):
             for key in sorted(events.keys()):
                 if events[key] != "TAG":
                     self.__apply_event(events[key], settings)
-                    count += 1
+                    counter += 1
 
         last_target_change = self.last_comment_date()
         events = source_issue.comments(after=last_target_change)
@@ -612,8 +612,8 @@ class Issue(findings.Finding):
             log.info("Applying %d comments of %s to %s, from %s", len(events), source_issue, self, last_target_change)
             for key in sorted(events.keys()):
                 self.add_comment(events[key]["value"])
-                count += 1
-        return count
+                counter += 1
+        return counter
 
 
 # ------------------------------- Static methods --------------------------------------
