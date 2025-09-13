@@ -63,6 +63,7 @@ class Application(aggr.Aggregation):
         c.LIST: "components/search_projects",
         c.SET_TAGS: "applications/set_tags",
         c.GET_TAGS: "applications/show",
+        c.RECOMPUTE: "applications/refresh",
         "CREATE_BRANCH": "applications/create_branch",
         "UPDATE_BRANCH": "applications/update_branch",
     }
@@ -237,7 +238,7 @@ class Application(aggr.Aggregation):
         :return: self:
         :rtype: Application
         """
-        log.debug("Updating application branch with %s", util.json_dump(branch_data))
+        log.debug("%s: Updating application branch '%s' with %s", self, branch_name, util.json_dump(branch_data))
         branch_definition = {}
         for p in branch_data.get("projects", []):
             if isinstance(p, list):
@@ -411,32 +412,41 @@ class Application(aggr.Aggregation):
             self._last_analysis = util.string_to_date(self.sq_json["analysisDate"])
         return self._last_analysis
 
+    def recompute(self) -> bool:
+        """Triggers application recomputation, return whether the operation succeeded"""
+        log.debug("Recomputing %s", str(self))
+        return self.post(Application.API[c.RECOMPUTE], params=self.api_params(c.RECOMPUTE)).ok
+
     def update(self, data: types.ObjectJsonRepr) -> None:
         """Updates an Application with data coming from a JSON (export)
 
         :param dict data:
         """
-        log.info("Updating application with %s", util.json_dump(data))
-        if "permissions" in data:
+        log.info("Updating %s with %s", self, util.json_dump(data))
+        visi = data.get("visibility", None)
+        if visi in ("public", "private"):
+            self.set_visibility(visi)
+        elif visi is None:
+            log.warning("%s visibility is not defined in JSON configuration file", self)
+        else:
+            log.warning("%s visibility to an invalid value in JSON configuration file, it must be 'public' or 'private'")
+        if perms := data.get("permissions", None):
+            log.info("Setting %s permissions with %s", self, perms)
             decoded_perms = {}
-            for ptype in permissions.PERMISSION_TYPES:
-                if ptype not in data["permissions"]:
-                    continue
-                decoded_perms[ptype] = {u: permissions.decode(v) for u, v in data["permissions"][ptype].items()}
+            for ptype in [p for p in permissions.PERMISSION_TYPES if p in perms]:
+                decoded_perms[ptype] = {u: permissions.decode(v) for u, v in perms[ptype].items()}
             self.set_permissions(decoded_perms)
-            # perms = {k: permissions.decode(v) for k, v in data.get("permissions", {}).items()}
-            # self.set_permissions(util.csv_to_list(perms))
+
         self.add_projects(_project_list(data))
         self.set_tags(util.csv_to_list(data.get("tags", [])))
-        main_branch = self.main_branch()
-        for name, branch_data in data.get("branches", {}).items():
-            if branch_data.get("isMain", False):
-                main_branch.rename(name)
-        for name, branch_data in data.get("branches", {}).items():
-            self.set_branches(name, branch_data)
+
+        main_branch_name = next((k for k, v in data.get("branches", {}).items() if v.get("isMain", False)), None)
+        main_branch_name is None or self.main_branch().rename(main_branch_name)
+
+        _ = [self.set_branches(name, branch_data) for name, branch_data in data.get("branches", {}).items()]
 
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:
-        ops = {c.READ: {"application": self.key}}
+        ops = {c.READ: {"application": self.key}, c.RECOMPUTE: {"key": self.key}}
         return ops[op] if op and op in ops else ops[c.READ]
 
     def __get_project_branches(self, branch_definition: types.ObjectJsonRepr):
@@ -449,9 +459,7 @@ class Application(aggr.Aggregation):
                 proj_br = o_proj.main_branch().name
             else:
                 proj_br = branch_definition[proj]
-                if proj_br == util.DEFAULT:
-                    proj_br = o_proj.main_branch().name
-            project_branches.append(branches.Branch.get_object(o_proj, proj_br))
+            project_branches.append(o_proj if proj_br == util.DEFAULT else branches.Branch.get_object(o_proj, proj_br))
         return project_branches
 
 
@@ -593,6 +601,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     new_key_list = util.csv_to_list(key_list)
     for key, data in config_data["applications"].items():
         if new_key_list and key not in new_key_list:
+            log.debug("App key '%s' not in selected apps", key)
             continue
         log.info("Importing application key '%s'", key)
         try:
@@ -601,6 +610,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             o = Application.create(endpoint, key, data["name"])
         try:
             o.update(data)
+            o.recompute()
         except exceptions.ObjectNotFound as e:
             log.error("%s configuration incomplete: %s", str(o), e.message)
     return True
