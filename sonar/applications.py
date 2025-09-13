@@ -63,6 +63,7 @@ class Application(aggr.Aggregation):
         c.LIST: "components/search_projects",
         c.SET_TAGS: "applications/set_tags",
         c.GET_TAGS: "applications/show",
+        c.RECOMPUTE: "applications/refresh",
         "CREATE_BRANCH": "applications/create_branch",
         "UPDATE_BRANCH": "applications/update_branch",
     }
@@ -411,6 +412,11 @@ class Application(aggr.Aggregation):
             self._last_analysis = util.string_to_date(self.sq_json["analysisDate"])
         return self._last_analysis
 
+    def recompute(self) -> bool:
+        """Triggers application recomputation, return whether the operation succeeded"""
+        log.debug("Recomputing %s", str(self))
+        return self.post(Application.API[c.RECOMPUTE], params=self.api_params(c.RECOMPUTE)).ok
+
     def update(self, data: types.ObjectJsonRepr) -> None:
         """Updates an Application with data coming from a JSON (export)
 
@@ -440,7 +446,7 @@ class Application(aggr.Aggregation):
         _ = [self.set_branches(name, branch_data) for name, branch_data in data.get("branches", {}).items()]
 
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:
-        ops = {c.READ: {"application": self.key}}
+        ops = {c.READ: {"application": self.key}, c.RECOMPUTE: {"key": self.key}}
         return ops[op] if op and op in ops else ops[c.READ]
 
     def __get_project_branches(self, branch_definition: types.ObjectJsonRepr):
@@ -606,6 +612,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             o = Application.create(endpoint, key, data["name"])
         try:
             o.update(data)
+            o.recompute()
         except exceptions.ObjectNotFound as e:
             log.error("%s configuration incomplete: %s", str(o), e.message)
     return True
