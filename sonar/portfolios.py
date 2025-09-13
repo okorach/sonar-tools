@@ -91,7 +91,7 @@ class Portfolio(aggregations.Aggregation):
         c.UPDATE: "views/update",
         c.DELETE: "views/delete",
         c.SEARCH: "views/search",
-        "REFRESH": "views/refresh",
+        c.RECOMPUTE: "views/refresh",
     }
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
