@@ -459,9 +459,7 @@ class Application(aggr.Aggregation):
                 proj_br = o_proj.main_branch().name
             else:
                 proj_br = branch_definition[proj]
-                if proj_br == util.DEFAULT:
-                    proj_br = o_proj.main_branch().name
-            project_branches.append(branches.Branch.get_object(o_proj, proj_br))
+            project_branches.append(o_proj if proj_br == util.DEFAULT else branches.Branch.get_object(o_proj, proj_br))
         return project_branches
 
 

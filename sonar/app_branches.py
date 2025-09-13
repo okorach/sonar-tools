@@ -54,11 +54,14 @@ class ApplicationBranch(Component):
         c.DELETE: "applications/delete_branch",
     }
 
-    def __init__(self, app: object, name: str, project_branches: list[Branch], is_main: bool = False) -> None:
+    def __init__(
+        self, app: object, name: str, project_branches: list[Branch], is_main: bool = False, branch_data: Optional[types.ApiPayload] = None
+    ) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=app.endpoint, key=f"{app.key} BRANCH {name}")
         self.concerned_object = app
         self.name = name
+        self.sq_json = branch_data
         self._is_main = is_main
         self._project_branches = project_branches
         self._last_analysis = None
@@ -102,9 +105,13 @@ class ApplicationBranch(Component):
         if app.endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         params = {"application": app.key, "branch": name, "project": [], "projectBranch": []}
-        for branch in project_branches:
-            params["project"].append(branch.concerned_object.key)
-            params["projectBranch"].append("" if branch.is_main() else branch.name)
+        for obj in project_branches:
+            if isinstance(obj, Branch):
+                params["project"].append(obj.concerned_object.key)
+                params["projectBranch"].append(obj.name)
+            else:  # Default main branch of project
+                params["project"].append(obj.key)
+                params["projectBranch"].append("")
         try:
             app.endpoint.post(ApplicationBranch.API[c.CREATE], params=params)
         except (ConnectionError, RequestException) as e:
@@ -118,7 +125,9 @@ class ApplicationBranch(Component):
         for proj_data in branch_data["projects"]:
             proj = projects.Project.get_object(app.endpoint, proj_data["key"])
             project_branches.append(Branch.get_object(concerned_object=proj, branch_name=proj_data["branch"]))
-        return ApplicationBranch(app=app, name=branch_data["branch"], project_branches=project_branches, is_main=branch_data.get("isMain", False))
+        return ApplicationBranch(
+            app=app, name=branch_data["branch"], project_branches=project_branches, is_main=branch_data.get("isMain", False), branch_data=branch_data
+        )
 
     def __str__(self) -> str:
         return f"application '{self.concerned_object.key}' branch '{self.name}'"
@@ -166,8 +175,8 @@ class ApplicationBranch(Component):
         :param full: Whether to do a full export including settings that can't be set, defaults to False
         :type full: bool, optional
         """
-        log.info("Exporting %s", str(self))
-        jsondata = {"projects": {b.concerned_object.key: b.name for b in self._project_branches}}
+        log.info("Exporting %s from %s", self, self.sq_json)
+        jsondata = {"projects": {b["key"]: b["branch"] if b["selected"] else utilities.DEFAULT for b in self.sq_json["projects"]}}
         if self.is_main():
             jsondata["isMain"] = True
         return jsondata
