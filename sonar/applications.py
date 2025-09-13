@@ -238,7 +238,7 @@ class Application(aggr.Aggregation):
         :return: self:
         :rtype: Application
         """
-        log.debug("Updating application branch with %s", util.json_dump(branch_data))
+        log.debug("%s: Updating application branch '%s' with %s", self, branch_name, util.json_dump(branch_data))
         branch_definition = {}
         for p in branch_data.get("projects", []):
             if isinstance(p, list):
