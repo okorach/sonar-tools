@@ -104,8 +104,7 @@ class ApplicationBranch(Component):
         params = {"application": app.key, "branch": name, "project": [], "projectBranch": []}
         for branch in project_branches:
             params["project"].append(branch.concerned_object.key)
-            br_name = "" if branch.is_main() else branch.name
-            params["projectBranch"].append(br_name)
+            params["projectBranch"].append("" if branch.is_main() else branch.name)
         try:
             app.endpoint.post(ApplicationBranch.API[c.CREATE], params=params)
         except (ConnectionError, RequestException) as e:
