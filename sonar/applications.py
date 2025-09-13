@@ -416,24 +416,28 @@ class Application(aggr.Aggregation):
 
         :param dict data:
         """
-        log.info("Updating application with %s", util.json_dump(data))
-        if "permissions" in data:
+        log.info("Updating %s with %s", self, util.json_dump(data))
+        visi = data.get("visibility", None)
+        if visi in ("public", "private"):
+            self.set_visibility(visi)
+        elif visi is None:
+            log.warning("%s visibility is not defined in JSON configuration file", self)
+        else:
+            log.warning("%s visibility to an invalid value in JSON configuration file, it must be 'public' or 'private'")
+        if perms := data.get("permissions", None):
+            log.info("Setting %s permissions with %s", self, perms)
             decoded_perms = {}
-            for ptype in permissions.PERMISSION_TYPES:
-                if ptype not in data["permissions"]:
-                    continue
-                decoded_perms[ptype] = {u: permissions.decode(v) for u, v in data["permissions"][ptype].items()}
+            for ptype in [p for p in permissions.PERMISSION_TYPES if p in perms]:
+                decoded_perms[ptype] = {u: permissions.decode(v) for u, v in perms[ptype].items()}
             self.set_permissions(decoded_perms)
-            # perms = {k: permissions.decode(v) for k, v in data.get("permissions", {}).items()}
-            # self.set_permissions(util.csv_to_list(perms))
+
         self.add_projects(_project_list(data))
         self.set_tags(util.csv_to_list(data.get("tags", [])))
-        main_branch = self.main_branch()
-        for name, branch_data in data.get("branches", {}).items():
-            if branch_data.get("isMain", False):
-                main_branch.rename(name)
-        for name, branch_data in data.get("branches", {}).items():
-            self.set_branches(name, branch_data)
+
+        main_branch_name = next((k for k, v in data.get("branches", {}).items() if v.get("isMain", False)), None)
+        main_branch_name is None or self.main_branch().rename(main_branch_name)
+
+        _ = [self.set_branches(name, branch_data) for name, branch_data in data.get("branches", {}).items()]
 
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         ops = {c.READ: {"application": self.key}}
@@ -593,6 +597,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     new_key_list = util.csv_to_list(key_list)
     for key, data in config_data["applications"].items():
         if new_key_list and key not in new_key_list:
+            log.debug("App key '%s' not in selected apps", key)
             continue
         log.info("Importing application key '%s'", key)
         try:
