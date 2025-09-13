@@ -585,7 +585,7 @@ class Portfolio(aggregations.Aggregation):
         """Triggers portfolio recomputation, return whether operation REQUEST succeeded"""
         log.debug("Recomputing %s", str(self))
         params = self.root_portfolio.api_params() if self.root_portfolio else self.api_params()
-        return self.post(Portfolio.API["REFRESH"], params=params).ok
+        return self.post(Portfolio.API[c.RECOMPUTE], params=params).ok
 
     def get_project_list(self) -> list[str]:
         log.debug("Search %s projects list", str(self))
