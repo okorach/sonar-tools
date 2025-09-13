@@ -1,3 +1,25 @@
+# Next version
+
+* `sonar-config`:
+  - Several improvements in applications export/import
+  - Rule export format is modified, for the best
+  - HAndle SCA criteria in QG exports
+  - A couple of bug fixes (when importing instantiated rules, )
+* `sonar-finding-sync`:
+  - Projects can be selected through regexp, allowing to sync multiple (or all) projects are once
+  - Incremental sync: findings are synced starting from the most recent change on the target finding
+  - Sync separates changelog sync and comment sync for more accuracy
+  - A tag can be added to all issues that were synchronized (not on hotspots, hotspots can't be tagged)
+  - `sonar-findings-sync` is now compatible with Community Edition (as a source or target platform)
+  - Fixed bug when synchronizing issues with no line nbr (file based issues)
+* `sonar-findings-export`:
+  - A couple of bug fixes when using complex export filters (was not working before)
+* `sonar-audit`:
+  - SonarQube Cloud audit improvements. The `Members` group on cloud is handled like the `sonar-users` group on Server
+  - Fix a crash when auditing organizations
+
+
+
 # Version 3.15
 
 * General performance (speed) improvements
