@@ -21,7 +21,6 @@
 """
     Exports SonarQube platform configuration as JSON
 """
-import sys
 from typing import TextIO
 from threading import Thread
 from queue import Queue
@@ -114,9 +113,10 @@ def __write_export(config: dict[str, str], file: str, format: str) -> None:
 def __convert_for_yaml(json_export: dict[str, any]) -> dict[str, any]:
     """Converts the default JSON produced by export to a modified version more suitable for YAML"""
     for what in WHAT_EVERYTHING:
-        if what in json_export:
-            yamlify_func = _EXPORT_CALLS[what][2]
-            json_export[what] = yamlify_func(json_export[what])
+        for k in json_export:
+            if what.lower() == k.lower() or (what == "settings" and k == "globalSettings"):
+                yamlify_func = _EXPORT_CALLS[what][2]
+                json_export[k] = yamlify_func(json_export[k])
     return json_export
 
 
