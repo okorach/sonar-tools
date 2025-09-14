@@ -32,8 +32,7 @@ class Changelog(object):
 
     def __init__(self, jsonlog: types.ApiPayload, concerned_object: object) -> None:
         """Constructor
-        :param ApiPayload another_qp: The second quality profile to compare with self
-        :return: dict result of the compare ("inLeft", "inRight", "same", "modified")
+        :param ApiPayload jsonlog: The changelog data from api/issues/changelog
         """
         self.concerned_object = concerned_object
         self.sq_json = jsonlog

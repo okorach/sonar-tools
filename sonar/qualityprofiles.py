@@ -452,6 +452,8 @@ class QualityProfile(sq.SqObject):
                 diff_rules[r_key]["severities"] = self.rule_impacts(r_key, substitute_with_default=True)
             if self.rule_is_prioritized(r_key):
                 diff_rules[r_key]["prioritized"] = True
+            if (params := self.rule_custom_params(r_key)) is not None:
+                diff_rules[r_key]["params"] = params.copy()
             rule_params = rule["left"].get("params", {}) if "left" in rule else rule.get("params", {})
             if len(rule_params) > 0:
                 diff_rules[r_key]["params"] = rule_params
@@ -536,6 +538,13 @@ class QualityProfile(sq.SqObject):
         :return: Whether the rule is prioritized in the quality profile
         """
         return rules.Rule.get_object(self.endpoint, rule_key).is_prioritized_in_quality_profile(self.key)
+
+    def rule_custom_params(self, rule_key: str) -> Optional[dict[str, str]]:
+        """Returns the rule custom params in the quality profile if any, None otherwise
+
+        :param str rule_key: The rule key to check
+        """
+        return rules.Rule.get_object(self.endpoint, rule_key).custom_parameters_in_quality_profile(self.key)
 
     def permissions(self) -> permissions.QualityProfilePermissions:
         """
