@@ -907,6 +907,8 @@ def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
     original_json = util.remove_nones(original_json)
+    if "plugins" in original_json:
+        original_json["plugins"] = util.dict_to_list(original_json["plugins"], "key", "version")
     if "languages" in original_json:
         original_json["languages"] = util.dict_to_list(original_json["languages"], "language")
     if "permissions" in original_json:
