@@ -920,6 +920,9 @@ def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRep
         original_json["permissionTemplates"] = util.dict_to_list(original_json["permissionTemplates"], "name")
     if "devopsIntegration" in original_json:
         original_json["devopsIntegration"] = util.dict_to_list(original_json["devopsIntegration"], "name")
+    for key in ("analysisScope", "authentication", "generalSettings", "linters"):
+        if key in original_json:
+            original_json[key] = util.dict_to_list(original_json[key], "key", "value")
     return original_json
 
 
