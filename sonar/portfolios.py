@@ -687,7 +687,7 @@ def check_supported(endpoint: pf.Platform) -> None:
     """Verifies the edition and raise exception if not supported"""
     if endpoint.is_sonarcloud():
         raise exceptions.UnsupportedOperation("No API yet to export portfolios on SonarQube Cloud")
-    elif endpoint.edition() not in (c.SC, c.EE, c.DCE):
+    if endpoint.edition() not in (c.SC, c.EE, c.DCE):
         raise exceptions.UnsupportedOperation(f"No portfolios in {endpoint.edition()} edition")
 
 

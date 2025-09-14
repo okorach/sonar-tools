@@ -490,8 +490,8 @@ def check_supported(endpoint: pf.Platform) -> None:
     """Verifies the edition and raise exception if not supported"""
     if endpoint.edition() == c.CE:
         raise exceptions.UnsupportedOperation(f"No applications in {endpoint.edition()} edition")
-    elif endpoint.edition() == c.SC:
-        raise exceptions.UnsupportedOperation(f"No applications in SonarQube Cloud")
+    if endpoint.edition() == c.SC:
+        raise exceptions.UnsupportedOperation("No applications in SonarQube Cloud")
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Application]:
