@@ -362,15 +362,23 @@ class Rule(sq.SqObject):
         else:
             return qp_impacts
 
+    def __get_quality_profile_data(self, quality_profile_id: str) -> Optional[dict[str, str]]:
+        if not quality_profile_id:
+            return None
+        self.refresh()
+        return next((qp for qp in self.sq_json.get("actives", []) if qp["qProfile"] == quality_profile_id), None)
+
     def is_prioritized_in_quality_profile(self, quality_profile_id: str) -> bool:
         """Returns True if the rule is a prioritized rule in a given quality profile, False otherwise"""
-        found_qp = None
-        if quality_profile_id:
-            self.refresh()
-            found_qp = next((qp for qp in self.sq_json.get("actives", []) if qp["qProfile"] == quality_profile_id), None)
-        if not found_qp:
+        if (found_qp := self.__get_quality_profile_data(quality_profile_id)) is None:
             return False
         return found_qp.get("prioritizedRule", False)
+
+    def custom_parameters_in_quality_profile(self, quality_profile_id: str) -> Optional[dict[str, str]]:
+        """Returns the rule custom params in the QP if any, else None"""
+        if (found_qp := self.__get_quality_profile_data(quality_profile_id)) is None:
+            return None
+        return None if "params" not in found_qp or len(found_qp["params"]) == 0 else {p["key"]: p["value"] for p in found_qp["params"]}
 
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
