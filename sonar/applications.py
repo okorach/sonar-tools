@@ -488,10 +488,10 @@ def count(endpoint: pf.Platform) -> int:
 
 def check_supported(endpoint: pf.Platform) -> None:
     """Verifies the edition and raise exception if not supported"""
-    if endpoint.edition() not in (c.DE, c.EE, c.DCE):
-        errmsg = f"No applications in {endpoint.edition()} edition"
-        log.warning(errmsg)
-        raise exceptions.UnsupportedOperation(errmsg)
+    if endpoint.edition() == c.CE:
+        raise exceptions.UnsupportedOperation(f"No applications in {endpoint.edition()} edition")
+    elif endpoint.edition() == c.SC:
+        raise exceptions.UnsupportedOperation(f"No applications in SonarQube Cloud")
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Application]:
