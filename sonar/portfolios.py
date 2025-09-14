@@ -685,14 +685,10 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, P
 
 def check_supported(endpoint: pf.Platform) -> None:
     """Verifies the edition and raise exception if not supported"""
-    errmsg = ""
-    if endpoint.edition() not in (c.EE, c.DCE):
-        errmsg = f"No portfolios in {endpoint.edition()} edition"
     if endpoint.is_sonarcloud():
-        errmsg = "No portfolios in SonarQube Cloud"
-    if errmsg != "":
-        log.warning(errmsg)
-        raise exceptions.UnsupportedOperation(errmsg)
+        raise exceptions.UnsupportedOperation("No API yet to export portfolios on SonarQube Cloud")
+    if endpoint.edition() not in (c.SC, c.EE, c.DCE):
+        raise exceptions.UnsupportedOperation(f"No portfolios in {endpoint.edition()} edition")
 
 
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[object]:
