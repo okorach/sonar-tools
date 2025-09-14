@@ -3,8 +3,10 @@
 * `sonar-config`:
   - Several improvements in applications export/import
   - Rule export format is modified, for the best
-  - HAndle SCA criteria in QG exports
-  - A couple of bug fixes (when importing instantiated rules, )
+  - Handle SCA criteria in QG exports
+  - A couple of bug fixes:
+    - Rule custom params are exported
+    - Import of instantiated rules is now working fine
 * `sonar-finding-sync`:
   - Projects can be selected through regexp, allowing to sync multiple (or all) projects are once
   - Incremental sync: findings are synced starting from the most recent change on the target finding
