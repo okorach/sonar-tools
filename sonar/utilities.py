@@ -790,7 +790,7 @@ def pretty_print_json(file: str) -> bool:
         with open_file(file, mode="r") as fd:
             json_data = json.loads(fd.read())
         with open_file(file, mode="w") as fd:
-            print(json_dump(json_data), file=fd)
+            print(json_dump(json_data, sort_keys=True), file=fd)
     except json.decoder.JSONDecodeError:
         log.warning("File %s is not correct JSON, cannot pretty print", file)
         return False
