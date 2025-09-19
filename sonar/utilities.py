@@ -744,26 +744,6 @@ def dict_to_list(original_dict: dict[str, any], key_field: str, value_field: Opt
     return [{key_field: key, value_field: elem} if not isinstance(elem, dict) else {key_field: key, **elem} for key, elem in original_dict.items()]
 
 
-def normalize_json_file(file: Optional[str], remove_empty: bool = True, remove_none: bool = True) -> None:
-    """Sorts a JSON file and optionally remove empty and none values"""
-    if file is None:
-        log.info("Output is stdout, skipping normalization")
-        return
-    log.info("Normalizing JSON file '%s' - remove empty = %s, remove nones = %s", file, str(remove_empty), str(remove_none))
-    try:
-        with open_file(file, mode="r") as fd:
-            json_data = json.loads(fd.read())
-    except json.decoder.JSONDecodeError:
-        log.warning("JSON Decode error while normalizing file '%s', is file complete?", file)
-        return
-    if remove_empty:
-        json_data = remove_empties(json_data)
-    if remove_none:
-        json_data = remove_nones(json_data)
-    with open_file(file, mode="w") as fd:
-        print(json_dump(json_data), file=fd)
-
-
 def http_error_string(status: HTTPStatus) -> str:
     """Returns the error string for a HTTPStatus code"""
     if status == HTTPStatus.UNAUTHORIZED:
@@ -815,3 +795,12 @@ def pretty_print_json(file: str) -> bool:
         log.warning("File %s is not correct JSON, cannot pretty print", file)
         return False
     return True
+
+
+def order_keys(original_json: dict[str, any], *keys) -> dict[str, any]:
+    ordered_json = {}
+    for key in [k for k in keys if k in original_json]:
+        ordered_json[key] = original_json[key]
+    for key in [k for k in original_json if k not in keys]:
+        ordered_json[key] = original_json[key]
+    return ordered_json
