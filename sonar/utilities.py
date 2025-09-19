@@ -241,10 +241,10 @@ def allowed_values_string(original_str: str, allowed_values: list[str]) -> str:
     return list_to_csv([v for v in csv_to_list(original_str) if v in allowed_values])
 
 
-def json_dump(jsondata: Union[list[str], dict[str, str]], indent: int = 3, redact_tokens: bool = True) -> str:
+def json_dump(jsondata: Union[list[str], dict[str, str]], indent: int = 3, redact_tokens: bool = True, sort_keys: bool = False) -> str:
     """JSON dump helper"""
     newdata = sort_lists(deepcopy(jsondata), redact_tokens=redact_tokens)
-    return json.dumps(newdata, indent=indent, sort_keys=True, separators=(",", ": "))
+    return json.dumps(newdata, indent=indent, sort_keys=sort_keys, separators=(",", ": "))
 
 
 def csv_to_list(string: Optional[str], separator: str = ",") -> list[str]:
