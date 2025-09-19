@@ -180,7 +180,7 @@ def main() -> None:
     try:
         kwargs = util.convert_args(__parser_args("Audits a SonarQube Server or Cloud platform or a SIF (Support Info File or System Info File)"))
         cli_settings = {}
-        for val in kwargs["settings"]:
+        for val in kwargs.get("settings", []) or []:
             key, value = val[0].split("=", maxsplit=1)
             cli_settings[key] = value
         settings = audit_conf.load(TOOL_NAME, cli_settings)
