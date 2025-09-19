@@ -135,6 +135,10 @@ def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remov
 
 
 def __normalize_file(file: str, format: str) -> bool:
+    """Normalizes a JSON or YAML file to order keys in a meaningful order (not necessarily alphabetically)
+    :param str file: Filename to normalize
+    :param str format: File format (json or yaml)
+    :return: whether normaizalization succeeded"""
     try:
         with utilities.open_file(file, mode="r") as fd:
             json_data = json.loads(fd.read())
