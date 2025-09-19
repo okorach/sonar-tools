@@ -41,7 +41,7 @@ _DEFAULT_TEMPLATE = "0. Default template"
 
 
 def __is_ordered_as_expected(data: list[str], expected_order: list[str]) -> bool:
-    for k in config._SECTIONS_ORDER:
+    for k in expected_order:
         if len(data) == 0:
             break
         if k == data[0]:
@@ -68,12 +68,17 @@ def test_config_export_yaml(yaml_file: Generator[str]) -> None:
     """test_config_export_yaml"""
     assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {yaml_file}") == e.OK
     with open(file=yaml_file, mode="r", encoding="utf-8") as fh:
-        json_config = yaml.load(fh.read())
+        json_config = yaml.safe_load(fh.read())
     # Verify YAML export is in the expected key order
     assert __is_ordered_as_expected(list(json_config.keys()), config._SECTIONS_ORDER)
+    __MAP = {'projects': "key", 'applications': "key", 'portfolios': "key", 'users': "login", 'groups': "name", 'qualityGates': "name", 'qualityProfiles': "language"}
     for section in config._SECTIONS_TO_SORT:
-        assert sorted(json_config.get(section, [])) == list(json_config.get(section, []))
-
+        elems = json_config.get(section, {})
+        if isinstance(elems, dict):
+            assert sorted(elems.keys()) == list(elems.keys())
+        elif isinstance(elems, list):
+            elems = [elem[__MAP[section]] for elem in elems]
+            assert sorted(elems) == list(elems)
 
 def test_config_export_wrong() -> None:
     """test_config_export_wrong"""
@@ -108,7 +113,7 @@ def test_config_inline_lists(json_file: Generator[str]) -> None:
     # Verify JSON export is in the expected key order
     assert __is_ordered_as_expected(list(json_config.keys()), config._SECTIONS_ORDER)
     for section in config._SECTIONS_TO_SORT:
-        assert sorted(json_config.get(section, [])) == list(json_config.get(section, []))
+        assert sorted(json_config.get(section, {}).keys()) == list(json_config.get(section, {}).keys())
 
 
 def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
