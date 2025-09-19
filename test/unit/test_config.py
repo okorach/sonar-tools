@@ -23,7 +23,7 @@
 
 from collections.abc import Generator
 
-import json
+import json, yaml
 
 import utilities as tutil
 from sonar import errcodes as e
@@ -40,6 +40,22 @@ OPTS = f"{CMD} {tutil.SQS_OPTS} -{opt.EXPORT_SHORT}"
 _DEFAULT_TEMPLATE = "0. Default template"
 
 
+def __is_ordered_as_expected(data: list[str], expected_order: list[str]) -> bool:
+    for k in expected_order:
+        if len(data) == 0:
+            break
+        if k == data[0]:
+            data.pop(0)
+    return len(data) == 0
+
+
+def __sections_present(data: list[str], present_sections: list[str], all_sections: list[str]) -> bool:
+    what = ["platform"] + ["globalSettings" if w == "settings" else w for w in present_sections]
+    whatnot = [w for w in all_sections if w not in what]
+    print(json.dumps(data, indent=3))
+    return all(s in data for s in what) and all(s not in data for s in whatnot)
+
+
 def test_config_export_full(json_file: Generator[str]) -> None:
     """test_config_export_full"""
     assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --fullExport") == e.OK
@@ -47,17 +63,50 @@ def test_config_export_full(json_file: Generator[str]) -> None:
 
 def test_config_export_partial_2(json_file: Generator[str]) -> None:
     """test_config_export_partial_2"""
-    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} -w settings,portfolios,users") == e.OK
+    what = ["settings", "portfolios", "users"]
+    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --{opt.WHAT} {','.join(what)}") == e.OK
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+        json_config = json.loads(fh.read())
+    assert __sections_present(json_config, what, config._SECTIONS_ORDER)
 
 
 def test_config_export_partial_3(json_file: Generator[str]) -> None:
     """test_config_export_partial_3"""
-    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} -w projects -{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT}") == e.OK
+    what = ["projects"]
+    assert (
+        tutil.run_cmd(
+            config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --{opt.WHAT} {','.join(what)} -{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT}"
+        )
+        == e.OK
+    )
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+        json_config = json.loads(fh.read())
+    assert __sections_present(json_config, what, config._SECTIONS_ORDER)
 
 
 def test_config_export_yaml(yaml_file: Generator[str]) -> None:
     """test_config_export_yaml"""
     assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {yaml_file}") == e.OK
+    with open(file=yaml_file, mode="r", encoding="utf-8") as fh:
+        json_config = yaml.safe_load(fh.read())
+    # Verify YAML export is in the expected key order
+    assert __is_ordered_as_expected(list(json_config.keys()), config._SECTIONS_ORDER)
+    __MAP = {
+        "projects": "key",
+        "applications": "key",
+        "portfolios": "key",
+        "users": "login",
+        "groups": "name",
+        "qualityGates": "name",
+        "qualityProfiles": "language",
+    }
+    for section in config._SECTIONS_TO_SORT:
+        elems = json_config.get(section, {})
+        if isinstance(elems, dict):
+            assert sorted(elems.keys()) == list(elems.keys())
+        elif isinstance(elems, list):
+            elems = [elem[__MAP[section]] for elem in elems]
+            assert sorted(elems) == list(elems)
 
 
 def test_config_export_wrong() -> None:
@@ -90,10 +139,15 @@ def test_config_inline_lists(json_file: Generator[str]) -> None:
             assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["projects"]["manual"]["BANKING-PORTAL"], list)
         assert json_config["portfolios"]["All"]["portfolios"]["Banking"]["byReference"]
 
+    # Verify JSON export is in the expected key order
+    assert __is_ordered_as_expected(list(json_config.keys()), config._SECTIONS_ORDER)
+    for section in config._SECTIONS_TO_SORT:
+        assert sorted(json_config.get(section, {}).keys()) == list(json_config.get(section, {}).keys())
+
 
 def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
     """test_config_dont_inline_lists"""
-    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --dontInlineLists") == e.OK
+    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --{opt.WHAT} settings,projects,portfolios --dontInlineLists") == e.OK
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], list)

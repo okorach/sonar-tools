@@ -21,7 +21,7 @@
 """
     Exports SonarQube platform configuration as JSON
 """
-from typing import TextIO
+from typing import TextIO, Optional
 from threading import Thread
 from queue import Queue
 
@@ -30,7 +30,7 @@ import yaml
 
 from cli import options
 from sonar import exceptions, errcodes, utilities, version
-from sonar.util import types, constants as c, cache_helper
+from sonar.util import types, constants as c
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
@@ -41,6 +41,26 @@ TOOL_NAME = "sonar-config"
 DONT_INLINE_LISTS = "dontInlineLists"
 FULL_EXPORT = "fullExport"
 EXPORT_EMPTY = "exportEmpty"
+
+_SECTIONS_TO_SORT = ("projects", "applications", "portfolios", "users", "groups", "qualityGates", "qualityProfiles")
+_SECTIONS_ORDER = (
+    "platform",
+    "globalSettings",
+    "qualityGates",
+    "qualityProfiles",
+    "projects",
+    "applications",
+    "portfolios",
+    "users",
+    "groups",
+    "rules",
+)
+
+_MIGRATION_EXPORT_SETTINGS = {
+    "FULL_EXPORT": False,
+    "INLINE_LISTS": False,
+    EXPORT_EMPTY: True,
+}
 
 _EXPORT_CALLS = {
     c.CONFIG_KEY_PLATFORM: [c.CONFIG_KEY_PLATFORM, platform.basics, platform.convert_for_yaml],
@@ -101,13 +121,37 @@ def __parse_args(desc: str) -> object:
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
-def __write_export(config: dict[str, str], file: str, format: str) -> None:
-    """Writes the configuration in file"""
-    with utilities.open_file(file) as fd:
+def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remove_none: bool = True) -> dict[str, any]:
+    """Sorts a JSON file and optionally remove empty and none values"""
+    log.info("Normalizing JSON - remove empty = %s, remove nones = %s", str(remove_empty), str(remove_none))
+    if remove_empty:
+        json_data = utilities.remove_empties(json_data)
+    if remove_none:
+        json_data = utilities.remove_nones(json_data)
+    json_data = utilities.order_keys(json_data, *_SECTIONS_ORDER)
+    for key in [k for k in _SECTIONS_TO_SORT if k in json_data]:
+        json_data[key] = {k: json_data[key][k] for k in sorted(json_data[key])}
+    return json_data
+
+
+def __normalize_file(file: str, format: str) -> bool:
+    """Normalizes a JSON or YAML file to order keys in a meaningful order (not necessarily alphabetically)
+    :param str file: Filename to normalize
+    :param str format: File format (json or yaml)
+    :return: whether normaizalization succeeded"""
+    try:
+        with utilities.open_file(file, mode="r") as fd:
+            json_data = json.loads(fd.read())
+    except json.decoder.JSONDecodeError:
+        log.warning("JSON Decode error while normalizing JSON file '%s', is file complete?", file)
+        return False
+    json_data = __normalize_json(json_data, remove_empty=False, remove_none=True)
+    with utilities.open_file(file, mode="w") as fd:
         if format == "yaml":
-            print(yaml.dump(__convert_for_yaml(config), sort_keys=False), file=fd)
+            print(yaml.dump(__convert_for_yaml(json_data), sort_keys=False), file=fd)
         else:
-            print(utilities.json_dump(config), file=fd)
+            print(utilities.json_dump(json_data), file=fd)
+    return True
 
 
 def __convert_for_yaml(json_export: dict[str, any]) -> dict[str, any]:
@@ -166,9 +210,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
         }
     )
     if mode == "MIGRATION":
-        export_settings["FULL_EXPORT"] = False
-        export_settings["INLINE_LISTS"] = False
-        export_settings[EXPORT_EMPTY] = True
+        export_settings |= _MIGRATION_EXPORT_SETTINGS
     log.info("Exporting with settings: %s", utilities.json_dump(export_settings, redact_tokens=True))
     if "projects" in what and kwargs[options.KEY_REGEXP]:
         if len(component_helper.get_components(endpoint, "projects", kwargs[options.KEY_REGEXP])) == 0:
@@ -199,16 +241,11 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
                 write_q and write_q.put(utilities.WRITE_END)
             write_q.join()
         print("\n}", file=fd)
-    if kwargs[options.FORMAT] == "yaml":
-        try:
-            with utilities.open_file(file, mode="r") as fd:
-                json_data = json.loads(fd.read())
-            with utilities.open_file(file, mode="w") as fd:
-                print(yaml.dump(__convert_for_yaml(json_data), sort_keys=False), file=fd)
-        except json.decoder.JSONDecodeError:
-            log.warning("JSON Decode error while converting JSON file '%s' to YAML, is file complete?", file)
+
+    if file:
+        __normalize_file(file, kwargs[options.FORMAT])
     else:
-        utilities.normalize_json_file(file, remove_empty=False, remove_none=True)
+        log.info("Output is stdout, skipping normalization")
     log.info("Exporting %s data from %s completed", mode.lower(), kwargs[options.URL])
 
 

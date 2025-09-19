@@ -241,10 +241,10 @@ def allowed_values_string(original_str: str, allowed_values: list[str]) -> str:
     return list_to_csv([v for v in csv_to_list(original_str) if v in allowed_values])
 
 
-def json_dump(jsondata: Union[list[str], dict[str, str]], indent: int = 3, redact_tokens: bool = True) -> str:
+def json_dump(jsondata: Union[list[str], dict[str, str]], indent: int = 3, redact_tokens: bool = True, sort_keys: bool = False) -> str:
     """JSON dump helper"""
     newdata = sort_lists(deepcopy(jsondata), redact_tokens=redact_tokens)
-    return json.dumps(newdata, indent=indent, sort_keys=True, separators=(",", ": "))
+    return json.dumps(newdata, indent=indent, sort_keys=sort_keys, separators=(",", ": "))
 
 
 def csv_to_list(string: Optional[str], separator: str = ",") -> list[str]:
@@ -741,27 +741,9 @@ def list_to_dict(original_list: list[dict[str, any]], key_field: str) -> dict[st
 
 def dict_to_list(original_dict: dict[str, any], key_field: str, value_field: Optional[str] = "value") -> list[str, any]:
     """Converts a dict to list adding dict key in list key_field"""
+    if isinstance(original_dict, list):
+        return original_dict
     return [{key_field: key, value_field: elem} if not isinstance(elem, dict) else {key_field: key, **elem} for key, elem in original_dict.items()]
-
-
-def normalize_json_file(file: Optional[str], remove_empty: bool = True, remove_none: bool = True) -> None:
-    """Sorts a JSON file and optionally remove empty and none values"""
-    if file is None:
-        log.info("Output is stdout, skipping normalization")
-        return
-    log.info("Normalizing JSON file '%s' - remove empty = %s, remove nones = %s", file, str(remove_empty), str(remove_none))
-    try:
-        with open_file(file, mode="r") as fd:
-            json_data = json.loads(fd.read())
-    except json.decoder.JSONDecodeError:
-        log.warning("JSON Decode error while normalizing file '%s', is file complete?", file)
-        return
-    if remove_empty:
-        json_data = remove_empties(json_data)
-    if remove_none:
-        json_data = remove_nones(json_data)
-    with open_file(file, mode="w") as fd:
-        print(json_dump(json_data), file=fd)
 
 
 def http_error_string(status: HTTPStatus) -> str:
@@ -810,8 +792,22 @@ def pretty_print_json(file: str) -> bool:
         with open_file(file, mode="r") as fd:
             json_data = json.loads(fd.read())
         with open_file(file, mode="w") as fd:
-            print(json_dump(json_data), file=fd)
+            print(json_dump(json_data, sort_keys=True), file=fd)
     except json.decoder.JSONDecodeError:
         log.warning("File %s is not correct JSON, cannot pretty print", file)
         return False
     return True
+
+
+def order_keys(original_dict: dict[str, any], *keys) -> dict[str, any]:
+    """Orders a dict keys in a chosen order, existings keys not in *keys are pushed to the end
+    :param dict[str, any] original_dict: Dict to order
+    :param str *keys: List of keys in desired order
+    :return: same dict with keys in desired order
+    """
+    ordered_dict = {}
+    for key in [k for k in keys if k in original_dict]:
+        ordered_dict[key] = original_dict[key]
+    for key in [k for k in original_dict if k not in keys]:
+        ordered_dict[key] = original_dict[key]
+    return ordered_dict
