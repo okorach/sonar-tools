@@ -48,6 +48,14 @@ def __is_ordered_as_expected(data: list[str], expected_order: list[str]) -> bool
             data.pop(0)
     return len(data) == 0
 
+def __sections_present(data: list[str], present_sections: list[str], all_sections: list[str]) -> bool:
+    what = ["platform"] + ["globalSettings" if w == "settings" else w for w in present_sections]
+    whatnot = [w for w in all_sections if w not in what]
+    print(json.dumps(data, indent=3))
+    return (
+        all(s in data for s in what) and
+        all(s not in data for s in whatnot)
+    )
 
 def test_config_export_full(json_file: Generator[str]) -> None:
     """test_config_export_full"""
@@ -56,13 +64,19 @@ def test_config_export_full(json_file: Generator[str]) -> None:
 
 def test_config_export_partial_2(json_file: Generator[str]) -> None:
     """test_config_export_partial_2"""
-    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} -w settings,portfolios,users") == e.OK
-
+    what = ["settings", "portfolios", "users"]
+    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --{opt.WHAT} {','.join(what)}") == e.OK
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+        json_config = json.loads(fh.read())
+    assert __sections_present(json_config, what, config._SECTIONS_ORDER)
 
 def test_config_export_partial_3(json_file: Generator[str]) -> None:
     """test_config_export_partial_3"""
-    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} -w projects -{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT}") == e.OK
-
+    what = ["projects"]
+    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --{opt.WHAT} {','.join(what)} -{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT}") == e.OK
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+        json_config = json.loads(fh.read())
+    assert __sections_present(json_config, what, config._SECTIONS_ORDER)
 
 def test_config_export_yaml(yaml_file: Generator[str]) -> None:
     """test_config_export_yaml"""
