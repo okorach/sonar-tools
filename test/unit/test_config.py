@@ -48,14 +48,13 @@ def __is_ordered_as_expected(data: list[str], expected_order: list[str]) -> bool
             data.pop(0)
     return len(data) == 0
 
+
 def __sections_present(data: list[str], present_sections: list[str], all_sections: list[str]) -> bool:
     what = ["platform"] + ["globalSettings" if w == "settings" else w for w in present_sections]
     whatnot = [w for w in all_sections if w not in what]
     print(json.dumps(data, indent=3))
-    return (
-        all(s in data for s in what) and
-        all(s not in data for s in whatnot)
-    )
+    return all(s in data for s in what) and all(s not in data for s in whatnot)
+
 
 def test_config_export_full(json_file: Generator[str]) -> None:
     """test_config_export_full"""
@@ -70,13 +69,20 @@ def test_config_export_partial_2(json_file: Generator[str]) -> None:
         json_config = json.loads(fh.read())
     assert __sections_present(json_config, what, config._SECTIONS_ORDER)
 
+
 def test_config_export_partial_3(json_file: Generator[str]) -> None:
     """test_config_export_partial_3"""
     what = ["projects"]
-    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --{opt.WHAT} {','.join(what)} -{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT}") == e.OK
+    assert (
+        tutil.run_cmd(
+            config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --{opt.WHAT} {','.join(what)} -{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT}"
+        )
+        == e.OK
+    )
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert __sections_present(json_config, what, config._SECTIONS_ORDER)
+
 
 def test_config_export_yaml(yaml_file: Generator[str]) -> None:
     """test_config_export_yaml"""
@@ -85,7 +91,15 @@ def test_config_export_yaml(yaml_file: Generator[str]) -> None:
         json_config = yaml.safe_load(fh.read())
     # Verify YAML export is in the expected key order
     assert __is_ordered_as_expected(list(json_config.keys()), config._SECTIONS_ORDER)
-    __MAP = {'projects': "key", 'applications': "key", 'portfolios': "key", 'users': "login", 'groups': "name", 'qualityGates': "name", 'qualityProfiles': "language"}
+    __MAP = {
+        "projects": "key",
+        "applications": "key",
+        "portfolios": "key",
+        "users": "login",
+        "groups": "name",
+        "qualityGates": "name",
+        "qualityProfiles": "language",
+    }
     for section in config._SECTIONS_TO_SORT:
         elems = json_config.get(section, {})
         if isinstance(elems, dict):
@@ -93,6 +107,7 @@ def test_config_export_yaml(yaml_file: Generator[str]) -> None:
         elif isinstance(elems, list):
             elems = [elem[__MAP[section]] for elem in elems]
             assert sorted(elems) == list(elems)
+
 
 def test_config_export_wrong() -> None:
     """test_config_export_wrong"""
