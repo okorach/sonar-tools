@@ -56,6 +56,12 @@ _SECTIONS_ORDER = (
     "rules",
 )
 
+_MIGRATION_EXPORT_SETTINGS = {
+    "FULL_EXPORT": False,
+    "INLINE_LISTS": False,
+    EXPORT_EMPTY: True,
+}
+
 _EXPORT_CALLS = {
     c.CONFIG_KEY_PLATFORM: [c.CONFIG_KEY_PLATFORM, platform.basics, platform.convert_for_yaml],
     options.WHAT_SETTINGS: [c.CONFIG_KEY_SETTINGS, platform.export, platform.convert_for_yaml],
@@ -128,6 +134,22 @@ def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remov
     return json_data
 
 
+def __normalize_file(file: str, format: str) -> bool:
+    try:
+        with utilities.open_file(file, mode="r") as fd:
+            json_data = json.loads(fd.read())
+    except json.decoder.JSONDecodeError:
+        log.warning("JSON Decode error while normalizing JSON file '%s', is file complete?", file)
+        return False
+    json_data = __normalize_json(json_data, remove_empty=False, remove_none=True)
+    with utilities.open_file(file, mode="w") as fd:
+        if format == "yaml":
+            print(yaml.dump(__convert_for_yaml(json_data), sort_keys=False), file=fd)
+        else:
+            print(utilities.json_dump(json_data), file=fd)
+    return True
+
+
 def __convert_for_yaml(json_export: dict[str, any]) -> dict[str, any]:
     """Converts the default JSON produced by export to a modified version more suitable for YAML"""
     for what in WHAT_EVERYTHING:
@@ -184,9 +206,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
         }
     )
     if mode == "MIGRATION":
-        export_settings["FULL_EXPORT"] = False
-        export_settings["INLINE_LISTS"] = False
-        export_settings[EXPORT_EMPTY] = True
+        export_settings |= _MIGRATION_EXPORT_SETTINGS
     log.info("Exporting with settings: %s", utilities.json_dump(export_settings, redact_tokens=True))
     if "projects" in what and kwargs[options.KEY_REGEXP]:
         if len(component_helper.get_components(endpoint, "projects", kwargs[options.KEY_REGEXP])) == 0:
@@ -219,18 +239,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
         print("\n}", file=fd)
 
     if file:
-        try:
-            with utilities.open_file(file, mode="r") as fd:
-                json_data = json.loads(fd.read())
-        except json.decoder.JSONDecodeError:
-            log.warning("JSON Decode error while normalizing JSON file '%s', is file complete?", file)
-        json_data = __normalize_json(json_data, remove_empty=False, remove_none=True)
-        if kwargs[options.FORMAT] == "yaml":
-            with utilities.open_file(file, mode="w") as fd:
-                print(yaml.dump(__convert_for_yaml(json_data), sort_keys=False), file=fd)
-        else:
-            with utilities.open_file(file, mode="w") as fd:
-                print(utilities.json_dump(json_data), file=fd)
+        __normalize_file(file, kwargs[options.FORMAT])
     else:
         log.info("Output is stdout, skipping normalization")
     log.info("Exporting %s data from %s completed", mode.lower(), kwargs[options.URL])
