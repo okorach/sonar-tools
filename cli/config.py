@@ -30,7 +30,7 @@ import yaml
 
 from cli import options
 from sonar import exceptions, errcodes, utilities, version
-from sonar.util import types, constants as c, cache_helper
+from sonar.util import types, constants as c
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
