@@ -90,6 +90,15 @@ def test_config_inline_lists(json_file: Generator[str]) -> None:
             assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["projects"]["manual"]["BANKING-PORTAL"], list)
         assert json_config["portfolios"]["All"]["portfolios"]["Banking"]["byReference"]
 
+    # Verify JSON export is in the expected key order
+    elems = list(json_config.keys())
+    for k in config._SECTIONS_ORDER:
+        if len(elems) == 0:
+            assert True
+        if k == elems[0]:
+            elems.pop(0)
+    assert False
+
 
 def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
     """test_config_dont_inline_lists"""
