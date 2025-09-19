@@ -23,7 +23,7 @@
 
 from collections.abc import Generator
 
-import json
+import json, yaml
 
 import utilities as tutil
 from sonar import errcodes as e
@@ -39,6 +39,13 @@ OPTS = f"{CMD} {tutil.SQS_OPTS} -{opt.EXPORT_SHORT}"
 
 _DEFAULT_TEMPLATE = "0. Default template"
 
+def __is_ordered_as_expected(data: list[str], expected_order: list[str]) -> bool:
+    for k in config._SECTIONS_ORDER:
+        if len(data) == 0:
+            break
+        if k == data[0]:
+            data.pop(0)
+    return len(data) == 0
 
 def test_config_export_full(json_file: Generator[str]) -> None:
     """test_config_export_full"""
@@ -58,6 +65,12 @@ def test_config_export_partial_3(json_file: Generator[str]) -> None:
 def test_config_export_yaml(yaml_file: Generator[str]) -> None:
     """test_config_export_yaml"""
     assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {yaml_file}") == e.OK
+    with open(file=yaml_file, mode="r", encoding="utf-8") as fh:
+        json_config = yaml.safe_load(fh.read())
+    # Verify YAML export is in the expected key order
+    assert __is_ordered_as_expected(list(json_config.keys()), config._SECTIONS_ORDER)
+    for section in config._SECTIONS_TO_SORT:
+        assert sorted(json_config.get(section, [])) == list(json_config.get(section, []))
 
 
 def test_config_export_wrong() -> None:
@@ -91,18 +104,13 @@ def test_config_inline_lists(json_file: Generator[str]) -> None:
         assert json_config["portfolios"]["All"]["portfolios"]["Banking"]["byReference"]
 
     # Verify JSON export is in the expected key order
-    elems = list(json_config.keys())
-    for k in config._SECTIONS_ORDER:
-        if len(elems) == 0:
-            break
-        if k == elems[0]:
-            elems.pop(0)
-    assert len(elems) == 0
-
+    assert __is_ordered_as_expected(list(json_config.keys()), config._SECTIONS_ORDER)
+    for section in config._SECTIONS_TO_SORT:
+        assert sorted(json_config.get(section, [])) == list(json_config.get(section, []))
 
 def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
     """test_config_dont_inline_lists"""
-    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --dontInlineLists") == e.OK
+    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --{opt.WHAT} settings,projects,portfolios --dontInlineLists") == e.OK
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], list)
