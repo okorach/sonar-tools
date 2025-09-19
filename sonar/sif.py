@@ -107,12 +107,14 @@ class Sif(object):
         else:
             return self.json["Database"]["Database"]
 
-    def plugins(self) -> dict[str, str]:
+    def plugins(self) -> dict[str, dict[str, str]]:
         """Returns plugins installed on the SQ instance represented by the SIF"""
-        if self.version() < (9, 7, 0):
-            return self.json[_STATS]["plugins"]
-        else:
-            return self.json["Plugins"]
+        d = self.json["Plugins"] if self.version() >= (9, 7, 0) else self.json[_STATS]["plugins"]
+        plugins_dict = {}
+        for k, v in d.items():
+            version, name = v.split(" ", maxsplit=1)
+            plugins_dict[k] = {"version": version, "name": name[1:-1]}
+        return plugins_dict
 
     def license_type(self) -> Optional[str]:
         """Returns the SIF SQ license type (prod or test)"""

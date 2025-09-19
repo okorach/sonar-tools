@@ -385,9 +385,7 @@ class Platform(object):
         sysinfo = self.sys_info()
         if "Application Nodes" in sysinfo:
             sysinfo = sysinfo["Application Nodes"][0]
-        if self.version() < (9, 7, 0):
-            return sysinfo["Statistics"]["plugins"]
-        return sysinfo["Plugins"]
+        return sif.Sif(sysinfo).plugins()
 
     def get_settings(self, settings_list: Optional[list[str]] = None) -> dict[str, any]:
         """Returns a list of (or all) platform global settings value from their key
