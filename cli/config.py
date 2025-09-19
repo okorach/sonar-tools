@@ -101,15 +101,6 @@ def __parse_args(desc: str) -> object:
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
-def __write_export(config: dict[str, str], file: str, format: str) -> None:
-    """Writes the configuration in file"""
-    with utilities.open_file(file) as fd:
-        if format == "yaml":
-            print(yaml.dump(__convert_for_yaml(config), sort_keys=False), file=fd)
-        else:
-            print(utilities.json_dump(config), file=fd)
-
-
 def __convert_for_yaml(json_export: dict[str, any]) -> dict[str, any]:
     """Converts the default JSON produced by export to a modified version more suitable for YAML"""
     for what in WHAT_EVERYTHING:
