@@ -797,10 +797,15 @@ def pretty_print_json(file: str) -> bool:
     return True
 
 
-def order_keys(original_json: dict[str, any], *keys) -> dict[str, any]:
-    ordered_json = {}
-    for key in [k for k in keys if k in original_json]:
-        ordered_json[key] = original_json[key]
-    for key in [k for k in original_json if k not in keys]:
-        ordered_json[key] = original_json[key]
-    return ordered_json
+def order_keys(original_dict: dict[str, any], *keys) -> dict[str, any]:
+    """Orders a dict keys in a chosen order, existings keys not in *keys are pushed to the end
+    :param dict[str, any] original_dict: Dict to order
+    :param str *keys: List of keys in desired order
+    :return: same dict with keys in desired order
+    """
+    ordered_dict = {}
+    for key in [k for k in keys if k in original_dict]:
+        ordered_dict[key] = original_dict[key]
+    for key in [k for k in original_dict if k not in keys]:
+        ordered_dict[key] = original_dict[key]
+    return ordered_dict
