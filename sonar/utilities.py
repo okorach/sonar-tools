@@ -814,6 +814,7 @@ def order_keys(original_dict: dict[str, any], *keys) -> dict[str, any]:
 
 
 def flatten(original_dict: dict[str, any]) -> dict[str, any]:
+    """Flattens a recursive dict into a flat one"""
     flat_dict = {}
     for k, v in original_dict.items():
         if isinstance(v, dict):
