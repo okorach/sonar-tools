@@ -113,6 +113,8 @@ _INLINE_SETTINGS = (
     r"^sonar\.cobol\.sql\.catalog\.defaultSchema$",
     r"^sonar\.docker\.file\.patterns$",
     r"^sonar\.auth\..*\.organizations$",
+    r"^sonar\.azureresourcemanager\.file\.identifier$",
+    r"^sonar\.java\.jvmframeworkconfig\.file\.patterns$",
 )
 
 VALID_SETTINGS = set()
@@ -297,6 +299,7 @@ class Setting(sqobject.SqObject):
                     break
         if val is None:
             val = ""
+        log.debug("JSON of %s = %s", self, {self.key: val})
         return {self.key: val}
 
     def definition(self) -> Optional[dict[str, str]]:
@@ -338,7 +341,7 @@ class Setting(sqobject.SqObject):
         m = re.match(
             r"^sonar\.(cpd\.)?(abap|androidLint|ansible|apex|azureresourcemanager|cloudformation|c|cpp|cfamily|cobol|cs|css|dart|docker|"
             r"eslint|flex|go|html|java|javascript|jcl|json|jsp|kotlin|objc|php|pli|plsql|python|ipynb|rpg|ruby|scala|swift|"
-            r"terraform|text|tsql|typescript|vb|vbnet|xml|yaml)\.",
+            r"terraform|text|tsql|typescript|vb|vbnet|xml|yaml|rust|jasmin)\.",
             self.key,
         )
         if m:
@@ -347,7 +350,7 @@ class Setting(sqobject.SqObject):
                 lang = "cfamily"
             elif lang in ("androidLint"):
                 lang = "kotlin"
-            elif lang in ("eslint"):
+            elif lang in ("eslint", "jasmin"):
                 lang = "javascript"
             return (LANGUAGES_SETTINGS, lang)
         if re.match(
@@ -374,6 +377,7 @@ class Setting(sqobject.SqObject):
             r"sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.scm\.provider|sonar\.technicalDebt|sonar\.validateWebhooks|"
             r"sonar\.docker|sonar\.login|sonar\.kubernetes|sonar\.plugins|sonar\.documentation|sonar\.projectCreation|"
             r"sonar\.autodetect\.ai\.code|sonar\.pdf\.confidential\.header\.enabled|sonar\.scanner\.skipNodeProvisioning|"
+            r"sonar\.sca|sonar\.rust|sonar\.jasmin"
             r"sonar\.qualityProfiles|sonar\.announcement|provisioning\.git|sonar\.ce|sonar\.azureresourcemanager|sonar\.filesize\.limit).*$",
             self.key,
         ):
@@ -528,6 +532,7 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
     """Sets a setting to a particular value"""
 
     try:
+        log.debug("Setting %s with value %s (for component %s)", key, value, component)
         s = get_object(endpoint=endpoint, key=key, component=component)
         if not s:
             log.warning("Setting '%s' does not exist on target platform, it cannot be set", key)
