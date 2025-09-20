@@ -377,7 +377,7 @@ class Setting(sqobject.SqObject):
             r"sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.scm\.provider|sonar\.technicalDebt|sonar\.validateWebhooks|"
             r"sonar\.docker|sonar\.login|sonar\.kubernetes|sonar\.plugins|sonar\.documentation|sonar\.projectCreation|"
             r"sonar\.autodetect\.ai\.code|sonar\.pdf\.confidential\.header\.enabled|sonar\.scanner\.skipNodeProvisioning|"
-            r"sonar\.sca|sonar\.rust|sonar\.jasmin"
+            r"sonar\.sca|sonar\.rust|sonar\.jasmin|sonar\.qualityProfiles\.|sonar\.enforceAzureOpenAiDomainValidation|"
             r"sonar\.qualityProfiles|sonar\.announcement|provisioning\.git|sonar\.ce|sonar\.azureresourcemanager|sonar\.filesize\.limit).*$",
             self.key,
         ):
