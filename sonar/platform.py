@@ -520,13 +520,18 @@ class Platform(object):
             log.info("No global settings to import")
             return False
         ok = True
-        config_data = config_data["globalSettings"]
+        config_data = config_data.get("globalSettings", {})
         sections = [
             s for s in ("generalSettings", "authentication", "analysisScope", "linters", "sastConfig", "tests", "thirdParty") if s in config_data
         ]
-        ok = ok and all(self.set_webhooks(v) for section in sections for k, v in config_data[section].items() if k == "webhooks")
-        ok = ok and all(self.set_setting(k, v) for section in sections for k, v in config_data[section].items() if k != "webhooks")
-        ok = ok and all(self.set_setting(s, v) for setting_value in config_data.get("languages", {}).values() for s, v in setting_value.items())
+        flat_settings = util.flatten(config_data)
+        count = sum(1 if self.set_webhooks(v) else 0 for k, v in config_data.get("webhooks", None) or {})
+        log.debug("Set %d webhooks", count)
+        ok = count == len(config_data.get("webhooks", None) or {}) and ok
+        count = sum(1 if self.set_setting(k, v) else 0 for k, v in flat_settings.items())
+        log.debug("Set %d flat settings", count)
+        ok = count == len(flat_settings) and ok
+        # ok = ok and all(self.set_setting(s, v) for setting_value in config_data.get("languages", {}).values() for s, v in setting_value.items())
 
         if settings.NEW_CODE_PERIOD in config_data.get("generalSettings", {}):
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data["generalSettings"][settings.NEW_CODE_PERIOD])
