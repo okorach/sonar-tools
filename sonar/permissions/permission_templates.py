@@ -292,6 +292,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> i
             o.set_as_default(utilities.csv_to_list(data.get("defaultFor", None)))
     return count
 
+
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
     """Audits permission templates and returns list of detected problems"""
     log.info("--- Auditing permission templates ---")
