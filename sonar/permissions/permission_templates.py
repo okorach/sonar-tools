@@ -273,19 +273,24 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> type
     return json_data
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> None:
-    """Imports sonar-conmfig JSON as permission templates"""
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> int:
+    """Imports sonar-conmfig JSON as permission templates
+    :return: Number of permission templates imported sucessfully
+    """
     if "permissionTemplates" not in config_data:
         log.info("No permissions templates in config, skipping import...")
-        return
+        return 0
     log.info("Importing permission templates")
     get_list(endpoint)
+    count = 0
     for name, data in config_data["permissionTemplates"].items():
         utilities.json_dump_debug(data, f"Importing: {name}:")
         o = create_or_update(endpoint=endpoint, name=name, data=data)
+        count += 1
         defs = data.get("defaultFor", None)
         if defs is not None and defs != "":
             o.set_as_default(utilities.csv_to_list(data.get("defaultFor", None)))
+    return count
 
 
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings) -> list[pb.Problem]:

@@ -70,15 +70,18 @@ class GlobalPermissions(permissions.Permissions):
         return self.read()
 
 
-def import_config(endpoint: object, config_data: types.ObjectJsonRepr) -> None:
-    """Imports global permissions in a SonarQube platform"""
+def import_config(endpoint: object, config_data: types.ObjectJsonRepr) -> int:
+    """Imports global permissions in a SonarQube platform
+    :return: number of global permissions imported
+    """
     my_permissions = config_data.get("permissions", {})
     if len(my_permissions) == 0:
         log.info("No global permissions in config, skipping import...")
-        return
+        return 0
     log.info("Importing global permissions")
     global_perms = GlobalPermissions(endpoint)
     global_perms.set(my_permissions)
+    return len(my_permissions)
 
 
 def edition_filter(perms: types.JsonPermissions, ed: str) -> types.JsonPermissions:
