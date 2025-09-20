@@ -521,9 +521,6 @@ class Platform(object):
             return False
         ok = True
         config_data = config_data.get("globalSettings", {})
-        sections = [
-            s for s in ("generalSettings", "authentication", "analysisScope", "linters", "sastConfig", "tests", "thirdParty") if s in config_data
-        ]
         flat_settings = util.flatten(config_data)
         count = sum(1 if self.set_webhooks(v) else 0 for k, v in config_data.get("webhooks", None) or {})
         log.debug("Set %d webhooks", count)
