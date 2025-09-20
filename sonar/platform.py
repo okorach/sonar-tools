@@ -510,41 +510,36 @@ class Platform(object):
         _ = [current_wh[wh_map[wh_name]].update(name=wh_name, **wh) for wh_name, wh in webhooks_data.items() if wh_name in current_wh_names]
         return True
 
-    def import_config(self, config_data: types.ObjectJsonRepr) -> bool:
+    def import_config(self, config_data: types.ObjectJsonRepr) -> int:
         """Imports a whole SonarQube platform global configuration represented as JSON
 
         :param config_data: the sonar-config configuration representation of the platform
-        :return: Whether the import was entirely successful or not
+        :return: Number of imported settings
         """
         if "globalSettings" not in config_data:
             log.info("No global settings to import")
-            return False
-        ok = True
+            return 0
+        count = 0
         config_data = config_data.get("globalSettings", {})
         flat_settings = util.flatten(config_data)
-        count = sum(1 if self.set_webhooks(v) else 0 for k, v in config_data.get("webhooks", None) or {})
-        log.debug("Set %d webhooks", count)
-        ok = count == len(config_data.get("webhooks", None) or {}) and ok
-        count = sum(1 if self.set_setting(k, v) else 0 for k, v in flat_settings.items())
-        log.debug("Set %d flat settings", count)
-        ok = count == len(flat_settings) and ok
-        # ok = ok and all(self.set_setting(s, v) for setting_value in config_data.get("languages", {}).values() for s, v in setting_value.items())
+        count += sum(1 if self.set_webhooks(v) else 0 for k, v in config_data.get("webhooks", None) or {})
+        count += sum(1 if self.set_setting(k, v) else 0 for k, v in flat_settings.items())
 
         if settings.NEW_CODE_PERIOD in config_data.get("generalSettings", {}):
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data["generalSettings"][settings.NEW_CODE_PERIOD])
             try:
                 settings.set_new_code_period(self, nc_type, nc_val)
+                count += 1
             except exceptions.UnsupportedOperation as e:
                 log.error(e.message)
-                ok = False
-        permission_templates.import_config(self, config_data)
-        global_permissions.import_config(self, config_data)
+        count += permission_templates.import_config(self, config_data)
+        count += global_permissions.import_config(self, config_data)
         try:
-            devops.import_config(self, config_data)
+            count += devops.import_config(self, config_data)
         except exceptions.UnsupportedOperation as e:
             log.warning(e.message)
-            ok = False
-        return ok
+        log.debug("Imported and set %d settings", count)
+        return count
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits a global platform configuration and returns the list of problems found
@@ -884,7 +879,7 @@ def _get_multiple_values(n: int, setting: str, severity: sev.Severity, domain: t
     return values
 
 
-def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
+def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> int:
     """Imports a configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
