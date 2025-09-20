@@ -208,6 +208,7 @@ class Rule(sq.SqObject):
         (_, params["customKey"]) = key.split(":")
         params["impacts"] = ";".join([f"{k}={v}" for k, v in params.get("impacts", {}).items()])
         log.debug("Creating rule key '%s'", key)
+        params.pop("severity" if endpoint.is_mqr_mode() else "impacts", None)
         if not endpoint.post(cls.API[c.CREATE], params=params).ok:
             return None
         return cls.get_object(endpoint=endpoint, key=key)
