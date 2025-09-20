@@ -152,6 +152,14 @@ def __parser_args(desc: str) -> object:
         action="store_true",
         help="Creates the $HOME/.sonar-audit.properties configuration file, if not already present or outputs to stdout if it already exist",
     )
+    parser.add_argument(
+        "-D",
+        required=False,
+        action="append",
+        dest="settings",
+        nargs="*",
+        help="Pass audit configuration settings on command line (-D<setting>=<value>)",
+    )
     args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME, verify_token=False)
     if args.sif is None and args.config is None:
         util.check_token(args.token)
@@ -171,7 +179,11 @@ def main() -> None:
     errcode = errcodes.OS_ERROR
     try:
         kwargs = util.convert_args(__parser_args("Audits a SonarQube Server or Cloud platform or a SIF (Support Info File or System Info File)"))
-        settings = audit_conf.load(TOOL_NAME)
+        cli_settings = {}
+        for val in kwargs.get("settings", []) or []:
+            key, value = val[0].split("=", maxsplit=1)
+            cli_settings[key] = value
+        settings = audit_conf.load(TOOL_NAME, cli_settings)
         file = ofile = kwargs.pop(options.REPORT_FILE)
         fmt = util.deduct_format(kwargs[options.FORMAT], ofile)
         settings.update(
