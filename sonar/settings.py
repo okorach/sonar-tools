@@ -238,9 +238,8 @@ class Setting(sqobject.SqObject):
         log.debug("%s set to '%s'", str(self), str(value))
         if not self.is_settable():
             log.error("Setting '%s' does not seem to be a settable setting, trying to set anyway...", str(self))
-        if value is None or value == "":
-            # TODO: return endpoint.reset_setting(key)
-            return True
+        if value is None or value == "" or (self.key == "sonar.autodetect.ai.code" and value is True):
+            return self.endpoint.reset_setting(self.key)
         if self.key in (COMPONENT_VISIBILITY, PROJECT_DEFAULT_VISIBILITY):
             return set_visibility(endpoint=self.endpoint, component=self.component, visibility=value)
 
@@ -262,7 +261,7 @@ class Setting(sqobject.SqObject):
             else:
                 params["fieldValues"] = [json.dumps(v) for v in value]
         elif isinstance(value, bool):
-            value = str(value).lower()
+            params["value"] = str(value).lower()
         else:
             pname = "values" if self.multi_valued else "value"
             params[pname] = value
