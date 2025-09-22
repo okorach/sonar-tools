@@ -492,7 +492,18 @@ class Platform(object):
         json_data["permissionTemplates"] = permission_templates.export(self, export_settings=export_settings)
         if not self.is_sonarcloud():
             json_data[settings.DEVOPS_INTEGRATION] = devops.export(self, export_settings=export_settings)
-        return json_data
+
+        order = (
+            "generalSettings",
+            "analysisScope",
+            "authentication",
+            "permissions",
+            "permissionTemplates",
+            "languages",
+            "devopsIntegration",
+            "sastConfig",
+        )
+        return {k: json_data[k] for k in order if k in json_data} | {k: v for k, v in json_data.items() if k not in order}
 
     def set_webhooks(self, webhooks_data: types.ObjectJsonRepr) -> bool:
         """Sets global webhooks with a list of webhooks represented as JSON
