@@ -500,8 +500,10 @@ class Platform(object):
             "permissions",
             "permissionTemplates",
             "languages",
+            "tests",
             "devopsIntegration",
             "sastConfig",
+            "linters",
         )
         return {k: json_data[k] for k in order if k in json_data} | {k: v for k, v in json_data.items() if k not in order}
 
