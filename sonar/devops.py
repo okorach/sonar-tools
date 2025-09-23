@@ -264,7 +264,7 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
     log.info("Importing DevOps config %s", util.json_dump(devops_settings))
     if len(DevopsPlatform.CACHE) == 0:
         get_list(endpoint)
-    count = 0
+    counter = 0
     for name, data in devops_settings.items():
         try:
             o = DevopsPlatform.read(endpoint, name)
@@ -276,8 +276,8 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
                 log.error(str(e))
                 continue
         o.update(**data)
-        count += 1
-    return count
+        counter += 1
+    return counter
 
 
 def devops_type(endpoint: platform.Platform, key: str) -> Optional[str]:
