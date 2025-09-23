@@ -43,16 +43,16 @@ THIRD_PARTY_SETTINGS = "thirdParty"
 ANALYSIS_SCOPE_SETTINGS = "analysisScope"
 SAST_CONFIG_SETTINGS = "sastConfig"
 TEST_SETTINGS = "tests"
-UNIVERSAL_SEPARATOR = ":"
 
 CATEGORIES = (
     GENERAL_SETTINGS,
-    LANGUAGES_SETTINGS,
     ANALYSIS_SCOPE_SETTINGS,
-    TEST_SETTINGS,
-    LINTER_SETTINGS,
     AUTH_SETTINGS,
+    LANGUAGES_SETTINGS,
+    TEST_SETTINGS,
+    DEVOPS_INTEGRATION,
     SAST_CONFIG_SETTINGS,
+    LINTER_SETTINGS,
     THIRD_PARTY_SETTINGS,
 )
 
@@ -371,18 +371,14 @@ class Setting(sqobject.SqObject):
         m = re.match(r"^sonar\.forceAuthentication$", self.key)
         if m:
             return (AUTH_SETTINGS, None)
-        if self.key not in (NEW_CODE_PERIOD, PROJECT_DEFAULT_VISIBILITY, MQR_ENABLED, COMPONENT_VISIBILITY) and not re.match(
-            r"^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.ai|"
-            r"sonar\.cpd|sonar\.dbcleaner|sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|"
-            r"sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.scm\.provider|sonar\.technicalDebt|sonar\.validateWebhooks|"
-            r"sonar\.docker|sonar\.login|sonar\.kubernetes|sonar\.plugins|sonar\.documentation|sonar\.projectCreation|"
-            r"sonar\.autodetect\.ai\.code|sonar\.pdf\.confidential\.header\.enabled|sonar\.scanner\.skipNodeProvisioning|"
-            r"sonar\.sca|sonar\.rust|sonar\.jasmin|sonar\.qualityProfiles\.|sonar\.enforceAzureOpenAiDomainValidation|"
-            r"sonar\.qualityProfiles|sonar\.announcement|provisioning\.git|sonar\.ce|sonar\.azureresourcemanager|sonar\.filesize\.limit).*$",
+        if re.match(r"^sonar\.dependencyCheck\..*$", self.key):
+            return ("thirdParty", None)
+        if self.key in (NEW_CODE_PERIOD, PROJECT_DEFAULT_VISIBILITY, MQR_ENABLED, COMPONENT_VISIBILITY) or re.match(
+            r"^(sonar\.|email\.|provisioning\.git).*$",
             self.key,
         ):
-            return ("thirdParty", None)
-        return (GENERAL_SETTINGS, None)
+            return (GENERAL_SETTINGS, None)
+        return ("thirdParty", None)
 
 
 def get_object(endpoint: pf.Platform, key: str, component: object = None) -> Setting:
