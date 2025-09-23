@@ -493,18 +493,7 @@ class Platform(object):
         if not self.is_sonarcloud():
             json_data[settings.DEVOPS_INTEGRATION] = devops.export(self, export_settings=export_settings)
 
-        order = (
-            "generalSettings",
-            "analysisScope",
-            "authentication",
-            "permissions",
-            "permissionTemplates",
-            "languages",
-            "tests",
-            "devopsIntegration",
-            "sastConfig",
-            "linters",
-        )
+        order = list(settings.CATEGORIES) + ["permissions", "permissionTemplates"]
         return {k: json_data[k] for k in order if k in json_data} | {k: v for k, v in json_data.items() if k not in order}
 
     def set_webhooks(self, webhooks_data: types.ObjectJsonRepr) -> bool:
