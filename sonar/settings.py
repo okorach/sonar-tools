@@ -223,10 +223,7 @@ class Setting(sqobject.SqObject):
                 self.value = None
                 log.error("Can't find proper 'sonar.login.message' value in %s, setting will not be exported", str(data))
         else:
-            self.value = None
-            for key in "value", "values", "fieldValues":
-                if key in data:
-                    self.value = util.convert_string(data[key])
+            self.value = next((key for key in ("fieldValues", "values", "value") if key in data), None)
             if not self.value and "defaultValue" in data:
                 self.value = util.DEFAULT
         self.__reload_inheritance(data)
