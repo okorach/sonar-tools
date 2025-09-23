@@ -216,6 +216,12 @@ class Setting(sqobject.SqObject):
             self.value = new_code_to_string(data)
         elif self.key == COMPONENT_VISIBILITY:
             self.value = data.get("visibility", None)
+        elif self.key == "sonar.login.message":
+            if "values" in data and isinstance(data["values"], list) and len(data["values"]) > 0:
+                self.value = data["values"][0]
+            else:
+                self.value = None
+                log.error("Can't find proper 'sonar.login.message' value in %s, setting will not be exported", str(data))
         else:
             self.value = None
             for key in "value", "values", "fieldValues":
