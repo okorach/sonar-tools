@@ -28,7 +28,7 @@ import json
 
 TOOLNAME = "trivy"
 
-MAPPING = {"INFO": "INFO", "LOW": "MINOR", "MEDIUM": "MAJOR", "HIGH": "CRITICAL", "BLOCKER": "BLOCKER"}
+MAPPING = {"LOW": "MINOR", "MEDIUM": "MAJOR", "HIGH": "CRITICAL", "BLOCKER": "BLOCKER"}
 
 
 def main() -> None:
@@ -71,7 +71,7 @@ def main() -> None:
             "description": issue.get("Description", ""),
             "engineId": TOOLNAME,
             "type": "VULNERABILITY",
-            "severity": MAPPING[sev_mqr],
+            "severity": MAPPING.get(sev_mqr, sev_mqr),
             "cleanCodeAttribute": "LOGICAL",
             "impacts": [{"softwareQuality": "SECURITY", "severity": sev_mqr}],
         }
