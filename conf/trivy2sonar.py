@@ -28,6 +28,7 @@ import json
 
 TOOLNAME = "trivy"
 
+TRIVY_TO_MQR_MAPPING = {"CRITICAL": "BLOCKER"}
 MAPPING = {"LOW": "MINOR", "MEDIUM": "MAJOR", "HIGH": "CRITICAL", "BLOCKER": "BLOCKER"}
 
 
@@ -63,6 +64,7 @@ def main() -> None:
         # else:
         #     sev = "HIGH"
         sev_mqr = issue.get("Severity", "MEDIUM")
+        sev_mqr = TRIVY_TO_MQR_MAPPING.get(sev_mqr, sev_mqr)
         if sev_mqr == "UNKNOWN":
             sev_mqr = "MEDIUM"
         rules_dict[f"{TOOLNAME}:{issue['VulnerabilityID']}"] = {
