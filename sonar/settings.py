@@ -43,16 +43,16 @@ THIRD_PARTY_SETTINGS = "thirdParty"
 ANALYSIS_SCOPE_SETTINGS = "analysisScope"
 SAST_CONFIG_SETTINGS = "sastConfig"
 TEST_SETTINGS = "tests"
-UNIVERSAL_SEPARATOR = ":"
 
 CATEGORIES = (
     GENERAL_SETTINGS,
-    LANGUAGES_SETTINGS,
     ANALYSIS_SCOPE_SETTINGS,
-    TEST_SETTINGS,
-    LINTER_SETTINGS,
     AUTH_SETTINGS,
+    LANGUAGES_SETTINGS,
+    TEST_SETTINGS,
+    DEVOPS_INTEGRATION,
     SAST_CONFIG_SETTINGS,
+    LINTER_SETTINGS,
     THIRD_PARTY_SETTINGS,
 )
 
@@ -113,6 +113,8 @@ _INLINE_SETTINGS = (
     r"^sonar\.cobol\.sql\.catalog\.defaultSchema$",
     r"^sonar\.docker\.file\.patterns$",
     r"^sonar\.auth\..*\.organizations$",
+    r"^sonar\.azureresourcemanager\.file\.identifier$",
+    r"^sonar\.java\.jvmframeworkconfig\.file\.patterns$",
 )
 
 VALID_SETTINGS = set()
@@ -214,11 +216,14 @@ class Setting(sqobject.SqObject):
             self.value = new_code_to_string(data)
         elif self.key == COMPONENT_VISIBILITY:
             self.value = data.get("visibility", None)
+        elif self.key == "sonar.login.message":
+            if "values" in data and isinstance(data["values"], list) and len(data["values"]) > 0:
+                self.value = data["values"][0]
+            else:
+                self.value = None
+                log.error("Can't find proper 'sonar.login.message' value in %s, setting will not be exported", str(data))
         else:
-            self.value = None
-            for key in "value", "values", "fieldValues":
-                if key in data:
-                    self.value = util.convert_string(data[key])
+            self.value = next((key for key in ("fieldValues", "values", "value") if key in data), None)
             if not self.value and "defaultValue" in data:
                 self.value = util.DEFAULT
         self.__reload_inheritance(data)
@@ -297,6 +302,7 @@ class Setting(sqobject.SqObject):
                     break
         if val is None:
             val = ""
+        log.debug("JSON of %s = %s", self, {self.key: val})
         return {self.key: val}
 
     def definition(self) -> Optional[dict[str, str]]:
@@ -338,7 +344,7 @@ class Setting(sqobject.SqObject):
         m = re.match(
             r"^sonar\.(cpd\.)?(abap|androidLint|ansible|apex|azureresourcemanager|cloudformation|c|cpp|cfamily|cobol|cs|css|dart|docker|"
             r"eslint|flex|go|html|java|javascript|jcl|json|jsp|kotlin|objc|php|pli|plsql|python|ipynb|rpg|ruby|scala|swift|"
-            r"terraform|text|tsql|typescript|vb|vbnet|xml|yaml)\.",
+            r"terraform|text|tsql|typescript|vb|vbnet|xml|yaml|rust|jasmin)\.",
             self.key,
         )
         if m:
@@ -347,7 +353,7 @@ class Setting(sqobject.SqObject):
                 lang = "cfamily"
             elif lang in ("androidLint"):
                 lang = "kotlin"
-            elif lang in ("eslint"):
+            elif lang in ("eslint", "jasmin"):
                 lang = "javascript"
             return (LANGUAGES_SETTINGS, lang)
         if re.match(
@@ -368,17 +374,14 @@ class Setting(sqobject.SqObject):
         m = re.match(r"^sonar\.forceAuthentication$", self.key)
         if m:
             return (AUTH_SETTINGS, None)
-        if self.key not in (NEW_CODE_PERIOD, PROJECT_DEFAULT_VISIBILITY, MQR_ENABLED, COMPONENT_VISIBILITY) and not re.match(
-            r"^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.ai|"
-            r"sonar\.cpd|sonar\.dbcleaner|sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|"
-            r"sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.scm\.provider|sonar\.technicalDebt|sonar\.validateWebhooks|"
-            r"sonar\.docker|sonar\.login|sonar\.kubernetes|sonar\.plugins|sonar\.documentation|sonar\.projectCreation|"
-            r"sonar\.autodetect\.ai\.code|sonar\.pdf\.confidential\.header\.enabled|sonar\.scanner\.skipNodeProvisioning|"
-            r"sonar\.qualityProfiles|sonar\.announcement|provisioning\.git|sonar\.ce|sonar\.azureresourcemanager|sonar\.filesize\.limit).*$",
+        if re.match(r"^sonar\.dependencyCheck\..*$", self.key):
+            return ("thirdParty", None)
+        if self.key in (NEW_CODE_PERIOD, PROJECT_DEFAULT_VISIBILITY, MQR_ENABLED, COMPONENT_VISIBILITY) or re.match(
+            r"^(sonar\.|email\.|provisioning\.git).*$",
             self.key,
         ):
-            return ("thirdParty", None)
-        return (GENERAL_SETTINGS, None)
+            return (GENERAL_SETTINGS, None)
+        return ("thirdParty", None)
 
 
 def get_object(endpoint: pf.Platform, key: str, component: object = None) -> Setting:
@@ -528,6 +531,7 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
     """Sets a setting to a particular value"""
 
     try:
+        log.debug("Setting %s with value %s (for component %s)", key, value, component)
         s = get_object(endpoint=endpoint, key=key, component=component)
         if not s:
             log.warning("Setting '%s' does not exist on target platform, it cannot be set", key)
