@@ -631,6 +631,7 @@ class Project(components.Component):
         return self.sq_json.get("isAiCodeFixEnabled", None)
 
     def __audit_scanner(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits whether the project is analyzed with the right scanner"""
         if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
         if not audit_settings.get("audit.projects.scanner", True):
@@ -649,6 +650,7 @@ class Project(components.Component):
         return [Problem(get_rule(RuleId.PROJ_WRONG_SCANNER), self, str(self), proj_type, scanner)]
 
     def __audit_key_pattern(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits whether the project key matches the desired pattern"""
         if audit_settings.get("audit.projects.keyPattern", None) is None:
             log.debug("%s: audit project key pattern is disabled, audit skipped", str(self))
             return []
