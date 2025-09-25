@@ -270,6 +270,12 @@
         "object": "Project",
         "message": "{} with {} LoCs is stale, it has not been analyzed since {} days, it could be deleted"
     },
+    "PROJ_NON_COMPLIANT_KEY_PATTERN": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "object": "Project",
+        "message": "{} has a key that does not comply with the pattern '{}'"
+    },
     "PROJ_HISTORY_COUNT": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
