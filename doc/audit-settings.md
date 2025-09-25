@@ -239,6 +239,10 @@ audit.projects.zeroLoc = yes
 # Set property to 0 to turn off the check
 audit.projects.maxNewCodeLines = 25000
 
+# Audits projects for compliance with a key pattern
+# Uncomment and set a regexp pattern - By default the pattern is automatically wrapped with ^ and $
+# audit.projects.keyPattern = (BU1|BU2|BU3)_[A-Z0-9_]+
+
 #====================== QUALITY GATES AUDIT CONFIGURATION =====================
 
 # Audit that there are not too many quality gates, this defeats company common governance

@@ -631,6 +631,7 @@ class Project(components.Component):
         return self.sq_json.get("isAiCodeFixEnabled", None)
 
     def __audit_scanner(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits whether the project is analyzed with the right scanner"""
         if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
         if not audit_settings.get("audit.projects.scanner", True):
@@ -647,6 +648,17 @@ class Project(components.Component):
         if proj_type == scanner:
             return []
         return [Problem(get_rule(RuleId.PROJ_WRONG_SCANNER), self, str(self), proj_type, scanner)]
+
+    def __audit_key_pattern(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits whether the project key matches the desired pattern"""
+        if audit_settings.get("audit.projects.keyPattern", None) is None:
+            log.debug("%s: audit project key pattern is disabled, audit skipped", str(self))
+            return []
+        if not re.match(rf"^{audit_settings['audit.projects.keyPattern']}$", self.key):
+            return [Problem(get_rule(RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN), self, str(self), audit_settings["audit.projects.keyPattern"])]
+        else:
+            log.debug("%s: matches the desired project key pattern '%s'", str(self), f"^{audit_settings['audit.projects.keyPattern']}$")
+            return []
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits a project and returns the list of problems found
@@ -667,6 +679,7 @@ class Project(components.Component):
 
             problems += self.__audit_scanner(audit_settings)
             problems += self._audit_component(audit_settings)
+            problems += self.__audit_key_pattern(audit_settings)
             if self.endpoint.edition() != c.CE and audit_settings.get("audit.project.branches", True):
                 problems += self.__audit_branches(audit_settings)
                 problems += self.__audit_pull_requests(audit_settings)

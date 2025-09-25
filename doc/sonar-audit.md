@@ -173,6 +173,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - Duplicate quality profiles
 - Projects: (if `audit.projects = yes`, default `yes`)
   - Projects provisioned but never analyzed
+  - Projects key not matching a pattern defined in the `audit.projects.keyPattern` setting
   - Projects not analyzed since `audit.projects.maxLastAnalysisAge` days (on any branch) (default 180 days)
   - Project branches not kept permanently and not analyzed since `audit.projects.branches.maxLastAnalysisAge` (default 30 days)
   - Pull requests not analyzed since `audit.projects.pullRequests.maxLastAnalysisAge`(default 30 days)
