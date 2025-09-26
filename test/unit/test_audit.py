@@ -28,6 +28,8 @@ import utilities as tutil
 from sonar import errcodes as e
 import cli.options as opt
 from cli import audit
+from sonar import projects
+from sonar.audit import rules
 
 CMD = f"sonar-audit.py {tutil.SQS_OPTS}"
 
@@ -87,8 +89,18 @@ def test_audit_cmd_line_settings(csv_file: Generator[str]) -> None:
 
 def test_audit_proj_key_pattern(csv_file: Generator[str]) -> None:
     """test_audit_cmd_line_settings"""
-    assert tutil.run_cmd(audit.main, f'{CMD} -D "audit.projects.keyPattern=.*" --{opt.REPORT_FILE} {csv_file}') == e.OK
-    assert not tutil.csv_col_has_values(csv_file, "Audit Check", "PROJ_NON_COMPLIANT_KEY_PATTERN")
+    settings = {"audit.projects": True, "audit.projects.keyPattern": None}
+    pbs = projects.audit(tutil.SQ, settings, key_list="BANKING.*")
+    assert all(pb.rule_id != rules.RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN for pb in pbs)
 
-    assert tutil.run_cmd(audit.main, f'{CMD} -D "audit.projects.keyPattern=(BANKING|INSURANCE|demo:).*" --{opt.REPORT_FILE} {csv_file}') == e.OK
-    assert tutil.csv_col_has_values(csv_file, "Audit Check", "PROJ_NON_COMPLIANT_KEY_PATTERN")
+    settings = {"audit.projects": True, "audit.projects.keyPattern": ".+"}
+    pbs = projects.audit(tutil.SQ, settings, key_list="BANKING.*")
+    assert all(pb.rule_id != rules.RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN for pb in pbs)
+
+    settings = {"audit.projects": True, "audit.projects.keyPattern": "BANKING.+"}
+    pbs = projects.audit(tutil.SQ, settings, key_list="(BANKING|INSURANCE).+")
+    assert any(pb.rule_id == rules.RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN for pb in pbs)
+
+    settings = {"audit.projects": True, "audit.projects.keyPattern": "(BANK|INSU|demo:).+"}
+    pbs = projects.audit(tutil.SQ, settings, key_list="(BANKING|INSURANCE|demo:).+")
+    assert all(pb.rule_id != rules.RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN for pb in pbs)
