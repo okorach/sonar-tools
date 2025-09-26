@@ -84,6 +84,10 @@ def write_problems(queue: Queue[list[problem.Problem]], fd: TextIO, settings: ty
         print("[", file=fd)
     else:
         csvwriter = csv.writer(fd, delimiter=settings.get("CSV_DELIMITER", ","))
+        header = ["Server Id"] if server_id else []
+        header += ["Audit Check", "Category", "Severity", "Message"]
+        header += ["URL"] if with_url else []
+        csvwriter.writerow(header)
     while True:
         problems = queue.get()
         if problems is util.WRITE_END:
