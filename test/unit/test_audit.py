@@ -83,3 +83,12 @@ def test_audit_cmd_line_settings(csv_file: Generator[str]) -> None:
     cli_opt = " ".join([f"-Daudit.{what}=false" for what in what_to_audit + ["globalSettings"]])
     assert tutil.run_cmd(audit.main, f"{CMD} {cli_opt} --{opt.REPORT_FILE} {csv_file}") == e.OK
     assert tutil.file_empty(csv_file)
+
+
+def test_audit_proj_key_pattern(csv_file: Generator[str]) -> None:
+    """test_audit_cmd_line_settings"""
+    assert tutil.run_cmd(audit.main, f'{CMD} -D "audit.projects.keyPattern=.*" --{opt.REPORT_FILE} {csv_file}') == e.OK
+    assert not tutil.csv_col_has_values(csv_file, "Audit Check", "PROJ_NON_COMPLIANT_KEY_PATTERN")
+
+    assert tutil.run_cmd(audit.main, f'{CMD} -D "audit.projects.keyPattern=(BANKING|INSURANCE|demo:).*" --{opt.REPORT_FILE} {csv_file}') == e.OK
+    assert tutil.csv_col_has_values(csv_file, "Audit Check", "PROJ_NON_COMPLIANT_KEY_PATTERN")
