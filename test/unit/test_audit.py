@@ -78,13 +78,13 @@ def test_audit_proj_non_existing_key() -> None:
 def test_audit_cmd_line_settings(csv_file: Generator[str]) -> None:
     """test_audit_cmd_line_settings"""
     what_to_audit = ["logs", "projects", "portfolios", "applications", "qualityProfiles", "qualityGates", "users", "groups"]
-    cli_opt = " ".join([f"-Daudit.{what}=false" for what in what_to_audit])
+    cli_opt = " ".join([f"-Daudit.{what}=true" for what in what_to_audit])
     assert tutil.run_cmd(audit.main, f"{CMD} {cli_opt} --{opt.REPORT_FILE} {csv_file}") == e.OK
-    assert not tutil.file_empty(csv_file)
+    assert tutil.csv_nbr_lines(csv_file) > 0
 
     cli_opt = " ".join([f"-Daudit.{what}=false" for what in what_to_audit + ["globalSettings"]])
     assert tutil.run_cmd(audit.main, f"{CMD} {cli_opt} --{opt.REPORT_FILE} {csv_file}") == e.OK
-    assert tutil.file_empty(csv_file)
+    assert tutil.csv_nbr_lines(csv_file) == 0
 
 
 def test_audit_proj_key_pattern(csv_file: Generator[str]) -> None:
