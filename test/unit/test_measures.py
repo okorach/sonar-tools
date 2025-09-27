@@ -202,7 +202,9 @@ def test_apps_measures(csv_file: Generator[str]) -> None:
     assert tutil.run_cmd(measures_export.main, cmd) == e.OK
     assert tutil.csv_nbr_cols(csv_file, 5)
     assert tutil.csv_col_has_values(csv_file, "key", existing_key)
-
+    assert tutil.run_cmd(measures_export.main, f"{cmd} --{opt.KEY_REGEXP} {existing_key} --{opt.BRANCH_REGEXP} .+") == e.OK
+    # APP_TEST app has more than 1 branche defined
+    assert tutil.csv_col_count_values(csv_file, "key", existing_key) > 1
 
 def test_portfolios_measures(csv_file: Generator[str]) -> None:
     """test_portfolios_measures"""
