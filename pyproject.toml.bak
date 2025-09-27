@@ -1,0 +1,31 @@
+[build-system]
+
+requires = [
+    "setuptools>=42",
+    "wheel",
+    "black",
+    "sphinx",
+    "sphinx_rtd_theme",
+    "sphinx-autodoc-typehints",
+    "twine",
+    "pytest",
+    "coverage",
+    "flake8",
+    "pylint",
+    "get_pypi_latest_version"
+]
+
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sonar-tools"
+version = "3.16"
+dependencies = [
+    "argparse",
+    "datetime",
+    "python-dateutil",
+    "requests",
+    "jprops",
+    "levenshtein",
+    "PyYAML",
+]

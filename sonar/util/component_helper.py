@@ -28,7 +28,7 @@ def get_components(
     endpoint: platform.Platform, component_type: str, key_regexp: Optional[str] = None, branch_regexp: Optional[str] = None, **kwargs
 ) -> list[components.Component]:
     """Returns list of components that match the filters"""
-    key_regexp = key_regexp or ".*"
+    key_regexp = key_regexp or ".+"
     if component_type in ("apps", "applications"):
         components = [p for p in applications.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
     elif component_type == "portfolios":

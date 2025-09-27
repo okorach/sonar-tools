@@ -296,6 +296,14 @@ def csv_col_has_values(csv_file: str, col_name: str, *values) -> bool:
         return False
 
 
+def csv_col_count_values(csv_file: str, col_name: str, *values) -> int:
+    values_to_search = list(values).copy()
+    with open(csv_file, encoding="utf-8") as fd:
+        (col,) = get_cols(next(reader := csv.reader(fd)), col_name)
+        counter = sum(1 if line[col] in values_to_search else 0 for line in reader)
+    return counter
+
+
 def csv_nbr_lines(csv_file: str) -> int:
     """return nbr lines in a CSV file"""
     with open(csv_file, encoding="utf-8") as fd:
