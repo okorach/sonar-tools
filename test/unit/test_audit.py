@@ -51,8 +51,8 @@ def test_audit_disabled(csv_file: Generator[str]) -> None:
     with open(".sonar-audit.properties", mode="w", encoding="utf-8") as fd:
         print(AUDIT_DISABLED, file=fd)
     assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}") == e.OK
-    assert tutil.file_empty(csv_file)
     os.remove(".sonar-audit.properties")
+    assert tutil.csv_nbr_lines(csv_file) == 0
 
 
 def test_audit_stdout() -> None:
