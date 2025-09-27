@@ -346,18 +346,6 @@ class Finding(sq.SqObject):
         """
         return {v["user"] for v in self.comments() if "user" in v}
 
-    def can_be_synced(self, sync_user: Optional[str]) -> bool:
-        """
-        :meta private:
-        """
-        log.debug("%s: Checking if modifiers %s are different from user %s", str(self), str(self.modifiers()), str(sync_user))
-        # If no account dedicated to sync is provided, finding can be synced only if no changelog
-        if sync_user is None:
-            log.debug("Allowed sync user is empty, checking if issue has changelog")
-            return not self.has_changelog()
-        # Else, finding can be synced only if changes were performed by syncer accounts
-        return all(u == sync_user for u in self.modifiers())
-
     def strictly_identical_to(self, another_finding: Finding, ignore_component: bool = False) -> bool:
         """
         :meta private:
@@ -422,7 +410,7 @@ class Finding(sq.SqObject):
         return score == 8 or score >= 7 and self.hash == another_finding.hash
 
     def search_siblings(
-        self, findings_list: list[Finding], sync_user: str = None, ignore_component: bool = False, **kwargs
+        self, findings_list: list[Finding], ignore_component: bool = False, **kwargs
     ) -> tuple[list[Finding], list[Finding], list[Finding]]:
         """
         :meta private:

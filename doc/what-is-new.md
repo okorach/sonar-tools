@@ -19,6 +19,7 @@
 * `sonar-audit`:
   - SonarQube Cloud audit improvements. The `Members` group on cloud is handled like the `sonar-users` group on Server
   - Fix a crash when auditing organizations
+  - Added auditing that projects keys follow a given naming convention (match a given regexp)
 
 
 

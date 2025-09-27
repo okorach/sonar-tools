@@ -202,10 +202,7 @@ class Application(aggr.Aggregation):
 
     def main_branch(self) -> object:
         """Returns the application main branch"""
-        for br in self.branches().values():
-            if br.is_main():
-                return br
-        return None
+        return next((br for br in self.branches().values() if br.is_main()), None)
 
     def create_branch(self, branch_name: str, branch_definition: types.ObjectJsonRepr) -> object:
         """Creates an application branch

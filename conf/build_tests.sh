@@ -31,8 +31,8 @@ echo "Generating edition / version specific tests"
 for target in lts latest cb 9 9-ce common
 do
     echo "Generating tests for $target"
-    rm -rf "$ROOTDIR/$GEN_LOC/$target"
-    mkdir -p "$ROOTDIR/$GEN_LOC/$target" 2>/dev/null
+    rm -rf "${ROOTDIR:?}/${GEN_LOC:?}/$target"
+    mkdir -p "${ROOTDIR:?}/${GEN_LOC:?}/$target" 2>/dev/null
     if [ "$target" == "common" ]; then
         b=$(basename "$f" .py)
         cp conftest.py utilities.py credentials.py "$ROOTDIR/$GEN_LOC/$target"

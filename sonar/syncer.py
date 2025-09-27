@@ -162,7 +162,6 @@ def __sync_one_finding(
     """Syncs one finding"""
     (exact_siblings, approx_siblings, modified_siblings) = src_finding.search_siblings(
         tgt_findings,
-        sync_user=settings[SYNC_SERVICE_ACCOUNT],
         ignore_component=settings[SYNC_IGNORE_COMPONENTS],
     )
     if len(exact_siblings) == 1:
