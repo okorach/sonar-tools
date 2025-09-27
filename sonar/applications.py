@@ -268,46 +268,27 @@ class Application(aggr.Aggregation):
                 branch.delete()
         return super().delete()
 
-    def get_filtered_branches(self, filters: dict[str, str]) -> Union[None, dict[str, object]]:
-        """Get lists of branches according to the filter"""
-        from sonar.app_branches import ApplicationBranch
-
-        if not filters:
-            return None
-        f = filters.copy()
-        br = f.pop("branch", None)
-        if not br:
-            return None
-        objects = {}
-        if br:
-            if "*" in br:
-                objects = self.branches()
-            else:
-                try:
-                    for b in br:
-                        objects[b] = ApplicationBranch.get_object(app=self, branch_name=b)
-                except exceptions.ObjectNotFound as e:
-                    log.error(e.message)
-        return objects
-
     def get_hotspots(self, filters: dict[str, str] = None) -> dict[str, object]:
-        my_branches = self.get_filtered_branches(filters)
-        if my_branches is None:
-            return super().get_hotspots(filters)
+        new_filters = filters.copy() if filters else {}
+        pattern = new_filters.pop("branch", None) if new_filters else None
+        if not pattern:
+            return super().get_hotspots(new_filters)
+        matching_branches = [b for b in self.branches().values() if re.match(rf"^{pattern}$", b.name)]
         findings_list = {}
-        for comp in my_branches.values():
-            if comp:
-                findings_list = {**findings_list, **comp.get_hotspots()}
+        for comp in matching_branches:
+            findings_list |= comp.get_hotspots(new_filters)
         return findings_list
 
     def get_issues(self, filters: dict[str, str] = None) -> dict[str, object]:
-        my_branches = self.get_filtered_branches(filters)
-        if my_branches is None:
-            return super().get_issues(filters)
+        new_filters = filters.copy() if filters else {}
+        pattern = new_filters.pop("branch", None) if new_filters else None
+        if not pattern:
+            return super().get_issues(new_filters)
+        log.debug("APP BRANCHES = %s", self.branches())
+        matching_branches = [b for b in self.branches().values() if re.match(rf"^{pattern}$", b.name)]
         findings_list = {}
-        for comp in my_branches.values():
-            if comp:
-                findings_list = {**findings_list, **comp.get_issues()}
+        for comp in matching_branches:
+            findings_list |= comp.get_issues(new_filters)
         return findings_list
 
     def nbr_projects(self, use_cache: bool = False) -> int:
