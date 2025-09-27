@@ -206,6 +206,7 @@ def test_apps_measures(csv_file: Generator[str]) -> None:
     # APP_TEST app has more than 1 branche defined
     assert tutil.csv_col_count_values(csv_file, "key", existing_key) > 1
 
+
 def test_portfolios_measures(csv_file: Generator[str]) -> None:
     """test_portfolios_measures"""
     existing_key = "PORTFOLIO_ALL"
