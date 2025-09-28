@@ -32,6 +32,8 @@ echo "Running tests"
 
 cd "$ROOTDIR" || exit 1
 
+sonar start -i test
+
 for target in latest cb 9 common
 do
     if [ "$target" != "common" ]; then
@@ -41,7 +43,7 @@ do
         coverage run --branch --source="$ROOTDIR" -m pytest "$ROOTDIR/$GEN_LOC/$target/" --junit-xml="$buildDir/xunit-results-$target.xml"
         coverage xml -o "$buildDir/coverage-$target.xml"
     fi
-    if [ "$target" != "latest" ]; then
+    if [ "$target" != "latest" ] && [ "$target" != "common" ]; then
         sonar stop -i $target
     fi
 done
