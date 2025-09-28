@@ -259,7 +259,7 @@ def test_history() -> None:
     """Tests that using the --history option works"""
     proj = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
     meas = measures.Measure(proj, "ncloc")
-    meas.refresh()
+    assert meas.refresh() > 10000
     counter = meas.count_history()
     assert counter > 20
     hist = meas.search_history()
