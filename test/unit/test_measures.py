@@ -23,6 +23,7 @@
 
 from collections.abc import Generator
 
+from datetime import datetime
 import utilities as tutil
 from sonar import errcodes as e, utilities, projects, measures
 import sonar.util.constants as c
@@ -258,7 +259,7 @@ def test_option_portfolios(csv_file: Generator[str]) -> None:
 def test_history() -> None:
     """Tests that using the --history option works"""
     proj = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    meas = measures.Measure(proj, "ncloc")
+    meas = measures.Measure(proj, "ncloc", 0)
     assert meas.refresh() > 10000
     counter = meas.count_history()
     assert counter > 20
@@ -267,7 +268,7 @@ def test_history() -> None:
     last_date = None
     for k, v in hist.items():
         this_date = utilities.string_to_date(k)
-        assert isinstance(this_date, utilities.datetime)
+        assert isinstance(this_date, datetime)
         assert last_date is None or this_date >= last_date
         last_date = this_date
         assert 4000 <= int(v) <= 20000
