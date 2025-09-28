@@ -24,7 +24,7 @@
 from collections.abc import Generator
 
 import utilities as tutil
-from sonar import errcodes as e, utilities
+from sonar import errcodes as e, utilities, projects, measures
 import sonar.util.constants as c
 
 from cli import measures_export
@@ -202,6 +202,9 @@ def test_apps_measures(csv_file: Generator[str]) -> None:
     assert tutil.run_cmd(measures_export.main, cmd) == e.OK
     assert tutil.csv_nbr_cols(csv_file, 5)
     assert tutil.csv_col_has_values(csv_file, "key", existing_key)
+    assert tutil.run_cmd(measures_export.main, f"{cmd} --{opt.KEY_REGEXP} {existing_key} --{opt.BRANCH_REGEXP} .+") == e.OK
+    # APP_TEST app has more than 1 branche defined
+    assert tutil.csv_col_count_values(csv_file, "key", existing_key) > 1
 
 
 def test_portfolios_measures(csv_file: Generator[str]) -> None:
@@ -250,3 +253,22 @@ def test_option_portfolios(csv_file: Generator[str]) -> None:
 
     assert tutil.run_cmd(measures_export.main, cmd) == e.OK
     assert tutil.csv_col_is_value(csv_file, "type", "PORTFOLIO")
+
+
+def test_history() -> None:
+    """Tests that using the --history option works"""
+    proj = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
+    meas = measures.Measure(proj, "ncloc")
+    assert meas.refresh() > 10000
+    counter = meas.count_history()
+    assert counter > 20
+    hist = meas.search_history()
+    assert len(hist) == counter
+    last_date = None
+    for k, v in hist.items():
+        this_date = utilities.string_to_date(k)
+        assert isinstance(this_date, utilities.datetime)
+        assert last_date is None or this_date >= last_date
+        last_date = this_date
+        assert 4000 <= int(v) <= 20000
+

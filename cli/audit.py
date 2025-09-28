@@ -72,39 +72,43 @@ def _audit_sif(sysinfo: str, audit_settings: types.ConfigSettings) -> tuple[str,
     return sif_obj.server_id(), sif_obj.audit(audit_settings)
 
 
-def write_problems(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.ConfigSettings) -> None:
+def write_csv(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.ConfigSettings) -> None:
+    """Writes the CSV file of audit problems"""
+    server_id = settings.get("SERVER_ID", None)
+    with_url = settings.get("WITH_URL", False)
+    csvwriter = csv.writer(fd, delimiter=settings.get("CSV_DELIMITER", ","))
+    header = ["Server Id"] if server_id else []
+    header += ["Audit Check", "Category", "Severity", "Message"]
+    header += ["URL"] if with_url else []
+    csvwriter.writerow(header)
+    while (problems := queue.get()) is not util.WRITE_END:
+        for p in problems:
+            json_data = p.to_json(with_url)
+            data = [] if not server_id else [server_id]
+            data += list(json_data.values())
+            csvwriter.writerow(data)
+        queue.task_done()
+    queue.task_done()
+
+
+def write_json(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.ConfigSettings) -> None:
     """
-    Thread to write problems in a CSV file
+    Thread to write problems in a JSON file
     """
     server_id = settings.get("SERVER_ID", None)
     with_url = settings.get("WITH_URL", False)
-    fmt = settings.get("format", "csv")
     comma = ""
-    if fmt == "json":
-        print("[", file=fd)
-    else:
-        csvwriter = csv.writer(fd, delimiter=settings.get("CSV_DELIMITER", ","))
-        header = ["Server Id"] if server_id else []
-        header += ["Audit Check", "Category", "Severity", "Message"]
-        header += ["URL"] if with_url else []
-        csvwriter.writerow(header)
-    while True:
-        problems = queue.get()
-        if problems is util.WRITE_END:
-            if fmt == "json":
-                print("]", file=fd)
-            queue.task_done()
-            break
+    print("[", file=fd)
+    while (problems := queue.get()) is not util.WRITE_END:
         for p in problems:
             json_data = p.to_json(with_url)
-            if fmt == "json":
-                print(f"{comma}{util.json_dump(json_data)}", file=fd)
-                comma = ","
-            else:
-                data = [] if not server_id else [server_id]
-                data += list(json_data.values())
-                csvwriter.writerow(data)
+            if server_id:
+                json_data |= {"serverId": server_id}
+            print(f"{comma}{util.json_dump(json_data)}", file=fd)
+            comma = ","
         queue.task_done()
+    print("]", file=fd)
+    queue.task_done()
     log.info("Writing audit problems complete")
 
 
@@ -120,20 +124,22 @@ def _audit_sq(
     write_q = Queue(maxsize=0)
     file = settings.get("FILE", None)
     fmt = settings.get("format", "csv")
+    func = write_csv if fmt == "csv" else write_json
     with util.open_file(file=file, mode="w") as fd:
-        worker = Thread(target=write_problems, args=(write_q, fd, settings))
+        worker = Thread(target=func, args=(write_q, fd, settings))
         worker.daemon = True
         worker.name = "AuditWriter"
         worker.start()
         for element, func in WHAT_AUDITABLE.items():
-            if element in what_to_audit:
-                try:
-                    pbs = func(endpoint=sq, audit_settings=settings, write_q=write_q, key_list=key_list)
-                    problems += pbs
-                except exceptions.SonarException as e:
-                    if not everything:
-                        log.warning(e.message)
-        write_q.put(None)
+            if element not in what_to_audit:
+                continue
+            try:
+                pbs = func(endpoint=sq, audit_settings=settings, write_q=write_q, key_list=key_list)
+                problems += pbs
+            except exceptions.SonarException as e:
+                if not everything:
+                    log.warning(e.message)
+        write_q.put(util.WRITE_END)
         write_q.join()
     if file and fmt == "json":
         util.pretty_print_json(file)
