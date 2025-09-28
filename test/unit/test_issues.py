@@ -85,19 +85,38 @@ def test_set_severity() -> None:
     """Test issue severity"""
     issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1, params={"statuses": "OPEN"})
     issue = list(issues_d.values())[0]
+    is_mqr = tutil.SQ.is_mqr_mode()
     old_sev = issue.severity
     new_sev = "MINOR" if old_sev == "CRITICAL" else "CRITICAL"
-    if tutil.SQ.is_mqr_mode():
-        assert not issue.set_severity(new_sev)
-        issue.refresh()
-        assert issue.severity == old_sev
-    else:
-        assert issue.set_severity(new_sev)
-        issue.refresh()
-        assert issue.severity == new_sev
-        assert not issue.set_severity("NON_EXISTING")
-        issue.set_severity(old_sev)
+    old_impacts = issue.impacts
+    new_impacts = {k: "HIGH" if v == "BLOCKER" else "BLOCKER" for k, v in old_impacts.items()}
+    
+    tutil.SQ.set_mqr_mode(False)
 
+    assert issue.set_severity(new_sev)
+    issue.refresh()
+    assert issue.severity == new_sev
+    assert not issue.set_severity("NON_EXISTING")
+    issue.set_severity(old_sev)
+
+    assert not any(issue.set_mqr_severity(k, v) for k, v in new_impacts.items())
+    issue.refresh()
+    assert issue.impacts == old_impacts
+ 
+    tutil.SQ.set_mqr_mode(True)
+
+    assert not issue.set_severity(new_sev)
+    issue.refresh()
+    assert issue.severity == old_sev
+
+    assert all(issue.set_mqr_severity(k, v) for k, v in new_impacts.items())
+    issue.refresh()
+    assert issue.impacts == new_impacts
+    assert not issue.set_mqr_severity("MAINTAINABILITY", "NON_EXISTING")
+    assert not issue.set_mqr_severity("NON_EXISTING", "HIGH")
+    [issue.set_mqr_severity(k, v) for k, v in old_impacts.items()]
+
+    tutil.SQ.set_mqr_mode(is_mqr)
 
 def test_add_remove_tag() -> None:
     """test_add_remove_tag"""
