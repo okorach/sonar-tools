@@ -89,7 +89,6 @@ def write_csv(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.C
             csvwriter.writerow(data)
         queue.task_done()
     queue.task_done()
-    return
 
 
 def write_json(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.ConfigSettings) -> None:
