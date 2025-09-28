@@ -34,3 +34,11 @@ def test_transitions() -> None:
 
     assert hotspot.mark_as_to_review()
     assert hotspot.reopen()
+
+    assert hotspot.assign("admin", "Assigning to admin")
+    assert hotspot.unassign("Unassigning")
+
+def test_search_by_project() -> None:
+    """test_search_by_project"""
+    hotspot_d = hotspots.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
+    assert len(hotspot_d) > 0
