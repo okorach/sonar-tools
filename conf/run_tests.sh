@@ -32,9 +32,11 @@ echo "Running tests"
 
 cd "$ROOTDIR" || exit 1
 
-for target in latest cb 9 cloud
+for target in latest cb 9 common
 do
-    sonar start -i $target && sleep 30
+    if [ "$target" != "common" ]; then
+        sonar start -i $target && sleep 30
+    fi
     if [ -d "$ROOTDIR/$GEN_LOC/$target/" ]; then
         coverage run --branch --source="$ROOTDIR" -m pytest "$ROOTDIR/$GEN_LOC/$target/" --junit-xml="$buildDir/xunit-results-$target.xml"
         coverage xml -o "$buildDir/coverage-$target.xml"
