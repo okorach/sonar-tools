@@ -764,6 +764,7 @@ class Platform(object):
         """Sets the platform to standard experience mode (disables MQR if available)"""
         return self.set_mqr_mode(False)
 
+
 # --------------------- Static methods -----------------
 # this is a pointer to the module object instance itself.
 this = sys.modules[__name__]
