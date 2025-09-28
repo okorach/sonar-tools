@@ -44,6 +44,7 @@ def test_get_object() -> None:
         _ = wh.get_object(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY)
     assert str(e.value).endswith(f"Webhook '{tutil.NON_EXISTING_KEY}' not found")
 
+
 def test_audit() -> None:
     """test_audit"""
     webhook = wh.get_object(endpoint=tutil.SQ, name=WEBHOOK)
@@ -53,6 +54,7 @@ def test_audit() -> None:
     pbs = wh.audit(tutil.SQ, {"audit.webhooks": True})
     assert len(pbs) == 1
     assert pbs[0].rule_id == audit_rules.RuleId.FAILED_WEBHOOK
+
 
 def test_update() -> None:
     """test_update"""
@@ -65,6 +67,7 @@ def test_update() -> None:
     webhook.update(url_target=old_url)
     webhook = wh.get_object(endpoint=tutil.SQ, name=WEBHOOK)
     assert webhook.webhook_url == old_url
+
 
 def test_export() -> None:
     """test_export"""

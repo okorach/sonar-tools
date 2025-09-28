@@ -271,4 +271,3 @@ def test_history() -> None:
         assert last_date is None or this_date >= last_date
         last_date = this_date
         assert 4000 <= int(v) <= 20000
-
