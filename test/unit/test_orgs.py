@@ -33,7 +33,7 @@ import sonar.util.constants as c
 MY_ORG = "okorach"
 
 
-SUPPORTED_EDITIONS = (c.SC)
+SUPPORTED_EDITIONS = c.SC
 
 
 def test_get_object() -> None:
@@ -50,6 +50,7 @@ def test_get_object() -> None:
     org2 = orgs.Organization.get_object(endpoint=tutil.SQ, key=MY_ORG)
     assert org2 is org
 
+
 def test_get_object_non_existing() -> None:
     """Test exception raised when providing non existing organization key"""
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
@@ -58,12 +59,14 @@ def test_get_object_non_existing() -> None:
         _ = orgs.Organization.get_object(endpoint=tutil.SQ, key=tutil.NON_EXISTING_KEY)
     assert str(e.value).endswith(f"Organization '{tutil.NON_EXISTING_KEY}' not found")
 
+
 def test_exists() -> None:
     """Test exist"""
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Organizations not supported")
     assert orgs.exists(endpoint=tutil.SQ, org_key=MY_ORG)
     assert not orgs.exists(endpoint=tutil.SQ, org_key=tutil.NON_EXISTING_KEY)
+
 
 def test_attributes() -> None:
     """Test attributes"""
@@ -76,6 +79,7 @@ def test_attributes() -> None:
     assert len(org.alm()) > 3
     assert str(org) == f"organization '{MY_ORG}'"
 
+
 def test_export() -> None:
     """Test attributes"""
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
@@ -87,6 +91,7 @@ def test_export() -> None:
     assert "newCodePeriod" in exp
     assert "subscription" in exp
     assert "alm" in exp
+
 
 def test_get_list() -> None:
     """Test Org get_list"""
