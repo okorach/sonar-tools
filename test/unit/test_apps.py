@@ -47,6 +47,7 @@ def test_get_object() -> None:
     obj2 = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
     assert obj2.key == EXISTING_KEY
     assert obj == obj2
+    assert obj.recompute()
 
 
 def test_count() -> None:
