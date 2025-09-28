@@ -90,7 +90,7 @@ def test_set_severity() -> None:
     new_sev = "MINOR" if old_sev == "CRITICAL" else "CRITICAL"
     old_impacts = issue.impacts
     new_impacts = {k: "HIGH" if v == "BLOCKER" else "BLOCKER" for k, v in old_impacts.items()}
-    
+
     tutil.SQ.set_mqr_mode(False)
 
     assert issue.set_severity(new_sev)
@@ -102,7 +102,7 @@ def test_set_severity() -> None:
     assert not any(issue.set_mqr_severity(k, v) for k, v in new_impacts.items())
     issue.refresh()
     assert issue.impacts == old_impacts
- 
+
     tutil.SQ.set_mqr_mode(True)
 
     assert not issue.set_severity(new_sev)
@@ -117,6 +117,7 @@ def test_set_severity() -> None:
     [issue.set_mqr_severity(k, v) for k, v in old_impacts.items()]
 
     tutil.SQ.set_mqr_mode(is_mqr)
+
 
 def test_add_remove_tag() -> None:
     """test_add_remove_tag"""
