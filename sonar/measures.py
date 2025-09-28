@@ -81,8 +81,9 @@ class Measure(sq.SqObject):
         :rtype: int or float or str
         """
         params = util.replace_keys(ALT_COMPONENTS, "component", self.concerned_object.api_params(c.GET))
+        params["metricKeys"] = self.metric
         data = json.loads(self.get(Measure.API_READ, params=params).text)["component"]["measures"]
-        self.value = self.__converted_value(_search_value(data))
+        self.value = self.__converted_value(_search_value(data[0]))
         return self.value
 
     def count_history(self, params: ApiParams = None) -> int:
