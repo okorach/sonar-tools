@@ -189,7 +189,7 @@ def test_import_config() -> None:
     """test_import_config"""
     try:
         qg = qualitygates.QualityGate.get_object(tutil.SQ, "TEMP GATE")
-        qg.delete() 
+        qg.delete()
     except exceptions.ObjectNotFound:
         pass
     conf = {
@@ -199,13 +199,13 @@ def test_import_config() -> None:
                     "new_duplicated_lines_density >= 3%",
                     "new_software_quality_maintainability_rating >= A",
                     "new_software_quality_reliability_issues >= 0",
-                    "new_software_quality_security_issues >= 0"
+                    "new_software_quality_security_issues >= 0",
                 ]
             }
         }
-        }
+    }
     assert qualitygates.import_config(tutil.SQ, conf)
     qg = qualitygates.QualityGate.get_object(tutil.SQ, "TEMP GATE")
     assert len(qg.conditions()) == 4
     assert conf["qualityGates"]["TEMP GATE"]["conditions"] == qg.conditions(encoded=True)
-    qg.delete() 
+    qg.delete()
