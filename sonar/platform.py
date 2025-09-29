@@ -759,6 +759,7 @@ class Platform(object):
             return False
         if self.version() >= (10, 8, 0):
             return self.set_setting(settings.MQR_ENABLED, enable)
+        return False
 
     def set_standard_experience(self) -> bool:
         """Sets the platform to standard experience mode (disables MQR if available)"""
