@@ -104,10 +104,25 @@ def test_export_async() -> None:
     proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
     assert proj.export_zip(asynchronous=True) == ("ASYNC_SUCCESS", None)
 
+
+def test_export_sync() -> None:
+    """test_export_sync"""
+    proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
+    (res, _) = proj.export_zip(asynchronous=False)
+    assert res == "SUCCESS"
+
+
 def test_import_async() -> None:
-    """test_export_async"""
+    """test_import_async"""
     proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.PROJECT_1)
     assert proj.import_zip(asynchronous=True) == "ASYNC_SUCCESS"
+
+
+def test_import_sync() -> None:
+    """test_import_sync"""
+    proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.PROJECT_1)
+    assert proj.import_zip(asynchronous=True).startswith("FAILED")
+
 
 def test_monorepo() -> None:
     """test_monorepo"""
@@ -115,6 +130,7 @@ def test_monorepo() -> None:
     assert not proj.is_part_of_monorepo()
     proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.PROJECT_1)
     assert not proj.is_part_of_monorepo()
+
 
 def test_get_findings() -> None:
     """test_get_findings"""
@@ -332,6 +348,7 @@ def test_set_permissions(get_test_project: Generator[projects.Project]) -> None:
     perms = proj.permissions().to_json()
     assert "groups" not in perms
     assert len(perms["users"]) == 2
+
 
 def test_project_key(get_test_project: Generator[projects.Project]) -> None:
     """test_project_key"""
