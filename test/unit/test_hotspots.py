@@ -33,7 +33,8 @@ def test_transitions() -> None:
     assert hotspot.mark_as_safe()
     assert hotspot.reopen()
 
-    assert hotspot.mark_as_acknowledged()
+    ok = tutil.SQ.version() >= (9, 4, 0) and not tutil.SQ.is_sonarcloud()
+    assert hotspot.mark_as_acknowledged() == ok
     assert hotspot.reopen()
 
     assert hotspot.mark_as_to_review()
