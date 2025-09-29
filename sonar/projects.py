@@ -729,8 +729,7 @@ class Project(components.Component):
         """Imports a project zip file in SonarQube
         :param bool asynchronous: Whether to export the project asynchronously or not (if async, import_zip returns immediately)
         :param int timeout: timeout in seconds to complete the export operation
-        :return: Whether the operation succeeded
-        :rtype: bool
+        :return: SUCCESS or FAILED with reason
         """
         mode = "asynchronously" if asynchronous else "synchronously"
         log.info("Importing %s (%s)", str(self), mode)
