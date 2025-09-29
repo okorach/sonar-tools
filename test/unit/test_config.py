@@ -27,7 +27,7 @@ import json, yaml
 
 import utilities as tutil
 from sonar import errcodes as e
-from sonar import portfolios
+from sonar import portfolios, applications
 from sonar import logging
 import sonar.util.constants as c
 
@@ -167,7 +167,8 @@ def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
 
 def test_config_import_portfolios() -> None:
     """test_config_import_portfolios"""
-    with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
+    config_file = f"{tutil.FILES_ROOT}/config.json"
+    with open(config_file, "r", encoding="utf-8") as f:
         json_config = json.loads(f.read())["portfolios"]
 
     # delete all portfolios in test
@@ -176,10 +177,28 @@ def test_config_import_portfolios() -> None:
     logging.info("Deleting all portfolios")
     _ = [p.delete() for p in portfolios.get_list(tutil.TEST_SQ, use_cache=False).values() if p.is_toplevel()]
     # Import config
-    cmd = f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} ${tutil.FILES_ROOT}/config.json --{opt.WHAT} {opt.WHAT_PORTFOLIOS}"
+    cmd = f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} {config_file} --{opt.WHAT} {opt.WHAT_PORTFOLIOS}"
     assert tutil.run_cmd(config.main, cmd) == e.OK
 
     # Compare portfolios
     portfolio_list = portfolios.get_list(tutil.TEST_SQ)
     assert len(portfolio_list) == len(json_config)
     assert sorted(portfolio_list.keys()) == sorted(json_config.keys())
+
+
+def test_config_import_apps() -> None:
+    """test_config_import_apps"""
+    config_file = f"{tutil.FILES_ROOT}/config.json"
+    with open(config_file, "r", encoding="utf-8") as f:
+        json_config = json.loads(f.read())["applications"]
+
+    # delete all apps in test
+    _ = [p.delete() for p in applications.get_list(tutil.TEST_SQ, use_cache=False).values()]
+    # Import config
+    cmd = f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} {config_file} --{opt.WHAT} {opt.WHAT_APPS}"
+    assert tutil.run_cmd(config.main, cmd) == e.OK
+
+    # Compare apps
+    app_list = applications.get_list(tutil.TEST_SQ)
+    assert len(app_list) == len(json_config)
+    assert sorted(app_list.keys()) == sorted(json_config.keys())

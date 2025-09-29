@@ -749,6 +749,22 @@ class Platform(object):
             return self.get_setting(settings.MQR_ENABLED)
         return self.version() >= c.MQR_INTRO_VERSION
 
+    def set_mqr_mode(self, enable: bool = True) -> bool:
+        """Enables or disables MQR mode on the platform"""
+        if self.is_sonarcloud():
+            log.error("Cannot change MQR mode on SonarQube Cloud")
+            return False
+        if self.version() < c.MQR_INTRO_VERSION:
+            log.error("MQR mode not available before SonarQube %s", util.version_to_string(c.MQR_INTRO_VERSION))
+            return False
+        if self.version() >= (10, 8, 0):
+            return self.set_setting(settings.MQR_ENABLED, enable)
+        return False
+
+    def set_standard_experience(self) -> bool:
+        """Sets the platform to standard experience mode (disables MQR if available)"""
+        return self.set_mqr_mode(False)
+
 
 # --------------------- Static methods -----------------
 # this is a pointer to the module object instance itself.

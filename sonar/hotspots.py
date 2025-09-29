@@ -381,6 +381,7 @@ def search_by_project(endpoint: pf.Platform, project_key: str, filters: types.Ap
     """
     key_list = util.csv_to_list(project_key)
     hotspots = {}
+    filters = {} if not filters else filters.copy()
     for k in key_list:
         filters[component_filter(endpoint)] = k
         project_hotspots = search(endpoint=endpoint, filters=filters)
