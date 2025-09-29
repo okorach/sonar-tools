@@ -24,6 +24,7 @@
 """
 
 import os
+from collections.abc import Generator
 
 import utilities as tutil
 from sonar import errcodes as e
@@ -35,7 +36,7 @@ CMD = "sonar-findings-sync.py"
 
 PLAT_OPTS = f"{tutil.SQS_OPTS} -U {os.getenv('SONAR_HOST_URL_TEST')} -T {os.getenv('SONAR_TOKEN_SYNC_USER')}"
 SC_PLAT_OPTS = f"{tutil.SQS_OPTS} -U https://sonarcloud.io -T {os.getenv('SONAR_TOKEN_SONARCLOUD')} -O okorach"
-SYNC_OPTS = f"-{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT} -K TESTSYNC -b master"
+SYNC_OPTS = f"-{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT} -K TESTSYNC"
 
 
 def test_sync_help() -> None:
@@ -43,11 +44,16 @@ def test_sync_help() -> None:
     assert tutil.run_cmd(findings_sync.main, f"{CMD} -h") == e.ARGS_ERROR
 
 
-def test_sync(json_file: callable) -> None:
+def test_sync_proj(json_file: Generator[str]) -> None:
     """test_sync"""
-    assert tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -B main -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
+    assert tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
 
 
-def test_sync_scloud(json_file: callable) -> None:
+def test_sync_branch(json_file: Generator[str]) -> None:
     """test_sync"""
-    assert tutil.run_cmd(findings_sync.main, f"{CMD} {SC_PLAT_OPTS} {SYNC_OPTS} -B master --threads 16 -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
+    assert tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -b master -B main -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
+
+
+def test_sync_scloud(json_file: Generator[str]) -> None:
+    """test_sync"""
+    assert tutil.run_cmd(findings_sync.main, f"{CMD} {SC_PLAT_OPTS} {SYNC_OPTS} --threads 16 -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
