@@ -19,7 +19,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sonar-tools"
-version = "3.16"
+version = "3.17"
 dependencies = [
     "argparse",
     "datetime",
