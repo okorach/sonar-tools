@@ -1,5 +1,7 @@
 # Next version
 
+# Version 3.16
+
 * `sonar-config`:
   - Several improvements in applications export/import
   - Rule export format is modified, for the best
@@ -7,6 +9,7 @@
   - A couple of bug fixes:
     - Rule custom params are exported
     - Import of instantiated rules is now working fine
+    - Applications imports with project branches non existing
 * `sonar-finding-sync`:
   - Projects can be selected through regexp, allowing to sync multiple (or all) projects are once
   - Incremental sync: findings are synced starting from the most recent change on the target finding
