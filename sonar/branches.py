@@ -31,7 +31,6 @@ import requests.utils
 from sonar import platform
 from sonar.util import types, cache
 import sonar.logging as log
-import sonar.sqobject as sq
 from sonar import components, settings, exceptions, tasks
 from sonar import projects
 import sonar.utilities as util

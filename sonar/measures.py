@@ -22,7 +22,6 @@
 from __future__ import annotations
 
 import json
-import re
 from http import HTTPStatus
 from requests import RequestException
 from sonar import metrics, exceptions, platform

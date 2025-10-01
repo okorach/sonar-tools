@@ -21,7 +21,7 @@
 """
     Exports SonarQube platform configuration as JSON
 """
-from typing import TextIO, Optional
+from typing import TextIO
 from threading import Thread
 from queue import Queue
 
