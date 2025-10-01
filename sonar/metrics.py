@@ -24,7 +24,6 @@ from __future__ import annotations
 import json
 from threading import Lock
 
-import sonar.logging as log
 import sonar.platform as pf
 from sonar.util.types import ApiPayload
 from sonar.util import cache

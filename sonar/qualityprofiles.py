@@ -849,7 +849,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             qp = futures_map[future]
             try:
                 _ = future.result(timeout=60)
-            except TimeoutError as e:
+            except TimeoutError:
                 log.error(f"Importing {qp} timed out after 60 seconds for {str(future)}.")
             except Exception as e:
                 log.error(f"Exception {str(e)} when importing {qp} or its chilren.")

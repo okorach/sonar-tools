@@ -23,7 +23,7 @@ Abstraction of the SonarQube "application" concept
 """
 
 from __future__ import annotations
-from typing import Union, Optional
+from typing import Optional
 import re
 import json
 from datetime import datetime
