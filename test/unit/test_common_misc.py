@@ -40,6 +40,7 @@ def test_clear_cache() -> None:
     """Clears the SonarQube caches before running tests on SC"""
     sonar_cache.clear()
 
+
 def test_sonar_tools_help() -> None:
     """test_sonar_tools_help"""
     assert tutil.run_cmd("sonar-tools-help") == 0
