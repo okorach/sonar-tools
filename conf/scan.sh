@@ -70,12 +70,16 @@ fi
 
 version=$(grep PACKAGE_VERSION "$ROOTDIR/sonar/version.py" | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
 
+
 cmd="sonar-scanner -Dsonar.projectVersion=$version \
   -Dsonar.python.flake8.reportPaths=$flake8Report \
   -Dsonar.python.pylint.reportPaths=$pylintReport \
-  -Dsonar.login=$SONAR_TOKEN \
   -Dsonar.token=$SONAR_TOKEN \
   "${scanOpts[*]}""
+
+if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_9" ]; then
+  cms="$cmd -Dsonar.login=$SONAR_TOKEN"
+fi
 
 if ls $buildDir/coverage*.xml >/dev/null 2>&1; then
   cmd="$cmd -Dsonar.python.coverage.reportPaths=$buildDir/coverage*.xml"
