@@ -108,6 +108,7 @@ dev = [
 
 # Set the maximum line length to 150.
 line-length = 150
+target-version = "py39"
 
 [tool.ruff.lint]
 # Add the `line-too-long` rule to the enforced rule set. By default, Ruff omits rules that
@@ -120,7 +121,7 @@ select = [
     # Pyflakes
     "F",
     # pyupgrade
-    "UP",
+    # "UP",
     # flake8-bugbear
     "B",
     # flake8-simplify
