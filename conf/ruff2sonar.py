@@ -43,26 +43,22 @@ def main() -> None:
     while i < nblines:
         line = lines[i]
         i += 1
-        # Search for pattern like "F401 [*] `sys` imported but unused"
-        if not (m := re.match(r"^([A-Za-z0-9]+) (\[\*\]) (.+)$", line)):
-            continue
-        rule_id = m.group(1)
-        message = m.group(3)
-        line = lines[i]
-        i += 1
-        # Search for pattern like "   --> cli/cust_measures.py:28:8"
-        if not (m := re.match(r"^\s*--> ([^:]+):(\d+):(\d+)$", line)):
+        # Search for pattern like "sonar/projects.py:196:13: B904 Within an `except` clause, raise exceptions"
+        if not (m := re.match(r"^([^:]+):(\d+):(\d+): ([A-Z0-9]+)( \[\*\])? (.+)$", line)):
             continue
         file_path = m.group(1)
         line_no = int(m.group(2))
+        start_col = int(m.group(3)) - 1
+        end_col = start_col + 1
+        rule_id = m.group(4)
+        message = m.group(6)
+        i += 1
 
         # Search for "   |        ^^^" pattern"
-        while i < nblines and not (m := re.match(r"^\s*\|\s(\s*)(\^+)", lines[i])):
+        while i < nblines and not re.match(r"^$", lines[i]):
+            if m := re.match(r"\s*\|\s(\s*)(\^+)", lines[i]):
+                end_col = start_col + len(m.group(2))
             i += 1
-        if not m:
-            continue
-        start_col = len(m.group(1))
-        end_col = start_col + len(m.group(2))
 
         sonar_issue = {
             "ruleId": f"{TOOLNAME}:{rule_id}",
