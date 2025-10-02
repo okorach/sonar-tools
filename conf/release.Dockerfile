@@ -22,10 +22,7 @@ ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 WORKDIR /opt/sonar-tools
 
 COPY ./sonar sonar
-COPY ./requirements.txt .
 COPY ./cli cli
-COPY ./setup.py .
-COPY ./sonar-tools .
 COPY ./README.md .
 COPY ./LICENSE .
 COPY ./sonar/audit sonar/audit
@@ -36,6 +33,6 @@ RUN pip install --upgrade pip \
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}
 
-HEALTHCHECK --interval=180s --timeout=5s CMD [ "sonar-tools" ]
+HEALTHCHECK --interval=180s --timeout=5s CMD [ "sonar-tools-help" ]
 
-CMD [ "sonar-tools" ]
+CMD [ "sonar-tools-help" ]

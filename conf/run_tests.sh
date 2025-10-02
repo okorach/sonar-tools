@@ -40,10 +40,7 @@ do
         sonar start -i $target && sleep 30
     fi
     if [ -d "$ROOTDIR/$GEN_LOC/$target/" ]; then
-        coverage run --branch --source="$ROOTDIR" -m pytest "$ROOTDIR/$GEN_LOC/$target/" --junit-xml="$buildDir/xunit-results-$target.xml"
-        coverage xml -o "$buildDir/coverage-$target.xml"
-    fi
-    if [ "$target" != "latest" ] && [ "$target" != "common" ]; then
-        sonar stop -i $target
+        poetry run coverage run --branch --source="$ROOTDIR" -m pytest "$ROOTDIR/$GEN_LOC/$target/" --junit-xml="$buildDir/xunit-results-$target.xml"
+        poetry run coverage xml -o "$buildDir/coverage-$target.xml"
     fi
 done
