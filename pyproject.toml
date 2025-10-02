@@ -134,6 +134,7 @@ docstring-code-format = true
 # enabled.
 docstring-code-line-length = "dynamic"
 
+
 [tool.ruff.lint]
 # Add the `line-too-long` rule to the enforced rule set. By default, Ruff omits rules that
 # overlap with the use of a formatter, like Black, but we can override this behavior by
@@ -161,6 +162,11 @@ extend-ignore = [
     "FBT002",
     "FBT001",
     "PTH123", # `open()` should be replaced by `Path.open()`
+    "ISC001",
+    "COM812", # Missing trailing comma in a dictionary or set literal
+    "D211",
+    "D213",
+    "D203",
 ]
 
 exclude = [
