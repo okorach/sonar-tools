@@ -19,6 +19,7 @@
 #
 
 """Cache module"""
+
 from typing import Optional
 from sonar import platform, projects, branches, pull_requests
 from sonar import applications, app_branches, portfolios

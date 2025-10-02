@@ -21,7 +21,7 @@
 
 
 """
-    sonar-rules tests
+sonar-rules tests
 """
 
 from collections.abc import Generator

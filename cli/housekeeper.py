@@ -20,12 +20,13 @@
 #
 """
 
-    Removes obsolete data from SonarQube platform
-    Currently:
-    - projects, branches, PR not analyzed since a given number of days
-    - Tokens not renewed since a given number of days
+Removes obsolete data from SonarQube platform
+Currently:
+- projects, branches, PR not analyzed since a given number of days
+- Tokens not renewed since a given number of days
 
 """
+
 import sys
 
 from requests import RequestException

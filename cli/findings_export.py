@@ -19,9 +19,9 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 """
-    This script exports findings as CSV, JSON, or SARIF
+This script exports findings as CSV, JSON, or SARIF
 
-    Usage: sonar-findings-export.py -t <SQ_TOKEN> -u <SQ_URL> [<filters>]
+Usage: sonar-findings-export.py -t <SQ_TOKEN> -u <SQ_URL> [<filters>]
 
 """
 

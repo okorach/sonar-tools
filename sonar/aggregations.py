@@ -19,7 +19,7 @@
 #
 """
 
-    Parent module of applications and portfolios
+Parent module of applications and portfolios
 
 """
 

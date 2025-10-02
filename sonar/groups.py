@@ -20,6 +20,7 @@
 #
 
 """Abstraction of the SonarQube group concept"""
+
 from __future__ import annotations
 import json
 

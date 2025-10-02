@@ -20,9 +20,10 @@
 #
 """
 
-    Audits a SUPPORT ticket SIF
+Audits a SUPPORT ticket SIF
 
 """
+
 from http import HTTPStatus
 import sys
 import os

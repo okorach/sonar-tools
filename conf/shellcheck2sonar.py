@@ -20,9 +20,10 @@
 #
 """
 
-    Converts shellcheck JSON format to Sonar external issues format
+Converts shellcheck JSON format to Sonar external issues format
 
 """
+
 import sys
 import json
 

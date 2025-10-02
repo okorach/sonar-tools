@@ -19,6 +19,7 @@
 #
 
 """Abstraction of the SonarQube webhook concept"""
+
 import json
 
 import sonar.logging as log

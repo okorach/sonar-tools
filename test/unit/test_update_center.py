@@ -19,7 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" update_center tests """
+"""update_center tests"""
 
 import datetime
 import sonar.util.update_center as uc

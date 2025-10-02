@@ -20,9 +20,10 @@
 #
 """
 
-    Abstraction of the SonarQube "rule" concept
+Abstraction of the SonarQube "rule" concept
 
 """
+
 from __future__ import annotations
 import json
 import concurrent.futures

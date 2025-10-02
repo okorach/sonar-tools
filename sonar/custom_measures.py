@@ -19,9 +19,10 @@
 #
 """
 
-    Abstraction of the SonarQube "custom measure" concept
+Abstraction of the SonarQube "custom measure" concept
 
 """
+
 import json
 import sonar.sqobject as sq
 import sonar.platform as pf

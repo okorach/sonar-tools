@@ -20,7 +20,7 @@
 #
 """
 
-    Exports/Imports all projects of a SonarQube Server platform
+Exports/Imports all projects of a SonarQube Server platform
 
 """
 

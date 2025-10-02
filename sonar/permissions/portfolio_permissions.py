@@ -19,6 +19,7 @@
 #
 
 """Abstraction of portfolio permissions"""
+
 from sonar.permissions import aggregation_permissions
 
 

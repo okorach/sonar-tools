@@ -19,6 +19,7 @@
 #
 
 """Abstraction of the audit rule concept"""
+
 import enum
 import json
 from typing import Optional

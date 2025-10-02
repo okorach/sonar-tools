@@ -19,7 +19,7 @@
 #
 """
 
-    Abstraction of the SonarQube "project" concept
+Abstraction of the SonarQube "project" concept
 
 """
 

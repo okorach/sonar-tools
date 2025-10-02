@@ -20,9 +20,10 @@
 
 """
 
-   Package setup
+Package setup
 
 """
+
 import setuptools
 from sonar import version
 

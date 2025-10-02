@@ -18,7 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" Cache manager """
+"""Cache manager"""
 
 from typing import Optional
 from sonar import logging as log

@@ -19,8 +19,9 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 """
-    Exports SonarQube platform configuration as JSON
+Exports SonarQube platform configuration as JSON
 """
+
 from typing import TextIO
 from threading import Thread
 from queue import Queue

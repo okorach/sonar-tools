@@ -19,7 +19,7 @@
 #
 """
 
-    Abstraction of the DCE Node concept
+Abstraction of the DCE Node concept
 
 """
 
