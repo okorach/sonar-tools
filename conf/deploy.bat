@@ -21,7 +21,9 @@
 :: build_docs=1
 :: release=0
 
-black --line-length=150 .
+ruff format
+if %errorlevel% neq 0 exit /b %errorlevel%
+
 rmdir /S /Q build
 rmdir /S /Q dist
 poetry build

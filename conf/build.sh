@@ -38,7 +38,7 @@ while [ $# -ne 0 ]; do
 done
 
 echo "======= FORMATTING CODE ========="
-black --line-length=150 .
+ruff format
 echo "======= BUILDING PACKAGE ========="
 rm -rf "$ROOTDIR/build/lib/sonar" "$ROOTDIR/build/lib/cli" "$ROOTDIR"/build/scripts*/sonar-tools "$ROOTDIR"/dist/sonar_tools*
 # python -m build

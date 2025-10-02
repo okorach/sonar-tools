@@ -43,7 +43,7 @@ while [ $# -ne 0 ]; do
     shift
 done
 
-black --line-length=150 .
+ruff format
 rm -rf "$ROOTDIR/build/lib/migration" "$ROOTDIR/build/lib/cli" "$ROOTDIR/build/lib/sonar" "$ROOTDIR"/build/scripts*/sonar_migration "$ROOTDIR"/dist/sonar_migration*
 python3 "$ROOTDIR/setup_migration.py" bdist_wheel
 
