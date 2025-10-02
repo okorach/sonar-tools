@@ -78,7 +78,7 @@ cmd="sonar-scanner -Dsonar.projectVersion=$version \
   "${scanOpts[*]}""
 
 if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_9" ]; then
-  cms="$cmd -Dsonar.login=$SONAR_TOKEN"
+  cmd="$cmd -Dsonar.login=$SONAR_TOKEN"
 fi
 
 if ls $buildDir/coverage*.xml >/dev/null 2>&1; then
