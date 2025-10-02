@@ -74,7 +74,7 @@ requires = [
     "wheel",
     "sphinx>=7.4.7",
     "sphinx_rtd_theme>=3.0.2",
-    "sphinx-autodoc-typehints>=2.5.0",
+    "sphinx-autodoc-typehints>=2.2.3",
     "twine",
     "get_pypi_latest_version",
 ]
