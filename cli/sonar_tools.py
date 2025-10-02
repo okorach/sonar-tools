@@ -23,7 +23,11 @@
 
 from sonar import version
 
-print(f'''
+
+def main() -> None:
+    """Main entry point for sonar-tools"""
+    print(
+        f"""
 sonar-tools version {version.PACKAGE_VERSION}
 (c) Olivier Korach 2019-2025
 Collections of utilities for SonarQube Server and Cloud:
@@ -38,8 +42,13 @@ Collections of utilities for SonarQube Server and Cloud:
 - sonar-findings-sync: Synchronizes issues between 2 branches of a same project, a whole project
   branches of 2 different projects (potentially on different platforms).
   (also available as sonar-issues-sync for backward compatibility, but deprecated)
-- sonar-projects: Exports / Imports projects to/from zip file (Import works for EE and higher)
-- sonar-config: Exports and imports an entire (or subsets of a) SonarQube Server or Cloud platform configuration as code (JSON)
+- sonar-projects: Exports or imports projects to/from zip file (Import works for SonarQube Server EE and higher)
+- sonar-config: Exports or imports an entire (or subsets of a) SonarQube Server or Cloud platform configuration as code (JSON)
 - sonar-rules: Exports Sonar rules
 See tools built-in -h help and https://github.com/okorach/sonar-tools for more documentation
-''')
+"""
+    )
+
+
+if __name__ == "__main__":
+    main()
