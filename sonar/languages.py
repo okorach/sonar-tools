@@ -29,6 +29,7 @@ from sonar import sqobject, rules
 import sonar.platform as pf
 from sonar.util.types import ApiPayload
 from sonar.util import cache
+from sonar.util import constants as c
 
 #: List of language APIs
 APIS = {"list": "languages/list"}
@@ -75,10 +76,10 @@ class Language(sqobject.SqObject):
         :returns: Nbr of rules for that language (and optional type)
         :rtype: int
         """
-        if not rule_type or rule_type not in rules.LEGACY_TYPES:
+        if not rule_type or rule_type not in (c.VULN, c.HOTSPOT, c.BUG, c.CODE_SMELL):
             rule_type = "_ALL"
         if not self._nb_rules[rule_type]:
-            self._nb_rules[rule_type] = rules.search(self.endpoint, languages=self.key, types=rule_type)
+            self._nb_rules[rule_type] = rules.search(self.endpoint, params={"languages": self.key, "types": rule_type})
         return self._nb_rules[rule_type]
 
 
