@@ -19,7 +19,7 @@
 #
 """
 
-    Abstraction of the SonarQube general object concept
+Abstraction of the SonarQube general object concept
 
 """
 

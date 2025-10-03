@@ -19,6 +19,7 @@
 #
 
 """Abstraction of the SonarQube background task concept"""
+
 from typing import Optional
 import time
 import datetime

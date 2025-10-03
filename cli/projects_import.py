@@ -20,9 +20,10 @@
 #
 """
 
-    Imports a list of projects to a SonarQube platform
+Imports a list of projects to a SonarQube platform
 
 """
+
 import sys
 from unittest.mock import patch
 

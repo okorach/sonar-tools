@@ -19,8 +19,9 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 """
-    Exports rules
+Exports rules
 """
+
 import sys
 import csv
 

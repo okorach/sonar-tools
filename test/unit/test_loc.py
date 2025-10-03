@@ -20,7 +20,7 @@
 #
 
 """
-    sonar-loc tests
+sonar-loc tests
 """
 
 from collections.abc import Generator

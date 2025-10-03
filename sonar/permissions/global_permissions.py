@@ -19,6 +19,7 @@
 #
 
 """Abstraction of SonarQube global permissions"""
+
 from __future__ import annotations
 
 import sonar.logging as log

@@ -19,8 +19,9 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 """
-    Exports LoC per projects
+Exports LoC per projects
 """
+
 import sys
 import csv
 import datetime

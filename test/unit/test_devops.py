@@ -19,7 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" DevOps platforms tests """
+"""DevOps platforms tests"""
 
 import pytest
 import utilities as tutil

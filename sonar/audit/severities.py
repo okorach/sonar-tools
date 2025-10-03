@@ -19,6 +19,7 @@
 #
 
 """Sonar Audit severities"""
+
 import enum
 from typing import Optional
 

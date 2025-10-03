@@ -19,10 +19,9 @@
 #
 """
 
-    Abstraction of the SonarQube platform or instance concept
+Abstraction of the SonarQube platform or instance concept
 
 """
-
 
 from http import HTTPStatus
 import sys

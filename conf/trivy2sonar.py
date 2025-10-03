@@ -20,9 +20,10 @@
 #
 """
 
-    Converts Trivy JSON format to Sonar external issues format
+Converts Trivy JSON format to Sonar external issues format
 
 """
+
 import sys
 import json
 
@@ -40,7 +41,6 @@ def main() -> None:
     issue_list = {}
 
     for issue in json.loads(text)["Results"][0]["Vulnerabilities"]:
-
         sonar_issue = {
             "ruleId": f"{TOOLNAME}:{issue['VulnerabilityID']}",
             "effortMinutes": 30,
