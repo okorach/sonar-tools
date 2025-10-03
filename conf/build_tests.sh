@@ -34,14 +34,14 @@ do
     rm -rf "${ROOTDIR:?}/${GEN_LOC:?}/${target}"
     mkdir -p "${ROOTDIR:?}/${GEN_LOC:?}/${target}" 2>/dev/null
     if [[ "${target}" = "common" ]]; then
-        b=$(basename "$f" .py)
+        b=$(basename "${f}" .py)
         cp conftest.py utilities.py credentials.py "${ROOTDIR}/${GEN_LOC}/${target}"
         cp test_common*.py "${ROOTDIR}/${GEN_LOC}/${target}"
     else
         for f in *.py
         do
-            b=$(basename "$f" .py)
-            cp "$f" "${ROOTDIR}/${GEN_LOC}/${target}/${b}_${target}.py"
+            b=$(basename "${f}" .py)
+            cp "${f}" "${ROOTDIR}/${GEN_LOC}/${target}/${b}_${target}.py"
         done
         cp "credentials-${target}.py" "${ROOTDIR}/${GEN_LOC}/${target}/credentials.py"
         mv "${ROOTDIR}/${GEN_LOC}/${target}/conftest_${target}.py" "${ROOTDIR}/${GEN_LOC}/${target}/conftest.py"
