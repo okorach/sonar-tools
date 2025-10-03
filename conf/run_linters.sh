@@ -61,9 +61,9 @@ flake8 --config "$CONFIG/.flake8" "$ROOTDIR" | tee "$flake8Report"
 
 if [ "$localbuild" = "true" ]; then
     echo "===> Running shellcheck"
-    shellcheck "$ROOTDIR"/*.sh "$ROOTDIR"/*/*.sh -s bash -f json | tee "$buildDir/shellcheck-report.txt" | "$CONFDIR"/shellcheck2sonar.py >"$shellcheckReport"
+    shellcheck "$ROOTDIR"/*.sh "$ROOTDIR"/*/*.sh -s bash -f json | jq | tee "$buildDir/shellcheck-report.json" | "$CONFDIR"/shellcheck2sonar.py >"$shellcheckReport"
     [ ! -s "$shellcheckReport" ] && rm -f "$shellcheckReport"
-    cat "$buildDir/shellcheck-report.txt"
+    cat "$buildDir/shellcheck-report.json"
 
     echo "===> Running checkov"
     checkov -d . --framework dockerfile -o sarif --output-file-path "$buildDir"
