@@ -166,6 +166,7 @@ extend-ignore = [
     "D211",
     "D213",
     "D203",
+    "D401",
 ]
 
 exclude = [
