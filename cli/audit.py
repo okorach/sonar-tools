@@ -20,6 +20,8 @@
 #
 """Audits a SonarQube platform"""
 
+from __future__ import annotations
+
 import json
 import csv
 from typing import TextIO, Optional
