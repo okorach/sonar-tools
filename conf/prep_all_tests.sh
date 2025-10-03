@@ -48,7 +48,7 @@ create_fresh_project "$SYNC_PROJECT_KEY" "https://sonarcloud.io" "$SONAR_TOKEN_S
 create_fresh_project "$SYNC_PROJECT_KEY" "${SONAR_HOST_URL_CB:?}" "$SONAR_TOKEN_CB_ADMIN_USER" "$SONAR_TOKEN_CB_ADMIN_ANALYSIS"
 
 for pr in 5 7; do
-    sonar-scanner -Dsonar.host.url=${SONAR_HOST_URL_LATEST:?} -Dsonar.pullrequest.key=$pr -Dsonar.pullrequest.branch=feature/$pr -Dsonar.token="$SONAR_TOKEN_LATEST_ADMIN_ANALYSIS"
+    sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_LATEST:?}" -Dsonar.pullrequest.key="$pr" -Dsonar.pullrequest.branch="feature/$pr" -Dsonar.token="$SONAR_TOKEN_LATEST_ADMIN_ANALYSIS"
     sonar-scanner -Dsonar.host.url=${SONAR_HOST_URL_LTS:?} -Dsonar.pullrequest.key=$pr -Dsonar.pullrequest.branch=feature/$pr -Dsonar.token="$SONAR_TOKEN_LTS_ADMIN_ANALYSIS"
 done
 # Format for 10.x and 9.x is different, file was generated for 10.x, so removing for 9.9
