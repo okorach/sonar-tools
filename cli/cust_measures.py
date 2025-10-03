@@ -19,10 +19,10 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 """
-    This script manipulates custom measures. You may:
+This script manipulates custom measures. You may:
 
-    Update a custom measure value:
-        Usage: cust_measures.py -t <SQ_TOKEN> -u <SQ_URL> -k <projectKey> -m <metricKey> --updateValue <value>
+Update a custom measure value:
+    Usage: cust_measures.py -t <SQ_TOKEN> -u <SQ_URL> -k <projectKey> -m <metricKey> --updateValue <value>
 """
 
 import sys

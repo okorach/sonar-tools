@@ -19,7 +19,7 @@
 #
 """
 
-    Abstraction of the Sonar sub-portfolio by reference concept
+Abstraction of the Sonar sub-portfolio by reference concept
 
 """
 

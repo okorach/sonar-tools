@@ -19,7 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" Common tests, independent of SonarQube version """
+"""Common tests, independent of SonarQube version"""
 
 import os, stat
 from collections.abc import Generator

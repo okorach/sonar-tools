@@ -21,7 +21,7 @@
 
 
 """
-    sonar-housekeeper tests
+sonar-housekeeper tests
 """
 
 import utilities as tutil

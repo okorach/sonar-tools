@@ -19,6 +19,7 @@
 #
 
 """Abstraction of the SonarQube User concept"""
+
 from __future__ import annotations
 
 import concurrent.futures

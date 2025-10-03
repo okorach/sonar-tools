@@ -18,7 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" Sonar Custom Types for type hints """
+"""Sonar Custom Types for type hints"""
 
 from typing import Union, Optional
 

@@ -19,7 +19,7 @@
 #
 """
 
-    Abstraction of the SonarQube Cloud organization concept
+Abstraction of the SonarQube Cloud organization concept
 
 """
 

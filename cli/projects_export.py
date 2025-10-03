@@ -20,9 +20,10 @@
 #
 """
 
-    Exports all projects of a SonarQube platform
+Exports all projects of a SonarQube platform
 
 """
+
 import sys
 from unittest.mock import patch
 

@@ -19,7 +19,7 @@
 #
 """
 
-    Abstraction of the App Node concept
+Abstraction of the App Node concept
 
 """
 

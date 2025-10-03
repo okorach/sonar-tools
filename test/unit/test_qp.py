@@ -19,7 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" quality profiles tests """
+"""quality profiles tests"""
 
 from collections.abc import Generator
 import json

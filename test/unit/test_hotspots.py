@@ -19,7 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" Test of the hotspots module and class, as well as changelog """
+"""Test of the hotspots module and class, as well as changelog"""
 
 import utilities as tutil
 from sonar import hotspots

@@ -20,9 +20,10 @@
 #
 """
 
-    Converts Ruff report format to Sonar external issues format
+Converts Ruff report format to Sonar external issues format
 
 """
+
 import sys
 import json
 import re

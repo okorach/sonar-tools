@@ -19,6 +19,7 @@
 #
 
 """Abstraction of the SonarQube permission template concept"""
+
 from __future__ import annotations
 
 import json

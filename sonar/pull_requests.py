@@ -19,7 +19,7 @@
 #
 """
 
-    Abstraction of the SonarQube "pull request" concept
+Abstraction of the SonarQube "pull request" concept
 
 """
 

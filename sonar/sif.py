@@ -19,7 +19,7 @@
 #
 """
 
-    Abstraction of the SonarQube System Info File (or Support Info File) concept
+Abstraction of the SonarQube System Info File (or Support Info File) concept
 
 """
 

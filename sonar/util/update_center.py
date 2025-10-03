@@ -18,7 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" Update center utilities """
+"""Update center utilities"""
 
 import os
 from typing import Optional

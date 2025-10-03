@@ -19,7 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" Logging tests """
+"""Logging tests"""
 
 import os
 from collections.abc import Generator

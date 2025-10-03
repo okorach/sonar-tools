@@ -20,9 +20,10 @@
 #
 """
 
-    Audits a SonarQube platform
+Audits a SonarQube platform
 
 """
+
 import sys
 import json
 import csv

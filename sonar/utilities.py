@@ -19,9 +19,10 @@
 #
 """
 
-    Utilities for sonar-tools
+Utilities for sonar-tools
 
 """
+
 from typing import TextIO, Union, Optional
 from http import HTTPStatus
 import sys

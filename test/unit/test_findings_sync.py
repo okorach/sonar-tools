@@ -20,7 +20,7 @@
 #
 
 """
-    sonar-findings-sync tests
+sonar-findings-sync tests
 """
 
 import os

@@ -19,7 +19,7 @@
 #
 """
 
-    Abstraction of the SonarQube "quality gate" concept
+Abstraction of the SonarQube "quality gate" concept
 
 """
 

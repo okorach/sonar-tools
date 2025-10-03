@@ -19,7 +19,7 @@
 #
 """
 
-    Abstraction of the SonarQube "portfolio" concept
+Abstraction of the SonarQube "portfolio" concept
 
 """
 

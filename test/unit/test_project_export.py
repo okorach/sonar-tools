@@ -20,7 +20,7 @@
 #
 
 
-""" sonar-projects tests """
+"""sonar-projects tests"""
 
 from collections.abc import Generator
 
