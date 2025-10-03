@@ -26,7 +26,7 @@ deps=0
 "${CONFDIR}"/build.sh "$@"
 
 while [[ $# -ne 0 ]]; do
-    case $1 in
+    case "${1}" in
         deps)
             deps=1
             ;;

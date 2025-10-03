@@ -23,7 +23,7 @@ ME="$( basename "${BASH_SOURCE[0]}" )"
 ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-localbuild="$1"
+localbuild="${1}"
 
 buildDir="${ROOTDIR}/build"
 pylintReport="${buildDir}/pylint-report.out"
@@ -32,7 +32,7 @@ flake8Report="${buildDir}/flake8-report.out"
 shellcheckReport="${buildDir}/external-issues-shellcheck.json"
 trivyReport="${buildDir}/external-issues-trivy.json"
 ruffReport="${buildDir}/external-issues-ruff.json"
-[ ! -d "${buildDir}" ] && mkdir "${buildDir}"
+[[ ! -d "${buildDir}" ]] && mkdir "${buildDir}"
 # rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  tests/__pycache__
 
 echo "===> Running ruff"
@@ -57,9 +57,9 @@ fi
 echo "===> Running flake8"
 rm -f "${flake8Report}"
 # See .flake8 file for settings
-flake8 --config "$CONFIG/.flake8" "${ROOTDIR}" | tee "${flake8Report}"
+flake8 --config "${CONFIG}/.flake8" "${ROOTDIR}" | tee "${flake8Report}"
 
-if [[ "$localbuild" = "true" ]]; then
+if [[ "${localbuild}" = "true" ]]; then
     echo "===> Running shellcheck"
     shellcheck "${ROOTDIR}"/*.sh "${ROOTDIR}"/*/*.sh -s bash -f json | jq | tee "${buildDir}/shellcheck-report.json" | "${CONFDIR}"/shellcheck2sonar.py >"${shellcheckReport}"
     [[ ! -s "${shellcheckReport}" ]] && rm -f "${shellcheckReport}"

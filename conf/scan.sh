@@ -25,7 +25,7 @@ CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 dolint="true"
 dotest="false"
-if [[ "$CI" == "" ]]; then
+if [[ "${CI}" = "" ]]; then
   localbuild="true"
 else
   localbuild="false"
@@ -35,7 +35,7 @@ scanOpts=()
 
 while [[ $# -ne 0 ]]
 do
-  case "$1" in
+  case "${1}" in
     -nolint)
       dolint="false"
       ;;
@@ -46,7 +46,7 @@ do
       localbuild="true"
       ;;
     *)
-      scanOpts=("${scanOpts[@]}" "$1")
+      scanOpts=("${scanOpts[@]}" "${1}")
       ;;
   esac
   shift
@@ -61,7 +61,7 @@ flake8Report="${buildDir}/flake8-report.out"
 
 
 if [[ "${dolint}" != "false" ]]; then
-  "${CONFDIR}"/run_linters.sh "$localbuild"
+  "${CONFDIR}"/run_linters.sh "${localbuild}"
 fi
 
 if [[ "${dotest}" = "true" ]]; then
@@ -81,21 +81,21 @@ if [[ "${SONAR_HOST_URL}" = "${SONAR_HOST_URL}_9" ]]; then
   cmd="${cmd} -Dsonar.login=${SONAR_TOKEN}"
 fi
 
-if ls ${buildDir}/coverage*.xml >/dev/null 2>&1; then
+if ls "${buildDir}"/coverage*.xml >/dev/null 2>&1; then
   cmd="${cmd} -Dsonar.python.coverage.reportPaths=${buildDir}/coverage*.xml"
 else
   echo "===> NO COVERAGE REPORT"
 fi
 
-if ls ${buildDir}/xunit-results*.xml >/dev/null 2>&1; then
+if ls "${buildDir}"/xunit-results*.xml >/dev/null 2>&1; then
   cmd="${cmd} -Dsonar.python.xunit.reportPath=${buildDir}/xunit-results*.xml"
 else
   echo "===> NO UNIT TESTS REPORT"
   cmd="${cmd} -Dsonar.python.xunit.reportPath="
 fi
 
-if ls ${buildDir}/external-issues*.json >/dev/null 2>&1; then
-  files=$(ls ${buildDir}/external-issues*.json | tr '\n' ' ' | sed -E -e 's/ +$//' -e 's/ +/,/g')
+if ls "${buildDir}"/external-issues*.json >/dev/null 2>&1; then
+  files=$(ls "${buildDir}"/external-issues*.json | tr '\n' ' ' | sed -E -e 's/ +$//' -e 's/ +/,/g')
   echo "EXTERNAL ISSUES FILES = ${files}"
   cmd="${cmd} -Dsonar.externalIssuesReportPaths=${files}"
 else
