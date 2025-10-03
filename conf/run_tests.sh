@@ -38,7 +38,7 @@ sonar start -i test
 for target in latest cb 9 common
 do
     if [[ "${target}" != "common" ]]; then
-        sonar start -i ${target} && sleep 30
+        sonar start -i "${target}" && sleep 30
     fi
     if [[ -d "${ROOTDIR}/${GEN_LOC}/${target}/" ]]; then
         # Recreate a fresh TESTSYNC project for sync tests
