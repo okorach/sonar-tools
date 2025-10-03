@@ -51,7 +51,7 @@ pylint --rcfile "${CONFDIR}"/pylintrc "${ROOTDIR}"/*.py "${ROOTDIR}"/*/*.py -r n
 re=$?
 if [[ "${re}" = "32" ]]; then
     >&2 echo "ERROR: pylint execution failed, errcode ${re}, aborting..."
-    exit ${re}
+    exit "${re}"
 fi
 
 echo "===> Running flake8"
