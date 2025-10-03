@@ -23,7 +23,7 @@ SONAR_TOOLS_RELEASE="${ROOTDIR}/sonar/version.py"
 build_docs=0
 build_docker=0
 
-while [[] $# -ne 0 ]]; do
+while [[ $# -ne 0 ]]; do
     case "${1}" in
         docs|doc)
             build_docs=1
