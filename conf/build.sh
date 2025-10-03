@@ -44,13 +44,13 @@ rm -rf "$ROOTDIR/build/lib/sonar" "$ROOTDIR/build/lib/cli" "$ROOTDIR"/build/scri
 # python -m build
 poetry build
 
-if [ "$build_docs" == "1" ]; then
+if [[ "$build_docs" = "1" ]]; then
     echo "======= BUILDING DOCS ========="
     rm -rf doc/api/build
     sphinx-build -b html doc/api/source doc/api/build
 fi
 
-if [ "$build_docker" == "1" ]; then
+if [[ "$build_docker" = "1" ]]; then
     echo "======= BUILDING DOCKER IMAGE WITH SNAPSHOT ========="
     version=$(grep PACKAGE_VERSION "$SONAR_TOOLS_RELEASE" | cut -d "=" -f 2 | cut -d '"' -f 2)
     docker build -t "olivierkorach/sonar-tools:$version-snapshot" -t olivierkorach/sonar-tools:latest -f "$CONFDIR/snapshot.Dockerfile" "$ROOTDIR" --load

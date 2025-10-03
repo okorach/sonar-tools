@@ -33,7 +33,7 @@ do
     echo "Generating tests for $target"
     rm -rf "${ROOTDIR:?}/${GEN_LOC:?}/$target"
     mkdir -p "${ROOTDIR:?}/${GEN_LOC:?}/$target" 2>/dev/null
-    if [ "$target" == "common" ]; then
+    if [[ "$target" = "common" ]]; then
         b=$(basename "$f" .py)
         cp conftest.py utilities.py credentials.py "$ROOTDIR/$GEN_LOC/$target"
         cp test_common*.py "$ROOTDIR/$GEN_LOC/$target"
