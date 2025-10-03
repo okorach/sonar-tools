@@ -73,5 +73,5 @@ if [[ "$localbuild" = "true" ]]; then
     trivy image -f json -o "${buildDir}"/trivy_results.json olivierkorach/sonar-tools:latest
     cat "${buildDir}"/trivy_results.json
     python3 "${CONFDIR}"/trivy2sonar.py < "${buildDir}"/trivy_results.json > "${trivyReport}"
-    [ ! -s "${trivyReport}" ] && rm -f "${trivyReport}"
+    [[ ! -s "${trivyReport}" ]] && rm -f "${trivyReport}"
 fi

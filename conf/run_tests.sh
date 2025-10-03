@@ -25,7 +25,7 @@ CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 buildDir="${ROOTDIR}/build"
 SYNC_PROJECT_KEY="TESTSYNC"
 
-[ ! -d "${buildDir}" ] && mkdir "${buildDir}"
+[[ ! -d "${buildDir}" ]] && mkdir "${buildDir}"
 
 echo "Running tests"
 
