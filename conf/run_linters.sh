@@ -39,7 +39,7 @@ echo "===> Running ruff"
 rm -f "${ruffReport}"
 ruff check . | tee "${buildDir}/ruff-report.txt" | "${CONFDIR}"/ruff2sonar.py >"${ruffReport}"
 re=$?
-if [ "${re}" == "32" ]; then
+if [[ "${re}" = "32" ]]; then
     >&2 echo "ERROR: pylint execution failed, errcode ${re}, aborting..."
     exit "${re}"
 fi
@@ -62,7 +62,7 @@ flake8 --config "$CONFIG/.flake8" "${ROOTDIR}" | tee "${flake8Report}"
 if [[ "$localbuild" = "true" ]]; then
     echo "===> Running shellcheck"
     shellcheck "${ROOTDIR}"/*.sh "${ROOTDIR}"/*/*.sh -s bash -f json | jq | tee "${buildDir}/shellcheck-report.json" | "${CONFDIR}"/shellcheck2sonar.py >"${shellcheckReport}"
-    [ ! -s "${shellcheckReport}" ] && rm -f "${shellcheckReport}"
+    [[ ! -s "${shellcheckReport}" ]] && rm -f "${shellcheckReport}"
     cat "${buildDir}/shellcheck-report.json"
 
     echo "===> Running checkov"

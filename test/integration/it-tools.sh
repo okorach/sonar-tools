@@ -22,9 +22,9 @@
 #set -euo pipefail
 
 REPO_ROOT="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; cd ../.. ; pwd -P )"
-TMP="$REPO_ROOT/tmp"
-IT_LOG_FILE="$TMP/it.log"
-mkdir -p "$TMP"
+TMP="${REPO_ROOT}/tmp"
+IT_LOG_FILE="${TMP}/it.log"
+mkdir -p "${TMP}"
 
 YELLOW=$(tput setaf 3)
 RED=$(tput setaf 1)
@@ -36,54 +36,54 @@ function logmsg {
 }
 
 function run_test {
-    file=$1; shift
+    file=${1}; shift
     announced_args=$(get_announced_args $@)  
-    announce_test "$announced_args -f $file"
-    if [ "$1" != "docker" ]; then
-        file="$REPO_ROOT/tmp/$file"
+    announce_test "${announced_args} -f ${file}"
+    if [[ "${1}" != "docker" ]]; then
+        file="${REPO_ROOT}/tmp/${file}"
     fi
-    if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
-        "$@" -o okorach -f "$file" 2>>$IT_LOG_FILE
+    if [[ "${SONAR_HOST_URL}" == "${SONAR_HOST_URL}_SONARCLOUD" ]]; then
+        "$@" -o okorach -f "${file}" 2>>$IT_LOG_FILE
     else
-        # echo "$@" -f "$file"
-        "$@" -f "$file" 2>>$IT_LOG_FILE
+        # echo "$@" -f "${file}"
+        "$@" -f "${file}" 2>>$IT_LOG_FILE
     fi
-    test_passed_if_file_not_empty "$file"
+    test_passed_if_file_not_empty "${file}"
 }
 
 function get_announced_args {
     skipnext="false"
     announced_args=""
     for arg in $@; do
-        if [ "$arg" = "-t" ] ||  [ "$arg" = "-u" ]; then
+        if [[ "${arg}" = "-t" ]] ||  [[ "${arg}" = "-u" ]]; then
             skipnext="true"
-        elif [ "$skipnext" = "true" ]; then
+        elif [[ "${skipnext}" = "true" ]]; then
             skipnext="false"
         else
-            announced_args="$announced_args $arg"
+            announced_args="${announced_args} ${arg}"
         fi
     done
-    echo $announced_args 
+    echo ${announced_args} 
 }
 
 function run_test_stdout {
-    file=$1; shift
+    file=${1}; shift
     announced_args=$(get_announced_args $@)  
-    announce_test "$announced_args >$file"
-    file="$REPO_ROOT/tmp/$file"
-    if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
-        "$@" -o okorach >"$file" 2>>$IT_LOG_FILE
+    announce_test "${announced_args} >${file}"
+    file="${REPO_ROOT}/tmp/${file}"
+    if [[ "${SONAR_HOST_URL}" == "${SONAR_HOST_URL}_SONARCLOUD" ]]; then
+        "$@" -o okorach >"${file}" 2>>$IT_LOG_FILE
     else
-        "$@" >"$file" 2>>$IT_LOG_FILE
+        "$@" >"${file}" 2>>$IT_LOG_FILE
     fi
-    test_passed_if_file_not_empty "$file"
+    test_passed_if_file_not_empty "${file}"
 }
 
 check_file_not_empty() {
-    if [ -s "$1" ]; then
-        logmsg "Output file $1 is OK"
+    if [[ -s "${1}" ]]; then
+        logmsg "Output file ${1} is OK"
     else
-        logmsg "Output file $1 is missing or empty"
+        logmsg "Output file ${1} is missing or empty"
         # exit 1
     fi
 }
@@ -96,14 +96,14 @@ test_passed_if_identical() {
 }
 
 test_passed_if_file_not_empty() {
-    [ -s "$1" ]
+    [[ -s "${1}" ]
     code=$?
     test_result $code
     return $code
 }
 
 test_result() {
-    if [ $1 -eq 0 ]; then
+    if [[ ${1} -eq 0 ]]; then
         echo -e "--> ${GREEN}PASSED${RESET}"
     else
         echo -e "==> ${RED}*** FAILED ***${RESET}"
