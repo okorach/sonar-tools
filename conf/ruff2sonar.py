@@ -40,53 +40,48 @@ def main() -> None:
     issue_list = {}
     lines = sys.stdin.read().splitlines()
     i = 0
+    line_no, file_path, start_col, end_col = None, None, None, None
+    rule_id, message = None, None
     nblines = len(lines)
     while i < nblines:
         line = lines[i]
-        i += 1
         # Search for pattern like "sonar/projects.py:196:13: B904 Within an `except` clause, raise exceptions"
-        if not (m := re.match(r"^([^:]+):(\d+):(\d+): ([A-Z0-9]+)( \[\*\])? (.+)$", line)):
-            continue
-        file_path = m.group(1)
-        line_no = int(m.group(2))
-        start_col = int(m.group(3)) - 1
-        end_col = start_col + 1
-        rule_id = m.group(4)
-        message = m.group(6)
+        if m := re.match(r"^([^:]+):(\d+):(\d+): ([A-Z0-9]+)( \[\*\])? (.+)$", line):
+            if line_no is not None:
+                sonar_issue = {
+                    "ruleId": f"{TOOLNAME}:{rule_id}",
+                    "effortMinutes": 5,
+                    "primaryLocation": {
+                        "message": message,
+                        "filePath": file_path,
+                        "textRange": {
+                            "startLine": line_no,
+                            "endLine": line_no,
+                            "startColumn": start_col,
+                            "endColumn": end_col,
+                        },
+                    },
+                }
+                issue_list[f"{rule_id} - {message}"] = sonar_issue
+                rules_dict[f"{TOOLNAME}:{rule_id}"] = {
+                    "id": f"{TOOLNAME}:{rule_id}",
+                    "name": f"{TOOLNAME}:{rule_id}",
+                    "description": message,
+                    "engineId": TOOLNAME,
+                    "type": "CODE_SMELL",
+                    "severity": "MAJOR",
+                    "cleanCodeAttribute": "LOGICAL",
+                    "impacts": [{"softwareQuality": "MAINTAINABILITY", "severity": "MEDIUM"}],
+                }
+            file_path = m.group(1)
+            line_no = int(m.group(2))
+            start_col = int(m.group(3)) - 1
+            end_col = start_col + 1
+            rule_id = m.group(4)
+            message = m.group(6)
+        elif m := re.match(r"\s*\|\s(\s*)(\^+)", lines[i]):
+            end_col = start_col + len(m.group(2))
         i += 1
-
-        # Search for "   |        ^^^" pattern"
-        while i < nblines and not re.match(r"^$", lines[i]):
-            if m := re.match(r"\s*\|\s(\s*)(\^+)", lines[i]):
-                end_col = start_col + len(m.group(2))
-            i += 1
-
-        sonar_issue = {
-            "ruleId": f"{TOOLNAME}:{rule_id}",
-            "effortMinutes": 5,
-            "primaryLocation": {
-                "message": message,
-                "filePath": file_path,
-                "textRange": {
-                    "startLine": line_no,
-                    "endLine": line_no,
-                    "startColumn": start_col,
-                    "endColumn": end_col,
-                },
-            },
-        }
-
-        issue_list[f"{rule_id} - {message}"] = sonar_issue
-        rules_dict[f"{TOOLNAME}:{rule_id}"] = {
-            "id": f"{TOOLNAME}:{rule_id}",
-            "name": f"{TOOLNAME}:{rule_id}",
-            "description": message,
-            "engineId": TOOLNAME,
-            "type": "CODE_SMELL",
-            "severity": "MAJOR",
-            "cleanCodeAttribute": "LOGICAL",
-            "impacts": [{"softwareQuality": "MAINTAINABILITY", "severity": "MEDIUM"}],
-        }
 
     external_issues = {"rules": list(rules_dict.values()), "issues": list(issue_list.values())}
     print(json.dumps(external_issues, indent=3, separators=(",", ": ")))
