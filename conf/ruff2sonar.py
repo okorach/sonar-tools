@@ -80,16 +80,23 @@ def main() -> None:
                 "cleanCodeAttribute": "LOGICAL",
                 "impacts": [{"softwareQuality": "MAINTAINABILITY", "severity": "MEDIUM"}],
             }
-        elif m := re.match(r"\s+\|\s\|(_+)\^.*", lines[i]):
+        elif m := re.match(r"\s+\|\s\|(_+)\^ [A-Z0-9]+", lines[i]):
             issue_range["endLine"] = end_line or issue_range["startLine"]
             end_line = None
-            issue_range["endColumn"] = 0 if rule_id == "I001" else len(m.group(1))
+            if rule_id != "I001":
+                issue_range["endColumn"] = len(m.group(1))
+            else:
+                issue_range["endLine"] -= 1
+                issue_range.pop("startColumn")
+                issue_range.pop("endColumn")
+            end_line = None
         elif m := re.match(r"\s*(\d+)\s\|\s\|.*$", lines[i]):
             end_line = int(m.group(1))
         i += 1
 
-    external_issues = {"rules": list(rules_dict.values()), "issues": issue_list}
-    print(json.dumps(external_issues, indent=3, separators=(",", ": ")))
+    if len(issue_list) > 0:
+        external_issues = {"rules": list(rules_dict.values()), "issues": issue_list}
+        print(json.dumps(external_issues, indent=3, separators=(",", ": ")))
 
 
 if __name__ == "__main__":
