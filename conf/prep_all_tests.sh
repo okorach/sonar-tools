@@ -20,7 +20,6 @@
 #
 
 SYNC_PROJECT_KEY="TESTSYNC"
-NAME_AND_KEY="-Dsonar.projectKey=$SYNC_PROJECT_KEY -Dsonar.projectName=$SYNC_PROJECT_KEY"
 
 function create_fresh_project {
     key="$1"
@@ -38,7 +37,7 @@ function create_fresh_project {
         opt_token="-Dsonar.login=$token"  
     fi
     curl -X POST -u "$usertoken:" "$url/api/projects/delete?project=$key"
-    conf/scan.sh "${opts[@]}" -Dsonar.projectKey=$key -Dsonar.projectName=$key -Dsonar.host.url=$url $opt_token $opt_org 
+    conf/scan.sh "${opts[@]}" -Dsonar.projectKey="$key" -Dsonar.projectName="$key" -Dsonar.host.url="$url" "$opt_token" "$opt_org" 
 }
 
 create_fresh_project "$SYNC_PROJECT_KEY" "${SONAR_HOST_URL_TEST:?}" "$SONAR_TOKEN_TEST_ADMIN_USER" "$SONAR_TOKEN_TEST_ADMIN_ANALYSIS" -nolint
@@ -56,5 +55,5 @@ done
 
 rm build/external-issues*
 for pr in 5 7; do
-    sonar-scanner -Dsonar.host.url=${SONAR_HOST_URL_9:?} -Dsonar.pullrequest.key=$pr -Dsonar.pullrequest.branch=feature/$pr -Dsonar.login="$SONAR_TOKEN_9_ADMIN_ANALYSIS"
+    sonar-scanner -Dsonar.host.url=${SONAR_HOST_URL_9:?} -Dsonar.pullrequest.key="$pr" -Dsonar.pullrequest.branch="feature/$pr" -Dsonar.login="$SONAR_TOKEN_9_ADMIN_ANALYSIS"
 done

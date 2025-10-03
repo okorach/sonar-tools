@@ -49,7 +49,6 @@ def main() -> None:
         # Search for pattern like "sonar/projects.py:196:13: B904 Within an `except` clause, raise exceptions"
         if m := re.match(r"^([^:]+):(\d+):(\d+): ([A-Z0-9]+)( \[\*\])? (.+)$", line):
             if sonar_issue is not None:
-                print("WRITE:", str(sonar_issue), file=sys.stderr)
                 issue_list.append(sonar_issue)
                 end_line = None
             file_path = m.group(1)
