@@ -22,18 +22,18 @@
 SYNC_PROJECT_KEY="TESTSYNC"
 
 function create_fresh_project {
-    key="$1"
-    url="$2"
-    usertoken="$3"
-    token="$4"
+    key="${1}"
+    url="${2}"
+    usertoken="${3}"
+    token="${4}"
     shift 3
     opts=("$@")
     opt_org=""
-    if [ "${url}" == "https://sonarcloud.io" ]; then
+    if [[ "${url}" = "https://sonarcloud.io" ]]; then
         opt_org="-Dsonar.organization=okorach"
     fi
     opt_token="-Dsonar.token=${token}"
-    if [ "${url}" == "${SONAR_HOST_URL_9}" ]; then
+    if [[ "${url}" = "${SONAR_HOST_URL_9}" ]]; then
         opt_token="-Dsonar.login=${token}"  
     fi
     curl -X POST -u "${usertoken}:" "${url}/api/projects/delete?project=${key}"
