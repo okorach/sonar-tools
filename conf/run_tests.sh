@@ -22,30 +22,30 @@
 # ME="$( basename "${BASH_SOURCE[0]}" )"
 ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-buildDir="$ROOTDIR/build"
+buildDir="${ROOTDIR}/build"
 SYNC_PROJECT_KEY="TESTSYNC"
 
-[ ! -d "$buildDir" ] && mkdir "$buildDir"
+[ ! -d "${buildDir}" ] && mkdir "${buildDir}"
 
 echo "Running tests"
 
-. "$CONFDIR/build_tests.sh"
+. "${CONFDIR}/build_tests.sh"
 
-cd "$ROOTDIR" || exit 1
+cd "${ROOTDIR}" || exit 1
 
 sonar start -i test
 
 for target in latest cb 9 common
 do
-    if [ "$target" != "common" ]; then
-        sonar start -i $target && sleep 30
+    if [[ "${target}" != "common" ]]; then
+        sonar start -i ${target} && sleep 30
     fi
-    if [ -d "$ROOTDIR/$GEN_LOC/$target/" ]; then
+    if [[ -d "${ROOTDIR}/${GEN_LOC}/${target}/" ]]; then
         # Recreate a fresh TESTSYNC project for sync tests
-        curl -X POST -u "$SONAR_TOKEN_TEST_ADMIN_USER:" "$SONAR_HOST_URL_TEST/api/projects/delete?project=$SYNC_PROJECT_KEY"
-        conf/scan.sh -nolint -Dsonar.host.url="$SONAR_HOST_URL_TEST" -Dsonar.projectKey="$SYNC_PROJECT_KEY" -Dsonar.projectName="$SYNC_PROJECT_KEY" -Dsonar.token="$SONAR_TOKEN_TEST_ADMIN_ANALYSIS"
+        curl -X POST -u "${SONAR_TOKEN_TEST_ADMIN_USER}:" "${SONAR_HOST_URL_TEST}/api/projects/delete?project=$SYNC_PROJECT_KEY"
+        conf/scan.sh -nolint -Dsonar.host.url="${SONAR_HOST_URL_TEST}" -Dsonar.projectKey="$SYNC_PROJECT_KEY" -Dsonar.projectName="$SYNC_PROJECT_KEY" -Dsonar.token="$SONAR_TOKEN_TEST_ADMIN_ANALYSIS"
         # Run tests
-        poetry run coverage run --branch --source="$ROOTDIR" -m pytest "$ROOTDIR/$GEN_LOC/$target/" --junit-xml="$buildDir/xunit-results-$target.xml"
-        poetry run coverage xml -o "$buildDir/coverage-$target.xml"
+        poetry run coverage run --branch --source="${ROOTDIR}" -m pytest "${ROOTDIR}/${GEN_LOC}/${target}/" --junit-xml="${buildDir}/xunit-results-${target}.xml"
+        poetry run coverage xml -o "${buildDir}/coverage-${target}.xml"
     fi
 done
