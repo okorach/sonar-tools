@@ -79,7 +79,7 @@ class Language(sqobject.SqObject):
         if not rule_type or rule_type not in (c.VULN, c.HOTSPOT, c.BUG, c.CODE_SMELL):
             rule_type = "_ALL"
         if not self._nb_rules[rule_type]:
-            self._nb_rules[rule_type] = rules.search(self.endpoint, languages=self.key, types=rule_type)
+            self._nb_rules[rule_type] = rules.search(self.endpoint, params={"languages": self.key, "types": rule_type})
         return self._nb_rules[rule_type]
 
 
