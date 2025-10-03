@@ -169,6 +169,9 @@ extend-ignore = [
     "D401",
     "ERA001",
     "S101",
+    "I001",
+    "TRY003",
+    "EM002",
 ]
 
 exclude = [
