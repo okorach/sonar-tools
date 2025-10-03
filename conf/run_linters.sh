@@ -41,7 +41,7 @@ ruff check . | tee "${buildDir}/ruff-report.txt" | "${CONFDIR}"/ruff2sonar.py >"
 re=$?
 if [ "${re}" == "32" ]; then
     >&2 echo "ERROR: pylint execution failed, errcode ${re}, aborting..."
-    exit ${re}
+    exit "${re}"
 fi
 cat "${buildDir}/ruff-report.txt"
 
