@@ -18,16 +18,13 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
+"""Audits a SonarQube platform"""
 
-Audits a SonarQube platform
+from __future__ import annotations
 
-"""
-
-import sys
 import json
 import csv
-from typing import TextIO
+from typing import TextIO, Optional
 from threading import Thread
 from queue import Queue
 from requests import RequestException
@@ -58,7 +55,7 @@ def _audit_sif(sysinfo: str, audit_settings: types.ConfigSettings) -> tuple[str,
     """Audits a SIF and return found problems"""
     log.info("Auditing SIF file '%s'", sysinfo)
     try:
-        with open(sysinfo, "r", encoding="utf-8") as f:
+        with open(sysinfo, encoding="utf-8") as f:
             sysinfo = json.loads(f.read())
     except json.decoder.JSONDecodeError:
         log.critical("File %s does not seem to be a legit JSON file", sysinfo)
@@ -74,7 +71,7 @@ def _audit_sif(sysinfo: str, audit_settings: types.ConfigSettings) -> tuple[str,
 
 
 def write_csv(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.ConfigSettings) -> None:
-    """Writes the CSV file of audit problems"""
+    """Thread callback to write audit problems in a CSV file"""
     server_id = settings.get("SERVER_ID", None)
     with_url = settings.get("WITH_URL", False)
     csvwriter = csv.writer(fd, delimiter=settings.get("CSV_DELIMITER", ","))
@@ -93,9 +90,7 @@ def write_csv(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.C
 
 
 def write_json(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.ConfigSettings) -> None:
-    """
-    Thread to write problems in a JSON file
-    """
+    """Thread callback to write problems in a JSON file"""
     server_id = settings.get("SERVER_ID", None)
     with_url = settings.get("WITH_URL", False)
     comma = ""
@@ -114,7 +109,7 @@ def write_json(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.
 
 
 def _audit_sq(
-    sq: platform.Platform, settings: types.ConfigSettings, what_to_audit: list[str] = None, key_list: types.KeyList = None
+    sq: platform.Platform, settings: types.ConfigSettings, what_to_audit: Optional[list[str]] = None, key_list: types.KeyList = None
 ) -> list[problem.Problem]:
     """Audits a SonarQube/Cloud platform"""
     everything = what_to_audit is None
@@ -179,9 +174,8 @@ def __parser_args(desc: str) -> object:
 
 def __check_keys_exist(key_regexp: list[str], sq: platform.Platform, what: list[str]) -> None:
     """Checks if project keys exist"""
-    if key_regexp and "projects" in what:
-        if len(component_helper.get_components(sq, "projects", key_regexp)) == 0:
-            raise options.ArgumentsError(f"No projects found with key matching regexp '{key_regexp}'")
+    if key_regexp and "projects" in what and len(component_helper.get_components(sq, "projects", key_regexp)) == 0:
+        raise options.ArgumentsError(f"No projects found with key matching regexp '{key_regexp}'")
 
 
 def main() -> None:

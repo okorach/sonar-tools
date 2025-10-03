@@ -141,9 +141,7 @@ _SETTINGS_WITH_SPECIFIC_IMPORT = (
 
 
 class Project(components.Component):
-    """
-    Abstraction of the SonarQube project concept
-    """
+    """Abstraction of the SonarQube project concept"""
 
     CACHE = cache.Cache()
     SEARCH_KEY_FIELD = "key"
@@ -727,6 +725,7 @@ class Project(components.Component):
 
     def import_zip(self, asynchronous: bool = False, timeout: int = 180) -> str:
         """Imports a project zip file in SonarQube
+
         :param bool asynchronous: Whether to export the project asynchronously or not (if async, import_zip returns immediately)
         :param int timeout: timeout in seconds to complete the export operation
         :return: SUCCESS or FAILED with reason

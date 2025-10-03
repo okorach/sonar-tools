@@ -26,8 +26,8 @@ CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 build_image=1
 release=0
 
-while [ $# -ne 0 ]; do
-    case $1 in
+while [[ $# -ne 0 ]]; do
+    case "${1}" in
         nodocker)
             build_image=0
             ;;
@@ -44,26 +44,26 @@ while [ $# -ne 0 ]; do
 done
 
 ruff format
-rm -rf "$ROOTDIR/build/lib/migration" "$ROOTDIR/build/lib/cli" "$ROOTDIR/build/lib/sonar" "$ROOTDIR"/build/scripts*/sonar_migration "$ROOTDIR"/dist/sonar_migration*
-python3 "$ROOTDIR/setup_migration.py" bdist_wheel
+rm -rf "${ROOTDIR}/build/lib/migration" "${ROOTDIR}/build/lib/cli" "${ROOTDIR}/build/lib/sonar" "${ROOTDIR}"/build/scripts*/sonar_migration "${ROOTDIR}"/dist/sonar_migration*
+python3 "${ROOTDIR}/setup_migration.py" bdist_wheel
 
 # Deploy locally for tests
-pip install --upgrade --force-reinstall "$ROOTDIR"/dist/sonar_migration-*-py3-*.whl
+pip install --upgrade --force-reinstall "${ROOTDIR}"/dist/sonar_migration-*-py3-*.whl
 
-if [ "$build_image" == "1" ]; then
-    docker build -t olivierkorach/sonar-migration:latest -f migration/snapshot.Dockerfile "$ROOTDIR" --load
+if [[ "${build_image}" == "1" ]]; then
+    docker build -t olivierkorach/sonar-migration:latest -f migration/snapshot.Dockerfile "${ROOTDIR}" --load
 fi
 
 # Deploy on pypi.org once released
-if [ "$release" = "1" ]; then
+if [[ "${release}" = "1" ]]; then
     echo "Confirm release [y/n] ?"
     read -r confirm
-    if [ "$confirm" = "y" ]; then
-        python3 -m twine upload "$ROOTDIR"/dist/sonar_migration-*-py3-*.whl
+    if [[ "${confirm}" = "y" ]]; then
+        python3 -m twine upload "${ROOTDIR}"/dist/sonar_migration-*-py3-*.whl
     fi
 fi
 
-if [ "$release_docker" = "1" ]; then
-    docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-migration:0.4  -t olivierkorach/sonar-migration:latest -f migration/release.Dockerfile "$ROOTDIR"
-    cd "$CONFDIR" && docker pushrm olivierkorach/sonar-migration
+if [[ "${release}_docker" = "1" ]]; then
+    docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-migration:0.4  -t olivierkorach/sonar-migration:latest -f migration/release.Dockerfile "${ROOTDIR}"
+    cd "${CONFDIR}" && docker pushrm olivierkorach/sonar-migration
 fi
