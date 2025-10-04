@@ -63,7 +63,7 @@ if [[ "${release}" = "1" ]]; then
     fi
 fi
 
-if [[ "${release}_docker" = "1" ]]; then
+if [[ "${release_docker}" = "1" ]]; then
     docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-migration:0.4  -t olivierkorach/sonar-migration:latest -f migration/release.Dockerfile "${ROOTDIR}"
     cd "${CONFDIR}" && docker pushrm olivierkorach/sonar-migration
 fi
