@@ -23,10 +23,12 @@ Abstraction of the SonarQube platform or instance concept
 
 """
 
+from __future__ import annotations
+
 from http import HTTPStatus
 import sys
 import os
-from typing import Optional
+from typing import Optional, Any
 import time
 import datetime
 import json
@@ -59,12 +61,14 @@ _SERVER_ID_KEY = "Server ID"
 class Platform(object):
     """Abstraction of the SonarQube "platform" concept"""
 
-    def __init__(self, url: str, token: str, org: str = None, cert_file: Optional[str] = None, http_timeout: int = 10, **kwargs) -> None:
+    def __init__(
+        self, url: str, token: str, org: Optional[str] = None, cert_file: Optional[str] = None, http_timeout: int = 10, **kwargs: Any
+    ) -> None:
         """Creates a SonarQube platform object
 
-        :param url: base URL of the SonarQube platform
-        :param token: token to connect to the platform
-        :param cert_file: Client certificate, if any needed, defaults to None
+        :param str url: base URL of the SonarQube platform
+        :param str token: token to connect to the platform
+        :param str cert_file: Client certificate, if any needed, defaults to None
         :return: the SonarQube object
         :rtype: Platform
         """
@@ -85,7 +89,8 @@ class Platform(object):
 
     def __str__(self) -> str:
         """
-        Returns the string representation of the SonarQube connection, with the token recognizable but largely redacted
+        Returns the string representation of the SonarQube connection,
+        with the token recognizable but largely redacted
         """
         return f"{util.redacted_token(self.__token)}@{self.local_url}"
 
@@ -110,15 +115,11 @@ class Platform(object):
             raise exceptions.ConnectionError(f"{str(e)} while connecting to {self.local_url}")
 
     def url(self) -> str:
-        """
-        Returns the SonarQube URL
-        """
+        """Returns the SonarQube URL"""
         return self.external_url
 
     def version(self) -> tuple[int, int, int]:
-        """
-        Returns the SonarQube platform version or 0.0.0 for SonarQube Cloud
-        """
+        """Returns the SonarQube platform version or 0.0.0 for SonarQube Cloud"""
         if self.is_sonarcloud():
             return 0, 0, 0
         if self._version is None:
@@ -128,7 +129,7 @@ class Platform(object):
 
     def release_date(self) -> Optional[datetime.date]:
         """
-        :returns: the SonarQube platform release date if found in update center or None if SonarQube Cloud or if the date cannot be found
+        :return: the SonarQube platform release date if found in update center or None if SonarQube Cloud or if the date cannot be found
         """
         if self.is_sonarcloud():
             return None
@@ -136,7 +137,7 @@ class Platform(object):
 
     def edition(self) -> str:
         """
-        Returns the Sonar edition: "community", "developer", "enterprise", c.DCE or "sonarcloud"
+        Returns the Sonar edition: "community", "developer", "enterprise", "datacenter" or "sonarcloud"
         """
         if self.is_sonarcloud():
             return c.SC
@@ -156,12 +157,11 @@ class Platform(object):
         return self.__user_data
 
     def set_user_agent(self, user_agent: str) -> None:
+        """Sets the user agent for HTTP requests"""
         self._user_agent = user_agent
 
     def server_id(self) -> str:
-        """
-        Returns the SonarQube instance server id
-        """
+        """Returns the SonarQube instance server id"""
         if self._server_id is not None:
             return self._server_id
         if self._sys_info is not None and _SERVER_ID_KEY in self._sys_info["System"]:
@@ -171,15 +171,13 @@ class Platform(object):
         return self._server_id
 
     def is_sonarcloud(self) -> bool:
-        """
-        Returns whether the target platform is SonarQube Cloud
-        """
+        """Returns whether the target platform is SonarQube Cloud"""
         return util.is_sonarcloud_url(self.local_url)
 
     def basics(self) -> dict[str, str]:
         """
-        :return: the 3 basic information of the platform: ServerId, Edition and Version
-        :rtype: dict{"serverId": <id>, "edition": <edition>, "version": <version>}
+        :return: the basic information of the platform: ServerId, Edition and Version
+        :rtype: dict{"serverId": <id>, "edition": <edition>, "version": <version>, "plugins": <dict>}
         """
 
         url = self.get_setting(key="sonar.core.serverBaseURL")
@@ -190,6 +188,19 @@ class Platform(object):
             return {**data, "organization": self.organization}
 
         return {**data, "version": util.version_to_string(self.version()[:3]), "serverId": self.server_id(), "plugins": self.plugins()}
+
+    def default_user_group(self) -> str:
+        """
+        :return: the built-in default group name on that platform
+        """
+        return c.SQC_USERS if self.is_sonarcloud() else c.SQS_USERS
+
+    def is_default_user_group(self, group_name: str) -> bool:
+        """
+        :param str group_name: group name to check
+        :return: whether the group is a built-in default group
+        """
+        return group_name == self.default_user_group()
 
     def get(self, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
         """Makes an HTTP GET request to SonarQube
@@ -241,27 +252,12 @@ class Platform(object):
         """
         return self.__run_request(requests.delete, api, params, **kwargs)
 
-    def default_user_group(self) -> str:
-        """
-        :return: the built-in default group name on that platform
-        """
-        return c.SQC_USERS if self.is_sonarcloud() else c.SQS_USERS
-
-    def is_default_user_group(self, group_name: str) -> bool:
-        """
-        :param str group_name: group name to check
-        :return: whether the group is a built-in default group
-        """
-        return group_name == self.default_user_group()
-
     def __run_request(self, request: callable, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
         mute = kwargs.pop("mute", ())
         api = _normalize_api(api)
-        headers = {"user-agent": self._user_agent, "accept": _APP_JSON}
-        headers.update(kwargs.get("headers", {}))
-        if params is None:
-            params = {}
+        headers = {"user-agent": self._user_agent, "accept": _APP_JSON} | kwargs.get("headers", {})
+        params = params or {}
         with_org = kwargs.pop("with_organization", True)
         if self.is_sonarcloud():
             headers["Authorization"] = f"Bearer {self.__token}"
@@ -298,18 +294,14 @@ class Platform(object):
             util.handle_error(e, "")
         return r
 
-    def get_paginated(self, api: str, return_field: str, params: types.ApiParams = None) -> types.ObjectJsonRepr:
+    def get_paginated(self, api: str, return_field: str, **kwargs: Any) -> types.ObjectJsonRepr:
         """Returns all pages of a paginated API"""
-        new_params = {} if params is None else params.copy()
-        new_params["ps"] = 500
-        new_params["p"] = 1
-        data = json.loads(self.get(api, params=new_params).text)
-        nb_pages = util.nbr_pages(data, api_version=1)
-        if nb_pages == 1:
+        params = {"ps": 500} | kwargs
+        data = json.loads(self.get(api, params=params | {"p": 1}).text)
+        if (nb_pages := util.nbr_pages(data, api_version=1)) == 1:
             return data
         for page in range(2, nb_pages + 1):
-            new_params["p"] = page
-            data[return_field].update(json.loads(self.get(api, params=new_params).text)[return_field])
+            data[return_field].update(json.loads(self.get(api, params=params | {"p": page}).text)[return_field])
         return data
 
     def global_permissions(self) -> dict[str, any]:

@@ -250,7 +250,7 @@ class Component(sq.SqObject):
     def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None) -> types.ApiPayload:
         """Returns a component analyses"""
         params = utilities.dict_remap(self.api_params(c.READ), {"component": "project"})
-        data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", params=params)["analyses"]
+        data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", **params)["analyses"]
         if filter_in and len(filter_in) > 0:
             data = [d for d in data if any(e["category"] in filter_in for e in d["events"])]
         if filter_out and len(filter_out) > 0:
