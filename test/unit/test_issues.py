@@ -170,7 +170,9 @@ def test_changelog() -> None:
     assert str(issue) == f"Issue key '{issue_key}'"
     assert issue.is_false_positive()
     changelog_l = list(issue.changelog(manual_only=False).values())
-    if tutil.SQ.version() >= (25, 1, 0):
+    if tutil.SQ.version() >= (25, 4, 2):
+        nb_changes = 14
+    elif tutil.SQ.version() >= (25, 1, 0):
         nb_changes = 8
     else:
         nb_changes = 1
