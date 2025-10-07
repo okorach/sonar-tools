@@ -40,7 +40,7 @@ def test_task() -> None:
     assert task.status() == tasks.SUCCESS
     assert 100 <= task.execution_time() <= 100000
     assert task.submitter() == "admin"
-    assert task.warning_count() > 0
+    assert task.warning_count() == 0
     assert task.error_message() is None
 
 
