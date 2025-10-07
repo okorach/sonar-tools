@@ -196,8 +196,11 @@ def test_changelog() -> None:
     assert not changelog.is_assignment()
     assert changelog.assignee() is None
     assert changelog.assignee(False) is None
-    if tutil.SQ.version() >= (10, 0, 0):
-        assert datetime(2025, 2, 12) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 2, 14)
+    if tutil.SQ.version() >= (2025, 5, 0):
+        assert datetime(2025, 10, 3) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 10, 4)
+        assert changelog.author() is None
+    elif tutil.SQ.version() >= (10, 0, 0):
+        assert datetime(2025, 3, 12) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 2, 14)
         assert changelog.author() is None
     else:
         assert datetime(2025, 8, 16) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 8, 18)
