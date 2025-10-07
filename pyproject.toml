@@ -80,7 +80,7 @@ requires = [
 ]
 
 [tool.poetry]
-packages = [{include = "sonar"}, {include = "cli"}]
+packages = [{include = "sonar"}, {include = "migration"}, {include = "cli"}]
 
 [dependency-groups]
 test = [
