@@ -106,5 +106,5 @@ def test_convert_for_yaml() -> None:
 
 
 def test_release_date() -> None:
-    assert datetime(2022, 1, 1) < tutil.SQ.release_date() <= datetime.today()
+    assert datetime(2022, 1, 1).date() < tutil.SQ.release_date() <= datetime.today().date()
     assert tutil.SC.release_date() is None
