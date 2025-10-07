@@ -45,7 +45,11 @@ while [[ $# -ne 0 ]]; do
 done
 
 rm -rf "${ROOTDIR}/build/lib/migration" "${ROOTDIR}/build/lib/cli" "${ROOTDIR}/build/lib/sonar" "${ROOTDIR}"/build/scripts*/sonar_migration "${ROOTDIR}"/dist/sonar_migration*
-python3 "${ROOTDIR}/setup_migration.py" bdist_wheel
+mv "${ROOTDIR}/pyproject.toml" "${ROOTDIR}/pyproject.toml.sonar-tools"
+cp "${ROOTDIR}/migration/pyproject.toml" "${ROOTDIR}"
+poetry build
+mv "${ROOTDIR}/pyproject.toml.sonar-tools" "${ROOTDIR}/pyproject.toml"
+
 
 # Deploy locally for tests
 pip install --upgrade --force-reinstall "${ROOTDIR}"/dist/sonar_migration-*-py3-*.whl
