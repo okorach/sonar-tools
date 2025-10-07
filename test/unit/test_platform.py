@@ -104,6 +104,7 @@ def test_convert_for_yaml() -> None:
     yaml_json = platform.convert_for_yaml(json_config.copy())
     assert len(yaml_json) == len(json_config)
 
+
 def test_release_date() -> None:
     assert datetime(2022, 1, 1) < tutil.SQ.release_date() <= datetime.today()
     assert tutil.SC.release_date() is None
