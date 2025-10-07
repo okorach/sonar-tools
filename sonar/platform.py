@@ -28,7 +28,7 @@ from __future__ import annotations
 from http import HTTPStatus
 import sys
 import os
-from typing import Optional, Any
+from typing import Optional
 import time
 import datetime
 import json
@@ -61,7 +61,9 @@ _SERVER_ID_KEY = "Server ID"
 class Platform(object):
     """Abstraction of the SonarQube "platform" concept"""
 
-    def __init__(self, url: str, token: str, org: Optional[str] = None, cert_file: Optional[str] = None, http_timeout: int = 10, **kwargs: str) -> None:
+    def __init__(
+        self, url: str, token: str, org: Optional[str] = None, cert_file: Optional[str] = None, http_timeout: int = 10, **kwargs: str
+    ) -> None:
         """Creates a SonarQube platform object
 
         :param str url: base URL of the SonarQube platform
