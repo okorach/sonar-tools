@@ -159,7 +159,7 @@ class Setting(sqobject.SqObject):
             params = get_component_params(component, name="project")
             data = json.loads(endpoint.get(Setting.API["NEW_CODE_GET"], params=params).text)
         elif key == MQR_ENABLED:
-            data == json.loads(endpoint.get(Setting.API["MQR_MODE"]).text)
+            data = json.loads(endpoint.get(Setting.API["MQR_MODE"]).text)
         else:
             if key == NEW_CODE_PERIOD:
                 key = "sonar.leak.period.type"
