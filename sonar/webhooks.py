@@ -20,10 +20,15 @@
 
 """Abstraction of the SonarQube webhook concept"""
 
+from __future__ import annotations
+from typing import Optional
+
 import json
+from http import HTTPStatus
+from requests import RequestException
 
 import sonar.logging as log
-from sonar import platform as pf
+from sonar import platform as pf, exceptions
 from sonar.util import types, cache, constants as c
 import sonar.utilities as util
 import sonar.sqobject as sq
@@ -39,7 +44,7 @@ class WebHook(sq.SqObject):
     """
 
     CACHE = cache.Cache()
-    API = {c.CREATE: "webhooks/create", c.UPDATE: "webhooks/update", c.LIST: "webhooks/list"}
+    API = {c.CREATE: "webhooks/create", c.READ: "webhooks/list", c.UPDATE: "webhooks/update", c.LIST: "webhooks/list"}
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "webhooks"
 
@@ -60,6 +65,21 @@ class WebHook(sq.SqObject):
         self.last_delivery = data.get("latestDelivery", None)
         WebHook.CACHE.put(self)
 
+    @classmethod
+    def get_object(cls, endpoint: pf.Platform, name: str, project_key: Optional[str] = None, data: Optional[types.ApiPayload] = None) -> WebHook:
+        """Gets a WebHook object from its name and an eventual project key"""
+        log.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
+        if o := WebHook.CACHE.get(name, project_key, endpoint.local_url):
+            return o
+        try:
+            whs = list(get_list(endpoint, project_key).values())
+            return next((wh for wh in whs if wh.name == name))
+        except RequestException as e:
+            util.handle_error(e, f"Getting webhook '{name}' of project key '{project_key}'", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found")
+        except StopIteration:
+            raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found")
+
     def __str__(self) -> str:
         return f"webhook '{self.name}'"
 
@@ -68,7 +88,7 @@ class WebHook(sq.SqObject):
         Returns an object unique Id
         :meta private:
         """
-        return hash((self.name, self.project if self.project else "", self.base_url()))
+        return hash((self.name, self.project, self.endpoint.local_url))
 
     def url(self) -> str:
         """Returns the object permalink"""
@@ -145,16 +165,7 @@ def update(endpoint: pf.Platform, name: str, **kwargs) -> None:
     if not o:
         create(endpoint, name, kwargs["url"], kwargs["secret"], project=project_key)
     else:
-        get_object(endpoint, name, project_key=project_key, data=kwargs).update(**kwargs)
-
-
-def get_object(endpoint: pf.Platform, name: str, project_key: str = None, data: types.ApiPayload = None) -> WebHook:
-    """Gets a WebHook object from name a project key"""
-    log.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
-    o = WebHook.CACHE.get(name, project_key, endpoint.local_url)
-    if not o:
-        o = WebHook(endpoint=endpoint, name=name, project=project_key, data=data)
-    return o
+        WebHook.get_object(endpoint, name, project_key=project_key, data=kwargs).update(**kwargs)
 
 
 def audit(endpoint: pf.Platform) -> list[problem.Problem]:
