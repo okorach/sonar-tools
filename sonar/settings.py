@@ -132,6 +132,7 @@ class Setting(sqobject.SqObject):
         c.LIST: "settings/list_definitions",
         "NEW_CODE_GET": "new_code_periods/show",
         "NEW_CODE_SET": "new_code_periods/set",
+        "MQR_MODE": "v2/clean-code-policy/mode",
     }
 
     def __init__(self, endpoint: pf.Platform, key: str, component: object = None, data: types.ApiPayload = None) -> None:
@@ -154,19 +155,7 @@ class Setting(sqobject.SqObject):
         o = Setting.CACHE.get(key, component, endpoint.local_url)
         if o:
             return o
-        if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
-            params = get_component_params(component, name="project")
-            data = json.loads(endpoint.get(Setting.API["NEW_CODE_GET"], params=params).text)
-        else:
-            if key == NEW_CODE_PERIOD:
-                key = "sonar.leak.period.type"
-            params = get_component_params(component)
-            params.update({"keys": key})
-            data = json.loads(endpoint.get(Setting.API[c.GET], params=params, with_organization=(component is None)).text)["settings"]
-            if not endpoint.is_sonarcloud() and len(data) > 0:
-                data = data[0]
-            else:
-                data = {"inherited": True}
+        data = get_settings_data(endpoint, key, component)
         return Setting.load(key=key, endpoint=endpoint, data=data, component=component)
 
     @classmethod
@@ -214,6 +203,8 @@ class Setting(sqobject.SqObject):
         self.multi_valued = data.get("multiValues", False)
         if self.key == NEW_CODE_PERIOD:
             self.value = new_code_to_string(data)
+        elif self.key == MQR_ENABLED:
+            self.value = data.get("mode", "MQR") != "STANDARD_EXPERIENCE"
         elif self.key == COMPONENT_VISIBILITY:
             self.value = data.get("visibility", None)
         elif self.key == "sonar.login.message":
@@ -225,6 +216,9 @@ class Setting(sqobject.SqObject):
             if not self.value and "defaultValue" in data:
                 self.value = util.DEFAULT
         self.__reload_inheritance(data)
+
+    def refresh(self) -> None:
+        self.reload(get_settings_data(self.endpoint, self.key, self.component))
 
     def __hash__(self) -> int:
         """Returns object unique ID"""
@@ -241,10 +235,17 @@ class Setting(sqobject.SqObject):
         log.debug("%s set to '%s'", str(self), str(value))
         if not self.is_settable():
             log.error("Setting '%s' does not seem to be a settable setting, trying to set anyway...", str(self))
-        if value is None or value == "" or (self.key == "sonar.autodetect.ai.code" and value is True):
-            return self.endpoint.reset_setting(self.key)
+            return False
+        if value is None or value == "" or (self.key == "sonar.autodetect.ai.code" and value is True and self.endpoint.version() < (2025, 2, 0)):
+            return self.reset()
+        if self.key == MQR_ENABLED:
+            if ok := self.patch(Setting.API["MQR_MODE"], params={"mode": "STANDARD_EXPERIENCE" if not value else "MQR"}).ok:
+                self.value = value
+            return ok
         if self.key in (COMPONENT_VISIBILITY, PROJECT_DEFAULT_VISIBILITY):
-            return set_visibility(endpoint=self.endpoint, component=self.component, visibility=value)
+            if ok := set_visibility(endpoint=self.endpoint, component=self.component, visibility=value):
+                self.value = value
+            return ok
 
         # Hack: Up to 9.4 cobol settings are comma separated mono-valued, in 9.5+ they are multi-valued
         if self.endpoint.version() > (9, 4, 0) or not self.key.startswith("sonar.cobol"):
@@ -256,34 +257,21 @@ class Setting(sqobject.SqObject):
             return False
 
         log.debug("Setting %s to value '%s'", str(self), str(value))
-        params = {"key": self.key, "component": self.component.key if self.component else None}
-        untransformed_value = value
-        if isinstance(value, list):
-            if isinstance(value[0], str):
-                params["values"] = value
-            else:
-                params["fieldValues"] = [json.dumps(v) for v in value]
-        elif isinstance(value, bool):
-            params["value"] = str(value).lower()
-        else:
-            pname = "values" if self.multi_valued else "value"
-            params[pname] = value
+        params = {"key": self.key, "component": self.component.key if self.component else None} | encode(self, value)
         try:
-            r = self.post(Setting.API[c.CREATE], params=params)
-            self.value = untransformed_value
-            return r.ok
+            if ok := self.post(Setting.API[c.CREATE], params=params).ok:
+                self.value = value
+            return ok
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"setting setting '{self.key}' of {str(self.component)}", catch_all=True)
             return False
 
     def reset(self) -> bool:
         log.info("Resetting %s", str(self))
-        params = {"keys": self.key}
-        if self.component:
-            params["component"] = self.component.key
+        params = {"keys": self.key} | {} if not self.component else {"component": self.component.key}
         try:
             r = self.post("settings/reset", params=params)
-            self.value = None
+            self.refresh()
             return r.ok
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"resetting setting '{self.key}' of {str(self.component)}", catch_all=True)
@@ -443,7 +431,7 @@ def get_bulk(
         o = get_new_code_period(endpoint, component)
         settings_dict[o.key] = o
     VALID_SETTINGS.update(set(settings_dict.keys()))
-    VALID_SETTINGS.update({"sonar.scm.provider"})
+    VALID_SETTINGS.update({"sonar.scm.provider", MQR_ENABLED})
     return settings_dict
 
 
@@ -562,6 +550,17 @@ def decode(setting_key: str, setting_value: any) -> any:
     return setting_value
 
 
+def encode(setting: Setting, setting_value: any) -> dict[str, str]:
+    """Encodes the params to pass to api/settings/set according to setting value type"""
+    if isinstance(setting_value, list):
+        params = {"values": setting_value} if isinstance(setting_value[0], str) else {"fieldValues": [json.dumps(v) for v in setting_value]}
+    elif isinstance(setting_value, bool):
+        params = {"value": str(setting_value).lower()}
+    else:
+        params = {"values" if setting.multi_valued else "value": setting_value}
+    return params
+
+
 def reset_setting(endpoint: pf.Platform, setting_key: str, project: Optional[object] = None) -> bool:
     """Resets a setting to its default"""
     return get_object(endpoint=endpoint, key=setting_key, component=project).reset()
@@ -575,3 +574,25 @@ def get_component_params(component: object, name: str = "component") -> types.Ap
         return {name: component.project.key, "branch": component.key}
     else:
         return {name: component.key}
+
+
+def get_settings_data(endpoint: pf.Platform, key: str, component: Optional[object]) -> types.ApiPayload:
+    """Reads a setting data with different API depending on setting key
+    :return: The returned API data"""
+
+    if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
+        params = get_component_params(component, name="project")
+        data = json.loads(endpoint.get(Setting.API["NEW_CODE_GET"], params=params).text)
+    elif key == MQR_ENABLED:
+        data = json.loads(endpoint.get(Setting.API["MQR_MODE"]).text)
+    else:
+        if key == NEW_CODE_PERIOD:
+            key = "sonar.leak.period.type"
+        params = get_component_params(component)
+        params.update({"keys": key})
+        data = json.loads(endpoint.get(Setting.API[c.GET], params=params, with_organization=(component is None)).text)["settings"]
+        if not endpoint.is_sonarcloud() and len(data) > 0:
+            data = data[0]
+        else:
+            data = {"inherited": True}
+    return data
