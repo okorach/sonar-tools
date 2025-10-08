@@ -23,6 +23,25 @@ import utilities as tutil
 from sonar import settings
 
 
+def test_set_standard() -> None:
+    """test_set_standard"""
+
+    o = settings.get_object(tutil.SQ, "sonar.java.file.suffixes")
+    val = o.value
+    new_val = [".jav", ".java", ".javacard"]
+    assert o.set(new_val)
+    assert sorted(o.value) == sorted(new_val)
+
+    new_val = [".jav", ".java", ".javacard", ".jah"]
+    assert o.set(", ".join(new_val))
+    assert sorted(o.value) == sorted(new_val)
+
+    assert o.reset()
+    assert sorted(o.value) == sorted([".jav", ".java"])
+    assert o.set(val)
+    assert sorted(o.value) == sorted(val)
+
+
 def test_autodetect_ai() -> None:
     """test_autodetect_ai"""
 
@@ -50,8 +69,13 @@ def test_mqr_mode() -> None:
     assert not o.value
     assert o.set(val)
 
+
 def test_unsettable() -> None:
     """test_unsettable"""
     o = settings.get_object(tutil.SQ, "sonar.core.startTime")
     assert o is not None
     assert not o.set("2025-01-01")
+    o = settings.get_object(tutil.SQ, "sonar.auth.github.apiUrl")
+    assert o is not None
+    res = True if tutil.SQ.version() < (10, 0, 0) else False
+    assert o.set("https://api.github.com/") == res
