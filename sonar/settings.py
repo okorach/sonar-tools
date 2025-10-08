@@ -132,6 +132,7 @@ class Setting(sqobject.SqObject):
         c.LIST: "settings/list_definitions",
         "NEW_CODE_GET": "new_code_periods/show",
         "NEW_CODE_SET": "new_code_periods/set",
+        "MQR_MODE": "v2/clean-code-policy/mode",
     }
 
     def __init__(self, endpoint: pf.Platform, key: str, component: object = None, data: types.ApiPayload = None) -> None:
@@ -157,6 +158,8 @@ class Setting(sqobject.SqObject):
         if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
             params = get_component_params(component, name="project")
             data = json.loads(endpoint.get(Setting.API["NEW_CODE_GET"], params=params).text)
+        elif key == MQR_ENABLED:
+            data == json.loads(endpoint.get(Setting.API["MQR_MODE"]).text)
         else:
             if key == NEW_CODE_PERIOD:
                 key = "sonar.leak.period.type"
@@ -214,6 +217,8 @@ class Setting(sqobject.SqObject):
         self.multi_valued = data.get("multiValues", False)
         if self.key == NEW_CODE_PERIOD:
             self.value = new_code_to_string(data)
+        elif self.key == MQR_ENABLED:
+            self.value = data.get("mode", "MQR") != "STANDARD_EXPERIENCE"
         elif self.key == COMPONENT_VISIBILITY:
             self.value = data.get("visibility", None)
         elif self.key == "sonar.login.message":
@@ -242,9 +247,17 @@ class Setting(sqobject.SqObject):
         if not self.is_settable():
             log.error("Setting '%s' does not seem to be a settable setting, trying to set anyway...", str(self))
         if value is None or value == "" or (self.key == "sonar.autodetect.ai.code" and value is True):
-            return self.endpoint.reset_setting(self.key)
+            if ok := self.endpoint.reset_setting(self.key):
+                self.read()
+            return ok
+        if self.key == MQR_ENABLED:
+            if ok := self.patch(Setting.API["MQR_MODE"], params={"mode": "STANDARD_EXPERIENCE" if not value else "MQR"}).ok:
+                self.value = value
+            return ok
         if self.key in (COMPONENT_VISIBILITY, PROJECT_DEFAULT_VISIBILITY):
-            return set_visibility(endpoint=self.endpoint, component=self.component, visibility=value)
+            if ok := set_visibility(endpoint=self.endpoint, component=self.component, visibility=value):
+                self.read()
+            return ok
 
         # Hack: Up to 9.4 cobol settings are comma separated mono-valued, in 9.5+ they are multi-valued
         if self.endpoint.version() > (9, 4, 0) or not self.key.startswith("sonar.cobol"):
@@ -443,7 +456,7 @@ def get_bulk(
         o = get_new_code_period(endpoint, component)
         settings_dict[o.key] = o
     VALID_SETTINGS.update(set(settings_dict.keys()))
-    VALID_SETTINGS.update({"sonar.scm.provider"})
+    VALID_SETTINGS.update({"sonar.scm.provider", MQR_ENABLED})
     return settings_dict
 
 
