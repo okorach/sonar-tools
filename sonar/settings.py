@@ -246,17 +246,15 @@ class Setting(sqobject.SqObject):
         log.debug("%s set to '%s'", str(self), str(value))
         if not self.is_settable():
             log.error("Setting '%s' does not seem to be a settable setting, trying to set anyway...", str(self))
-        if value is None or value == "" or (self.key == "sonar.autodetect.ai.code" and value is True):
-            if ok := self.endpoint.reset_setting(self.key):
-                self.read()
-            return ok
+        if value is None or value == "" or (self.key == "sonar.autodetect.ai.code" and value is True and self.endpoint.version() < (2025, 2, 0)):
+            return self.reset()
         if self.key == MQR_ENABLED:
             if ok := self.patch(Setting.API["MQR_MODE"], params={"mode": "STANDARD_EXPERIENCE" if not value else "MQR"}).ok:
                 self.value = value
             return ok
         if self.key in (COMPONENT_VISIBILITY, PROJECT_DEFAULT_VISIBILITY):
             if ok := set_visibility(endpoint=self.endpoint, component=self.component, visibility=value):
-                self.read()
+                self.value = value
             return ok
 
         # Hack: Up to 9.4 cobol settings are comma separated mono-valued, in 9.5+ they are multi-valued
@@ -282,9 +280,9 @@ class Setting(sqobject.SqObject):
             pname = "values" if self.multi_valued else "value"
             params[pname] = value
         try:
-            r = self.post(Setting.API[c.CREATE], params=params)
-            self.value = untransformed_value
-            return r.ok
+            if ok := self.post(Setting.API[c.CREATE], params=params).ok:
+                self.value = untransformed_value
+            return ok
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"setting setting '{self.key}' of {str(self.component)}", catch_all=True)
             return False
