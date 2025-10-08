@@ -246,6 +246,7 @@ class Setting(sqobject.SqObject):
         log.debug("%s set to '%s'", str(self), str(value))
         if not self.is_settable():
             log.error("Setting '%s' does not seem to be a settable setting, trying to set anyway...", str(self))
+            return False
         if value is None or value == "" or (self.key == "sonar.autodetect.ai.code" and value is True and self.endpoint.version() < (2025, 2, 0)):
             return self.reset()
         if self.key == MQR_ENABLED:
