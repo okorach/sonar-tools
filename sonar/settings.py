@@ -551,6 +551,7 @@ def decode(setting_key: str, setting_value: any) -> any:
 
 
 def encode(setting: Setting, setting_value: any) -> dict[str, str]:
+    """Encodes the params to pass to api/settings/set according to setting value type"""
     if isinstance(setting_value, list):
         params = {"values": setting_value} if isinstance(setting_value[0], str) else {"fieldValues": [json.dumps(v) for v in setting_value]}
     elif isinstance(setting_value, bool):
