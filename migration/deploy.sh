@@ -25,6 +25,7 @@ CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 build_image=1
 release=0
+release_docker=0
 
 while [[ $# -ne 0 ]]; do
     case "${1}" in
@@ -43,9 +44,12 @@ while [[ $# -ne 0 ]]; do
     shift
 done
 
-ruff format
 rm -rf "${ROOTDIR}/build/lib/migration" "${ROOTDIR}/build/lib/cli" "${ROOTDIR}/build/lib/sonar" "${ROOTDIR}"/build/scripts*/sonar_migration "${ROOTDIR}"/dist/sonar_migration*
-python3 "${ROOTDIR}/setup_migration.py" bdist_wheel
+mv "${ROOTDIR}/pyproject.toml" "${ROOTDIR}/pyproject.toml.sonar-tools"
+cp "${ROOTDIR}/migration/pyproject.toml" "${ROOTDIR}"
+poetry build
+mv "${ROOTDIR}/pyproject.toml.sonar-tools" "${ROOTDIR}/pyproject.toml"
+
 
 # Deploy locally for tests
 pip install --upgrade --force-reinstall "${ROOTDIR}"/dist/sonar_migration-*-py3-*.whl
@@ -63,7 +67,7 @@ if [[ "${release}" = "1" ]]; then
     fi
 fi
 
-if [[ "${release}_docker" = "1" ]]; then
+if [[ "${release_docker}" = "1" ]]; then
     docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-migration:0.4  -t olivierkorach/sonar-migration:latest -f migration/release.Dockerfile "${ROOTDIR}"
     cd "${CONFDIR}" && docker pushrm olivierkorach/sonar-migration
 fi

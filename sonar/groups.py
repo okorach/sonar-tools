@@ -203,7 +203,7 @@ class Group(sq.SqObject):
                 data = json.loads(self.get(MEMBERSHIP_API, params={"groupId": self.id}).text)
                 self.__members = [users.User.get_object_by_id(self.endpoint, d["userId"]) for d in data["groupMemberships"]]
             else:
-                data = self.endpoint.get_paginated("api/user_groups/users", return_field="users", params={"name": self.name})
+                data = self.endpoint.get_paginated("api/user_groups/users", return_field="users", name=self.name)
                 self.__members = [users.User.get_object(self.endpoint, d["login"]) for d in data["users"]]
         return self.__members
 

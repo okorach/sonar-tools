@@ -18,7 +18,7 @@ Command line tool to collect SonarQube data to prepare eventual migration to Son
 
 
 # Requirements and Installation
-- `sonar-migration` requires python 3.8 or higher
+- `sonar-migration` requires python 3.9 or higher
 - Installation is based on [pip](https://pypi.org/project/pip/).
 - Online installation.
   - Run: `python3 -m pip install sonar-migration` (or `python3 -m pip upgrade sonar-migration`)

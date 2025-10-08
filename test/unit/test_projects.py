@@ -121,7 +121,7 @@ def test_import_async() -> None:
 def test_import_sync() -> None:
     """test_import_sync"""
     proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.PROJECT_1)
-    assert proj.import_zip(asynchronous=True).startswith("FAILED")
+    assert proj.import_zip(asynchronous=False).startswith("FAILED")
 
 
 def test_monorepo() -> None:

@@ -622,7 +622,7 @@ class Project(components.Component):
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
-            data = self.endpoint.get_paginated(api=Project.API[c.LIST], params={"filter": _PROJECT_QUALIFIER}, return_field="components")
+            data = self.endpoint.get_paginated(api=Project.API[c.LIST], return_field="components", filter=_PROJECT_QUALIFIER)
             p_data = next((p for p in data["components"] if p["key"] == self.key), None)
             if p_data:
                 self.sq_json.update(p_data)
