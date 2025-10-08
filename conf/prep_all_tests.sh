@@ -45,7 +45,7 @@ create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_TEST:?}" "${SONAR_T
 create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_LATEST:?}" "${SONAR_TOKEN_LATEST_ADMIN_USER}" "${SONAR_TOKEN_LATEST_ADMIN_ANALYSIS}"
 create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_CB:?}" "${SONAR_TOKEN_CB_ADMIN_USER}" "${SONAR_TOKEN_CB_ADMIN_ANALYSIS}"
 create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_9:?}" "${SONAR_TOKEN_9_ADMIN_USER}" "${SONAR_TOKEN_9_ADMIN_ANALYSIS}"
-create_fresh_project "${SYNC_PROJECT_KEY}" "https://sonarcloud.io" "${SONAR_TOKEN_SONARCLOUD" "${SONAR_TOKEN_SONARCLOUD"
+create_fresh_project "${SYNC_PROJECT_KEY}" "https://sonarcloud.io" "${SONAR_TOKEN_SONARCLOUD}" "${SONAR_TOKEN_SONARCLOUD}"
 create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_CB:?}" "${SONAR_TOKEN_CB_ADMIN_USER}" "${SONAR_TOKEN_CB_ADMIN_ANALYSIS}"
 
 for pr in 5 7; do

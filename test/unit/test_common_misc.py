@@ -21,7 +21,8 @@
 
 """Common tests, independent of SonarQube version"""
 
-from sonar import utilities
+from cli import sonar_tools
+from sonar import utilities, errcodes
 from sonar.util import sonar_cache
 import utilities as tutil
 
@@ -43,4 +44,4 @@ def test_clear_cache() -> None:
 
 def test_sonar_tools_help() -> None:
     """test_sonar_tools_help"""
-    assert tutil.run_cmd("sonar-tools-help") == 0
+    assert tutil.run_cmd(sonar_tools.main, "sonar-tools-help") == errcodes.OK
