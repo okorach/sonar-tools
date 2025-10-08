@@ -66,7 +66,7 @@ def test_update() -> None:
     """test_update"""
     webhook = wh.WebHook.get_object(tutil.SQ, WEBHOOK)
     old_url = webhook.webhook_url
-    new_url = "http://my.jenkins.server/sonar-webhook/"
+    new_url = "https://my.jenkins.server/sonar-webhook/"
     webhook.update(url=new_url)
     webhook = wh.WebHook.get_object(tutil.SQ, WEBHOOK)
     assert webhook.webhook_url == new_url
