@@ -218,6 +218,7 @@ class Setting(sqobject.SqObject):
         self.__reload_inheritance(data)
 
     def refresh(self) -> None:
+        """Reads the setting value on SonarQube"""
         self.reload(get_settings_data(self.endpoint, self.key, self.component))
 
     def __hash__(self) -> int:
@@ -259,12 +260,13 @@ class Setting(sqobject.SqObject):
         log.debug("Setting %s to value '%s'", str(self), str(value))
         params = {"key": self.key, "component": self.component.key if self.component else None} | encode(self, value)
         try:
-            if ok := self.post(Setting.API[c.CREATE], params=params).ok:
-                self.value = value
-            return ok
+            ok = self.post(Setting.API[c.CREATE], params=params).ok
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"setting setting '{self.key}' of {str(self.component)}", catch_all=True)
             return False
+        else:
+            self.value = value
+            return ok
 
     def reset(self) -> bool:
         log.info("Resetting %s", str(self))
@@ -578,8 +580,12 @@ def get_component_params(component: object, name: str = "component") -> types.Ap
 
 def get_settings_data(endpoint: pf.Platform, key: str, component: Optional[object]) -> types.ApiPayload:
     """Reads a setting data with different API depending on setting key
-    :return: The returned API data"""
 
+    :param Platform endpoint: The SonarQube Platform object
+    :param str key: The setting key
+    :param object component: The component (Project) concerned, optional
+    :return: The returned API data
+    """
     if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
         params = get_component_params(component, name="project")
         data = json.loads(endpoint.get(Setting.API["NEW_CODE_GET"], params=params).text)
