@@ -56,13 +56,8 @@ class WebHook(sq.SqObject):
         if data is None:
             params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
             data = json.loads(self.post(WebHook.API[c.CREATE], params=params).text)["webhook"]
-        self.sq_json = data
-        self.name = data["name"]  #: Webhook name
-        self.key = data["key"]  #: Webhook key
-        self.webhook_url = data["url"]  #: Webhook URL
-        self.secret = data.get("secret", None)  #: Webhook secret
+        self.reload(data)
         self.project = project  #: Webhook project if project specific webhook
-        self.last_delivery = data.get("latestDelivery", None)
         WebHook.CACHE.put(self)
 
     @classmethod
@@ -90,19 +85,38 @@ class WebHook(sq.SqObject):
         """
         return hash((self.name, self.project, self.endpoint.local_url))
 
+    def refresh(self) -> None:
+        data = json.loads(self.get(WebHook.API[c.LIST], params=None if not self.project else {"project": self.name}).text)
+        wh_data = next((wh for wh in data["webhooks"] if wh["name"] == self.name), None)
+        if wh_data is None:
+            name = str(self)
+            self.delete()
+            raise exceptions.ObjectNotFound(f"{name} not found")
+        self.reload(wh_data)
+
+    def reload(self, data: types.ApiPayload) -> None:
+        log.debug("Loading %s with %s", str(self), str(data))
+        self.sq_json = self.sq_json or {} | data
+        self.name = data["name"]  #: Webhook name
+        self.key = data["key"]  #: Webhook key
+        self.webhook_url = data["url"]  #: Webhook URL
+        self.secret = data.get("secret", None)  #: Webhook secret
+        self.last_delivery = data.get("latestDelivery", None)
+
     def url(self) -> str:
         """Returns the object permalink"""
         return f"{self.base_url(local=False)}/admin/webhooks"
 
-    def update(self, **kwargs) -> None:
+    def update(self, **kwargs) -> bool:
         """Updates a webhook with new properties (name, url, secret)
 
         :param kwargs: dict - "url", "name", "secret" are the looked up keys
-        :return: Nothing
+        :return: Whether the operation succeeded
         """
-        params = util.remove_nones(kwargs)
-        params.update({"webhook": self.key})
-        self.post(WebHook.API[c.UPDATE], params=params)
+        params = {"webhook": self.key, "name": self.name, "url": self.webhook_url} | util.remove_nones(kwargs)
+        ok = self.post(WebHook.API[c.UPDATE], params=params).ok
+        self.refresh()
+        return ok
 
     def audit(self) -> list[problem.Problem]:
         """
