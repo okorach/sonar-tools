@@ -211,7 +211,7 @@ def __get(endpoint: object, api: str, params: types.ApiParams) -> requests.Respo
 
 def __load(endpoint: object, object_class: any, data: types.ObjectJsonRepr) -> dict[str, object]:
     key_field = object_class.SEARCH_KEY_FIELD
-    if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization"):
+    if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook"):
         return {obj[key_field]: object_class.load(endpoint=endpoint, data=obj) for obj in data}
     elif object_class.__name__ in ("Rule"):
         return {obj[key_field]: object_class.load(endpoint=endpoint, key=obj[key_field], data=obj) for obj in data}

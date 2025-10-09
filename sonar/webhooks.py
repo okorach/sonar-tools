@@ -48,27 +48,56 @@ class WebHook(sq.SqObject):
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "webhooks"
 
-    def __init__(
-        self, endpoint: pf.Platform, name: str, url: str = None, secret: str = None, project: str = None, data: types.ApiPayload = None
-    ) -> None:
+    def __init__(self, endpoint: pf.Platform, name: str, url: str, secret: Optional[str] = None, project: Optional[str] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=name)
-        self.name = name #: Webhook name
-        self.webhook_url = url   #: Webhook key
-        self.secret = secret   #: Webhook secret
-        self.project = project   #: Webhook project, optional
-        self.last_delivery = None   #: Webhook last delivery timestamp
-        if data is None:
-            params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
-            data = json.loads(self.post(WebHook.API[c.CREATE], params=params).text)["webhook"]
-        self.reload(data)
+        self.name = name  #: Webhook name
+        self.webhook_url = url  #: Webhook key
+        self.secret = secret  #: Webhook secret
+        self.project = project  #: Webhook project, optional
+        self.last_delivery = None  #: Webhook last delivery timestamp
         self.project = project  #: Webhook project if project specific webhook
         WebHook.CACHE.put(self)
 
     @classmethod
-    def get_object(cls, endpoint: pf.Platform, name: str, project_key: Optional[str] = None, data: Optional[types.ApiPayload] = None) -> WebHook:
+    def create(cls, endpoint: pf.Platform, name: str, url: str, secret: Optional[str], project: Optional[str]) -> WebHook:
+        """Creates a WebHook object in SonarQube
+
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param str name: Webhook name
+        :param str url: Webhook URL
+        :param str secret: Webhook secret, optional
+        :param str project: Webhook project key, optional
+        :return: The created WebHook
+        """
+        params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
+        try:
+            endpoint.post(WebHook.API[c.CREATE], params=params)
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"creating Webhook '{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
+            raise exceptions.ObjectAlreadyExists(name, e.response.text)
+        o = cls(endpoint, name=name, url=url, secret=secret, project=project)
+        o.refresh()
+        return o
+
+    @classmethod
+    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> WebHook:
+        """Creates and loads a local WebHook object with data payload received from API
+
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param ApiPayload data: The webhook data received from the API
+        :return: The created WebHook
+        """
+        name, project = data["name"], data.get("project", None)
+        if (o := WebHook.CACHE.get(name, project, endpoint.local_url)) is None:
+            o = WebHook(endpoint, name, data["url"], data.get("secret", None), project)
+        o.reload(data)
+        return o
+
+    @classmethod
+    def get_object(cls, endpoint: pf.Platform, name: str, project_key: Optional[str] = None) -> WebHook:
         """Gets a WebHook object from its name and an eventual project key"""
-        log.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
+        log.debug("Getting webhook name %s project key %s", name, str(project_key))
         if o := WebHook.CACHE.get(name, project_key, endpoint.local_url):
             return o
         try:
@@ -91,7 +120,8 @@ class WebHook(sq.SqObject):
         return hash((self.name, self.project, self.endpoint.local_url))
 
     def refresh(self) -> None:
-        data = json.loads(self.get(WebHook.API[c.LIST], params=None if not self.project else {"project": self.name}).text)
+        """Reads the Webhook data on the SonarQube platform and updates the local object"""
+        data = json.loads(self.get(WebHook.API[c.LIST], params=None if not self.project else {"project": self.project}).text)
         wh_data = next((wh for wh in data["webhooks"] if wh["name"] == self.name), None)
         if wh_data is None:
             wh_name = str(self)
