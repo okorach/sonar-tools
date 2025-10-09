@@ -53,6 +53,11 @@ class WebHook(sq.SqObject):
     ) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=name)
+        self.name = name
+        self.webhook_url = url
+        self.secret = secret
+        self.project = project
+        self.last_delivery = None
         if data is None:
             params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
             data = json.loads(self.post(WebHook.API[c.CREATE], params=params).text)["webhook"]
