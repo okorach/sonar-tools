@@ -53,11 +53,11 @@ class WebHook(sq.SqObject):
     ) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=name)
-        self.name = name
-        self.webhook_url = url
-        self.secret = secret
-        self.project = project
-        self.last_delivery = None
+        self.name = name #: Webhook name
+        self.webhook_url = url   #: Webhook key
+        self.secret = secret   #: Webhook secret
+        self.project = project   #: Webhook project, optional
+        self.last_delivery = None   #: Webhook last delivery timestamp
         if data is None:
             params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
             data = json.loads(self.post(WebHook.API[c.CREATE], params=params).text)["webhook"]
@@ -103,10 +103,10 @@ class WebHook(sq.SqObject):
     def reload(self, data: types.ApiPayload) -> None:
         log.debug("Loading %s with %s", str(self), str(data))
         self.sq_json = self.sq_json or {} | data
-        self.name = data["name"]  #: Webhook name
-        self.key = data["key"]  #: Webhook key
-        self.webhook_url = data["url"]  #: Webhook URL
-        self.secret = data.get("secret", None)  #: Webhook secret
+        self.name = data["name"]
+        self.key = data["key"]
+        self.webhook_url = data["url"]
+        self.secret = data.get("secret", None)
         self.last_delivery = data.get("latestDelivery", None)
 
     def url(self) -> str:
