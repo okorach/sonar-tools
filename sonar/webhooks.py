@@ -94,9 +94,10 @@ class WebHook(sq.SqObject):
         data = json.loads(self.get(WebHook.API[c.LIST], params=None if not self.project else {"project": self.name}).text)
         wh_data = next((wh for wh in data["webhooks"] if wh["name"] == self.name), None)
         if wh_data is None:
-            name = str(self)
+            wh_name = str(self)
+            name = self.name
             self.delete()
-            raise exceptions.ObjectNotFound(f"{name} not found")
+            raise exceptions.ObjectNotFound(name, f"{wh_name} not found")
         self.reload(wh_data)
 
     def reload(self, data: types.ApiPayload) -> None:
