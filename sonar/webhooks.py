@@ -215,7 +215,7 @@ def update(endpoint: pf.Platform, name: str, **kwargs) -> None:
     if not o:
         create(endpoint, name, kwargs["url"], kwargs["secret"], project=project_key)
     else:
-        WebHook.get_object(endpoint, name, project_key=project_key, data=kwargs).update(**kwargs)
+        WebHook.get_object(endpoint, name, project_key=project_key).update(**kwargs)
 
 
 def audit(endpoint: pf.Platform) -> list[problem.Problem]:
