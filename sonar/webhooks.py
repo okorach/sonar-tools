@@ -178,7 +178,6 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, W
 
     :param ApiParams params: Filters to narrow down the search, can only be "project"
     :return: List of webhooks
-    :rtype: dict{<key>: <WebHook>}
     """
     return sq.search_objects(endpoint=endpoint, object_class=WebHook, params=params)
 
