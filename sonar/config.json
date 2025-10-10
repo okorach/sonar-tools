@@ -233,7 +233,10 @@
                 ["OPEN", "REOPENED"],
                 ["CRITICAL", "HIGH"],
                 ["MAJOR", "MEDIUM"],
-                ["MINOR", "LOW"]
+                ["MINOR", "LOW"],
+                ["VULNERABILITY", "SECURITY"],
+                ["BUG", "RELIABILITY"],
+                ["CODE_SMELL", "MAINTAINABILITY"]
             ],
             "fields": [
                 ["severities", "impactSeverities"],
