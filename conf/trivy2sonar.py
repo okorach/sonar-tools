@@ -35,6 +35,7 @@ MAPPING = {"LOW": "MINOR", "MEDIUM": "MAJOR", "HIGH": "CRITICAL", "BLOCKER": "BL
 
 def main() -> None:
     """Main script entry point"""
+    v1 = len(sys.argv) > 1 and sys.argv[1] == "v1"
     text = "".join(sys.stdin)
 
     rules_dict = {}
@@ -55,7 +56,6 @@ def main() -> None:
                 },
             },
         }
-        issue_list[sonar_issue["primaryLocation"]["message"]] = sonar_issue
         # score = max([v["V3Score"] for v in issue['CVSS'].values()])
         # if score <= 4:
         #     sev = "LOW"
@@ -77,8 +77,17 @@ def main() -> None:
             "cleanCodeAttribute": "LOGICAL",
             "impacts": [{"softwareQuality": "SECURITY", "severity": sev_mqr}],
         }
+        if v1:
+            sonar_issue["engineId"] = TOOLNAME
+            sonar_issue["severity"] = MAPPING.get(sev_mqr, sev_mqr)
+            sonar_issue["type"] = "CODE_SMELL"
+        issue_list[sonar_issue["primaryLocation"]["message"]] = sonar_issue
 
+    if len(issue_list) == 0:
+        return
     external_issues = {"rules": list(rules_dict.values()), "issues": list(issue_list.values())}
+    if v1:
+        external_issues.pop("rules")
     print(json.dumps(external_issues, indent=3, separators=(",", ": ")))
 
 
