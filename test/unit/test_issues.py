@@ -170,9 +170,9 @@ def test_changelog() -> None:
     assert str(issue) == f"Issue key '{issue_key}'"
     assert issue.is_false_positive()
     changelog_l = list(issue.changelog(manual_only=False).values())
-    if tutil.SQ.version() >= (2025, 4, 2) or tutil.SQ.edition() == c.CE:
+    if tutil.SQ.version() >= (2025, 4, 2) or tutil.SQ.edition() != c.CE:
         nb_changes = 14
-    elif tutil.SQ.version() >= (2025, 1, 0):
+    elif tutil.SQ.version() >= (25, 1, 0):
         nb_changes = 8
     else:
         nb_changes = 1
@@ -200,7 +200,7 @@ def test_changelog() -> None:
         assert datetime(2025, 10, 3) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 10, 4)
         assert changelog.author() is None
     elif tutil.SQ.version() >= (10, 0, 0):
-        assert datetime(2025, 3, 12) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 2, 14)
+        assert datetime(2025, 2, 13) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 2, 14)
         assert changelog.author() is None
     else:
         assert datetime(2025, 8, 16) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 8, 18)
