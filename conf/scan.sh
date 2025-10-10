@@ -31,6 +31,8 @@ else
   localbuild="false"
 fi
 
+external_format="v2"
+
 scanOpts=()
 
 while [[ $# -ne 0 ]]
@@ -41,6 +43,9 @@ do
       ;;
     -test)
       dotest="true"
+      ;;
+    -9)
+      external_format="v1"
       ;;
     -local)
       localbuild="true"
@@ -61,7 +66,7 @@ flake8Report="${buildDir}/flake8-report.out"
 
 
 if [[ "${dolint}" != "false" ]]; then
-  "${CONFDIR}"/run_linters.sh "${localbuild}"
+  "${CONFDIR}"/run_linters.sh "${external_format}" "${localbuild}"
 fi
 
 if [[ "${dotest}" = "true" ]]; then
