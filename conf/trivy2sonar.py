@@ -80,7 +80,7 @@ def main() -> None:
         if v1:
             sonar_issue["engineId"] = TOOLNAME
             sonar_issue["severity"] = MAPPING.get(sev_mqr, sev_mqr)
-            sonar_issue["type"] = "CODE_SMELL"
+            sonar_issue["type"] = "VULNERABILITY"
         issue_list[sonar_issue["primaryLocation"]["message"]] = sonar_issue
 
     if len(issue_list) == 0:
