@@ -174,7 +174,7 @@ def test_changelog() -> None:
     assert issue.is_false_positive()
     changelog_l = list(issue.changelog(manual_only=False).values())
     if tutil.SQ.version() < (10, 0, 0):
-        nb_changes = 1
+        nb_changes = 4
     elif tutil.SQ.version() >= (2025, 4, 2):
         nb_changes = 14
     elif tutil.SQ.version() >= (25, 1, 0):
