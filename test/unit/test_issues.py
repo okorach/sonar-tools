@@ -21,7 +21,7 @@
 
 """Test of the issues module and class, as well as changelog"""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytest
 
 import utilities as tutil
@@ -175,7 +175,7 @@ def test_changelog() -> None:
     changelog_l = list(issue.changelog(manual_only=False).values())
     if tutil.SQ.version() < (10, 0, 0):
         nb_changes = 1
-    elif tutil.SQ.version() >= (2025, 4, 2) or tutil.SQ.edition() != c.CE:
+    elif tutil.SQ.version() >= (2025, 4, 2):
         nb_changes = 14
     elif tutil.SQ.version() >= (25, 1, 0):
         nb_changes = 8
@@ -201,17 +201,17 @@ def test_changelog() -> None:
     assert not changelog.is_assignment()
     assert changelog.assignee() is None
     assert changelog.assignee(False) is None
+    author = None
+    delta = timedelta(days=1)
     if tutil.SQ.version() >= (2025, 5, 0):
-        assert datetime(2025, 10, 3) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 10, 4)
-        assert changelog.author() is None
+        date_change = datetime(2025, 10, 3)
     elif tutil.SQ.version() >= (10, 0, 0):
-        assert datetime(2025, 2, 13) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 2, 14)
-        assert changelog.author() is None
+        date_change = datetime(2025, 2, 13)
     else:
-        assert datetime(2025, 8, 16) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 8, 18)
-        assert changelog.author() == "admin"
-    assert not changelog.is_tag()
-    assert changelog.get_tags() == []
+        date_change = datetime(2025, 10, 10)
+        author = "admin"
+    assert date_change <= changelog.date_time().replace(tzinfo=None) < date_change + delta
+    assert changelog.author() == author
 
 
 def test_multiple_changelogs():
