@@ -23,7 +23,8 @@ ME="$( basename "${BASH_SOURCE[0]}" )"
 ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-localbuild="${1}"
+external_format="${1}"
+localbuild="${2}"
 
 buildDir="${ROOTDIR}/build"
 pylintReport="${buildDir}/pylint-report.out"
@@ -37,7 +38,7 @@ ruffReport="${buildDir}/external-issues-ruff.json"
 
 echo "===> Running ruff"
 rm -f "${ruffReport}"
-ruff check . | tee "${buildDir}/ruff-report.txt" | "${CONFDIR}"/ruff2sonar.py >"${ruffReport}"
+ruff check . | tee "${buildDir}/ruff-report.txt" | "${CONFDIR}"/ruff2sonar.py "${external_format}" >"${ruffReport}"
 re=$?
 if [[ "${re}" = "32" ]]; then
     >&2 echo "ERROR: pylint execution failed, errcode ${re}, aborting..."
@@ -61,7 +62,7 @@ flake8 --config "${CONFIG}/.flake8" "${ROOTDIR}" | tee "${flake8Report}"
 
 if [[ "${localbuild}" = "true" ]]; then
     echo "===> Running shellcheck"
-    shellcheck "${ROOTDIR}"/*.sh "${ROOTDIR}"/*/*.sh -s bash -f json | jq | tee "${buildDir}/shellcheck-report.json" | "${CONFDIR}"/shellcheck2sonar.py >"${shellcheckReport}"
+    shellcheck "${ROOTDIR}"/*.sh "${ROOTDIR}"/*/*.sh -s bash -f json | jq | tee "${buildDir}/shellcheck-report.json" | "${CONFDIR}"/shellcheck2sonar.py "${external_format}" > "${shellcheckReport}"
     [[ ! -s "${shellcheckReport}" ]] && rm -f "${shellcheckReport}"
     cat "${buildDir}/shellcheck-report.json"
 
@@ -72,6 +73,6 @@ if [[ "${localbuild}" = "true" ]]; then
     "${CONFDIR}"/build.sh docker
     trivy image -f json -o "${buildDir}"/trivy_results.json olivierkorach/sonar-tools:latest
     cat "${buildDir}"/trivy_results.json
-    python3 "${CONFDIR}"/trivy2sonar.py < "${buildDir}"/trivy_results.json > "${trivyReport}"
+    python3 "${CONFDIR}"/trivy2sonar.py "${external_format}" < "${buildDir}"/trivy_results.json > "${trivyReport}"
     [[ ! -s "${trivyReport}" ]] && rm -f "${trivyReport}"
 fi
