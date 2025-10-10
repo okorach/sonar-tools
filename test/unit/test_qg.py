@@ -195,7 +195,11 @@ def test_import_config() -> None:
         pass
     conds = ["new_duplicated_lines_density >= 3%"]
     if tutil.SQ.version() < c.MQR_INTRO_VERSION:
-        conds += ["new_bugs >= 0", "new_vulnerabilities >= 0", "new_maintainability_rating >= A",]
+        conds += [
+            "new_bugs >= 0",
+            "new_vulnerabilities >= 0",
+            "new_maintainability_rating >= A",
+        ]
     else:
         conds += [
             "new_software_quality_maintainability_rating >= A",
