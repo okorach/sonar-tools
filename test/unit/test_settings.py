@@ -48,6 +48,7 @@ def test_autodetect_ai() -> None:
     o = settings.get_object(tutil.SQ, "sonar.autodetect.ai.code")
     if tutil.SQ.version() < (2025, 1, 0):
         assert o is None
+        return
 
     val = o.value
     assert o.set(True)
@@ -60,8 +61,9 @@ def test_autodetect_ai() -> None:
 def test_mqr_mode() -> None:
     """test_mqr_mode"""
     o = settings.get_object(tutil.SQ, "sonar.multi-quality-mode.enabled")
-    if tutil.SQ.version() < (2025, 1, 0):
+    if tutil.SQ.version() < (25, 0, 0):
         assert o is None
+        return
     val = o.value
     assert o.set(True)
     assert o.value

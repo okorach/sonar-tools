@@ -57,6 +57,9 @@ _NEW_SEARCH_SEVERITY_FIELD = "impactSeverities"
 OLD_FP = "FALSE-POSITIVE"
 NEW_FP = "FALSE_POSITIVE"
 
+_MQR_SEARCH_FIELDS = (_NEW_SEARCH_SEVERITY_FIELD, _NEW_SEARCH_STATUS_FIELD, _NEW_SEARCH_TYPE_FIELD)
+_STD_SEARCH_FIELDS = (_OLD_SEARCH_SEVERITY_FIELD, _OLD_SEARCH_STATUS_FIELD, _OLD_SEARCH_TYPE_FIELD)
+
 _COMMA_CRITERIAS = (
     _OLD_SEARCH_COMPONENT_FIELD,
     _NEW_SEARCH_COMPONENT_FIELD,
@@ -1002,6 +1005,8 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
         if allowed is not None and filters[field] is not None:
             filters[field] = list(set(util.intersection(filters[field], allowed)))
 
+    disallowed = _STD_SEARCH_FIELDS if endpoint.is_mqr_mode() else _MQR_SEARCH_FIELDS
+    filters = {k: v for k, v in filters.items() if k not in disallowed}
     filters = {k: util.list_to_csv(v) for k, v in filters.items() if v}
     log.debug("Sanitized issue search filters %s", str(filters))
     return filters

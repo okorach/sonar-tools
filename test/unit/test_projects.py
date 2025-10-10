@@ -115,13 +115,21 @@ def test_export_sync() -> None:
 def test_import_async() -> None:
     """test_import_async"""
     proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.PROJECT_1)
-    assert proj.import_zip(asynchronous=True) == "ASYNC_SUCCESS"
+    if tutil.SQ.edition() == c.CE:
+        with pytest.raises(exceptions.UnsupportedOperation):
+            proj.import_zip(asynchronous=True)
+    else:
+        assert proj.import_zip(asynchronous=True) == "ASYNC_SUCCESS"
 
 
 def test_import_sync() -> None:
     """test_import_sync"""
     proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.PROJECT_1)
-    assert proj.import_zip(asynchronous=False).startswith("FAILED")
+    if tutil.SQ.edition() == c.CE:
+        with pytest.raises(exceptions.UnsupportedOperation):
+            proj.import_zip(asynchronous=False)
+    else:
+        assert proj.import_zip(asynchronous=False).startswith("FAILED")
 
 
 def test_monorepo() -> None:

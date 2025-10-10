@@ -32,6 +32,7 @@ MAPPING = {"LOW": "MINOR", "MEDIUM": "MAJOR", "HIGH": "CRITICAL", "BLOCKER": "BL
 
 def main() -> None:
     """Main script entry point"""
+    v1 = len(sys.argv) > 1 and sys.argv[1] == "v1"
     rules_dict = {}
     issue_list = []
     lines = sys.stdin.read().splitlines()
@@ -65,6 +66,10 @@ def main() -> None:
                     "textRange": issue_range,
                 },
             }
+            if v1:
+                sonar_issue["engineId"] = TOOLNAME
+                sonar_issue["severity"] = "MAJOR"
+                sonar_issue["type"] = "CODE_SMELL"
             rules_dict[f"{TOOLNAME}:{rule_id}"] = {
                 "id": f"{TOOLNAME}:{rule_id}",
                 "name": f"{TOOLNAME}:{rule_id}",
@@ -89,9 +94,12 @@ def main() -> None:
             end_line = int(m.group(1))
         i += 1
 
-    if len(issue_list) > 0:
-        external_issues = {"rules": list(rules_dict.values()), "issues": issue_list}
-        print(json.dumps(external_issues, indent=3, separators=(",", ": ")))
+    if len(issue_list) == 0:
+        return
+    external_issues = {"rules": list(rules_dict.values()), "issues": issue_list}
+    if v1:
+        external_issues.pop("rules")
+    print(json.dumps(external_issues, indent=3, separators=(",", ": ")))
 
 
 if __name__ == "__main__":

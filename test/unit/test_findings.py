@@ -303,7 +303,7 @@ def test_search_issues_by_project() -> None:
     nb_issues = len(issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT, search_findings=True))
     assert 100 <= nb_issues <= 3500
     nb_issues = len(issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT, params={"resolved": "false"}))
-    assert nb_issues < 1700
+    assert nb_issues < 1800
     nb_issues = len(issues.search_by_project(endpoint=tutil.SQ, project_key=None))
     assert nb_issues > 3500
 

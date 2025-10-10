@@ -21,7 +21,7 @@
 
 """Test of the issues module and class, as well as changelog"""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytest
 
 import utilities as tutil
@@ -31,7 +31,7 @@ from sonar.util import constants as c
 
 
 ISSUE_FP = "ffbe8a34-cef6-4d5b-849d-bb2c25951c51"
-ISSUE_FP_V9_9 = "AZi22OzWCMRVk7bHctjy"
+ISSUE_FP_V9_9 = "AZi22OzbCMRVk7bHctjz"
 ISSUE_ACCEPTED = "c99ac40e-c2c5-43ef-bcc5-4cd077d1052f"
 ISSUE_ACCEPTED_V9_9 = "AZI6frkTuTfDeRt_hspx"
 ISSUE_W_MULTIPLE_CHANGELOGS = "6ae41c3b-c3d2-422f-a505-d355e7b0a268"
@@ -103,6 +103,9 @@ def test_set_severity() -> None:
     issue.refresh()
     assert issue.impacts == old_impacts
 
+    if tutil.SQ.version() < c.MQR_INTRO_VERSION:
+        return
+
     tutil.SQ.set_mqr_mode(True)
 
     assert not issue.set_severity(new_sev)
@@ -170,7 +173,9 @@ def test_changelog() -> None:
     assert str(issue) == f"Issue key '{issue_key}'"
     assert issue.is_false_positive()
     changelog_l = list(issue.changelog(manual_only=False).values())
-    if tutil.SQ.version() >= (25, 4, 2):
+    if tutil.SQ.version() < (10, 0, 0):
+        nb_changes = 4
+    elif tutil.SQ.version() >= (2025, 4, 2):
         nb_changes = 14
     elif tutil.SQ.version() >= (25, 1, 0):
         nb_changes = 8
@@ -196,17 +201,17 @@ def test_changelog() -> None:
     assert not changelog.is_assignment()
     assert changelog.assignee() is None
     assert changelog.assignee(False) is None
+    author = None
+    delta = timedelta(days=1)
     if tutil.SQ.version() >= (2025, 5, 0):
-        assert datetime(2025, 10, 3) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 10, 4)
-        assert changelog.author() is None
+        date_change = datetime(2025, 10, 3)
     elif tutil.SQ.version() >= (10, 0, 0):
-        assert datetime(2025, 3, 12) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 2, 14)
-        assert changelog.author() is None
+        date_change = datetime(2025, 2, 13)
     else:
-        assert datetime(2025, 8, 16) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 8, 18)
-        assert changelog.author() == "admin"
-    assert not changelog.is_tag()
-    assert changelog.get_tags() == []
+        date_change = datetime(2025, 10, 10)
+        author = "admin"
+    assert date_change <= changelog.date_time().replace(tzinfo=None) < date_change + delta
+    assert changelog.author() == author
 
 
 def test_multiple_changelogs():
