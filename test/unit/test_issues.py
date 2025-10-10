@@ -31,7 +31,7 @@ from sonar.util import constants as c
 
 
 ISSUE_FP = "ffbe8a34-cef6-4d5b-849d-bb2c25951c51"
-ISSUE_FP_V9_9 = "AZi22OzWCMRVk7bHctjy"
+ISSUE_FP_V9_9 = "AZi22OzbCMRVk7bHctjz"
 ISSUE_ACCEPTED = "c99ac40e-c2c5-43ef-bcc5-4cd077d1052f"
 ISSUE_ACCEPTED_V9_9 = "AZI6frkTuTfDeRt_hspx"
 ISSUE_W_MULTIPLE_CHANGELOGS = "6ae41c3b-c3d2-422f-a505-d355e7b0a268"
@@ -103,6 +103,9 @@ def test_set_severity() -> None:
     issue.refresh()
     assert issue.impacts == old_impacts
 
+    if tutil.SQ.version() < c.MQR_INTRO_VERSION:
+        return
+
     tutil.SQ.set_mqr_mode(True)
 
     assert not issue.set_severity(new_sev)
@@ -170,7 +173,9 @@ def test_changelog() -> None:
     assert str(issue) == f"Issue key '{issue_key}'"
     assert issue.is_false_positive()
     changelog_l = list(issue.changelog(manual_only=False).values())
-    if tutil.SQ.version() >= (2025, 4, 2) or tutil.SQ.edition() != c.CE:
+    if tutil.SQ.version() < (10, 0, 0):
+        nb_changes = 1
+    elif tutil.SQ.version() >= (2025, 4, 2) or tutil.SQ.edition() != c.CE:
         nb_changes = 14
     elif tutil.SQ.version() >= (25, 1, 0):
         nb_changes = 8
