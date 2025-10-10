@@ -31,7 +31,15 @@ else
   localbuild="false"
 fi
 
-external_format="v2"
+if [[ "${SONAR_HOST_URL}" = "${SONAR_HOST_URL_9}" ]]; then
+  external_format="v1"
+  auth="-Dsonar.login=${SONAR_TOKEN}"
+else
+  external_format="v2"
+  auth=""
+fi
+
+
 
 scanOpts=()
 
@@ -46,6 +54,7 @@ do
       ;;
     -9)
       external_format="v1"
+      auth="-Dsonar.login=${SONAR_TOKEN}"
       ;;
     -local)
       localbuild="true"
@@ -79,12 +88,8 @@ version=$(grep PACKAGE_VERSION "${ROOTDIR}/sonar/version.py" | cut -d "=" -f 2 |
 cmd="sonar-scanner -Dsonar.projectVersion=${version} \
   -Dsonar.python.flake8.reportPaths=${flake8Report} \
   -Dsonar.python.pylint.reportPaths=${pylintReport} \
-  -Dsonar.token=${SONAR_TOKEN} \
+  -Dsonar.token=${SONAR_TOKEN} ${auth}\
   "${scanOpts[*]}""
-
-if [[ "${SONAR_HOST_URL}" = "${SONAR_HOST_URL}_9" ]]; then
-  cmd="${cmd} -Dsonar.login=${SONAR_TOKEN}"
-fi
 
 if ls "${buildDir}"/coverage*.xml >/dev/null 2>&1; then
   cmd="${cmd} -Dsonar.python.coverage.reportPaths=${buildDir}/coverage*.xml"
