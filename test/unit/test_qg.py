@@ -27,6 +27,7 @@ import pytest
 
 import utilities as tutil
 from sonar import qualitygates, exceptions, logging
+from sonar.util import constants as c
 
 
 def test_get_object(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
@@ -192,18 +193,16 @@ def test_import_config() -> None:
         qg.delete()
     except exceptions.ObjectNotFound:
         pass
-    conf = {
-        "qualityGates": {
-            "TEMP GATE": {
-                "conditions": [
-                    "new_duplicated_lines_density >= 3%",
-                    "new_software_quality_maintainability_rating >= A",
-                    "new_software_quality_reliability_issues >= 0",
-                    "new_software_quality_security_issues >= 0",
-                ]
-            }
-        }
-    }
+    conds = ["new_duplicated_lines_density >= 3%"]
+    if tutil.SQ.version() < c.MQR_INTRO_VERSION:
+        conds += ["new_bugs >= 0", "new_vulnerabilities >= 0", "new_maintainability_rating >= A",]
+    else:
+        conds += [
+            "new_software_quality_maintainability_rating >= A",
+            "new_software_quality_reliability_issues >= 0",
+            "new_software_quality_security_issues >= 0",
+        ]
+    conf = {"qualityGates": {"TEMP GATE": {"conditions": conds}}}
     assert qualitygates.import_config(tutil.SQ, conf)
     qg = qualitygates.QualityGate.get_object(tutil.SQ, "TEMP GATE")
     assert len(qg.conditions()) == 4
