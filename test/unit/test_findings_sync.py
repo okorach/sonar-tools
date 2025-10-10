@@ -25,9 +25,11 @@ sonar-findings-sync tests
 
 import os
 from collections.abc import Generator
+import pytest
 
 import utilities as tutil
 from sonar import errcodes as e
+from sonar.util import constants as c
 from cli import findings_sync
 import cli.options as opt
 
@@ -40,20 +42,23 @@ SYNC_OPTS = f"-{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT} -K TESTSYNC"
 
 
 def test_sync_help() -> None:
-    """test_sync"""
+    """test_sync_help"""
     assert tutil.run_cmd(findings_sync.main, f"{CMD} -h") == e.ARGS_ERROR
 
 
 def test_sync_proj(json_file: Generator[str]) -> None:
-    """test_sync"""
+    """test_sync_proj"""
     assert tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
 
 
 def test_sync_branch(json_file: Generator[str]) -> None:
-    """test_sync"""
-    assert tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -b master -B main -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
+    """test_sync_branch"""
+    code = e.UNSUPPORTED_OPERATION if tutil.SQ.edition() == c.CE else e.OK
+    assert tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -b master -B main -{opt.REPORT_FILE_SHORT} {json_file}") == code
+    if tutil.SQ.edition() == c.CE:
+        assert tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -B main -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
 
 
 def test_sync_scloud(json_file: Generator[str]) -> None:
-    """test_sync"""
+    """test_sync_scloud"""
     assert tutil.run_cmd(findings_sync.main, f"{CMD} {SC_PLAT_OPTS} {SYNC_OPTS} --threads 16 -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
