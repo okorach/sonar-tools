@@ -53,14 +53,15 @@ cmd="sonar-scanner -Dsonar.projectVersion=${VERSION} \
   -Dsonar.token=${SONAR_TOKEN} ${auth}\
   "${scanOpts[*]}""
 
-if ls "${BUILD_DIR}"/coverage*.xml >/dev/null 2>&1; then
-  cmd="${cmd} -Dsonar.python.coverage.reportPaths=${BUILD_DIR}/coverage*.xml"
+relativeDir=$(basename $BUILD_DIR)
+  if ls "${BUILD_DIR}"/coverage*.xml >/dev/null 2>&1; then
+  cmd="${cmd} -Dsonar.python.coverage.reportPaths=${relativeDir}/coverage*.xml"
 else
   echo "===> NO COVERAGE REPORT"
 fi
 
 if ls "${BUILD_DIR}"/xunit-results*.xml >/dev/null 2>&1; then
-  cmd="${cmd} -Dsonar.python.xunit.reportPath=${BUILD_DIR}/xunit-results*.xml"
+  cmd="${cmd} -Dsonar.python.xunit.reportPath=${relativeDir}/xunit-results*.xml"
 else
   echo "===> NO UNIT TESTS REPORT"
   cmd="${cmd} -Dsonar.python.xunit.reportPath="
