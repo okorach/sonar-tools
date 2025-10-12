@@ -27,12 +27,6 @@ CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 dolint="true"
 dotest="false"
-if [[ "${CI}" = "" ]]; then
-  localbuild="true"
-else
-  localbuild="false"
-fi
-
 scanOpts=()
 
 while [[ $# -ne 0 ]]
