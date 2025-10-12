@@ -22,10 +22,12 @@
 # ME="$( basename "${BASH_SOURCE[0]}" )"
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-buildDir="${ROOT_DIR}/build"
+
+. "${CONF_DIR}/env"
+
 SYNC_PROJECT_KEY="TESTSYNC"
 
-[[ ! -d "${buildDir}" ]] && mkdir "${buildDir}"
+[[ ! -d "${BUILD_DIR}" ]] && mkdir "${BUILD_DIR}"
 
 echo "Running tests"
 
@@ -45,7 +47,7 @@ do
         curl -X POST -u "${SONAR_TOKEN_TEST_ADMIN_USER}:" "${SONAR_HOST_URL_TEST}/api/projects/delete?project=${SYNC_PROJECT_KEY}"
         conf/scan.sh -nolint -Dsonar.host.url="${SONAR_HOST_URL_TEST}" -Dsonar.projectKey="${SYNC_PROJECT_KEY}" -Dsonar.projectName="${SYNC_PROJECT_KEY}" -Dsonar.token="${SONAR_TOKEN_TEST_ADMIN_ANALYSIS}"
         # Run tests
-        poetry run coverage run --branch --source="${ROOT_DIR}" -m pytest "${ROOT_DIR}/${GEN_LOC}/${target}/" --junit-xml="${buildDir}/xunit-results-${target}.xml"
-        poetry run coverage xml -o "${buildDir}/coverage-${target}.xml"
+        poetry run coverage run --branch --source="${ROOT_DIR}" -m pytest "${ROOT_DIR}/${GEN_LOC}/${target}/" --junit-xml="${BUILD_DIR}/xunit-results-${target}.xml"
+        poetry run coverage xml -o "${BUILD_DIR}/coverage-${target}.xml"
     fi
 done

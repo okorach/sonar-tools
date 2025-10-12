@@ -7,7 +7,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
-# version 3 of the License, or (at your option) any later version.
+# VERSION 3 of the License, or (at your option) any later VERSION.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -24,32 +24,16 @@ CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 . "${CONF_DIR}/env"
 
-scanOpts=()
-
-while [[ $# -ne 0 ]]
-do
-  case "${1}" in
-    -nolint|-test|-9|-local)
-      ;;
-    *)
-      scanOpts=("${scanOpts[@]}" "${1}")
-      ;;
-  esac
-  shift
-done
-
-version=$(grep PACKAGE_VERSION "${ROOT_DIR}/sonar/version.py" | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
-
 auth=""
 if [[ "${SONAR_HOST_URL}" = "${SONAR_HOST_URL_9}" ]]; then
   auth="-Dsonar.login=${SONAR_TOKEN}"
 fi
 
-cmd="sonar-scanner -Dsonar.projectVersion=${version} \
+cmd="sonar-scanner -Dsonar.projectVersion=${VERSION} \
   -Dsonar.python.flake8.reportPaths=${flake8Report} \
   -Dsonar.python.pylint.reportPaths=${pylintReport} \
   -Dsonar.token=${SONAR_TOKEN} ${auth}\
-  "${scanOpts[*]}""
+  "${@}""
 
 if ls "${BUILD_DIR}"/coverage*.xml >/dev/null 2>&1; then
   cmd="${cmd} -Dsonar.python.coverage.reportPaths=${BUILD_DIR}/coverage*.xml"
@@ -71,7 +55,6 @@ if ls "${BUILD_DIR}"/external-issues*.json >/dev/null 2>&1; then
 else
   echo "===> NO EXTERNAL ISSUES"
 fi
-
 
 echo
 echo "Running: ${cmd}" | sed "s/${SONAR_TOKEN}/<SONAR_TOKEN>/g"
