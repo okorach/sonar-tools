@@ -201,22 +201,6 @@ def export(endpoint: pf.Platform, project_key: str = None, full: bool = False) -
     return json_data if len(json_data) > 0 else None
 
 
-def create(endpoint: pf.Platform, name: str, url: str, secret: str = None, project: str = None) -> WebHook:
-    """Creates a webhook, global if project key is None, othewise project specific"""
-    return WebHook(endpoint=endpoint, name=name, url=url, secret=secret, project=project)
-
-
-def update(endpoint: pf.Platform, name: str, **kwargs) -> None:
-    """Updates a webhook with data in kwargs"""
-    project_key = kwargs.pop("project", None)
-    get_list(endpoint, project_key)
-    o = WebHook.CACHE.get(name, project_key, endpoint.local_url)
-    if not o:
-        create(endpoint, name, kwargs["url"], kwargs["secret"], project=project_key)
-    else:
-        WebHook.get_object(endpoint, name, project_key=project_key).update(**kwargs)
-
-
 def audit(endpoint: pf.Platform) -> list[problem.Problem]:
     """Audits web hooks and returns list of found problems"""
     log.info("Auditing webhooks")
