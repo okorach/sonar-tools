@@ -25,6 +25,8 @@ CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 external_format="${1}"
 localbuild="${2}"
+linters_to_run="${3:-ruff,pylint,flake8,trivy,checkov,shellcheck}"
+
 if [[ "${localbuild}" = "" ]]; then
     localbuild="true"
     if [[ "${CI}" != "" ]]; then
@@ -37,43 +39,53 @@ fi
 [[ ! -d "${BUILD_DIR}" ]] && mkdir "${BUILD_DIR}"
 # rm -rf -- ${BUILD_DIR:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  tests/__pycache__
 
-echo "===> Running ruff"
-rm -f "${RUFF_REPORT}"
-ruff check . | tee "${BUILD_DIR}/ruff-report.txt" | "${CONF_DIR}"/ruff2sonar.py "${external_format}" >"${RUFF_REPORT}"
-re=$?
-if [[ "${re}" = "32" ]]; then
-    >&2 echo "ERROR: pylint execution failed, errcode ${re}, aborting..."
-    exit "${re}"
-fi
-cat "${BUILD_DIR}/ruff-report.txt"
-
-echo "===> Running pylint"
-rm -f "${PYLINT_REPORT}"
-pylint --rcfile "${CONF_DIR}"/pylintrc "${ROOT_DIR}"/*.py "${ROOT_DIR}"/*/*.py -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" | tee "${PYLINT_REPORT}"
-re=$?
-if [[ "${re}" = "32" ]]; then
-    >&2 echo "ERROR: pylint execution failed, errcode ${re}, aborting..."
-    exit "${re}"
+if [[ "${linters_to_run}" == *"ruff"* ]]; then
+    echo "===> Running ruff"
+    rm -f "${RUFF_REPORT}"
+    ruff check . | tee "${BUILD_DIR}/ruff-report.txt" | "${CONF_DIR}"/ruff2sonar.py "${external_format}" >"${RUFF_REPORT}"
+    re=$?
+    if [[ "${re}" = "32" ]]; then
+        >&2 echo "ERROR: pylint execution failed, errcode ${re}, aborting..."
+        exit "${re}"
+    fi
+    cat "${BUILD_DIR}/ruff-report.txt"
 fi
 
-echo "===> Running flake8"
-rm -f "${FLAKE8_REPORT}"
-# See .flake8 file for settings
-flake8 --config "${CONF_DIR}/.flake8" "${ROOT_DIR}" | tee "${FLAKE8_REPORT}"
+if [[ "${linters_to_run}" == *"pylint"* ]]; then
+    echo "===> Running pylint"
+    rm -f "${PYLINT_REPORT}"
+    pylint --rcfile "${CONF_DIR}"/pylintrc "${ROOT_DIR}"/*.py "${ROOT_DIR}"/*/*.py -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" | tee "${PYLINT_REPORT}"
+    re=$?
+    if [[ "${re}" = "32" ]]; then
+        >&2 echo "ERROR: pylint execution failed, errcode ${re}, aborting..."
+        exit "${re}"
+    fi
+fi
+
+if [[ "${linters_to_run}" == *"flake8"* ]]; then
+    echo "===> Running flake8"
+    rm -f "${FLAKE8_REPORT}"
+    # See .flake8 file for settings
+    flake8 --config "${CONF_DIR}/.flake8" "${ROOT_DIR}" | tee "${FLAKE8_REPORT}"
+fi
 
 if [[ "${localbuild}" = "true" ]]; then
-    echo "===> Running shellcheck"
-    shellcheck "${ROOT_DIR}"/*.sh "${ROOT_DIR}"/*/*.sh -s bash -f json | jq | tee "${BUILD_DIR}/shellcheck-report.json" | "${CONF_DIR}"/shellcheck2sonar.py "${external_format}" > "${SHELLCHECK_REPORT}"
-    [[ ! -s "${SHELLCHECK_REPORT}" ]] && rm -f "${SHELLCHECK_REPORT}"
-    cat "${BUILD_DIR}/shellcheck-report.json"
-
-    echo "===> Running checkov"
-    checkov -d . --framework dockerfile -o sarif --output-file-path "${BUILD_DIR}"
-
-    echo "===> Running trivy"
-    "${CONF_DIR}"/build.sh docker
-    trivy image -f json -o "${BUILD_DIR}"/trivy_results.json olivierkorach/sonar-tools:latest
-    cat "${BUILD_DIR}"/trivy_results.json
-    python3 "${CONF_DIR}"/trivy2sonar.py "${external_format}" < "${BUILD_DIR}"/trivy_results.json > "${TRIVY_REPORT}"
-    [[ ! -s "${TRIVY_REPORT}" ]] && rm -f "${TRIVY_REPORT}"
+    if [[ "${linters_to_run}" == *"shellcheck"* ]]; then
+        echo "===> Running shellcheck"
+        shellcheck "${ROOT_DIR}"/*.sh "${ROOT_DIR}"/*/*.sh -s bash -f json | jq | tee "${BUILD_DIR}/shellcheck-report.json" | "${CONF_DIR}"/shellcheck2sonar.py "${external_format}" > "${SHELLCHECK_REPORT}"
+        [[ ! -s "${SHELLCHECK_REPORT}" ]] && rm -f "${SHELLCHECK_REPORT}"
+        cat "${BUILD_DIR}/shellcheck-report.json"
+    fi
+    if [[ "${linters_to_run}" == *"checkov"* ]]; then
+        echo "===> Running checkov"
+        checkov -d . --framework dockerfile -o sarif --output-file-path "${BUILD_DIR}"
+    fi
+    if [[ "${linters_to_run}" == *"trivy"* ]]; then
+        echo "===> Running trivy"
+        "${CONF_DIR}"/build.sh docker
+        trivy image -f json -o "${BUILD_DIR}"/trivy_results.json olivierkorach/sonar-tools:latest
+        cat "${BUILD_DIR}"/trivy_results.json
+        python3 "${CONF_DIR}"/trivy2sonar.py "${external_format}" < "${BUILD_DIR}"/trivy_results.json > "${TRIVY_REPORT}"
+        [[ ! -s "${TRIVY_REPORT}" ]] && rm -f "${TRIVY_REPORT}"
+    fi
 fi
