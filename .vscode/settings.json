@@ -6,5 +6,10 @@
     "sonarlint.focusOnNewCode": true,
     "pylint.args": [
         "[\"--rcfile=conf/pylintrc\"]"
-    ]
+    ],
+    "python.testing.pytestArgs": [
+        "test"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }
