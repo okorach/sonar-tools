@@ -70,6 +70,7 @@ class WebHook(sq.SqObject):
         :param str project: Webhook project key, optional
         :return: The created WebHook
         """
+        log.info("Creating webhook name %s, url %s project %s", name, url, str(project))
         params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
         try:
             endpoint.post(WebHook.API[c.CREATE], params=params)
@@ -199,6 +200,22 @@ def export(endpoint: pf.Platform, project_key: str = None, full: bool = False) -
         j.pop("name", None)
         json_data[wb.name] = util.remove_nones(j)
     return json_data if len(json_data) > 0 else None
+
+
+def import_config(endpoint: pf.Platform, data: types.ObjectJsonRepr, project_key: Optional[str] = None) -> None:
+    """Imports a set of webhooks defined from a JSON description"""
+
+    log.debug("Importing webhooks %s for %s", str(data), str(project_key))
+    current_wh = get_list(endpoint, project_key=project_key)
+    existing_webhooks = {wh.name: k for k, wh in current_wh.items()}
+
+    # FIXME: Handle several webhooks with same name
+    for wh_name, wh_data in data.items():
+        if wh_name in existing_webhooks:
+            current_wh[existing_webhooks[wh_name]].update(name=wh_name, **wh_data)
+        else:
+            hook = WebHook.create(endpoint=endpoint, name=wh_name, url=wh_data.get("url", "https://to.be.defined"), project=project_key)
+            hook.update(**wh_data)
 
 
 def audit(endpoint: pf.Platform) -> list[problem.Problem]:

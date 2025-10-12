@@ -1226,16 +1226,7 @@ class Project(components.Component):
         :param dict webhook_data: JSON describing the webhooks
         :return: Nothing
         """
-        current_wh = self.webhooks()
-        current_wh_names = [wh.name for wh in current_wh.values()]
-        wh_map = {wh.name: k for k, wh in current_wh.items()}
-        # FIXME: Handle several webhooks with same name
-        for wh_name, wh in webhook_data.items():
-            if wh_name in current_wh_names:
-                current_wh[wh_map[wh_name]].update(name=wh_name, **wh)
-            else:
-                hook = webhooks.WebHook.create(endpoint=self.endpoint, name=wh_name, url="", project=self.key)
-                hook.update(**wh)
+        webhooks.import_config(self.endpoint, webhook_data, self.key)
 
     def set_settings(self, data: types.ObjectJsonRepr) -> None:
         """Sets project settings (webhooks, settings, new code period)

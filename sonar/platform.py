@@ -46,6 +46,7 @@ from sonar.audit.rules import get_rule, RuleId
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
 from sonar.audit.problem import Problem
+from sonar import webhooks
 
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
@@ -491,16 +492,12 @@ class Platform(object):
         """Sets global webhooks with a list of webhooks represented as JSON
 
         :param webhooks_data: the webhooks JSON representation
-        :return: Whether the operation succeeded or not
+        :return: The number of webhooks configured
         """
+        log.debug("%s setting webhooks %s", str(self), str(webhooks_data))
         if webhooks_data is None:
             return False
-        current_wh = self.webhooks()
-        # FIXME: Handle several webhooks with same name
-        current_wh_names = [wh.name for wh in current_wh.values()]
-        wh_map = {wh.name: k for k, wh in current_wh.items()}
-        log.debug("Current webhooks = %s", str(current_wh_names))
-        _ = [current_wh[wh_map[wh_name]].update(name=wh_name, **wh) for wh_name, wh in webhooks_data.items() if wh_name in current_wh_names]
+        webhooks.import_config(self, webhooks_data)
         return True
 
     def import_config(self, config_data: types.ObjectJsonRepr) -> int:
@@ -515,8 +512,14 @@ class Platform(object):
         count = 0
         config_data = config_data.get("globalSettings", {})
         flat_settings = util.flatten(config_data)
-        count += sum(1 if self.set_webhooks(v) else 0 for k, v in config_data.get("webhooks", None) or {})
         count += sum(1 if self.set_setting(k, v) else 0 for k, v in flat_settings.items())
+
+        try:
+            wh_data = config_data["generalSettings"]["webhooks"]
+            self.set_webhooks(wh_data)
+            count += len(wh_data)
+        except KeyError:
+            pass
 
         if settings.NEW_CODE_PERIOD in config_data.get("generalSettings", {}):
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data["generalSettings"][settings.NEW_CODE_PERIOD])
