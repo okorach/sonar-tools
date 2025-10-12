@@ -81,3 +81,13 @@ def test_export() -> None:
     assert len(exp) == 1
     first = list(exp.keys())[0]
     assert exp[first]["url"].startswith("https://")
+
+
+def test_create_delete() -> None:
+    """test_create_delete"""
+    hook = wh.WebHook.create(tutil.SQ, tutil.TEMP_KEY, "http://google.com", "Shhht", tutil.PROJECT_1)
+    assert hook.name == tutil.TEMP_KEY
+    assert hook.webhook_url == "http://google.com"
+    assert hook.secret == "Shhht"
+    assert hook.project == tutil.PROJECT_1
+    hook.delete()
