@@ -40,7 +40,6 @@ do
       ;;
     -9)
       external_format="v1"
-      auth="-Dsonar.login=${SONAR_TOKEN}"
       ;;
     -local)
       localbuild="true"
