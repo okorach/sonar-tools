@@ -90,4 +90,9 @@ def test_create_delete() -> None:
     assert hook.webhook_url == "http://google.com"
     assert hook.secret == "Shhht"
     assert hook.project == tutil.PROJECT_1
+
+    hook.refresh()
     hook.delete()
+    with pytest.raises(exceptions.ObjectNotFound):
+        hook.refresh()
+
