@@ -16,12 +16,13 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-SONAR_TOOLS_RELEASE="${ROOTDIR}/sonar/version.py"
+ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 build_docs=0
 build_docker=0
+
+. "${CONF_DIR}/env.sh"
 
 while [[ $# -ne 0 ]]; do
     case "${1}" in
@@ -40,7 +41,7 @@ done
 echo "======= FORMATTING CODE ========="
 ruff format
 echo "======= BUILDING PACKAGE ========="
-rm -rf "${ROOTDIR}/build/lib/sonar" "${ROOTDIR}/build/lib/cli" "${ROOTDIR}"/build/scripts*/sonar-tools "${ROOTDIR}"/dist/sonar_tools*
+rm -rf "${ROOT_DIR}/build/lib/sonar" "${ROOT_DIR}/build/lib/cli" "${ROOT_DIR}"/build/scripts*/sonar-tools "${ROOT_DIR}"/dist/sonar_tools*
 # python -m build
 poetry build
 
@@ -52,6 +53,5 @@ fi
 
 if [[ "${build_docker}" = "1" ]]; then
     echo "======= BUILDING DOCKER IMAGE WITH SNAPSHOT ========="
-    version=$(grep PACKAGE_VERSION "${SONAR_TOOLS_RELEASE}" | cut -d "=" -f 2 | cut -d '"' -f 2)
-    docker build -t "olivierkorach/sonar-tools:${version}-snapshot" -t olivierkorach/sonar-tools:latest -f "${CONFDIR}/snapshot.Dockerfile" "${ROOTDIR}" --load
+    docker build -t "olivierkorach/sonar-tools:${VERSION}-snapshot" -t olivierkorach/sonar-tools:latest -f "${CONF_DIR}/snapshot.Dockerfile" "${ROOT_DIR}" --load
 fi

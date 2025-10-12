@@ -20,35 +20,30 @@
 #
 
 ME="$( basename "${BASH_SOURCE[0]}" )"
-ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 external_format="${1}"
 localbuild="${2}"
 
-buildDir="${ROOTDIR}/build"
-pylintReport="${buildDir}/pylint-report.out"
-# banditReport="${buildDir}/bandit-report.json"
-flake8Report="${buildDir}/flake8-report.out"
-shellcheckReport="${buildDir}/external-issues-shellcheck.json"
-trivyReport="${buildDir}/external-issues-trivy.json"
-ruffReport="${buildDir}/external-issues-ruff.json"
-[[ ! -d "${buildDir}" ]] && mkdir "${buildDir}"
-# rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  tests/__pycache__
+. ${CONF_DIR}/env
+
+[[ ! -d "${BUILD_DIR}" ]] && mkdir "${BUILD_DIR}"
+# rm -rf -- ${BUILD_DIR:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  tests/__pycache__
 
 echo "===> Running ruff"
 rm -f "${ruffReport}"
-ruff check . | tee "${buildDir}/ruff-report.txt" | "${CONFDIR}"/ruff2sonar.py "${external_format}" >"${ruffReport}"
+ruff check . | tee "${BUILD_DIR}/ruff-report.txt" | "${CONF_DIR}"/ruff2sonar.py "${external_format}" >"${ruffReport}"
 re=$?
 if [[ "${re}" = "32" ]]; then
     >&2 echo "ERROR: pylint execution failed, errcode ${re}, aborting..."
     exit "${re}"
 fi
-cat "${buildDir}/ruff-report.txt"
+cat "${BUILD_DIR}/ruff-report.txt"
 
 echo "===> Running pylint"
 rm -f "${pylintReport}"
-pylint --rcfile "${CONFDIR}"/pylintrc "${ROOTDIR}"/*.py "${ROOTDIR}"/*/*.py -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" | tee "${pylintReport}"
+pylint --rcfile "${CONF_DIR}"/pylintrc "${ROOT_DIR}"/*.py "${ROOT_DIR}"/*/*.py -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" | tee "${pylintReport}"
 re=$?
 if [[ "${re}" = "32" ]]; then
     >&2 echo "ERROR: pylint execution failed, errcode ${re}, aborting..."
@@ -58,21 +53,21 @@ fi
 echo "===> Running flake8"
 rm -f "${flake8Report}"
 # See .flake8 file for settings
-flake8 --config "${CONFIG}/.flake8" "${ROOTDIR}" | tee "${flake8Report}"
+flake8 --config "${CONFIG}/.flake8" "${ROOT_DIR}" | tee "${flake8Report}"
 
 if [[ "${localbuild}" = "true" ]]; then
     echo "===> Running shellcheck"
-    shellcheck "${ROOTDIR}"/*.sh "${ROOTDIR}"/*/*.sh -s bash -f json | jq | tee "${buildDir}/shellcheck-report.json" | "${CONFDIR}"/shellcheck2sonar.py "${external_format}" > "${shellcheckReport}"
+    shellcheck "${ROOT_DIR}"/*.sh "${ROOT_DIR}"/*/*.sh -s bash -f json | jq | tee "${BUILD_DIR}/shellcheck-report.json" | "${CONF_DIR}"/shellcheck2sonar.py "${external_format}" > "${shellcheckReport}"
     [[ ! -s "${shellcheckReport}" ]] && rm -f "${shellcheckReport}"
-    cat "${buildDir}/shellcheck-report.json"
+    cat "${BUILD_DIR}/shellcheck-report.json"
 
     echo "===> Running checkov"
-    checkov -d . --framework dockerfile -o sarif --output-file-path "${buildDir}"
+    checkov -d . --framework dockerfile -o sarif --output-file-path "${BUILD_DIR}"
 
     echo "===> Running trivy"
-    "${CONFDIR}"/build.sh docker
-    trivy image -f json -o "${buildDir}"/trivy_results.json olivierkorach/sonar-tools:latest
-    cat "${buildDir}"/trivy_results.json
-    python3 "${CONFDIR}"/trivy2sonar.py "${external_format}" < "${buildDir}"/trivy_results.json > "${trivyReport}"
+    "${CONF_DIR}"/build.sh docker
+    trivy image -f json -o "${BUILD_DIR}"/trivy_results.json olivierkorach/sonar-tools:latest
+    cat "${BUILD_DIR}"/trivy_results.json
+    python3 "${CONF_DIR}"/trivy2sonar.py "${external_format}" < "${BUILD_DIR}"/trivy_results.json > "${trivyReport}"
     [[ ! -s "${trivyReport}" ]] && rm -f "${trivyReport}"
 fi
