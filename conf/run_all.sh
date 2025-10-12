@@ -19,27 +19,44 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+# ME="$( basename "${BASH_SOURCE[0]}" )"
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-deps=0
-"${CONF_DIR}"/build.sh "$@"
+. "${CONF_DIR}/env.sh"
 
-while [[ $# -ne 0 ]]; do
-    case "${1}" in
-        deps)
-            deps=1
-            ;;
-        *)
-            ;;
-    esac
-    shift
+dolint="true"
+dotest="false"
+scanOpts=()
+
+while [[ $# -ne 0 ]]
+do
+  case "${1}" in
+    -nolint)
+      dolint="false"
+      ;;
+    -test)
+      dotest="true"
+      ;;
+    -9)
+      external_format="v1"
+      ;;
+    -local)
+      localbuild="true"
+      ;;
+    *)
+      scanOpts=("${scanOpts[@]}" "${1}")
+      ;;
+  esac
+  shift
 done
 
-# Deploy locally for tests
-if [[ "${deps}" = "1" ]]; then
-    pipopts="--upgrade"
-else
-    pipopts="--no-deps"
+if [[ "${dolint}" != "false" ]]; then
+  "${CONF_DIR}"/run_linters.sh "${external_format}" "${localbuild}"
 fi
-pip install "${pipopts}" --force-reinstall "${ROOT_DIR}"/dist/sonar_tools-*-py3-*.whl
+
+if [[ "${dotest}" = "true" ]]; then
+  "${CONF_DIR}"/run_tests.sh
+fi
+
+"${CONF_DIR}"/run_scanner.sh "${scanOpts[@]}"

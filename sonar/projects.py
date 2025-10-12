@@ -1234,7 +1234,8 @@ class Project(components.Component):
             if wh_name in current_wh_names:
                 current_wh[wh_map[wh_name]].update(name=wh_name, **wh)
             else:
-                webhooks.update(name=wh_name, endpoint=self.endpoint, project=self.key, **wh)
+                hook = webhooks.WebHook.create(endpoint=self.endpoint, name=wh_name, url="", project=self.key)
+                hook.update(**wh)
 
     def set_settings(self, data: types.ObjectJsonRepr) -> None:
         """Sets project settings (webhooks, settings, new code period)

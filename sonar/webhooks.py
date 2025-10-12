@@ -60,7 +60,7 @@ class WebHook(sq.SqObject):
         WebHook.CACHE.put(self)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, name: str, url: str, secret: Optional[str], project: Optional[str]) -> WebHook:
+    def create(cls, endpoint: pf.Platform, name: str, url: str, secret: Optional[str] = None, project: Optional[str] = None) -> WebHook:
         """Creates a WebHook object in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -199,22 +199,6 @@ def export(endpoint: pf.Platform, project_key: str = None, full: bool = False) -
         j.pop("name", None)
         json_data[wb.name] = util.remove_nones(j)
     return json_data if len(json_data) > 0 else None
-
-
-def create(endpoint: pf.Platform, name: str, url: str, secret: str = None, project: str = None) -> WebHook:
-    """Creates a webhook, global if project key is None, othewise project specific"""
-    return WebHook(endpoint=endpoint, name=name, url=url, secret=secret, project=project)
-
-
-def update(endpoint: pf.Platform, name: str, **kwargs) -> None:
-    """Updates a webhook with data in kwargs"""
-    project_key = kwargs.pop("project", None)
-    get_list(endpoint, project_key)
-    o = WebHook.CACHE.get(name, project_key, endpoint.local_url)
-    if not o:
-        create(endpoint, name, kwargs["url"], kwargs["secret"], project=project_key)
-    else:
-        WebHook.get_object(endpoint, name, project_key=project_key).update(**kwargs)
 
 
 def audit(endpoint: pf.Platform) -> list[problem.Problem]:
