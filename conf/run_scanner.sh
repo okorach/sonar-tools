@@ -51,7 +51,7 @@ cmd="sonar-scanner -Dsonar.projectVersion=${VERSION} \
   -Dsonar.python.flake8.reportPaths=${FLAKE8_REPORT} \
   -Dsonar.python.pylint.reportPaths=${PYLINT_REPORT} \
   -Dsonar.token=${SONAR_TOKEN} ${auth}\
-  "${scanOpts[@]}""
+  "${scanOpts[*]}""
 
 if ls "${BUILD_DIR}"/coverage*.xml >/dev/null 2>&1; then
   cmd="${cmd} -Dsonar.python.coverage.reportPaths=${BUILD_DIR}/coverage*.xml"
