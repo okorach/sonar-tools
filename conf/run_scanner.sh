@@ -34,9 +34,8 @@ do
   case "${1}" in
     -Dsonar.host.url=*)
       scanOpts=("${scanOpts[@]}" "${1}")
-      url=$(echo ${1} | cut -d = -f 2)
+      url=$(echo "${1}" | cut -d = -f 2)
       if [[ "${url}" = "${SONAR_HOST_URL_9}" ]]; then
-        external_format="v1"
         auth="-Dsonar.login=${SONAR_TOKEN}"
       fi
       ;;
@@ -53,7 +52,7 @@ cmd="sonar-scanner -Dsonar.projectVersion=${VERSION} \
   -Dsonar.token=${SONAR_TOKEN} ${auth}\
   "${scanOpts[*]}""
 
-relativeDir=$(basename $BUILD_DIR)
+relativeDir=$(basename "${BUILD_DIR}")
   if ls "${BUILD_DIR}"/coverage*.xml >/dev/null 2>&1; then
   cmd="${cmd} -Dsonar.python.coverage.reportPaths=${relativeDir}/coverage*.xml"
 else
