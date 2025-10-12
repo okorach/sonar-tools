@@ -72,7 +72,8 @@ fi
 if [[ "${localbuild}" = "true" ]]; then
     if [[ "${linters_to_run}" == *"shellcheck"* ]]; then
         echo "===> Running shellcheck"
-        shellcheck "${ROOT_DIR}"/*.sh "${ROOT_DIR}"/*/*.sh -s bash -f json | jq | tee "${BUILD_DIR}/shellcheck-report.json" | "${CONF_DIR}"/shellcheck2sonar.py "${external_format}" > "${SHELLCHECK_REPORT}"
+        shellcheck $(find "${ROOT_DIR}" . -name '*.sh') \
+            -s bash -f json | jq | tee "${BUILD_DIR}/shellcheck-report.json" | "${CONF_DIR}"/shellcheck2sonar.py "${external_format}" > "${SHELLCHECK_REPORT}"
         [[ ! -s "${SHELLCHECK_REPORT}" ]] && rm -f "${SHELLCHECK_REPORT}"
         cat "${BUILD_DIR}/shellcheck-report.json"
     fi
