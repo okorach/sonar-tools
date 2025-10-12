@@ -60,7 +60,7 @@ class WebHook(sq.SqObject):
         WebHook.CACHE.put(self)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, name: str, url: str, secret: Optional[str], project: Optional[str]) -> WebHook:
+    def create(cls, endpoint: pf.Platform, name: str, url: str, secret: Optional[str] = None, project: Optional[str] = None) -> WebHook:
         """Creates a WebHook object in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
