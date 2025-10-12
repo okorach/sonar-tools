@@ -443,13 +443,10 @@ class Platform(object):
             url += f" - BODY: {data}"
         return url
 
-    def webhooks(self) -> dict[str, object]:
+    def webhooks(self) -> dict[str, webhooks.WebHook]:
         """
         :return: the list of global webhooks
-        :rtype: dict{<webhook_name>: <webhook_data>, ...}
         """
-        from sonar import webhooks
-
         return webhooks.get_list(self)
 
     def export(self, export_settings: types.ConfigSettings, full: bool = False) -> types.ObjectJsonRepr:
