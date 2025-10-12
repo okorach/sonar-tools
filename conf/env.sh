@@ -22,9 +22,9 @@
 VERSION=$(grep PACKAGE_VERSION "${ROOT_DIR}/sonar/version.py" | cut -d "=" -f 2 | cut -d '"' -f 2)
 BUILD_DIR="${ROOT_DIR}/build"
 
-pylintReport="${BUILD_DIR}/pylint-report.out"
+PYLINT_REPORT="${BUILD_DIR}/pylint-report.out"
 # banditReport="${BUILD_DIR}/bandit-report.json"
-flake8Report="${BUILD_DIR}/flake8-report.out"
-shellcheckReport="${BUILD_DIR}/external-issues-shellcheck.json"
-trivyReport="${BUILD_DIR}/external-issues-trivy.json"
-ruffReport="${BUILD_DIR}/external-issues-ruff.json"
+FLAKE8_REPORT="${BUILD_DIR}/flake8-report.out"
+SHELLCHECK_REPORT="${BUILD_DIR}/external-issues-shellcheck.json"
+TRIVY_REPORT="${BUILD_DIR}/external-issues-trivy.json"
+RUFF_REPORT="${BUILD_DIR}/external-issues-ruff.json"

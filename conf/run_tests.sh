@@ -23,7 +23,7 @@
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-. "${CONF_DIR}/env"
+. "${CONF_DIR}/env.sh"
 
 SYNC_PROJECT_KEY="TESTSYNC"
 

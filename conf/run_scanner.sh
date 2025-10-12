@@ -22,7 +22,7 @@
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-. "${CONF_DIR}/env"
+. "${CONF_DIR}/env.sh"
 
 auth=""
 if [[ "${SONAR_HOST_URL}" = "${SONAR_HOST_URL_9}" ]]; then
@@ -30,8 +30,8 @@ if [[ "${SONAR_HOST_URL}" = "${SONAR_HOST_URL_9}" ]]; then
 fi
 
 cmd="sonar-scanner -Dsonar.projectVersion=${VERSION} \
-  -Dsonar.python.flake8.reportPaths=${flake8Report} \
-  -Dsonar.python.pylint.reportPaths=${pylintReport} \
+  -Dsonar.python.flake8.reportPaths=${FLAKE8_REPORT} \
+  -Dsonar.python.pylint.reportPaths=${PYLINT_REPORT} \
   -Dsonar.token=${SONAR_TOKEN} ${auth}\
   "${@}""
 
