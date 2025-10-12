@@ -25,6 +25,12 @@ CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 external_format="${1}"
 localbuild="${2}"
+if [[ "${localbuild}" = "" ]]; then
+    localbuild="true"
+    if [[ "${CI}" != "" ]]; then
+        localbuild="false"
+    fi
+fi
 
 . "${CONF_DIR}/env.sh"
 
@@ -53,7 +59,7 @@ fi
 echo "===> Running flake8"
 rm -f "${FLAKE8_REPORT}"
 # See .flake8 file for settings
-flake8 --config "${CONFIG}/.flake8" "${ROOT_DIR}" | tee "${FLAKE8_REPORT}"
+flake8 --config "${CONF_DIR}/.flake8" "${ROOT_DIR}" | tee "${FLAKE8_REPORT}"
 
 if [[ "${localbuild}" = "true" ]]; then
     echo "===> Running shellcheck"
