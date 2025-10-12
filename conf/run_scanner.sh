@@ -29,11 +29,29 @@ if [[ "${SONAR_HOST_URL}" = "${SONAR_HOST_URL_9}" ]]; then
   auth="-Dsonar.login=${SONAR_TOKEN}"
 fi
 
+while [[ $# -ne 0 ]]
+do
+  case "${1}" in
+    -Dsonar.host.url=*)
+      scanOpts=("${scanOpts[@]}" "${1}")
+      url=$(echo ${1} | cut -d = -f 2)
+      if [[ "${url}" = "${SONAR_HOST_URL_9}" ]]; then
+        external_format="v1"
+        auth="-Dsonar.login=${SONAR_TOKEN}"
+      fi
+      ;;
+    *)
+      scanOpts=("${scanOpts[@]}" "${1}")
+      ;;
+  esac
+  shift
+done
+
 cmd="sonar-scanner -Dsonar.projectVersion=${VERSION} \
   -Dsonar.python.flake8.reportPaths=${FLAKE8_REPORT} \
   -Dsonar.python.pylint.reportPaths=${PYLINT_REPORT} \
   -Dsonar.token=${SONAR_TOKEN} ${auth}\
-  "${@}""
+  "${scanOpts[@]}""
 
 if ls "${BUILD_DIR}"/coverage*.xml >/dev/null 2>&1; then
   cmd="${cmd} -Dsonar.python.coverage.reportPaths=${BUILD_DIR}/coverage*.xml"
