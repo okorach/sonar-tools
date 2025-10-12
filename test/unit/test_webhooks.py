@@ -95,4 +95,3 @@ def test_create_delete() -> None:
     hook.delete()
     with pytest.raises(exceptions.ObjectNotFound):
         hook.refresh()
-
