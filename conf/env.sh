@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # sonar-tools
-# Copyright (C) 2019-2025 Olivier Korach
+# Copyright (C) 2025 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -19,27 +19,12 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+VERSION=$(grep PACKAGE_VERSION "${ROOT_DIR}/sonar/version.py" | cut -d "=" -f 2 | cut -d '"' -f 2)
+BUILD_DIR="${ROOT_DIR}/build"
 
-deps=0
-"${CONF_DIR}"/build.sh "$@"
-
-while [[ $# -ne 0 ]]; do
-    case "${1}" in
-        deps)
-            deps=1
-            ;;
-        *)
-            ;;
-    esac
-    shift
-done
-
-# Deploy locally for tests
-if [[ "${deps}" = "1" ]]; then
-    pipopts="--upgrade"
-else
-    pipopts="--no-deps"
-fi
-pip install "${pipopts}" --force-reinstall "${ROOT_DIR}"/dist/sonar_tools-*-py3-*.whl
+PYLINT_REPORT="${BUILD_DIR}/pylint-report.out"
+# banditReport="${BUILD_DIR}/bandit-report.json"
+FLAKE8_REPORT="${BUILD_DIR}/flake8-report.out"
+SHELLCHECK_REPORT="${BUILD_DIR}/external-issues-shellcheck.json"
+TRIVY_REPORT="${BUILD_DIR}/external-issues-trivy.json"
+RUFF_REPORT="${BUILD_DIR}/external-issues-ruff.json"
