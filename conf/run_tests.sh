@@ -45,7 +45,7 @@ do
     if [[ -d "${ROOT_DIR}/${GEN_LOC}/${target}/" ]]; then
         # Recreate a fresh TESTSYNC project for sync tests
         curl -X POST -u "${SONAR_TOKEN_TEST_ADMIN_USER}:" "${SONAR_HOST_URL_TEST}/api/projects/delete?project=${SYNC_PROJECT_KEY}"
-        conf/scan.sh -nolint -Dsonar.host.url="${SONAR_HOST_URL_TEST}" -Dsonar.projectKey="${SYNC_PROJECT_KEY}" -Dsonar.projectName="${SYNC_PROJECT_KEY}" -Dsonar.token="${SONAR_TOKEN_TEST_ADMIN_ANALYSIS}"
+        conf/run_scanner.sh -Dsonar.host.url="${SONAR_HOST_URL_TEST}" -Dsonar.projectKey="${SYNC_PROJECT_KEY}" -Dsonar.projectName="${SYNC_PROJECT_KEY}" -Dsonar.token="${SONAR_TOKEN_TEST_ADMIN_ANALYSIS}"
         # Run tests
         poetry run coverage run --branch --source="${ROOT_DIR}" -m pytest "${ROOT_DIR}/${GEN_LOC}/${target}/" --junit-xml="${BUILD_DIR}/xunit-results-${target}.xml"
         poetry run coverage xml -o "${BUILD_DIR}/coverage-${target}.xml"
