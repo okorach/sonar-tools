@@ -20,17 +20,19 @@
 
 """Abstraction of SonarQube finding (issue or hotspot) changelog"""
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from datetime import datetime
 import sonar.logging as log
 from sonar.util import types
 from sonar.util import issue_defs as idefs
 
+if TYPE_CHECKING:
+    from sonar.findings import Finding
 
 class Changelog(object):
     """Abstraction of SonarQube finding (issue or hotspot) changelog"""
 
-    def __init__(self, jsonlog: types.ApiPayload, concerned_object: object) -> None:
+    def __init__(self, jsonlog: types.ApiPayload, concerned_object: Finding) -> None:
         """Constructor
         :param ApiPayload jsonlog: The changelog data from api/issues/changelog
         """
