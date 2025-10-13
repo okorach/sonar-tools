@@ -23,7 +23,7 @@ Abstraction of the SonarQube "application" concept
 """
 
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import re
 import json
 from datetime import datetime
@@ -32,7 +32,7 @@ from threading import Lock
 from requests import RequestException
 
 import sonar.logging as log
-import sonar.platform as pf
+from sonar.platform import Platform
 from sonar.util import types, cache
 
 from sonar import exceptions, projects, branches, app_branches
@@ -42,6 +42,9 @@ import sonar.aggregations as aggr
 import sonar.utilities as util
 from sonar.audit import rules, problem
 import sonar.util.constants as c
+
+if TYPE_CHECKING:
+    from sonar.app_branches import ApplicationBranch
 
 _CLASS_LOCK = Lock()
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")
@@ -68,21 +71,21 @@ class Application(aggr.Aggregation):
         "UPDATE_BRANCH": "applications/update_branch",
     }
 
-    def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
+    def __init__(self, endpoint: Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=endpoint, key=key)
-        self._branches = None
-        self._projects = None
-        self._description = None
-        self.name = name
-        log.debug("Created object %s with uuid %d id %x", str(self), hash(self), id(self))
+        self._branches = None # :type: Optional[dict[str, ApplicationBranch]]
+        self._projects = None # :type: Optional[dict[str, str]]
+        self._description = None # :type: Optional[str]
+        self.name = name # :type: str
+        log.debug("Created %s with uuid %d id %x", str(self), hash(self), id(self))
         Application.CACHE.put(self)
 
     @classmethod
-    def get_object(cls, endpoint: pf.Platform, key: str) -> Application:
+    def get_object(cls, endpoint: Platform, key: str) -> Application:
         """Gets an Application object from SonarQube
 
-        :param pf.Platform endpoint: Reference to the SonarQube platform
+        :param Platform endpoint: Reference to the SonarQube platform
         :param str key: Application key, must not already exist on SonarQube
         :raises UnsupportedOperation: If on a Community Edition
         :raises ObjectNotFound: If Application key not found in SonarQube
@@ -101,10 +104,10 @@ class Application(aggr.Aggregation):
         return cls.load(endpoint, data)
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Application:
+    def load(cls, endpoint: Platform, data: types.ApiPayload) -> Application:
         """Loads an Application object with data retrieved from SonarQube
 
-        :param pf.Platform endpoint: Reference to the SonarQube platform
+        :param Platform endpoint: Reference to the SonarQube platform
         :param str key: Application key, must not already exist on SonarQube
         :param dict data: Data coming from api/components/search_projects or api/applications/show
         :raises UnsupportedOperation: If on a Community Edition
@@ -120,10 +123,10 @@ class Application(aggr.Aggregation):
         return o
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, key: str, name: str) -> Application:
+    def create(cls, endpoint: Platform, key: str, name: str) -> Application:
         """Creates an Application object in SonarQube
 
-        :param pf.Platform endpoint: Reference to the SonarQube platform
+        :param Platform endpoint: Reference to the SonarQube platform
         :param str key: Application key, must not already exist on SonarQube
         :param str name: Application name
         :raises UnsupportedOperation: If on a Community Edition
@@ -249,7 +252,7 @@ class Application(aggr.Aggregation):
             self.create_branch(branch_name=branch_name, branch_definition=branch_definition)
         return self
 
-    def branches(self) -> dict[str, object]:
+    def branches(self) -> dict[str, ApplicationBranch]:
         """
         :return: the list of branches of the application and their definition
         :rtype: dict {<branchName>: <ApplicationBranch>}
@@ -268,7 +271,7 @@ class Application(aggr.Aggregation):
                 branch.delete()
         return super().delete()
 
-    def get_hotspots(self, filters: dict[str, str] = None) -> dict[str, object]:
+    def get_hotspots(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:
         new_filters = filters.copy() if filters else {}
         pattern = new_filters.pop("branch", None) if new_filters else None
         if not pattern:
@@ -279,7 +282,7 @@ class Application(aggr.Aggregation):
             findings_list |= comp.get_hotspots(new_filters)
         return findings_list
 
-    def get_issues(self, filters: dict[str, str] = None) -> dict[str, object]:
+    def get_issues(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:
         new_filters = filters.copy() if filters else {}
         pattern = new_filters.pop("branch", None) if new_filters else None
         if not pattern:
@@ -433,10 +436,7 @@ class Application(aggr.Aggregation):
         list_mode = isinstance(branch_definition, list)
         for proj in branch_definition:
             o_proj = projects.Project.get_object(self.endpoint, proj)
-            if list_mode:
-                proj_br = o_proj.main_branch().name
-            else:
-                proj_br = branch_definition[proj]
+            proj_br = o_proj.main_branch().name if list_mode else branch_definition[proj]
             project_branches.append(o_proj if proj_br == util.DEFAULT else branches.Branch.get_object(o_proj, proj_br))
         return project_branches
 
@@ -454,7 +454,7 @@ def _project_list(data: types.ObjectJsonRepr) -> types.KeyList:
     return list(plist.keys())
 
 
-def count(endpoint: pf.Platform) -> int:
+def count(endpoint: Platform) -> int:
     """returns count of applications
 
     :param endpoint: Reference to the SonarQube platform
@@ -464,7 +464,7 @@ def count(endpoint: pf.Platform) -> int:
     return util.nbr_total_elements(json.loads(endpoint.get(Application.API[c.LIST], params={"ps": 1, "filter": "qualifier = APP"}).text))
 
 
-def check_supported(endpoint: pf.Platform) -> None:
+def check_supported(endpoint: Platform) -> None:
     """Verifies the edition and raise exception if not supported"""
     if endpoint.edition() == c.CE:
         raise exceptions.UnsupportedOperation(f"No applications in {endpoint.edition()} edition")
@@ -472,7 +472,7 @@ def check_supported(endpoint: pf.Platform) -> None:
         raise exceptions.UnsupportedOperation("No applications in SonarQube Cloud")
 
 
-def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Application]:
+def search(endpoint: Platform, params: types.ApiParams = None) -> dict[str, Application]:
     """Searches applications
 
     :param endpoint: Reference to the SonarQube platform
@@ -487,7 +487,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, A
     return sq.search_objects(endpoint=endpoint, object_class=Application, params=new_params)
 
 
-def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Application]:
+def get_list(endpoint: Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Application]:
     """
     :return: List of Applications (all of them if key_list is None or empty)
     :param endpoint: Reference to the Sonar platform
@@ -504,7 +504,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
     return object_list
 
 
-def exists(endpoint: pf.Platform, key: str) -> bool:
+def exists(endpoint: Platform, key: str) -> bool:
     """Tells whether a application with a given key exists"""
     try:
         Application.get_object(endpoint, key)
@@ -513,7 +513,7 @@ def exists(endpoint: pf.Platform, key: str) -> bool:
         return False
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports applications as JSON
 
     :param endpoint: Reference to the Sonar platform
@@ -538,7 +538,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     return apps_settings
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[problem.Problem]:
+def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[problem.Problem]:
     """Audits applications and return list of problems found
 
     :param endpoint: Reference to the Sonar platform
@@ -559,7 +559,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     return problems
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
+def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports a list of application configuration in a SonarQube platform
 
     :param endpoint: Reference to the SonarQube platform
@@ -594,7 +594,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     return True
 
 
-def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Application]:
+def search_by_name(endpoint: Platform, name: str) -> dict[str, Application]:
     """Searches applications by name. Several apps may match as name does not have to be unique"""
     get_list(endpoint=endpoint, use_cache=False)
     data = {}
