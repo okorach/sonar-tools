@@ -23,7 +23,7 @@ Abstraction of the SonarQube general object concept
 
 """
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import json
 
 from http import HTTPStatus
@@ -36,6 +36,8 @@ from sonar.util import types, cache
 from sonar.util import constants as c
 from sonar import utilities, exceptions, errcodes
 
+if TYPE_CHECKING:
+    from sonar.platform import Platform
 
 class SqObject(object):
     """Abstraction of Sonar objects"""
@@ -43,12 +45,12 @@ class SqObject(object):
     CACHE = cache.Cache
     API = {c.SEARCH: None}
 
-    def __init__(self, endpoint: object, key: str) -> None:
-        self.key = key  #: Object unique key (unique in its class)
-        self.endpoint = endpoint  #: Reference to the SonarQube platform
-        self.concerned_object = None
-        self._tags = None
-        self.sq_json = {}
+    def __init__(self, endpoint: Platform, key: str) -> None:
+        self.key = key  #: Object unique key (unique in its class) # :type: str
+        self.endpoint = endpoint  #: Reference to the SonarQube platform # :type: Platform
+        self.concerned_object = None # :type: Optional[SqObject]
+        self._tags = None # :type: Optional[list[str]]
+        self.sq_json = {} # :type: types.ApiPayload
 
     def __hash__(self) -> int:
         """Default UUID for SQ objects"""
@@ -72,7 +74,7 @@ class SqObject(object):
         return cls.API[op] if op in cls.API else cls.API[c.LIST]
 
     @classmethod
-    def clear_cache(cls, endpoint: Optional[object] = None) -> None:
+    def clear_cache(cls, endpoint: Optional[Platform] = None) -> None:
         """Clears the cache of a given class
 
         :param endpoint: Optional, clears only the cache fo rthis platfiorm if specified, clear all if not
@@ -101,7 +103,7 @@ class SqObject(object):
         self,
         api: str,
         params: types.ApiParams = None,
-        data: str = None,
+        data: Optional[str] = None,
         mute: tuple[HTTPStatus] = (),
         **kwargs,
     ) -> requests.Response:
