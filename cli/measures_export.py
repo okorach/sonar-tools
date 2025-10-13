@@ -28,19 +28,23 @@ Exports some measures of all projects
 import sys
 import csv
 from requests import RequestException
+from typing import TYPE_CHECKING
 
 from sonar.util import types
 from cli import options
 import sonar.logging as log
-from sonar import metrics, platform, exceptions, errcodes, version, measures
+from sonar.platform import Platform
+from sonar import metrics, exceptions, errcodes, version, measures
 import sonar.utilities as util
 import sonar.util.constants as c
 from sonar.util import component_helper
 
 TOOL_NAME = "sonar-measures"
 
+if TYPE_CHECKING:
+    from sonar.components import Component
 
-def __get_measures_history(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
+def __get_measures_history(obj: Component, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the measure history of an object (project, branch, application, portfolio)"""
     try:
         data = obj.get_measures_history(wanted_metrics)
@@ -55,7 +59,7 @@ def __get_measures_history(obj: object, wanted_metrics: types.KeyList, convert_o
     return obj.component_data() | {"history": data}
 
 
-def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
+def __get_measures(obj: Component, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the list of requested measures of an object"""
     log.info("Getting measures for %s", str(obj))
     measures_d = {}
@@ -71,7 +75,7 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: 
             return measures_d
 
         sep = "|" if convert_options[options.CSV_SEPARATOR] == "," else ","
-        if obj.__class__.__name__ == "Branch":
+        if util.class_name(obj) == "Branch":
             measures_d["tags"] = sep.join(obj.concerned_object.get_tags())
         else:
             measures_d["tags"] = sep.join(obj.get_tags())
@@ -81,7 +85,7 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: 
     return measures_d
 
 
-def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeySet) -> types.KeyList:
+def __get_wanted_metrics(endpoint: Platform, wanted_metrics: types.KeySet) -> types.KeyList:
     """Returns an ordered list of metrics based on CLI inputs"""
     main_metrics = list(metrics.MAIN_METRICS)
     if endpoint.version() >= c.ACCEPT_INTRO_VERSION:
@@ -255,7 +259,7 @@ def main() -> None:
         kwargs["dates"] = "dateonly" if kwargs["datesWithoutTime"] else "datetime"
         if kwargs[options.COMPONENT_TYPE] == "portfolios" and kwargs[options.WITH_TAGS]:
             util.final_exit(errcodes.ARGS_ERROR, f"Portfolios have no tags, can't use option --{options.WITH_TAGS} with --{options.PORTFOLIOS}")
-        endpoint = platform.Platform(**kwargs)
+        endpoint = Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
 
