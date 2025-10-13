@@ -88,12 +88,10 @@ class SqObject(object):
         except AttributeError:
             pass
 
-    def reload(self, data: types.ObjectJsonRepr) -> None:
+    def reload(self, data: types.ApiPayload) -> SqObject:
         """Reload a Sonar object with its JSON representation"""
-        if self.sq_json is None:
-            self.sq_json = data
-        else:
-            self.sq_json.update(data)
+        self.sq_json = self.sq_json or {} | data
+        return self
 
     def base_url(self, local: bool = True) -> str:
         """Returns the platform base URL"""
