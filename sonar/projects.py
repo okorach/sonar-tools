@@ -31,14 +31,13 @@ import json
 import concurrent.futures
 from datetime import datetime
 
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 from http import HTTPStatus
 from threading import Lock
 from requests import HTTPError, RequestException
 import Levenshtein
 
 import sonar.logging as log
-from sonar.platform import Platform
 
 from sonar.util import types, cache
 from sonar import exceptions, errcodes
@@ -52,6 +51,9 @@ from sonar.audit import severities
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
 
 _CLASS_LOCK = Lock()
 

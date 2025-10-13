@@ -29,13 +29,14 @@ from http import HTTPStatus
 from requests import HTTPError, RequestException
 
 import sonar.logging as log
-from sonar.platform import Platform
+
 from sonar.util import types, cache, constants as c
 from sonar import sqobject, exceptions
 import sonar.utilities as util
 
 if TYPE_CHECKING:
     from sonar.projects import Project
+    from sonar.platform import Platform
 
 DEVOPS_INTEGRATION = "devopsIntegration"
 GENERAL_SETTINGS = "generalSettings"
