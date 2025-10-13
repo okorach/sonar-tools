@@ -25,12 +25,18 @@ from __future__ import annotations
 import json
 from http import HTTPStatus
 from requests import RequestException
-from sonar import metrics, exceptions, platform
+from typing import TYPE_CHECKING
+
+from sonar import metrics, exceptions
+from sonar.platform import Platform
 from sonar.util.types import ApiPayload, ApiParams, KeyList
 from sonar.util import cache, constants as c
 import sonar.logging as log
 import sonar.utilities as util
 import sonar.sqobject as sq
+
+if TYPE_CHECKING:
+    from sonar.components import Component
 
 ALT_COMPONENTS = ("project", "application", "portfolio", "key")
 
@@ -46,22 +52,20 @@ class Measure(sq.SqObject):
     API_READ = "measures/component"
     API_HISTORY = "measures/search_history"
 
-    def __init__(self, concerned_object: object, key: str, value: any) -> None:
+    def __init__(self, concerned_object: Component, key: str, value: any) -> None:
         """Constructor"""
         super().__init__(endpoint=concerned_object.endpoint, key=key)
-        self.value = None  #: Measure value
-        self.metric = key  #: Measure metric
-        self.concerned_object = concerned_object  #: Object concerned by the measure
+        self.value = None  #: Measure value # :type: Optional[any]
+        self.metric = key  #: Measure metric # :type: str
+        self.concerned_object = concerned_object  #: Object concerned by the measure # :type: Component
         self.value = self.__converted_value(value)
 
     @classmethod
-    def load(cls, concerned_object: object, data: ApiPayload) -> Measure:
+    def load(cls, concerned_object: Component, data: ApiPayload) -> Measure:
         """Loads a measure from data
 
-        :param endpoint: Reference to SonarQube platform
-        :type endpoint: Platform
-        :paramm data: Data retrieved from a measure search
-        :type data: dict
+        :param Component concerned_object: Component concerned by the measure
+        :param ApiPayload data: Data retrieved from a measure search
         :return: The created measure
         :rtype: Measure
         """
@@ -126,13 +130,12 @@ class Measure(sq.SqObject):
         return format(self.endpoint, self.key, self.value, ratings=ratings, percents=percents)
 
 
-def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, Measure]:
+def get(concerned_object: Component, metrics_list: KeyList, **kwargs) -> dict[str, Measure]:
     """Reads a list of measures of a component (project, branch, pull request, application or portfolio)
 
     :param Component concerned_object: Concerned object (project, branch, pull request, application or portfolio)
     :param KeyList metrics_list: List of metrics to read
-    :param kwargs: List of filters to search for the measures, defaults to None
-    :type kwargs: dict, optional
+    :param dict kwargs: List of filters to search for the measures, defaults to None
     :return: Dict of found measures
     :rtype: dict{<metric>: <value>}
     """
@@ -152,14 +155,12 @@ def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, 
     return m_dict
 
 
-def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> list[str, str, str]:
+def get_history(concerned_object: Component, metrics_list: KeyList, **kwargs) -> list[str, str, str]:
     """Reads the history of measures of a component (project, branch, application or portfolio)
 
-    :param concerned_object: Concerned object (project, branch, pull request, application or portfolio)
-    :type concerned_object: Project, Branch, PullRequest, Application or Portfolio
+    :param Component concerned_object: Concerned object (project, branch, pull request, application or portfolio)
     :param KeyList metrics_list: List of metrics to read
-    :param kwargs: List of filters to search for the measures history, defaults to None
-    :type kwargs: dict, optional
+    :param dict kwargs: Optional list of filters to search for the measures history, defaults to None
     :return: List of found history of measures
     :rtype: list[<date>, <metricKey>, <value>]
     """
@@ -210,7 +211,7 @@ def get_rating_number(rating_letter: str) -> int:
     return rating_letter
 
 
-def format(endpoint: platform.Platform, metric_key: str, value: any, ratings: str = "letters", percents: str = "float") -> any:
+def format(endpoint: Platform, metric_key: str, value: any, ratings: str = "letters", percents: str = "float") -> any:
     """Formats a measure"""
     try:
         metric = metrics.Metric.get_object(endpoint, metric_key)
