@@ -68,7 +68,7 @@ def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
     if len(object_list) <= 0:
         log.warning("No objects with LoCs to dump, dump skipped")
         return
-    obj_type = type(object_list[0]).__name__.lower()
+    obj_type = util.class_name(object_list[0]).lower()
     nb_loc, nb_objects = 0, 0
     with util.open_file(file) as fd:
         writer = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
@@ -95,7 +95,7 @@ def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
 def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
     """Returns the object data as JSON"""
     parent_type = kwargs[options.COMPONENT_TYPE][:-1]
-    is_branch = type(o).__name__.lower() in ("branch", "applicationbranch")
+    is_branch = util.class_name(o).lower() in ("branch", "applicationbranch")
     parent_o = o.concerned_object if is_branch else o
     d = {parent_type: parent_o.key, "ncloc": ""}
     try:
@@ -124,7 +124,7 @@ def __dump_json(object_list: list[object], file: str, **kwargs) -> None:
     if len(object_list) <= 0:
         log.warning("No objects with LoCs to dump, dump skipped")
         return
-    obj_type = type(object_list[0]).__name__.lower()
+    obj_type = util.class_name(object_list[0]).lower()
     # Collect all objects data
     for o in object_list:
         data.append(__get_object_json_data(o, **kwargs))
