@@ -37,9 +37,11 @@ function create_fresh_project {
         opt_token="-Dsonar.login=${token}"  
     fi
     curl -X POST -u "${usertoken}:" "${url}/api/projects/delete?project=${key}"
-    conf/scan.sh "${opts[@]}" -Dsonar.projectKey="${key}" -Dsonar.projectName="${key}" -Dsonar.host.url="${url}" "${opt_token}" "${opt_org}" 
+    conf/run_scanner.sh "${opts[@]}" -Dsonar.projectKey="${key}" -Dsonar.projectName="${key}" -Dsonar.host.url="${url}" "${opt_token}" "${opt_org}" 
     return 0
 }
+
+conf/run_linters.sh
 
 create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_TEST:?}" "${SONAR_TOKEN_TEST_ADMIN_USER}" "${SONAR_TOKEN_TEST_ADMIN_ANALYSIS}" -nolint
 create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_LATEST:?}" "${SONAR_TOKEN_LATEST_ADMIN_USER}" "${SONAR_TOKEN_LATEST_ADMIN_ANALYSIS}"
