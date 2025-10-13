@@ -105,7 +105,7 @@ def format_date(somedate: datetime.datetime) -> str:
     return ISO_DATE_FORMAT % (somedate.year, somedate.month, somedate.day)
 
 
-def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, str, None]:
+def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, None]:
     """Converts a string date to a date"""
     try:
         return datetime.datetime.strptime(string, SQ_DATETIME_FORMAT)
