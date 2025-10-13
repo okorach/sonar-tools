@@ -415,4 +415,4 @@ class Component(sq.SqObject):
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""
-        return {"key": self.key, "name": self.name, "type": type(self).__name__.upper(), "branch": "", "url": self.url()}
+        return {"key": self.key, "name": self.name, "type": utilities.class_name(self).upper(), "branch": "", "url": self.url()}
