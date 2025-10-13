@@ -27,7 +27,7 @@ Usage: sonar-findings-export.py -t <SQ_TOKEN> -u <SQ_URL> [<filters>]
 
 import os
 import csv
-from typing import TextIO
+from typing import TextIO, Union, TYPE_CHECKING
 import concurrent.futures
 from argparse import Namespace
 import traceback
@@ -35,13 +35,18 @@ import traceback
 from cli import options
 from sonar.util.types import ConfigSettings
 import sonar.logging as log
-from sonar import platform, exceptions, errcodes, version
+from sonar.platform import Platform
+from sonar.projects import Project
+from sonar.applications import Application
+from sonar.portfolios import Portfolio
+
+from sonar import exceptions, errcodes, version
 from sonar import hotspots, findings
-from sonar import applications, portfolios
+
 from sonar.util import issue_defs as idefs, types, component_helper
 import sonar.util.constants as c
-
 import sonar.utilities as util
+
 
 TOOL_NAME = "sonar-findings"
 DATES_WITHOUT_TIME = False
@@ -149,7 +154,7 @@ def parse_args(desc: str) -> Namespace:
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
-def __write_header(file: str, endpoint: platform.Platform, **kwargs) -> None:
+def __write_header(file: str, endpoint: Platform, **kwargs) -> None:
     """Writes the file header"""
     with util.open_file(file=file) as fd:
         if kwargs[options.FORMAT] == "sarif":
@@ -264,7 +269,7 @@ def needs_hotspot_search(params: types.ApiParams) -> bool:
     )
 
 
-def get_component_findings(component: object, search_findings: bool, params: ConfigSettings) -> dict[str, findings.Finding]:
+def get_component_findings(component: Union[Project, Application, Portfolio], search_findings: bool, params: ConfigSettings) -> dict[str, findings.Finding]:
     """Gets the findings of a component and puts them in a writing queue"""
     try:
         _ = next(v for k, v in params.items() if k in _SEARCH_CRITERIA and v is not None)
@@ -272,7 +277,7 @@ def get_component_findings(component: object, search_findings: bool, params: Con
     except StopIteration:
         pass
 
-    if search_findings and not isinstance(component, (applications.Application, portfolios.Portfolio)):
+    if search_findings and not isinstance(component, (Application, Portfolio)):
         return findings.export_findings(
             component.endpoint, component.key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
         )
@@ -288,7 +293,7 @@ def get_component_findings(component: object, search_findings: bool, params: Con
     return findings_list
 
 
-def store_findings(components_list: list[object], endpoint: platform.Platform, params: ConfigSettings) -> int:
+def store_findings(components_list: list[Union[Project, Application, Portfolio]], endpoint: Platform, params: ConfigSettings) -> int:
     """Export all findings of a given project list
 
     :param list[Components] components_list: Components to export findings (components can be projects, branches, PRs, applications, or portfolios)
@@ -324,7 +329,7 @@ def store_findings(components_list: list[object], endpoint: platform.Platform, p
     return total_findings
 
 
-def __turn_off_use_findings_if_needed(endpoint: object, params: dict[str, str]) -> dict[str, str]:
+def __turn_off_use_findings_if_needed(endpoint: Platform, params: dict[str, str]) -> dict[str, str]:
     """Turn off use-findings option if some incompatible options (issue filters) are used"""
     if not params[options.USE_FINDINGS]:
         return params
@@ -347,7 +352,7 @@ def main() -> None:
     start_time = util.start_clock()
     try:
         kwargs = util.convert_args(parse_args("Sonar findings export"))
-        sqenv = platform.Platform(**kwargs)
+        sqenv = Platform(**kwargs)
         sqenv.verify_connection()
         sqenv.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
 
