@@ -29,7 +29,7 @@ import Levenshtein
 
 import sonar.logging as log
 import sonar.sqobject as sq
-import sonar.platform as pf
+from sonar.platform import Platform
 from sonar.util import types
 from sonar.util import constants as c, issue_defs as idefs
 
@@ -106,29 +106,29 @@ class Finding(sq.SqObject):
     A finding is a general concept that can be either an issue or a security hotspot
     """
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None, from_export: bool = False) -> None:
+    def __init__(self, endpoint: Platform, key: str, data: types.ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
-        self.severity = None  #: Severity (str)
-        self.type = None  #: Type (str): VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT
-        self.impacts = None  #: 10.x MQR mode
-        self.author = None  #: Author (str)
-        self.assignee = None  #: Assignee (str)
-        self.status = None  #: Status (str)
-        self.resolution = None  #: Resolution (str)
-        self.rule = None  #: Rule Id (str)
-        self.projectKey = None  #: Project key (str)
-        self._changelog = None
-        self._comments = None
-        self.file = None  #: File (str)
-        self.line = 0  #: Line (int)
+        self.severity = None  #: Severity # :type: Optional[str]  
+        self.type = None  #: Type: VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT # :type: Optional[str]
+        self.impacts = None  #: 10.x MQR mode # :type: Optional[dict[str, str]]
+        self.author = None  #: Author # :type: Optional[str]
+        self.assignee = None  #: Assignee # :type: Optional[str]
+        self.status = None  #: Status # :type: Optional[str]
+        self.resolution = None  #: Resolution # :type: Optional[str]
+        self.rule = None  #: Rule Id # :type: Optional[str]
+        self.projectKey = None  #: Project key # :type: Optional[str]
+        self._changelog = None # :type: Optional[dict[str, changelog.Changelog]]
+        self._comments = None # :type: Optional[dict[str, str]]
+        self.file = None  #: File # :type: Optional[str]
+        self.line = 0  #: Line # :type: Optional[int]
         self.component = None
-        self.message = None  #: Message
+        self.message = None  #: Message # :type: Optional[str]
         self.creation_date = None  #: Creation date (datetime)
         self.modification_date = None  #: Last modification date (datetime)
-        self.hash = None  #: Hash (str)
-        self.branch = None  #: Branch (str)
-        self.pull_request = None  #: Pull request (str)
+        self.hash = None  #: Hash  # :type: Optional[str]
+        self.branch = None  #: Branch # :type: Optional[str]
+        self.pull_request = None  #: Pull request # :type: Optional[str]
         self._load(data, from_export)
 
     def _load(self, data: types.ApiPayload, from_export: bool = False) -> None:
@@ -147,8 +147,7 @@ class Finding(sq.SqObject):
         self.message = jsondata.get("message", None)
         self.status = jsondata["status"]
         self.resolution = jsondata.get("resolution", None)
-        if not self.rule:
-            self.rule = jsondata.get("rule", jsondata.get("ruleReference", None))
+        self.rule = self.rule or jsondata.get("rule", jsondata.get("ruleReference", None))
         try:
             self.line = int(jsondata.get("line", jsondata.get("lineNumber", 0)))
         except ValueError:
@@ -472,7 +471,7 @@ class Finding(sq.SqObject):
         return branch, pr
 
 
-def export_findings(endpoint: pf.Platform, project_key: str, branch: str = None, pull_request: str = None) -> dict[str, Finding]:
+def export_findings(endpoint: Platform, project_key: str, branch: str = None, pull_request: str = None) -> dict[str, Finding]:
     """Export all findings of a given project
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -487,7 +486,7 @@ def export_findings(endpoint: pf.Platform, project_key: str, branch: str = None,
     return projects.Project(key=project_key, endpoint=endpoint).get_findings(branch, pull_request)
 
 
-def to_csv_header(endpoint: pf.Platform) -> list[str]:
+def to_csv_header(endpoint: Platform) -> list[str]:
     """Returns the list of CSV fields provided by an issue CSV export"""
     if endpoint.version() >= c.MQR_INTRO_VERSION:
         return list(CSV_EXPORT_FIELDS)
