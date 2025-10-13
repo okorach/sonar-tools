@@ -24,6 +24,9 @@ Abstraction of the Sonar sub-portfolio by reference concept
 """
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from http import HTTPStatus
 from requests import RequestException
 
@@ -35,6 +38,8 @@ from sonar import exceptions, utilities
 import sonar.sqobject as sq
 import sonar.util.constants as c
 
+if TYPE_CHECKING:
+    from sonar.portfolios import Portfolio
 
 class PortfolioReference(sq.SqObject):
     """
@@ -43,7 +48,7 @@ class PortfolioReference(sq.SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, reference: object, parent: object) -> None:
+    def __init__(self, reference: Portfolio, parent: Portfolio) -> None:
         """Constructor, don't use - use class methods instead"""
         self.key = f"{parent.key}:{reference.key}"
         super().__init__(endpoint=parent.endpoint, key=self.key)
@@ -63,12 +68,12 @@ class PortfolioReference(sq.SqObject):
         return o
 
     @classmethod
-    def load(cls, reference: object, parent: object) -> PortfolioReference:
+    def load(cls, reference: Portfolio, parent: Portfolio) -> PortfolioReference:
         """Constructor, don't use - use class methods instead"""
         return PortfolioReference(reference=reference, parent=parent)
 
     @classmethod
-    def create(cls, reference: object, parent: object, params: types.ApiParams = None) -> PortfolioReference:
+    def create(cls, reference: Portfolio, parent: Portfolio, params: types.ApiParams = None) -> PortfolioReference:
         """Constructor, don't use - use class methods instead"""
 
         try:
@@ -77,7 +82,7 @@ class PortfolioReference(sq.SqObject):
             utilities.handle_error(
                 e, f"creating portfolio reference to {str(reference)} in {str(parent)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,)
             )
-            raise exceptions.ObjectAlreadyExists
+            raise exceptions.ObjectAlreadyExists("reference", "reference portfolioalready exists")
         return PortfolioReference(reference=reference, parent=parent)
 
     def __str__(self) -> str:
