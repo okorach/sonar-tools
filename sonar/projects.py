@@ -38,7 +38,7 @@ from requests import HTTPError, RequestException
 import Levenshtein
 
 import sonar.logging as log
-import sonar.platform as pf
+from sonar.platform import Platform
 
 from sonar.util import types, cache
 from sonar import exceptions, errcodes
@@ -155,27 +155,27 @@ class Project(components.Component):
         c.GET_TAGS: "components/show",
     }
 
-    def __init__(self, endpoint: pf.Platform, key: str) -> None:
+    def __init__(self, endpoint: Platform, key: str) -> None:
         """
         :param Platform endpoint: Reference to the SonarQube platform
         :param str key: The project key
         """
         super().__init__(endpoint=endpoint, key=key)
-        self._last_analysis = None
-        self._branches_last_analysis = None
-        self._permissions = None
-        self._branches = None
-        self._pull_requests = None
-        self._ncloc_with_branches = None
-        self._binding = None
-        self._new_code = None
-        self._ci = None
-        self._revision = None
+        self._last_analysis = None # :type: Optional[datetime]
+        self._branches_last_analysis = None # :type: Optional[datetime]
+        self._permissions = None # :type: Optional[pperms.ProjectPermissions]
+        self._branches = None # :type: Optional[dict[str, branches.Branch]]
+        self._pull_requests = None # :type: Optional[dict[str, pull_requests.PullRequest]]
+        self._ncloc_with_branches = None # :type: Optional[int]
+        self._binding = None # :type: Optional[dict[str, str]]
+        self._new_code = None # :type: Optional[str]
+        self._ci = None # :type: Optional[str]
+        self._revision = None # :type: Optional[str]
         Project.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
     @classmethod
-    def get_object(cls, endpoint: pf.Platform, key: str) -> Project:
+    def get_object(cls, endpoint: Platform, key: str) -> Project:
         """Creates a project from a search in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -195,7 +195,7 @@ class Project(components.Component):
         return cls.load(endpoint, data["component"])
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Project:
+    def load(cls, endpoint: Platform, data: types.ApiPayload) -> Project:
         """Creates a project loaded with JSON data coming from api/components/search request
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -212,7 +212,7 @@ class Project(components.Component):
         return o
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, key: str, name: str) -> Project:
+    def create(cls, endpoint: Platform, key: str, name: str) -> Project:
         """Creates a Project object after creating it in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -1416,7 +1416,7 @@ class Project(components.Component):
         return ops[op] if op and op in ops else {"project": self.key}
 
 
-def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
+def count(endpoint: Platform, params: types.ApiParams = None) -> int:
     """Counts projects
 
     :param params: list of parameters to filter projects to search
@@ -1431,7 +1431,7 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
     return util.nbr_total_elements(json.loads(endpoint.get(Project.API[c.LIST], params=params).text))
 
 
-def search(endpoint: pf.Platform, params: types.ApiParams = None, threads: int = 8) -> dict[str, Project]:
+def search(endpoint: Platform, params: types.ApiParams = None, threads: int = 8) -> dict[str, Project]:
     """Searches projects in SonarQube
 
     :param endpoint: Reference to the SonarQube platform
@@ -1444,7 +1444,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None, threads: int =
     return sqobject.search_objects(endpoint=endpoint, object_class=Project, params=new_params, threads=threads)
 
 
-def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, use_cache: bool = True) -> dict[str, Project]:
+def get_list(endpoint: Platform, key_list: types.KeyList = None, threads: int = 8, use_cache: bool = True) -> dict[str, Project]:
     """
     :param Platform endpoint: Reference to the SonarQube platform
     :param KeyList key_list: List of portfolios keys to get, if None or empty all portfolios are returned
@@ -1460,7 +1460,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
     return {key: Project.get_object(endpoint, key) for key in sorted(key_list)}
 
 
-def get_matching_list(endpoint: pf.Platform, pattern: str, threads: int = 8) -> dict[str, Project]:
+def get_matching_list(endpoint: Platform, pattern: str, threads: int = 8) -> dict[str, Project]:
     """
     :param Platform endpoint: Reference to the SonarQube platform
     :param str pattern: Regular expression to match project keys
@@ -1520,7 +1520,7 @@ def __audit_bindings(projects_list: dict[str, Project], audit_settings: types.Co
     return problems
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
+def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
     """Audits all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1559,7 +1559,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     return problems
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports all or a list of projects configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1595,7 +1595,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     return dict(sorted(results.items()))
 
 
-def exists(key: str, endpoint: pf.Platform) -> bool:
+def exists(key: str, endpoint: Platform) -> bool:
     """
     :param str key: project key to check
     :param Platform endpoint: reference to the SonarQube platform
@@ -1609,7 +1609,7 @@ def exists(key: str, endpoint: pf.Platform) -> bool:
         return False
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
+def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
     """Imports a configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1660,7 +1660,7 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
 
 
 def export_zips(
-    endpoint: pf.Platform, key_regexp: Optional[str] = None, threads: int = 8, export_timeout: int = 30, skip_zero_loc: bool = False
+    endpoint: Platform, key_regexp: Optional[str] = None, threads: int = 8, export_timeout: int = 30, skip_zero_loc: bool = False
 ) -> list[dict[str, str]]:
     """Export as zip all or a list of projects
 
@@ -1721,7 +1721,7 @@ def export_zips(
     return results
 
 
-def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30) -> tuple[str, str]:
+def import_zip(endpoint: Platform, project_key: str, import_timeout: int = 30) -> tuple[str, str]:
     try:
         o_proj = Project.create(key=project_key, endpoint=endpoint, name=project_key)
     except exceptions.ObjectAlreadyExists:
@@ -1733,7 +1733,7 @@ def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30
     return o_proj, s
 
 
-def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60) -> dict[Project, str]:
+def import_zips(endpoint: Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60) -> dict[Project, str]:
     """Imports as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
