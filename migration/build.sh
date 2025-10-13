@@ -23,8 +23,6 @@ ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 build_image=1
-release=0
-release_docker=0
 
 while [[ $# -ne 0 ]]; do
     case "${1}" in
