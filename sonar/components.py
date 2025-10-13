@@ -35,7 +35,7 @@ from sonar.util import types
 import sonar.util.constants as c
 import sonar.logging as log
 import sonar.sqobject as sq
-import sonar.platform as pf
+from sonar.platform import Platform
 
 from sonar import settings, tasks, measures, utilities, rules, exceptions
 
@@ -53,29 +53,23 @@ class Component(sq.SqObject):
 
     API = {c.SEARCH: "components/search"}
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None) -> None:
+    def __init__(self, endpoint: Platform, key: str, data: types.ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
-        self.name = None
-        self.nbr_issues = None
-        self.ncloc = None
-        self._description = None
-        self._last_analysis = None
-        self._visibility = None
-        if data is not None:
-            self.reload(data)
+        self.name = None # :type: Optional[str]
+        self.nbr_issues = None # :type: Optional[int]
+        self.ncloc = None # :type: Optional[int]
+        self._description = None # :type: Optional[str]
+        self._last_analysis = None # :type: Optional[datetime]
+        self._visibility = None # :type: Optional[str]
+        self.reload(data or {})
 
     def reload(self, data: types.ApiPayload) -> Component:
         log.debug("Reloading %s with %s", str(self), utilities.json_dump(data))
-        if not self.sq_json:
-            self.sq_json = {}
-        self.sq_json.update(data)
-        if "name" in data:
-            self.name = data["name"]
-        if "visibility" in data:
-            self._visibility = data["visibility"]
-        if "analysisDate" in data:
-            self._last_analysis = utilities.string_to_date(data["analysisDate"])
+        super().reload(data)
+        self.name = data.get("name", None) or self.name
+        self.visibility = data.get("visibility", None) or self.visibility
+        self.last_analysis = data.get("analysisDate", None) or self.last_analysis
         return self
 
     def __str__(self) -> str:
@@ -128,9 +122,7 @@ class Component(sq.SqObject):
         """Returns the count of issues of a component for a given ruleset"""
         from sonar.issues import count_by_rule
 
-        params = self.api_params()
-        if filters is not None:
-            params.update(filters)
+        params = self.api_params() | filters or {}
         params["facets"] = "rules"
         params["rules"] = [r.key for r in ruleset]
         return {k: v for k, v in count_by_rule(endpoint=self.endpoint, **params).items() if v > 0}
