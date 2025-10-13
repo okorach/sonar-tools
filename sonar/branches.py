@@ -347,7 +347,7 @@ class Branch(components.Component):
         return {
             "key": self.concerned_object.key,
             "name": self.concerned_object.name,
-            "type": type(self.concerned_object).__name__.upper(),
+            "type": util.class_name(self.concerned_object).upper(),
             "branch": self.name,
             "url": self.url(),
         }
