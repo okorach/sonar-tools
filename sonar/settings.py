@@ -24,15 +24,18 @@ Abstraction of the SonarQube setting concept
 from __future__ import annotations
 import re
 import json
-from typing import Union, Optional
+from typing import Union, Optional, TYPE_CHECKING
 from http import HTTPStatus
 from requests import HTTPError, RequestException
 
 import sonar.logging as log
-import sonar.platform as pf
+from sonar.platform import Platform
 from sonar.util import types, cache, constants as c
 from sonar import sqobject, exceptions
 import sonar.utilities as util
+
+if TYPE_CHECKING:
+    from sonar.projects import Project
 
 DEVOPS_INTEGRATION = "devopsIntegration"
 GENERAL_SETTINGS = "generalSettings"
@@ -135,7 +138,7 @@ class Setting(sqobject.SqObject):
         "MQR_MODE": "v2/clean-code-policy/mode",
     }
 
-    def __init__(self, endpoint: pf.Platform, key: str, component: object = None, data: types.ApiPayload = None) -> None:
+    def __init__(self, endpoint: Platform, key: str, component: Optional[Project] = None, data: types.ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.component = component
@@ -149,7 +152,7 @@ class Setting(sqobject.SqObject):
         Setting.CACHE.put(self)
 
     @classmethod
-    def read(cls, key: str, endpoint: pf.Platform, component: object = None) -> Setting:
+    def read(cls, key: str, endpoint: Platform, component: Optional[Project] = None) -> Setting:
         """Reads a setting from the platform"""
         log.debug("Reading setting '%s' for %s", key, str(component))
         o = Setting.CACHE.get(key, component, endpoint.local_url)
@@ -159,7 +162,7 @@ class Setting(sqobject.SqObject):
         return Setting.load(key=key, endpoint=endpoint, data=data, component=component)
 
     @classmethod
-    def create(cls, key: str, endpoint: pf.Platform, value: any = None, component: object = None) -> Union[Setting, None]:
+    def create(cls, key: str, endpoint: Platform, value: any = None, component: Optional[Project] = None) -> Union[Setting, None]:
         """Creates a setting with a custom value"""
         log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
         r = endpoint.post(Setting.API[c.CREATE], params={"key": key, "component": component})
@@ -169,7 +172,7 @@ class Setting(sqobject.SqObject):
         return o
 
     @classmethod
-    def load(cls, key: str, endpoint: pf.Platform, data: types.ApiPayload, component: object = None) -> Setting:
+    def load(cls, key: str, endpoint: Platform, data: types.ApiPayload, component: Optional[Project] = None) -> Setting:
         """Loads a setting with  JSON data"""
         log.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
         o = Setting.CACHE.get(key, component, endpoint.local_url)
@@ -372,7 +375,7 @@ class Setting(sqobject.SqObject):
         return ("thirdParty", None)
 
 
-def get_object(endpoint: pf.Platform, key: str, component: object = None) -> Setting:
+def get_object(endpoint: Platform, key: str, component: Optional[Project] = None) -> Setting:
     """Returns a Setting object from its key and, optionally, component"""
     o = Setting.CACHE.get(key, component, endpoint.local_url)
     if not o:
@@ -380,7 +383,7 @@ def get_object(endpoint: pf.Platform, key: str, component: object = None) -> Set
     return Setting.CACHE.get(key, component, endpoint.local_url)
 
 
-def __get_settings(endpoint: pf.Platform, data: types.ApiPayload, component: object = None) -> dict[str, Setting]:
+def __get_settings(endpoint: Platform, data: types.ApiPayload, component: Optional[Project] = None) -> dict[str, Setting]:
     """Returns settings of the global platform or a specific component object (Project, Branch, App, Portfolio)"""
     settings = {}
     settings_type_list = ["settings"]
@@ -402,7 +405,7 @@ def __get_settings(endpoint: pf.Platform, data: types.ApiPayload, component: obj
 
 
 def get_bulk(
-    endpoint: pf.Platform, settings_list: types.KeyList = None, component: object = None, include_not_set: bool = False
+    endpoint: Platform, settings_list: types.KeyList = None, component: Optional[Project] = None, include_not_set: bool = False
 ) -> dict[str, Setting]:
     """Gets several settings as bulk (returns a dict)"""
     settings_dict = {}
@@ -437,7 +440,7 @@ def get_bulk(
     return settings_dict
 
 
-def get_all(endpoint: pf.Platform, project: object = None) -> dict[str, Setting]:
+def get_all(endpoint: Platform, project: Project = None) -> dict[str, Setting]:
     """Returns all settings, global ones or component settings"""
     return get_bulk(endpoint, component=project, include_not_set=True)
 
@@ -461,12 +464,12 @@ def string_to_new_code(value: str) -> list[str]:
     return re.split(r"\s*=\s*", value)
 
 
-def get_new_code_period(endpoint: pf.Platform, project_or_branch: object) -> Setting:
+def get_new_code_period(endpoint: Platform, project_or_branch: Project) -> Setting:
     """returns the new code period, either the default global setting, or specific to a project/branch"""
     return Setting.read(key=NEW_CODE_PERIOD, endpoint=endpoint, component=project_or_branch)
 
 
-def set_new_code_period(endpoint: pf.Platform, nc_type: str, nc_value: str, project_key: str = None, branch: str = None) -> bool:
+def set_new_code_period(endpoint: Platform, nc_type: str, nc_value: str, project_key: str = None, branch: str = None) -> bool:
     """Sets the new code period at global level or for a project"""
     log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
     try:
@@ -483,7 +486,7 @@ def set_new_code_period(endpoint: pf.Platform, nc_type: str, nc_value: str, proj
     return ok
 
 
-def get_visibility(endpoint: pf.Platform, component: object) -> str:
+def get_visibility(endpoint: Platform, component: Optional[Project]) -> str:
     """Returns the platform global or component visibility"""
     key = COMPONENT_VISIBILITY if component else PROJECT_DEFAULT_VISIBILITY
     o = Setting.CACHE.get(key, component, endpoint.local_url)
@@ -499,7 +502,7 @@ def get_visibility(endpoint: pf.Platform, component: object) -> str:
         return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 
 
-def set_visibility(endpoint: pf.Platform, visibility: str, component: object = None) -> bool:
+def set_visibility(endpoint: Platform, visibility: str, component: Optional[Project] = None) -> bool:
     """Sets the platform global default visibility or component visibility"""
     try:
         if component:
@@ -515,7 +518,7 @@ def set_visibility(endpoint: pf.Platform, visibility: str, component: object = N
         return False
 
 
-def set_setting(endpoint: pf.Platform, key: str, value: any, component: object = None) -> bool:
+def set_setting(endpoint: Platform, key: str, value: any, component: Optional[Project] = None) -> bool:
     """Sets a setting to a particular value"""
 
     try:
@@ -563,22 +566,22 @@ def encode(setting: Setting, setting_value: any) -> dict[str, str]:
     return params
 
 
-def reset_setting(endpoint: pf.Platform, setting_key: str, project: Optional[object] = None) -> bool:
+def reset_setting(endpoint: Platform, setting_key: str, project: Optional[object] = None) -> bool:
     """Resets a setting to its default"""
     return get_object(endpoint=endpoint, key=setting_key, component=project).reset()
 
 
-def get_component_params(component: object, name: str = "component") -> types.ApiParamss:
+def get_component_params(component: Optional[Project], name: str = "component") -> types.ApiParamss:
     """Gets the parameters to read or write settings"""
     if not component:
         return {}
-    elif type(component).__name__ == "Branch":
+    elif util.class_name(component) == "Branch":
         return {name: component.project.key, "branch": component.key}
     else:
         return {name: component.key}
 
 
-def get_settings_data(endpoint: pf.Platform, key: str, component: Optional[object]) -> types.ApiPayload:
+def get_settings_data(endpoint: Platform, key: str, component: Optional[object]) -> types.ApiPayload:
     """Reads a setting data with different API depending on setting key
 
     :param Platform endpoint: The SonarQube Platform object
