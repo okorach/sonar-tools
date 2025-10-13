@@ -50,5 +50,5 @@ if [[ "${confirm}" = "y" ]]; then
     cd "${ROOT_DIR}" && docker pushrm olivierkorach/sonar-tools
 
     echo "Running scan"
-    "${CONF_DIR}/scan.sh" -test
+    "${CONF_DIR}/run_all.sh" -test
 fi
