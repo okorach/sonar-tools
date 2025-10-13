@@ -23,7 +23,7 @@ Parent module of applications and portfolios
 
 """
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import json
 
 import sonar.logging as log
@@ -34,6 +34,9 @@ import sonar.components as comp
 from sonar import utilities
 from sonar.audit.rules import get_rule
 from sonar.audit.problem import Problem
+
+if TYPE_CHECKING:
+    from sonar.permissions import Permissions
 
 
 class Aggregation(comp.Component):
@@ -84,7 +87,7 @@ class Aggregation(comp.Component):
     def _audit_singleton_aggregation(self, broken_rule: object) -> list[Problem]:
         return self._audit_aggregation_cardinality((1,), broken_rule)
 
-    def permissions(self) -> Optional[object]:
+    def permissions(self) -> Optional[Permissions]:
         """Should be implement in child classes"""
         return self._permissions
 
