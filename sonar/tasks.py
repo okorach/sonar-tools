@@ -20,7 +20,7 @@
 
 """Abstraction of the SonarQube background task concept"""
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING, Union
 import time
 import datetime
 import json
@@ -30,13 +30,20 @@ from requests import RequestException
 
 import sonar.logging as log
 import sonar.sqobject as sq
-import sonar.platform as pf
+from sonar.platform import Platform
 
 import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 from sonar.config import get_scanners_versions
 from sonar.util import types, cache
+
+if TYPE_CHECKING:
+    from sonar.projects import Project
+    from sonar.branches import Branch
+    from sonar.pull_requests import PullRequest
+    from sonar.applications import Application
+    from sonar.portfolios import Portfolio
 
 SUCCESS = "SUCCESS"
 PENDING = "PENDING"
@@ -68,7 +75,7 @@ class Task(sq.SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: pf.Platform, task_id: str, concerned_object: object = None, data: types.ApiPayload = None) -> None:
+    def __init__(self, endpoint: Platform, task_id: str, concerned_object: Optional[Union[Project, Branch, PullRequest, Application, Portfolio]] = None, data: types.ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=task_id)
         self.sq_json = data
@@ -98,7 +105,7 @@ class Task(sq.SqObject):
             u += f"?id={self.component_key}"
         return u
 
-    def project(self) -> object:
+    def project(self) -> Union[Project, Branch, PullRequest, Application, Portfolio]:
         """Returns the project of the background task"""
         return self.concerned_object
 
@@ -430,7 +437,7 @@ class Task(sq.SqObject):
                         log.debug("Pattern = '%s'", excl)
                         problems += self.__audit_exclusions(excl, susp_exclusions, susp_exceptions)
             problems += self.__audit_disabled_scm(audit_settings, context)
-        elif type(self.concerned_object).__name__ == "Project":
+        elif util.class_name(self.concerned_object) == "Project":
             log.debug("Last background task of %s has no scanner context, can't audit it", str(self.concerned_object))
 
         problems += self.__audit_warnings(audit_settings)
@@ -440,7 +447,7 @@ class Task(sq.SqObject):
         return problems
 
 
-def search(endpoint: pf.Platform, only_current: bool = False, component_key: str = None, **kwargs) -> list[Task]:
+def search(endpoint: Platform, only_current: bool = False, component_key: str = None, **kwargs) -> list[Task]:
     """Searches background tasks
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -464,12 +471,12 @@ def search(endpoint: pf.Platform, only_current: bool = False, component_key: str
     return []
 
 
-def search_all_last(endpoint: pf.Platform) -> list[Task]:
+def search_all_last(endpoint: Platform) -> list[Task]:
     """Searches for last background task of all found components"""
     return search(endpoint=endpoint, only_current=True)
 
 
-def search_last(endpoint: pf.Platform, component_key: str, **params) -> Optional[Task]:
+def search_last(endpoint: Platform, component_key: str, **params) -> Optional[Task]:
     """Searches for last background task of a component"""
     branch = params.pop("branch", None)
     bg_tasks = search(endpoint=endpoint, only_current=branch is None, component_key=component_key, **params)
@@ -482,6 +489,6 @@ def search_last(endpoint: pf.Platform, component_key: str, **params) -> Optional
     return bg_tasks[0]
 
 
-def search_all(endpoint: pf.Platform, component_key: str, **params) -> list[Task]:
+def search_all(endpoint: Platform, component_key: str, **params) -> list[Task]:
     """Search all background tasks of a given component"""
     return search(endpoint=endpoint, component_key=component_key, **params)
