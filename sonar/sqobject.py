@@ -62,7 +62,7 @@ class SqObject(object):
         return NotImplemented
 
     @classmethod
-    def api_for(cls, op: str, endpoint: object) -> Optional[str]:
+    def api_for(cls, op: str, endpoint: Platform) -> Optional[str]:
         """Returns the API to use for a particular operation.
         This function must be overloaded for classes that need specific treatment. e.g. API V1 or V2
         depending on SonarQube version, different API for SonarQube Cloud
@@ -157,13 +157,13 @@ class SqObject(object):
         try:
             ok = self.post(api=self.__class__.API[c.DELETE], params=self.api_params(c.DELETE)).ok
             if ok:
-                log.info("Removing from %s cache", str(self.__class__.__name__))
+                log.info("Removing from %s cache", utilities.class_name(self))
                 self.__class__.CACHE.pop(self)
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"deleting {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
         except (AttributeError, KeyError):
-            raise exceptions.UnsupportedOperation(f"Can't delete {self.__class__.__name__.lower()}s")
+            raise exceptions.UnsupportedOperation(f"Can't delete {utilities.class_name(self).lower()}s")
         return ok
 
     def set_tags(self, tags: list[str]) -> bool:
@@ -183,7 +183,7 @@ class SqObject(object):
             utilities.handle_error(e, f"setting tags of {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             return False
         except (AttributeError, KeyError):
-            raise exceptions.UnsupportedOperation(f"Can't set tags on {self.__class__.__name__.lower()}s")
+            raise exceptions.UnsupportedOperation(f"Can't set tags on {utilities.class_name(self).lower()}s")
         return r.ok
 
     def get_tags(self, **kwargs) -> list[str]:
@@ -191,7 +191,7 @@ class SqObject(object):
         try:
             api = self.__class__.API[c.GET_TAGS]
         except (AttributeError, KeyError):
-            raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags")
+            raise exceptions.UnsupportedOperation(f"{utilities.class_name(self).lower()}s have no tags")
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
         if not kwargs.get(c.USE_CACHE, True) or self._tags is None:
@@ -204,12 +204,12 @@ class SqObject(object):
         return self._tags
 
 
-def __get(endpoint: object, api: str, params: types.ApiParams) -> requests.Response:
+def __get(endpoint: Platform, api: str, params: types.ApiParams) -> requests.Response:
     """Returns a Sonar object from its key"""
     return json.loads(endpoint.get(api, params=params).text)
 
 
-def __load(endpoint: object, object_class: any, data: types.ObjectJsonRepr) -> dict[str, object]:
+def __load(endpoint: Platform, object_class: any, data: types.ObjectJsonRepr) -> dict[str, object]:
     key_field = object_class.SEARCH_KEY_FIELD
     if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook"):
         return {obj[key_field]: object_class.load(endpoint=endpoint, data=obj) for obj in data}
@@ -219,7 +219,7 @@ def __load(endpoint: object, object_class: any, data: types.ObjectJsonRepr) -> d
         return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}
 
 
-def search_objects(endpoint: object, object_class: any, params: types.ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
+def search_objects(endpoint: Platform, object_class: any, params: types.ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
     """Runs a multi-threaded object search for searchable Sonar Objects"""
     api = object_class.api_for(c.SEARCH, endpoint)
     returned_field = object_class.SEARCH_RETURN_FIELD
