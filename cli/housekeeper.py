@@ -32,7 +32,8 @@ import sys
 from requests import RequestException
 from cli import options
 import sonar.logging as log
-from sonar import platform, tokens, users, projects, branches, version, errcodes
+from sonar.platform import Platform
+from sonar import tokens, users, projects, branches, version, errcodes
 import sonar.util.constants as c
 import sonar.utilities as util
 import sonar.exceptions as ex
@@ -42,7 +43,7 @@ TOOL_NAME = "sonar-housekeeper"
 PROJ_MAX_AGE = "audit.projects.maxLastAnalysisAge"
 
 
-def get_project_problems(settings: dict[str, str], endpoint: object) -> list[problem.Problem]:
+def get_project_problems(settings: dict[str, str], endpoint: Platform) -> list[problem.Problem]:
     """Returns the list of problems that would require housekeeping for a given project"""
     problems = []
     if settings[PROJ_MAX_AGE] < 90:
@@ -71,7 +72,7 @@ def get_project_problems(settings: dict[str, str], endpoint: object) -> list[pro
     return problems
 
 
-def get_user_problems(settings: dict[str, str], endpoint: platform.Platform) -> list[problem.Problem]:
+def get_user_problems(settings: dict[str, str], endpoint: Platform) -> list[problem.Problem]:
     """Collects problems related to user accounts"""
     user_problems = users.audit(endpoint=endpoint, audit_settings=settings)
     loglevel = log.WARNING if len(user_problems) > 0 else log.INFO
@@ -191,7 +192,7 @@ def main() -> None:
     start_time = util.start_clock()
     try:
         kwargs = util.convert_args(_parse_arguments())
-        sq = platform.Platform(**kwargs)
+        sq = Platform(**kwargs)
         sq.verify_connection()
         sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
 
