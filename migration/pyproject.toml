@@ -65,7 +65,7 @@ requires = [
 ]
 
 [tool.poetry]
-packages = [{include = "sonar"}, {include = "migration"}]
+packages = [{include = "sonar"}, {include = "migration"}, {include = "cli"}]
 
 [dependency-groups]
 test = [
