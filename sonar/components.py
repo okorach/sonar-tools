@@ -118,7 +118,7 @@ class Component(sq.SqObject):
         """Returns list of issues for a component, optionally on branches or/and PRs"""
         from sonar.issues import search_all
 
-        filters = {k: list(set(v) if isinstance(v, (list, set, tuple)) else v) for k, v in (filters or {}).items() if v is not None}
+        filters = {k: list(set(v)) if isinstance(v, (list, set, tuple)) else v for k, v in (filters or {}).items() if v is not None}
         log.info("Searching issues for %s with filters %s", str(self), str(filters))
         issue_list = search_all(endpoint=self.endpoint, params=self.api_params() | {"additionalFields": "comments"} | filters)
         self.nbr_issues = len(issue_list)
