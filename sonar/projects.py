@@ -161,16 +161,16 @@ class Project(components.Component):
         :param str key: The project key
         """
         super().__init__(endpoint=endpoint, key=key)
-        self._last_analysis = None # :type: Optional[datetime]
-        self._branches_last_analysis = None # :type: Optional[datetime]
-        self._permissions = None # :type: Optional[pperms.ProjectPermissions]
-        self._branches = None # :type: Optional[dict[str, branches.Branch]]
-        self._pull_requests = None # :type: Optional[dict[str, pull_requests.PullRequest]]
-        self._ncloc_with_branches = None # :type: Optional[int]
-        self._binding = None # :type: Optional[dict[str, str]]
-        self._new_code = None # :type: Optional[str]
-        self._ci = None # :type: Optional[str]
-        self._revision = None # :type: Optional[str]
+        self._last_analysis = None  # :type: Optional[datetime]
+        self._branches_last_analysis = None  # :type: Optional[datetime]
+        self._permissions = None  # :type: Optional[pperms.ProjectPermissions]
+        self._branches = None  # :type: Optional[dict[str, branches.Branch]]
+        self._pull_requests = None  # :type: Optional[dict[str, pull_requests.PullRequest]]
+        self._ncloc_with_branches = None  # :type: Optional[int]
+        self._binding = None  # :type: Optional[dict[str, str]]
+        self._new_code = None  # :type: Optional[str]
+        self._ci = None  # :type: Optional[str]
+        self._revision = None  # :type: Optional[str]
         Project.CACHE.put(self)
         log.debug("Created object %s", str(self))
 

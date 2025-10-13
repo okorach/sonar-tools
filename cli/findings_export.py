@@ -269,7 +269,9 @@ def needs_hotspot_search(params: types.ApiParams) -> bool:
     )
 
 
-def get_component_findings(component: Union[Project, Application, Portfolio], search_findings: bool, params: ConfigSettings) -> dict[str, findings.Finding]:
+def get_component_findings(
+    component: Union[Project, Application, Portfolio], search_findings: bool, params: ConfigSettings
+) -> dict[str, findings.Finding]:
     """Gets the findings of a component and puts them in a writing queue"""
     try:
         _ = next(v for k, v in params.items() if k in _SEARCH_CRITERIA and v is not None)

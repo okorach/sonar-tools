@@ -109,7 +109,7 @@ class Finding(sq.SqObject):
     def __init__(self, endpoint: Platform, key: str, data: types.ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
-        self.severity = None  #: Severity # :type: Optional[str]  
+        self.severity = None  #: Severity # :type: Optional[str]
         self.type = None  #: Type: VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT # :type: Optional[str]
         self.impacts = None  #: 10.x MQR mode # :type: Optional[dict[str, str]]
         self.author = None  #: Author # :type: Optional[str]
@@ -118,8 +118,8 @@ class Finding(sq.SqObject):
         self.resolution = None  #: Resolution # :type: Optional[str]
         self.rule = None  #: Rule Id # :type: Optional[str]
         self.projectKey = None  #: Project key # :type: Optional[str]
-        self._changelog = None # :type: Optional[dict[str, changelog.Changelog]]
-        self._comments = None # :type: Optional[dict[str, str]]
+        self._changelog = None  # :type: Optional[dict[str, changelog.Changelog]]
+        self._comments = None  # :type: Optional[dict[str, str]]
         self.file = None  #: File # :type: Optional[str]
         self.line = 0  #: Line # :type: Optional[int]
         self.component = None

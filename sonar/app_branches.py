@@ -48,12 +48,12 @@ class ApplicationBranch(Component):
     Abstraction of the SonarQube "application branch" concept
     """
 
-    CACHE = cache.Cache() # :type: cache.Cache
-    API = { # :type: dict[str, str]
-        c.CREATE: "applications/create_branch", # :type: str
-        c.GET: "applications/show", # :type: str
-        c.UPDATE: "applications/update_branch", # :type: str
-        c.DELETE: "applications/delete_branch", # :type: str
+    CACHE = cache.Cache()  # :type: cache.Cache
+    API = {  # :type: dict[str, str]
+        c.CREATE: "applications/create_branch",  # :type: str
+        c.GET: "applications/show",  # :type: str
+        c.UPDATE: "applications/update_branch",  # :type: str
+        c.DELETE: "applications/delete_branch",  # :type: str
     }
 
     def __init__(
@@ -61,12 +61,12 @@ class ApplicationBranch(Component):
     ) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=app.endpoint, key=f"{app.key} BRANCH {name}")
-        self.concerned_object = app # :type: Application
-        self.name = name # :type: str
-        self.sq_json = branch_data # :type: types.ApiPayload
-        self._is_main = is_main # :type: bool
-        self._project_branches = project_branches # :type: list[Branch]
-        self._last_analysis = None # :type: Optional[datetime]
+        self.concerned_object = app  # :type: Application
+        self.name = name  # :type: str
+        self.sq_json = branch_data  # :type: types.ApiPayload
+        self._is_main = is_main  # :type: bool
+        self._project_branches = project_branches  # :type: list[Branch]
+        self._last_analysis = None  # :type: Optional[datetime]
         log.debug("Created %s with uuid %d id %x", str(self), hash(self), id(self))
         ApplicationBranch.CACHE.put(self)
 

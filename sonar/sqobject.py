@@ -39,6 +39,7 @@ from sonar import utilities, exceptions, errcodes
 if TYPE_CHECKING:
     from sonar.platform import Platform
 
+
 class SqObject(object):
     """Abstraction of Sonar objects"""
 
@@ -48,9 +49,9 @@ class SqObject(object):
     def __init__(self, endpoint: Platform, key: str) -> None:
         self.key = key  #: Object unique key (unique in its class) # :type: str
         self.endpoint = endpoint  #: Reference to the SonarQube platform # :type: Platform
-        self.concerned_object = None # :type: Optional[SqObject]
-        self._tags = None # :type: Optional[list[str]]
-        self.sq_json = {} # :type: types.ApiPayload
+        self.concerned_object = None  # :type: Optional[SqObject]
+        self._tags = None  # :type: Optional[list[str]]
+        self.sq_json = {}  # :type: types.ApiPayload
 
     def __hash__(self) -> int:
         """Default UUID for SQ objects"""

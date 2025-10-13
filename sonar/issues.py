@@ -134,7 +134,7 @@ class Issue(findings.Finding):
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
-        self._debt = None # :type: Optional[int]
+        self._debt = None  # :type: Optional[int]
         Issue.CACHE.put(self)
 
     def __str__(self) -> str:
@@ -175,14 +175,14 @@ class Issue(findings.Finding):
         if "debt" in self.sq_json:
             kdays, days, hours, minutes = 0, 0, 0, 0
             debt = self.sq_json["debt"]
-            
-            if (m := re.search(r"(\d+)kd", debt)):
+
+            if m := re.search(r"(\d+)kd", debt):
                 kdays = int(m.group(1))
-            if (m := re.search(r"(\d+)d", debt)):
+            if m := re.search(r"(\d+)d", debt):
                 days = int(m.group(1))
-            if (m := re.search(r"(\d+)h", debt)):
+            if m := re.search(r"(\d+)h", debt):
                 hours = int(m.group(1))
-            if (m := re.search(r"(\d+)min", debt)):
+            if m := re.search(r"(\d+)min", debt):
                 minutes = int(m.group(1))
             self._debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
         elif "effort" in self.sq_json:

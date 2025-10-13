@@ -29,6 +29,7 @@ from sonar.util import issue_defs as idefs
 if TYPE_CHECKING:
     from sonar.findings import Finding
 
+
 class Changelog(object):
     """Abstraction of SonarQube finding (issue or hotspot) changelog"""
 

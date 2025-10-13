@@ -41,6 +41,7 @@ import sonar.util.constants as c
 if TYPE_CHECKING:
     from sonar.portfolios import Portfolio
 
+
 class PortfolioReference(sq.SqObject):
     """
     Abstraction of the Sonar portfolio reference concept

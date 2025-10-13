@@ -75,7 +75,13 @@ class Task(sq.SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: Platform, task_id: str, concerned_object: Optional[Union[Project, Branch, PullRequest, Application, Portfolio]] = None, data: types.ApiPayload = None) -> None:
+    def __init__(
+        self,
+        endpoint: Platform,
+        task_id: str,
+        concerned_object: Optional[Union[Project, Branch, PullRequest, Application, Portfolio]] = None,
+        data: types.ApiPayload = None,
+    ) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=task_id)
         self.sq_json = data

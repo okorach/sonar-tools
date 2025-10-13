@@ -44,6 +44,7 @@ TOOL_NAME = "sonar-measures"
 if TYPE_CHECKING:
     from sonar.components import Component
 
+
 def __get_measures_history(obj: Component, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the measure history of an object (project, branch, application, portfolio)"""
     try:

@@ -56,12 +56,12 @@ class Component(sq.SqObject):
     def __init__(self, endpoint: Platform, key: str, data: types.ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
-        self.name = None # :type: Optional[str]
-        self.nbr_issues = None # :type: Optional[int]
-        self.ncloc = None # :type: Optional[int]
-        self._description = None # :type: Optional[str]
-        self._last_analysis = None # :type: Optional[datetime]
-        self._visibility = None # :type: Optional[str]
+        self.name = None  # :type: Optional[str]
+        self.nbr_issues = None  # :type: Optional[int]
+        self.ncloc = None  # :type: Optional[int]
+        self._description = None  # :type: Optional[str]
+        self._last_analysis = None  # :type: Optional[datetime]
+        self._visibility = None  # :type: Optional[str]
         self.reload(data or {})
 
     def reload(self, data: types.ApiPayload) -> Component:

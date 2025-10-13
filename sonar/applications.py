@@ -74,10 +74,10 @@ class Application(aggr.Aggregation):
     def __init__(self, endpoint: Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=endpoint, key=key)
-        self._branches = None # :type: Optional[dict[str, ApplicationBranch]]
-        self._projects = None # :type: Optional[dict[str, str]]
-        self._description = None # :type: Optional[str]
-        self.name = name # :type: str
+        self._branches = None  # :type: Optional[dict[str, ApplicationBranch]]
+        self._projects = None  # :type: Optional[dict[str, str]]
+        self._description = None  # :type: Optional[str]
+        self.name = name  # :type: str
         log.debug("Created %s with uuid %d id %x", str(self), hash(self), id(self))
         Application.CACHE.put(self)
 
