@@ -115,7 +115,7 @@ _INLINE_SETTINGS = (
     r"^sonar\.auth\..*\.organizations$",
     r"^sonar\.azureresourcemanager\.file\.identifier$",
     r"^sonar\.java\.jvmframeworkconfig\.file\.patterns$",
-    r"^sonar\.auth\.gitlab\.allowedGroups"
+    r"^sonar\.auth\.gitlab\.allowedGroups",
 )
 
 VALID_SETTINGS = set()
