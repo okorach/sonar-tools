@@ -397,8 +397,7 @@ class Project(components.Component):
             try:
                 resp = self.get("alm_settings/get_binding", params={"project": self.key}, mute=(HTTPStatus.NOT_FOUND,))
                 self._binding = {"has_binding": True, "binding": json.loads(resp.text)}
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting binding of {str(self)}", catch_http_errors=True, log_level=log.DEBUG)
+            except exceptions.SonarException as e:
                 # Hack: 8.9 returns 404, 9.x returns 400
                 self._binding = {"has_binding": False}
         log.debug("%s binding = %s", str(self), str(self._binding.get("binding", None)))
@@ -806,11 +805,7 @@ class Project(components.Component):
         elif pr is not None:
             params["pullRequest"] = pr
 
-        try:
-            data = json.loads(self.get("projects/export_findings", params=params).text)["export_findings"]
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, "getting project findings", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            return {}
+        data = json.loads(self.get("projects/export_findings", params=params).text)["export_findings"]
         findings_conflicts = {"SECURITY_HOTSPOT": 0, "BUG": 0, "CODE_SMELL": 0, "VULNERABILITY": 0}
         nbr_findings = {"SECURITY_HOTSPOT": 0, "BUG": 0, "CODE_SMELL": 0, "VULNERABILITY": 0}
         for i in data:
@@ -825,7 +820,8 @@ class Project(components.Component):
             i["pullRequest"] = pr
             nbr_findings[i["type"]] += 1
             if i["type"] == "SECURITY_HOTSPOT":
-                findings_list[key] = hotspots.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
+                if i.get("status", "") != "CLOSED":
+                    findings_list[key] = hotspots.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
             else:
                 findings_list[key] = issues.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
         for t in ("SECURITY_HOTSPOT", "BUG", "CODE_SMELL", "VULNERABILITY"):
@@ -842,9 +838,8 @@ class Project(components.Component):
         if branches_or_prs is None:
             return super().get_hotspots(filters)
         findings_list = {}
-        for comp in branches_or_prs.values():
-            if comp:
-                findings_list = {**findings_list, **comp.get_hotspots()}
+        for component in [comp for comp in branches_or_prs.values() if comp]:
+            findings_list |= component.get_hotspots()
         return findings_list
 
     def get_issues(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:
@@ -852,9 +847,8 @@ class Project(components.Component):
         if branches_or_prs is None:
             return super().get_issues(filters)
         findings_list = {}
-        for comp in branches_or_prs.values():
-            if comp:
-                findings_list = {**findings_list, **comp.get_issues()}
+        for component in [comp for comp in branches_or_prs.values() if comp]:
+            findings_list |= component.get_issues()
         return findings_list
 
     def count_third_party_issues(self, filters: Optional[dict[str, str]] = None) -> dict[str, int]:
@@ -953,12 +947,8 @@ class Project(components.Component):
         :return: name of quality gate and whether it's the default
         :rtype: tuple(name, is_default)
         """
-        try:
-            data = json.loads(self.get(api="qualitygates/get_by_project", params={"project": self.key}).text)
-            return data["qualityGate"]["name"], data["qualityGate"]["default"]
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting quality gate of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN,))
-            return "Error - Insufficient Permissions", False
+        data = json.loads(self.get(api="qualitygates/get_by_project", params={"project": self.key}).text)
+        return data["qualityGate"]["name"], data["qualityGate"]["default"]
 
     def webhooks(self) -> dict[str, webhooks.WebHook]:
         """
@@ -966,11 +956,7 @@ class Project(components.Component):
         :rtype: dict{key: WebHook}
         """
         log.debug("Getting %s webhooks", str(self))
-        try:
-            return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN, HTTPStatus.NOT_FOUND))
-            return None
+        return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
 
     def links(self) -> Optional[list[dict[str, str]]]:
         """
@@ -1066,8 +1052,7 @@ class Project(components.Component):
 
             try:
                 hooks = webhooks.export(self.endpoint, self.key)
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN,))
+            except exceptions.SonarException as e:
                 hooks = None
             if hooks is not None:
                 json_data["webhooks"] = hooks
@@ -1123,12 +1108,7 @@ class Project(components.Component):
         :type desired_permissions: dict
         :return: Nothing
         """
-        try:
-            self.permissions().set(desired_permissions)
-            return True
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting permissions of {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            return False
+        self.permissions().set(desired_permissions)
 
     def set_links(self, desired_links: types.ObjectJsonRepr) -> bool:
         """Sets project links
@@ -1139,15 +1119,11 @@ class Project(components.Component):
         """
         params = {"projectKey": self.key}
         ok = True
-        try:
-            for link in desired_links.get("links", {}):
-                if link.get("type", "") != "custom":
-                    continue
-                params.update(link)
-                ok = ok and self.post("project_links/create", params=params).ok
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting links of {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
-            return False
+        for link in desired_links.get("links", {}):
+            if link.get("type", "") != "custom":
+                continue
+            params.update(link)
+            ok = ok and self.post("project_links/create", params=params).ok
         return ok
 
     def set_quality_gate(self, quality_gate: str) -> bool:
@@ -1158,17 +1134,8 @@ class Project(components.Component):
         """
         if quality_gate is None:
             return False
-        try:
-            _ = qualitygates.QualityGate.get_object(self.endpoint, quality_gate)
-        except exceptions.ObjectNotFound:
-            log.warning("Quality gate '%s' not found, can't set it for %s", quality_gate, str(self))
-            return False
-        log.debug("Setting quality gate '%s' for %s", quality_gate, str(self))
-        try:
-            return self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate}).ok
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting permissions of {str(self)}", catch_all=True)
-        return False
+        _ = qualitygates.QualityGate.get_object(self.endpoint, quality_gate)
+        return self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate}).ok
 
     def set_contains_ai_code(self, contains_ai_code: bool) -> bool:
         """Sets whether a project contains AI code
@@ -1178,14 +1145,10 @@ class Project(components.Component):
         """
         if self.endpoint.version() < (10, 7, 0) or self.endpoint.edition() == c.CE:
             return False
-        try:
-            api = "projects/set_contains_ai_code"
-            if self.endpoint.version() == (10, 7, 0):
-                api = "projects/set_ai_code_assurance"
-            return self.post(api, params={"project": self.key, "contains_ai_code": str(contains_ai_code).lower()}).ok
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting contains AI code of {str(self)}", catch_all=True)
-            return False
+        api = "projects/set_contains_ai_code"
+        if self.endpoint.version() == (10, 7, 0):
+            api = "projects/set_ai_code_assurance"
+        return self.post(api, params={"project": self.key, "contains_ai_code": str(contains_ai_code).lower()}).ok
 
     def set_quality_profile(self, language: str, quality_profile: str) -> bool:
         """Sets project quality profile for a given language
@@ -1198,15 +1161,7 @@ class Project(components.Component):
             log.warning("Quality profile '%s' in language '%s' does not exist, can't set it for %s", quality_profile, language, str(self))
             return False
         log.debug("Setting quality profile '%s' of language '%s' for %s", quality_profile, language, str(self))
-        try:
-            return self.post("qualityprofiles/add_project", params={"project": self.key, "qualityProfile": quality_profile, "language": language}).ok
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting quality profile of {str(self)}", catch_all=True)
-            errcode, msg = util.http_error_and_code(e)
-            if errcode == errcodes.OBJECT_NOT_FOUND:
-                Project.CACHE.pop(self)
-                raise exceptions.ObjectNotFound(self.key, msg)
-        return False
+        return self.post("qualityprofiles/add_project", params={"project": self.key, "qualityProfile": quality_profile, "language": language}).ok
 
     def rename_main_branch(self, main_branch_name: str) -> bool:
         """Renames the project main branch
@@ -1391,11 +1346,8 @@ class Project(components.Component):
             except StopIteration:
                 log.warning("No main branch defined in %s configuration", self)
             for branch_name, branch_data in branch_config.items():
-                try:
-                    branch = branches.Branch.get_object(self, branch_name)
-                    branch.import_config(branch_data)
-                except exceptions.ObjectNotFound:
-                    log.warning("Branch %s does not exist in %s, skipping update", branch_name, str(self))
+                branch = branches.Branch.get_object(self, branch_name)
+                branch.import_config(branch_data)
         if "binding" in config:
             try:
                 self.set_devops_binding(config["binding"])
@@ -1546,7 +1498,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
             try:
                 problems += (proj_pbs := future.result(timeout=60))
                 write_q and write_q.put(proj_pbs)
-            except (TimeoutError, RequestException) as e:
+            except (TimeoutError, RequestException, exceptions.SonarException) as e:
                 log.error(f"Exception {str(e)} when auditing {str(futures_map[future])}.")
             current += 1
             lvl = log.INFO if current % 10 == 0 or total - current < 10 else log.DEBUG
@@ -1585,7 +1537,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
                 exp_json = future.result(timeout=60)
                 write_q and write_q.put(exp_json)
                 results[futures_map[future].key] = exp_json
-            except (TimeoutError, RequestException) as e:
+            except (TimeoutError, RequestException, exceptions.SonarException) as e:
                 log.error(f"Exception {str(e)} when exporting {str(futures_map[future])}.")
             current += 1
             lvl = log.INFO if current % 10 == 0 or total - current < 10 else log.DEBUG
