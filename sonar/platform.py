@@ -290,14 +290,15 @@ class Platform(object):
             code = r.status_code
             lvl = log.DEBUG if code in mute else log.ERROR
             log.log(lvl, "%s (%s request)", util.error_msg(e), req_type)
-            error = util.sonar_error(e.response).lower()
-            if "not found" in error:  # code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound("", error) from e
-            if any(msg in error for msg in ("already exists", "already been taken")):
-                raise exceptions.ObjectAlreadyExists("", error) from e
-            if any(msg in error for msg in ("insufficient privileges", "insufficient permissions")):
-                raise exceptions.SonarException(error, errcodes.SONAR_API_AUTHORIZATION)
-            raise exceptions.SonarException(error, errcodes.SONAR_API)
+            err_msg = util.sonar_error(e.response)
+            err_msg_lower = err_msg.lower()
+            if "not found" in err_msg_lower:  # code == HTTPStatus.NOT_FOUND:
+                raise exceptions.ObjectNotFound("", err_msg) from e
+            if any(msg in err_msg_lower for msg in ("already exists", "already been taken")):
+                raise exceptions.ObjectAlreadyExists("", err_msg) from e
+            if any(msg in err_msg_lower for msg in ("insufficient privileges", "insufficient permissions")):
+                raise exceptions.SonarException(err_msg, errcodes.SONAR_API_AUTHORIZATION)
+            raise exceptions.SonarException(err_msg, errcodes.SONAR_API)
         except ConnectionError as e:
             util.handle_error(e, "")
         return r
