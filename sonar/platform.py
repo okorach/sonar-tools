@@ -292,7 +292,9 @@ class Platform(object):
             log.log(lvl, "%s (%s request)", util.error_msg(e), req_type)
             err_msg = util.sonar_error(e.response)
             err_msg_lower = err_msg.lower()
-            if "not found" in err_msg_lower:  # code == HTTPStatus.NOT_FOUND:
+            if any(
+                msg in err_msg_lower for msg in ("not found", "no quality gate has been found", "does not exist")
+            ):  # code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound("", err_msg) from e
             if any(msg in err_msg_lower for msg in ("already exists", "already been taken")):
                 raise exceptions.ObjectAlreadyExists("", err_msg) from e
