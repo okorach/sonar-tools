@@ -264,9 +264,8 @@ class Platform(object):
             headers["Authorization"] = f"Bearer {self.__token}"
             if with_org:
                 params["organization"] = self.organization
-        req_type, url = "", ""
+        req_type, url = getattr(request, "__name__", repr(request)).upper(), ""
         if log.get_level() <= log.DEBUG:
-            req_type = getattr(request, "__name__", repr(request)).upper()
             url = self.__urlstring(api, params, kwargs.get("data", {}))
             log.debug("%s: %s", req_type, url)
         kwargs["headers"] = headers
@@ -287,11 +286,19 @@ class Platform(object):
                 if retry:
                     self.local_url = new_url
             r.raise_for_status()
-        except HTTPError as e:
-            lvl = log.DEBUG if r.status_code in mute else log.ERROR
+        except RequestException as e:
+            code = r.status_code
+            lvl = log.DEBUG if code in mute else log.ERROR
             log.log(lvl, "%s (%s request)", util.error_msg(e), req_type)
-            raise e
-        except (ConnectionError, RequestException) as e:
+            error = util.sonar_error(e.response).lower()
+            if "not found" in error:  # code == HTTPStatus.NOT_FOUND:
+                raise exceptions.ObjectNotFound("", error) from e
+            if any(msg in error for msg in ("already exists", "already been taken")):
+                raise exceptions.ObjectAlreadyExists("", error) from e
+            if any(msg in error for msg in ("insufficient privileges", "insufficient permissions")):
+                raise exceptions.SonarException(error, errcodes.SONAR_API_AUTHORIZATION)
+            raise exceptions.SonarException(error, errcodes.SONAR_API)
+        except ConnectionError as e:
             util.handle_error(e, "")
         return r
 
