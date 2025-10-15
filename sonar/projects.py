@@ -735,13 +735,11 @@ class Project(components.Component):
             raise exceptions.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
         try:
             resp = self.post("project_dump/import", params={"key": self.key})
-        except RequestException as e:
+        except exceptions.SonarException as e:
             if "Dump file does not exist" in util.sonar_error(e.response):
                 return f"FAILED/{tasks.ZIP_MISSING}"
             util.handle_error(e, f"importing zip of {str(self)} {mode}", catch_all=True)
-            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound(self.key, f"Project key '{self.key}' not found")
-            return f"FAILED/{util.http_error_string(e.response.status_code)}"
+            return f"FAILED/{e.message}"
         except ConnectionError as e:
             return f"FAILED/{str(e)}"
 
@@ -1718,15 +1716,18 @@ def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2
                 status = f"EXCEPTION {e}"
             statuses_count[status] = statuses_count[status] + 1 if status in statuses_count else 1
             if o_proj is None:
-                o_proj = futures_map[future]
-                statuses[o_proj.key] = {}
+                proj_key = futures_map[future]
+                statuses[proj_key] = {"importStatus": status}
             else:
-                statuses[o_proj.key] = {"importDate": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-            statuses[o_proj.key]["importProjectUrl"] = o_proj.url()
-            statuses[o_proj.key]["importStatus"] = status
+                proj_key = o_proj.key
+                statuses[proj_key] = {
+                    "importDate": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "importProjectUrl": o_proj.url(),
+                    "importStatus": status,
+                }
 
             i += 1
-            log.info("%d/%d imports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), o_proj.key, status)
+            log.info("%d/%d imports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), proj_key, status)
             log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses_count.items()]))
     return statuses
 
