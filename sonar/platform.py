@@ -286,7 +286,7 @@ class Platform(object):
                 if retry:
                     self.local_url = new_url
             r.raise_for_status()
-        except RequestException as e:
+        except HTTPError as e:
             code = r.status_code
             lvl = log.DEBUG if code in mute else log.ERROR
             log.log(lvl, "%s (%s request)", util.error_msg(e), req_type)
