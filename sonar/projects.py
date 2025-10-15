@@ -735,8 +735,10 @@ class Project(components.Component):
             raise exceptions.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
         try:
             resp = self.post("project_dump/import", params={"key": self.key})
+        except exceptions.ObjectNotFound:
+            return f"FAILED/PROJECT_NOT_FOUND"
         except exceptions.SonarException as e:
-            if "Dump file does not exist" in util.sonar_error(e.response):
+            if "Dump file does not exist" in e.message:
                 return f"FAILED/{tasks.ZIP_MISSING}"
             util.handle_error(e, f"importing zip of {str(self)} {mode}", catch_all=True)
             return f"FAILED/{e.message}"
