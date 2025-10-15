@@ -295,7 +295,8 @@ class Platform(object):
             if any(
                 msg in err_msg_lower for msg in ("not found", "no quality gate has been found", "does not exist")
             ):  # code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound("", err_msg) from e
+                key = next((params[k] for k in ("key", "project", "component", "componentKey") if k in params), "Unknown")
+                raise exceptions.ObjectNotFound(key, err_msg) from e
             if any(msg in err_msg_lower for msg in ("already exists", "already been taken")):
                 raise exceptions.ObjectAlreadyExists("", err_msg) from e
             if any(msg in err_msg_lower for msg in ("insufficient privileges", "insufficient permissions")):
