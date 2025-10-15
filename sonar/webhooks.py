@@ -44,7 +44,7 @@ class WebHook(sq.SqObject):
     """
 
     CACHE = cache.Cache()
-    API = {c.CREATE: "webhooks/create", c.READ: "webhooks/list", c.UPDATE: "webhooks/update", c.LIST: "webhooks/list"}
+    API = {c.CREATE: "webhooks/create", c.READ: "webhooks/list", c.UPDATE: "webhooks/update", c.LIST: "webhooks/list", c.DELETE: "webhooks/delete"}
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "webhooks"
 
@@ -72,11 +72,7 @@ class WebHook(sq.SqObject):
         """
         log.info("Creating webhook name %s, url %s project %s", name, url, str(project))
         params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
-        try:
-            endpoint.post(WebHook.API[c.CREATE], params=params)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating Webhook '{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(name, e.response.text)
+        endpoint.post(WebHook.API[c.CREATE], params=params)
         o = cls(endpoint, name=name, url=url, secret=secret, project=project)
         o.refresh()
         return o
@@ -127,7 +123,7 @@ class WebHook(sq.SqObject):
         if wh_data is None:
             wh_name = str(self)
             name = self.name
-            self.delete()
+            WebHook.CACHE.pop(self)
             raise exceptions.ObjectNotFound(name, f"{wh_name} not found")
         self.reload(wh_data)
 
@@ -137,7 +133,7 @@ class WebHook(sq.SqObject):
         self.name = data["name"]
         self.key = data["key"]
         self.webhook_url = data["url"]
-        self.secret = data.get("secret", None)
+        self.secret = data.get("secret", None) or self.secret
         self.last_delivery = data.get("latestDelivery", None)
 
     def url(self) -> str:
@@ -172,6 +168,10 @@ class WebHook(sq.SqObject):
         :rtype: dict
         """
         return util.filter_export(self.sq_json, _IMPORTABLE_PROPERTIES, full)
+
+    def api_params(self, op: str) -> types.ApiParams:
+        ops = {c.READ: {"webhook": self.key}}
+        return ops[op] if op and op in ops else ops[c.READ]
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, WebHook]:
