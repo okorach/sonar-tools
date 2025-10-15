@@ -464,7 +464,7 @@ class Finding(sq.SqObject):
             util.handle_error(e, f"applying transition {transition}", catch_http_statuses=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
         except exceptions.SonarException as e:
             if re.match(r"Transition from state [A-Za-z]+ does not exist", e.message):
-                raise exceptions.IllegalTransition(e.message) from e
+                raise exceptions.UnsupportedOperation(e.message) from e
             raise e
         return False
 

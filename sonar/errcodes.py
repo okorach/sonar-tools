@@ -70,5 +70,3 @@ OBJECT_NOT_FOUND = 16
 
 SONAR_INTERNAL_ERROR = 17
 
-# Attemnpting an illegal issue transition
-ILLEGAL_ISSUE_TRANSITION = 18

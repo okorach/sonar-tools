@@ -51,15 +51,6 @@ class ObjectNotFound(SonarException):
         self.key = key
 
 
-class IllegalTransition(SonarException):
-    """
-    Issue transition error
-    """
-
-    def __init__(self, message: str) -> None:
-        super().__init__(message, errcodes.ILLEGAL_ISSUE_TRANSITION)
-
-
 class ObjectAlreadyExists(SonarException):
     """
     Object already exists when trying to create it
