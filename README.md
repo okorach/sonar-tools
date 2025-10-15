@@ -396,7 +396,6 @@ When tools complete successfully they return exit code 0. En case of fatal error
 - Code 15: Miscellaneous OS errors
 - Code 16: Object not found during a search
 - Code 17: Sonar Server internal error
-- Code 18: Unsupported issue status transition
 
 # License
 
