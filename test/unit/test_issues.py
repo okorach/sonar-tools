@@ -96,7 +96,8 @@ def test_set_severity() -> None:
     assert issue.set_severity(new_sev)
     issue.refresh()
     assert issue.severity == new_sev
-    assert not issue.set_severity("NON_EXISTING")
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.set_severity("NON_EXISTING")
     issue.set_severity(old_sev)
 
     assert not any(issue.set_mqr_severity(k, v) for k, v in new_impacts.items())
