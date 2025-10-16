@@ -397,7 +397,7 @@ class Project(components.Component):
             try:
                 resp = self.get("alm_settings/get_binding", params={"project": self.key}, mute=(HTTPStatus.NOT_FOUND,))
                 self._binding = {"has_binding": True, "binding": json.loads(resp.text)}
-            except exceptions.SonarException as e:
+            except exceptions.SonarException:
                 # Hack: 8.9 returns 404, 9.x returns 400
                 self._binding = {"has_binding": False}
         log.debug("%s binding = %s", str(self), str(self._binding.get("binding", None)))
@@ -1052,7 +1052,7 @@ class Project(components.Component):
 
             try:
                 hooks = webhooks.export(self.endpoint, self.key)
-            except exceptions.SonarException as e:
+            except exceptions.SonarException:
                 hooks = None
             if hooks is not None:
                 json_data["webhooks"] = hooks

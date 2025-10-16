@@ -99,12 +99,12 @@ class WebHook(sq.SqObject):
             return o
         try:
             whs = list(get_list(endpoint, project_key).values())
-            return next((wh for wh in whs if wh.name == name))
+            return next(wh for wh in whs if wh.name == name)
         except RequestException as e:
             util.handle_error(e, f"Getting webhook '{name}' of project key '{project_key}'", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found")
-        except StopIteration:
-            raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found")
+            raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found") from e
+        except StopIteration as e:
+            raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found") from e
 
     def __str__(self) -> str:
         return f"webhook '{self.name}'"
@@ -128,6 +128,7 @@ class WebHook(sq.SqObject):
         self.reload(wh_data)
 
     def reload(self, data: types.ApiPayload) -> None:
+        """Reloads a WebHook from the payload gotten from SonarQube"""
         log.debug("Loading %s with %s", str(self), str(data))
         self.sq_json = self.sq_json or {} | data
         self.name = data["name"]
@@ -140,7 +141,7 @@ class WebHook(sq.SqObject):
         """Returns the object permalink"""
         return f"{self.base_url(local=False)}/admin/webhooks"
 
-    def update(self, **kwargs) -> bool:
+    def update(self, **kwargs: str) -> bool:
         """Updates a webhook with new properties (name, url, secret)
 
         :param kwargs: dict - "url", "name", "secret" are the looked up keys
@@ -170,6 +171,7 @@ class WebHook(sq.SqObject):
         return util.filter_export(self.sq_json, _IMPORTABLE_PROPERTIES, full)
 
     def api_params(self, op: str) -> types.ApiParams:
+        """Returns the std api params to pass for a given webhook"""
         ops = {c.READ: {"webhook": self.key}}
         return ops[op] if op and op in ops else ops[c.READ]
 
@@ -204,7 +206,6 @@ def export(endpoint: pf.Platform, project_key: str = None, full: bool = False) -
 
 def import_config(endpoint: pf.Platform, data: types.ObjectJsonRepr, project_key: Optional[str] = None) -> None:
     """Imports a set of webhooks defined from a JSON description"""
-
     log.debug("Importing webhooks %s for %s", str(data), str(project_key))
     current_wh = get_list(endpoint, project_key=project_key)
     existing_webhooks = {wh.name: k for k, wh in current_wh.items()}
