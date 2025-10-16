@@ -85,9 +85,10 @@ def test_export() -> None:
 
 def test_create_delete() -> None:
     """test_create_delete"""
-    with pytest.raises(exceptions.SonarException):
-        # Secret too short
-        wh.WebHook.create(tutil.SQ, tutil.TEMP_KEY, "http://google.com", "Shhht", tutil.PROJECT_1)
+    if tutil.SQ.version() >= (10, 0, 0):
+        with pytest.raises(exceptions.SonarException):
+            # Secret too short
+            wh.WebHook.create(tutil.SQ, tutil.TEMP_KEY, "http://google.com", "Shhht", tutil.PROJECT_1)
     hook = wh.WebHook.create(tutil.SQ, tutil.TEMP_KEY, "http://google.com", "Shhht012345678910", tutil.PROJECT_1)
     assert hook.name == tutil.TEMP_KEY
     assert hook.webhook_url == "http://google.com"
@@ -96,5 +97,6 @@ def test_create_delete() -> None:
 
     hook.refresh()
     hook.delete()
-    with pytest.raises(exceptions.ObjectNotFound):
-        hook.refresh()
+    if tutil.SQ.version() >= (10, 0, 0):
+        with pytest.raises(exceptions.ObjectNotFound):
+            hook.refresh()
