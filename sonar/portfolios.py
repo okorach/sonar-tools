@@ -545,7 +545,7 @@ class Portfolio(aggregations.Aggregation):
         self._applications[app_key].append(branch)
         return True
 
-    def add_subportfolio(self, key: str, name: str = None, by_ref: bool = False) -> object:
+    def add_subportfolio(self, key: str, name: str = None, by_ref: bool = False) -> Portfolio:
         """Adds a subportfolio to a portfolio, defined by key, name and by reference option"""
 
         log.info("Adding sub-portfolios to %s", str(self))
