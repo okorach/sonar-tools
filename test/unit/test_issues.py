@@ -116,8 +116,10 @@ def test_set_severity() -> None:
     assert all(issue.set_mqr_severity(k, v) for k, v in new_impacts.items())
     issue.refresh()
     assert issue.impacts == new_impacts
-    assert not issue.set_mqr_severity("MAINTAINABILITY", "NON_EXISTING")
-    assert not issue.set_mqr_severity("NON_EXISTING", "HIGH")
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.set_mqr_severity("MAINTAINABILITY", "NON_EXISTING")
+    with pytest.raises(exceptions.SonarException):
+        issue.set_mqr_severity("NON_EXISTING", "HIGH")
     [issue.set_mqr_severity(k, v) for k, v in old_impacts.items()]
 
     tutil.SQ.set_mqr_mode(is_mqr)
@@ -177,7 +179,7 @@ def test_changelog() -> None:
     if tutil.SQ.version() < (10, 0, 0):
         nb_changes = 4
     elif tutil.SQ.version() >= (2025, 4, 2):
-        nb_changes = 14
+        nb_changes = 16
     elif tutil.SQ.version() >= (25, 1, 0):
         nb_changes = 8
     else:
@@ -205,7 +207,7 @@ def test_changelog() -> None:
     author = None
     delta = timedelta(days=1)
     if tutil.SQ.version() >= (2025, 5, 0):
-        date_change = datetime(2025, 10, 3)
+        date_change = datetime(2025, 10, 12)
     elif tutil.SQ.version() >= (10, 0, 0):
         date_change = datetime(2025, 2, 13)
     else:
@@ -263,28 +265,37 @@ def test_transitions() -> None:
     issue = list(issues_d.values())[0]
 
     assert issue.confirm()
-    assert not issue.confirm()
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.confirm()
     assert issue.unconfirm()
-    assert not issue.unconfirm()
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.unconfirm()
 
     assert issue.resolve_as_fixed()
-    assert not issue.resolve_as_fixed()
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.resolve_as_fixed()
     assert issue.reopen()
-    assert not issue.reopen()
+    with pytest.raises(exceptions.UnsupportedOperation):
+        assert not issue.reopen()
 
     if tutil.SQ.version() >= c.ACCEPT_INTRO_VERSION:
         assert issue.accept()
-        assert not issue.accept()
+        with pytest.raises(exceptions.UnsupportedOperation):
+            issue.accept()
     else:
         assert issue.mark_as_wont_fix()
-        assert not issue.mark_as_wont_fix()
+        with pytest.raises(exceptions.UnsupportedOperation):
+            issue.mark_as_wont_fix()
     assert issue.reopen()
-    assert not issue.reopen()
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.reopen()
 
     assert issue.mark_as_false_positive()
-    assert not issue.mark_as_false_positive()
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.mark_as_false_positive()
     assert issue.reopen()
-    assert not issue.reopen()
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.reopen()
 
 
 def test_search_first() -> None:
