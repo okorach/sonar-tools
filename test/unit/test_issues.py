@@ -150,7 +150,8 @@ def test_set_type() -> None:
         assert issue.set_type(new_type)
         issue.refresh()
         assert issue.type == new_type
-        assert not issue.set_type("NON_EXISTING")
+        with pytest.raises(exceptions.UnsupportedOperation):
+            issue.set_type("NON_EXISTING")
         issue.set_type(old_type)
 
 
