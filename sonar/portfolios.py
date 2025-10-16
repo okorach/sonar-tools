@@ -644,7 +644,12 @@ class Portfolio(aggregations.Aggregation):
             if subp_data.get("byReference", False):
                 o_subp = Portfolio.get_object(self.endpoint, key)
                 if o_subp.key not in key_list:
-                    self.add_subportfolio(o_subp.key, name=o_subp.name, by_ref=True)
+                    try:
+                        self.add_subportfolio(o_subp.key, name=o_subp.name, by_ref=True)
+                    except exceptions.SonarException as e:
+                        # If the exception is that the portfolio already references, just pass
+                        if "already references" not in e.message:
+                            raise
             else:
                 try:
                     o_subp = Portfolio.get_object(self.endpoint, key)
