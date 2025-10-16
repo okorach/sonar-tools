@@ -49,7 +49,6 @@ jobs:
       - name: Run linters
         working-directory: .
         run: |
-          poetry install
           chmod +x conf/run_linters.sh
           conf/run_linters.sh
       #- name: Cache SonarQube packages
