@@ -295,7 +295,7 @@ class Platform(object):
             err_msg_lower = err_msg.lower()
             key = next((params[k] for k in ("key", "project", "component", "componentKey") if k in params), "Unknown")
             if any(
-                msg in err_msg_lower for msg in ("not found", "no quality gate has been found", "does not exist")
+                msg in err_msg_lower for msg in ("not found", "no quality gate has been found", "does not exist", "could not find")
             ):  # code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key, err_msg) from e
             if any(msg in err_msg_lower for msg in ("already exists", "already been taken")):
