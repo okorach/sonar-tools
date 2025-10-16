@@ -300,7 +300,7 @@ class Platform(object):
                 raise exceptions.ObjectNotFound(key, err_msg) from e
             if any(msg in err_msg_lower for msg in ("already exists", "already been taken")):
                 raise exceptions.ObjectAlreadyExists("", err_msg) from e
-            if re.match(r"Value of parameter .+ must be one of", err_msg):
+            if re.match(r"(Value of parameter .+ must be one of|No enum constant)", err_msg):
                 raise exceptions.UnsupportedOperation(err_msg) from e
             if any(msg in err_msg_lower for msg in ("insufficient privileges", "insufficient permissions")):
                 raise exceptions.SonarException(err_msg, errcodes.SONAR_API_AUTHORIZATION)
