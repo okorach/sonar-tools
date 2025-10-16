@@ -42,7 +42,7 @@ fi
 if [[ "${linters_to_run}" == *"ruff"* ]]; then
     echo "===> Running ruff"
     rm -f "${RUFF_REPORT}"
-    ruff check . | tee "${BUILD_DIR}/ruff-report.txt" | "${CONF_DIR}"/ruff2sonar.py "${external_format}" >"${RUFF_REPORT}"
+    python ruff check . | tee "${BUILD_DIR}/ruff-report.txt" | "${CONF_DIR}"/ruff2sonar.py "${external_format}" >"${RUFF_REPORT}"
     re=$?
     if [[ "${re}" = "32" ]]; then
         >&2 echo "ERROR: pylint execution failed, errcode ${re}, aborting..."
