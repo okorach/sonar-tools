@@ -300,12 +300,8 @@ class Issue(findings.Finding):
         return r.ok
 
     def __set_severity(self, **params) -> bool:
-        try:
-            log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, str(params))
-            r = self.post("issues/set_severity", {"issue": self.key, **params})
-        except exceptions.SonarException as e:
-            if re.match(r"No enum constant .*", e.message):
-                raise exceptions.UnsupportedOperation from e
+        log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, str(params))
+        r = self.post("issues/set_severity", {"issue": self.key, **params})
         return r.ok
 
     def set_severity(self, severity: str) -> bool:
