@@ -146,7 +146,7 @@ class User(sqobject.SqObject):
         if o := User.CACHE.get(login, endpoint.local_url):
             return o
         log.debug("Getting user '%s'", login)
-        if (user := next((o for k, o in search(endpoint, params={"q": login}).items() if k == login), None)):
+        if user := next((o for k, o in search(endpoint, params={"q": login}).items() if k == login), None):
             return user
         raise exceptions.ObjectNotFound(login, f"User '{login}' not found")
 

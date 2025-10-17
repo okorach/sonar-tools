@@ -710,6 +710,7 @@ def delete(endpoint: pf.Platform, key: str) -> bool:
     """Deletes a portfolio by its key"""
     return Portfolio.get_object(endpoint, key).delete()
 
+
 def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports portfolio configuration described in a JSON"""
     if "portfolios" not in config_data:

@@ -94,7 +94,6 @@ class Branch(components.Component):
         if not br:
             raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(concerned_object)} not found")
         return cls.load(concerned_object, branch_name, br)
-        
 
     @classmethod
     def load(cls, concerned_object: projects.Project, branch_name: str, data: types.ApiPayload) -> Branch:

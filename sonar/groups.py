@@ -390,7 +390,7 @@ def get_object_from_id(endpoint: pf.Platform, id: str) -> Group:
         raise exceptions.UnsupportedOperation("Operation unsupported before SonarQube 10.4")
     if len(Group.CACHE) == 0:
         get_list(endpoint)
-    if (gr := next((o for o in Group.CACHE.values() if o.id == id), None)):
+    if gr := next((o for o in Group.CACHE.values() if o.id == id), None):
         return gr
     raise exceptions.ObjectNotFound(id, message=f"Group '{id}' not found")
 
