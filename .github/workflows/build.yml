@@ -53,7 +53,7 @@ jobs:
       - name: Run linters
         working-directory: .
         run: |
-          python -m install ruff pylint flake8
+          python -m pip install ruff pylint flake8
           chmod +x conf/run_linters.sh
           conf/run_linters.sh
       # - name: Cache SonarQube packages
