@@ -44,7 +44,7 @@ class WebHook(sq.SqObject):
     """
 
     CACHE = cache.Cache()
-    API = {c.CREATE: "webhooks/create", c.READ: "webhooks/list", c.UPDATE: "webhooks/update", c.LIST: "webhooks/list"}
+    API = {c.CREATE: "webhooks/create", c.READ: "webhooks/list", c.UPDATE: "webhooks/update", c.LIST: "webhooks/list", c.DELETE: "webhooks/delete"}
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "webhooks"
 
@@ -72,11 +72,7 @@ class WebHook(sq.SqObject):
         """
         log.info("Creating webhook name %s, url %s project %s", name, url, str(project))
         params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
-        try:
-            endpoint.post(WebHook.API[c.CREATE], params=params)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating Webhook '{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(name, e.response.text)
+        endpoint.post(WebHook.API[c.CREATE], params=params)
         o = cls(endpoint, name=name, url=url, secret=secret, project=project)
         o.refresh()
         return o
@@ -103,12 +99,12 @@ class WebHook(sq.SqObject):
             return o
         try:
             whs = list(get_list(endpoint, project_key).values())
-            return next((wh for wh in whs if wh.name == name))
+            return next(wh for wh in whs if wh.name == name)
         except RequestException as e:
             util.handle_error(e, f"Getting webhook '{name}' of project key '{project_key}'", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found")
-        except StopIteration:
-            raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found")
+            raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found") from e
+        except StopIteration as e:
+            raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found") from e
 
     def __str__(self) -> str:
         return f"webhook '{self.name}'"
@@ -127,24 +123,25 @@ class WebHook(sq.SqObject):
         if wh_data is None:
             wh_name = str(self)
             name = self.name
-            self.delete()
+            WebHook.CACHE.pop(self)
             raise exceptions.ObjectNotFound(name, f"{wh_name} not found")
         self.reload(wh_data)
 
     def reload(self, data: types.ApiPayload) -> None:
+        """Reloads a WebHook from the payload gotten from SonarQube"""
         log.debug("Loading %s with %s", str(self), str(data))
         self.sq_json = self.sq_json or {} | data
         self.name = data["name"]
         self.key = data["key"]
         self.webhook_url = data["url"]
-        self.secret = data.get("secret", None)
+        self.secret = data.get("secret", None) or self.secret
         self.last_delivery = data.get("latestDelivery", None)
 
     def url(self) -> str:
         """Returns the object permalink"""
         return f"{self.base_url(local=False)}/admin/webhooks"
 
-    def update(self, **kwargs) -> bool:
+    def update(self, **kwargs: str) -> bool:
         """Updates a webhook with new properties (name, url, secret)
 
         :param kwargs: dict - "url", "name", "secret" are the looked up keys
@@ -172,6 +169,11 @@ class WebHook(sq.SqObject):
         :rtype: dict
         """
         return util.filter_export(self.sq_json, _IMPORTABLE_PROPERTIES, full)
+
+    def api_params(self, op: str) -> types.ApiParams:
+        """Returns the std api params to pass for a given webhook"""
+        ops = {c.READ: {"webhook": self.key}}
+        return ops[op] if op and op in ops else ops[c.READ]
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, WebHook]:
@@ -204,7 +206,6 @@ def export(endpoint: pf.Platform, project_key: str = None, full: bool = False) -
 
 def import_config(endpoint: pf.Platform, data: types.ObjectJsonRepr, project_key: Optional[str] = None) -> None:
     """Imports a set of webhooks defined from a JSON description"""
-
     log.debug("Importing webhooks %s for %s", str(data), str(project_key))
     current_wh = get_list(endpoint, project_key=project_key)
     existing_webhooks = {wh.name: k for k, wh in current_wh.items()}

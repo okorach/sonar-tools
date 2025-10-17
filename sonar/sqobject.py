@@ -159,9 +159,6 @@ class SqObject(object):
             if ok:
                 log.info("Removing from %s cache", str(self.__class__.__name__))
                 self.__class__.CACHE.pop(self)
-        except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"deleting {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
         except (AttributeError, KeyError):
             raise exceptions.UnsupportedOperation(f"Can't delete {self.__class__.__name__.lower()}s")
         return ok

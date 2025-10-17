@@ -468,26 +468,16 @@ def open_file(file: str = None, mode: str = "w") -> TextIO:
 
 def search_by_name(endpoint: object, name: str, api: str, returned_field: str, extra_params: dict[str, str] = None) -> Union[dict[str, str], None]:
     """Searches a object by name"""
-    params = {"q": name}
-    if extra_params is not None:
-        params.update(extra_params)
+    params = {"q": name} | (extra_params or {})
     data = json.loads(endpoint.get(api, params=params).text)
-    for d in data[returned_field]:
-        if d["name"] == name:
-            return d
-    return None
+    return next((d for d in data[returned_field] if d["name"] == name), None)
 
 
 def search_by_key(endpoint: object, key: str, api: str, returned_field: str, extra_params: Optional[dict[str, str]] = None) -> types.ApiPayload:
     """Search an object by its key"""
-    params = {"q": key}
-    if extra_params is not None:
-        params.update(extra_params)
+    params = {"q": key} | (extra_params or {})
     data = json.loads(endpoint.get(api, params=params).text)
-    for d in data[returned_field]:
-        if d["key"] == key:
-            return d
-    return None
+    return next((d for d in data[returned_field] if d["key"] == key), None)
 
 
 def sonar_error(response: requests.models.Response) -> str:

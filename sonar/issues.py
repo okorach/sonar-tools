@@ -294,18 +294,14 @@ class Issue(findings.Finding):
         log.debug("Adding comment '%s' to %s", comment, str(self))
         try:
             r = self.post("issues/add_comment", {"issue": self.key, "text": comment})
-        except (ConnectionError, requests.RequestException) as e:
+        except requests.RequestException as e:
             util.handle_error(e, "adding comment", catch_all=True)
             return False
         return r.ok
 
     def __set_severity(self, **params) -> bool:
-        try:
-            log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, str(params))
-            r = self.post("issues/set_severity", {"issue": self.key, **params})
-        except (ConnectionError, requests.RequestException) as e:
-            util.handle_error(e, "changing issue severity", catch_all=True)
-            return False
+        log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, str(params))
+        r = self.post("issues/set_severity", {"issue": self.key, **params})
         return r.ok
 
     def set_severity(self, severity: str) -> bool:
