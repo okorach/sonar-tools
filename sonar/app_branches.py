@@ -201,7 +201,7 @@ class ApplicationBranch(Component):
             params["projectBranch"].append(br_name)
         try:
             ok = self.post(ApplicationBranch.API[c.UPDATE], params=params).ok
-        except exceptions.ObjectNotFound as e:
+        except exceptions.ObjectNotFound:
             ApplicationBranch.CACHE.pop(self)
             raise
 

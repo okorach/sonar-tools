@@ -730,13 +730,10 @@ class Project(components.Component):
             resp = self.post("project_dump/import", params={"key": self.key})
         except exceptions.ObjectNotFound as e:
             Project.CACHE.pop(self)
-            return f"FAILED/{e.message}", None
-        except exceptions.SonarException as e:
-            return f"FAILED/{e.message}", None
+            return f"FAILED/{e.message}"
         except exceptions.SonarException as e:
             if "Dump file does not exist" in e.message:
                 return f"FAILED/{tasks.ZIP_MISSING}"
-            util.handle_error(e, f"importing zip of {str(self)} {mode}", catch_all=True)
             return f"FAILED/{e.message}"
         except ConnectionError as e:
             return f"FAILED/{str(e)}"
@@ -1669,7 +1666,7 @@ def export_zips(
     return results
 
 
-def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30) -> tuple[str, str]:
+def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30) -> tuple[Project, str]:
     try:
         o_proj = Project.create(key=project_key, endpoint=endpoint, name=project_key)
     except exceptions.ObjectAlreadyExists:

@@ -195,7 +195,7 @@ class Branch(components.Component):
         elif self._new_code is None:
             try:
                 data = json.loads(self.get(api=Branch.API["get_new_code"], params=self.api_params(c.LIST)).text)
-            except exceptions.ObjectNotFound as e:
+            except exceptions.ObjectNotFound:
                 Branch.CACHE.pop(self)
                 raise
 
@@ -312,7 +312,7 @@ class Branch(components.Component):
         log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
         try:
             self.post(Branch.API[c.RENAME], params={"project": self.concerned_object.key, "name": new_name})
-        except exceptions.ObjectNotFound as e:
+        except exceptions.ObjectNotFound:
             Branch.CACHE.pop(self)
             raise
         except exceptions.SonarException:

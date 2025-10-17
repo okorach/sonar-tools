@@ -24,8 +24,6 @@ from __future__ import annotations
 from typing import Optional
 
 import json
-from http import HTTPStatus
-from requests import RequestException
 
 import sonar.logging as log
 from sonar import platform as pf, exceptions

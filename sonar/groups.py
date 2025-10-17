@@ -27,7 +27,7 @@ import json
 from typing import Optional
 
 from http import HTTPStatus
-from requests import HTTPError, RequestException
+from requests import RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -170,7 +170,7 @@ class Group(sq.SqObject):
             if ok:
                 log.info("Removing from %s cache", str(self.__class__.__name__))
                 Group.CACHE.pop(self)
-        except exceptions.ObjectNotFound as e:
+        except exceptions.ObjectNotFound:
             Group.CACHE.pop(self)
             raise
         return ok

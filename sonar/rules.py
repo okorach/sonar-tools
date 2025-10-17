@@ -29,7 +29,6 @@ import json
 import concurrent.futures
 from threading import Lock
 from typing import Optional
-from http import HTTPStatus
 from requests import RequestException
 
 import sonar.logging as log
@@ -253,7 +252,7 @@ class Rule(sq.SqObject):
 
         try:
             data = json.loads(self.get(Rule.API[c.READ], params={"key": self.key, "actives": "true"}).text)
-        except exceptions.ObjectNotFound as e:
+        except exceptions.ObjectNotFound:
             Rule.CACHE.pop(self)
             raise
         self.sq_json.update(data["rule"])

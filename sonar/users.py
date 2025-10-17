@@ -354,7 +354,7 @@ class User(sqobject.SqObject):
             if ok:
                 log.info("Removing from %s cache", str(User.__name__))
                 User.CACHE.pop(self)
-        except exceptions.ObjectNotFound as e:
+        except exceptions.ObjectNotFound:
             User.CACHE.pop(self)
             raise
         return ok

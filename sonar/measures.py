@@ -23,8 +23,6 @@
 from __future__ import annotations
 
 import json
-from http import HTTPStatus
-from requests import RequestException
 from sonar import metrics, exceptions, platform
 from sonar.util.types import ApiPayload, ApiParams, KeyList
 from sonar.util import cache, constants as c
