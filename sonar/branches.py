@@ -144,29 +144,20 @@ class Branch(components.Component):
         return self
 
     def _load(self, data: types.ApiPayload) -> None:
-        if self.sq_json is None:
-            self.sq_json = data
-        else:
-            self.sq_json.update(data)
+        self.sq_json = self.sq_json or {} | data
         self._is_main = self.sq_json["isMain"]
         self._last_analysis = util.string_to_date(self.sq_json.get("analysisDate", None))
         self._keep_when_inactive = self.sq_json.get("excludedFromPurge", False)
         self._is_main = self.sq_json.get("isMain", False)
 
     def is_kept_when_inactive(self) -> bool:
-        """
-        :return: Whether the branch is kept when inactive
-        :rtype: bool
-        """
+        """Returns whether the branch is kept when inactive"""
         if self._keep_when_inactive is None or self.sq_json is None:
             self.refresh()
         return self._keep_when_inactive
 
     def is_main(self) -> bool:
-        """
-        :return: Whether the branch is the project main branch
-        :rtype: bool
-        """
+        """Returns whether the branch is the project main branch"""
         if self._is_main is None or self.sq_json is None:
             self.refresh()
         return self._is_main
@@ -238,12 +229,8 @@ class Branch(components.Component):
         :return: Whether the operation was successful
         """
         log.info("Setting %s keep when inactive to %s", self, keep)
-        try:
-            self.post("project_branches/set_automatic_deletion_protection", params=self.api_params() | {"value": str(keep).lower()})
-            self._keep_when_inactive = keep
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting {str(self)} keep when inactive to {keep}", catch_all=True)
-            return False
+        ok = self.post("project_branches/set_automatic_deletion_protection", params=self.api_params() | {"value": str(keep).lower()}).ok
+        self._keep_when_inactive = keep
         return True
 
     def set_as_main(self) -> bool:
@@ -251,11 +238,7 @@ class Branch(components.Component):
 
         :return: Whether the operation was successful
         """
-        try:
-            self.post("api/project_branches/set_main", params=self.api_params())
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting {str(self)} as main branch", catch_all=True)
-            return False
+        self.post("api/project_branches/set_main", params=self.api_params())
         for b in self.concerned_object.branches().values():
             b._is_main = b.name == self.name
         return True
@@ -315,8 +298,6 @@ class Branch(components.Component):
         except exceptions.ObjectNotFound:
             Branch.CACHE.pop(self)
             raise
-        except exceptions.SonarException:
-            return False
         Branch.CACHE.pop(self)
         self.name = new_name
         Branch.CACHE.put(self)
@@ -328,9 +309,7 @@ class Branch(components.Component):
         :return: dict of Findings, with finding key as key
         :rtype: dict{key: Finding}
         """
-        findings = self.get_issues()
-        findings.update(self.get_hotspots())
-        return findings
+        return self.get_issues() | self.get_hotspots()
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""
