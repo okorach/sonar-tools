@@ -50,7 +50,7 @@ jobs:
         working-directory: .
         run: |
           chmod +x conf/run_linters.sh
-          conf/run_linters.sh
+          . conf/run_linters.sh
       #- name: Cache SonarQube packages
       #  uses: actions/cache@v4
       #  with:
