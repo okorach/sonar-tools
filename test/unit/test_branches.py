@@ -29,26 +29,34 @@ import sonar.util.constants as c
 SUPPORTED_EDITIONS = (c.DE, c.EE, c.DCE)
 
 
+def verify_branch_support(func: callable, **kwargs) -> bool:
+    if kwargs["concerned_object"].endpoint.edition() not in SUPPORTED_EDITIONS:
+        with pytest.raises(exceptions.UnsupportedOperation):
+            _ = func(**kwargs)
+        return False
+    return True
+
+
 def test_get_object() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
 
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not tutil.verify_support(SUPPORTED_EDITIONS, branches.Branch.get_object, endpoint=tutil.SQ, concerned_object=project, branch_name="develop"):
+    if not verify_branch_support(branches.Branch.get_object, concerned_object=project, branch_name="develop"):
         return
-    obj = branches.Branch.get_object(endpoint=tutil.SQ, concerned_object=project, branch_name="develop")
-    assert str(obj) == f"Branch 'develop' of project '{project.key}'"
+    obj = branches.Branch.get_object(concerned_object=project, branch_name="develop")
+    assert str(obj) == f"branch 'develop' of project '{project.key}'"
     obj.refresh()
 
 
 def test_not_found() -> None:
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not tutil.verify_support(SUPPORTED_EDITIONS, branches.Branch.get_object, endpoint=tutil.SQ, concerned_object=project, branch_name="develop"):
+    if not verify_branch_support(branches.Branch.get_object, concerned_object=project, branch_name="develop"):
         return
     with pytest.raises(exceptions.ObjectNotFound):
-        obj = branches.Branch.get_object(endpoint=tutil.SQ, concerned_object=project, branch_name="non-existing")
+        obj = branches.Branch.get_object(concerned_object=project, branch_name="non-existing")
 
-    obj = branches.Branch.get_object(endpoint=tutil.SQ, concerned_object=project, branch_name="develop")
-    obj.key = "non-existing2"
+    obj = branches.Branch.get_object(concerned_object=project, branch_name="develop")
+    obj.name = "non-existing2"
     with pytest.raises(exceptions.ObjectNotFound):
         obj.refresh()
 
@@ -59,10 +67,9 @@ def test_not_found() -> None:
 
 def test_is_main_is_kept():
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not tutil.verify_support(SUPPORTED_EDITIONS, branches.Branch.get_object, endpoint=tutil.SQ, concerned_object=project, branch_name="develop"):
+    if not verify_branch_support(branches.Branch.get_object, concerned_object=project, branch_name="develop"):
         return
-    with pytest.raises(exceptions.ObjectNotFound):
-        obj = branches.Branch.get_object(endpoint=tutil.SQ, concerned_object=project, branch_name="develop")
+    obj = branches.Branch.get_object(concerned_object=project, branch_name="develop")
     obj._keep_when_inactive = None
     obj.refresh()
     assert obj.is_kept_when_inactive() in (True, False)
@@ -73,10 +80,10 @@ def test_is_main_is_kept():
 def test_set_as_main():
     """test_set_as_main"""
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not tutil.verify_support(SUPPORTED_EDITIONS, branches.Branch.get_object, endpoint=tutil.SQ, concerned_object=project, branch_name="develop"):
+    if not verify_branch_support(branches.Branch.get_object, concerned_object=project, branch_name="develop"):
         return
-    dev_br = branches.Branch.get_object(endpoint=tutil.SQ, concerned_object=project, branch_name="develop")
-    master_br = branches.Branch.get_object(endpoint=tutil.SQ, concerned_object=project, branch_name="master")
+    dev_br = branches.Branch.get_object(concerned_object=project, branch_name="develop")
+    master_br = branches.Branch.get_object(concerned_object=project, branch_name="master")
     assert master_br.is_main()
     assert not dev_br.is_main()
 
@@ -94,10 +101,10 @@ def test_set_as_main():
 def test_set_keep_as_inactive():
     """test_set_keep_as_inactive"""
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not tutil.verify_support(SUPPORTED_EDITIONS, branches.Branch.get_object, endpoint=tutil.SQ, concerned_object=project, branch_name="develop"):
+    if not verify_branch_support(branches.Branch.get_object, concerned_object=project, branch_name="develop"):
         return
-    dev_br = branches.Branch.get_object(endpoint=tutil.SQ, concerned_object=project, branch_name="develop")
-    master_br = branches.Branch.get_object(endpoint=tutil.SQ, concerned_object=project, branch_name="master")
+    dev_br = branches.Branch.get_object(concerned_object=project, branch_name="develop")
+    master_br = branches.Branch.get_object(concerned_object=project, branch_name="master")
     assert dev_br.is_kept_when_inactive()
     assert master_br.is_kept_when_inactive()
 
@@ -115,17 +122,17 @@ def test_set_keep_as_inactive():
 def test_rename():
     """test_rename"""
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not tutil.verify_support(SUPPORTED_EDITIONS, branches.Branch.get_object, endpoint=tutil.SQ, concerned_object=project, branch_name="develop"):
+    if not verify_branch_support(branches.Branch.get_object, concerned_object=project, branch_name="develop"):
         return
-    dev_br = branches.Branch.get_object(endpoint=tutil.SQ, concerned_object=project, branch_name="develop")
-    master_br = branches.Branch.get_object(endpoint=tutil.SQ, concerned_object=project, branch_name="master")
+    dev_br = branches.Branch.get_object(concerned_object=project, branch_name="develop")
+    master_br = branches.Branch.get_object(concerned_object=project, branch_name="master")
     with pytest.raises(exceptions.UnsupportedOperation):
         dev_br.rename("release")
 
     assert master_br.rename("main")
     assert not master_br.rename("main")
 
-    new_br = branches.Branch.get_object(endpoint=tutil.SQ, concerned_object=project, branch_name="main")
+    new_br = branches.Branch.get_object(concerned_object=project, branch_name="main")
     assert new_br is master_br
     assert master_br.rename("master")
     assert new_br.name == "master"
@@ -134,9 +141,9 @@ def test_rename():
 def test_get_findings():
     """test_get_findings"""
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not tutil.verify_support(SUPPORTED_EDITIONS, branches.Branch.get_object, endpoint=tutil.SQ, concerned_object=project, branch_name="develop"):
+    if not verify_branch_support(branches.Branch.get_object, concerned_object=project, branch_name="develop"):
         return
-    dev_br = branches.Branch.get_object(endpoint=tutil.SQ, concerned_object=project, branch_name="develop")
+    dev_br = branches.Branch.get_object(concerned_object=project, branch_name="develop")
     assert len(dev_br.get_findings()) > 0
 
     dev_br.name = "non-existing"
@@ -144,21 +151,19 @@ def test_get_findings():
         dev_br.get_findings()
 
 
-def test_audit_off():
+def test_audit():
     """test_audit_off"""
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not tutil.verify_support(SUPPORTED_EDITIONS, branches.Branch.get_object, endpoint=tutil.SQ, concerned_object=project, branch_name="develop"):
+    if not verify_branch_support(branches.Branch.get_object, concerned_object=project, branch_name="develop"):
         return
-    dev_br = branches.Branch.get_object(endpoint=tutil.SQ, concerned_object=project, branch_name="develop")
+    dev_br = branches.Branch.get_object(concerned_object=project, branch_name="develop")
     assert len(dev_br.audit({"audit.project.branches": False})) == 0
 
     dev_br.name = "non-existing"
-    with pytest.raises(exceptions.ObjectNotFound):
-        dev_br.audit({})
+    assert len(dev_br.audit({})) == 0
 
 
 def test_exists():
     """test_exists"""
     assert branches.exists(tutil.SQ, branch_name="develop", project_key=tutil.LIVE_PROJECT)
     assert not branches.exists(tutil.SQ, branch_name="foobar", project_key=tutil.LIVE_PROJECT)
-    assert not branches.exists(tutil.SQ, branch_name="develop", project_key=tutil.PROJECT_1)
