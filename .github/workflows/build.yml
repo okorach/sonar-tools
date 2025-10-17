@@ -32,6 +32,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install poetry
           poetry install
+          poetry build
+          chmod +x conf/run_linters.sh
+          conf/run_linters.sh
         # Linting is done in the run_linters.sh script
 
       - name: Prep tests
@@ -48,12 +51,11 @@ jobs:
       #    conf/run_tests.sh
       #    echo "--------- UT report ---------"; cat build/xunit*.xml
       #    echo "---------Coverage report ---------"; cat build/coverage*.xml
-      - name: Run linters
-        working-directory: .
-        run: |
-          . venv/bin/activate
-          chmod +x conf/run_linters.sh
-          conf/run_linters.sh
+      # - name: Run linters
+      #  working-directory: .
+      #  run: |
+      #    chmod +x conf/run_linters.sh
+      #    conf/run_linters.sh
       #- name: Cache SonarQube packages
       #  uses: actions/cache@v4
       #  with:
