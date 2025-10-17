@@ -27,6 +27,8 @@ jobs:
           python-version: '3.9'
       - name: Install dependencies
         run: |
+          venv venv
+          . venv/bin/activate 
           python -m pip install --upgrade pip
           python -m pip install poetry
           poetry install
@@ -49,8 +51,9 @@ jobs:
       - name: Run linters
         working-directory: .
         run: |
+          . venv/bin/activate
           chmod +x conf/run_linters.sh
-          . conf/run_linters.sh
+          conf/run_linters.sh
       #- name: Cache SonarQube packages
       #  uses: actions/cache@v4
       #  with:
