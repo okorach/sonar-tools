@@ -113,7 +113,11 @@ class SqObject(object):
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: The request response
         """
-        return self.endpoint.get(api=api, params=params, data=data, mute=mute, **kwargs)
+        try:
+            return self.endpoint.get(api=api, params=params, data=data, mute=mute, **kwargs)
+        except exceptions.ObjectNotFound:
+            self.__class__.CACHE.clear()
+            raise
 
     def post(
         self,
@@ -131,7 +135,11 @@ class SqObject(object):
         :type mute: tuple, optional
         :return: The request response
         """
-        return self.endpoint.post(api=api, params=params, mute=mute, **kwargs)
+        try:
+            return self.endpoint.post(api=api, params=params, mute=mute, **kwargs)
+        except exceptions.ObjectNotFound:
+            self.__class__.CACHE.clear()
+            raise
 
     def patch(
         self,
@@ -149,7 +157,11 @@ class SqObject(object):
         :type mute: tuple, optional
         :return: The request response
         """
-        return self.endpoint.patch(api=api, params=params, mute=mute, **kwargs)
+        try:
+            return self.endpoint.patch(api=api, params=params, mute=mute, **kwargs)
+        except exceptions.ObjectNotFound:
+            self.__class__.CACHE.clear()
+            raise
 
     def delete(self) -> bool:
         """Deletes an object, returns whether the operation succeeded"""
