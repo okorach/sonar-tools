@@ -143,7 +143,7 @@ class User(sqobject.SqObject):
         :return: The user object
         :rtype: User
         """
-        if (o := User.CACHE.get(login, endpoint.local_url)):
+        if o := User.CACHE.get(login, endpoint.local_url):
             return o
         log.debug("Getting user '%s'", login)
         if (user := next((o for k, o in search(endpoint, params={"q": login}).items() if k == login), None)):

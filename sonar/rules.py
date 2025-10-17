@@ -190,7 +190,7 @@ class Rule(sq.SqObject):
     @classmethod
     def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
         """Returns a rule object from the cache or from the platform itself"""
-        if (o := Rule.CACHE.get(key, endpoint.local_url)):
+        if o := Rule.CACHE.get(key, endpoint.local_url):
             return o
         r = endpoint.get(Rule.API[c.READ], params={"key": key, "actives": "true"})
         return Rule(endpoint=endpoint, key=key, data=json.loads(r.text)["rule"])

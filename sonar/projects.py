@@ -183,7 +183,7 @@ class Project(components.Component):
         :raises ObjectNotFound: if project key not found
         :return: The Project
         """
-        if (o := Project.CACHE.get(key, endpoint.local_url)):
+        if o := Project.CACHE.get(key, endpoint.local_url):
             return o
         data = json.loads(endpoint.get(Project.API[c.READ], params={"component": key}).text)
         return cls.load(endpoint, data["component"])

@@ -73,7 +73,7 @@ class Organization(sqobject.SqObject):
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        if (o := Organization.CACHE.get(key, endpoint.local_url)):
+        if o := Organization.CACHE.get(key, endpoint.local_url):
             return o
         data = json.loads(endpoint.get(Organization.API[c.SEARCH], params={"organizations": key}).text)
         if len(data["organizations"]) == 0:
