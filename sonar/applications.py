@@ -93,11 +93,7 @@ class Application(aggr.Aggregation):
         o = Application.CACHE.get(key, endpoint.local_url)
         if o:
             return o
-        try:
-            data = json.loads(endpoint.get(Application.API[c.GET], params={"application": key}).text)["application"]
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"searching application {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(key, f"Application key '{key}' not found")
+        data = json.loads(endpoint.get(Application.API[c.GET], params={"application": key}).text)["application"]
         return cls.load(endpoint, data)
 
     @classmethod
@@ -151,10 +147,9 @@ class Application(aggr.Aggregation):
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
             self.reload(json.loads(self.get(Application.API[c.GET], params=self.api_params(c.GET)).text)["application"])
             self.projects()
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"refreshing {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        except exceptions.ObjectNotFound:
             Application.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
+            raise
 
     def __str__(self) -> str:
         """String name of object"""

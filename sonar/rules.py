@@ -190,14 +190,9 @@ class Rule(sq.SqObject):
     @classmethod
     def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
         """Returns a rule object from the cache or from the platform itself"""
-        o = Rule.CACHE.get(key, endpoint.local_url)
-        if o:
+        if (o := Rule.CACHE.get(key, endpoint.local_url)):
             return o
-        try:
-            r = endpoint.get(Rule.API[c.READ], params={"key": key, "actives": "true"})
-        except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"getting rule {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
+        r = endpoint.get(Rule.API[c.READ], params={"key": key, "actives": "true"})
         return Rule(endpoint=endpoint, key=key, data=json.loads(r.text)["rule"])
 
     @classmethod
@@ -258,10 +253,9 @@ class Rule(sq.SqObject):
 
         try:
             data = json.loads(self.get(Rule.API[c.READ], params={"key": self.key, "actives": "true"}).text)
-        except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"Reading {self}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        except exceptions.ObjectNotFound as e:
             Rule.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(key=self.key, message=f"{self} does not exist")
+            raise
         self.sq_json.update(data["rule"])
         self.sq_json["actives"] = data["actives"].copy()
         return True
@@ -450,16 +444,13 @@ def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> d
     return rule_list
 
 
-def get_object(endpoint: platform.Platform, key: str) -> Optional[Rule]:
+def get_object(endpoint: platform.Platform, key: str) -> Rule:
     """Returns a Rule object from its key
-    :return: The Rule object corresponding to the input rule key, or None if not found
+    :return: The Rule object corresponding to the input rule key
+    :raises: ObjectNotFound if rule does not exist
     :param str key: The rule key
-    :rtype: Rule or None
     """
-    try:
-        return Rule.get_object(key=key, endpoint=endpoint)
-    except exceptions.ObjectNotFound:
-        return None
+    return Rule.get_object(key=key, endpoint=endpoint)
 
 
 def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:

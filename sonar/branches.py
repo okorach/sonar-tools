@@ -89,16 +89,12 @@ class Branch(components.Component):
         o = Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())
         if o:
             return o
-        try:
-            data = json.loads(concerned_object.get(Branch.API[c.LIST], params={"project": concerned_object.key}).text)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"searching {str(concerned_object)} for branch '{branch_name}'", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
-
-        for br in data.get("branches", []):
-            if br["name"] == branch_name:
-                return cls.load(concerned_object, branch_name, br)
-        raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(concerned_object)} not found")
+        data = json.loads(concerned_object.get(Branch.API[c.LIST], params={"project": concerned_object.key}).text)
+        br = next((b for b in data.get("branches", []) if b["name"] == branch_name), None)
+        if not br:
+            raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(concerned_object)} not found")
+        return cls.load(concerned_object, branch_name, br)
+        
 
     @classmethod
     def load(cls, concerned_object: projects.Project, branch_name: str, data: types.ApiPayload) -> Branch:
@@ -137,10 +133,9 @@ class Branch(components.Component):
         """
         try:
             data = json.loads(self.get(Branch.API[c.LIST], params=self.api_params(c.LIST)).text)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"refreshing {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        except exceptions.ObjectNotFound:
             Branch.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found in SonarQube")
+            raise
         for br in data.get("branches", []):
             if br["name"] == self.name:
                 self._load(br)
@@ -201,10 +196,9 @@ class Branch(components.Component):
         elif self._new_code is None:
             try:
                 data = json.loads(self.get(api=Branch.API["get_new_code"], params=self.api_params(c.LIST)).text)
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting new code period of {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            except exceptions.ObjectNotFound as e:
                 Branch.CACHE.pop(self)
-                raise exceptions.ObjectNotFound(self.concerned_object.key, f"{str(self.concerned_object)} not found")
+                raise
 
             for b in data["newCodePeriods"]:
                 new_code = settings.new_code_to_string(b)
@@ -319,14 +313,11 @@ class Branch(components.Component):
         log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
         try:
             self.post(Branch.API[c.RENAME], params={"project": self.concerned_object.key, "name": new_name})
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"Renaming {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST))
-            if isinstance(e, HTTPError):
-                if e.response.status_code == HTTPStatus.NOT_FOUND:
-                    Branch.CACHE.pop(self)
-                    raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")
-                if e.response.status_code == HTTPStatus.BAD_REQUEST:
-                    return False
+        except exceptions.ObjectNotFound as e:
+            Branch.CACHE.pop(self)
+            raise
+        except exceptions.SonarException:
+            return False
         Branch.CACHE.pop(self)
         self.name = new_name
         Branch.CACHE.put(self)

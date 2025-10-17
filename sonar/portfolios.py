@@ -412,13 +412,9 @@ class Portfolio(aggregations.Aggregation):
             try:
                 self.post("views/add_project", params={"key": self.key, "project": key}, mute=(HTTPStatus.BAD_REQUEST,))
                 self._selection_mode[_SELECTION_MODE_MANUAL][key] = {c.DEFAULT_BRANCH}
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"adding projects to {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST))
-                if e.response.status_code == HTTPStatus.BAD_REQUEST:
-                    log.warning("%s: Project '%s' already in %s", util.error_msg(e), key, str(self))
-                else:
-                    Portfolio.CACHE.pop(self)
-                    raise exceptions.ObjectNotFound(self.key, f"Project '{key}' not found, can't be added to {str(self)}")
+            except exceptions.ObjectNotFound:
+                Portfolio.CACHE.pop(self)
+                raise
         return self
 
     def add_project_branches(self, project_key: str, branches: set[str]) -> Portfolio:
@@ -431,16 +427,7 @@ class Portfolio(aggregations.Aggregation):
         return self
 
     def add_project_branch(self, project_key: str, branch: str) -> bool:
-        try:
-            r = self.post("views/add_project_branch", params={"key": self.key, "project": project_key, "branch": branch})
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.NOT_FOUND:
-                Portfolio.CACHE.pop(self)
-                raise exceptions.ObjectNotFound(self.key, f"Project '{project_key}' or branch '{branch}' not found, can't be added to {str(self)}")
-            if e.response.status_code == HTTPStatus.BAD_REQUEST:
-                log.warning("%s: Project '%s' branch '%s', already in %s", util.error_msg(e), project_key, branch, str(self))
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"adding projects to {str(self)}")
+        r = self.post("views/add_project_branch", params={"key": self.key, "project": project_key, "branch": branch})
         if project_key in self._selection_mode[_SELECTION_MODE_MANUAL]:
             self._selection_mode[_SELECTION_MODE_MANUAL][project_key].discard(c.DEFAULT_BRANCH)
             self._selection_mode[_SELECTION_MODE_MANUAL][project_key].add(branch)
@@ -721,13 +708,7 @@ def exists(endpoint: pf.Platform, key: str) -> bool:
 
 def delete(endpoint: pf.Platform, key: str) -> bool:
     """Deletes a portfolio by its key"""
-    try:
-        p = Portfolio.get_object(endpoint, key)
-        p.delete()
-        return True
-    except exceptions.ObjectNotFound:
-        return False
-
+    return Portfolio.get_object(endpoint, key).delete()
 
 def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports portfolio configuration described in a JSON"""
@@ -762,7 +743,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         try:
             o = Portfolio.get_object(endpoint, key)
             o.update(data=data, recurse=True)
-        except exceptions.ObjectNotFound as e:
+        except exceptions.SonarException as e:
             log.error(e.message)
     return True
 

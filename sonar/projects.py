@@ -182,16 +182,10 @@ class Project(components.Component):
         :param str key: Project key to search
         :raises ObjectNotFound: if project key not found
         :return: The Project
-        :rtype: Project
         """
-        o = Project.CACHE.get(key, endpoint.local_url)
-        if o:
+        if (o := Project.CACHE.get(key, endpoint.local_url)):
             return o
-        try:
-            data = json.loads(endpoint.get(Project.API[c.READ], params={"component": key}).text)
-        except RequestException as e:
-            util.handle_error(e, f"Getting project {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
+        data = json.loads(endpoint.get(Project.API[c.READ], params={"component": key}).text)
         return cls.load(endpoint, data["component"])
 
     @classmethod
@@ -205,8 +199,7 @@ class Project(components.Component):
         :rtype: Project
         """
         key = data["key"]
-        o = Project.CACHE.get(key, endpoint.local_url)
-        if not o:
+        if not (o := Project.CACHE.get(key, endpoint.local_url)):
             o = cls(endpoint, key)
         o.reload(data)
         return o
@@ -246,14 +239,12 @@ class Project(components.Component):
 
         :raises ObjectNotFound: if project key not found
         :return: self
-        :rtype: Project
         """
         try:
             data = json.loads(self.get(Project.api_for(c.READ, self.endpoint), params=self.api_params(c.READ)).text)
-        except RequestException as e:
-            util.handle_error(e, f"searching project {self.key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        except exceptions.ObjectNotFound:
             Project.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
+            raise
         return self.reload(data["component"])
 
     def reload(self, data: types.ApiPayload) -> Project:
@@ -376,7 +367,7 @@ class Project(components.Component):
 
         :raises ObjectNotFound: If object to delete was not found in SonarQube
         :raises request.HTTPError: In all other cases of HTTP Errors
-        :return: Nothing
+        :return: Whether the operation succeeded
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         log.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
@@ -681,10 +672,9 @@ class Project(components.Component):
                 problems += self.__audit_branches(audit_settings)
                 problems += self.__audit_pull_requests(audit_settings)
 
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"auditing {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        except exceptions.ObjectNotFound:
             Project.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(self.key, str(e))
+            raise
 
         return problems
 
@@ -702,10 +692,13 @@ class Project(components.Component):
             )
         try:
             resp = self.post("project_dump/export", params={"key": self.key})
+        except exceptions.ObjectNotFound as e:
+            Project.CACHE.pop(self)
+            return f"FAILED/{e.message}", None
+        except exceptions.SonarException as e:
+            return f"FAILED/{e.message}", None
         except RequestException as e:
             util.handle_error(e, f"exporting zip of {str(self)}", catch_all=True)
-            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound(self.key, f"Project key '{self.key}' not found")
             return f"FAILED/{util.http_error_string(e.response.status_code)}", None
         except ConnectionError as e:
             return str(e), None
@@ -735,8 +728,11 @@ class Project(components.Component):
             raise exceptions.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
         try:
             resp = self.post("project_dump/import", params={"key": self.key})
-        except exceptions.ObjectNotFound:
-            return "FAILED/PROJECT_NOT_FOUND"
+        except exceptions.ObjectNotFound as e:
+            Project.CACHE.pop(self)
+            return f"FAILED/{e.message}", None
+        except exceptions.SonarException as e:
+            return f"FAILED/{e.message}", None
         except exceptions.SonarException as e:
             if "Dump file does not exist" in e.message:
                 return f"FAILED/{tasks.ZIP_MISSING}"
@@ -770,7 +766,7 @@ class Project(components.Component):
             else:
                 try:
                     objects = {b: branches.Branch.get_object(concerned_object=self, branch_name=b) for b in br}
-                except (exceptions.ObjectNotFound, exceptions.UnsupportedOperation) as e:
+                except exceptions.SonarException as e:
                     log.error(e.message)
         if pr:
             if "*" in pr:
@@ -778,7 +774,7 @@ class Project(components.Component):
             else:
                 try:
                     objects.update({p: pull_requests.get_object(project=self, pull_request_key=p) for p in pr})
-                except exceptions.ObjectNotFound as e:
+                except exceptions.SonarException as e:
                     log.error(e.message)
         return objects
 

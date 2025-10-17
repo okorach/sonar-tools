@@ -195,24 +195,19 @@ class QualityGate(sq.SqObject):
         """
         :raises ObjectNotFound: If Quality gate not found
         :return: The list of projects using this quality gate
-        :rtype: dict {<projectKey>: <projectData>}
         """
         if self._projects is not None:
             return self._projects
-        if self.endpoint.is_sonarcloud():
-            params = {"gateId": self.key, "ps": 500}
-        else:
-            params = {"gateName": self.name, "ps": 500}
+        params = {"ps": 500} | {"gateId": self.key} if self.endpoint.is_sonarcloud() else {"gateName": self.name}
         page, nb_pages = 1, 1
         self._projects = {}
         while page <= nb_pages:
             params["p"] = page
             try:
                 resp = self.get(QualityGate.API["get_projects"], params=params)
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting projects of {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            except exceptions.ObjectNotFound:
                 QualityGate.CACHE.pop(self)
-                raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
+                raise
             data = json.loads(resp.text)
             for prj in data["results"]:
                 key = prj["key"] if "key" in prj else prj["id"]

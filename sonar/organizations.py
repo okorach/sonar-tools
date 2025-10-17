@@ -73,15 +73,9 @@ class Organization(sqobject.SqObject):
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        o = Organization.CACHE.get(key, endpoint.local_url)
-        if o:
+        if (o := Organization.CACHE.get(key, endpoint.local_url)):
             return o
-        try:
-            data = json.loads(endpoint.get(Organization.API[c.SEARCH], params={"organizations": key}).text)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting organization {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")
-
+        data = json.loads(endpoint.get(Organization.API[c.SEARCH], params={"organizations": key}).text)
         if len(data["organizations"]) == 0:
             raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")
         return cls.load(endpoint, data["organizations"][0])
@@ -192,8 +186,8 @@ def exists(endpoint: pf.Platform, org_key: str) -> bool:
     log.info("Verifying that organization '%s' exists", org_key)
     try:
         _ = Organization.get_object(endpoint=endpoint, key=org_key)
-        log.warning("Organization '%s' does not exist or user is not a member", org_key)
     except exceptions.ObjectNotFound:
+        log.warning("Organization '%s' does not exist or user is not a member", org_key)
         return False
     log.debug("Organization '%s' exists and user is a member", org_key)
     return True

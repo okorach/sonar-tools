@@ -155,11 +155,7 @@ class QualityProfile(sq.SqObject):
             raise exceptions.ObjectNotFound(f"{language}:{original_qp_name}", f"Quality profile {language}:{original_qp_name} not found")
         original_qp = l[0]
         log.debug("Found QP to clone: %s", str(original_qp))
-        try:
-            endpoint.post("qualityprofiles/copy", params={"toName": name, "fromKey": original_qp.key})
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"cloning {str(original_qp)} into name '{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(f"{language}:{name}", e.response.text)
+        endpoint.post("qualityprofiles/copy", params={"toName": name, "fromKey": original_qp.key})
         return cls.read(endpoint=endpoint, name=name, language=language)
 
     @classmethod
@@ -801,8 +797,7 @@ def get_object(endpoint: pf.Platform, name: str, language: str) -> Optional[Qual
     :return: The quality profile object, of None if not found
     """
     get_list(endpoint)
-    o = QualityProfile.CACHE.get(name, language, endpoint.local_url)
-    if not o:
+    if not (o := QualityProfile.CACHE.get(name, language, endpoint.local_url)):
         raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
     return o
 

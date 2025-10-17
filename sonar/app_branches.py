@@ -201,10 +201,9 @@ class ApplicationBranch(Component):
             params["projectBranch"].append(br_name)
         try:
             ok = self.post(ApplicationBranch.API[c.UPDATE], params=params).ok
-        except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"updating {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        except exceptions.ObjectNotFound as e:
             ApplicationBranch.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(str(self), e.response.text)
+            raise
 
         self.name = name
         self._project_branches = project_branches
