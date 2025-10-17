@@ -76,7 +76,7 @@ def test_get_object_non_existing() -> None:
         return
     with pytest.raises(exceptions.ObjectNotFound) as e:
         _ = App.get_object(endpoint=tutil.SQ, key=NON_EXISTING_KEY)
-    assert str(e.value).endswith(f"Application key '{NON_EXISTING_KEY}' not found")
+    assert str(e.value).endswith(f"Application '{NON_EXISTING_KEY}' not found")
 
 
 def test_exists(get_test_app: Generator[App]) -> None:

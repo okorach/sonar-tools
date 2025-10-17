@@ -28,6 +28,7 @@ from __future__ import annotations
 from http import HTTPStatus
 import sys
 import os
+import re
 from typing import Optional
 import time
 import datetime
@@ -264,9 +265,8 @@ class Platform(object):
             headers["Authorization"] = f"Bearer {self.__token}"
             if with_org:
                 params["organization"] = self.organization
-        req_type, url = "", ""
+        req_type, url = getattr(request, "__name__", repr(request)).upper(), ""
         if log.get_level() <= log.DEBUG:
-            req_type = getattr(request, "__name__", repr(request)).upper()
             url = self.__urlstring(api, params, kwargs.get("data", {}))
             log.debug("%s: %s", req_type, url)
         kwargs["headers"] = headers
@@ -288,10 +288,24 @@ class Platform(object):
                     self.local_url = new_url
             r.raise_for_status()
         except HTTPError as e:
-            lvl = log.DEBUG if r.status_code in mute else log.ERROR
+            code = r.status_code
+            lvl = log.DEBUG if code in mute else log.ERROR
             log.log(lvl, "%s (%s request)", util.error_msg(e), req_type)
-            raise e
-        except (ConnectionError, RequestException) as e:
+            err_msg = util.sonar_error(e.response)
+            err_msg_lower = err_msg.lower()
+            key = next((params[k] for k in ("key", "project", "component", "componentKey") if k in params), "Unknown")
+            if any(
+                msg in err_msg_lower for msg in ("not found", "no quality gate has been found", "does not exist", "could not find")
+            ):  # code == HTTPStatus.NOT_FOUND:
+                raise exceptions.ObjectNotFound(key, err_msg) from e
+            if any(msg in err_msg_lower for msg in ("already exists", "already been taken")):
+                raise exceptions.ObjectAlreadyExists(key, err_msg) from e
+            if re.match(r"(Value of parameter .+ must be one of|No enum constant)", err_msg):
+                raise exceptions.UnsupportedOperation(err_msg) from e
+            if any(msg in err_msg_lower for msg in ("insufficient privileges", "insufficient permissions")):
+                raise exceptions.SonarException(err_msg, errcodes.SONAR_API_AUTHORIZATION) from e
+            raise exceptions.SonarException(err_msg, errcodes.SONAR_API) from e
+        except ConnectionError as e:
             util.handle_error(e, "")
         return r
 

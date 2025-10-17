@@ -143,10 +143,13 @@ def test_monorepo() -> None:
 def test_get_findings() -> None:
     """test_get_findings"""
     proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
-    assert len(proj.get_findings(branch="non-existing-branch")) == 0
+    with pytest.raises(exceptions.ObjectNotFound):
+        proj.get_findings(branch="non-existing-branch")
     if tutil.SQ.edition() != c.CE:
         assert len(proj.get_findings(branch="develop")) > 0
-    assert len(proj.get_findings(pr="1")) == 0
+    with pytest.raises(exceptions.ObjectNotFound):
+        proj.get_findings(pr="1")
+    assert len(proj.get_findings(pr="5")) == 0
 
 
 def test_count_third_party_issues() -> None:
@@ -228,11 +231,13 @@ def test_import_wrong_key(get_test_project: Generator[projects.Project]) -> None
     """test_import_wrong_key"""
     proj = get_test_project
     proj.key = tutil.NON_EXISTING_KEY
-    expected_exception = exceptions.ObjectNotFound if tutil.SQ.edition() in (c.EE, c.DCE) else exceptions.UnsupportedOperation
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        with pytest.raises(expected_exception):
+        assert proj.import_zip(asynchronous=True) == "FAILED/PROJECT_NOT_FOUND"
+        assert proj.import_zip(asynchronous=False) == "FAILED/PROJECT_NOT_FOUND"
+    else:
+        with pytest.raises(exceptions.UnsupportedOperation):
             proj.import_zip(asynchronous=True)
-        with pytest.raises(expected_exception):
+        with pytest.raises(exceptions.UnsupportedOperation):
             proj.import_zip(asynchronous=False)
 
 
@@ -249,7 +254,8 @@ def test_set_links(get_test_project: Generator[projects.Project]) -> None:
     proj = get_test_project
     proj.set_links({"links": [{"type": "custom", "name": "google", "url": "https://google.com"}]})
     proj.key = tutil.NON_EXISTING_KEY
-    assert not proj.set_links({"links": [{"type": "custom", "name": "yahoo", "url": "https://yahoo.com"}]})
+    with pytest.raises(exceptions.ObjectNotFound):
+        proj.set_links({"links": [{"type": "custom", "name": "yahoo", "url": "https://yahoo.com"}]})
 
 
 def test_set_tags(get_test_project: Generator[projects.Project]) -> None:
@@ -271,37 +277,43 @@ def test_set_quality_gate(get_test_project: Generator[projects.Project], get_tes
     qg = get_test_quality_gate
     assert proj.set_quality_gate(qg.name)
     assert not proj.set_quality_gate(None)
-    assert not proj.set_quality_gate(tutil.NON_EXISTING_KEY)
+    with pytest.raises(exceptions.ObjectNotFound):
+        proj.set_quality_gate(tutil.NON_EXISTING_KEY)
 
     proj.key = tutil.NON_EXISTING_KEY
-    assert not proj.set_quality_gate(qg.name)
+    with pytest.raises(exceptions.ObjectNotFound):
+        assert not proj.set_quality_gate(qg.name)
 
 
 def test_ai_code_assurance(get_test_project: Generator[projects.Project]) -> None:
     """test_ai_code_assurance"""
     proj = get_test_project
-    if tutil.SQ.version() >= (10, 7, 0) and tutil.SQ.edition() != c.CE:
-        proj = get_test_project
-        assert proj.set_contains_ai_code(True)
-        assert proj.get_ai_code_assurance() in (
-            "CONTAINS_AI_CODE",
-            "AI_CODE_ASSURED",
-            "AI_CODE_ASSURANCE_ON",
-            "AI_CODE_ASSURANCE_OFF",
-            "AI_CODE_ASSURANCE_PASS",
-            "AI_CODE_ASSURANCE_FAIL",
-            "NONE",
-        )
-        assert proj.set_contains_ai_code(False)
-        assert proj.get_ai_code_assurance() == "NONE"
-        proj.key = tutil.NON_EXISTING_KEY
-        assert not proj.set_contains_ai_code(True)
-        assert proj.get_ai_code_assurance() is None
-        assert not proj.set_contains_ai_code(False)
-        assert proj.get_ai_code_assurance() is None
-    else:
+    if tutil.SQ.version() < (10, 7, 0) or tutil.SQ.edition() == c.CE:
         with pytest.raises(exceptions.UnsupportedOperation):
             proj.get_ai_code_assurance()
+        return
+    proj = get_test_project
+    assert proj.set_contains_ai_code(True)
+    assert proj.get_ai_code_assurance() in (
+        "CONTAINS_AI_CODE",
+        "AI_CODE_ASSURED",
+        "AI_CODE_ASSURANCE_ON",
+        "AI_CODE_ASSURANCE_OFF",
+        "AI_CODE_ASSURANCE_PASS",
+        "AI_CODE_ASSURANCE_FAIL",
+        "NONE",
+    )
+    assert proj.set_contains_ai_code(False)
+    assert proj.get_ai_code_assurance() == "NONE"
+    proj.key = tutil.NON_EXISTING_KEY
+    with pytest.raises(exceptions.ObjectNotFound):
+        proj.set_contains_ai_code(True)
+    with pytest.raises(exceptions.ObjectNotFound):
+        assert proj.get_ai_code_assurance()
+    with pytest.raises(exceptions.ObjectNotFound):
+        proj.set_contains_ai_code(False)
+    with pytest.raises(exceptions.ObjectNotFound):
+        proj.get_ai_code_assurance()
 
 
 def test_set_quality_profile(get_test_project: Generator[projects.Project], get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
@@ -339,8 +351,10 @@ def test_wrong_key_2(get_test_project: Generator[projects.Project]) -> None:
     """test_wrong_key"""
     proj = get_test_project
     proj.key = tutil.NON_EXISTING_KEY
-    assert proj.webhooks() is None
-    assert proj.links() is None
+    with pytest.raises(exceptions.ObjectNotFound):
+        _ = proj.webhooks()
+    with pytest.raises(exceptions.ObjectNotFound):
+        _ = proj.links()
     # assert proj.quality_gate() is None
     with pytest.raises(exceptions.ObjectNotFound):
         proj.audit({})
