@@ -29,12 +29,6 @@ while [[ $# -ne 0 ]]; do
         nodocker)
             build_image=0
             ;;
-        pypi)
-            release=1
-            ;;
-        dockerhub)
-            release_docker=1
-            ;;
         *)
             ;;
     esac
