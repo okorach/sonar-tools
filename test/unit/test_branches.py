@@ -88,6 +88,11 @@ def test_set_as_main():
     assert main_br.is_main()
     assert not dev_br.is_main()
 
+    if tutil.SQ.version() < (10, 0, 0):
+        with pytest.raises(exceptions.UnsupportedOperation):
+            dev_br.set_as_main()
+        return
+
     assert dev_br.set_as_main()
     assert not main_br.is_main()
     assert dev_br.is_main()
