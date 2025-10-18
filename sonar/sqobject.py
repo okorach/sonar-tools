@@ -23,7 +23,7 @@ Abstraction of the SonarQube general object concept
 
 """
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import json
 
 from http import HTTPStatus
@@ -36,6 +36,9 @@ from sonar.util import types, cache
 from sonar.util import constants as c
 from sonar import utilities, exceptions, errcodes
 
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+
 
 class SqObject(object):
     """Abstraction of Sonar objects"""
@@ -43,12 +46,12 @@ class SqObject(object):
     CACHE = cache.Cache
     API = {c.SEARCH: None}
 
-    def __init__(self, endpoint: object, key: str) -> None:
-        self.key = key  #: Object unique key (unique in its class)
-        self.endpoint = endpoint  #: Reference to the SonarQube platform
-        self.concerned_object = None
-        self._tags = None
-        self.sq_json = {}
+    def __init__(self, endpoint: Platform, key: str) -> None:
+        self.key = key  #: Object unique key (unique in its class) # :type: str
+        self.endpoint = endpoint  #: Reference to the SonarQube platform # :type: Platform
+        self.concerned_object = None  # :type: Optional[SqObject]
+        self._tags = None  # :type: Optional[list[str]]
+        self.sq_json = {}  # :type: types.ApiPayload
 
     def __hash__(self) -> int:
         """Default UUID for SQ objects"""
@@ -60,7 +63,7 @@ class SqObject(object):
         return NotImplemented
 
     @classmethod
-    def api_for(cls, op: str, endpoint: object) -> Optional[str]:
+    def api_for(cls, op: str, endpoint: Platform) -> Optional[str]:
         """Returns the API to use for a particular operation.
         This function must be overloaded for classes that need specific treatment. e.g. API V1 or V2
         depending on SonarQube version, different API for SonarQube Cloud
@@ -72,7 +75,7 @@ class SqObject(object):
         return cls.API[op] if op in cls.API else cls.API[c.LIST]
 
     @classmethod
-    def clear_cache(cls, endpoint: Optional[object] = None) -> None:
+    def clear_cache(cls, endpoint: Optional[Platform] = None) -> None:
         """Clears the cache of a given class
 
         :param endpoint: Optional, clears only the cache fo rthis platfiorm if specified, clear all if not
@@ -86,12 +89,10 @@ class SqObject(object):
         except AttributeError:
             pass
 
-    def reload(self, data: types.ObjectJsonRepr) -> None:
+    def reload(self, data: types.ApiPayload) -> SqObject:
         """Reload a Sonar object with its JSON representation"""
-        if self.sq_json is None:
-            self.sq_json = data
-        else:
-            self.sq_json.update(data)
+        self.sq_json = self.sq_json or {} | data
+        return self
 
     def base_url(self, local: bool = True) -> str:
         """Returns the platform base URL"""
@@ -101,7 +102,7 @@ class SqObject(object):
         self,
         api: str,
         params: types.ApiParams = None,
-        data: str = None,
+        data: Optional[str] = None,
         mute: tuple[HTTPStatus] = (),
         **kwargs,
     ) -> requests.Response:
@@ -157,10 +158,10 @@ class SqObject(object):
         try:
             ok = self.post(api=self.__class__.API[c.DELETE], params=self.api_params(c.DELETE)).ok
             if ok:
-                log.info("Removing from %s cache", str(self.__class__.__name__))
+                log.info("Removing from %s cache", utilities.class_name(self))
                 self.__class__.CACHE.pop(self)
         except (AttributeError, KeyError):
-            raise exceptions.UnsupportedOperation(f"Can't delete {self.__class__.__name__.lower()}s")
+            raise exceptions.UnsupportedOperation(f"Can't delete {utilities.class_name(self).lower()}s")
         return ok
 
     def set_tags(self, tags: list[str]) -> bool:
@@ -180,7 +181,7 @@ class SqObject(object):
             utilities.handle_error(e, f"setting tags of {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             return False
         except (AttributeError, KeyError):
-            raise exceptions.UnsupportedOperation(f"Can't set tags on {self.__class__.__name__.lower()}s")
+            raise exceptions.UnsupportedOperation(f"Can't set tags on {utilities.class_name(self).lower()}s")
         return r.ok
 
     def get_tags(self, **kwargs) -> list[str]:
@@ -188,7 +189,7 @@ class SqObject(object):
         try:
             api = self.__class__.API[c.GET_TAGS]
         except (AttributeError, KeyError):
-            raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags")
+            raise exceptions.UnsupportedOperation(f"{utilities.class_name(self).lower()}s have no tags")
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
         if not kwargs.get(c.USE_CACHE, True) or self._tags is None:
@@ -201,12 +202,12 @@ class SqObject(object):
         return self._tags
 
 
-def __get(endpoint: object, api: str, params: types.ApiParams) -> requests.Response:
+def __get(endpoint: Platform, api: str, params: types.ApiParams) -> requests.Response:
     """Returns a Sonar object from its key"""
     return json.loads(endpoint.get(api, params=params).text)
 
 
-def __load(endpoint: object, object_class: any, data: types.ObjectJsonRepr) -> dict[str, object]:
+def __load(endpoint: Platform, object_class: any, data: types.ObjectJsonRepr) -> dict[str, object]:
     key_field = object_class.SEARCH_KEY_FIELD
     if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook"):
         return {obj[key_field]: object_class.load(endpoint=endpoint, data=obj) for obj in data}
@@ -216,7 +217,7 @@ def __load(endpoint: object, object_class: any, data: types.ObjectJsonRepr) -> d
         return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}
 
 
-def search_objects(endpoint: object, object_class: any, params: types.ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
+def search_objects(endpoint: Platform, object_class: any, params: types.ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
     """Runs a multi-threaded object search for searchable Sonar Objects"""
     api = object_class.api_for(c.SEARCH, endpoint)
     returned_field = object_class.SEARCH_RETURN_FIELD

@@ -23,7 +23,7 @@
 import concurrent.futures
 import traceback
 
-from typing import Union
+from typing import Union, Optional
 
 import sonar.logging as log
 import sonar.utilities as util
@@ -210,9 +210,9 @@ def __sync_curated_list(
 def sync_lists(
     src_findings: list[findings.Finding],
     tgt_findings: list[findings.Finding],
-    src_object: object,
-    tgt_object: object,
-    sync_settings: types.ConfigSettings = None,
+    src_object: Union[Project, Branch],
+    tgt_object: Union[Project, Branch],
+    sync_settings: Optional[types.ConfigSettings] = None,
 ) -> tuple[list[dict[str, str]], dict[str, int]]:
     """Syncs 2 list of findings and returns report and count of syncs"""
     # Mass collect changelogs with multithreading, that will be needed later

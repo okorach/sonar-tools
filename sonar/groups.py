@@ -24,13 +24,13 @@
 from __future__ import annotations
 import json
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from http import HTTPStatus
 from requests import HTTPError, RequestException
 
 import sonar.logging as log
-import sonar.platform as pf
+from sonar.platform import Platform
 import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar import exceptions, users
@@ -38,6 +38,9 @@ from sonar import exceptions, users
 from sonar.audit import rules
 from sonar.audit.problem import Problem
 from sonar.util import types, cache, constants as c
+
+if TYPE_CHECKING:
+    from sonar.users import User
 
 ADD_USER = "ADD_USER"
 REMOVE_USER = "REMOVE_USER"
@@ -72,7 +75,7 @@ class Group(sq.SqObject):
     SEARCH_KEY_FIELD = "name"
     SEARCH_RETURN_FIELD = "groups"
 
-    def __init__(self, endpoint: pf.Platform, name: str, data: types.ApiPayload) -> None:
+    def __init__(self, endpoint: Platform, name: str, data: types.ApiPayload) -> None:
         """Do not use, use class methods to create objects"""
         super().__init__(endpoint=endpoint, key=name)
         self.name = name  #: Group name
@@ -85,7 +88,7 @@ class Group(sq.SqObject):
         log.debug("Created %s object, id '%s'", str(self), str(self.id))
 
     @classmethod
-    def read(cls, endpoint: pf.Platform, name: str) -> Group:
+    def read(cls, endpoint: Platform, name: str) -> Group:
         """Creates a Group object corresponding to the group with same name in SonarQube
         :param Platform endpoint: Reference to the SonarQube platform
         :param str name: Group name
@@ -106,7 +109,7 @@ class Group(sq.SqObject):
         return cls(endpoint, name, data=data)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, name: str, description: str = None) -> Group:
+    def create(cls, endpoint: Platform, name: str, description: str = None) -> Group:
         """Creates a new group in SonarQube and returns the corresponding Group object
 
         :param endpoint: Reference to the SonarQube platform
@@ -125,7 +128,7 @@ class Group(sq.SqObject):
         return o
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Group:
+    def load(cls, endpoint: Platform, data: types.ApiPayload) -> Group:
         """Creates a Group object from the result of a SonarQube API group search data
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -135,7 +138,7 @@ class Group(sq.SqObject):
         return cls(endpoint=endpoint, name=data["name"], data=data)
 
     @classmethod
-    def api_for(cls, op: str, endpoint: object) -> Optional[str]:
+    def api_for(cls, op: str, endpoint: Platform) -> Optional[str]:
         """Returns the API for a given operation depending on the SonarQube version"""
         if endpoint.is_sonarcloud() or endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
             api_to_use = Group.API_V1
@@ -144,7 +147,7 @@ class Group(sq.SqObject):
         return api_to_use[op] if op in api_to_use else api_to_use[c.LIST]
 
     @classmethod
-    def get_object(cls, endpoint: pf.Platform, name: str) -> Group:
+    def get_object(cls, endpoint: Platform, name: str) -> Group:
         """Returns a group object
 
         :param Platform endpoint: reference to the SonarQube platform
@@ -168,7 +171,7 @@ class Group(sq.SqObject):
             else:
                 ok = self.post(api=Group.API_V1[c.DELETE], params=self.api_params(c.DELETE)).ok
             if ok:
-                log.info("Removing from %s cache", str(self.__class__.__name__))
+                log.info("Removing from %s cache", util.class_name(self))
                 self.__class__.CACHE.pop(self)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"deleting {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
@@ -220,7 +223,7 @@ class Group(sq.SqObject):
         """
         return f"{self.base_url(local=False)}/admin/groups"
 
-    def add_user(self, user: object) -> bool:
+    def add_user(self, user: User) -> bool:
         """Adds an user to the group
 
         :param user: the User to add
@@ -243,7 +246,7 @@ class Group(sq.SqObject):
                     raise exceptions.ObjectNotFound(user.login, util.sonar_error(e.response))
         return r.ok
 
-    def remove_user(self, user: object) -> bool:
+    def remove_user(self, user: User) -> bool:
         """Removes a user from the group
 
         :param str user_login: User login
@@ -342,7 +345,7 @@ class Group(sq.SqObject):
         return r.ok
 
 
-def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Group]:
+def search(endpoint: Platform, params: types.ApiParams = None) -> dict[str, Group]:
     """Search groups
 
     :params Platform endpoint: Reference to the SonarQube platform
@@ -352,7 +355,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, G
     return sq.search_objects(endpoint=endpoint, object_class=Group, params=params, api_version=api_version)
 
 
-def get_list(endpoint: pf.Platform) -> dict[str, Group]:
+def get_list(endpoint: Platform) -> dict[str, Group]:
     """Returns the list of groups
 
     :params Platform endpoint: Reference to the SonarQube platform
@@ -363,7 +366,7 @@ def get_list(endpoint: pf.Platform) -> dict[str, Group]:
     return dict(sorted(search(endpoint).items()))
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports groups representation in JSON
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -384,7 +387,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     return g_list
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
+def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
     """Audits all groups
 
     :param dict audit_settings: Configuration of audit
@@ -404,7 +407,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     return problems
 
 
-def get_object_from_id(endpoint: pf.Platform, id: str) -> Group:
+def get_object_from_id(endpoint: Platform, id: str) -> Group:
     """Searches a Group object from its id - SonarQube 10.4+"""
     if endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
         raise exceptions.UnsupportedOperation("Operation unsupported before SonarQube 10.4")
@@ -416,7 +419,7 @@ def get_object_from_id(endpoint: pf.Platform, id: str) -> Group:
     raise exceptions.ObjectNotFound(id, message=f"Group '{id}' not found")
 
 
-def create_or_update(endpoint: pf.Platform, name: str, description: str) -> Group:
+def create_or_update(endpoint: Platform, name: str, description: str) -> Group:
     """Creates or updates a group
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -434,7 +437,7 @@ def create_or_update(endpoint: pf.Platform, name: str, description: str) -> Grou
         return Group.create(endpoint, name, description)
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
+def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
     """Imports a group configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -453,7 +456,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         create_or_update(endpoint, name, desc)
 
 
-def exists(endpoint: pf.Platform, name: str) -> bool:
+def exists(endpoint: Platform, name: str) -> bool:
     """
     :param endpoint: reference to the SonarQube platform
     :param group_name: group name to check

@@ -25,7 +25,7 @@ Abstraction of the SonarQube "pull request" concept
 
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import requests.utils
 
@@ -37,6 +37,8 @@ from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
 
+if TYPE_CHECKING:
+    from sonar.projects import Project
 
 _UNSUPPORTED_IN_CE = "Pull requests not available in Community Edition"
 
@@ -49,12 +51,12 @@ class PullRequest(components.Component):
     CACHE = cache.Cache()
     API = {c.DELETE: "project_pull_requests/delete", c.LIST: "project_pull_requests/list"}
 
-    def __init__(self, project: object, key: str, data: types.ApiPayload = None) -> None:
+    def __init__(self, project: Project, key: str, data: types.ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=project.endpoint, key=key)
-        self.concerned_object = project
-        self.json = data
-        self._last_analysis = None
+        self.concerned_object = project  #: Project concerned by the PR # :type: Project
+        self.json = data  #: Json data # :type: types.ApiPayload
+        self._last_analysis = None  #: Last analysis date # :type: Optional[datetime]
         PullRequest.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
@@ -107,7 +109,7 @@ class PullRequest(components.Component):
         return ops[op] if op and op in ops else ops[c.READ]
 
 
-def get_object(pull_request_key: str, project: object, data: types.ApiPayload = None) -> Optional[PullRequest]:
+def get_object(pull_request_key: str, project: Project, data: types.ApiPayload = None) -> Optional[PullRequest]:
     """Returns a PR object from a PR key and a project"""
     if project.endpoint.edition() == c.CE:
         log.debug("Pull requests not available in Community Edition")
@@ -118,7 +120,7 @@ def get_object(pull_request_key: str, project: object, data: types.ApiPayload = 
     return o
 
 
-def get_list(project: object) -> dict[str, PullRequest]:
+def get_list(project: Project) -> dict[str, PullRequest]:
     """Retrieves the list of pull requests of a project
 
     :param Project project: Project to get PRs from

@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from http import HTTPStatus
 from requests import RequestException
 import requests.utils
@@ -36,6 +36,9 @@ from sonar.util import types, cache, constants as c
 
 from sonar import users
 from sonar import findings, rules, changelog
+
+if TYPE_CHECKING:
+    from sonar.changelog import Changelog
 
 PROJECT_FILTER = "project"
 PROJECT_FILTER_OLD = "projectKey"
@@ -246,7 +249,7 @@ class Hotspot(findings.Finding):
         """
         return self.assign(assignee=None, comment=comment)
 
-    def __apply_event(self, event: object, settings: types.ConfigSettings) -> bool:
+    def __apply_event(self, event: Changelog, settings: types.ConfigSettings) -> bool:
         """Applies a changelog event (transition, comment, assign) to the hotspot"""
         from sonar import syncer
 

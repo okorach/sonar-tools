@@ -23,7 +23,7 @@ Utilities for sonar-tools
 
 """
 
-from typing import TextIO, Union, Optional
+from typing import TextIO, Union, Optional, TYPE_CHECKING
 from http import HTTPStatus
 import sys
 import os
@@ -41,6 +41,8 @@ from sonar import version, errcodes
 from sonar.util import types, cache_helper
 import cli.options as opt
 
+if TYPE_CHECKING:
+    from sonar.platform import Platform
 
 ISO_DATE_FORMAT = "%04d-%02d-%02d"
 SQ_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
@@ -105,7 +107,7 @@ def format_date(somedate: datetime.datetime) -> str:
     return ISO_DATE_FORMAT % (somedate.year, somedate.month, somedate.day)
 
 
-def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, str, None]:
+def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, None]:
     """Converts a string date to a date"""
     try:
         return datetime.datetime.strptime(string, SQ_DATETIME_FORMAT)
@@ -466,14 +468,14 @@ def open_file(file: str = None, mode: str = "w") -> TextIO:
             fd.close()
 
 
-def search_by_name(endpoint: object, name: str, api: str, returned_field: str, extra_params: dict[str, str] = None) -> Union[dict[str, str], None]:
+def search_by_name(endpoint: Platform, name: str, api: str, returned_field: str, extra_params: dict[str, str] = None) -> Union[dict[str, str], None]:
     """Searches a object by name"""
     params = {"q": name} | (extra_params or {})
     data = json.loads(endpoint.get(api, params=params).text)
     return next((d for d in data[returned_field] if d["name"] == name), None)
 
 
-def search_by_key(endpoint: object, key: str, api: str, returned_field: str, extra_params: Optional[dict[str, str]] = None) -> types.ApiPayload:
+def search_by_key(endpoint: Platform, key: str, api: str, returned_field: str, extra_params: Optional[dict[str, str]] = None) -> types.ApiPayload:
     """Search an object by its key"""
     params = {"q": key} | (extra_params or {})
     data = json.loads(endpoint.get(api, params=params).text)
