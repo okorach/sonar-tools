@@ -165,5 +165,9 @@ def test_audit():
 
 def test_exists():
     """test_exists"""
-    assert branches.exists(tutil.SQ, branch_name="develop", project_key=tutil.LIVE_PROJECT)
-    assert not branches.exists(tutil.SQ, branch_name="foobar", project_key=tutil.LIVE_PROJECT)
+    if tutil.SQ.edition() == c.CE:
+        with pytest.raises(exceptions.UnsupportedOperation):
+            branches.exists(tutil.SQ, branch_name="develop", project_key=tutil.LIVE_PROJECT)
+    else:
+        assert branches.exists(tutil.SQ, branch_name="develop", project_key=tutil.LIVE_PROJECT)
+        assert not branches.exists(tutil.SQ, branch_name="foobar", project_key=tutil.LIVE_PROJECT)
