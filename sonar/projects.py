@@ -1662,6 +1662,7 @@ def export_zips(
 
 
 def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30) -> tuple[Project, str]:
+    """Imports a project zip file"""
     try:
         o_proj = Project.create(key=project_key, endpoint=endpoint, name=project_key)
     except exceptions.ObjectAlreadyExists:
