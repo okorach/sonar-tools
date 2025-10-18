@@ -214,11 +214,7 @@ class Project(components.Component):
         :return: The Project
         :rtype: Project
         """
-        try:
-            endpoint.post(Project.API[c.CREATE], params={"project": key, "name": name})
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating project '{key}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(key, e.response.text)
+        endpoint.post(Project.API[c.CREATE], params={"project": key, "name": name})
         o = cls(endpoint, key)
         o.name = name
         return o
