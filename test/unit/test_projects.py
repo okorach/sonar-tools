@@ -211,6 +211,9 @@ def test_already_exists() -> None:
     with pytest.raises(exceptions.ObjectAlreadyExists):
         projects.Project.create(endpoint=tutil.SQ, key=tutil.EXISTING_PROJECT, name="name")
 
+def test_exists() -> None:
+    assert projects.exists(tutil.SQ, tutil.LIVE_PROJECT)
+    assert not projects.exists(tutil.SQ, "non-existing")
 
 def test_binding() -> None:
     """test_binding"""
