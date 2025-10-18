@@ -584,8 +584,8 @@ class Project(components.Component):
                 data = json.loads(self.get("project_analyses/search", params={"project": self.key, "ps": 1}).text)["analyses"]
                 if len(data) > 0:
                     self._ci, self._revision = data[0].get("detectedCI", "unknown"), data[0].get("revision", "unknown")
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting CI tool of {str(self)}", catch_all=True)
+            except exceptions.SonarException:
+                pass
             except KeyError:
                 log.warning("KeyError, can't retrieve CI tool and revision")
         return self._ci
@@ -954,8 +954,7 @@ class Project(components.Component):
         """
         try:
             data = json.loads(self.get(api="project_links/search", params={"projectKey": self.key}).text)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting links of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN, HTTPStatus.NOT_FOUND))
+        except exceptions.SonarException:
             return None
         link_list = None
         for link in data["links"]:

@@ -25,8 +25,6 @@ from __future__ import annotations
 import re
 import json
 from typing import Union, Optional
-from http import HTTPStatus
-from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -261,23 +259,20 @@ class Setting(sqobject.SqObject):
         log.debug("Setting %s to value '%s'", str(self), str(value))
         params = {"key": self.key, "component": self.component.key if self.component else None} | encode(self, value)
         try:
-            ok = self.post(Setting.API[c.CREATE], params=params).ok
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting setting '{self.key}' of {str(self.component)}", catch_all=True)
-            return False
-        else:
-            self.value = value
+            if ok := self.post(Setting.API[c.CREATE], params=params).ok:
+                self.value = value
             return ok
+        except exceptions.SonarException:
+            return False
 
     def reset(self) -> bool:
         log.info("Resetting %s", str(self))
         params = {"keys": self.key} | {} if not self.component else {"component": self.component.key}
         try:
-            r = self.post("settings/reset", params=params)
+            ok = self.post("settings/reset", params=params).ok
             self.refresh()
-            return r.ok
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"resetting setting '{self.key}' of {str(self.component)}", catch_all=True)
+            return ok
+        except exceptions.SonarException:
             return False
 
     def to_json(self, list_as_csv: bool = True) -> types.ObjectJsonRepr:
@@ -470,17 +465,11 @@ def get_new_code_period(endpoint: pf.Platform, project_or_branch: object) -> Set
 def set_new_code_period(endpoint: pf.Platform, nc_type: str, nc_value: str, project_key: str = None, branch: str = None) -> bool:
     """Sets the new code period at global level or for a project"""
     log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
-    try:
-        if endpoint.is_sonarcloud():
-            ok = endpoint.post(Setting.API[c.CREATE], params={"key": "sonar.leak.period.type", "value": nc_type, "project": project_key}).ok
-            ok = ok and endpoint.post(Setting.API[c.CREATE], params={"key": "sonar.leak.period", "value": nc_value, "project": project_key}).ok
-        else:
-            ok = endpoint.post(Setting.API["NEW_CODE_SET"], params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch}).ok
-    except (ConnectionError, RequestException) as e:
-        util.handle_error(e, f"setting new code period of {project_key}", catch_all=True)
-        if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
-            raise exceptions.UnsupportedOperation(f"Can't set project new code period: {e.response.text}")
-        return False
+    if endpoint.is_sonarcloud():
+        ok = endpoint.post(Setting.API[c.CREATE], params={"key": "sonar.leak.period.type", "value": nc_type, "project": project_key}).ok
+        ok = ok and endpoint.post(Setting.API[c.CREATE], params={"key": "sonar.leak.period", "value": nc_value, "project": project_key}).ok
+    else:
+        ok = endpoint.post(Setting.API["NEW_CODE_SET"], params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch}).ok
     return ok
 
 
@@ -502,23 +491,16 @@ def get_visibility(endpoint: pf.Platform, component: object) -> str:
 
 def set_visibility(endpoint: pf.Platform, visibility: str, component: object = None) -> bool:
     """Sets the platform global default visibility or component visibility"""
-    try:
-        if component:
-            log.debug("Setting setting '%s' of %s to value '%s'", COMPONENT_VISIBILITY, str(component), visibility)
-            return endpoint.post("projects/update_visibility", params={"project": component.key, "visibility": visibility}).ok
-        else:
-            log.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
-            return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
-    except (ConnectionError, RequestException) as e:
-        util.handle_error(e, f"setting comp or global visibility of {str(component)}", catch_all=True)
-        if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
-            raise exceptions.UnsupportedOperation(f"Can't set comp or global visibility of {str(component)}: {e.response.text}")
-        return False
+    if component:
+        log.debug("Setting setting '%s' of %s to value '%s'", COMPONENT_VISIBILITY, str(component), visibility)
+        return endpoint.post("projects/update_visibility", params={"project": component.key, "visibility": visibility}).ok
+    else:
+        log.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
+        return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
 
 
 def set_setting(endpoint: pf.Platform, key: str, value: any, component: object = None) -> bool:
     """Sets a setting to a particular value"""
-
     try:
         log.debug("Setting %s with value %s (for component %s)", key, value, component)
         s = get_object(endpoint=endpoint, key=key, component=component)
@@ -526,13 +508,10 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
             log.warning("Setting '%s' does not exist on target platform, it cannot be set", key)
             return False
         s.set(value)
-    except (ConnectionError, RequestException) as e:
-        util.handle_error(e, f"setting setting '{key}' of {str(component)}", catch_all=True)
-        return False
-    except exceptions.UnsupportedOperation as e:
+        return True
+    except exceptions.SonarException as e:
         log.error("Setting '%s' cannot be set: %s", key, e.message)
         return False
-    return True
 
 
 def decode(setting_key: str, setting_value: any) -> any:

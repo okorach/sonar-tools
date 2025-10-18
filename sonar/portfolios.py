@@ -30,7 +30,6 @@ from typing import Optional
 import json
 from http import HTTPStatus
 from threading import Lock
-from requests import RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -257,24 +256,18 @@ class Portfolio(aggregations.Aggregation):
 
     def add_reference_subportfolio(self, reference: Portfolio) -> object:
         ref = PortfolioReference.create(parent=self, reference=reference)
-        try:
-            if self.endpoint.version() >= (9, 3, 0):
-                self.post("views/add_portfolio", params={"portfolio": self.key, "reference": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
-            else:
-                self.post("views/add_local_view", params={"key": self.key, "ref_key": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"adding reference subportfolio to {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
+        if self.endpoint.version() >= (9, 3, 0):
+            self.post("views/add_portfolio", params={"portfolio": self.key, "reference": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
+        else:
+            self.post("views/add_local_view", params={"key": self.key, "ref_key": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
         self._sub_portfolios.update({reference.key: ref})
         return ref
 
     def add_standard_subportfolio(self, key: str, name: str, **kwargs) -> Portfolio:
         """Adds a subportfolio"""
         subp = Portfolio.create(endpoint=self.endpoint, key=key, name=name, parent=self, **kwargs)
-        try:
-            if self.endpoint.version() < (9, 3, 0):
-                self.post("views/add_sub_view", params={"key": self.key, "name": name, "subKey": key}, mute=(HTTPStatus.BAD_REQUEST,))
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"adding standard subportfolio to {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
+        if self.endpoint.version() < (9, 3, 0):
+            self.post("views/add_sub_view", params={"key": self.key, "name": name, "subKey": key}, mute=(HTTPStatus.BAD_REQUEST,))
         self._sub_portfolios.update({subp.key: subp})
         return subp
 
@@ -516,17 +509,14 @@ class Portfolio(aggregations.Aggregation):
 
     def add_application_branch(self, app_key: str, branch: str = c.DEFAULT_BRANCH) -> bool:
         app = applications.Application.get_object(self.endpoint, app_key)
-        try:
-            if branch == c.DEFAULT_BRANCH:
-                log.info("%s: Adding %s default branch", str(self), str(app))
-                self.post("views/add_application", params={"portfolio": self.key, "application": app_key}, mute=(HTTPStatus.BAD_REQUEST,))
-            else:
-                app_branch = app_branches.ApplicationBranch.get_object(app=app, branch_name=branch)
-                log.info("%s: Adding %s", str(self), str(app_branch))
-                params = {"key": self.key, "application": app_key, "branch": branch}
-                self.post("views/add_application_branch", params=params, mute=(HTTPStatus.BAD_REQUEST,))
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"adding app branch to {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
+        if branch == c.DEFAULT_BRANCH:
+            log.info("%s: Adding %s default branch", str(self), str(app))
+            self.post("views/add_application", params={"portfolio": self.key, "application": app_key}, mute=(HTTPStatus.BAD_REQUEST,))
+        else:
+            app_branch = app_branches.ApplicationBranch.get_object(app=app, branch_name=branch)
+            log.info("%s: Adding %s", str(self), str(app_branch))
+            params = {"key": self.key, "application": app_key, "branch": branch}
+            self.post("views/add_application_branch", params=params, mute=(HTTPStatus.BAD_REQUEST,))
         if app_key not in self._applications:
             self._applications[app_key] = []
         self._applications[app_key].append(branch)
@@ -586,8 +576,7 @@ class Portfolio(aggregations.Aggregation):
                 data = json.loads(self.get("api/measures/component_tree", params=params).text)
                 nbr_projects = util.nbr_total_elements(data)
                 proj_key_list += [comp["refKey"] for comp in data["components"]]
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting projects list of {str(self)}", catch_all=True)
+            except exceptions.SonarException:
                 break
             nbr_pages = util.nbr_pages(data)
             log.debug("Number of projects: %d - Page: %d/%d", nbr_projects, page, nbr_pages)
@@ -787,8 +776,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
                     exported_portfolios[k] = exp
             else:
                 log.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"exporting {str(p)}, export will be empty for this portfolio", catch_all=True)
+        except exceptions.SonarException:
             exported_portfolios[k] = {}
         i += 1
         if i % 10 == 0 or i == nb_portfolios:

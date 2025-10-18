@@ -29,7 +29,6 @@ import json
 import concurrent.futures
 from threading import Lock
 from typing import Optional
-from requests import RequestException
 
 import sonar.logging as log
 import sonar.sqobject as sq
@@ -404,8 +403,8 @@ def search_keys(endpoint: platform.Platform, **params) -> list[str]:
             data = json.loads(endpoint.get(Rule.API[c.SEARCH], params=new_params).text)
             nbr_pages = utilities.nbr_pages(data)
             rule_list += [r[Rule.SEARCH_KEY_FIELD] for r in data[Rule.SEARCH_RETURN_FIELD]]
-    except (ConnectionError, RequestException) as e:
-        utilities.handle_error(e, "searching rules", catch_all=True)
+    except exceptions.SonarException:
+        pass
     return rule_list
 
 

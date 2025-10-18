@@ -26,9 +26,7 @@ Abstraction of the SonarQube "quality gate" concept
 from __future__ import annotations
 from typing import Union
 
-from http import HTTPStatus
 import json
-from requests import RequestException
 
 import sonar.logging as log
 import sonar.sqobject as sq
@@ -166,11 +164,7 @@ class QualityGate(sq.SqObject):
     @classmethod
     def create(cls, endpoint: pf.Platform, name: str) -> Union[QualityGate, None]:
         """Creates an empty quality gate"""
-        try:
-            endpoint.post(QualityGate.API[c.CREATE], params={"name": name})
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating quality gate '{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(name, e.response.text)
+        endpoint.post(QualityGate.API[c.CREATE], params={"name": name})
         return cls.get_object(endpoint, name)
 
     def __str__(self) -> str:
@@ -267,8 +261,7 @@ class QualityGate(sq.SqObject):
             (params["metric"], params["op"], params["error"]) = _decode_condition(cond)
             try:
                 ok = ok and self.post("qualitygates/create_condition", params=params).ok
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"adding condition '{cond}' to {str(self)}", catch_all=True)
+            except exceptions.SonarException:
                 ok = False
         self._conditions = None
         self.conditions()
@@ -303,14 +296,13 @@ class QualityGate(sq.SqObject):
         """
         params = {"id": self.key} if self.endpoint.is_sonarcloud() else {"name": self.name}
         try:
-            r = self.post("qualitygates/set_as_default", params=params)
+            ok = self.post("qualitygates/set_as_default", params=params).ok
             # Turn off default for all other quality gates except the current one
             for qg in get_list(self.endpoint).values():
                 qg.is_default = qg.name == self.name
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting {str(self)} as default quality gate")
+            return ok
+        except exceptions.SonarException as e:
             return False
-        return r.ok
 
     def update(self, **data) -> bool:
         """Updates a quality gate

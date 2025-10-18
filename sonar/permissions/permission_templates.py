@@ -24,11 +24,10 @@ from __future__ import annotations
 
 import json
 import re
-from requests import RequestException
 
 import sonar.logging as log
 from sonar.util import types, cache
-from sonar import sqobject, utilities
+from sonar import sqobject, utilities, exceptions
 from sonar.permissions import template_permissions
 import sonar.platform as pf
 from sonar.audit.rules import get_rule, RuleId
@@ -136,7 +135,7 @@ class PermissionTemplate(sqobject.SqObject):
             self._permissions = template_permissions.TemplatePermissions(self)
         return self._permissions
 
-    def set_as_default(self, what_list: list[str]) -> None:
+    def set_as_default(self, what_list: list[str]) -> bool:
         """Sets a permission template as default for projects or apps or portfolios"""
         log.debug("Setting %s as default for %s", str(self), str(what_list))
         ed = self.endpoint.edition()
@@ -146,9 +145,9 @@ class PermissionTemplate(sqobject.SqObject):
                 log.warning("Can't set permission template as default for %s on a %s edition", qual, ed)
                 continue
             try:
-                self.post("permissions/set_default_template", params={"templateId": self.key, "qualifier": qual})
-            except (ConnectionError, RequestException) as e:
-                utilities.handle_error(e, f"setting {str(self)} as default")
+                return self.post("permissions/set_default_template", params={"templateId": self.key, "qualifier": qual}).ok
+            except exceptions.SonarException:
+                return False
 
     def set_pattern(self, pattern: str) -> PermissionTemplate:
         """Sets a permission template pattern"""

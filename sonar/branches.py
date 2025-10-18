@@ -26,7 +26,6 @@ from typing import Optional
 import json
 import re
 from urllib.parse import unquote
-from requests import HTTPError, RequestException
 import requests.utils
 
 from sonar import platform
@@ -173,9 +172,8 @@ class Branch(components.Component):
         """
         try:
             return super().delete()
-        except (ConnectionError, RequestException) as e:
-            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
-                log.warning("Can't delete %s, it's the main branch", str(self))
+        except exceptions.SonarException as e:
+            log.warning(e.message)
             return False
 
     def get(self, api: str, params: types.ApiParams = None, data: str = None, mute: tuple[HTTPStatus] = (), **kwargs) -> requests.Response:

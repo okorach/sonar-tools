@@ -128,11 +128,7 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         check_supported(endpoint)
-        try:
-            endpoint.post(Application.API["CREATE"], params={"key": key, "name": name})
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating application {key}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(key, e.response.text)
+        endpoint.post(Application.API["CREATE"], params={"key": key, "name": name})
         log.info("Creating object")
         return Application(endpoint=endpoint, key=key, name=name)
 

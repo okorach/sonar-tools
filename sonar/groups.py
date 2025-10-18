@@ -26,9 +26,6 @@ import json
 
 from typing import Optional
 
-from http import HTTPStatus
-from requests import RequestException
-
 import sonar.logging as log
 import sonar.platform as pf
 import sonar.sqobject as sq
@@ -115,11 +112,7 @@ class Group(sq.SqObject):
         :return: The group object
         """
         log.debug("Creating group '%s'", name)
-        try:
-            data = json.loads(endpoint.post(Group.api_for(c.CREATE, endpoint), params={"name": name, "description": description}).text)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating group '{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(name, util.sonar_error(e.response))
+        data = json.loads(endpoint.post(Group.api_for(c.CREATE, endpoint), params={"name": name, "description": description}).text)
         o = cls.read(endpoint=endpoint, name=name)
         o.sq_json.update(data)
         return o

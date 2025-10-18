@@ -126,11 +126,7 @@ class User(sqobject.SqObject):
         params = {"login": login, "local": str(is_local).lower(), "name": name}
         if is_local:
             params["password"] = password if password else login
-        try:
-            endpoint.post(User.api_for(c.CREATE, endpoint), params=params)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating user '{login}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(login, util.sonar_error(e.response))
+        endpoint.post(User.api_for(c.CREATE, endpoint), params=params)
         return cls.get_object(endpoint=endpoint, login=login)
 
     @classmethod
@@ -520,7 +516,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         for future in concurrent.futures.as_completed(futures):
             try:
                 problems += future.result(timeout=60)
-            except (TimeoutError, RequestException) as e:
+            except (TimeoutError, RequestException, exceptions.SonarException) as e:
                 log.error(f"Exception {str(e)} when auditing {str(futures_map[future])}.")
     "write_q" in kwargs and kwargs["write_q"].put(problems)
     log.info("--- Auditing users: END ---")

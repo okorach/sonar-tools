@@ -25,7 +25,6 @@ import json
 from datetime import datetime
 from typing import Optional
 from http import HTTPStatus
-from requests import RequestException
 import requests.utils
 
 import sonar.logging as log
@@ -36,6 +35,7 @@ from sonar.util import types, cache, constants as c
 
 from sonar import users
 from sonar import findings, rules, changelog
+from sonar import exceptions
 
 PROJECT_FILTER = "project"
 PROJECT_FILTER_OLD = "projectKey"
@@ -152,19 +152,17 @@ class Hotspot(findings.Finding):
                     self.rule = d["rule"]["key"]
                 self.assignee = d.get("assignee", None)
             return resp.ok
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, "refreshing hotspot", catch_all=True)
+        except exceptions.SonarException:
             return False
 
     def __mark_as(self, resolution: Optional[str], comment: Optional[str] = None, status: str = "REVIEWED") -> bool:
         try:
             params = util.remove_nones({"hotspot": self.key, "status": status, "resolution": resolution, "commemt": comment})
-            r = self.post("hotspots/change_status", params=params)
-        except (ConnectionError, requests.RequestException) as e:
-            util.handle_error(e, f"marking hotspot as {status}/{resolution}", catch_all=True)
+            ok = self.post("hotspots/change_status", params=params).ok
+            self.refresh()
+            return ok
+        except exceptions.SonarException:
             return False
-        self.refresh()
-        return r.ok
 
     def mark_as_safe(self) -> bool:
         """Marks a hotspot as safe
@@ -215,8 +213,7 @@ class Hotspot(findings.Finding):
         """
         try:
             return self.post("hotspots/add_comment", params={"hotspot": self.key, "comment": comment}).ok
-        except (ConnectionError, requests.RequestException) as e:
-            util.handle_error(e, "adding comment to hotspot", catch_all=True)
+        except exceptions.SonarException:
             return False
 
     def assign(self, assignee: Optional[str], comment: Optional[str] = None) -> bool:
@@ -231,13 +228,12 @@ class Hotspot(findings.Finding):
                 log.debug("Unassigning %s", str(self))
             else:
                 log.debug("Assigning %s to '%s'", str(self), str(assignee))
-            r = self.post("hotspots/assign", util.remove_nones({"hotspot": self.key, "assignee": assignee, "comment": comment}))
-            if r.ok:
+            ok = self.post("hotspots/assign", util.remove_nones({"hotspot": self.key, "assignee": assignee, "comment": comment})).ok
+            if ok:
                 self.assignee = assignee
-        except (ConnectionError, requests.RequestException) as e:
-            util.handle_error(e, "assigning/unassigning hotspot", catch_all=True)
+            return ok
+        except exceptions.SonarException:
             return False
-        return r.ok
 
     def unassign(self, comment: Optional[str] = None) -> bool:
         """Unassigns a hotspot (and optionally comment)
@@ -421,8 +417,7 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
             try:
                 data = json.loads(endpoint.get(Hotspot.API[c.SEARCH], params=inline_filters, mute=(HTTPStatus.NOT_FOUND,)).text)
                 nbr_hotspots = util.nbr_total_elements(data)
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, "searching hotspots", catch_all=True)
+            except exceptions.SonarException:
                 nbr_hotspots = 0
                 return {}
             nbr_pages = util.nbr_pages(data)

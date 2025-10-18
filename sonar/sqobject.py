@@ -29,7 +29,6 @@ import json
 from http import HTTPStatus
 import concurrent.futures
 import requests
-from requests import RequestException
 
 import sonar.logging as log
 from sonar.util import types, cache
@@ -185,15 +184,13 @@ class SqObject(object):
         tags = list(set(utilities.csv_to_list(tags)))
         log.info("Settings tags %s to %s", tags, str(self))
         try:
-            r = self.post(self.__class__.API[c.SET_TAGS], params={**self.api_params(c.SET_TAGS), "tags": utilities.list_to_csv(tags)})
-            if r.ok:
+            if ok := self.post(self.__class__.API[c.SET_TAGS], params={**self.api_params(c.SET_TAGS), "tags": utilities.list_to_csv(tags)}).ok:
                 self._tags = sorted(tags)
-        except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"setting tags of {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
+            return ok
+        except exceptions.SonarException:
             return False
         except (AttributeError, KeyError):
             raise exceptions.UnsupportedOperation(f"Can't set tags on {self.__class__.__name__.lower()}s")
-        return r.ok
 
     def get_tags(self, **kwargs) -> list[str]:
         """Returns object tags"""
@@ -208,7 +205,7 @@ class SqObject(object):
                 data = json.loads(self.get(api, params=self.get_tags_params()).text)
                 self.sq_json.update(data["component"])
                 self._tags = self.sq_json["tags"]
-            except (ConnectionError, RequestException):
+            except exceptions.SonarException:
                 self._tags = []
         return self._tags
 

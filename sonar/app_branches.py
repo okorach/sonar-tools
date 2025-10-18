@@ -24,8 +24,6 @@ from __future__ import annotations
 from typing import Optional
 
 import json
-from http import HTTPStatus
-from requests import RequestException
 from requests.utils import quote
 
 import sonar.logging as log
@@ -112,11 +110,7 @@ class ApplicationBranch(Component):
             else:  # Default main branch of project
                 params["project"].append(obj.key)
                 params["projectBranch"].append("")
-        try:
-            app.endpoint.post(ApplicationBranch.API[c.CREATE], params=params)
-        except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"creating branch {name} of {str(app)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(f"{str(app)} branch '{name}", e.response.text)
+        app.endpoint.post(ApplicationBranch.API[c.CREATE], params=params)
         return ApplicationBranch(app=app, name=name, project_branches=project_branches)
 
     @classmethod

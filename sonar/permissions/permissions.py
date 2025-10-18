@@ -25,10 +25,9 @@ from typing import Optional
 
 import json
 from abc import ABC, abstractmethod
-from requests import RequestException
 
 import sonar.logging as log
-from sonar import utilities
+from sonar import utilities, exceptions
 from sonar.util import types
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
@@ -299,15 +298,14 @@ class Permissions(ABC):
                     else:
                         counter += 1
                 page, nbr_pages = page + 1, utilities.nbr_pages(data)
-            except (ConnectionError, RequestException) as e:
-                utilities.handle_error(e, f"getting permissions of {str(self)}", catch_all=True)
+            except exceptions.SonarException:
                 page += 1
         return perms
 
     def _post_api(self, api: str, set_field: str, perms_dict: types.JsonPermissions, **extra_params) -> bool:
         if perms_dict is None:
             return True
-        result = False
+        ok = True
         params = extra_params.copy()
         for u, perms in perms_dict.items():
             params[set_field] = u
@@ -315,11 +313,10 @@ class Permissions(ABC):
             for p in filtered_perms:
                 params["permission"] = p
                 try:
-                    r = self.endpoint.post(api, params=params)
-                except (ConnectionError, RequestException) as e:
-                    utilities.handle_error(e, f"setting permissions of {str(self)}", catch_all=True)
-                result = result and r.ok
-        return result
+                    ok = self.endpoint.post(api, params=params).ok and ok
+                except exceptions.SonarException:
+                    ok = False
+        return ok
 
 
 def simplify(perms_dict: dict[str, list[str]]) -> Optional[dict[str, str]]:
