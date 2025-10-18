@@ -261,9 +261,10 @@ class Setting(sqobject.SqObject):
         try:
             if ok := self.post(Setting.API[c.CREATE], params=params).ok:
                 self.value = value
-            return ok
         except exceptions.SonarException:
             return False
+        else:
+            return ok
 
     def reset(self) -> bool:
         log.info("Resetting %s", str(self))
@@ -271,9 +272,10 @@ class Setting(sqobject.SqObject):
         try:
             ok = self.post("settings/reset", params=params).ok
             self.refresh()
-            return ok
         except exceptions.SonarException:
             return False
+        else:
+            return ok
 
     def to_json(self, list_as_csv: bool = True) -> types.ObjectJsonRepr:
         val = self.value
@@ -508,10 +510,11 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
             log.warning("Setting '%s' does not exist on target platform, it cannot be set", key)
             return False
         s.set(value)
-        return True
     except exceptions.SonarException as e:
         log.error("Setting '%s' cannot be set: %s", key, e.message)
         return False
+    else:
+        return True
 
 
 def decode(setting_key: str, setting_value: any) -> any:

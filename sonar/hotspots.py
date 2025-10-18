@@ -160,9 +160,10 @@ class Hotspot(findings.Finding):
             params = util.remove_nones({"hotspot": self.key, "status": status, "resolution": resolution, "commemt": comment})
             ok = self.post("hotspots/change_status", params=params).ok
             self.refresh()
-            return ok
         except exceptions.SonarException:
             return False
+        else:
+            return ok
 
     def mark_as_safe(self) -> bool:
         """Marks a hotspot as safe
@@ -231,9 +232,10 @@ class Hotspot(findings.Finding):
             ok = self.post("hotspots/assign", util.remove_nones({"hotspot": self.key, "assignee": assignee, "comment": comment})).ok
             if ok:
                 self.assignee = assignee
-            return ok
         except exceptions.SonarException:
             return False
+        else:
+            return ok
 
     def unassign(self, comment: Optional[str] = None) -> bool:
         """Unassigns a hotspot (and optionally comment)

@@ -176,7 +176,8 @@ class Branch(components.Component):
             log.warning(e.message)
             return False
 
-    def get(self, api: str, params: types.ApiParams = None, data: str = None, mute: tuple[HTTPStatus] = (), **kwargs) -> requests.Response:
+    def get(self, api: str, params: types.ApiParams = None, data: Optional[str] = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
+        """Performs an HTTP GET request for the object"""
         try:
             return super().get(api=api, params=params, data=data, mute=mute, **kwargs)
         except exceptions.ObjectNotFound as e:
@@ -185,7 +186,8 @@ class Branch(components.Component):
                 projects.Project.CACHE.clear()
             raise
 
-    def post(self, api: str, params: types.ApiParams = None, mute: tuple[HTTPStatus] = (), **kwargs) -> requests.Response:
+    def post(self, api: str, params: types.ApiParams = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
+        """Performs an HTTP POST request for the object"""
         try:
             return super().post(api=api, params=params, mute=mute, **kwargs)
         except exceptions.ObjectNotFound as e:

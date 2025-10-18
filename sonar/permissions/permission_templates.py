@@ -148,6 +148,7 @@ class PermissionTemplate(sqobject.SqObject):
                 return self.post("permissions/set_default_template", params={"templateId": self.key, "qualifier": qual}).ok
             except exceptions.SonarException:
                 return False
+        return False
 
     def set_pattern(self, pattern: str) -> PermissionTemplate:
         """Sets a permission template pattern"""

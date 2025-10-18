@@ -186,11 +186,12 @@ class SqObject(object):
         try:
             if ok := self.post(self.__class__.API[c.SET_TAGS], params={**self.api_params(c.SET_TAGS), "tags": utilities.list_to_csv(tags)}).ok:
                 self._tags = sorted(tags)
-            return ok
         except exceptions.SonarException:
             return False
         except (AttributeError, KeyError):
             raise exceptions.UnsupportedOperation(f"Can't set tags on {self.__class__.__name__.lower()}s")
+        else:
+            return ok
 
     def get_tags(self, **kwargs) -> list[str]:
         """Returns object tags"""

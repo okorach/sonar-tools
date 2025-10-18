@@ -343,9 +343,10 @@ class Issue(findings.Finding):
             log.debug("Assigning %s to '%s'", str(self), str(assignee))
             if ok := self.post("issues/assign", params).ok:
                 self.assignee = assignee
-            return ok
         except exceptions.SonarException:
             return False
+        else:
+            return ok
 
     def get_tags(self, **kwargs) -> list[str]:
         """Returns issues tags"""
@@ -393,9 +394,10 @@ class Issue(findings.Finding):
         try:
             if ok := self.post("issues/set_type", {"issue": self.key, "type": new_type}).ok:
                 self.type = new_type
-            return ok
         except exceptions.SonarException:
             return False
+        else:
+            return ok
 
     def is_wont_fix(self) -> bool:
         """

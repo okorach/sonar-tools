@@ -27,7 +27,6 @@ from typing import Optional, Union
 import datetime as dt
 import json
 
-from http import HTTPStatus
 from requests import RequestException
 
 import sonar.logging as log

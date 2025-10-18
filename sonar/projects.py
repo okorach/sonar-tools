@@ -251,10 +251,7 @@ class Project(components.Component):
         :rtype: Project
         """
         """Loads a project object with contents of an api/projects/search call"""
-        if self.sq_json is None:
-            self.sq_json = data
-        else:
-            self.sq_json.update(data)
+        self.sq_json = (self.sq_json or {}) | data
         self.name = data["name"]
         self._visibility = data["visibility"]
         if "lastAnalysisDate" in data:

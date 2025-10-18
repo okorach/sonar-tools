@@ -300,9 +300,10 @@ class QualityGate(sq.SqObject):
             # Turn off default for all other quality gates except the current one
             for qg in get_list(self.endpoint).values():
                 qg.is_default = qg.name == self.name
-            return ok
         except exceptions.SonarException:
             return False
+        else:
+            return ok
 
     def update(self, **data) -> bool:
         """Updates a quality gate
