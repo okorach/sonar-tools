@@ -125,17 +125,19 @@ def test_rename():
     if not verify_branch_support(branches.Branch.get_object, concerned_object=project, branch_name="develop"):
         return
     dev_br = branches.Branch.get_object(concerned_object=project, branch_name="develop")
-    master_br = branches.Branch.get_object(concerned_object=project, branch_name="master")
+    main_br_name = project.main_branch_name()
+    main_br = branches.Branch.get_object(concerned_object=project, branch_name=main_br_name)
     with pytest.raises(exceptions.UnsupportedOperation):
         dev_br.rename("release")
 
-    assert master_br.rename("main")
-    assert not master_br.rename("main")
+    new_name = "gold"
+    assert main_br.rename(new_name)
+    assert not main_br.rename(new_name)
 
-    new_br = branches.Branch.get_object(concerned_object=project, branch_name="main")
-    assert new_br is master_br
-    assert master_br.rename("master")
-    assert new_br.name == "master"
+    new_br = branches.Branch.get_object(concerned_object=project, branch_name=new_name)
+    assert new_br is main_br
+    assert main_br.rename(main_br_name)
+    assert new_br.name == main_br_name
 
 
 def test_get_findings():
