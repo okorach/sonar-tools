@@ -36,8 +36,8 @@ import cli.options as opt
 
 CMD = "sonar-findings-sync.py"
 
-TEST_URL = os.getenv('SONAR_HOST_URL_TEST')
-TEST_TOKEN = os.getenv('SONAR_TOKEN_SYNC_USER')
+TEST_URL = os.getenv("SONAR_HOST_URL_TEST")
+TEST_TOKEN = os.getenv("SONAR_TOKEN_SYNC_USER")
 PLAT_OPTS = f"{tutil.SQS_OPTS} --{opt.URL_TARGET} {TEST_URL} --{opt.TOKEN_TARGET} {TEST_TOKEN}"
 TEST_OPTS = f"--{opt.URL} {TEST_URL} --{opt.TOKEN} {TEST_TOKEN} --{opt.KEY_REGEXP} TESTSYNC"
 SC_PLAT_OPTS = f"{tutil.SQS_OPTS} -U https://sonarcloud.io -T {os.getenv('SONAR_TOKEN_SONARCLOUD')} -O okorach"
@@ -53,6 +53,7 @@ def test_sync_2_proj_all_branches(json_file: Generator[str]) -> None:
     """test_sync_2_proj"""
     assert tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
 
+
 def test_sync_same_proj_all_branches(json_file: Generator[str]) -> None:
     """test_sync_same_proj_all_branches"""
     # Project sync across all branches of a given project
@@ -67,7 +68,10 @@ def test_sync_same_proj_2_branches(json_file: Generator[str]) -> None:
 def test_sync_2_proj_branches(json_file: Generator[str]) -> None:
     """test_sync_2_proj_branches"""
     code = e.UNSUPPORTED_OPERATION if tutil.SQ.edition() == c.CE else e.OK
-    assert tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} --{opt.BRANCH_REGEXP} master -B main -{opt.REPORT_FILE_SHORT} {json_file}") == code
+    assert (
+        tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} --{opt.BRANCH_REGEXP} master -B main -{opt.REPORT_FILE_SHORT} {json_file}")
+        == code
+    )
     if tutil.SQ.edition() == c.CE:
         assert tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -B main -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
 

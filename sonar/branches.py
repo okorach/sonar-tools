@@ -176,7 +176,9 @@ class Branch(components.Component):
             log.warning(e.message)
             return False
 
-    def get(self, api: str, params: types.ApiParams = None, data: Optional[str] = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
+    def get(
+        self, api: str, params: types.ApiParams = None, data: Optional[str] = None, mute: tuple[HTTPStatus] = (), **kwargs: str
+    ) -> requests.Response:
         """Performs an HTTP GET request for the object"""
         try:
             return super().get(api=api, params=params, data=data, mute=mute, **kwargs)
