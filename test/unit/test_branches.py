@@ -83,19 +83,20 @@ def test_set_as_main():
     if not verify_branch_support(branches.Branch.get_object, concerned_object=project, branch_name="develop"):
         return
     dev_br = branches.Branch.get_object(concerned_object=project, branch_name="develop")
-    master_br = branches.Branch.get_object(concerned_object=project, branch_name="master")
-    assert master_br.is_main()
+    main_br_name = project.main_branch_name()
+    main_br = branches.Branch.get_object(concerned_object=project, branch_name=main_br_name)
+    assert main_br.is_main()
     assert not dev_br.is_main()
 
     assert dev_br.set_as_main()
-    assert not master_br.is_main()
+    assert not main_br.is_main()
     assert dev_br.is_main()
 
-    assert master_br.set_as_main()
+    assert main_br.set_as_main()
 
-    master_br.name = "non-existing"
+    main_br.name = "non-existing"
     with pytest.raises(exceptions.ObjectNotFound):
-        master_br.set_as_main()
+        main_br.set_as_main()
 
 
 def test_set_keep_as_inactive():
