@@ -35,7 +35,6 @@ from typing import Optional, Union
 from http import HTTPStatus
 from threading import Lock
 from requests import HTTPError, RequestException
-import Levenshtein
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -845,9 +844,7 @@ class Project(components.Component):
             return super().count_third_party_issues(filters)
         log.debug("Getting 3rd party issues on branches/PR")
         issue_counts = {}
-        for comp in branches_or_prs.values():
-            if not comp:
-                continue
+        for comp in [c for c in branches_or_prs.values() if c]:
             log.debug("Getting 3rd party issues for %s", str(comp))
             for k, total in comp.count_third_party_issues(filters).items():
                 if k not in issue_counts:
@@ -1398,26 +1395,17 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
 
 
 def get_matching_list(endpoint: pf.Platform, pattern: str, threads: int = 8) -> dict[str, Project]:
-    """
+    """Returns the list of projects whose keys are matching the pattern
+
     :param Platform endpoint: Reference to the SonarQube platform
     :param str pattern: Regular expression to match project keys
     :return: the list of all projects matching the pattern
-    :rtype: dict{key: Project}
     """
-    if not pattern or pattern == ".*":
-        return get_list(endpoint, threads=threads)
+    pattern = pattern or ".+"
     log.info("Listing projects matching regexp '%s'", pattern)
     matches = {k: v for k, v in get_list(endpoint, threads=threads).items() if re.match(rf"^{pattern}$", k)}
     log.info("%d project key matching regexp '%s'", len(matches), pattern)
     return matches
-
-
-def __similar_keys(key1: str, key2: str, max_distance: int = 5) -> bool:
-    """Returns whether 2 project keys are similar"""
-    if key1 == key2:
-        return False
-    max_distance = min(len(key1) // 2, len(key2) // 2, max_distance)
-    return len(key2) >= 7 and (re.match(key2, key1)) or Levenshtein.distance(key1, key2, score_cutoff=6) <= max_distance
 
 
 def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
@@ -1433,7 +1421,7 @@ def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.
     for key1, p in projects_list.items():
         for key2 in projects_list:
             pair = " ".join(sorted([key1, key2]))
-            if __similar_keys(key1, key2, audit_settings.get("audit.projects.duplicates.maxDifferences", 4)) and pair not in pair_set:
+            if util.similar_strings(key1, key2, audit_settings.get("audit.projects.duplicates.maxDifferences", 4)) and pair not in pair_set:
                 duplicates.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
             pair_set.add(pair)
     return duplicates
