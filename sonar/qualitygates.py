@@ -301,7 +301,7 @@ class QualityGate(sq.SqObject):
             for qg in get_list(self.endpoint).values():
                 qg.is_default = qg.name == self.name
             return ok
-        except exceptions.SonarException as e:
+        except exceptions.SonarException:
             return False
 
     def update(self, **data) -> bool:
