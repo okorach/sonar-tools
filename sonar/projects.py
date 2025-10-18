@@ -1450,7 +1450,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings audit_settings: Configuration of audit
-    :returns: list of problems found
+    :return: list of problems found
     """
     if not audit_settings.get("audit.projects", True):
         log.info("Auditing projects is disabled, audit skipped...")
@@ -1489,7 +1489,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
-    :returns: list of projects settings
+    :return: list of projects settings
     """
 
     write_q = kwargs.get("write_q", None)
@@ -1520,12 +1520,12 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     return dict(sorted(results.items()))
 
 
-def exists(key: str, endpoint: pf.Platform) -> bool:
-    """
-    :param str key: project key to check
+def exists(endpoint: pf.Platform, key: str) -> bool:
+    """Returns whether a project exists
+
     :param Platform endpoint: reference to the SonarQube platform
-    :returns: whether the project exists
-    :rtype: bool
+    :param str key: project key to check
+    :return: whether the project exists
     """
     try:
         Project.get_object(endpoint, key)
