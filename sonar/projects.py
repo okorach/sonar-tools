@@ -770,10 +770,8 @@ class Project(components.Component):
     def get_findings(self, branch: Optional[str] = None, pr: Optional[str] = None) -> dict[str, object]:
         """Returns a project list of findings (issues and hotspots)
 
-        :param branch: branch name to consider, if any
-        :type branch: str, optional
-        :param pr: PR key to consider, if any
-        :type pr: str, optional
+        :param str branch: optional branch name to consider, if any
+        :param str pr: optional PR key to consider, if any
         :return: JSON of all findings, with finding key as key
         :rtype: dict{key: Finding}
         """
@@ -784,11 +782,7 @@ class Project(components.Component):
             return {}
         log.info("Exporting findings for %s", str(self))
         findings_list = {}
-        params = {"project": self.key}
-        if branch is not None:
-            params["branch"] = branch
-        elif pr is not None:
-            params["pullRequest"] = pr
+        params = util.remove_nones({"project": self.key, "branch": branch, "pullRequest": pr})
 
         data = json.loads(self.get("projects/export_findings", params=params).text)["export_findings"]
         findings_conflicts = {"SECURITY_HOTSPOT": 0, "BUG": 0, "CODE_SMELL": 0, "VULNERABILITY": 0}
