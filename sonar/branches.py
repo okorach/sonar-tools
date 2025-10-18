@@ -317,13 +317,15 @@ class Branch(components.Component):
         Branch.CACHE.put(self)
         return True
 
-    def get_findings(self) -> dict[str, object]:
+    def get_findings(self, filters: Optional[types.ApiParams] = None) -> dict[str, object]:
         """Returns a branch list of findings
 
         :return: dict of Findings, with finding key as key
         :rtype: dict{key: Finding}
         """
-        return self.get_issues() | self.get_hotspots()
+        if not filters:
+            return self.concerned_object.get_findings(branch=self.name)
+        return self.get_issues(filters) | self.get_hotspots(filters)
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""
