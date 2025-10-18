@@ -24,14 +24,12 @@ Abstraction of the Sonar sub-portfolio by reference concept
 """
 
 from __future__ import annotations
-from http import HTTPStatus
-from requests import RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
 from sonar.util import types, cache
 
-from sonar import exceptions, utilities
+from sonar import exceptions
 import sonar.sqobject as sq
 import sonar.util.constants as c
 
@@ -70,14 +68,7 @@ class PortfolioReference(sq.SqObject):
     @classmethod
     def create(cls, reference: object, parent: object, params: types.ApiParams = None) -> PortfolioReference:
         """Constructor, don't use - use class methods instead"""
-
-        try:
-            parent.endpoint.post("views/add_portfolio", params={"portfolio": parent.key, "reference": reference.key})
-        except (ConnectionError, RequestException) as e:
-            utilities.handle_error(
-                e, f"creating portfolio reference to {str(reference)} in {str(parent)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,)
-            )
-            raise exceptions.ObjectAlreadyExists
+        parent.endpoint.post("views/add_portfolio", params={"portfolio": parent.key, "reference": reference.key})
         return PortfolioReference(reference=reference, parent=parent)
 
     def __str__(self) -> str:

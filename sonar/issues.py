@@ -293,11 +293,9 @@ class Issue(findings.Finding):
         """
         log.debug("Adding comment '%s' to %s", comment, str(self))
         try:
-            r = self.post("issues/add_comment", {"issue": self.key, "text": comment})
-        except requests.RequestException as e:
-            util.handle_error(e, "adding comment", catch_all=True)
+            return self.post("issues/add_comment", {"issue": self.key, "text": comment}).ok
+        except exceptions.SonarException:
             return False
-        return r.ok
 
     def __set_severity(self, **params) -> bool:
         log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, str(params))
@@ -343,13 +341,12 @@ class Issue(findings.Finding):
         try:
             params = util.remove_nones({"issue": self.key, "assignee": assignee})
             log.debug("Assigning %s to '%s'", str(self), str(assignee))
-            r = self.post("issues/assign", params)
-            if r.ok:
+            if ok := self.post("issues/assign", params).ok:
                 self.assignee = assignee
-        except (ConnectionError, requests.RequestException) as e:
-            util.handle_error(e, "assigning issue", catch_all=True)
+        except exceptions.SonarException:
             return False
-        return r.ok
+        else:
+            return ok
 
     def get_tags(self, **kwargs) -> list[str]:
         """Returns issues tags"""
@@ -395,13 +392,12 @@ class Issue(findings.Finding):
             raise exceptions.UnsupportedOperation("Changing issue type is not supported in MQR mode")
         log.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
         try:
-            r = self.post("issues/set_type", {"issue": self.key, "type": new_type})
-            if r.ok:
+            if ok := self.post("issues/set_type", {"issue": self.key, "type": new_type}).ok:
                 self.type = new_type
-        except (ConnectionError, requests.RequestException) as e:
-            util.handle_error(e, "setting issue type", catch_all=True)
+        except exceptions.SonarException:
             return False
-        return r.ok
+        else:
+            return ok
 
     def is_wont_fix(self) -> bool:
         """

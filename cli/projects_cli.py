@@ -24,7 +24,6 @@ Exports/Imports all projects of a SonarQube Server platform
 
 """
 
-import sys
 import json
 
 from requests import RequestException

@@ -24,11 +24,10 @@ from __future__ import annotations
 from typing import Optional
 
 import json
-from requests import RequestException
 
 from sonar.util import types
 import sonar.logging as log
-from sonar import utilities
+from sonar import utilities, exceptions
 from sonar.audit.problem import Problem
 from sonar.permissions import permissions
 
@@ -86,8 +85,7 @@ class QualityPermissions(permissions.Permissions):
                 data = json.loads(resp.text)
                 perms += [p[ret_field] for p in data[perm_type]]
                 page, nbr_pages = page + 1, utilities.nbr_pages(data)
-            except (ConnectionError, RequestException) as e:
-                utilities.handle_error(e, f"getting permissions of {str(self)}", catch_all=True)
+            except exceptions.SonarException:
                 page += 1
         return perms
 

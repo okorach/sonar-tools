@@ -24,8 +24,8 @@ from __future__ import annotations
 from http import HTTPStatus
 from typing import Optional
 import json
+import re
 from urllib.parse import unquote
-from requests import HTTPError, RequestException
 import requests.utils
 
 from sonar import platform
@@ -89,16 +89,11 @@ class Branch(components.Component):
         o = Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())
         if o:
             return o
-        try:
-            data = json.loads(concerned_object.get(Branch.API[c.LIST], params={"project": concerned_object.key}).text)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"searching {str(concerned_object)} for branch '{branch_name}'", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
-
-        for br in data.get("branches", []):
-            if br["name"] == branch_name:
-                return cls.load(concerned_object, branch_name, br)
-        raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(concerned_object)} not found")
+        data = json.loads(concerned_object.get(Branch.API[c.LIST], params={"project": concerned_object.key}).text)
+        br = next((b for b in data.get("branches", []) if b["name"] == branch_name), None)
+        if not br:
+            raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(concerned_object)} not found")
+        return cls.load(concerned_object, branch_name, br)
 
     @classmethod
     def load(cls, concerned_object: projects.Project, branch_name: str, data: types.ApiPayload) -> Branch:
@@ -112,9 +107,11 @@ class Branch(components.Component):
         """
         branch_name = unquote(branch_name)
         o = Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())
+        br_data = next((br for br in data.get("branches", []) if br["name"] == branch_name), None)
         if not o:
             o = cls(concerned_object, branch_name)
-        o._load(data)
+        if br_data:
+            o._load(br_data)
         return o
 
     def __str__(self) -> str:
@@ -135,44 +132,33 @@ class Branch(components.Component):
         :return: itself
         :rtype: Branch
         """
-        try:
-            data = json.loads(self.get(Branch.API[c.LIST], params=self.api_params(c.LIST)).text)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"refreshing {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            Branch.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found in SonarQube")
-        for br in data.get("branches", []):
-            if br["name"] == self.name:
-                self._load(br)
-            else:
-                # While we're there let's load other branches with up to date branch data
-                Branch.load(self.concerned_object, br["name"], data)
+        data = json.loads(self.get(Branch.API[c.LIST], params=self.api_params(c.LIST)).text)
+        br_data = next((br for br in data.get("branches", []) if br["name"] == self.name), None)
+        if not br_data:
+            Branch.CACHE.clear()
+            raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
+        self._load(br_data)
+        # While we're there let's load other branches with up to date branch data
+        for br in [b for b in data.get("branches", []) if b["name"] != self.name]:
+            Branch.load(self.concerned_object, br["name"], data)
         return self
 
     def _load(self, data: types.ApiPayload) -> None:
-        if self.sq_json is None:
-            self.sq_json = data
-        else:
-            self.sq_json.update(data)
+        log.debug("Loading %s with data %s", self, data)
+        self.sq_json = (self.sq_json or {}) | data
         self._is_main = self.sq_json["isMain"]
         self._last_analysis = util.string_to_date(self.sq_json.get("analysisDate", None))
         self._keep_when_inactive = self.sq_json.get("excludedFromPurge", False)
         self._is_main = self.sq_json.get("isMain", False)
 
     def is_kept_when_inactive(self) -> bool:
-        """
-        :return: Whether the branch is kept when inactive
-        :rtype: bool
-        """
+        """Returns whether the branch is kept when inactive"""
         if self._keep_when_inactive is None or self.sq_json is None:
             self.refresh()
         return self._keep_when_inactive
 
     def is_main(self) -> bool:
-        """
-        :return: Whether the branch is the project main branch
-        :rtype: bool
-        """
+        """Returns whether the branch is the project main branch"""
         if self._is_main is None or self.sq_json is None:
             self.refresh()
         return self._is_main
@@ -186,10 +172,31 @@ class Branch(components.Component):
         """
         try:
             return super().delete()
-        except (ConnectionError, RequestException) as e:
-            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
-                log.warning("Can't delete %s, it's the main branch", str(self))
+        except exceptions.SonarException as e:
+            log.warning(e.message)
             return False
+
+    def get(
+        self, api: str, params: types.ApiParams = None, data: Optional[str] = None, mute: tuple[HTTPStatus] = (), **kwargs: str
+    ) -> requests.Response:
+        """Performs an HTTP GET request for the object"""
+        try:
+            return super().get(api=api, params=params, data=data, mute=mute, **kwargs)
+        except exceptions.ObjectNotFound as e:
+            if re.match(r"Project .+ not found", e.message):
+                log.warning("Clearing project cache")
+                projects.Project.CACHE.clear()
+            raise
+
+    def post(self, api: str, params: types.ApiParams = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
+        """Performs an HTTP POST request for the object"""
+        try:
+            return super().post(api=api, params=params, mute=mute, **kwargs)
+        except exceptions.ObjectNotFound as e:
+            if re.match(r"Project .+ not found", e.message):
+                log.warning("Clearing project cache")
+                projects.Project.CACHE.clear()
+            raise
 
     def new_code(self) -> str:
         """
@@ -199,13 +206,7 @@ class Branch(components.Component):
         if self._new_code is None and self.endpoint.is_sonarcloud():
             self._new_code = settings.new_code_to_string({"inherited": True})
         elif self._new_code is None:
-            try:
-                data = json.loads(self.get(api=Branch.API["get_new_code"], params=self.api_params(c.LIST)).text)
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting new code period of {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-                Branch.CACHE.pop(self)
-                raise exceptions.ObjectNotFound(self.concerned_object.key, f"{str(self.concerned_object)} not found")
-
+            data = json.loads(self.get(api=Branch.API["get_new_code"], params=self.api_params(c.LIST)).text)
             for b in data["newCodePeriods"]:
                 new_code = settings.new_code_to_string(b)
                 if b["branchKey"] == self.name:
@@ -245,12 +246,9 @@ class Branch(components.Component):
         :return: Whether the operation was successful
         """
         log.info("Setting %s keep when inactive to %s", self, keep)
-        try:
-            self.post("project_branches/set_automatic_deletion_protection", params=self.api_params() | {"value": str(keep).lower()})
+        ok = self.post("project_branches/set_automatic_deletion_protection", params=self.api_params() | {"value": str(keep).lower()}).ok
+        if ok:
             self._keep_when_inactive = keep
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting {str(self)} keep when inactive to {keep}", catch_all=True)
-            return False
         return True
 
     def set_as_main(self) -> bool:
@@ -258,11 +256,7 @@ class Branch(components.Component):
 
         :return: Whether the operation was successful
         """
-        try:
-            self.post("api/project_branches/set_main", params=self.api_params())
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting {str(self)} as main branch", catch_all=True)
-            return False
+        self.post("api/project_branches/set_main", params=self.api_params())
         for b in self.concerned_object.branches().values():
             b._is_main = b.name == self.name
         return True
@@ -317,30 +311,21 @@ class Branch(components.Component):
             log.debug("Skipping rename %s with same new name", str(self))
             return False
         log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
-        try:
-            self.post(Branch.API[c.RENAME], params={"project": self.concerned_object.key, "name": new_name})
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"Renaming {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST))
-            if isinstance(e, HTTPError):
-                if e.response.status_code == HTTPStatus.NOT_FOUND:
-                    Branch.CACHE.pop(self)
-                    raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")
-                if e.response.status_code == HTTPStatus.BAD_REQUEST:
-                    return False
+        self.post(Branch.API[c.RENAME], params={"project": self.concerned_object.key, "name": new_name})
         Branch.CACHE.pop(self)
         self.name = new_name
         Branch.CACHE.put(self)
         return True
 
-    def get_findings(self) -> dict[str, object]:
+    def get_findings(self, filters: Optional[types.ApiParams] = None) -> dict[str, object]:
         """Returns a branch list of findings
 
         :return: dict of Findings, with finding key as key
         :rtype: dict{key: Finding}
         """
-        findings = self.get_issues()
-        findings.update(self.get_hotspots())
-        return findings
+        if not filters:
+            return self.concerned_object.get_findings(branch=self.name)
+        return self.get_issues(filters) | self.get_hotspots(filters)
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""

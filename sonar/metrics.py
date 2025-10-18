@@ -105,8 +105,7 @@ class Metric(sqobject.SqObject):
     @classmethod
     def get_object(cls, endpoint: pf.Platform, key: str) -> Metric:
         search(endpoint=endpoint)
-        o = Metric.CACHE.get(key, endpoint.local_url)
-        if not o:
+        if not (o := Metric.CACHE.get(key, endpoint.local_url)):
             raise exceptions.ObjectNotFound(key, f"Metric key '{key}' not found")
         return o
 
@@ -156,26 +155,17 @@ def search(endpoint: pf.Platform, show_hidden_metrics: bool = False, use_cache: 
 
 def is_a_rating(endpoint: pf.Platform, metric_key: str) -> bool:
     """Whether a metric is a rating"""
-    try:
-        return Metric.get_object(endpoint, metric_key).is_a_rating()
-    except exceptions.ObjectNotFound:
-        return False
+    return Metric.get_object(endpoint, metric_key).is_a_rating()
 
 
 def is_a_percent(endpoint: pf.Platform, metric_key: str) -> bool:
     """Whether a metric is a percent"""
-    try:
-        return Metric.get_object(endpoint, metric_key).is_a_percent()
-    except exceptions.ObjectNotFound:
-        return False
+    return Metric.get_object(endpoint, metric_key).is_a_percent()
 
 
 def is_an_effort(endpoint: pf.Platform, metric_key: str) -> bool:
     """Whether a metric is an effort"""
-    try:
-        return Metric.get_object(endpoint, metric_key).is_an_effort()
-    except exceptions.ObjectNotFound:
-        return False
+    Metric.get_object(endpoint, metric_key).is_an_effort()
 
 
 def count(endpoint: pf.Platform, use_cache: bool = True) -> int:

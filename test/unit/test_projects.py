@@ -132,6 +132,16 @@ def test_import_sync() -> None:
         assert proj.import_zip(asynchronous=False).startswith("FAILED")
 
 
+def test_import_no_zip(get_test_project: Generator[projects.Project]) -> None:
+    """test_import_no_zip"""
+    if tutil.SQ.edition() == c.CE:
+        pytest.skip("No zip import in Community Build")
+    assert get_test_project.import_zip(asynchronous=False) == f"FAILED/ZIP_MISSING"
+    get_test_project.key = "non-existing"
+    res = get_test_project.import_zip(asynchronous=False)
+    assert res.startsWith("FAILED/") and "not found" in res
+
+
 def test_monorepo() -> None:
     """test_monorepo"""
     proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
@@ -202,6 +212,11 @@ def test_already_exists() -> None:
     """test_already_exists"""
     with pytest.raises(exceptions.ObjectAlreadyExists):
         projects.Project.create(endpoint=tutil.SQ, key=tutil.EXISTING_PROJECT, name="name")
+
+
+def test_exists() -> None:
+    assert projects.exists(tutil.SQ, tutil.LIVE_PROJECT)
+    assert not projects.exists(tutil.SQ, "non-existing")
 
 
 def test_binding() -> None:

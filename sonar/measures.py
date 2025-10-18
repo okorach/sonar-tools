@@ -23,8 +23,6 @@
 from __future__ import annotations
 
 import json
-from http import HTTPStatus
-from requests import RequestException
 from sonar import metrics, exceptions, platform
 from sonar.util.types import ApiPayload, ApiParams, KeyList
 from sonar.util import cache, constants as c
@@ -140,11 +138,7 @@ def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, 
     params["metricKeys"] = util.list_to_csv(metrics_list)
     log.debug("Getting measures with %s", str(params))
 
-    try:
-        data = json.loads(concerned_object.endpoint.get(Measure.API_READ, params={**kwargs, **params}).text)
-    except (ConnectionError, RequestException) as e:
-        util.handle_error(e, f"getting measures {str(metrics_list)} of {str(concerned_object)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-        raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
+    data = json.loads(concerned_object.endpoint.get(Measure.API_READ, params={**kwargs, **params}).text)
     m_dict = dict.fromkeys(metrics_list, None)
     for m in data["component"]["measures"]:
         m_dict[m["metric"]] = Measure.load(data=m, concerned_object=concerned_object)
@@ -169,15 +163,7 @@ def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> li
     params["metrics"] = util.list_to_csv(metrics_list)
     log.debug("Getting measures history with %s", str(params))
 
-    try:
-        data = json.loads(concerned_object.endpoint.get(Measure.API_HISTORY, params={**kwargs, **params}).text)
-    except (ConnectionError, RequestException) as e:
-        util.handle_error(
-            e,
-            f"getting measures {str(metrics_list)} history of {str(concerned_object)}",
-            catch_http_statuses=(HTTPStatus.NOT_FOUND,),
-        )
-        raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
+    data = json.loads(concerned_object.endpoint.get(Measure.API_HISTORY, params={**kwargs, **params}).text)
     res_list = []
     for m in reversed(data["measures"]):
         res_list += [[dt["date"], m["metric"], dt["value"]] for dt in m["history"] if "value" in dt]

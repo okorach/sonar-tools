@@ -26,12 +26,11 @@ import datetime
 import json
 import re
 
-from requests import RequestException
-
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
 
+from sonar import exceptions
 import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
@@ -459,9 +458,8 @@ def search(endpoint: pf.Platform, only_current: bool = False, component_key: str
     try:
         data = json.loads(endpoint.get("ce/activity", params=params).text)
         return [Task(endpoint=endpoint, task_id=t["id"], data=t) for t in data["tasks"]]
-    except (ConnectionError, RequestException) as e:
-        util.handle_error(e, f"getting background tasks of component {component_key}", catch_all=True)
-    return []
+    except exceptions.SonarException:
+        return []
 
 
 def search_all_last(endpoint: pf.Platform) -> list[Task]:

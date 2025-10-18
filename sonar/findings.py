@@ -24,8 +24,6 @@ import concurrent.futures
 from datetime import datetime
 from typing import Optional
 import re
-from http import HTTPStatus
-from requests import RequestException
 import Levenshtein
 
 import sonar.logging as log
@@ -460,13 +458,10 @@ class Finding(sq.SqObject):
     def do_transition(self, transition: str) -> bool:
         try:
             return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"applying transition {transition}", catch_http_statuses=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
         except exceptions.SonarException as e:
             if re.match(r"Transition from state [A-Za-z]+ does not exist", e.message):
                 raise exceptions.UnsupportedOperation(e.message) from e
             raise
-        return False
 
     def get_branch_and_pr(self, data: types.ApiPayload) -> tuple[Optional[str], Optional[str]]:
         """
