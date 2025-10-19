@@ -187,7 +187,13 @@ class Rule(sq.SqObject):
 
     @classmethod
     def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
-        """Returns a rule object from the cache or from the platform itself"""
+        """Returns a rule object from it key, taken from the cache or from the platform itself
+
+        :param Platform endpoint: The SonarQube reference
+        :param str key: The rule key
+        :return: The Rule object corresponding to the input rule key
+        :raises: ObjectNotFound if rule does not exist
+        """
         if o := Rule.CACHE.get(key, endpoint.local_url):
             return o
         r = endpoint.get(Rule.API[c.READ], params={"key": key, "actives": "true"})
@@ -440,15 +446,6 @@ def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> d
                 log.error(f"{str(e)} for {str(future)}.")
     log.info("Returning a list of %d rules", len(rule_list))
     return rule_list
-
-
-def get_object(endpoint: platform.Platform, key: str) -> Rule:
-    """Returns a Rule object from its key
-    :return: The Rule object corresponding to the input rule key
-    :raises: ObjectNotFound if rule does not exist
-    :param str key: The rule key
-    """
-    return Rule.get_object(key=key, endpoint=endpoint)
 
 
 def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
