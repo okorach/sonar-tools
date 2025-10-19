@@ -838,7 +838,7 @@ class Project(components.Component):
             return super().count_third_party_issues(filters)
         log.debug("Getting 3rd party issues on branches/PR")
         issue_counts = {}
-        for comp in [c for c in branches_or_prs.values() if c]:
+        for comp in [co for co in branches_or_prs.values() if co]:
             log.debug("Getting 3rd party issues for %s", str(comp))
             for k, total in comp.count_third_party_issues(filters).items():
                 if k not in issue_counts:

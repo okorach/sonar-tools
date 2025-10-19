@@ -41,6 +41,7 @@ class Cache(object):
         return "'undefined class' cache" if not self.object_class else f"'{self.object_class.__name__}' cache"
 
     def set_class(self, object_class: object) -> None:
+        """Defines the class the cache is for"""
         self.object_class = object_class
 
     def contents(self) -> str:

@@ -822,4 +822,4 @@ def similar_strings(key1: str, key2: str, max_distance: int = 5) -> bool:
     if key1 == key2:
         return False
     max_distance = min(len(key1) // 2, len(key2) // 2, max_distance)
-    return len(key2) >= 7 and (re.match(key2, key1)) or Levenshtein.distance(key1, key2, score_cutoff=6) <= max_distance
+    return (len(key2) >= 7 and (re.match(key2, key1))) or Levenshtein.distance(key1, key2, score_cutoff=6) <= max_distance
