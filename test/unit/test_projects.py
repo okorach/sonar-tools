@@ -54,12 +54,15 @@ def test_create_delete() -> None:
     """test_create_delete"""
     proj = projects.Project.create(endpoint=tutil.SQ, key=tutil.TEMP_KEY, name="temp")
     assert proj.key == tutil.TEMP_KEY
+    assert proj.main_branch_name() == "main"
     if tutil.SQ.edition() != c.CE:
         assert proj.main_branch().name == "main"
         proj.rename_main_branch("foobar")
         assert proj.main_branch().name == "foobar"
     else:
-        assert proj.main_branch_name() == "main"
+        with pytest.raises(exceptions.UnsupportedOperation):
+            proj.main_branch()
+
     assert proj.delete()
     with pytest.raises(exceptions.ObjectNotFound):
         proj.refresh()
