@@ -497,7 +497,7 @@ def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: types.ApiPara
         log.debug("%d hotspots remaining after filtering by createdBefore %s", len(filtered_findings), str(filters["createdBefore"]))
     if "languages" in filters:
         filtered_findings = {
-            k: v for k, v in filtered_findings.items() if rules.get_object(endpoint=v.endpoint, key=v.rule).language in filters["languages"]
+            k: v for k, v in filtered_findings.items() if rules.Rule.get_object(endpoint=v.endpoint, key=v.rule).language in filters["languages"]
         }
         log.debug("%d hotspots remaining after filtering by languages %s", len(filtered_findings), str(filters["languages"]))
     log.debug("%d hotspots remaining after post search filtering", len(filtered_findings))

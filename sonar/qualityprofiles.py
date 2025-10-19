@@ -267,7 +267,7 @@ class QualityProfile(sq.SqObject):
             # Assume nobody changed QP during execution
             return self._rules
         rule_key_list = rules.search_keys(self.endpoint, activation="true", qprofile=self.key, s="key", languages=self.language)
-        self._rules = {k: rules.get_object(self.endpoint, k) for k in rule_key_list}
+        self._rules = {k: rules.Rule.get_object(self.endpoint, k) for k in rule_key_list}
         return self._rules
 
     def activate_rule(self, rule_key: str, severity: Optional[str] = None, **params) -> bool:
@@ -289,7 +289,7 @@ class QualityProfile(sq.SqObject):
             return False
         if self._rules is None:
             self._rules = {}
-        self._rules[rule_key] = rules.get_object(self.endpoint, rule_key)
+        self._rules[rule_key] = rules.Rule.get_object(self.endpoint, rule_key)
         return ok
 
     def deactivate_rule(self, rule_key: str) -> bool:
@@ -429,7 +429,7 @@ class QualityProfile(sq.SqObject):
         :return: The severities of the rule in the quality profile
         :rtype: dict[str, str]
         """
-        return rules.get_object(self.endpoint, rule_key).impacts(self.key, substitute_with_default=substitute_with_default)
+        return rules.Rule.get_object(self.endpoint, rule_key).impacts(self.key, substitute_with_default=substitute_with_default)
 
     def __process_rules_diff(self, rule_set: dict[str:str]) -> dict[str:str]:
         diff_rules = {}
