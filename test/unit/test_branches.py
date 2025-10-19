@@ -59,10 +59,14 @@ def test_not_found() -> None:
     obj.name = "non-existing2"
     with pytest.raises(exceptions.ObjectNotFound):
         obj.refresh()
+    branches.Branch.CACHE.clear()
+    projects.Project.CACHE.clear()
 
     obj.concerned_object.key = "non-existing2"
     with pytest.raises(exceptions.ObjectNotFound):
         obj.new_code()
+    branches.Branch.CACHE.clear()
+    projects.Project.CACHE.clear()
 
 
 def test_is_main_is_kept():
@@ -99,9 +103,11 @@ def test_set_as_main():
 
     assert main_br.set_as_main()
 
-    main_br.name = "non-existing"
+    main_br.name = "non-existing-main"
     with pytest.raises(exceptions.ObjectNotFound):
         main_br.set_as_main()
+    branches.Branch.CACHE.clear()
+    projects.Project.CACHE.clear()
 
 
 def test_set_keep_as_inactive():
@@ -120,9 +126,11 @@ def test_set_keep_as_inactive():
 
     assert dev_br.set_keep_when_inactive(True)
 
-    dev_br.name = "non-existing"
+    dev_br.name = "non-existing-develop"
     with pytest.raises(exceptions.ObjectNotFound):
         dev_br.set_keep_when_inactive(True)
+    branches.Branch.CACHE.clear()
+    projects.Project.CACHE.clear()
 
 
 def test_rename():
@@ -154,9 +162,11 @@ def test_get_findings():
     dev_br = branches.Branch.get_object(concerned_object=project, branch_name="develop")
     assert len(dev_br.get_findings()) > 0
 
-    dev_br.name = "non-existing"
+    dev_br.name = "non-existing-dev2"
     with pytest.raises(exceptions.ObjectNotFound):
         dev_br.get_findings()
+    branches.Branch.CACHE.clear()
+    projects.Project.CACHE.clear()
 
 
 def test_audit():
@@ -167,8 +177,10 @@ def test_audit():
     dev_br = branches.Branch.get_object(concerned_object=project, branch_name="develop")
     assert len(dev_br.audit({"audit.project.branches": False})) == 0
 
-    dev_br.name = "non-existing"
+    dev_br.name = "non-existing-dev3"
     assert len(dev_br.audit({})) == 0
+    branches.Branch.CACHE.clear()
+    projects.Project.CACHE.clear()
 
 
 def test_exists():
