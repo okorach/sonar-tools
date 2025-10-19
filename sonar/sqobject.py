@@ -39,10 +39,12 @@ from sonar import utilities, exceptions, errcodes
 class SqObject(object):
     """Abstraction of Sonar objects"""
 
-    CACHE = cache.Cache
+    CACHE = cache.Cache()
     API = {c.SEARCH: None}
 
     def __init__(self, endpoint: object, key: str) -> None:
+        if not self.__class__.CACHE:
+            self.__class__.CACHE.set_class(self.__class__)
         self.key = key  #: Object unique key (unique in its class)
         self.endpoint = endpoint  #: Reference to the SonarQube platform
         self.concerned_object = None
