@@ -21,19 +21,30 @@
 """Cache manager"""
 
 from typing import Optional
+from sonar import logging as log
 
 
 class Cache(object):
     """Abstract cache implementation"""
 
     def __init__(self) -> None:
+        """Constructor"""
         self.objects = {}
+        self.object_class = None
 
     def __len__(self) -> int:
         """Returns size of cache"""
         return len(self.objects)
 
     def __str__(self) -> str:
+        """string repr of Cache"""
+        return "'undefined class' cache" if not self.object_class else f"'{self.object_class.__name__}' cache"
+
+    def set_class(self, object_class: object) -> None:
+        self.object_class = object_class
+
+    def contents(self) -> str:
+        """Returns the cache contents as a string"""
         return ", ".join([str(o) for o in self.objects.values()])
 
     def put(self, obj: object) -> object:
@@ -41,13 +52,19 @@ class Cache(object):
         h = hash(obj)
         if h not in self.objects:
             self.objects[h] = obj
+        else:
+            log.debug("%s already in cache, can't be added again", obj)
+        # log.debug("PUT %s: %s", self, self.contents())
         return self.objects[h]
 
     def get(self, *args) -> Optional[object]:
+        # log.debug("GET %s: %s", self, self.contents())
         return self.objects.get(hash(args), None)
 
     def pop(self, obj: object) -> Optional[object]:
-        return self.objects.pop(hash(obj), None)
+        o = self.objects.pop(hash(obj), None)
+        log.debug("POP %s: %s", self, self.contents())
+        return o
 
     def values(self) -> list[object]:
         return list(self.objects.values())
@@ -59,4 +76,6 @@ class Cache(object):
         return self.objects.items()
 
     def clear(self) -> None:
+        """Clears a cache"""
+        # log.info("Clearing %s", self)
         self.objects = {}
