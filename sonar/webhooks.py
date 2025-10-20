@@ -84,7 +84,7 @@ class WebHook(sq.SqObject):
         :return: The created WebHook
         """
         name, project = data["name"], data.get("project", None)
-        if o := WebHook.CACHE.get(name, project, endpoint.local_url) is None:
+        if (o := WebHook.CACHE.get(name, project, endpoint.local_url)) is None:
             o = WebHook(endpoint, name, data["url"], data.get("secret", None), project)
         o.reload(data)
         return o
