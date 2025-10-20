@@ -37,7 +37,7 @@ To import, the zip file smust be first copied under (under `data/governance/proj
 
 ## Requirements and Installation
 
-`sonar-projects` is installed through the **sonar-tools** [general installation](../README.md#install)
+`sonar-projects` is installed through the **sonar-tools** [general installation](https://github.com/okorach/sonar-tools/blob/master/README.md#install)
 
 ## Common command line parameters
 

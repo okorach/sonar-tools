@@ -9,7 +9,7 @@ The detail of what is audited is listed at the bottom of this page
 
 ## Requirements and Installation
 
-`sonar-audit` is installed through the **sonar-tools** [general installation](../README.md#install)
+`sonar-audit` is installed through the **sonar-tools** [general installation](https://github.com/okorach/sonar-tools/blob/master/README.md#install)
 
 ## Common command line parameters
 

@@ -27,7 +27,7 @@ Basic Usage: `sonar-measures-export -m _main [-f <file>] [--format csv|json] [-b
 
 ## Requirements and Installation
 
-`sonar-measures-export` is installed through the **sonar-tools** [general installation](../README.md#install)
+`sonar-measures-export` is installed through the **sonar-tools** [general installation](https://github.com/okorach/sonar-tools/blob/master/README.md#install)
 
 ## Common command line parameters
 

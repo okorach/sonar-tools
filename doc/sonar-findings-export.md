@@ -29,7 +29,7 @@ Basic Usage: `sonar-findings-export [--format csv|json|sarif] [--sarifNoCustomPr
 
 ## Requirements and Installation
 
-`sonar-findings-export` is installed through the **sonar-tools** [general installation](../README.md#install)
+`sonar-findings-export` is installed through the **sonar-tools** [general installation](https://github.com/okorach/sonar-tools/blob/master/README.md#install)
 
 ## Common command line parameters
 

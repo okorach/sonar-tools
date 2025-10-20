@@ -7,7 +7,7 @@ When the source or target is a Community Edition/Build then only the main branch
 
 ## Requirements and Installation
 
-`sonar-findings-sync` is installed through the **sonar-tools** [general installation](../README.md#install)
+`sonar-findings-sync` is installed through the **sonar-tools** [general installation](https://github.com/okorach/sonar-tools/blob/master/README.md#install)
 
 ## Common command line parameters
 

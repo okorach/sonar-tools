@@ -23,7 +23,7 @@ Basic Usage: `sonar-loc [-f <file>] [--format csv|json] [-a] [-n] [--withTags] [
 
 ## Requirements and Installation
 
-`sonar-loc` is installed through the **sonar-tools** [general installation](../README.md#install)
+`sonar-loc` is installed through the **sonar-tools** [general installation](https://github.com/okorach/sonar-tools/blob/master/README.md#install)
 
 ## Common command line parameters
 
