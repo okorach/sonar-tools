@@ -38,6 +38,8 @@ function create_fresh_project {
     fi
     curl -X POST -u "${usertoken}:" "${url}/api/projects/delete?project=${key}"
     conf/run_scanner.sh "${opts[@]}" -Dsonar.projectKey="${key}" -Dsonar.projectName="${key}" -Dsonar.host.url="${url}" "${opt_token}" "${opt_org}" 
+    conf/run_scanner.sh "${opts[@]}" -Dsonar.projectKey="${key}" -Dsonar.projectName="${key}" -Dsonar.host.url="${url}" "${opt_token}" "${opt_org}" -Dsonar.branch.name=develop
+    conf/run_scanner.sh "${opts[@]}" -Dsonar.projectKey="${key}" -Dsonar.projectName="${key}" -Dsonar.host.url="${url}" "${opt_token}" "${opt_org}" -Dsonar.branch.name=release-3.x
     return 0
 }
 

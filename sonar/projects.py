@@ -35,7 +35,6 @@ from typing import Optional, Union
 from http import HTTPStatus
 from threading import Lock
 from requests import HTTPError, RequestException
-import Levenshtein
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -182,16 +181,10 @@ class Project(components.Component):
         :param str key: Project key to search
         :raises ObjectNotFound: if project key not found
         :return: The Project
-        :rtype: Project
         """
-        o = Project.CACHE.get(key, endpoint.local_url)
-        if o:
+        if o := Project.CACHE.get(key, endpoint.local_url):
             return o
-        try:
-            data = json.loads(endpoint.get(Project.API[c.READ], params={"component": key}).text)
-        except RequestException as e:
-            util.handle_error(e, f"Getting project {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
+        data = json.loads(endpoint.get(Project.API[c.READ], params={"component": key}).text)
         return cls.load(endpoint, data["component"])
 
     @classmethod
@@ -205,8 +198,7 @@ class Project(components.Component):
         :rtype: Project
         """
         key = data["key"]
-        o = Project.CACHE.get(key, endpoint.local_url)
-        if not o:
+        if not (o := Project.CACHE.get(key, endpoint.local_url)):
             o = cls(endpoint, key)
         o.reload(data)
         return o
@@ -221,11 +213,7 @@ class Project(components.Component):
         :return: The Project
         :rtype: Project
         """
-        try:
-            endpoint.post(Project.API[c.CREATE], params={"project": key, "name": name})
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating project '{key}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(key, e.response.text)
+        endpoint.post(Project.API[c.CREATE], params={"project": key, "name": name})
         o = cls(endpoint, key)
         o.name = name
         return o
@@ -246,14 +234,12 @@ class Project(components.Component):
 
         :raises ObjectNotFound: if project key not found
         :return: self
-        :rtype: Project
         """
         try:
             data = json.loads(self.get(Project.api_for(c.READ, self.endpoint), params=self.api_params(c.READ)).text)
-        except RequestException as e:
-            util.handle_error(e, f"searching project {self.key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        except exceptions.ObjectNotFound:
             Project.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
+            raise
         return self.reload(data["component"])
 
     def reload(self, data: types.ApiPayload) -> Project:
@@ -264,10 +250,7 @@ class Project(components.Component):
         :rtype: Project
         """
         """Loads a project object with contents of an api/projects/search call"""
-        if self.sq_json is None:
-            self.sq_json = data
-        else:
-            self.sq_json.update(data)
+        self.sq_json = (self.sq_json or {}) | data
         self.name = data["name"]
         self._visibility = data["visibility"]
         if "lastAnalysisDate" in data:
@@ -376,7 +359,7 @@ class Project(components.Component):
 
         :raises ObjectNotFound: If object to delete was not found in SonarQube
         :raises request.HTTPError: In all other cases of HTTP Errors
-        :return: Nothing
+        :return: Whether the operation succeeded
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         log.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
@@ -597,8 +580,8 @@ class Project(components.Component):
                 data = json.loads(self.get("project_analyses/search", params={"project": self.key, "ps": 1}).text)["analyses"]
                 if len(data) > 0:
                     self._ci, self._revision = data[0].get("detectedCI", "unknown"), data[0].get("revision", "unknown")
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting CI tool of {str(self)}", catch_all=True)
+            except exceptions.SonarException:
+                pass
             except KeyError:
                 log.warning("KeyError, can't retrieve CI tool and revision")
         return self._ci
@@ -681,10 +664,9 @@ class Project(components.Component):
                 problems += self.__audit_branches(audit_settings)
                 problems += self.__audit_pull_requests(audit_settings)
 
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"auditing {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        except exceptions.ObjectNotFound:
             Project.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(self.key, str(e))
+            raise
 
         return problems
 
@@ -702,10 +684,13 @@ class Project(components.Component):
             )
         try:
             resp = self.post("project_dump/export", params={"key": self.key})
+        except exceptions.ObjectNotFound as e:
+            Project.CACHE.pop(self)
+            return f"FAILED/{e.message}", None
+        except exceptions.SonarException as e:
+            return f"FAILED/{e.message}", None
         except RequestException as e:
             util.handle_error(e, f"exporting zip of {str(self)}", catch_all=True)
-            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound(self.key, f"Project key '{self.key}' not found")
             return f"FAILED/{util.http_error_string(e.response.status_code)}", None
         except ConnectionError as e:
             return str(e), None
@@ -735,12 +720,12 @@ class Project(components.Component):
             raise exceptions.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
         try:
             resp = self.post("project_dump/import", params={"key": self.key})
-        except exceptions.ObjectNotFound:
-            return "FAILED/PROJECT_NOT_FOUND"
+        except exceptions.ObjectNotFound as e:
+            Project.CACHE.pop(self)
+            return f"FAILED/{e.message}"
         except exceptions.SonarException as e:
             if "Dump file does not exist" in e.message:
                 return f"FAILED/{tasks.ZIP_MISSING}"
-            util.handle_error(e, f"importing zip of {str(self)} {mode}", catch_all=True)
             return f"FAILED/{e.message}"
         except ConnectionError as e:
             return f"FAILED/{str(e)}"
@@ -770,7 +755,7 @@ class Project(components.Component):
             else:
                 try:
                     objects = {b: branches.Branch.get_object(concerned_object=self, branch_name=b) for b in br}
-                except (exceptions.ObjectNotFound, exceptions.UnsupportedOperation) as e:
+                except exceptions.SonarException as e:
                     log.error(e.message)
         if pr:
             if "*" in pr:
@@ -778,17 +763,15 @@ class Project(components.Component):
             else:
                 try:
                     objects.update({p: pull_requests.get_object(project=self, pull_request_key=p) for p in pr})
-                except exceptions.ObjectNotFound as e:
+                except exceptions.SonarException as e:
                     log.error(e.message)
         return objects
 
     def get_findings(self, branch: Optional[str] = None, pr: Optional[str] = None) -> dict[str, object]:
         """Returns a project list of findings (issues and hotspots)
 
-        :param branch: branch name to consider, if any
-        :type branch: str, optional
-        :param pr: PR key to consider, if any
-        :type pr: str, optional
+        :param str branch: optional branch name to consider, if any
+        :param str pr: optional PR key to consider, if any
         :return: JSON of all findings, with finding key as key
         :rtype: dict{key: Finding}
         """
@@ -799,11 +782,7 @@ class Project(components.Component):
             return {}
         log.info("Exporting findings for %s", str(self))
         findings_list = {}
-        params = {"project": self.key}
-        if branch is not None:
-            params["branch"] = branch
-        elif pr is not None:
-            params["pullRequest"] = pr
+        params = util.remove_nones({"project": self.key, "branch": branch, "pullRequest": pr})
 
         data = json.loads(self.get("projects/export_findings", params=params).text)["export_findings"]
         findings_conflicts = {"SECURITY_HOTSPOT": 0, "BUG": 0, "CODE_SMELL": 0, "VULNERABILITY": 0}
@@ -859,9 +838,7 @@ class Project(components.Component):
             return super().count_third_party_issues(filters)
         log.debug("Getting 3rd party issues on branches/PR")
         issue_counts = {}
-        for comp in branches_or_prs.values():
-            if not comp:
-                continue
+        for comp in [co for co in branches_or_prs.values() if co]:
             log.debug("Getting 3rd party issues for %s", str(comp))
             for k, total in comp.count_third_party_issues(filters).items():
                 if k not in issue_counts:
@@ -965,8 +942,7 @@ class Project(components.Component):
         """
         try:
             data = json.loads(self.get(api="project_links/search", params={"projectKey": self.key}).text)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting links of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN, HTTPStatus.NOT_FOUND))
+        except exceptions.SonarException:
             return None
         link_list = None
         for link in data["links"]:
@@ -1413,26 +1389,17 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
 
 
 def get_matching_list(endpoint: pf.Platform, pattern: str, threads: int = 8) -> dict[str, Project]:
-    """
+    """Returns the list of projects whose keys are matching the pattern
+
     :param Platform endpoint: Reference to the SonarQube platform
     :param str pattern: Regular expression to match project keys
     :return: the list of all projects matching the pattern
-    :rtype: dict{key: Project}
     """
-    if not pattern or pattern == ".*":
-        return get_list(endpoint, threads=threads)
+    pattern = pattern or ".+"
     log.info("Listing projects matching regexp '%s'", pattern)
     matches = {k: v for k, v in get_list(endpoint, threads=threads).items() if re.match(rf"^{pattern}$", k)}
     log.info("%d project key matching regexp '%s'", len(matches), pattern)
     return matches
-
-
-def __similar_keys(key1: str, key2: str, max_distance: int = 5) -> bool:
-    """Returns whether 2 project keys are similar"""
-    if key1 == key2:
-        return False
-    max_distance = min(len(key1) // 2, len(key2) // 2, max_distance)
-    return len(key2) >= 7 and (re.match(key2, key1)) or Levenshtein.distance(key1, key2, score_cutoff=6) <= max_distance
 
 
 def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
@@ -1448,7 +1415,7 @@ def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.
     for key1, p in projects_list.items():
         for key2 in projects_list:
             pair = " ".join(sorted([key1, key2]))
-            if __similar_keys(key1, key2, audit_settings.get("audit.projects.duplicates.maxDifferences", 4)) and pair not in pair_set:
+            if util.similar_strings(key1, key2, audit_settings.get("audit.projects.duplicates.maxDifferences", 4)) and pair not in pair_set:
                 duplicates.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
             pair_set.add(pair)
     return duplicates
@@ -1477,7 +1444,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings audit_settings: Configuration of audit
-    :returns: list of problems found
+    :return: list of problems found
     """
     if not audit_settings.get("audit.projects", True):
         log.info("Auditing projects is disabled, audit skipped...")
@@ -1516,7 +1483,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
-    :returns: list of projects settings
+    :return: list of projects settings
     """
 
     write_q = kwargs.get("write_q", None)
@@ -1547,12 +1514,12 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     return dict(sorted(results.items()))
 
 
-def exists(key: str, endpoint: pf.Platform) -> bool:
-    """
-    :param str key: project key to check
+def exists(endpoint: pf.Platform, key: str) -> bool:
+    """Returns whether a project exists
+
     :param Platform endpoint: reference to the SonarQube platform
-    :returns: whether the project exists
-    :rtype: bool
+    :param str key: project key to check
+    :return: whether the project exists
     """
     try:
         Project.get_object(endpoint, key)
@@ -1673,7 +1640,8 @@ def export_zips(
     return results
 
 
-def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30) -> tuple[str, str]:
+def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30) -> tuple[Project, str]:
+    """Imports a project zip file"""
     try:
         o_proj = Project.create(key=project_key, endpoint=endpoint, name=project_key)
     except exceptions.ObjectAlreadyExists:

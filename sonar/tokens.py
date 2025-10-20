@@ -26,14 +26,11 @@ from typing import Optional
 import json
 
 import datetime
-from http import HTTPStatus
-from requests import RequestException
 
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
 import sonar.utilities as util
-from sonar import exceptions
 from sonar.util import types, cache, constants as c
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
@@ -69,11 +66,7 @@ class UserToken(sq.SqObject):
         :param login: User for which the token must be created
         :param name: Token name
         """
-        try:
-            data = json.loads(endpoint.post(UserToken.API[c.CREATE], {"name": name, "login": login}).text)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating token '{name}' for user '{login}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(name, e.response.text)
+        data = json.loads(endpoint.post(UserToken.API[c.CREATE], {"name": name, "login": login}).text)
         return UserToken(endpoint=endpoint, login=data["login"], json_data=data, name=name)
 
     def __str__(self) -> str:
