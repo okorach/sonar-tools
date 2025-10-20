@@ -8,6 +8,10 @@ During import:
 - When the object already exists it is updated according to the config file
 - When an object exists in the target platform and is not defined in the config file, this object remains unmodified. As such the import of configuration is "additive" to the current config, it does not replace it.
 
+## Required Permissions
+
+`sonar-config` needs `Browse` and `Administer` permission on more or less everything that may be exported or imported
+
 ## Requirements and Installation
 
 `sonar-config` is installed through the **sonar-tools** [general installation](../README.md#install)
