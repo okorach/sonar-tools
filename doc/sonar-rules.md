@@ -7,7 +7,7 @@ Basic Usage: `sonar-rules -e -f <file>`
 - `-e` or `--export`: Specify the export operation
 - `-l` or `--languages`: Export only rules of given languages (comma separated, defined by they Sonar key, not its name)
 - `--qualityProfiles`: Export rules defined in a given quality profile. In this case the `--languages` option is mandatory and should specify a single language
-- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
+- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 
 ## Required Permissions

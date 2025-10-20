@@ -18,7 +18,7 @@ Basic Usage: `sonar-measures-export -m _main [-f <file>] [--format csv|json] [-b
 - `-a | --withLastAnalysis`: Output the last analysis date (all branches and PR taken into account) in addition to the LOCs
 - `--withURL`: Outputs the URL of the project or portfolio for each record
 - `--history`: Export measures history instead of only the last value
-- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
+- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 
 ## Required Permissions

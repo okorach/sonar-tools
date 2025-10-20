@@ -20,7 +20,7 @@ Basic Usage: `sonar-findings-export [--format csv|json|sarif] [--sarifNoCustomPr
 - `-k <keyList>`: Comma separated list of keys of objects to export (all objects if not specified)
 - `-b <branchList>`: For projects and apps, comma separated list of branches to export (Use * for all branches)
 - `--datesWithoutTime`: Reports timestamps only with date, not time
-- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
+- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 
 ## Required Permissions

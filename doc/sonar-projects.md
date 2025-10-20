@@ -21,7 +21,7 @@ Basic Usage:
 - `--importTimeout`: Defines timeout to import a single project in seconds,
                      by default 180 s (large projects can take time to import)
 - `--skipZeroLoc`    Skips import of projects with zero lines of code (if they were exported in the first place)
-- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
+- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 :information_source: All zip files are generated in the SonarQube Server instance standard location (under `data/governance/project_dumps/export`). On a DCE, the export may be distributed over all the Application Nodes
 :warning: **sonar-tools** 2.7 or higher is required for compatibility with SonarQube Server 10
