@@ -6,7 +6,7 @@ Deletes obsolete/outdated data from SonarQube:
 - Inactive branches (Branches not analyzed for a given number of days), excepted branches marked as "keep when inactive"
 - Inactive pull requests (PRs not analyzed for a given number of days)
 
-Usage: `sonar-housekeeper [-P <days>] [-B <days>] [-R <days>] [-T <days>] [--mode delete] [-h]`
+Usage: `sonar-housekeeper [-P <days>] [-B <days>] [-R <days>] [-T <days>] [--mode delete]`
 
 - `-P <days>`: Will search for projects not analyzed since more than `<days>` days.
 To avoid deleting too recent projects it is denied to specify less than 90 days
@@ -17,6 +17,8 @@ Branches marked as "keep when inactive" are excluded from housekeeping
 - `--mode delete`: If not specified, `sonar-housekeeper` will only perform a dry run and list projects
 branches, pull requests and tokens that would be deleted.
 If `--mode delete` is specified objects are actually deleted
+- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](../README.md#common-params)
+
 
 :warning: **sonar-tools** 2.7 or higher is required for `sonar-housekeeper` compatibility with SonarQube Server 10
 

@@ -6,6 +6,7 @@ Plenty of issue filters can be specified from the command line, type `sonar-find
 :warning: On large SonarQube Server or Cloud instances with a lot of issues, it can be stressful for the instance (many API calls) and very long to export all issues. It's recommended to define filters that will only export a subset of all issues (see examples below).
 
 Basic Usage: `sonar-findings-export [--format csv|json|sarif] [--sarifNoCustomProperties] [-k <keyList>] ...`
+
 - `--format csv|json|sarif`: Choose export format. Default is based on output file extension, and csv in last - `--sarifNoCustomProperties`: For SARIF export. By default all Sonar custom properties are exported which makes the SARIF export quite verbose. Use this option to not export the Sonar custom properties (only the SARIF standard ones)
 - `--statuses <statusList>`: Only export findings with given statuses, comma separated among OPEN,CONFIRMED,REOPENED,RESOLVED,CLOSED,TO_REVIEW,REVIEWED
 - `--resolutions <resolutionList>`: Only export findings with given resolution, comma separated among FALSE-POSITIVE,WONTFIX,FIXED,REMOVED,ACCEPTED,SAFE,ACKNOWLEDGED,FIXED
@@ -19,7 +20,8 @@ Basic Usage: `sonar-findings-export [--format csv|json|sarif] [--sarifNoCustomPr
 - `-k <keyList>`: Comma separated list of keys of objects to export (all objects if not specified)
 - `-b <branchList>`: For projects and apps, comma separated list of branches to export (Use * for all branches)
 - `--datesWithoutTime`: Reports timestamps only with date, not time
-resort
+- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](../README.md#common-params)
+
 
 ## Required Permissions
 
@@ -31,7 +33,7 @@ resort
 
 ## Common command line parameters
 
-`sonar-findings-export` accepts all the **sonar-tools** [common parameters](../README.md#common-params)
+`sonar-config` accepts all the **sonar-tools** [common parameters](../README.md#common-params)
 
 ## Examples
 ```

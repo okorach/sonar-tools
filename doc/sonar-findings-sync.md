@@ -30,7 +30,8 @@ When the source or target is a Community Edition/Build then only the main branch
 the target token.
 - `--nolink`: Do not add a HTTP link comment in the source and target findings (that point at each other)
 - `--tag`: Defines the tag applied to synchronized issues, default is `synchronized`. Use `--tag ''` to not tag the issues
-- `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
+- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](../README.md#common-params)
+
 
 :warning: Note about `-t` and `-T`: It is **strongly recommended** to run `sonar-findings-sync` with the credentials of a specific service account dedicated to issues synchronization on the target. This will allow to recognize automatic synchronization changes by the author of those changes. This token is either the one provided with `-t` when the synchronization is within the same SonarQube Server or Cloud (for instance 2 branches of a same project), or `-T` when synchronizing between 2 different SonarQube Server or Cloud instances (The `-T <token>` corresponding to a user on the **target** SonarQube Server or Cloud in that case)
 

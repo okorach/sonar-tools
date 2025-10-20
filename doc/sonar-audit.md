@@ -17,7 +17,7 @@ The detail of what is audited is listed at the bottom of this page
 
 ## Usage
 
-`sonar-audit [-u <url>] [-t <token>] [--what <auditSelection>] [--sif <SIF>] [-f <file>] [--format [json|csv]] [-h] [-v <debugLevel>]`
+`sonar-audit [--what <auditSelection>] [--sif <SIF>] [-f <file>] [--format [json|csv]]`
 
 `--what` can be followed by a list of comma separated items to audit.
 When `--what` is not specified, everything is audited
@@ -39,7 +39,7 @@ When `--what` is not specified, everything is audited
 - `--format [json|csv]`: Generates output in JSON or CSV format (CSV is the default)
 - `--csvSeparator <separator>`: Allows to select the separator character for CSV, `,` is the default
 - `-h`: Displays help and exits
-- `-u`, `-t`, `-h`, `-v`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](../README.md#common-params)
+- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](../README.md#common-params)
 
 ## Required Permissions
 

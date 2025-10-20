@@ -22,7 +22,7 @@ During import:
 
 ## Usage
 
-`sonar-config [-u <url>] [-t <token>] [-e|--export] [-i|--import] [-w|--what <configSelection>] [-f <file>] [-h] [-v <debugLevel>] [-k "<key1>,<key2>,...,<keyn>"]`
+`sonar-config [-e|--export] [-i|--import] [-w|--what <configSelection>] [-f <file>] [-h] [-k "<key1>,<key2>,...,<keyn>"]`
 
 `--what` can be followed by a list of comma separated items to export or import
 When `--what` is not specified, everything is exported or 
@@ -40,7 +40,7 @@ When `--what` is not specified, everything is exported or
 - `-k "<key1>,<key2>,...,<keyn>"`: Limits the export or import operation to projects, apps or portfolios matching these keys
 - `--fullExport`: Will also export object properties that are not used for an import by may be of interest anyway
 - `-h`: Displays help and exits
-- `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
+- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](../README.md#common-params)
 
 ## Required Permissions
 

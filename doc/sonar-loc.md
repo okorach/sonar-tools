@@ -15,6 +15,7 @@ Basic Usage: `sonar-loc [-f <file>] [--format csv|json] [-a] [-n] [--withTags] [
 - `--withTags`: Outputs the tags of the project, app or portfolio
 - `--withURL`: Outputs the URL of the project, app or portfolio for each record
 - `-b`: Export LoCs for each branches of targeted objects (projects or applications)
+- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](../README.md#common-params)
 
 ## Required Permissions
 
