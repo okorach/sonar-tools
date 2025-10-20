@@ -36,6 +36,8 @@ from datetime import timezone
 from copy import deepcopy
 import requests
 
+import Levenshtein
+
 import sonar.logging as log
 from sonar import version, errcodes
 from sonar.util import types, cache_helper
@@ -813,3 +815,11 @@ def flatten(original_dict: dict[str, any]) -> dict[str, any]:
         else:
             flat_dict[k] = v
     return flat_dict
+
+
+def similar_strings(key1: str, key2: str, max_distance: int = 5) -> bool:
+    """Returns whether 2 project keys are similar, but not equal"""
+    if key1 == key2:
+        return False
+    max_distance = min(len(key1) // 2, len(key2) // 2, max_distance)
+    return (len(key2) >= 7 and (re.match(key2, key1))) or Levenshtein.distance(key1, key2, score_cutoff=6) <= max_distance

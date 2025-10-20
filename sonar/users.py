@@ -27,7 +27,6 @@ from typing import Optional, Union
 import datetime as dt
 import json
 
-from http import HTTPStatus
 from requests import RequestException
 
 import sonar.logging as log
@@ -126,11 +125,7 @@ class User(sqobject.SqObject):
         params = {"login": login, "local": str(is_local).lower(), "name": name}
         if is_local:
             params["password"] = password if password else login
-        try:
-            endpoint.post(User.api_for(c.CREATE, endpoint), params=params)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating user '{login}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(login, util.sonar_error(e.response))
+        endpoint.post(User.api_for(c.CREATE, endpoint), params=params)
         return cls.get_object(endpoint=endpoint, login=login)
 
     @classmethod
@@ -143,13 +138,11 @@ class User(sqobject.SqObject):
         :return: The user object
         :rtype: User
         """
-        o = User.CACHE.get(login, endpoint.local_url)
-        if o:
+        if o := User.CACHE.get(login, endpoint.local_url):
             return o
         log.debug("Getting user '%s'", login)
-        for k, o in search(endpoint, params={"q": login}).items():
-            if k == login:
-                return o
+        if user := next((o for k, o in search(endpoint, params={"q": login}).items() if k == login), None):
+            return user
         raise exceptions.ObjectNotFound(login, f"User '{login}' not found")
 
     @classmethod
@@ -159,19 +152,15 @@ class User(sqobject.SqObject):
         :param endpoint: Reference to the SonarQube platform
         :param id: User id
         :raises ObjectNotFound: if id not found
-        :raises UnsuppoertedOperation: If SonarQube version < 10.4
+        :raises UnsupportedOperation: If SonarQube version < 10.4
         :return: The user object
         :rtype: User
         """
         if endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             raise exceptions.UnsupportedOperation("Get by ID is an APIv2 features, staring from SonarQube 10.4")
         log.debug("Getting user id '%s'", id)
-        try:
-            data = json.loads(endpoint.get(f"/api/v2/users-management/users/{id}", mute=()).text)
-            return cls.load(endpoint, data)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting user id '{id}'", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(id, f"User id '{id}' not found")
+        data = json.loads(endpoint.get(f"/api/v2/users-management/users/{id}", mute=()).text)
+        return cls.load(endpoint, data)
 
     @classmethod
     def api_for(cls, op: str, endpoint: object) -> Optional[str]:
@@ -358,11 +347,11 @@ class User(sqobject.SqObject):
             else:
                 ok = self.post(api=User.API_V1[c.DELETE], params=self.api_params(c.DELETE)).ok
             if ok:
-                log.info("Removing from %s cache", str(self.__class__.__name__))
-                self.__class__.CACHE.pop(self)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"deleting {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
+                log.info("Removing from %s cache", str(User.__name__))
+                User.CACHE.pop(self)
+        except exceptions.ObjectNotFound:
+            User.CACHE.pop(self)
+            raise
         return ok
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
@@ -526,7 +515,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         for future in concurrent.futures.as_completed(futures):
             try:
                 problems += future.result(timeout=60)
-            except (TimeoutError, RequestException) as e:
+            except (TimeoutError, RequestException, exceptions.SonarException) as e:
                 log.error(f"Exception {str(e)} when auditing {str(futures_map[future])}.")
     "write_q" in kwargs and kwargs["write_q"].put(problems)
     log.info("--- Auditing users: END ---")

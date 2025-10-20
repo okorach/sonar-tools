@@ -24,6 +24,8 @@
 from datetime import datetime, timedelta
 import pytest
 
+from requests.exceptions import ConnectionError
+
 import utilities as tutil
 from sonar import issues, exceptions, logging
 from sonar import utilities as util
@@ -254,10 +256,13 @@ def test_request_error() -> None:
     """test_request_error"""
     issues_d = issues.search_by_project(endpoint=tutil.TEST_SQ, project_key=tutil.PROJECT_1)
     issue = list(issues_d.values())[0]
+    url = tutil.TEST_SQ.local_url
     tutil.TEST_SQ.local_url = "http://localhost:3337"
-    assert not issue.add_comment("Won't work")
-
-    assert not issue.assign("admin")
+    with pytest.raises(ConnectionError):
+        issue.add_comment("Won't work")
+    with pytest.raises(ConnectionError):
+        issue.assign("admin")
+    tutil.TEST_SQ.local_url = url
 
 
 def test_transitions() -> None:

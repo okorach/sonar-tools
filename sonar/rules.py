@@ -29,8 +29,6 @@ import json
 import concurrent.futures
 from threading import Lock
 from typing import Optional
-from http import HTTPStatus
-from requests import RequestException
 
 import sonar.logging as log
 import sonar.sqobject as sq
@@ -189,15 +187,16 @@ class Rule(sq.SqObject):
 
     @classmethod
     def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
-        """Returns a rule object from the cache or from the platform itself"""
-        o = Rule.CACHE.get(key, endpoint.local_url)
-        if o:
+        """Returns a rule object from it key, taken from the cache or from the platform itself
+
+        :param Platform endpoint: The SonarQube reference
+        :param str key: The rule key
+        :return: The Rule object corresponding to the input rule key
+        :raises: ObjectNotFound if rule does not exist
+        """
+        if o := Rule.CACHE.get(key, endpoint.local_url):
             return o
-        try:
-            r = endpoint.get(Rule.API[c.READ], params={"key": key, "actives": "true"})
-        except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"getting rule {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
+        r = endpoint.get(Rule.API[c.READ], params={"key": key, "actives": "true"})
         return Rule(endpoint=endpoint, key=key, data=json.loads(r.text)["rule"])
 
     @classmethod
@@ -258,10 +257,9 @@ class Rule(sq.SqObject):
 
         try:
             data = json.loads(self.get(Rule.API[c.READ], params={"key": self.key, "actives": "true"}).text)
-        except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"Reading {self}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        except exceptions.ObjectNotFound:
             Rule.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(key=self.key, message=f"{self} does not exist")
+            raise
         self.sq_json.update(data["rule"])
         self.sq_json["actives"] = data["actives"].copy()
         return True
@@ -411,8 +409,8 @@ def search_keys(endpoint: platform.Platform, **params) -> list[str]:
             data = json.loads(endpoint.get(Rule.API[c.SEARCH], params=new_params).text)
             nbr_pages = utilities.nbr_pages(data)
             rule_list += [r[Rule.SEARCH_KEY_FIELD] for r in data[Rule.SEARCH_RETURN_FIELD]]
-    except (ConnectionError, RequestException) as e:
-        utilities.handle_error(e, "searching rules", catch_all=True)
+    except exceptions.SonarException:
+        pass
     return rule_list
 
 
@@ -448,18 +446,6 @@ def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> d
                 log.error(f"{str(e)} for {str(future)}.")
     log.info("Returning a list of %d rules", len(rule_list))
     return rule_list
-
-
-def get_object(endpoint: platform.Platform, key: str) -> Optional[Rule]:
-    """Returns a Rule object from its key
-    :return: The Rule object corresponding to the input rule key, or None if not found
-    :param str key: The rule key
-    :rtype: Rule or None
-    """
-    try:
-        return Rule.get_object(key=key, endpoint=endpoint)
-    except exceptions.ObjectNotFound:
-        return None
 
 
 def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:

@@ -106,6 +106,16 @@ class PullRequest(components.Component):
         ops = {c.READ: {"project": self.concerned_object.key, "pullRequest": self.key}}
         return ops[op] if op and op in ops else ops[c.READ]
 
+    def get_findings(self, filters: Optional[types.ApiParams] = None) -> dict[str, object]:
+        """Returns a PR list of findings
+
+        :return: dict of Findings, with finding key as key
+        :rtype: dict{key: Finding}
+        """
+        if not filters:
+            return self.concerned_object.get_findings(pr=self.key)
+        return self.get_issues(filters) | self.get_hotspots(filters)
+
 
 def get_object(pull_request_key: str, project: object, data: types.ApiPayload = None) -> Optional[PullRequest]:
     """Returns a PR object from a PR key and a project"""

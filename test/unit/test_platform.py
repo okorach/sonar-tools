@@ -22,7 +22,7 @@
 """platform tests"""
 
 import json
-from requests import RequestException
+import requests.exceptions
 from datetime import datetime
 
 import pytest
@@ -82,10 +82,11 @@ def test_wrong_url() -> None:
     tutil.TEST_SQ.local_url = "http://localhost:3337"
 
     tutil.TEST_SQ._sys_info = None
-    with pytest.raises(RequestException):
+    with pytest.raises(requests.exceptions.ConnectionError):
         tutil.TEST_SQ.sys_info()
 
-    tutil.TEST_SQ.global_permissions()
+    with pytest.raises(requests.exceptions.ConnectionError):
+        tutil.TEST_SQ.global_permissions()
 
 
 def test_set_webhooks() -> None:

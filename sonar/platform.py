@@ -304,6 +304,8 @@ class Platform(object):
                 raise exceptions.UnsupportedOperation(err_msg) from e
             if any(msg in err_msg_lower for msg in ("insufficient privileges", "insufficient permissions")):
                 raise exceptions.SonarException(err_msg, errcodes.SONAR_API_AUTHORIZATION) from e
+            if "unknown url" in err_msg_lower:
+                raise exceptions.UnsupportedOperation(err_msg) from e
             raise exceptions.SonarException(err_msg, errcodes.SONAR_API) from e
         except ConnectionError as e:
             util.handle_error(e, "")
