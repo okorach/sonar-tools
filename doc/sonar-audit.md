@@ -41,10 +41,6 @@ When `--what` is not specified, everything is audited
 - `-h`: Displays help and exits
 - `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
-## Required Permissions
-
-To be able to audit everything, the token provided to `sonar-audit` should have the global `Administer System` permission and `Browse`and `Administer` permission on all projects.
-
 ## Configuration file
 
 `sonar-audit` can be configured with a configuration file to select what to audit and some different
