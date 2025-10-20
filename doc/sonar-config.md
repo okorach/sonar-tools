@@ -18,7 +18,7 @@ During import:
 
 ## Common command line parameters
 
-`sonar-config` accepts all the **sonar-tools** [common parameters](../README.md#common-params)
+`sonar-config` accepts all the **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 ## Usage
 
@@ -40,7 +40,7 @@ When `--what` is not specified, everything is exported or
 - `-k "<key1>,<key2>,...,<keyn>"`: Limits the export or import operation to projects, apps or portfolios matching these keys
 - `--fullExport`: Will also export object properties that are not used for an import by may be of interest anyway
 - `-h`: Displays help and exits
-- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](../README.md#common-params)
+- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 ## Required Permissions
 

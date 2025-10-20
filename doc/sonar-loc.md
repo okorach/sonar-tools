@@ -15,7 +15,7 @@ Basic Usage: `sonar-loc [-f <file>] [--format csv|json] [-a] [-n] [--withTags] [
 - `--withTags`: Outputs the tags of the project, app or portfolio
 - `--withURL`: Outputs the URL of the project, app or portfolio for each record
 - `-b`: Export LoCs for each branches of targeted objects (projects or applications)
-- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](../README.md#common-params)
+- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 ## Required Permissions
 
@@ -27,4 +27,4 @@ Basic Usage: `sonar-loc [-f <file>] [--format csv|json] [-a] [-n] [--withTags] [
 
 ## Common command line parameters
 
-`sonar-loc` accepts all the **sonar-tools** [common parameters](../README.md#common-params)
+`sonar-loc` accepts all the **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)

@@ -13,7 +13,7 @@ The detail of what is audited is listed at the bottom of this page
 
 ## Common command line parameters
 
-`sonar-audit` accepts all the **sonar-tools** [common parameters](../README.md#common-params)
+`sonar-audit` accepts all the **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 ## Usage
 
@@ -39,7 +39,7 @@ When `--what` is not specified, everything is audited
 - `--format [json|csv]`: Generates output in JSON or CSV format (CSV is the default)
 - `--csvSeparator <separator>`: Allows to select the separator character for CSV, `,` is the default
 - `-h`: Displays help and exits
-- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](../README.md#common-params)
+- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 ## Required Permissions
 

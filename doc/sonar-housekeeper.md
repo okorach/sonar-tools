@@ -17,7 +17,7 @@ Branches marked as "keep when inactive" are excluded from housekeeping
 - `--mode delete`: If not specified, `sonar-housekeeper` will only perform a dry run and list projects
 branches, pull requests and tokens that would be deleted.
 If `--mode delete` is specified objects are actually deleted
-- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](../README.md#common-params)
+- `-u`, `-t`, `-h`, `-v`, `-l`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 
 :warning: **sonar-tools** 2.7 or higher is required for `sonar-housekeeper` compatibility with SonarQube Server 10
@@ -34,7 +34,7 @@ To be able to delete anything, the token provided to `sonar-housekeeper` should 
 
 ## Common command line parameters
 
-`sonar-housekeeper` accepts all the **sonar-tools** [common parameters](../README.md#common-params)
+`sonar-housekeeper` accepts all the **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 ### :information_source: Limitations
 To avoid bad mistakes (mistakenly deleting too many projects), the tools will refuse to delete projects analyzed in the last 90 days.
