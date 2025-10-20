@@ -24,11 +24,9 @@ from __future__ import annotations
 from typing import Optional
 import json
 from datetime import datetime
-from http import HTTPStatus
 import concurrent.futures
 
 from threading import Lock
-from requests import RequestException
 import requests.utils
 
 import sonar.logging as log
@@ -132,11 +130,7 @@ class QualityProfile(sq.SqObject):
             log.error("Language '%s' does not exist, quality profile creation aborted")
             return None
         log.debug("Creating quality profile '%s' of language '%s'", name, language)
-        try:
-            endpoint.post(QualityProfile.API[c.CREATE], params={"name": name, "language": language})
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating quality profile '{language}:{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(f"{language}:{name}", e.response.text)
+        endpoint.post(QualityProfile.API[c.CREATE], params={"name": name, "language": language})
         return cls.read(endpoint=endpoint, name=name, language=language)
 
     @classmethod
@@ -155,11 +149,7 @@ class QualityProfile(sq.SqObject):
             raise exceptions.ObjectNotFound(f"{language}:{original_qp_name}", f"Quality profile {language}:{original_qp_name} not found")
         original_qp = l[0]
         log.debug("Found QP to clone: %s", str(original_qp))
-        try:
-            endpoint.post("qualityprofiles/copy", params={"toName": name, "fromKey": original_qp.key})
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"cloning {str(original_qp)} into name '{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(f"{language}:{name}", e.response.text)
+        endpoint.post("qualityprofiles/copy", params={"toName": name, "fromKey": original_qp.key})
         return cls.read(endpoint=endpoint, name=name, language=language)
 
     @classmethod
@@ -277,7 +267,7 @@ class QualityProfile(sq.SqObject):
             # Assume nobody changed QP during execution
             return self._rules
         rule_key_list = rules.search_keys(self.endpoint, activation="true", qprofile=self.key, s="key", languages=self.language)
-        self._rules = {k: rules.get_object(self.endpoint, k) for k in rule_key_list}
+        self._rules = {k: rules.Rule.get_object(self.endpoint, k) for k in rule_key_list}
         return self._rules
 
     def activate_rule(self, rule_key: str, severity: Optional[str] = None, **params) -> bool:
@@ -294,14 +284,13 @@ class QualityProfile(sq.SqObject):
         if len(params) > 0:
             api_params["params"] = ";".join([f"{k}={v}" for k, v in params.items()])
         try:
-            r = self.post("qualityprofiles/activate_rule", params=api_params)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"activating rule {rule_key} in {str(self)}", catch_all=True)
+            ok = self.post("qualityprofiles/activate_rule", params=api_params).ok
+        except exceptions.SonarException:
             return False
         if self._rules is None:
             self._rules = {}
-        self._rules[rule_key] = rules.get_object(self.endpoint, rule_key)
-        return r.ok
+        self._rules[rule_key] = rules.Rule.get_object(self.endpoint, rule_key)
+        return ok
 
     def deactivate_rule(self, rule_key: str) -> bool:
         """Deactivates a rule in the quality profile
@@ -312,11 +301,9 @@ class QualityProfile(sq.SqObject):
         """
         log.debug("Deactivating rule %s in %s", rule_key, str(self))
         try:
-            r = self.post("qualityprofiles/deactivate_rule", params={"key": self.key, "rule": rule_key})
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"deactivating rule {rule_key} in {str(self)}", catch_all=True)
+            return self.post("qualityprofiles/deactivate_rule", params={"key": self.key, "rule": rule_key}).ok
+        except exceptions.SonarException:
             return False
-        return r.ok
 
     def deactivate_rules(self, ruleset: list[str]) -> bool:
         """Deactivates a list of rules in the quality profile
@@ -325,7 +312,7 @@ class QualityProfile(sq.SqObject):
         """
         ok = True
         for r_key in ruleset:
-            ok = ok and self.deactivate_rule(rule_key=r_key)
+            ok = self.deactivate_rule(rule_key=r_key) and ok
         self.rules(use_cache=False)
         return ok
 
@@ -442,7 +429,7 @@ class QualityProfile(sq.SqObject):
         :return: The severities of the rule in the quality profile
         :rtype: dict[str, str]
         """
-        return rules.get_object(self.endpoint, rule_key).impacts(self.key, substitute_with_default=substitute_with_default)
+        return rules.Rule.get_object(self.endpoint, rule_key).impacts(self.key, substitute_with_default=substitute_with_default)
 
     def __process_rules_diff(self, rule_set: dict[str:str]) -> dict[str:str]:
         diff_rules = {}
@@ -801,8 +788,7 @@ def get_object(endpoint: pf.Platform, name: str, language: str) -> Optional[Qual
     :return: The quality profile object, of None if not found
     """
     get_list(endpoint)
-    o = QualityProfile.CACHE.get(name, language, endpoint.local_url)
-    if not o:
+    if not (o := QualityProfile.CACHE.get(name, language, endpoint.local_url)):
         raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
     return o
 

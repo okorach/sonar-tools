@@ -24,8 +24,6 @@ from __future__ import annotations
 from typing import Optional
 
 import json
-from http import HTTPStatus
-from requests import RequestException
 
 import sonar.logging as log
 from sonar import platform as pf, exceptions
@@ -100,9 +98,6 @@ class WebHook(sq.SqObject):
         try:
             whs = list(get_list(endpoint, project_key).values())
             return next(wh for wh in whs if wh.name == name)
-        except RequestException as e:
-            util.handle_error(e, f"Getting webhook '{name}' of project key '{project_key}'", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found") from e
         except StopIteration as e:
             raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found") from e
 

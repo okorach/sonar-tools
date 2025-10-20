@@ -70,7 +70,7 @@ def test_rules_misspelled_language_2(csv_file: Generator[str]) -> None:
 
 def test_get_rule() -> None:
     """test_get_rule"""
-    myrule = rules.get_object(endpoint=tutil.SQ, key="java:S127")
+    myrule = rules.Rule.get_object(endpoint=tutil.SQ, key="java:S127")
     assert str(myrule) == "rule key 'java:S127'"
     myrule = rules.Rule.load(endpoint=tutil.SQ, key="java:S127", data={})
     assert str(myrule) == "rule key 'java:S127'"
@@ -78,7 +78,7 @@ def test_get_rule() -> None:
 
 def test_set_tags() -> None:
     """test_set_tags"""
-    my_rule = rules.get_object(endpoint=tutil.SQ, key="java:S127")
+    my_rule = rules.Rule.get_object(endpoint=tutil.SQ, key="java:S127")
     assert my_rule.set_tags(tutil.TAGS)
     assert my_rule.tags == sorted(tutil.TAGS)
     assert my_rule.reset_tags()
@@ -87,7 +87,7 @@ def test_set_tags() -> None:
 
 def test_set_desc() -> None:
     """test_set_tags"""
-    my_rule = rules.get_object(endpoint=tutil.SQ, key="java:S127")
+    my_rule = rules.Rule.get_object(endpoint=tutil.SQ, key="java:S127")
     assert my_rule.set_description("Blah blah")
     assert my_rule.custom_desc == "Blah blah"
     assert my_rule.reset_description()
@@ -109,7 +109,7 @@ def test_facets() -> None:
 
 def test_get_rule_cache() -> None:
     """test_get_rule_cache"""
-    my_rule = rules.get_object(endpoint=tutil.SQ, key="java:S127")
+    my_rule = rules.Rule.get_object(endpoint=tutil.SQ, key="java:S127")
     assert str(my_rule) == "rule key 'java:S127'"
     new_rule = rules.Rule.get_object(endpoint=tutil.SQ, key="java:S127")
     assert my_rule is new_rule
@@ -143,7 +143,7 @@ def test_export_all() -> None:
 
 def test_new_taxo() -> None:
     """test_new_taxo"""
-    my_rule = rules.get_object(endpoint=tutil.SQ, key="java:S127")
+    my_rule = rules.Rule.get_object(endpoint=tutil.SQ, key="java:S127")
     if tutil.SQ.version() >= c.MQR_INTRO_VERSION:
         for qual, sev in my_rule.impacts().items():
             assert qual in idefs.MQR_QUALITIES
