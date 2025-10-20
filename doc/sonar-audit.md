@@ -3,11 +3,13 @@
 Command line tool to audit a SonarQube instance and output warning logs whenever a suspicious or incorrect setting/situation is found.
 The detail of what is audited is listed at the bottom of this page
 
+## Required Permissions
+
+`sonar-audit` needs `Browse` and `Administer` permission on more or less everything that may be audited
+
 ## Requirements and Installation
 
 `sonar-audit` is installed through the **sonar-tools** [general installation](../README.md#install)
-
-:warning: **sonar-tools** 2.7 or higher is required for `sonar-audit` compatibility with SonarQube 10
 
 ## Common command line parameters
 
