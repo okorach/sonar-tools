@@ -31,9 +31,9 @@ export SONAR_TOKEN=squ_83356c9b2db891d45da2a119a29cdc4d03fe654e
 sonar-rules -f rules.csv
 sonar-rules -f rules.json
 # Exports rules for languages Java, C# and C++
-sonar-rules -l "java, cs, cpp" -f rules.csv
+sonar-rules --languages "java, cs, cpp" -f rules.csv
 # Exports rules of quality profile "Sonar way" of language Java 
-sonar-rules -u https://sonarqube.mycompany.com -t <myToken> -l java --qualityProfile "Sonar way" >rules.csv
+sonar-rules -u https://sonarqube.mycompany.com -t <myToken> --languages java --qualityProfile "Sonar way" >rules.csv
 ```
 
 # <a name="docker"></a>Using sonar-tools in Docker
