@@ -105,7 +105,7 @@ class UserToken(sq.SqObject):
             log.info("%s: Audit of token max age is disabled, skipped")
         elif age > max_age:
             problems.append(Problem(get_rule(RuleId.TOKEN_TOO_OLD), self, str(self), age))
-        if self.last_connection_date:
+        if self.last_connection_date and mode != "housekeeper":
             last_cnx_age = util.age(self.last_connection_date, now=today)
             if last_cnx_age > settings.get("audit.tokens.maxUnusedAge", 30):
                 problems.append(Problem(get_rule(RuleId.TOKEN_UNUSED), self, str(self), last_cnx_age))
