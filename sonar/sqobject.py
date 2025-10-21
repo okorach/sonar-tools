@@ -23,7 +23,7 @@ Abstraction of the SonarQube general object concept
 
 """
 
-from typing import Optional
+from typing import Any, Optional
 import json
 
 from http import HTTPStatus
@@ -220,7 +220,7 @@ def __get(endpoint: object, api: str, params: types.ApiParams) -> requests.Respo
     return json.loads(endpoint.get(api, params=params).text)
 
 
-def __load(endpoint: object, object_class: any, data: types.ObjectJsonRepr) -> dict[str, object]:
+def __load(endpoint: object, object_class: Any, data: types.ObjectJsonRepr) -> dict[str, object]:
     key_field = object_class.SEARCH_KEY_FIELD
     if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook"):
         return {obj[key_field]: object_class.load(endpoint=endpoint, data=obj) for obj in data}
@@ -230,7 +230,7 @@ def __load(endpoint: object, object_class: any, data: types.ObjectJsonRepr) -> d
         return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}
 
 
-def search_objects(endpoint: object, object_class: any, params: types.ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
+def search_objects(endpoint: object, object_class: Any, params: types.ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
     """Runs a multi-threaded object search for searchable Sonar Objects"""
     api = object_class.api_for(c.SEARCH, endpoint)
     returned_field = object_class.SEARCH_RETURN_FIELD

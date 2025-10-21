@@ -24,7 +24,7 @@ Abstraction of the SonarQube setting concept
 from __future__ import annotations
 import re
 import json
-from typing import Union, Optional
+from typing import Any, Union, Optional
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -158,7 +158,7 @@ class Setting(sqobject.SqObject):
         return Setting.load(key=key, endpoint=endpoint, data=data, component=component)
 
     @classmethod
-    def create(cls, key: str, endpoint: pf.Platform, value: any = None, component: object = None) -> Union[Setting, None]:
+    def create(cls, key: str, endpoint: pf.Platform, value: Any = None, component: object = None) -> Union[Setting, None]:
         """Creates a setting with a custom value"""
         log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
         r = endpoint.post(Setting.API[c.CREATE], params={"key": key, "component": component})
@@ -230,7 +230,7 @@ class Setting(sqobject.SqObject):
         else:
             return f"setting '{self.key}' of {str(self.component)}"
 
-    def set(self, value: any) -> bool:
+    def set(self, value: Any) -> bool:
         """Sets a setting value, returns if operation succeeded"""
         log.debug("%s set to '%s'", str(self), str(value))
         if not self.is_settable():
@@ -440,7 +440,7 @@ def get_all(endpoint: pf.Platform, project: object = None) -> dict[str, Setting]
     return get_bulk(endpoint, component=project, include_not_set=True)
 
 
-def new_code_to_string(data: any) -> Union[int, str, None]:
+def new_code_to_string(data: Any) -> Union[int, str, None]:
     """Converts a new code period from anything to int str"""
     if isinstance(data, (int, str)):
         return data
@@ -501,7 +501,7 @@ def set_visibility(endpoint: pf.Platform, visibility: str, component: object = N
         return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
 
 
-def set_setting(endpoint: pf.Platform, key: str, value: any, component: object = None) -> bool:
+def set_setting(endpoint: pf.Platform, key: str, value: Any, component: object = None) -> bool:
     """Sets a setting to a particular value"""
     try:
         log.debug("Setting %s with value %s (for component %s)", key, value, component)
@@ -517,7 +517,7 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
         return True
 
 
-def decode(setting_key: str, setting_value: any) -> any:
+def decode(setting_key: str, setting_value: Any) -> Any:
     """Decodes a setting"""
     if setting_key == NEW_CODE_PERIOD:
         if isinstance(setting_value, int):
@@ -535,7 +535,7 @@ def decode(setting_key: str, setting_value: any) -> any:
     return setting_value
 
 
-def encode(setting: Setting, setting_value: any) -> dict[str, str]:
+def encode(setting: Setting, setting_value: Any) -> dict[str, str]:
     """Encodes the params to pass to api/settings/set according to setting value type"""
     if isinstance(setting_value, list):
         params = {"values": setting_value} if isinstance(setting_value[0], str) else {"fieldValues": [json.dumps(v) for v in setting_value]}

@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 from sonar import metrics, exceptions, platform
 from sonar.util.types import ApiPayload, ApiParams, KeyList
 from sonar.util import cache, constants as c
@@ -44,7 +45,7 @@ class Measure(sq.SqObject):
     API_READ = "measures/component"
     API_HISTORY = "measures/search_history"
 
-    def __init__(self, concerned_object: object, key: str, value: any) -> None:
+    def __init__(self, concerned_object: object, key: str, value: Any) -> None:
         """Constructor"""
         super().__init__(endpoint=concerned_object.endpoint, key=key)
         self.value = None  #: Measure value
@@ -66,7 +67,7 @@ class Measure(sq.SqObject):
         metrics.search(concerned_object.endpoint)
         return cls(concerned_object=concerned_object, key=data["metric"], value=_search_value(data))
 
-    def __converted_value(self, value: any) -> any:
+    def __converted_value(self, value: Any) -> Any:
         value = util.string_to_date(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
         if self.is_a_rating():
             value = int(float(value))
@@ -170,7 +171,7 @@ def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> li
     return res_list
 
 
-def get_rating_letter(rating: any) -> str:
+def get_rating_letter(rating: Any) -> str:
     """
     :param any rating: The rating as repturned by the API (a str or float)
     :return: The rating converted from number to letter, if number between 1 and 5, else the unchanged rating
@@ -196,7 +197,7 @@ def get_rating_number(rating_letter: str) -> int:
     return rating_letter
 
 
-def format(endpoint: platform.Platform, metric_key: str, value: any, ratings: str = "letters", percents: str = "float") -> any:
+def format(endpoint: platform.Platform, metric_key: str, value: Any, ratings: str = "letters", percents: str = "float") -> Any:
     """Formats a measure"""
     try:
         metric = metrics.Metric.get_object(endpoint, metric_key)

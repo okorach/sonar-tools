@@ -29,7 +29,7 @@ from http import HTTPStatus
 import sys
 import os
 import re
-from typing import Optional
+from typing import Any, Optional
 import time
 import datetime
 import json
@@ -433,7 +433,7 @@ class Platform(object):
         """
         return settings.reset_setting(self, key)
 
-    def set_setting(self, key: str, value: any) -> bool:
+    def set_setting(self, key: str, value: Any) -> bool:
         """Sets a platform global setting
 
         :param key: Setting key

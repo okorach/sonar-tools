@@ -24,7 +24,7 @@ Abstraction of the SonarQube "component" concept
 """
 
 from __future__ import annotations
-from typing import Optional
+from typing import Any, Optional
 import math
 import json
 
@@ -200,7 +200,7 @@ class Component(sq.SqObject):
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
-    def get_measure(self, metric: str, fallback: int = None) -> any:
+    def get_measure(self, metric: str, fallback: Any = None) -> Any:
         """Returns a component measure"""
         meas = self.get_measures([metric])
         return meas[metric].value if metric in meas and meas[metric] and meas[metric].value is not None else fallback

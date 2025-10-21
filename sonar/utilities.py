@@ -23,7 +23,7 @@ Utilities for sonar-tools
 
 """
 
-from typing import TextIO, Union, Optional
+from typing import Any, TextIO, Union, Optional
 from http import HTTPStatus
 import sys
 import os
@@ -142,7 +142,7 @@ def age(some_date: datetime.datetime, rounded: bool = True, now: Optional[dateti
     return delta.days if rounded else delta
 
 
-def get_setting(settings: dict[str, str], key: str, default: any) -> any:
+def get_setting(settings: dict[str, str], key: str, default: Any) -> Any:
     """Gets a setting or the default value"""
     if settings is None:
         return default
@@ -159,7 +159,7 @@ def redacted_token(token: str) -> str:
         return re.sub(r"(..).*(..)", r"\1***\2", token)
 
 
-def convert_to_type(value: any) -> any:
+def convert_to_type(value: Any) -> Any:
     """Converts a potentially string value to the corresponding int or float"""
     try:
         return int(value)
@@ -214,7 +214,7 @@ def remove_empties(d: dict[str, any]) -> dict[str, any]:
     return new_d
 
 
-def sort_lists(data: any, redact_tokens: bool = True) -> any:
+def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
     """Recursively removes empty lists and dicts and none from a dict"""
     if isinstance(data, (list, set, tuple)):
         data = list(data)
@@ -408,7 +408,7 @@ def convert_string(value: str) -> Union[str, int, float, bool]:
     return value
 
 
-def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: any) -> dict[str, str]:
+def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: Any) -> dict[str, str]:
     """Updates a 2 levels JSON"""
     if categ not in json_data:
         if subcateg is None:
@@ -566,7 +566,7 @@ def check_what(what: Union[str, list[str]], allowed_values: list[str], operation
     return what
 
 
-def __prefix(value: any) -> any:
+def __prefix(value: Any) -> Any:
     """Recursively places all keys in a dict or list by a prefixed version"""
     if isinstance(value, dict):
         return {f"_{k}": __prefix(v) for k, v in value.items()}
@@ -701,7 +701,7 @@ def dict_reverse(map: dict[str, str]) -> dict[str, str]:
     return {v: k for k, v in map.items()}
 
 
-def inline_lists(element: any, exceptions: tuple[str]) -> any:
+def inline_lists(element: Any, exceptions: tuple[str]) -> Any:
     """Recursively explores a dict and replace string lists by CSV strings, if list values do not contain commas"""
     if isinstance(element, dict):
         new_dict = element.copy()
