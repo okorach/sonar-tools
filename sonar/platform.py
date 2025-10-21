@@ -442,7 +442,7 @@ class Platform(object):
         """
         return settings.set_setting(self, key, value)
 
-    def __urlstring(self, api: str, params: types.ApiParams, data: str = None) -> str:
+    def __urlstring(self, api: str, params: types.ApiParams, data: Optional[str] = None) -> str:
         """Returns a string corresponding to the URL and parameters"""
         url = f"{str(self)}{api}"
         if params is not None:

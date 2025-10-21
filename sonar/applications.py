@@ -259,7 +259,7 @@ class Application(aggr.Aggregation):
                 branch.delete()
         return super().delete()
 
-    def get_hotspots(self, filters: dict[str, str] = None) -> dict[str, object]:
+    def get_hotspots(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:
         new_filters = filters.copy() if filters else {}
         pattern = new_filters.pop("branch", None) if new_filters else None
         if not pattern:
@@ -270,7 +270,7 @@ class Application(aggr.Aggregation):
             findings_list |= comp.get_hotspots(new_filters)
         return findings_list
 
-    def get_issues(self, filters: dict[str, str] = None) -> dict[str, object]:
+    def get_issues(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:
         new_filters = filters.copy() if filters else {}
         pattern = new_filters.pop("branch", None) if new_filters else None
         if not pattern:

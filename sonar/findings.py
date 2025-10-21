@@ -473,7 +473,7 @@ class Finding(sq.SqObject):
         return branch, pr
 
 
-def export_findings(endpoint: pf.Platform, project_key: str, branch: str = None, pull_request: str = None) -> dict[str, Finding]:
+def export_findings(endpoint: pf.Platform, project_key: str, branch: Optional[str] = None, pull_request: Optional[str] = None) -> dict[str, Finding]:
     """Export all findings of a given project
 
     :param Platform endpoint: Reference to the SonarQube platform

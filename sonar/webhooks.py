@@ -180,7 +180,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, W
     return sq.search_objects(endpoint=endpoint, object_class=WebHook, params=params)
 
 
-def get_list(endpoint: pf.Platform, project_key: str = None) -> dict[str, WebHook]:
+def get_list(endpoint: pf.Platform, project_key: Optional[str] = None) -> dict[str, WebHook]:
     """Returns the list of web hooks, global ones or for a project if project key is given"""
     log.debug("Getting webhooks for project key %s", str(project_key))
     params = None
@@ -189,7 +189,7 @@ def get_list(endpoint: pf.Platform, project_key: str = None) -> dict[str, WebHoo
     return search(endpoint, params)
 
 
-def export(endpoint: pf.Platform, project_key: str = None, full: bool = False) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, project_key: Optional[str] = None, full: bool = False) -> types.ObjectJsonRepr:
     """Export webhooks of a project as JSON"""
     json_data = {}
     for wb in get_list(endpoint, project_key).values():

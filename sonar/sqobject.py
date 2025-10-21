@@ -104,7 +104,7 @@ class SqObject(object):
         self,
         api: str,
         params: types.ApiParams = None,
-        data: str = None,
+        data: Optional[str] = None,
         mute: tuple[HTTPStatus] = (),
         **kwargs,
     ) -> requests.Response:

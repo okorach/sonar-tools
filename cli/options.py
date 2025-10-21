@@ -27,6 +27,7 @@ import os
 import sys
 import random
 from argparse import ArgumentParser
+from typing import Optional
 
 import sonar.logging as log
 from sonar import errcodes, version, utilities, exceptions
@@ -186,7 +187,7 @@ def __check_file_writeable(file: str) -> None:
         os.remove(file)
 
 
-def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_token: bool = True, is_migration: bool = False) -> object:
+def parse_and_check(parser: ArgumentParser, logger_name: Optional[str] = None, verify_token: bool = True, is_migration: bool = False) -> object:
     """Parses arguments, applies default settings and perform common environment checks"""
     try:
         args = parser.parse_args()
@@ -408,7 +409,7 @@ def set_target_sonar_args(parser: ArgumentParser) -> ArgumentParser:
     return parser
 
 
-def set_output_file_args(parser: ArgumentParser, help_str: str = None, allowed_formats: tuple[str, ...] = ("csv",)) -> ArgumentParser:
+def set_output_file_args(parser: ArgumentParser, help_str: Optional[str] = None, allowed_formats: tuple[str, ...] = ("csv",)) -> ArgumentParser:
     """Sets the output file CLI options"""
     if not help_str:
         help_str = "Report file, stdout by default"

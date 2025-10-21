@@ -453,7 +453,7 @@ def is_api_v2(api: str) -> bool:
 
 
 @contextlib.contextmanager
-def open_file(file: str = None, mode: str = "w") -> TextIO:
+def open_file(file: Optional[str] = None, mode: str = "w") -> TextIO:
     """Opens a file if not None or -, otherwise stdout"""
     if file and file != "-":
         log.debug("Opening file '%s' in directory '%s'", file, os.getcwd())
@@ -468,7 +468,7 @@ def open_file(file: str = None, mode: str = "w") -> TextIO:
             fd.close()
 
 
-def search_by_name(endpoint: object, name: str, api: str, returned_field: str, extra_params: dict[str, str] = None) -> Union[dict[str, str], None]:
+def search_by_name(endpoint: object, name: str, api: str, returned_field: str, extra_params: Optional[dict[str, str]] = None) -> Union[dict[str, str], None]:
     """Searches a object by name"""
     params = {"q": name} | (extra_params or {})
     data = json.loads(endpoint.get(api, params=params).text)

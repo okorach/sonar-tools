@@ -24,7 +24,7 @@ Abstraction of the SonarQube "custom measure" concept
 """
 
 import json
-from typing import Any
+from typing import Any, Optional
 import sonar.sqobject as sq
 import sonar.platform as pf
 
@@ -33,7 +33,7 @@ class CustomMeasure(sq.SqObject):
     API_ROOT = "api/custom_measures/"
 
     def __init__(
-        self, key: str, endpoint: pf.Platform, uuid: str = None, project_key: str = None, value: Any = None, description: str = None
+        self, key: str, endpoint: pf.Platform, uuid: Optional[str] = None, project_key: Optional[str] = None, value: Any = None, description: Optional[str] = None
     ) -> None:
         super().__init__(endpoint=endpoint, key=key)
         self.uuid = uuid
@@ -41,7 +41,7 @@ class CustomMeasure(sq.SqObject):
         self.value = value
         self.description = description
 
-    def create(self, project_key: str, metric_key: str, value: Any, description: str = None) -> bool:
+    def create(self, project_key: str, metric_key: str, value: Any, description: Optional[str] = None) -> bool:
         return self.post(
             CustomMeasure.API_ROOT + "create",
             {
@@ -52,7 +52,7 @@ class CustomMeasure(sq.SqObject):
             },
         ).ok
 
-    def update(self, value: Any, description: str = None) -> bool:
+    def update(self, value: Any, description: Optional[str] = None) -> bool:
         """Updates a custom measure"""
         return self.post(
             CustomMeasure.API_ROOT + "update",

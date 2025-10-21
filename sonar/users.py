@@ -107,7 +107,7 @@ class User(sqobject.SqObject):
         return cls(login=data["login"], endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, login: str, name: str, is_local: bool = True, password: str = None) -> User:
+    def create(cls, endpoint: pf.Platform, login: str, name: str, is_local: bool = True, password: Optional[str] = None) -> User:
         """Creates a new user in SonarQube and returns the corresponding User object
 
         :param Platform endpoint: Reference to the SonarQube platform

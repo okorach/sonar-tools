@@ -109,7 +109,7 @@ def write_json(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.
 
 
 def _audit_sq(
-    sq: platform.Platform, settings: types.ConfigSettings, what_to_audit: Optional[list[str]] = None, key_list: types.KeyList = None
+    sq: platform.Platform, settings: types.ConfigSettings, what_to_audit: Optional[list[str]] = None, key_list: Optional[types.KeyList] = None
 ) -> list[problem.Problem]:
     """Audits a SonarQube/Cloud platform"""
     everything = what_to_audit is None

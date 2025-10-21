@@ -67,7 +67,7 @@ class Task(sq.SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: pf.Platform, task_id: str, concerned_object: object = None, data: types.ApiPayload = None) -> None:
+    def __init__(self, endpoint: pf.Platform, task_id: str, concerned_object: Optional[object] = None, data: Optional[types.ApiPayload] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=task_id)
         self.sq_json = data
@@ -439,7 +439,7 @@ class Task(sq.SqObject):
         return problems
 
 
-def search(endpoint: pf.Platform, only_current: bool = False, component_key: str = None, **kwargs) -> list[Task]:
+def search(endpoint: pf.Platform, only_current: bool = False, component_key: Optional[str] = None, **kwargs) -> list[Task]:
     """Searches background tasks
 
     :param Platform endpoint: Reference to the SonarQube platform

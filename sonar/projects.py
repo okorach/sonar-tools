@@ -994,7 +994,7 @@ class Project(components.Component):
         log.debug("Returning %s migration data %s", str(self), util.json_dump(json_data))
         return json_data
 
-    def export(self, export_settings: types.ConfigSettings, settings_list: dict[str, str] = None) -> types.ObjectJsonRepr:
+    def export(self, export_settings: types.ConfigSettings, settings_list: Optional[dict[str, str]] = None) -> types.ObjectJsonRepr:
         """Exports the entire project configuration as JSON
 
         :return: All project configuration settings
