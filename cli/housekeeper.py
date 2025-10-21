@@ -110,7 +110,7 @@ def _parse_arguments() -> object:
         required=False,
         type=int,
         default=0,
-        help=f"Deletes projects not analyzed since a given number of days",
+        help="Deletes projects not analyzed since a given number of days",
     )
     parser.add_argument(
         "-B",
@@ -118,7 +118,7 @@ def _parse_arguments() -> object:
         required=False,
         type=int,
         default=0,
-        help=f"Deletes branches not to be kept and not analyzed since a given number of days",
+        help="Deletes branches not to be kept and not analyzed since a given number of days",
     )
     parser.add_argument(
         "--keepWhenInactive",
@@ -132,7 +132,7 @@ def _parse_arguments() -> object:
         required=False,
         type=int,
         default=0,
-        help=f"Deletes pull requests not analyzed since a given number of days",
+        help="Deletes pull requests not analyzed since a given number of days",
     )
     parser.add_argument(
         "-T",
@@ -140,7 +140,7 @@ def _parse_arguments() -> object:
         required=False,
         type=int,
         default=0,
-        help=f"Deletes user tokens older than a certain number of days",
+        help="Deletes user tokens older than a certain number of days",
     )
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
