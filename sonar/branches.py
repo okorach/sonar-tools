@@ -361,15 +361,20 @@ class Branch(components.Component):
 
     def __audit_last_analysis(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         if self.is_main():
-            log.debug("%s is main (not purgeable)", str(self))
+            log.info("%s is main (not purgeable)", str(self))
             return []
         if (age := util.age(self.last_analysis())) is None:
             log.debug("%s last analysis audit is disabled, skipped...", str(self))
             return []
         max_age = audit_settings.get("audit.projects.branches.maxLastAnalysisAge", 30)
+        preserved = audit_settings.get("audit.projects.branches.keepWhenInactive", None)
         problems = []
-        if self.is_kept_when_inactive():
-            log.debug("%s is kept when inactive (not purgeable)", str(self))
+        log.info("EVALUATING %s age %d greater than %d days and not matches '%s'", str(self), age, max_age, preserved)
+        if preserved is not None and age > max_age and not re.match(rf"^{preserved}$", self.name):
+            log.info("%s age %d greater than %d days and not matches '%s'", str(self), age, max_age, preserved)
+            problems.append(Problem(get_rule(RuleId.BRANCH_LAST_ANALYSIS), self, str(self), age))
+        elif self.is_kept_when_inactive():
+            log.info("%s is kept when inactive (not purgeable)", str(self))
         elif age > max_age:
             problems.append(Problem(get_rule(RuleId.BRANCH_LAST_ANALYSIS), self, str(self), age))
         else:
