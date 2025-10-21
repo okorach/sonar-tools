@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # sonar-tools
 # Copyright (C) 2019-2025 Olivier Korach
@@ -125,6 +124,12 @@ def _parse_arguments() -> object:
         help=f"Deletes branches not to be kept and not analyzed since a given number of days, by default {_DEFAULT_BRANCH_OBSOLESCENCE} days",
     )
     parser.add_argument(
+        "--keepWhenInactive",
+        required=False,
+        type=str,
+        help="Regexp of branches to keep when inactive, overrides the SonarQube default sonar.dbcleaner.branchesToKeepWhenInactive value",
+    )
+    parser.add_argument(
         "-R",
         "--pullrequestsMaxAge",
         required=False,
@@ -195,12 +200,13 @@ def main() -> None:
         sq.verify_connection()
         sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
 
-        mode, proj_age, branch_age, pr_age, token_age = (
+        mode, proj_age, branch_age, pr_age, token_age, keep_regexp = (
             kwargs["mode"],
             kwargs["projectsMaxAge"],
             kwargs["branchesMaxAge"],
             kwargs["pullrequestsMaxAge"],
             kwargs["tokensMaxAge"],
+            kwargs.get("keepWhenInactive", None),
         )
         settings = {
             "audit.tokens.maxAge": token_age,
@@ -209,6 +215,7 @@ def main() -> None:
             PROJ_MAX_AGE: proj_age,
             "audit.projects.branches.maxLastAnalysisAge": branch_age,
             "audit.projects.pullRequests.maxLastAnalysisAge": pr_age,
+            "audit.projects.branches.keepWhenInactive": keep_regexp,
             c.AUDIT_MODE_PARAM: "housekeeper",
             options.NBR_THREADS: kwargs[options.NBR_THREADS],
         }

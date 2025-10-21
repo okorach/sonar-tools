@@ -296,10 +296,15 @@ def csv_col_has_values(csv_file: str, col_name: str, *values) -> bool:
         return False
 
 
-def csv_col_count_values(csv_file: str, col_name: str, *values) -> int:
+def csv_col_count_values(csv_file: str, col_name_or_nbr: Union[str, int], *values) -> int:
+    """Counts the number of times a given column has one of the given values"""
     values_to_search = list(values).copy()
     with open(csv_file, encoding="utf-8") as fd:
-        (col,) = get_cols(next(reader := csv.reader(fd)), col_name)
+        reader = csv.reader(fd)
+        if isinstance(col_name_or_nbr, int):
+            col = col_name_or_nbr - 1
+        else:
+            (col,) = get_cols(next(reader, col_name_or_nbr)) 
         counter = sum(1 if line[col] in values_to_search else 0 for line in reader)
     return counter
 
