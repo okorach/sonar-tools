@@ -86,6 +86,10 @@ def __dump_csv(problems: list[Problem], file: str, server_id: str = None, with_u
     """
     with utilities.open_file(file, "w") as fd:
         csvwriter = csv.writer(fd, delimiter=separator)
+        header = ["Server Id"] if server_id else []
+        header += ["Audit Check", "Category", "Severity", "Message"]
+        header += ["URL"] if with_url else []
+        csvwriter.writerow(header)
         for p in problems:
             data = []
             if server_id is not None:
