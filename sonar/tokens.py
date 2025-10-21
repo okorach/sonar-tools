@@ -94,13 +94,16 @@ class UserToken(sq.SqObject):
         if self.sq_json.get("isExpired", False):
             return [Problem(get_rule(RuleId.TOKEN_EXPIRED), self, str(self))]
         problems = []
-        mode = settings.get("audit.mode", "")
+        mode = settings.get(c.AUDIT_MODE_PARAM, "")
+        max_age = settings.get("audit.tokens.maxAge", 90)
         if not today:
             today = datetime.datetime.now(datetime.timezone.utc).astimezone()
         age = util.age(self.created_at, now=today)
         if mode != "housekeeper" and not self.expiration_date:
             problems.append(Problem(get_rule(RuleId.TOKEN_WITHOUT_EXPIRATION), self, str(self), age))
-        if age > settings.get("audit.tokens.maxAge", 90):
+        if max_age == 0:
+            log.info("%s: Audit of token max age is disabled, skipped")
+        elif age > max_age:
             problems.append(Problem(get_rule(RuleId.TOKEN_TOO_OLD), self, str(self), age))
         if self.last_connection_date:
             last_cnx_age = util.age(self.last_connection_date, now=today)

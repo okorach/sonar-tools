@@ -417,6 +417,8 @@ class Project(components.Component):
         problems = []
         age = util.age(self.last_analysis(include_branches=True), True)
         if age is None:
+            if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
+                return problems
             if not audit_settings.get("audit.projects.neverAnalyzed", True):
                 log.debug("Auditing of never analyzed projects is disabled, skipping")
             else:
@@ -457,19 +459,11 @@ class Project(components.Component):
         return problems
 
     def __audit_pull_requests(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        """Audits project pul requests
+        """Audits project pull requests
 
-        :param audit_settings: Settings (thresholds) to raise problems
-        :type audit_settings: dict
-        :return: List of problems found, or empty list
-        :rtype: list[Problem]
+        :param ConfigSettings audit_settings: Settings (thresholds) to raise problems
+        :return: List of problems found
         """
-        if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
-            return []
-        max_age = audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)
-        if max_age == 0:
-            log.debug("Auditing of pull request last analysis age is disabled, skipping...")
-            return []
         problems = []
         for pr in self.pull_requests().values():
             problems += pr.audit(audit_settings)
@@ -650,16 +644,16 @@ class Project(components.Component):
         problems = []
         try:
             problems = self.__audit_last_analysis(audit_settings)
-            problems += self.audit_visibility(audit_settings)
-            problems += self.__audit_binding_valid(audit_settings)
-            # Skip language audit, as this can be problematic
-            # problems += self.__audit_languages(audit_settings)
             if audit_settings.get(c.AUDIT_MODE_PARAM, "") != "housekeeper":
+                problems += self.audit_visibility(audit_settings)
+                problems += self.__audit_binding_valid(audit_settings)
+                # Skip language audit, as this can be problematic
+                # problems += self.__audit_languages(audit_settings)
                 problems += self.permissions().audit(audit_settings)
 
-            problems += self.__audit_scanner(audit_settings)
-            problems += self._audit_component(audit_settings)
-            problems += self.__audit_key_pattern(audit_settings)
+                problems += self.__audit_scanner(audit_settings)
+                problems += self._audit_component(audit_settings)
+                problems += self.__audit_key_pattern(audit_settings)
             if self.endpoint.edition() != c.CE and audit_settings.get("audit.project.branches", True):
                 problems += self.__audit_branches(audit_settings)
                 problems += self.__audit_pull_requests(audit_settings)
