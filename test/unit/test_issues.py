@@ -122,7 +122,8 @@ def test_set_severity() -> None:
         issue.set_mqr_severity("MAINTAINABILITY", "NON_EXISTING")
     with pytest.raises(exceptions.SonarException):
         issue.set_mqr_severity("NON_EXISTING", "HIGH")
-    [issue.set_mqr_severity(k, v) for k, v in old_impacts.items()]
+    for k, v in old_impacts.items():
+        issue.set_mqr_severity(k, v)
 
     tutil.SQ.set_mqr_mode(is_mqr)
 

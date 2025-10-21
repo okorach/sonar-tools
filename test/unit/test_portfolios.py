@@ -293,7 +293,9 @@ def test_import() -> None:
     # delete all portfolios in test
     logging.info("Deleting all portfolios")
     pf.Portfolio.clear_cache()
-    _ = [o.delete() for o in pf.get_list(tutil.TEST_SQ, use_cache=False).values() if o.is_toplevel()]
+    for o in pf.get_list(tutil.TEST_SQ, use_cache=False).values():
+        if o.is_toplevel():
+            o.delete()
     assert pf.import_config(tutil.TEST_SQ, {"portfolios": json_exp})
 
     # Compare portfolios

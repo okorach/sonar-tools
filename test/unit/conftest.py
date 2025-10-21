@@ -119,7 +119,7 @@ def get_test_app() -> Generator[applications.Application]:
 
 
 @pytest.fixture
-def get_test_portfolio() -> Generator[portfolios.Portfolio]:
+def get_test_portfolio() -> Generator[Union[portfolios.Portfolio, None]]:
     """setup of tests"""
     o = None
     if tutil.SQ.edition() in (c.EE, c.DCE):
@@ -202,11 +202,15 @@ def get_test_user() -> Generator[users.User]:
     except exceptions.ObjectNotFound:
         o = users.User.create(endpoint=tutil.SQ, login=tutil.TEMP_KEY, name=f"User name {tutil.TEMP_KEY}")
     (uid, uname, ulogin) = (o.name, o.id, o.login)
-    _ = [o.remove_from_group(g) for g in o.groups() if g != tutil.SQ.default_user_group()]
+    for g in o.groups():
+        if g != tutil.SQ.default_user_group():
+            o.remove_from_group(g)
     yield o
     try:
         (o.name, o.id, o.login) = (uid, uname, ulogin)
-        _ = [o.remove_from_group(g) for g in o.groups() if g != tutil.SQ.default_user_group()]
+        for g in o.groups():
+            if g != tutil.SQ.default_user_group():
+                o.remove_from_group(g)
         o.delete()
     except exceptions.ObjectNotFound:
         pass

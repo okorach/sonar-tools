@@ -412,7 +412,8 @@ class Application(aggr.Aggregation):
         main_branch_name = next((k for k, v in data.get("branches", {}).items() if v.get("isMain", False)), None)
         main_branch_name is None or self.main_branch().rename(main_branch_name)
 
-        _ = [self.set_branches(name, branch_data) for name, branch_data in data.get("branches", {}).items()]
+        for name, branch_data in data.get("branches", {}).items():
+            self.set_branches(name, branch_data)
 
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         ops = {c.READ: {"application": self.key}, c.RECOMPUTE: {"key": self.key}}

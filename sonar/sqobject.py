@@ -83,7 +83,9 @@ class SqObject(object):
             if not endpoint:
                 cls.CACHE.clear()
             else:
-                _ = [cls.CACHE.pop(o) for o in cls.CACHE.values().copy() if o.base_url() != endpoint.local_url]
+                for o in cls.CACHE.values().copy():
+                    if o.base_url() != endpoint.local_url:
+                        cls.CACHE.pop(o)
         except AttributeError:
             pass
 

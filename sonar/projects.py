@@ -368,7 +368,7 @@ class Project(components.Component):
     def has_binding(self) -> bool:
         """Whether the project has a DevOps platform binding"""
         if not self._binding:
-            _ = self.binding()
+            self.binding()
         return self._binding.get("has_binding", False)
 
     def binding(self) -> Optional[dict[str, str]]:
@@ -512,7 +512,7 @@ class Project(components.Component):
             log.info("%s has no binding, skipping binding validation...", str(self))
             return []
         try:
-            _ = self.get("alm_settings/validate_binding", params={"project": self.key})
+            self.get("alm_settings/validate_binding", params={"project": self.key})
             log.debug("%s binding is valid", str(self))
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"auditing binding of {str(self)}", catch_all=True)
@@ -1104,7 +1104,7 @@ class Project(components.Component):
         """
         if quality_gate is None:
             return False
-        _ = qualitygates.QualityGate.get_object(self.endpoint, quality_gate)
+        qualitygates.QualityGate.get_object(self.endpoint, quality_gate)
         return self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate}).ok
 
     def set_contains_ai_code(self, contains_ai_code: bool) -> bool:
@@ -1308,7 +1308,8 @@ class Project(components.Component):
         self.set_tags(util.csv_to_list(config.get("tags", None)))
         self.set_quality_gate(config.get("qualityGate", None))
 
-        _ = [self.set_quality_profile(language=lang, quality_profile=qp_name) for lang, qp_name in config.get("qualityProfiles", {}).items()]
+        for lang, qp_name in config.get("qualityProfiles", {}).items():
+            self.set_quality_profile(language=lang, quality_profile=qp_name)
         if branch_config := config.get("branches", None):
             try:
                 bname = next(bname for bname, bdata in branch_config.items() if bdata.get("isMain", False))
@@ -1483,7 +1484,8 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     write_q = kwargs.get("write_q", None)
     key_regexp = kwargs.get("key_list", ".+")
     nb_threads = export_settings.get("threads", 8)
-    _ = [qp.projects() for qp in qualityprofiles.get_list(endpoint).values()]
+    for qp in qualityprofiles.get_list(endpoint).values():
+        qp.projects()
     proj_list = {k: v for k, v in get_list(endpoint=endpoint, threads=nb_threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)}
     total, current = len(proj_list), 0
     log.info("Exporting %d projects", total)
