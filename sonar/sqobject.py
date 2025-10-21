@@ -47,8 +47,8 @@ class SqObject(object):
             self.__class__.CACHE.set_class(self.__class__)
         self.key = key  #: Object unique key (unique in its class)
         self.endpoint = endpoint  #: Reference to the SonarQube platform
-        self.concerned_object = None
-        self._tags = None
+        self.concerned_object: Optional[object] = None
+        self._tags: Optional[list[str]] = None
         self.sq_json = {}
 
     def __hash__(self) -> int:

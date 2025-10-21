@@ -71,9 +71,9 @@ class Application(aggr.Aggregation):
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=endpoint, key=key)
-        self._branches = None
-        self._projects = None
-        self._description = None
+        self._branches: Optional[dict] = None
+        self._projects: Optional[dict] = None
+        self._description: Optional[str] = None
         self.name = name
         log.debug("Created object %s with uuid %d id %x", str(self), hash(self), id(self))
         Application.CACHE.put(self)
@@ -369,7 +369,7 @@ class Application(aggr.Aggregation):
                 util.handle_error(e, f"adding project '{proj}' to {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
                 Application.CACHE.pop(self)
                 ok = False
-        self._projects = None
+        self._projects: Optional[dict] = None
         self.projects()
         return ok
 

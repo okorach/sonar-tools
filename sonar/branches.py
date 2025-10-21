@@ -23,6 +23,7 @@
 from __future__ import annotations
 from http import HTTPStatus
 from typing import Optional
+from datetime import datetime
 import json
 import re
 from urllib.parse import unquote
@@ -67,10 +68,10 @@ class Branch(components.Component):
         super().__init__(endpoint=project.endpoint, key=name)
         self.name = name
         self.concerned_object = project
-        self._is_main = None
-        self._new_code = None
-        self._last_analysis = None
-        self._keep_when_inactive = None
+        self._is_main: Optional[bool] = None
+        self._new_code: Optional[str] = None
+        self._last_analysis: Optional[datetime] = None
+        self._keep_when_inactive: Optional[bool] = None
         Branch.CACHE.put(self)
         log.debug("Created object %s", str(self))
 

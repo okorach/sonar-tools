@@ -21,6 +21,7 @@
 """Abstraction of the SonarQube permission template concept"""
 
 from __future__ import annotations
+from typing import Optional
 
 import json
 import re
@@ -52,11 +53,11 @@ class PermissionTemplate(sqobject.SqObject):
     def __init__(self, endpoint: pf.Platform, name: str, data: types.ApiPayload = None, create_data: types.ObjectJsonRepr = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=name)
-        self.key = None
+        self.key: Optional[str] = None
         self.name = name
-        self.description = None
-        self.project_key_pattern = None
-        self._permissions = None
+        self.description: Optional[str] = None
+        self.project_key_pattern: Optional[str] = None
+        self._permissions: Optional[dict] = None
         if create_data is not None:
             log.info("Creating permission template '%s'", name)
             log.debug("from create_data %s", utilities.json_dump(create_data))

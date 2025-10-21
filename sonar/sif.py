@@ -66,7 +66,7 @@ class Sif(object):
             raise NotSystemInfo("JSON is not a system info nor a support info")
         self.json = json_sif
         self.concerned_object = concerned_object
-        self._url = None
+        self._url: Optional[str] = None
 
     def __str__(self) -> str:
         """str() implementation"""

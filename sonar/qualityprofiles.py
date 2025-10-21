@@ -75,10 +75,10 @@ class QualityProfile(sq.SqObject):
         self.is_default = data["isDefault"]  #: Quality profile is default
         self.is_built_in = data["isBuiltIn"]  #: Quality profile is built-in - read-only
         self.sq_json = data
-        self._permissions = None
-        self._rules = None
-        self.__last_use = None
-        self.__last_update = None
+        self._permissions: Optional[object] = None
+        self._rules: Optional[dict[str, rules.Rule]] = None
+        self.__last_use: Optional[datetime] = None
+        self.__last_update: Optional[datetime] = None
 
         # self._rules = self.rules()
         self.nbr_rules = int(data["activeRuleCount"])  #: Number of rules in the quality profile

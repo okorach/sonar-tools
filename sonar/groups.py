@@ -74,7 +74,7 @@ class Group(sq.SqObject):
         super().__init__(endpoint=endpoint, key=name)
         self.name = name  #: Group name
         self.description = data.get("description", "")  #: Group description
-        self.__members = None
+        self.__members: Optional[list[users.User]] = None
         self.__is_default = data.get("default", None)
         self.id = data.get("id", None)  #: SonarQube 10.4+ Group id
         self.sq_json = data

@@ -53,7 +53,7 @@ class WebHook(sq.SqObject):
         self.webhook_url = url  #: Webhook key
         self.secret = secret  #: Webhook secret
         self.project = project  #: Webhook project, optional
-        self.last_delivery = None  #: Webhook last delivery timestamp
+        self.last_delivery: Optional[str] = None  #: Webhook last delivery timestamp
         self.project = project  #: Webhook project if project specific webhook
         WebHook.CACHE.put(self)
 

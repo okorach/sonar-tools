@@ -54,7 +54,7 @@ class PullRequest(components.Component):
         super().__init__(endpoint=project.endpoint, key=key)
         self.concerned_object = project
         self.json = data
-        self._last_analysis = None
+        self._last_analysis: Optional[datetime] = None
         PullRequest.CACHE.put(self)
         log.debug("Created object %s", str(self))
 

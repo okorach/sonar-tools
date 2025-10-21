@@ -138,11 +138,11 @@ class Setting(sqobject.SqObject):
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.component = component
-        self.value = None
-        self.multi_valued = None
-        self.inherited = None
-        self._definition = None
-        self._is_global = None
+        self.value: Optional[Any] = None
+        self.multi_valued: Optional[bool] = None
+        self.inherited: Optional[bool] = None
+        self._definition: Optional[dict] = None
+        self._is_global: Optional[bool] = None
         self.reload(data)
         log.debug("Created %s uuid %d value %s", str(self), hash(self), str(self.value))
         Setting.CACHE.put(self)
@@ -207,7 +207,7 @@ class Setting(sqobject.SqObject):
         elif self.key == COMPONENT_VISIBILITY:
             self.value = data.get("visibility", None)
         elif self.key == "sonar.login.message":
-            self.value = None
+            self.value: Optional[Any] = None
             if "values" in data and isinstance(data["values"], list) and len(data["values"]) > 0:
                 self.value = data["values"][0]
         else:
@@ -535,15 +535,14 @@ def decode(setting_key: str, setting_value: Any) -> Any:
     return setting_value
 
 
-def encode(setting: Setting, setting_value: Any) -> dict[str, str]:
+def encode(setting: Setting, setting_value: Any) -> dict[str, Any]:
     """Encodes the params to pass to api/settings/set according to setting value type"""
     if isinstance(setting_value, list):
-        params = {"values": setting_value} if isinstance(setting_value[0], str) else {"fieldValues": [json.dumps(v) for v in setting_value]}
+        return {"values": setting_value} if isinstance(setting_value[0], str) else {"fieldValues": [json.dumps(v) for v in setting_value]}
     elif isinstance(setting_value, bool):
-        params = {"value": str(setting_value).lower()}
+        return {"value": str(setting_value).lower()}
     else:
-        params = {"values" if setting.multi_valued else "value": setting_value}
-    return params
+        return {"values" if setting.multi_valued else "value": setting_value}
 
 
 def reset_setting(endpoint: pf.Platform, setting_key: str, project: Optional[object] = None) -> bool:

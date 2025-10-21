@@ -134,7 +134,7 @@ class Issue(findings.Finding):
     def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
-        self._debt = None
+        self._debt: Optional[int] = None
         Issue.CACHE.put(self)
 
     def __str__(self) -> str:

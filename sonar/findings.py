@@ -118,11 +118,11 @@ class Finding(sq.SqObject):
         self.resolution = None  #: Resolution (str)
         self.rule = None  #: Rule Id (str)
         self.projectKey = None  #: Project key (str)
-        self._changelog = None
-        self._comments = None
-        self.file = None  #: File (str)
+        self._changelog: Optional[dict] = None
+        self._comments: Optional[dict] = None
+        self.file: Optional[str] = None
         self.line = 0  #: Line (int)
-        self.component = None
+        self.component: Optional[str] = None
         self.message = None  #: Message
         self.creation_date = None  #: Creation date (datetime)
         self.modification_date = None  #: Last modification date (datetime)

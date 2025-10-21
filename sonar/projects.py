@@ -160,16 +160,16 @@ class Project(components.Component):
         :param str key: The project key
         """
         super().__init__(endpoint=endpoint, key=key)
-        self._last_analysis = None
-        self._branches_last_analysis = None
-        self._permissions = None
-        self._branches = None
-        self._pull_requests = None
-        self._ncloc_with_branches = None
-        self._binding = None
-        self._new_code = None
-        self._ci = None
-        self._revision = None
+        self._last_analysis: Optional[datetime] = None
+        self._branches_last_analysis: Optional[datetime] = None
+        self._permissions: Optional[object] = None
+        self._branches: Optional[dict] = None
+        self._pull_requests: Optional[dict] = None
+        self._ncloc_with_branches: Optional[int] = None
+        self._binding: Optional[dict] = None
+        self._new_code: Optional[str] = None
+        self._ci: Optional[str] = None
+        self._revision: Optional[str] = None
         Project.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
@@ -258,7 +258,7 @@ class Project(components.Component):
         elif "analysisDate" in data:
             self._last_analysis = util.string_to_date(data["analysisDate"])
         else:
-            self._last_analysis = None
+            self._last_analysis: Optional[datetime] = None
         self._revision = data.get("revision", self._revision)
         return self
 

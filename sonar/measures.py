@@ -23,7 +23,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, Optional
 from sonar import metrics, exceptions, platform
 from sonar.util.types import ApiPayload, ApiParams, KeyList
 from sonar.util import cache, constants as c
@@ -48,7 +48,7 @@ class Measure(sq.SqObject):
     def __init__(self, concerned_object: object, key: str, value: Any) -> None:
         """Constructor"""
         super().__init__(endpoint=concerned_object.endpoint, key=key)
-        self.value = None  #: Measure value
+        self.value: Optional[Any] = None  #: Measure value
         self.metric = key  #: Measure metric
         self.concerned_object = concerned_object  #: Object concerned by the measure
         self.value = self.__converted_value(value)

@@ -36,7 +36,7 @@ class Changelog(object):
         """
         self.concerned_object = concerned_object
         self.sq_json = jsonlog
-        self._change_type = None
+        self._change_type: Optional[str] = None
 
     def __str__(self) -> str:
         """str() implementation"""

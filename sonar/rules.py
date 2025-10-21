@@ -167,7 +167,7 @@ class Rule(sq.SqObject):
             if self.type in idefs.STD_TYPES:
                 self._impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
 
-        self.tags = None if len(data.get("tags", [])) == 0 else data["tags"]
+        self.tags: Optional[list[str]] = None if len(data.get("tags", [])) == 0 else data["tags"]
         self.systags = data.get("sysTags", [])
         self.name = data.get("name", None)
         self.language = data.get("lang", None)
