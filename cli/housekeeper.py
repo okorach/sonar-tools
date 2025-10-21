@@ -127,7 +127,7 @@ def _parse_arguments() -> object:
         "--keepWhenInactive",
         required=False,
         type=str,
-        help=f"Regexp of branches to keep when inactive, overrides the SonarQube default sonar.dbcleaner.branchesToKeepWhenInactive value",
+        help="Regexp of branches to keep when inactive, overrides the SonarQube default sonar.dbcleaner.branchesToKeepWhenInactive value",
     )
     parser.add_argument(
         "-R",
