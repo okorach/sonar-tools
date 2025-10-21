@@ -87,10 +87,13 @@ class PullRequest(components.Component):
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits the pull request according to the audit settings"""
-        problems = self._audit_component(audit_settings)
-        if (age := util.age(self.last_analysis())) is None:  # Main branch not analyzed yet
+        problems = [] if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper" else self._audit_component(audit_settings)
+        if (age := util.age(self.last_analysis())) is None:
+            log.warning("%s: Can't get last analysis date for audit, skipped")
             return problems
-        max_age = audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)
+        if (max_age := audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)) == 0:
+            log.info("%s: Audit of last analysis date is disabled", self)
+            return problems
         if age > max_age:
             problems.append(Problem(get_rule(RuleId.PULL_REQUEST_LAST_ANALYSIS), self, str(self), age))
         else:

@@ -423,7 +423,7 @@ class User(sqobject.SqObject):
 
         today = dt.datetime.now(dt.timezone.utc).astimezone()
         problems = [p for t in self.tokens() for p in t.audit(settings=settings, today=today)]
-        if self.last_login:
+        if self.last_login and settings.get(c.AUDIT_MODE_PARAM, "") != "housekeeper":
             age = util.age(self.last_login, now=today)
             if age > settings.get("audit.users.maxLoginAge", 180):
                 problems.append(Problem(get_rule(RuleId.USER_UNUSED), self, str(self), age))

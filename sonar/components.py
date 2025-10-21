@@ -288,7 +288,7 @@ class Component(sq.SqObject):
 
     def _audit_bg_task(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project background tasks"""
-        if audit_settings.get("audit.mode", "") == "housekeeper":
+        if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
         # Cutting short if background task audit is disabled because getting last task is costly
         if (

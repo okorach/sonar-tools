@@ -363,13 +363,14 @@ class Branch(components.Component):
         if self.is_main():
             log.info("%s is main (not purgeable)", str(self))
             return []
-        if (age := util.age(self.last_analysis())) is None:
+        if (max_age := audit_settings.get("audit.projects.branches.maxLastAnalysisAge", 30)) == 0:
             log.debug("%s last analysis audit is disabled, skipped...", str(self))
             return []
-        max_age = audit_settings.get("audit.projects.branches.maxLastAnalysisAge", 30)
+        if (age := util.age(self.last_analysis())) is None:
+            log.warning("%s: Can't get last analysis date for audit, skipped", str(self))
+            return []
         preserved = audit_settings.get("audit.projects.branches.keepWhenInactive", None)
         problems = []
-        log.info("EVALUATING %s age %d greater than %d days and not matches '%s'", str(self), age, max_age, preserved)
         if preserved is not None and age > max_age and not re.match(rf"^{preserved}$", self.name):
             log.info("%s age %d greater than %d days and not matches '%s'", str(self), age, max_age, preserved)
             problems.append(Problem(get_rule(RuleId.BRANCH_LAST_ANALYSIS), self, str(self), age))
@@ -392,7 +393,10 @@ class Branch(components.Component):
             return []
         log.debug("Auditing %s", str(self))
         try:
-            return self.__audit_last_analysis(audit_settings) + self.__audit_never_analyzed() + self._audit_component(audit_settings)
+            if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
+                return self.__audit_last_analysis(audit_settings)
+            else:
+                return self.__audit_last_analysis(audit_settings) + self.__audit_never_analyzed() + self._audit_component(audit_settings)
         except Exception as e:
             log.error("%s while auditing %s, audit skipped", util.error_msg(e), str(self))
         return []
