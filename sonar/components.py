@@ -213,7 +213,7 @@ class Component(sq.SqObject):
         """Returns a component navigation data"""
         params = utilities.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(c.GET))
         data = json.loads(self.get("navigation/component", params=params).text)
-        self.sq_json.update(data)
+        super().reload(data)
         return data
 
     def refresh(self) -> Component:
