@@ -247,18 +247,13 @@ class Project(components.Component):
 
         :param dict data: Data to load
         :return: self
-        :rtype: Project
         """
         """Loads a project object with contents of an api/projects/search call"""
-        self.sq_json = (self.sq_json or {}) | data
+        super().reload(data)
         self.name = data["name"]
         self._visibility = data["visibility"]
-        if "lastAnalysisDate" in data:
-            self._last_analysis = util.string_to_date(data["lastAnalysisDate"])
-        elif "analysisDate" in data:
-            self._last_analysis = util.string_to_date(data["analysisDate"])
-        else:
-            self._last_analysis: Optional[datetime] = None
+        key = next((k for k in ("lastAnalysisDate", "analysisDate") if k in data), None)
+        self._last_analysis = util.string_to_date(data[key]) if key else None
         self._revision = data.get("revision", self._revision)
         return self
 
@@ -1582,8 +1577,8 @@ def export_zips(
     :param Platform endpoint: reference to the SonarQube platform
     :param str key_regexp: Regexp to filter projects to export, defaults to None (all projects)
     :param int threads: Number of parallel threads for export, defaults to 8
-    :param int export_timeout: Tiemout to export the project, defaults to 30
-    :returns: list of exported projects and platform version
+    :param int export_timeout: Timeout to export the project, defaults to 30
+    :return: list of exported projects with export result
     """
     statuses, results = {"SUCCESS": 0}, []
     projects_list = {k: p for k, p in get_list(endpoint, threads=threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", p.key)}
@@ -1649,7 +1644,7 @@ def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30
     return o_proj, s
 
 
-def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60) -> dict[Project, str]:
+def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60) -> dict[str, Project]:
     """Imports as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
