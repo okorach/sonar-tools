@@ -67,15 +67,17 @@ class Task(sq.SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: pf.Platform, task_id: str, concerned_object: Optional[object] = None, data: Optional[types.ApiPayload] = None) -> None:
+    def __init__(
+        self, endpoint: pf.Platform, task_id: str, concerned_object: Optional[object] = None, data: Optional[types.ApiPayload] = None
+    ) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=task_id)
         self.sq_json = data
         self.concerned_object = concerned_object
         if data is not None:
             self.component_key = data.get("componentKey", None)
-        self._context: Optional[dict] = None
-        self._error: Optional[dict] = None
+        self._context: Optional[dict[str, str]] = None
+        self._error: Optional[dict[str, str]] = None
         self._submitted_at: Optional[datetime] = None
         self._started_at: Optional[datetime] = None
         self._ended_at: Optional[datetime] = None

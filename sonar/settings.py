@@ -141,7 +141,7 @@ class Setting(sqobject.SqObject):
         self.value: Optional[Any] = None
         self.multi_valued: Optional[bool] = None
         self.inherited: Optional[bool] = None
-        self._definition: Optional[dict] = None
+        self._definition: types.ApiPayload = None
         self._is_global: Optional[bool] = None
         self.reload(data)
         log.debug("Created %s uuid %d value %s", str(self), hash(self), str(self.value))

@@ -95,7 +95,7 @@ class Hotspot(findings.Finding):
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self.type = "SECURITY_HOTSPOT"
-        self.__details: Optional[dict] = None
+        self.__details: types.ApiPayload = None
         Hotspot.CACHE.put(self)
         self.refresh()
 

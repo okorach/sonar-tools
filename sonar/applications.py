@@ -71,8 +71,8 @@ class Application(aggr.Aggregation):
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=endpoint, key=key)
-        self._branches: Optional[dict] = None
-        self._projects: Optional[dict] = None
+        self._branches: Optional[dict[str, app_branches.ApplicationBranch]] = None
+        self._projects: Optional[dict[str, str]] = None
         self._description: Optional[str] = None
         self.name = name
         log.debug("Created object %s with uuid %d id %x", str(self), hash(self), id(self))
@@ -90,7 +90,7 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         check_supported(endpoint)
-        o = Application.CACHE.get(key, endpoint.local_url)
+        o: Application = Application.CACHE.get(key, endpoint.local_url)
         if o:
             return o
         data = json.loads(endpoint.get(Application.API[c.GET], params={"application": key}).text)["application"]
@@ -109,7 +109,7 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         check_supported(endpoint)
-        o = Application.CACHE.get(data["key"], endpoint.local_url)
+        o: Application = Application.CACHE.get(data["key"], endpoint.local_url)
         if not o:
             o = cls(endpoint, data["key"], data["name"])
         o.reload(data)
@@ -369,7 +369,7 @@ class Application(aggr.Aggregation):
                 util.handle_error(e, f"adding project '{proj}' to {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
                 Application.CACHE.pop(self)
                 ok = False
-        self._projects: Optional[dict] = None
+        self._projects = None
         self.projects()
         return ok
 

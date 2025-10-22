@@ -200,7 +200,7 @@ class User(sqobject.SqObject):
             else:
                 self.last_login = max(dt1, dt2)
             self.id = data["id"]
-        self.__tokens: Optional[list] = None
+        self.__tokens = None
         self.sq_json = data
 
     def groups(self, data: types.ApiPayload = None, **kwargs) -> types.KeyList:

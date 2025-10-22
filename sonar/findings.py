@@ -35,6 +35,7 @@ from sonar import exceptions
 
 import sonar.utilities as util
 from sonar import projects, rules
+from sonar.changelog import Changelog
 
 _JSON_FIELDS_REMAPPED = (("pull_request", "pullRequest"), ("_comments", "comments"))
 
@@ -109,26 +110,26 @@ class Finding(sq.SqObject):
     def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
-        self.severity = None  #: Severity (str)
-        self.type = None  #: Type (str): VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT
-        self.impacts = None  #: 10.x MQR mode
-        self.author = None  #: Author (str)
-        self.assignee = None  #: Assignee (str)
-        self.status = None  #: Status (str)
-        self.resolution = None  #: Resolution (str)
-        self.rule = None  #: Rule Id (str)
-        self.projectKey = None  #: Project key (str)
-        self._changelog: Optional[dict] = None
-        self._comments: Optional[dict] = None
+        self.severity = None  # BLOCKER, CRITICAL, MAJOR, MINOR, INFO
+        self.type: Optional[str] = None  # VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT
+        self.impacts: Optional[dict[str, str]] = None  #: 10.x MQR mode
+        self.author: Optional[str] = None
+        self.assignee: Optional[str] = None
+        self.status: Optional[str] = None  # OPEN, CONFIRMED, REOPENED, RESOLVED, CLOSED, ACCEPTED, FALSE_POSITIVE
+        self.resolution: Optional[str] = None
+        self.rule: Optional[str] = None
+        self.projectKey: Optional[str] = None
+        self._changelog: Optional[dict[str, Changelog]] = None
+        self._comments: Optional[dict[str, dict[str, str]]] = None
         self.file: Optional[str] = None
-        self.line = 0  #: Line (int)
+        self.line: int = 0
         self.component: Optional[str] = None
-        self.message = None  #: Message
-        self.creation_date = None  #: Creation date (datetime)
-        self.modification_date = None  #: Last modification date (datetime)
-        self.hash = None  #: Hash (str)
-        self.branch = None  #: Branch (str)
-        self.pull_request = None  #: Pull request (str)
+        self.message: Optional[str] = None  #: Message
+        self.creation_date: Optional[datetime] = None  #: Creation date (datetime)
+        self.modification_date: Optional[datetime] = None  #: Last modification date (datetime)
+        self.hash: Optional[str] = None  #: Hash (str)
+        self.branch: Optional[str] = None  #: Branch (str)
+        self.pull_request: Optional[str] = None  #: Pull request (str)
         self._load(data, from_export)
 
     def _load(self, data: types.ApiPayload, from_export: bool = False) -> None:

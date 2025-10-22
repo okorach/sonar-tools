@@ -163,10 +163,10 @@ class Project(components.Component):
         self._last_analysis: Optional[datetime] = None
         self._branches_last_analysis: Optional[datetime] = None
         self._permissions: Optional[object] = None
-        self._branches: Optional[dict] = None
-        self._pull_requests: Optional[dict] = None
+        self._branches: Optional[dict[str, branches.Branch]] = None
+        self._pull_requests: Optional[dict[str, pull_requests.PullRequest]] = None
         self._ncloc_with_branches: Optional[int] = None
-        self._binding: Optional[dict] = None
+        self._binding: Optional[dict[str, str]] = None
         self._new_code: Optional[str] = None
         self._ci: Optional[str] = None
         self._revision: Optional[str] = None

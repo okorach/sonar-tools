@@ -45,11 +45,11 @@ class SqObject(object):
     def __init__(self, endpoint: object, key: str) -> None:
         if not self.__class__.CACHE:
             self.__class__.CACHE.set_class(self.__class__)
-        self.key = key  #: Object unique key (unique in its class)
-        self.endpoint = endpoint  #: Reference to the SonarQube platform
+        self.key: Optional[str] = key  #: Object unique key (unique in its class)
+        self.endpoint: object = endpoint  #: Reference to the SonarQube platform
         self.concerned_object: Optional[object] = None
         self._tags: Optional[list[str]] = None
-        self.sq_json = {}
+        self.sq_json: Optional[types.ApiPayload] = None
 
     def __hash__(self) -> int:
         """Default UUID for SQ objects"""

@@ -61,7 +61,9 @@ class Problem:
         return d
 
 
-def dump_report(problems: list[Problem], file: str, server_id: Optional[str] = None, format: str = "csv", with_url: bool = False, separator: str = ",") -> None:
+def dump_report(
+    problems: list[Problem], file: str, server_id: Optional[str] = None, format: str = "csv", with_url: bool = False, separator: str = ","
+) -> None:
     """Dumps to file a report about a list of problems
 
     :param list[Problems] problems: List of problems to dump

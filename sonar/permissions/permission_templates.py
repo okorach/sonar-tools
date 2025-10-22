@@ -53,11 +53,11 @@ class PermissionTemplate(sqobject.SqObject):
     def __init__(self, endpoint: pf.Platform, name: str, data: types.ApiPayload = None, create_data: types.ObjectJsonRepr = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=name)
-        self.key: Optional[str] = None
-        self.name = name
+        self.key = None
+        self.name: str = name
         self.description: Optional[str] = None
         self.project_key_pattern: Optional[str] = None
-        self._permissions: Optional[dict] = None
+        self._permissions: Optional[template_permissions.TemplatePermissions] = None
         if create_data is not None:
             log.info("Creating permission template '%s'", name)
             log.debug("from create_data %s", utilities.json_dump(create_data))
@@ -244,7 +244,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, P
     return objects_list
 
 
-def search_by_name(endpoint: pf.Platform, name: str) -> PermissionTemplate:
+def search_by_name(endpoint: pf.Platform, name: str) -> types.ApiPayload:
     """Searches permissions templates by name"""
     return utilities.search_by_name(endpoint=endpoint, name=name, api=_SEARCH_API, returned_field="permissionTemplates")
 

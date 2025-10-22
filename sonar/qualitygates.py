@@ -117,7 +117,7 @@ class QualityGate(sq.SqObject):
         log.debug("Loading %s with data %s", self, util.json_dump(data))
         self.is_built_in = False  #: Whether the quality gate is built in
         self.is_default = False  #: Whether the quality gate is the default
-        self._conditions: Optional[dict] = None  #: Quality gate conditions
+        self._conditions: Optional[dict[str, str]] = None  #: Quality gate conditions
         self._permissions: Optional[object] = None  #: Quality gate permissions
         self._projects: Optional[dict[str, projects.Project]] = None  #: Projects using this quality profile
         self.sq_json = data
@@ -263,7 +263,7 @@ class QualityGate(sq.SqObject):
                 ok = ok and self.post("qualitygates/create_condition", params=params).ok
             except exceptions.SonarException:
                 ok = False
-        self._conditions: Optional[dict] = None
+        self._conditions = None
         self.conditions()
         return ok
 

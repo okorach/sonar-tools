@@ -41,7 +41,7 @@ class GlobalPermissions(permissions.Permissions):
     def __init__(self, concerned_object: object) -> None:
         self.concerned_object = concerned_object
         self.endpoint = concerned_object
-        self.permissions: Optional[dict] = None
+        self.permissions: Optional[dict[str, str[str, str]]] = None
         self.read()
 
     def __str__(self) -> str:

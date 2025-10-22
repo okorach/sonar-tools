@@ -78,16 +78,16 @@ class Platform(object):
         self.external_url = self.local_url
         self.__token = token
         self.__cert_file = cert_file
-        self.__user_data: Optional[dict] = None
+        self.__user_data: types.ApiPayload = None
         self._version: Optional[tuple[int, ...]] = None
         self._sys_info: Optional[dict[str, Any]] = None
-        self.__global_nav: Optional[dict] = None
+        self.__global_nav: types.ApiPayload = None
         self._server_id: Optional[str] = None
         self._permissions: Optional[object] = None
         self.http_timeout = int(http_timeout)
         self.organization = org
         self._user_agent = _SONAR_TOOLS_AGENT
-        self._global_settings_definitions: Optional[dict] = None
+        self._global_settings_definitions: types.ApiPayload = None
 
     def __str__(self) -> str:
         """
