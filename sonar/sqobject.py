@@ -206,7 +206,7 @@ class SqObject(object):
         if not kwargs.get(c.USE_CACHE, True) or self._tags is None:
             try:
                 data = json.loads(self.get(api, params=self.get_tags_params()).text)
-                self.sq_json.update(data["component"])
+                self.reload(data["component"])
                 self._tags = self.sq_json["tags"]
             except exceptions.SonarException:
                 self._tags = []
