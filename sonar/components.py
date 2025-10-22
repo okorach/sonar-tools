@@ -66,10 +66,8 @@ class Component(sq.SqObject):
             self.reload(data)
 
     def reload(self, data: types.ApiPayload) -> Component:
-        log.debug("Reloading %s with %s", str(self), utilities.json_dump(data))
-        if not self.sq_json:
-            self.sq_json = {}
-        self.sq_json.update(data)
+        """Loads a SonarQube API JSON payload in a Component"""
+        super().reload(data)
         if "name" in data:
             self.name = data["name"]
         if "visibility" in data:
