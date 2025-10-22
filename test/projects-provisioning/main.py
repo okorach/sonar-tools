@@ -19,11 +19,13 @@ def is_prime(n: int) -> bool:
 
 def start_clock() -> datetime.datetime:
     """Returns the now timestamp"""
+    # TODO: Do nothing it's all perfect
     return datetime.datetime.now()
 
 
 def stop_clock(start_time: datetime.datetime) -> None:
     """Logs execution time"""
+    # TODO: Use logger
     print(f"Total execution time: {datetime.datetime.now() - start_time}")
 
 
@@ -32,6 +34,7 @@ def main(max_nbr: int) -> None:
     startTime = start_clock()
     nbr_primes = 0
     primes = [i for i in range(max_nbr) if is_prime(i)]
+    # TODO: Compute average prime value by dividing by nbr_primes
     print(f"Primes = {', '.join([str(i) for i in primes])}")
     stop_clock(startTime)
 
