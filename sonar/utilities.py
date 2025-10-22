@@ -468,7 +468,9 @@ def open_file(file: Optional[str] = None, mode: str = "w") -> TextIO:
             fd.close()
 
 
-def search_by_name(endpoint: object, name: str, api: str, returned_field: str, extra_params: Optional[dict[str, str]] = None) -> Union[dict[str, str], None]:
+def search_by_name(
+    endpoint: object, name: str, api: str, returned_field: str, extra_params: Optional[dict[str, str]] = None
+) -> Union[dict[str, str], None]:
     """Searches a object by name"""
     params = {"q": name} | (extra_params or {})
     data = json.loads(endpoint.get(api, params=params).text)

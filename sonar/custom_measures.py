@@ -33,7 +33,13 @@ class CustomMeasure(sq.SqObject):
     API_ROOT = "api/custom_measures/"
 
     def __init__(
-        self, key: str, endpoint: pf.Platform, uuid: Optional[str] = None, project_key: Optional[str] = None, value: Any = None, description: Optional[str] = None
+        self,
+        key: str,
+        endpoint: pf.Platform,
+        uuid: Optional[str] = None,
+        project_key: Optional[str] = None,
+        value: Any = None,
+        description: Optional[str] = None,
     ) -> None:
         super().__init__(endpoint=endpoint, key=key)
         self.uuid = uuid
