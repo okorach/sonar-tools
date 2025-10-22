@@ -168,7 +168,7 @@ class Portfolio(aggregations.Aggregation):
         """Returns string representation of object"""
         return (
             f"subportfolio '{self.key}'"
-            if self.sq_json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
+            if self.sq_json and self.sq_json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
             else f"portfolio '{self.key}'"
         )
 
