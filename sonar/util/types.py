@@ -20,17 +20,17 @@
 
 """Sonar Custom Types for type hints"""
 
-from typing import Union, Optional
+from typing import Union, Optional, Any
 
 ConfigSettings = dict[str, str]
 
 ObjectFilter = dict[str, str]
 
-ObjectJsonRepr = dict[str, any]
+ObjectJsonRepr = dict[str, Any]
 
 ApiParams = Optional[dict[str, str]]
 
-ApiPayload = Optional[dict[str, any]]
+ApiPayload = Optional[dict[str, Any]]
 
 KeyList = Optional[list[str]]
 
