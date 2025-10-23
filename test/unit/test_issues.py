@@ -28,7 +28,6 @@ from requests.exceptions import ConnectionError
 
 import utilities as tutil
 from sonar import issues, exceptions, logging
-from sonar import utilities as util
 from sonar.util import constants as c
 import credentials as tconf
 
