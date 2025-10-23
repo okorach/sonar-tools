@@ -20,15 +20,12 @@
 
 """sonar-findings-export tests"""
 
-import os
 from collections.abc import Generator
 
 import utilities as tutil
 from sonar import errcodes as e
 import cli.options as opt
 from cli import findings_export
-from sonar import projects
-from sonar.audit import rules
 
 CMD = f"sonar-findings-export.py {tutil.SQS_OPTS}"
 
