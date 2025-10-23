@@ -32,7 +32,6 @@ from requests import RequestException
 from cli import options
 import sonar.logging as log
 from sonar import platform, tokens, users, projects, branches, pull_requests, version, errcodes
-from sonar.util import types
 import sonar.util.constants as c
 import sonar.utilities as util
 import sonar.exceptions as ex
@@ -241,7 +240,7 @@ def main() -> None:
         if token_age:
             problems += get_user_problems(settings, sq)
 
-        problem.dump_report(problems, file=kwargs[options.REPORT_FILE], format="csv")
+        problem.dump_report(problems, file=kwargs[options.REPORT_FILE], fmt="csv")
 
         (deleted_proj, deleted_loc, deleted_branches, deleted_prs, revoked_tokens) = _delete_objects(problems, mode)
 
