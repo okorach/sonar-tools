@@ -29,6 +29,7 @@ from cli import findings_export
 
 CMD = f"sonar-findings-export.py {tutil.SQS_OPTS}"
 
+
 def test_export_portfolios_findings(csv_file: Generator[str]) -> None:
     """test_export_portfolios_findings"""
     assert tutil.run_cmd(findings_export.main, f"{CMD} --portfolios --{opt.KEY_REGEXP} Banking --{opt.REPORT_FILE} {csv_file}") == e.OK
