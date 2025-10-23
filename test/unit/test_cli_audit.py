@@ -22,6 +22,7 @@
 """sonar-audit tests"""
 
 import os
+import csv
 from collections.abc import Generator
 
 import utilities as tutil
@@ -104,3 +105,13 @@ def test_audit_proj_key_pattern(csv_file: Generator[str]) -> None:
     settings = {"audit.projects": True, "audit.projects.keyPattern": "(BANK|INSU|demo:).+"}
     pbs = projects.audit(tutil.SQ, settings, key_list="(BANKING|INSURANCE|demo:).+")
     assert all(pb.rule_id != rules.RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN for pb in pbs)
+
+
+def test_filter_severity(csv_file: Generator[str]) -> None:
+    """test_filter_severity"""
+    assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.MIN_SEVERITY} BLOCKER") == e.OK
+    with open(csv_file, encoding="utf-8") as fd:
+        reader = csv.reader(fd)
+        for row in reader:
+            severity = row[3]
+            assert severity == "BLOCKER"
