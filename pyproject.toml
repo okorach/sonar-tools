@@ -172,6 +172,7 @@ extend-ignore = [
     "I001",
     "TRY003",
     "EM102",
+    "C901", # Complexity rule, better covered by SonarQube
 ]
 
 exclude = [
