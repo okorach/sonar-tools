@@ -19,18 +19,15 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""sonar-audit tests"""
+"""sonar-audit CLI tests"""
 
 import os
-import csv
 from collections.abc import Generator
 
 import utilities as tutil
 from sonar import errcodes as e
 import cli.options as opt
 from cli import audit
-from sonar import projects
-from sonar.audit import rules
 
 CMD = f"sonar-audit.py {tutil.SQS_OPTS}"
 
@@ -88,30 +85,33 @@ def test_audit_cmd_line_settings(csv_file: Generator[str]) -> None:
     assert tutil.csv_nbr_lines(csv_file) == 0
 
 
-def test_audit_proj_key_pattern(csv_file: Generator[str]) -> None:
-    """test_audit_cmd_line_settings"""
-    settings = {"audit.projects": True, "audit.projects.keyPattern": None}
-    pbs = projects.audit(tutil.SQ, settings, key_list="BANKING.*")
-    assert all(pb.rule_id != rules.RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN for pb in pbs)
-
-    settings = {"audit.projects": True, "audit.projects.keyPattern": ".+"}
-    pbs = projects.audit(tutil.SQ, settings, key_list="BANKING.*")
-    assert all(pb.rule_id != rules.RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN for pb in pbs)
-
-    settings = {"audit.projects": True, "audit.projects.keyPattern": "BANKING.+"}
-    pbs = projects.audit(tutil.SQ, settings, key_list="(BANKING|INSURANCE).+")
-    assert any(pb.rule_id == rules.RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN for pb in pbs)
-
-    settings = {"audit.projects": True, "audit.projects.keyPattern": "(BANK|INSU|demo:).+"}
-    pbs = projects.audit(tutil.SQ, settings, key_list="(BANKING|INSURANCE|demo:).+")
-    assert all(pb.rule_id != rules.RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN for pb in pbs)
-
-
 def test_filter_severity(csv_file: Generator[str]) -> None:
-    """test_filter_severity"""
-    assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.MIN_SEVERITY} BLOCKER") == e.OK
-    with open(csv_file, encoding="utf-8") as fd:
-        reader = csv.reader(fd)
-        for row in reader:
-            severity = row[3]
-            assert severity == "BLOCKER"
+    """Verify that filtering by severities works"""
+    assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.SEVERITIES} MEDIUM,HIGH") == e.OK
+    assert tutil.csv_nbr_lines(csv_file) > 0
+    assert tutil.csv_col_is_value(csv_file, "Severity", "MEDIUM", "HIGH")
+
+
+def test_filter_type(json_file: Generator[str]) -> None:
+    """Verify that filtering by severities works"""
+    assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {json_file} --{opt.TYPES} HOUSEKEEPING,SECURITY") == e.OK
+    assert tutil.json_field_in_values(json_file, "type", "HOUSEKEEPING", "SECURITY")
+
+
+def test_filter_problem(csv_file: Generator[str]) -> None:
+    """Verify that filtering by problem id works"""
+    regexp = "(OBJECT.*|QG.*)"
+    assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --problems {regexp}") == e.OK
+    assert tutil.csv_col_match(csv_file, "Problem", regexp)
+
+
+def test_filter_multiple(csv_file: Generator[str]) -> None:
+    """Verify that filtering by problem id works"""
+    regexp = "(OBJECT.*|QG.*)"
+    assert (
+        tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.TYPES} HOUSEKEEPING --{opt.SEVERITIES} MEDIUM --problems {regexp}")
+        == e.OK
+    )
+    assert tutil.csv_col_is_value(csv_file, "Severity", "MEDIUM")
+    assert tutil.csv_col_is_value(csv_file, "Type", "HOUSEKEEPING")
+    assert tutil.csv_col_match(csv_file, "Problem", regexp)
