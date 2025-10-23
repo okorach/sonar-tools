@@ -48,7 +48,7 @@ audit.plugins = no"""
 
 
 def test_audit_disabled(csv_file: Generator[str]) -> None:
-    """test_audit_disabled"""
+    """Tests that nothing is output when all audits are disabled"""
     with open(".sonar-audit.properties", mode="w", encoding="utf-8") as fd:
         print(AUDIT_DISABLED, file=fd)
     assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}") == e.OK
@@ -57,22 +57,22 @@ def test_audit_disabled(csv_file: Generator[str]) -> None:
 
 
 def test_audit_stdout() -> None:
-    """test_audit_stdout"""
+    """Tests audit to stdout"""
     assert tutil.run_cmd(audit.main, CMD) == e.OK
 
 
 def test_audit_json(json_file: Generator[str]) -> None:
-    """test_audit_json"""
+    """Test audit to json file"""
     assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {json_file}") == e.OK
 
 
 def test_audit_proj_key(csv_file: Generator[str]) -> None:
-    """test_audit_proj_key"""
+    """Tests that audit can select only specific project keys"""
     assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.WHAT} projects --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT}") == e.OK
 
 
 def test_audit_proj_non_existing_key() -> None:
-    """test_audit_proj_non_existing_key"""
+    """Tests that error is raised when the project key regexp does not select any project"""
     assert tutil.run_cmd(audit.main, f"{CMD} --{opt.WHAT} projects --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT},bad_key") == e.ARGS_ERROR
 
 
