@@ -145,41 +145,58 @@ def _parse_arguments() -> object:
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
-def _delete_objects(problems: problem.Problem, mode: str, settings: types.ConfigSettings) -> tuple[int, int, int, int, int]:
-    """Deletes objects (that should be housekept)"""
+def _revoke_tokens(problems: problem.Problem, mode: str) -> int:
+    """Revokes user tokens (that should be housekept)"""
     revoked_token_count = 0
-    deleted_projects = {}
-    deleted_branch_count = 0
-    deleted_pr_count = 0
-    deleted_loc = 0
-    for p in problems:
+    for p in [p for p in problems if isinstance(p.concerned_object, tokens.UserToken)]:
         obj = p.concerned_object
-        if obj is None:
-            continue  # BUG
         try:
-            if isinstance(obj, projects.Project):
-                loc = int(obj.get_measure("ncloc", fallback="0"))
-                if mode == "delete":
-                    log.info("Deleting %s, %d LoC", str(obj), loc)
-                else:
-                    log.info("%s, %d LoC should be deleted", str(obj), loc)
-                if mode != "delete" or obj.delete():
-                    deleted_projects[obj.key] = obj
-                    deleted_loc += loc
-            if isinstance(obj, (tokens.UserToken, users.User)) and (mode != "delete" or obj.revoke()):
+            if mode != "delete" or obj.revoke():
                 revoked_token_count += 1
-            elif settings[PROJ_MAX_AGE] > 0 and obj.project().key in deleted_projects:
-                log.info("%s deleted, so no need to delete %s", str(obj.project()), str(obj))
-            elif mode != "delete" or obj.delete():
-                log.info("%s to delete", str(obj))
-                if isinstance(obj, branches.Branch):
-                    deleted_branch_count += 1
-                elif isinstance(obj, pull_requests.PullRequest):
-                    deleted_pr_count += 1
+        except ex.ObjectNotFound:
+            log.warning("Token %s does not exist, revocation skipped...", obj)
+    return revoked_token_count
 
+
+def _delete_projects(problems: problem.Problem, mode: str) -> tuple[list[str], int]:
+    """Deletes projects (that should be housekept)"""
+    deleted_projects = []
+    loc_total = 0
+    for obj in [p.concerned_object for p in problems if isinstance(p.concerned_object, projects.Project)]:
+        try:
+            loc = int(obj.get_measure("ncloc", fallback="0"))
+            log.info("Deleting %s, %d LoC" if mode == "delete" else "%s, %d LoC should be deleted", str(obj), loc)
+            if mode != "delete" or obj.delete():
+                deleted_projects.append(obj.key)
+                loc_total += loc
         except ex.ObjectNotFound:
             log.warning("%s does not exist, deletion skipped...", str(obj))
+    return deleted_projects, loc_total
 
+
+def _delete_class(problems: problem.Problem, mode: str, proj_list: list[str], object_class: object) -> int:
+    """Deletes branches or PRs (that should be housekept)"""
+    counter = 0
+    for obj in [p.concerned_object for p in problems if isinstance(p.concerned_object, object_class)]:
+        try:
+            if obj.project().key in proj_list:
+                log.info("%s deleted, so no need to delete %s", str(obj.project()), str(obj))
+                continue
+            log.info("%s to delete", str(obj))
+            if mode != "delete" or obj.delete():
+                counter += 1
+        except ex.ObjectNotFound:
+            log.warning("%s does not exist, deletion skipped...", str(obj))
+    return counter
+
+
+def _delete_objects(problems: problem.Problem, mode: str) -> tuple[int, int, int, int, int]:
+    """Deletes objects (that should be housekept)"""
+    deleted_projects = {}
+    revoked_token_count = _revoke_tokens(problems, mode)
+    deleted_projects, deleted_loc = _delete_projects(problems, mode)
+    deleted_branch_count = _delete_class(problems, mode, deleted_projects, branches.Branch)
+    deleted_pr_count = _delete_class(problems, mode, deleted_projects, pull_requests.PullRequest)
     return (
         len(deleted_projects),
         deleted_loc,
@@ -226,11 +243,9 @@ def main() -> None:
 
         problem.dump_report(problems, file=kwargs[options.REPORT_FILE], format="csv")
 
-        op = "to delete"
-        if mode == "delete":
-            op = "deleted"
-        (deleted_proj, deleted_loc, deleted_branches, deleted_prs, revoked_tokens) = _delete_objects(problems, mode, settings=settings)
+        (deleted_proj, deleted_loc, deleted_branches, deleted_prs, revoked_tokens) = _delete_objects(problems, mode)
 
+        op = "deleted" if mode == "delete" else "to delete"
         if proj_age > 0:
             log.info("%d projects older than %d days (%d LoCs) %s", deleted_proj, proj_age, deleted_loc, op)
         if branch_age > 0:
