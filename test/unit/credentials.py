@@ -20,6 +20,13 @@
 #
 
 from os import getenv
+from datetime import datetime
 
 TARGET_PLATFORM = "http://localhost:10000"
 TARGET_TOKEN = getenv("SONAR_TOKEN_LATEST_ADMIN_USER")
+
+ISSUE_FP = "64e848c0-d5f4-402e-8c80-af6536041b5e"
+ISSUE_FP_NBR_CHANGELOGS = 12
+ISSUE_FP_CHANGELOG_DATE = datetime(2025, 10, 23)
+
+ISSUE_ACCEPTED = "e9eb08fe-bb53-443a-8a92-425589807c78"

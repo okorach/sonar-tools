@@ -20,6 +20,17 @@
 #
 
 from os import getenv
+from datetime import datetime
 
 TARGET_PLATFORM = "https://sonarcloud.io"
 TARGET_TOKEN = getenv("SONAR_TOKEN_SONARCLOUD")
+
+ISSUE_FP = "6e7537bf-fccc-4aab-962e-e2f924d44728"
+ISSUE_FP_NBR_CHANGELOGS = 16
+
+ISSUE_ACCEPTED = "c99ac40e-c2c5-43ef-bcc5-4cd077d1052f"
+
+CHLOG_DATE = datetime(2025, 10, 12)
+
+ISSUE_W_MULTIPLE_CHANGELOGS = "6ae41c3b-c3d2-422f-a505-d355e7b0a268"
+ISSUE_W_MULTIPLE_CHANGELOGS_DATE = "2019-09-21"
