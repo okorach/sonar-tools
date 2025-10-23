@@ -63,7 +63,7 @@ class Problem:
 
 
 def dump_report(
-    problems: list[Problem], file: str, server_id: Optional[str] = None, format: str = "csv", with_url: bool = False, separator: str = ","
+    problems: list[Problem], file: str, server_id: Optional[str] = None, fmt: str = "csv", with_url: bool = False, separator: str = ","
 ) -> None:
     """Dumps to file a report about a list of problems
 
@@ -74,7 +74,7 @@ def dump_report(
     :rtype: None
     """
     log.info("Writing report to %s", f"file '{file}'" if file else "stdout")
-    if format == "json":
+    if fmt == "json":
         __dump_json(problems=problems, file=file, server_id=server_id, with_url=with_url)
     else:
         __dump_csv(problems=problems, file=file, server_id=server_id, with_url=with_url, separator=separator)
