@@ -239,7 +239,8 @@ def csv_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("csv")
     yield file
-    rm(file)
+    if os.path.exists(file):
+        rm(file)
 
 
 @pytest.fixture
@@ -247,7 +248,8 @@ def txt_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("txt")
     yield file
-    rm(file)
+    if os.path.exists(file):
+        rm(file)
 
 
 @pytest.fixture
@@ -255,16 +257,17 @@ def json_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("json")
     yield file
-    rm(file)
+    if os.path.exists(file):
+        rm(file)
 
 
 @pytest.fixture
 def yaml_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("yaml")
-    rm(file)
     yield file
-    rm(file)
+    if os.path.exists(file):
+        rm(file)
 
 
 @pytest.fixture
@@ -272,7 +275,8 @@ def sarif_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("sarif")
     yield file
-    rm(file)
+    if os.path.exists(file):
+        rm(file)
 
 
 @pytest.fixture
