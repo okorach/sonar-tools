@@ -74,7 +74,7 @@ def test_audit_proj_non_existing_key() -> None:
 
 
 def test_audit_cmd_line_settings(csv_file: Generator[str]) -> None:
-    """test_audit_cmd_line_settings"""
+    """Verifies that passing audit settings from command line with -D<key>=<value> works"""
     what_to_audit = ["logs", "projects", "portfolios", "applications", "qualityProfiles", "qualityGates", "users", "groups"]
     cli_opt = " ".join([f"-Daudit.{what}=true" for what in what_to_audit])
     assert tutil.run_cmd(audit.main, f"{CMD} {cli_opt} --{opt.REPORT_FILE} {csv_file}") == e.OK
@@ -100,14 +100,14 @@ def test_filter_type(json_file: Generator[str]) -> None:
 
 def test_filter_problem(csv_file: Generator[str]) -> None:
     """Verify that filtering by problem id works"""
-    regexp = "(OBJECT.*|QG.*)"
+    regexp = "(OBJECT.+|QG.+)"
     assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --problems {regexp}") == e.OK
     assert tutil.csv_col_match(csv_file, "Problem", regexp)
 
 
 def test_filter_multiple(csv_file: Generator[str]) -> None:
     """Verify that filtering by problem id works"""
-    regexp = "(OBJECT.*|QG.*)"
+    regexp = "(OBJECT.+|QG.+)"
     assert (
         tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.TYPES} HOUSEKEEPING --{opt.SEVERITIES} MEDIUM --problems {regexp}")
         == e.OK
