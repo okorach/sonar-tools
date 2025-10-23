@@ -41,10 +41,8 @@ def test_get_object(get_test_project: Generator[projects.Project]) -> None:
 
 def test_refresh(get_test_project: Generator[projects.Project]) -> None:
     """test_refresh"""
-    proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.EXISTING_PROJECT)
-    proj.refresh()
-
     proj = get_test_project
+    proj.refresh()
     proj.delete()
     with pytest.raises(exceptions.ObjectNotFound):
         proj.refresh()
@@ -139,7 +137,7 @@ def test_import_no_zip(get_test_project: Generator[projects.Project]) -> None:
     """test_import_no_zip"""
     if tutil.SQ.edition() == c.CE:
         pytest.skip("No zip import in Community Build")
-    assert get_test_project.import_zip(asynchronous=False) == f"FAILED/ZIP_MISSING"
+    assert get_test_project.import_zip(asynchronous=False) == "FAILED/ZIP_MISSING"
     get_test_project.key = "non-existing"
     res = get_test_project.import_zip(asynchronous=False)
     assert res.startsWith("FAILED/") and "not found" in res
@@ -300,7 +298,7 @@ def test_set_quality_gate(get_test_project: Generator[projects.Project], get_tes
 
     proj.key = tutil.NON_EXISTING_KEY
     with pytest.raises(exceptions.ObjectNotFound):
-        assert not proj.set_quality_gate(qg.name)
+        proj.set_quality_gate(qg.name)
 
 
 def test_ai_code_assurance(get_test_project: Generator[projects.Project]) -> None:
@@ -327,7 +325,7 @@ def test_ai_code_assurance(get_test_project: Generator[projects.Project]) -> Non
     with pytest.raises(exceptions.ObjectNotFound):
         proj.set_contains_ai_code(True)
     with pytest.raises(exceptions.ObjectNotFound):
-        assert proj.get_ai_code_assurance()
+        proj.get_ai_code_assurance()
     with pytest.raises(exceptions.ObjectNotFound):
         proj.set_contains_ai_code(False)
     with pytest.raises(exceptions.ObjectNotFound):
@@ -393,3 +391,30 @@ def test_set_permissions(get_test_project: Generator[projects.Project]) -> None:
 def test_project_key(get_test_project: Generator[projects.Project]) -> None:
     """test_project_key"""
     assert get_test_project.project_key() == tutil.TEMP_KEY
+
+
+def test_import_zips() -> None:
+    """test_import_zips"""
+    proj_list = [tutil.PROJECT_0, tutil.PROJECT_1, tutil.PROJECT_2, "non-existing"]
+    if tutil.SQ.edition() == c.CE:
+        with pytest.raises(exceptions.UnsupportedOperation):
+            projects.import_zips(tutil.SQ, project_list=proj_list)
+        return
+    res = projects.import_zips(tutil.SQ, project_list=proj_list)
+    assert len(res) == len(proj_list)
+    assert sum(1 for r in res.values() if r["importStatus"] != "SUCCESS") == len(proj_list)
+
+
+def test_export_zips() -> None:
+    """test_import_zips"""
+    PROJ_WITH_NO_LOC = "project-without-analyses"
+    proj_list = [tutil.PROJECT_0, tutil.PROJECT_1, tutil.PROJECT_2, tutil.NON_EXISTING_KEY, PROJ_WITH_NO_LOC]
+    regexp = f"({'|'.join(proj_list)})"
+    res = {r["key"]: r for r in projects.export_zips(tutil.SQ, key_regexp=regexp, skip_zero_loc=True)}
+    assert len(res) == len(proj_list) - 1
+    for proj in proj_list[:3]:
+        assert res[proj]["exportStatus"] == "SUCCESS"
+    assert tutil.NON_EXISTING_KEY not in res
+    assert res[PROJ_WITH_NO_LOC]["exportStatus"] == "SKIPPED/ZERO_LOC"
+    res = {r["key"]: r for r in projects.export_zips(tutil.SQ, key_regexp=regexp, skip_zero_loc=False)}
+    assert res[PROJ_WITH_NO_LOC]["exportStatus"] == "SUCCESS/ZERO_LOC"
