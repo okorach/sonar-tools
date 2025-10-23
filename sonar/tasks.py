@@ -21,8 +21,8 @@
 """Abstraction of the SonarQube background task concept"""
 
 from typing import Optional
+from datetime import datetime
 import time
-import datetime
 import json
 import re
 
@@ -67,18 +67,20 @@ class Task(sq.SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: pf.Platform, task_id: str, concerned_object: object = None, data: types.ApiPayload = None) -> None:
+    def __init__(
+        self, endpoint: pf.Platform, task_id: str, concerned_object: Optional[object] = None, data: Optional[types.ApiPayload] = None
+    ) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=task_id)
         self.sq_json = data
         self.concerned_object = concerned_object
         if data is not None:
             self.component_key = data.get("componentKey", None)
-        self._context = None
-        self._error = None
-        self._submitted_at = None
-        self._started_at = None
-        self._ended_at = None
+        self._context: Optional[dict[str, str]] = None
+        self._error: Optional[dict[str, str]] = None
+        self._submitted_at: Optional[datetime] = None
+        self._started_at: Optional[datetime] = None
+        self._ended_at: Optional[datetime] = None
 
     def __str__(self) -> str:
         """
@@ -395,7 +397,7 @@ class Task(sq.SqObject):
 
         tuple_version_list = [tuple(int(n) for n in v.split(".")) for v in versions_list]
         tuple_version_list.sort(reverse=True)
-        delta_days = (datetime.datetime.today() - release_date).days
+        delta_days = (datetime.today() - release_date).days
         index = tuple_version_list.index(scanner_version)
 
         log.debug("Auditing Scanner for .NET v9.2.x")
@@ -439,7 +441,7 @@ class Task(sq.SqObject):
         return problems
 
 
-def search(endpoint: pf.Platform, only_current: bool = False, component_key: str = None, **kwargs) -> list[Task]:
+def search(endpoint: pf.Platform, only_current: bool = False, component_key: Optional[str] = None, **kwargs) -> list[Task]:
     """Searches background tasks
 
     :param Platform endpoint: Reference to the SonarQube platform

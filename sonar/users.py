@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import concurrent.futures
 from typing import Optional, Union
-import datetime as dt
+from datetime import datetime, timezone
 import json
 
 from requests import RequestException
@@ -79,15 +79,15 @@ class User(sqobject.SqObject):
         """Do not use to create users, use on of the constructor class methods"""
         super().__init__(endpoint=endpoint, key=login)
         self.login = login  #: User login (str)
-        self.id = None  #: SonarQube 10+ User Id (str)
-        self.name = None  #: User name (str)
-        self._groups = None  #: User groups (list)
-        self.scm_accounts = None  #: User SCM accounts (list)
-        self.email = None  #: User email (str)
-        self.is_local = None  #: Whether user is local (bool) - read-only
-        self.last_login = None  #: User last login (datetime) - read-only
-        self.nb_tokens = None  #: Nbr of tokens (int) - read-only
-        self.__tokens = None
+        self.id: Optional[str] = None  #: SonarQube 10+ User Id (str)
+        self.name: Optional[str] = None  #: User name (str)
+        self._groups: Optional[list[str]] = None  #: User groups (list)
+        self.scm_accounts: Optional[list[str]] = None  #: User SCM accounts (list)
+        self.email: Optional[str] = None  #: User email (str)
+        self.is_local: Optional[bool] = None  #: Whether user is local (bool) - read-only
+        self.last_login: Optional[datetime] = None  #: User last login (datetime) - read-only
+        self.nb_tokens: Optional[int] = None  #: Nbr of tokens (int) - read-only
+        self.__tokens: Optional[list[tokens.UserToken]] = None
         self.__load(data)
         log.debug("Created %s id '%s'", str(self), str(self.id))
         User.CACHE.put(self)
@@ -107,7 +107,7 @@ class User(sqobject.SqObject):
         return cls(login=data["login"], endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, login: str, name: str, is_local: bool = True, password: str = None) -> User:
+    def create(cls, endpoint: pf.Platform, login: str, name: str, is_local: bool = True, password: Optional[str] = None) -> User:
         """Creates a new user in SonarQube and returns the corresponding User object
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -186,7 +186,7 @@ class User(sqobject.SqObject):
         self.email = data.get("email", None)  #: User email
         self.is_local = data.get("local", False)  #: User is local - read-only
         self.last_login = None  #: User last login - read-only
-        self.nb_tokens = None
+        self.nb_tokens: Optional[int] = None
         if self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             self.last_login = util.string_to_date(data.get("lastConnectionDate", None))
             self.nb_tokens = data.get("tokenCount", None)  #: Nbr of tokens - read-only
@@ -421,7 +421,7 @@ class User(sqobject.SqObject):
             log.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
             return []
 
-        today = dt.datetime.now(dt.timezone.utc).astimezone()
+        today = datetime.now(timezone.utc).astimezone()
         problems = [p for t in self.tokens() for p in t.audit(settings=settings, today=today)]
         if self.last_login and settings.get(c.AUDIT_MODE_PARAM, "") != "housekeeper":
             age = util.age(self.last_login, now=today)

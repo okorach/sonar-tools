@@ -103,13 +103,13 @@ class Portfolio(aggregations.Aggregation):
         self.name = name if name is not None else key
         self._selection_mode = {_SELECTION_MODE_NONE: True}  #: Portfolio project selection mode
         self._tags = []  #: Portfolio tags when selection mode is TAGS
-        self._description = None  #: Portfolio description
-        self._visibility = None  #: Portfolio visibility
+        self._description: Optional[str] = None  #: Portfolio description
+        self._visibility: Optional[str] = None  #: Portfolio visibility
         self._applications = {}  #: applications
-        self._permissions = None  #: Permissions
+        self._permissions: Optional[object] = None  #: Permissions
 
-        self.parent_portfolio = None  #: Ref to parent portfolio object, if any
-        self.root_portfolio = None  #: Ref to root portfolio, if any
+        self.parent_portfolio: Optional[Portfolio] = None  #: Ref to parent portfolio object, if any
+        self.root_portfolio: Optional[Portfolio] = None  #: Ref to root portfolio, if any
         self._sub_portfolios = {}  #: Subportfolios
         Portfolio.CACHE.put(self)
         log.debug("Created portfolio object name '%s'", name)
@@ -168,7 +168,7 @@ class Portfolio(aggregations.Aggregation):
         """Returns string representation of object"""
         return (
             f"subportfolio '{self.key}'"
-            if self.sq_json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
+            if self.sq_json and self.sq_json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
             else f"portfolio '{self.key}'"
         )
 
@@ -176,7 +176,7 @@ class Portfolio(aggregations.Aggregation):
         """Reloads a portfolio with returned API data"""
         super().reload(data)
         if "originalKey" not in data and data["qualifier"] == _PORTFOLIO_QUALIFIER:
-            self.parent_portfolio = None
+            self.parent_portfolio: Optional[object] = None
             self.root_portfolio = self
         self.load_selection_mode()
         self.reload_sub_portfolios()
@@ -522,7 +522,7 @@ class Portfolio(aggregations.Aggregation):
         self._applications[app_key].append(branch)
         return True
 
-    def add_subportfolio(self, key: str, name: str = None, by_ref: bool = False) -> Portfolio:
+    def add_subportfolio(self, key: str, name: Optional[str] = None, by_ref: bool = False) -> Portfolio:
         """Adds a subportfolio to a portfolio, defined by key, name and by reference option"""
 
         log.info("Adding sub-portfolios to %s", str(self))

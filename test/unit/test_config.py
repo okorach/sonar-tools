@@ -175,7 +175,9 @@ def test_config_import_portfolios() -> None:
     p_list = portfolios.get_list(tutil.TEST_SQ, use_cache=False)
     logging.info("PORTFOLIOS = %s", str(list(p_list.keys())))
     logging.info("Deleting all portfolios")
-    _ = [p.delete() for p in portfolios.get_list(tutil.TEST_SQ, use_cache=False).values() if p.is_toplevel()]
+    for p in portfolios.get_list(tutil.TEST_SQ, use_cache=False).values():
+        if p.is_toplevel():
+            p.delete()
     # Import config
     cmd = f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} {config_file} --{opt.WHAT} {opt.WHAT_PORTFOLIOS}"
     assert tutil.run_cmd(config.main, cmd) == e.OK
@@ -193,7 +195,8 @@ def test_config_import_apps() -> None:
         json_config = json.loads(f.read())["applications"]
 
     # delete all apps in test
-    _ = [p.delete() for p in applications.get_list(tutil.TEST_SQ, use_cache=False).values()]
+    for p in applications.get_list(tutil.TEST_SQ, use_cache=False).values():
+        p.delete()
     # Import config
     cmd = f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} {config_file} --{opt.WHAT} {opt.WHAT_APPS}"
     assert tutil.run_cmd(config.main, cmd) == e.OK

@@ -95,7 +95,7 @@ class Hotspot(findings.Finding):
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self.type = "SECURITY_HOTSPOT"
-        self.__details = None
+        self.__details: types.ApiPayload = None
         Hotspot.CACHE.put(self)
         self.refresh()
 
@@ -438,7 +438,7 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
     return post_search_filter(hotspots_list, filters)
 
 
-def get_object(endpoint: pf.Platform, key: str, data: dict[str] = None, from_export: bool = False) -> Hotspot:
+def get_object(endpoint: pf.Platform, key: str, data: Optional[dict[str]] = None, from_export: bool = False) -> Hotspot:
     """Returns a hotspot from its key"""
     o = Hotspot.CACHE.get(key, endpoint.local_url)
     if not o:

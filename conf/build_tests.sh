@@ -43,6 +43,7 @@ do
             b=$(basename "${f}" .py)
             cp "${f}" "${ROOT_DIR}/${GEN_LOC}/${target}/${b}_${target}.py"
         done
+        rm "${ROOT_DIR}/${GEN_LOC}/${target}"/credentials*.py
         cp "credentials-${target}.py" "${ROOT_DIR}/${GEN_LOC}/${target}/credentials.py"
         mv "${ROOT_DIR}/${GEN_LOC}/${target}/conftest_${target}.py" "${ROOT_DIR}/${GEN_LOC}/${target}/conftest.py"
         mv "${ROOT_DIR}/${GEN_LOC}/${target}/utilities_${target}.py" "${ROOT_DIR}/${GEN_LOC}/${target}/utilities.py"

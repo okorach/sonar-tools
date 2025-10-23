@@ -24,7 +24,7 @@ Abstraction of the SonarQube "component" concept
 """
 
 from __future__ import annotations
-from typing import Optional
+from typing import Any, Optional
 import math
 import json
 
@@ -56,20 +56,18 @@ class Component(sq.SqObject):
     def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
-        self.name = None
-        self.nbr_issues = None
-        self.ncloc = None
-        self._description = None
-        self._last_analysis = None
-        self._visibility = None
+        self.name: Optional[str] = None
+        self.nbr_issues: Optional[int] = None
+        self.ncloc: Optional[int] = None
+        self._description: Optional[str] = None
+        self._last_analysis: Optional[datetime] = None
+        self._visibility: Optional[str] = None
         if data is not None:
             self.reload(data)
 
     def reload(self, data: types.ApiPayload) -> Component:
-        log.debug("Reloading %s with %s", str(self), utilities.json_dump(data))
-        if not self.sq_json:
-            self.sq_json = {}
-        self.sq_json.update(data)
+        """Loads a SonarQube API JSON payload in a Component"""
+        super().reload(data)
         if "name" in data:
             self.name = data["name"]
         if "visibility" in data:
@@ -200,7 +198,7 @@ class Component(sq.SqObject):
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
-    def get_measure(self, metric: str, fallback: int = None) -> any:
+    def get_measure(self, metric: str, fallback: Any = None) -> Any:
         """Returns a component measure"""
         meas = self.get_measures([metric])
         return meas[metric].value if metric in meas and meas[metric] and meas[metric].value is not None else fallback
@@ -215,7 +213,7 @@ class Component(sq.SqObject):
         """Returns a component navigation data"""
         params = utilities.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(c.GET))
         data = json.loads(self.get("navigation/component", params=params).text)
-        self.sq_json.update(data)
+        super().reload(data)
         return data
 
     def refresh(self) -> Component:

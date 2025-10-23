@@ -49,12 +49,12 @@ class PullRequest(components.Component):
     CACHE = cache.Cache()
     API = {c.DELETE: "project_pull_requests/delete", c.LIST: "project_pull_requests/list"}
 
-    def __init__(self, project: object, key: str, data: types.ApiPayload = None) -> None:
+    def __init__(self, project: object, key: str, data: Optional[types.ApiPayload] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=project.endpoint, key=key)
         self.concerned_object = project
         self.json = data
-        self._last_analysis = None
+        self._last_analysis: Optional[datetime] = None
         PullRequest.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
@@ -120,7 +120,7 @@ class PullRequest(components.Component):
         return self.get_issues(filters) | self.get_hotspots(filters)
 
 
-def get_object(pull_request_key: str, project: object, data: types.ApiPayload = None) -> Optional[PullRequest]:
+def get_object(pull_request_key: str, project: object, data: Optional[types.ApiPayload] = None) -> Optional[PullRequest]:
     """Returns a PR object from a PR key and a project"""
     if project.endpoint.edition() == c.CE:
         log.debug("Pull requests not available in Community Edition")

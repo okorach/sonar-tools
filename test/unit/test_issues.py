@@ -30,23 +30,14 @@ import utilities as tutil
 from sonar import issues, exceptions, logging
 from sonar import utilities as util
 from sonar.util import constants as c
-
-
-ISSUE_FP = "ffbe8a34-cef6-4d5b-849d-bb2c25951c51"
-ISSUE_FP_V9_9 = "AZi22OzbCMRVk7bHctjz"
-ISSUE_ACCEPTED = "c99ac40e-c2c5-43ef-bcc5-4cd077d1052f"
-ISSUE_ACCEPTED_V9_9 = "AZI6frkTuTfDeRt_hspx"
-ISSUE_W_MULTIPLE_CHANGELOGS = "6ae41c3b-c3d2-422f-a505-d355e7b0a268"
-CHLOG_ISSUE_DATE = "2019-09-21"
-ISSUE_W_MULTIPLE_CHANGELOGS_V9_9 = "AZBKamIoDJWCTq61gxzW"
-CHLOG_ISSUE_V9_9_DATE = "2021-01-08"
+import credentials as tconf
 
 
 def test_issue() -> None:
     """Test issues"""
-    issue_key = ISSUE_FP if tutil.SQ.version() >= (10, 0, 0) else ISSUE_FP_V9_9
-    issue_key_accepted = ISSUE_ACCEPTED if tutil.SQ.version() >= (10, 0, 0) else ISSUE_ACCEPTED_V9_9
-    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
+    issue_key = tconf.ISSUE_FP
+    issue_key_accepted = tconf.ISSUE_ACCEPTED
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
 
     issue = issues_d[issue_key]
     assert not issue.is_security_issue()
@@ -122,7 +113,8 @@ def test_set_severity() -> None:
         issue.set_mqr_severity("MAINTAINABILITY", "NON_EXISTING")
     with pytest.raises(exceptions.SonarException):
         issue.set_mqr_severity("NON_EXISTING", "HIGH")
-    [issue.set_mqr_severity(k, v) for k, v in old_impacts.items()]
+    for k, v in old_impacts.items():
+        issue.set_mqr_severity(k, v)
 
     tutil.SQ.set_mqr_mode(is_mqr)
 
@@ -171,23 +163,15 @@ def test_assign() -> None:
 
 def test_changelog() -> None:
     """Test changelog"""
-    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
-    issue_key = ISSUE_FP if tutil.SQ.version() >= (10, 0, 0) else ISSUE_FP_V9_9
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
+    issue_key = tconf.ISSUE_FP
     assert issue_key in issues_d
     issue = issues_d[issue_key]
     assert issue.key == issue_key
     assert str(issue) == f"Issue key '{issue_key}'"
     assert issue.is_false_positive()
     changelog_l = list(issue.changelog(manual_only=False).values())
-    if tutil.SQ.version() < (10, 0, 0):
-        nb_changes = 4
-    elif tutil.SQ.version() >= (2025, 4, 2):
-        nb_changes = 16
-    elif tutil.SQ.version() >= (25, 1, 0):
-        nb_changes = 8
-    else:
-        nb_changes = 1
-    assert len(changelog_l) == nb_changes
+    assert len(changelog_l) == tconf.ISSUE_FP_NBR_CHANGELOGS
     changelog = changelog_l[-1]
     assert changelog.is_resolve_as_fp()
     assert not changelog.is_closed()
@@ -207,26 +191,16 @@ def test_changelog() -> None:
     assert not changelog.is_assignment()
     assert changelog.assignee() is None
     assert changelog.assignee(False) is None
-    author = None
     delta = timedelta(days=1)
-    if tutil.SQ.version() >= (2025, 5, 0):
-        date_change = datetime(2025, 10, 12)
-    elif tutil.SQ.version() >= (10, 0, 0):
-        date_change = datetime(2025, 2, 13)
-    else:
-        date_change = datetime(2025, 10, 10)
-        author = "admin"
+    date_change = tconf.ISSUE_FP_CHANGELOG_DATE
     assert date_change <= changelog.date_time().replace(tzinfo=None) < date_change + delta
-    assert changelog.author() == author
+    assert changelog.author() == "admin"
 
 
 def test_multiple_changelogs():
     """test_multiple_changelogs"""
-    issue_dt = util.string_to_date(CHLOG_ISSUE_V9_9_DATE if tutil.SQ.version() < (10, 0, 0) else CHLOG_ISSUE_DATE)
-    issues_d = issues.search_by_date(
-        endpoint=tutil.SQ, params={"project": "pytorch", "timeZone": "Europe/Paris"}, date_start=issue_dt, date_stop=issue_dt
-    )
-    issue_key = ISSUE_W_MULTIPLE_CHANGELOGS if tutil.SQ.version() >= (10, 0, 0) else ISSUE_W_MULTIPLE_CHANGELOGS_V9_9
+    issue_key = tconf.ISSUE_FP
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
     assert issue_key in issues_d
     issue = issues_d[issue_key]
     state_list = ("ACCEPT", "CONFIRM", "UNCONFIRM", "FP", "REOPEN", "SEVERITY", "ASSIGN", "UNASSIGN", "SEVERITY")
@@ -239,7 +213,7 @@ def test_multiple_changelogs():
         results["UNCONFIRM"] |= cl.is_unconfirm()
         if cl.is_resolve_as_fp():
             results["FP"] = True
-            assert cl.previous_state() in "OPEN", "REOPENED"
+            assert cl.previous_state() in ("OPEN", "REOPENED")
         if cl.is_assignment():
             results["ASSIGN"] = True
             assert len(cl.assignee()) > 0
@@ -282,7 +256,7 @@ def test_transitions() -> None:
         issue.resolve_as_fixed()
     assert issue.reopen()
     with pytest.raises(exceptions.UnsupportedOperation):
-        assert not issue.reopen()
+        issue.reopen()
 
     if tutil.SQ.version() >= c.ACCEPT_INTRO_VERSION:
         assert issue.accept()

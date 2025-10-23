@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 from typing import Optional
+from datetime import datetime
 
 import json
 from requests.utils import quote
@@ -62,7 +63,7 @@ class ApplicationBranch(Component):
         self.sq_json = branch_data
         self._is_main = is_main
         self._project_branches = project_branches
-        self._last_analysis = None
+        self._last_analysis: Optional[datetime] = None
         log.debug("Created object %s with uuid %d id %x", str(self), hash(self), id(self))
         ApplicationBranch.CACHE.put(self)
 

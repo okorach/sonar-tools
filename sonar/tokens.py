@@ -44,7 +44,7 @@ class UserToken(sq.SqObject):
     CACHE = cache.Cache()
     API = {c.CREATE: "user_tokens/generate", c.DELETE: "user_tokens/revoke", c.LIST: "user_tokens/search"}
 
-    def __init__(self, endpoint: pf.Platform, login: str, json_data: types.ApiPayload, name: str = None) -> None:
+    def __init__(self, endpoint: pf.Platform, login: str, json_data: types.ApiPayload, name: Optional[str] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=login)
         self.login = login  #: User login

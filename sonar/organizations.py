@@ -24,6 +24,7 @@ Abstraction of the SonarQube Cloud organization concept
 """
 
 from __future__ import annotations
+from typing import Optional
 import json
 from threading import Lock
 
@@ -53,7 +54,7 @@ class Organization(sqobject.SqObject):
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=endpoint, key=key)
-        self.description = None
+        self.description: Optional[str] = None
         self.name = name
         log.debug("Created object %s", str(self))
         Organization.CACHE.put(self)

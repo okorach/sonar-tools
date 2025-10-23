@@ -21,6 +21,7 @@
 """Abstraction of the SonarQube metric concept"""
 
 from __future__ import annotations
+from typing import Optional
 import json
 from threading import Lock
 
@@ -91,14 +92,14 @@ class Metric(sqobject.SqObject):
     def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
-        self.type = None  #: Type (FLOAT, INT, STRING, WORK_DUR...)
-        self.name = None  #: Name
-        self.description = None  #: Description
-        self.domain = None  #: Domain
-        self.direction = None  #: Directory
-        self.qualitative = None  #: Qualitative
-        self.hidden = None  #: Hidden
-        self.custom = None  #: Custom
+        self.type: Optional[str] = None  #: Type (FLOAT, INT, STRING, WORK_DUR...)
+        self.name: Optional[str] = None  #: Name
+        self.description: Optional[str] = None  #: Description
+        self.domain: Optional[str] = None  #: Domain
+        self.direction: Optional[str] = None  #: Directory
+        self.qualitative: Optional[bool] = None  #: Qualitative
+        self.hidden: Optional[bool] = None  #: Hidden
+        self.custom: Optional[bool] = None  #: Custom
         self.__load(data)
         Metric.CACHE.put(self)
 

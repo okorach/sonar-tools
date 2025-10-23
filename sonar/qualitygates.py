@@ -24,7 +24,7 @@ Abstraction of the SonarQube "quality gate" concept
 """
 
 from __future__ import annotations
-from typing import Union
+from typing import Union, Optional
 
 import json
 
@@ -117,9 +117,9 @@ class QualityGate(sq.SqObject):
         log.debug("Loading %s with data %s", self, util.json_dump(data))
         self.is_built_in = False  #: Whether the quality gate is built in
         self.is_default = False  #: Whether the quality gate is the default
-        self._conditions = None  #: Quality gate conditions
-        self._permissions = None  #: Quality gate permissions
-        self._projects = None  #: Projects using this quality profile
+        self._conditions: Optional[dict[str, str]] = None  #: Quality gate conditions
+        self._permissions: Optional[object] = None  #: Quality gate permissions
+        self._projects: Optional[dict[str, projects.Project]] = None  #: Projects using this quality profile
         self.sq_json = data
         self.name = data.pop("name")
         self.key = data.pop("id", self.name)

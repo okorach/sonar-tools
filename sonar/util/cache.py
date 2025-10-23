@@ -30,7 +30,7 @@ class Cache(object):
     def __init__(self) -> None:
         """Constructor"""
         self.objects = {}
-        self.object_class = None
+        self.object_class: Optional[type] = None
 
     def __len__(self) -> int:
         """Returns size of cache"""

@@ -160,16 +160,16 @@ class Project(components.Component):
         :param str key: The project key
         """
         super().__init__(endpoint=endpoint, key=key)
-        self._last_analysis = None
-        self._branches_last_analysis = None
-        self._permissions = None
-        self._branches = None
-        self._pull_requests = None
-        self._ncloc_with_branches = None
-        self._binding = None
-        self._new_code = None
-        self._ci = None
-        self._revision = None
+        self._last_analysis: Optional[datetime] = None
+        self._branches_last_analysis: Optional[datetime] = None
+        self._permissions: Optional[object] = None
+        self._branches: Optional[dict[str, branches.Branch]] = None
+        self._pull_requests: Optional[dict[str, pull_requests.PullRequest]] = None
+        self._ncloc_with_branches: Optional[int] = None
+        self._binding: Optional[dict[str, str]] = None
+        self._new_code: Optional[str] = None
+        self._ci: Optional[str] = None
+        self._revision: Optional[str] = None
         Project.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
@@ -247,18 +247,13 @@ class Project(components.Component):
 
         :param dict data: Data to load
         :return: self
-        :rtype: Project
         """
         """Loads a project object with contents of an api/projects/search call"""
-        self.sq_json = (self.sq_json or {}) | data
+        super().reload(data)
         self.name = data["name"]
         self._visibility = data["visibility"]
-        if "lastAnalysisDate" in data:
-            self._last_analysis = util.string_to_date(data["lastAnalysisDate"])
-        elif "analysisDate" in data:
-            self._last_analysis = util.string_to_date(data["analysisDate"])
-        else:
-            self._last_analysis = None
+        key = next((k for k in ("lastAnalysisDate", "analysisDate") if k in data), None)
+        self._last_analysis = util.string_to_date(data[key]) if key else None
         self._revision = data.get("revision", self._revision)
         return self
 
@@ -368,7 +363,7 @@ class Project(components.Component):
     def has_binding(self) -> bool:
         """Whether the project has a DevOps platform binding"""
         if not self._binding:
-            _ = self.binding()
+            self.binding()
         return self._binding.get("has_binding", False)
 
     def binding(self) -> Optional[dict[str, str]]:
@@ -512,7 +507,7 @@ class Project(components.Component):
             log.info("%s has no binding, skipping binding validation...", str(self))
             return []
         try:
-            _ = self.get("alm_settings/validate_binding", params={"project": self.key})
+            self.get("alm_settings/validate_binding", params={"project": self.key})
             log.debug("%s binding is valid", str(self))
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"auditing binding of {str(self)}", catch_all=True)
@@ -994,7 +989,7 @@ class Project(components.Component):
         log.debug("Returning %s migration data %s", str(self), util.json_dump(json_data))
         return json_data
 
-    def export(self, export_settings: types.ConfigSettings, settings_list: dict[str, str] = None) -> types.ObjectJsonRepr:
+    def export(self, export_settings: types.ConfigSettings, settings_list: Optional[dict[str, str]] = None) -> types.ObjectJsonRepr:
         """Exports the entire project configuration as JSON
 
         :return: All project configuration settings
@@ -1104,7 +1099,7 @@ class Project(components.Component):
         """
         if quality_gate is None:
             return False
-        _ = qualitygates.QualityGate.get_object(self.endpoint, quality_gate)
+        qualitygates.QualityGate.get_object(self.endpoint, quality_gate)
         return self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate}).ok
 
     def set_contains_ai_code(self, contains_ai_code: bool) -> bool:
@@ -1308,7 +1303,8 @@ class Project(components.Component):
         self.set_tags(util.csv_to_list(config.get("tags", None)))
         self.set_quality_gate(config.get("qualityGate", None))
 
-        _ = [self.set_quality_profile(language=lang, quality_profile=qp_name) for lang, qp_name in config.get("qualityProfiles", {}).items()]
+        for lang, qp_name in config.get("qualityProfiles", {}).items():
+            self.set_quality_profile(language=lang, quality_profile=qp_name)
         if branch_config := config.get("branches", None):
             try:
                 bname = next(bname for bname, bdata in branch_config.items() if bdata.get("isMain", False))
@@ -1483,7 +1479,8 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     write_q = kwargs.get("write_q", None)
     key_regexp = kwargs.get("key_list", ".+")
     nb_threads = export_settings.get("threads", 8)
-    _ = [qp.projects() for qp in qualityprofiles.get_list(endpoint).values()]
+    for qp in qualityprofiles.get_list(endpoint).values():
+        qp.projects()
     proj_list = {k: v for k, v in get_list(endpoint=endpoint, threads=nb_threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)}
     total, current = len(proj_list), 0
     log.info("Exporting %d projects", total)
@@ -1580,8 +1577,8 @@ def export_zips(
     :param Platform endpoint: reference to the SonarQube platform
     :param str key_regexp: Regexp to filter projects to export, defaults to None (all projects)
     :param int threads: Number of parallel threads for export, defaults to 8
-    :param int export_timeout: Tiemout to export the project, defaults to 30
-    :returns: list of exported projects and platform version
+    :param int export_timeout: Timeout to export the project, defaults to 30
+    :return: list of exported projects with export result
     """
     statuses, results = {"SUCCESS": 0}, []
     projects_list = {k: p for k, p in get_list(endpoint, threads=threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", p.key)}
@@ -1647,7 +1644,7 @@ def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30
     return o_proj, s
 
 
-def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60) -> dict[Project, str]:
+def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60) -> dict[str, Project]:
     """Imports as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform

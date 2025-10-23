@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 import json
+from typing import Optional
 from threading import Lock
 from sonar import sqobject, rules
 import sonar.platform as pf
@@ -68,7 +69,7 @@ class Language(sqobject.SqObject):
         get_list(endpoint)
         return Language.CACHE.get(key, endpoint.local_url)
 
-    def number_of_rules(self, rule_type: str = None) -> int:
+    def number_of_rules(self, rule_type: Optional[str] = None) -> int:
         """Count rules in the language, optionally filtering on rule type
 
         :param rule_type: Rule type to filter on, defaults to None

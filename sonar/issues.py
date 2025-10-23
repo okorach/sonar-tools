@@ -134,7 +134,7 @@ class Issue(findings.Finding):
     def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
-        self._debt = None
+        self._debt: Optional[int] = None
         Issue.CACHE.put(self)
 
     def __str__(self) -> str:
@@ -386,18 +386,13 @@ class Issue(findings.Finding):
         """Sets an issue type
         :param str new_type: New type of the issue (Can be BUG, VULNERABILITY or CODE_SMELL)
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         if self.endpoint.is_mqr_mode():
             raise exceptions.UnsupportedOperation("Changing issue type is not supported in MQR mode")
         log.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
-        try:
-            if ok := self.post("issues/set_type", {"issue": self.key, "type": new_type}).ok:
-                self.type = new_type
-        except exceptions.SonarException:
-            return False
-        else:
-            return ok
+        if ok := self.post("issues/set_type", {"issue": self.key, "type": new_type}).ok:
+            self.type = new_type
+        return ok
 
     def is_wont_fix(self) -> bool:
         """

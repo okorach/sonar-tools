@@ -71,9 +71,9 @@ class Application(aggr.Aggregation):
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=endpoint, key=key)
-        self._branches = None
-        self._projects = None
-        self._description = None
+        self._branches: Optional[dict[str, app_branches.ApplicationBranch]] = None
+        self._projects: Optional[dict[str, str]] = None
+        self._description: Optional[str] = None
         self.name = name
         log.debug("Created object %s with uuid %d id %x", str(self), hash(self), id(self))
         Application.CACHE.put(self)
@@ -90,7 +90,7 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         check_supported(endpoint)
-        o = Application.CACHE.get(key, endpoint.local_url)
+        o: Application = Application.CACHE.get(key, endpoint.local_url)
         if o:
             return o
         data = json.loads(endpoint.get(Application.API[c.GET], params={"application": key}).text)["application"]
@@ -109,7 +109,7 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         check_supported(endpoint)
-        o = Application.CACHE.get(data["key"], endpoint.local_url)
+        o: Application = Application.CACHE.get(data["key"], endpoint.local_url)
         if not o:
             o = cls(endpoint, data["key"], data["name"])
         o.reload(data)
@@ -259,7 +259,7 @@ class Application(aggr.Aggregation):
                 branch.delete()
         return super().delete()
 
-    def get_hotspots(self, filters: dict[str, str] = None) -> dict[str, object]:
+    def get_hotspots(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:
         new_filters = filters.copy() if filters else {}
         pattern = new_filters.pop("branch", None) if new_filters else None
         if not pattern:
@@ -270,7 +270,7 @@ class Application(aggr.Aggregation):
             findings_list |= comp.get_hotspots(new_filters)
         return findings_list
 
-    def get_issues(self, filters: dict[str, str] = None) -> dict[str, object]:
+    def get_issues(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:
         new_filters = filters.copy() if filters else {}
         pattern = new_filters.pop("branch", None) if new_filters else None
         if not pattern:
@@ -412,7 +412,8 @@ class Application(aggr.Aggregation):
         main_branch_name = next((k for k, v in data.get("branches", {}).items() if v.get("isMain", False)), None)
         main_branch_name is None or self.main_branch().rename(main_branch_name)
 
-        _ = [self.set_branches(name, branch_data) for name, branch_data in data.get("branches", {}).items()]
+        for name, branch_data in data.get("branches", {}).items():
+            self.set_branches(name, branch_data)
 
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         ops = {c.READ: {"application": self.key}, c.RECOMPUTE: {"key": self.key}}

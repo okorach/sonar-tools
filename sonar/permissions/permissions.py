@@ -75,7 +75,7 @@ class Permissions(ABC):
     def __init__(self, concerned_object: object) -> None:
         self.concerned_object = concerned_object
         self.endpoint = concerned_object.endpoint
-        self.permissions = None
+        self.permissions: Optional[dict[str, dict[str, str]]] = None
         self.read()
 
     def __str__(self) -> str:

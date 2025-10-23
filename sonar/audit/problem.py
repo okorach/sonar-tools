@@ -19,6 +19,7 @@
 #
 
 import csv
+from typing import Optional
 
 import sonar.logging as log
 from sonar import utilities
@@ -60,7 +61,9 @@ class Problem:
         return d
 
 
-def dump_report(problems: list[Problem], file: str, server_id: str = None, format: str = "csv", with_url: bool = False, separator: str = ",") -> None:
+def dump_report(
+    problems: list[Problem], file: str, server_id: Optional[str] = None, format: str = "csv", with_url: bool = False, separator: str = ","
+) -> None:
     """Dumps to file a report about a list of problems
 
     :param list[Problems] problems: List of problems to dump
@@ -76,7 +79,7 @@ def dump_report(problems: list[Problem], file: str, server_id: str = None, forma
         __dump_csv(problems=problems, file=file, server_id=server_id, with_url=with_url, separator=separator)
 
 
-def __dump_csv(problems: list[Problem], file: str, server_id: str = None, with_url: bool = False, separator: str = ",") -> None:
+def __dump_csv(problems: list[Problem], file: str, server_id: Optional[str] = None, with_url: bool = False, separator: str = ",") -> None:
     """Writes a list of problems in CSV format
 
     :param list[Problems] problems: List of problems to dump
@@ -98,7 +101,7 @@ def __dump_csv(problems: list[Problem], file: str, server_id: str = None, with_u
             csvwriter.writerow(data)
 
 
-def __dump_json(problems: list[Problem], file: str, server_id: str = None, with_url: bool = False) -> None:
+def __dump_json(problems: list[Problem], file: str, server_id: Optional[str] = None, with_url: bool = False) -> None:
     """Writes a list of problems in JSON format
 
     :param list[Problems] problems: List of problems to dump

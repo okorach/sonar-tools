@@ -74,7 +74,7 @@ class Group(sq.SqObject):
         super().__init__(endpoint=endpoint, key=name)
         self.name = name  #: Group name
         self.description = data.get("description", "")  #: Group description
-        self.__members = None
+        self.__members: Optional[list[users.User]] = None
         self.__is_default = data.get("default", None)
         self.id = data.get("id", None)  #: SonarQube 10.4+ Group id
         self.sq_json = data
@@ -103,7 +103,7 @@ class Group(sq.SqObject):
         return cls(endpoint, name, data=data)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, name: str, description: str = None) -> Group:
+    def create(cls, endpoint: pf.Platform, name: str, description: Optional[str] = None) -> Group:
         """Creates a new group in SonarQube and returns the corresponding Group object
 
         :param endpoint: Reference to the SonarQube platform

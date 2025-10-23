@@ -21,6 +21,7 @@
 """Abstraction of SonarQube global permissions"""
 
 from __future__ import annotations
+from typing import Optional
 
 import sonar.logging as log
 from sonar.permissions import permissions
@@ -40,7 +41,7 @@ class GlobalPermissions(permissions.Permissions):
     def __init__(self, concerned_object: object) -> None:
         self.concerned_object = concerned_object
         self.endpoint = concerned_object
-        self.permissions = None
+        self.permissions: Optional[dict[str, str[str, str]]] = None
         self.read()
 
     def __str__(self) -> str:
