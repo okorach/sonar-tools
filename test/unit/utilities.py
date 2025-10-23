@@ -28,7 +28,7 @@ import sys
 import datetime
 import re
 import csv, json
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from unittest.mock import patch
 import pytest
 
@@ -388,10 +388,15 @@ def csv_col_not_all_empty(csv_file: str, col_name: str) -> bool:
     return not csv_col_condition(csv_file, col_name, is_empty)
 
 
+def read_json(json_file: str) -> dict[str, Any]:
+    """Reads a JSON file and returns its content"""
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+        return json.loads(fh.read())
+
+
 def json_field_sorted(json_file: str, field: str) -> bool:
     """return whether a JSON file is sorted by a given field"""
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
-        data = json.loads(fh.read())
+    data = read_json(json_file)
     last_key = ""
     for p in data:
         if last_key > p[field]:
@@ -402,15 +407,13 @@ def json_field_sorted(json_file: str, field: str) -> bool:
 
 def json_fields_present(json_file: str, *fields) -> bool:
     """return whether a JSON file is present for all elements of the JSON"""
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
-        data = json.loads(fh.read())
+    data = read_json(json_file)
     return sum(1 for p in data for field in fields if field not in p) == 0
 
 
 def json_fields_absent(json_file: str, *fields) -> bool:
     """return whether a JSON file is absent for all elements of the JSON"""
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
-        data = json.loads(fh.read())
+    data = read_json(json_file)
     return sum(1 for p in data for field in fields if field in p) == 0
 
 
@@ -421,18 +424,22 @@ def json_field_not_all_empty(csv_file: str, col_name: str) -> bool:
 
 def json_field_match(json_file: str, field: str, regexp: str, allow_null: bool = False) -> bool:
     """return whether a JSON field matches a regexp"""
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
-        data = json.loads(fh.read())
+    data = read_json(json_file)
     if allow_null:
-        return sum(1 for p in data if field in p and p[field] is not None and not re.match(rf"{regexp}", p[field])) == 0
+        return all(p[field] is None or re.match(rf"{regexp}", p[field]) for p in data)
     else:
-        return sum(1 for p in data if not re.match(rf"{regexp}", p[field])) == 0
+        return all(re.match(rf"{regexp}", p[field]) for p in data)
+
+
+def json_field_in_values(json_file: str, field: str, *values) -> bool:
+    """Verifies that a JSON field is in a list of values"""
+    data = read_json(json_file)
+    return all(p[field] in values for p in data)
 
 
 def json_field_condition(json_file: str, field: str, func: callable, allow_null: bool = False) -> bool:
     """return whether a JSON field matches a regexp"""
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
-        data = json.loads(fh.read())
+    data = read_json(json_file)
     if allow_null:
         return sum(1 for p in data if field in p and p[field] is not None and not func(p[field], allow_null)) == 0
     else:
