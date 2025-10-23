@@ -272,16 +272,16 @@ class Finding(sq.SqObject):
         return data
 
     def is_vulnerability(self) -> bool:
-        return self.type == "VULNERABILITY" or "SECURITY" in self.impacts
+        return "SECURITY" in self.impacts if self.endpoint.is_mqr_mode() else self.type == "VULNERABILITY"
 
     def is_hotspot(self) -> bool:
-        return self.type == "SECURITY_HOTSPOT" or "SECURITY" in self.impacts
+        return self.type == "SECURITY_HOTSPOT"
 
     def is_bug(self) -> bool:
-        return self.type == "BUG" or "RELIABILITY" in self.impacts
+        return "RELIABILITY" in self.impacts if self.endpoint.is_mqr_mode() else self.type == "BUG"
 
     def is_code_smell(self) -> bool:
-        return self.type == "CODE_SMELL" or "MAINTAINABILITY" in self.impacts
+        return "MAINTAINABILITY" in self.impacts if self.endpoint.is_mqr_mode() else self.type == "CODE_SMELL"
 
     def is_security_issue(self) -> bool:
         return self.is_vulnerability() or self.is_hotspot()
