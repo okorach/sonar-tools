@@ -93,7 +93,7 @@ def write_csv(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.C
     with_url = settings.get("WITH_URL", False)
     csvwriter = csv.writer(fd, delimiter=settings.get("CSV_DELIMITER", ","))
     header = ["Server Id"] if server_id else []
-    header += ["Audit Check", "Category", "Severity", "Message"]
+    header += ["Problem", "Type", "Severity", "Message"]
     header += ["URL"] if with_url else []
     csvwriter.writerow(header)
     while (problems := queue.get()) is not util.WRITE_END:
