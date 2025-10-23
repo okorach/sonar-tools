@@ -104,7 +104,7 @@ class SqObject(object):
         params: types.ApiParams = None,
         data: Optional[str] = None,
         mute: tuple[HTTPStatus] = (),
-        **kwargs,
+        **kwargs: Any,
     ) -> requests.Response:
         """Executes and HTTP GET against the SonarQube platform
 
@@ -125,7 +125,7 @@ class SqObject(object):
         api: str,
         params: types.ApiParams = None,
         mute: tuple[HTTPStatus] = (),
-        **kwargs,
+        **kwargs: Any,
     ) -> requests.Response:
         """Executes and HTTP POST against the SonarQube platform
 
@@ -147,7 +147,7 @@ class SqObject(object):
         api: str,
         params: types.ApiParams = None,
         mute: tuple[HTTPStatus] = (),
-        **kwargs,
+        **kwargs: Any,
     ) -> requests.Response:
         """Executes and HTTP PATCH against the SonarQube platform
 
@@ -172,8 +172,8 @@ class SqObject(object):
             if ok:
                 log.info("Removing from %s cache", str(self.__class__.__name__))
                 self.__class__.CACHE.pop(self)
-        except (AttributeError, KeyError):
-            raise exceptions.UnsupportedOperation(f"Can't delete {self.__class__.__name__.lower()}s")
+        except (AttributeError, KeyError) as e:
+            raise exceptions.UnsupportedOperation(f"Can't delete {self.__class__.__name__.lower()}s") from e
         return ok
 
     def set_tags(self, tags: list[str]) -> bool:
@@ -195,12 +195,12 @@ class SqObject(object):
         else:
             return ok
 
-    def get_tags(self, **kwargs) -> list[str]:
+    def get_tags(self, **kwargs: Any) -> list[str]:
         """Returns object tags"""
         try:
             api = self.__class__.API[c.GET_TAGS]
-        except (AttributeError, KeyError):
-            raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags")
+        except (AttributeError, KeyError) as e:
+            raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags") from e
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
         if not kwargs.get(c.USE_CACHE, True) or self._tags is None:
@@ -222,10 +222,9 @@ def __load(endpoint: object, object_class: Any, data: types.ObjectJsonRepr) -> d
     key_field = object_class.SEARCH_KEY_FIELD
     if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook"):
         return {obj[key_field]: object_class.load(endpoint=endpoint, data=obj) for obj in data}
-    elif object_class.__name__ in ("Rule"):
+    if object_class.__name__ in ("Rule"):
         return {obj[key_field]: object_class.load(endpoint=endpoint, key=obj[key_field], data=obj) for obj in data}
-    else:
-        return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}
+    return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}
 
 
 def search_objects(endpoint: object, object_class: Any, params: types.ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
