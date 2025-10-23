@@ -21,15 +21,18 @@
 
 from __future__ import annotations
 import concurrent.futures
-from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from datetime import datetime
+    from sonar.util import types
+
 import re
 import Levenshtein
 
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
-from sonar.util import types
 from sonar.util import constants as c, issue_defs as idefs
 from sonar import exceptions
 

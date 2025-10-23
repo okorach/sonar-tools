@@ -21,7 +21,6 @@
 import re
 from typing import Optional
 
-from sonar.util import constants as c
 from sonar import platform, components, projects, applications, portfolios
 
 

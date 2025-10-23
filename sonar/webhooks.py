@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube webhook concept"""
 
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, ClassVar
 
 import json
 
@@ -41,10 +41,10 @@ class WebHook(sq.SqObject):
     Abstraction of the SonarQube "webhook" concept
     """
 
-    CACHE = cache.Cache()
-    API = {c.CREATE: "webhooks/create", c.READ: "webhooks/list", c.UPDATE: "webhooks/update", c.LIST: "webhooks/list", c.DELETE: "webhooks/delete"}
-    SEARCH_KEY_FIELD = "key"
-    SEARCH_RETURN_FIELD = "webhooks"
+    CACHE: ClassVar[cache.Cache] = cache.Cache()
+    API: ClassVar[dict[str, str]] = {c.CREATE: "webhooks/create", c.READ: "webhooks/list", c.UPDATE: "webhooks/update", c.LIST: "webhooks/list", c.DELETE: "webhooks/delete"}
+    SEARCH_KEY_FIELD: ClassVar[str] = "key"
+    SEARCH_RETURN_FIELD: ClassVar[str] = "webhooks"
 
     def __init__(self, endpoint: pf.Platform, name: str, url: str, secret: Optional[str] = None, project: Optional[str] = None) -> None:
         """Constructor"""

@@ -51,7 +51,7 @@ def __get_measures_history(obj: object, wanted_metrics: types.KeyList, convert_o
         ratings = convert_options.get("ratings", "letters")
         percents = convert_options.get("percents", "float")
         for m in data:
-            m[2] = measures.format(obj.endpoint, m[1], m[2], ratings, percents)
+            m[2] = measures.format_measure(obj.endpoint, m[1], m[2], ratings, percents)
     return obj.component_data() | {"history": data}
 
 

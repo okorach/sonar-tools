@@ -401,8 +401,7 @@ class Branch(components.Component):
         try:
             if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
                 return self.__audit_last_analysis(audit_settings)
-            else:
-                return self.__audit_last_analysis(audit_settings) + self.__audit_never_analyzed() + self._audit_component(audit_settings)
+            return self.__audit_last_analysis(audit_settings) + self.__audit_never_analyzed() + self._audit_component(audit_settings)
         except Exception as e:
             log.error("%s while auditing %s, audit skipped", util.error_msg(e), str(self))
         return []
