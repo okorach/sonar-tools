@@ -26,7 +26,7 @@ Abstraction of the SonarQube "portfolio" concept
 from __future__ import annotations
 
 import re
-from typing import Optional
+from typing import Optional, Union, Any
 import json
 from http import HTTPStatus
 from threading import Lock
@@ -37,6 +37,9 @@ from sonar.util import types, cache
 import sonar.util.constants as c
 
 from sonar import aggregations, exceptions, applications, app_branches
+from sonar.projects import Project
+from sonar.branches import Branch
+
 import sonar.permissions.permissions as perms
 import sonar.permissions.portfolio_permissions as pperms
 import sonar.sqobject as sq
@@ -100,17 +103,17 @@ class Portfolio(aggregations.Aggregation):
     def __init__(self, endpoint: pf.Platform, key: str, name: Optional[str] = None) -> None:
         """Constructor, don't use - use class methods instead"""
         super().__init__(endpoint=endpoint, key=key)
-        self.name = name if name is not None else key
-        self._selection_mode = {_SELECTION_MODE_NONE: True}  #: Portfolio project selection mode
-        self._tags = []  #: Portfolio tags when selection mode is TAGS
+        self.name: str = name if name is not None else key
+        self._selection_mode: dict[str, Any] = {_SELECTION_MODE_NONE: True}  #: Portfolio project selection mode
+        self._tags: list[str] = []  #: Portfolio tags when selection mode is TAGS
         self._description: Optional[str] = None  #: Portfolio description
         self._visibility: Optional[str] = None  #: Portfolio visibility
-        self._applications = {}  #: applications
-        self._permissions: Optional[object] = None  #: Permissions
-
+        self._applications: dict[str, Any] = {}  #: applications
+        self._permissions: Optional[dict[str, list[str]]] = None  #: Permissions
+        self._projects: Optional[dict[str, set[str]]] = None  #: Projects and branches in portfolio
         self.parent_portfolio: Optional[Portfolio] = None  #: Ref to parent portfolio object, if any
         self.root_portfolio: Optional[Portfolio] = None  #: Ref to root portfolio, if any
-        self._sub_portfolios = {}  #: Subportfolios
+        self._sub_portfolios: dict[str, Portfolio] = {}  #: Subportfolios
         Portfolio.CACHE.put(self)
         log.debug("Created portfolio object name '%s'", name)
 
@@ -168,7 +171,7 @@ class Portfolio(aggregations.Aggregation):
         """Returns string representation of object"""
         return (
             f"subportfolio '{self.key}'"
-            if self.sq_json and self.sq_json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
+            if self.sq_json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
             else f"portfolio '{self.key}'"
         )
 
@@ -176,7 +179,7 @@ class Portfolio(aggregations.Aggregation):
         """Reloads a portfolio with returned API data"""
         super().reload(data)
         if "originalKey" not in data and data["qualifier"] == _PORTFOLIO_QUALIFIER:
-            self.parent_portfolio: Optional[object] = None
+            self.parent_portfolio = None
             self.root_portfolio = self
         self.load_selection_mode()
         self.reload_sub_portfolios()
@@ -226,11 +229,24 @@ class Portfolio(aggregations.Aggregation):
         return f"{self.base_url(local=False)}/portfolio?id={self.key}"
 
     def projects(self) -> Optional[dict[str, str]]:
-        """Returns list of projects and their branches if selection mode is manual, None otherwise"""
+        """Returns list of projects and their branches if selection mode is manual, or the list of projects for other modes"""
         if not self._selection_mode or _SELECTION_MODE_MANUAL not in self._selection_mode:
-            log.debug("%s: Not manual mode, no projects", str(self))
-            return None
+            if self._projects is None:
+                data = json.loads(self.get("api/views/projects_status", params={"portfolio": self.key}).text)
+                self._projects = {p["refKey"]: {c.DEFAULT_BRANCH} for p in data["projects"]}
+            return self._projects
         return self._selection_mode[_SELECTION_MODE_MANUAL]
+
+    def components(self) -> list[Union[Project, Branch]]:
+        """Returns the list of components objects (projects/branches) in the portfolio"""
+        log.debug("Collecting portfolio components from %s", util.json_dump(self.sq_json))
+        new_comps = []
+        for p_key, p_branches in self.projects().items():
+            proj = Project.get_object(self.endpoint, p_key)
+            for br in p_branches:
+                # If br is DEFAULT_BRANCH, next() will find nothing and we'll append the project itself
+                new_comps.append(next((b for b in proj.branches().values() if b.name == br), proj))
+        return new_comps
 
     def applications(self) -> Optional[dict[str, str]]:
         log.debug("Collecting portfolios applications from %s", util.json_dump(self.sq_json))
@@ -522,7 +538,7 @@ class Portfolio(aggregations.Aggregation):
         self._applications[app_key].append(branch)
         return True
 
-    def add_subportfolio(self, key: str, name: Optional[str] = None, by_ref: bool = False) -> Portfolio:
+    def add_subportfolio(self, key: str, name: str = None, by_ref: bool = False) -> Portfolio:
         """Adds a subportfolio to a portfolio, defined by key, name and by reference option"""
 
         log.info("Adding sub-portfolios to %s", str(self))
