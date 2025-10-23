@@ -51,7 +51,8 @@ class Problem:
         d = vars(self).copy()
         d.pop("concerned_object")
 
-        for k in ("severity", "type", "rule_id"):
+        d["problem"] = str(d.pop("rule_id"))
+        for k in ("severity", "type"):
             d[k] = str(d[k])
         if with_url:
             try:

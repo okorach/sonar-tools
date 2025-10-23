@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import csv
+import re
 from typing import TextIO, Optional
 from threading import Thread
 from queue import Queue
@@ -50,6 +51,8 @@ WHAT_AUDITABLE = {
     options.WHAT_PORTFOLIOS: portfolios.audit,
 }
 
+PROBLEM_KEYS = "problems"
+
 
 def _audit_sif(sysinfo: str, audit_settings: types.ConfigSettings) -> tuple[str, list[problem.Problem]]:
     """Audits a SIF and return found problems"""
@@ -70,20 +73,35 @@ def _audit_sif(sysinfo: str, audit_settings: types.ConfigSettings) -> tuple[str,
     return sif_obj.server_id(), sif_obj.audit(audit_settings)
 
 
+def __filter_problems(problems: list[problem.Problem], settings: types.ConfigSettings) -> list[problem.Problem]:
+    """Filters audit problems by severity and/or type and/or problem key"""
+    if settings.get(options.SEVERITIES, None):
+        log.debug("Filtering audit problems with severities: %s", settings[options.SEVERITIES])
+        problems = [p for p in problems if str(p.severity) in settings[options.SEVERITIES]]
+    if settings.get(options.TYPES, None):
+        log.debug("Filtering audit problems with types: %s", settings[options.TYPES])
+        problems = [p for p in problems if str(p.type) in settings[options.TYPES]]
+    if settings.get(PROBLEM_KEYS, None):
+        log.debug("Filtering audit problems with keys: %s", settings[PROBLEM_KEYS])
+        problems = [p for p in problems if re.match(rf"^{settings[PROBLEM_KEYS]}$", str(p.rule_id))]
+    return problems
+
+
 def write_csv(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.ConfigSettings) -> None:
     """Thread callback to write audit problems in a CSV file"""
     server_id = settings.get("SERVER_ID", None)
     with_url = settings.get("WITH_URL", False)
     csvwriter = csv.writer(fd, delimiter=settings.get("CSV_DELIMITER", ","))
     header = ["Server Id"] if server_id else []
-    header += ["Audit Check", "Category", "Severity", "Message"]
+    header += ["Problem", "Type", "Severity", "Message"]
     header += ["URL"] if with_url else []
     csvwriter.writerow(header)
     while (problems := queue.get()) is not util.WRITE_END:
+        problems = __filter_problems(problems, settings)
         for p in problems:
             json_data = p.to_json(with_url)
             data = [] if not server_id else [server_id]
-            data += list(json_data.values())
+            data += [json_data[k] for k in ("problem", "type", "severity", "message") if k in json_data]
             csvwriter.writerow(data)
         queue.task_done()
     queue.task_done()
@@ -96,6 +114,7 @@ def write_json(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.
     comma = ""
     print("[", file=fd)
     while (problems := queue.get()) is not util.WRITE_END:
+        problems = __filter_problems(problems, settings)
         for p in problems:
             json_data = p.to_json(with_url)
             if server_id:
@@ -166,6 +185,24 @@ def __parser_args(desc: str) -> object:
         nargs="*",
         help="Pass audit configuration settings on command line (-D<setting>=<value>)",
     )
+    parser.add_argument(
+        f"--{options.SEVERITIES}",
+        required=False,
+        default=None,
+        help="Report only audit problems with the given severities (comma separate values LOW, MEDIUM, HIGH, CRITICAL)",
+    )
+    parser.add_argument(
+        f"--{options.TYPES}",
+        required=False,
+        default=None,
+        help="Report only audit problems of the given comma separated problem types",
+    )
+    parser.add_argument(
+        f"--{PROBLEM_KEYS}",
+        required=False,
+        default=None,
+        help="Report only audit problems whose type key matches the given regexp",
+    )
     args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME, verify_token=False)
     if args.sif is None and args.config is None:
         util.check_token(args.token)
@@ -189,6 +226,7 @@ def main() -> None:
             key, value = val[0].split("=", maxsplit=1)
             cli_settings[key] = value
         settings = audit_conf.load(TOOL_NAME, cli_settings)
+        settings |= kwargs
         file = ofile = kwargs.pop(options.REPORT_FILE)
         fmt = util.deduct_format(kwargs[options.FORMAT], ofile)
         settings.update(
@@ -196,7 +234,6 @@ def main() -> None:
                 "FILE": file,
                 "CSV_DELIMITER": kwargs[options.CSV_SEPARATOR],
                 "WITH_URL": kwargs[options.WITH_URL],
-                "threads": kwargs[options.NBR_THREADS],
                 "format": fmt,
             }
         )
@@ -208,8 +245,8 @@ def main() -> None:
             file = kwargs["sif"]
             errcode = errcodes.SIF_AUDIT_ERROR
             (settings["SERVER_ID"], problems) = _audit_sif(file, settings)
+            problems = __filter_problems(problems, settings)
             problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=fmt)
-
         else:
             sq = platform.Platform(**kwargs)
             sq.verify_connection()

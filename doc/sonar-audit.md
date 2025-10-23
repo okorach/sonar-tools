@@ -32,6 +32,9 @@ When `--what` is not specified, everything is audited
 - `--what apps`: Audits applications
 - `-f <file>`: Sends audit output to `<file>`, `stdout` is the default. The output format is deducted from
   the file extension (JSON or CSV), except if `--format` is specified
+- `--severities`: The audit output will only reports problems of the given severities to pass as comma separated (LOW, MEDIUM, HIGH, CRITICAL)
+- `--types`: The audit output will only reports problems of the given types to pass as comma separated (BAD_PRACTICE, GOVERNANCE, HOUSEKEEPING, OPERATIONS, PERFORMANCE, SECURITY as of today, more may be added in the future)
+- `--problems`: The audit output will only report problems whose key match the given regexp. The key is the 2nd column of the CSV or the "problem" field of the JSON
 - `--sif <SystemInfoFile>`: Will audit the input SIF file, instead of connecting to a SonarQube Server or Cloud platform.
   In that case:
   - URL and token are not needed
