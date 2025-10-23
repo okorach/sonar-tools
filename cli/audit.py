@@ -246,7 +246,7 @@ def main() -> None:
             errcode = errcodes.SIF_AUDIT_ERROR
             (settings["SERVER_ID"], problems) = _audit_sif(file, settings)
             problems = __filter_problems(problems, settings)
-            problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=fmt)
+            problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], fmt=fmt)
         else:
             sq = platform.Platform(**kwargs)
             sq.verify_connection()
