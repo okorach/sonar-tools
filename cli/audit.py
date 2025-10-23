@@ -51,7 +51,7 @@ WHAT_AUDITABLE = {
     options.WHAT_PORTFOLIOS: portfolios.audit,
 }
 
-PROBLEM_KEYS = "problemKeys"
+PROBLEM_KEYS = "problems"
 
 
 def _audit_sif(sysinfo: str, audit_settings: types.ConfigSettings) -> tuple[str, list[problem.Problem]]:
