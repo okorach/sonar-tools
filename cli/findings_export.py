@@ -125,7 +125,7 @@ def parse_args(desc: str) -> Namespace:
     parser.add_argument(
         f"--{options.SEVERITIES}",
         required=False,
-        help="Comma separated severities among" + util.list_to_csv(idefs.STD_SEVERITIES + hotspots.SEVERITIES),
+        help="Comma separated severities among " + util.list_to_csv(idefs.STD_SEVERITIES + hotspots.SEVERITIES),
     )
     parser.add_argument(
         f"--{options.TYPES}",
