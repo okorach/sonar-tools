@@ -22,15 +22,20 @@
 
 from __future__ import annotations
 from http import HTTPStatus
-from typing import Optional
-from datetime import datetime
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sonar.projects import Project
+    from sonar.util import types
+    from datetime import datetime
+
 import json
 import re
 from urllib.parse import unquote
 import requests.utils
 
 from sonar import platform
-from sonar.util import types, cache
+from sonar.util import cache
 import sonar.logging as log
 from sonar import components, settings, exceptions, tasks
 from sonar import projects
@@ -57,7 +62,7 @@ class Branch(components.Component):
         "get_new_code": "new_code_periods/list",
     }
 
-    def __init__(self, project: projects.Project, name: str) -> None:
+    def __init__(self, project: Project, name: str) -> None:
         """Don't use this, use class methods to create Branch objects
 
         :raises UnsupportedOperation: When attempting to branches on Community Edition
@@ -76,10 +81,10 @@ class Branch(components.Component):
         log.debug("Created object %s", str(self))
 
     @classmethod
-    def get_object(cls, concerned_object: projects.Project, branch_name: str) -> Branch:
+    def get_object(cls, concerned_object: Project, branch_name: str) -> Branch:
         """Gets a SonarQube Branch object
 
-        :param projects.Project concerned_object: projects.Project concerned by the branch
+        :param Project concerned_object: Project concerned by the branch
         :param str branch_name: The branch name
         :raises UnsupportedOperation: If trying to manipulate branches on a community edition
         :raises ObjectNotFound: If project key or branch name not found in SonarQube
@@ -97,10 +102,10 @@ class Branch(components.Component):
         return cls.load(concerned_object, branch_name, br)
 
     @classmethod
-    def load(cls, concerned_object: projects.Project, branch_name: str, data: types.ApiPayload) -> Branch:
+    def load(cls, concerned_object: Project, branch_name: str, data: types.ApiPayload) -> Branch:
         """Gets a Branch object from JSON data gotten from a list API call
 
-        :param projects.Project concerned_object: the projects.Project the branch belonsg to
+        :param Project concerned_object: the Project the branch belonsg to
         :param str branch_name: Name of the branch
         :param dict data: Data received from API call
         :return: The Branch object
@@ -122,7 +127,7 @@ class Branch(components.Component):
         """Computes a uuid for the branch that can serve as index"""
         return hash((self.concerned_object.key, self.name, self.base_url()))
 
-    def project(self) -> projects.Project:
+    def project(self) -> Project:
         """Returns the project key"""
         return self.concerned_object
 
@@ -186,7 +191,7 @@ class Branch(components.Component):
         except exceptions.ObjectNotFound as e:
             if re.match(r"Project .+ not found", e.message):
                 log.warning("Clearing project cache")
-                projects.Project.CACHE.clear()
+                Project.CACHE.clear()
             raise
 
     def post(self, api: str, params: types.ApiParams = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
@@ -196,7 +201,7 @@ class Branch(components.Component):
         except exceptions.ObjectNotFound as e:
             if re.match(r"Project .+ not found", e.message):
                 log.warning("Clearing project cache")
-                projects.Project.CACHE.clear()
+                Project.CACHE.clear()
             raise
 
     def new_code(self) -> str:
@@ -414,10 +419,10 @@ class Branch(components.Component):
         return task
 
 
-def get_list(project: projects.Project) -> dict[str, Branch]:
+def get_list(project: Project) -> dict[str, Branch]:
     """Retrieves the list of branches of a project
 
-    :param projects.Project project: projects.Project the branch belongs to
+    :param Project project: Project the branch belongs to
     :raises UnsupportedOperation: Branches not supported in Community Edition
     :return: List of project branches
     :rtype: dict{branch_name: Branch}
@@ -436,13 +441,13 @@ def exists(endpoint: platform.Platform, branch_name: str, project_key: str) -> b
 
     :param Platform endpoint: Reference to the SonarQube platform
     :param str branch_name: Branch name
-    :param str project_key: projects.Project key
+    :param str project_key: Project key
     :raises UnsupportedOperation: Branches not supported in Community Edition
     :return: Whether the branch exists in SonarQube
     :rtype: bool
     """
     try:
-        project = projects.Project.get_object(endpoint, project_key)
+        project = Project.get_object(endpoint, project_key)
     except exceptions.ObjectNotFound:
         return False
     return branch_name in get_list(project)

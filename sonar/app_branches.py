@@ -21,14 +21,17 @@
 """Abstraction of Sonar Application Branch"""
 
 from __future__ import annotations
-from typing import Optional
-from datetime import datetime
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sonar.util import types
+    from datetime import datetime
 
 import json
 from requests.utils import quote
 
 import sonar.logging as log
-from sonar.util import types, cache
+from sonar.util import cache
 
 from sonar.components import Component
 
