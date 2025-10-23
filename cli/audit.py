@@ -101,7 +101,7 @@ def write_csv(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.C
         for p in problems:
             json_data = p.to_json(with_url)
             data = [] if not server_id else [server_id]
-            data += list(json_data.values())
+            data += [json_data[k] for k in ("problem", "type", "severity", "message") if k in json_data]
             csvwriter.writerow(data)
         queue.task_done()
     queue.task_done()
