@@ -121,8 +121,8 @@ class Measure(sq.SqObject):
     def is_an_effort(self) -> bool:
         return metrics.is_an_effort(self.endpoint, self.key)
 
-    def format_measure(self, ratings: str = "letters", percents: str = "float") -> any:
-        return format_measure(self.endpoint, self.key, self.value, ratings=ratings, percents=percents)
+    def format(self, ratings: str = "letters", percents: str = "float") -> any:
+        return format(self.endpoint, self.key, self.value, ratings=ratings, percents=percents)
 
 
 def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, Measure]:
@@ -197,7 +197,7 @@ def get_rating_number(rating_letter: str) -> int:
     return rating_letter
 
 
-def format_measure(endpoint: platform.Platform, metric_key: str, value: Any, ratings: str = "letters", percents: str = "float") -> Any:
+def format(endpoint: platform.Platform, metric_key: str, value: Any, ratings: str = "letters", percents: str = "float") -> Any:
     """Formats a measure"""
     try:
         metric = metrics.Metric.get_object(endpoint, metric_key)
