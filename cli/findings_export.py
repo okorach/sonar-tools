@@ -373,6 +373,12 @@ def main() -> None:
             key_regexp=params.get(options.KEY_REGEXP, None),
             branch_regexp=branch_regexp,
         )
+        if params[options.COMPONENT_TYPE] == "portfolios":
+            components = []
+            for comp in components_list:
+                components += comp.components()
+            components_list = components
+
         if len(components_list) == 0:
             br = f"and branch matching regexp '{params[options.BRANCH_REGEXP]}'" if options.BRANCH_REGEXP in params else ""
             raise exceptions.SonarException(
