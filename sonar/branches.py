@@ -24,11 +24,6 @@ from __future__ import annotations
 from http import HTTPStatus
 from typing import Optional, TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from sonar.projects import Project
-    from sonar.util import types
-    from datetime import datetime
-
 import json
 import re
 from urllib.parse import unquote
@@ -38,13 +33,16 @@ from sonar import platform
 from sonar.util import cache
 import sonar.logging as log
 from sonar import components, settings, exceptions, tasks
-from sonar import projects
+from sonar.projects import Project
 import sonar.utilities as util
 
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 import sonar.util.constants as c
 
+if TYPE_CHECKING:
+    from sonar.util import types
+    from datetime import datetime
 
 _UNSUPPORTED_IN_CE = "Branches not available in Community Edition"
 

@@ -42,7 +42,13 @@ class WebHook(sq.SqObject):
     """
 
     CACHE: ClassVar[cache.Cache] = cache.Cache()
-    API: ClassVar[dict[str, str]] = {c.CREATE: "webhooks/create", c.READ: "webhooks/list", c.UPDATE: "webhooks/update", c.LIST: "webhooks/list", c.DELETE: "webhooks/delete"}
+    API: ClassVar[dict[str, str]] = {
+        c.CREATE: "webhooks/create",
+        c.READ: "webhooks/list",
+        c.UPDATE: "webhooks/update",
+        c.LIST: "webhooks/list",
+        c.DELETE: "webhooks/delete",
+    }
     SEARCH_KEY_FIELD: ClassVar[str] = "key"
     SEARCH_RETURN_FIELD: ClassVar[str] = "webhooks"
 

@@ -31,10 +31,6 @@ import json
 from http import HTTPStatus
 from threading import Lock
 
-if TYPE_CHECKING:
-    from sonar.util import types
-    from sonar.branches import Branch
-
 import sonar.logging as log
 import sonar.platform as pf
 from sonar.util import cache
@@ -43,14 +39,16 @@ import sonar.util.constants as c
 from sonar import aggregations, exceptions, applications, app_branches
 from sonar.projects import Project
 
-
 import sonar.permissions.permissions as perms
 import sonar.permissions.portfolio_permissions as pperms
 import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar.audit import rules, problem
-
 from sonar.portfolio_reference import PortfolioReference
+
+if TYPE_CHECKING:
+    from sonar.util import types
+    from sonar.branches import Branch
 
 _CLASS_LOCK = Lock()
 

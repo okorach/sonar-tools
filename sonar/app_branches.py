@@ -22,11 +22,6 @@
 
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from sonar.util import types
-    from datetime import datetime
-
 import json
 from requests.utils import quote
 
@@ -39,6 +34,9 @@ from sonar.branches import Branch
 from sonar import exceptions, projects, utilities
 import sonar.util.constants as c
 
+if TYPE_CHECKING:
+    from sonar.util import types
+    from datetime import datetime
 
 _NOT_SUPPORTED = "Applications not supported in community edition"
 

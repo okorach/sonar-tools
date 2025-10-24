@@ -23,10 +23,6 @@ from __future__ import annotations
 import concurrent.futures
 from typing import Optional, TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from datetime import datetime
-    from sonar.util import types
-
 import re
 import Levenshtein
 
@@ -38,7 +34,11 @@ from sonar import exceptions
 
 import sonar.utilities as util
 from sonar import projects, rules
-from sonar.changelog import Changelog
+
+if TYPE_CHECKING:
+    from datetime import datetime
+    from sonar.util import types
+    from sonar.changelog import Changelog
 
 _JSON_FIELDS_REMAPPED = (("pull_request", "pullRequest"), ("_comments", "comments"))
 
