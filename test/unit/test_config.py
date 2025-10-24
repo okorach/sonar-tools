@@ -211,7 +211,7 @@ def test_config_import_apps() -> None:
 def test_config_import_projects() -> None:
     """TEsts that the import of projects config works"""
     config_file = f"{tutil.FILES_ROOT}/config.json"
-    json_config = util.read_json_file(config_file)["projects"]
+    json_config = tutil.read_json(config_file)["projects"]
 
     # delete all projects in test except the testsync one
     for p in projects.get_list(tutil.TEST_SQ).values():
