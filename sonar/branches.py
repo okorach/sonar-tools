@@ -33,7 +33,7 @@ from sonar import platform
 from sonar.util import cache
 import sonar.logging as log
 from sonar import components, settings, exceptions, tasks
-from sonar.projects import Project
+from sonar import projects as proj
 import sonar.utilities as util
 
 from sonar.audit.problem import Problem
@@ -60,7 +60,7 @@ class Branch(components.Component):
         "get_new_code": "new_code_periods/list",
     }
 
-    def __init__(self, project: Project, name: str) -> None:
+    def __init__(self, project: proj.Project, name: str) -> None:
         """Don't use this, use class methods to create Branch objects
 
         :raises UnsupportedOperation: When attempting to branches on Community Edition
@@ -79,7 +79,7 @@ class Branch(components.Component):
         log.debug("Created object %s", str(self))
 
     @classmethod
-    def get_object(cls, concerned_object: Project, branch_name: str) -> Branch:
+    def get_object(cls, concerned_object: proj.Project, branch_name: str) -> Branch:
         """Gets a SonarQube Branch object
 
         :param Project concerned_object: Project concerned by the branch
@@ -100,7 +100,7 @@ class Branch(components.Component):
         return cls.load(concerned_object, branch_name, br)
 
     @classmethod
-    def load(cls, concerned_object: Project, branch_name: str, data: types.ApiPayload) -> Branch:
+    def load(cls, concerned_object: proj.Project, branch_name: str, data: types.ApiPayload) -> Branch:
         """Gets a Branch object from JSON data gotten from a list API call
 
         :param Project concerned_object: the Project the branch belonsg to
@@ -125,7 +125,7 @@ class Branch(components.Component):
         """Computes a uuid for the branch that can serve as index"""
         return hash((self.concerned_object.key, self.name, self.base_url()))
 
-    def project(self) -> Project:
+    def project(self) -> proj.Project:
         """Returns the project key"""
         return self.concerned_object
 
@@ -189,7 +189,7 @@ class Branch(components.Component):
         except exceptions.ObjectNotFound as e:
             if re.match(r"Project .+ not found", e.message):
                 log.warning("Clearing project cache")
-                Project.CACHE.clear()
+                proj.Project.CACHE.clear()
             raise
 
     def post(self, api: str, params: types.ApiParams = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
@@ -199,7 +199,7 @@ class Branch(components.Component):
         except exceptions.ObjectNotFound as e:
             if re.match(r"Project .+ not found", e.message):
                 log.warning("Clearing project cache")
-                Project.CACHE.clear()
+                proj.Project.CACHE.clear()
             raise
 
     def new_code(self) -> str:
@@ -416,7 +416,7 @@ class Branch(components.Component):
         return task
 
 
-def get_list(project: Project) -> dict[str, Branch]:
+def get_list(project: proj.Project) -> dict[str, Branch]:
     """Retrieves the list of branches of a project
 
     :param Project project: Project the branch belongs to
@@ -444,7 +444,7 @@ def exists(endpoint: platform.Platform, branch_name: str, project_key: str) -> b
     :rtype: bool
     """
     try:
-        project = Project.get_object(endpoint, project_key)
+        project = proj.Project.get_object(endpoint, project_key)
     except exceptions.ObjectNotFound:
         return False
     return branch_name in get_list(project)
