@@ -26,27 +26,29 @@ Abstraction of the SonarQube "portfolio" concept
 from __future__ import annotations
 
 import re
-from typing import Optional, Union, Any
+from typing import Optional, Union, Any, TYPE_CHECKING
 import json
 from http import HTTPStatus
 from threading import Lock
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import types, cache
+from sonar.util import cache
 import sonar.util.constants as c
 
 from sonar import aggregations, exceptions, applications, app_branches
 from sonar.projects import Project
-from sonar.branches import Branch
 
 import sonar.permissions.permissions as perms
 import sonar.permissions.portfolio_permissions as pperms
 import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar.audit import rules, problem
-
 from sonar.portfolio_reference import PortfolioReference
+
+if TYPE_CHECKING:
+    from sonar.util import types
+    from sonar.branches import Branch
 
 _CLASS_LOCK = Lock()
 
@@ -538,7 +540,7 @@ class Portfolio(aggregations.Aggregation):
         self._applications[app_key].append(branch)
         return True
 
-    def add_subportfolio(self, key: str, name: str = None, by_ref: bool = False) -> Portfolio:
+    def add_subportfolio(self, key: str, name: Optional[str] = None, by_ref: bool = False) -> Portfolio:
         """Adds a subportfolio to a portfolio, defined by key, name and by reference option"""
 
         log.info("Adding sub-portfolios to %s", str(self))

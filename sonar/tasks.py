@@ -20,7 +20,7 @@
 
 """Abstraction of the SonarQube background task concept"""
 
-from typing import Optional
+from typing import Optional, Any
 from datetime import datetime
 import time
 import json
@@ -441,7 +441,7 @@ class Task(sq.SqObject):
         return problems
 
 
-def search(endpoint: pf.Platform, only_current: bool = False, component_key: Optional[str] = None, **kwargs) -> list[Task]:
+def search(endpoint: pf.Platform, only_current: bool = False, component_key: Optional[str] = None, **kwargs: Any) -> list[Task]:
     """Searches background tasks
 
     :param Platform endpoint: Reference to the SonarQube platform

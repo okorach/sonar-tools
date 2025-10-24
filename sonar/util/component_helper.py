@@ -21,7 +21,6 @@
 import re
 from typing import Optional
 
-from sonar.util import constants as c
 from sonar import platform, components, projects, applications, portfolios
 
 
@@ -33,12 +32,9 @@ def get_components(
     if component_type in ("apps", "applications"):
         components = [p for p in applications.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
     elif component_type == "portfolios":
-        portfolio_list = [p for p in portfolios.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
+        components = [p for p in portfolios.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
         if kwargs.get("topLevelOnly", False):
-            portfolio_list = [p for p in portfolio_list if p.is_toplevel()]
-        components = []
-        for comp in portfolio_list:
-            components += comp.components()
+            components = [p for p in components if p.is_toplevel()]
     else:
         components = [p for p in projects.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
     if component_type != "portfolios" and branch_regexp:

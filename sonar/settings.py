@@ -440,7 +440,7 @@ def get_all(endpoint: pf.Platform, project: Optional[object] = None) -> dict[str
     return get_bulk(endpoint, component=project, include_not_set=True)
 
 
-def new_code_to_string(data: Any) -> Union[int, str, None]:
+def new_code_to_string(data: Union[int, str, dict[str, str]]) -> Union[int, str, None]:
     """Converts a new code period from anything to int str"""
     if isinstance(data, (int, str)):
         return data
@@ -539,10 +539,9 @@ def encode(setting: Setting, setting_value: Any) -> dict[str, Any]:
     """Encodes the params to pass to api/settings/set according to setting value type"""
     if isinstance(setting_value, list):
         return {"values": setting_value} if isinstance(setting_value[0], str) else {"fieldValues": [json.dumps(v) for v in setting_value]}
-    elif isinstance(setting_value, bool):
+    if isinstance(setting_value, bool):
         return {"value": str(setting_value).lower()}
-    else:
-        return {"values" if setting.multi_valued else "value": setting_value}
+    return {"values" if setting.multi_valued else "value": setting_value}
 
 
 def reset_setting(endpoint: pf.Platform, setting_key: str, project: Optional[object] = None) -> bool:

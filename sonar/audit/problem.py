@@ -63,7 +63,7 @@ class Problem:
 
 
 def dump_report(
-    problems: list[Problem], file: str, server_id: Optional[str] = None, format: str = "csv", with_url: bool = False, separator: str = ","
+    problems: list[Problem], file: str, server_id: Optional[str] = None, fmt: str = "csv", with_url: bool = False, separator: str = ","
 ) -> None:
     """Dumps to file a report about a list of problems
 
@@ -74,7 +74,7 @@ def dump_report(
     :rtype: None
     """
     log.info("Writing report to %s", f"file '{file}'" if file else "stdout")
-    if format == "json":
+    if fmt == "json":
         __dump_json(problems=problems, file=file, server_id=server_id, with_url=with_url)
     else:
         __dump_csv(problems=problems, file=file, server_id=server_id, with_url=with_url, separator=separator)
@@ -91,14 +91,13 @@ def __dump_csv(problems: list[Problem], file: str, server_id: Optional[str] = No
     with utilities.open_file(file, "w") as fd:
         csvwriter = csv.writer(fd, delimiter=separator)
         header = ["Server Id"] if server_id else []
-        header += ["Audit Check", "Category", "Severity", "Message"]
+        header += ["Problem", "Category", "Severity", "Message"]
         header += ["URL"] if with_url else []
         csvwriter.writerow(header)
         for p in problems:
-            data = []
-            if server_id is not None:
-                data = [server_id]
-            data += list(p.to_json(with_url).values())
+            json_data = p.to_json(with_url)
+            data = [server_id] if server_id else []
+            data += [json_data[k] for k in ("problem", "type", "severity", "message", "url") if k in json_data]
             csvwriter.writerow(data)
 
 

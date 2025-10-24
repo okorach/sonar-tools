@@ -27,9 +27,10 @@ import json, yaml
 
 import utilities as tutil
 from sonar import errcodes as e
-from sonar import portfolios, applications
+from sonar import portfolios, applications, projects
 from sonar import logging
 import sonar.util.constants as c
+from sonar import utilities as util
 
 import cli.options as opt
 from cli import config
@@ -205,3 +206,22 @@ def test_config_import_apps() -> None:
     app_list = applications.get_list(tutil.TEST_SQ)
     assert len(app_list) == len(json_config)
     assert sorted(app_list.keys()) == sorted(json_config.keys())
+
+
+def test_config_import_projects() -> None:
+    """TEsts that the import of projects config works"""
+    config_file = f"{tutil.FILES_ROOT}/config.json"
+    json_config = tutil.read_json(config_file)["projects"]
+
+    # delete all projects in test except the testsync one
+    for p in projects.get_list(tutil.TEST_SQ).values():
+        if p.key != "TESTSYNC":
+            p.delete()
+    # Import config
+    cmd = f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} {config_file} --{opt.WHAT} {opt.WHAT_PROJECTS}"
+    assert tutil.run_cmd(config.main, cmd) == e.OK
+
+    # Compare projects
+    project_list = projects.get_list(tutil.TEST_SQ)
+    assert len(project_list) == len(json_config)
+    assert sorted(project_list.keys()) == sorted(json_config.keys())

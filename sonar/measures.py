@@ -23,7 +23,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any, Optional, Union
 from sonar import metrics, exceptions, platform
 from sonar.util.types import ApiPayload, ApiParams, KeyList
 from sonar.util import cache, constants as c
@@ -171,7 +171,7 @@ def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> li
     return res_list
 
 
-def get_rating_letter(rating: Any) -> str:
+def get_rating_letter(rating: Union[float, str]) -> str:
     """
     :param any rating: The rating as repturned by the API (a str or float)
     :return: The rating converted from number to letter, if number between 1 and 5, else the unchanged rating
