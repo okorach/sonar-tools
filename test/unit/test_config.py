@@ -207,14 +207,16 @@ def test_config_import_apps() -> None:
     assert len(app_list) == len(json_config)
     assert sorted(app_list.keys()) == sorted(json_config.keys())
 
+
 def test_config_import_projects() -> None:
     """TEsts that the import of projects config works"""
     config_file = f"{tutil.FILES_ROOT}/config.json"
     json_config = util.read_json_file(config_file)["projects"]
 
-    # delete all projects in test
+    # delete all projects in test except the testsync one
     for p in projects.get_list(tutil.TEST_SQ).values():
-        p.delete()
+        if p.key != "TESTSYNC":
+            p.delete()
     # Import config
     cmd = f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} {config_file} --{opt.WHAT} {opt.WHAT_PROJECTS}"
     assert tutil.run_cmd(config.main, cmd) == e.OK
