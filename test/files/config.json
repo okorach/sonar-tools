@@ -2392,8 +2392,8 @@
                   "severity": "MAJOR",
                   "impacts": {
                      "SECURITY": "LOW",
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "MEDIUM"
+                     "MAINTAINABILITY": "MEDIUM",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
@@ -2407,8 +2407,8 @@
                   "key": "python:S6714",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "LOW",
-                     "MAINTAINABILITY": "MEDIUM"
+                     "MAINTAINABILITY": "MEDIUM",
+                     "RELIABILITY": "LOW"
                   }
                },
                {
@@ -2422,8 +2422,8 @@
                   "key": "python:S6727",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "LOW",
                      "SECURITY": "LOW",
+                     "MAINTAINABILITY": "LOW",
                      "RELIABILITY": "HIGH"
                   }
                },
@@ -2446,8 +2446,8 @@
                   "key": "python:S6734",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "HIGH"
+                     "MAINTAINABILITY": "HIGH",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
@@ -2461,8 +2461,8 @@
                   "key": "python:S6741",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "MEDIUM"
+                     "MAINTAINABILITY": "MEDIUM",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
@@ -2539,25 +2539,25 @@
                   "key": "python:S6882",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
                      "SECURITY": "LOW",
-                     "MAINTAINABILITY": "HIGH"
+                     "MAINTAINABILITY": "HIGH",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S6883",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "HIGH"
+                     "MAINTAINABILITY": "HIGH",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S6887",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "HIGH",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "HIGH"
                   }
                },
                {
@@ -2581,8 +2581,8 @@
                   "key": "python:S6900",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
                      "SECURITY": "LOW",
+                     "RELIABILITY": "MEDIUM",
                      "MAINTAINABILITY": "HIGH"
                   }
                },
@@ -2619,16 +2619,16 @@
                   "key": "python:S6919",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "MEDIUM"
+                     "MAINTAINABILITY": "MEDIUM",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S6925",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "MEDIUM"
+                     "MAINTAINABILITY": "MEDIUM",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
@@ -2643,8 +2643,8 @@
                   "key": "python:S6929",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "MEDIUM"
+                     "MAINTAINABILITY": "MEDIUM",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
@@ -2673,16 +2673,16 @@
                   "key": "python:S6973",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "LOW",
-                     "MAINTAINABILITY": "MEDIUM"
+                     "MAINTAINABILITY": "MEDIUM",
+                     "RELIABILITY": "LOW"
                   }
                },
                {
                   "key": "python:S6974",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "RELIABILITY": "HIGH",
-                     "MAINTAINABILITY": "MEDIUM"
+                     "MAINTAINABILITY": "MEDIUM",
+                     "RELIABILITY": "HIGH"
                   }
                },
                {
@@ -2842,8 +2842,8 @@
                   "key": "pythonenterprise:S7182",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "MEDIUM"
+                     "MAINTAINABILITY": "MEDIUM",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
@@ -2864,8 +2864,8 @@
                   "key": "pythonenterprise:S7191",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "MEDIUM"
+                     "MAINTAINABILITY": "MEDIUM",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
@@ -2927,8 +2927,8 @@
                   "key": "pythonenterprise:S7471",
                   "severity": "MINOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "MEDIUM"
+                     "MAINTAINABILITY": "MEDIUM",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
@@ -3266,6 +3266,54 @@
       }
    },
    "projects": {
+      "25k-issues": {
+         "name": "25k-issues",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "BANKING-ACQUISITIONS": {
+         "name": "BANKING-ACQUISITIONS",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "olivier-k31581": "admin, user"
+            },
+            "groups": {
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, user"
+            }
+         }
+      },
+      "BANKING-ACQUISITIONS-DILIGENCE": {
+         "name": "BANKING-ACQUISITIONS-DILIGENCE",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "olivier-k31581": "admin, user"
+            },
+            "groups": {
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, user"
+            }
+         }
+      },
       "BANKING-AFRICA-OPS": {
          "name": "Banking Africa operations",
          "tags": "africa",
@@ -3346,6 +3394,21 @@
       },
       "BANKING-INVESTMENT-MERGER": {
          "name": "BANKING-INVESTMENT-MERGER",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "olivier-k31581": "admin, user"
+            },
+            "groups": {
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, user"
+            }
+         }
+      },
+      "BANKING-MERGERS": {
+         "name": "BANKING-MERGERS",
          "visibility": "private",
          "permissions": {
             "users": {
@@ -3585,6 +3648,96 @@
             }
          }
       },
+      "RETAIL-WEB": {
+         "name": "Retail Web",
+         "tags": "banking, retail",
+         "visibility": "private",
+         "links": [
+            {
+               "type": "homepage",
+               "name": "homepage",
+               "url": "http://maven.apache.org"
+            }
+         ],
+         "permissions": {
+            "users": {
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "TEST": {
+         "name": "name",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "TESTSYNC": {
+         "name": "TESTSYNC",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         },
+         "branches": {
+            "main": {
+               "isMain": true
+            },
+            "release-3.x": {
+               "keepWhenInactive": true
+            },
+            "develop": {
+               "keepWhenInactive": true
+            }
+         }
+      },
+      "ai-code-fix": {
+         "name": "AI CodeFix examples",
+         "tags": "demo",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         },
+         "containsAiCode": true
+      },
       "bad:stale-project": {
          "name": "BANKING-ASIA-OPS",
          "visibility": "private",
@@ -3604,6 +3757,247 @@
                "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user",
                "sonar-users": "codeviewer, user"
+            }
+         }
+      },
+      "checkstyle-issues": {
+         "name": "Project with checkstyle issues",
+         "visibility": "private",
+         "qualityProfiles": {
+            "java": "Sonar Way + Checkstyle"
+         },
+         "links": [
+            {
+               "type": "homepage",
+               "name": "homepage",
+               "url": "http://maven.apache.org"
+            }
+         ],
+         "permissions": {
+            "users": {
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         },
+         "branches": {
+            "main": {
+               "isMain": true
+            },
+            "develop": {
+               "keepWhenInactive": true
+            }
+         }
+      },
+      "code-variants": {
+         "name": "code-variants",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "creedengo": {
+         "name": "Creedengo",
+         "visibility": "private",
+         "links": [
+            {
+               "type": "homepage",
+               "name": "homepage",
+               "url": "http://maven.apache.org"
+            }
+         ],
+         "permissions": {
+            "users": {
+               "admin": "admin"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "creedengo-issues": {
+         "name": "Creedengo",
+         "visibility": "private",
+         "links": [
+            {
+               "type": "homepage",
+               "name": "homepage",
+               "url": "http://maven.apache.org"
+            }
+         ],
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         },
+         "branches": {
+            "develop": {
+               "keepWhenInactive": true
+            },
+            "main": {
+               "isMain": true
+            }
+         },
+         "sonar.coverage.exclusions": "**/*.css, **/.htm*"
+      },
+      "demo-autoconfig": {
+         "name": "demo-autoconfig",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "demo-rules": {
+         "name": "demo-rules",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "demo:ado-cli": {
+         "name": "demo:ado-cli",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "demo:autoconfig": {
+         "name": "demo:autoconfig",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "demo:autoconfig:carbon": {
+         "name": "demo:autoconfig:carbon",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         },
+         "branches": {
+            "develop": {
+               "isMain": true
+            }
+         }
+      },
+      "demo:coverage": {
+         "name": "demo:coverage",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "demo:github-actions-cli": {
+         "name": "GitHub / Actions / CLI",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
             }
          }
       },
@@ -3812,9 +4206,55 @@
             }
          }
       },
-      "demo:jcl": {
-         "name": "JCL Demo",
+      "demo:juice-shop": {
+         "name": "juice-shop",
          "visibility": "private",
+         "links": [
+            {
+               "type": "homepage",
+               "name": "homepage",
+               "url": "https://owasp-juice.shop"
+            },
+            {
+               "type": "scm",
+               "name": "scm",
+               "url": "https://github.com/juice-shop/juice-shop.git"
+            },
+            {
+               "type": "issue",
+               "name": "issue",
+               "url": "https://github.com/juice-shop/juice-shop/issues"
+            }
+         ],
+         "permissions": {
+            "users": {
+               "admin": "admin"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "demo:sca-log4shell-detect-maven": {
+         "name": "SCA demo - Log4shell detect - Maven",
+         "visibility": "private",
+         "links": [
+            {
+               "type": "scm",
+               "name": "scm",
+               "url": "https://github.com/okorach/log4shell-detect"
+            },
+            {
+               "type": "homepage",
+               "name": "homepage",
+               "url": "https://github.com/okorach/log4shell-detect"
+            }
+         ],
          "permissions": {
             "users": {
                "admin": "admin, codeviewer, user",
@@ -3827,6 +4267,11 @@
                "sonar-administrators": "admin, codeviewer, user",
                "sonar-users": "user",
                "tech-leads": "codeviewer, issueadmin, user"
+            }
+         },
+         "branches": {
+            "main": {
+               "isMain": true
             }
          }
       },
@@ -3853,6 +4298,151 @@
          },
          "sonar.text.inclusions": "**/*, **/*.bash, **/*.conf, **/*.config, **/*.ksh, **/*.pem, **/*.properties, **/*.ps1, **/*.sh, **/*.zsh, .aws/config, .env, **/*.xml"
       },
+      "demo:target-awareness": {
+         "name": "demo:target-awareness",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "dotnet-with-cli": {
+         "name": "dotnet-with-cli",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "dvpa": {
+         "name": "dvpa",
+         "visibility": "private",
+         "newCodePeriod": "NUMBER_OF_DAYS = 30",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         },
+         "sonar.cfamily.generateComputedConfig": "false"
+      },
+      "exclusions-2": {
+         "name": "exclusions-2",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "file-issue": {
+         "name": "file-issue",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "gradle-with-cli": {
+         "name": "gradle-with-cli",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "maven-with-cli": {
+         "name": "maven-with-cli",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "mute-in-ide": {
+         "name": "Mute issue in IDE",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
       "no-scm": {
          "name": "no-scm",
          "visibility": "private",
@@ -3870,6 +4460,81 @@
                "tech-leads": "codeviewer, issueadmin, user"
             }
          }
+      },
+      "non-existing": {
+         "name": "non-existing",
+         "visibility": "private",
+         "links": [
+            {
+               "type": "yahoo",
+               "name": "yahoo",
+               "url": "https://yahoo.com"
+            },
+            {
+               "type": "yahoo",
+               "name": "yahoo",
+               "url": "https://yahoo.com"
+            },
+            {
+               "type": "yahoo",
+               "name": "yahoo",
+               "url": "https://yahoo.com"
+            },
+            {
+               "type": "yahoo",
+               "name": "yahoo",
+               "url": "https://yahoo.com"
+            },
+            {
+               "type": "yahoo",
+               "name": "yahoo",
+               "url": "https://yahoo.com"
+            },
+            {
+               "type": "yahoo",
+               "name": "yahoo",
+               "url": "https://yahoo.com"
+            },
+            {
+               "type": "yahoo",
+               "name": "yahoo",
+               "url": "https://yahoo.com"
+            },
+            {
+               "type": "yahoo",
+               "name": "yahoo",
+               "url": "https://yahoo.com"
+            },
+            {
+               "type": "yahoo",
+               "name": "yahoo",
+               "url": "https://yahoo.com"
+            },
+            {
+               "type": "yahoo",
+               "name": "yahoo",
+               "url": "https://yahoo.com"
+            },
+            {
+               "type": "yahoo",
+               "name": "yahoo",
+               "url": "https://yahoo.com"
+            }
+         ],
+         "permissions": {
+            "users": {
+               "admin": "admin"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         },
+         "containsAiCode": true
       },
       "okorach-org_pr-demo_3a1857ec-cebc-49f2-96ac-9bbc99111469": {
          "name": "pr-demo",
@@ -3960,6 +4625,24 @@
             }
          }
       },
+      "okorach_docker-hello-world": {
+         "name": "okorach_docker-hello-world",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
       "okorach_sonar-tools": {
          "name": "Sonar Tools",
          "tags": "python",
@@ -4003,6 +4686,78 @@
                "ruleKey": "python:S211"
             }
          ]
+      },
+      "okorach_sonar-tools-target": {
+         "name": "Sonar Tools Target",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         },
+         "branches": {
+            "master": {
+               "isMain": true
+            },
+            "develop": {
+               "keepWhenInactive": true
+            },
+            "comma,branch": {
+               "keepWhenInactive": true
+            }
+         }
+      },
+      "org.owasp.webgoat:webgoat": {
+         "name": "WebGoat",
+         "visibility": "private",
+         "qualityProfiles": {
+            "java": "Security Max"
+         },
+         "links": [
+            {
+               "type": "scm",
+               "name": "scm",
+               "url": "https://github.com/WebGoat/WebGoat"
+            },
+            {
+               "type": "homepage",
+               "name": "homepage",
+               "url": "https://github.com/WebGoat/WebGoat"
+            },
+            {
+               "type": "issue",
+               "name": "issue",
+               "url": "https://github.com/WebGoat/WebGoat/issues"
+            }
+         ],
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         },
+         "branches": {
+            "main": {
+               "isMain": true
+            }
+         }
       },
       "project-without-analyses": {
          "name": "Project without analyses",
@@ -4164,6 +4919,152 @@
             }
          }
       },
+      "source-key": {
+         "name": "Source",
+         "visibility": "private",
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         },
+         "branches": {
+            "master": {
+               "isMain": true
+            },
+            "develop": {
+               "keepWhenInactive": true
+            }
+         }
+      },
+      "test:juice-shop": {
+         "name": "Juice Shop",
+         "visibility": "private",
+         "links": [
+            {
+               "type": "scm",
+               "name": "scm",
+               "url": "https://github.com/juice-shop/juice-shop.git"
+            },
+            {
+               "type": "issue",
+               "name": "issue",
+               "url": "https://github.com/juice-shop/juice-shop/issues"
+            },
+            {
+               "type": "homepage",
+               "name": "homepage",
+               "url": "https://owasp-juice.shop"
+            }
+         ],
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "third-party-issues": {
+         "name": "Third party issues",
+         "visibility": "private",
+         "links": [
+            {
+               "type": "homepage",
+               "name": "homepage",
+               "url": "http://maven.apache.org"
+            }
+         ],
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         },
+         "branches": {
+            "develop": {
+               "keepWhenInactive": true
+            },
+            "main": {
+               "isMain": true
+            }
+         }
+      },
+      "training:complexity": {
+         "name": "Training: Cyclomatic vs Cognitive complexity",
+         "visibility": "private",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "training:external-issues": {
+         "name": "Training: External issues import",
+         "visibility": "private",
+         "permissions": {
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
+      "training:security": {
+         "name": "training:security",
+         "visibility": "private",
+         "links": [
+            {
+               "type": "homepage",
+               "name": "homepage",
+               "url": "http://maven.apache.org"
+            }
+         ],
+         "permissions": {
+            "users": {
+               "admin": "admin, codeviewer, user",
+               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
+            },
+            "groups": {
+               "developers": "codeviewer, user",
+               "project-admins": "admin, codeviewer, user",
+               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, user",
+               "sonar-users": "user",
+               "tech-leads": "codeviewer, issueadmin, user"
+            }
+         }
+      },
       "web-backend": {
          "name": "Web back-end",
          "visibility": "private",
@@ -4243,14 +5144,14 @@
                },
                "isMain": true
             },
-            "Other Branch": {
+            "BRANCH foo": {
                "projects": {
                   "ai-code-fix": "main",
                   "BANKING-AFRICA-OPS": "main",
                   "dvpa": "main"
                }
             },
-            "BRANCH foo": {
+            "Other Branch": {
                "projects": {
                   "ai-code-fix": "main",
                   "BANKING-AFRICA-OPS": "main",
@@ -4669,8 +5570,8 @@
          "jcl:Track_usage_of_rogue_programs": {
             "severity": "INFO",
             "impacts": {
-               "MAINTAINABILITY": "LOW",
                "SECURITY": "HIGH",
+               "MAINTAINABILITY": "LOW",
                "RELIABILITY": "MEDIUM"
             },
             "params": {
@@ -4683,8 +5584,8 @@
          "java:Don_t_be_rude": {
             "severity": "MAJOR",
             "impacts": {
-               "SECURITY": "MEDIUM",
-               "MAINTAINABILITY": "MEDIUM"
+               "MAINTAINABILITY": "MEDIUM",
+               "SECURITY": "MEDIUM"
             },
             "params": {
                "message": "Hey don't be rude!",
