@@ -710,8 +710,10 @@ class Project(components.Component):
         try:
             resp = self.post("project_dump/import", params={"key": self.key})
         except exceptions.ObjectNotFound as e:
+            if "Dump file does not exist" in e.message:
+                return f"FAILED/{tasks.ZIP_MISSING}"
             Project.CACHE.pop(self)
-            return f"FAILED/{e.message}"
+            return "FAILED/PROJECT_NOT_FOUND"
         except exceptions.SonarException as e:
             if "Dump file does not exist" in e.message:
                 return f"FAILED/{tasks.ZIP_MISSING}"
