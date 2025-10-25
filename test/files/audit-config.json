@@ -99,11 +99,11 @@
             "main": {
                "isMain": true,
                "projects": {
-                  "project1": "main",
-                  "project2": "main",
-                  "project3": "main",
-                  "project4": "main",
-                  "proyecto5": "main"
+                  "test:project1": "main",
+                  "test:project2": "main",
+                  "test:project3": "main",
+                  "test:project4": "main",
+                  "test:proyecto5": "main"
                }
             }
          },
@@ -2009,7 +2009,7 @@
          ],
          "visibility": "private"
       },
-      "project1": {
+      "test:project1": {
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -2039,7 +2039,7 @@
          "sonar.coverage.jacoco.xmlReportPaths": "**/*jacoco*.xml",
          "visibility": "private"
       },
-      "project2": {
+      "test:project2": {
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -2065,7 +2065,7 @@
          },
          "visibility": "private"
       },
-      "project3": {
+      "test:project3": {
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -2091,7 +2091,7 @@
          },
          "visibility": "private"
       },
-      "project4": {
+      "test:project4": {
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -2115,7 +2115,7 @@
          },
          "visibility": "public"
       },
-      "proyecto5": {
+      "test:proyecto5": {
          "branches": {
             "develop": {
                "keepWhenInactive": true
