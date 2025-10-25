@@ -250,6 +250,11 @@ class Branch(components.Component):
         :return: Whether the operation was successful
         """
         log.info("Setting %s keep when inactive to %s", self, keep)
+        if self.is_main():
+            if not keep:
+                log.warning("%s is main branch, can't be purgeable, skipping...", str(self))
+                raise exceptions.UnsupportedOperation(f"{str(self)} is the main branch, can't be purgeable")
+            return True
         ok = self.post("project_branches/set_automatic_deletion_protection", params=self.api_params() | {"value": str(keep).lower()}).ok
         if ok:
             self._keep_when_inactive = keep
@@ -285,7 +290,10 @@ class Branch(components.Component):
         log.debug("Importing %s with %s", str(self), config_data)
         if config_data.get("isMain", False):
             self.set_as_main()
-        self.set_keep_when_inactive(config_data.get("keepWhenInactive", False))
+        try:
+            self.set_keep_when_inactive(config_data.get("keepWhenInactive", False))
+        except exceptions.UnsupportedOperation as e:
+            log.warning(e.message)
         if settings.NEW_CODE_PERIOD in config_data:
             new_code = settings.string_to_new_code(config_data[settings.NEW_CODE_PERIOD])
             param = None
