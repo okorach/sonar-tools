@@ -27,7 +27,7 @@ from sonar import hotspots
 
 def test_transitions() -> None:
     """test_transitions"""
-    hotspot_d = hotspots.search(endpoint=tutil.SQ, filters={"project": "pytorch"})
+    hotspot_d = hotspots.search(endpoint=tutil.SQ, filters={"project": "test:juice-shop"})
     hotspot = list(hotspot_d.values())[0]
 
     assert hotspot.mark_as_safe()

@@ -89,6 +89,7 @@ class WebHook(sq.SqObject):
         :param ApiPayload data: The webhook data received from the API
         :return: The created WebHook
         """
+        log.debug("LOading Webhook with %s", data)
         name, project = data["name"], data.get("project", None)
         if (o := WebHook.CACHE.get(name, project, endpoint.local_url)) is None:
             o = WebHook(endpoint, name, data["url"], data.get("secret", None), project)
@@ -119,7 +120,9 @@ class WebHook(sq.SqObject):
 
     def refresh(self) -> None:
         """Reads the Webhook data on the SonarQube platform and updates the local object"""
+        log.debug("Refreshing %s with proj %s", str(self), str(self.project))
         data = json.loads(self.get(WebHook.API[c.LIST], params=None if not self.project else {"project": self.project}).text)
+        log.debug("Refreshing %s with data %s", str(self), str(data))
         wh_data = next((wh for wh in data["webhooks"] if wh["name"] == self.name), None)
         if wh_data is None:
             wh_name = str(self)
@@ -148,6 +151,7 @@ class WebHook(sq.SqObject):
         :param kwargs: dict - "url", "name", "secret" are the looked up keys
         :return: Whether the operation succeeded
         """
+        log.info("Updating %s with %s", str(self), str(self.project))
         params = {"webhook": self.key, "name": self.name, "url": self.webhook_url} | util.remove_nones(kwargs)
         ok = self.post(WebHook.API[c.UPDATE], params=params).ok
         self.refresh()
@@ -189,10 +193,10 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, W
 def get_list(endpoint: pf.Platform, project_key: Optional[str] = None) -> dict[str, WebHook]:
     """Returns the list of web hooks, global ones or for a project if project key is given"""
     log.debug("Getting webhooks for project key %s", str(project_key))
-    params = None
-    if project_key is not None:
-        params = {"project": project_key}
-    return search(endpoint, params)
+    wh_list = search(endpoint, {"project": project_key} if project_key else None)
+    for wh in wh_list.values():
+        wh.project = project_key
+    return wh_list
 
 
 def export(endpoint: pf.Platform, project_key: Optional[str] = None, full: bool = False) -> types.ObjectJsonRepr:
