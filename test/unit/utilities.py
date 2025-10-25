@@ -63,9 +63,9 @@ LIVE_PROJECT = PROJECT_0
 PROJ_WITH_BRANCHES = PROJECT_1
 BRANCH_MAIN = "main"
 BRANCH_2 = "develop"
-BRANCH_3 = "some-branch"
+BRANCH_3 = "release-3.x"
 BRANCH_4 = "feature/new-feature"
-BRANCH_5 = "comma,branch"
+BRANCH_5 = "release-2.x"
 
 NON_EXISTING_KEY = "non-existing"
 

@@ -248,7 +248,6 @@
          "sonar.cpd.cross_project": false,
          "sonar.dbcleaner.auditHousekeeping": "Monthly",
          "sonar.dbcleaner.branchesToKeepWhenInactive": [
-            "comma,branch",
             "develop",
             "main",
             "master",
@@ -759,7 +758,6 @@
                "BANKING-INVESTMENT-EQUITY": "-DEFAULT_BRANCH-",
                "BANKING-INVESTMENT-MERGER": "-DEFAULT_BRANCH-",
                "BANKING-PORTAL": [
-                  "comma,branch",
                   "main",
                   "release-3.2"
                ]
@@ -960,9 +958,6 @@
       },
       "BANKING-PORTAL": {
          "branches": {
-            "comma,branch": {
-               "keepWhenInactive": true
-            },
             "main": {
                "isMain": true
             },
@@ -1978,10 +1973,6 @@
       },
       "okorach_sonar-tools": {
          "branches": {
-            "comma,branch": {
-               "keepWhenInactive": true,
-               "newCodePeriod": "REFERENCE_BRANCH = develop"
-            },
             "develop": {
                "keepWhenInactive": true,
                "newCodePeriod": "REFERENCE_BRANCH = master"

@@ -56,7 +56,6 @@
          "sonar.dbcleaner.hoursBeforeKeepingOnlyOneSnapshotByDay": "24",
          "sonar.dbcleaner.daysBeforeDeletingInactiveBranchesAndPRs": "30",
          "sonar.dbcleaner.branchesToKeepWhenInactive": [
-            "comma,branch",
             "develop",
             "main",
             "master",
@@ -3437,9 +3436,6 @@
             }
          },
          "branches": {
-            "comma,branch": {
-               "keepWhenInactive": true
-            },
             "release-3.2": {
                "keepWhenInactive": true
             },
@@ -4687,35 +4683,6 @@
             }
          ]
       },
-      "okorach_sonar-tools-target": {
-         "name": "Sonar Tools Target",
-         "visibility": "private",
-         "permissions": {
-            "users": {
-               "admin": "admin, codeviewer, user",
-               "syncer": "codeviewer, issueadmin, securityhotspotadmin, user"
-            },
-            "groups": {
-               "developers": "codeviewer, user",
-               "project-admins": "admin, codeviewer, user",
-               "security-auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "sonar-administrators": "admin, codeviewer, user",
-               "sonar-users": "user",
-               "tech-leads": "codeviewer, issueadmin, user"
-            }
-         },
-         "branches": {
-            "master": {
-               "isMain": true
-            },
-            "develop": {
-               "keepWhenInactive": true
-            },
-            "comma,branch": {
-               "keepWhenInactive": true
-            }
-         }
-      },
       "org.owasp.webgoat:webgoat": {
          "name": "WebGoat",
          "visibility": "private",
@@ -4794,9 +4761,6 @@
             }
          },
          "branches": {
-            "comma,branch": {
-               "keepWhenInactive": true
-            },
             "release-2.x": {
                "keepWhenInactive": true
             },
@@ -5449,7 +5413,6 @@
                "BANKING-INVESTMENT-EQUITY": "-DEFAULT_BRANCH-",
                "BANKING-INVESTMENT-MERGER": "-DEFAULT_BRANCH-",
                "BANKING-PORTAL": [
-                  "comma,branch",
                   "main",
                   "release-3.2"
                ]
