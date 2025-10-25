@@ -1312,8 +1312,11 @@ class Project(components.Component):
             except StopIteration:
                 log.warning("No main branch defined in %s configuration", self)
             for branch_name, branch_data in branch_config.items():
-                branch = branches.Branch.get_object(self, branch_name)
-                branch.import_config(branch_data)
+                try:
+                    branch = branches.Branch.get_object(self, branch_name)
+                    branch.import_config(branch_data)
+                except exceptions.ObjectNotFound:
+                    log.warning("Branch '%s' of %s does not exists, can't update its configuuration", branch_name, str(self))
         if "binding" in config:
             try:
                 self.set_devops_binding(config["binding"])
