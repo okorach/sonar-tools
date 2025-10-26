@@ -22,7 +22,7 @@
 Exports SonarQube platform configuration as JSON
 """
 
-from typing import TextIO
+from typing import TextIO, Any
 from threading import Thread
 from queue import Queue
 
@@ -122,7 +122,7 @@ def __parse_args(desc: str) -> object:
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
-def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remove_none: bool = True) -> dict[str, any]:
+def __normalize_json(json_data: dict[str, Any], remove_empty: bool = True, remove_none: bool = True) -> dict[str, any]:
     """Sorts a JSON file and optionally remove empty and none values"""
     log.info("Normalizing JSON - remove empty = %s, remove nones = %s", str(remove_empty), str(remove_none))
     json_data = utilities.clean_data(json_data, remove_empty, remove_none)
@@ -130,9 +130,10 @@ def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remov
     for key in [k for k in _SECTIONS_TO_SORT if k in json_data]:
         if isinstance(json_data[key], (list, tuple, set)):
             if len(json_data[key]) > 0:
-                sort_field = "login" if "login" in json_data[key][0] else "key"
-                tmp_d = {v[sort_field]: v for v in json_data[key]}
-                json_data[key] = list(dict(sorted(tmp_d.items())).values())
+                sort_field = next((k for k in ("key", "name", "login") if k in json_data[key][0]), None)
+                if sort_field:
+                    tmp_d = {v[sort_field]: v for v in json_data[key]}
+                    json_data[key] = list(dict(sorted(tmp_d.items())).values())
         else:
             json_data[key] = {k: json_data[key][k] for k in sorted(json_data[key])}
     return json_data
@@ -175,8 +176,14 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
     done = False
     prefix = ""
     objects_exported_as_lists = ("projects", "applications")
+    objects_exported_as_whole = "qualityGates"
     log.info("Waiting %s to write...", object_type)
-    start, stop = ("[", "]") if object_type in objects_exported_as_lists else ("{", "}")
+    if object_type in objects_exported_as_lists:
+        start, stop = ("[", "]")
+    elif object_type in objects_exported_as_whole:
+        start, stop = ("", "")
+    else:
+        start, stop = ("{", "}")
     print(f'"{object_type}": ' + start, file=fd)
     while not done:
         obj_json = queue.get()
@@ -185,9 +192,11 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
                 obj_json = __prep_json_for_write(obj_json, {**export_settings, EXPORT_EMPTY: True})
             else:
                 obj_json = __prep_json_for_write(obj_json, export_settings)
-            key = obj_json.get("key", obj_json.get("login", "unknown"))
+            key = "" if isinstance(obj_json, list) else obj_json.get("key", obj_json.get("login", obj_json.get("name", "unknown")))
             log.debug("Writing %s key '%s'", object_type[:-1], key)
             if object_type in objects_exported_as_lists:
+                print(f"{prefix}{utilities.json_dump(obj_json)}", end="", file=fd)
+            elif object_type in objects_exported_as_whole:
                 print(f"{prefix}{utilities.json_dump(obj_json)}", end="", file=fd)
             elif object_type in ("applications", "portfolios", "users"):
                 print(f'{prefix}"{key}": {utilities.json_dump(obj_json)}', end="", file=fd)
