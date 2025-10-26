@@ -411,8 +411,6 @@ def test_export_zips() -> None:
     proj_list = [tutil.PROJECT_0, tutil.PROJECT_1, tutil.PROJECT_2, tutil.NON_EXISTING_KEY, PROJ_WITH_NO_LOC]
     regexp = f"({'|'.join(proj_list)})"
     res = {r["key"]: r for r in projects.export_zips(tutil.SQ, key_regexp=regexp, skip_zero_loc=True)}
-    # assert len([r for r in res.values() if r["exportStatus"] != "SKIPPED/ZERO_LOC"]) == len(proj_list) - 2
-    # assert len([r for r in res.values() if r["exportStatus"] == "SKIPPED/ZERO_LOC"]) == 1
     for proj in proj_list[:3]:
         assert res[proj]["exportStatus"] == "SUCCESS"
     assert tutil.NON_EXISTING_KEY not in res
