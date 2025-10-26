@@ -197,20 +197,24 @@ def none_to_zero(d: dict[str, any], key_match: str = "^.+$") -> dict[str, any]:
     return new_d
 
 
-def remove_empties(d: dict[str, any]) -> dict[str, any]:
+def remove_empties(d: Any) -> Any:
     """Recursively removes empty lists and dicts and none from a dict"""
     # log.debug("Cleaning up %s", json_dump(d))
-    new_d = d.copy()
-    for k, v in d.items():
-        if isinstance(v, str) and v == "":
-            new_d.pop(k)
-            continue
-        if not isinstance(v, (list, dict)):
-            continue
-        if len(v) == 0:
-            new_d.pop(k)
-        elif isinstance(v, dict):
-            new_d[k] = remove_empties(v)
+    if not isinstance(d, (list, dict)):
+        return d
+
+    if isinstance(d, list):
+        # Remove empty strings
+        return [remove_empties(elem) for elem in d if not (isinstance(elem, str) and elem == "")]
+    
+    # Remove empty dict string values
+    new_d = {k: v for k, v in d.items() if not isinstance(v, str) or v != ""}
+
+    # Remove empty dict list or dict values
+    new_d = {k: v for k, v in new_d.items() if not isinstance(v, (list, dict)) or len(v) > 0}
+    
+    # Recurse on list and dicts
+    new_d = {k: remove_empties(v) if isinstance(v, (list, dict)) else v for k, v in new_d.items()}
     return new_d
 
 
