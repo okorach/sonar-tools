@@ -89,7 +89,10 @@ class Permissions(ABC):
         for p in normalize(perm_type):
             if p not in self.permissions or len(self.permissions[p]) == 0:
                 continue
-            perms += [{p[:-1]: k, "permissions": encode(v)} for k, v in self.permissions.get(p, {}).items()]
+            for k, v in self.permissions.get(p, {}).items():
+                if not v or len(v) == 0:
+                    continue
+                perms += [{p[:-1]: k, "permissions": encode(v)}]
         return perms if len(perms) > 0 else None
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
