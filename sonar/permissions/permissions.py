@@ -61,8 +61,8 @@ _APPS = 5
 _PORTFOLIOS = 6
 
 OBJECTS_WITH_PERMISSIONS = (_GLOBAL, _PROJECTS, _TEMPLATES, _QG, _QP, _APPS, _PORTFOLIOS)
-PERMISSION_TYPES = ("users", "groups")
-NO_PERMISSIONS = {"users": None, "groups": None}
+PERMISSION_TYPES = ("groups", "users")
+NO_PERMISSIONS = {"groups": None, "users": None}
 
 MAX_PERMS = 100
 
@@ -81,15 +81,15 @@ class Permissions(ABC):
     def __str__(self) -> str:
         return f"permissions of {str(self.concerned_object)}"
 
-    def to_json(self, perm_type: str | None = None, csv: bool = False) -> types.JsonPermissions:
+    def to_json(self, perm_type: Optional[str] = None, csv: bool = False) -> types.JsonPermissions:
         """Converts a permission object to JSON"""
         if not csv:
             return self.permissions.get(perm_type, {}) if is_valid(perm_type) else self.permissions
-        perms = {}
+        perms = []
         for p in normalize(perm_type):
             if p not in self.permissions or len(self.permissions[p]) == 0:
                 continue
-            perms[p] = {k: encode(v) for k, v in self.permissions.get(p, {}).items()}
+            perms += [{p[:-1]: k, "permissions": encode(v)} for k, v in self.permissions.get(p, {}).items()]
         return perms if len(perms) > 0 else None
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
