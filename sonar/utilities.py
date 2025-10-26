@@ -172,23 +172,6 @@ def convert_to_type(value: Any) -> Any:
     return value
 
 
-def remove_nones(d: Any) -> Any:
-    """Removes elements of the dict that are None values"""
-    if not isinstance(d, (list, dict)):
-        return d
-
-    if isinstance(d, list):
-        # Remove None values
-        return [remove_nones(elem) for elem in d if elem is not None]
-
-    # Remove None dict values
-    new_d = {k: v for k, v in d.items() if v is not None}
-
-    # Recurse on list and dicts
-    new_d = {k: remove_nones(v) if isinstance(v, (list, dict)) else v for k, v in new_d.items()}
-    return new_d
-
-
 def none_to_zero(d: dict[str, any], key_match: str = "^.+$") -> dict[str, any]:
     """Replaces None values in a dict with 0"""
     new_d = d.copy()
@@ -202,18 +185,35 @@ def none_to_zero(d: dict[str, any], key_match: str = "^.+$") -> dict[str, any]:
     return new_d
 
 
+def remove_nones(d: Any) -> Any:
+    """Removes elements of the data that are None values"""
+    return clean_data(d, remove_empty=False, remove_none=True)
+
+
 def remove_empties(d: Any) -> Any:
+    """Removes elements of the data that are empty strings, lists or dicts"""
+    return clean_data(d, remove_empty=True, remove_none=False)
+
+
+def clean_data(d: Any, remove_empty: bool, remove_none: bool) -> Any:
     """Recursively removes empty lists and dicts and none from a dict"""
     # log.debug("Cleaning up %s", json_dump(d))
     if not isinstance(d, (list, dict)):
         return d
 
     if isinstance(d, list):
-        # Remove empty strings
-        return [remove_empties(elem) for elem in d if not (isinstance(elem, str) and elem == "")]
+        # Remove empty strings and nones
+        if remove_empty:
+            d = [elem for elem in d if not (isinstance(elem, str) and elem == "")]
+        if remove_none:
+            d = [elem for elem in d if elem is not None]
+        return [clean_data(elem, remove_empty, remove_none) for elem in d]
 
     # Remove empty dict string values
-    new_d = {k: v for k, v in d.items() if not isinstance(v, str) or v != ""}
+    if remove_empty:
+        new_d = {k: v for k, v in d.items() if not isinstance(v, str) or v != ""}
+    if remove_none:
+        new_d = {k: v for k, v in d.items() if v is not None}
 
     # Remove empty dict list or dict values
     new_d = {k: v for k, v in new_d.items() if not isinstance(v, (list, dict)) or len(v) > 0}
