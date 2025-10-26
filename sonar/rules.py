@@ -139,6 +139,8 @@ CSV_EXPORT_FIELDS = [
 
 LEGACY_CSV_EXPORT_FIELDS = ["key", "language", "repo", "type", "severity", "name", "ruleType", "tags"]
 
+_IMPORTABLE_PROPERTIES = ["severity", "impacts", "description", "params", "isTemplate", "templateKey", "tags", "mdNote", "language"]
+
 _CLASS_LOCK = Lock()
 
 
@@ -297,18 +299,15 @@ class Rule(sq.SqObject):
 
     def export(self, full: bool = False) -> types.ObjectJsonRepr:
         """Returns the JSON corresponding to a rule export"""
-        rule = self.to_json()
-        d = {"severity": rule.get("severity", ""), "impacts": self.impacts(), "description": self.custom_desc}
-        if len(rule.get("params", {})) > 0:
-            d["params"] = rule["params"] if full else {p["key"]: p.get("defaultValue", "") for p in rule["params"]}
-        mapping = {"isTemplate": "isTemplate", "tags": "tags", "lang": "language", "templateKey": "templateKey"}
-        d |= {newkey: rule[oldkey] for oldkey, newkey in mapping.items() if oldkey in rule}
+        d = self.to_json()
+        d["impacts"] = self.impacts()
+        if len(d.get("params", {})) > 0:
+            d["params"] = d["params"] if full else [{"key": p["key"], "value": p.get("defaultValue", "")} for p in d["params"]]
+        mapping = {"lang": "language"}
+        d |= {newkey: d[oldkey] for oldkey, newkey in mapping.items() if oldkey in d}
         if not d["isTemplate"]:
             d.pop("isTemplate", None)
-        if full:
-            d.update({f"_{k}": v for k, v in rule.items() if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "lang")})
-            d.pop("_key", None)
-        return utilities.remove_nones(d)
+        return utilities.filter_export(d, _IMPORTABLE_PROPERTIES, full)
 
     def set_tags(self, tags: list[str]) -> bool:
         """Sets rule custom tags"""
