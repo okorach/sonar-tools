@@ -583,10 +583,16 @@ def __prefix(value: Any) -> Any:
 
 def filter_export(json_data: dict[str, Any], key_properties: list[str], full: bool) -> dict[str, Any]:
     """Filters dict for export removing or prefixing non-key properties"""
-    new_json_data = {k: v for k, v in json_data.items() if k in key_properties}
+    new_json_data = {k: json_data[k] for k in key_properties if k in json_data}
     if full:
         new_json_data |= {f"_{k}": __prefix(v) for k, v in json_data.items() if k not in key_properties}
     return new_json_data
+
+
+def order_dict(d: dict[str, Any], key_order: list[str]) -> dict[str, Any]:
+    """Orders keys of a dictionary in a given order"""
+    new_d = {k: d[k] for k in key_order if k in d}
+    return new_d | {k: v for k, v in d.items() if k not in new_d}
 
 
 def replace_keys(key_list: list[str], new_key: str, data: dict[str, any]) -> dict[str, any]:
