@@ -175,7 +175,7 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
     """
     done = False
     prefix = ""
-    objects_exported_as_lists = ("projects", "applications")
+    objects_exported_as_lists = ("projects", "applications", "users")
     objects_exported_as_whole = "qualityGates"
     log.info("Waiting %s to write...", object_type)
     if object_type in objects_exported_as_lists:
