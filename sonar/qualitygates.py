@@ -459,8 +459,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     log.info("Exporting quality gates")
     qg_list = {k: qg.to_json(export_settings) for k, qg in get_list(endpoint).items()}
     qg_list = list(dict(sorted(qg_list.items())).values())
-    write_q = kwargs.get("write_q", None)
-    if write_q:
+    if write_q := kwargs.get("write_q", None):
         write_q.put(qg_list)
         write_q.put(util.WRITE_END)
     return qg_list
