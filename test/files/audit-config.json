@@ -99,11 +99,11 @@
             "main": {
                "isMain": true,
                "projects": {
-                  "project1": "main",
-                  "project2": "main",
-                  "project3": "main",
-                  "project4": "main",
-                  "proyecto5": "main"
+                  "test:project1": "main",
+                  "test:project2": "main",
+                  "test:project3": "main",
+                  "test:project4": "main",
+                  "test:proyecto5": "main"
                }
             }
          },
@@ -248,7 +248,6 @@
          "sonar.cpd.cross_project": false,
          "sonar.dbcleaner.auditHousekeeping": "Monthly",
          "sonar.dbcleaner.branchesToKeepWhenInactive": [
-            "comma,branch",
             "develop",
             "main",
             "master",
@@ -759,7 +758,6 @@
                "BANKING-INVESTMENT-EQUITY": "-DEFAULT_BRANCH-",
                "BANKING-INVESTMENT-MERGER": "-DEFAULT_BRANCH-",
                "BANKING-PORTAL": [
-                  "comma,branch",
                   "main",
                   "release-3.2"
                ]
@@ -960,9 +958,6 @@
       },
       "BANKING-PORTAL": {
          "branches": {
-            "comma,branch": {
-               "keepWhenInactive": true
-            },
             "main": {
                "isMain": true
             },
@@ -1978,10 +1973,6 @@
       },
       "okorach_sonar-tools": {
          "branches": {
-            "comma,branch": {
-               "keepWhenInactive": true,
-               "newCodePeriod": "REFERENCE_BRANCH = develop"
-            },
             "develop": {
                "keepWhenInactive": true,
                "newCodePeriod": "REFERENCE_BRANCH = master"
@@ -2018,7 +2009,7 @@
          ],
          "visibility": "private"
       },
-      "project1": {
+      "test:project1": {
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -2048,7 +2039,7 @@
          "sonar.coverage.jacoco.xmlReportPaths": "**/*jacoco*.xml",
          "visibility": "private"
       },
-      "project2": {
+      "test:project2": {
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -2074,7 +2065,7 @@
          },
          "visibility": "private"
       },
-      "project3": {
+      "test:project3": {
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -2100,7 +2091,7 @@
          },
          "visibility": "private"
       },
-      "project4": {
+      "test:project4": {
          "branches": {
             "develop": {
                "keepWhenInactive": true
@@ -2124,7 +2115,7 @@
          },
          "visibility": "public"
       },
-      "proyecto5": {
+      "test:proyecto5": {
          "branches": {
             "develop": {
                "keepWhenInactive": true

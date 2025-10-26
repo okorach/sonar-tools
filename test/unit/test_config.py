@@ -30,7 +30,6 @@ from sonar import errcodes as e
 from sonar import portfolios, applications, projects
 from sonar import logging
 import sonar.util.constants as c
-from sonar import utilities as util
 
 import cli.options as opt
 from cli import config

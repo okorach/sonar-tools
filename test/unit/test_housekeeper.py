@@ -47,7 +47,7 @@ def test_keep_branches_override(csv_file: Generator[str]) -> None:
         pytest.skip("No branches in Community")
     opts = f"{CMD} {tutil.SQS_OPTS} -P 730 -T 730 -R 730 -B 90 -f {csv_file}"
     assert tutil.run_cmd(housekeeper.main, opts) == errcodes.OK
-    nbr_br = tutil.csv_col_count_values(csv_file, "Audit Check", "BRANCH_LAST_ANALYSIS")
+    nbr_br = tutil.csv_col_count_values(csv_file, "Problem", "BRANCH_LAST_ANALYSIS")
     assert tutil.run_cmd(housekeeper.main, f"{opts} --keepWhenInactive 'dontkeepanything'") == errcodes.OK
     # With 'dontkeepanything' as branch regexp, more branches to delete should be found
-    assert tutil.csv_col_count_values(csv_file, "Audit Check", "BRANCH_LAST_ANALYSIS") > nbr_br
+    assert tutil.csv_col_count_values(csv_file, "Problem", "BRANCH_LAST_ANALYSIS") > nbr_br

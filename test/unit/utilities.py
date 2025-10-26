@@ -53,19 +53,19 @@ JSON_FILE = f"temp.{os.getpid()}.json"
 YAML_FILE = f"temp.{os.getpid()}.yaml"
 
 PROJECT_0 = "okorach_sonar-tools"
-PROJECT_1 = "project1"
-PROJECT_2 = "project2"
-PROJECT_3 = "project3"
-PROJECT_4 = "project4"
-PROJECT_5 = "project5"
+PROJECT_1 = "test:project1"
+PROJECT_2 = "test:project2"
+PROJECT_3 = "test:project3"
+PROJECT_4 = "test:project4"
+PROJECT_5 = "test:proyecto5"
 
 LIVE_PROJECT = PROJECT_0
 PROJ_WITH_BRANCHES = PROJECT_1
 BRANCH_MAIN = "main"
 BRANCH_2 = "develop"
-BRANCH_3 = "some-branch"
+BRANCH_3 = "release-3.x"
 BRANCH_4 = "feature/new-feature"
-BRANCH_5 = "comma,branch"
+BRANCH_5 = "release-2.x"
 
 NON_EXISTING_KEY = "non-existing"
 

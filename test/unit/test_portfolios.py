@@ -113,7 +113,7 @@ def test_add_project(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     assert p.has_project(project.key)
 
     p.add_project_branches(project.key, [c.DEFAULT_BRANCH, "develop"])
-    p.add_project_branches(project.key, ["comma,branch", "develop"])
+    p.add_project_branches(project.key, ["release-3.x", "develop"])
     assert p.recompute()
 
 

@@ -55,7 +55,6 @@
          "sonar.dbcleaner.hoursBeforeKeepingOnlyOneSnapshotByDay": "24",
          "sonar.dbcleaner.daysBeforeDeletingInactiveBranchesAndPRs": "30",
          "sonar.dbcleaner.branchesToKeepWhenInactive": [
-            "comma,branch",
             "develop",
             "main",
             "master",
