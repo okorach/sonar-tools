@@ -782,25 +782,24 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     portfolio_list = {k: v for k, v in get_list(endpoint=endpoint).items() if not key_regexp or re.match(key_regexp, k)}
     nb_portfolios = len(portfolio_list)
     i = 0
-    exported_portfolios = {}
-    for k, p in portfolio_list.items():
+    exported_portfolios = []
+    for p in dict(sorted(portfolio_list.items())).values():
         try:
             if not p.is_sub_portfolio():
                 exp = p.export(export_settings)
                 if write_q:
                     write_q.put(exp)
                 else:
-                    exp.pop("key")
-                    exported_portfolios[k] = exp
+                    exported_portfolios.append(exp)
             else:
                 log.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
         except exceptions.SonarException:
-            exported_portfolios[k] = {}
+            pass
         i += 1
         if i % 10 == 0 or i == nb_portfolios:
             log.info("Exported %d/%d portfolios (%d%%)", i, nb_portfolios, (i * 100) // nb_portfolios)
     write_q and write_q.put(util.WRITE_END)
-    return dict(sorted(exported_portfolios.items()))
+    return exported_portfolios
 
 
 def recompute(endpoint: pf.Platform) -> None:
