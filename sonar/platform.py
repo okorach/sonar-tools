@@ -384,7 +384,7 @@ class Platform(object):
             return self.sys_info()["Statistics"]["database"]["name"]
         return self.sys_info()["Database"]["Database"]
 
-    def plugins(self) -> dict[str, str]:
+    def plugins(self) -> list[dict[str, str]]:
         """
         :return: the SonarQube platform plugins
         """
