@@ -437,7 +437,7 @@ class QualityProfile(sq.SqObject):
             r_key = rule["key"]
             diff_rules[r_key] = {}
             if self.rule_has_custom_severities(r_key):
-                diff_rules[r_key]["severities"] = self.rule_impacts(r_key, substitute_with_default=True)
+                diff_rules[r_key]["impacts"] = self.rule_impacts(r_key, substitute_with_default=True)
             if self.rule_is_prioritized(r_key):
                 diff_rules[r_key]["prioritized"] = True
             if (params := self.rule_custom_params(r_key)) is not None:
