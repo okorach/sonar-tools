@@ -382,7 +382,7 @@ class Portfolio(aggregations.Aggregation):
                 json_data["projects"] = mode
             if export_settings.get("MODE", "") == "MIGRATION":
                 json_data["projects"]["keys"] = self.get_project_list()
-        json_data["applications"] = self._applications
+        json_data["applications"] = [{"key": k, "branches": v} for k, v in self._applications.items()]
         return json_data
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
