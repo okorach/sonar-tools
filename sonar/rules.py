@@ -139,7 +139,7 @@ CSV_EXPORT_FIELDS = [
 
 LEGACY_CSV_EXPORT_FIELDS = ["key", "language", "repo", "type", "severity", "name", "ruleType", "tags"]
 
-_IMPORTABLE_PROPERTIES = ["severity", "impacts", "description", "params", "isTemplate", "templateKey", "tags", "mdNote", "language"]
+_IMPORTABLE_PROPERTIES = ["key", "severity", "impacts", "description", "params", "isTemplate", "templateKey", "tags", "mdNote", "language"]
 
 _CLASS_LOCK = Lock()
 
@@ -300,13 +300,15 @@ class Rule(sq.SqObject):
     def export(self, full: bool = False) -> types.ObjectJsonRepr:
         """Returns the JSON corresponding to a rule export"""
         d = self.to_json()
+        d["key"] = self.key
         d["impacts"] = self.impacts()
         if len(d.get("params", {})) > 0:
             d["params"] = d["params"] if full else [{"key": p["key"], "value": p.get("defaultValue", "")} for p in d["params"]]
-        mapping = {"lang": "language"}
+        mapping = {"lang": "language", "mdNote": "description"}
         d |= {newkey: d[oldkey] for oldkey, newkey in mapping.items() if oldkey in d}
         if not d["isTemplate"]:
             d.pop("isTemplate", None)
+        log.info("RULE = %s", utilities.json_dump(d))
         return utilities.filter_export(d, _IMPORTABLE_PROPERTIES, full)
 
     def set_tags(self, tags: list[str]) -> bool:
@@ -453,22 +455,20 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     threads = 16 if endpoint.is_sonarcloud() else 8
     get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", threads))
 
-    all_rules = get_list(endpoint=endpoint, use_cache=False, include_external=False).items()
+    all_rules = get_list(endpoint=endpoint, use_cache=False, include_external=False).values()
     rule_list = {}
-    rule_list["instantiated"] = {k: rule.export(full) for k, rule in all_rules if rule.is_instantiated()}
-    rule_list["extended"] = {k: rule.export(full) for k, rule in all_rules if rule.is_extended()}
+    rule_list["instantiated"] = [rule.export(full) for rule in all_rules if rule.is_instantiated()]
+    rule_list["extended"] = [rule.export(full) for rule in all_rules if rule.is_extended()]
     if not full:
-        rule_list["extended"] = utilities.remove_nones(
-            {
-                k: {"tags": v.get("tags", None), "description": v.get("description", None)}
-                for k, v in rule_list["extended"].items()
-                if "tags" in v or "description" in v
-            }
-        )
+        rule_list["extended"] = [
+            utilities.clean_data({"key": v["key"], "tags": v.get("tags", None), "description": v.get("description", None)})
+            for v in rule_list["extended"]
+            if "tags" in v or "description" in v
+        ]
     if full:
-        rule_list["standard"] = {k: rule.export(full) for k, rule in all_rules if not rule.is_instantiated() and not rule.is_extended()}
+        rule_list["standard"] = [rule.export(full) for rule in all_rules if not rule.is_instantiated() and not rule.is_extended()]
     if export_settings.get("MODE", "") == "MIGRATION":
-        rule_list["thirdParty"] = {r.key: r.export() for r in third_party(endpoint=endpoint)}
+        rule_list["thirdParty"] = [r.export() for r in third_party(endpoint=endpoint)]
 
     for k in ("instantiated", "extended", "standard", "thirdParty"):
         if len(rule_list.get(k, {})) == 0:
