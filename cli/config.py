@@ -177,8 +177,9 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
     """
     done = False
     prefix = ""
+    objects_exported_as_lists = ("projects", "applications")
     log.info("Waiting %s to write...", object_type)
-    start, stop = ("[", "]") if object_type == "projects" else ("{", "}")
+    start, stop = ("[", "]") if object_type in objects_exported_as_lists else ("{", "}")
     print(f'"{object_type}": ' + start, file=fd)
     while not done:
         obj_json = queue.get()
@@ -189,7 +190,7 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
                 obj_json = __prep_json_for_write(obj_json, export_settings)
             key = obj_json.get("key", obj_json.get("login", "unknown"))
             log.debug("Writing %s key '%s'", object_type[:-1], key)
-            if object_type == "projects":
+            if object_type in objects_exported_as_lists:
                 print(f"{prefix}{utilities.json_dump(obj_json)}", end="", file=fd)
             elif object_type in ("applications", "portfolios", "users"):
                 print(f'{prefix}"{key}": {utilities.json_dump(obj_json)}', end="", file=fd)
