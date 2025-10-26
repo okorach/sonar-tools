@@ -172,15 +172,20 @@ def convert_to_type(value: Any) -> Any:
     return value
 
 
-def remove_nones(d: dict[str, any]) -> dict[str, any]:
+def remove_nones(d: Any) -> Any:
     """Removes elements of the dict that are None values"""
-    new_d = d.copy()
-    for k, v in d.items():
-        if v is None:
-            new_d.pop(k)
-            continue
-        if isinstance(v, dict):
-            new_d[k] = remove_nones(v)
+    if not isinstance(d, (list, dict)):
+        return d
+
+    if isinstance(d, list):
+        # Remove None values
+        return [remove_nones(elem) for elem in d if elem is not None]
+
+    # Remove None dict values
+    new_d = {k: v for k, v in d.items() if v is not None}
+
+    # Recurse on list and dicts
+    new_d = {k: remove_nones(v) if isinstance(v, (list, dict)) else v for k, v in new_d.items()}
     return new_d
 
 
@@ -206,13 +211,13 @@ def remove_empties(d: Any) -> Any:
     if isinstance(d, list):
         # Remove empty strings
         return [remove_empties(elem) for elem in d if not (isinstance(elem, str) and elem == "")]
-    
+
     # Remove empty dict string values
     new_d = {k: v for k, v in d.items() if not isinstance(v, str) or v != ""}
 
     # Remove empty dict list or dict values
     new_d = {k: v for k, v in new_d.items() if not isinstance(v, (list, dict)) or len(v) > 0}
-    
+
     # Recurse on list and dicts
     new_d = {k: remove_empties(v) if isinstance(v, (list, dict)) else v for k, v in new_d.items()}
     return new_d
