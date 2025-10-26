@@ -218,9 +218,8 @@ def clean_data(d: Any, remove_empty: bool, remove_none: bool) -> Any:
     # Remove empty dict list or dict values
     new_d = {k: v for k, v in new_d.items() if not isinstance(v, (list, dict)) or len(v) > 0}
 
-    # Recurse on list and dicts
-    new_d = {k: remove_empties(v) if isinstance(v, (list, dict)) else v for k, v in new_d.items()}
-    return new_d
+    # Recurse
+    return {k: clean_data(v, remove_empty, remove_none) for k, v in new_d.items()}
 
 
 def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
