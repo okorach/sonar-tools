@@ -1507,7 +1507,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
             log.log(lvl, "%d/%d projects exported (%d%%)", current, total, (current * 100) // total)
     log.debug("Projects export complete")
     write_q and write_q.put(util.WRITE_END)
-    return dict(sorted(results.items()))
+    return dict(sorted(results.items())).values()
 
 
 def exists(endpoint: pf.Platform, key: str) -> bool:
