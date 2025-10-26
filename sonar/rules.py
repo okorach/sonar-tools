@@ -308,7 +308,6 @@ class Rule(sq.SqObject):
         d |= {newkey: d[oldkey] for oldkey, newkey in mapping.items() if oldkey in d}
         if not d["isTemplate"]:
             d.pop("isTemplate", None)
-        log.info("RULE = %s", utilities.json_dump(d))
         return utilities.filter_export(d, _IMPORTABLE_PROPERTIES, full)
 
     def set_tags(self, tags: list[str]) -> bool:
