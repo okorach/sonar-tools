@@ -565,4 +565,4 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, QualityGate]:
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    return util.dict_to_list(util.remove_nones(original_json), "name")
+    return original_json

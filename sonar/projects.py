@@ -1711,8 +1711,4 @@ def convert_proj_for_yaml(proj_json: types.ObjectJsonRepr) -> types.ObjectJsonRe
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    clean_json = util.remove_nones(original_json)
-    new_json = []
-    for proj in util.dict_to_list(clean_json, "key"):
-        new_json.append(convert_proj_for_yaml(proj))
-    return new_json
+    return original_json

@@ -849,19 +849,7 @@ def get_api_branch(branch: str) -> str:
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    new_json = util.dict_to_list(util.remove_nones(original_json), "key")
-    for p_json in new_json:
-        try:
-            p_json["projects"] = [{"key": k, "branch": br} for k, br in p_json["projects"]["manual"].items()]
-        except KeyError:
-            pass
-        if "portfolios" in p_json:
-            p_json["portfolios"] = convert_for_yaml(p_json["portfolios"])
-        if "applications" in p_json:
-            p_json["applications"] = [{"key": k, "branches": br} for k, br in p_json["applications"].items()]
-        if "permissions" in p_json:
-            p_json["permissions"] = perms.convert_for_yaml(p_json["permissions"])
-    return new_json
+    return original_json
 
 
 def clear_cache(endpoint: pf.Platform) -> None:
