@@ -349,18 +349,19 @@ class Rule(sq.SqObject):
             self.refresh()
             found_qp = next((qp for qp in self.sq_json.get("actives", []) if quality_profile_id and qp["qProfile"] == quality_profile_id), None)
         if not found_qp:
-            return self._impacts if len(self._impacts) > 0 else {TYPE_TO_QUALITY[self.type]: self.severity}
-        if self.endpoint.is_mqr_mode():
-            qp_impacts = {imp["softwareQuality"]: imp["severity"] for imp in found_qp["impacts"]}
-            default_impacts = self._impacts
+            qp_impacts = self._impacts if len(self._impacts) > 0 else {TYPE_TO_QUALITY[self.type]: self.severity}
         else:
-            qp_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
-            default_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
+            if self.endpoint.is_mqr_mode():
+                qp_impacts = {imp["softwareQuality"]: imp["severity"] for imp in found_qp["impacts"]}
+                default_impacts = self._impacts
+            else:
+                qp_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
+                default_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
 
-        if substitute_with_default:
-            return {k: c.DEFAULT if qp_impacts[k] == default_impacts.get(k, qp_impacts[k]) else v for k, v in qp_impacts.items()}
-        else:
-            return qp_impacts
+            if substitute_with_default:
+                qp_impacts = {k: c.DEFAULT if qp_impacts[k] == default_impacts.get(k, qp_impacts[k]) else v for k, v in qp_impacts.items()}
+
+        return {k.lower(): v for k, v in qp_impacts.items()}
 
     def __get_quality_profile_data(self, quality_profile_id: str) -> Optional[dict[str, str]]:
         if not quality_profile_id:

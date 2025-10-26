@@ -21,6 +21,7 @@ CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 build_docs=0
 build_docker=0
+offline=0
 
 . "${CONF_DIR}/env.sh"
 
@@ -32,6 +33,9 @@ while [[ $# -ne 0 ]]; do
         docker)
             build_docker=1
             ;;
+        offline)
+            offline=1
+            ;;
         *)
             ;;
     esac
@@ -41,9 +45,13 @@ done
 echo "======= FORMATTING CODE ========="
 ruff format
 echo "======= BUILDING PACKAGE ========="
-rm -rf "${ROOT_DIR}/build/lib/sonar" "${ROOT_DIR}/build/lib/cli" "${ROOT_DIR}"/build/scripts*/sonar-tools "${ROOT_DIR}"/dist/sonar_tools*
-# python -m build
-poetry build
+if [[ "${offline}" = "1" ]]; then
+    python setup.py bdist_wheel
+    # python -m build
+else
+    rm -rf "${ROOT_DIR}/build/lib/sonar" "${ROOT_DIR}/build/lib/cli" "${ROOT_DIR}"/build/scripts*/sonar-tools "${ROOT_DIR}"/dist/sonar_tools*
+    poetry build
+fi
 
 if [[ "${build_docs}" = "1" ]]; then
     echo "======= BUILDING DOCS ========="
