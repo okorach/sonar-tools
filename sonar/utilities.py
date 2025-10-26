@@ -190,12 +190,7 @@ def remove_nones(d: Any) -> Any:
     return clean_data(d, remove_empty=False, remove_none=True)
 
 
-def remove_empties(d: Any) -> Any:
-    """Removes elements of the data that are empty strings, lists or dicts"""
-    return clean_data(d, remove_empty=True, remove_none=False)
-
-
-def clean_data(d: Any, remove_empty: bool, remove_none: bool) -> Any:
+def clean_data(d: Any, remove_empty: bool = True, remove_none: bool = True) -> Any:
     """Recursively removes empty lists and dicts and none from a dict"""
     # log.debug("Cleaning up %s", json_dump(d))
     if not isinstance(d, (list, dict)):

@@ -345,7 +345,7 @@ class Application(aggr.Aggregation):
             }
         )
         json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
-        return util.remove_empties(json_data)
+        return util.clean_data(json_data)
 
     def set_permissions(self, data: types.JsonPermissions) -> application_permissions.ApplicationPermissions:
         """Sets an application permissions
@@ -601,7 +601,7 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Application]:
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    new_json = util.dict_to_list(util.remove_nones(original_json), "key")
+    new_json = util.dict_to_list(util.clean_data(original_json, remove_empty=False), "key")
     for app_json in new_json:
         app_json["branches"] = util.dict_to_list(app_json["branches"], "name")
         for b in app_json["branches"]:
