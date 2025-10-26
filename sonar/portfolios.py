@@ -72,13 +72,16 @@ _IMPORTABLE_PROPERTIES = (
     "key",
     "name",
     "description",
+    "mode",
+    "projects",
+    "regexp",
+    "tags",
+    "applications",
+    "portfolios",
     "visibility",
     "permissions",
-    "projects",
     "projectsList",
-    "portfolios",
     "subPortfolios",
-    "applications",
 )
 
 
@@ -199,20 +202,22 @@ class Portfolio(aggregations.Aggregation):
         mode = self.sq_json.get(_API_SELECTION_MODE_FIELD, None)
         if mode is None:
             return
-        branch = self.sq_json.get("branch", c.DEFAULT_BRANCH)
+        branch = self.sq_json.get("branch", None)
         if mode == _SELECTION_MODE_MANUAL:
-            self._selection_mode = {mode: {}}
+            self._selection_mode = {"mode": _SELECTION_MODE_MANUAL, "projects": []}
             for projdata in self.sq_json.get("selectedProjects", {}):
-                branch_list = projdata.get("selectedBranches", [c.DEFAULT_BRANCH])
-                self._selection_mode[mode].update({projdata["projectKey"]: set(branch_list)})
+                if branch_list := projdata.get("selectedBranches", None):
+                    self._selection_mode["projects"].append({"key": projdata["projectKey"], "branches": list(set(branch_list))})
+                else:
+                    self._selection_mode["projects"].append({"key": projdata["projectKey"]})
         elif mode == _SELECTION_MODE_REGEXP:
-            self._selection_mode = {mode: self.sq_json["regexp"], "branch": branch}
+            self._selection_mode = util.clean_data({"mode": mode, "regexp": self.sq_json["regexp"], "branch": branch})
         elif mode == _SELECTION_MODE_TAGS:
-            self._selection_mode = {mode: self.sq_json["tags"], "branch": branch}
+            self._selection_mode = util.clean_data({"mode": mode, "tags": self.sq_json["tags"], "branch": branch})
         elif mode == _SELECTION_MODE_REST:
-            self._selection_mode = {mode: True, "branch": branch}
+            self._selection_mode = util.clean_data({"mode": mode, "branch": branch})
         else:
-            self._selection_mode = {mode: True}
+            self._selection_mode = {"mode": mode}
 
     def refresh(self) -> None:
         """Refreshes a portfolio data from the Sonar instance"""
@@ -371,15 +376,10 @@ class Portfolio(aggregations.Aggregation):
             json_data["permissions"] = self.permissions().export(export_settings=export_settings)
         json_data["tags"] = self._tags
         if subportfolios:
-            json_data["portfolios"] = {}
-            for s in subportfolios.values():
-                subp_json = s.to_json(export_settings)
-                subp_key = subp_json.pop("key")
-                json_data["portfolios"][subp_key] = subp_json
-        mode = self.selection_mode().copy()
-        if mode:
-            if "none" not in mode or export_settings.get("MODE", "") == "MIGRATION":
-                json_data["projects"] = mode
+            json_data["portfolios"] = [s.to_json(export_settings) for s in subportfolios.values()]
+        if mode := self.selection_mode():
+            json_data.update(mode)
+            json_data["mode"] = json_data["mode"].lower()
             if export_settings.get("MODE", "") == "MIGRATION":
                 json_data["projects"]["keys"] = self.get_project_list()
         json_data["applications"] = [{"key": k, "branches": v} for k, v in self._applications.items()]
@@ -387,8 +387,7 @@ class Portfolio(aggregations.Aggregation):
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports a portfolio (for sonar-config)"""
-        log.info("Exporting %s", str(self))
-        return util.remove_nones(util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
+        return util.clean_data(util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
 
     def permissions(self) -> pperms.PortfolioPermissions:
         """Returns a portfolio permissions (if toplevel) or None if sub-portfolio"""
