@@ -8,7 +8,7 @@ cd "$DIR"
 
 url=${1:-$SONAR_HOST_URL}
 
-projects="project1 project2 project3 project4 proyecto5"
+projects="test:project1 test:project2 test:project3 test:project4 test:proyecto5"
 for p in $projects; do
     echo "Processing $p"
     sonar-scanner -Dsonar.projectKey=$p -Dsonar.host.url=$url -Dsonar.branch.name=develop -Dsonar.login=$SONAR_TOKEN -Dsonar.token=$SONAR_TOKEN
