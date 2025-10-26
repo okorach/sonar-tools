@@ -248,8 +248,10 @@ def test_import_wrong_key(get_test_project: Generator[projects.Project]) -> None
     proj = get_test_project
     proj.key = tutil.NON_EXISTING_KEY
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        assert proj.import_zip(asynchronous=True) == "FAILED/PROJECT_NOT_FOUND"
-        assert proj.import_zip(asynchronous=False) == "FAILED/PROJECT_NOT_FOUND"
+        with pytest.raises(exceptions.ObjectNotFound):
+            proj.import_zip(asynchronous=True)
+        with pytest.raises(exceptions.ObjectNotFound):
+            proj.import_zip(asynchronous=False)
     else:
         with pytest.raises(exceptions.UnsupportedOperation):
             proj.import_zip(asynchronous=True)
