@@ -389,7 +389,7 @@ class Platform(object):
         :return: the SonarQube platform plugins
         """
         if self.is_sonarcloud():
-            return {}
+            return []
         sysinfo = self.sys_info()
         if "Application Nodes" in sysinfo:
             sysinfo = sysinfo["Application Nodes"][0]
