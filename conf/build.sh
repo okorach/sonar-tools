@@ -46,7 +46,12 @@ echo "======= FORMATTING CODE ========="
 ruff format
 echo "======= BUILDING PACKAGE ========="
 if [[ "${offline}" = "1" ]]; then
+    cp "${ROOT_DIR}/conf/offline/setup.py" "${ROOT_DIR}/"
+    cp "${ROOT_DIR}/conf/offline/sonar-tools" "${ROOT_DIR}/"
+    mv "${ROOT_DIR}/pyproject.toml" "${ROOT_DIR}/pyproject.toml.bak"
     python setup.py bdist_wheel
+    mv "${ROOT_DIR}/pyproject.toml.bak" "${ROOT_DIR}/pyproject.toml"
+    rm "${ROOT_DIR}/setup.py" "${ROOT_DIR}/sonar-tools"
     # python -m build
 else
     rm -rf "${ROOT_DIR}/build/lib/sonar" "${ROOT_DIR}/build/lib/cli" "${ROOT_DIR}"/build/scripts*/sonar-tools "${ROOT_DIR}"/dist/sonar_tools*
