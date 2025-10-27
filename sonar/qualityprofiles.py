@@ -398,7 +398,7 @@ class QualityProfile(sq.SqObject):
                 if self.rule_is_prioritized(rule.key):
                     data["prioritized"] = True
                 if self.rule_has_custom_severities(rule.key):
-                    data["severities"] = self.rule_impacts(rule.key, substitute_with_default=True)
+                    data["impacts"] = self.rule_impacts(rule.key, substitute_with_default=True)
                 json_data["rules"].append({"key": rule.key, **data})
         json_data["permissions"] = self.permissions().export(export_settings)
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
@@ -437,7 +437,7 @@ class QualityProfile(sq.SqObject):
             r_key = rule["key"]
             diff_rules[r_key] = {}
             if self.rule_has_custom_severities(r_key):
-                diff_rules[r_key]["severities"] = self.rule_impacts(r_key, substitute_with_default=True)
+                diff_rules[r_key]["impacts"] = self.rule_impacts(r_key, substitute_with_default=True)
             if self.rule_is_prioritized(r_key):
                 diff_rules[r_key]["prioritized"] = True
             if (params := self.rule_custom_params(r_key)) is not None:

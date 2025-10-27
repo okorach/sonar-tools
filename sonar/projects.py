@@ -1507,7 +1507,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
             log.log(lvl, "%d/%d projects exported (%d%%)", current, total, (current * 100) // total)
     log.debug("Projects export complete")
     write_q and write_q.put(util.WRITE_END)
-    return dict(sorted(results.items()))
+    return list(dict(sorted(results.items())).values())
 
 
 def exists(endpoint: pf.Platform, key: str) -> bool:
@@ -1711,8 +1711,4 @@ def convert_proj_for_yaml(proj_json: types.ObjectJsonRepr) -> types.ObjectJsonRe
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    clean_json = util.remove_nones(original_json)
-    new_json = []
-    for proj in util.dict_to_list(clean_json, "key"):
-        new_json.append(convert_proj_for_yaml(proj))
-    return new_json
+    return original_json

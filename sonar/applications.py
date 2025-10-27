@@ -339,12 +339,13 @@ class Application(aggr.Aggregation):
                 "description": None if self._description == "" else self._description,
                 "visibility": self.visibility(),
                 # 'projects': self.projects(),
-                "branches": {br.name: br.export() for br in self.branches().values()},
+                "branches": [br.export() for br in self.branches().values()],
                 "permissions": self.permissions().export(export_settings=export_settings),
                 "tags": self.get_tags(),
             }
         )
-        return util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
+        json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
+        return util.clean_data(json_data)
 
     def set_permissions(self, data: types.JsonPermissions) -> application_permissions.ApplicationPermissions:
         """Sets an application permissions
@@ -525,11 +526,9 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
         app_json = app.export(export_settings)
         if write_q:
             write_q.put(app_json)
-        else:
-            app_json.pop("key")
-            apps_settings[k] = app_json
+        apps_settings[k] = app_json
     write_q and write_q.put(util.WRITE_END)
-    return apps_settings
+    return dict(sorted(app_json.items())).values()
 
 
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[problem.Problem]:
@@ -602,12 +601,4 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Application]:
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    new_json = util.dict_to_list(util.remove_nones(original_json), "key")
-    for app_json in new_json:
-        app_json["branches"] = util.dict_to_list(app_json["branches"], "name")
-        for b in app_json["branches"]:
-            if "projects" in b:
-                b["projects"] = [{"key": k, "branch": br} for k, br in b["projects"].items()]
-        if "permissions" in app_json:
-            app_json["permissions"] = permissions.convert_for_yaml(app_json["permissions"])
-    return new_json
+    return original_json

@@ -483,13 +483,12 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     """
     log.info("Exporting users")
     write_q = kwargs.get("write_q", None)
-    u_list = {}
+    u_list = []
     for u_login, u_obj in sorted(search(endpoint=endpoint).items()):
-        u_list[u_login] = u_obj.to_json(export_settings)
+        d = u_obj.to_json(export_settings)
+        u_list.append(d)
         if write_q:
-            write_q.put(u_list[u_login])
-        else:
-            u_list[u_login].pop("login", None)
+            write_q.put(d)
     write_q and write_q.put(util.WRITE_END)
     return u_list
 
@@ -564,7 +563,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    return util.dict_to_list(original_json, "login")
+    return original_json
 
 
 def exists(endpoint: pf.Platform, login: str) -> bool:

@@ -61,8 +61,8 @@ _APPS = 5
 _PORTFOLIOS = 6
 
 OBJECTS_WITH_PERMISSIONS = (_GLOBAL, _PROJECTS, _TEMPLATES, _QG, _QP, _APPS, _PORTFOLIOS)
-PERMISSION_TYPES = ("users", "groups")
-NO_PERMISSIONS = {"users": None, "groups": None}
+PERMISSION_TYPES = ("groups", "users")
+NO_PERMISSIONS = {"groups": None, "users": None}
 
 MAX_PERMS = 100
 
@@ -81,15 +81,18 @@ class Permissions(ABC):
     def __str__(self) -> str:
         return f"permissions of {str(self.concerned_object)}"
 
-    def to_json(self, perm_type: str | None = None, csv: bool = False) -> types.JsonPermissions:
+    def to_json(self, perm_type: Optional[str] = None, csv: bool = False) -> types.JsonPermissions:
         """Converts a permission object to JSON"""
         if not csv:
             return self.permissions.get(perm_type, {}) if is_valid(perm_type) else self.permissions
-        perms = {}
+        perms = []
         for p in normalize(perm_type):
             if p not in self.permissions or len(self.permissions[p]) == 0:
                 continue
-            perms[p] = {k: encode(v) for k, v in self.permissions.get(p, {}).items()}
+            for k, v in self.permissions.get(p, {}).items():
+                if not v or len(v) == 0:
+                    continue
+                perms += [{p[:-1]: k, "permissions": encode(v)}]
         return perms if len(perms) > 0 else None
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
@@ -434,8 +437,4 @@ def black_list(perms: types.JsonPermissions, disallowed_perms: list[str]) -> typ
 
 def convert_for_yaml(json_perms: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Converts permissions in a format that is more friendly for YAML"""
-    converted_perms = []
-    for ptype in "groups", "users":
-        if ptype in json_perms:
-            converted_perms += utilities.dict_to_list(json_perms[ptype], ptype[:-1], "permissions")
-    return converted_perms
+    return json_perms
