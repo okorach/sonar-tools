@@ -74,3 +74,5 @@ DEFAULT_BRANCH = "-DEFAULT_BRANCH-"
 
 SQS_USERS = "sonar-users"  # SonarQube Server users default group name
 SQC_USERS = "Members"  # SonarQube Cloud users default group name
+
+ELASTIC_MAX_RESULTS = 10000  # ElasticSearch max results limit
