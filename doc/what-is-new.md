@@ -1,5 +1,9 @@
 # Next version
 
+# Version 3.16.1
+
+- Patch for [Issue #2039](https://github.com/okorach/sonar-tools/issues/2039) that may affect merely all the Sonar Tools
+
 # Version 3.16
 
 * `sonar-config`:
