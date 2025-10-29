@@ -40,6 +40,8 @@ import sonar.logging as log
 import sonar.platform as pf
 
 from sonar.util import types, cache
+from sonar.util import project_utils as putils
+
 from sonar import exceptions, errcodes
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops
 import sonar.permissions.permissions as perms
@@ -1357,14 +1359,22 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
 def search(endpoint: pf.Platform, params: types.ApiParams = None, threads: int = 8) -> dict[str, Project]:
     """Searches projects in SonarQube
 
-    :param endpoint: Reference to the SonarQube platform
-    :param params: list of parameters to narrow down the search
-    :returns: list of projects
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param ApiParams params: list of filter parameters to narrow down the search
+    :param int threads: Number of threads to use for the search
     """
     new_params = {} if params is None else params.copy()
-    if not endpoint.is_sonarcloud():
+    if not endpoint.is_sonarcloud() and not new_params.get("filter", None):
         new_params["filter"] = _PROJECT_QUALIFIER
-    return sqobject.search_objects(endpoint=endpoint, object_class=Project, params=new_params, threads=threads)
+    try:
+        log.info("Searching projects with parameters: %s", str(new_params))
+        return sqobject.search_objects(endpoint=endpoint, object_class=Project, params=new_params, threads=threads)
+    except exceptions.TooManyResults as e:
+        log.warning(e.message)
+        filter_1, filter_2 = putils.split_loc_filter(new_params["filter"])
+        return search(endpoint, params={**new_params, "filter": filter_1}, threads=threads) | search(
+            endpoint, params={**new_params, "filter": filter_2}, threads=threads
+        )
 
 
 def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, use_cache: bool = True) -> dict[str, Project]:
@@ -1375,8 +1385,8 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
     :return: the list of all projects
     :rtype: dict{key: Project}
     """
-    with _CLASS_LOCK:
-        if key_list is None or len(key_list) == 0 or not use_cache:
+    if key_list is None or len(key_list) == 0 or not use_cache:
+        with _CLASS_LOCK:
             log.info("Listing projects")
             p_list = dict(sorted(search(endpoint=endpoint, threads=threads).items()))
             return p_list

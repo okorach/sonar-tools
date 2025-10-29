@@ -24,5 +24,5 @@ sonar-tools project version
 
 """
 
-PACKAGE_VERSION = "3.17"
-MIGRATION_TOOL_VERSION = "0.7"
+PACKAGE_VERSION = "3.16.1"
+MIGRATION_TOOL_VERSION = "0.6-snapshot"

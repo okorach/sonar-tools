@@ -242,6 +242,10 @@ def search_objects(endpoint: object, object_class: Any, params: types.ApiParams,
     data = __get(endpoint, api, {**new_params, p_field: 1})
     nb_pages = utilities.nbr_pages(data, api_version)
     nb_objects = max(len(data[returned_field]), utilities.nbr_total_elements(data, api_version))
+
+    if nb_objects > c.ELASTIC_MAX_RESULTS:
+        raise exceptions.TooManyResults(nb_objects, f"Too many {cname}s ({nb_objects}) returned by search")
+
     log.info(
         "Searching %d %ss, %d pages of %d elements, %d pages in parallel...",
         nb_objects,
