@@ -23,7 +23,7 @@ Abstraction of the SonarQube "application" concept
 """
 
 from __future__ import annotations
-from typing import Union, Optional
+from typing import Optional
 import re
 import json
 from datetime import datetime
@@ -71,9 +71,9 @@ class Application(aggr.Aggregation):
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=endpoint, key=key)
-        self._branches = None
-        self._projects = None
-        self._description = None
+        self._branches: Optional[dict[str, app_branches.ApplicationBranch]] = None
+        self._projects: Optional[dict[str, str]] = None
+        self._description: Optional[str] = None
         self.name = name
         log.debug("Created object %s with uuid %d id %x", str(self), hash(self), id(self))
         Application.CACHE.put(self)
@@ -90,14 +90,10 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         check_supported(endpoint)
-        o = Application.CACHE.get(key, endpoint.local_url)
+        o: Application = Application.CACHE.get(key, endpoint.local_url)
         if o:
             return o
-        try:
-            data = json.loads(endpoint.get(Application.API[c.GET], params={"application": key}).text)["application"]
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"searching application {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(key, f"Application key '{key}' not found")
+        data = json.loads(endpoint.get(Application.API[c.GET], params={"application": key}).text)["application"]
         return cls.load(endpoint, data)
 
     @classmethod
@@ -113,7 +109,7 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         check_supported(endpoint)
-        o = Application.CACHE.get(data["key"], endpoint.local_url)
+        o: Application = Application.CACHE.get(data["key"], endpoint.local_url)
         if not o:
             o = cls(endpoint, data["key"], data["name"])
         o.reload(data)
@@ -132,11 +128,7 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         check_supported(endpoint)
-        try:
-            endpoint.post(Application.API["CREATE"], params={"key": key, "name": name})
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating application {key}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(key, e.response.text)
+        endpoint.post(Application.API["CREATE"], params={"key": key, "name": name})
         log.info("Creating object")
         return Application(endpoint=endpoint, key=key, name=name)
 
@@ -151,10 +143,9 @@ class Application(aggr.Aggregation):
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
             self.reload(json.loads(self.get(Application.API[c.GET], params=self.api_params(c.GET)).text)["application"])
             self.projects()
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"refreshing {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        except exceptions.ObjectNotFound:
             Application.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
+            raise
 
     def __str__(self) -> str:
         """String name of object"""
@@ -268,7 +259,8 @@ class Application(aggr.Aggregation):
                 branch.delete()
         return super().delete()
 
-    def get_hotspots(self, filters: dict[str, str] = None) -> dict[str, object]:
+    def get_hotspots(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:
+        """Returns the security hotspots of the application (ie of its projects or branches)"""
         new_filters = filters.copy() if filters else {}
         pattern = new_filters.pop("branch", None) if new_filters else None
         if not pattern:
@@ -279,7 +271,8 @@ class Application(aggr.Aggregation):
             findings_list |= comp.get_hotspots(new_filters)
         return findings_list
 
-    def get_issues(self, filters: dict[str, str] = None) -> dict[str, object]:
+    def get_issues(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:
+        """Returns the issues of the application (ie of its projects or branches)"""
         new_filters = filters.copy() if filters else {}
         pattern = new_filters.pop("branch", None) if new_filters else None
         if not pattern:
@@ -346,12 +339,13 @@ class Application(aggr.Aggregation):
                 "description": None if self._description == "" else self._description,
                 "visibility": self.visibility(),
                 # 'projects': self.projects(),
-                "branches": {br.name: br.export() for br in self.branches().values()},
+                "branches": [br.export() for br in self.branches().values()],
                 "permissions": self.permissions().export(export_settings=export_settings),
                 "tags": self.get_tags(),
             }
         )
-        return util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
+        json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
+        return util.clean_data(json_data)
 
     def set_permissions(self, data: types.JsonPermissions) -> application_permissions.ApplicationPermissions:
         """Sets an application permissions
@@ -421,7 +415,8 @@ class Application(aggr.Aggregation):
         main_branch_name = next((k for k, v in data.get("branches", {}).items() if v.get("isMain", False)), None)
         main_branch_name is None or self.main_branch().rename(main_branch_name)
 
-        _ = [self.set_branches(name, branch_data) for name, branch_data in data.get("branches", {}).items()]
+        for name, branch_data in data.get("branches", {}).items():
+            self.set_branches(name, branch_data)
 
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         ops = {c.READ: {"application": self.key}, c.RECOMPUTE: {"key": self.key}}
@@ -531,11 +526,9 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
         app_json = app.export(export_settings)
         if write_q:
             write_q.put(app_json)
-        else:
-            app_json.pop("key")
-            apps_settings[k] = app_json
+        apps_settings[k] = app_json
     write_q and write_q.put(util.WRITE_END)
-    return apps_settings
+    return dict(sorted(app_json.items())).values()
 
 
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[problem.Problem]:
@@ -608,12 +601,4 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Application]:
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    new_json = util.dict_to_list(util.remove_nones(original_json), "key")
-    for app_json in new_json:
-        app_json["branches"] = util.dict_to_list(app_json["branches"], "name")
-        for b in app_json["branches"]:
-            if "projects" in b:
-                b["projects"] = [{"key": k, "branch": br} for k, br in b["projects"].items()]
-        if "permissions" in app_json:
-            app_json["permissions"] = permissions.convert_for_yaml(app_json["permissions"])
-    return new_json
+    return original_json

@@ -18,18 +18,15 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" Abstraction of Sonar Application Branch """
+"""Abstraction of Sonar Application Branch"""
 
 from __future__ import annotations
-from typing import Optional
-
+from typing import Optional, TYPE_CHECKING
 import json
-from http import HTTPStatus
-from requests import RequestException
 from requests.utils import quote
 
 import sonar.logging as log
-from sonar.util import types, cache
+from sonar.util import cache
 
 from sonar.components import Component
 
@@ -37,6 +34,9 @@ from sonar.branches import Branch
 from sonar import exceptions, projects, utilities
 import sonar.util.constants as c
 
+if TYPE_CHECKING:
+    from sonar.util import types
+    from datetime import datetime
 
 _NOT_SUPPORTED = "Applications not supported in community edition"
 
@@ -64,7 +64,7 @@ class ApplicationBranch(Component):
         self.sq_json = branch_data
         self._is_main = is_main
         self._project_branches = project_branches
-        self._last_analysis = None
+        self._last_analysis: Optional[datetime] = None
         log.debug("Created object %s with uuid %d id %x", str(self), hash(self), id(self))
         ApplicationBranch.CACHE.put(self)
 
@@ -112,11 +112,7 @@ class ApplicationBranch(Component):
             else:  # Default main branch of project
                 params["project"].append(obj.key)
                 params["projectBranch"].append("")
-        try:
-            app.endpoint.post(ApplicationBranch.API[c.CREATE], params=params)
-        except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"creating branch {name} of {str(app)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(f"{str(app)} branch '{name}", e.response.text)
+        app.endpoint.post(ApplicationBranch.API[c.CREATE], params=params)
         return ApplicationBranch(app=app, name=name, project_branches=project_branches)
 
     @classmethod
@@ -175,10 +171,13 @@ class ApplicationBranch(Component):
         :param full: Whether to do a full export including settings that can't be set, defaults to False
         :type full: bool, optional
         """
-        log.info("Exporting %s from %s", self, self.sq_json)
-        jsondata = {"projects": {b["key"]: b["branch"] if b["selected"] else utilities.DEFAULT for b in self.sq_json["projects"]}}
+        log.info("Exporting %s from %s", self, utilities.json_dump(self.sq_json))
+        jsondata = {"name": self.name}
         if self.is_main():
             jsondata["isMain"] = True
+        br_projects = [b for b in self.sq_json["projects"] if b.get("selected", True)]
+        br_projects = [{"key": b["key"], "branch": None if b["isMain"] else b["branch"]} for b in br_projects]
+        jsondata["projects"] = utilities.remove_nones(br_projects)
         return jsondata
 
     def update(self, name: str, project_branches: list[Branch]) -> bool:
@@ -201,10 +200,9 @@ class ApplicationBranch(Component):
             params["projectBranch"].append(br_name)
         try:
             ok = self.post(ApplicationBranch.API[c.UPDATE], params=params).ok
-        except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"updating {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        except exceptions.ObjectNotFound:
             ApplicationBranch.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(str(self), e.response.text)
+            raise
 
         self.name = name
         self._project_branches = project_branches

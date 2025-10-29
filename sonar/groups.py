@@ -20,13 +20,11 @@
 #
 
 """Abstraction of the SonarQube group concept"""
+
 from __future__ import annotations
 import json
 
 from typing import Optional
-
-from http import HTTPStatus
-from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -76,7 +74,7 @@ class Group(sq.SqObject):
         super().__init__(endpoint=endpoint, key=name)
         self.name = name  #: Group name
         self.description = data.get("description", "")  #: Group description
-        self.__members = None
+        self.__members: Optional[list[users.User]] = None
         self.__is_default = data.get("default", None)
         self.id = data.get("id", None)  #: SonarQube 10.4+ Group id
         self.sq_json = data
@@ -105,7 +103,7 @@ class Group(sq.SqObject):
         return cls(endpoint, name, data=data)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, name: str, description: str = None) -> Group:
+    def create(cls, endpoint: pf.Platform, name: str, description: Optional[str] = None) -> Group:
         """Creates a new group in SonarQube and returns the corresponding Group object
 
         :param endpoint: Reference to the SonarQube platform
@@ -114,11 +112,7 @@ class Group(sq.SqObject):
         :return: The group object
         """
         log.debug("Creating group '%s'", name)
-        try:
-            data = json.loads(endpoint.post(Group.api_for(c.CREATE, endpoint), params={"name": name, "description": description}).text)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating group '{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(name, util.sonar_error(e.response))
+        data = json.loads(endpoint.post(Group.api_for(c.CREATE, endpoint), params={"name": name, "description": description}).text)
         o = cls.read(endpoint=endpoint, name=name)
         o.sq_json.update(data)
         return o
@@ -168,10 +162,10 @@ class Group(sq.SqObject):
                 ok = self.post(api=Group.API_V1[c.DELETE], params=self.api_params(c.DELETE)).ok
             if ok:
                 log.info("Removing from %s cache", str(self.__class__.__name__))
-                self.__class__.CACHE.pop(self)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"deleting {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
+                Group.CACHE.pop(self)
+        except exceptions.ObjectNotFound:
+            Group.CACHE.pop(self)
+            raise
         return ok
 
     def api_params(self, op: str) -> types.ApiParams:
@@ -202,7 +196,7 @@ class Group(sq.SqObject):
                 data = json.loads(self.get(MEMBERSHIP_API, params={"groupId": self.id}).text)
                 self.__members = [users.User.get_object_by_id(self.endpoint, d["userId"]) for d in data["groupMemberships"]]
             else:
-                data = self.endpoint.get_paginated("api/user_groups/users", return_field="users", params={"name": self.name})
+                data = self.endpoint.get_paginated("api/user_groups/users", return_field="users", name=self.name)
                 self.__members = [users.User.get_object(self.endpoint, d["login"]) for d in data["users"]]
         return self.__members
 
@@ -226,21 +220,11 @@ class Group(sq.SqObject):
         :return: Whether the operation succeeded
         """
         log.info("Adding %s to %s", str(user), str(self))
-        try:
-            if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
-                params = {"groupId": self.id, "userId": user.id}
-            else:
-                params = {"login": user.login, "name": self.name}
-            r = self.post(Group.api_for(ADD_USER, self.endpoint), params=params)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, "adding user to group", catch_http_statuses=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
-            if isinstance(e, HTTPError):
-                code = e.response.status_code
-                if code == HTTPStatus.BAD_REQUEST:
-                    raise exceptions.UnsupportedOperation(util.sonar_error(e.response))
-                if code == HTTPStatus.NOT_FOUND:
-                    raise exceptions.ObjectNotFound(user.login, util.sonar_error(e.response))
-        return r.ok
+        if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
+            params = {"groupId": self.id, "userId": user.id}
+        else:
+            params = {"login": user.login, "name": self.name}
+        return self.post(Group.api_for(ADD_USER, self.endpoint), params=params).ok
 
     def remove_user(self, user: object) -> bool:
         """Removes a user from the group
@@ -250,24 +234,14 @@ class Group(sq.SqObject):
         :rtype: bool
         """
         log.info("Removing %s from %s", str(user), str(self))
-        try:
-            if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
-                for m in json.loads(self.get(MEMBERSHIP_API, params={"userId": user.id}).text)["groupMemberships"]:
-                    if m["groupId"] == self.id:
-                        return self.endpoint.delete(f"{Group.api_for(REMOVE_USER, self.endpoint)}/{m['id']}").ok
-                raise exceptions.ObjectNotFound(user.login, f"{str(self)} or user id '{user.id} not found")
-            else:
-                params = {"login": user.login, "name": self.name}
-                return self.post(Group.api_for(REMOVE_USER, self.endpoint), params=params).ok
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, "removing user from group", catch_http_statuses=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
-            if isinstance(e, HTTPError):
-                code = e.response.status_code
-                if code == HTTPStatus.BAD_REQUEST:
-                    raise exceptions.UnsupportedOperation(util.sonar_error(e.response))
-                if code == HTTPStatus.NOT_FOUND:
-                    raise exceptions.ObjectNotFound(user.login, util.sonar_error(e.response))
-        return False
+        if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
+            for m in json.loads(self.get(MEMBERSHIP_API, params={"userId": user.id}).text)["groupMemberships"]:
+                if m["groupId"] == self.id:
+                    return self.endpoint.delete(f"{Group.api_for(REMOVE_USER, self.endpoint)}/{m['id']}").ok
+            raise exceptions.ObjectNotFound(user.login, f"{str(self)} or user id '{user.id} not found")
+        else:
+            params = {"login": user.login, "name": self.name}
+            return self.post(Group.api_for(REMOVE_USER, self.endpoint), params=params).ok
 
     def audit(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
         """Audits a group and return list of problems found
@@ -371,11 +345,12 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     """
 
     log.info("Exporting groups")
-    g_list = {}
+    g_list = []
     for g_name, g_obj in get_list(endpoint=endpoint).items():
         if not export_settings.get("FULL_EXPORT", False) and g_obj.is_default():
             continue
-        g_list[g_name] = "" if g_obj.description is None else g_obj.description
+        g_list.append({"name": g_name, "description": g_obj.description})
+    util.clean_data(g_list, remove_empty=False)
     log.info("%s groups to export", len(g_list))
     if write_q := kwargs.get("write_q", None):
         write_q.put(g_list)
@@ -409,9 +384,8 @@ def get_object_from_id(endpoint: pf.Platform, id: str) -> Group:
         raise exceptions.UnsupportedOperation("Operation unsupported before SonarQube 10.4")
     if len(Group.CACHE) == 0:
         get_list(endpoint)
-    for o in Group.CACHE.values():
-        if o.id == id:
-            return o
+    if gr := next((o for o in Group.CACHE.values() if o.id == id), None):
+        return gr
     raise exceptions.ObjectNotFound(id, message=f"Group '{id}' not found")
 
 

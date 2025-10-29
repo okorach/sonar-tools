@@ -19,9 +19,9 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 """
-    This script exports findings as CSV, JSON, or SARIF
+This script exports findings as CSV, JSON, or SARIF
 
-    Usage: sonar-findings-export.py -t <SQ_TOKEN> -u <SQ_URL> [<filters>]
+Usage: sonar-findings-export.py -t <SQ_TOKEN> -u <SQ_URL> [<filters>]
 
 """
 
@@ -125,7 +125,7 @@ def parse_args(desc: str) -> Namespace:
     parser.add_argument(
         f"--{options.SEVERITIES}",
         required=False,
-        help="Comma separated severities among" + util.list_to_csv(idefs.STD_SEVERITIES + hotspots.SEVERITIES),
+        help="Comma separated severities among " + util.list_to_csv(idefs.STD_SEVERITIES + hotspots.SEVERITIES),
     )
     parser.add_argument(
         f"--{options.TYPES}",
@@ -373,6 +373,12 @@ def main() -> None:
             key_regexp=params.get(options.KEY_REGEXP, None),
             branch_regexp=branch_regexp,
         )
+        if params[options.COMPONENT_TYPE] == "portfolios":
+            components = []
+            for comp in components_list:
+                components += comp.components()
+            components_list = components
+
         if len(components_list) == 0:
             br = f"and branch matching regexp '{params[options.BRANCH_REGEXP]}'" if options.BRANCH_REGEXP in params else ""
             raise exceptions.SonarException(

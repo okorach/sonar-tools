@@ -57,6 +57,9 @@ _NEW_SEARCH_SEVERITY_FIELD = "impactSeverities"
 OLD_FP = "FALSE-POSITIVE"
 NEW_FP = "FALSE_POSITIVE"
 
+_MQR_SEARCH_FIELDS = (_NEW_SEARCH_SEVERITY_FIELD, _NEW_SEARCH_STATUS_FIELD, _NEW_SEARCH_TYPE_FIELD)
+_STD_SEARCH_FIELDS = (_OLD_SEARCH_SEVERITY_FIELD, _OLD_SEARCH_STATUS_FIELD, _OLD_SEARCH_TYPE_FIELD)
+
 _COMMA_CRITERIAS = (
     _OLD_SEARCH_COMPONENT_FIELD,
     _NEW_SEARCH_COMPONENT_FIELD,
@@ -131,7 +134,7 @@ class Issue(findings.Finding):
     def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
-        self._debt = None
+        self._debt: Optional[int] = None
         Issue.CACHE.put(self)
 
     def __str__(self) -> str:
@@ -290,19 +293,13 @@ class Issue(findings.Finding):
         """
         log.debug("Adding comment '%s' to %s", comment, str(self))
         try:
-            r = self.post("issues/add_comment", {"issue": self.key, "text": comment})
-        except (ConnectionError, requests.RequestException) as e:
-            util.handle_error(e, "adding comment", catch_all=True)
+            return self.post("issues/add_comment", {"issue": self.key, "text": comment}).ok
+        except exceptions.SonarException:
             return False
-        return r.ok
 
     def __set_severity(self, **params) -> bool:
-        try:
-            log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, str(params))
-            r = self.post("issues/set_severity", {"issue": self.key, **params})
-        except (ConnectionError, requests.RequestException) as e:
-            util.handle_error(e, "changing issue severity", catch_all=True)
-            return False
+        log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, str(params))
+        r = self.post("issues/set_severity", {"issue": self.key, **params})
         return r.ok
 
     def set_severity(self, severity: str) -> bool:
@@ -344,13 +341,12 @@ class Issue(findings.Finding):
         try:
             params = util.remove_nones({"issue": self.key, "assignee": assignee})
             log.debug("Assigning %s to '%s'", str(self), str(assignee))
-            r = self.post("issues/assign", params)
-            if r.ok:
+            if ok := self.post("issues/assign", params).ok:
                 self.assignee = assignee
-        except (ConnectionError, requests.RequestException) as e:
-            util.handle_error(e, "assigning issue", catch_all=True)
+        except exceptions.SonarException:
             return False
-        return r.ok
+        else:
+            return ok
 
     def get_tags(self, **kwargs) -> list[str]:
         """Returns issues tags"""
@@ -390,19 +386,13 @@ class Issue(findings.Finding):
         """Sets an issue type
         :param str new_type: New type of the issue (Can be BUG, VULNERABILITY or CODE_SMELL)
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         if self.endpoint.is_mqr_mode():
             raise exceptions.UnsupportedOperation("Changing issue type is not supported in MQR mode")
         log.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
-        try:
-            r = self.post("issues/set_type", {"issue": self.key, "type": new_type})
-            if r.ok:
-                self.type = new_type
-        except (ConnectionError, requests.RequestException) as e:
-            util.handle_error(e, "setting issue type", catch_all=True)
-            return False
-        return r.ok
+        if ok := self.post("issues/set_type", {"issue": self.key, "type": new_type}).ok:
+            self.type = new_type
+        return ok
 
     def is_wont_fix(self) -> bool:
         """
@@ -1002,6 +992,8 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
         if allowed is not None and filters[field] is not None:
             filters[field] = list(set(util.intersection(filters[field], allowed)))
 
+    disallowed = _STD_SEARCH_FIELDS if endpoint.is_mqr_mode() else _MQR_SEARCH_FIELDS
+    filters = {k: v for k, v in filters.items() if k not in disallowed}
     filters = {k: util.list_to_csv(v) for k, v in filters.items() if v}
     log.debug("Sanitized issue search filters %s", str(filters))
     return filters

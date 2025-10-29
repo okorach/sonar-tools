@@ -20,7 +20,7 @@
 #
 
 """
-    test utilities
+test utilities
 """
 
 import os
@@ -28,7 +28,7 @@ import sys
 import datetime
 import re
 import csv, json
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from unittest.mock import patch
 import pytest
 
@@ -53,19 +53,19 @@ JSON_FILE = f"temp.{os.getpid()}.json"
 YAML_FILE = f"temp.{os.getpid()}.yaml"
 
 PROJECT_0 = "okorach_sonar-tools"
-PROJECT_1 = "project1"
-PROJECT_2 = "project2"
-PROJECT_3 = "project3"
-PROJECT_4 = "project4"
-PROJECT_5 = "project5"
+PROJECT_1 = "test:project1"
+PROJECT_2 = "test:project2"
+PROJECT_3 = "test:project3"
+PROJECT_4 = "test:project4"
+PROJECT_5 = "test:proyecto5"
 
 LIVE_PROJECT = PROJECT_0
 PROJ_WITH_BRANCHES = PROJECT_1
 BRANCH_MAIN = "main"
 BRANCH_2 = "develop"
-BRANCH_3 = "some-branch"
+BRANCH_3 = "release-3.x"
 BRANCH_4 = "feature/new-feature"
-BRANCH_5 = "comma,branch"
+BRANCH_5 = "release-2.x"
 
 NON_EXISTING_KEY = "non-existing"
 
@@ -296,10 +296,15 @@ def csv_col_has_values(csv_file: str, col_name: str, *values) -> bool:
         return False
 
 
-def csv_col_count_values(csv_file: str, col_name: str, *values) -> int:
+def csv_col_count_values(csv_file: str, col_name_or_nbr: Union[str, int], *values) -> int:
+    """Counts the number of times a given column has one of the given values"""
     values_to_search = list(values).copy()
     with open(csv_file, encoding="utf-8") as fd:
-        (col,) = get_cols(next(reader := csv.reader(fd)), col_name)
+        reader = csv.reader(fd)
+        if isinstance(col_name_or_nbr, int):
+            col = col_name_or_nbr - 1
+        else:
+            (col,) = get_cols(next(reader), col_name_or_nbr)
         counter = sum(1 if line[col] in values_to_search else 0 for line in reader)
     return counter
 
@@ -383,10 +388,15 @@ def csv_col_not_all_empty(csv_file: str, col_name: str) -> bool:
     return not csv_col_condition(csv_file, col_name, is_empty)
 
 
+def read_json(json_file: str) -> dict[str, Any]:
+    """Reads a JSON file and returns its content"""
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+        return json.loads(fh.read())
+
+
 def json_field_sorted(json_file: str, field: str) -> bool:
     """return whether a JSON file is sorted by a given field"""
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
-        data = json.loads(fh.read())
+    data = read_json(json_file)
     last_key = ""
     for p in data:
         if last_key > p[field]:
@@ -397,15 +407,13 @@ def json_field_sorted(json_file: str, field: str) -> bool:
 
 def json_fields_present(json_file: str, *fields) -> bool:
     """return whether a JSON file is present for all elements of the JSON"""
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
-        data = json.loads(fh.read())
+    data = read_json(json_file)
     return sum(1 for p in data for field in fields if field not in p) == 0
 
 
 def json_fields_absent(json_file: str, *fields) -> bool:
     """return whether a JSON file is absent for all elements of the JSON"""
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
-        data = json.loads(fh.read())
+    data = read_json(json_file)
     return sum(1 for p in data for field in fields if field in p) == 0
 
 
@@ -416,18 +424,22 @@ def json_field_not_all_empty(csv_file: str, col_name: str) -> bool:
 
 def json_field_match(json_file: str, field: str, regexp: str, allow_null: bool = False) -> bool:
     """return whether a JSON field matches a regexp"""
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
-        data = json.loads(fh.read())
+    data = read_json(json_file)
     if allow_null:
-        return sum(1 for p in data if field in p and p[field] is not None and not re.match(rf"{regexp}", p[field])) == 0
+        return all(p[field] is None or re.match(rf"{regexp}", p[field]) for p in data)
     else:
-        return sum(1 for p in data if not re.match(rf"{regexp}", p[field])) == 0
+        return all(re.match(rf"{regexp}", p[field]) for p in data)
+
+
+def json_field_in_values(json_file: str, field: str, *values) -> bool:
+    """Verifies that a JSON field is in a list of values"""
+    data = read_json(json_file)
+    return all(p[field] in values for p in data)
 
 
 def json_field_condition(json_file: str, field: str, func: callable, allow_null: bool = False) -> bool:
     """return whether a JSON field matches a regexp"""
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
-        data = json.loads(fh.read())
+    data = read_json(json_file)
     if allow_null:
         return sum(1 for p in data if field in p and p[field] is not None and not func(p[field], allow_null)) == 0
     else:

@@ -19,10 +19,11 @@
 #
 """
 
-    Utilities for sonar-tools
+Utilities for sonar-tools
 
 """
-from typing import TextIO, Union, Optional
+
+from typing import Any, TextIO, Union, Optional
 from http import HTTPStatus
 import sys
 import os
@@ -34,6 +35,8 @@ import datetime
 from datetime import timezone
 from copy import deepcopy
 import requests
+
+import Levenshtein
 
 import sonar.logging as log
 from sonar import version, errcodes
@@ -139,7 +142,7 @@ def age(some_date: datetime.datetime, rounded: bool = True, now: Optional[dateti
     return delta.days if rounded else delta
 
 
-def get_setting(settings: dict[str, str], key: str, default: any) -> any:
+def get_setting(settings: dict[str, str], key: str, default: Any) -> Any:
     """Gets a setting or the default value"""
     if settings is None:
         return default
@@ -156,7 +159,7 @@ def redacted_token(token: str) -> str:
         return re.sub(r"(..).*(..)", r"\1***\2", token)
 
 
-def convert_to_type(value: any) -> any:
+def convert_to_type(value: Any) -> Any:
     """Converts a potentially string value to the corresponding int or float"""
     try:
         return int(value)
@@ -167,18 +170,6 @@ def convert_to_type(value: any) -> any:
     except ValueError:
         pass
     return value
-
-
-def remove_nones(d: dict[str, any]) -> dict[str, any]:
-    """Removes elements of the dict that are None values"""
-    new_d = d.copy()
-    for k, v in d.items():
-        if v is None:
-            new_d.pop(k)
-            continue
-        if isinstance(v, dict):
-            new_d[k] = remove_nones(v)
-    return new_d
 
 
 def none_to_zero(d: dict[str, any], key_match: str = "^.+$") -> dict[str, any]:
@@ -194,24 +185,39 @@ def none_to_zero(d: dict[str, any], key_match: str = "^.+$") -> dict[str, any]:
     return new_d
 
 
-def remove_empties(d: dict[str, any]) -> dict[str, any]:
+def remove_nones(d: Any) -> Any:
+    """Removes elements of the data that are None values"""
+    return clean_data(d, remove_empty=False, remove_none=True)
+
+
+def clean_data(d: Any, remove_empty: bool = True, remove_none: bool = True) -> Any:
     """Recursively removes empty lists and dicts and none from a dict"""
     # log.debug("Cleaning up %s", json_dump(d))
-    new_d = d.copy()
-    for k, v in d.items():
-        if isinstance(v, str) and v == "":
-            new_d.pop(k)
-            continue
-        if not isinstance(v, (list, dict)):
-            continue
-        if len(v) == 0:
-            new_d.pop(k)
-        elif isinstance(v, dict):
-            new_d[k] = remove_empties(v)
-    return new_d
+    if not isinstance(d, (list, dict)):
+        return d
+
+    if isinstance(d, list):
+        # Remove empty strings and nones
+        if remove_empty:
+            d = [elem for elem in d if not (isinstance(elem, str) and elem == "")]
+        if remove_none:
+            d = [elem for elem in d if elem is not None]
+        return [clean_data(elem, remove_empty, remove_none) for elem in d]
+
+    # Remove empty dict string values
+    if remove_empty:
+        new_d = {k: v for k, v in d.items() if not isinstance(v, str) or v != ""}
+    if remove_none:
+        new_d = {k: v for k, v in d.items() if v is not None}
+
+    # Remove empty dict list or dict values
+    new_d = {k: v for k, v in new_d.items() if not isinstance(v, (list, dict)) or len(v) > 0}
+
+    # Recurse
+    return {k: clean_data(v, remove_empty, remove_none) for k, v in new_d.items()}
 
 
-def sort_lists(data: any, redact_tokens: bool = True) -> any:
+def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
     """Recursively removes empty lists and dicts and none from a dict"""
     if isinstance(data, (list, set, tuple)):
         data = list(data)
@@ -405,7 +411,7 @@ def convert_string(value: str) -> Union[str, int, float, bool]:
     return value
 
 
-def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: any) -> dict[str, str]:
+def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: Any) -> dict[str, str]:
     """Updates a 2 levels JSON"""
     if categ not in json_data:
         if subcateg is None:
@@ -450,7 +456,7 @@ def is_api_v2(api: str) -> bool:
 
 
 @contextlib.contextmanager
-def open_file(file: str = None, mode: str = "w") -> TextIO:
+def open_file(file: Optional[str] = None, mode: str = "w") -> TextIO:
     """Opens a file if not None or -, otherwise stdout"""
     if file and file != "-":
         log.debug("Opening file '%s' in directory '%s'", file, os.getcwd())
@@ -465,28 +471,20 @@ def open_file(file: str = None, mode: str = "w") -> TextIO:
             fd.close()
 
 
-def search_by_name(endpoint: object, name: str, api: str, returned_field: str, extra_params: dict[str, str] = None) -> Union[dict[str, str], None]:
+def search_by_name(
+    endpoint: object, name: str, api: str, returned_field: str, extra_params: Optional[dict[str, str]] = None
+) -> Union[dict[str, str], None]:
     """Searches a object by name"""
-    params = {"q": name}
-    if extra_params is not None:
-        params.update(extra_params)
+    params = {"q": name} | (extra_params or {})
     data = json.loads(endpoint.get(api, params=params).text)
-    for d in data[returned_field]:
-        if d["name"] == name:
-            return d
-    return None
+    return next((d for d in data[returned_field] if d["name"] == name), None)
 
 
 def search_by_key(endpoint: object, key: str, api: str, returned_field: str, extra_params: Optional[dict[str, str]] = None) -> types.ApiPayload:
     """Search an object by its key"""
-    params = {"q": key}
-    if extra_params is not None:
-        params.update(extra_params)
+    params = {"q": key} | (extra_params or {})
     data = json.loads(endpoint.get(api, params=params).text)
-    for d in data[returned_field]:
-        if d["key"] == key:
-            return d
-    return None
+    return next((d for d in data[returned_field] if d["key"] == key), None)
 
 
 def sonar_error(response: requests.models.Response) -> str:
@@ -573,7 +571,7 @@ def check_what(what: Union[str, list[str]], allowed_values: list[str], operation
     return what
 
 
-def __prefix(value: any) -> any:
+def __prefix(value: Any) -> Any:
     """Recursively places all keys in a dict or list by a prefixed version"""
     if isinstance(value, dict):
         return {f"_{k}": __prefix(v) for k, v in value.items()}
@@ -583,16 +581,18 @@ def __prefix(value: any) -> any:
         return value
 
 
-def filter_export(json_data: dict[str, any], key_properties: list[str], full: bool) -> dict[str, any]:
+def filter_export(json_data: dict[str, Any], key_properties: list[str], full: bool) -> dict[str, Any]:
     """Filters dict for export removing or prefixing non-key properties"""
-    new_json_data = json_data.copy()
-    for k in json_data:
-        if k not in key_properties:
-            if full and k != "actions":
-                new_json_data[f"_{k}"] = __prefix(new_json_data.pop(k))
-            else:
-                new_json_data.pop(k)
+    new_json_data = {k: json_data[k] for k in key_properties if k in json_data}
+    if full:
+        new_json_data |= {f"_{k}": __prefix(v) for k, v in json_data.items() if k not in key_properties}
     return new_json_data
+
+
+def order_dict(d: dict[str, Any], key_order: list[str]) -> dict[str, Any]:
+    """Orders keys of a dictionary in a given order"""
+    new_d = {k: d[k] for k in key_order if k in d}
+    return new_d | {k: v for k, v in d.items() if k not in new_d}
 
 
 def replace_keys(key_list: list[str], new_key: str, data: dict[str, any]) -> dict[str, any]:
@@ -708,7 +708,7 @@ def dict_reverse(map: dict[str, str]) -> dict[str, str]:
     return {v: k for k, v in map.items()}
 
 
-def inline_lists(element: any, exceptions: tuple[str]) -> any:
+def inline_lists(element: Any, exceptions: tuple[str]) -> Any:
     """Recursively explores a dict and replace string lists by CSV strings, if list values do not contain commas"""
     if isinstance(element, dict):
         new_dict = element.copy()
@@ -822,3 +822,11 @@ def flatten(original_dict: dict[str, any]) -> dict[str, any]:
         else:
             flat_dict[k] = v
     return flat_dict
+
+
+def similar_strings(key1: str, key2: str, max_distance: int = 5) -> bool:
+    """Returns whether 2 project keys are similar, but not equal"""
+    if key1 == key2:
+        return False
+    max_distance = min(len(key1) // 2, len(key2) // 2, max_distance)
+    return (len(key2) >= 7 and (re.match(key2, key1))) or Levenshtein.distance(key1, key2, score_cutoff=6) <= max_distance

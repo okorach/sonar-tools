@@ -19,7 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" applications tests """
+"""applications tests"""
 
 import datetime
 from collections.abc import Generator
@@ -76,7 +76,7 @@ def test_get_object_non_existing() -> None:
         return
     with pytest.raises(exceptions.ObjectNotFound) as e:
         _ = App.get_object(endpoint=tutil.SQ, key=NON_EXISTING_KEY)
-    assert str(e.value).endswith(f"Application key '{NON_EXISTING_KEY}' not found")
+    assert str(e.value).endswith(f"Application '{NON_EXISTING_KEY}' not found")
 
 
 def test_exists(get_test_app: Generator[App]) -> None:
@@ -259,9 +259,9 @@ def test_app_branches(get_test_app: Generator[App]) -> None:
     APP_BRANCH_MAIN, APP_BRANCH_2 = "BRANCH foo", "Other Branch"
     definition = {
         "branches": {
-            APP_BRANCH_2: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_MAIN, "demo:jcl": "main", "demo:java-security": "main"}},
+            APP_BRANCH_2: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_MAIN, tutil.PROJECT_1: "main", "demo:java-security": "main"}},
             APP_BRANCH_MAIN: {
-                "projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"},
+                "projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, tutil.PROJECT_1: "main", "demo:java-security": "main"},
                 "isMain": True,
             },
         }
@@ -273,10 +273,10 @@ def test_app_branches(get_test_app: Generator[App]) -> None:
     APP_BRANCH_MAIN, APP_BRANCH_2, APP_BRANCH_3 = "Main Branch", "Master", "MiBranch"
     definition = {
         "branches": {
-            APP_BRANCH_2: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_MAIN, "demo:jcl": "main", "demo:java-security": "main"}},
-            APP_BRANCH_3: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"}},
+            APP_BRANCH_2: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_MAIN, tutil.PROJECT_1: "main", "demo:java-security": "main"}},
+            APP_BRANCH_3: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, tutil.PROJECT_1: "main", "demo:java-security": "main"}},
             APP_BRANCH_MAIN: {
-                "projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, "demo:jcl": "main", "demo:java-security": "main"},
+                "projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, tutil.PROJECT_1: "main", "demo:java-security": "main"},
                 "isMain": True,
             },
         }

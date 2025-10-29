@@ -19,11 +19,12 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 """
-    Exports some measures of all projects
-    - Either all measures (-m _all)
-    - Or the main measures (-m _main)
-    - Or a custom selection of measures (-m <measure1,measure2,measure3...>)
+Exports some measures of all projects
+- Either all measures (-m _all)
+- Or the main measures (-m _main)
+- Or a custom selection of measures (-m <measure1,measure2,measure3...>)
 """
+
 import sys
 import csv
 from requests import RequestException

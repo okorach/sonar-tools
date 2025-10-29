@@ -19,15 +19,16 @@
 #
 
 """Abstraction of the SonarQube permission template concept"""
+
 from __future__ import annotations
+from typing import Optional
 
 import json
 import re
-from requests import RequestException
 
 import sonar.logging as log
 from sonar.util import types, cache
-from sonar import sqobject, utilities
+from sonar import sqobject, utilities, exceptions
 from sonar.permissions import template_permissions
 import sonar.platform as pf
 from sonar.audit.rules import get_rule, RuleId
@@ -41,7 +42,7 @@ _SEARCH_API = "permissions/search_templates"
 _CREATE_API = "permissions/create_template"
 _UPDATE_API = "permissions/update_template"
 
-_IMPORTABLE_PROPERTIES = ("name", "description", "pattern", "permissions", "defaultFor")
+_IMPORTABLE_PROPERTIES = ("name", "pattern", "defaultFor", "description", "permissions")
 
 
 class PermissionTemplate(sqobject.SqObject):
@@ -53,10 +54,10 @@ class PermissionTemplate(sqobject.SqObject):
         """Constructor"""
         super().__init__(endpoint=endpoint, key=name)
         self.key = None
-        self.name = name
-        self.description = None
-        self.project_key_pattern = None
-        self._permissions = None
+        self.name: str = name
+        self.description: Optional[str] = None
+        self.project_key_pattern: Optional[str] = None
+        self._permissions: Optional[template_permissions.TemplatePermissions] = None
         if create_data is not None:
             log.info("Creating permission template '%s'", name)
             log.debug("from create_data %s", utilities.json_dump(create_data))
@@ -135,7 +136,7 @@ class PermissionTemplate(sqobject.SqObject):
             self._permissions = template_permissions.TemplatePermissions(self)
         return self._permissions
 
-    def set_as_default(self, what_list: list[str]) -> None:
+    def set_as_default(self, what_list: list[str]) -> bool:
         """Sets a permission template as default for projects or apps or portfolios"""
         log.debug("Setting %s as default for %s", str(self), str(what_list))
         ed = self.endpoint.edition()
@@ -145,9 +146,10 @@ class PermissionTemplate(sqobject.SqObject):
                 log.warning("Can't set permission template as default for %s on a %s edition", qual, ed)
                 continue
             try:
-                self.post("permissions/set_default_template", params={"templateId": self.key, "qualifier": qual})
-            except (ConnectionError, RequestException) as e:
-                utilities.handle_error(e, f"setting {str(self)} as default")
+                return self.post("permissions/set_default_template", params={"templateId": self.key, "qualifier": qual}).ok
+            except exceptions.SonarException:
+                return False
+        return False
 
     def set_pattern(self, pattern: str) -> PermissionTemplate:
         """Sets a permission template pattern"""
@@ -157,16 +159,13 @@ class PermissionTemplate(sqobject.SqObject):
 
     def to_json(self, export_settings: types.ConfigSettings = None) -> types.ObjectJsonRepr:
         """Returns JSON representation of a permission template"""
-        json_data = self.sq_json.copy()
-        json_data.update(
-            {
-                "key": self.key,
-                "name": self.name,
-                "description": self.description if self.description != "" else None,
-                "pattern": self.project_key_pattern,
-                "permissions": self.permissions().export(export_settings=export_settings),
-            }
-        )
+        json_data = self.sq_json.copy() | {
+            "key": self.key,
+            "name": self.name,
+            "description": self.description if self.description != "" else None,
+            "pattern": self.project_key_pattern,
+            "permissions": self.permissions().export(export_settings=export_settings),
+        }
 
         defaults = []
         if self.is_projects_default():
@@ -242,7 +241,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, P
     return objects_list
 
 
-def search_by_name(endpoint: pf.Platform, name: str) -> PermissionTemplate:
+def search_by_name(endpoint: pf.Platform, name: str) -> types.ApiPayload:
     """Searches permissions templates by name"""
     return utilities.search_by_name(endpoint=endpoint, name=name, api=_SEARCH_API, returned_field="permissionTemplates")
 
@@ -263,14 +262,9 @@ def _load_default_templates(endpoint: pf.Platform, data: types.ApiPayload = None
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
     """Exports permission templates as JSON"""
     log.info("Exporting permission templates")
-    pt_list = get_list(endpoint)
-    json_data = {}
-    for pt in pt_list.values():
-        json_data[pt.name] = pt.to_json(export_settings)
-        if not export_settings.get("FULL_EXPORT"):
-            for k in ("name", "id", "key"):
-                json_data[pt.name].pop(k, None)
-    return json_data
+    json_data = {pt.name: pt.to_json(export_settings) for pt in get_list(endpoint).values()}
+    log.info("PT RES = %s", utilities.json_dump(json_data))
+    return list(dict(sorted(json_data.items())).values())
 
 
 def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> int:

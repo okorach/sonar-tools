@@ -38,5 +38,5 @@ def get_components(
     else:
         components = [p for p in projects.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
     if component_type != "portfolios" and branch_regexp:
-        components = [b for c in components for b in c.branches().values() if re.match(rf"^{branch_regexp}$", b.name)]
+        components = [b for comp in components for b in comp.branches().values() if re.match(rf"^{branch_regexp}$", b.name)]
     return components

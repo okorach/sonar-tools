@@ -19,6 +19,7 @@
 #
 
 import csv
+from typing import Optional
 
 import sonar.logging as log
 from sonar import utilities
@@ -50,7 +51,8 @@ class Problem:
         d = vars(self).copy()
         d.pop("concerned_object")
 
-        for k in ("severity", "type", "rule_id"):
+        d["problem"] = str(d.pop("rule_id"))
+        for k in ("severity", "type"):
             d[k] = str(d[k])
         if with_url:
             try:
@@ -60,7 +62,9 @@ class Problem:
         return d
 
 
-def dump_report(problems: list[Problem], file: str, server_id: str = None, format: str = "csv", with_url: bool = False, separator: str = ",") -> None:
+def dump_report(
+    problems: list[Problem], file: str, server_id: Optional[str] = None, fmt: str = "csv", with_url: bool = False, separator: str = ","
+) -> None:
     """Dumps to file a report about a list of problems
 
     :param list[Problems] problems: List of problems to dump
@@ -70,13 +74,13 @@ def dump_report(problems: list[Problem], file: str, server_id: str = None, forma
     :rtype: None
     """
     log.info("Writing report to %s", f"file '{file}'" if file else "stdout")
-    if format == "json":
+    if fmt == "json":
         __dump_json(problems=problems, file=file, server_id=server_id, with_url=with_url)
     else:
         __dump_csv(problems=problems, file=file, server_id=server_id, with_url=with_url, separator=separator)
 
 
-def __dump_csv(problems: list[Problem], file: str, server_id: str = None, with_url: bool = False, separator: str = ",") -> None:
+def __dump_csv(problems: list[Problem], file: str, server_id: Optional[str] = None, with_url: bool = False, separator: str = ",") -> None:
     """Writes a list of problems in CSV format
 
     :param list[Problems] problems: List of problems to dump
@@ -86,15 +90,18 @@ def __dump_csv(problems: list[Problem], file: str, server_id: str = None, with_u
     """
     with utilities.open_file(file, "w") as fd:
         csvwriter = csv.writer(fd, delimiter=separator)
+        header = ["Server Id"] if server_id else []
+        header += ["Problem", "Category", "Severity", "Message"]
+        header += ["URL"] if with_url else []
+        csvwriter.writerow(header)
         for p in problems:
-            data = []
-            if server_id is not None:
-                data = [server_id]
-            data += list(p.to_json(with_url).values())
+            json_data = p.to_json(with_url)
+            data = [server_id] if server_id else []
+            data += [json_data[k] for k in ("problem", "type", "severity", "message", "url") if k in json_data]
             csvwriter.writerow(data)
 
 
-def __dump_json(problems: list[Problem], file: str, server_id: str = None, with_url: bool = False) -> None:
+def __dump_json(problems: list[Problem], file: str, server_id: Optional[str] = None, with_url: bool = False) -> None:
     """Writes a list of problems in JSON format
 
     :param list[Problems] problems: List of problems to dump

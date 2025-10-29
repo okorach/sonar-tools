@@ -17,9 +17,10 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-""" sonar-tools logging module """
+"""sonar-tools logging module"""
 
 import logging
+from typing import Optional
 
 CRITICAL = logging.CRITICAL
 FATAL = logging.FATAL
@@ -41,7 +42,7 @@ SQ_DATE_FORMAT = "%Y-%m-%d"
 SQ_TIME_FORMAT = "%H:%M:%S"
 
 
-def set_logger(filename: str = None, logger_name: str = None) -> None:
+def set_logger(filename: Optional[str] = None, logger_name: Optional[str] = None) -> None:
     """Sets the logging file (stderr only by default) and the logger name"""
     global __LOGGER
     if logger_name is not None:

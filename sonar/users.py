@@ -19,14 +19,14 @@
 #
 
 """Abstraction of the SonarQube User concept"""
+
 from __future__ import annotations
 
 import concurrent.futures
 from typing import Optional, Union
-import datetime as dt
+from datetime import datetime, timezone
 import json
 
-from http import HTTPStatus
 from requests import RequestException
 
 import sonar.logging as log
@@ -79,15 +79,15 @@ class User(sqobject.SqObject):
         """Do not use to create users, use on of the constructor class methods"""
         super().__init__(endpoint=endpoint, key=login)
         self.login = login  #: User login (str)
-        self.id = None  #: SonarQube 10+ User Id (str)
-        self.name = None  #: User name (str)
-        self._groups = None  #: User groups (list)
-        self.scm_accounts = None  #: User SCM accounts (list)
-        self.email = None  #: User email (str)
-        self.is_local = None  #: Whether user is local (bool) - read-only
-        self.last_login = None  #: User last login (datetime) - read-only
-        self.nb_tokens = None  #: Nbr of tokens (int) - read-only
-        self.__tokens = None
+        self.id: Optional[str] = None  #: SonarQube 10+ User Id (str)
+        self.name: Optional[str] = None  #: User name (str)
+        self._groups: Optional[list[str]] = None  #: User groups (list)
+        self.scm_accounts: Optional[list[str]] = None  #: User SCM accounts (list)
+        self.email: Optional[str] = None  #: User email (str)
+        self.is_local: Optional[bool] = None  #: Whether user is local (bool) - read-only
+        self.last_login: Optional[datetime] = None  #: User last login (datetime) - read-only
+        self.nb_tokens: Optional[int] = None  #: Nbr of tokens (int) - read-only
+        self.__tokens: Optional[list[tokens.UserToken]] = None
         self.__load(data)
         log.debug("Created %s id '%s'", str(self), str(self.id))
         User.CACHE.put(self)
@@ -107,7 +107,7 @@ class User(sqobject.SqObject):
         return cls(login=data["login"], endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, login: str, name: str, is_local: bool = True, password: str = None) -> User:
+    def create(cls, endpoint: pf.Platform, login: str, name: str, is_local: bool = True, password: Optional[str] = None) -> User:
         """Creates a new user in SonarQube and returns the corresponding User object
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -125,11 +125,7 @@ class User(sqobject.SqObject):
         params = {"login": login, "local": str(is_local).lower(), "name": name}
         if is_local:
             params["password"] = password if password else login
-        try:
-            endpoint.post(User.api_for(c.CREATE, endpoint), params=params)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating user '{login}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(login, util.sonar_error(e.response))
+        endpoint.post(User.api_for(c.CREATE, endpoint), params=params)
         return cls.get_object(endpoint=endpoint, login=login)
 
     @classmethod
@@ -142,13 +138,11 @@ class User(sqobject.SqObject):
         :return: The user object
         :rtype: User
         """
-        o = User.CACHE.get(login, endpoint.local_url)
-        if o:
+        if o := User.CACHE.get(login, endpoint.local_url):
             return o
         log.debug("Getting user '%s'", login)
-        for k, o in search(endpoint, params={"q": login}).items():
-            if k == login:
-                return o
+        if user := next((o for k, o in search(endpoint, params={"q": login}).items() if k == login), None):
+            return user
         raise exceptions.ObjectNotFound(login, f"User '{login}' not found")
 
     @classmethod
@@ -158,19 +152,15 @@ class User(sqobject.SqObject):
         :param endpoint: Reference to the SonarQube platform
         :param id: User id
         :raises ObjectNotFound: if id not found
-        :raises UnsuppoertedOperation: If SonarQube version < 10.4
+        :raises UnsupportedOperation: If SonarQube version < 10.4
         :return: The user object
         :rtype: User
         """
         if endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             raise exceptions.UnsupportedOperation("Get by ID is an APIv2 features, staring from SonarQube 10.4")
         log.debug("Getting user id '%s'", id)
-        try:
-            data = json.loads(endpoint.get(f"/api/v2/users-management/users/{id}", mute=()).text)
-            return cls.load(endpoint, data)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting user id '{id}'", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(id, f"User id '{id}' not found")
+        data = json.loads(endpoint.get(f"/api/v2/users-management/users/{id}", mute=()).text)
+        return cls.load(endpoint, data)
 
     @classmethod
     def api_for(cls, op: str, endpoint: object) -> Optional[str]:
@@ -196,7 +186,7 @@ class User(sqobject.SqObject):
         self.email = data.get("email", None)  #: User email
         self.is_local = data.get("local", False)  #: User is local - read-only
         self.last_login = None  #: User last login - read-only
-        self.nb_tokens = None
+        self.nb_tokens: Optional[int] = None
         if self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             self.last_login = util.string_to_date(data.get("lastConnectionDate", None))
             self.nb_tokens = data.get("tokenCount", None)  #: Nbr of tokens - read-only
@@ -357,11 +347,11 @@ class User(sqobject.SqObject):
             else:
                 ok = self.post(api=User.API_V1[c.DELETE], params=self.api_params(c.DELETE)).ok
             if ok:
-                log.info("Removing from %s cache", str(self.__class__.__name__))
-                self.__class__.CACHE.pop(self)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"deleting {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
+                log.info("Removing from %s cache", str(User.__name__))
+                User.CACHE.pop(self)
+        except exceptions.ObjectNotFound:
+            User.CACHE.pop(self)
+            raise
         return ok
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
@@ -431,9 +421,9 @@ class User(sqobject.SqObject):
             log.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
             return []
 
-        today = dt.datetime.now(dt.timezone.utc).astimezone()
+        today = datetime.now(timezone.utc).astimezone()
         problems = [p for t in self.tokens() for p in t.audit(settings=settings, today=today)]
-        if self.last_login:
+        if self.last_login and settings.get(c.AUDIT_MODE_PARAM, "") != "housekeeper":
             age = util.age(self.last_login, now=today)
             if age > settings.get("audit.users.maxLoginAge", 180):
                 problems.append(Problem(get_rule(RuleId.USER_UNUSED), self, str(self), age))
@@ -493,13 +483,12 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     """
     log.info("Exporting users")
     write_q = kwargs.get("write_q", None)
-    u_list = {}
+    u_list = []
     for u_login, u_obj in sorted(search(endpoint=endpoint).items()):
-        u_list[u_login] = u_obj.to_json(export_settings)
+        d = u_obj.to_json(export_settings)
+        u_list.append(d)
         if write_q:
-            write_q.put(u_list[u_login])
-        else:
-            u_list[u_login].pop("login", None)
+            write_q.put(d)
     write_q and write_q.put(util.WRITE_END)
     return u_list
 
@@ -525,7 +514,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         for future in concurrent.futures.as_completed(futures):
             try:
                 problems += future.result(timeout=60)
-            except (TimeoutError, RequestException) as e:
+            except (TimeoutError, RequestException, exceptions.SonarException) as e:
                 log.error(f"Exception {str(e)} when auditing {str(futures_map[future])}.")
     "write_q" in kwargs and kwargs["write_q"].put(problems)
     log.info("--- Auditing users: END ---")
@@ -574,7 +563,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    return util.dict_to_list(original_json, "login")
+    return original_json
 
 
 def exists(endpoint: pf.Platform, login: str) -> bool:

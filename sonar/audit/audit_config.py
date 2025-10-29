@@ -19,6 +19,7 @@
 #
 
 """sonar-config CLI"""
+
 import os
 import pathlib
 import jprops

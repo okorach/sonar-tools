@@ -21,10 +21,10 @@
 """Abstraction of the SonarQube metric concept"""
 
 from __future__ import annotations
+from typing import Optional
 import json
 from threading import Lock
 
-import sonar.logging as log
 import sonar.platform as pf
 from sonar.util.types import ApiPayload
 from sonar.util import cache
@@ -92,22 +92,21 @@ class Metric(sqobject.SqObject):
     def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
-        self.type = None  #: Type (FLOAT, INT, STRING, WORK_DUR...)
-        self.name = None  #: Name
-        self.description = None  #: Description
-        self.domain = None  #: Domain
-        self.direction = None  #: Directory
-        self.qualitative = None  #: Qualitative
-        self.hidden = None  #: Hidden
-        self.custom = None  #: Custom
+        self.type: Optional[str] = None  #: Type (FLOAT, INT, STRING, WORK_DUR...)
+        self.name: Optional[str] = None  #: Name
+        self.description: Optional[str] = None  #: Description
+        self.domain: Optional[str] = None  #: Domain
+        self.direction: Optional[str] = None  #: Directory
+        self.qualitative: Optional[bool] = None  #: Qualitative
+        self.hidden: Optional[bool] = None  #: Hidden
+        self.custom: Optional[bool] = None  #: Custom
         self.__load(data)
         Metric.CACHE.put(self)
 
     @classmethod
     def get_object(cls, endpoint: pf.Platform, key: str) -> Metric:
         search(endpoint=endpoint)
-        o = Metric.CACHE.get(key, endpoint.local_url)
-        if not o:
+        if not (o := Metric.CACHE.get(key, endpoint.local_url)):
             raise exceptions.ObjectNotFound(key, f"Metric key '{key}' not found")
         return o
 
@@ -157,26 +156,17 @@ def search(endpoint: pf.Platform, show_hidden_metrics: bool = False, use_cache: 
 
 def is_a_rating(endpoint: pf.Platform, metric_key: str) -> bool:
     """Whether a metric is a rating"""
-    try:
-        return Metric.get_object(endpoint, metric_key).is_a_rating()
-    except exceptions.ObjectNotFound:
-        return False
+    return Metric.get_object(endpoint, metric_key).is_a_rating()
 
 
 def is_a_percent(endpoint: pf.Platform, metric_key: str) -> bool:
     """Whether a metric is a percent"""
-    try:
-        return Metric.get_object(endpoint, metric_key).is_a_percent()
-    except exceptions.ObjectNotFound:
-        return False
+    return Metric.get_object(endpoint, metric_key).is_a_percent()
 
 
 def is_an_effort(endpoint: pf.Platform, metric_key: str) -> bool:
     """Whether a metric is an effort"""
-    try:
-        return Metric.get_object(endpoint, metric_key).is_an_effort()
-    except exceptions.ObjectNotFound:
-        return False
+    Metric.get_object(endpoint, metric_key).is_an_effort()
 
 
 def count(endpoint: pf.Platform, use_cache: bool = True) -> int:

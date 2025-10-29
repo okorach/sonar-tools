@@ -19,7 +19,7 @@
 #
 """
 
-    Abstraction of the SonarQube "project" concept
+Abstraction of the SonarQube "project" concept
 
 """
 
@@ -35,7 +35,6 @@ from typing import Optional, Union
 from http import HTTPStatus
 from threading import Lock
 from requests import HTTPError, RequestException
-import Levenshtein
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -143,9 +142,7 @@ _SETTINGS_WITH_SPECIFIC_IMPORT = (
 
 
 class Project(components.Component):
-    """
-    Abstraction of the SonarQube project concept
-    """
+    """Abstraction of the SonarQube project concept"""
 
     CACHE = cache.Cache()
     SEARCH_KEY_FIELD = "key"
@@ -165,16 +162,16 @@ class Project(components.Component):
         :param str key: The project key
         """
         super().__init__(endpoint=endpoint, key=key)
-        self._last_analysis = None
-        self._branches_last_analysis = None
-        self._permissions = None
-        self._branches = None
-        self._pull_requests = None
-        self._ncloc_with_branches = None
-        self._binding = None
-        self._new_code = None
-        self._ci = None
-        self._revision = None
+        self._last_analysis: Optional[datetime] = None
+        self._branches_last_analysis: Optional[datetime] = None
+        self._permissions: Optional[object] = None
+        self._branches: Optional[dict[str, branches.Branch]] = None
+        self._pull_requests: Optional[dict[str, pull_requests.PullRequest]] = None
+        self._ncloc_with_branches: Optional[int] = None
+        self._binding: Optional[dict[str, str]] = None
+        self._new_code: Optional[str] = None
+        self._ci: Optional[str] = None
+        self._revision: Optional[str] = None
         Project.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
@@ -186,16 +183,10 @@ class Project(components.Component):
         :param str key: Project key to search
         :raises ObjectNotFound: if project key not found
         :return: The Project
-        :rtype: Project
         """
-        o = Project.CACHE.get(key, endpoint.local_url)
-        if o:
+        if o := Project.CACHE.get(key, endpoint.local_url):
             return o
-        try:
-            data = json.loads(endpoint.get(Project.API[c.READ], params={"component": key}).text)
-        except RequestException as e:
-            util.handle_error(e, f"Getting project {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
+        data = json.loads(endpoint.get(Project.API[c.READ], params={"component": key}).text)
         return cls.load(endpoint, data["component"])
 
     @classmethod
@@ -209,8 +200,7 @@ class Project(components.Component):
         :rtype: Project
         """
         key = data["key"]
-        o = Project.CACHE.get(key, endpoint.local_url)
-        if not o:
+        if not (o := Project.CACHE.get(key, endpoint.local_url)):
             o = cls(endpoint, key)
         o.reload(data)
         return o
@@ -225,11 +215,7 @@ class Project(components.Component):
         :return: The Project
         :rtype: Project
         """
-        try:
-            endpoint.post(Project.API[c.CREATE], params={"project": key, "name": name})
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating project '{key}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(key, e.response.text)
+        endpoint.post(Project.API[c.CREATE], params={"project": key, "name": name})
         o = cls(endpoint, key)
         o.name = name
         return o
@@ -250,14 +236,12 @@ class Project(components.Component):
 
         :raises ObjectNotFound: if project key not found
         :return: self
-        :rtype: Project
         """
         try:
             data = json.loads(self.get(Project.api_for(c.READ, self.endpoint), params=self.api_params(c.READ)).text)
-        except RequestException as e:
-            util.handle_error(e, f"searching project {self.key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        except exceptions.ObjectNotFound:
             Project.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
+            raise
         return self.reload(data["component"])
 
     def reload(self, data: types.ApiPayload) -> Project:
@@ -265,21 +249,13 @@ class Project(components.Component):
 
         :param dict data: Data to load
         :return: self
-        :rtype: Project
         """
         """Loads a project object with contents of an api/projects/search call"""
-        if self.sq_json is None:
-            self.sq_json = data
-        else:
-            self.sq_json.update(data)
+        super().reload(data)
         self.name = data["name"]
         self._visibility = data["visibility"]
-        if "lastAnalysisDate" in data:
-            self._last_analysis = util.string_to_date(data["lastAnalysisDate"])
-        elif "analysisDate" in data:
-            self._last_analysis = util.string_to_date(data["analysisDate"])
-        else:
-            self._last_analysis = None
+        key = next((k for k in ("lastAnalysisDate", "analysisDate") if k in data), None)
+        self._last_analysis = util.string_to_date(data[key]) if key else None
         self._revision = data.get("revision", self._revision)
         return self
 
@@ -380,7 +356,7 @@ class Project(components.Component):
 
         :raises ObjectNotFound: If object to delete was not found in SonarQube
         :raises request.HTTPError: In all other cases of HTTP Errors
-        :return: Nothing
+        :return: Whether the operation succeeded
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         log.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
@@ -389,7 +365,7 @@ class Project(components.Component):
     def has_binding(self) -> bool:
         """Whether the project has a DevOps platform binding"""
         if not self._binding:
-            _ = self.binding()
+            self.binding()
         return self._binding.get("has_binding", False)
 
     def binding(self) -> Optional[dict[str, str]]:
@@ -401,8 +377,7 @@ class Project(components.Component):
             try:
                 resp = self.get("alm_settings/get_binding", params={"project": self.key}, mute=(HTTPStatus.NOT_FOUND,))
                 self._binding = {"has_binding": True, "binding": json.loads(resp.text)}
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting binding of {str(self)}", catch_http_errors=True, log_level=log.DEBUG)
+            except exceptions.SonarException:
                 # Hack: 8.9 returns 404, 9.x returns 400
                 self._binding = {"has_binding": False}
         log.debug("%s binding = %s", str(self), str(self._binding.get("binding", None)))
@@ -439,6 +414,8 @@ class Project(components.Component):
         problems = []
         age = util.age(self.last_analysis(include_branches=True), True)
         if age is None:
+            if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
+                return problems
             if not audit_settings.get("audit.projects.neverAnalyzed", True):
                 log.debug("Auditing of never analyzed projects is disabled, skipping")
             else:
@@ -479,19 +456,11 @@ class Project(components.Component):
         return problems
 
     def __audit_pull_requests(self, audit_settings: types.ConfigSettings) -> list[Problem]:
-        """Audits project pul requests
+        """Audits project pull requests
 
-        :param audit_settings: Settings (thresholds) to raise problems
-        :type audit_settings: dict
-        :return: List of problems found, or empty list
-        :rtype: list[Problem]
+        :param ConfigSettings audit_settings: Settings (thresholds) to raise problems
+        :return: List of problems found
         """
-        if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
-            return []
-        max_age = audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)
-        if max_age == 0:
-            log.debug("Auditing of pull request last analysis age is disabled, skipping...")
-            return []
         problems = []
         for pr in self.pull_requests().values():
             problems += pr.audit(audit_settings)
@@ -540,7 +509,7 @@ class Project(components.Component):
             log.info("%s has no binding, skipping binding validation...", str(self))
             return []
         try:
-            _ = self.get("alm_settings/validate_binding", params={"project": self.key})
+            self.get("alm_settings/validate_binding", params={"project": self.key})
             log.debug("%s binding is valid", str(self))
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"auditing binding of {str(self)}", catch_all=True)
@@ -602,8 +571,8 @@ class Project(components.Component):
                 data = json.loads(self.get("project_analyses/search", params={"project": self.key, "ps": 1}).text)["analyses"]
                 if len(data) > 0:
                     self._ci, self._revision = data[0].get("detectedCI", "unknown"), data[0].get("revision", "unknown")
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting CI tool of {str(self)}", catch_all=True)
+            except exceptions.SonarException:
+                pass
             except KeyError:
                 log.warning("KeyError, can't retrieve CI tool and revision")
         return self._ci
@@ -626,7 +595,7 @@ class Project(components.Component):
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
-            data = self.endpoint.get_paginated(api=Project.API[c.LIST], params={"filter": _PROJECT_QUALIFIER}, return_field="components")
+            data = self.endpoint.get_paginated(api=Project.API[c.LIST], return_field="components", filter=_PROJECT_QUALIFIER)
             p_data = next((p for p in data["components"] if p["key"] == self.key), None)
             if p_data:
                 self.sq_json.update(p_data)
@@ -672,24 +641,23 @@ class Project(components.Component):
         problems = []
         try:
             problems = self.__audit_last_analysis(audit_settings)
-            problems += self.audit_visibility(audit_settings)
-            problems += self.__audit_binding_valid(audit_settings)
-            # Skip language audit, as this can be problematic
-            # problems += self.__audit_languages(audit_settings)
             if audit_settings.get(c.AUDIT_MODE_PARAM, "") != "housekeeper":
+                problems += self.audit_visibility(audit_settings)
+                problems += self.__audit_binding_valid(audit_settings)
+                # Skip language audit, as this can be problematic
+                # problems += self.__audit_languages(audit_settings)
                 problems += self.permissions().audit(audit_settings)
 
-            problems += self.__audit_scanner(audit_settings)
-            problems += self._audit_component(audit_settings)
-            problems += self.__audit_key_pattern(audit_settings)
+                problems += self.__audit_scanner(audit_settings)
+                problems += self._audit_component(audit_settings)
+                problems += self.__audit_key_pattern(audit_settings)
             if self.endpoint.edition() != c.CE and audit_settings.get("audit.project.branches", True):
                 problems += self.__audit_branches(audit_settings)
                 problems += self.__audit_pull_requests(audit_settings)
 
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"auditing {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        except exceptions.ObjectNotFound:
             Project.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(self.key, str(e))
+            raise
 
         return problems
 
@@ -707,10 +675,13 @@ class Project(components.Component):
             )
         try:
             resp = self.post("project_dump/export", params={"key": self.key})
+        except exceptions.ObjectNotFound as e:
+            Project.CACHE.pop(self)
+            raise
+        except exceptions.SonarException as e:
+            return f"FAILED/{e.message}", None
         except RequestException as e:
             util.handle_error(e, f"exporting zip of {str(self)}", catch_all=True)
-            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound(self.key, f"Project key '{self.key}' not found")
             return f"FAILED/{util.http_error_string(e.response.status_code)}", None
         except ConnectionError as e:
             return str(e), None
@@ -729,6 +700,7 @@ class Project(components.Component):
 
     def import_zip(self, asynchronous: bool = False, timeout: int = 180) -> str:
         """Imports a project zip file in SonarQube
+
         :param bool asynchronous: Whether to export the project asynchronously or not (if async, import_zip returns immediately)
         :param int timeout: timeout in seconds to complete the export operation
         :return: SUCCESS or FAILED with reason
@@ -739,13 +711,15 @@ class Project(components.Component):
             raise exceptions.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
         try:
             resp = self.post("project_dump/import", params={"key": self.key})
-        except RequestException as e:
-            if "Dump file does not exist" in util.sonar_error(e.response):
+        except exceptions.ObjectNotFound as e:
+            if "Dump file does not exist" in e.message:
                 return f"FAILED/{tasks.ZIP_MISSING}"
-            util.handle_error(e, f"importing zip of {str(self)} {mode}", catch_all=True)
-            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound(self.key, f"Project key '{self.key}' not found")
-            return f"FAILED/{util.http_error_string(e.response.status_code)}"
+            Project.CACHE.pop(self)
+            raise
+        except exceptions.SonarException as e:
+            if "Dump file does not exist" in e.message:
+                return f"FAILED/{tasks.ZIP_MISSING}"
+            return f"FAILED/{e.message}"
         except ConnectionError as e:
             return f"FAILED/{str(e)}"
 
@@ -774,7 +748,7 @@ class Project(components.Component):
             else:
                 try:
                     objects = {b: branches.Branch.get_object(concerned_object=self, branch_name=b) for b in br}
-                except (exceptions.ObjectNotFound, exceptions.UnsupportedOperation) as e:
+                except exceptions.SonarException as e:
                     log.error(e.message)
         if pr:
             if "*" in pr:
@@ -782,17 +756,15 @@ class Project(components.Component):
             else:
                 try:
                     objects.update({p: pull_requests.get_object(project=self, pull_request_key=p) for p in pr})
-                except exceptions.ObjectNotFound as e:
+                except exceptions.SonarException as e:
                     log.error(e.message)
         return objects
 
     def get_findings(self, branch: Optional[str] = None, pr: Optional[str] = None) -> dict[str, object]:
         """Returns a project list of findings (issues and hotspots)
 
-        :param branch: branch name to consider, if any
-        :type branch: str, optional
-        :param pr: PR key to consider, if any
-        :type pr: str, optional
+        :param str branch: optional branch name to consider, if any
+        :param str pr: optional PR key to consider, if any
         :return: JSON of all findings, with finding key as key
         :rtype: dict{key: Finding}
         """
@@ -803,17 +775,9 @@ class Project(components.Component):
             return {}
         log.info("Exporting findings for %s", str(self))
         findings_list = {}
-        params = {"project": self.key}
-        if branch is not None:
-            params["branch"] = branch
-        elif pr is not None:
-            params["pullRequest"] = pr
+        params = util.remove_nones({"project": self.key, "branch": branch, "pullRequest": pr})
 
-        try:
-            data = json.loads(self.get("projects/export_findings", params=params).text)["export_findings"]
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, "getting project findings", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            return {}
+        data = json.loads(self.get("projects/export_findings", params=params).text)["export_findings"]
         findings_conflicts = {"SECURITY_HOTSPOT": 0, "BUG": 0, "CODE_SMELL": 0, "VULNERABILITY": 0}
         nbr_findings = {"SECURITY_HOTSPOT": 0, "BUG": 0, "CODE_SMELL": 0, "VULNERABILITY": 0}
         for i in data:
@@ -828,7 +792,8 @@ class Project(components.Component):
             i["pullRequest"] = pr
             nbr_findings[i["type"]] += 1
             if i["type"] == "SECURITY_HOTSPOT":
-                findings_list[key] = hotspots.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
+                if i.get("status", "") != "CLOSED":
+                    findings_list[key] = hotspots.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
             else:
                 findings_list[key] = issues.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
         for t in ("SECURITY_HOTSPOT", "BUG", "CODE_SMELL", "VULNERABILITY"):
@@ -845,9 +810,8 @@ class Project(components.Component):
         if branches_or_prs is None:
             return super().get_hotspots(filters)
         findings_list = {}
-        for comp in branches_or_prs.values():
-            if comp:
-                findings_list = {**findings_list, **comp.get_hotspots()}
+        for component in [comp for comp in branches_or_prs.values() if comp]:
+            findings_list |= component.get_hotspots()
         return findings_list
 
     def get_issues(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:
@@ -855,9 +819,8 @@ class Project(components.Component):
         if branches_or_prs is None:
             return super().get_issues(filters)
         findings_list = {}
-        for comp in branches_or_prs.values():
-            if comp:
-                findings_list = {**findings_list, **comp.get_issues()}
+        for component in [comp for comp in branches_or_prs.values() if comp]:
+            findings_list |= component.get_issues()
         return findings_list
 
     def count_third_party_issues(self, filters: Optional[dict[str, str]] = None) -> dict[str, int]:
@@ -868,9 +831,7 @@ class Project(components.Component):
             return super().count_third_party_issues(filters)
         log.debug("Getting 3rd party issues on branches/PR")
         issue_counts = {}
-        for comp in branches_or_prs.values():
-            if not comp:
-                continue
+        for comp in [co for co in branches_or_prs.values() if co]:
             log.debug("Getting 3rd party issues for %s", str(comp))
             for k, total in comp.count_third_party_issues(filters).items():
                 if k not in issue_counts:
@@ -956,12 +917,8 @@ class Project(components.Component):
         :return: name of quality gate and whether it's the default
         :rtype: tuple(name, is_default)
         """
-        try:
-            data = json.loads(self.get(api="qualitygates/get_by_project", params={"project": self.key}).text)
-            return data["qualityGate"]["name"], data["qualityGate"]["default"]
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting quality gate of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN,))
-            return "Error - Insufficient Permissions", False
+        data = json.loads(self.get(api="qualitygates/get_by_project", params={"project": self.key}).text)
+        return data["qualityGate"]["name"], data["qualityGate"]["default"]
 
     def webhooks(self) -> dict[str, webhooks.WebHook]:
         """
@@ -969,11 +926,7 @@ class Project(components.Component):
         :rtype: dict{key: WebHook}
         """
         log.debug("Getting %s webhooks", str(self))
-        try:
-            return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN, HTTPStatus.NOT_FOUND))
-            return None
+        return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
 
     def links(self) -> Optional[list[dict[str, str]]]:
         """
@@ -982,8 +935,7 @@ class Project(components.Component):
         """
         try:
             data = json.loads(self.get(api="project_links/search", params={"projectKey": self.key}).text)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"getting links of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN, HTTPStatus.NOT_FOUND))
+        except exceptions.SonarException:
             return None
         link_list = None
         for link in data["links"]:
@@ -1041,7 +993,7 @@ class Project(components.Component):
         log.debug("Returning %s migration data %s", str(self), util.json_dump(json_data))
         return json_data
 
-    def export(self, export_settings: types.ConfigSettings, settings_list: dict[str, str] = None) -> types.ObjectJsonRepr:
+    def export(self, export_settings: types.ConfigSettings, settings_list: Optional[dict[str, str]] = None) -> types.ObjectJsonRepr:
         """Exports the entire project configuration as JSON
 
         :return: All project configuration settings
@@ -1069,8 +1021,7 @@ class Project(components.Component):
 
             try:
                 hooks = webhooks.export(self.endpoint, self.key)
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_statuses=(HTTPStatus.FORBIDDEN,))
+            except exceptions.SonarException:
                 hooks = None
             if hooks is not None:
                 json_data["webhooks"] = hooks
@@ -1126,12 +1077,7 @@ class Project(components.Component):
         :type desired_permissions: dict
         :return: Nothing
         """
-        try:
-            self.permissions().set(desired_permissions)
-            return True
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting permissions of {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            return False
+        self.permissions().set(desired_permissions)
 
     def set_links(self, desired_links: types.ObjectJsonRepr) -> bool:
         """Sets project links
@@ -1142,15 +1088,11 @@ class Project(components.Component):
         """
         params = {"projectKey": self.key}
         ok = True
-        try:
-            for link in desired_links.get("links", {}):
-                if link.get("type", "") != "custom":
-                    continue
-                params.update(link)
-                ok = ok and self.post("project_links/create", params=params).ok
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting links of {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
-            return False
+        for link in desired_links.get("links", {}):
+            if link.get("type", "") != "custom":
+                continue
+            params.update(link)
+            ok = ok and self.post("project_links/create", params=params).ok
         return ok
 
     def set_quality_gate(self, quality_gate: str) -> bool:
@@ -1161,17 +1103,8 @@ class Project(components.Component):
         """
         if quality_gate is None:
             return False
-        try:
-            _ = qualitygates.QualityGate.get_object(self.endpoint, quality_gate)
-        except exceptions.ObjectNotFound:
-            log.warning("Quality gate '%s' not found, can't set it for %s", quality_gate, str(self))
-            return False
-        log.debug("Setting quality gate '%s' for %s", quality_gate, str(self))
-        try:
-            return self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate}).ok
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting permissions of {str(self)}", catch_all=True)
-        return False
+        qualitygates.QualityGate.get_object(self.endpoint, quality_gate)
+        return self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate}).ok
 
     def set_contains_ai_code(self, contains_ai_code: bool) -> bool:
         """Sets whether a project contains AI code
@@ -1181,14 +1114,10 @@ class Project(components.Component):
         """
         if self.endpoint.version() < (10, 7, 0) or self.endpoint.edition() == c.CE:
             return False
-        try:
-            api = "projects/set_contains_ai_code"
-            if self.endpoint.version() == (10, 7, 0):
-                api = "projects/set_ai_code_assurance"
-            return self.post(api, params={"project": self.key, "contains_ai_code": str(contains_ai_code).lower()}).ok
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting contains AI code of {str(self)}", catch_all=True)
-            return False
+        api = "projects/set_contains_ai_code"
+        if self.endpoint.version() == (10, 7, 0):
+            api = "projects/set_ai_code_assurance"
+        return self.post(api, params={"project": self.key, "contains_ai_code": str(contains_ai_code).lower()}).ok
 
     def set_quality_profile(self, language: str, quality_profile: str) -> bool:
         """Sets project quality profile for a given language
@@ -1201,15 +1130,7 @@ class Project(components.Component):
             log.warning("Quality profile '%s' in language '%s' does not exist, can't set it for %s", quality_profile, language, str(self))
             return False
         log.debug("Setting quality profile '%s' of language '%s' for %s", quality_profile, language, str(self))
-        try:
-            return self.post("qualityprofiles/add_project", params={"project": self.key, "qualityProfile": quality_profile, "language": language}).ok
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting quality profile of {str(self)}", catch_all=True)
-            errcode, msg = util.http_error_and_code(e)
-            if errcode == errcodes.OBJECT_NOT_FOUND:
-                Project.CACHE.pop(self)
-                raise exceptions.ObjectNotFound(self.key, msg)
-        return False
+        return self.post("qualityprofiles/add_project", params={"project": self.key, "qualityProfile": quality_profile, "language": language}).ok
 
     def rename_main_branch(self, main_branch_name: str) -> bool:
         """Renames the project main branch
@@ -1229,15 +1150,7 @@ class Project(components.Component):
         :param dict webhook_data: JSON describing the webhooks
         :return: Nothing
         """
-        current_wh = self.webhooks()
-        current_wh_names = [wh.name for wh in current_wh.values()]
-        wh_map = {wh.name: k for k, wh in current_wh.items()}
-        # FIXME: Handle several webhooks with same name
-        for wh_name, wh in webhook_data.items():
-            if wh_name in current_wh_names:
-                current_wh[wh_map[wh_name]].update(name=wh_name, **wh)
-            else:
-                webhooks.update(name=wh_name, endpoint=self.endpoint, project=self.key, **wh)
+        webhooks.import_config(self.endpoint, webhook_data, self.key)
 
     def set_settings(self, data: types.ObjectJsonRepr) -> None:
         """Sets project settings (webhooks, settings, new code period)
@@ -1394,7 +1307,8 @@ class Project(components.Component):
         self.set_tags(util.csv_to_list(config.get("tags", None)))
         self.set_quality_gate(config.get("qualityGate", None))
 
-        _ = [self.set_quality_profile(language=lang, quality_profile=qp_name) for lang, qp_name in config.get("qualityProfiles", {}).items()]
+        for lang, qp_name in config.get("qualityProfiles", {}).items():
+            self.set_quality_profile(language=lang, quality_profile=qp_name)
         if branch_config := config.get("branches", None):
             try:
                 bname = next(bname for bname, bdata in branch_config.items() if bdata.get("isMain", False))
@@ -1406,7 +1320,7 @@ class Project(components.Component):
                     branch = branches.Branch.get_object(self, branch_name)
                     branch.import_config(branch_data)
                 except exceptions.ObjectNotFound:
-                    log.warning("Branch %s does not exist in %s, skipping update", branch_name, str(self))
+                    log.warning("Branch '%s' of %s does not exists, can't update its configuuration", branch_name, str(self))
         if "binding" in config:
             try:
                 self.set_devops_binding(config["binding"])
@@ -1480,26 +1394,17 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
 
 
 def get_matching_list(endpoint: pf.Platform, pattern: str, threads: int = 8) -> dict[str, Project]:
-    """
+    """Returns the list of projects whose keys are matching the pattern
+
     :param Platform endpoint: Reference to the SonarQube platform
     :param str pattern: Regular expression to match project keys
     :return: the list of all projects matching the pattern
-    :rtype: dict{key: Project}
     """
-    if not pattern or pattern == ".*":
-        return get_list(endpoint, threads=threads)
+    pattern = pattern or ".+"
     log.info("Listing projects matching regexp '%s'", pattern)
     matches = {k: v for k, v in get_list(endpoint, threads=threads).items() if re.match(rf"^{pattern}$", k)}
     log.info("%d project key matching regexp '%s'", len(matches), pattern)
     return matches
-
-
-def __similar_keys(key1: str, key2: str, max_distance: int = 5) -> bool:
-    """Returns whether 2 project keys are similar"""
-    if key1 == key2:
-        return False
-    max_distance = min(len(key1) // 2, len(key2) // 2, max_distance)
-    return len(key2) >= 7 and (re.match(key2, key1)) or Levenshtein.distance(key1, key2, score_cutoff=6) <= max_distance
 
 
 def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
@@ -1515,7 +1420,7 @@ def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.
     for key1, p in projects_list.items():
         for key2 in projects_list:
             pair = " ".join(sorted([key1, key2]))
-            if __similar_keys(key1, key2, audit_settings.get("audit.projects.duplicates.maxDifferences", 4)) and pair not in pair_set:
+            if util.similar_strings(key1, key2, audit_settings.get("audit.projects.duplicates.maxDifferences", 4)) and pair not in pair_set:
                 duplicates.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
             pair_set.add(pair)
     return duplicates
@@ -1544,7 +1449,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings audit_settings: Configuration of audit
-    :returns: list of problems found
+    :return: list of problems found
     """
     if not audit_settings.get("audit.projects", True):
         log.info("Auditing projects is disabled, audit skipped...")
@@ -1565,7 +1470,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
             try:
                 problems += (proj_pbs := future.result(timeout=60))
                 write_q and write_q.put(proj_pbs)
-            except (TimeoutError, RequestException) as e:
+            except (TimeoutError, RequestException, exceptions.SonarException) as e:
                 log.error(f"Exception {str(e)} when auditing {str(futures_map[future])}.")
             current += 1
             lvl = log.INFO if current % 10 == 0 or total - current < 10 else log.DEBUG
@@ -1583,13 +1488,14 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
-    :returns: list of projects settings
+    :return: list of projects settings
     """
 
     write_q = kwargs.get("write_q", None)
     key_regexp = kwargs.get("key_list", ".+")
     nb_threads = export_settings.get("threads", 8)
-    _ = [qp.projects() for qp in qualityprofiles.get_list(endpoint).values()]
+    for qp in qualityprofiles.get_list(endpoint).values():
+        qp.projects()
     proj_list = {k: v for k, v in get_list(endpoint=endpoint, threads=nb_threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)}
     total, current = len(proj_list), 0
     log.info("Exporting %d projects", total)
@@ -1604,22 +1510,22 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
                 exp_json = future.result(timeout=60)
                 write_q and write_q.put(exp_json)
                 results[futures_map[future].key] = exp_json
-            except (TimeoutError, RequestException) as e:
+            except (TimeoutError, RequestException, exceptions.SonarException) as e:
                 log.error(f"Exception {str(e)} when exporting {str(futures_map[future])}.")
             current += 1
             lvl = log.INFO if current % 10 == 0 or total - current < 10 else log.DEBUG
             log.log(lvl, "%d/%d projects exported (%d%%)", current, total, (current * 100) // total)
     log.debug("Projects export complete")
     write_q and write_q.put(util.WRITE_END)
-    return dict(sorted(results.items()))
+    return list(dict(sorted(results.items())).values())
 
 
-def exists(key: str, endpoint: pf.Platform) -> bool:
-    """
-    :param str key: project key to check
+def exists(endpoint: pf.Platform, key: str) -> bool:
+    """Returns whether a project exists
+
     :param Platform endpoint: reference to the SonarQube platform
-    :returns: whether the project exists
-    :rtype: bool
+    :param str key: project key to check
+    :return: whether the project exists
     """
     try:
         Project.get_object(endpoint, key)
@@ -1686,8 +1592,8 @@ def export_zips(
     :param Platform endpoint: reference to the SonarQube platform
     :param str key_regexp: Regexp to filter projects to export, defaults to None (all projects)
     :param int threads: Number of parallel threads for export, defaults to 8
-    :param int export_timeout: Tiemout to export the project, defaults to 30
-    :returns: list of exported projects and platform version
+    :param int export_timeout: Timeout to export the project, defaults to 30
+    :return: list of exported projects with export result
     """
     statuses, results = {"SUCCESS": 0}, []
     projects_list = {k: p for k, p in get_list(endpoint, threads=threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", p.key)}
@@ -1740,7 +1646,8 @@ def export_zips(
     return results
 
 
-def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30) -> tuple[str, str]:
+def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30) -> tuple[Project, str]:
+    """Imports a project zip file"""
     try:
         o_proj = Project.create(key=project_key, endpoint=endpoint, name=project_key)
     except exceptions.ObjectAlreadyExists:
@@ -1752,7 +1659,7 @@ def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30
     return o_proj, s
 
 
-def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60) -> dict[Project, str]:
+def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60) -> dict[str, Project]:
     """Imports as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1785,15 +1692,18 @@ def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2
                 status = f"EXCEPTION {e}"
             statuses_count[status] = statuses_count[status] + 1 if status in statuses_count else 1
             if o_proj is None:
-                o_proj = futures_map[future]
-                statuses[o_proj.key] = {}
+                proj_key = futures_map[future]
+                statuses[proj_key] = {"importStatus": status}
             else:
-                statuses[o_proj.key] = {"importDate": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-            statuses[o_proj.key]["importProjectUrl"] = o_proj.url()
-            statuses[o_proj.key]["importStatus"] = status
+                proj_key = o_proj.key
+                statuses[proj_key] = {
+                    "importDate": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "importProjectUrl": o_proj.url(),
+                    "importStatus": status,
+                }
 
             i += 1
-            log.info("%d/%d imports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), o_proj.key, status)
+            log.info("%d/%d imports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), proj_key, status)
             log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses_count.items()]))
     return statuses
 
@@ -1811,8 +1721,4 @@ def convert_proj_for_yaml(proj_json: types.ObjectJsonRepr) -> types.ObjectJsonRe
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    clean_json = util.remove_nones(original_json)
-    new_json = []
-    for proj in util.dict_to_list(clean_json, "key"):
-        new_json.append(convert_proj_for_yaml(proj))
-    return new_json
+    return original_json

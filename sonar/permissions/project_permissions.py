@@ -72,6 +72,9 @@ class ProjectPermissions(permissions.Permissions):
             self.read()
         for p in permissions.PERMISSION_TYPES:
             to_remove = diff_func(self.permissions.get(p, {}), new_perms.get(p, {}))
+            if p == "users" and "admin" in to_remove:
+                # Don't remove admin permission to the admin user, this is not possible anyway
+                to_remove["admin"] = [v for v in to_remove["admin"] if v != "admin"]
             self._post_api(apis["remove"][p], field[p], to_remove, **kwargs)
             to_add = diff_func(new_perms.get(p, {}), self.permissions.get(p, {}))
             self._post_api(apis["add"][p], field[p], to_add, **kwargs)

@@ -19,9 +19,8 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" users tests """
+"""Webhooks tests"""
 
-from collections.abc import Generator
 import pytest
 
 import utilities as tutil
@@ -34,38 +33,45 @@ WEBHOOK = "Jenkins"
 
 def test_get_object() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
-    webhook = wh.get_object(endpoint=tutil.SQ, name=WEBHOOK)
+    webhook = wh.WebHook.get_object(tutil.SQ, WEBHOOK)
     assert webhook.name == WEBHOOK
     assert str(webhook) == f"webhook '{WEBHOOK}'"
     assert webhook.url() == f"{tutil.SQ.external_url}/admin/webhooks"
-    webhook2 = wh.get_object(endpoint=tutil.SQ, name=WEBHOOK)
+    webhook2 = wh.WebHook.get_object(endpoint=tutil.SQ, name=WEBHOOK)
     assert webhook2 is webhook
+
     with pytest.raises(exceptions.ObjectNotFound) as e:
-        _ = wh.get_object(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY)
-    assert str(e.value).endswith(f"Webhook '{tutil.NON_EXISTING_KEY}' not found")
+        _ = wh.WebHook.get_object(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY)
+    assert str(e.value).endswith(f"Webhook '{tutil.NON_EXISTING_KEY}' of project 'None' not found")
+    with pytest.raises(exceptions.ObjectNotFound) as e:
+        _ = wh.WebHook.get_object(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY, project_key=tutil.LIVE_PROJECT)
+    assert str(e.value).endswith(f"Webhook '{tutil.NON_EXISTING_KEY}' of project '{tutil.LIVE_PROJECT}' not found")
+    with pytest.raises(exceptions.ObjectNotFound) as e:
+        _ = wh.WebHook.get_object(endpoint=tutil.SQ, name=WEBHOOK, project_key=tutil.LIVE_PROJECT)
+    assert str(e.value).endswith(f"Webhook '{WEBHOOK}' of project '{tutil.LIVE_PROJECT}' not found")
 
 
 def test_audit() -> None:
     """test_audit"""
-    webhook = wh.get_object(endpoint=tutil.SQ, name=WEBHOOK)
+    webhook = wh.WebHook.get_object(tutil.SQ, WEBHOOK)
     pbs = webhook.audit()
     assert len(pbs) == 1
     assert pbs[0].rule_id == audit_rules.RuleId.FAILED_WEBHOOK
-    pbs = wh.audit(tutil.SQ, {"audit.webhooks": True})
+    pbs = wh.audit(tutil.SQ)
     assert len(pbs) == 1
     assert pbs[0].rule_id == audit_rules.RuleId.FAILED_WEBHOOK
 
 
 def test_update() -> None:
     """test_update"""
-    webhook = wh.get_object(endpoint=tutil.SQ, name=WEBHOOK)
+    webhook = wh.WebHook.get_object(tutil.SQ, WEBHOOK)
     old_url = webhook.webhook_url
-    new_url = "http://my.jenkins.server/sonar-webhook/"
+    new_url = "https://my.jenkins.server/sonar-webhook/"
     webhook.update(url=new_url)
-    webhook = wh.get_object(endpoint=tutil.SQ, name=WEBHOOK)
+    webhook = wh.WebHook.get_object(tutil.SQ, WEBHOOK)
     assert webhook.webhook_url == new_url
     webhook.update(url_target=old_url)
-    webhook = wh.get_object(endpoint=tutil.SQ, name=WEBHOOK)
+    webhook = wh.WebHook.get_object(tutil.SQ, WEBHOOK)
     assert webhook.webhook_url == old_url
 
 
@@ -73,5 +79,24 @@ def test_export() -> None:
     """test_export"""
     exp = wh.export(tutil.SQ)
     assert len(exp) == 1
-    first = list(exp.key())[0]
+    first = list(exp.keys())[0]
     assert exp[first]["url"].startswith("https://")
+
+
+def test_create_delete() -> None:
+    """test_create_delete"""
+    if tutil.SQ.version() >= (10, 0, 0):
+        with pytest.raises(exceptions.SonarException):
+            # Secret too short
+            wh.WebHook.create(tutil.SQ, tutil.TEMP_KEY, "http://google.com", "Shhht", tutil.PROJECT_1)
+    hook = wh.WebHook.create(tutil.SQ, tutil.TEMP_KEY, "http://google.com", "Shhht012345678910", tutil.PROJECT_1)
+    assert hook.name == tutil.TEMP_KEY
+    assert hook.webhook_url == "http://google.com"
+    assert hook.secret == "Shhht012345678910"
+    assert hook.project == tutil.PROJECT_1
+
+    hook.refresh()
+    hook.delete()
+    if tutil.SQ.version() >= (10, 0, 0):
+        with pytest.raises(exceptions.ObjectNotFound):
+            hook.refresh()

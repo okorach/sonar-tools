@@ -19,11 +19,12 @@
 #
 """
 
-    Abstraction of the SonarQube "component" concept
+Abstraction of the SonarQube "component" concept
 
 """
+
 from __future__ import annotations
-from typing import Optional
+from typing import Any, Optional
 import math
 import json
 
@@ -55,20 +56,18 @@ class Component(sq.SqObject):
     def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
-        self.name = None
-        self.nbr_issues = None
-        self.ncloc = None
-        self._description = None
-        self._last_analysis = None
-        self._visibility = None
+        self.name: Optional[str] = None
+        self.nbr_issues: Optional[int] = None
+        self.ncloc: Optional[int] = None
+        self._description: Optional[str] = None
+        self._last_analysis: Optional[datetime] = None
+        self._visibility: Optional[str] = None
         if data is not None:
             self.reload(data)
 
     def reload(self, data: types.ApiPayload) -> Component:
-        log.debug("Reloading %s with %s", str(self), utilities.json_dump(data))
-        if not self.sq_json:
-            self.sq_json = {}
-        self.sq_json.update(data)
+        """Loads a SonarQube API JSON payload in a Component"""
+        super().reload(data)
         if "name" in data:
             self.name = data["name"]
         if "visibility" in data:
@@ -117,7 +116,7 @@ class Component(sq.SqObject):
         """Returns list of issues for a component, optionally on branches or/and PRs"""
         from sonar.issues import search_all
 
-        filters = {k: list(set(v) if isinstance(v, (list, set, tuple)) else v) for k, v in (filters or {}).items() if v is not None}
+        filters = {k: list(set(v)) if isinstance(v, (list, set, tuple)) else v for k, v in (filters or {}).items() if v is not None}
         log.info("Searching issues for %s with filters %s", str(self), str(filters))
         issue_list = search_all(endpoint=self.endpoint, params=self.api_params() | {"additionalFields": "comments"} | filters)
         self.nbr_issues = len(issue_list)
@@ -199,7 +198,7 @@ class Component(sq.SqObject):
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
-    def get_measure(self, metric: str, fallback: int = None) -> any:
+    def get_measure(self, metric: str, fallback: Any = None) -> Any:
         """Returns a component measure"""
         meas = self.get_measures([metric])
         return meas[metric].value if metric in meas and meas[metric] and meas[metric].value is not None else fallback
@@ -214,7 +213,7 @@ class Component(sq.SqObject):
         """Returns a component navigation data"""
         params = utilities.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(c.GET))
         data = json.loads(self.get("navigation/component", params=params).text)
-        self.sq_json.update(data)
+        super().reload(data)
         return data
 
     def refresh(self) -> Component:
@@ -249,7 +248,7 @@ class Component(sq.SqObject):
     def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None) -> types.ApiPayload:
         """Returns a component analyses"""
         params = utilities.dict_remap(self.api_params(c.READ), {"component": "project"})
-        data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", params=params)["analyses"]
+        data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", **params)["analyses"]
         if filter_in and len(filter_in) > 0:
             data = [d for d in data if any(e["category"] in filter_in for e in d["events"])]
         if filter_out and len(filter_out) > 0:
@@ -287,7 +286,7 @@ class Component(sq.SqObject):
 
     def _audit_bg_task(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project background tasks"""
-        if audit_settings.get("audit.mode", "") == "housekeeper":
+        if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
         # Cutting short if background task audit is disabled because getting last task is costly
         if (

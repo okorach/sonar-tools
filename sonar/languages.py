@@ -20,14 +20,17 @@
 #
 
 """Abstraction of the SonarQube language concept"""
+
 from __future__ import annotations
 
 import json
+from typing import Optional
 from threading import Lock
 from sonar import sqobject, rules
 import sonar.platform as pf
 from sonar.util.types import ApiPayload
 from sonar.util import cache
+from sonar.util import constants as c
 
 #: List of language APIs
 APIS = {"list": "languages/list"}
@@ -66,7 +69,7 @@ class Language(sqobject.SqObject):
         get_list(endpoint)
         return Language.CACHE.get(key, endpoint.local_url)
 
-    def number_of_rules(self, rule_type: str = None) -> int:
+    def number_of_rules(self, rule_type: Optional[str] = None) -> int:
         """Count rules in the language, optionally filtering on rule type
 
         :param rule_type: Rule type to filter on, defaults to None
@@ -74,10 +77,10 @@ class Language(sqobject.SqObject):
         :returns: Nbr of rules for that language (and optional type)
         :rtype: int
         """
-        if not rule_type or rule_type not in rules.LEGACY_TYPES:
+        if not rule_type or rule_type not in (c.VULN, c.HOTSPOT, c.BUG, c.CODE_SMELL):
             rule_type = "_ALL"
         if not self._nb_rules[rule_type]:
-            self._nb_rules[rule_type] = rules.search(self.endpoint, languages=self.key, types=rule_type)
+            self._nb_rules[rule_type] = rules.search(self.endpoint, params={"languages": self.key, "types": rule_type})
         return self._nb_rules[rule_type]
 
 

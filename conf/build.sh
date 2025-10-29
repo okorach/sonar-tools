@@ -16,20 +16,25 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-SONAR_TOOLS_RELEASE="$ROOTDIR/sonar/version.py"
+ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 build_docs=0
 build_docker=0
+offline=0
 
-while [ $# -ne 0 ]; do
-    case $1 in
+. "${CONF_DIR}/env.sh"
+
+while [[ $# -ne 0 ]]; do
+    case "${1}" in
         docs|doc)
             build_docs=1
             ;;
         docker)
             build_docker=1
+            ;;
+        offline)
+            offline=1
             ;;
         *)
             ;;
@@ -38,19 +43,28 @@ while [ $# -ne 0 ]; do
 done
 
 echo "======= FORMATTING CODE ========="
-black --line-length=150 .
+ruff format
 echo "======= BUILDING PACKAGE ========="
-rm -rf "$ROOTDIR/build/lib/sonar" "$ROOTDIR/build/lib/cli" "$ROOTDIR"/build/scripts*/sonar-tools "$ROOTDIR"/dist/sonar_tools*
-python -m build
+if [[ "${offline}" = "1" ]]; then
+    cp "${ROOT_DIR}/conf/offline/setup.py" "${ROOT_DIR}/"
+    cp "${ROOT_DIR}/conf/offline/sonar-tools" "${ROOT_DIR}/"
+    mv "${ROOT_DIR}/pyproject.toml" "${ROOT_DIR}/pyproject.toml.bak"
+    python setup.py bdist_wheel
+    mv "${ROOT_DIR}/pyproject.toml.bak" "${ROOT_DIR}/pyproject.toml"
+    rm "${ROOT_DIR}/setup.py" "${ROOT_DIR}/sonar-tools"
+    # python -m build
+else
+    rm -rf "${ROOT_DIR}/build/lib/sonar" "${ROOT_DIR}/build/lib/cli" "${ROOT_DIR}"/build/scripts*/sonar-tools "${ROOT_DIR}"/dist/sonar_tools*
+    poetry build
+fi
 
-if [ "$build_docs" == "1" ]; then
+if [[ "${build_docs}" = "1" ]]; then
     echo "======= BUILDING DOCS ========="
     rm -rf doc/api/build
     sphinx-build -b html doc/api/source doc/api/build
 fi
 
-if [ "$build_docker" == "1" ]; then
+if [[ "${build_docker}" = "1" ]]; then
     echo "======= BUILDING DOCKER IMAGE WITH SNAPSHOT ========="
-    version=$(grep PACKAGE_VERSION "$SONAR_TOOLS_RELEASE" | cut -d "=" -f 2 | cut -d '"' -f 2)
-    docker build -t "olivierkorach/sonar-tools:$version-snapshot" -t olivierkorach/sonar-tools:latest -f "$CONFDIR/snapshot.Dockerfile" "$ROOTDIR" --load
+    docker build -t "olivierkorach/sonar-tools:${VERSION}-snapshot" -t olivierkorach/sonar-tools:latest -f "${CONF_DIR}/snapshot.Dockerfile" "${ROOT_DIR}" --load
 fi

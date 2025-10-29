@@ -19,7 +19,7 @@
 #
 """
 
-    Abstraction of the Search Node concept
+Abstraction of the Search Node concept
 
 """
 

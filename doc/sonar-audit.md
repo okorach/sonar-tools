@@ -3,19 +3,21 @@
 Command line tool to audit a SonarQube instance and output warning logs whenever a suspicious or incorrect setting/situation is found.
 The detail of what is audited is listed at the bottom of this page
 
+## Required Permissions
+
+`sonar-audit` needs `Browse` and `Administer` permission on more or less everything that may be audited
+
 ## Requirements and Installation
 
-`sonar-audit` is installed through the **sonar-tools** [general installation](../README.md#install)
-
-:warning: **sonar-tools** 2.7 or higher is required for `sonar-audit` compatibility with SonarQube 10
+`sonar-audit` is installed through the **sonar-tools** [general installation](https://github.com/okorach/sonar-tools/blob/master/README.md#install)
 
 ## Common command line parameters
 
-`sonar-audit` accepts all the **sonar-tools** [common parameters](../README.md#common-params)
+`sonar-audit` accepts all the **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 ## Usage
 
-`sonar-audit [-u <url>] [-t <token>] [--what <auditSelection>] [--sif <SIF>] [-f <file>] [--format [json|csv]] [-h] [-v <debugLevel>]`
+`sonar-audit [--what <auditSelection>] [--sif <SIF>] [-f <file>] [--format [json|csv]]`
 
 `--what` can be followed by a list of comma separated items to audit.
 When `--what` is not specified, everything is audited
@@ -30,6 +32,9 @@ When `--what` is not specified, everything is audited
 - `--what apps`: Audits applications
 - `-f <file>`: Sends audit output to `<file>`, `stdout` is the default. The output format is deducted from
   the file extension (JSON or CSV), except if `--format` is specified
+- `--severities`: The audit output will only reports problems of the given severities to pass as comma separated (LOW, MEDIUM, HIGH, CRITICAL)
+- `--types`: The audit output will only reports problems of the given types to pass as comma separated (BAD_PRACTICE, GOVERNANCE, HOUSEKEEPING, OPERATIONS, PERFORMANCE, SECURITY as of today, more may be added in the future)
+- `--problems`: The audit output will only report problems whose key match the given regexp. The key is the 2nd column of the CSV or the "problem" field of the JSON
 - `--sif <SystemInfoFile>`: Will audit the input SIF file, instead of connecting to a SonarQube Server or Cloud platform.
   In that case:
   - URL and token are not needed
@@ -37,11 +42,7 @@ When `--what` is not specified, everything is audited
 - `--format [json|csv]`: Generates output in JSON or CSV format (CSV is the default)
 - `--csvSeparator <separator>`: Allows to select the separator character for CSV, `,` is the default
 - `-h`: Displays help and exits
-- `-u`, `-t`, `-h`, `-v`, `--httpTimeout`, `--threads`: See **sonar-tools** [common parameters](../README.md#common-params)
-
-## Required Permissions
-
-To be able to audit everything, the token provided to `sonar-audit` should have the global `Administer System` permission and `Browse`and `Administer` permission on all projects.
+- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 ## Configuration file
 

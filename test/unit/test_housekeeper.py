@@ -21,8 +21,11 @@
 
 
 """
-    sonar-housekeeper tests
+sonar-housekeeper tests
 """
+
+from collections.abc import Generator
+import pytest
 
 import utilities as tutil
 from sonar import errcodes
@@ -36,3 +39,15 @@ def test_housekeeper() -> None:
     """test_housekeeper"""
     for opts in __GOOD_OPTS:
         assert tutil.run_cmd(housekeeper.main, f"{CMD} {tutil.SQS_OPTS} {opts}") == errcodes.OK
+
+
+def test_keep_branches_override(csv_file: Generator[str]) -> None:
+    """test_keep_branches_override"""
+    if tutil.SQ.version() == "community":
+        pytest.skip("No branches in Community")
+    opts = f"{CMD} {tutil.SQS_OPTS} -P 730 -T 730 -R 730 -B 90 -f {csv_file}"
+    assert tutil.run_cmd(housekeeper.main, opts) == errcodes.OK
+    nbr_br = tutil.csv_col_count_values(csv_file, "Problem", "BRANCH_LAST_ANALYSIS")
+    assert tutil.run_cmd(housekeeper.main, f"{opts} --keepWhenInactive 'dontkeepanything'") == errcodes.OK
+    # With 'dontkeepanything' as branch regexp, more branches to delete should be found
+    assert tutil.csv_col_count_values(csv_file, "Problem", "BRANCH_LAST_ANALYSIS") > nbr_br

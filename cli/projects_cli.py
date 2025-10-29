@@ -20,11 +20,10 @@
 #
 """
 
-    Exports/Imports all projects of a SonarQube Server platform
+Exports/Imports all projects of a SonarQube Server platform
 
 """
 
-import sys
 import json
 
 from requests import RequestException
@@ -108,7 +107,8 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
         if proj["key"] in statuses:
             proj.update(statuses[proj["key"]])
         else:
-            _ = [proj.pop(k, None) for k in ("importStatus", "importDate", "importProjectUrl")]
+            for k in ("importStatus", "importDate", "importProjectUrl"):
+                proj.pop(k, None)
     data["importSonarqubeEnvironment"] = {
         "url": endpoint.url(),
         "version": ".".join([str(n) for n in endpoint.version()[:2]]),

@@ -19,32 +19,36 @@
 #
 """
 
-    Abstraction of the SonarQube "portfolio" concept
+Abstraction of the SonarQube "portfolio" concept
 
 """
 
 from __future__ import annotations
 
 import re
-from typing import Optional
+from typing import Optional, Union, Any, TYPE_CHECKING
 import json
 from http import HTTPStatus
 from threading import Lock
-from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import types, cache
+from sonar.util import cache
 import sonar.util.constants as c
 
 from sonar import aggregations, exceptions, applications, app_branches
+from sonar.projects import Project
+
 import sonar.permissions.permissions as perms
 import sonar.permissions.portfolio_permissions as pperms
 import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar.audit import rules, problem
-
 from sonar.portfolio_reference import PortfolioReference
+
+if TYPE_CHECKING:
+    from sonar.util import types
+    from sonar.branches import Branch
 
 _CLASS_LOCK = Lock()
 
@@ -68,13 +72,16 @@ _IMPORTABLE_PROPERTIES = (
     "key",
     "name",
     "description",
+    "mode",
+    "projects",
+    "regexp",
+    "tags",
+    "applications",
+    "portfolios",
     "visibility",
     "permissions",
-    "projects",
     "projectsList",
-    "portfolios",
     "subPortfolios",
-    "applications",
 )
 
 
@@ -101,17 +108,17 @@ class Portfolio(aggregations.Aggregation):
     def __init__(self, endpoint: pf.Platform, key: str, name: Optional[str] = None) -> None:
         """Constructor, don't use - use class methods instead"""
         super().__init__(endpoint=endpoint, key=key)
-        self.name = name if name is not None else key
-        self._selection_mode = {_SELECTION_MODE_NONE: True}  #: Portfolio project selection mode
-        self._tags = []  #: Portfolio tags when selection mode is TAGS
-        self._description = None  #: Portfolio description
-        self._visibility = None  #: Portfolio visibility
-        self._applications = {}  #: applications
-        self._permissions = None  #: Permissions
-
-        self.parent_portfolio = None  #: Ref to parent portfolio object, if any
-        self.root_portfolio = None  #: Ref to root portfolio, if any
-        self._sub_portfolios = {}  #: Subportfolios
+        self.name: str = name if name is not None else key
+        self._selection_mode: dict[str, Any] = {_SELECTION_MODE_NONE: True}  #: Portfolio project selection mode
+        self._tags: list[str] = []  #: Portfolio tags when selection mode is TAGS
+        self._description: Optional[str] = None  #: Portfolio description
+        self._visibility: Optional[str] = None  #: Portfolio visibility
+        self._applications: dict[str, Any] = {}  #: applications
+        self._permissions: Optional[dict[str, list[str]]] = None  #: Permissions
+        self._projects: Optional[dict[str, set[str]]] = None  #: Projects and branches in portfolio
+        self.parent_portfolio: Optional[Portfolio] = None  #: Ref to parent portfolio object, if any
+        self.root_portfolio: Optional[Portfolio] = None  #: Ref to root portfolio, if any
+        self._sub_portfolios: dict[str, Portfolio] = {}  #: Subportfolios
         Portfolio.CACHE.put(self)
         log.debug("Created portfolio object name '%s'", name)
 
@@ -169,7 +176,7 @@ class Portfolio(aggregations.Aggregation):
         """Returns string representation of object"""
         return (
             f"subportfolio '{self.key}'"
-            if self.sq_json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
+            if self.sq_json and self.sq_json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
             else f"portfolio '{self.key}'"
         )
 
@@ -195,20 +202,22 @@ class Portfolio(aggregations.Aggregation):
         mode = self.sq_json.get(_API_SELECTION_MODE_FIELD, None)
         if mode is None:
             return
-        branch = self.sq_json.get("branch", c.DEFAULT_BRANCH)
+        branch = self.sq_json.get("branch", None)
         if mode == _SELECTION_MODE_MANUAL:
-            self._selection_mode = {mode: {}}
+            self._selection_mode = {"mode": _SELECTION_MODE_MANUAL, "projects": []}
             for projdata in self.sq_json.get("selectedProjects", {}):
-                branch_list = projdata.get("selectedBranches", [c.DEFAULT_BRANCH])
-                self._selection_mode[mode].update({projdata["projectKey"]: set(branch_list)})
+                if branch_list := projdata.get("selectedBranches", None):
+                    self._selection_mode["projects"].append({"key": projdata["projectKey"], "branches": list(set(branch_list))})
+                else:
+                    self._selection_mode["projects"].append({"key": projdata["projectKey"]})
         elif mode == _SELECTION_MODE_REGEXP:
-            self._selection_mode = {mode: self.sq_json["regexp"], "branch": branch}
+            self._selection_mode = util.clean_data({"mode": mode, "regexp": self.sq_json["regexp"], "branch": branch})
         elif mode == _SELECTION_MODE_TAGS:
-            self._selection_mode = {mode: self.sq_json["tags"], "branch": branch}
+            self._selection_mode = util.clean_data({"mode": mode, "tags": self.sq_json["tags"], "branch": branch})
         elif mode == _SELECTION_MODE_REST:
-            self._selection_mode = {mode: True, "branch": branch}
+            self._selection_mode = util.clean_data({"mode": mode, "branch": branch})
         else:
-            self._selection_mode = {mode: True}
+            self._selection_mode = {"mode": mode}
 
     def refresh(self) -> None:
         """Refreshes a portfolio data from the Sonar instance"""
@@ -227,11 +236,24 @@ class Portfolio(aggregations.Aggregation):
         return f"{self.base_url(local=False)}/portfolio?id={self.key}"
 
     def projects(self) -> Optional[dict[str, str]]:
-        """Returns list of projects and their branches if selection mode is manual, None otherwise"""
+        """Returns list of projects and their branches if selection mode is manual, or the list of projects for other modes"""
         if not self._selection_mode or _SELECTION_MODE_MANUAL not in self._selection_mode:
-            log.debug("%s: Not manual mode, no projects", str(self))
-            return None
+            if self._projects is None:
+                data = json.loads(self.get("api/views/projects_status", params={"portfolio": self.key}).text)
+                self._projects = {p["refKey"]: {c.DEFAULT_BRANCH} for p in data["projects"]}
+            return self._projects
         return self._selection_mode[_SELECTION_MODE_MANUAL]
+
+    def components(self) -> list[Union[Project, Branch]]:
+        """Returns the list of components objects (projects/branches) in the portfolio"""
+        log.debug("Collecting portfolio components from %s", util.json_dump(self.sq_json))
+        new_comps = []
+        for p_key, p_branches in self.projects().items():
+            proj = Project.get_object(self.endpoint, p_key)
+            for br in p_branches:
+                # If br is DEFAULT_BRANCH, next() will find nothing and we'll append the project itself
+                new_comps.append(next((b for b in proj.branches().values() if b.name == br), proj))
+        return new_comps
 
     def applications(self) -> Optional[dict[str, str]]:
         log.debug("Collecting portfolios applications from %s", util.json_dump(self.sq_json))
@@ -257,24 +279,18 @@ class Portfolio(aggregations.Aggregation):
 
     def add_reference_subportfolio(self, reference: Portfolio) -> object:
         ref = PortfolioReference.create(parent=self, reference=reference)
-        try:
-            if self.endpoint.version() >= (9, 3, 0):
-                self.post("views/add_portfolio", params={"portfolio": self.key, "reference": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
-            else:
-                self.post("views/add_local_view", params={"key": self.key, "ref_key": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"adding reference subportfolio to {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
+        if self.endpoint.version() >= (9, 3, 0):
+            self.post("views/add_portfolio", params={"portfolio": self.key, "reference": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
+        else:
+            self.post("views/add_local_view", params={"key": self.key, "ref_key": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
         self._sub_portfolios.update({reference.key: ref})
         return ref
 
     def add_standard_subportfolio(self, key: str, name: str, **kwargs) -> Portfolio:
         """Adds a subportfolio"""
         subp = Portfolio.create(endpoint=self.endpoint, key=key, name=name, parent=self, **kwargs)
-        try:
-            if self.endpoint.version() < (9, 3, 0):
-                self.post("views/add_sub_view", params={"key": self.key, "name": name, "subKey": key}, mute=(HTTPStatus.BAD_REQUEST,))
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"adding standard subportfolio to {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
+        if self.endpoint.version() < (9, 3, 0):
+            self.post("views/add_sub_view", params={"key": self.key, "name": name, "subKey": key}, mute=(HTTPStatus.BAD_REQUEST,))
         self._sub_portfolios.update({subp.key: subp})
         return subp
 
@@ -360,24 +376,18 @@ class Portfolio(aggregations.Aggregation):
             json_data["permissions"] = self.permissions().export(export_settings=export_settings)
         json_data["tags"] = self._tags
         if subportfolios:
-            json_data["portfolios"] = {}
-            for s in subportfolios.values():
-                subp_json = s.to_json(export_settings)
-                subp_key = subp_json.pop("key")
-                json_data["portfolios"][subp_key] = subp_json
-        mode = self.selection_mode().copy()
-        if mode:
-            if "none" not in mode or export_settings.get("MODE", "") == "MIGRATION":
-                json_data["projects"] = mode
+            json_data["portfolios"] = [s.to_json(export_settings) for s in subportfolios.values()]
+        if mode := self.selection_mode():
+            json_data.update(mode)
+            json_data["mode"] = json_data["mode"].lower()
             if export_settings.get("MODE", "") == "MIGRATION":
                 json_data["projects"]["keys"] = self.get_project_list()
-        json_data["applications"] = self._applications
+        json_data["applications"] = [{"key": k, "branches": v} for k, v in self._applications.items()]
         return json_data
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports a portfolio (for sonar-config)"""
-        log.info("Exporting %s", str(self))
-        return util.remove_nones(util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
+        return util.clean_data(util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
 
     def permissions(self) -> pperms.PortfolioPermissions:
         """Returns a portfolio permissions (if toplevel) or None if sub-portfolio"""
@@ -412,13 +422,9 @@ class Portfolio(aggregations.Aggregation):
             try:
                 self.post("views/add_project", params={"key": self.key, "project": key}, mute=(HTTPStatus.BAD_REQUEST,))
                 self._selection_mode[_SELECTION_MODE_MANUAL][key] = {c.DEFAULT_BRANCH}
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"adding projects to {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST))
-                if e.response.status_code == HTTPStatus.BAD_REQUEST:
-                    log.warning("%s: Project '%s' already in %s", util.error_msg(e), key, str(self))
-                else:
-                    Portfolio.CACHE.pop(self)
-                    raise exceptions.ObjectNotFound(self.key, f"Project '{key}' not found, can't be added to {str(self)}")
+            except exceptions.ObjectNotFound:
+                Portfolio.CACHE.pop(self)
+                raise
         return self
 
     def add_project_branches(self, project_key: str, branches: set[str]) -> Portfolio:
@@ -431,16 +437,7 @@ class Portfolio(aggregations.Aggregation):
         return self
 
     def add_project_branch(self, project_key: str, branch: str) -> bool:
-        try:
-            r = self.post("views/add_project_branch", params={"key": self.key, "project": project_key, "branch": branch})
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.NOT_FOUND:
-                Portfolio.CACHE.pop(self)
-                raise exceptions.ObjectNotFound(self.key, f"Project '{project_key}' or branch '{branch}' not found, can't be added to {str(self)}")
-            if e.response.status_code == HTTPStatus.BAD_REQUEST:
-                log.warning("%s: Project '%s' branch '%s', already in %s", util.error_msg(e), project_key, branch, str(self))
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"adding projects to {str(self)}")
+        r = self.post("views/add_project_branch", params={"key": self.key, "project": project_key, "branch": branch})
         if project_key in self._selection_mode[_SELECTION_MODE_MANUAL]:
             self._selection_mode[_SELECTION_MODE_MANUAL][project_key].discard(c.DEFAULT_BRANCH)
             self._selection_mode[_SELECTION_MODE_MANUAL][project_key].add(branch)
@@ -529,23 +526,20 @@ class Portfolio(aggregations.Aggregation):
 
     def add_application_branch(self, app_key: str, branch: str = c.DEFAULT_BRANCH) -> bool:
         app = applications.Application.get_object(self.endpoint, app_key)
-        try:
-            if branch == c.DEFAULT_BRANCH:
-                log.info("%s: Adding %s default branch", str(self), str(app))
-                self.post("views/add_application", params={"portfolio": self.key, "application": app_key}, mute=(HTTPStatus.BAD_REQUEST,))
-            else:
-                app_branch = app_branches.ApplicationBranch.get_object(app=app, branch_name=branch)
-                log.info("%s: Adding %s", str(self), str(app_branch))
-                params = {"key": self.key, "application": app_key, "branch": branch}
-                self.post("views/add_application_branch", params=params, mute=(HTTPStatus.BAD_REQUEST,))
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"adding app branch to {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
+        if branch == c.DEFAULT_BRANCH:
+            log.info("%s: Adding %s default branch", str(self), str(app))
+            self.post("views/add_application", params={"portfolio": self.key, "application": app_key}, mute=(HTTPStatus.BAD_REQUEST,))
+        else:
+            app_branch = app_branches.ApplicationBranch.get_object(app=app, branch_name=branch)
+            log.info("%s: Adding %s", str(self), str(app_branch))
+            params = {"key": self.key, "application": app_key, "branch": branch}
+            self.post("views/add_application_branch", params=params, mute=(HTTPStatus.BAD_REQUEST,))
         if app_key not in self._applications:
             self._applications[app_key] = []
         self._applications[app_key].append(branch)
         return True
 
-    def add_subportfolio(self, key: str, name: str = None, by_ref: bool = False) -> object:
+    def add_subportfolio(self, key: str, name: Optional[str] = None, by_ref: bool = False) -> Portfolio:
         """Adds a subportfolio to a portfolio, defined by key, name and by reference option"""
 
         log.info("Adding sub-portfolios to %s", str(self))
@@ -599,8 +593,7 @@ class Portfolio(aggregations.Aggregation):
                 data = json.loads(self.get("api/measures/component_tree", params=params).text)
                 nbr_projects = util.nbr_total_elements(data)
                 proj_key_list += [comp["refKey"] for comp in data["components"]]
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting projects list of {str(self)}", catch_all=True)
+            except exceptions.SonarException:
                 break
             nbr_pages = util.nbr_pages(data)
             log.debug("Number of projects: %d - Page: %d/%d", nbr_projects, page, nbr_pages)
@@ -644,7 +637,12 @@ class Portfolio(aggregations.Aggregation):
             if subp_data.get("byReference", False):
                 o_subp = Portfolio.get_object(self.endpoint, key)
                 if o_subp.key not in key_list:
-                    self.add_subportfolio(o_subp.key, name=o_subp.name, by_ref=True)
+                    try:
+                        self.add_subportfolio(o_subp.key, name=o_subp.name, by_ref=True)
+                    except exceptions.SonarException as e:
+                        # If the exception is that the portfolio already references, just pass
+                        if "already references" not in e.message:
+                            raise
             else:
                 try:
                     o_subp = Portfolio.get_object(self.endpoint, key)
@@ -716,12 +714,7 @@ def exists(endpoint: pf.Platform, key: str) -> bool:
 
 def delete(endpoint: pf.Platform, key: str) -> bool:
     """Deletes a portfolio by its key"""
-    try:
-        p = Portfolio.get_object(endpoint, key)
-        p.delete()
-        return True
-    except exceptions.ObjectNotFound:
-        return False
+    return Portfolio.get_object(endpoint, key).delete()
 
 
 def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
@@ -757,7 +750,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         try:
             o = Portfolio.get_object(endpoint, key)
             o.update(data=data, recurse=True)
-        except exceptions.ObjectNotFound as e:
+        except exceptions.SonarException as e:
             log.error(e.message)
     return True
 
@@ -788,26 +781,24 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     portfolio_list = {k: v for k, v in get_list(endpoint=endpoint).items() if not key_regexp or re.match(key_regexp, k)}
     nb_portfolios = len(portfolio_list)
     i = 0
-    exported_portfolios = {}
-    for k, p in portfolio_list.items():
+    exported_portfolios = []
+    for p in dict(sorted(portfolio_list.items())).values():
         try:
             if not p.is_sub_portfolio():
                 exp = p.export(export_settings)
                 if write_q:
                     write_q.put(exp)
                 else:
-                    exp.pop("key")
-                    exported_portfolios[k] = exp
+                    exported_portfolios.append(exp)
             else:
                 log.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"exporting {str(p)}, export will be empty for this portfolio", catch_all=True)
-            exported_portfolios[k] = {}
+        except exceptions.SonarException:
+            pass
         i += 1
         if i % 10 == 0 or i == nb_portfolios:
             log.info("Exported %d/%d portfolios (%d%%)", i, nb_portfolios, (i * 100) // nb_portfolios)
     write_q and write_q.put(util.WRITE_END)
-    return dict(sorted(exported_portfolios.items()))
+    return exported_portfolios
 
 
 def recompute(endpoint: pf.Platform) -> None:
@@ -856,19 +847,7 @@ def get_api_branch(branch: str) -> str:
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    new_json = util.dict_to_list(util.remove_nones(original_json), "key")
-    for p_json in new_json:
-        try:
-            p_json["projects"] = [{"key": k, "branch": br} for k, br in p_json["projects"]["manual"].items()]
-        except KeyError:
-            pass
-        if "portfolios" in p_json:
-            p_json["portfolios"] = convert_for_yaml(p_json["portfolios"])
-        if "applications" in p_json:
-            p_json["applications"] = [{"key": k, "branches": br} for k, br in p_json["applications"].items()]
-        if "permissions" in p_json:
-            p_json["permissions"] = perms.convert_for_yaml(p_json["permissions"])
-    return new_json
+    return original_json
 
 
 def clear_cache(endpoint: pf.Platform) -> None:

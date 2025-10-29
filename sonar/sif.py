@@ -19,7 +19,7 @@
 #
 """
 
-    Abstraction of the SonarQube System Info File (or Support Info File) concept
+Abstraction of the SonarQube System Info File (or Support Info File) concept
 
 """
 
@@ -60,13 +60,13 @@ class NotSystemInfo(Exception):
 class Sif(object):
     """Abstraction of SIF file"""
 
-    def __init__(self, json_sif: dict[str, str], concerned_object: object = None) -> None:
+    def __init__(self, json_sif: dict[str, str], concerned_object: Optional[object] = None) -> None:
         if not is_sysinfo(json_sif):
             log.critical("Provided JSON does not seem to be a system info")
             raise NotSystemInfo("JSON is not a system info nor a support info")
         self.json = json_sif
         self.concerned_object = concerned_object
-        self._url = None
+        self._url: Optional[str] = None
 
     def __str__(self) -> str:
         """str() implementation"""
@@ -107,14 +107,14 @@ class Sif(object):
         else:
             return self.json["Database"]["Database"]
 
-    def plugins(self) -> dict[str, dict[str, str]]:
+    def plugins(self) -> list[dict[str, str]]:
         """Returns plugins installed on the SQ instance represented by the SIF"""
         d = self.json["Plugins"] if self.version() >= (9, 7, 0) else self.json[_STATS]["plugins"]
         plugins_dict = {}
         for k, v in d.items():
             version, name = v.split(" ", maxsplit=1)
-            plugins_dict[k] = {"version": version, "name": name[1:-1]}
-        return plugins_dict
+            plugins_dict[k] = {"key": k, "name": name[1:-1], "version": version}
+        return list(dict(sorted(plugins_dict.items())).values())
 
     def license_type(self) -> Optional[str]:
         """Returns the SIF SQ license type (prod or test)"""

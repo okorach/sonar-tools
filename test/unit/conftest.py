@@ -19,9 +19,10 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" Test fixtures """
+"""Test fixtures"""
 
 import os
+from typing import Union
 from collections.abc import Generator
 import pytest
 
@@ -119,7 +120,7 @@ def get_test_app() -> Generator[applications.Application]:
 
 
 @pytest.fixture
-def get_test_portfolio() -> Generator[portfolios.Portfolio]:
+def get_test_portfolio() -> Generator[Union[portfolios.Portfolio, None]]:
     """setup of tests"""
     o = None
     if tutil.SQ.edition() in (c.EE, c.DCE):
@@ -202,11 +203,15 @@ def get_test_user() -> Generator[users.User]:
     except exceptions.ObjectNotFound:
         o = users.User.create(endpoint=tutil.SQ, login=tutil.TEMP_KEY, name=f"User name {tutil.TEMP_KEY}")
     (uid, uname, ulogin) = (o.name, o.id, o.login)
-    _ = [o.remove_from_group(g) for g in o.groups() if g != tutil.SQ.default_user_group()]
+    for g in o.groups():
+        if g != tutil.SQ.default_user_group():
+            o.remove_from_group(g)
     yield o
     try:
         (o.name, o.id, o.login) = (uid, uname, ulogin)
-        _ = [o.remove_from_group(g) for g in o.groups() if g != tutil.SQ.default_user_group()]
+        for g in o.groups():
+            if g != tutil.SQ.default_user_group():
+                o.remove_from_group(g)
         o.delete()
     except exceptions.ObjectNotFound:
         pass
@@ -234,7 +239,8 @@ def csv_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("csv")
     yield file
-    rm(file)
+    if os.path.exists(file):
+        rm(file)
 
 
 @pytest.fixture
@@ -242,7 +248,8 @@ def txt_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("txt")
     yield file
-    rm(file)
+    if os.path.exists(file):
+        rm(file)
 
 
 @pytest.fixture
@@ -250,16 +257,17 @@ def json_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("json")
     yield file
-    rm(file)
+    if os.path.exists(file):
+        rm(file)
 
 
 @pytest.fixture
 def yaml_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("yaml")
-    rm(file)
     yield file
-    rm(file)
+    if os.path.exists(file):
+        rm(file)
 
 
 @pytest.fixture
@@ -267,7 +275,8 @@ def sarif_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("sarif")
     yield file
-    rm(file)
+    if os.path.exists(file):
+        rm(file)
 
 
 @pytest.fixture

@@ -20,7 +20,7 @@
 
 """
 
-    sonar-tools project version
+sonar-tools project version
 
 """
 

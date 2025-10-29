@@ -19,75 +19,14 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" sonar-audit tests """
-
-import os
-from collections.abc import Generator
+"""Project audit tests"""
 
 import utilities as tutil
-from sonar import errcodes as e
-import cli.options as opt
-from cli import audit
 from sonar import projects
 from sonar.audit import rules
 
-CMD = f"sonar-audit.py {tutil.SQS_OPTS}"
 
-AUDIT_DISABLED = """
-audit.globalSettings = no
-audit.projects = false
-audit.qualityGates = no
-audit.qualityProfiles = no
-audit.users = no
-audit.groups = no
-audit.portfolios = no
-audit.applications = no
-audit.logs = no
-audit.plugins = no"""
-
-
-def test_audit_disabled(csv_file: Generator[str]) -> None:
-    """test_audit_disabled"""
-    with open(".sonar-audit.properties", mode="w", encoding="utf-8") as fd:
-        print(AUDIT_DISABLED, file=fd)
-    assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}") == e.OK
-    os.remove(".sonar-audit.properties")
-    assert tutil.csv_nbr_lines(csv_file) == 0
-
-
-def test_audit_stdout() -> None:
-    """test_audit_stdout"""
-    assert tutil.run_cmd(audit.main, CMD) == e.OK
-
-
-def test_audit_json(json_file: Generator[str]) -> None:
-    """test_audit_json"""
-    assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {json_file}") == e.OK
-
-
-def test_audit_proj_key(csv_file: Generator[str]) -> None:
-    """test_audit_proj_key"""
-    assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.WHAT} projects --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT}") == e.OK
-
-
-def test_audit_proj_non_existing_key() -> None:
-    """test_audit_proj_non_existing_key"""
-    assert tutil.run_cmd(audit.main, f"{CMD} --{opt.WHAT} projects --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT},bad_key") == e.ARGS_ERROR
-
-
-def test_audit_cmd_line_settings(csv_file: Generator[str]) -> None:
-    """test_audit_cmd_line_settings"""
-    what_to_audit = ["logs", "projects", "portfolios", "applications", "qualityProfiles", "qualityGates", "users", "groups"]
-    cli_opt = " ".join([f"-Daudit.{what}=true" for what in what_to_audit])
-    assert tutil.run_cmd(audit.main, f"{CMD} {cli_opt} --{opt.REPORT_FILE} {csv_file}") == e.OK
-    assert tutil.csv_nbr_lines(csv_file) > 0
-
-    cli_opt = " ".join([f"-Daudit.{what}=false" for what in what_to_audit + ["globalSettings"]])
-    assert tutil.run_cmd(audit.main, f"{CMD} {cli_opt} --{opt.REPORT_FILE} {csv_file}") == e.OK
-    assert tutil.csv_nbr_lines(csv_file) == 0
-
-
-def test_audit_proj_key_pattern(csv_file: Generator[str]) -> None:
+def test_audit_proj_key_pattern() -> None:
     """test_audit_cmd_line_settings"""
     settings = {"audit.projects": True, "audit.projects.keyPattern": None}
     pbs = projects.audit(tutil.SQ, settings, key_list="BANKING.*")

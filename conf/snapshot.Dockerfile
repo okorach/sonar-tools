@@ -22,23 +22,21 @@ ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 WORKDIR /opt/sonar-tools
 
 COPY ./sonar sonar
-COPY ./requirements.txt .
+COPY ./pyproject.toml .
 COPY ./cli cli
-COPY ./setup.py .
-COPY ./sonar-tools .
 COPY ./README.md .
 COPY ./LICENSE .
 COPY ./sonar/audit sonar/audit
 
 RUN pip install --upgrade pip \
-&& pip install --no-cache-dir -r requirements.txt \
-&& pip install --no-cache-dir --upgrade pip setuptools wheel \
-&& python setup.py bdist_wheel \
+&& pip install --no-cache-dir poetry \
+&& poetry install \
+&& poetry build \
 && pip install dist/sonar_tools-*-py3-*.whl --force-reinstall
 
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}
 
-HEALTHCHECK --interval=180s --timeout=5s CMD [ "sonar-tools" ]
+HEALTHCHECK --interval=180s --timeout=5s CMD [ "sonar-tools-help" ]
 
-CMD [ "sonar-tools" ]
+CMD [ "sonar-tools-help" ]

@@ -21,10 +21,13 @@
 :: build_docs=1
 :: release=0
 
-black --line-length=150 .
+ruff format
+if %errorlevel% neq 0 exit /b %errorlevel%
+
 rmdir /S /Q build
 rmdir /S /Q dist
-python setup.py bdist_wheel
+poetry build
+if %errorlevel% neq 0 exit /b %errorlevel%
 
 :: Deploy locally for tests
 pip install pip install --no-deps --force-reinstall dist\*-py3-*.whl

@@ -23,6 +23,7 @@
 Exceptions raised but the sonar python APIs
 
 """
+
 from sonar import errcodes
 
 

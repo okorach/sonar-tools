@@ -19,10 +19,12 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" Common tests, independent of SonarQube version """
+"""Common tests, independent of SonarQube version"""
 
-from sonar import utilities
+from cli import sonar_tools
+from sonar import utilities, errcodes
 from sonar.util import sonar_cache
+import utilities as tutil
 
 
 def test_deduct_fmt() -> None:
@@ -38,3 +40,8 @@ def test_deduct_fmt() -> None:
 def test_clear_cache() -> None:
     """Clears the SonarQube caches before running tests on SC"""
     sonar_cache.clear()
+
+
+def test_sonar_tools_help() -> None:
+    """test_sonar_tools_help"""
+    assert tutil.run_cmd(sonar_tools.main, "sonar-tools-help") == errcodes.OK

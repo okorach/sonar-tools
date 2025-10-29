@@ -21,20 +21,24 @@
 
 from __future__ import annotations
 import concurrent.futures
-from datetime import datetime
-from typing import Optional
-from http import HTTPStatus
-from requests import RequestException
+from typing import Optional, TYPE_CHECKING
+
+import re
 import Levenshtein
 
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
-from sonar.util import types
 from sonar.util import constants as c, issue_defs as idefs
+from sonar import exceptions
 
 import sonar.utilities as util
 from sonar import projects, rules
+
+if TYPE_CHECKING:
+    from datetime import datetime
+    from sonar.util import types
+    from sonar.changelog import Changelog
 
 _JSON_FIELDS_REMAPPED = (("pull_request", "pullRequest"), ("_comments", "comments"))
 
@@ -109,26 +113,26 @@ class Finding(sq.SqObject):
     def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
-        self.severity = None  #: Severity (str)
-        self.type = None  #: Type (str): VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT
-        self.impacts = None  #: 10.x MQR mode
-        self.author = None  #: Author (str)
-        self.assignee = None  #: Assignee (str)
-        self.status = None  #: Status (str)
-        self.resolution = None  #: Resolution (str)
-        self.rule = None  #: Rule Id (str)
-        self.projectKey = None  #: Project key (str)
-        self._changelog = None
-        self._comments = None
-        self.file = None  #: File (str)
-        self.line = 0  #: Line (int)
-        self.component = None
-        self.message = None  #: Message
-        self.creation_date = None  #: Creation date (datetime)
-        self.modification_date = None  #: Last modification date (datetime)
-        self.hash = None  #: Hash (str)
-        self.branch = None  #: Branch (str)
-        self.pull_request = None  #: Pull request (str)
+        self.severity = None  # BLOCKER, CRITICAL, MAJOR, MINOR, INFO
+        self.type: Optional[str] = None  # VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT
+        self.impacts: Optional[dict[str, str]] = None  #: 10.x MQR mode
+        self.author: Optional[str] = None
+        self.assignee: Optional[str] = None
+        self.status: Optional[str] = None  # OPEN, CONFIRMED, REOPENED, RESOLVED, CLOSED, ACCEPTED, FALSE_POSITIVE
+        self.resolution: Optional[str] = None
+        self.rule: Optional[str] = None
+        self.projectKey: Optional[str] = None
+        self._changelog: Optional[dict[str, Changelog]] = None
+        self._comments: Optional[dict[str, dict[str, str]]] = None
+        self.file: Optional[str] = None
+        self.line: int = 0
+        self.component: Optional[str] = None
+        self.message: Optional[str] = None  #: Message
+        self.creation_date: Optional[datetime] = None  #: Creation date (datetime)
+        self.modification_date: Optional[datetime] = None  #: Last modification date (datetime)
+        self.hash: Optional[str] = None  #: Hash (str)
+        self.branch: Optional[str] = None  #: Branch (str)
+        self.pull_request: Optional[str] = None  #: Pull request (str)
         self._load(data, from_export)
 
     def _load(self, data: types.ApiPayload, from_export: bool = False) -> None:
@@ -182,7 +186,7 @@ class Finding(sq.SqObject):
 
     def language(self) -> str:
         """Returns the finding language"""
-        return rules.get_object(endpoint=self.endpoint, key=self.rule).language
+        return rules.Rule.get_object(endpoint=self.endpoint, key=self.rule).language
 
     def to_csv(self, without_time: bool = False) -> list[str]:
         """
@@ -271,16 +275,16 @@ class Finding(sq.SqObject):
         return data
 
     def is_vulnerability(self) -> bool:
-        return self.type == "VULNERABILITY" or "SECURITY" in self.impacts
+        return "SECURITY" in self.impacts if self.endpoint.is_mqr_mode() else self.type == "VULNERABILITY"
 
     def is_hotspot(self) -> bool:
-        return self.type == "SECURITY_HOTSPOT" or "SECURITY" in self.impacts
+        return self.type == "SECURITY_HOTSPOT"
 
     def is_bug(self) -> bool:
-        return self.type == "BUG" or "RELIABILITY" in self.impacts
+        return "RELIABILITY" in self.impacts if self.endpoint.is_mqr_mode() else self.type == "BUG"
 
     def is_code_smell(self) -> bool:
-        return self.type == "CODE_SMELL" or "MAINTAINABILITY" in self.impacts
+        return "MAINTAINABILITY" in self.impacts if self.endpoint.is_mqr_mode() else self.type == "CODE_SMELL"
 
     def is_security_issue(self) -> bool:
         return self.is_vulnerability() or self.is_hotspot()
@@ -458,9 +462,10 @@ class Finding(sq.SqObject):
     def do_transition(self, transition: str) -> bool:
         try:
             return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"applying transition {transition}", catch_http_statuses=(HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND))
-        return False
+        except exceptions.SonarException as e:
+            if re.match(r"Transition from state [A-Za-z]+ does not exist", e.message):
+                raise exceptions.UnsupportedOperation(e.message) from e
+            raise
 
     def get_branch_and_pr(self, data: types.ApiPayload) -> tuple[Optional[str], Optional[str]]:
         """
@@ -472,7 +477,7 @@ class Finding(sq.SqObject):
         return branch, pr
 
 
-def export_findings(endpoint: pf.Platform, project_key: str, branch: str = None, pull_request: str = None) -> dict[str, Finding]:
+def export_findings(endpoint: pf.Platform, project_key: str, branch: Optional[str] = None, pull_request: Optional[str] = None) -> dict[str, Finding]:
     """Export all findings of a given project
 
     :param Platform endpoint: Reference to the SonarQube platform

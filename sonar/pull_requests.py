@@ -19,7 +19,7 @@
 #
 """
 
-    Abstraction of the SonarQube "pull request" concept
+Abstraction of the SonarQube "pull request" concept
 
 """
 
@@ -49,12 +49,12 @@ class PullRequest(components.Component):
     CACHE = cache.Cache()
     API = {c.DELETE: "project_pull_requests/delete", c.LIST: "project_pull_requests/list"}
 
-    def __init__(self, project: object, key: str, data: types.ApiPayload = None) -> None:
+    def __init__(self, project: object, key: str, data: Optional[types.ApiPayload] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=project.endpoint, key=key)
         self.concerned_object = project
         self.json = data
-        self._last_analysis = None
+        self._last_analysis: Optional[datetime] = None
         PullRequest.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
@@ -87,10 +87,13 @@ class PullRequest(components.Component):
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits the pull request according to the audit settings"""
-        problems = self._audit_component(audit_settings)
-        if (age := util.age(self.last_analysis())) is None:  # Main branch not analyzed yet
+        problems = [] if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper" else self._audit_component(audit_settings)
+        if (age := util.age(self.last_analysis())) is None:
+            log.warning("%s: Can't get last analysis date for audit, skipped")
             return problems
-        max_age = audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)
+        if (max_age := audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)) == 0:
+            log.info("%s: Audit of last analysis date is disabled", self)
+            return problems
         if age > max_age:
             problems.append(Problem(get_rule(RuleId.PULL_REQUEST_LAST_ANALYSIS), self, str(self), age))
         else:
@@ -106,8 +109,18 @@ class PullRequest(components.Component):
         ops = {c.READ: {"project": self.concerned_object.key, "pullRequest": self.key}}
         return ops[op] if op and op in ops else ops[c.READ]
 
+    def get_findings(self, filters: Optional[types.ApiParams] = None) -> dict[str, object]:
+        """Returns a PR list of findings
 
-def get_object(pull_request_key: str, project: object, data: types.ApiPayload = None) -> Optional[PullRequest]:
+        :return: dict of Findings, with finding key as key
+        :rtype: dict{key: Finding}
+        """
+        if not filters:
+            return self.concerned_object.get_findings(pr=self.key)
+        return self.get_issues(filters) | self.get_hotspots(filters)
+
+
+def get_object(pull_request_key: str, project: object, data: Optional[types.ApiPayload] = None) -> Optional[PullRequest]:
     """Returns a PR object from a PR key and a project"""
     if project.endpoint.edition() == c.CE:
         log.debug("Pull requests not available in Community Edition")

@@ -19,13 +19,11 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 """
-    Exports SonarQube platform configuration as JSON
+Exports SonarQube platform configuration as JSON
 """
-import sys
 
 from cli import options, config
 from sonar import exceptions, errcodes, utilities, version
-import sonar.util.constants as c
 import sonar.logging as log
 from sonar import platform
 

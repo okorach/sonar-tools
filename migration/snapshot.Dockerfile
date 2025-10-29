@@ -22,16 +22,15 @@ ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 WORKDIR /opt/sonar-migration
 
 COPY ./sonar sonar
-COPY ./requirements.txt .
+COPY ./migration/pyproject.toml .
 COPY ./migration migration
+COPY ./migration/README.md .
 COPY ./LICENSE .
 COPY ./cli cli
-COPY ./setup_migration.py .
 
 RUN pip install --upgrade pip \
-&& pip install --no-cache-dir -r requirements.txt \
-&& pip install --no-cache-dir --upgrade pip setuptools wheel \
-&& python setup_migration.py bdist_wheel \
+&& pip install --no-cache-dir poetry \
+&& poetry build \
 && pip install dist/sonar_migration-*-py3-*.whl --force-reinstall
 
 USER ${USERNAME}

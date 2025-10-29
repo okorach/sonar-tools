@@ -19,7 +19,7 @@
 #
 """
 
-    Parent module of applications and portfolios
+Parent module of applications and portfolios
 
 """
 
@@ -40,8 +40,8 @@ class Aggregation(comp.Component):
     """Parent class of applications and portfolios"""
 
     def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None) -> None:
-        self._nbr_projects = None
-        self._permissions = None
+        self._nbr_projects: Optional[int] = None
+        self._permissions: Optional[object] = None
         super().__init__(endpoint=endpoint, key=key)
 
     def reload(self, data: dict[str, any]) -> None:

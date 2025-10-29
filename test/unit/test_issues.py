@@ -19,32 +19,24 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" Test of the issues module and class, as well as changelog """
+"""Test of the issues module and class, as well as changelog"""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytest
+
+from requests.exceptions import ConnectionError
 
 import utilities as tutil
 from sonar import issues, exceptions, logging
-from sonar import utilities as util
 from sonar.util import constants as c
-
-
-ISSUE_FP = "ffbe8a34-cef6-4d5b-849d-bb2c25951c51"
-ISSUE_FP_V9_9 = "AZi22OzWCMRVk7bHctjy"
-ISSUE_ACCEPTED = "c99ac40e-c2c5-43ef-bcc5-4cd077d1052f"
-ISSUE_ACCEPTED_V9_9 = "AZI6frkTuTfDeRt_hspx"
-ISSUE_W_MULTIPLE_CHANGELOGS = "6ae41c3b-c3d2-422f-a505-d355e7b0a268"
-CHLOG_ISSUE_DATE = "2019-09-21"
-ISSUE_W_MULTIPLE_CHANGELOGS_V9_9 = "AZBKamIoDJWCTq61gxzW"
-CHLOG_ISSUE_V9_9_DATE = "2021-01-08"
+import credentials as tconf
 
 
 def test_issue() -> None:
     """Test issues"""
-    issue_key = ISSUE_FP if tutil.SQ.version() >= (10, 0, 0) else ISSUE_FP_V9_9
-    issue_key_accepted = ISSUE_ACCEPTED if tutil.SQ.version() >= (10, 0, 0) else ISSUE_ACCEPTED_V9_9
-    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
+    issue_key = tconf.ISSUE_FP
+    issue_key_accepted = tconf.ISSUE_ACCEPTED
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
 
     issue = issues_d[issue_key]
     assert not issue.is_security_issue()
@@ -96,12 +88,16 @@ def test_set_severity() -> None:
     assert issue.set_severity(new_sev)
     issue.refresh()
     assert issue.severity == new_sev
-    assert not issue.set_severity("NON_EXISTING")
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.set_severity("NON_EXISTING")
     issue.set_severity(old_sev)
 
     assert not any(issue.set_mqr_severity(k, v) for k, v in new_impacts.items())
     issue.refresh()
     assert issue.impacts == old_impacts
+
+    if tutil.SQ.version() < c.MQR_INTRO_VERSION:
+        return
 
     tutil.SQ.set_mqr_mode(True)
 
@@ -112,9 +108,12 @@ def test_set_severity() -> None:
     assert all(issue.set_mqr_severity(k, v) for k, v in new_impacts.items())
     issue.refresh()
     assert issue.impacts == new_impacts
-    assert not issue.set_mqr_severity("MAINTAINABILITY", "NON_EXISTING")
-    assert not issue.set_mqr_severity("NON_EXISTING", "HIGH")
-    [issue.set_mqr_severity(k, v) for k, v in old_impacts.items()]
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.set_mqr_severity("MAINTAINABILITY", "NON_EXISTING")
+    with pytest.raises(exceptions.SonarException):
+        issue.set_mqr_severity("NON_EXISTING", "HIGH")
+    for k, v in old_impacts.items():
+        issue.set_mqr_severity(k, v)
 
     tutil.SQ.set_mqr_mode(is_mqr)
 
@@ -144,7 +143,8 @@ def test_set_type() -> None:
         assert issue.set_type(new_type)
         issue.refresh()
         assert issue.type == new_type
-        assert not issue.set_type("NON_EXISTING")
+        with pytest.raises(exceptions.UnsupportedOperation):
+            issue.set_type("NON_EXISTING")
         issue.set_type(old_type)
 
 
@@ -162,19 +162,15 @@ def test_assign() -> None:
 
 def test_changelog() -> None:
     """Test changelog"""
-    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
-    issue_key = ISSUE_FP if tutil.SQ.version() >= (10, 0, 0) else ISSUE_FP_V9_9
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
+    issue_key = tconf.ISSUE_FP
     assert issue_key in issues_d
     issue = issues_d[issue_key]
     assert issue.key == issue_key
     assert str(issue) == f"Issue key '{issue_key}'"
     assert issue.is_false_positive()
     changelog_l = list(issue.changelog(manual_only=False).values())
-    if tutil.SQ.version() >= (25, 1, 0):
-        nb_changes = 8
-    else:
-        nb_changes = 1
-    assert len(changelog_l) == nb_changes
+    assert len(changelog_l) == tconf.ISSUE_FP_NBR_CHANGELOGS
     changelog = changelog_l[-1]
     assert changelog.is_resolve_as_fp()
     assert not changelog.is_closed()
@@ -194,23 +190,16 @@ def test_changelog() -> None:
     assert not changelog.is_assignment()
     assert changelog.assignee() is None
     assert changelog.assignee(False) is None
-    if tutil.SQ.version() >= (10, 0, 0):
-        assert datetime(2025, 2, 12) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 2, 14)
-        assert changelog.author() is None
-    else:
-        assert datetime(2025, 8, 16) <= changelog.date_time().replace(tzinfo=None) < datetime(2025, 8, 18)
-        assert changelog.author() == "admin"
-    assert not changelog.is_tag()
-    assert changelog.get_tags() == []
+    delta = timedelta(days=1)
+    date_change = tconf.ISSUE_FP_CHANGELOG_DATE
+    assert date_change <= changelog.date_time().replace(tzinfo=None) < date_change + delta
+    assert changelog.author() == "admin"
 
 
 def test_multiple_changelogs():
     """test_multiple_changelogs"""
-    issue_dt = util.string_to_date(CHLOG_ISSUE_V9_9_DATE if tutil.SQ.version() < (10, 0, 0) else CHLOG_ISSUE_DATE)
-    issues_d = issues.search_by_date(
-        endpoint=tutil.SQ, params={"project": "pytorch", "timeZone": "Europe/Paris"}, date_start=issue_dt, date_stop=issue_dt
-    )
-    issue_key = ISSUE_W_MULTIPLE_CHANGELOGS if tutil.SQ.version() >= (10, 0, 0) else ISSUE_W_MULTIPLE_CHANGELOGS_V9_9
+    issue_key = tconf.ISSUE_FP
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
     assert issue_key in issues_d
     issue = issues_d[issue_key]
     state_list = ("ACCEPT", "CONFIRM", "UNCONFIRM", "FP", "REOPEN", "SEVERITY", "ASSIGN", "UNASSIGN", "SEVERITY")
@@ -223,7 +212,7 @@ def test_multiple_changelogs():
         results["UNCONFIRM"] |= cl.is_unconfirm()
         if cl.is_resolve_as_fp():
             results["FP"] = True
-            assert cl.previous_state() in "OPEN", "REOPENED"
+            assert cl.previous_state() in ("OPEN", "REOPENED")
         if cl.is_assignment():
             results["ASSIGN"] = True
             assert len(cl.assignee()) > 0
@@ -240,10 +229,13 @@ def test_request_error() -> None:
     """test_request_error"""
     issues_d = issues.search_by_project(endpoint=tutil.TEST_SQ, project_key=tutil.PROJECT_1)
     issue = list(issues_d.values())[0]
+    url = tutil.TEST_SQ.local_url
     tutil.TEST_SQ.local_url = "http://localhost:3337"
-    assert not issue.add_comment("Won't work")
-
-    assert not issue.assign("admin")
+    with pytest.raises(ConnectionError):
+        issue.add_comment("Won't work")
+    with pytest.raises(ConnectionError):
+        issue.assign("admin")
+    tutil.TEST_SQ.local_url = url
 
 
 def test_transitions() -> None:
@@ -252,28 +244,37 @@ def test_transitions() -> None:
     issue = list(issues_d.values())[0]
 
     assert issue.confirm()
-    assert not issue.confirm()
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.confirm()
     assert issue.unconfirm()
-    assert not issue.unconfirm()
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.unconfirm()
 
     assert issue.resolve_as_fixed()
-    assert not issue.resolve_as_fixed()
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.resolve_as_fixed()
     assert issue.reopen()
-    assert not issue.reopen()
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.reopen()
 
     if tutil.SQ.version() >= c.ACCEPT_INTRO_VERSION:
         assert issue.accept()
-        assert not issue.accept()
+        with pytest.raises(exceptions.UnsupportedOperation):
+            issue.accept()
     else:
         assert issue.mark_as_wont_fix()
-        assert not issue.mark_as_wont_fix()
+        with pytest.raises(exceptions.UnsupportedOperation):
+            issue.mark_as_wont_fix()
     assert issue.reopen()
-    assert not issue.reopen()
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.reopen()
 
     assert issue.mark_as_false_positive()
-    assert not issue.mark_as_false_positive()
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.mark_as_false_positive()
     assert issue.reopen()
-    assert not issue.reopen()
+    with pytest.raises(exceptions.UnsupportedOperation):
+        issue.reopen()
 
 
 def test_search_first() -> None:

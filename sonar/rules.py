@@ -20,16 +20,15 @@
 #
 """
 
-    Abstraction of the SonarQube "rule" concept
+Abstraction of the SonarQube "rule" concept
 
 """
+
 from __future__ import annotations
 import json
 import concurrent.futures
 from threading import Lock
 from typing import Optional
-from http import HTTPStatus
-from requests import RequestException
 
 import sonar.logging as log
 import sonar.sqobject as sq
@@ -140,6 +139,8 @@ CSV_EXPORT_FIELDS = [
 
 LEGACY_CSV_EXPORT_FIELDS = ["key", "language", "repo", "type", "severity", "name", "ruleType", "tags"]
 
+_IMPORTABLE_PROPERTIES = ["key", "severity", "impacts", "description", "params", "isTemplate", "templateKey", "tags", "mdNote", "language"]
+
 _CLASS_LOCK = Lock()
 
 
@@ -168,7 +169,7 @@ class Rule(sq.SqObject):
             if self.type in idefs.STD_TYPES:
                 self._impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
 
-        self.tags = None if len(data.get("tags", [])) == 0 else data["tags"]
+        self.tags: Optional[list[str]] = None if len(data.get("tags", [])) == 0 else data["tags"]
         self.systags = data.get("sysTags", [])
         self.name = data.get("name", None)
         self.language = data.get("lang", None)
@@ -188,15 +189,16 @@ class Rule(sq.SqObject):
 
     @classmethod
     def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
-        """Returns a rule object from the cache or from the platform itself"""
-        o = Rule.CACHE.get(key, endpoint.local_url)
-        if o:
+        """Returns a rule object from it key, taken from the cache or from the platform itself
+
+        :param Platform endpoint: The SonarQube reference
+        :param str key: The rule key
+        :return: The Rule object corresponding to the input rule key
+        :raises: ObjectNotFound if rule does not exist
+        """
+        if o := Rule.CACHE.get(key, endpoint.local_url):
             return o
-        try:
-            r = endpoint.get(Rule.API[c.READ], params={"key": key, "actives": "true"})
-        except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"getting rule {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-            raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
+        r = endpoint.get(Rule.API[c.READ], params={"key": key, "actives": "true"})
         return Rule(endpoint=endpoint, key=key, data=json.loads(r.text)["rule"])
 
     @classmethod
@@ -215,10 +217,9 @@ class Rule(sq.SqObject):
 
     @classmethod
     def load(cls, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> Rule:
-        """Loads a rule object"""
-        o = Rule.CACHE.get(key, endpoint.local_url)
-        if o:
-            o.sq_json.update(data)
+        """Loads a rule object with a SonarQube API payload"""
+        if o := Rule.CACHE.get(key, endpoint.local_url):
+            o.reload(data)
             return o
         return cls(key=key, endpoint=endpoint, data=data)
 
@@ -257,10 +258,9 @@ class Rule(sq.SqObject):
 
         try:
             data = json.loads(self.get(Rule.API[c.READ], params={"key": self.key, "actives": "true"}).text)
-        except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"Reading {self}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        except exceptions.ObjectNotFound:
             Rule.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(key=self.key, message=f"{self} does not exist")
+            raise
         self.sq_json.update(data["rule"])
         self.sq_json["actives"] = data["actives"].copy()
         return True
@@ -299,18 +299,16 @@ class Rule(sq.SqObject):
 
     def export(self, full: bool = False) -> types.ObjectJsonRepr:
         """Returns the JSON corresponding to a rule export"""
-        rule = self.to_json()
-        d = {"severity": rule.get("severity", ""), "impacts": self.impacts(), "description": self.custom_desc}
-        if len(rule.get("params", {})) > 0:
-            d["params"] = rule["params"] if full else {p["key"]: p.get("defaultValue", "") for p in rule["params"]}
-        mapping = {"isTemplate": "isTemplate", "tags": "tags", "lang": "language", "templateKey": "templateKey"}
-        d |= {newkey: rule[oldkey] for oldkey, newkey in mapping.items() if oldkey in rule}
+        d = self.to_json()
+        d["key"] = self.key
+        d["impacts"] = self.impacts()
+        if len(d.get("params", {})) > 0:
+            d["params"] = d["params"] if full else [{"key": p["key"], "value": p.get("defaultValue", "")} for p in d["params"]]
+        mapping = {"lang": "language", "mdNote": "description"}
+        d |= {newkey: d[oldkey] for oldkey, newkey in mapping.items() if oldkey in d}
         if not d["isTemplate"]:
             d.pop("isTemplate", None)
-        if full:
-            d.update({f"_{k}": v for k, v in rule.items() if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "lang")})
-            d.pop("_key", None)
-        return utilities.remove_nones(d)
+        return utilities.filter_export(d, _IMPORTABLE_PROPERTIES, full)
 
     def set_tags(self, tags: list[str]) -> bool:
         """Sets rule custom tags"""
@@ -350,18 +348,19 @@ class Rule(sq.SqObject):
             self.refresh()
             found_qp = next((qp for qp in self.sq_json.get("actives", []) if quality_profile_id and qp["qProfile"] == quality_profile_id), None)
         if not found_qp:
-            return self._impacts if len(self._impacts) > 0 else {TYPE_TO_QUALITY[self.type]: self.severity}
-        if self.endpoint.is_mqr_mode():
-            qp_impacts = {imp["softwareQuality"]: imp["severity"] for imp in found_qp["impacts"]}
-            default_impacts = self._impacts
+            qp_impacts = self._impacts if len(self._impacts) > 0 else {TYPE_TO_QUALITY[self.type]: self.severity}
         else:
-            qp_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
-            default_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
+            if self.endpoint.is_mqr_mode():
+                qp_impacts = {imp["softwareQuality"]: imp["severity"] for imp in found_qp["impacts"]}
+                default_impacts = self._impacts
+            else:
+                qp_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
+                default_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
 
-        if substitute_with_default:
-            return {k: c.DEFAULT if qp_impacts[k] == default_impacts.get(k, qp_impacts[k]) else v for k, v in qp_impacts.items()}
-        else:
-            return qp_impacts
+            if substitute_with_default:
+                qp_impacts = {k: c.DEFAULT if qp_impacts[k] == default_impacts.get(k, qp_impacts[k]) else v for k, v in qp_impacts.items()}
+
+        return {k.lower(): v for k, v in qp_impacts.items()}
 
     def __get_quality_profile_data(self, quality_profile_id: str) -> Optional[dict[str, str]]:
         if not quality_profile_id:
@@ -410,8 +409,8 @@ def search_keys(endpoint: platform.Platform, **params) -> list[str]:
             data = json.loads(endpoint.get(Rule.API[c.SEARCH], params=new_params).text)
             nbr_pages = utilities.nbr_pages(data)
             rule_list += [r[Rule.SEARCH_KEY_FIELD] for r in data[Rule.SEARCH_RETURN_FIELD]]
-    except (ConnectionError, RequestException) as e:
-        utilities.handle_error(e, "searching rules", catch_all=True)
+    except exceptions.SonarException:
+        pass
     return rule_list
 
 
@@ -449,18 +448,6 @@ def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> d
     return rule_list
 
 
-def get_object(endpoint: platform.Platform, key: str) -> Optional[Rule]:
-    """Returns a Rule object from its key
-    :return: The Rule object corresponding to the input rule key, or None if not found
-    :param str key: The rule key
-    :rtype: Rule or None
-    """
-    try:
-        return Rule.get_object(key=key, endpoint=endpoint)
-    except exceptions.ObjectNotFound:
-        return None
-
-
 def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Returns a JSON export of all rules"""
     log.info("Exporting rules")
@@ -468,22 +455,20 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     threads = 16 if endpoint.is_sonarcloud() else 8
     get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", threads))
 
-    all_rules = get_list(endpoint=endpoint, use_cache=False, include_external=False).items()
+    all_rules = get_list(endpoint=endpoint, use_cache=False, include_external=False).values()
     rule_list = {}
-    rule_list["instantiated"] = {k: rule.export(full) for k, rule in all_rules if rule.is_instantiated()}
-    rule_list["extended"] = {k: rule.export(full) for k, rule in all_rules if rule.is_extended()}
+    rule_list["instantiated"] = [rule.export(full) for rule in all_rules if rule.is_instantiated()]
+    rule_list["extended"] = [rule.export(full) for rule in all_rules if rule.is_extended()]
     if not full:
-        rule_list["extended"] = utilities.remove_nones(
-            {
-                k: {"tags": v.get("tags", None), "description": v.get("description", None)}
-                for k, v in rule_list["extended"].items()
-                if "tags" in v or "description" in v
-            }
-        )
+        rule_list["extended"] = [
+            utilities.clean_data({"key": v["key"], "tags": v.get("tags", None), "description": v.get("description", None)})
+            for v in rule_list["extended"]
+            if "tags" in v or "description" in v
+        ]
     if full:
-        rule_list["standard"] = {k: rule.export(full) for k, rule in all_rules if not rule.is_instantiated() and not rule.is_extended()}
+        rule_list["standard"] = [rule.export(full) for rule in all_rules if not rule.is_instantiated() and not rule.is_extended()]
     if export_settings.get("MODE", "") == "MIGRATION":
-        rule_list["thirdParty"] = {r.key: r.export() for r in third_party(endpoint=endpoint)}
+        rule_list["thirdParty"] = [r.export() for r in third_party(endpoint=endpoint)]
 
     for k in ("instantiated", "extended", "standard", "thirdParty"):
         if len(rule_list.get(k, {})) == 0:

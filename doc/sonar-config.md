@@ -8,17 +8,21 @@ During import:
 - When the object already exists it is updated according to the config file
 - When an object exists in the target platform and is not defined in the config file, this object remains unmodified. As such the import of configuration is "additive" to the current config, it does not replace it.
 
+## Required Permissions
+
+`sonar-config` needs `Browse` and `Administer` permission on more or less everything that may be exported or imported
+
 ## Requirements and Installation
 
-`sonar-config` is installed through the **sonar-tools** [general installation](../README.md#install)
+`sonar-config` is installed through the **sonar-tools** [general installation](https://github.com/okorach/sonar-tools/blob/master/README.md#install)
 
 ## Common command line parameters
 
-`sonar-config` accepts all the **sonar-tools** [common parameters](../README.md#common-params)
+`sonar-config` accepts all the **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 ## Usage
 
-`sonar-config [-u <url>] [-t <token>] [-e|--export] [-i|--import] [-w|--what <configSelection>] [-f <file>] [-h] [-v <debugLevel>] [-k "<key1>,<key2>,...,<keyn>"]`
+`sonar-config [-e|--export] [-i|--import] [-w|--what <configSelection>] [-f <file>] [-h] [-k "<key1>,<key2>,...,<keyn>"]`
 
 `--what` can be followed by a list of comma separated items to export or import
 When `--what` is not specified, everything is exported or 
@@ -36,7 +40,7 @@ When `--what` is not specified, everything is exported or
 - `-k "<key1>,<key2>,...,<keyn>"`: Limits the export or import operation to projects, apps or portfolios matching these keys
 - `--fullExport`: Will also export object properties that are not used for an import by may be of interest anyway
 - `-h`: Displays help and exits
-- `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
+- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 ## Required Permissions
 

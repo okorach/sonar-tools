@@ -19,16 +19,14 @@
 #
 """
 
-    Abstraction of the SonarQube "quality gate" concept
+Abstraction of the SonarQube "quality gate" concept
 
 """
 
 from __future__ import annotations
-from typing import Union
+from typing import Union, Optional
 
-from http import HTTPStatus
 import json
-from requests import RequestException
 
 import sonar.logging as log
 import sonar.sqobject as sq
@@ -94,7 +92,7 @@ GOOD_QG_CONDITIONS = {
     "prioritized_rule_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
 }
 
-_IMPORTABLE_PROPERTIES = ("isDefault", "isBuiltIn", "conditions", "permissions")
+_IMPORTABLE_PROPERTIES = ("name", "isDefault", "isBuiltIn", "conditions", "permissions")
 
 
 class QualityGate(sq.SqObject):
@@ -119,9 +117,9 @@ class QualityGate(sq.SqObject):
         log.debug("Loading %s with data %s", self, util.json_dump(data))
         self.is_built_in = False  #: Whether the quality gate is built in
         self.is_default = False  #: Whether the quality gate is the default
-        self._conditions = None  #: Quality gate conditions
-        self._permissions = None  #: Quality gate permissions
-        self._projects = None  #: Projects using this quality profile
+        self._conditions: Optional[dict[str, str]] = None  #: Quality gate conditions
+        self._permissions: Optional[object] = None  #: Quality gate permissions
+        self._projects: Optional[dict[str, projects.Project]] = None  #: Projects using this quality profile
         self.sq_json = data
         self.name = data.pop("name")
         self.key = data.pop("id", self.name)
@@ -166,11 +164,7 @@ class QualityGate(sq.SqObject):
     @classmethod
     def create(cls, endpoint: pf.Platform, name: str) -> Union[QualityGate, None]:
         """Creates an empty quality gate"""
-        try:
-            endpoint.post(QualityGate.API[c.CREATE], params={"name": name})
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating quality gate '{name}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(name, e.response.text)
+        endpoint.post(QualityGate.API[c.CREATE], params={"name": name})
         return cls.get_object(endpoint, name)
 
     def __str__(self) -> str:
@@ -195,24 +189,19 @@ class QualityGate(sq.SqObject):
         """
         :raises ObjectNotFound: If Quality gate not found
         :return: The list of projects using this quality gate
-        :rtype: dict {<projectKey>: <projectData>}
         """
         if self._projects is not None:
             return self._projects
-        if self.endpoint.is_sonarcloud():
-            params = {"gateId": self.key, "ps": 500}
-        else:
-            params = {"gateName": self.name, "ps": 500}
+        params = {"ps": 500} | {"gateId": self.key} if self.endpoint.is_sonarcloud() else {"gateName": self.name}
         page, nb_pages = 1, 1
         self._projects = {}
         while page <= nb_pages:
             params["p"] = page
             try:
                 resp = self.get(QualityGate.API["get_projects"], params=params)
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting projects of {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            except exceptions.ObjectNotFound:
                 QualityGate.CACHE.pop(self)
-                raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
+                raise
             data = json.loads(resp.text)
             for prj in data["results"]:
                 key = prj["key"] if "key" in prj else prj["id"]
@@ -272,8 +261,7 @@ class QualityGate(sq.SqObject):
             (params["metric"], params["op"], params["error"]) = _decode_condition(cond)
             try:
                 ok = ok and self.post("qualitygates/create_condition", params=params).ok
-            except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"adding condition '{cond}' to {str(self)}", catch_all=True)
+            except exceptions.SonarException:
                 ok = False
         self._conditions = None
         self.conditions()
@@ -308,14 +296,14 @@ class QualityGate(sq.SqObject):
         """
         params = {"id": self.key} if self.endpoint.is_sonarcloud() else {"name": self.name}
         try:
-            r = self.post("qualitygates/set_as_default", params=params)
+            ok = self.post("qualitygates/set_as_default", params=params).ok
             # Turn off default for all other quality gates except the current one
             for qg in get_list(self.endpoint).values():
                 qg.is_default = qg.name == self.name
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting {str(self)} as default quality gate")
+        except exceptions.SonarException:
             return False
-        return r.ok
+        else:
+            return ok
 
     def update(self, **data) -> bool:
         """Updates a quality gate
@@ -388,7 +376,7 @@ class QualityGate(sq.SqObject):
 
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Returns JSON representation of object"""
-        json_data = self.sq_json
+        json_data = {"name": self.name} | self.sq_json
         full = export_settings.get("FULL_EXPORT", False)
         if not self.is_default and not full:
             json_data.pop("isDefault", None)
@@ -470,8 +458,8 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     """
     log.info("Exporting quality gates")
     qg_list = {k: qg.to_json(export_settings) for k, qg in get_list(endpoint).items()}
-    write_q = kwargs.get("write_q", None)
-    if write_q:
+    qg_list = list(dict(sorted(qg_list.items())).values())
+    if write_q := kwargs.get("write_q", None):
         write_q.put(qg_list)
         write_q.put(util.WRITE_END)
     return qg_list
@@ -577,4 +565,4 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, QualityGate]:
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    return util.dict_to_list(util.remove_nones(original_json), "name")
+    return original_json

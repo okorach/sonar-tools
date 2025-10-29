@@ -20,30 +20,34 @@
 #
 
 # ME="$( basename "${BASH_SOURCE[0]}" )"
-ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-buildDir="$ROOTDIR/build"
+ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-[ ! -d "$buildDir" ] && mkdir "$buildDir"
+. "${CONF_DIR}/env.sh"
+
+SYNC_PROJECT_KEY="TESTSYNC"
+
+[[ ! -d "${BUILD_DIR}" ]] && mkdir "${BUILD_DIR}"
 
 echo "Running tests"
 
-. "$CONFDIR/build_tests.sh"
+. "${CONF_DIR}/build_tests.sh"
 
-cd "$ROOTDIR" || exit 1
+cd "${ROOT_DIR}" || exit 1
 
 sonar start -i test
 
 for target in latest cb 9 common
 do
-    if [ "$target" != "common" ]; then
-        sonar start -i $target && sleep 30
+    if [[ "${target}" != "common" ]]; then
+        sonar start -i "${target}" && sleep 30
     fi
-    if [ -d "$ROOTDIR/$GEN_LOC/$target/" ]; then
-        coverage run --branch --source="$ROOTDIR" -m pytest "$ROOTDIR/$GEN_LOC/$target/" --junit-xml="$buildDir/xunit-results-$target.xml"
-        coverage xml -o "$buildDir/coverage-$target.xml"
-    fi
-    if [ "$target" != "latest" ] && [ "$target" != "common" ]; then
-        sonar stop -i $target
+    if [[ -d "${ROOT_DIR}/${GEN_LOC}/${target}/" ]]; then
+        # Recreate a fresh TESTSYNC project for sync tests
+        curl -X POST -u "${SONAR_TOKEN_TEST_ADMIN_USER}:" "${SONAR_HOST_URL_TEST}/api/projects/delete?project=${SYNC_PROJECT_KEY}"
+        conf/run_scanner.sh -Dsonar.host.url="${SONAR_HOST_URL_TEST}" -Dsonar.projectKey="${SYNC_PROJECT_KEY}" -Dsonar.projectName="${SYNC_PROJECT_KEY}" -Dsonar.token="${SONAR_TOKEN_TEST_ADMIN_ANALYSIS}"
+        # Run tests
+        poetry run coverage run --branch --source="${ROOT_DIR}" -m pytest "${ROOT_DIR}/${GEN_LOC}/${target}/" --junit-xml="${BUILD_DIR}/xunit-results-${target}.xml"
+        poetry run coverage xml -o "${BUILD_DIR}/coverage-${target}.xml"
     fi
 done

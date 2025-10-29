@@ -19,10 +19,11 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" platform tests """
+"""platform tests"""
 
 import json
-from requests import RequestException
+import requests.exceptions
+from datetime import datetime
 
 import pytest
 import utilities as tutil
@@ -81,10 +82,11 @@ def test_wrong_url() -> None:
     tutil.TEST_SQ.local_url = "http://localhost:3337"
 
     tutil.TEST_SQ._sys_info = None
-    with pytest.raises(RequestException):
+    with pytest.raises(requests.exceptions.ConnectionError):
         tutil.TEST_SQ.sys_info()
 
-    tutil.TEST_SQ.global_permissions()
+    with pytest.raises(requests.exceptions.ConnectionError):
+        tutil.TEST_SQ.global_permissions()
 
 
 def test_set_webhooks() -> None:
@@ -102,3 +104,8 @@ def test_convert_for_yaml() -> None:
         json_config = json.load(f)["globalSettings"]
     yaml_json = platform.convert_for_yaml(json_config.copy())
     assert len(yaml_json) == len(json_config)
+
+
+def test_release_date() -> None:
+    assert datetime(2022, 1, 1).date() < tutil.SQ.release_date() <= datetime.today().date()
+    assert tutil.SC.release_date() is None

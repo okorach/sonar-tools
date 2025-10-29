@@ -19,12 +19,10 @@
 #
 
 """Abstraction of the SonarQube DevOps platform concept"""
+
 from __future__ import annotations
 from typing import Optional, Union
-from http import HTTPStatus
 import json
-
-from requests import RequestException
 
 import sonar.logging as log
 from sonar.util import types, cache
@@ -108,11 +106,10 @@ class DevopsPlatform(sq.SqObject):
             elif plt_type == "bitbucketcloud":
                 params.update({"clientSecret": _TO_BE_SET, "clientId": _TO_BE_SET, "workspace": url_or_workspace})
                 endpoint.post(_CREATE_API_BBCLOUD, params=params)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating devops platform {key}/{plt_type}/{url_or_workspace}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
+        except exceptions.SonarException as e:
             if endpoint.edition() in (c.CE, c.DE):
                 log.warning("Can't set DevOps platform '%s', don't you have more that 1 of that type?", key)
-            raise exceptions.UnsupportedOperation(f"Can't set DevOps platform '{key}', don't you have more that 1 of that type?")
+            raise exceptions.UnsupportedOperation(e.message) from e
         o = DevopsPlatform(endpoint=endpoint, key=key, platform_type=plt_type)
         o.refresh()
         return o
@@ -184,8 +181,7 @@ class DevopsPlatform(sq.SqObject):
             ok = self.post(f"alm_settings/update_{alm_type}", params=params).ok
             self.url = kwargs["url"]
             self._specific = {k: v for k, v in params.items() if k not in ("key", "url")}
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"updating devops platform {self.key}/{alm_type}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
+        except exceptions.SonarException:
             ok = False
         return ok
 
@@ -243,12 +239,8 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings) -
     :meta private:
     """
     log.info("Exporting DevOps integration settings")
-    json_data = {}
-    for s in get_list(endpoint).values():
-        export_data = s.to_json(export_settings)
-        key = export_data.pop("key")
-        json_data[key] = export_data
-    return json_data
+    devops_list = {s.key: s.to_json(export_settings) for s in get_list(endpoint).values()}
+    return list(dict(sorted(devops_list.items())).values())
 
 
 def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> int:

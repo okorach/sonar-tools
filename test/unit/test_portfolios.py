@@ -19,7 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" portfolio tests """
+"""portfolio tests"""
 
 from collections.abc import Generator
 import time
@@ -113,7 +113,7 @@ def test_add_project(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     assert p.has_project(project.key)
 
     p.add_project_branches(project.key, [c.DEFAULT_BRANCH, "develop"])
-    p.add_project_branches(project.key, ["comma,branch", "develop"])
+    p.add_project_branches(project.key, ["release-3.x", "develop"])
     assert p.recompute()
 
 
@@ -293,7 +293,9 @@ def test_import() -> None:
     # delete all portfolios in test
     logging.info("Deleting all portfolios")
     pf.Portfolio.clear_cache()
-    _ = [o.delete() for o in pf.get_list(tutil.TEST_SQ, use_cache=False).values() if o.is_toplevel()]
+    for o in pf.get_list(tutil.TEST_SQ, use_cache=False).values():
+        if o.is_toplevel():
+            o.delete()
     assert pf.import_config(tutil.TEST_SQ, {"portfolios": json_exp})
 
     # Compare portfolios

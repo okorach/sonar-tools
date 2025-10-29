@@ -26,14 +26,11 @@ from typing import Optional
 import json
 
 import datetime
-from http import HTTPStatus
-from requests import RequestException
 
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
 import sonar.utilities as util
-from sonar import exceptions
 from sonar.util import types, cache, constants as c
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
@@ -47,7 +44,7 @@ class UserToken(sq.SqObject):
     CACHE = cache.Cache()
     API = {c.CREATE: "user_tokens/generate", c.DELETE: "user_tokens/revoke", c.LIST: "user_tokens/search"}
 
-    def __init__(self, endpoint: pf.Platform, login: str, json_data: types.ApiPayload, name: str = None) -> None:
+    def __init__(self, endpoint: pf.Platform, login: str, json_data: types.ApiPayload, name: Optional[str] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=login)
         self.login = login  #: User login
@@ -69,11 +66,7 @@ class UserToken(sq.SqObject):
         :param login: User for which the token must be created
         :param name: Token name
         """
-        try:
-            data = json.loads(endpoint.post(UserToken.API[c.CREATE], {"name": name, "login": login}).text)
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"creating token '{name}' for user '{login}'", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
-            raise exceptions.ObjectAlreadyExists(name, e.response.text)
+        data = json.loads(endpoint.post(UserToken.API[c.CREATE], {"name": name, "login": login}).text)
         return UserToken(endpoint=endpoint, login=data["login"], json_data=data, name=name)
 
     def __str__(self) -> str:
@@ -101,15 +94,18 @@ class UserToken(sq.SqObject):
         if self.sq_json.get("isExpired", False):
             return [Problem(get_rule(RuleId.TOKEN_EXPIRED), self, str(self))]
         problems = []
-        mode = settings.get("audit.mode", "")
+        mode = settings.get(c.AUDIT_MODE_PARAM, "")
+        max_age = settings.get("audit.tokens.maxAge", 90)
         if not today:
             today = datetime.datetime.now(datetime.timezone.utc).astimezone()
         age = util.age(self.created_at, now=today)
         if mode != "housekeeper" and not self.expiration_date:
             problems.append(Problem(get_rule(RuleId.TOKEN_WITHOUT_EXPIRATION), self, str(self), age))
-        if age > settings.get("audit.tokens.maxAge", 90):
+        if max_age == 0:
+            log.info("%s: Audit of token max age is disabled, skipped")
+        elif age > max_age:
             problems.append(Problem(get_rule(RuleId.TOKEN_TOO_OLD), self, str(self), age))
-        if self.last_connection_date:
+        if self.last_connection_date and mode != "housekeeper":
             last_cnx_age = util.age(self.last_connection_date, now=today)
             if last_cnx_age > settings.get("audit.tokens.maxUnusedAge", 30):
                 problems.append(Problem(get_rule(RuleId.TOKEN_UNUSED), self, str(self), last_cnx_age))

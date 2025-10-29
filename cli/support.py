@@ -20,9 +20,10 @@
 #
 """
 
-    Audits a SUPPORT ticket SIF
+Audits a SUPPORT ticket SIF
 
 """
+
 from http import HTTPStatus
 import sys
 import os
@@ -165,7 +166,7 @@ def main():
             if problems:
                 found_problems = True
                 log.warning("%d issues found during audit", len(problems))
-                problem.dump_report(problems, file=None, format="csv")
+                problem.dump_report(problems, file=None, fmt="csv")
                 comment += build_jira_comments(problems)
             else:
                 log.info("%d issues found during audit", len(problems))

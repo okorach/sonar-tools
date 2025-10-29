@@ -19,15 +19,17 @@
 #
 """
 
-    Abstraction of the SonarQube platform or instance concept
+Abstraction of the SonarQube platform or instance concept
 
 """
 
+from __future__ import annotations
 
 from http import HTTPStatus
 import sys
 import os
-from typing import Optional
+import re
+from typing import Any, Optional
 import time
 import datetime
 import json
@@ -45,6 +47,7 @@ from sonar.audit.rules import get_rule, RuleId
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
 from sonar.audit.problem import Problem
+from sonar import webhooks
 
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
@@ -60,12 +63,14 @@ _SERVER_ID_KEY = "Server ID"
 class Platform(object):
     """Abstraction of the SonarQube "platform" concept"""
 
-    def __init__(self, url: str, token: str, org: str = None, cert_file: Optional[str] = None, http_timeout: int = 10, **kwargs) -> None:
+    def __init__(
+        self, url: str, token: str, org: Optional[str] = None, cert_file: Optional[str] = None, http_timeout: int = 10, **kwargs: str
+    ) -> None:
         """Creates a SonarQube platform object
 
-        :param url: base URL of the SonarQube platform
-        :param token: token to connect to the platform
-        :param cert_file: Client certificate, if any needed, defaults to None
+        :param str url: base URL of the SonarQube platform
+        :param str token: token to connect to the platform
+        :param str cert_file: Client certificate, if any needed, defaults to None
         :return: the SonarQube object
         :rtype: Platform
         """
@@ -73,20 +78,21 @@ class Platform(object):
         self.external_url = self.local_url
         self.__token = token
         self.__cert_file = cert_file
-        self.__user_data = None
-        self._version = None
-        self._sys_info = None
-        self.__global_nav = None
-        self._server_id = None
-        self._permissions = None
+        self.__user_data: types.ApiPayload = None
+        self._version: Optional[tuple[int, ...]] = None
+        self._sys_info: Optional[dict[str, Any]] = None
+        self.__global_nav: types.ApiPayload = None
+        self._server_id: Optional[str] = None
+        self._permissions: Optional[object] = None
         self.http_timeout = int(http_timeout)
         self.organization = org
         self._user_agent = _SONAR_TOOLS_AGENT
-        self._global_settings_definitions = None
+        self._global_settings_definitions: types.ApiPayload = None
 
     def __str__(self) -> str:
         """
-        Returns the string representation of the SonarQube connection, with the token recognizable but largely redacted
+        Returns the string representation of the SonarQube connection,
+        with the token recognizable but largely redacted
         """
         return f"{util.redacted_token(self.__token)}@{self.local_url}"
 
@@ -111,15 +117,11 @@ class Platform(object):
             raise exceptions.ConnectionError(f"{str(e)} while connecting to {self.local_url}")
 
     def url(self) -> str:
-        """
-        Returns the SonarQube URL
-        """
+        """Returns the SonarQube URL"""
         return self.external_url
 
     def version(self) -> tuple[int, int, int]:
-        """
-        Returns the SonarQube platform version or 0.0.0 for SonarQube Cloud
-        """
+        """Returns the SonarQube platform version or 0.0.0 for SonarQube Cloud"""
         if self.is_sonarcloud():
             return 0, 0, 0
         if self._version is None:
@@ -129,7 +131,7 @@ class Platform(object):
 
     def release_date(self) -> Optional[datetime.date]:
         """
-        :returns: the SonarQube platform release date if found in update center or None if SonarQube Cloud or if the date cannot be found
+        :return: the SonarQube platform release date if found in update center or None if SonarQube Cloud or if the date cannot be found
         """
         if self.is_sonarcloud():
             return None
@@ -137,7 +139,7 @@ class Platform(object):
 
     def edition(self) -> str:
         """
-        Returns the Sonar edition: "community", "developer", "enterprise", c.DCE or "sonarcloud"
+        Returns the Sonar edition: "community", "developer", "enterprise", "datacenter" or "sonarcloud"
         """
         if self.is_sonarcloud():
             return c.SC
@@ -157,12 +159,11 @@ class Platform(object):
         return self.__user_data
 
     def set_user_agent(self, user_agent: str) -> None:
+        """Sets the user agent for HTTP requests"""
         self._user_agent = user_agent
 
     def server_id(self) -> str:
-        """
-        Returns the SonarQube instance server id
-        """
+        """Returns the SonarQube instance server id"""
         if self._server_id is not None:
             return self._server_id
         if self._sys_info is not None and _SERVER_ID_KEY in self._sys_info["System"]:
@@ -172,15 +173,13 @@ class Platform(object):
         return self._server_id
 
     def is_sonarcloud(self) -> bool:
-        """
-        Returns whether the target platform is SonarQube Cloud
-        """
+        """Returns whether the target platform is SonarQube Cloud"""
         return util.is_sonarcloud_url(self.local_url)
 
     def basics(self) -> dict[str, str]:
         """
-        :return: the 3 basic information of the platform: ServerId, Edition and Version
-        :rtype: dict{"serverId": <id>, "edition": <edition>, "version": <version>}
+        :return: the basic information of the platform: ServerId, Edition and Version
+        :rtype: dict{"serverId": <id>, "edition": <edition>, "version": <version>, "plugins": <dict>}
         """
 
         url = self.get_setting(key="sonar.core.serverBaseURL")
@@ -191,6 +190,19 @@ class Platform(object):
             return {**data, "organization": self.organization}
 
         return {**data, "version": util.version_to_string(self.version()[:3]), "serverId": self.server_id(), "plugins": self.plugins()}
+
+    def default_user_group(self) -> str:
+        """
+        :return: the built-in default group name on that platform
+        """
+        return c.SQC_USERS if self.is_sonarcloud() else c.SQS_USERS
+
+    def is_default_user_group(self, group_name: str) -> bool:
+        """
+        :param str group_name: group name to check
+        :return: whether the group is a built-in default group
+        """
+        return group_name == self.default_user_group()
 
     def get(self, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
         """Makes an HTTP GET request to SonarQube
@@ -242,35 +254,19 @@ class Platform(object):
         """
         return self.__run_request(requests.delete, api, params, **kwargs)
 
-    def default_user_group(self) -> str:
-        """
-        :return: the built-in default group name on that platform
-        """
-        return c.SQC_USERS if self.is_sonarcloud() else c.SQS_USERS
-
-    def is_default_user_group(self, group_name: str) -> bool:
-        """
-        :param str group_name: group name to check
-        :return: whether the group is a built-in default group
-        """
-        return group_name == self.default_user_group()
-
     def __run_request(self, request: callable, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
         mute = kwargs.pop("mute", ())
         api = _normalize_api(api)
-        headers = {"user-agent": self._user_agent, "accept": _APP_JSON}
-        headers.update(kwargs.get("headers", {}))
-        if params is None:
-            params = {}
+        headers = {"user-agent": self._user_agent, "accept": _APP_JSON} | kwargs.get("headers", {})
+        params = params or {}
         with_org = kwargs.pop("with_organization", True)
         if self.is_sonarcloud():
             headers["Authorization"] = f"Bearer {self.__token}"
             if with_org:
                 params["organization"] = self.organization
-        req_type, url = "", ""
+        req_type, url = getattr(request, "__name__", repr(request)).upper(), ""
         if log.get_level() <= log.DEBUG:
-            req_type = getattr(request, "__name__", repr(request)).upper()
             url = self.__urlstring(api, params, kwargs.get("data", {}))
             log.debug("%s: %s", req_type, url)
         kwargs["headers"] = headers
@@ -292,25 +288,37 @@ class Platform(object):
                     self.local_url = new_url
             r.raise_for_status()
         except HTTPError as e:
-            lvl = log.DEBUG if r.status_code in mute else log.ERROR
+            code = r.status_code
+            lvl = log.DEBUG if code in mute else log.ERROR
             log.log(lvl, "%s (%s request)", util.error_msg(e), req_type)
-            raise e
-        except (ConnectionError, RequestException) as e:
+            err_msg = util.sonar_error(e.response)
+            err_msg_lower = err_msg.lower()
+            key = next((params[k] for k in ("key", "project", "component", "componentKey") if k in params), "Unknown")
+            if any(
+                msg in err_msg_lower for msg in ("not found", "no quality gate has been found", "does not exist", "could not find")
+            ):  # code == HTTPStatus.NOT_FOUND:
+                raise exceptions.ObjectNotFound(key, err_msg) from e
+            if any(msg in err_msg_lower for msg in ("already exists", "already been taken")):
+                raise exceptions.ObjectAlreadyExists(key, err_msg) from e
+            if re.match(r"(Value of parameter .+ must be one of|No enum constant)", err_msg):
+                raise exceptions.UnsupportedOperation(err_msg) from e
+            if any(msg in err_msg_lower for msg in ("insufficient privileges", "insufficient permissions")):
+                raise exceptions.SonarException(err_msg, errcodes.SONAR_API_AUTHORIZATION) from e
+            if "unknown url" in err_msg_lower:
+                raise exceptions.UnsupportedOperation(err_msg) from e
+            raise exceptions.SonarException(err_msg, errcodes.SONAR_API) from e
+        except ConnectionError as e:
             util.handle_error(e, "")
         return r
 
-    def get_paginated(self, api: str, return_field: str, params: types.ApiParams = None) -> types.ObjectJsonRepr:
+    def get_paginated(self, api: str, return_field: str, **kwargs: str) -> types.ObjectJsonRepr:
         """Returns all pages of a paginated API"""
-        new_params = {} if params is None else params.copy()
-        new_params["ps"] = 500
-        new_params["p"] = 1
-        data = json.loads(self.get(api, params=new_params).text)
-        nb_pages = util.nbr_pages(data, api_version=1)
-        if nb_pages == 1:
+        params = {"ps": 500} | kwargs
+        data = json.loads(self.get(api, params=params | {"p": 1}).text)
+        if (nb_pages := util.nbr_pages(data, api_version=1)) == 1:
             return data
         for page in range(2, nb_pages + 1):
-            new_params["p"] = page
-            data[return_field].update(json.loads(self.get(api, params=new_params).text)[return_field])
+            data[return_field].update(json.loads(self.get(api, params=params | {"p": page}).text)[return_field])
         return data
 
     def global_permissions(self) -> dict[str, any]:
@@ -376,12 +384,12 @@ class Platform(object):
             return self.sys_info()["Statistics"]["database"]["name"]
         return self.sys_info()["Database"]["Database"]
 
-    def plugins(self) -> dict[str, str]:
+    def plugins(self) -> list[dict[str, str]]:
         """
         :return: the SonarQube platform plugins
         """
         if self.is_sonarcloud():
-            return {}
+            return []
         sysinfo = self.sys_info()
         if "Application Nodes" in sysinfo:
             sysinfo = sysinfo["Application Nodes"][0]
@@ -425,7 +433,7 @@ class Platform(object):
         """
         return settings.reset_setting(self, key)
 
-    def set_setting(self, key: str, value: any) -> bool:
+    def set_setting(self, key: str, value: Any) -> bool:
         """Sets a platform global setting
 
         :param key: Setting key
@@ -434,7 +442,7 @@ class Platform(object):
         """
         return settings.set_setting(self, key, value)
 
-    def __urlstring(self, api: str, params: types.ApiParams, data: str = None) -> str:
+    def __urlstring(self, api: str, params: types.ApiParams, data: Optional[str] = None) -> str:
         """Returns a string corresponding to the URL and parameters"""
         url = f"{str(self)}{api}"
         if params is not None:
@@ -451,13 +459,10 @@ class Platform(object):
             url += f" - BODY: {data}"
         return url
 
-    def webhooks(self) -> dict[str, object]:
+    def webhooks(self) -> dict[str, webhooks.WebHook]:
         """
         :return: the list of global webhooks
-        :rtype: dict{<webhook_name>: <webhook_data>, ...}
         """
-        from sonar import webhooks
-
         return webhooks.get_list(self)
 
     def export(self, export_settings: types.ConfigSettings, full: bool = False) -> types.ObjectJsonRepr:
@@ -500,16 +505,12 @@ class Platform(object):
         """Sets global webhooks with a list of webhooks represented as JSON
 
         :param webhooks_data: the webhooks JSON representation
-        :return: Whether the operation succeeded or not
+        :return: The number of webhooks configured
         """
+        log.debug("%s setting webhooks %s", str(self), str(webhooks_data))
         if webhooks_data is None:
             return False
-        current_wh = self.webhooks()
-        # FIXME: Handle several webhooks with same name
-        current_wh_names = [wh.name for wh in current_wh.values()]
-        wh_map = {wh.name: k for k, wh in current_wh.items()}
-        log.debug("Current webhooks = %s", str(current_wh_names))
-        _ = [current_wh[wh_map[wh_name]].update(name=wh_name, **wh) for wh_name, wh in webhooks_data.items() if wh_name in current_wh_names]
+        webhooks.import_config(self, webhooks_data)
         return True
 
     def import_config(self, config_data: types.ObjectJsonRepr) -> int:
@@ -524,8 +525,14 @@ class Platform(object):
         count = 0
         config_data = config_data.get("globalSettings", {})
         flat_settings = util.flatten(config_data)
-        count += sum(1 if self.set_webhooks(v) else 0 for k, v in config_data.get("webhooks", None) or {})
         count += sum(1 if self.set_setting(k, v) else 0 for k, v in flat_settings.items())
+
+        try:
+            wh_data = config_data["generalSettings"]["webhooks"]
+            self.set_webhooks(wh_data)
+            count += len(wh_data)
+        except KeyError:
+            pass
 
         if settings.NEW_CODE_PERIOD in config_data.get("generalSettings", {}):
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data["generalSettings"][settings.NEW_CODE_PERIOD])
@@ -919,23 +926,6 @@ def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    original_json = util.remove_nones(original_json)
-    if "plugins" in original_json:
-        original_json["plugins"] = util.dict_to_list(original_json["plugins"], "key", "version")
-    if "languages" in original_json:
-        original_json["languages"] = util.dict_to_list(original_json["languages"], "language")
-    if "permissions" in original_json:
-        original_json["permissions"] = permissions.convert_for_yaml(original_json["permissions"])
-    if "permissionTemplates" in original_json:
-        for tpl in original_json["permissionTemplates"].values():
-            if "permissions" in tpl:
-                tpl["permissions"] = permissions.convert_for_yaml(tpl["permissions"])
-        original_json["permissionTemplates"] = util.dict_to_list(original_json["permissionTemplates"], "name")
-    if "devopsIntegration" in original_json:
-        original_json["devopsIntegration"] = util.dict_to_list(original_json["devopsIntegration"], "name")
-    for key in ("analysisScope", "authentication", "generalSettings", "linters"):
-        if key in original_json:
-            original_json[key] = util.dict_to_list(original_json[key], "key", "value")
     return original_json
 
 

@@ -19,7 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" Test of the hotspots module and class, as well as changelog """
+"""Test of the hotspots module and class, as well as changelog"""
 
 import utilities as tutil
 from sonar import hotspots
@@ -27,7 +27,7 @@ from sonar import hotspots
 
 def test_transitions() -> None:
     """test_transitions"""
-    hotspot_d = hotspots.search(endpoint=tutil.SQ, filters={"project": "pytorch"})
+    hotspot_d = hotspots.search(endpoint=tutil.SQ, filters={"project": "test:juice-shop"})
     hotspot = list(hotspot_d.values())[0]
 
     assert hotspot.mark_as_safe()

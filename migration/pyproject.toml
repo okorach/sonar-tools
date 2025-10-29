@@ -1,0 +1,183 @@
+[project]
+name = "sonar-migration"
+version = "0.6"
+description = "A tool for SonarQube Server to Cloud migration assistance"
+authors = [
+  {name = "Olivier Korach", email = "olivier.korach@gmail.com"},
+]
+maintainers = [
+  {name = "Olivier Korach", email = "olivier.korach@gmail.com"},
+]
+
+license = "LGPL-3.0-only"
+
+license-files = ["LICEN[CS]E*"]
+
+keywords = ["sonarqube", "sonar", "migration", "administration", "automation"]
+
+readme = "README.md"
+requires-python = ">= 3.9"
+dependencies = [
+    "argparse",
+    "datetime",
+    "python-dateutil (>=2.9.0)",
+    "requests (>=2.32)",
+    "jprops (>=2.0.2)",
+    "levenshtein (>=0.27.1)",
+    "PyYAML (>=6.0.2)",
+]
+
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  # Indicate who your project is intended for
+  "Intended Audience :: Developers",
+  "Topic :: Code Quality :: Utility Tools",
+  # Specify the Python versions you support here.
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Homepage = "https://pypi.org/sonar-migration"
+Documentation = "https://github.com/okorach/migration/README.md"
+Repository = "https://github.com/okorach/sonar-tools.git"
+Issues = "https://github.com/okorach/sonar-tools/issues"
+Changelog = "https://github.com/okorach/sonar-tools/blob/master/doc/what-is-new.md"
+
+[project.scripts]
+sonar-migration = "migration.migration:main"
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = [
+    "poetry-core>=2.0.0,<3.0.0",
+    "wheel",
+    "sphinx>=7.4.7",
+    "sphinx_rtd_theme>=3.0.2",
+    "sphinx-autodoc-typehints>=2.2.3",
+    "twine",
+    "get_pypi_latest_version",
+]
+
+[tool.poetry]
+packages = [{include = "sonar"}, {include = "migration"}, {include = "cli"}]
+
+[dependency-groups]
+test = [
+    "pytest (>=8.1.1)",
+    "coverage (>=7.4.4)",
+]
+lint = [
+    "ruff (>=0.5.2)",
+    "pylint (>=3.1.0)",
+    "flake8 (>=7.0.0)",
+]
+docs = [
+    "sphinx (>=7.3.7)",
+    "sphinx-autodoc-typehints (>=2.1.0)",
+    "sphinx-rtd-theme (>=2.0.0)",
+]
+dev = [
+    { include-group = "test" },
+    { include-group = "lint" },
+    { include-group = "docs" },
+]
+
+[tool.ruff]
+
+# Set the maximum line length to 150.
+line-length = 150
+target-version = "py39"
+indent-width = 4
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+# Enable auto-formatting of code examples in docstrings. Markdown,
+# reStructuredText code/literal blocks and doctests are all supported.
+#
+# This is currently disabled by default, but it is planned for this
+# to be opt-out in the future.
+docstring-code-format = true
+
+# Set the line length limit used when formatting code snippets in
+# docstrings.
+#
+# This only has an effect when the `docstring-code-format` setting is
+# enabled.
+docstring-code-line-length = "dynamic"
+
+
+[tool.ruff.lint]
+# Add the `line-too-long` rule to the enforced rule set. By default, Ruff omits rules that
+# overlap with the use of a formatter, like Black, but we can override this behavior by
+# explicitly adding the rule.
+# extend-select = ["E501"]
+# select = [
+#    # pycodestyle
+#    "E",
+#    # Pyflakes
+#    "F",
+#    # pyupgrade
+#    # "UP",
+#    # flake8-bugbear
+#    "B",
+#    # flake8-simplify
+#    "SIM",
+#    # isort
+#    "I",
+#]
+select = [ "ALL" ]
+extend-ignore = [
+    "D403",
+    "D415",
+    "D400",
+    "FBT002",
+    "FBT001",
+    "PTH123", # `open()` should be replaced by `Path.open()`
+    "ISC001",
+    "COM812", # Missing trailing comma in a dictionary or set literal
+    "D211",
+    "D213",
+    "D203",
+    "D401",
+    "ERA001",
+    "S101",
+    "I001",
+    "TRY003",
+    "EM102",
+]
+
+exclude = [
+    ".eggs",
+    ".git",
+    ".mypy_cache",
+    ".pyenv",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages"
+]
+
+[tool.ruff.lint.pyupgrade]
+# Preserve types, even if a file imports `from __future__ import annotations`.
+keep-runtime-typing = true
