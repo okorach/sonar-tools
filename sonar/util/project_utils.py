@@ -17,9 +17,11 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""Project utility functions"""
+
+""" Project utility functions """
 
 import math
+from sonar import logging as log
 
 
 def split_loc_filter(loc_filter: str) -> tuple[str, str]:
@@ -50,7 +52,8 @@ def split_loc_filter(loc_filter: str) -> tuple[str, str]:
                 pass
         else:
             new_filters.append(f)
-    loc_middle = int(math.exp((math.log2(loc_max) - math.log2(max(loc_min, 1))) / 2))
+    loc_middle = int(2 ** ((math.log2(loc_max) + math.log2(max(loc_min, 1))) / 2))
+    log.debug("LoC split: min=%d, middle=%d, max=%d", loc_min, loc_middle, loc_max)
     slice1 = __FILTER_AND.join(new_filters + [f"ncloc>={loc_min}", f"ncloc<={loc_middle}"])
     slice2 = __FILTER_AND.join(new_filters + [f"ncloc>{loc_middle}", f"ncloc<={loc_max}"])
     return slice1, slice2
