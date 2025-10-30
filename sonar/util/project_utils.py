@@ -18,7 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-""" Project utility functions """
+"""Project utility functions"""
 
 import math
 from sonar import logging as log
