@@ -263,7 +263,6 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> type
     """Exports permission templates as JSON"""
     log.info("Exporting permission templates")
     json_data = {pt.name: pt.to_json(export_settings) for pt in get_list(endpoint).values()}
-    log.info("PT RES = %s", utilities.json_dump(json_data))
     return list(dict(sorted(json_data.items())).values())
 
 
