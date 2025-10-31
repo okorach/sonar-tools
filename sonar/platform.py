@@ -468,10 +468,8 @@ class Platform(object):
     def export(self, export_settings: types.ConfigSettings, full: bool = False) -> types.ObjectJsonRepr:
         """Exports the global platform properties as JSON
 
-        :param full: Whether to also export properties that cannot be set, defaults to False
-        :type full: bool, optional
+        :param bool full: Optional, Whether to also export properties that cannot be set, defaults to False
         :return: dict of all properties with their values
-        :rtype: dict
         """
         log.info("Exporting platform global settings")
         json_data = {}
@@ -483,7 +481,7 @@ class Platform(object):
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
                 # What is reported as 3rd part are SonarQube Cloud internal settings
                 continue
-            setting_json = s.to_json(export_settings.get("INLINE_LISTS", True))
+            setting_json = s.to_json()
             if lang := s.language():
                 langs[lang] = langs.get(lang, [])
                 langs[lang].append(setting_json)
