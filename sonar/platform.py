@@ -475,24 +475,19 @@ class Platform(object):
         """
         log.info("Exporting platform global settings")
         json_data = {}
-        for s in self.__settings(include_not_set=export_settings.get("EXPORT_DEFAULTS", False)).values():
-            if s.is_internal():
-                continue
+        exp_defaults = export_settings.get("EXPORT_DEFAULTS", False)
+        to_export = [s for s in self.__settings(include_not_set=exp_defaults).values() if not s.is_internal() and s.is_global()]
+        for s in to_export:
             (categ, subcateg) = s.category()
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
                 # What is reported as 3rd part are SonarQube Cloud internal settings
                 continue
-            if not s.is_global():
-                continue
-            util.update_json(json_data, categ, subcateg, s.to_json(export_settings.get("INLINE_LISTS", True)))
-
-        hooks = {}
-        for wb in self.webhooks().values():
-            j = util.remove_nones(wb.to_json(full))
-            j.pop("name", None)
-            hooks[wb.name] = j
+            subcateg = subcateg or categ
+            json_data[subcateg] = json_data.get(subcateg, [])
+            json_data[subcateg].append(s.to_json(export_settings.get("INLINE_LISTS", True)))
+        hooks = [wh.to_json(full) for wh in self.webhooks().values()]
         if len(hooks) > 0:
-            json_data[settings.GENERAL_SETTINGS].update({"webhooks": hooks})
+            json_data["webhooks"] = hooks
         json_data["permissions"] = self.global_permissions().export(export_settings=export_settings)
         json_data["permissionTemplates"] = permission_templates.export(self, export_settings=export_settings)
         if not self.is_sonarcloud():
