@@ -521,14 +521,14 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     key_regexp = kwargs.get("key_list", ".*")
 
     app_list = {k: v for k, v in get_list(endpoint).items() if not key_regexp or re.match(key_regexp, k)}
-    apps_settings = {}
+    apps_export = {}
     for k, app in app_list.items():
         app_json = app.export(export_settings)
         if write_q:
             write_q.put(app_json)
-        apps_settings[k] = app_json
+        apps_export[k] = app_json
     write_q and write_q.put(util.WRITE_END)
-    return dict(sorted(app_json.items())).values()
+    return dict(sorted(apps_export.items())).values()
 
 
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[problem.Problem]:
