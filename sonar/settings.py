@@ -289,7 +289,7 @@ class Setting(sqobject.SqObject):
         if val is None:
             val = ""
         # log.debug("JSON of %s = %s", self, {self.key: val})
-        return {self.key: val}
+        return {"key": self.key, "value": val}
 
     def definition(self) -> Optional[dict[str, str]]:
         """Returns the setting global definition"""
