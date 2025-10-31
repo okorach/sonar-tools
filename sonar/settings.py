@@ -197,28 +197,24 @@ class Setting(sqobject.SqObject):
         o.reload(data)
         return o
 
-    def __reload_inheritance(self, data: types.ApiPayload) -> bool:
+    def __reload_inheritance(self, data: Optional[types.ApiPayload]) -> bool:
         """Verifies if a setting is inherited from the data returned by SQ"""
-        if "inherited" in data:
-            self.inherited = data["inherited"]
-        elif self.key == NEW_CODE_PERIOD:
-            self.inherited = False
-        elif "parentValues" in data or "parentValue" in data or "parentFieldValues" in data:
-            self.inherited = False
-        elif "category" in data:
+        data = data or self.sq_json
+        self.inherited = None
+        for key, parent_key in (("values", "parentValues"), ("value", "parentValue")):
+            if key in data and parent_key in data and data[key] == data[parent_key]:
+                self.inherited = True
+        if self.value is None:
             self.inherited = True
-        elif self.component is not None:
-            self.inherited = False
-        else:
-            self.inherited = True
-        if self.component is None:
-            self.inherited = True
+        if self.inherited is None:
+            self.inherited = data.get("inherited", False)
         return self.inherited
 
     def reload(self, data: types.ApiPayload) -> None:
         """Reloads a Setting with JSON returned from Sonar API"""
         if not data:
             return
+        super().reload(data)
         self.multi_valued = data.get("multiValues", False)
         if self.key == NEW_CODE_PERIOD:
             self.value = new_code_to_string(data)
@@ -301,7 +297,7 @@ class Setting(sqobject.SqObject):
         val = self.value
         if self.key == NEW_CODE_PERIOD:
             val = new_code_to_string(self.value)
-        return {"key": self.key, "value": val}
+        return {"key": self.key, "value": val, "isDefault": self.inherited}
 
     def definition(self) -> Optional[dict[str, str]]:
         """Returns the setting global definition"""
@@ -322,10 +318,8 @@ class Setting(sqobject.SqObject):
         internal_settings = _SQ_INTERNAL_SETTINGS
         if self.endpoint.is_sonarcloud():
             internal_settings = _SC_INTERNAL_SETTINGS
-            if self.is_global():
-                (categ, _) = self.category()
-                if categ in ("languages", "analysisScope", "tests", "authentication"):
-                    return True
+            if self.is_global() and self.category() in (LANGUAGES_SETTINGS, ANALYSIS_SCOPE_SETTINGS, TEST_SETTINGS, AUTH_SETTINGS):
+                return True
 
         return any(self.key.startswith(prefix) for prefix in internal_settings)
 
