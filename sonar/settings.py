@@ -56,6 +56,24 @@ CATEGORIES = (
     THIRD_PARTY_SETTINGS,
 )
 
+LANGUAGE_SETTING_PATTERN = r"^sonar\.(cpd\.)?(abap|androidLint|ansible|apex|azureresourcemanager|cloudformation|c|cpp|cfamily|\
+cobol|cs|css|dart|docker|eslint|flex|go|html|java|javascript|jcl|json|jsp|kotlin|objc|php|pli|\
+plsql|python|ipynb|rpg|ruby|scala|swift|terraform|text|tsql|typescript|vb|vbnet|xml|yaml|rust|jasmin)\."
+
+CATEGORY_MAP = {
+    r"^sonar\.(cpd\.)?(abap|androidLint|ansible|apex|azureresourcemanager|cloudformation|c|cpp|cfamily|cobol|cs|css|dart|docker|"
+    r"eslint|flex|go|html|java|javascript|jcl|json|jsp|kotlin|objc|php|pli|plsql|python|ipynb|rpg|ruby|scala|swift|"
+    r"terraform|text|tsql|typescript|vb|vbnet|xml|yaml|rust|jasmin)\.": LANGUAGES_SETTINGS,
+    r"^.*([lL]int|govet|flake8|checkstyle|pmd|spotbugs|findbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat).*$": LINTER_SETTINGS,
+    r"^sonar\.security\.config\..+$": SAST_CONFIG_SETTINGS,
+    r"^sonar\.sca\..+$": SCA_CONFIG_SETTINGS,
+    r"^.*\.(exclusions$|inclusions$|issue\..+)$": ANALYSIS_SCOPE_SETTINGS,
+    r"^.*(\.reports?Paths?$|unit\..*$|cov.*$)": TEST_SETTINGS,
+    r"^sonar\.forceAuthentication$": AUTH_SETTINGS,
+    r"^sonar\.dependencyCheck\..*$": THIRD_PARTY_SETTINGS,
+    r"^(sonar\.|email\.|provisioning\.git).*$": GENERAL_SETTINGS,
+}
+
 NEW_CODE_PERIOD = "newCodePeriod"
 COMPONENT_VISIBILITY = "visibility"
 PROJECT_DEFAULT_VISIBILITY = "projects.default.visibility"
@@ -327,51 +345,25 @@ class Setting(sqobject.SqObject):
             return False
         return not self.is_internal()
 
-    def category(self) -> tuple[str, str]:
-        """Returns the 2 levels classification of a setting"""
-        m = re.match(
-            r"^sonar\.(cpd\.)?(abap|androidLint|ansible|apex|azureresourcemanager|cloudformation|c|cpp|cfamily|cobol|cs|css|dart|docker|"
-            r"eslint|flex|go|html|java|javascript|jcl|json|jsp|kotlin|objc|php|pli|plsql|python|ipynb|rpg|ruby|scala|swift|"
-            r"terraform|text|tsql|typescript|vb|vbnet|xml|yaml|rust|jasmin)\.",
-            self.key,
-        )
-        if m:
-            lang = m.group(2)
-            if lang in ("c", "cpp", "objc", "cfamily"):
-                lang = "cfamily"
-            elif lang in ("androidLint"):
-                lang = "kotlin"
-            elif lang in ("eslint", "jasmin"):
-                lang = "javascript"
-            return (LANGUAGES_SETTINGS, lang)
-        if re.match(
-            r"^.*([lL]int|govet|flake8|checkstyle|pmd|spotbugs|findbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat).*$",
-            self.key,
-        ):
-            return (LINTER_SETTINGS, None)
-        if re.match(r"^sonar\.security\.config\..+$", self.key):
-            return (SAST_CONFIG_SETTINGS, None)
-        if re.match(r"^sonar\.sca\..+$", self.key):
-            return (SCA_CONFIG_SETTINGS, None)
-        if re.match(r"^.*\.(exclusions$|inclusions$|issue\..+)$", self.key):
-            return (ANALYSIS_SCOPE_SETTINGS, None)
+    def category(self) -> str:
+        """Returns the setting category"""
+        for k, v in CATEGORY_MAP.items():
+            if re.match(k, self.key):
+                return v
+        if self.key in (NEW_CODE_PERIOD, PROJECT_DEFAULT_VISIBILITY, MQR_ENABLED, COMPONENT_VISIBILITY):
+            return GENERAL_SETTINGS
+        return THIRD_PARTY_SETTINGS
 
-        if re.match(r"^.*(\.reports?Paths?$|unit\..*$|cov.*$)", self.key):
-            return (TEST_SETTINGS, None)
-        m = re.match(r"^sonar\.(auth\.|authenticator\.downcase).*$", self.key)
-        if m:
-            return (AUTH_SETTINGS, None)
-        m = re.match(r"^sonar\.forceAuthentication$", self.key)
-        if m:
-            return (AUTH_SETTINGS, None)
-        if re.match(r"^sonar\.dependencyCheck\..*$", self.key):
-            return ("thirdParty", None)
-        if self.key in (NEW_CODE_PERIOD, PROJECT_DEFAULT_VISIBILITY, MQR_ENABLED, COMPONENT_VISIBILITY) or re.match(
-            r"^(sonar\.|email\.|provisioning\.git).*$",
-            self.key,
-        ):
-            return (GENERAL_SETTINGS, None)
-        return ("thirdParty", None)
+    def language(self) -> Optional[str]:
+        """Returns the setting language or None"""
+        if m := re.match(LANGUAGE_SETTING_PATTERN, self.key):
+            lang = m.group(2)
+            lang_map = {("c", "cpp", "objc", "cfamily"): "cfamily", ("androidLint",): "kotlin", ("eslint", "jasmin"): "javascript"}
+            for k, v in lang_map.items():
+                if lang in k:
+                    lang = v
+            return lang
+        return None
 
 
 def get_object(endpoint: pf.Platform, key: str, component: Optional[object] = None) -> Setting:
