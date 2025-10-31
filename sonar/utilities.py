@@ -411,23 +411,6 @@ def convert_string(value: str) -> Union[str, int, float, bool]:
     return value
 
 
-def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: Any) -> dict[str, str]:
-    """Updates a 2 levels JSON"""
-    if categ not in json_data:
-        if subcateg is None:
-            json_data[categ] = value
-        else:
-            json_data[categ] = {subcateg: value}
-    elif subcateg is not None:
-        if subcateg in json_data[categ]:
-            json_data[categ][subcateg].update(value)
-        else:
-            json_data[categ][subcateg] = value
-    else:
-        json_data[categ].update(value)
-    return json_data
-
-
 def nbr_pages(sonar_api_json: dict[str, str], api_version: int = 1) -> int:
     """Returns nbr of pages of a paginated Sonar API call"""
     paging = "page" if api_version == 2 else "paging"
