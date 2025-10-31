@@ -417,7 +417,7 @@ class Platform(object):
             settings_dict[ai_code_fix.key] = ai_code_fix
         return settings_dict
 
-    def get_setting(self, key: str) -> any:
+    def get_setting(self, key: str) -> Any:
         """Returns a platform global setting value from its key
 
         :param key: Setting key
@@ -465,7 +465,7 @@ class Platform(object):
         """
         return webhooks.get_list(self)
 
-    def export(self, export_settings: types.ConfigSettings, full: bool = False) -> types.ObjectJsonRepr:
+    def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports the global platform properties as JSON
 
         :param bool full: Optional, Whether to also export properties that cannot be set, defaults to False
@@ -473,8 +473,10 @@ class Platform(object):
         """
         log.info("Exporting platform global settings")
         json_data = {}
-        exp_defaults = export_settings.get("EXPORT_DEFAULTS", False)
-        to_export = [s for s in self.__settings(include_not_set=exp_defaults).values() if not s.is_internal() and s.is_global()]
+        full = export_settings.get("EXPORT_DEFAULTS", False)
+        to_export = [s for s in self.__settings(include_not_set=full).values() if not s.is_internal() and s.is_global()]
+        if not full:
+            to_export = [s for s in to_export if not s.inherited]
         langs = {}
         for s in to_export:
             categ = s.category()
@@ -482,6 +484,8 @@ class Platform(object):
                 # What is reported as 3rd part are SonarQube Cloud internal settings
                 continue
             setting_json = s.to_json()
+            if not full:
+                setting_json.pop("isDefault", None)
             if lang := s.language():
                 langs[lang] = langs.get(lang, [])
                 langs[lang].append(setting_json)
