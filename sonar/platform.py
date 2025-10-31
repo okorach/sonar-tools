@@ -479,14 +479,14 @@ class Platform(object):
         to_export = [s for s in self.__settings(include_not_set=exp_defaults).values() if not s.is_internal() and s.is_global()]
         langs = {}
         for s in to_export:
-            (categ, subcateg) = s.category()
+            categ = s.category()
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
                 # What is reported as 3rd part are SonarQube Cloud internal settings
                 continue
             setting_json = s.to_json(export_settings.get("INLINE_LISTS", True))
-            if subcateg:
-                langs[subcateg] = json_data.get(categ, [])
-                langs[subcateg].append(setting_json)
+            if lang := s.language():
+                langs[lang] = langs.get(lang, [])
+                langs[lang].append(setting_json)
             else:
                 json_data[categ] = json_data.get(categ, [])
                 json_data[categ].append(setting_json)
