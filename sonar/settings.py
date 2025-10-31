@@ -226,8 +226,8 @@ class Setting(sqobject.SqObject):
             self.value = data.get("mode", "MQR") != "STANDARD_EXPERIENCE"
         elif self.key == COMPONENT_VISIBILITY:
             self.value = data.get("visibility", None)
-        elif self.key == "sonar.login.message":
-            self.value: Optional[Any] = None
+        elif self.key in ("sonar.login.message", "sonar.announcement.message"):
+            self.value = None
             if "values" in data and isinstance(data["values"], list) and len(data["values"]) > 0:
                 self.value = data["values"][0]
         else:
@@ -297,18 +297,10 @@ class Setting(sqobject.SqObject):
         else:
             return ok
 
-    def to_json(self, list_as_csv: bool = True) -> types.ObjectJsonRepr:
+    def to_json(self) -> types.ObjectJsonRepr:
         val = self.value
         if self.key == NEW_CODE_PERIOD:
             val = new_code_to_string(self.value)
-        elif list_as_csv and isinstance(self.value, list):
-            for reg in _INLINE_SETTINGS:
-                if re.match(reg, self.key):
-                    val = util.list_to_csv(val, separator=", ", check_for_separator=True)
-                    break
-        if val is None:
-            val = ""
-        # log.debug("JSON of %s = %s", self, {self.key: val})
         return {"key": self.key, "value": val}
 
     def definition(self) -> Optional[dict[str, str]]:
