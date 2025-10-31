@@ -400,7 +400,7 @@ class QualityProfile(sq.SqObject):
                 if self.rule_has_custom_severities(rule.key):
                     data["impacts"] = self.rule_impacts(rule.key, substitute_with_default=True)
                 json_data["rules"].append({"key": rule.key, **data})
-        json_data["permissions"] = self.permissions().export(export_settings)
+        json_data["permissions"] = self.permissions().export()
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
     def compare(self, another_qp: QualityProfile) -> dict[str, str]:

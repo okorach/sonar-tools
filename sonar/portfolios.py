@@ -373,7 +373,7 @@ class Portfolio(aggregations.Aggregation):
         subportfolios = self.sub_portfolios()
         if not self.is_sub_portfolio():
             json_data["visibility"] = self._visibility
-            json_data["permissions"] = self.permissions().export(export_settings=export_settings)
+            json_data["permissions"] = self.permissions().export()
         json_data["tags"] = self._tags
         if subportfolios:
             json_data["portfolios"] = [s.to_json(export_settings) for s in subportfolios.values()]

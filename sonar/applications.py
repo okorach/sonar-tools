@@ -340,7 +340,7 @@ class Application(aggr.Aggregation):
                 "visibility": self.visibility(),
                 # 'projects': self.projects(),
                 "branches": [br.export() for br in self.branches().values()],
-                "permissions": self.permissions().export(export_settings=export_settings),
+                "permissions": self.permissions().export(),
                 "tags": self.get_tags(),
             }
         )

@@ -164,7 +164,7 @@ class PermissionTemplate(sqobject.SqObject):
             "name": self.name,
             "description": self.description if self.description != "" else None,
             "pattern": self.project_key_pattern,
-            "permissions": self.permissions().export(export_settings=export_settings),
+            "permissions": self.permissions().export(),
         }
 
         defaults = []

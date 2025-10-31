@@ -95,15 +95,10 @@ class Permissions(ABC):
                 perms += [{p[:-1]: k, "permissions": encode(v)}]
         return perms if len(perms) > 0 else None
 
-    def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
+    def export(self) -> types.ObjectJsonRepr:
         """Exports permissions as JSON"""
-        inlined = export_settings.get("INLINE_LISTS", True)
-        perms = self.to_json(csv=inlined)
-        if not inlined:
-            perms = {k: v for k, v in perms.items() if len(v) > 0}
-        if not perms or len(perms) == 0:
-            return None
-        return perms
+        perms = {k: v for k, v in self.to_json().items() if len(v) > 0}
+        return None if len(perms) == 0 else perms
 
     @abstractmethod
     def read(self) -> Permissions:
