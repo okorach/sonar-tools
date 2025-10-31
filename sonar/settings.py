@@ -40,6 +40,7 @@ LINTER_SETTINGS = "linters"
 THIRD_PARTY_SETTINGS = "thirdParty"
 ANALYSIS_SCOPE_SETTINGS = "analysisScope"
 SAST_CONFIG_SETTINGS = "sastConfig"
+SCA_CONFIG_SETTINGS = "sca"
 TEST_SETTINGS = "tests"
 
 CATEGORIES = (
@@ -50,6 +51,7 @@ CATEGORIES = (
     TEST_SETTINGS,
     DEVOPS_INTEGRATION,
     SAST_CONFIG_SETTINGS,
+    SCA_CONFIG_SETTINGS,
     LINTER_SETTINGS,
     THIRD_PARTY_SETTINGS,
 )
@@ -349,6 +351,8 @@ class Setting(sqobject.SqObject):
             return (LINTER_SETTINGS, None)
         if re.match(r"^sonar\.security\.config\..+$", self.key):
             return (SAST_CONFIG_SETTINGS, None)
+        if re.match(r"^sonar\.sca\..+$", self.key):
+            return (SCA_CONFIG_SETTINGS, None)
         if re.match(r"^.*\.(exclusions$|inclusions$|issue\..+)$", self.key):
             return (ANALYSIS_SCOPE_SETTINGS, None)
 
