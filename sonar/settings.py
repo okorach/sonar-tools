@@ -230,6 +230,7 @@ class Setting(sqobject.SqObject):
             self.value = next((data[key] for key in ("fieldValues", "values", "value") if key in data), None)
             if not self.value and "defaultValue" in data:
                 self.value = util.DEFAULT
+        self.value = util.convert_string(self.value)
         self.__reload_inheritance(data)
 
     def refresh(self) -> None:
