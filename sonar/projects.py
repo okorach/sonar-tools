@@ -969,7 +969,7 @@ class Project(components.Component):
         # If there is only 1 branch with no specific config except being main, don't return anything
         if len(branch_data) == 0 or (len(branch_data) == 1 and "main" in branch_data and len(branch_data["main"]) <= 1):
             return None
-        return list(dict(sorted(branch_data.items())).values())
+        return util.sort_list_by_key(list(branch_data.values()), "name", "isMain")
 
     def migration_export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Produces the data that is exported for SQ to SC migration"""
@@ -1049,7 +1049,7 @@ class Project(components.Component):
                 pass
             if contains_ai:
                 json_data[_CONTAINS_AI_CODE] = contains_ai
-            json_data["settings"] = [s.to_json() for s in settings_list if (with_inherited or not s.inherited) and s.key != "visibility"]
+            json_data["settings"] = util.sort_list_by_key([s.to_json() for s in settings_list], "key")
             if not with_inherited:
                 [s.pop("isDefault", None) for s in json_data["settings"]]
 
