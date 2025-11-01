@@ -127,7 +127,7 @@ class Permissions(ABC):
         """
         if self.permissions is None:
             self.read()
-        return self.to_json(perm_type="users")
+        return self.permissions.get("users", {})
 
     def groups(self) -> types.JsonPermissions:
         """
@@ -135,7 +135,7 @@ class Permissions(ABC):
         """
         if self.permissions is None:
             self.read()
-        return self.to_json(perm_type="groups")
+        return self.permissions.get("groups", {})
 
     def added_permissions(self, other_perms: types.JsonPermissions) -> types.JsonPermissions:
         return diff(self.permissions, other_perms)
@@ -191,7 +191,7 @@ class Permissions(ABC):
         """Audits maximum number of user or groups with permissions"""
         problems = []
         o = self.concerned_object
-        data = self.to_json()
+        data = self.permissions
         for t in PERMISSION_TYPES:
             max_count = audit_settings.get(f"audit.permissions.max{t.capitalize()}", 5)
             count = len(data.get(t, {}))
@@ -203,7 +203,7 @@ class Permissions(ABC):
     def audit_sonar_users_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits that default user group has no sensitive permissions"""
         __SENSITIVE_PERMISSIONS = ["issueadmin", "scan", "securityhotspotadmin", "admin", "gateadmin", "profileadmin"]
-        groups = self.to_json(perm_type="groups")
+        groups = self.permissions.get("groups", {})
         if isinstance(groups, list):
             groups = {u: ["admin"] for u in groups}
         default_gr = self.endpoint.default_user_group()
@@ -213,7 +213,7 @@ class Permissions(ABC):
 
     def audit_anyone_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits that Anyone group has no permissions"""
-        groups = self.to_json(perm_type="groups")
+        groups = self.permissions.get("groups", {})
         if groups and any(gr_name == "Anyone" for gr_name in groups):
             return [Problem(get_rule(RuleId.PROJ_PERM_ANYONE), self.concerned_object, str(self.concerned_object))]
         return []
@@ -399,13 +399,43 @@ def white_list(perms: types.JsonPermissions, allowed_perms: list[str]) -> types.
 def black_list(perms: types.JsonPermissions, disallowed_perms: list[str]) -> types.JsonPermissions:
     """Returns permissions filtered after a black list of disallowed permissions"""
     resulting_perms = {}
-    for perm_type, sub_perms in perms.items():
+    for perm_type, sub_perms in list_to_dict(perms).items():
         resulting_perms[perm_type] = {}
         for user_or_group, original_perms in sub_perms.items():
             resulting_perms[perm_type][user_or_group] = [p for p in original_perms if p not in disallowed_perms]
-    return resulting_perms
+    return dict_to_list(resulting_perms)
 
 
 def convert_for_yaml(json_perms: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Converts permissions in a format that is more friendly for YAML"""
     return json_perms
+
+
+def fmt_perms(group_or_user: str, perms: list[str], type_of_perm: str) -> types.JsonPermissions:
+    """Helper to convert perms to dict"""
+    return {type_of_perm[:-1]: group_or_user, "permissions": perms}
+
+
+def group_perms(group: str, perms: list[str]) -> types.JsonPermissions:
+    """Helper to convert group perms to dict"""
+    return fmt_perms(group, perms, "groups")
+
+
+def user_perms(user: str, perms: list[str]) -> types.JsonPermissions:
+    """Helper to convert group perms to dict"""
+    return fmt_perms(user, perms, "users")
+
+
+def list_to_dict(perms: types.JsonPermissions) -> dict[str, dict[str, list[str]]]:
+    log.info("L2D = %s", utilities.json_dump(perms))
+    res = {"users": {p["user"]: p["permissions"] for p in perms if "user" in p}}
+    res |= {"groups": {p["group"]: p["permissions"] for p in perms if "group" in p}}
+    return res
+
+
+def dict_to_list(perms: dict[str, dict[str, list[str]]]) -> types.JsonPermissions:
+    res = []
+    for ptype in PERMISSION_TYPES:
+        for p in perms.get(ptype, {}):
+            res += [{ptype[:-1]: k, "permissions": v} for k, v in p]
+    return res
