@@ -503,7 +503,7 @@ class Platform(object):
 
         hooks = [wh.to_json(full) for wh in self.webhooks().values()]
         if len(hooks) > 0:
-            json_data["webhooks"] = hooks
+            json_data["webhooks"] = util.sort_list_by_key(hooks, "name")
         json_data["permissions"] = self.global_permissions().export()
         json_data["permissionTemplates"] = permission_templates.export(self, export_settings=export_settings)
         if not self.is_sonarcloud():
