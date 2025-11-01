@@ -51,7 +51,7 @@ class ProjectPermissions(permissions.Permissions):
         """Reads permissions in SonarQube"""
         self.permissions = permissions.NO_PERMISSIONS.copy()
         for p in permissions.PERMISSION_TYPES:
-            self.permissions += self._get_api(
+            self.permissions[p] = self._get_api(
                 ProjectPermissions.APIS["get"][p],
                 p,
                 ProjectPermissions.API_GET_FIELD[p],
