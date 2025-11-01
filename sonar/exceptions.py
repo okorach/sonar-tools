@@ -75,11 +75,3 @@ class ConnectionError(SonarException):
 
     def __init__(self, message: str) -> None:
         super().__init__(message, errcodes.CONNECTION_ERROR)
-
-
-class TooManyResults(SonarException):
-    """When a call to APIs returns too many results."""
-
-    def __init__(self, nbr_results: int, message: str) -> None:
-        super().__init__(message, errcodes.TOO_MANY_RESULTS)
-        self.nbr_results = nbr_results
