@@ -35,6 +35,7 @@ from typing import Optional, Union
 from http import HTTPStatus
 from threading import Lock
 from requests import HTTPError, RequestException
+import traceback
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -1032,11 +1033,14 @@ class Project(components.Component):
                 json_data.update(self.migration_export(export_settings))
 
             with_inherited = export_settings.get("FULL_EXPORT", False)
+            log.info("EXP1")
             settings_list = settings.get_bulk(
                 endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=with_inherited
             ).values()
+            log.info("EXP2")
             settings_list = [s for s in settings_list if not s.is_global()]
             settings_list = [s for s in settings_list if s.key not in ("visibility", settings.NEW_CODE_PERIOD)]
+            log.info("EXP3")
             if not with_inherited:
                 settings_list = [s for s in settings_list if not s.inherited]
 
@@ -1049,11 +1053,15 @@ class Project(components.Component):
                 pass
             if contains_ai:
                 json_data[_CONTAINS_AI_CODE] = contains_ai
+            log.info("EXP3.2")
             json_data["settings"] = util.sort_list_by_key([s.to_json() for s in settings_list], "key")
+            log.info("EXP4")
             if not with_inherited:
                 _ = [s.pop("isDefault", None) for s in json_data["settings"]]
+            return json_data
 
         except Exception as e:
+            traceback.print_exc()
             util.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
             json_data["error"] = f"{util.error_msg(e)} while exporting project"
         log.debug("Exporting %s done, returning %s", str(self), util.json_dump(json_data))

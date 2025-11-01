@@ -291,15 +291,13 @@ def list_to_regexp(str_list: list[str]) -> str:
     return "(" + "|".join(str_list) + ")" if len(str_list) > 0 else ""
 
 
-def list_to_csv(
-    array: Union[None, str, int, float, list[str], set[str], tuple[str]], separator: str = ",", check_for_separator: bool = False
-) -> Optional[str]:
+def list_to_csv(array: Union[None, str, int, float, list[str], set[str], tuple[str]], separator: str = ",", check_for_separator: bool = False) -> Any:
     """Converts a list of strings to CSV"""
     if isinstance(array, str):
         return csv_normalize(array, separator) if " " in array else array
     if array is None:
         return None
-    if isinstance(array, (list, set, tuple)):
+    if isinstance(array, (list, set, tuple)) and all(isinstance(e, str) for e in array):
         if check_for_separator:
             # Don't convert to string if one array item contains the string separator
             s = separator.strip()
@@ -307,7 +305,7 @@ def list_to_csv(
                 if s in item:
                     return array
         return separator.join([v.strip() for v in array])
-    return str(array)
+    return array
 
 
 def csv_normalize(string: str, separator: str = ",") -> str:
