@@ -387,7 +387,7 @@ class QualityGate(sq.SqObject):
             if not full:
                 json_data.pop("isBuiltIn", None)
             json_data["conditions"] = self.conditions(encoded=True)
-            json_data["permissions"] = self.permissions().export(export_settings=export_settings)
+            json_data["permissions"] = self.permissions().export()
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
 

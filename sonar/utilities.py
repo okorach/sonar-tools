@@ -237,6 +237,16 @@ def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
     return data
 
 
+def sort_list_by_key(list_to_sort: list[dict[str, Any]], key: str, priority_field: Optional[str] = None) -> list[dict[str, Any]]:
+    """Sorts a lits of dicts by a given key, exception for the priority field that would go first"""
+    f_elem = None
+    if priority_field:
+        f_elem = next((elem for elem in list_to_sort if priority_field in elem), None)
+    tmp_dict = {elem[key]: elem for elem in list_to_sort if elem != f_elem}
+    first_elem = [f_elem] if f_elem else []
+    return first_elem + list(dict(sorted(tmp_dict.items())).values())
+
+
 def dict_subset(d: dict[str, str], subset_list: list[str]) -> dict[str, str]:
     """Returns the subset of dict only with subset_list keys"""
     return {key: d[key] for key in subset_list if key in d}
@@ -411,23 +421,6 @@ def convert_string(value: str) -> Union[str, int, float, bool]:
     return value
 
 
-def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: Any) -> dict[str, str]:
-    """Updates a 2 levels JSON"""
-    if categ not in json_data:
-        if subcateg is None:
-            json_data[categ] = value
-        else:
-            json_data[categ] = {subcateg: value}
-    elif subcateg is not None:
-        if subcateg in json_data[categ]:
-            json_data[categ][subcateg].update(value)
-        else:
-            json_data[categ][subcateg] = value
-    else:
-        json_data[categ].update(value)
-    return json_data
-
-
 def nbr_pages(sonar_api_json: dict[str, str], api_version: int = 1) -> int:
     """Returns nbr of pages of a paginated Sonar API call"""
     paging = "page" if api_version == 2 else "paging"
@@ -593,6 +586,12 @@ def order_dict(d: dict[str, Any], key_order: list[str]) -> dict[str, Any]:
     """Orders keys of a dictionary in a given order"""
     new_d = {k: d[k] for k in key_order if k in d}
     return new_d | {k: v for k, v in d.items() if k not in new_d}
+
+
+def order_list(l: list[str], *key_order) -> list[str]:
+    """Orders elements of a list in a given order"""
+    new_l = [k for k in key_order if k in l]
+    return new_l + [k for k in l if k not in new_l]
 
 
 def replace_keys(key_list: list[str], new_key: str, data: dict[str, any]) -> dict[str, any]:

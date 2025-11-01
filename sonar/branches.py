@@ -229,19 +229,16 @@ class Branch(components.Component):
         :rtype: str
         """
         log.debug("Exporting %s", str(self))
-        data = {settings.NEW_CODE_PERIOD: self.new_code()}
+        data = {"name": self.name, "project": self.concerned_object.key}
         if self.is_main():
             data["isMain"] = True
         if self.is_kept_when_inactive() and not self.is_main():
             data["keepWhenInactive"] = True
         if self.new_code():
             data[settings.NEW_CODE_PERIOD] = self.new_code()
-        if export_settings.get("FULL_EXPORT", True):
-            data.update({"name": self.name, "project": self.concerned_object.key})
         if export_settings.get("MODE", "") == "MIGRATION":
             data.update(self.migration_export(export_settings))
-        data = util.remove_nones(data)
-        return None if len(data) == 0 else data
+        return util.remove_nones(data)
 
     def set_keep_when_inactive(self, keep: bool) -> bool:
         """Sets whether the branch is kept when inactive

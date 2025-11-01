@@ -40,4 +40,6 @@ ObjectDict = Optional[dict[str, object]]
 
 CliParams = Optional[dict[str, Union[str, int, float, list[str]]]]
 
-JsonPermissions = dict[str, dict[str, list[str]]]
+PermissionItem = dict[str, Union[str, list[str]]]
+
+JsonPermissions = list[PermissionItem]
