@@ -1013,7 +1013,7 @@ class Project(components.Component):
             if self.endpoint.version() >= (10, 7, 0):
                 json_data["aiCodeFix"] = self.ai_code_fix()
             json_data["branches"] = self.__get_branch_export(export_settings)
-            [b.pop("project") for b in json_data["branches"]]
+            _ = [b.pop("project") for b in json_data["branches"]]
             json_data["tags"] = self.get_tags()
             json_data["visibility"] = self.visibility()
             (json_data["qualityGate"], qg_is_default) = self.quality_gate()
@@ -1051,7 +1051,7 @@ class Project(components.Component):
                 json_data[_CONTAINS_AI_CODE] = contains_ai
             json_data["settings"] = util.sort_list_by_key([s.to_json() for s in settings_list], "key")
             if not with_inherited:
-                [s.pop("isDefault", None) for s in json_data["settings"]]
+                _ = [s.pop("isDefault", None) for s in json_data["settings"]]
 
         except Exception as e:
             util.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
