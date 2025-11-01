@@ -189,7 +189,12 @@ class Platform(object):
         if self.is_sonarcloud():
             return {**data, "organization": self.organization}
 
-        return {**data, "version": util.version_to_string(self.version()[:3]), "serverId": self.server_id(), "plugins": self.plugins()}
+        return {
+            **data,
+            "version": util.version_to_string(self.version()[:3]),
+            "serverId": self.server_id(),
+            "plugins": util.sort_list_by_key(self.plugins(), "key"),
+        }
 
     def default_user_group(self) -> str:
         """
