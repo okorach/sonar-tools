@@ -39,9 +39,9 @@ class TemplatePermissions(project_permissions.ProjectPermissions):
 
     def read(self) -> TemplatePermissions:
         """Reads permissions of a permission template"""
-        self.permissions = permissions.NO_PERMISSIONS
+        self.permissions = permissions.NO_PERMISSIONS.copy()
         for p in permissions.PERMISSION_TYPES:
-            self.permissions[p] = self._get_api(
+            self.permissions += self._get_api(
                 TemplatePermissions.API_GET[p],
                 p,
                 TemplatePermissions.API_GET_FIELD[p],

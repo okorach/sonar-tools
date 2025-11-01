@@ -63,7 +63,7 @@ _PORTFOLIOS = 6
 
 OBJECTS_WITH_PERMISSIONS = (_GLOBAL, _PROJECTS, _TEMPLATES, _QG, _QP, _APPS, _PORTFOLIOS)
 PERMISSION_TYPES = ("groups", "users")
-NO_PERMISSIONS = {"groups": None, "users": None}
+NO_PERMISSIONS = []
 
 MAX_PERMS = 100
 
@@ -84,15 +84,8 @@ class Permissions(ABC):
 
     def to_json(self, perm_type: Optional[str] = None) -> types.JsonPermissions:
         """Converts a permission object to JSON"""
-        perms = []
         order = PROJECT_PERMISSIONS if self.concerned_object else ENTERPRISE_GLOBAL_PERMISSIONS
-        for p in normalize(perm_type):
-            if p not in self.permissions or len(self.permissions[p]) == 0:
-                continue
-            for k, v in self.permissions.get(p, {}).items():
-                if not v or len(v) == 0:
-                    continue
-                perms += [{p[:-1]: k, "permissions": encode(v, order)}]
+        perms += [{"permissions": encode(p["permissions"], order), **p} for p in self.permissions]
         if perm_type:
             perms = [p for p in perms if perm_type[:-1] in p.keys()]
         return perms if len(perms) > 0 else None
@@ -115,20 +108,6 @@ class Permissions(ABC):
 
         :param JsonPermissions new_perms: The permissions to set
         """
-
-    def set_user_permissions(self, user_perms: dict[str, list[str]]) -> Permissions:
-        """Sets user permissions of an object
-
-        :param dict[str, list[str]] user_perms: The user permissions to apply
-        """
-        return self.set({"users": user_perms})
-
-    def set_group_permissions(self, group_perms: dict[str, list[str]]) -> Permissions:
-        """Sets user permissions of an object
-
-        :param dict[str, list[str]] group_perms: The group permissions to apply
-        """
-        return self.set({"groups": group_perms})
 
     def clear(self) -> Permissions:
         """Clears all permissions of an object
@@ -279,7 +258,7 @@ class Permissions(ABC):
         return perm_counter
 
     def _get_api(self, api: str, perm_type: str, ret_field: str, **extra_params) -> types.JsonPermissions:
-        perms = {}
+        perms = []
         params = extra_params.copy()
         page, nbr_pages = 1, 1
         counter = 0
@@ -291,7 +270,7 @@ class Permissions(ABC):
                 # perms.update({p[ret_field]: p["permissions"] for p in data[perm_type]})
                 for p in data[perm_type]:
                     if len(p["permissions"]) > 0:
-                        perms[p[ret_field]] = p["permissions"]
+                        perms.append({perm_type[:-1]: p[ret_field], "permssions": p["permissions"]})
                         counter = 0
                     else:
                         counter += 1
@@ -403,8 +382,9 @@ def diffarray(perms_1: list[str], perms_2: list[str]) -> list[str]:
 def white_list(perms: types.JsonPermissions, allowed_perms: list[str]) -> types.JsonPermissions:
     """Returns permissions filtered from a white list of allowed permissions"""
     resulting_perms = []
-    for perm in perms:
+    for perm in perms.items():
         k = "users" if "users" in perm else "groups"
+        log.info("PERM = %s", str(perm))
         v = [p for p in perm["permissions"] if p in allowed_perms]
         resulting_perms.append({k: perm[k], "permissions": v})
     return resulting_perms

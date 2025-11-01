@@ -55,14 +55,11 @@ class QualityPermissions(permissions.Permissions):
         """Returns the JSON representation of permissions"""
         if not self.permissions:
             return None
-        if not csv:
-            return self.permissions[perm_type] if permissions.is_valid(perm_type) and perm_type in self.permissions else self.permissions
-        perms = {}
-        for p in permissions.normalize(perm_type):
-            dperms = self.permissions.get(p, None)
-            if dperms is not None and len(dperms) > 0:
-                perms[p] = permissions.encode(self.permissions.get(p, None), permissions.ENTERPRISE_GLOBAL_PERMISSIONS)
-
+        perms = self.permissions.copy()
+        if perm_type:
+            perms = [p for p in self.permissions if perm_type[:1] in p]
+        if csv:
+            perms = [{"permissions": permissions.encode(p["permissions"], permissions.ENTERPRISE_GLOBAL_PERMISSIONS), **p} for p in perms]
         return perms if len(perms) > 0 else None
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
@@ -112,10 +109,10 @@ class QualityPermissions(permissions.Permissions):
 
     def _read_perms(self, apis: dict[str, dict[str, str]], field: str, **kwargs) -> types.ObjectJsonRepr:
         """Reads permissions of a QP or QG"""
-        self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
+        self.permissions = permissions.NO_PERMISSIONS.copy()
         if self.concerned_object.is_built_in:
             log.debug("No permissions for %s because it's built-in", str(self))
         else:
             for p in permissions.PERMISSION_TYPES:
-                self.permissions[p] = self._get_api(apis["get"][p], p, field[p], **kwargs)
+                self.permissions += self._get_api(apis["get"][p], p, field[p], **kwargs)
         return self.permissions
