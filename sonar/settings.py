@@ -56,6 +56,37 @@ CATEGORIES = (
     THIRD_PARTY_SETTINGS,
 )
 
+GLOBAL_SETTINGS = (
+    r"sonar\.auth\..+",
+    r"sonar\.announcement\..+",
+    r"sonar\.login\..+",
+    r"provisioning\..+",
+    r"sonar\.earlyAccess\..+",
+    r"sonar\.dbCleaner\..+",
+    r"sonar\.governance\..+",
+    r"sonar\.sca\..+",
+    r"sonar\.ai\.codefix\.hidden",
+    r"sonar\.allowPermissionManagementForProjectAdmin",
+    r"sonar\.authenticator\.downcase",
+    r"sonar\.builtInQualityProfiles\.disableNotificationOnUpdate",
+    r"sonar\.filesize\.limit",
+    r"sonar\.enforceAzureOpenAiDomainValidation",
+    r"sonar\.forceAuthentication",
+    r"sonar\.global\.exclusions",
+    r"sonar\.governance\.report\.project\.branch\.frequency",
+    r"sonar\.issues\.sandbox\..*",
+    r"sonar\.jreAutoProvisioning\.disabled",
+    r"sonar\.lf\..+",
+    r"sonar\.multi-quality-mode\.enabled",
+    r"sonar\.notifications\..+",
+    r"sonar\.pdf\..+",
+    r"sonar\.qualityProfiles\.allowDisableInheritedRules",
+    r"sonar\.scanner\..+",
+    r"sonar\.technicalDebt\..*",
+    r"sonar\.validateWebhooks",
+    r"sonar\.dependencyCheck\..*",
+)
+
 LANGUAGE_SETTING_PATTERN = r"^sonar\.(cpd\.)?(abap|androidLint|ansible|apex|azureresourcemanager|cloudformation|c|cpp|cfamily|\
 cobol|cs|css|dart|docker|eslint|flex|go|html|java|javascript|jcl|json|jsp|kotlin|objc|php|pli|\
 plsql|python|ipynb|rpg|ruby|scala|swift|terraform|text|tsql|typescript|vb|vbnet|xml|yaml|rust|jasmin)\."
@@ -84,37 +115,43 @@ TOKEN_MAX_LIFETIME = "sonar.auth.token.max.allowed.lifetime"
 _GLOBAL_SETTINGS_WITHOUT_DEF = (AI_CODE_FIX, MQR_ENABLED)
 
 _SQ_INTERNAL_SETTINGS = (
-    "sonaranalyzer",
-    "sonar.updatecenter",
-    "sonar.plugins.risk.consent",
-    "sonar.core.id",
-    "sonar.core.startTime",
-    "sonar.plsql.jdbc.driver.class",
+    r"sonar\.projectCreation\.mainBranchName",
+    r"sonaranalyzer.*",
+    r"sonar\.updatecenter\.*",
+    r"sonar\.plugins\.risk\.consent",
+    r"sonar\.core\..*",
+    r"sonar\.plsql\.jdbc\.driver\.class",
+    r"sonar\.ce\.parallelProjectTasks",
+    r"sonar\.cs\.analyzer\..+",
+    r"sonar\.cpd\.cobol\.minimum.+",
+    r"sonar\.documentation\.+",
 )
 
 _SC_INTERNAL_SETTINGS = (
-    "sonaranalyzer",
-    "sonar.updatecenter",
-    "sonar.plugins.risk.consent",
-    "sonar.core.id",
-    "sonar.core.startTime",
-    "sonar.plsql.jdbc.driver.class",
-    "sonar.dbcleaner",
-    "sonar.core.serverBaseURL",
-    "email.",
-    "sonar.builtIn",
-    "sonar.issues.defaultAssigneeLogin",
-    "sonar.filesize.limit",
-    "sonar.kubernetes.activate",
-    "sonar.lf",
-    "sonar.notifications",
-    "sonar.plugins.loadAll",
-    "sonar.qualityProfiles.allowDisableInheritedRules",
-    "sonar.scm.disabled",
-    "sonar.technicalDebt",
-    "sonar.issue.",
-    "sonar.global",
-    "sonar.forceAuthentication",
+    r"sonaranalyzer.*",
+    r"sonar\.updatecenter\.*",
+    r"sonar\.plugins\.risk\.consent",
+    r"sonar\.core\..*",
+    r"sonar\.plsql\.jdbc\.driver\.class",
+    r"sonar\.ce\.parallelProjectTasks",
+    r"sonar\.cs\.analyzer\..+",
+    r"sonar\.cpd\.cobol\.minimum.+",
+    r"sonar\.documentation\.+",
+    r"sonar\.dbcleaner\..+",
+    r"email\..+",
+    r"sonar\.builtIn.+",
+    r"sonar\.issues\.defaultAssigneeLogin",
+    r"sonar\.filesize\.limit",
+    r"sonar\.kubernetes\.activate",
+    r"sonar\.lf\..+",
+    r"sonar\.notifications",
+    r"sonar\.plugins\.loadAll",
+    r"sonar\.qualityProfiles\.allowDisableInheritedRules",
+    r"sonar\.scm\.disabled",
+    r"sonar\.technicalDebt\..+",
+    r"sonar\.issue\..+",
+    r"sonar\.global\..+",
+    r"sonar\.forceAuthentication",
 )
 
 _INLINE_SETTINGS = (
@@ -309,7 +346,7 @@ class Setting(sqobject.SqObject):
     def is_global(self) -> bool:
         """Returns whether a setting global or specific for one component (project, branch, application, portfolio)"""
         if self.component:
-            return False
+            return any(re.match(regexp, self.key) for regexp in GLOBAL_SETTINGS)
         if self._is_global is None:
             self._is_global = self.definition() is not None or self.key in _GLOBAL_SETTINGS_WITHOUT_DEF
         return self._is_global
@@ -322,7 +359,7 @@ class Setting(sqobject.SqObject):
             if self.is_global() and self.category() in (LANGUAGES_SETTINGS, ANALYSIS_SCOPE_SETTINGS, TEST_SETTINGS, AUTH_SETTINGS):
                 return True
 
-        return any(self.key.startswith(prefix) for prefix in internal_settings)
+        return any(re.match(regexp, self.key) for regexp in internal_settings)
 
     def is_settable(self) -> bool:
         """Returns whether a setting can be set"""
@@ -373,6 +410,8 @@ def __get_settings(endpoint: pf.Platform, data: types.ApiPayload, component: Opt
         log.debug("Looking at %s", setting_type)
         for s in data.get(setting_type, {}):
             (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
+            if component and any(re.match(regexp, key) for regexp in GLOBAL_SETTINGS):
+                continue
             o = Setting(endpoint=endpoint, key=key, component=component, data=None)
             if o.is_internal():
                 log.debug("Skipping internal setting %s", s["key"])
