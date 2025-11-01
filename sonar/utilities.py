@@ -172,6 +172,18 @@ def convert_to_type(value: Any) -> Any:
     return value
 
 
+def remove_nones(d: dict[str, any]) -> dict[str, any]:
+    """Removes elements of the dict that are None values"""
+    new_d = d.copy()
+    for k, v in d.items():
+        if v is None:
+            new_d.pop(k)
+            continue
+        if isinstance(v, dict):
+            new_d[k] = remove_nones(v)
+    return new_d
+
+
 def none_to_zero(d: dict[str, any], key_match: str = "^.+$") -> dict[str, any]:
     """Replaces None values in a dict with 0"""
     new_d = d.copy()
@@ -185,36 +197,21 @@ def none_to_zero(d: dict[str, any], key_match: str = "^.+$") -> dict[str, any]:
     return new_d
 
 
-def remove_nones(d: Any) -> Any:
-    """Removes elements of the data that are None values"""
-    return clean_data(d, remove_empty=False, remove_none=True)
-
-
-def clean_data(d: Any, remove_empty: bool = True, remove_none: bool = True) -> Any:
+def remove_empties(d: dict[str, any]) -> dict[str, any]:
     """Recursively removes empty lists and dicts and none from a dict"""
     # log.debug("Cleaning up %s", json_dump(d))
-    if not isinstance(d, (list, dict)):
-        return d
-
-    if isinstance(d, list):
-        # Remove empty strings and nones
-        if remove_empty:
-            d = [elem for elem in d if not (isinstance(elem, str) and elem == "")]
-        if remove_none:
-            d = [elem for elem in d if elem is not None]
-        return [clean_data(elem, remove_empty, remove_none) for elem in d]
-
-    # Remove empty dict string values
-    if remove_empty:
-        new_d = {k: v for k, v in d.items() if not isinstance(v, str) or v != ""}
-    if remove_none:
-        new_d = {k: v for k, v in d.items() if v is not None}
-
-    # Remove empty dict list or dict values
-    new_d = {k: v for k, v in new_d.items() if not isinstance(v, (list, dict)) or len(v) > 0}
-
-    # Recurse
-    return {k: clean_data(v, remove_empty, remove_none) for k, v in new_d.items()}
+    new_d = d.copy()
+    for k, v in d.items():
+        if isinstance(v, str) and v == "":
+            new_d.pop(k)
+            continue
+        if not isinstance(v, (list, dict)):
+            continue
+        if len(v) == 0:
+            new_d.pop(k)
+        elif isinstance(v, dict):
+            new_d[k] = remove_empties(v)
+    return new_d
 
 
 def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
@@ -581,18 +578,16 @@ def __prefix(value: Any) -> Any:
         return value
 
 
-def filter_export(json_data: dict[str, Any], key_properties: list[str], full: bool) -> dict[str, Any]:
+def filter_export(json_data: dict[str, any], key_properties: list[str], full: bool) -> dict[str, any]:
     """Filters dict for export removing or prefixing non-key properties"""
-    new_json_data = {k: json_data[k] for k in key_properties if k in json_data}
-    if full:
-        new_json_data |= {f"_{k}": __prefix(v) for k, v in json_data.items() if k not in key_properties}
+    new_json_data = json_data.copy()
+    for k in json_data:
+        if k not in key_properties:
+            if full and k != "actions":
+                new_json_data[f"_{k}"] = __prefix(new_json_data.pop(k))
+            else:
+                new_json_data.pop(k)
     return new_json_data
-
-
-def order_dict(d: dict[str, Any], key_order: list[str]) -> dict[str, Any]:
-    """Orders keys of a dictionary in a given order"""
-    new_d = {k: d[k] for k in key_order if k in d}
-    return new_d | {k: v for k, v in d.items() if k not in new_d}
 
 
 def replace_keys(key_list: list[str], new_key: str, data: dict[str, any]) -> dict[str, any]:

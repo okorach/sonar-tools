@@ -72,16 +72,13 @@ _IMPORTABLE_PROPERTIES = (
     "key",
     "name",
     "description",
-    "mode",
-    "projects",
-    "regexp",
-    "tags",
-    "applications",
-    "portfolios",
     "visibility",
     "permissions",
+    "projects",
     "projectsList",
+    "portfolios",
     "subPortfolios",
+    "applications",
 )
 
 
@@ -202,22 +199,20 @@ class Portfolio(aggregations.Aggregation):
         mode = self.sq_json.get(_API_SELECTION_MODE_FIELD, None)
         if mode is None:
             return
-        branch = self.sq_json.get("branch", None)
+        branch = self.sq_json.get("branch", c.DEFAULT_BRANCH)
         if mode == _SELECTION_MODE_MANUAL:
-            self._selection_mode = {"mode": _SELECTION_MODE_MANUAL, "projects": []}
+            self._selection_mode = {mode: {}}
             for projdata in self.sq_json.get("selectedProjects", {}):
-                if branch_list := projdata.get("selectedBranches", None):
-                    self._selection_mode["projects"].append({"key": projdata["projectKey"], "branches": list(set(branch_list))})
-                else:
-                    self._selection_mode["projects"].append({"key": projdata["projectKey"]})
+                branch_list = projdata.get("selectedBranches", [c.DEFAULT_BRANCH])
+                self._selection_mode[mode].update({projdata["projectKey"]: set(branch_list)})
         elif mode == _SELECTION_MODE_REGEXP:
-            self._selection_mode = util.clean_data({"mode": mode, "regexp": self.sq_json["regexp"], "branch": branch})
+            self._selection_mode = {mode: self.sq_json["regexp"], "branch": branch}
         elif mode == _SELECTION_MODE_TAGS:
-            self._selection_mode = util.clean_data({"mode": mode, "tags": self.sq_json["tags"], "branch": branch})
+            self._selection_mode = {mode: self.sq_json["tags"], "branch": branch}
         elif mode == _SELECTION_MODE_REST:
-            self._selection_mode = util.clean_data({"mode": mode, "branch": branch})
+            self._selection_mode = {mode: True, "branch": branch}
         else:
-            self._selection_mode = {"mode": mode}
+            self._selection_mode = {mode: True}
 
     def refresh(self) -> None:
         """Refreshes a portfolio data from the Sonar instance"""
@@ -376,18 +371,24 @@ class Portfolio(aggregations.Aggregation):
             json_data["permissions"] = self.permissions().export(export_settings=export_settings)
         json_data["tags"] = self._tags
         if subportfolios:
-            json_data["portfolios"] = [s.to_json(export_settings) for s in subportfolios.values()]
-        if mode := self.selection_mode():
-            json_data.update(mode)
-            json_data["mode"] = json_data["mode"].lower()
+            json_data["portfolios"] = {}
+            for s in subportfolios.values():
+                subp_json = s.to_json(export_settings)
+                subp_key = subp_json.pop("key")
+                json_data["portfolios"][subp_key] = subp_json
+        mode = self.selection_mode().copy()
+        if mode:
+            if "none" not in mode or export_settings.get("MODE", "") == "MIGRATION":
+                json_data["projects"] = mode
             if export_settings.get("MODE", "") == "MIGRATION":
                 json_data["projects"]["keys"] = self.get_project_list()
-        json_data["applications"] = [{"key": k, "branches": v} for k, v in self._applications.items()]
+        json_data["applications"] = self._applications
         return json_data
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports a portfolio (for sonar-config)"""
-        return util.clean_data(util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
+        log.info("Exporting %s", str(self))
+        return util.remove_nones(util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
 
     def permissions(self) -> pperms.PortfolioPermissions:
         """Returns a portfolio permissions (if toplevel) or None if sub-portfolio"""
@@ -781,24 +782,25 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     portfolio_list = {k: v for k, v in get_list(endpoint=endpoint).items() if not key_regexp or re.match(key_regexp, k)}
     nb_portfolios = len(portfolio_list)
     i = 0
-    exported_portfolios = []
-    for p in dict(sorted(portfolio_list.items())).values():
+    exported_portfolios = {}
+    for k, p in portfolio_list.items():
         try:
             if not p.is_sub_portfolio():
                 exp = p.export(export_settings)
                 if write_q:
                     write_q.put(exp)
                 else:
-                    exported_portfolios.append(exp)
+                    exp.pop("key")
+                    exported_portfolios[k] = exp
             else:
                 log.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
         except exceptions.SonarException:
-            pass
+            exported_portfolios[k] = {}
         i += 1
         if i % 10 == 0 or i == nb_portfolios:
             log.info("Exported %d/%d portfolios (%d%%)", i, nb_portfolios, (i * 100) // nb_portfolios)
     write_q and write_q.put(util.WRITE_END)
-    return exported_portfolios
+    return dict(sorted(exported_portfolios.items()))
 
 
 def recompute(endpoint: pf.Platform) -> None:
@@ -847,7 +849,19 @@ def get_api_branch(branch: str) -> str:
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    return original_json
+    new_json = util.dict_to_list(util.remove_nones(original_json), "key")
+    for p_json in new_json:
+        try:
+            p_json["projects"] = [{"key": k, "branch": br} for k, br in p_json["projects"]["manual"].items()]
+        except KeyError:
+            pass
+        if "portfolios" in p_json:
+            p_json["portfolios"] = convert_for_yaml(p_json["portfolios"])
+        if "applications" in p_json:
+            p_json["applications"] = [{"key": k, "branches": br} for k, br in p_json["applications"].items()]
+        if "permissions" in p_json:
+            p_json["permissions"] = perms.convert_for_yaml(p_json["permissions"])
+    return new_json
 
 
 def clear_cache(endpoint: pf.Platform) -> None:

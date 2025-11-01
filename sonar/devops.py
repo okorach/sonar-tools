@@ -239,8 +239,12 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings) -
     :meta private:
     """
     log.info("Exporting DevOps integration settings")
-    devops_list = {s.key: s.to_json(export_settings) for s in get_list(endpoint).values()}
-    return list(dict(sorted(devops_list.items())).values())
+    json_data = {}
+    for s in get_list(endpoint).values():
+        export_data = s.to_json(export_settings)
+        key = export_data.pop("key")
+        json_data[key] = export_data
+    return json_data
 
 
 def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> int:

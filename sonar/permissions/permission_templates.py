@@ -42,7 +42,7 @@ _SEARCH_API = "permissions/search_templates"
 _CREATE_API = "permissions/create_template"
 _UPDATE_API = "permissions/update_template"
 
-_IMPORTABLE_PROPERTIES = ("name", "pattern", "defaultFor", "description", "permissions")
+_IMPORTABLE_PROPERTIES = ("name", "description", "pattern", "permissions", "defaultFor")
 
 
 class PermissionTemplate(sqobject.SqObject):
@@ -159,13 +159,16 @@ class PermissionTemplate(sqobject.SqObject):
 
     def to_json(self, export_settings: types.ConfigSettings = None) -> types.ObjectJsonRepr:
         """Returns JSON representation of a permission template"""
-        json_data = self.sq_json.copy() | {
-            "key": self.key,
-            "name": self.name,
-            "description": self.description if self.description != "" else None,
-            "pattern": self.project_key_pattern,
-            "permissions": self.permissions().export(export_settings=export_settings),
-        }
+        json_data = self.sq_json.copy()
+        json_data.update(
+            {
+                "key": self.key,
+                "name": self.name,
+                "description": self.description if self.description != "" else None,
+                "pattern": self.project_key_pattern,
+                "permissions": self.permissions().export(export_settings=export_settings),
+            }
+        )
 
         defaults = []
         if self.is_projects_default():
@@ -262,9 +265,14 @@ def _load_default_templates(endpoint: pf.Platform, data: types.ApiPayload = None
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
     """Exports permission templates as JSON"""
     log.info("Exporting permission templates")
-    json_data = {pt.name: pt.to_json(export_settings) for pt in get_list(endpoint).values()}
-    log.info("PT RES = %s", utilities.json_dump(json_data))
-    return list(dict(sorted(json_data.items())).values())
+    pt_list = get_list(endpoint)
+    json_data = {}
+    for pt in pt_list.values():
+        json_data[pt.name] = pt.to_json(export_settings)
+        if not export_settings.get("FULL_EXPORT"):
+            for k in ("name", "id", "key"):
+                json_data[pt.name].pop(k, None)
+    return json_data
 
 
 def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> int:

@@ -139,8 +139,6 @@ CSV_EXPORT_FIELDS = [
 
 LEGACY_CSV_EXPORT_FIELDS = ["key", "language", "repo", "type", "severity", "name", "ruleType", "tags"]
 
-_IMPORTABLE_PROPERTIES = ["key", "severity", "impacts", "description", "params", "isTemplate", "templateKey", "tags", "mdNote", "language"]
-
 _CLASS_LOCK = Lock()
 
 
@@ -299,16 +297,18 @@ class Rule(sq.SqObject):
 
     def export(self, full: bool = False) -> types.ObjectJsonRepr:
         """Returns the JSON corresponding to a rule export"""
-        d = self.to_json()
-        d["key"] = self.key
-        d["impacts"] = self.impacts()
-        if len(d.get("params", {})) > 0:
-            d["params"] = d["params"] if full else [{"key": p["key"], "value": p.get("defaultValue", "")} for p in d["params"]]
-        mapping = {"lang": "language", "mdNote": "description"}
-        d |= {newkey: d[oldkey] for oldkey, newkey in mapping.items() if oldkey in d}
+        rule = self.to_json()
+        d = {"severity": rule.get("severity", ""), "impacts": self.impacts(), "description": self.custom_desc}
+        if len(rule.get("params", {})) > 0:
+            d["params"] = rule["params"] if full else {p["key"]: p.get("defaultValue", "") for p in rule["params"]}
+        mapping = {"isTemplate": "isTemplate", "tags": "tags", "lang": "language", "templateKey": "templateKey"}
+        d |= {newkey: rule[oldkey] for oldkey, newkey in mapping.items() if oldkey in rule}
         if not d["isTemplate"]:
             d.pop("isTemplate", None)
-        return utilities.filter_export(d, _IMPORTABLE_PROPERTIES, full)
+        if full:
+            d.update({f"_{k}": v for k, v in rule.items() if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "lang")})
+            d.pop("_key", None)
+        return utilities.remove_nones(d)
 
     def set_tags(self, tags: list[str]) -> bool:
         """Sets rule custom tags"""
@@ -348,19 +348,18 @@ class Rule(sq.SqObject):
             self.refresh()
             found_qp = next((qp for qp in self.sq_json.get("actives", []) if quality_profile_id and qp["qProfile"] == quality_profile_id), None)
         if not found_qp:
-            qp_impacts = self._impacts if len(self._impacts) > 0 else {TYPE_TO_QUALITY[self.type]: self.severity}
+            return self._impacts if len(self._impacts) > 0 else {TYPE_TO_QUALITY[self.type]: self.severity}
+        if self.endpoint.is_mqr_mode():
+            qp_impacts = {imp["softwareQuality"]: imp["severity"] for imp in found_qp["impacts"]}
+            default_impacts = self._impacts
         else:
-            if self.endpoint.is_mqr_mode():
-                qp_impacts = {imp["softwareQuality"]: imp["severity"] for imp in found_qp["impacts"]}
-                default_impacts = self._impacts
-            else:
-                qp_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
-                default_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
+            qp_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
+            default_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
 
-            if substitute_with_default:
-                qp_impacts = {k: c.DEFAULT if qp_impacts[k] == default_impacts.get(k, qp_impacts[k]) else v for k, v in qp_impacts.items()}
-
-        return {k.lower(): v for k, v in qp_impacts.items()}
+        if substitute_with_default:
+            return {k: c.DEFAULT if qp_impacts[k] == default_impacts.get(k, qp_impacts[k]) else v for k, v in qp_impacts.items()}
+        else:
+            return qp_impacts
 
     def __get_quality_profile_data(self, quality_profile_id: str) -> Optional[dict[str, str]]:
         if not quality_profile_id:
@@ -455,20 +454,22 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     threads = 16 if endpoint.is_sonarcloud() else 8
     get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", threads))
 
-    all_rules = get_list(endpoint=endpoint, use_cache=False, include_external=False).values()
+    all_rules = get_list(endpoint=endpoint, use_cache=False, include_external=False).items()
     rule_list = {}
-    rule_list["instantiated"] = [rule.export(full) for rule in all_rules if rule.is_instantiated()]
-    rule_list["extended"] = [rule.export(full) for rule in all_rules if rule.is_extended()]
+    rule_list["instantiated"] = {k: rule.export(full) for k, rule in all_rules if rule.is_instantiated()}
+    rule_list["extended"] = {k: rule.export(full) for k, rule in all_rules if rule.is_extended()}
     if not full:
-        rule_list["extended"] = [
-            utilities.clean_data({"key": v["key"], "tags": v.get("tags", None), "description": v.get("description", None)})
-            for v in rule_list["extended"]
-            if "tags" in v or "description" in v
-        ]
+        rule_list["extended"] = utilities.remove_nones(
+            {
+                k: {"tags": v.get("tags", None), "description": v.get("description", None)}
+                for k, v in rule_list["extended"].items()
+                if "tags" in v or "description" in v
+            }
+        )
     if full:
-        rule_list["standard"] = [rule.export(full) for rule in all_rules if not rule.is_instantiated() and not rule.is_extended()]
+        rule_list["standard"] = {k: rule.export(full) for k, rule in all_rules if not rule.is_instantiated() and not rule.is_extended()}
     if export_settings.get("MODE", "") == "MIGRATION":
-        rule_list["thirdParty"] = [r.export() for r in third_party(endpoint=endpoint)]
+        rule_list["thirdParty"] = {r.key: r.export() for r in third_party(endpoint=endpoint)}
 
     for k in ("instantiated", "extended", "standard", "thirdParty"):
         if len(rule_list.get(k, {})) == 0:

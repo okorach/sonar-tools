@@ -171,13 +171,10 @@ class ApplicationBranch(Component):
         :param full: Whether to do a full export including settings that can't be set, defaults to False
         :type full: bool, optional
         """
-        log.info("Exporting %s from %s", self, utilities.json_dump(self.sq_json))
-        jsondata = {"name": self.name}
+        log.info("Exporting %s from %s", self, self.sq_json)
+        jsondata = {"projects": {b["key"]: b["branch"] if b["selected"] else utilities.DEFAULT for b in self.sq_json["projects"]}}
         if self.is_main():
             jsondata["isMain"] = True
-        br_projects = [b for b in self.sq_json["projects"] if b.get("selected", True)]
-        br_projects = [{"key": b["key"], "branch": None if b["isMain"] else b["branch"]} for b in br_projects]
-        jsondata["projects"] = utilities.remove_nones(br_projects)
         return jsondata
 
     def update(self, name: str, project_branches: list[Branch]) -> bool:
