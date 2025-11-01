@@ -49,9 +49,9 @@ class GlobalPermissions(permissions.Permissions):
 
     def read(self) -> GlobalPermissions:
         """Reads global permissions"""
-        self.permissions = permissions.NO_PERMISSIONS.copy()
+        self.permissions = permissions.NO_PERMISSIONS
         for ptype in permissions.PERMISSION_TYPES:
-            self.permissions += self._get_api(
+            self.permissions[ptype] = self._get_api(
                 GlobalPermissions.API_GET[ptype], ptype, GlobalPermissions.API_GET_FIELD[ptype], ps=permissions.MAX_PERMS
             )
         return self
