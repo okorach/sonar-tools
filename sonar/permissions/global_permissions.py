@@ -93,3 +93,18 @@ def edition_filter(perms: types.JsonPermissions, ed: str) -> types.JsonPermissio
             log.warning("Can't manage permission '%s' on a %s edition", p, ed)
             perms.remove(p)
     return perms
+
+
+def fmt_perms(group_or_user: str, perms: list[str], type_of_perm: str) -> types.JsonPermissions:
+    """Helper to convert perms to dict"""
+    return {type_of_perm: group_or_user, "permissions": perms}
+
+
+def group_perms(group: str, perms: list[str]) -> types.JsonPermissions:
+    """Helper to convert group perms to dict"""
+    return fmt_perms(group, perms, "groups")
+
+
+def user_perms(user: str, perms: list[str]) -> types.JsonPermissions:
+    """Helper to convert group perms to dict"""
+    return fmt_perms(user, perms, "users")

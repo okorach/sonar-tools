@@ -189,7 +189,12 @@ class Platform(object):
         if self.is_sonarcloud():
             return {**data, "organization": self.organization}
 
-        return {**data, "version": util.version_to_string(self.version()[:3]), "serverId": self.server_id(), "plugins": self.plugins()}
+        return {
+            **data,
+            "version": util.version_to_string(self.version()[:3]),
+            "serverId": self.server_id(),
+            "plugins": util.sort_list_by_key(self.plugins(), "key"),
+        }
 
     def default_user_group(self) -> str:
         """
@@ -406,7 +411,9 @@ class Platform(object):
             settings_dict = {k: settings.get_object(endpoint=self, key=k) for k in settings_list}
         platform_settings = {}
         for v in settings_dict.values():
-            platform_settings |= v.to_json()
+            d = v.to_json()
+            platform_settings |= {d["key"]: d["value"]}
+        log.info("PLAT_SETTINGS = %s", util.json_dump(platform_settings))
         return platform_settings
 
     def __settings(self, settings_list: types.KeyList = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
@@ -417,7 +424,7 @@ class Platform(object):
             settings_dict[ai_code_fix.key] = ai_code_fix
         return settings_dict
 
-    def get_setting(self, key: str) -> any:
+    def get_setting(self, key: str) -> Any:
         """Returns a platform global setting value from its key
 
         :param key: Setting key
@@ -465,35 +472,41 @@ class Platform(object):
         """
         return webhooks.get_list(self)
 
-    def export(self, export_settings: types.ConfigSettings, full: bool = False) -> types.ObjectJsonRepr:
+    def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports the global platform properties as JSON
 
-        :param full: Whether to also export properties that cannot be set, defaults to False
-        :type full: bool, optional
+        :param bool full: Optional, Whether to also export properties that cannot be set, defaults to False
         :return: dict of all properties with their values
-        :rtype: dict
         """
         log.info("Exporting platform global settings")
         json_data = {}
-        for s in self.__settings(include_not_set=export_settings.get("EXPORT_DEFAULTS", False)).values():
-            if s.is_internal():
-                continue
-            (categ, subcateg) = s.category()
+        full = export_settings.get("EXPORT_DEFAULTS", False)
+        to_export = [s for s in self.__settings(include_not_set=full).values() if not s.is_internal() and s.is_global()]
+        if not full:
+            to_export = [s for s in to_export if not s.inherited]
+        langs = {}
+        for s in to_export:
+            categ = s.category()
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
                 # What is reported as 3rd part are SonarQube Cloud internal settings
                 continue
-            if not s.is_global():
-                continue
-            util.update_json(json_data, categ, subcateg, s.to_json(export_settings.get("INLINE_LISTS", True)))
+            setting_json = s.to_json()
+            if not full:
+                setting_json.pop("isDefault", None)
+            if lang := s.language():
+                langs[lang] = langs.get(lang, [])
+                langs[lang].append(setting_json)
+            else:
+                json_data[categ] = json_data.get(categ, [])
+                json_data[categ].append(setting_json)
+        json_data["languages"] = [{"language": k, "settings": util.sort_list_by_key(v, "key")} for k, v in langs.items()]
+        for k in settings.GENERAL_SETTINGS, settings.ANALYSIS_SCOPE_SETTINGS:
+            json_data[k] = util.sort_list_by_key(json_data[k], "key")
 
-        hooks = {}
-        for wb in self.webhooks().values():
-            j = util.remove_nones(wb.to_json(full))
-            j.pop("name", None)
-            hooks[wb.name] = j
+        hooks = [wh.to_json(full) for wh in self.webhooks().values()]
         if len(hooks) > 0:
-            json_data[settings.GENERAL_SETTINGS].update({"webhooks": hooks})
-        json_data["permissions"] = self.global_permissions().export(export_settings=export_settings)
+            json_data["webhooks"] = util.sort_list_by_key(hooks, "name")
+        json_data["permissions"] = self.global_permissions().export()
         json_data["permissionTemplates"] = permission_templates.export(self, export_settings=export_settings)
         if not self.is_sonarcloud():
             json_data[settings.DEVOPS_INTEGRATION] = devops.export(self, export_settings=export_settings)
@@ -741,11 +754,13 @@ class Platform(object):
         if lifetime_setting is None:
             log.info("Token maximum lifetime setting not found, skipping audit")
             return []
-        max_lifetime = util.to_days(self.get_setting(settings.TOKEN_MAX_LIFETIME))
+        max_lifetime = util.to_days(lifetime_setting.value)
+        max_allowed = audit_settings.get("audit.tokens.maxAge", 90)
         if max_lifetime is None:
             return [Problem(get_rule(RuleId.TOKEN_LIFETIME_UNLIMITED), self.external_url)]
-        if max_lifetime > audit_settings.get("audit.tokens.maxAge", 90):
-            return [Problem(get_rule(RuleId.TOKEN_LIFETIME_TOO_HIGH), self.external_url, max_lifetime, audit_settings.get("audit.tokens.maxAge", 90))]
+        if max_lifetime > max_allowed:
+            return [Problem(get_rule(RuleId.TOKEN_LIFETIME_TOO_HIGH), self.external_url, max_lifetime, max_allowed)]
+        log.info("Maximum token lifetime (%d days) is lower than the audit max (%d days)", max_lifetime, max_allowed)
         return []
 
     def is_mqr_mode(self) -> bool:

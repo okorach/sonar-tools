@@ -37,18 +37,19 @@ COMMUNITY_GLOBAL_PERMISSIONS = {
     "admin": "Administer System",
     "gateadmin": "Administer Quality Gates",
     "profileadmin": "Administer Quality Profiles",
-    "provisioning": "Create Projects",
     "scan": "Execute Analysis",
+    "provisioning": "Create Projects",
 }
-DEVELOPER_GLOBAL_PERMISSIONS = {**COMMUNITY_GLOBAL_PERMISSIONS, **{"applicationcreator": "Create Applications"}}
-ENTERPRISE_GLOBAL_PERMISSIONS = {**DEVELOPER_GLOBAL_PERMISSIONS, **{"portfoliocreator": "Create Portfolios"}}
+
+DEVELOPER_GLOBAL_PERMISSIONS = {**COMMUNITY_GLOBAL_PERMISSIONS, "applicationcreator": "Create Applications"}
+ENTERPRISE_GLOBAL_PERMISSIONS = {**DEVELOPER_GLOBAL_PERMISSIONS, "portfoliocreator": "Create Portfolios"}
 
 PROJECT_PERMISSIONS = {
-    "admin": "Administer Project",
     "user": "Browse",
     "codeviewer": "See source code",
     "issueadmin": "Administer Issues",
     "securityhotspotadmin": "Create Projects",
+    "admin": "Administer Project",
     "scan": "Execute Analysis",
 }
 
@@ -62,7 +63,7 @@ _PORTFOLIOS = 6
 
 OBJECTS_WITH_PERMISSIONS = (_GLOBAL, _PROJECTS, _TEMPLATES, _QG, _QP, _APPS, _PORTFOLIOS)
 PERMISSION_TYPES = ("groups", "users")
-NO_PERMISSIONS = {"groups": None, "users": None}
+NO_PERMISSIONS = {p: {} for p in PERMISSION_TYPES}
 
 MAX_PERMS = 100
 
@@ -81,10 +82,9 @@ class Permissions(ABC):
     def __str__(self) -> str:
         return f"permissions of {str(self.concerned_object)}"
 
-    def to_json(self, perm_type: Optional[str] = None, csv: bool = False) -> types.JsonPermissions:
+    def to_json(self, perm_type: Optional[str] = None) -> types.JsonPermissions:
         """Converts a permission object to JSON"""
-        if not csv:
-            return self.permissions.get(perm_type, {}) if is_valid(perm_type) else self.permissions
+        order = PROJECT_PERMISSIONS if self.concerned_object else ENTERPRISE_GLOBAL_PERMISSIONS
         perms = []
         for p in normalize(perm_type):
             if p not in self.permissions or len(self.permissions[p]) == 0:
@@ -92,18 +92,13 @@ class Permissions(ABC):
             for k, v in self.permissions.get(p, {}).items():
                 if not v or len(v) == 0:
                     continue
-                perms += [{p[:-1]: k, "permissions": encode(v)}]
+                perms += [{p[:-1]: k, "permissions": encode(v, order)}]
         return perms if len(perms) > 0 else None
 
-    def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
+    def export(self) -> types.ObjectJsonRepr:
         """Exports permissions as JSON"""
-        inlined = export_settings.get("INLINE_LISTS", True)
-        perms = self.to_json(csv=inlined)
-        if not inlined:
-            perms = {k: v for k, v in perms.items() if len(v) > 0}
-        if not perms or len(perms) == 0:
-            return None
-        return perms
+        perms = self.to_json()
+        return None if not perms or len(perms) == 0 else perms
 
     @abstractmethod
     def read(self) -> Permissions:
@@ -119,20 +114,6 @@ class Permissions(ABC):
         :param JsonPermissions new_perms: The permissions to set
         """
 
-    def set_user_permissions(self, user_perms: dict[str, list[str]]) -> Permissions:
-        """Sets user permissions of an object
-
-        :param dict[str, list[str]] user_perms: The user permissions to apply
-        """
-        return self.set({"users": user_perms})
-
-    def set_group_permissions(self, group_perms: dict[str, list[str]]) -> Permissions:
-        """Sets user permissions of an object
-
-        :param dict[str, list[str]] group_perms: The group permissions to apply
-        """
-        return self.set({"groups": group_perms})
-
     def clear(self) -> Permissions:
         """Clears all permissions of an object
         :return: self
@@ -140,23 +121,21 @@ class Permissions(ABC):
         """
         return self.set({"users": {}, "groups": {}})
 
-    def users(self) -> dict[str, list[str]]:
+    def users(self) -> types.JsonPermissions:
         """
         :return: User permissions of an object
-        :rtype: list (for QualityGate and QualityProfile) or dict (for other objects)
         """
         if self.permissions is None:
             self.read()
-        return self.to_json(perm_type="users")
+        return self.permissions.get("users", {})
 
-    def groups(self) -> dict[str, list[str]]:
+    def groups(self) -> types.JsonPermissions:
         """
         :return: Group permissions of an object
-        :rtype: list (for QualityGate and QualityProfile) or dict (for other objects)
         """
         if self.permissions is None:
             self.read()
-        return self.to_json(perm_type="groups")
+        return self.permissions.get("groups", {})
 
     def added_permissions(self, other_perms: types.JsonPermissions) -> types.JsonPermissions:
         return diff(self.permissions, other_perms)
@@ -212,7 +191,7 @@ class Permissions(ABC):
         """Audits maximum number of user or groups with permissions"""
         problems = []
         o = self.concerned_object
-        data = self.to_json()
+        data = self.permissions
         for t in PERMISSION_TYPES:
             max_count = audit_settings.get(f"audit.permissions.max{t.capitalize()}", 5)
             count = len(data.get(t, {}))
@@ -224,7 +203,7 @@ class Permissions(ABC):
     def audit_sonar_users_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits that default user group has no sensitive permissions"""
         __SENSITIVE_PERMISSIONS = ["issueadmin", "scan", "securityhotspotadmin", "admin", "gateadmin", "profileadmin"]
-        groups = self.to_json(perm_type="groups")
+        groups = self.permissions.get("groups", {})
         if isinstance(groups, list):
             groups = {u: ["admin"] for u in groups}
         default_gr = self.endpoint.default_user_group()
@@ -234,7 +213,7 @@ class Permissions(ABC):
 
     def audit_anyone_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits that Anyone group has no permissions"""
-        groups = self.to_json(perm_type="groups")
+        groups = self.permissions.get("groups", {})
         if groups and any(gr_name == "Anyone" for gr_name in groups):
             return [Problem(get_rule(RuleId.PROJ_PERM_ANYONE), self.concerned_object, str(self.concerned_object))]
         return []
@@ -322,18 +301,12 @@ class Permissions(ABC):
         return ok
 
 
-def simplify(perms_dict: dict[str, list[str]]) -> Optional[dict[str, str]]:
-    """Simplifies permissions by converting to CSV an array"""
-    if perms_dict is None or len(perms_dict) == 0:
-        return None
-    return {k: encode(v) for k, v in perms_dict.items() if len(v) > 0}
-
-
-def encode(perms_array: dict[str, list[str]]) -> dict[str, str]:
+def encode(perms_array: dict[str, list[str]], order: list[str]) -> dict[str, str]:
     """
     :meta private:
     """
-    return utilities.list_to_csv(perms_array, ", ", check_for_separator=True)
+    ordered = utilities.order_list(perms_array, *order)
+    return utilities.list_to_csv(ordered, ", ", check_for_separator=True)
 
 
 def decode(encoded_perms: dict[str, str]) -> dict[str, list[str]]:
@@ -426,15 +399,43 @@ def white_list(perms: types.JsonPermissions, allowed_perms: list[str]) -> types.
 def black_list(perms: types.JsonPermissions, disallowed_perms: list[str]) -> types.JsonPermissions:
     """Returns permissions filtered after a black list of disallowed permissions"""
     resulting_perms = {}
-    for perm_type, sub_perms in perms.items():
-        # if perm_type not in PERMISSION_TYPES:
-        #    continue
+    for perm_type, sub_perms in list_to_dict(perms).items():
         resulting_perms[perm_type] = {}
         for user_or_group, original_perms in sub_perms.items():
             resulting_perms[perm_type][user_or_group] = [p for p in original_perms if p not in disallowed_perms]
-    return resulting_perms
+    return dict_to_list(resulting_perms)
 
 
 def convert_for_yaml(json_perms: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Converts permissions in a format that is more friendly for YAML"""
     return json_perms
+
+
+def fmt_perms(group_or_user: str, perms: list[str], type_of_perm: str) -> types.JsonPermissions:
+    """Helper to convert perms to dict"""
+    return {type_of_perm[:-1]: group_or_user, "permissions": perms}
+
+
+def group_perms(group: str, perms: list[str]) -> types.JsonPermissions:
+    """Helper to convert group perms to dict"""
+    return fmt_perms(group, perms, "groups")
+
+
+def user_perms(user: str, perms: list[str]) -> types.JsonPermissions:
+    """Helper to convert group perms to dict"""
+    return fmt_perms(user, perms, "users")
+
+
+def list_to_dict(perms: types.JsonPermissions) -> dict[str, dict[str, list[str]]]:
+    log.info("L2D = %s", utilities.json_dump(perms))
+    res = {"users": {p["user"]: p["permissions"] for p in perms if "user" in p}}
+    res |= {"groups": {p["group"]: p["permissions"] for p in perms if "group" in p}}
+    return res
+
+
+def dict_to_list(perms: dict[str, dict[str, list[str]]]) -> types.JsonPermissions:
+    res = []
+    for ptype in PERMISSION_TYPES:
+        for p in perms.get(ptype, {}):
+            res += [{ptype[:-1]: k, "permissions": v} for k, v in p]
+    return res

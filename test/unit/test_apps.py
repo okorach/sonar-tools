@@ -29,6 +29,7 @@ import utilities as tutil
 from sonar import applications as apps, exceptions
 from sonar.applications import Application as App
 import sonar.util.constants as c
+from sonar.permissions import permissions
 
 EXISTING_KEY = "APP_TEST"
 EXISTING_KEY_2 = "FE-BE"
@@ -122,7 +123,11 @@ def test_permissions_1(get_test_app: Generator[App]) -> None:
     if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name="An app", key=TEST_KEY):
         return
     obj = get_test_app
-    obj.set_permissions({"groups": {tutil.SQ.default_user_group(): ["user", "admin"], "sonar-administrators": ["user", "admin"]}})
+    perms = [
+        permissions.group_perms(tutil.SQ.default_user_group(), ["user", "admin"]),
+        permissions.group_perms("sonar-administrators", ["user", "admin"]),
+    ]
+    obj.set_permissions(perms)
     # assert apps.permissions().to_json()["groups"] == {tutil.SQ.default_user_group(): ["user", "admin"], "sonar-administrators": ["user", "admin"]}
 
 
@@ -131,7 +136,8 @@ def test_permissions_2(get_test_app: Generator[App]) -> None:
     if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name=tutil.TEMP_NAME, key=tutil.TEMP_KEY):
         return
     obj = get_test_app
-    obj.set_permissions({"groups": {tutil.SQ.default_user_group(): ["user"], "sonar-administrators": ["user", "admin"]}})
+    perms = [permissions.group_perms(tutil.SQ.default_user_group(), ["user"]), permissions.group_perms("sonar-administrators", ["user", "admin"])]
+    obj.set_permissions(perms)
     # assert apps.permissions().to_json()["groups"] == {tutil.SQ.default_user_group(): ["user"], "sonar-administrators": ["user", "admin"]}
 
 

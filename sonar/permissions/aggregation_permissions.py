@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 from sonar.util import types
+from sonar import logging as log
 from sonar.permissions import permissions, project_permissions
 
 AGGREGATION_PERMISSIONS = {
@@ -49,4 +50,4 @@ class AggregationPermissions(project_permissions.ProjectPermissions):
         :return: Permissions associated to the aggregation
         :rtype: self
         """
-        return super().set(permissions.white_list(new_perms, AGGREGATION_PERMISSIONS))
+        return super().set(permissions.white_list(permissions.list_to_dict(new_perms), AGGREGATION_PERMISSIONS))

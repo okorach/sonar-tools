@@ -237,6 +237,16 @@ def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
     return data
 
 
+def sort_list_by_key(list_to_sort: list[dict[str, Any]], key: str, priority_field: Optional[str] = None) -> list[dict[str, Any]]:
+    """Sorts a lits of dicts by a given key, exception for the priority field that would go first"""
+    f_elem = None
+    if priority_field:
+        f_elem = next((elem for elem in list_to_sort if priority_field in elem), None)
+    tmp_dict = {elem[key]: elem for elem in list_to_sort if elem != f_elem}
+    first_elem = [f_elem] if f_elem else []
+    return first_elem + list(dict(sorted(tmp_dict.items())).values())
+
+
 def dict_subset(d: dict[str, str], subset_list: list[str]) -> dict[str, str]:
     """Returns the subset of dict only with subset_list keys"""
     return {key: d[key] for key in subset_list if key in d}
@@ -281,15 +291,13 @@ def list_to_regexp(str_list: list[str]) -> str:
     return "(" + "|".join(str_list) + ")" if len(str_list) > 0 else ""
 
 
-def list_to_csv(
-    array: Union[None, str, int, float, list[str], set[str], tuple[str]], separator: str = ",", check_for_separator: bool = False
-) -> Optional[str]:
+def list_to_csv(array: Union[None, str, int, float, list[str], set[str], tuple[str]], separator: str = ",", check_for_separator: bool = False) -> Any:
     """Converts a list of strings to CSV"""
     if isinstance(array, str):
         return csv_normalize(array, separator) if " " in array else array
     if array is None:
         return None
-    if isinstance(array, (list, set, tuple)):
+    if isinstance(array, (list, set, tuple)) and all(isinstance(e, str) for e in array):
         if check_for_separator:
             # Don't convert to string if one array item contains the string separator
             s = separator.strip()
@@ -297,7 +305,7 @@ def list_to_csv(
                 if s in item:
                     return array
         return separator.join([v.strip() for v in array])
-    return str(array)
+    return array
 
 
 def csv_normalize(string: str, separator: str = ",") -> str:
@@ -317,10 +325,10 @@ def union(list1: list[any], list2: list[any]) -> list[any]:
     return list1 + [value for value in list2 if value not in list1]
 
 
-def difference(list1: list[any], list2: list[any]) -> list[any]:
+def difference(list1: list[Any], list2: list[Any]) -> list[Any]:
     """Computes difference of 2 lists"""
     # FIXME - This should be sets
-    return [value for value in list1 if value not in list2]
+    return list(set(list1) - set(list2))
 
 
 def quote(string: str, sep: str) -> str:
@@ -409,23 +417,6 @@ def convert_string(value: str) -> Union[str, int, float, bool]:
             except ValueError:
                 pass
     return value
-
-
-def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: Any) -> dict[str, str]:
-    """Updates a 2 levels JSON"""
-    if categ not in json_data:
-        if subcateg is None:
-            json_data[categ] = value
-        else:
-            json_data[categ] = {subcateg: value}
-    elif subcateg is not None:
-        if subcateg in json_data[categ]:
-            json_data[categ][subcateg].update(value)
-        else:
-            json_data[categ][subcateg] = value
-    else:
-        json_data[categ].update(value)
-    return json_data
 
 
 def nbr_pages(sonar_api_json: dict[str, str], api_version: int = 1) -> int:
@@ -593,6 +584,12 @@ def order_dict(d: dict[str, Any], key_order: list[str]) -> dict[str, Any]:
     """Orders keys of a dictionary in a given order"""
     new_d = {k: d[k] for k in key_order if k in d}
     return new_d | {k: v for k, v in d.items() if k not in new_d}
+
+
+def order_list(l: list[str], *key_order) -> list[str]:
+    """Orders elements of a list in a given order"""
+    new_l = [k for k in key_order if k in l]
+    return new_l + [k for k in l if k not in new_l]
 
 
 def replace_keys(key_list: list[str], new_key: str, data: dict[str, any]) -> dict[str, any]:

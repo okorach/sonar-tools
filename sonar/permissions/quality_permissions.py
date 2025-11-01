@@ -62,6 +62,7 @@ class QualityPermissions(permissions.Permissions):
             dperms = self.permissions.get(p, None)
             if dperms is not None and len(dperms) > 0:
                 perms[p] = permissions.encode(self.permissions.get(p, None))
+        perms = permissions.dict_to_list(perms)
         return perms if len(perms) > 0 else None
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:

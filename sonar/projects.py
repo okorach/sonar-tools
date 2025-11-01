@@ -35,6 +35,7 @@ from typing import Optional, Union
 from http import HTTPStatus
 from threading import Lock
 from requests import HTTPError, RequestException
+import traceback
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -969,7 +970,7 @@ class Project(components.Component):
         # If there is only 1 branch with no specific config except being main, don't return anything
         if len(branch_data) == 0 or (len(branch_data) == 1 and "main" in branch_data and len(branch_data["main"]) <= 1):
             return None
-        return branch_data
+        return util.sort_list_by_key(list(branch_data.values()), "name", "isMain")
 
     def migration_export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Produces the data that is exported for SQ to SC migration"""
@@ -1009,10 +1010,11 @@ class Project(components.Component):
                 json_data[settings.NEW_CODE_PERIOD] = nc
             json_data["qualityProfiles"] = self.__export_get_qp()
             json_data["links"] = self.links()
-            json_data["permissions"] = self.permissions().to_json(csv=export_settings.get("INLINE_LISTS", True))
+            json_data["permissions"] = self.permissions().to_json()
             if self.endpoint.version() >= (10, 7, 0):
                 json_data["aiCodeFix"] = self.ai_code_fix()
             json_data["branches"] = self.__get_branch_export(export_settings)
+            _ = [b.pop("project") for b in json_data["branches"]]
             json_data["tags"] = self.get_tags()
             json_data["visibility"] = self.visibility()
             (json_data["qualityGate"], qg_is_default) = self.quality_gate()
@@ -1030,7 +1032,18 @@ class Project(components.Component):
             if export_settings.get("MODE", "") == "MIGRATION":
                 json_data.update(self.migration_export(export_settings))
 
-            settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
+            with_inherited = export_settings.get("FULL_EXPORT", False)
+            log.info("EXP1")
+            settings_list = settings.get_bulk(
+                endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=with_inherited
+            ).values()
+            log.info("EXP2")
+            settings_list = [s for s in settings_list if not s.is_global()]
+            settings_list = [s for s in settings_list if s.key not in ("visibility", settings.NEW_CODE_PERIOD)]
+            log.info("EXP3")
+            if not with_inherited:
+                settings_list = [s for s in settings_list if not s.inherited]
+
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
             contains_ai = False
             try:
@@ -1040,12 +1053,15 @@ class Project(components.Component):
                 pass
             if contains_ai:
                 json_data[_CONTAINS_AI_CODE] = contains_ai
-            for s in settings_dict.values():
-                if not export_settings.get("INCLUDE_INHERITED", False) and s.inherited:
-                    continue
-                json_data.update(s.to_json())
+            log.info("EXP3.2")
+            json_data["settings"] = util.sort_list_by_key([s.to_json() for s in settings_list], "key")
+            log.info("EXP4")
+            if not with_inherited:
+                _ = [s.pop("isDefault", None) for s in json_data["settings"]]
+            return json_data
 
         except Exception as e:
+            traceback.print_exc()
             util.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
             json_data["error"] = f"{util.error_msg(e)} while exporting project"
         log.debug("Exporting %s done, returning %s", str(self), util.json_dump(json_data))

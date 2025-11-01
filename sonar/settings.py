@@ -40,6 +40,7 @@ LINTER_SETTINGS = "linters"
 THIRD_PARTY_SETTINGS = "thirdParty"
 ANALYSIS_SCOPE_SETTINGS = "analysisScope"
 SAST_CONFIG_SETTINGS = "sastConfig"
+SCA_CONFIG_SETTINGS = "sca"
 TEST_SETTINGS = "tests"
 
 CATEGORIES = (
@@ -50,9 +51,59 @@ CATEGORIES = (
     TEST_SETTINGS,
     DEVOPS_INTEGRATION,
     SAST_CONFIG_SETTINGS,
+    SCA_CONFIG_SETTINGS,
     LINTER_SETTINGS,
     THIRD_PARTY_SETTINGS,
 )
+
+GLOBAL_SETTINGS = (
+    r"sonar\.auth\..+",
+    r"sonar\.announcement\..+",
+    r"sonar\.login\..+",
+    r"provisioning\..+",
+    r"sonar\.earlyAccess\..+",
+    r"sonar\.dbCleaner\..+",
+    r"sonar\.governance\..+",
+    r"sonar\.sca\..+",
+    r"sonar\.ai\.codefix\.hidden",
+    r"sonar\.allowPermissionManagementForProjectAdmin",
+    r"sonar\.authenticator\.downcase",
+    r"sonar\.builtInQualityProfiles\.disableNotificationOnUpdate",
+    r"sonar\.filesize\.limit",
+    r"sonar\.enforceAzureOpenAiDomainValidation",
+    r"sonar\.forceAuthentication",
+    r"sonar\.global\.exclusions",
+    r"sonar\.governance\.report\.project\.branch\.frequency",
+    r"sonar\.issues\.sandbox\..*",
+    r"sonar\.jreAutoProvisioning\.disabled",
+    r"sonar\.lf\..+",
+    r"sonar\.multi-quality-mode\.enabled",
+    r"sonar\.notifications\..+",
+    r"sonar\.pdf\..+",
+    r"sonar\.qualityProfiles\.allowDisableInheritedRules",
+    r"sonar\.scanner\..+",
+    r"sonar\.technicalDebt\..*",
+    r"sonar\.validateWebhooks",
+    r"sonar\.dependencyCheck\..*",
+)
+
+LANGUAGE_SETTING_PATTERN = r"^sonar\.(cpd\.)?(abap|androidLint|ansible|apex|azureresourcemanager|cloudformation|c|cpp|cfamily|\
+cobol|cs|css|dart|docker|eslint|flex|go|html|java|javascript|jcl|json|jsp|kotlin|objc|php|pli|\
+plsql|python|ipynb|rpg|ruby|scala|swift|terraform|text|tsql|typescript|vb|vbnet|xml|yaml|rust|jasmin)\."
+
+CATEGORY_MAP = {
+    r"^sonar\.(cpd\.)?(abap|androidLint|ansible|apex|azureresourcemanager|cloudformation|c|cpp|cfamily|cobol|cs|css|dart|docker|"
+    r"eslint|flex|go|html|java|javascript|jcl|json|jsp|kotlin|objc|php|pli|plsql|python|ipynb|rpg|ruby|scala|swift|"
+    r"terraform|text|tsql|typescript|vb|vbnet|xml|yaml|rust|jasmin)\.": LANGUAGES_SETTINGS,
+    r"^.*([lL]int|govet|flake8|checkstyle|pmd|spotbugs|findbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat).*$": LINTER_SETTINGS,
+    r"^sonar\.security\.config\..+$": SAST_CONFIG_SETTINGS,
+    r"^sonar\.sca\..+$": SCA_CONFIG_SETTINGS,
+    r"^.*\.(exclusions$|inclusions$|issue\..+)$": ANALYSIS_SCOPE_SETTINGS,
+    r"^.*(\.reports?Paths?$|unit\..*$|cov.*$)": TEST_SETTINGS,
+    r"^sonar\.forceAuthentication$": AUTH_SETTINGS,
+    r"^sonar\.dependencyCheck\..*$": THIRD_PARTY_SETTINGS,
+    r"^(sonar\.|email\.|provisioning\.git).*$": GENERAL_SETTINGS,
+}
 
 NEW_CODE_PERIOD = "newCodePeriod"
 COMPONENT_VISIBILITY = "visibility"
@@ -64,37 +115,43 @@ TOKEN_MAX_LIFETIME = "sonar.auth.token.max.allowed.lifetime"
 _GLOBAL_SETTINGS_WITHOUT_DEF = (AI_CODE_FIX, MQR_ENABLED)
 
 _SQ_INTERNAL_SETTINGS = (
-    "sonaranalyzer",
-    "sonar.updatecenter",
-    "sonar.plugins.risk.consent",
-    "sonar.core.id",
-    "sonar.core.startTime",
-    "sonar.plsql.jdbc.driver.class",
+    r"sonar\.projectCreation\.mainBranchName",
+    r"sonaranalyzer.*",
+    r"sonar\.updatecenter\.*",
+    r"sonar\.plugins\.risk\.consent",
+    r"sonar\.core\..*",
+    r"sonar\.plsql\.jdbc\.driver\.class",
+    r"sonar\.ce\.parallelProjectTasks",
+    r"sonar\.cs\.analyzer\..+",
+    r"sonar\.cpd\.cobol\.minimum.+",
+    r"sonar\.documentation\.+",
 )
 
 _SC_INTERNAL_SETTINGS = (
-    "sonaranalyzer",
-    "sonar.updatecenter",
-    "sonar.plugins.risk.consent",
-    "sonar.core.id",
-    "sonar.core.startTime",
-    "sonar.plsql.jdbc.driver.class",
-    "sonar.dbcleaner",
-    "sonar.core.serverBaseURL",
-    "email.",
-    "sonar.builtIn",
-    "sonar.issues.defaultAssigneeLogin",
-    "sonar.filesize.limit",
-    "sonar.kubernetes.activate",
-    "sonar.lf",
-    "sonar.notifications",
-    "sonar.plugins.loadAll",
-    "sonar.qualityProfiles.allowDisableInheritedRules",
-    "sonar.scm.disabled",
-    "sonar.technicalDebt",
-    "sonar.issue.",
-    "sonar.global",
-    "sonar.forceAuthentication",
+    r"sonaranalyzer.*",
+    r"sonar\.updatecenter\.*",
+    r"sonar\.plugins\.risk\.consent",
+    r"sonar\.core\..*",
+    r"sonar\.plsql\.jdbc\.driver\.class",
+    r"sonar\.ce\.parallelProjectTasks",
+    r"sonar\.cs\.analyzer\..+",
+    r"sonar\.cpd\.cobol\.minimum.+",
+    r"sonar\.documentation\.+",
+    r"sonar\.dbcleaner\..+",
+    r"email\..+",
+    r"sonar\.builtIn.+",
+    r"sonar\.issues\.defaultAssigneeLogin",
+    r"sonar\.filesize\.limit",
+    r"sonar\.kubernetes\.activate",
+    r"sonar\.lf\..+",
+    r"sonar\.notifications",
+    r"sonar\.plugins\.loadAll",
+    r"sonar\.qualityProfiles\.allowDisableInheritedRules",
+    r"sonar\.scm\.disabled",
+    r"sonar\.technicalDebt\..+",
+    r"sonar\.issue\..+",
+    r"sonar\.global\..+",
+    r"sonar\.forceAuthentication",
 )
 
 _INLINE_SETTINGS = (
@@ -177,28 +234,24 @@ class Setting(sqobject.SqObject):
         o.reload(data)
         return o
 
-    def __reload_inheritance(self, data: types.ApiPayload) -> bool:
+    def __reload_inheritance(self, data: Optional[types.ApiPayload]) -> bool:
         """Verifies if a setting is inherited from the data returned by SQ"""
-        if "inherited" in data:
-            self.inherited = data["inherited"]
-        elif self.key == NEW_CODE_PERIOD:
-            self.inherited = False
-        elif "parentValues" in data or "parentValue" in data or "parentFieldValues" in data:
-            self.inherited = False
-        elif "category" in data:
+        data = data or self.sq_json
+        self.inherited = None
+        for key, parent_key in (("values", "parentValues"), ("value", "parentValue")):
+            if key in data and parent_key in data and data[key] == data[parent_key]:
+                self.inherited = True
+        if self.value is None:
             self.inherited = True
-        elif self.component is not None:
-            self.inherited = False
-        else:
-            self.inherited = True
-        if self.component is None:
-            self.inherited = True
+        if self.inherited is None:
+            self.inherited = data.get("inherited", False)
         return self.inherited
 
     def reload(self, data: types.ApiPayload) -> None:
         """Reloads a Setting with JSON returned from Sonar API"""
         if not data:
             return
+        super().reload(data)
         self.multi_valued = data.get("multiValues", False)
         if self.key == NEW_CODE_PERIOD:
             self.value = new_code_to_string(data)
@@ -206,14 +259,15 @@ class Setting(sqobject.SqObject):
             self.value = data.get("mode", "MQR") != "STANDARD_EXPERIENCE"
         elif self.key == COMPONENT_VISIBILITY:
             self.value = data.get("visibility", None)
-        elif self.key == "sonar.login.message":
-            self.value: Optional[Any] = None
+        elif self.key in ("sonar.login.message", "sonar.announcement.message"):
+            self.value = None
             if "values" in data and isinstance(data["values"], list) and len(data["values"]) > 0:
                 self.value = data["values"][0]
         else:
             self.value = next((data[key] for key in ("fieldValues", "values", "value") if key in data), None)
             if not self.value and "defaultValue" in data:
                 self.value = util.DEFAULT
+        self.value = util.convert_string(self.value)
         self.__reload_inheritance(data)
 
     def refresh(self) -> None:
@@ -277,19 +331,11 @@ class Setting(sqobject.SqObject):
         else:
             return ok
 
-    def to_json(self, list_as_csv: bool = True) -> types.ObjectJsonRepr:
+    def to_json(self) -> types.ObjectJsonRepr:
         val = self.value
         if self.key == NEW_CODE_PERIOD:
             val = new_code_to_string(self.value)
-        elif list_as_csv and isinstance(self.value, list):
-            for reg in _INLINE_SETTINGS:
-                if re.match(reg, self.key):
-                    val = util.list_to_csv(val, separator=", ", check_for_separator=True)
-                    break
-        if val is None:
-            val = ""
-        # log.debug("JSON of %s = %s", self, {self.key: val})
-        return {self.key: val}
+        return {"key": self.key, "value": val, "isDefault": self.inherited}
 
     def definition(self) -> Optional[dict[str, str]]:
         """Returns the setting global definition"""
@@ -300,7 +346,7 @@ class Setting(sqobject.SqObject):
     def is_global(self) -> bool:
         """Returns whether a setting global or specific for one component (project, branch, application, portfolio)"""
         if self.component:
-            return False
+            return any(re.match(regexp, self.key) for regexp in GLOBAL_SETTINGS)
         if self._is_global is None:
             self._is_global = self.definition() is not None or self.key in _GLOBAL_SETTINGS_WITHOUT_DEF
         return self._is_global
@@ -310,12 +356,10 @@ class Setting(sqobject.SqObject):
         internal_settings = _SQ_INTERNAL_SETTINGS
         if self.endpoint.is_sonarcloud():
             internal_settings = _SC_INTERNAL_SETTINGS
-            if self.is_global():
-                (categ, _) = self.category()
-                if categ in ("languages", "analysisScope", "tests", "authentication"):
-                    return True
+            if self.is_global() and self.category() in (LANGUAGES_SETTINGS, ANALYSIS_SCOPE_SETTINGS, TEST_SETTINGS, AUTH_SETTINGS):
+                return True
 
-        return any(self.key.startswith(prefix) for prefix in internal_settings)
+        return any(re.match(regexp, self.key) for regexp in internal_settings)
 
     def is_settable(self) -> bool:
         """Returns whether a setting can be set"""
@@ -325,49 +369,25 @@ class Setting(sqobject.SqObject):
             return False
         return not self.is_internal()
 
-    def category(self) -> tuple[str, str]:
-        """Returns the 2 levels classification of a setting"""
-        m = re.match(
-            r"^sonar\.(cpd\.)?(abap|androidLint|ansible|apex|azureresourcemanager|cloudformation|c|cpp|cfamily|cobol|cs|css|dart|docker|"
-            r"eslint|flex|go|html|java|javascript|jcl|json|jsp|kotlin|objc|php|pli|plsql|python|ipynb|rpg|ruby|scala|swift|"
-            r"terraform|text|tsql|typescript|vb|vbnet|xml|yaml|rust|jasmin)\.",
-            self.key,
-        )
-        if m:
-            lang = m.group(2)
-            if lang in ("c", "cpp", "objc", "cfamily"):
-                lang = "cfamily"
-            elif lang in ("androidLint"):
-                lang = "kotlin"
-            elif lang in ("eslint", "jasmin"):
-                lang = "javascript"
-            return (LANGUAGES_SETTINGS, lang)
-        if re.match(
-            r"^.*([lL]int|govet|flake8|checkstyle|pmd|spotbugs|findbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat).*$",
-            self.key,
-        ):
-            return (LINTER_SETTINGS, None)
-        if re.match(r"^sonar\.security\.config\..+$", self.key):
-            return (SAST_CONFIG_SETTINGS, None)
-        if re.match(r"^.*\.(exclusions$|inclusions$|issue\..+)$", self.key):
-            return (ANALYSIS_SCOPE_SETTINGS, None)
+    def category(self) -> str:
+        """Returns the setting category"""
+        for k, v in CATEGORY_MAP.items():
+            if re.match(k, self.key):
+                return v
+        if self.key in (NEW_CODE_PERIOD, PROJECT_DEFAULT_VISIBILITY, MQR_ENABLED, COMPONENT_VISIBILITY):
+            return GENERAL_SETTINGS
+        return THIRD_PARTY_SETTINGS
 
-        if re.match(r"^.*(\.reports?Paths?$|unit\..*$|cov.*$)", self.key):
-            return (TEST_SETTINGS, None)
-        m = re.match(r"^sonar\.(auth\.|authenticator\.downcase).*$", self.key)
-        if m:
-            return (AUTH_SETTINGS, None)
-        m = re.match(r"^sonar\.forceAuthentication$", self.key)
-        if m:
-            return (AUTH_SETTINGS, None)
-        if re.match(r"^sonar\.dependencyCheck\..*$", self.key):
-            return ("thirdParty", None)
-        if self.key in (NEW_CODE_PERIOD, PROJECT_DEFAULT_VISIBILITY, MQR_ENABLED, COMPONENT_VISIBILITY) or re.match(
-            r"^(sonar\.|email\.|provisioning\.git).*$",
-            self.key,
-        ):
-            return (GENERAL_SETTINGS, None)
-        return ("thirdParty", None)
+    def language(self) -> Optional[str]:
+        """Returns the setting language or None"""
+        if m := re.match(LANGUAGE_SETTING_PATTERN, self.key):
+            lang = m.group(2)
+            lang_map = {("c", "cpp", "objc", "cfamily"): "cfamily", ("androidLint",): "kotlin", ("eslint", "jasmin"): "javascript"}
+            for k, v in lang_map.items():
+                if lang in k:
+                    lang = v
+            return lang
+        return None
 
 
 def get_object(endpoint: pf.Platform, key: str, component: Optional[object] = None) -> Setting:
@@ -390,6 +410,8 @@ def __get_settings(endpoint: pf.Platform, data: types.ApiPayload, component: Opt
         log.debug("Looking at %s", setting_type)
         for s in data.get(setting_type, {}):
             (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
+            if component and any(re.match(regexp, key) for regexp in GLOBAL_SETTINGS):
+                continue
             o = Setting(endpoint=endpoint, key=key, component=component, data=None)
             if o.is_internal():
                 log.debug("Skipping internal setting %s", s["key"])
