@@ -335,7 +335,7 @@ class Setting(sqobject.SqObject):
         val = self.value
         if self.key == NEW_CODE_PERIOD:
             val = new_code_to_string(self.value)
-        return {"key": self.key, "value": val, "isDefault": self.inherited}
+        return {"key": self.key, "value": util.list_to_csv(val, separator=", ", check_for_separator=True), "isDefault": self.inherited}
 
     def definition(self) -> Optional[dict[str, str]]:
         """Returns the setting global definition"""
