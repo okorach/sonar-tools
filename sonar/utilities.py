@@ -327,10 +327,10 @@ def union(list1: list[any], list2: list[any]) -> list[any]:
     return list1 + [value for value in list2 if value not in list1]
 
 
-def difference(list1: list[any], list2: list[any]) -> list[any]:
+def difference(list1: list[Any], list2: list[Any]) -> list[Any]:
     """Computes difference of 2 lists"""
     # FIXME - This should be sets
-    return [value for value in list1 if value not in list2]
+    return list(set(list1) - set(list2))
 
 
 def quote(string: str, sep: str) -> str:
