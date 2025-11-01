@@ -969,7 +969,7 @@ class Project(components.Component):
         # If there is only 1 branch with no specific config except being main, don't return anything
         if len(branch_data) == 0 or (len(branch_data) == 1 and "main" in branch_data and len(branch_data["main"]) <= 1):
             return None
-        return branch_data
+        return list(dict(sorted(branch_data.items())).values())
 
     def migration_export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Produces the data that is exported for SQ to SC migration"""
@@ -1013,6 +1013,7 @@ class Project(components.Component):
             if self.endpoint.version() >= (10, 7, 0):
                 json_data["aiCodeFix"] = self.ai_code_fix()
             json_data["branches"] = self.__get_branch_export(export_settings)
+            [b.pop("project") for b in json_data["branches"]]
             json_data["tags"] = self.get_tags()
             json_data["visibility"] = self.visibility()
             (json_data["qualityGate"], qg_is_default) = self.quality_gate()
