@@ -411,7 +411,9 @@ class Platform(object):
             settings_dict = {k: settings.get_object(endpoint=self, key=k) for k in settings_list}
         platform_settings = {}
         for v in settings_dict.values():
-            platform_settings |= v.to_json()
+            d = v.to_json()
+            platform_settings |= {d["key"]: d["value"]}
+        log.info("PLAT_SETTINGS = %s", util.json_dump(platform_settings))
         return platform_settings
 
     def __settings(self, settings_list: types.KeyList = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
@@ -752,11 +754,13 @@ class Platform(object):
         if lifetime_setting is None:
             log.info("Token maximum lifetime setting not found, skipping audit")
             return []
-        max_lifetime = util.to_days(self.get_setting(settings.TOKEN_MAX_LIFETIME))
+        max_lifetime = util.to_days(lifetime_setting.value)
+        max_allowed = audit_settings.get("audit.tokens.maxAge", 90)
         if max_lifetime is None:
             return [Problem(get_rule(RuleId.TOKEN_LIFETIME_UNLIMITED), self.external_url)]
-        if max_lifetime > audit_settings.get("audit.tokens.maxAge", 90):
-            return [Problem(get_rule(RuleId.TOKEN_LIFETIME_TOO_HIGH), self.external_url, max_lifetime, audit_settings.get("audit.tokens.maxAge", 90))]
+        if max_lifetime > max_allowed:
+            return [Problem(get_rule(RuleId.TOKEN_LIFETIME_TOO_HIGH), self.external_url, max_lifetime, max_allowed)]
+        log.info("Maximum token lifetime (%d days) is lower than the audit max (%d days)", max_lifetime, max_allowed)
         return []
 
     def is_mqr_mode(self) -> bool:
