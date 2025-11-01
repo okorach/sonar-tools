@@ -492,7 +492,10 @@ class Platform(object):
             else:
                 json_data[categ] = json_data.get(categ, [])
                 json_data[categ].append(setting_json)
-        json_data["languages"] = [{"language": k, "settings": v} for k, v in langs.items()]
+        json_data["languages"] = [{"language": k, "settings": util.sort_list_by_key(v, "key")} for k, v in langs.items()]
+        for k in settings.GENERAL_SETTINGS, settings.ANALYSIS_SCOPE_SETTINGS:
+            json_data[k] = util.sort_list_by_key(json_data[k], "key")
+
         hooks = [wh.to_json(full) for wh in self.webhooks().values()]
         if len(hooks) > 0:
             json_data["webhooks"] = hooks
