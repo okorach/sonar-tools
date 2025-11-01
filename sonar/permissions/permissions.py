@@ -93,6 +93,8 @@ class Permissions(ABC):
                 if not v or len(v) == 0:
                     continue
                 perms += [{p[:-1]: k, "permissions": encode(v, order)}]
+        if perm_type:
+            perms = [p for p in perms if perm_type[:-1] in p.keys()]
         return perms if len(perms) > 0 else None
 
     def export(self) -> types.ObjectJsonRepr:
@@ -135,19 +137,17 @@ class Permissions(ABC):
         """
         return self.set({"users": {}, "groups": {}})
 
-    def users(self) -> dict[str, list[str]]:
+    def users(self) -> types.JsonPermissions:
         """
         :return: User permissions of an object
-        :rtype: list (for QualityGate and QualityProfile) or dict (for other objects)
         """
         if self.permissions is None:
             self.read()
         return self.to_json(perm_type="users")
 
-    def groups(self) -> dict[str, list[str]]:
+    def groups(self) -> types.JsonPermissions:
         """
         :return: Group permissions of an object
-        :rtype: list (for QualityGate and QualityProfile) or dict (for other objects)
         """
         if self.permissions is None:
             self.read()
@@ -402,25 +402,21 @@ def diffarray(perms_1: list[str], perms_2: list[str]) -> list[str]:
 
 def white_list(perms: types.JsonPermissions, allowed_perms: list[str]) -> types.JsonPermissions:
     """Returns permissions filtered from a white list of allowed permissions"""
-    resulting_perms = {}
-    for perm_type, sub_perms in perms.items():
-        # if perm_type not in PERMISSION_TYPES:
-        #    continue
-        resulting_perms[perm_type] = {}
-        for user_or_group, original_perms in sub_perms.items():
-            resulting_perms[perm_type][user_or_group] = [p for p in original_perms if p in allowed_perms]
+    resulting_perms = []
+    for perm in perms:
+        k = "users" if "users" in perm else "groups"
+        v = [p for p in perm["permissions"] if p in allowed_perms]
+        resulting_perms.append({k: perm[k], "permissions": v})
     return resulting_perms
 
 
 def black_list(perms: types.JsonPermissions, disallowed_perms: list[str]) -> types.JsonPermissions:
     """Returns permissions filtered after a black list of disallowed permissions"""
-    resulting_perms = {}
-    for perm_type, sub_perms in perms.items():
-        # if perm_type not in PERMISSION_TYPES:
-        #    continue
-        resulting_perms[perm_type] = {}
-        for user_or_group, original_perms in sub_perms.items():
-            resulting_perms[perm_type][user_or_group] = [p for p in original_perms if p not in disallowed_perms]
+    resulting_perms = []
+    for perm in perms:
+        k = "users" if "users" in perm else "groups"
+        v = [p for p in perm["permissions"] if p not in disallowed_perms]
+        resulting_perms.append({k: perm[k], "permissions": v})
     return resulting_perms
 
 
