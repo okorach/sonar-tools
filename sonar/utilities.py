@@ -588,6 +588,12 @@ def order_dict(d: dict[str, Any], key_order: list[str]) -> dict[str, Any]:
     return new_d | {k: v for k, v in d.items() if k not in new_d}
 
 
+def order_list(l: list[str], *key_order) -> list[str]:
+    """Orders elements of a list in a given order"""
+    new_l = [k for k in key_order if k in l]
+    return new_l + [k for k in l if k not in new_l]
+
+
 def replace_keys(key_list: list[str], new_key: str, data: dict[str, any]) -> dict[str, any]:
     """Replace a list of old keys by a new key in a dict"""
     for k in key_list:
