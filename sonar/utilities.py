@@ -237,6 +237,16 @@ def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
     return data
 
 
+def sort_list_by_key(list_to_sort: list[dict[str, Any]], key: str, priority_field: Optional[str] = None) -> list[dict[str, Any]]:
+    """Sorts a lits of dicts by a given key, exception for the priority field that would go first"""
+    f_elem = None
+    if priority_field:
+        f_elem = next((elem for elem in list_to_sort if priority_field in elem), None)
+    tmp_dict = {elem[key]: elem for elem in list_to_sort if elem != f_elem}
+    first_elem = [f_elem] if f_elem else []
+    return first_elem + list(dict(sorted(tmp_dict.items())).values())
+
+
 def dict_subset(d: dict[str, str], subset_list: list[str]) -> dict[str, str]:
     """Returns the subset of dict only with subset_list keys"""
     return {key: d[key] for key in subset_list if key in d}
