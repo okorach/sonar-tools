@@ -37,18 +37,19 @@ COMMUNITY_GLOBAL_PERMISSIONS = {
     "admin": "Administer System",
     "gateadmin": "Administer Quality Gates",
     "profileadmin": "Administer Quality Profiles",
-    "provisioning": "Create Projects",
     "scan": "Execute Analysis",
+    "provisioning": "Create Projects",
 }
-DEVELOPER_GLOBAL_PERMISSIONS = {**COMMUNITY_GLOBAL_PERMISSIONS, **{"applicationcreator": "Create Applications"}}
-ENTERPRISE_GLOBAL_PERMISSIONS = {**DEVELOPER_GLOBAL_PERMISSIONS, **{"portfoliocreator": "Create Portfolios"}}
+
+DEVELOPER_GLOBAL_PERMISSIONS = {**COMMUNITY_GLOBAL_PERMISSIONS, "applicationcreator": "Create Applications"}
+ENTERPRISE_GLOBAL_PERMISSIONS = {**DEVELOPER_GLOBAL_PERMISSIONS, "portfoliocreator": "Create Portfolios"}
 
 PROJECT_PERMISSIONS = {
-    "admin": "Administer Project",
     "user": "Browse",
     "codeviewer": "See source code",
     "issueadmin": "Administer Issues",
     "securityhotspotadmin": "Create Projects",
+    "admin": "Administer Project",
     "scan": "Execute Analysis",
 }
 
@@ -81,24 +82,23 @@ class Permissions(ABC):
     def __str__(self) -> str:
         return f"permissions of {str(self.concerned_object)}"
 
-    def to_json(self, perm_type: Optional[str] = None, csv: bool = False) -> types.JsonPermissions:
+    def to_json(self, perm_type: Optional[str] = None) -> types.JsonPermissions:
         """Converts a permission object to JSON"""
-        if not csv:
-            return self.permissions.get(perm_type, {}) if is_valid(perm_type) else self.permissions
         perms = []
+        order = PROJECT_PERMISSIONS if self.concerned_object else ENTERPRISE_GLOBAL_PERMISSIONS
         for p in normalize(perm_type):
             if p not in self.permissions or len(self.permissions[p]) == 0:
                 continue
             for k, v in self.permissions.get(p, {}).items():
                 if not v or len(v) == 0:
                     continue
-                perms += [{p[:-1]: k, "permissions": encode(v)}]
+                perms += [{p[:-1]: k, "permissions": encode(v, order)}]
         return perms if len(perms) > 0 else None
 
     def export(self) -> types.ObjectJsonRepr:
         """Exports permissions as JSON"""
-        perms = {k: v for k, v in self.to_json().items() if len(v) > 0}
-        return None if len(perms) == 0 else perms
+        perms = self.to_json()
+        return None if not perms or len(perms) == 0 else perms
 
     @abstractmethod
     def read(self) -> Permissions:
@@ -324,11 +324,12 @@ def simplify(perms_dict: dict[str, list[str]]) -> Optional[dict[str, str]]:
     return {k: encode(v) for k, v in perms_dict.items() if len(v) > 0}
 
 
-def encode(perms_array: dict[str, list[str]]) -> dict[str, str]:
+def encode(perms_array: dict[str, list[str]], order: list[str]) -> dict[str, str]:
     """
     :meta private:
     """
-    return utilities.list_to_csv(perms_array, ", ", check_for_separator=True)
+    ordered = utilities.order_list(perms_array, *order)
+    return utilities.list_to_csv(ordered, ", ", check_for_separator=True)
 
 
 def decode(encoded_perms: dict[str, str]) -> dict[str, list[str]]:
