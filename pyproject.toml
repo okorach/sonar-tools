@@ -1,6 +1,6 @@
 [project]
 name = "sonar-tools"
-version = "3.17"
+version = "3.16.2"
 description = "A collection of utility tools for the SonarQube ecosystem"
 authors = [
   {name = "Olivier Korach", email = "olivier.korach@gmail.com"},
@@ -31,7 +31,7 @@ classifiers = [
   "Development Status :: 5 - Production/Stable",
   # Indicate who your project is intended for
   "Intended Audience :: Developers",
-  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Code Quality :: Utility Tools",
   # Specify the Python versions you support here.
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.8",

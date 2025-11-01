@@ -28,11 +28,11 @@ COPY ./LICENSE .
 COPY ./sonar/audit sonar/audit
 
 RUN pip install --upgrade pip \
-&& pip install sonar-tools==3.17
+&& pip install sonar-tools==3.16.2
 
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}
 
-HEALTHCHECK --interval=180s --timeout=5s CMD [ "sonar-tools-help" ]
+HEALTHCHECK --interval=180s --timeout=5s CMD [ "sonar-tools" ]
 
-CMD [ "sonar-tools-help" ]
+CMD [ "sonar-tools" ]
