@@ -1030,7 +1030,15 @@ class Project(components.Component):
             if export_settings.get("MODE", "") == "MIGRATION":
                 json_data.update(self.migration_export(export_settings))
 
-            settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
+            with_inherited = export_settings.get("FULL_EXPORT", False)
+            settings_list = settings.get_bulk(
+                endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=with_inherited
+            ).values()
+            settings_list = [s for s in settings_list if not s.is_global()]
+            settings_list = [s for s in settings_list if s.key not in ("visibility", settings.NEW_CODE_PERIOD)]
+            if not with_inherited:
+                settings_list = [s for s in settings_list if not s.inherited]
+
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
             contains_ai = False
             try:
@@ -1040,8 +1048,9 @@ class Project(components.Component):
                 pass
             if contains_ai:
                 json_data[_CONTAINS_AI_CODE] = contains_ai
-            with_inherited = export_settings.get("INCLUDE_INHERITED", False)
-            json_data["settings"] = [s.to_json() for s in settings_dict.values() if with_inherited or not s.inherited and s.key != "visibility"]
+            json_data["settings"] = [s.to_json() for s in settings_list if (with_inherited or not s.inherited) and s.key != "visibility"]
+            if not with_inherited:
+                [s.pop("isDefault", None) for s in json_data["settings"]]
 
         except Exception as e:
             util.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
