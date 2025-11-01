@@ -93,7 +93,6 @@ class Permissions(ABC):
                 if not v or len(v) == 0:
                     continue
                 perms += [{p[:-1]: k, "permissions": encode(v, order)}]
-        log.info("RETURN PERM = %s", utilities.json_dump(perms))
         return perms if len(perms) > 0 else None
 
     def export(self) -> types.ObjectJsonRepr:
