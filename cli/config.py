@@ -124,7 +124,7 @@ def __parse_args(desc: str) -> object:
 
 def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remove_none: bool = True) -> dict[str, any]:
     """Sorts a JSON file and optionally remove empty and none values"""
-    SORT_FIELDS = {"users": "login", "groups": "name", "qualityGates": "name"}
+    SORT_FIELDS = {"users": "login", "groups": "name", "qualityGates": "name", "qualityProfiles": "language"}
     log.info("Normalizing JSON - remove empty = %s, remove nones = %s", str(remove_empty), str(remove_none))
     json_data = utilities.clean_data(json_data, remove_none=remove_none, remove_empty=remove_empty)
     json_data = utilities.order_keys(json_data, *_SECTIONS_ORDER)
@@ -174,7 +174,7 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
     prefix = ""
     log.info("Waiting %s to write...", object_type)
     objects_exported_as_lists = ("projects", "applications", "users", "portfolios")
-    objects_exported_as_whole = ("qualityGates", "groups")
+    objects_exported_as_whole = ("qualityGates", "groups", "qualityProfiles")
     log.info("Waiting %s to write...", object_type)
     if object_type in objects_exported_as_lists:
         start, stop = ("[", "]")

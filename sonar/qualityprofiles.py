@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube Quality Profile concept"""
 
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Any
 import json
 from datetime import datetime
 import concurrent.futures
@@ -754,6 +754,21 @@ def flatten(qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     return flat_list
 
 
+def __convert_children_to_list(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
+    """Converts a profile's children profiles to list"""
+    for v in qp_json.values():
+        if "children" in v:
+            v["children"] = __convert_children_to_list(v["children"])
+    return util.dict_to_list(qp_json, "name")
+
+
+def __convert_profiles_to_list(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
+    """Converts a language top level list of profiles to list"""
+    for k, v in qp_json.items():
+        qp_json[k] = __convert_children_to_list(v)
+    return util.dict_to_list(qp_json, "language", "profiles")
+
+
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports all or a list of quality profiles configuration as dict
 
@@ -772,10 +787,12 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
             qp_list[lang] = {}
         qp_list[lang][name] = json_data
     qp_list = hierarchize(qp_list, endpoint=endpoint)
+    qp_list = __convert_profiles_to_list(qp_list)
     if write_q := kwargs.get("write_q", None):
         write_q.put(qp_list)
         write_q.put(util.WRITE_END)
-    return dict(sorted(qp_list.items()))
+    # return dict(sorted(qp_list.items()))
+    return qp_list
 
 
 def get_object(endpoint: pf.Platform, name: str, language: str) -> Optional[QualityProfile]:
