@@ -345,11 +345,11 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     """
 
     log.info("Exporting groups")
-    g_list = {}
+    g_list = []
     for g_name, g_obj in get_list(endpoint=endpoint).items():
         if not export_settings.get("FULL_EXPORT", False) and g_obj.is_default():
             continue
-        g_list[g_name] = "" if g_obj.description is None else g_obj.description
+        g_list.append({"name": g_name, "description": g_obj.description or ""})
     log.info("%s groups to export", len(g_list))
     if write_q := kwargs.get("write_q", None):
         write_q.put(g_list)
