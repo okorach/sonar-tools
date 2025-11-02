@@ -139,8 +139,8 @@ def test_import_no_zip(get_test_project: Generator[projects.Project]) -> None:
         pytest.skip("No zip import in Community Build")
     assert get_test_project.import_zip(asynchronous=False) == "FAILED/ZIP_MISSING"
     get_test_project.key = "non-existing"
-    res = get_test_project.import_zip(asynchronous=False)
-    assert res.startswith("FAILED/ZIP_MISSING")
+    with pytest.raises(exceptions.ObjectNotFound):
+        get_test_project.import_zip(asynchronous=False)
 
 
 def test_monorepo() -> None:
@@ -392,6 +392,7 @@ def test_import_zips() -> None:
     res = projects.import_zips(tutil.SQ, project_list=proj_list)
     assert len(res) == len(proj_list)
     assert sum(1 for r in res.values() if r["importStatus"] != "SUCCESS") == len(proj_list)
+    projects.Project.get_object(tutil.SQ, "non-existing").delete()
 
 
 def test_export_zips() -> None:
