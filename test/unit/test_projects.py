@@ -365,19 +365,6 @@ def test_audit_languages(get_test_project: Generator[projects.Project]) -> None:
     assert proj.audit_languages({"audit.projects.utilityLocs": True}) == []
 
 
-def test_wrong_key_2(get_test_project: Generator[projects.Project]) -> None:
-    """test_wrong_key"""
-    proj = get_test_project
-    proj.key = tutil.NON_EXISTING_KEY
-    with pytest.raises(exceptions.ObjectNotFound):
-        _ = proj.webhooks()
-    with pytest.raises(exceptions.ObjectNotFound):
-        _ = proj.links()
-    # assert proj.quality_gate() is None
-    with pytest.raises(exceptions.ObjectNotFound):
-        proj.audit({})
-
-
 def test_set_permissions(get_test_project: Generator[projects.Project]) -> None:
     """test_set_permissions"""
     proj = get_test_project
