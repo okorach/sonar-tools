@@ -1005,7 +1005,7 @@ class Project(components.Component):
             nc = self.new_code()
             if nc != "":
                 json_data[settings.NEW_CODE_PERIOD] = nc
-            json_data["qualityProfiles"] = self.__export_get_qp()
+            json_data["qualityProfiles"] = util.dict_to_list(self.__export_get_qp(), "language", "name")
             json_data["links"] = self.links()
             json_data["permissions"] = self.permissions().to_json(csv=export_settings.get("INLINE_LISTS", True))
             if self.endpoint.version() >= (10, 7, 0):
