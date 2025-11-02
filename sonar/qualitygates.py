@@ -92,7 +92,7 @@ GOOD_QG_CONDITIONS = {
     "prioritized_rule_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
 }
 
-_IMPORTABLE_PROPERTIES = ("isDefault", "isBuiltIn", "conditions", "permissions")
+_IMPORTABLE_PROPERTIES = ("name", "isDefault", "isBuiltIn", "conditions", "permissions")
 
 
 class QualityGate(sq.SqObject):
@@ -121,8 +121,8 @@ class QualityGate(sq.SqObject):
         self._permissions: Optional[object] = None  #: Quality gate permissions
         self._projects: Optional[dict[str, projects.Project]] = None  #: Projects using this quality profile
         self.sq_json = data
-        self.name = data.pop("name")
-        self.key = data.pop("id", self.name)
+        self.name = data.get("name")
+        self.key = data.get("id", self.name)
         self.is_default = data.get("isDefault", False)
         self.is_built_in = data.get("isBuiltIn", False)
         self.conditions()
@@ -457,7 +457,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     :return: Quality gates representations as JSON
     """
     log.info("Exporting quality gates")
-    qg_list = {k: qg.to_json(export_settings) for k, qg in get_list(endpoint).items()}
+    qg_list = [qg.to_json(export_settings) for qg in get_list(endpoint).values()]
     write_q = kwargs.get("write_q", None)
     if write_q:
         write_q.put(qg_list)
