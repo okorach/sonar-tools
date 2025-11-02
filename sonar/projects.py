@@ -1038,10 +1038,8 @@ class Project(components.Component):
                 pass
             if contains_ai:
                 json_data[_CONTAINS_AI_CODE] = contains_ai
-            for s in settings_dict.values():
-                if not export_settings.get("INCLUDE_INHERITED", False) and s.inherited:
-                    continue
-                json_data.update(s.to_json())
+            with_inherited = export_settings.get("INCLUDE_INHERITED", False)
+            json_data["settings"] = [s.to_json() for s in settings_dict.values() if with_inherited or not s.inherited and s.key != "visibility"]
 
         except Exception as e:
             util.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
