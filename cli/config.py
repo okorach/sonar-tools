@@ -125,10 +125,7 @@ def __parse_args(desc: str) -> object:
 def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remove_none: bool = True) -> dict[str, any]:
     """Sorts a JSON file and optionally remove empty and none values"""
     log.info("Normalizing JSON - remove empty = %s, remove nones = %s", str(remove_empty), str(remove_none))
-    if remove_empty:
-        json_data = utilities.remove_empties(json_data)
-    if remove_none:
-        json_data = utilities.remove_nones(json_data)
+    json_data = utilities.clean_data(json_data, remove_none=remove_none, remove_empty=remove_empty)
     json_data = utilities.order_keys(json_data, *_SECTIONS_ORDER)
     for key in [k for k in _SECTIONS_TO_SORT if k in json_data]:
         json_data[key] = {k: json_data[key][k] for k in sorted(json_data[key])}
@@ -260,7 +257,7 @@ def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: type
         json_data = utilities.remove_nones(json_data)
         if not export_settings.get(EXPORT_EMPTY, False):
             log.debug("Removing empties")
-            json_data = utilities.remove_empties(json_data)
+            json_data = utilities.clean_data(json_data, remove_empty=True)
     if export_settings.get("INLINE_LISTS", True):
         json_data = utilities.inline_lists(json_data, exceptions=("conditions",))
     return json_data
