@@ -207,11 +207,11 @@ class Setting(sqobject.SqObject):
         elif self.key == COMPONENT_VISIBILITY:
             self.value = data.get("visibility", None)
         elif self.key == "sonar.login.message":
-            self.value: Optional[Any] = None
+            self.value = None
             if "values" in data and isinstance(data["values"], list) and len(data["values"]) > 0:
                 self.value = data["values"][0]
         else:
-            self.value = next((data[key] for key in ("fieldValues", "values", "value") if key in data), None)
+            self.value = util.convert_to_type(next((data[key] for key in ("fieldValues", "values", "value") if key in data), None))
             if not self.value and "defaultValue" in data:
                 self.value = util.DEFAULT
         self.__reload_inheritance(data)

@@ -159,14 +159,20 @@ def redacted_token(token: str) -> str:
         return re.sub(r"(..).*(..)", r"\1***\2", token)
 
 
-def convert_to_type(value: Any) -> Any:
+def convert_to_type(value: str) -> Any:
     """Converts a potentially string value to the corresponding int or float"""
+    if not isinstance(value, str):
+        return value
     try:
         return int(value)
     except ValueError:
         pass
     try:
         return float(value)
+    except ValueError:
+        pass
+    try:
+        return bool(value)
     except ValueError:
         pass
     return value
