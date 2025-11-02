@@ -723,7 +723,7 @@ def dict_remap_and_stringify(original_dict: dict[str, str], remapping: dict[str,
     return dict_stringify(dict_remap(original_dict, remapping))
 
 
-def list_to_dict(original_list: list[dict[str, any]], key_field: str) -> dict[str, any]:
+def list_to_dict(original_list: list[dict[str, Any]], key_field: str) -> dict[str, any]:
     """Converts a list to dict with list key_field as dict key"""
     converted_dict = {elem[key_field]: elem for elem in original_list}
     for e in converted_dict.values():
@@ -731,7 +731,7 @@ def list_to_dict(original_list: list[dict[str, any]], key_field: str) -> dict[st
     return converted_dict
 
 
-def dict_to_list(original_dict: dict[str, any], key_field: str, value_field: Optional[str] = "value") -> list[str, any]:
+def dict_to_list(original_dict: dict[str, Any], key_field: str, value_field: Optional[str] = "value") -> list[str, any]:
     """Converts a dict to list adding dict key in list key_field"""
     if isinstance(original_dict, list):
         return original_dict
@@ -791,20 +791,6 @@ def pretty_print_json(file: str) -> bool:
     return True
 
 
-def order_keys(original_dict: dict[str, any], *keys) -> dict[str, any]:
-    """Orders a dict keys in a chosen order, existings keys not in *keys are pushed to the end
-    :param dict[str, any] original_dict: Dict to order
-    :param str *keys: List of keys in desired order
-    :return: same dict with keys in desired order
-    """
-    ordered_dict = {}
-    for key in [k for k in keys if k in original_dict]:
-        ordered_dict[key] = original_dict[key]
-    for key in [k for k in original_dict if k not in keys]:
-        ordered_dict[key] = original_dict[key]
-    return ordered_dict
-
-
 def flatten(original_dict: dict[str, any]) -> dict[str, any]:
     """Flattens a recursive dict into a flat one"""
     flat_dict = {}
@@ -832,6 +818,20 @@ def sort_list_by_key(list_to_sort: list[dict[str, Any]], key: str, priority_fiel
     tmp_dict = {elem[key]: elem for elem in list_to_sort if elem != f_elem}
     first_elem = [f_elem] if f_elem else []
     return first_elem + list(dict(sorted(tmp_dict.items())).values())
+
+
+def order_keys(original_dict: dict[str, any], *keys) -> dict[str, any]:
+    """Orders a dict keys in a chosen order, existings keys not in *keys are pushed to the end
+    :param dict[str, any] original_dict: Dict to order
+    :param str *keys: List of keys in desired order
+    :return: same dict with keys in desired order
+    """
+    ordered_dict = {}
+    for key in [k for k in keys if k in original_dict]:
+        ordered_dict[key] = original_dict[key]
+    for key in [k for k in original_dict if k not in keys]:
+        ordered_dict[key] = original_dict[key]
+    return ordered_dict
 
 
 def order_dict(d: dict[str, Any], key_order: list[str]) -> dict[str, Any]:
