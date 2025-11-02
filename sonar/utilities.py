@@ -172,18 +172,6 @@ def convert_to_type(value: Any) -> Any:
     return value
 
 
-def remove_nones(d: dict[str, any]) -> dict[str, any]:
-    """Removes elements of the dict that are None values"""
-    new_d = d.copy()
-    for k, v in d.items():
-        if v is None:
-            new_d.pop(k)
-            continue
-        if isinstance(v, dict):
-            new_d[k] = remove_nones(v)
-    return new_d
-
-
 def none_to_zero(d: dict[str, any], key_match: str = "^.+$") -> dict[str, any]:
     """Replaces None values in a dict with 0"""
     new_d = d.copy()
@@ -197,21 +185,36 @@ def none_to_zero(d: dict[str, any], key_match: str = "^.+$") -> dict[str, any]:
     return new_d
 
 
-def remove_empties(d: dict[str, any]) -> dict[str, any]:
+def remove_nones(d: Any) -> Any:
+    """Removes elements of the data that are None values"""
+    return clean_data(d, remove_empty=False, remove_none=True)
+
+
+def clean_data(d: Any, remove_empty: bool = True, remove_none: bool = True) -> Any:
     """Recursively removes empty lists and dicts and none from a dict"""
     # log.debug("Cleaning up %s", json_dump(d))
-    new_d = d.copy()
-    for k, v in d.items():
-        if isinstance(v, str) and v == "":
-            new_d.pop(k)
-            continue
-        if not isinstance(v, (list, dict)):
-            continue
-        if len(v) == 0:
-            new_d.pop(k)
-        elif isinstance(v, dict):
-            new_d[k] = remove_empties(v)
-    return new_d
+    if not isinstance(d, (list, dict)):
+        return d
+
+    if isinstance(d, list):
+        # Remove empty strings and nones
+        if remove_empty:
+            d = [elem for elem in d if not (isinstance(elem, str) and elem == "")]
+        if remove_none:
+            d = [elem for elem in d if elem is not None]
+        return [clean_data(elem, remove_empty, remove_none) for elem in d]
+
+    # Remove empty dict string values
+    if remove_empty:
+        new_d = {k: v for k, v in d.items() if not isinstance(v, str) or v != ""}
+    if remove_none:
+        new_d = {k: v for k, v in d.items() if v is not None}
+
+    # Remove empty dict list or dict values
+    new_d = {k: v for k, v in new_d.items() if not isinstance(v, (list, dict)) or len(v) > 0}
+
+    # Recurse
+    return {k: clean_data(v, remove_empty, remove_none) for k, v in new_d.items()}
 
 
 def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
@@ -278,15 +281,13 @@ def list_to_regexp(str_list: list[str]) -> str:
     return "(" + "|".join(str_list) + ")" if len(str_list) > 0 else ""
 
 
-def list_to_csv(
-    array: Union[None, str, int, float, list[str], set[str], tuple[str]], separator: str = ",", check_for_separator: bool = False
-) -> Optional[str]:
+def list_to_csv(array: Union[None, str, int, float, list[str], set[str], tuple[str]], separator: str = ",", check_for_separator: bool = False) -> Any:
     """Converts a list of strings to CSV"""
     if isinstance(array, str):
         return csv_normalize(array, separator) if " " in array else array
     if array is None:
         return None
-    if isinstance(array, (list, set, tuple)):
+    if isinstance(array, (list, set, tuple)) and all(isinstance(e, str) for e in array):
         if check_for_separator:
             # Don't convert to string if one array item contains the string separator
             s = separator.strip()
@@ -294,7 +295,7 @@ def list_to_csv(
                 if s in item:
                     return array
         return separator.join([v.strip() for v in array])
-    return str(array)
+    return array
 
 
 def csv_normalize(string: str, separator: str = ",") -> str:
@@ -314,10 +315,10 @@ def union(list1: list[any], list2: list[any]) -> list[any]:
     return list1 + [value for value in list2 if value not in list1]
 
 
-def difference(list1: list[any], list2: list[any]) -> list[any]:
+def difference(list1: list[Any], list2: list[Any]) -> list[Any]:
     """Computes difference of 2 lists"""
     # FIXME - This should be sets
-    return [value for value in list1 if value not in list2]
+    return list(set(list1) - set(list2))
 
 
 def quote(string: str, sep: str) -> str:
@@ -578,15 +579,11 @@ def __prefix(value: Any) -> Any:
         return value
 
 
-def filter_export(json_data: dict[str, any], key_properties: list[str], full: bool) -> dict[str, any]:
+def filter_export(json_data: dict[str, Any], key_properties: list[str], full: bool) -> dict[str, Any]:
     """Filters dict for export removing or prefixing non-key properties"""
-    new_json_data = json_data.copy()
-    for k in json_data:
-        if k not in key_properties:
-            if full and k != "actions":
-                new_json_data[f"_{k}"] = __prefix(new_json_data.pop(k))
-            else:
-                new_json_data.pop(k)
+    new_json_data = {k: json_data[k] for k in key_properties if k in json_data}
+    if full:
+        new_json_data |= {f"_{k}": __prefix(v) for k, v in json_data.items() if k not in key_properties}
     return new_json_data
 
 
@@ -825,3 +822,25 @@ def similar_strings(key1: str, key2: str, max_distance: int = 5) -> bool:
         return False
     max_distance = min(len(key1) // 2, len(key2) // 2, max_distance)
     return (len(key2) >= 7 and (re.match(key2, key1))) or Levenshtein.distance(key1, key2, score_cutoff=6) <= max_distance
+
+
+def sort_list_by_key(list_to_sort: list[dict[str, Any]], key: str, priority_field: Optional[str] = None) -> list[dict[str, Any]]:
+    """Sorts a lits of dicts by a given key, exception for the priority field that would go first"""
+    f_elem = None
+    if priority_field:
+        f_elem = next((elem for elem in list_to_sort if priority_field in elem), None)
+    tmp_dict = {elem[key]: elem for elem in list_to_sort if elem != f_elem}
+    first_elem = [f_elem] if f_elem else []
+    return first_elem + list(dict(sorted(tmp_dict.items())).values())
+
+
+def order_dict(d: dict[str, Any], key_order: list[str]) -> dict[str, Any]:
+    """Orders keys of a dictionary in a given order"""
+    new_d = {k: d[k] for k in key_order if k in d}
+    return new_d | {k: v for k, v in d.items() if k not in new_d}
+
+
+def order_list(l: list[str], *key_order) -> list[str]:
+    """Orders elements of a list in a given order"""
+    new_l = [k for k in key_order if k in l]
+    return new_l + [k for k in l if k not in new_l]
