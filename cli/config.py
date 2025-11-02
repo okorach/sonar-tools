@@ -124,11 +124,15 @@ def __parse_args(desc: str) -> object:
 
 def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remove_none: bool = True) -> dict[str, any]:
     """Sorts a JSON file and optionally remove empty and none values"""
+    SORT_FIELDS = {"users": "login"}
     log.info("Normalizing JSON - remove empty = %s, remove nones = %s", str(remove_empty), str(remove_none))
     json_data = utilities.clean_data(json_data, remove_none=remove_none, remove_empty=remove_empty)
     json_data = utilities.order_keys(json_data, *_SECTIONS_ORDER)
     for key in [k for k in _SECTIONS_TO_SORT if k in json_data]:
-        json_data[key] = {k: json_data[key][k] for k in sorted(json_data[key])}
+        if isinstance(json_data[key], dict):
+            json_data[key] = {k: json_data[key][k] for k in sorted(json_data[key])}
+        else:
+            json_data[key] = utilities.sort_list_by_key(json_data[key], SORT_FIELDS.get(key, "key"))
     return json_data
 
 
@@ -169,7 +173,16 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
     done = False
     prefix = ""
     log.info("Waiting %s to write...", object_type)
-    print(f'"{object_type}": ' + "{", file=fd)
+    objects_exported_as_lists = ("projects", "applications", "users", "portfolios")
+    objects_exported_as_whole = ("qualityGates", "groups")
+    log.info("Waiting %s to write...", object_type)
+    if object_type in objects_exported_as_lists:
+        start, stop = ("[", "]")
+    elif object_type in objects_exported_as_whole:
+        start, stop = ("", "")
+    else:
+        start, stop = ("{", "}")
+    print(f'"{object_type}": ' + start, file=fd)
     while not done:
         obj_json = queue.get()
         if not (done := obj_json is utilities.WRITE_END):
@@ -177,19 +190,20 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
                 obj_json = __prep_json_for_write(obj_json, {**export_settings, EXPORT_EMPTY: True})
             else:
                 obj_json = __prep_json_for_write(obj_json, export_settings)
-            if object_type in ("projects", "applications", "portfolios", "users"):
-                if object_type == "users":
-                    key = obj_json.pop("login", None)
-                else:
-                    key = obj_json.pop("key", None)
-                log.debug("Writing %s key '%s'", object_type[:-1], key)
+            key = "" if isinstance(obj_json, list) else obj_json.get("key", obj_json.get("login", obj_json.get("name", "unknown")))
+            log.debug("Writing %s key '%s'", object_type[:-1], key)
+            if object_type in objects_exported_as_lists:
+                print(f"{prefix}{utilities.json_dump(obj_json)}", end="", file=fd)
+            elif object_type in objects_exported_as_whole:
+                print(f"{prefix}{utilities.json_dump(obj_json)}", end="", file=fd)
+            elif object_type in ("applications", "portfolios", "users"):
                 print(f'{prefix}"{key}": {utilities.json_dump(obj_json)}', end="", file=fd)
             else:
                 log.debug("Writing %s", object_type)
                 print(f"{prefix}{utilities.json_dump(obj_json)[2:-1]}", end="", file=fd)
             prefix = ",\n"
         queue.task_done()
-    print("\n}", file=fd, end="")
+    print("\n" + stop, file=fd, end="")
     log.info("Writing %s complete", object_type)
 
 
