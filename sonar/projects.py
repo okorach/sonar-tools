@@ -1010,7 +1010,7 @@ class Project(components.Component):
             json_data["permissions"] = self.permissions().to_json(csv=export_settings.get("INLINE_LISTS", True))
             if self.endpoint.version() >= (10, 7, 0):
                 json_data["aiCodeFix"] = self.ai_code_fix()
-            json_data["branches"] = self.__get_branch_export(export_settings)
+            json_data["branches"] = util.dict_to_list(self.__get_branch_export(export_settings), "name")
             json_data["tags"] = self.get_tags()
             json_data["visibility"] = self.visibility()
             (json_data["qualityGate"], qg_is_default) = self.quality_gate()
