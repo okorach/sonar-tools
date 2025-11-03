@@ -224,7 +224,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
         for what_item, call_data in _EXPORT_CALLS.items():
             if what_item not in what:
                 continue
-            ndx, func, _ = call_data
+            ndx, func = call_data
             if not is_first:
                 print(",", file=fd)
             is_first = False
