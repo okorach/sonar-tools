@@ -562,12 +562,6 @@ def convert_rule_list_for_yaml(rule_list: types.ObjectJsonRepr) -> list[types.Ob
     return utilities.dict_to_list(rule_list, "key", "severity")
 
 
-def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
-    """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    clean_json = utilities.remove_nones(original_json)
-    return {category: convert_rule_list_for_yaml(clean_json[category]) for category in ("instantiated", "extended") if category in clean_json}
-
-
 def third_party(endpoint: platform.Platform) -> list[Rule]:
     """Returns the list of rules coming from 3rd party plugins"""
     return [r for r in get_list(endpoint=endpoint).values() if r.repo and r.repo not in SONAR_REPOS and not r.repo.startswith("external_")]
