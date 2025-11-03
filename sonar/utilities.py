@@ -732,6 +732,8 @@ def dict_remap_and_stringify(original_dict: dict[str, str], remapping: dict[str,
 
 def list_to_dict(original_list: list[dict[str, Any]], key_field: str) -> dict[str, any]:
     """Converts a list to dict with list key_field as dict key"""
+    if original_list is None:
+        return original_list
     converted_dict = {elem[key_field]: elem for elem in original_list}
     for e in converted_dict.values():
         e.pop(key_field)
@@ -740,7 +742,7 @@ def list_to_dict(original_list: list[dict[str, Any]], key_field: str) -> dict[st
 
 def dict_to_list(original_dict: dict[str, Any], key_field: str, value_field: Optional[str] = "value") -> list[str, any]:
     """Converts a dict to list adding dict key in list key_field"""
-    if isinstance(original_dict, list):
+    if original_dict is None or isinstance(original_dict, list):
         return original_dict
     return [{key_field: key, value_field: elem} if not isinstance(elem, dict) else {key_field: key, **elem} for key, elem in original_dict.items()]
 
