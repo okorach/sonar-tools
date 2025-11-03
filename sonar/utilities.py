@@ -850,3 +850,8 @@ def order_list(l: list[str], *key_order) -> list[str]:
     """Orders elements of a list in a given order"""
     new_l = [k for k in key_order if k in l]
     return new_l + [k for k in l if k not in new_l]
+
+
+def perms_to_list(perms: dict[str, Any]) -> list[str, Any]:
+    """Converts permissions in dict format to list format"""
+    return dict_to_list(perms.get("groups", {}), "group", "permissions") + dict_to_list(perms.get("users", {}), "user", "permissions")

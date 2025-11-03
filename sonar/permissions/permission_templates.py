@@ -42,7 +42,7 @@ _SEARCH_API = "permissions/search_templates"
 _CREATE_API = "permissions/create_template"
 _UPDATE_API = "permissions/update_template"
 
-_IMPORTABLE_PROPERTIES = ("name", "description", "pattern", "permissions", "defaultFor")
+_IMPORTABLE_PROPERTIES = ("name", "description", "pattern", "defaultFor", "permissions")
 
 
 class PermissionTemplate(sqobject.SqObject):
