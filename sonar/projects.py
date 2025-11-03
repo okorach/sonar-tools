@@ -1705,5 +1705,5 @@ def convert_proj_for_yaml(proj_json: types.ObjectJsonRepr) -> types.ObjectJsonRe
     if "qualityProfiles" in proj_json:
         proj_json["qualityProfiles"] = util.dict_to_list(proj_json["qualityProfiles"], "language", "name")
     if "permissions" in proj_json:
-        proj_json["permissions"] = perms.convert_for_yaml(proj_json["permissions"])
+        proj_json["permissions"] = convert_for_yaml(proj_json["permissions"])
     return proj_json
