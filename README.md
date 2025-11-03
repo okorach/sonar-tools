@@ -1,8 +1,9 @@
 # sonar-tools
 Command line tools to help in SonarQube administration tasks. Available as a **pypi.org** package or a **docker** image.
 
-`sonar-tools` is compatible with SonarQube versions 9.9.x, LTA (2025.1.x as of June 2025), latest 2025.x (2025.3.x as of June 2025). It may work with older 9.x versions or intermediate 10.x versions but this is not guaranteed.
-`sonar-tools` is also compatible with the **latest** SonarQube Community Build (25.6 as of June 2025).
+`sonar-tools` is compatible with:
+- SonarQube Server versions 9.9.x, January LTA (2025.1.x), July LTA (2025.4.x), latest 2025.x (2025.5 as of Oct 2025). It may work with older 9.x versions or intermediate 10.x versions but this is not guaranteed.
+- The **latest** SonarQube Community Build (25.10 as of Oct 2025).
 
 
 ![Downloads](https://img.shields.io/pypi/dm/sonar-tools?color=informational)
@@ -30,9 +31,9 @@ deletes tokens created since more than a certain number of days
 - [sonar-config](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md): Exports or Imports a SonarQube Server or Cloud platform configuration to/from configuration as code file (JSON file).
 - [sonar-rules](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-rules.md): Exports SonarQube Server or Cloud rules.
 
-:information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube Server LTA (Long Term Active, 2025.1.x as of Oct 2025), LATEST (2025.5.x as of Oct 2025), Community Build (25.9.x as of Oct 2025) and 9.9.9 versions**
+:information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube Server Jan LTA (Long Term Active, 2025.1.x as of Oct 2025), July LTA (2025.4.x as of Oct 2025), LATEST (2025.5.x as of Oct 2025), Community Build (25.9.x as of Oct 2025) and 9.9.9 versions, and SonarQube Clou**
 
-:warning: **sonar-tools** 2.7 or higher is required for compatibility with SonarQube Server 10
+:warning: **sonar-tools** 2.7 or higher is required for compatibility with SonarQube Cloud or SonarQube Server 10 and higher
 
 # What's New - Release notes
 - [What's new](https://github.com/okorach/sonar-tools/blob/master/doc/what-is-new.md)
