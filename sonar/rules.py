@@ -345,7 +345,8 @@ class Rule(sq.SqObject):
         """Returns the rule clean code attributes"""
         found_qp = None
         if quality_profile_id:
-            self.refresh()
+            if "actives" not in self.sq_json:
+                self.refresh()
             found_qp = next((qp for qp in self.sq_json.get("actives", []) if quality_profile_id and qp["qProfile"] == quality_profile_id), None)
         if not found_qp:
             return self._impacts if len(self._impacts) > 0 else {TYPE_TO_QUALITY[self.type]: self.severity}
@@ -360,6 +361,17 @@ class Rule(sq.SqObject):
             return {k: c.DEFAULT if qp_impacts[k] == default_impacts.get(k, qp_impacts[k]) else v for k, v in qp_impacts.items()}
         else:
             return qp_impacts
+
+    def rule_severity(self, quality_profile_id: Optional[str] = None, substitute_with_default: bool = True) -> str:
+        """Returns the severity, potentially customized in a QP"""
+        found_qp = None
+        if quality_profile_id:
+            if "actives" not in self.sq_json:
+                self.refresh()
+            found_qp = next((qp for qp in self.sq_json.get("actives", []) if quality_profile_id and qp["qProfile"] == quality_profile_id), None)
+        if not found_qp:
+            return c.DEFAULT if substitute_with_default else self.severity
+        return c.DEFAULT if substitute_with_default and found_qp["severity"] == self.severity else found_qp["severity"]
 
     def __get_quality_profile_data(self, quality_profile_id: str) -> Optional[dict[str, str]]:
         if not quality_profile_id:
