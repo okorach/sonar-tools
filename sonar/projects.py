@@ -30,6 +30,7 @@ import re
 import json
 import concurrent.futures
 from datetime import datetime
+import traceback
 
 from typing import Optional, Union
 from http import HTTPStatus
@@ -1042,6 +1043,7 @@ class Project(components.Component):
             json_data["settings"] = [s.to_json() for s in settings_dict.values() if with_inherited or not s.inherited and s.key != "visibility"]
 
         except Exception as e:
+            traceback.print_exc()
             util.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
             json_data["error"] = f"{util.error_msg(e)} while exporting project"
         log.debug("Exporting %s done, returning %s", str(self), util.json_dump(json_data))
