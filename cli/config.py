@@ -124,7 +124,7 @@ def __parse_args(desc: str) -> object:
 
 def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remove_none: bool = True) -> dict[str, any]:
     """Sorts a JSON file and optionally remove empty and none values"""
-    SORT_FIELDS = {"users": "login", "groups": "name", "qualityGates": "name", "qualityProfiles": "language"}
+    sort_fields = {"users": "login", "groups": "name", "qualityGates": "name", "qualityProfiles": "language"}
     log.info("Normalizing JSON - remove empty = %s, remove nones = %s", str(remove_empty), str(remove_none))
     json_data = utilities.clean_data(json_data, remove_none=remove_none, remove_empty=remove_empty)
     json_data = utilities.order_keys(json_data, *_SECTIONS_ORDER)
@@ -192,12 +192,8 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
                 obj_json = __prep_json_for_write(obj_json, export_settings)
             key = "" if isinstance(obj_json, list) else obj_json.get("key", obj_json.get("login", obj_json.get("name", "unknown")))
             log.debug("Writing %s key '%s'", object_type[:-1], key)
-            if object_type in objects_exported_as_lists:
+            if object_type in objects_exported_as_lists or object_type in objects_exported_as_whole:
                 print(f"{prefix}{utilities.json_dump(obj_json)}", end="", file=fd)
-            elif object_type in objects_exported_as_whole:
-                print(f"{prefix}{utilities.json_dump(obj_json)}", end="", file=fd)
-            elif object_type in ("applications", "portfolios", "users"):
-                print(f'{prefix}"{key}": {utilities.json_dump(obj_json)}', end="", file=fd)
             else:
                 log.debug("Writing %s", object_type)
                 print(f"{prefix}{utilities.json_dump(obj_json)[2:-1]}", end="", file=fd)
