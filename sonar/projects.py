@@ -1008,7 +1008,7 @@ class Project(components.Component):
                 json_data[settings.NEW_CODE_PERIOD] = nc
             json_data["qualityProfiles"] = util.dict_to_list(self.__export_get_qp(), "language", "name")
             json_data["links"] = self.links()
-            json_data["permissions"] = self.permissions().to_json(csv=export_settings.get("INLINE_LISTS", True))
+            json_data["permissions"] = util.perms_to_list(self.permissions().to_json(csv=export_settings.get("INLINE_LISTS", True)))
             if self.endpoint.version() >= (10, 7, 0):
                 json_data["aiCodeFix"] = self.ai_code_fix()
             json_data["branches"] = util.dict_to_list(self.__get_branch_export(export_settings), "name")
