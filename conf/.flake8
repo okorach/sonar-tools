@@ -3,4 +3,5 @@
 ignore = E501,E401,W503,E128,C901,W504,E302,E265,E741,W291,W292,W293,W391,F401,E226,F841,F821,F541,D400,D401,E800,D102,D105,D107,I900,F632,E261,E731
 max-line-length = 150
 #exclude = tests/*
+exclude = test/gen/*
 #max-complexity = 10
