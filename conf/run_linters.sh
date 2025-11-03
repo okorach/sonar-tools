@@ -66,7 +66,7 @@ if [[ "${linters_to_run}" == *"flake8"* ]]; then
     echo "===> Running flake8"
     rm -f "${FLAKE8_REPORT}"
     # See .flake8 file for settings
-    flake8 --config "${CONF_DIR}/.flake8" "${ROOT_DIR}" | tee "${FLAKE8_REPORT}"
+    flake8 --config "${CONF_DIR}/.flake8" --exclude test/gen "${ROOT_DIR}" | tee "${FLAKE8_REPORT}"
 fi
 
 if [[ "${localbuild}" = "true" ]]; then

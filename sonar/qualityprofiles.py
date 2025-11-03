@@ -393,11 +393,15 @@ class QualityProfile(sq.SqObject):
             json_data.pop("isBuiltIn", None)
             json_data["rules"] = []
             for rule in self.rules().values():
-                data = {k: v for k, v in rule.export(full).items() if k not in ("isTemplate", "templateKey", "language", "tags", "severities")}
+                data = {
+                    k: v for k, v in rule.export(full).items() if k not in ("isTemplate", "templateKey", "language", "tags", "severities", "impacts")
+                }
                 if self.rule_is_prioritized(rule.key):
                     data["prioritized"] = True
-                if self.rule_has_custom_severities(rule.key):
-                    data["severities"] = self.rule_impacts(rule.key, substitute_with_default=True)
+                if self.rule_has_custom_severity(rule.key):
+                    data["severity"] = self.rule_severity(rule.key, substitute_with_default=True)
+                if self.rule_has_custom_impacts(rule.key):
+                    data["impacts"] = {k: v for k, v in self.rule_impacts(rule.key, substitute_with_default=True).items() if v != c.DEFAULT}
                 json_data["rules"].append({"key": rule.key, **data})
         json_data["permissions"] = self.permissions().export(export_settings)
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
@@ -422,21 +426,32 @@ class QualityProfile(sq.SqObject):
         return operations[op] if op in operations else operations[c.GET]
 
     def rule_impacts(self, rule_key: str, substitute_with_default: bool = True) -> dict[str, str]:
-        """Returns the severities of a rule in the quality profile
+        """Returns the impacts of a rule in the quality profile
 
         :param str rule_key: The rule key to get severities for
-        :return: The severities of the rule in the quality profile
+        :return: The impacts of the rule in the quality profile
         :rtype: dict[str, str]
         """
         return rules.Rule.get_object(self.endpoint, rule_key).impacts(self.key, substitute_with_default=substitute_with_default)
 
-    def __process_rules_diff(self, rule_set: dict[str:str]) -> dict[str:str]:
+    def rule_severity(self, rule_key: str, substitute_with_default: bool = True) -> str:
+        """Returns the severity of a rule in the quality profile
+
+        :param str rule_key: The rule key to get severities for
+        :return: The severity
+        :rtype: str
+        """
+        return rules.Rule.get_object(self.endpoint, rule_key).rule_severity(self.key, substitute_with_default=substitute_with_default)
+
+    def __process_rules_diff(self, rule_set: dict[str, str]) -> list[dict[str, str]]:
         diff_rules = {}
         for rule in rule_set:
             r_key = rule["key"]
             diff_rules[r_key] = {}
-            if self.rule_has_custom_severities(r_key):
-                diff_rules[r_key]["severities"] = self.rule_impacts(r_key, substitute_with_default=True)
+            if self.rule_has_custom_severity(r_key):
+                diff_rules[r_key]["severity"] = self.rule_severity(r_key, substitute_with_default=True)
+            if self.rule_has_custom_impacts(r_key):
+                diff_rules[r_key]["impacts"] = {k: v for k, v in self.rule_impacts(r_key, substitute_with_default=True).items() if v != c.DEFAULT}
             if self.rule_is_prioritized(r_key):
                 diff_rules[r_key]["prioritized"] = True
             if (params := self.rule_custom_params(r_key)) is not None:
@@ -500,23 +515,44 @@ class QualityProfile(sq.SqObject):
         """
         return project.key in self.projects()
 
-    def rule_has_custom_severities(self, rule_key: str) -> bool:
-        """Checks whether the rule has a custom severity in the quality profile
+    def rule_has_custom_impacts(self, rule_key: str) -> bool:
+        """Checks whether the rule has custom impacts in the quality profile
 
         :param str rule_key: The rule key to check
-        :return: Whether the rule has a some custom severities in the quality profile
+        :return: Whether the rule has a some custom impacts in the quality profile
         """
         if self.endpoint.is_sonarcloud():
             return False
         rule = rules.Rule.get_object(self.endpoint, rule_key)
+        impacts = rule.impacts(quality_profile_id=self.key, substitute_with_default=True)
+        has_custom = any(sev != c.DEFAULT for sev in impacts.values())
         log.debug(
-            "Checking if rule %s has custom severities in %s: %s - result %s",
+            "Checking if rule %s has custom impacts in %s: %s - result %s",
             rule_key,
             str(self),
-            str(rule.impacts(quality_profile_id=self.key, substitute_with_default=True)),
-            any(sev != c.DEFAULT for sev in rule.impacts(quality_profile_id=self.key, substitute_with_default=True).values()),
+            str(impacts),
+            has_custom,
         )
-        return any(sev != c.DEFAULT for sev in rule.impacts(quality_profile_id=self.key, substitute_with_default=True).values())
+        return has_custom
+
+    def rule_has_custom_severity(self, rule_key: str) -> bool:
+        """Checks whether the rule has custom impacts in the quality profile
+
+        :param str rule_key: The rule key to check
+        :return: Whether the rule has a some custom severity in the quality profile
+        """
+        if self.endpoint.is_sonarcloud():
+            return False
+        rule = rules.Rule.get_object(self.endpoint, rule_key)
+        sev = rule.rule_severity(quality_profile_id=self.key, substitute_with_default=True)
+        log.debug(
+            "Checking if rule %s has custom impacts in %s: %s - result %s",
+            rule_key,
+            str(self),
+            sev,
+            sev != c.DEFAULT,
+        )
+        return sev != c.DEFAULT
 
     def rule_is_prioritized(self, rule_key: str) -> bool:
         """Checks whether the rule is prioritized in the quality profile
