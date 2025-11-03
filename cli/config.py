@@ -132,7 +132,7 @@ def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remov
         if isinstance(json_data[key], dict):
             json_data[key] = {k: json_data[key][k] for k in sorted(json_data[key])}
         else:
-            json_data[key] = utilities.sort_list_by_key(json_data[key], SORT_FIELDS.get(key, "key"))
+            json_data[key] = utilities.sort_list_by_key(json_data[key], sort_fields.get(key, "key"))
     return json_data
 
 
