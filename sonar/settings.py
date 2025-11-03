@@ -206,7 +206,7 @@ class Setting(sqobject.SqObject):
             self.value = data.get("mode", "MQR") != "STANDARD_EXPERIENCE"
         elif self.key == COMPONENT_VISIBILITY:
             self.value = data.get("visibility", None)
-        elif self.key == "sonar.login.message":
+        elif self.key in ("sonar.login.message", "sonar.announcement.message"):
             self.value = None
             if "values" in data and isinstance(data["values"], list) and len(data["values"]) > 0:
                 self.value = data["values"][0]

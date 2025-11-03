@@ -172,10 +172,10 @@ def convert_to_type(value: str) -> Any:
         return float(value)
     except ValueError:
         pass
-    try:
-        return bool(value)
-    except ValueError:
-        pass
+    if value.lower() == "true":
+        return True
+    if value.lower() == "false":
+        return False
     return value
 
 
