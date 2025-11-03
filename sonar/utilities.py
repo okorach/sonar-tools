@@ -24,6 +24,7 @@ Utilities for sonar-tools
 """
 
 from typing import Any, TextIO, Union, Optional
+from collections.abc import Generator
 from http import HTTPStatus
 import sys
 import os
@@ -460,7 +461,7 @@ def is_api_v2(api: str) -> bool:
 
 
 @contextlib.contextmanager
-def open_file(file: Optional[str] = None, mode: str = "w") -> TextIO:
+def open_file(file: Optional[str] = None, mode: str = "w") -> Generator[TextIO, None, None]:
     """Opens a file if not None or -, otherwise stdout"""
     if file and file != "-":
         log.debug("Opening file '%s' in directory '%s'", file, os.getcwd())
