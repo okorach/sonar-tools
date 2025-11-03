@@ -674,7 +674,7 @@ class Project(components.Component):
             )
         try:
             resp = self.post("project_dump/export", params={"key": self.key})
-        except exceptions.ObjectNotFound as e:
+        except exceptions.ObjectNotFound:
             Project.CACHE.pop(self)
             raise
         except exceptions.SonarException as e:

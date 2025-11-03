@@ -109,7 +109,7 @@ dev = [
 line-length = 150
 target-version = "py39"
 indent-width = 4
-
+exclude = ["test/gen"]
 [tool.ruff.format]
 # Like Black, use double quotes for strings.
 quote-style = "double"

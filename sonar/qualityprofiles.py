@@ -287,8 +287,7 @@ class QualityProfile(sq.SqObject):
             ok = self.post("qualityprofiles/activate_rule", params=api_params).ok
         except exceptions.SonarException:
             return False
-        if self._rules is None:
-            self._rules = {}
+        self._rules = self._rules or {}
         self._rules[rule_key] = rules.Rule.get_object(self.endpoint, rule_key)
         return ok
 

@@ -288,7 +288,7 @@ def list_to_regexp(str_list: list[str]) -> str:
     return "(" + "|".join(str_list) + ")" if len(str_list) > 0 else ""
 
 
-def list_to_csv(array: Union[None, str, int, float, list[str], set[str], tuple[str]], separator: str = ",", check_for_separator: bool = False) -> Any:
+def list_to_csv(array: Union[None, str, float, list[str], set[str], tuple[str]], separator: str = ",", check_for_separator: bool = False) -> Any:
     """Converts a list of strings to CSV"""
     if isinstance(array, str):
         return csv_normalize(array, separator) if " " in array else array
@@ -849,10 +849,10 @@ def order_dict(d: dict[str, Any], key_order: list[str]) -> dict[str, Any]:
     return new_d | {k: v for k, v in d.items() if k not in new_d}
 
 
-def order_list(l: list[str], *key_order) -> list[str]:
+def order_list(list_to_order: list[str], *key_order: str) -> list[str]:
     """Orders elements of a list in a given order"""
-    new_l = [k for k in key_order if k in l]
-    return new_l + [k for k in l if k not in new_l]
+    new_l = [k for k in key_order if k in list_to_order]
+    return new_l + [k for k in list_to_order if k not in new_l]
 
 
 def perms_to_list(perms: dict[str, Any]) -> list[str, Any]:
