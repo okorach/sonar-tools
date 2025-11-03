@@ -855,4 +855,6 @@ def order_list(l: list[str], *key_order) -> list[str]:
 
 def perms_to_list(perms: dict[str, Any]) -> list[str, Any]:
     """Converts permissions in dict format to list format"""
+    if not perms:
+        return perms
     return dict_to_list(perms.get("groups", {}), "group", "permissions") + dict_to_list(perms.get("users", {}), "user", "permissions")
