@@ -24,6 +24,7 @@ Utilities for sonar-tools
 """
 
 from typing import Any, TextIO, Union, Optional
+from collections.abc import Generator
 from http import HTTPStatus
 import sys
 import os
@@ -460,7 +461,7 @@ def is_api_v2(api: str) -> bool:
 
 
 @contextlib.contextmanager
-def open_file(file: Optional[str] = None, mode: str = "w") -> TextIO:
+def open_file(file: Optional[str] = None, mode: str = "w") -> Generator[TextIO, None, None]:
     """Opens a file if not None or -, otherwise stdout"""
     if file and file != "-":
         log.debug("Opening file '%s' in directory '%s'", file, os.getcwd())
@@ -850,3 +851,8 @@ def order_list(l: list[str], *key_order) -> list[str]:
     """Orders elements of a list in a given order"""
     new_l = [k for k in key_order if k in l]
     return new_l + [k for k in l if k not in new_l]
+
+
+def perms_to_list(perms: dict[str, Any]) -> list[str, Any]:
+    """Converts permissions in dict format to list format"""
+    return dict_to_list(perms.get("groups", {}), "group", "permissions") + dict_to_list(perms.get("users", {}), "user", "permissions")
