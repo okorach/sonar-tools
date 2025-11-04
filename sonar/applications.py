@@ -23,7 +23,7 @@ Abstraction of the SonarQube "application" concept
 """
 
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Any
 import re
 import json
 from datetime import datetime
@@ -340,10 +340,11 @@ class Application(aggr.Aggregation):
                 "visibility": self.visibility(),
                 # 'projects': self.projects(),
                 "branches": {br.name: br.export() for br in self.branches().values()},
-                "permissions": util.perms_to_list(self.permissions().export(export_settings=export_settings)),
+                "permissions": self.permissions().export(export_settings=export_settings),
                 "tags": self.get_tags(),
             }
         )
+        json_data = old_to_new_json_one(json_data)
         return util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
     def set_permissions(self, data: types.JsonPermissions) -> application_permissions.ApplicationPermissions:
@@ -507,7 +508,7 @@ def exists(endpoint: pf.Platform, key: str) -> bool:
         return False
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> list[dict[str, Any]]:
     """Exports applications as JSON
 
     :param endpoint: Reference to the Sonar platform
@@ -520,14 +521,13 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     key_regexp = kwargs.get("key_list", ".*")
 
     app_list = {k: v for k, v in get_list(endpoint).items() if not key_regexp or re.match(key_regexp, k)}
-    apps_settings = {}
+    apps_settings = []
     for k, app in app_list.items():
         app_json = app.export(export_settings)
         if write_q:
             write_q.put(app_json)
         else:
-            app_json.pop("key")
-            apps_settings[k] = app_json
+            apps_settings.append(app_json)
     write_q and write_q.put(util.WRITE_END)
     return apps_settings
 
@@ -598,3 +598,20 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Application]:
             data[app.key] = app
     # return {app.key: app for app in Application.CACHE.values() if app.name == name}
     return data
+
+
+def old_to_new_json_one(old_json: dict[str, Any]) -> dict[str, Any]:
+    new_json = old_json.copy()
+    if "permissions" in old_json:
+        new_json["permissions"] = util.perms_to_list(old_json["permissions"])
+    if "branches" in old_json:
+        new_json["branches"] = util.dict_to_list(old_json["branches"], "name")
+    return new_json
+
+
+def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    new_json = old_json.copy()
+    for k, v in new_json.items():
+        log.info("Convert %s %s", k, v)
+        new_json[k] = old_to_new_json_one(v)
+    return util.dict_to_list(new_json, "key")
