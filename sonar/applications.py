@@ -612,6 +612,5 @@ def old_to_new_json_one(old_json: dict[str, Any]) -> dict[str, Any]:
 def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
     new_json = old_json.copy()
     for k, v in new_json.items():
-        log.info("Convert %s %s", k, v)
         new_json[k] = old_to_new_json_one(v)
     return util.dict_to_list(new_json, "key")
