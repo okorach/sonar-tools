@@ -23,7 +23,7 @@
 from __future__ import annotations
 
 import concurrent.futures
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from datetime import datetime, timezone
 import json
 
@@ -568,3 +568,7 @@ def exists(endpoint: pf.Platform, login: str) -> bool:
     :return: whether the group exists
     """
     return User.get_object(endpoint=endpoint, login=login) is not None
+
+
+def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    return util.dict_to_list(old_json, "login")
