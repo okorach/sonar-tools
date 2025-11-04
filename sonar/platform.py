@@ -974,3 +974,28 @@ def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs) ->
     pbs = endpoint.audit(audit_settings)
     "write_q" in kwargs and kwargs["write_q"].put(pbs)
     return pbs
+
+
+def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    new_json = {}
+    if "plugins" in old_json:
+        new_json["plugins"] = util.dict_to_list(old_json["plugins"], "key")
+    return new_json
+
+
+def global_settings_old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    new_json = {}
+    special_categories = (settings.LANGUAGES_SETTINGS, settings.DEVOPS_INTEGRATION, "permissions", "permissionTemplates")
+    for categ in [cat for cat in settings.CATEGORIES if cat not in special_categories]:
+        new_json[categ] = util.sort_list_by_key(util.dict_to_list(old_json[categ], "key"), "key")
+    for k, v in old_json[settings.LANGUAGES_SETTINGS].items():
+        new_json[settings.LANGUAGES_SETTINGS] = new_json.get(settings.LANGUAGES_SETTINGS, None) or {}
+        new_json[settings.LANGUAGES_SETTINGS][k] = util.sort_list_by_key(util.dict_to_list(v, "key"), "key")
+    new_json[settings.LANGUAGES_SETTINGS] = util.dict_to_list(new_json[settings.LANGUAGES_SETTINGS], "language", "settings")
+    new_json[settings.DEVOPS_INTEGRATION] = util.dict_to_list(old_json[settings.DEVOPS_INTEGRATION], "key")
+    new_json["permissions"] = util.perms_to_list(old_json["permissions"])
+    for v in old_json["permissionTemplates"].values():
+        if "permissions" in v:
+            v["permissions"] = util.perms_to_list(v["permissions"])
+    new_json["permissionTemplates"] = util.dict_to_list(old_json["permissionTemplates"], "key")
+    return new_json
