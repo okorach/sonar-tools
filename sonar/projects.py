@@ -1696,23 +1696,3 @@ def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2
             log.info("%d/%d imports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), proj_key, status)
             log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses_count.items()]))
     return statuses
-
-
-def convert_proj_for_yaml(proj_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
-    """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    if "branches" in proj_json:
-        proj_json["branches"] = util.dict_to_list(proj_json["branches"], "name")
-    if "qualityProfiles" in proj_json:
-        proj_json["qualityProfiles"] = util.dict_to_list(proj_json["qualityProfiles"], "language", "name")
-    if "permissions" in proj_json:
-        proj_json["permissions"] = perms.convert_for_yaml(proj_json["permissions"])
-    return proj_json
-
-
-def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
-    """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
-    clean_json = util.remove_nones(original_json)
-    new_json = []
-    for proj in util.dict_to_list(clean_json, "key"):
-        new_json.append(convert_proj_for_yaml(proj))
-    return new_json

@@ -430,12 +430,3 @@ def black_list(perms: types.JsonPermissions, disallowed_perms: list[str]) -> typ
         for user_or_group, original_perms in sub_perms.items():
             resulting_perms[perm_type][user_or_group] = [p for p in original_perms if p not in disallowed_perms]
     return resulting_perms
-
-
-def convert_for_yaml(json_perms: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
-    """Converts permissions in a format that is more friendly for YAML"""
-    converted_perms = []
-    for ptype in "groups", "users":
-        if ptype in json_perms:
-            converted_perms += utilities.dict_to_list(json_perms[ptype], ptype[:-1], "permissions")
-    return converted_perms

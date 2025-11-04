@@ -64,16 +64,16 @@ _MIGRATION_EXPORT_SETTINGS = {
 }
 
 _EXPORT_CALLS = {
-    c.CONFIG_KEY_PLATFORM: [c.CONFIG_KEY_PLATFORM, platform.basics, platform.convert_for_yaml],
-    options.WHAT_SETTINGS: [c.CONFIG_KEY_SETTINGS, platform.export, platform.convert_for_yaml],
-    options.WHAT_RULES: [c.CONFIG_KEY_RULES, rules.export, rules.convert_for_yaml],
-    options.WHAT_PROFILES: [c.CONFIG_KEY_PROFILES, qualityprofiles.export, qualityprofiles.convert_for_yaml],
-    options.WHAT_GATES: [c.CONFIG_KEY_GATES, qualitygates.export, qualitygates.convert_for_yaml],
-    options.WHAT_PROJECTS: [c.CONFIG_KEY_PROJECTS, projects.export, projects.convert_for_yaml],
-    options.WHAT_APPS: [c.CONFIG_KEY_APPS, applications.export, applications.convert_for_yaml],
-    options.WHAT_PORTFOLIOS: [c.CONFIG_KEY_PORTFOLIOS, portfolios.export, portfolios.convert_for_yaml],
-    options.WHAT_USERS: [c.CONFIG_KEY_USERS, users.export, users.convert_for_yaml],
-    options.WHAT_GROUPS: [c.CONFIG_KEY_GROUPS, groups.export, groups.convert_for_yaml],
+    c.CONFIG_KEY_PLATFORM: [c.CONFIG_KEY_PLATFORM, platform.basics],
+    options.WHAT_SETTINGS: [c.CONFIG_KEY_SETTINGS, platform.export],
+    options.WHAT_RULES: [c.CONFIG_KEY_RULES, rules.export],
+    options.WHAT_PROFILES: [c.CONFIG_KEY_PROFILES, qualityprofiles.export],
+    options.WHAT_GATES: [c.CONFIG_KEY_GATES, qualitygates.export],
+    options.WHAT_PROJECTS: [c.CONFIG_KEY_PROJECTS, projects.export],
+    options.WHAT_APPS: [c.CONFIG_KEY_APPS, applications.export],
+    options.WHAT_PORTFOLIOS: [c.CONFIG_KEY_PORTFOLIOS, portfolios.export],
+    options.WHAT_USERS: [c.CONFIG_KEY_USERS, users.export],
+    options.WHAT_GROUPS: [c.CONFIG_KEY_GROUPS, groups.export],
 }
 
 WHAT_EVERYTHING = list(_EXPORT_CALLS.keys())[1:]
@@ -150,20 +150,10 @@ def __normalize_file(file: str, format: str) -> bool:
     json_data = __normalize_json(json_data, remove_empty=False, remove_none=True)
     with utilities.open_file(file, mode="w") as fd:
         if format == "yaml":
-            print(yaml.dump(__convert_for_yaml(json_data), sort_keys=False), file=fd)
+            print(yaml.dump(json_data, sort_keys=False), file=fd)
         else:
             print(utilities.json_dump(json_data), file=fd)
     return True
-
-
-def __convert_for_yaml(json_export: dict[str, any]) -> dict[str, any]:
-    """Converts the default JSON produced by export to a modified version more suitable for YAML"""
-    for what in WHAT_EVERYTHING:
-        for k in json_export:
-            if what.lower() == k.lower() or (what == "settings" and k == "globalSettings"):
-                yamlify_func = _EXPORT_CALLS[what][2]
-                json_export[k] = yamlify_func(json_export[k])
-    return json_export
 
 
 def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: str, export_settings: types.ConfigSettings) -> None:
@@ -234,7 +224,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
         for what_item, call_data in _EXPORT_CALLS.items():
             if what_item not in what:
                 continue
-            ndx, func, _ = call_data
+            ndx, func = call_data
             if not is_first:
                 print(",", file=fd)
             is_first = False
