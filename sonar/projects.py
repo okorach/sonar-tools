@@ -32,7 +32,7 @@ import concurrent.futures
 from datetime import datetime
 import traceback
 
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from http import HTTPStatus
 from threading import Lock
 from requests import HTTPError, RequestException
@@ -1696,3 +1696,22 @@ def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2
             log.info("%d/%d imports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), proj_key, status)
             log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses_count.items()]))
     return statuses
+
+
+def old_to_new_json_one(old_json: dict[str, Any]) -> dict[str, Any]:
+    new_json = old_json.copy()
+    if "permissions" in old_json:
+        new_json["permissions"] = util.perms_to_list(old_json["permissions"])
+    if "branches" in old_json:
+        new_json["branches"] = util.dict_to_list(old_json["branches"], "name")
+    if "settings" in old_json:
+        new_json["settings"] = util.dict_to_list(old_json["settings"], "key")
+    return new_json
+
+
+def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    new_json = old_json.copy()
+    for k, v in new_json.items():
+        log.info("Convert %s %s", k, v)
+        new_json[k] = old_to_new_json_one(v)
+    return util.dict_to_list(new_json, "key")
