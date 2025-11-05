@@ -24,7 +24,7 @@
 from __future__ import annotations
 import json
 
-from typing import Optional
+from typing import Optional, Any
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -428,7 +428,12 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
 def exists(endpoint: pf.Platform, name: str) -> bool:
     """
     :param endpoint: reference to the SonarQube platform
-    :param group_name: group name to check
+    :param name: group name to check
     :return: whether the group exists
     """
     return Group.get_object(endpoint=endpoint, name=name) is not None
+
+
+def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts sonar-config old groups JSON report format to new format"""
+    return util.dict_to_list(old_json, "name", "description")

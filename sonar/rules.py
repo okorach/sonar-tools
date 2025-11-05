@@ -28,7 +28,7 @@ from __future__ import annotations
 import json
 import concurrent.futures
 from threading import Lock
-from typing import Optional
+from typing import Optional, Any
 
 import sonar.logging as log
 import sonar.sqobject as sq
@@ -486,6 +486,7 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     for k in ("instantiated", "extended", "standard", "thirdParty"):
         if len(rule_list.get(k, {})) == 0:
             rule_list.pop(k, None)
+    rule_list = old_to_new_json(rule_list)
     if write_q := kwargs.get("write_q", None):
         write_q.put(rule_list)
         write_q.put(utilities.WRITE_END)
@@ -578,3 +579,12 @@ def severities(endpoint: platform.Platform, json_data: dict[str, any]) -> Option
         return {impact["softwareQuality"]: impact["severity"] for impact in json_data.get("impacts", [])}
     else:
         return json_data.get("severity", None)
+
+
+def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts the sonar-config rules old JSON report format to the new one"""
+    new_json = {}
+    for k in ("instantiated", "extended", "standard", "thirdParty"):
+        if k in old_json:
+            new_json[k] = utilities.dict_to_list(old_json[k], "key")
+    return new_json

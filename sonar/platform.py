@@ -465,9 +465,7 @@ class Platform(object):
         return url
 
     def webhooks(self) -> dict[str, webhooks.WebHook]:
-        """
-        :return: the list of global webhooks
-        """
+        """Returns the list of global webhooks"""
         return webhooks.get_list(self)
 
     def export(self, export_settings: types.ConfigSettings, full: bool = False) -> types.ObjectJsonRepr:
@@ -476,18 +474,15 @@ class Platform(object):
         :param full: Whether to also export properties that cannot be set, defaults to False
         :type full: bool, optional
         :return: dict of all properties with their values
-        :rtype: dict
         """
         log.info("Exporting platform global settings")
         json_data = {}
+        settings_list = self.__settings(include_not_set=export_settings.get("EXPORT_DEFAULTS", False)).values()
+        settings_list = [s for s in settings_list if s.is_global() and not s.is_internal()]
         for s in self.__settings(include_not_set=export_settings.get("EXPORT_DEFAULTS", False)).values():
-            if s.is_internal():
-                continue
             (categ, subcateg) = s.category()
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
                 # What is reported as 3rd part are SonarQube Cloud internal settings
-                continue
-            if not s.is_global():
                 continue
             util.update_json(json_data, categ, subcateg, s.to_json(export_settings.get("INLINE_LISTS", True)))
 
@@ -650,8 +645,7 @@ class Platform(object):
                 if rule is not None:
                     problems.append(Problem(rule, f"{self.local_url}/admin/system", logfile, line))
         logs = self.get("system/logs", params={"name": "deprecation"}).text
-        nb_deprecation = len(logs.splitlines())
-        if nb_deprecation > 0:
+        if (nb_deprecation := len(logs.splitlines())) > 0:
             rule = get_rule(RuleId.DEPRECATION_WARNINGS)
             problems.append(Problem(rule, f"{self.local_url}/admin/system", nb_deprecation))
         return problems
@@ -810,10 +804,9 @@ def _normalize_api(api: str) -> str:
     return api
 
 
-def _audit_setting_value(key: str, platform_settings: dict[str, any], audit_settings: types.ConfigSettings, url: str) -> list[Problem]:
+def _audit_setting_value(key: str, platform_settings: dict[str, Any], audit_settings: types.ConfigSettings, url: str) -> list[Problem]:
     """Audits a particular platform setting is set to expected value"""
-    v = _get_multiple_values(4, audit_settings[key], "MEDIUM", "CONFIGURATION")
-    if v is None:
+    if (v := _get_multiple_values(4, audit_settings[key], "MEDIUM", "CONFIGURATION")) is None:
         log.error(WRONG_CONFIG_MSG, key, audit_settings[key])
         return []
     if v[0] not in platform_settings:
@@ -830,11 +823,10 @@ def _audit_setting_value(key: str, platform_settings: dict[str, any], audit_sett
 
 
 def _audit_setting_in_range(
-    key: str, platform_settings: dict[str, any], audit_settings: types.ConfigSettings, sq_version: tuple[int, int, int], url: str
+    key: str, platform_settings: dict[str, Any], audit_settings: types.ConfigSettings, sq_version: tuple[int, int, int], url: str
 ) -> list[Problem]:
     """Audits a particular platform setting is within expected range of values"""
-    v = _get_multiple_values(5, audit_settings[key], "MEDIUM", "CONFIGURATION")
-    if v is None:
+    if (v := _get_multiple_values(5, audit_settings[key], "MEDIUM", "CONFIGURATION")) is None:
         log.error(WRONG_CONFIG_MSG, key, audit_settings[key])
         return []
     if v[0] not in platform_settings:
@@ -852,11 +844,10 @@ def _audit_setting_in_range(
 
 
 def _audit_setting_set(
-    key: str, check_is_set: bool, platform_settings: dict[str, any], audit_settings: types.ConfigSettings, url: str
+    key: str, check_is_set: bool, platform_settings: dict[str, Any], audit_settings: types.ConfigSettings, url: str
 ) -> list[Problem]:
     """Audits that a setting is set or not set"""
-    v = _get_multiple_values(3, audit_settings[key], "MEDIUM", "CONFIGURATION")
-    if v is None:
+    if (v := _get_multiple_values(3, audit_settings[key], "MEDIUM", "CONFIGURATION")) is None:
         log.error(WRONG_CONFIG_MSG, key, audit_settings[key])
         return []
     log.info("Auditing whether setting %s is set or not", v[0])
@@ -928,7 +919,6 @@ def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_lis
     :param Platform endpoint: reference to the SonarQube platform
     :param ObjectJsonRepr config_data: the configuration to import
     :param KeyList key_list: Unused
-    :return: Nothing
     """
     return endpoint.import_config(config_data)
 
@@ -948,7 +938,6 @@ def export(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs) 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
     :return: Platform settings
-    :rtype: ObjectJsonRepr
     """
     exp = endpoint.export(export_settings)
     if write_q := kwargs.get("write_q", None):
@@ -974,3 +963,29 @@ def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs) ->
     pbs = endpoint.audit(audit_settings)
     "write_q" in kwargs and kwargs["write_q"].put(pbs)
     return pbs
+
+
+def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts sonar-config "plaform" section old JSON report format to new format"""
+    if "plugins" in old_json:
+        old_json["plugins"] = util.dict_to_list(old_json["plugins"], "key")
+    return old_json
+
+
+def global_settings_old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts sonar-config "globalSettings" section old JSON report format to new format"""
+    new_json = {}
+    special_categories = (settings.LANGUAGES_SETTINGS, settings.DEVOPS_INTEGRATION, "permissions", "permissionTemplates")
+    for categ in [cat for cat in settings.CATEGORIES if cat not in special_categories]:
+        new_json[categ] = util.sort_list_by_key(util.dict_to_list(old_json[categ], "key"), "key")
+    for k, v in old_json[settings.LANGUAGES_SETTINGS].items():
+        new_json[settings.LANGUAGES_SETTINGS] = new_json.get(settings.LANGUAGES_SETTINGS, None) or {}
+        new_json[settings.LANGUAGES_SETTINGS][k] = util.sort_list_by_key(util.dict_to_list(v, "key"), "key")
+    new_json[settings.LANGUAGES_SETTINGS] = util.dict_to_list(new_json[settings.LANGUAGES_SETTINGS], "language", "settings")
+    new_json[settings.DEVOPS_INTEGRATION] = util.dict_to_list(old_json[settings.DEVOPS_INTEGRATION], "key")
+    new_json["permissions"] = util.perms_to_list(old_json["permissions"])
+    for v in old_json["permissionTemplates"].values():
+        if "permissions" in v:
+            v["permissions"] = util.perms_to_list(v["permissions"])
+    new_json["permissionTemplates"] = util.dict_to_list(old_json["permissionTemplates"], "key")
+    return new_json

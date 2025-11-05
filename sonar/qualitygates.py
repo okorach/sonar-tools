@@ -24,7 +24,7 @@ Abstraction of the SonarQube "quality gate" concept
 """
 
 from __future__ import annotations
-from typing import Union, Optional
+from typing import Union, Optional, Any
 
 import json
 
@@ -561,3 +561,8 @@ def _decode_condition(cond: str) -> tuple[str, str, str]:
 def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, QualityGate]:
     """Searches quality gates matching name"""
     return util.search_by_name(endpoint, name, QualityGate.API[c.LIST], "qualitygates")
+
+
+def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts the sonar-config quality gates old JSON report format to the new one"""
+    return util.dict_to_list(old_json, "name")

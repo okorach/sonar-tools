@@ -22,7 +22,7 @@
 Exports SonarQube platform configuration as JSON
 """
 
-from typing import TextIO
+from typing import TextIO, Any
 from threading import Thread
 from queue import Queue
 
@@ -118,6 +118,16 @@ def __parse_args(desc: str) -> object:
         default=False,
         action="store_true",
         help="By default, sonar-config does not export empty values, setting this flag will add empty values in the export",
+    )
+    parser.add_argument(
+        "--convertFrom",
+        required=False,
+        help="Source sonar-config old JSON format",
+    )
+    parser.add_argument(
+        "--convertTo",
+        required=False,
+        help="Target sonar-config new JSON format",
     )
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
@@ -294,11 +304,40 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     log.info("Importing configuration to %s completed", kwargs[options.URL])
 
 
+def convert_json(**kwargs) -> dict[str, Any]:
+    """Converts a sonar-config report from the old to the new JSON format"""
+    with open(kwargs["convertFrom"], encoding="utf-8") as fd:
+        old_json = json.loads(fd.read())
+    mapping = {
+        "platform": platform.old_to_new_json,
+        "globalSettings": platform.global_settings_old_to_new_json,
+        "qualityProfiles": qualityprofiles.old_to_new_json,
+        "qualityGates": qualitygates.old_to_new_json,
+        "projects": projects.old_to_new_json,
+        "portfolios": portfolios.old_to_new_json,
+        "applications": applications.old_to_new_json,
+        "users": users.old_to_new_json,
+        "groups": groups.old_to_new_json,
+        "rules": rules.old_to_new_json,
+    }
+    new_json = {}
+    for k, func in mapping.items():
+        if k in old_json:
+            log.info("Converting %s", k)
+            new_json[k] = func(old_json[k])
+    with open(kwargs["convertTo"], mode="w", encoding="utf-8") as fd:
+        print(utilities.json_dump(new_json), file=fd)
+    return new_json
+
+
 def main() -> None:
     """Main entry point for sonar-config"""
     start_time = utilities.start_clock()
     try:
         kwargs = utilities.convert_args(__parse_args("Extract SonarQube Server or Cloud platform configuration"))
+        if kwargs["convertFrom"] is not None:
+            convert_json(**kwargs)
+            utilities.final_exit(errcodes.OK, "", start_time)
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")

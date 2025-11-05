@@ -789,21 +789,6 @@ def flatten(qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     return flat_list
 
 
-def __convert_children_to_list(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
-    """Converts a profile's children profiles to list"""
-    for v in qp_json.values():
-        if "children" in v:
-            v["children"] = __convert_children_to_list(v["children"])
-    return util.dict_to_list(qp_json, "name")
-
-
-def __convert_profiles_to_list(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
-    """Converts a language top level list of profiles to list"""
-    for k, v in qp_json.items():
-        qp_json[k] = __convert_children_to_list(v)
-    return util.dict_to_list(qp_json, "language", "profiles")
-
-
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports all or a list of quality profiles configuration as dict
 
@@ -917,3 +902,18 @@ def convert_one_qp_yaml(qp: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
         qp[_CHILDREN_KEY] = {k: convert_one_qp_yaml(q) for k, q in qp[_CHILDREN_KEY].items()}
         qp[_CHILDREN_KEY] = util.dict_to_list(qp[_CHILDREN_KEY], "name")
     return qp
+
+
+def __convert_children_to_list(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
+    """Converts a profile's children profiles to list"""
+    for v in qp_json.values():
+        if "children" in v:
+            v["children"] = __convert_children_to_list(v["children"])
+    return util.dict_to_list(qp_json, "name")
+
+
+def old_to_new_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
+    """Converts a language top level list of profiles to list"""
+    for k, v in qp_json.items():
+        qp_json[k] = __convert_children_to_list(v)
+    return util.dict_to_list(qp_json, "language", "profiles")
