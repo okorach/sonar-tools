@@ -853,6 +853,7 @@ def clear_cache(endpoint: pf.Platform) -> None:
 
 
 def old_to_new_json_one(old_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts the sonar-config old JSON report format for a single portfolio to the new one"""
     new_json = old_json.copy()
     for key in "children", "portfolios":
         if key in new_json:
@@ -865,6 +866,7 @@ def old_to_new_json_one(old_json: dict[str, Any]) -> dict[str, Any]:
 
 
 def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts the sonar-config portfolios old JSON report format to the new one"""
     new_json = old_json.copy()
     for k, v in new_json.items():
         new_json[k] = old_to_new_json_one(v)

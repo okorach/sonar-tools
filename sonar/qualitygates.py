@@ -564,4 +564,5 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, QualityGate]:
 
 
 def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts the sonar-config quality gates old JSON report format to the new one"""
     return util.dict_to_list(old_json, "name")

@@ -582,6 +582,7 @@ def severities(endpoint: platform.Platform, json_data: dict[str, any]) -> Option
 
 
 def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts the sonar-config rules old JSON report format to the new one"""
     new_json = {}
     for k in ("instantiated", "extended", "standard", "thirdParty"):
         if k in old_json:

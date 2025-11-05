@@ -435,4 +435,5 @@ def exists(endpoint: pf.Platform, name: str) -> bool:
 
 
 def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts sonar-config old groups JSON report format to new format"""
     return util.dict_to_list(old_json, "name", "description")

@@ -977,13 +977,14 @@ def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs) ->
 
 
 def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
-    new_json = {}
+    """Converts sonar-config "plaform" section old JSON report format to new format"""
     if "plugins" in old_json:
-        new_json["plugins"] = util.dict_to_list(old_json["plugins"], "key")
-    return new_json
+        old_json["plugins"] = util.dict_to_list(old_json["plugins"], "key")
+    return old_json
 
 
 def global_settings_old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts sonar-config "globalSettings" section old JSON report format to new format"""
     new_json = {}
     special_categories = (settings.LANGUAGES_SETTINGS, settings.DEVOPS_INTEGRATION, "permissions", "permissionTemplates")
     for categ in [cat for cat in settings.CATEGORIES if cat not in special_categories]:

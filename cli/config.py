@@ -305,6 +305,7 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
 
 
 def convert_json(**kwargs) -> dict[str, Any]:
+    """Converts a sonar-config report from the old to the new JSON format"""
     with open(kwargs["convertFrom"], encoding="utf-8") as fd:
         old_json = json.loads(fd.read())
     mapping = {
@@ -334,7 +335,7 @@ def main() -> None:
     start_time = utilities.start_clock()
     try:
         kwargs = utilities.convert_args(__parse_args("Extract SonarQube Server or Cloud platform configuration"))
-        if kwargs["convertFrom"] != None:
+        if kwargs["convertFrom"] is not None:
             convert_json(**kwargs)
             utilities.final_exit(errcodes.OK, "", start_time)
         endpoint = platform.Platform(**kwargs)
