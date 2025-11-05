@@ -69,6 +69,8 @@ def old_to_new_json_one(old_json: dict[str, Any]) -> dict[str, Any]:
     new_json = old_json.copy()
     if "permissions" in old_json:
         new_json["permissions"] = util.perms_to_list(old_json["permissions"])
+    if "qualityProfiles" in old_json:
+        new_json["qualityProfiles"] = util.dict_to_list(old_json["qualityProfiles"], "language", "name")
     if "branches" in old_json:
         new_json["branches"] = util.dict_to_list(old_json["branches"], "name")
     if "settings" in old_json:
