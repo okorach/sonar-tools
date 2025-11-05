@@ -32,6 +32,11 @@ import yaml
 from cli import options
 from sonar import exceptions, errcodes, utilities, version
 from sonar.util import types, constants as c
+from sonar.util import platform_helper as pfhelp
+from sonar.util import project_helper as pjhelp
+from sonar.util import portfolio_helper as foliohelp
+from sonar.util import qualityprofile_helper as qphelp
+
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
@@ -309,16 +314,16 @@ def convert_json(**kwargs) -> dict[str, Any]:
     with open(kwargs["convertFrom"], encoding="utf-8") as fd:
         old_json = json.loads(fd.read())
     mapping = {
-        "platform": platform.old_to_new_json,
-        "globalSettings": platform.global_settings_old_to_new_json,
-        "qualityProfiles": qualityprofiles.old_to_new_json,
-        "qualityGates": qualitygates.old_to_new_json,
-        "projects": projects.old_to_new_json,
-        "portfolios": portfolios.old_to_new_json,
+        "platform": pfhelp.convert_basics_json,
+        "globalSettings": pfhelp.convert_global_settings_json,
+        "qualityProfiles": qphelp.convert_qps_json,
+        "qualityGates": qualitygates.convert_qgs_json,
+        "projects": pjhelp.convert_projects_json,
+        "portfolios": foliohelp.convert_portfolios_json,
         "applications": applications.old_to_new_json,
-        "users": users.old_to_new_json,
-        "groups": groups.old_to_new_json,
-        "rules": rules.old_to_new_json,
+        "users": users.convert_users_json,
+        "groups": groups.convert_groups_json,
+        "rules": rules.convert_rules_json,
     }
     new_json = {}
     for k, func in mapping.items():

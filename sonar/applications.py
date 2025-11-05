@@ -518,7 +518,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     """
     check_supported(endpoint)
     write_q = kwargs.get("write_q", None)
-    key_regexp = kwargs.get("key_list", ".*")
+    key_regexp = kwargs.get("key_list", ".+")
 
     app_list = {k: v for k, v in get_list(endpoint).items() if not key_regexp or re.match(key_regexp, k)}
     apps_settings = []
@@ -547,7 +547,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         return []
     log.info("--- Auditing applications ---")
     problems = []
-    key_regexp = kwargs.get("key_list", None) or ".*"
+    key_regexp = kwargs.get("key_list", ".+")
     for obj in [o for o in get_list(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
         problems += obj.audit(audit_settings, **kwargs)
     return problems

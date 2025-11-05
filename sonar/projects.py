@@ -52,6 +52,7 @@ from sonar.audit import severities
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
+import sonar.util.project_helper as phelp
 
 _CLASS_LOCK = Lock()
 
@@ -87,45 +88,6 @@ _IMPORTABLE_PROPERTIES = (
 
 _PROJECT_QUALIFIER = "qualifier=TRK"
 
-_UNNEEDED_CONTEXT_DATA = (
-    "sonar.announcement.message",
-    "sonar.auth.github.allowUsersToSignUp",
-    "sonar.auth.github.apiUrl",
-    "sonar.auth.github.appId",
-    "sonar.auth.github.enabled",
-    "sonar.auth.github.groupsSync",
-    "sonar.auth.github.organizations",
-    "sonar.auth.github.webUrl",
-    "sonar.builtInQualityProfiles.disableNotificationOnUpdate",
-    "sonar.core.id",
-    "sonar.core.serverBaseURL",
-    "sonar.core.startTime",
-    "sonar.dbcleaner.branchesToKeepWhenInactive",
-    "sonar.forceAuthentication",
-    "sonar.host.url",
-    "sonar.java.jdkHome",
-    "sonar.links.ci",
-    "sonar.links.homepage",
-    "sonar.links.issue",
-    "sonar.links.scm",
-    "sonar.links.scm_dev",
-    "sonar.plugins.risk.consent",
-)
-
-_UNNEEDED_TASK_DATA = (
-    "analysisId",
-    "componentId",
-    "hasScannerContext",
-    "id",
-    "warningCount",
-    "componentQualifier",
-    "nodeName",
-    "componentName",
-    "componentKey",
-    "submittedAt",
-    "executedAt",
-    "type",
-)
 
 # Keys to exclude when applying settings in update()
 _SETTINGS_WITH_SPECIFIC_IMPORT = (
@@ -980,10 +942,10 @@ class Project(components.Component):
         if last_task:
             ctxt = last_task.scanner_context()
             if ctxt:
-                ctxt = {k: v for k, v in ctxt.items() if k not in _UNNEEDED_CONTEXT_DATA}
+                ctxt = {k: v for k, v in ctxt.items() if k not in phelp.UNNEEDED_CONTEXT_DATA}
             t_hist = []
             for t in self.task_history():
-                t_hist.append({k: v for k, v in t.sq_json.items() if k not in _UNNEEDED_TASK_DATA})
+                t_hist.append({k: v for k, v in t.sq_json.items() if k not in phelp.UNNEEDED_TASK_DATA})
             json_data["backgroundTasks"] = {
                 "lastTaskScannerContext": ctxt,
                 # "lastTaskWarnings": last_task.warnings(),
@@ -1343,9 +1305,6 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
     """Counts projects
 
     :param params: list of parameters to filter projects to search
-    :type params: dict
-    :return: Count of projects
-    :rtype: int
     """
     new_params = {} if params is None else params.copy()
     new_params.update({"ps": 1, "p": 1})
@@ -1696,23 +1655,3 @@ def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2
             log.info("%d/%d imports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), proj_key, status)
             log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses_count.items()]))
     return statuses
-
-
-def old_to_new_json_one(old_json: dict[str, Any]) -> dict[str, Any]:
-    """Converts the sonar-config projects old JSON report format for a single project to the new one"""
-    new_json = old_json.copy()
-    if "permissions" in old_json:
-        new_json["permissions"] = util.perms_to_list(old_json["permissions"])
-    if "branches" in old_json:
-        new_json["branches"] = util.dict_to_list(old_json["branches"], "name")
-    if "settings" in old_json:
-        new_json["settings"] = util.dict_to_list(old_json["settings"], "key")
-    return new_json
-
-
-def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
-    """Converts the sonar-config projects old JSON report format to the new one"""
-    new_json = old_json.copy()
-    for k, v in new_json.items():
-        new_json[k] = old_to_new_json_one(v)
-    return util.dict_to_list(new_json, "key")

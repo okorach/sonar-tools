@@ -20,8 +20,8 @@
 """Helper tools for the Platform object"""
 
 from typing import Any
-import settings
-import utilities as util
+from sonar import settings
+from sonar import utilities as util
 
 
 def normalize_api(api: str) -> str:
@@ -37,14 +37,14 @@ def normalize_api(api: str) -> str:
     return api
 
 
-def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+def convert_basics_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts sonar-config "plaform" section old JSON report format to new format"""
     if "plugins" in old_json:
         old_json["plugins"] = util.dict_to_list(old_json["plugins"], "key")
     return old_json
 
 
-def global_settings_old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+def convert_global_settings_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts sonar-config "globalSettings" section old JSON report format to new format"""
     new_json = {}
     special_categories = (settings.LANGUAGES_SETTINGS, settings.DEVOPS_INTEGRATION, "permissions", "permissionTemplates")

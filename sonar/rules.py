@@ -486,7 +486,7 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     for k in ("instantiated", "extended", "standard", "thirdParty"):
         if len(rule_list.get(k, {})) == 0:
             rule_list.pop(k, None)
-    rule_list = old_to_new_json(rule_list)
+    rule_list = convert_rules_json(rule_list)
     if write_q := kwargs.get("write_q", None):
         write_q.put(rule_list)
         write_q.put(utilities.WRITE_END)
@@ -581,7 +581,7 @@ def severities(endpoint: platform.Platform, json_data: dict[str, any]) -> Option
         return json_data.get("severity", None)
 
 
-def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+def convert_rules_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts the sonar-config rules old JSON report format to the new one"""
     new_json = {}
     for k in ("instantiated", "extended", "standard", "thirdParty"):

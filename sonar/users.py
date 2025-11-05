@@ -570,6 +570,6 @@ def exists(endpoint: pf.Platform, login: str) -> bool:
     return User.get_object(endpoint=endpoint, login=login) is not None
 
 
-def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+def convert_users_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts the sonar-config users old JSON report format to the new one"""
     return util.dict_to_list(old_json, "login")
