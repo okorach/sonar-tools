@@ -316,8 +316,8 @@ def convert_json(**kwargs) -> dict[str, Any]:
     mapping = {
         "platform": pfhelp.convert_basics_json,
         "globalSettings": pfhelp.convert_global_settings_json,
-        "qualityProfiles": qphelp.convert_qps_json,
         "qualityGates": qualitygates.convert_qgs_json,
+        "qualityProfiles": qphelp.convert_qps_json,
         "projects": pjhelp.convert_projects_json,
         "portfolios": foliohelp.convert_portfolios_json,
         "applications": applications.convert_apps_json,
