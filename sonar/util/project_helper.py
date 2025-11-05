@@ -64,7 +64,7 @@ UNNEEDED_CONTEXT_DATA = (
 )
 
 
-def old_to_new_json_one(old_json: dict[str, Any]) -> dict[str, Any]:
+def convert_project_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts the sonar-config projects old JSON report format for a single project to the new one"""
     new_json = old_json.copy()
     if "permissions" in old_json:
@@ -82,5 +82,5 @@ def convert_projects_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts the sonar-config projects old JSON report format to the new one"""
     new_json = old_json.copy()
     for k, v in new_json.items():
-        new_json[k] = old_to_new_json_one(v)
+        new_json[k] = convert_project_json(v)
     return util.dict_to_list(new_json, "key")

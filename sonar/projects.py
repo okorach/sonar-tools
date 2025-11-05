@@ -1002,8 +1002,8 @@ class Project(components.Component):
             if contains_ai:
                 json_data[_CONTAINS_AI_CODE] = contains_ai
             with_inherited = export_settings.get("INCLUDE_INHERITED", False)
-            json_data["settings"] = {k: s.to_json() for k, s in settings_dict.values() if with_inherited or not s.inherited and s.key != "visibility"}
-            return phelp.convert_projects_json(json_data)
+            json_data["settings"] = {k: s.to_json() for k, s in settings_dict.items() if with_inherited or not s.inherited and s.key != "visibility"}
+            return phelp.convert_project_json(json_data)
 
         except Exception as e:
             traceback.print_exc()
