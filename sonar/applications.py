@@ -344,7 +344,7 @@ class Application(aggr.Aggregation):
                 "tags": self.get_tags(),
             }
         )
-        json_data = old_to_new_json_one(json_data)
+        json_data = convert_app_json(json_data)
         return util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
     def set_permissions(self, data: types.JsonPermissions) -> application_permissions.ApplicationPermissions:
@@ -600,7 +600,7 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Application]:
     return data
 
 
-def old_to_new_json_one(old_app_json: dict[str, Any]) -> dict[str, Any]:
+def convert_app_json(old_app_json: dict[str, Any]) -> dict[str, Any]:
     """Converts sonar-config old JSON report format to new format for a single application"""
     new_json = old_app_json.copy()
     if "permissions" in old_app_json:
@@ -610,9 +610,9 @@ def old_to_new_json_one(old_app_json: dict[str, Any]) -> dict[str, Any]:
     return new_json
 
 
-def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+def convert_apps_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts sonar-config old JSON report format to new format"""
     new_json = old_json.copy()
     for k, v in new_json.items():
-        new_json[k] = old_to_new_json_one(v)
+        new_json[k] = convert_app_json(v)
     return util.dict_to_list(new_json, "key")

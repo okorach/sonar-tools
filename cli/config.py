@@ -320,7 +320,7 @@ def convert_json(**kwargs) -> dict[str, Any]:
         "qualityGates": qualitygates.convert_qgs_json,
         "projects": pjhelp.convert_projects_json,
         "portfolios": foliohelp.convert_portfolios_json,
-        "applications": applications.old_to_new_json,
+        "applications": applications.convert_apps_json,
         "users": users.convert_users_json,
         "groups": groups.convert_groups_json,
         "rules": rules.convert_rules_json,
