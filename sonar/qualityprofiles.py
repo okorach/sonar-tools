@@ -392,7 +392,9 @@ class QualityProfile(sq.SqObject):
             json_data["rules"] = []
             for rule in self.rules().values():
                 data = {
-                    k: v for k, v in rule.export(full).items() if k not in ("isTemplate", "templateKey", "language", "tags", "severities", "impacts")
+                    k: v
+                    for k, v in rule.export(full).items()
+                    if k not in ("isTemplate", "templateKey", "language", "tags", "severity", "severities", "impacts")
                 }
                 if self.rule_is_prioritized(rule.key):
                     data["prioritized"] = True
