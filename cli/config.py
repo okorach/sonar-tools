@@ -45,7 +45,6 @@ from sonar.util import component_helper
 
 TOOL_NAME = "sonar-config"
 
-DONT_INLINE_LISTS = "dontInlineLists"
 FULL_EXPORT = "fullExport"
 EXPORT_EMPTY = "exportEmpty"
 
@@ -109,14 +108,6 @@ def __parse_args(desc: str) -> object:
         help="Also exports settings values that are the platform defaults. "
         f"By default the export will show the value as '{utilities.DEFAULT}' "
         "and the setting will not be imported at import time",
-    )
-    parser.add_argument(
-        f"--{DONT_INLINE_LISTS}",
-        required=False,
-        default=False,
-        action="store_true",
-        help="By default, sonar-config exports multi-valued settings as comma separated strings instead of arrays (if there is not comma in values). "
-        "Set this flag if you want to force export multi valued settings as arrays",
     )
     parser.add_argument(
         f"--{EXPORT_EMPTY}",
@@ -192,10 +183,12 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
     while not done:
         obj_json = queue.get()
         if not (done := obj_json is utilities.WRITE_END):
+            log.info("WRITING %s", utilities.json_dump(obj_json))
             if object_type == "groups":
                 obj_json = __prep_json_for_write(obj_json, {**export_settings, EXPORT_EMPTY: True})
             else:
                 obj_json = __prep_json_for_write(obj_json, export_settings)
+            log.info("CONVERTED WRITING %s", utilities.json_dump(obj_json))
             key = "" if isinstance(obj_json, list) else obj_json.get("key", obj_json.get("login", obj_json.get("name", "unknown")))
             log.debug("Writing %s key '%s'", object_type[:-1], key)
             if object_type in objects_exported_as_lists or object_type in objects_exported_as_whole:
@@ -216,7 +209,6 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
     export_settings = kwargs.copy()
     export_settings.update(
         {
-            "INLINE_LISTS": not kwargs.get(DONT_INLINE_LISTS, False),
             "EXPORT_DEFAULTS": True,
             "FULL_EXPORT": kwargs.get(FULL_EXPORT, False),
             "MODE": mode,
@@ -274,8 +266,6 @@ def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: type
         if not export_settings.get(EXPORT_EMPTY, False):
             log.debug("Removing empties")
             json_data = utilities.clean_data(json_data, remove_empty=True)
-    if export_settings.get("INLINE_LISTS", True):
-        json_data = utilities.inline_lists(json_data, exceptions=("conditions",))
     return json_data
 
 
