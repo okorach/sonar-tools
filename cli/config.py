@@ -263,7 +263,7 @@ def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: type
         json_data = utilities.remove_nones(json_data)
         if not export_settings.get(EXPORT_EMPTY, False):
             log.debug("Removing empties")
-            json_data = utilities.clean_data(json_data, remove_empty=True)
+            json_data = utilities.clean_data(json_data, remove_empty=False)
     return json_data
 
 
