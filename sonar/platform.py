@@ -499,7 +499,7 @@ class Platform(object):
         if not self.is_sonarcloud():
             json_data[settings.DEVOPS_INTEGRATION] = devops.export(self, export_settings=export_settings)
 
-            return pfhelp.convert_global_settings_json(json_data)
+        return pfhelp.convert_global_settings_json(json_data)
 
     def set_webhooks(self, webhooks_data: types.ObjectJsonRepr) -> bool:
         """Sets global webhooks with a list of webhooks represented as JSON
