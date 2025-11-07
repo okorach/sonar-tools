@@ -21,11 +21,14 @@
 
 from typing import Any
 from sonar import utilities as util
+from sonar.util import common_json_helper
 
 
 def convert_portfolio_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts the sonar-config old JSON report format for a single portfolio to the new one"""
-    new_json = old_json.copy()
+    new_json = common_json_helper.convert_common_fields(old_json.copy())
+    if "projects" in new_json:
+        new_json["projects"] = common_json_helper.convert_common_fields(new_json["projects"])
     for key in "children", "portfolios":
         if key in new_json:
             new_json[key] = convert_portfolios_json(new_json[key])
@@ -38,7 +41,6 @@ def convert_portfolio_json(old_json: dict[str, Any]) -> dict[str, Any]:
 
 def convert_portfolios_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts the sonar-config portfolios old JSON report format to the new one"""
-    new_json = old_json.copy()
-    for k, v in new_json.items():
-        new_json[k] = convert_portfolio_json(v)
-    return util.dict_to_list(new_json, "key")
+    for k, v in old_json.items():
+        old_json[k] = convert_portfolio_json(v)
+    return util.dict_to_list(old_json, "key")
