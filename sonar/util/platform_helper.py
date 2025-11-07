@@ -22,6 +22,7 @@
 from typing import Any
 from sonar import settings
 from sonar import utilities as util
+from sonar.util import common_json_helper
 
 _PERM_TPL_IMPORTABLE_PROPERTIES = ("name", "description", "pattern", "defaultFor", "permissions")
 
@@ -47,8 +48,7 @@ def convert_basics_json(old_json: dict[str, Any]) -> dict[str, Any]:
 
 
 def convert_template_json(json_data: dict[str, Any], full: bool = False) -> dict[str, Any]:
-    if "permissions" in json_data:
-        json_data["permissions"] = util.perms_to_list(json_data["permissions"])
+    json_data = common_json_helper.convert_common_fields(json_data)
     return util.remove_nones(util.filter_export(json_data, _PERM_TPL_IMPORTABLE_PROPERTIES, full))
 
 
@@ -63,8 +63,9 @@ def convert_global_settings_json(old_json: dict[str, Any], full: bool = False) -
         new_json[settings.LANGUAGES_SETTINGS][k] = util.sort_list_by_key(util.dict_to_list(v, "key"), "key")
     new_json[settings.LANGUAGES_SETTINGS] = util.dict_to_list(dict(sorted(new_json[settings.LANGUAGES_SETTINGS].items())), "language", "settings")
     new_json[settings.DEVOPS_INTEGRATION] = util.dict_to_list(dict(sorted(old_json[settings.DEVOPS_INTEGRATION].items())), "key")
-    new_json["permissions"] = util.perms_to_list(old_json["permissions"])
     for k, v in new_json["permissionTemplates"].items():
         new_json["permissionTemplates"][k] = convert_template_json(new_json["permissionTemplates"][k], full)
     new_json["permissionTemplates"] = util.dict_to_list(new_json["permissionTemplates"], "key")
-    return new_json
+    new_json = common_json_helper.convert_common_fields(new_json)
+
+    return util.order_dict(new_json, [*settings.CATEGORIES, "permissions", "permissionTemplates"])

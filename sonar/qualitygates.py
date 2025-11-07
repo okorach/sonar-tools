@@ -38,6 +38,7 @@ import sonar.utilities as util
 
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
+from sonar.util import common_json_helper
 
 
 __MAX_ISSUES_SHOULD_BE_ZERO = "Any numeric threshold on number of issues should be 0 or should be removed from QG conditions"
@@ -565,4 +566,5 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, QualityGate]:
 
 def convert_qgs_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts the sonar-config quality gates old JSON report format to the new one"""
+    old_json = common_json_helper.convert_common_fields(old_json, with_permissions=False)
     return util.dict_to_list(old_json, "name")
