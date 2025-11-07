@@ -36,6 +36,7 @@ from sonar.util import platform_helper as pfhelp
 from sonar.util import project_helper as pjhelp
 from sonar.util import portfolio_helper as foliohelp
 from sonar.util import qualityprofile_helper as qphelp
+from sonar.util import rule_helper as rhelp
 
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
@@ -323,13 +324,14 @@ def convert_json(**kwargs) -> dict[str, Any]:
         "applications": applications.convert_apps_json,
         "users": users.convert_users_json,
         "groups": groups.convert_groups_json,
-        "rules": rules.convert_rules_json,
+        "rules": rhelp.convert_rules_json,
     }
     new_json = {}
     for k, func in mapping.items():
         if k in old_json:
             log.info("Converting %s", k)
             new_json[k] = func(old_json[k])
+    new_json = __normalize_json(new_json, remove_empty=False, remove_none=True)
     with open(kwargs["convertTo"], mode="w", encoding="utf-8") as fd:
         print(utilities.json_dump(new_json), file=fd)
     return new_json
