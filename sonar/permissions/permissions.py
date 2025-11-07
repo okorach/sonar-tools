@@ -86,10 +86,14 @@ class Permissions(ABC):
         if not csv:
             return self.permissions.get(perm_type, {}) if is_valid(perm_type) else self.permissions
         perms = {}
-        for p in normalize(perm_type):
-            if p not in self.permissions or len(self.permissions[p]) == 0:
+        for ptype in normalize(perm_type):
+            for k, v in self.permissions.get(ptype, {}).copy().items():
+                if len(v) == 0:
+                    self.permissions[ptype].pop(k)
+        for ptype in normalize(perm_type):
+            if ptype not in self.permissions or len(self.permissions[ptype]) == 0:
                 continue
-            perms[p] = {k: encode(v) for k, v in self.permissions.get(p, {}).items()}
+            perms[ptype] = {k: encode(v) for k, v in self.permissions.get(ptype, {}).items()}
         return perms if len(perms) > 0 else None
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:

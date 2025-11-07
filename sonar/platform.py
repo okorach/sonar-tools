@@ -40,6 +40,7 @@ import sonar.logging as log
 import sonar.utilities as util
 from sonar.util import types, update_center
 import sonar.util.constants as c
+import sonar.util.platform_helper as pfhelp
 
 from sonar import errcodes, settings, devops, version, sif, exceptions, organizations
 from sonar.permissions import permissions, global_permissions, permission_templates
@@ -262,7 +263,7 @@ class Platform(object):
     def __run_request(self, request: callable, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
         mute = kwargs.pop("mute", ())
-        api = _normalize_api(api)
+        api = pfhelp.normalize_api(api)
         headers = {"user-agent": self._user_agent, "accept": _APP_JSON} | kwargs.get("headers", {})
         params = params or {}
         with_org = kwargs.pop("with_organization", True)
@@ -498,21 +499,7 @@ class Platform(object):
         if not self.is_sonarcloud():
             json_data[settings.DEVOPS_INTEGRATION] = devops.export(self, export_settings=export_settings)
 
-        # Convert dicts to lists
-        special_categories = (settings.LANGUAGES_SETTINGS, settings.DEVOPS_INTEGRATION, "permissions", "permissionTemplates")
-        for categ in [cat for cat in settings.CATEGORIES if cat not in special_categories]:
-            json_data[categ] = util.sort_list_by_key(util.dict_to_list(json_data[categ], "key"), "key")
-        for k, v in json_data[settings.LANGUAGES_SETTINGS].items():
-            json_data[settings.LANGUAGES_SETTINGS][k] = util.sort_list_by_key(util.dict_to_list(v, "key"), "key")
-        json_data[settings.LANGUAGES_SETTINGS] = util.dict_to_list(json_data[settings.LANGUAGES_SETTINGS], "language", "settings")
-        json_data[settings.DEVOPS_INTEGRATION] = util.dict_to_list(json_data[settings.DEVOPS_INTEGRATION], "key")
-        json_data["permissions"] = util.perms_to_list(json_data["permissions"])
-        for v in json_data["permissionTemplates"].values():
-            if "permissions" in v:
-                v["permissions"] = util.perms_to_list(v["permissions"])
-        json_data["permissionTemplates"] = util.dict_to_list(json_data["permissionTemplates"], "key")
-
-        return util.order_dict(json_data, [*settings.CATEGORIES, "permissions", "permissionTemplates"])
+        return pfhelp.convert_global_settings_json(json_data)
 
     def set_webhooks(self, webhooks_data: types.ObjectJsonRepr) -> bool:
         """Sets global webhooks with a list of webhooks represented as JSON
@@ -791,19 +778,6 @@ this = sys.modules[__name__]
 this.context = Platform(os.getenv("SONAR_HOST_URL", "http://localhost:9000"), os.getenv("SONAR_TOKEN", ""))
 
 
-def _normalize_api(api: str) -> str:
-    """Normalizes an API based on its multiple original forms"""
-    if api.startswith("/api/"):
-        pass
-    elif api.startswith("api/"):
-        api = "/" + api
-    elif api.startswith("/"):
-        api = "/api" + api
-    else:
-        api = "/api/" + api
-    return api
-
-
 def _audit_setting_value(key: str, platform_settings: dict[str, Any], audit_settings: types.ConfigSettings, url: str) -> list[Problem]:
     """Audits a particular platform setting is set to expected value"""
     if (v := _get_multiple_values(4, audit_settings[key], "MEDIUM", "CONFIGURATION")) is None:
@@ -963,29 +937,3 @@ def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs) ->
     pbs = endpoint.audit(audit_settings)
     "write_q" in kwargs and kwargs["write_q"].put(pbs)
     return pbs
-
-
-def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
-    """Converts sonar-config "plaform" section old JSON report format to new format"""
-    if "plugins" in old_json:
-        old_json["plugins"] = util.dict_to_list(old_json["plugins"], "key")
-    return old_json
-
-
-def global_settings_old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
-    """Converts sonar-config "globalSettings" section old JSON report format to new format"""
-    new_json = {}
-    special_categories = (settings.LANGUAGES_SETTINGS, settings.DEVOPS_INTEGRATION, "permissions", "permissionTemplates")
-    for categ in [cat for cat in settings.CATEGORIES if cat not in special_categories]:
-        new_json[categ] = util.sort_list_by_key(util.dict_to_list(old_json[categ], "key"), "key")
-    for k, v in old_json[settings.LANGUAGES_SETTINGS].items():
-        new_json[settings.LANGUAGES_SETTINGS] = new_json.get(settings.LANGUAGES_SETTINGS, None) or {}
-        new_json[settings.LANGUAGES_SETTINGS][k] = util.sort_list_by_key(util.dict_to_list(v, "key"), "key")
-    new_json[settings.LANGUAGES_SETTINGS] = util.dict_to_list(new_json[settings.LANGUAGES_SETTINGS], "language", "settings")
-    new_json[settings.DEVOPS_INTEGRATION] = util.dict_to_list(old_json[settings.DEVOPS_INTEGRATION], "key")
-    new_json["permissions"] = util.perms_to_list(old_json["permissions"])
-    for v in old_json["permissionTemplates"].values():
-        if "permissions" in v:
-            v["permissions"] = util.perms_to_list(v["permissions"])
-    new_json["permissionTemplates"] = util.dict_to_list(old_json["permissionTemplates"], "key")
-    return new_json

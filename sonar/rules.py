@@ -34,6 +34,7 @@ import sonar.logging as log
 import sonar.sqobject as sq
 from sonar.util import types, cache, constants as c, issue_defs as idefs
 from sonar import platform, utilities, exceptions, languages
+from sonar.util import rule_helper as rhelp
 
 TYPE_TO_QUALITY = {
     idefs.TYPE_BUG: idefs.QUALITY_RELIABILITY,
@@ -486,7 +487,7 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     for k in ("instantiated", "extended", "standard", "thirdParty"):
         if len(rule_list.get(k, {})) == 0:
             rule_list.pop(k, None)
-    rule_list = old_to_new_json(rule_list)
+    rule_list = rhelp.convert_rules_json(rule_list)
     if write_q := kwargs.get("write_q", None):
         write_q.put(rule_list)
         write_q.put(utilities.WRITE_END)
@@ -579,12 +580,3 @@ def severities(endpoint: platform.Platform, json_data: dict[str, any]) -> Option
         return {impact["softwareQuality"]: impact["severity"] for impact in json_data.get("impacts", [])}
     else:
         return json_data.get("severity", None)
-
-
-def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
-    """Converts the sonar-config rules old JSON report format to the new one"""
-    new_json = {}
-    for k in ("instantiated", "extended", "standard", "thirdParty"):
-        if k in old_json:
-            new_json[k] = utilities.dict_to_list(old_json[k], "key")
-    return new_json

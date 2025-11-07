@@ -42,7 +42,7 @@ from sonar.audit.problem import Problem
 
 _GROUPS_API_SC = "users/groups"
 
-SETTABLE_PROPERTIES = ("login", "name", "scmAccounts", "email", "groups", "local")
+SETTABLE_PROPERTIES = ("login", "name", "email", "groups", "scmAccounts", "local")
 USER_API = "v2/users-management/users"
 
 
@@ -448,7 +448,8 @@ class User(sqobject.SqObject):
             json_data.pop("local")
         for key in "sonarQubeLastConnectionDate", "externalLogin", "externalProvider", "id", "managed":
             json_data.pop(key, None)
-        return util.filter_export(json_data, SETTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
+        json_data = util.filter_export(json_data, SETTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
+        return convert_user_json(json_data)
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, User]:
@@ -570,6 +571,16 @@ def exists(endpoint: pf.Platform, login: str) -> bool:
     return User.get_object(endpoint=endpoint, login=login) is not None
 
 
-def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+def convert_user_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts a user JSON from old to new format"""
+    for k in "groups", "scmAccounts":
+        if k in old_json:
+            old_json[k] = util.csv_to_list(old_json[k])
+    return util.order_dict(old_json, SETTABLE_PROPERTIES)
+
+
+def convert_users_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts the sonar-config users old JSON report format to the new one"""
+    for k, u in old_json.items():
+        old_json[k] = convert_user_json(u)
     return util.dict_to_list(old_json, "login")

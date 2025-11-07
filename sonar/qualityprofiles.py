@@ -32,6 +32,7 @@ import requests.utils
 import sonar.logging as log
 import sonar.platform as pf
 from sonar.util import types, cache, constants as c
+from sonar.util import qualityprofile_helper as qphelp
 from sonar import exceptions
 from sonar import rules, languages
 import sonar.permissions.qualityprofile_permissions as permissions
@@ -40,9 +41,6 @@ import sonar.utilities as util
 
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
-
-_KEY_PARENT = "parent"
-_CHILDREN_KEY = "children"
 
 _IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefault", "rules", "permissions", "prioritizedRules")
 
@@ -363,7 +361,7 @@ class QualityProfile(sq.SqObject):
                 QualityProfile.CACHE.pop(self)
                 self.name = data["name"]
                 QualityProfile.CACHE.put(self)
-            self.set_parent(data.pop(_KEY_PARENT, None))
+            self.set_parent(data.pop(qphelp.KEY_PARENT, None))
             self.set_rules(data.get("rules", []) + data.get("addedRules", []))
             self.activate_rules(data.get("modifiedRules", []))
             self.set_permissions(data.get("permissions", []))
@@ -371,12 +369,12 @@ class QualityProfile(sq.SqObject):
             if data.get("isDefault", False):
                 self.set_as_default()
 
-        for child_name, child_data in data.get(_CHILDREN_KEY, {}).items():
+        for child_name, child_data in data.get(qphelp.KEY_CHILDREN, {}).items():
             try:
                 child_qp = get_object(self.endpoint, child_name, self.language)
             except exceptions.ObjectNotFound:
                 child_qp = QualityProfile.create(self.endpoint, child_name, self.language)
-            child_qp.update(child_data | {_KEY_PARENT: self.name})
+            child_qp.update(child_data | {qphelp.KEY_PARENT: self.name})
         return self
 
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
@@ -394,7 +392,9 @@ class QualityProfile(sq.SqObject):
             json_data["rules"] = []
             for rule in self.rules().values():
                 data = {
-                    k: v for k, v in rule.export(full).items() if k not in ("isTemplate", "templateKey", "language", "tags", "severities", "impacts")
+                    k: v
+                    for k, v in rule.export(full).items()
+                    if k not in ("isTemplate", "templateKey", "language", "tags", "severity", "severities", "impacts")
                 }
                 if self.rule_is_prioritized(rule.key):
                     data["prioritized"] = True
@@ -430,7 +430,6 @@ class QualityProfile(sq.SqObject):
 
         :param str rule_key: The rule key to get severities for
         :return: The impacts of the rule in the quality profile
-        :rtype: dict[str, str]
         """
         return rules.Rule.get_object(self.endpoint, rule_key).impacts(self.key, substitute_with_default=substitute_with_default)
 
@@ -439,7 +438,6 @@ class QualityProfile(sq.SqObject):
 
         :param str rule_key: The rule key to get severities for
         :return: The severity
-        :rtype: str
         """
         return rules.Rule.get_object(self.endpoint, rule_key).rule_severity(self.key, substitute_with_default=substitute_with_default)
 
@@ -742,12 +740,12 @@ def hierarchize_language(qp_list: dict[str, str], endpoint: pf.Platform, languag
                 continue
             parent_qp_name = qp_json_data.pop("parentName")
             parent_qp = hierarchy[parent_qp_name]
-            if _CHILDREN_KEY not in parent_qp:
-                parent_qp[_CHILDREN_KEY] = {}
+            if qphelp.KEY_CHILDREN not in parent_qp:
+                parent_qp[qphelp.KEY_CHILDREN] = {}
             this_qp = get_object(endpoint=endpoint, name=qp_name, language=language)
             qp_json_data |= this_qp.diff(get_object(endpoint=endpoint, name=parent_qp_name, language=language))
             qp_json_data.pop("rules", None)
-            parent_qp[_CHILDREN_KEY][qp_name] = qp_json_data
+            parent_qp[qphelp.KEY_CHILDREN][qp_name] = qp_json_data
             to_remove.append(qp_name)
     for qp_name in to_remove:
         hierarchy.pop(qp_name)
@@ -764,29 +762,6 @@ def hierarchize(qp_list: types.ObjectJsonRepr, endpoint: pf.Platform) -> types.O
     """
     log.info("Organizing quality profiles in hierarchy")
     return {lang: hierarchize_language(lang_qp_list, endpoint=endpoint, language=lang) for lang, lang_qp_list in qp_list.items()}
-
-
-def flatten_language(language: str, qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
-    """Converts a hierarchical list of QP of a given language into a flat list"""
-    flat_list = {}
-    for qp_name, qp_data in qp_list.copy().items():
-        if _CHILDREN_KEY in qp_data:
-            children = flatten_language(language, qp_data[_CHILDREN_KEY])
-            for child in children.values():
-                if "parent" not in child:
-                    child["parent"] = f"{language}:{qp_name}"
-            qp_data.pop(_CHILDREN_KEY)
-            flat_list.update(children)
-        flat_list[f"{language}:{qp_name}"] = qp_data
-    return flat_list
-
-
-def flatten(qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
-    """Organize a hierarchical list of QP in a flat list"""
-    flat_list = {}
-    for lang, lang_qp_list in qp_list.items():
-        flat_list.update(flatten_language(lang, lang_qp_list))
-    return flat_list
 
 
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
@@ -807,7 +782,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
             qp_list[lang] = {}
         qp_list[lang][name] = json_data
     qp_list = hierarchize(qp_list, endpoint=endpoint)
-    qp_list = __convert_profiles_to_list(qp_list)
+    qp_list = qphelp.convert_qps_json(qp_list)
     if write_q := kwargs.get("write_q", None):
         write_q.put(qp_list)
         write_q.put(util.WRITE_END)
@@ -893,27 +868,3 @@ def exists(endpoint: pf.Platform, name: str, language: str) -> bool:
         return True
     except exceptions.ObjectNotFound:
         return False
-
-
-def convert_one_qp_yaml(qp: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
-    """Converts a QP in a modified version more suitable for YAML export"""
-
-    if _CHILDREN_KEY in qp:
-        qp[_CHILDREN_KEY] = {k: convert_one_qp_yaml(q) for k, q in qp[_CHILDREN_KEY].items()}
-        qp[_CHILDREN_KEY] = util.dict_to_list(qp[_CHILDREN_KEY], "name")
-    return qp
-
-
-def __convert_children_to_list(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
-    """Converts a profile's children profiles to list"""
-    for v in qp_json.values():
-        if "children" in v:
-            v["children"] = __convert_children_to_list(v["children"])
-    return util.dict_to_list(qp_json, "name")
-
-
-def old_to_new_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
-    """Converts a language top level list of profiles to list"""
-    for k, v in qp_json.items():
-        qp_json[k] = __convert_children_to_list(v)
-    return util.dict_to_list(qp_json, "language", "profiles")

@@ -45,6 +45,7 @@ import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar.audit import rules, problem
 from sonar.portfolio_reference import PortfolioReference
+from sonar.util import portfolio_helper as phelp
 
 if TYPE_CHECKING:
     from sonar.util import types
@@ -368,7 +369,8 @@ class Portfolio(aggregations.Aggregation):
         subportfolios = self.sub_portfolios()
         if not self.is_sub_portfolio():
             json_data["visibility"] = self._visibility
-            json_data["permissions"] = util.perms_to_list(self.permissions().export(export_settings=export_settings))
+            if pf_perms := self.permissions().export(export_settings=export_settings):
+                json_data["permissions"] = util.perms_to_list(pf_perms)
         json_data["tags"] = self._tags
         if subportfolios:
             json_data["portfolios"] = {}
@@ -388,7 +390,10 @@ class Portfolio(aggregations.Aggregation):
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports a portfolio (for sonar-config)"""
         log.info("Exporting %s", str(self))
-        return util.remove_nones(util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
+        json_data = util.remove_nones(
+            util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
+        )
+        return phelp.convert_portfolio_json(json_data)
 
     def permissions(self) -> pperms.PortfolioPermissions:
         """Returns a portfolio permissions (if toplevel) or None if sub-portfolio"""
@@ -455,26 +460,20 @@ class Portfolio(aggregations.Aggregation):
 
     def set_tags_mode(self, tags: list[str], branch: Optional[str] = None) -> Portfolio:
         """Sets a portfolio to tags mode"""
-        if branch is None:
-            branch = c.DEFAULT_BRANCH
-        self.post("views/set_tags_mode", params={"portfolio": self.key, "tags": util.list_to_csv(tags), "branch": get_api_branch(branch)})
-        self._selection_mode = {_SELECTION_MODE_TAGS: tags, "branch": branch}
+        self.post("views/set_tags_mode", params={"portfolio": self.key, "tags": util.list_to_csv(tags), "branch": branch})
+        self._selection_mode = {_SELECTION_MODE_TAGS: tags, "branch": branch or c.DEFAULT_BRANCH}
         return self
 
     def set_regexp_mode(self, regexp: str, branch: Optional[str] = None) -> Portfolio:
         """Sets a portfolio to regexp mode"""
-        if branch is None:
-            branch = c.DEFAULT_BRANCH
-        self.post("views/set_regexp_mode", params={"portfolio": self.key, "regexp": regexp, "branch": get_api_branch(branch)})
-        self._selection_mode = {_SELECTION_MODE_REGEXP: regexp, "branch": branch}
+        self.post("views/set_regexp_mode", params={"portfolio": self.key, "regexp": regexp, "branch": branch})
+        self._selection_mode = {_SELECTION_MODE_REGEXP: regexp, "branch": branch or c.DEFAULT_BRANCH}
         return self
 
     def set_remaining_projects_mode(self, branch: Optional[str] = None) -> Portfolio:
         """Sets a portfolio to remaining projects mode"""
-        if branch is None:
-            branch = c.DEFAULT_BRANCH
-        self.post("views/set_remaining_projects_mode", params={"portfolio": self.key, "branch": get_api_branch(branch)})
-        self._selection_mode = {"rest": True, "branch": branch}
+        self.post("views/set_remaining_projects_mode", params={"portfolio": self.key, "branch": branch})
+        self._selection_mode = {"rest": True, "branch": branch or c.DEFAULT_BRANCH}
         return self
 
     def set_none_mode(self) -> Portfolio:
@@ -808,17 +807,6 @@ def recompute(endpoint: pf.Platform) -> None:
     endpoint.post(Portfolio.API["REFRESH"])
 
 
-def _find_sub_portfolio(key: str, data: types.ApiPayload) -> types.ApiPayload:
-    """Finds a subportfolio in a JSON hierarchy"""
-    for subp in data.get("subViews", []):
-        if subp["key"] == key:
-            return subp
-        child = _find_sub_portfolio(key, subp)
-        if child is not None:
-            return child
-    return {}
-
-
 def __create_portfolio_hierarchy(endpoint: pf.Platform, data: types.ApiPayload, parent_key: str) -> int:
     """Creates the hierarchy of portfolios that are new defined by reference"""
     nbr_creations = 0
@@ -840,34 +828,3 @@ def __create_portfolio_hierarchy(endpoint: pf.Platform, data: types.ApiPayload, 
         o.root_portfolio = o_parent.root_portfolio
         nbr_creations += __create_portfolio_hierarchy(endpoint, subp, parent_key=key)
     return nbr_creations
-
-
-def get_api_branch(branch: str) -> str:
-    """Returns the value to pass to the API for the branch parameter"""
-    return branch if branch != c.DEFAULT_BRANCH else None
-
-
-def clear_cache(endpoint: pf.Platform) -> None:
-    """Clears the cache of an endpoint"""
-    Portfolio.clear_cache(endpoint)
-
-
-def old_to_new_json_one(old_json: dict[str, Any]) -> dict[str, Any]:
-    """Converts the sonar-config old JSON report format for a single portfolio to the new one"""
-    new_json = old_json.copy()
-    for key in "children", "portfolios":
-        if key in new_json:
-            new_json[key] = old_to_new_json(new_json[key])
-    if "permissions" in old_json:
-        new_json["permissions"] = util.perms_to_list(old_json["permissions"])
-    if "branches" in old_json:
-        new_json["branches"] = util.dict_to_list(old_json["branches"], "name")
-    return new_json
-
-
-def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
-    """Converts the sonar-config portfolios old JSON report format to the new one"""
-    new_json = old_json.copy()
-    for k, v in new_json.items():
-        new_json[k] = old_to_new_json_one(v)
-    return util.dict_to_list(new_json, "key")

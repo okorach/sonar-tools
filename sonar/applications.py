@@ -42,6 +42,7 @@ import sonar.aggregations as aggr
 import sonar.utilities as util
 from sonar.audit import rules, problem
 import sonar.util.constants as c
+from sonar.util import common_json_helper
 
 _CLASS_LOCK = Lock()
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")
@@ -344,7 +345,7 @@ class Application(aggr.Aggregation):
                 "tags": self.get_tags(),
             }
         )
-        json_data = old_to_new_json_one(json_data)
+        json_data = convert_app_json(json_data)
         return util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
     def set_permissions(self, data: types.JsonPermissions) -> application_permissions.ApplicationPermissions:
@@ -518,7 +519,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     """
     check_supported(endpoint)
     write_q = kwargs.get("write_q", None)
-    key_regexp = kwargs.get("key_list", ".*")
+    key_regexp = kwargs.get("key_list", ".+")
 
     app_list = {k: v for k, v in get_list(endpoint).items() if not key_regexp or re.match(key_regexp, k)}
     apps_settings = []
@@ -547,7 +548,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         return []
     log.info("--- Auditing applications ---")
     problems = []
-    key_regexp = kwargs.get("key_list", None) or ".*"
+    key_regexp = kwargs.get("key_list", ".+")
     for obj in [o for o in get_list(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
         problems += obj.audit(audit_settings, **kwargs)
     return problems
@@ -600,19 +601,17 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Application]:
     return data
 
 
-def old_to_new_json_one(old_app_json: dict[str, Any]) -> dict[str, Any]:
+def convert_app_json(old_app_json: dict[str, Any]) -> dict[str, Any]:
     """Converts sonar-config old JSON report format to new format for a single application"""
-    new_json = old_app_json.copy()
-    if "permissions" in old_app_json:
-        new_json["permissions"] = util.perms_to_list(old_app_json["permissions"])
+    new_json = common_json_helper.convert_common_fields(old_app_json.copy())
     if "branches" in old_app_json:
         new_json["branches"] = util.dict_to_list(old_app_json["branches"], "name")
     return new_json
 
 
-def old_to_new_json(old_json: dict[str, Any]) -> dict[str, Any]:
+def convert_apps_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts sonar-config old JSON report format to new format"""
     new_json = old_json.copy()
     for k, v in new_json.items():
-        new_json[k] = old_to_new_json_one(v)
+        new_json[k] = convert_app_json(v)
     return util.dict_to_list(new_json, "key")

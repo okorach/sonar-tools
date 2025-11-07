@@ -32,6 +32,12 @@ import yaml
 from cli import options
 from sonar import exceptions, errcodes, utilities, version
 from sonar.util import types, constants as c
+from sonar.util import platform_helper as pfhelp
+from sonar.util import project_helper as pjhelp
+from sonar.util import portfolio_helper as foliohelp
+from sonar.util import qualityprofile_helper as qphelp
+from sonar.util import rule_helper as rhelp
+
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
@@ -39,7 +45,6 @@ from sonar.util import component_helper
 
 TOOL_NAME = "sonar-config"
 
-DONT_INLINE_LISTS = "dontInlineLists"
 FULL_EXPORT = "fullExport"
 EXPORT_EMPTY = "exportEmpty"
 
@@ -103,14 +108,6 @@ def __parse_args(desc: str) -> object:
         help="Also exports settings values that are the platform defaults. "
         f"By default the export will show the value as '{utilities.DEFAULT}' "
         "and the setting will not be imported at import time",
-    )
-    parser.add_argument(
-        f"--{DONT_INLINE_LISTS}",
-        required=False,
-        default=False,
-        action="store_true",
-        help="By default, sonar-config exports multi-valued settings as comma separated strings instead of arrays (if there is not comma in values). "
-        "Set this flag if you want to force export multi valued settings as arrays",
     )
     parser.add_argument(
         f"--{EXPORT_EMPTY}",
@@ -210,7 +207,6 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
     export_settings = kwargs.copy()
     export_settings.update(
         {
-            "INLINE_LISTS": not kwargs.get(DONT_INLINE_LISTS, False),
             "EXPORT_DEFAULTS": True,
             "FULL_EXPORT": kwargs.get(FULL_EXPORT, False),
             "MODE": mode,
@@ -268,8 +264,6 @@ def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: type
         if not export_settings.get(EXPORT_EMPTY, False):
             log.debug("Removing empties")
             json_data = utilities.clean_data(json_data, remove_empty=True)
-    if export_settings.get("INLINE_LISTS", True):
-        json_data = utilities.inline_lists(json_data, exceptions=("conditions",))
     return json_data
 
 
@@ -309,22 +303,23 @@ def convert_json(**kwargs) -> dict[str, Any]:
     with open(kwargs["convertFrom"], encoding="utf-8") as fd:
         old_json = json.loads(fd.read())
     mapping = {
-        "platform": platform.old_to_new_json,
-        "globalSettings": platform.global_settings_old_to_new_json,
-        "qualityProfiles": qualityprofiles.old_to_new_json,
-        "qualityGates": qualitygates.old_to_new_json,
-        "projects": projects.old_to_new_json,
-        "portfolios": portfolios.old_to_new_json,
-        "applications": applications.old_to_new_json,
-        "users": users.old_to_new_json,
-        "groups": groups.old_to_new_json,
-        "rules": rules.old_to_new_json,
+        "platform": pfhelp.convert_basics_json,
+        "globalSettings": pfhelp.convert_global_settings_json,
+        "qualityGates": qualitygates.convert_qgs_json,
+        "qualityProfiles": qphelp.convert_qps_json,
+        "projects": pjhelp.convert_projects_json,
+        "portfolios": foliohelp.convert_portfolios_json,
+        "applications": applications.convert_apps_json,
+        "users": users.convert_users_json,
+        "groups": groups.convert_groups_json,
+        "rules": rhelp.convert_rules_json,
     }
     new_json = {}
     for k, func in mapping.items():
         if k in old_json:
             log.info("Converting %s", k)
             new_json[k] = func(old_json[k])
+    new_json = __normalize_json(new_json, remove_empty=False, remove_none=True)
     with open(kwargs["convertTo"], mode="w", encoding="utf-8") as fd:
         print(utilities.json_dump(new_json), file=fd)
     return new_json
