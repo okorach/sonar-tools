@@ -45,6 +45,7 @@ import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar.audit import rules, problem
 from sonar.portfolio_reference import PortfolioReference
+from sonar.util import portfolio_helper as phelp
 
 if TYPE_CHECKING:
     from sonar.util import types
@@ -368,7 +369,9 @@ class Portfolio(aggregations.Aggregation):
         subportfolios = self.sub_portfolios()
         if not self.is_sub_portfolio():
             json_data["visibility"] = self._visibility
-            json_data["permissions"] = util.perms_to_list(self.permissions().export(export_settings=export_settings))
+            if perms := self.permissions().export(export_settings=export_settings):
+                log.info("%s PERMS = %s", self, str(perms))
+                json_data["permissions"] = util.perms_to_list(perms)
         json_data["tags"] = self._tags
         if subportfolios:
             json_data["portfolios"] = {}
@@ -388,7 +391,10 @@ class Portfolio(aggregations.Aggregation):
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports a portfolio (for sonar-config)"""
         log.info("Exporting %s", str(self))
-        return util.remove_nones(util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
+        json_data = util.remove_nones(
+            util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
+        )
+        return phelp.convert_portfolio_json(json_data)
 
     def permissions(self) -> pperms.PortfolioPermissions:
         """Returns a portfolio permissions (if toplevel) or None if sub-portfolio"""
