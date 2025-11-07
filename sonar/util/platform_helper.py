@@ -23,6 +23,8 @@ from typing import Any
 from sonar import settings
 from sonar import utilities as util
 
+_PERM_TPL_IMPORTABLE_PROPERTIES = ("name", "description", "pattern", "defaultFor", "permissions")
+
 
 def normalize_api(api: str) -> str:
     """Normalizes an API based on its multiple original forms"""
@@ -44,20 +46,25 @@ def convert_basics_json(old_json: dict[str, Any]) -> dict[str, Any]:
     return old_json
 
 
-def convert_global_settings_json(old_json: dict[str, Any]) -> dict[str, Any]:
+def convert_template_json(json_data: dict[str, Any], full: bool = False) -> dict[str, Any]:
+    if "permissions" in json_data:
+        json_data["permissions"] = util.perms_to_list(json_data["permissions"])
+    return util.remove_nones(util.filter_export(json_data, _PERM_TPL_IMPORTABLE_PROPERTIES, full))
+
+
+def convert_global_settings_json(old_json: dict[str, Any], full: bool = False) -> dict[str, Any]:
     """Converts sonar-config "globalSettings" section old JSON report format to new format"""
-    new_json = {}
+    new_json = old_json.copy()
     special_categories = (settings.LANGUAGES_SETTINGS, settings.DEVOPS_INTEGRATION, "permissions", "permissionTemplates")
     for categ in [cat for cat in settings.CATEGORIES if cat not in special_categories]:
-        new_json[categ] = util.sort_list_by_key(util.dict_to_list(old_json[categ], "key"), "key")
+        new_json[categ] = util.sort_list_by_key(util.dict_to_list(dict(sorted(old_json[categ].items())), "key"), "key")
     for k, v in old_json[settings.LANGUAGES_SETTINGS].items():
         new_json[settings.LANGUAGES_SETTINGS] = new_json.get(settings.LANGUAGES_SETTINGS, None) or {}
         new_json[settings.LANGUAGES_SETTINGS][k] = util.sort_list_by_key(util.dict_to_list(v, "key"), "key")
-    new_json[settings.LANGUAGES_SETTINGS] = util.dict_to_list(new_json[settings.LANGUAGES_SETTINGS], "language", "settings")
-    new_json[settings.DEVOPS_INTEGRATION] = util.dict_to_list(old_json[settings.DEVOPS_INTEGRATION], "key")
+    new_json[settings.LANGUAGES_SETTINGS] = util.dict_to_list(dict(sorted(new_json[settings.LANGUAGES_SETTINGS].items())), "language", "settings")
+    new_json[settings.DEVOPS_INTEGRATION] = util.dict_to_list(dict(sorted(old_json[settings.DEVOPS_INTEGRATION].items())), "key")
     new_json["permissions"] = util.perms_to_list(old_json["permissions"])
-    for v in old_json["permissionTemplates"].values():
-        if "permissions" in v:
-            v["permissions"] = util.perms_to_list(v["permissions"])
-    new_json["permissionTemplates"] = util.dict_to_list(old_json["permissionTemplates"], "key")
+    for k, v in new_json["permissionTemplates"].items():
+        new_json["permissionTemplates"][k] = convert_template_json(new_json["permissionTemplates"][k], full)
+    new_json["permissionTemplates"] = util.dict_to_list(new_json["permissionTemplates"], "key")
     return new_json
