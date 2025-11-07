@@ -30,6 +30,5 @@ def convert_common_fields(json_data: dict[str, Any], with_permissions: bool = Tr
         for perm in json_data["permissions"]:
             perm["permissions"] = utilities.csv_to_list(perm["permissions"])
     if "tags" in json_data:
-        log.info("CONVERTING TAGS %s", json_data["tags"])
         json_data["tags"] = utilities.csv_to_list(json_data["tags"])
     return json_data

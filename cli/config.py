@@ -188,7 +188,6 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
                 obj_json = __prep_json_for_write(obj_json, {**export_settings, EXPORT_EMPTY: True})
             else:
                 obj_json = __prep_json_for_write(obj_json, export_settings)
-            log.info("CONVERTED WRITING %s", utilities.json_dump(obj_json))
             key = "" if isinstance(obj_json, list) else obj_json.get("key", obj_json.get("login", obj_json.get("name", "unknown")))
             log.debug("Writing %s key '%s'", object_type[:-1], key)
             if object_type in objects_exported_as_lists or object_type in objects_exported_as_whole:
