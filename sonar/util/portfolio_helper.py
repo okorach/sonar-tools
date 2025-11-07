@@ -32,8 +32,6 @@ def convert_portfolio_json(old_json: dict[str, Any]) -> dict[str, Any]:
     for key in "children", "portfolios":
         if key in new_json:
             new_json[key] = convert_portfolios_json(new_json[key])
-    if "permissions" in old_json:
-        new_json["permissions"] = util.perms_to_list(old_json["permissions"])
     if "branches" in old_json:
         new_json["branches"] = util.dict_to_list(old_json["branches"], "name")
     return new_json
