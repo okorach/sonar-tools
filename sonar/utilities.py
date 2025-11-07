@@ -200,6 +200,8 @@ def remove_nones(d: Any) -> Any:
 def clean_data(d: Any, remove_empty: bool = True, remove_none: bool = True) -> Any:
     """Recursively removes empty lists and dicts and none from a dict"""
     # log.debug("Cleaning up %s", json_dump(d))
+    if isinstance(d, str):
+        return convert_string(d)
     if not isinstance(d, (list, dict)):
         return d
 
@@ -857,6 +859,6 @@ def order_list(list_to_order: list[str], *key_order: str) -> list[str]:
 
 def perms_to_list(perms: dict[str, Any]) -> list[str, Any]:
     """Converts permissions in dict format to list format"""
-    if not perms:
+    if not perms or not isinstance(perms, dict):
         return perms
     return dict_to_list(perms.get("groups", {}), "group", "permissions") + dict_to_list(perms.get("users", {}), "user", "permissions")
