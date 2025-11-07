@@ -21,7 +21,7 @@
 
 from typing import Any
 from sonar import utilities as util
-
+from sonar.util import common_json_helper
 
 UNNEEDED_TASK_DATA = (
     "analysisId",
@@ -84,8 +84,6 @@ _JSON_KEY_ORDER = (
 def convert_project_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts the sonar-config projects old JSON report format for a single project to the new one"""
     new_json = old_json.copy()
-    if "permissions" in old_json:
-        new_json["permissions"] = util.perms_to_list(old_json["permissions"])
     if "qualityProfiles" in old_json:
         new_json["qualityProfiles"] = util.dict_to_list(old_json["qualityProfiles"], "language", "name")
     if "branches" in old_json:
@@ -99,6 +97,7 @@ def convert_project_json(old_json: dict[str, Any]) -> dict[str, Any]:
         if AI_CODE_FIX in new_json["settings"] and not new_json["settings"][AI_CODE_FIX]:
             new_json["settings"].pop(AI_CODE_FIX)
         new_json["settings"] = util.dict_to_list(dict(sorted(new_json["settings"].items())), "key", "value")
+    new_json = common_json_helper.convert_common_fields(new_json)
     return util.order_dict(new_json, _JSON_KEY_ORDER)
 
 
