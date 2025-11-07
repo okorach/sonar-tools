@@ -604,8 +604,6 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Application]:
 def convert_app_json(old_app_json: dict[str, Any]) -> dict[str, Any]:
     """Converts sonar-config old JSON report format to new format for a single application"""
     new_json = common_json_helper.convert_common_fields(old_app_json.copy())
-    if "permissions" in old_app_json:
-        new_json["permissions"] = util.perms_to_list(old_app_json["permissions"])
     if "branches" in old_app_json:
         new_json["branches"] = util.dict_to_list(old_app_json["branches"], "name")
     return new_json
