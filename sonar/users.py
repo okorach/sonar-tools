@@ -42,7 +42,7 @@ from sonar.audit.problem import Problem
 
 _GROUPS_API_SC = "users/groups"
 
-SETTABLE_PROPERTIES = ("login", "name", "scmAccounts", "email", "groups", "local")
+SETTABLE_PROPERTIES = ("login", "name", "email", "groups", "scmAccounts", "local")
 USER_API = "v2/users-management/users"
 
 
@@ -448,7 +448,8 @@ class User(sqobject.SqObject):
             json_data.pop("local")
         for key in "sonarQubeLastConnectionDate", "externalLogin", "externalProvider", "id", "managed":
             json_data.pop(key, None)
-        return util.filter_export(json_data, SETTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
+        json_data = util.filter_export(json_data, SETTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
+        return convert_user_json(json_data)
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, User]:
@@ -571,7 +572,10 @@ def exists(endpoint: pf.Platform, login: str) -> bool:
 
 
 def convert_user_json(old_json: dict[str, Any]) -> dict[str, Any]:
-    return util.order_dict(old_json, ["name", "email", "groups", "scmAccounts", "local"])
+    for k in "groups", "scmAccounts":
+        if k in old_json:
+            old_json[k] = util.csv_to_list(old_json[k])
+    return util.order_dict(old_json, SETTABLE_PROPERTIES)
 
 
 def convert_users_json(old_json: dict[str, Any]) -> dict[str, Any]:
