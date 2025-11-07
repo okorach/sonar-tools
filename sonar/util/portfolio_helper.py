@@ -64,7 +64,6 @@ def convert_portfolio_json(old_json: dict[str, Any]) -> dict[str, Any]:
             new_json[key] = convert_portfolios_json(new_json[key])
     if "branches" in old_json:
         new_json["branches"] = util.dict_to_list(old_json["branches"], "name")
-    log.info("CONVERTED %s", util.json_dump(new_json))
     new_json = util.order_keys(new_json, "key", "name", "visibility", "projectSelection", "applications", "portfolios", "permissions")
     return new_json
 
