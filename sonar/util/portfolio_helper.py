@@ -21,6 +21,7 @@
 
 from typing import Any
 from sonar import utilities as util
+from sonar.util import constants as c
 from sonar.util import common_json_helper
 
 
@@ -29,11 +30,41 @@ def convert_portfolio_json(old_json: dict[str, Any]) -> dict[str, Any]:
     new_json = common_json_helper.convert_common_fields(old_json.copy())
     if "projects" in new_json:
         new_json["projects"] = common_json_helper.convert_common_fields(new_json["projects"])
+        if "manual" in new_json["projects"]:
+            projs = {}
+            for k, v in new_json["projects"]["manual"].items():
+                projs[k] = {"key": k, "branches": sorted(["" if e == c.DEFAULT_BRANCH else e for e in util.csv_to_list(v)])}
+                if projs[k]["branches"] == [""]:
+                    projs[k].pop("branches", None)
+            new_json["projectSelection"] = {"manual": new_json["projects"]}
+            new_json["projectSelection"]["manual"] = util.dict_to_list(projs, "key", "branches")
+        elif "regexp" in new_json["projects"]:
+            new_json["projectSelection"] = "regexp"
+            new_json["projectSelection"] = {"regexp": new_json["projects"]["regexp"]}
+            if new_json["projects"].get("branch", c.DEFAULT_BRANCH) != c.DEFAULT_BRANCH:
+                new_json["projectSelection"]["branch"] = new_json["projects"]["branch"]
+        elif "tags" in new_json["projects"]:
+            new_json["projectSelection"] = {"tags": new_json["projects"]["tags"]}
+            if new_json["projects"].get("branch", c.DEFAULT_BRANCH) != c.DEFAULT_BRANCH:
+                new_json["projectSelection"]["branch"] = new_json["projects"]["branch"]
+        elif "rest" in new_json["projects"]:
+            new_json["projectSelection"] = {"rest": True}
+            if new_json["projects"].get("branch", c.DEFAULT_BRANCH) != c.DEFAULT_BRANCH:
+                new_json["projectSelection"]["branch"] = new_json["projects"]["branch"]
+        new_json.pop("projects")
+    if "applications" in new_json:
+        for k, v in new_json["applications"].items():
+            new_json["applications"][k] = {"key": k, "branches": sorted(["" if e == c.DEFAULT_BRANCH else e for e in util.csv_to_list(v)])}
+            if new_json["applications"][k]["branches"] == [""]:
+                new_json["applications"][k].pop("branches", None)
+        new_json["applications"] = util.dict_to_list(new_json["applications"], "key", "branches")
+
     for key in "children", "portfolios":
         if key in new_json:
             new_json[key] = convert_portfolios_json(new_json[key])
     if "branches" in old_json:
         new_json["branches"] = util.dict_to_list(old_json["branches"], "name")
+    new_json = util.order_keys(new_json, "key", "name", "visibility", "projectSelection", "applications", "portfolios", "permissions")
     return new_json
 
 

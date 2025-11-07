@@ -604,9 +604,18 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Application]:
 def convert_app_json(old_app_json: dict[str, Any]) -> dict[str, Any]:
     """Converts sonar-config old JSON report format to new format for a single application"""
     new_json = common_json_helper.convert_common_fields(old_app_json.copy())
-    if "branches" in old_app_json:
-        new_json["branches"] = util.dict_to_list(old_app_json["branches"], "name")
-    return new_json
+    if "branches" not in new_json:
+        return new_json
+    for br, data in new_json["branches"].items():
+        if "projects" not in data:
+            continue
+        new_json["branches"][br] = util.order_dict(data, ["name", "isMain", "projects"])
+        new_json["branches"][br]["projects"] = util.dict_to_list(new_json["branches"][br]["projects"], "key", "branch")
+        for proj_data in new_json["branches"][br]["projects"]:
+            if proj_data.get("branch", None) in ("__default__", c.DEFAULT_BRANCH):
+                proj_data.pop("branch")
+    new_json["branches"] = util.sort_list_by_key(util.dict_to_list(new_json["branches"], "name"), "name", "isMain")
+    return util.order_dict(new_json, ["key", "name", "visibility", "tags", "branches", "permissions"])
 
 
 def convert_apps_json(old_json: dict[str, Any]) -> dict[str, Any]:
