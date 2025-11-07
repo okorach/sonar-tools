@@ -22,6 +22,7 @@
 from typing import Any
 from sonar import utilities as util
 from sonar.util import types
+from sonar.util import common_json_helper
 
 KEY_PARENT = "parent"
 KEY_CHILDREN = "children"
@@ -62,7 +63,7 @@ def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
                     r.pop("severities")
         if "children" in v:
             v["children"] = __convert_qp_json(v["children"])
-        qp_json[k] = util.order_keys(v, *KEY_ORDER)
+        qp_json[k] = util.order_keys(common_json_helper.convert_common_fields(v, with_permissions=False), *KEY_ORDER)
     return util.dict_to_list(qp_json, "name")
 
 
