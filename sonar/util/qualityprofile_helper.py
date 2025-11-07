@@ -21,6 +21,7 @@
 
 from typing import Any
 from sonar import utilities as util
+from sonar.util import constants as c
 from sonar.util import types
 from sonar.util import common_json_helper
 
@@ -61,6 +62,12 @@ def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
                 if "severities" in r:
                     r["impacts"] = r["severities"]
                     r.pop("severities")
+                if "impacts" in r:
+                    r["impacts"] = {
+                        k: r["impacts"][k]
+                        for k in ("SECURITY", "RELIABILITY", "MAINTAINABILITY")
+                        if k in r["impacts"] and r["impacts"][k] != c.DEFAULT
+                    }
         if "children" in v:
             v["children"] = __convert_qp_json(v["children"])
         qp_json[k] = util.order_keys(common_json_helper.convert_common_fields(v, with_permissions=False), *KEY_ORDER)
