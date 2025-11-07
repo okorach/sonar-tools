@@ -83,7 +83,7 @@ _IMPORTABLE_PROPERTIES = (
     "visibility",
     "qualityGate",
     "webhooks",
-    "aiCodeFix",
+    phelp.AI_CODE_FIX,
 )
 
 _PROJECT_QUALIFIER = "qualifier=TRK"
@@ -965,14 +965,11 @@ class Project(components.Component):
         json_data.update({"key": self.key, "name": self.name})
         try:
             json_data["binding"] = self.__export_get_binding()
-            nc = self.new_code()
-            if nc != "":
-                json_data[settings.NEW_CODE_PERIOD] = nc
             json_data["qualityProfiles"] = self.__export_get_qp()
             json_data["links"] = self.links()
             json_data["permissions"] = self.permissions().to_json(csv=export_settings.get("INLINE_LISTS", True))
             if self.endpoint.version() >= (10, 7, 0):
-                json_data["aiCodeFix"] = self.ai_code_fix()
+                json_data[phelp.AI_CODE_FIX] = self.ai_code_fix()
             json_data["branches"] = self.__get_branch_export(export_settings)
             json_data["tags"] = self.get_tags()
             json_data["visibility"] = self.visibility()
@@ -1002,7 +999,10 @@ class Project(components.Component):
             if contains_ai:
                 json_data[_CONTAINS_AI_CODE] = contains_ai
             with_inherited = export_settings.get("INCLUDE_INHERITED", False)
-            json_data["settings"] = {k: s.to_json() for k, s in settings_dict.items() if with_inherited or not s.inherited and s.key != "visibility"}
+            json_data["settings"] = {}
+            settings_to_export = {k: s for k, s in settings_dict.items() if with_inherited or not s.inherited and s.key != "visibility"}
+            for k, s in settings_to_export.items():
+                json_data["settings"] |= s.to_json()
             return phelp.convert_project_json(json_data)
 
         except Exception as e:
