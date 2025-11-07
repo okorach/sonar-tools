@@ -21,7 +21,6 @@
 
 from typing import Any
 from sonar import utilities
-from sonar import logging as log
 
 
 def convert_common_fields(json_data: dict[str, Any], with_permissions: bool = True) -> dict[str, Any]:
