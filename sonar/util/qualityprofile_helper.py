@@ -25,6 +25,7 @@ from sonar.util import types
 
 KEY_PARENT = "parent"
 KEY_CHILDREN = "children"
+KEY_ORDER = ("name", "isBuiltIn", "isDefault", "children", "addedRules", "modifiedRules", "permissions")
 
 
 def flatten_language(language: str, qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
@@ -50,16 +51,23 @@ def flatten(qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     return flat_list
 
 
-def __convert_children_to_list(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
+def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
     """Converts a profile's children profiles to list"""
-    for v in qp_json.values():
+
+    for k, v in sorted(qp_json.items()):
+        for rtype in "addedRules", "modifiedRules":
+            for r in v.get(rtype, {}):
+                if "severities" in r:
+                    r["impacts"] = r["severities"]
+                    r.pop("severities")
         if "children" in v:
-            v["children"] = __convert_children_to_list(v["children"])
+            v["children"] = __convert_qp_json(v["children"])
+        qp_json[k] = util.order_keys(v, *KEY_ORDER)
     return util.dict_to_list(qp_json, "name")
 
 
 def convert_qps_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
     """Converts a language top level list of profiles to list"""
-    for k, v in qp_json.items():
-        qp_json[k] = __convert_children_to_list(v)
+    for k, v in sorted(qp_json.items()):
+        qp_json[k] = __convert_qp_json(v)
     return util.dict_to_list(qp_json, "language", "profiles")
