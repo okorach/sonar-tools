@@ -499,22 +499,7 @@ class Platform(object):
         if not self.is_sonarcloud():
             json_data[settings.DEVOPS_INTEGRATION] = devops.export(self, export_settings=export_settings)
 
-        # Convert dicts to lists
-        special_categories = (settings.LANGUAGES_SETTINGS, settings.DEVOPS_INTEGRATION, "permissions", "permissionTemplates")
-        for categ in [cat for cat in settings.CATEGORIES if cat not in special_categories]:
-            json_data[categ] = util.sort_list_by_key(util.dict_to_list(json_data[categ], "key"), "key")
-        for k, v in sorted(json_data[settings.LANGUAGES_SETTINGS].items()):
-            json_data[settings.LANGUAGES_SETTINGS][k] = util.sort_list_by_key(util.dict_to_list(v, "key"), "key")
-        json_data[settings.LANGUAGES_SETTINGS] = util.dict_to_list(json_data[settings.LANGUAGES_SETTINGS], "language", "settings")
-        json_data[settings.LANGUAGES_SETTINGS] = util.sort_list_by_key(json_data[settings.LANGUAGES_SETTINGS], "language")
-        json_data[settings.DEVOPS_INTEGRATION] = util.dict_to_list(json_data[settings.DEVOPS_INTEGRATION], "key")
-        json_data["permissions"] = util.perms_to_list(json_data["permissions"])
-        for v in json_data["permissionTemplates"].values():
-            if "permissions" in v:
-                v["permissions"] = util.perms_to_list(v["permissions"])
-        json_data["permissionTemplates"] = util.dict_to_list(json_data["permissionTemplates"], "key")
-
-        return util.order_dict(json_data, [*settings.CATEGORIES, "permissions", "permissionTemplates"])
+            return pfhelp.convert_global_settings_json(json_data)
 
     def set_webhooks(self, webhooks_data: types.ObjectJsonRepr) -> bool:
         """Sets global webhooks with a list of webhooks represented as JSON
