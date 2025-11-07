@@ -21,12 +21,19 @@
 
 from typing import Any
 from sonar import utilities
+from sonar.util import constants as c
 from sonar.util import common_json_helper
 
 
 def convert_rule_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts a rule JSON from old to new export format"""
-    return common_json_helper.convert_common_fields(old_json)
+    old_json = common_json_helper.convert_common_fields(old_json)
+    if "impacts" in old_json:
+        old_json["impacts"] = {
+            k: old_json["impacts"][k]
+            for k in ("SECURITY", "RELIABILITY", "MAINTAINABILITY")
+            if k in old_json["impacts"] and old_json["impacts"][k] != c.DEFAULT
+        }
 
 
 def convert_rules_json(old_json: dict[str, Any]) -> dict[str, Any]:
