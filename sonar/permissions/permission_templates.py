@@ -21,13 +21,14 @@
 """Abstraction of the SonarQube permission template concept"""
 
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Any
 
 import json
 import re
 
 import sonar.logging as log
 from sonar.util import types, cache
+from sonar.util import platform_helper as phelp
 from sonar import sqobject, utilities, exceptions
 from sonar.permissions import template_permissions
 import sonar.platform as pf
@@ -41,8 +42,6 @@ _QUALIFIER_REVERSE_MAP = {"projects": "TRK", "applications": "APP", "portfolios"
 _SEARCH_API = "permissions/search_templates"
 _CREATE_API = "permissions/create_template"
 _UPDATE_API = "permissions/update_template"
-
-_IMPORTABLE_PROPERTIES = ("name", "description", "pattern", "defaultFor", "permissions")
 
 
 class PermissionTemplate(sqobject.SqObject):
@@ -183,7 +182,7 @@ class PermissionTemplate(sqobject.SqObject):
             json_data.pop("pattern")
         json_data["creationDate"] = utilities.date_to_string(self.creation_date)
         json_data["lastUpdate"] = utilities.date_to_string(self.last_update)
-        return utilities.remove_nones(utilities.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
+        return phelp.convert_template_json(json_data, export_settings.get("FULL_EXPORT", False))
 
     def _audit_pattern(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
         log.debug("Auditing %s projectKeyPattern ('%s')", str(self), str(self.project_key_pattern))
