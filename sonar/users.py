@@ -572,6 +572,7 @@ def exists(endpoint: pf.Platform, login: str) -> bool:
 
 
 def convert_user_json(old_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts a user JSON from old to new format"""
     for k in "groups", "scmAccounts":
         if k in old_json:
             old_json[k] = util.csv_to_list(old_json[k])

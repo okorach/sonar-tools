@@ -48,6 +48,7 @@ def convert_basics_json(old_json: dict[str, Any]) -> dict[str, Any]:
 
 
 def convert_template_json(json_data: dict[str, Any], full: bool = False) -> dict[str, Any]:
+    """Converts a Perm Template JSON from old to new format"""
     json_data = common_json_helper.convert_common_fields(json_data)
     return util.remove_nones(util.filter_export(json_data, _PERM_TPL_IMPORTABLE_PROPERTIES, full))
 

@@ -25,6 +25,7 @@ from sonar import logging as log
 
 
 def convert_common_fields(json_data: dict[str, Any], with_permissions: bool = True) -> dict[str, Any]:
+    """Converts Sonar objects common fields from old to new JSON format"""
     if "permissions" in json_data and json_data["permissions"] is None:
         json_data.pop("permissions")
     if with_permissions and "permissions" in json_data:
