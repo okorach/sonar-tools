@@ -63,6 +63,23 @@ UNNEEDED_CONTEXT_DATA = (
     "sonar.plugins.risk.consent",
 )
 
+AI_CODE_FIX = "aiCodeFix"
+
+_JSON_KEY_ORDER = (
+    "key",
+    "name",
+    "tags",
+    "visibility",
+    "settings",
+    "binding",
+    "branches",
+    "permissions",
+    "qualityGate",
+    "qualityProfiles",
+    "links",
+    "webhooks",
+)
+
 
 def convert_project_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts the sonar-config projects old JSON report format for a single project to the new one"""
@@ -73,9 +90,16 @@ def convert_project_json(old_json: dict[str, Any]) -> dict[str, Any]:
         new_json["qualityProfiles"] = util.dict_to_list(old_json["qualityProfiles"], "language", "name")
     if "branches" in old_json:
         new_json["branches"] = util.dict_to_list(old_json["branches"], "name")
-    if "settings" in old_json:
-        new_json["settings"] = util.dict_to_list(old_json["settings"], "key")
-    return new_json
+    for k, v in old_json.items():
+        if k not in _JSON_KEY_ORDER:
+            new_json.pop(k, None)
+            new_json["settings"] = new_json.get("settings", None) or {}
+            new_json["settings"][k] = v
+    if "settings" in new_json:
+        if AI_CODE_FIX in new_json["settings"] and not new_json["settings"][AI_CODE_FIX]:
+            new_json["settings"].pop(AI_CODE_FIX)
+        new_json["settings"] = util.dict_to_list(dict(sorted(new_json["settings"].items())), "key", "value")
+    return util.order_dict(new_json, _JSON_KEY_ORDER)
 
 
 def convert_projects_json(old_json: dict[str, Any]) -> dict[str, Any]:
