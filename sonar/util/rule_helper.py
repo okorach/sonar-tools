@@ -21,12 +21,12 @@
 
 from typing import Any
 from sonar import utilities
+from sonar.util import common_json_helper
 
 
 def convert_rule_json(old_json: dict[str, Any]) -> dict[str, Any]:
-    if "tags" in old_json:
-        old_json["tags"] = utilities.list_to_csv(old_json["tags"])
-    return old_json
+    """Converts a rule JSON from old to new export format"""
+    return common_json_helper.convert_common_fields(old_json)
 
 
 def convert_rules_json(old_json: dict[str, Any]) -> dict[str, Any]:
