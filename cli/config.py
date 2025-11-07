@@ -183,7 +183,6 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
     while not done:
         obj_json = queue.get()
         if not (done := obj_json is utilities.WRITE_END):
-            log.info("WRITING %s", utilities.json_dump(obj_json))
             if object_type == "groups":
                 obj_json = __prep_json_for_write(obj_json, {**export_settings, EXPORT_EMPTY: True})
             else:
