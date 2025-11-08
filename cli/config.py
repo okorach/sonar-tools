@@ -68,6 +68,9 @@ _MIGRATION_EXPORT_SETTINGS = {
     EXPORT_EMPTY: True,
 }
 
+_CONVERT_FROM = "convertFrom"
+_CONVERT_TO = "convertTo"
+
 _EXPORT_CALLS = {
     c.CONFIG_KEY_PLATFORM: [c.CONFIG_KEY_PLATFORM, platform.basics],
     options.WHAT_SETTINGS: [c.CONFIG_KEY_SETTINGS, platform.export],
@@ -117,22 +120,22 @@ def __parse_args(desc: str) -> object:
         help="By default, sonar-config does not export empty values, setting this flag will add empty values in the export",
     )
     parser.add_argument(
-        "--convertFrom",
+        f"--{_CONVERT_FROM}",
         required=False,
         help="Source sonar-config old JSON format",
     )
     parser.add_argument(
-        "--convertTo",
+        f"--{_CONVERT_TO}",
         required=False,
         help="Target sonar-config new JSON format",
     )
-    return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
+    return options.parse_and_check(parser=parser, logger_name=TOOL_NAME, verify_token=False)
 
 
 def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remove_none: bool = True) -> dict[str, any]:
     """Sorts a JSON file and optionally remove empty and none values"""
     sort_fields = {"users": "login", "groups": "name", "qualityGates": "name", "qualityProfiles": "language"}
-    log.info("Normalizing JSON - remove empty = %s, remove nones = %s", str(remove_empty), str(remove_none))
+    log.debug("Normalizing JSON - remove empty = %s, remove nones = %s", str(remove_empty), str(remove_none))
     json_data = utilities.clean_data(json_data, remove_none=remove_none, remove_empty=remove_empty)
     json_data = utilities.order_keys(json_data, *_SECTIONS_ORDER)
     for key in [k for k in _SECTIONS_TO_SORT if k in json_data]:
@@ -298,10 +301,7 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     log.info("Importing configuration to %s completed", kwargs[options.URL])
 
 
-def convert_json(**kwargs) -> dict[str, Any]:
-    """Converts a sonar-config report from the old to the new JSON format"""
-    with open(kwargs["convertFrom"], encoding="utf-8") as fd:
-        old_json = json.loads(fd.read())
+def convert_json(original_json: dict[str, Any]) -> dict[str, Any]:
     mapping = {
         "platform": pfhelp.convert_basics_json,
         "globalSettings": pfhelp.convert_global_settings_json,
@@ -316,13 +316,18 @@ def convert_json(**kwargs) -> dict[str, Any]:
     }
     new_json = {}
     for k, func in mapping.items():
-        if k in old_json:
+        if k in original_json:
             log.info("Converting %s", k)
-            new_json[k] = func(old_json[k])
-    new_json = __normalize_json(new_json, remove_empty=False, remove_none=True)
-    with open(kwargs["convertTo"], mode="w", encoding="utf-8") as fd:
+            new_json[k] = func(original_json[k])
+    return __normalize_json(new_json, remove_empty=False, remove_none=True)
+
+
+def convert_json_file(**kwargs) -> None:
+    """Converts a sonar-config report from the old to the new JSON format"""
+    with open(kwargs[_CONVERT_FROM], encoding="utf-8") as fd:
+        new_json = convert_json(json.loads(fd.read()))
+    with utilities.open_file(kwargs.get(_CONVERT_TO, None)) as fd:
         print(utilities.json_dump(new_json), file=fd)
-    return new_json
 
 
 def main() -> None:
@@ -330,9 +335,12 @@ def main() -> None:
     start_time = utilities.start_clock()
     try:
         kwargs = utilities.convert_args(__parse_args("Extract SonarQube Server or Cloud platform configuration"))
-        if kwargs["convertFrom"] is not None:
-            convert_json(**kwargs)
+        if kwargs[_CONVERT_FROM] is not None:
+            convert_json_file(**kwargs)
             utilities.final_exit(errcodes.OK, "", start_time)
+        log.info("Checking token")
+        utilities.check_token(kwargs[options.TOKEN], utilities.is_sonarcloud_url(kwargs[options.URL]))
+        log.info("Token OK")
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
