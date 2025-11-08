@@ -302,6 +302,7 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
 
 
 def convert_json(original_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts a sonar-config JSON file from the old to new format"""
     mapping = {
         "platform": pfhelp.convert_basics_json,
         "globalSettings": pfhelp.convert_global_settings_json,
