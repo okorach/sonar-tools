@@ -71,16 +71,20 @@ def check_last_version(package_url: str) -> None:
 
 def token_type(token: str) -> str:
     """Returns the type of token"""
-    if token[0:4] == "sqa_":
+    if len(token) != 44:
+        return "wrong format"
+    elif token[0:4] == "sqa_":
         return "global-analysis"
     elif token[0:4] == "sqp_":
         return "project-analysis"
-    else:
+    elif token[0:4] == "squ_":
         return "user"
+    return "wrong format"
 
 
 def check_token(token: Optional[str], is_sonarcloud: bool = False) -> None:
     """Verifies if a proper user token has been provided"""
+    log.info("Checking token %s SQC %s token type = %s", token, is_sonarcloud, token_type(token))
     if token is None:
         final_exit(
             errcodes.SONAR_API_AUTHENTICATION,
