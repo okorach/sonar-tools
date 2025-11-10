@@ -99,13 +99,6 @@ def test_normalize_api() -> None:
         assert platform._normalize_api(input) == normalized_result
 
 
-def test_convert_for_yaml() -> None:
-    with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
-        json_config = json.load(f)["globalSettings"]
-    yaml_json = platform.convert_for_yaml(json_config.copy())
-    assert len(yaml_json) == len(json_config)
-
-
 def test_release_date() -> None:
     assert datetime(2022, 1, 1).date() < tutil.SQ.release_date() <= datetime.today().date()
     assert tutil.SC.release_date() is None

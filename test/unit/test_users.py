@@ -149,16 +149,6 @@ def test_login_from_name(get_test_user: Generator[users.User]) -> None:
     assert users.get_login_from_name(tutil.SQ, f"User name bb{tutil.TEMP_KEY}aa") == user2.login
 
 
-def test_convert_for_yaml() -> None:
-    """test_convert_for_yaml"""
-    json_exp = users.export(tutil.SQ, export_settings={"FULL_EXPORT": True})
-    yaml_exp = users.convert_for_yaml(json_exp)
-    assert len(json_exp) > 0
-    assert isinstance(json_exp, dict)
-    assert isinstance(yaml_exp, list)
-    assert len(yaml_exp) == len(json_exp)
-
-
 def test_more_than_50_users(get_60_users: Generator[list[users.User]]) -> None:
     # Count groups first
     user_list = get_60_users

@@ -174,11 +174,8 @@ def test_export() -> None:
             if any(d in cond for d in _PERCENTAGE_METRICS):
                 assert cond.endswith("%")
 
-    yaml_exp = qualitygates.convert_for_yaml(json_exp)
     assert len(json_exp) > 0
-    assert isinstance(json_exp, dict)
-    assert isinstance(yaml_exp, list)
-    assert len(yaml_exp) == len(json_exp)
+    assert isinstance(json_exp, list)
 
 
 def test_audit_disabled() -> None:

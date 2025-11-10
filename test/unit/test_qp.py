@@ -118,12 +118,8 @@ def test_set_default(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> 
 def test_export() -> None:
     """test_export"""
     json_exp = qualityprofiles.export(endpoint=tutil.SQ, export_settings={})
-    yaml_exp = qualityprofiles.convert_for_yaml(json_exp)
     assert len(json_exp) > 0
-    assert isinstance(json_exp, dict)
-    assert isinstance(yaml_exp, list)
-    assert len(yaml_exp) == len(json_exp)
-
+    assert isinstance(json_exp, list)
 
 def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """test_add_remove_rules"""

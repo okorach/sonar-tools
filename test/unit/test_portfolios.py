@@ -276,11 +276,8 @@ def test_export() -> None:
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
     json_exp = pf.export(tutil.SQ, {})
-    yaml_exp = pf.convert_for_yaml(json_exp)
     assert len(json_exp) > 0
-    assert isinstance(json_exp, dict)
-    assert isinstance(yaml_exp, list)
-    assert len(yaml_exp) == len(json_exp)
+    assert isinstance(json_exp, list)
 
 
 def test_import() -> None:
