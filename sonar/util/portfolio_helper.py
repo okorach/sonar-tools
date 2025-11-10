@@ -26,6 +26,7 @@ from sonar.util import common_json_helper
 
 
 def __convert_projects_json(json_to_convert: dict[str, Any]) -> dict[str, Any]:
+    """Converts the 'projects' section of a portfolio JSON"""
     json_to_convert["projects"] = common_json_helper.convert_common_fields(json_to_convert["projects"])
     if "manual" in json_to_convert["projects"]:
         projs = {}
@@ -50,6 +51,7 @@ def __convert_projects_json(json_to_convert: dict[str, Any]) -> dict[str, Any]:
             json_to_convert["projectSelection"]["branch"] = json_to_convert["projects"]["branch"]
     json_to_convert.pop("projects")
     return json_to_convert
+
 
 def convert_portfolio_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts the sonar-config old JSON report format for a single portfolio to the new one"""
