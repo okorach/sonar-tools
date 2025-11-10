@@ -119,35 +119,9 @@ def test_config_non_existing_project() -> None:
     assert tutil.run_cmd(config.main, f"{OPTS} -{opt.KEY_REGEXP_SHORT} bad_project") == e.WRONG_SEARCH_CRITERIA
 
 
-def test_config_inline_lists(json_file: Generator[str]) -> None:
-    """test_config_inline_lists"""
-
-    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file}") == e.OK
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
-        json_config = json.loads(fh.read())
-    assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], str)
-    assert isinstance(
-        json_config["globalSettings"]["permissionTemplates"][_DEFAULT_TEMPLATE]["permissions"]["groups"][tutil.SQ.default_user_group()], str
-    )
-    assert isinstance(json_config["projects"][tutil.LIVE_PROJECT]["permissions"]["groups"][tutil.SQ.default_user_group()], str)
-
-    if tutil.SQ.edition() not in (c.CE, c.DE):
-        assert isinstance(json_config["portfolios"]["PORTFOLIO_ALL"]["permissions"]["groups"]["sonar-administrators"], str)
-        assert isinstance(json_config["portfolios"]["PORTFOLIO-PYTHON"]["projects"]["tags"], str)
-        # This is a list because there is a comma in one of the branches
-        if tutil.SQ.version() >= (10, 0, 0):
-            assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["projects"]["manual"]["BANKING-PORTAL"], list)
-        assert json_config["portfolios"]["All"]["portfolios"]["Banking"]["byReference"]
-
-    # Verify JSON export is in the expected key order
-    assert __is_ordered_as_expected(list(json_config.keys()), config._SECTIONS_ORDER)
-    for section in config._SECTIONS_TO_SORT:
-        assert sorted(json_config.get(section, {}).keys()) == list(json_config.get(section, {}).keys())
-
-
 def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
     """test_config_dont_inline_lists"""
-    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --{opt.WHAT} settings,projects,portfolios --dontInlineLists") == e.OK
+    assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --{opt.WHAT} settings,projects,portfolios") == e.OK
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], list)
