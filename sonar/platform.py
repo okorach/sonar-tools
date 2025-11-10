@@ -263,6 +263,7 @@ class Platform(object):
         api = pfhelp.normalize_api(api)
         headers = {"user-agent": self._user_agent, "accept": _APP_JSON} | kwargs.get("headers", {})
         params = params or {}
+        params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
         with_org = kwargs.pop("with_organization", True)
         if self.is_sonarcloud():
             headers["Authorization"] = f"Bearer {self.__token}"
