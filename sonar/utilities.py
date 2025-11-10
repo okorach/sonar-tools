@@ -41,7 +41,7 @@ import Levenshtein
 
 import sonar.logging as log
 from sonar import version, errcodes
-from sonar.util import types, cache_helper
+from sonar.util import types, cache_helper, constants as c
 import cli.options as opt
 
 
@@ -71,15 +71,15 @@ def check_last_version(package_url: str) -> None:
 
 def token_type(token: str) -> str:
     """Returns the type of token"""
-    if len(token) != 44:
+    if len(token) not in (c.SQS_TOKEN_LENGTH, c.SQC_TOKEN_LENGTH):
         return "wrong format"
-    elif token[0:4] == "sqa_":
+    if token[0:4] == "sqa_":
         return "global-analysis"
-    elif token[0:4] == "sqp_":
+    if token[0:4] == "sqp_":
         return "project-analysis"
-    elif token[0:4] == "squ_":
+    if token[0:4] == "squ_":
         return "user"
-    return "wrong format"
+    return "user"
 
 
 def check_token(token: Optional[str], is_sonarcloud: bool = False) -> None:
@@ -835,8 +835,9 @@ def sort_list_by_key(list_to_sort: list[dict[str, Any]], key: str, priority_fiel
     return first_elem + list(dict(sorted(tmp_dict.items())).values())
 
 
-def order_keys(original_dict: dict[str, any], *keys) -> dict[str, any]:
+def order_keys(original_dict: dict[str, any], *keys: str) -> dict[str, any]:
     """Orders a dict keys in a chosen order, existings keys not in *keys are pushed to the end
+
     :param dict[str, any] original_dict: Dict to order
     :param str *keys: List of keys in desired order
     :return: same dict with keys in desired order

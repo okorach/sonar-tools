@@ -25,14 +25,14 @@ from sonar.util import constants as c
 from sonar.util import common_json_helper
 
 
-def convert_rule_json(old_json: dict[str, Any]) -> dict[str, Any]:
+def __convert_rule_json(json_to_convert: dict[str, Any]) -> None:
     """Converts a rule JSON from old to new export format"""
-    old_json = common_json_helper.convert_common_fields(old_json)
-    if "impacts" in old_json:
-        old_json["impacts"] = {
-            k: old_json["impacts"][k]
+    json_to_convert = common_json_helper.convert_common_fields(json_to_convert)
+    if "impacts" in json_to_convert:
+        json_to_convert["impacts"] = {
+            k: json_to_convert["impacts"][k]
             for k in ("SECURITY", "RELIABILITY", "MAINTAINABILITY")
-            if k in old_json["impacts"] and old_json["impacts"][k] != c.DEFAULT
+            if k in json_to_convert["impacts"] and json_to_convert["impacts"][k] != c.DEFAULT
         }
 
 
@@ -42,6 +42,6 @@ def convert_rules_json(old_json: dict[str, Any]) -> dict[str, Any]:
     for k in ("instantiated", "extended", "standard", "thirdParty"):
         if k in old_json:
             for r in old_json[k].values():
-                r = convert_rule_json(r)
+                __convert_rule_json(r)
             new_json[k] = utilities.dict_to_list(dict(sorted(old_json[k].items())), "key")
     return new_json

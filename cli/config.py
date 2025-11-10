@@ -22,7 +22,7 @@
 Exports SonarQube platform configuration as JSON
 """
 
-from typing import TextIO, Any
+from typing import TextIO, Any, Optional
 from threading import Thread
 from queue import Queue
 
@@ -323,11 +323,11 @@ def convert_json(original_json: dict[str, Any]) -> dict[str, Any]:
     return __normalize_json(new_json, remove_empty=False, remove_none=True)
 
 
-def convert_json_file(**kwargs) -> None:
+def convert_json_file(from_file: str, to_file: Optional[str]) -> None:
     """Converts a sonar-config report from the old to the new JSON format"""
-    with open(kwargs[_CONVERT_FROM], encoding="utf-8") as fd:
+    with open(from_file, encoding="utf-8") as fd:
         new_json = convert_json(json.loads(fd.read()))
-    with utilities.open_file(kwargs.get(_CONVERT_TO, None)) as fd:
+    with utilities.open_file(to_file) as fd:
         print(utilities.json_dump(new_json), file=fd)
 
 
@@ -337,7 +337,7 @@ def main() -> None:
     try:
         kwargs = utilities.convert_args(__parse_args("Extract SonarQube Server or Cloud platform configuration"))
         if kwargs[_CONVERT_FROM] is not None:
-            convert_json_file(**kwargs)
+            convert_json_file(kwargs[_CONVERT_FROM], kwargs.get(_CONVERT_TO, None))
             utilities.final_exit(errcodes.OK, "", start_time)
         log.info("Checking token")
         utilities.check_token(kwargs[options.TOKEN], utilities.is_sonarcloud_url(kwargs[options.URL]))

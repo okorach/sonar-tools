@@ -32,7 +32,7 @@ import concurrent.futures
 from datetime import datetime
 import traceback
 
-from typing import Optional, Union, Any
+from typing import Optional, Union
 from http import HTTPStatus
 from threading import Lock
 from requests import HTTPError, RequestException
@@ -1001,7 +1001,7 @@ class Project(components.Component):
             with_inherited = export_settings.get("INCLUDE_INHERITED", False)
             json_data["settings"] = {}
             settings_to_export = {k: s for k, s in settings_dict.items() if with_inherited or not s.inherited and s.key != "visibility"}
-            for k, s in settings_to_export.items():
+            for s in settings_to_export.values():
                 json_data["settings"] |= s.to_json()
             return phelp.convert_project_json(json_data)
 
@@ -1435,7 +1435,6 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
 
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports all or a list of projects configuration as dict
-
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
     :return: list of projects settings

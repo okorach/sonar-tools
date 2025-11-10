@@ -91,8 +91,7 @@ class Platform(object):
         self._global_settings_definitions: types.ApiPayload = None
 
     def __str__(self) -> str:
-        """
-        Returns the string representation of the SonarQube connection,
+        """Returns the string representation of the SonarQube connection,
         with the token recognizable but largely redacted
         """
         return f"{util.redacted_token(self.__token)}@{self.local_url}"
@@ -139,9 +138,7 @@ class Platform(object):
         return update_center.get_release_date(self.version())
 
     def edition(self) -> str:
-        """
-        Returns the Sonar edition: "community", "developer", "enterprise", "datacenter" or "sonarcloud"
-        """
+        """Returns the Sonar edition: 'community', 'developer', 'enterprise', 'datacenter' or 'sonarcloud'"""
         if self.is_sonarcloud():
             return c.SC
         if "edition" in self.global_nav():
@@ -177,9 +174,9 @@ class Platform(object):
         """Returns whether the target platform is SonarQube Cloud"""
         return util.is_sonarcloud_url(self.local_url)
 
-    def basics(self) -> dict[str, str]:
-        """
-        :return: the basic information of the platform: ServerId, Edition and Version
+    def basics(self) -> dict[str, Any]:
+        """Returns the platform basic info as JSON
+        :return: the basic information of the platform: ServerId, Edition, Version and Plugins
         :rtype: dict{"serverId": <id>, "edition": <edition>, "version": <version>, "plugins": <dict>}
         """
 
@@ -204,7 +201,7 @@ class Platform(object):
         return c.SQC_USERS if self.is_sonarcloud() else c.SQS_USERS
 
     def is_default_user_group(self, group_name: str) -> bool:
-        """
+        """Returns whether a group name is the default user group (sonar-user on SQS Members on SQC)
         :param str group_name: group name to check
         :return: whether the group is a built-in default group
         """

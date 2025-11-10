@@ -55,7 +55,6 @@ def flatten(qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
 
 def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
     """Converts a profile's children profiles to list"""
-
     for k, v in sorted(qp_json.items()):
         for rtype in "addedRules", "modifiedRules":
             for r in v.get(rtype, {}):

@@ -61,6 +61,7 @@ class Sif(object):
     """Abstraction of SIF file"""
 
     def __init__(self, json_sif: dict[str, str], concerned_object: Optional[object] = None) -> None:
+        """Constructor"""
         if not is_sysinfo(json_sif):
             log.critical("Provided JSON does not seem to be a system info")
             raise NotSystemInfo("JSON is not a system info nor a support info")
