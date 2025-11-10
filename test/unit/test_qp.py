@@ -121,6 +121,7 @@ def test_export() -> None:
     assert len(json_exp) > 0
     assert isinstance(json_exp, list)
 
+
 def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """test_add_remove_rules"""
     qp = get_test_qp
