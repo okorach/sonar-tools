@@ -29,6 +29,7 @@ import pytest
 import utilities as tutil
 from sonar import portfolios as pf, projects, exceptions, logging
 import sonar.util.constants as c
+from sonar.util import portfolio_helper as phelp
 
 EXISTING_PORTFOLIO = "PORT_FAV_PROJECTS"
 
@@ -276,8 +277,10 @@ def test_export() -> None:
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
     json_exp = pf.export(tutil.SQ, {})
+    list_exp = phelp.convert_portfolios_json(json_exp)
     assert len(json_exp) > 0
-    assert isinstance(json_exp, list)
+    assert isinstance(list_exp, list)
+    assert len(list_exp) == len(json_exp)
 
 
 def test_import() -> None:
