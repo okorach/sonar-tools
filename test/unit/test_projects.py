@@ -27,7 +27,7 @@ import pytest
 from sonar import projects, exceptions, qualityprofiles, qualitygates
 from sonar.audit import audit_config
 import sonar.util.constants as c
-
+from sonar.util import project_helper as phelp
 import utilities as tutil
 
 
@@ -202,8 +202,11 @@ def test_count() -> None:
 def test_export() -> None:
     """test_export"""
     json_exp = projects.export(endpoint=tutil.SQ, export_settings={})
+    list_exp = phelp.convert_projects_json(json_exp)
     assert len(json_exp) > 0
-    assert isinstance(json_exp, list)
+    assert isinstance(json_exp, dict)
+    assert isinstance(list_exp, list)
+    assert len(json_exp) == len(list_exp)
 
 
 def test_already_exists() -> None:

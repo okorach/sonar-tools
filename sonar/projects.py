@@ -1003,7 +1003,7 @@ class Project(components.Component):
             settings_to_export = {k: s for k, s in settings_dict.items() if with_inherited or not s.inherited and s.key != "visibility"}
             for s in settings_to_export.values():
                 json_data["settings"] |= s.to_json()
-            return phelp.convert_project_json(json_data)
+            return json_data
 
         except Exception as e:
             traceback.print_exc()
@@ -1457,7 +1457,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
         for future in concurrent.futures.as_completed(futures):
             try:
                 exp_json = future.result(timeout=60)
-                write_q and write_q.put(exp_json)
+                write_q and write_q.put(phelp.convert_project_json(exp_json))
                 results[futures_map[future].key] = exp_json
             except (TimeoutError, RequestException, exceptions.SonarException) as e:
                 log.error(f"Exception {str(e)} when exporting {str(futures_map[future])}.")
