@@ -49,7 +49,6 @@ import sonar.audit.severities as sev
 import sonar.audit.types as typ
 from sonar.audit.problem import Problem
 from sonar import webhooks
-import sonar.util.common_helper as chelp
 
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
@@ -664,7 +663,7 @@ class Platform(object):
             else:
                 log.info("User 'admin' default password has been changed")
         except requests.RequestException as e:
-            chelp.clear_cache_and_exit(errcodes.SONAR_API, str(e))
+            raise exceptions.SonarException(str(e), errcodes.SONAR_API)
         return problems
 
     def __audit_group_permissions(self) -> list[Problem]:
