@@ -53,7 +53,6 @@ from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
 import sonar.util.project_helper as phelp
-import sonar.util.common_helper as chelp
 
 _CLASS_LOCK = Lock()
 
@@ -1523,8 +1522,9 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
     """Thread callable for project zip export"""
     try:
         status, file = project.export_zip(timeout=export_timeout)
-    except exceptions.UnsupportedOperation:
-        chelp.clear_cache_and_exit(errcodes.UNSUPPORTED_OPERATION, "Zip export unsupported on your SonarQube version")
+    except exceptions.UnsupportedOperation as e:
+        # chelp.clear_cache_and_exit(errcodes.UNSUPPORTED_OPERATION, "Zip export unsupported on your SonarQube version")
+        raise exceptions.UnsupportedOperation("Zip export unsupported on your SonarQube version", errcodes.UNSUPPORTED_OPERATION) from e
     log.debug("Exporting thread for %s done, status: %s", str(project), status)
     data = {"key": project.key, "exportProjectUrl": project.url(), "exportStatus": status}
     if status.startswith(tasks.SUCCESS):
@@ -1572,6 +1572,8 @@ def export_zips(
                 status = f"{ZIP_TIMEOUT}({export_timeout}s)"
                 result = {"key": futures_map[future].key, "exportProjectUrl": futures_map[future].url(), "exportStatus": status}
                 log.error(f"Project Zip export timed out after {export_timeout} seconds for {str(future)}.")
+            except exceptions.UnsupportedOperation as e:
+                raise
             except Exception as e:
                 status = f"{ZIP_EXCEPTION}({e})"
                 result = {"key": futures_map[future].key, "exportProjectUrl": futures_map[future].url(), "exportStatus": status}
