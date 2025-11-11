@@ -867,3 +867,8 @@ def perms_to_list(perms: dict[str, Any]) -> list[str, Any]:
     if not perms or not isinstance(perms, dict):
         return perms
     return dict_to_list(perms.get("groups", {}), "group", "permissions") + dict_to_list(perms.get("users", {}), "user", "permissions")
+
+
+def search_list(obj_list: list[Any], field: str, value: str) -> dict[str, Any]:
+    """Returns the first dict elem in a list whose field is a given value"""
+    return next((elem for elem in obj_list if elem[field] == value), None)
