@@ -40,7 +40,7 @@ import requests
 import Levenshtein
 
 import sonar.logging as log
-from sonar import version, errcodes
+from sonar import version, errcodes, exceptions
 from sonar.util import types, constants as c
 import cli.options as opt
 
@@ -84,16 +84,12 @@ def token_type(token: str) -> str:
 
 def check_token(token: Optional[str], is_sonarcloud: bool = False) -> None:
     """Verifies if a proper user token has been provided"""
-    log.info("Checking token %s SQC %s token type = %s", token, is_sonarcloud, token_type(token))
     if token is None:
-        final_exit(
-            errcodes.SONAR_API_AUTHENTICATION,
-            "Token is missing (Argument -t/--token)",
-        )
+        raise exceptions.SonarException("Token is missing (Argument -t/--token)", errcodes.SONAR_API_AUTHENTICATION)
     if not is_sonarcloud and token_type(token) != "user":
-        final_exit(
-            errcodes.TOKEN_NOT_SUITED,
+        raise exceptions.SonarException(
             f"The provided token {redacted_token(token)} is a {token_type(token)} token, a user token is required for sonar-tools",
+            errcodes.TOKEN_NOT_SUITED,
         )
 
 
