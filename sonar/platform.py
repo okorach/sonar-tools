@@ -49,6 +49,7 @@ import sonar.audit.severities as sev
 import sonar.audit.types as typ
 from sonar.audit.problem import Problem
 from sonar import webhooks
+import sonar.util.common_helper as chelp
 
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
@@ -91,7 +92,8 @@ class Platform(object):
         self._global_settings_definitions: types.ApiPayload = None
 
     def __str__(self) -> str:
-        """Returns the string representation of the SonarQube connection,
+        """
+        Returns the string representation of the SonarQube connection,
         with the token recognizable but largely redacted
         """
         return f"{util.redacted_token(self.__token)}@{self.local_url}"
@@ -130,15 +132,13 @@ class Platform(object):
         return self._version[0:3]
 
     def release_date(self) -> Optional[datetime.date]:
-        """
-        :return: the SonarQube platform release date if found in update center or None if SonarQube Cloud or if the date cannot be found
-        """
+        """Returns the SonarQube Server platform release date if found in update center or None if SonarQube Cloud or if the date cannot be found"""
         if self.is_sonarcloud():
             return None
         return update_center.get_release_date(self.version())
 
     def edition(self) -> str:
-        """Returns the Sonar edition: 'community', 'developer', 'enterprise', 'datacenter' or 'sonarcloud'"""
+        """Returns the SonarQube edition: 'community', 'developer', 'enterprise', 'datacenter' or 'sonarcloud'"""
         if self.is_sonarcloud():
             return c.SC
         if "edition" in self.global_nav():
@@ -176,10 +176,10 @@ class Platform(object):
 
     def basics(self) -> dict[str, Any]:
         """Returns the platform basic info as JSON
+
         :return: the basic information of the platform: ServerId, Edition, Version and Plugins
         :rtype: dict{"serverId": <id>, "edition": <edition>, "version": <version>, "plugins": <dict>}
         """
-
         url = self.get_setting(key="sonar.core.serverBaseURL")
         if url in (None, ""):
             url = self.local_url
@@ -195,13 +195,12 @@ class Platform(object):
         }
 
     def default_user_group(self) -> str:
-        """
-        :return: the built-in default group name on that platform
-        """
+        """Returns the built-in default group name on that platform"""
         return c.SQC_USERS if self.is_sonarcloud() else c.SQS_USERS
 
     def is_default_user_group(self, group_name: str) -> bool:
         """Returns whether a group name is the default user group (sonar-user on SQS Members on SQC)
+
         :param str group_name: group name to check
         :return: whether the group is a built-in default group
         """
@@ -665,7 +664,7 @@ class Platform(object):
             else:
                 log.info("User 'admin' default password has been changed")
         except requests.RequestException as e:
-            util.final_exit(errcodes.SONAR_API, str(e))
+            chelp.clear_cache_and_exit(errcodes.SONAR_API, str(e))
         return problems
 
     def __audit_group_permissions(self) -> list[Problem]:

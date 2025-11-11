@@ -53,6 +53,7 @@ from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
 import sonar.util.project_helper as phelp
+import sonar.util.common_helper as chelp
 
 _CLASS_LOCK = Lock()
 
@@ -1003,14 +1004,14 @@ class Project(components.Component):
             settings_to_export = {k: s for k, s in settings_dict.items() if with_inherited or not s.inherited and s.key != "visibility"}
             for s in settings_to_export.values():
                 json_data["settings"] |= s.to_json()
-            return json_data
 
         except Exception as e:
             traceback.print_exc()
             util.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
             json_data["error"] = f"{util.error_msg(e)} while exporting project"
-        log.debug("Exporting %s done, returning %s", str(self), util.json_dump(json_data))
-        return json_data
+        else:
+            log.debug("Exporting %s done, returning %s", str(self), util.json_dump(json_data))
+            return json_data
 
     def new_code(self) -> str:
         """
@@ -1435,8 +1436,9 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
 
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports all or a list of projects configuration as dict
-    :param Platform endpoint: reference to the SonarQube platform
-    :param ConfigSettings export_settings: Export parameters
+
+    :param endpoint: reference to the SonarQube platform
+    :param export_settings: Export parameters
     :return: list of projects settings
     """
 
@@ -1522,7 +1524,7 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
     try:
         status, file = project.export_zip(timeout=export_timeout)
     except exceptions.UnsupportedOperation:
-        util.final_exit(errcodes.UNSUPPORTED_OPERATION, "Zip export unsupported on your SonarQube version")
+        chelp.clear_cache_and_exit(errcodes.UNSUPPORTED_OPERATION, "Zip export unsupported on your SonarQube version")
     log.debug("Exporting thread for %s done, status: %s", str(project), status)
     data = {"key": project.key, "exportProjectUrl": project.url(), "exportStatus": status}
     if status.startswith(tasks.SUCCESS):

@@ -42,6 +42,7 @@ from sonar.util import issue_defs as idefs, types, component_helper
 import sonar.util.constants as c
 
 import sonar.utilities as util
+import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-findings"
 DATES_WITHOUT_TIME = False
@@ -219,21 +220,21 @@ def __verify_inputs(params: types.ApiParams) -> bool:
     errcode = errcodes.WRONG_SEARCH_CRITERIA
     diff = util.difference(util.csv_to_list(params.get(options.RESOLUTIONS, None)), idefs.RESOLUTIONS + hotspots.RESOLUTIONS)
     if diff:
-        util.final_exit(errcode, f"Resolutions {str(diff)} are not legit resolutions")
+        chelp.clear_cache_and_exit(errcode, f"Resolutions {str(diff)} are not legit resolutions")
 
     diff = util.difference(util.csv_to_list(params.get(options.STATUSES, None)), idefs.STATUSES + hotspots.STATUSES)
     if diff:
-        util.final_exit(errcode, f"Statuses {str(diff)} are not legit statuses")
+        chelp.clear_cache_and_exit(errcode, f"Statuses {str(diff)} are not legit statuses")
 
     diff = util.difference(util.csv_to_list(params.get(options.SEVERITIES, None)), idefs.STD_SEVERITIES + hotspots.SEVERITIES)
     if diff:
-        util.final_exit(errcode, f"Severities {str(diff)} are not legit severities")
+        chelp.clear_cache_and_exit(errcode, f"Severities {str(diff)} are not legit severities")
 
     diff = util.difference(util.csv_to_list(params.get(options.TYPES, None)), idefs.STD_TYPES + hotspots.TYPES)
     if diff:
-        util.final_exit(errcode, f"Types {str(diff)} are not legit types")
+        chelp.clear_cache_and_exit(errcode, f"Types {str(diff)} are not legit types")
     if len(params[options.CSV_SEPARATOR]) > 1:
-        util.final_exit(errcode, f"CSV separator must be a single character, {params[options.CSV_SEPARATOR]} is not legit")
+        chelp.clear_cache_and_exit(errcode, f"CSV separator must be a single character, {params[options.CSV_SEPARATOR]} is not legit")
 
     return True
 
@@ -362,7 +363,7 @@ def main() -> None:
         params = __turn_off_use_findings_if_needed(sqenv, params=params)
         branch_regexp = params.get(options.BRANCH_REGEXP, None)
         if sqenv.edition() == c.CE and (branch_regexp is not None or params.get(options.PULL_REQUESTS, None) is not None):
-            util.final_exit(
+            chelp.clear_cache_and_exit(
                 errcodes.UNSUPPORTED_OPERATION,
                 f"Options '--{options.BRANCH_REGEXP}' and '--{options.PULL_REQUESTS}' shall not be used with Community Edition/Community Build",
             )
@@ -396,9 +397,9 @@ def main() -> None:
 
         nb_findings = store_findings(components_list, endpoint=sqenv, params=params)
     except (PermissionError, FileNotFoundError) as e:
-        util.final_exit(errcodes.OS_ERROR, f"OS error while exporting findings: {e}")
+        chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error while exporting findings: {e}")
     except exceptions.SonarException as e:
-        util.final_exit(e.errcode, e.message)
+        chelp.clear_cache_and_exit(e.errcode, e.message)
 
     log.info(
         "Exported %d findings to %s (%d components from URL %s)",
@@ -407,7 +408,7 @@ def main() -> None:
         len(components_list),
         sqenv.local_url,
     )
-    util.final_exit(errcodes.OK, start_time=start_time)
+    chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
 
 
 if __name__ == "__main__":

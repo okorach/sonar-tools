@@ -21,7 +21,8 @@
 
 """Main entry point for sonar-tools"""
 
-from sonar import version, utilities, errcodes
+from sonar import version, errcodes
+import sonar.util.common_helper as chelp
 
 
 def main() -> None:
@@ -48,7 +49,7 @@ Collections of utilities for SonarQube Server and Cloud:
 See tools built-in -h help and https://github.com/okorach/sonar-tools for more documentation
 """
     )
-    utilities.final_exit(errcodes.OK)
+    chelp.clear_cache_and_exit(errcodes.OK)
 
 
 if __name__ == "__main__":

@@ -41,7 +41,7 @@ import Levenshtein
 
 import sonar.logging as log
 from sonar import version, errcodes
-from sonar.util import types, cache_helper, constants as c
+from sonar.util import types, constants as c
 import cli.options as opt
 
 
@@ -250,9 +250,9 @@ def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
     return data
 
 
-def dict_subset(d: dict[str, str], subset_list: list[str]) -> dict[str, str]:
+def dict_subset(d: dict[str, str], key_subset: list[str]) -> dict[str, str]:
     """Returns the subset of dict only with subset_list keys"""
-    return {key: d[key] for key in subset_list if key in d}
+    return {key: d[key] for key in key_subset if key in d}
 
 
 def allowed_values_string(original_str: str, allowed_values: list[str]) -> str:
@@ -394,7 +394,6 @@ def dict_add(dict1: dict[str, int], dict2: dict[str, int]) -> dict[str, int]:
 
 def final_exit(exit_code: int, err_msg: Optional[str] = None, start_time: Optional[datetime.datetime] = None) -> None:
     """Fatal exit with error msg"""
-    cache_helper.clear_cache()
     if exit_code != errcodes.OK:
         log.fatal(err_msg)
         print(f"FATAL: {err_msg}", file=sys.stderr)

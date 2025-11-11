@@ -42,6 +42,8 @@ import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
 from sonar.util import component_helper
+import sonar.util.common_helper as chelp
+
 
 TOOL_NAME = "sonar-config"
 
@@ -221,7 +223,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
     log.info("Exporting with settings: %s", utilities.json_dump(export_settings, redact_tokens=True))
     if "projects" in what and kwargs[options.KEY_REGEXP]:
         if len(component_helper.get_components(endpoint, "projects", kwargs[options.KEY_REGEXP])) == 0:
-            utilities.final_exit(errcodes.WRONG_SEARCH_CRITERIA, f"No projects matching regexp '{kwargs[options.KEY_REGEXP]}'")
+            chelp.clear_cache_and_exit(errcodes.WRONG_SEARCH_CRITERIA, f"No projects matching regexp '{kwargs[options.KEY_REGEXP]}'")
 
     what.append(c.CONFIG_KEY_PLATFORM)
     log.info("Exporting configuration from %s", kwargs[options.URL])
@@ -277,7 +279,7 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         with open(kwargs[options.REPORT_FILE], "r", encoding="utf-8") as fd:
             data = json.loads(fd.read())
     except FileNotFoundError as e:
-        utilities.final_exit(errcodes.OS_ERROR, f"OS error while reading file: {e}")
+        chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error while reading file: {e}")
     key_list = kwargs[options.KEY_REGEXP]
 
     calls = {
@@ -338,7 +340,7 @@ def main() -> None:
         kwargs = utilities.convert_args(__parse_args("Extract SonarQube Server or Cloud platform configuration"))
         if kwargs[_CONVERT_FROM] is not None:
             convert_json_file(kwargs[_CONVERT_FROM], kwargs.get(_CONVERT_TO, None))
-            utilities.final_exit(errcodes.OK, "", start_time)
+            chelp.clear_cache_and_exit(errcodes.OK, "", start_time)
         log.info("Checking token")
         utilities.check_token(kwargs[options.TOKEN], utilities.is_sonarcloud_url(kwargs[options.URL]))
         log.info("Token OK")
@@ -357,14 +359,14 @@ def main() -> None:
             export_config(endpoint, what, **kwargs)
         elif kwargs[options.IMPORT]:
             if kwargs["file"] is None:
-                utilities.final_exit(errcodes.ARGS_ERROR, "--file is mandatory to import configuration")
+                chelp.clear_cache_and_exit(errcodes.ARGS_ERROR, "--file is mandatory to import configuration")
             __import_config(endpoint, what, **kwargs)
     except exceptions.SonarException as e:
-        utilities.final_exit(e.errcode, e.message)
+        chelp.clear_cache_and_exit(e.errcode, e.message)
     except (PermissionError, FileNotFoundError) as e:
-        utilities.final_exit(errcodes.OS_ERROR, f"OS error while exporting config: {e}")
+        chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error while exporting config: {e}")
 
-    utilities.final_exit(errcodes.OK, "", start_time)
+    chelp.clear_cache_and_exit(errcodes.OK, "", start_time)
 
 
 if __name__ == "__main__":
