@@ -986,7 +986,7 @@ class Project(components.Component):
             json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
             if export_settings.get("MODE", "") == "MIGRATION":
-                json_data.update(self.migration_export(export_settings))
+                json_data.update({"migrationData": self.migration_export(export_settings)})
 
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})

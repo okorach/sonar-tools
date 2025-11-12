@@ -57,7 +57,7 @@ def test_migration(json_file: Generator[str]) -> None:
         item_list.append("branches")
     for p in json_config["projects"]:
         for item in item_list:
-            assert item in p or "error" in p
+            assert item in p["migrationData"] or "error" in p
 
     u = json_config["users"]["admin"]
     assert tutil.SQ.default_user_group() in u["groups"]
