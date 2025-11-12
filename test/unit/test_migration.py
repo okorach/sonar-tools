@@ -55,7 +55,7 @@ def test_migration(json_file: Generator[str]) -> None:
     item_list = ["backgroundTasks", "detectedCi", "lastAnalysis", "issues", "hotspots", "name", "ncloc", "permissions", "revision", "visibility"]
     if tutil.SQ.edition() != c.CE:
         item_list.append("branches")
-    for p in json_config["projects"].values():
+    for p in json_config["projects"]:
         for item in item_list:
             assert item in p or "error" in p
 
@@ -123,6 +123,6 @@ def test_migration_skip_issues(json_file: Generator[str]) -> None:
     for item in GLOBAL_ITEMS:
         assert item in json_config
 
-    for p in json_config["projects"].values():
+    for p in json_config["projects"]:
         assert "issues" not in p
         assert "hotspots" not in p
