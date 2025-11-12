@@ -78,7 +78,7 @@ _JSON_KEY_ORDER = (
     "qualityProfiles",
     "links",
     "webhooks",
-    "migrationData"
+    "migrationData",
 )
 
 
