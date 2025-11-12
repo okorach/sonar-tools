@@ -27,7 +27,8 @@ from datetime import datetime
 
 import pytest
 import utilities as tutil
-from sonar import platform, settings
+from sonar import settings
+import sonar.util.platform_helper as phelp
 
 
 def test_system_id() -> None:
@@ -96,7 +97,7 @@ def test_set_webhooks() -> None:
 def test_normalize_api() -> None:
     normalized_result = "/api/projects/search"
     for input in "/projects/search", "/api/projects/search", "api/projects/search", "projects/search":
-        assert platform._normalize_api(input) == normalized_result
+        assert phelp.normalize_api(input) == normalized_result
 
 
 def test_release_date() -> None:
