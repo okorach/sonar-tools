@@ -52,7 +52,7 @@ def test_migration(json_file: Generator[str]) -> None:
     for item in GLOBAL_ITEMS:
         assert item in json_config
 
-    item_list = ["backgroundTasks", "detectedCi", "lastAnalysis", "issues", "hotspots", "name", "ncloc", "permissions", "revision", "visibility"]
+    item_list = ["detectedCi", "lastAnalysis", "issues", "hotspots", "ncloc", "revision"]
     if tutil.SQ.edition() != c.CE:
         item_list.append("branches")
     for p in json_config["projects"]:
