@@ -390,10 +390,7 @@ class Portfolio(aggregations.Aggregation):
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports a portfolio (for sonar-config)"""
         log.info("Exporting %s", str(self))
-        json_data = util.remove_nones(
-            util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
-        )
-        return phelp.convert_portfolio_json(json_data)
+        return util.remove_nones(util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
 
     def permissions(self) -> pperms.PortfolioPermissions:
         """Returns a portfolio permissions (if toplevel) or None if sub-portfolio"""
@@ -787,7 +784,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
             if not p.is_sub_portfolio():
                 exp = p.export(export_settings)
                 if write_q:
-                    write_q.put(exp)
+                    write_q.put(phelp.convert_portfolio_json(exp))
                 else:
                     exp.pop("key")
                     exported_portfolios[k] = exp

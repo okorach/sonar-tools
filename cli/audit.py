@@ -38,6 +38,7 @@ from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, p
 import sonar.utilities as util
 from sonar.audit import problem
 from sonar.audit import audit_config as audit_conf
+import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-audit"
 WHAT_AUDITABLE = {
@@ -239,7 +240,7 @@ def main() -> None:
         )
         if kwargs.get("config", False):
             audit_conf.configure()
-            util.final_exit(errcodes.OK, start_time=start_time)
+            chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
 
         if kwargs["sif"]:
             file = kwargs["sif"]
@@ -261,16 +262,18 @@ def main() -> None:
         # problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=util.deduct_format(kwargs[options.FORMAT], ofile))
 
     except (PermissionError, FileNotFoundError) as e:
-        util.final_exit(errcode, f"OS error while writing file '{file}': {e}")
+        chelp.clear_cache_and_exit(errcode, f"OS error while writing file '{file}': {e}")
     except exceptions.SonarException as e:
-        util.final_exit(e.errcode, e.message)
+        chelp.clear_cache_and_exit(e.errcode, e.message)
     except json.decoder.JSONDecodeError:
-        util.final_exit(errcodes.SIF_AUDIT_ERROR, f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...")
+        chelp.clear_cache_and_exit(errcodes.SIF_AUDIT_ERROR, f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...")
     except sif.NotSystemInfo:
-        util.final_exit(errcodes.SIF_AUDIT_ERROR, f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...")
+        chelp.clear_cache_and_exit(
+            errcodes.SIF_AUDIT_ERROR, f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting..."
+        )
     except RequestException as e:
-        util.final_exit(errcodes.SONAR_API, f"HTTP error while auditing: {str(e)}")
-    util.final_exit(errcodes.OK, start_time=start_time)
+        chelp.clear_cache_and_exit(errcodes.SONAR_API, f"HTTP error while auditing: {str(e)}")
+    chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
 
 
 if __name__ == "__main__":

@@ -183,7 +183,7 @@ def __check_file_writeable(file: str) -> None:
             with open(file, mode="w", encoding="utf-8"):
                 pass
         except (PermissionError, FileNotFoundError) as e:
-            utilities.final_exit(errcodes.OS_ERROR, f"Can't write to file '{file}': {e}")
+            raise exceptions.SonarException(f"Can't write to file '{file}': {e}", errcodes.OS_ERROR)
         os.remove(file)
 
 

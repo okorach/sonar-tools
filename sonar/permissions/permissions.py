@@ -421,6 +421,8 @@ def white_list(perms: types.JsonPermissions, allowed_perms: list[str]) -> types.
         resulting_perms[perm_type] = {}
         for user_or_group, original_perms in sub_perms.items():
             resulting_perms[perm_type][user_or_group] = [p for p in original_perms if p in allowed_perms]
+            if len(resulting_perms[perm_type][user_or_group]) == 0:
+                resulting_perms[perm_type].pop(user_or_group)
     return resulting_perms
 
 
@@ -433,4 +435,6 @@ def black_list(perms: types.JsonPermissions, disallowed_perms: list[str]) -> typ
         resulting_perms[perm_type] = {}
         for user_or_group, original_perms in sub_perms.items():
             resulting_perms[perm_type][user_or_group] = [p for p in original_perms if p not in disallowed_perms]
+            if len(resulting_perms[perm_type][user_or_group]) == 0:
+                resulting_perms[perm_type].pop(user_or_group)
     return resulting_perms

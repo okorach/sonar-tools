@@ -25,11 +25,10 @@ Update a custom measure value:
     Usage: cust_measures.py -t <SQ_TOKEN> -u <SQ_URL> -k <projectKey> -m <metricKey> --updateValue <value>
 """
 
-import sys
-
 from cli import options
 import sonar.logging as log
 from sonar import custom_measures, platform, utilities, exceptions, version
+import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-custom-measures"
 
@@ -65,8 +64,8 @@ def main():
                 description=params.get("description", None),
             )
     except exceptions.SonarException as e:
-        utilities.final_exit(e.errcode, e.message)
-    utilities.final_exit(0, start_time=start_time)
+        chelp.clear_cache_and_exit(e.errcode, e.message)
+    chelp.clear_cache_and_exit(0, start_time=start_time)
 
 
 if __name__ == "__main__":

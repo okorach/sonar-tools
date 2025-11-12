@@ -150,13 +150,6 @@ def test_import() -> None:
         o_g.delete()
 
 
-def test_convert_yaml() -> None:
-    data = groups.export(tutil.SQ, {})
-    yaml_list = groups.convert_for_yaml(data)
-    assert len(yaml_list) == len(data)
-    assert len(yaml_list[0]) == 2
-
-
 def test_set_name(get_test_group: Generator[groups.Group]) -> None:
     gr = get_test_group
     assert gr.name == tutil.TEMP_KEY

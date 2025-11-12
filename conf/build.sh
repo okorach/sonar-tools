@@ -22,6 +22,7 @@ CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 build_docs=0
 build_docker=0
 offline=0
+deps=0
 
 . "${CONF_DIR}/env.sh"
 
@@ -35,6 +36,9 @@ while [[ $# -ne 0 ]]; do
             ;;
         offline)
             offline=1
+            ;;
+        deps)
+            deps=1
             ;;
         *)
             ;;
@@ -57,6 +61,13 @@ else
     rm -rf "${ROOT_DIR}/build/lib/sonar" "${ROOT_DIR}/build/lib/cli" "${ROOT_DIR}"/build/scripts*/sonar-tools "${ROOT_DIR}"/dist/sonar_tools*
     poetry build
 fi
+# Deploy locally for tests
+if [[ "${deps}" = "1" ]]; then
+    pipopts="--upgrade"
+else
+    pipopts="--no-deps"
+fi
+pip install "${pipopts}" --force-reinstall "${ROOT_DIR}"/dist/sonar_tools-*-py3-*.whl
 
 if [[ "${build_docs}" = "1" ]]; then
     echo "======= BUILDING DOCS ========="

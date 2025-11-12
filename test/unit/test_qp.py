@@ -27,6 +27,7 @@ import pytest
 
 import utilities as tutil
 from sonar import qualityprofiles, languages, rules, exceptions, logging
+import sonar.util.qualityprofile_helper as qhelp
 
 
 def test_get_object(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
@@ -118,11 +119,8 @@ def test_set_default(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> 
 def test_export() -> None:
     """test_export"""
     json_exp = qualityprofiles.export(endpoint=tutil.SQ, export_settings={})
-    yaml_exp = qualityprofiles.convert_for_yaml(json_exp)
     assert len(json_exp) > 0
-    assert isinstance(json_exp, dict)
-    assert isinstance(yaml_exp, list)
-    assert len(yaml_exp) == len(json_exp)
+    assert isinstance(json_exp, list)
 
 
 def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
@@ -170,7 +168,7 @@ def test_import() -> None:
     assert qualityprofiles.import_config(tutil.TEST_SQ, {"qualityProfiles": json_exp})
 
     # Compare QP list
-    json_name_list = sorted([k for k, v in qualityprofiles.flatten(json_exp).items() if not v.get("isBuiltIn", False)])
+    json_name_list = sorted([k for k, v in qhelp.flatten(json_exp).items() if not v.get("isBuiltIn", False)])
     qp_name_list = sorted([f"{o.language}:{o.name}" for o in qualityprofiles.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in])
     logging.debug("Imported  list = %s", str(json_name_list))
     logging.debug("SonarQube list = %s", str(qp_name_list))

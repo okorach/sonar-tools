@@ -30,6 +30,7 @@ import sonar.logging as log
 from sonar import rules, platform, exceptions, errcodes, version, qualityprofiles
 import sonar.utilities as util
 import sonar.util.constants as c
+import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-rules"
 
@@ -101,11 +102,11 @@ def main() -> int:
         else:
             __write_rules_json(file=file, rule_list=rule_list)
     except exceptions.SonarException as e:
-        util.final_exit(e.errcode, e.message)
+        chelp.clear_cache_and_exit(e.errcode, e.message)
     except OSError as e:
-        util.final_exit(errcodes.OS_ERROR, f"OS error: {e}")
+        chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error: {e}")
     log.info("%d rules exported from %s", len(rule_list), endpoint.local_url)
-    util.final_exit(0, start_time=start_time)
+    chelp.clear_cache_and_exit(0, start_time=start_time)
 
 
 if __name__ == "__main__":

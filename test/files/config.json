@@ -4668,7 +4668,7 @@
             }
          }
       },
-      "project1": {
+      "test:project1": {
          "name": "Project 1",
          "visibility": "private",
          "newCodePeriod": "PREVIOUS_VERSION",
@@ -4709,7 +4709,7 @@
          },
          "sonar.coverage.jacoco.xmlReportPaths": "**/*jacoco*.xml"
       },
-      "project2": {
+      "test:project2": {
          "name": "Project 2",
          "visibility": "private",
          "permissions": {
@@ -4734,7 +4734,7 @@
             }
          }
       },
-      "project3": {
+      "test:project3": {
          "name": "Project 3",
          "visibility": "private",
          "permissions": {
@@ -4759,7 +4759,7 @@
             }
          }
       },
-      "project4": {
+      "test:project4": {
          "name": "Project 4",
          "visibility": "private",
          "permissions": {
@@ -4782,7 +4782,7 @@
             }
          }
       },
-      "proyecto5": {
+      "test:proyecto5": {
          "name": "Project 5",
          "tags": "python",
          "visibility": "private",
@@ -5109,11 +5109,11 @@
          "branches": {
             "main": {
                "projects": {
-                  "project1": "main",
-                  "project2": "main",
-                  "project3": "main",
-                  "project4": "main",
-                  "proyecto5": "main"
+                  "test:project1": "main",
+                  "test:project2": "main",
+                  "test:project3": "main",
+                  "test:project4": "main",
+                  "test:proyecto5": "main"
                },
                "isMain": true
             }

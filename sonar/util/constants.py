@@ -74,3 +74,6 @@ DEFAULT_BRANCH = "-DEFAULT_BRANCH-"
 
 SQS_USERS = "sonar-users"  # SonarQube Server users default group name
 SQC_USERS = "Members"  # SonarQube Cloud users default group name
+
+SQS_TOKEN_LENGTH = 44
+SQC_TOKEN_LENGTH = 40

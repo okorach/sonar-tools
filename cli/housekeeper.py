@@ -26,8 +26,6 @@ Currently:
 
 """
 
-import sys
-
 from requests import RequestException
 from cli import options
 import sonar.logging as log
@@ -36,6 +34,7 @@ import sonar.util.constants as c
 import sonar.utilities as util
 import sonar.exceptions as ex
 from sonar.audit import problem
+import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-housekeeper"
 PROJ_MAX_AGE = "audit.projects.maxLastAnalysisAge"
@@ -255,12 +254,12 @@ def main() -> None:
             log.info("%d tokens older than %d days %s", revoked_tokens, token_age, "revoked" if mode == "deleted" else "to revoke")
 
     except (PermissionError, FileNotFoundError) as e:
-        util.final_exit(errcodes.OS_ERROR, f"OS error while housekeeping: {str(e)}")
+        chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error while housekeeping: {str(e)}")
     except ex.SonarException as e:
-        util.final_exit(e.errcode, e.message)
+        chelp.clear_cache_and_exit(e.errcode, e.message)
     except RequestException as e:
-        util.final_exit(errcodes.SONAR_API, f"HTTP error while housekeeping: {str(e)}")
-    util.final_exit(0, start_time=start_time)
+        chelp.clear_cache_and_exit(errcodes.SONAR_API, f"HTTP error while housekeeping: {str(e)}")
+    chelp.clear_cache_and_exit(0, start_time=start_time)
 
 
 if __name__ == "__main__":

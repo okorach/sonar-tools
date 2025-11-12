@@ -37,6 +37,7 @@ import sonar.platform as pf
 import sonar.util.constants as c
 from sonar import syncer, exceptions, projects, branches, version
 import sonar.utilities as util
+import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-findings-sync"
 
@@ -199,8 +200,8 @@ def main() -> None:
                     log.info("   %d %s %s", counters.get(f"{t}_{key}", 0), t, desc)
 
     except exceptions.SonarException as e:
-        util.final_exit(e.errcode, e.message)
-    util.final_exit(0, start_time=start_time)
+        chelp.clear_cache_and_exit(e.errcode, e.message)
+    chelp.clear_cache_and_exit(0, start_time=start_time)
 
 
 if __name__ == "__main__":

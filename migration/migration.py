@@ -26,6 +26,7 @@ from cli import options, config
 from sonar import exceptions, errcodes, utilities, version
 import sonar.logging as log
 from sonar import platform
+import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-migration"
 
@@ -74,12 +75,12 @@ def main() -> None:
             kwargs[options.REPORT_FILE] = f"sonar-migration.{endpoint.server_id()}.json"
         config.export_config(endpoint, what, mode="MIGRATION", **kwargs)
     except exceptions.SonarException as e:
-        utilities.final_exit(e.errcode, e.message)
+        chelp.clear_cache_and_exit(e.errcode, e.message)
     except (PermissionError, FileNotFoundError) as e:
-        utilities.final_exit(errcodes.OS_ERROR, f"OS error while exporting config: {e}")
+        chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error while exporting config: {e}")
     log.info("Exporting SQ to SC migration data from %s completed", kwargs[options.URL])
     log.info("Migration file '%s' created", kwargs[options.REPORT_FILE])
-    utilities.final_exit(0, start_time=start_time)
+    chelp.clear_cache_and_exit(0, start_time=start_time)
 
 
 if __name__ == "__main__":

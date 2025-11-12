@@ -509,7 +509,7 @@ def exists(endpoint: pf.Platform, key: str) -> bool:
         return False
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> list[dict[str, Any]]:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs: Any) -> list[dict[str, Any]]:
     """Exports applications as JSON
 
     :param endpoint: Reference to the Sonar platform

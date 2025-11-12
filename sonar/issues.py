@@ -751,6 +751,7 @@ def search_by_date(endpoint: pf.Platform, params: ApiParams, date_start: Optiona
 
 def __search_all_by_project(endpoint: pf.Platform, project_key: str, params: ApiParams = None) -> dict[str, Issue]:
     """Search issues by project"""
+    log.debug("Searching by project with params %s", params)
     new_params = pre_search_filters(endpoint, params)
     new_params["project"] = project_key
     issue_list = {}
@@ -774,8 +775,7 @@ def search_by_project(endpoint: pf.Platform, project_key: str, params: ApiParams
     :return: list of Issues
     :rtype: dict{<key>: <Issue>}
     """
-    if params is None:
-        params = {}
+    params = params or {}
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
@@ -862,6 +862,7 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
     :rtype: dict{<key>: <Issue>}
     :raises: TooManyIssuesError if more than 10'000 issues found
     """
+    log.debug("Searching with %s", params)
     filters = pre_search_filters(endpoint=endpoint, params=params.copy())
     if "ps" not in filters:
         filters["ps"] = Issue.MAX_PAGE_SIZE
@@ -994,6 +995,9 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
 
     disallowed = _STD_SEARCH_FIELDS if endpoint.is_mqr_mode() else _MQR_SEARCH_FIELDS
     filters = {k: v for k, v in filters.items() if k not in disallowed}
+    # Convert boolean parameter values to strings
+    filters = {k: str(v).lower() if isinstance(v, bool) else v for k, v in filters.items()}
+    # Convert list parameter values to CSV
     filters = {k: util.list_to_csv(v) for k, v in filters.items() if v}
     log.debug("Sanitized issue search filters %s", str(filters))
     return filters

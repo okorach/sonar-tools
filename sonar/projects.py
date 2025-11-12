@@ -32,7 +32,7 @@ import concurrent.futures
 from datetime import datetime
 import traceback
 
-from typing import Optional, Union, Any
+from typing import Optional, Union
 from http import HTTPStatus
 from threading import Lock
 from requests import HTTPError, RequestException
@@ -986,7 +986,7 @@ class Project(components.Component):
             json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
             if export_settings.get("MODE", "") == "MIGRATION":
-                json_data.update(self.migration_export(export_settings))
+                json_data.update({"migrationData": self.migration_export(export_settings)})
 
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
@@ -1001,15 +1001,14 @@ class Project(components.Component):
             with_inherited = export_settings.get("INCLUDE_INHERITED", False)
             json_data["settings"] = {}
             settings_to_export = {k: s for k, s in settings_dict.items() if with_inherited or not s.inherited and s.key != "visibility"}
-            for k, s in settings_to_export.items():
+            for s in settings_to_export.values():
                 json_data["settings"] |= s.to_json()
-            return phelp.convert_project_json(json_data)
-
+            log.debug("Exporting %s done, returning %s", str(self), util.json_dump(json_data))
         except Exception as e:
             traceback.print_exc()
             util.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
             json_data["error"] = f"{util.error_msg(e)} while exporting project"
-        log.debug("Exporting %s done, returning %s", str(self), util.json_dump(json_data))
+
         return json_data
 
     def new_code(self) -> str:
@@ -1436,8 +1435,8 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports all or a list of projects configuration as dict
 
-    :param Platform endpoint: reference to the SonarQube platform
-    :param ConfigSettings export_settings: Export parameters
+    :param endpoint: reference to the SonarQube platform
+    :param export_settings: Export parameters
     :return: list of projects settings
     """
 
@@ -1458,7 +1457,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
         for future in concurrent.futures.as_completed(futures):
             try:
                 exp_json = future.result(timeout=60)
-                write_q and write_q.put(exp_json)
+                write_q and write_q.put(phelp.convert_project_json(exp_json))
                 results[futures_map[future].key] = exp_json
             except (TimeoutError, RequestException, exceptions.SonarException) as e:
                 log.error(f"Exception {str(e)} when exporting {str(futures_map[future])}.")
@@ -1522,8 +1521,9 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
     """Thread callable for project zip export"""
     try:
         status, file = project.export_zip(timeout=export_timeout)
-    except exceptions.UnsupportedOperation:
-        util.final_exit(errcodes.UNSUPPORTED_OPERATION, "Zip export unsupported on your SonarQube version")
+    except exceptions.UnsupportedOperation as e:
+        # chelp.clear_cache_and_exit(errcodes.UNSUPPORTED_OPERATION, "Zip export unsupported on your SonarQube version")
+        raise exceptions.UnsupportedOperation("Zip export unsupported on your SonarQube version") from e
     log.debug("Exporting thread for %s done, status: %s", str(project), status)
     data = {"key": project.key, "exportProjectUrl": project.url(), "exportStatus": status}
     if status.startswith(tasks.SUCCESS):
@@ -1571,6 +1571,8 @@ def export_zips(
                 status = f"{ZIP_TIMEOUT}({export_timeout}s)"
                 result = {"key": futures_map[future].key, "exportProjectUrl": futures_map[future].url(), "exportStatus": status}
                 log.error(f"Project Zip export timed out after {export_timeout} seconds for {str(future)}.")
+            except exceptions.UnsupportedOperation as e:
+                raise
             except Exception as e:
                 status = f"{ZIP_EXCEPTION}({e})"
                 result = {"key": futures_map[future].key, "exportProjectUrl": futures_map[future].url(), "exportStatus": status}

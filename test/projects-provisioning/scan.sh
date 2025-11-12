@@ -17,7 +17,7 @@ done
 branches="feature/new-feature some-branch release-3.x"
 for b in $branches; do
     echo "Processing $p"
-    sonar-scanner -Dsonar.projectKey=$p -Dsonar.host.url=$url -Dsonar.projectKey=project1 -Dsonar.branch.name=$b -Dsonar.login=$SONAR_TOKEN -Dsonar.token=$SONAR_TOKEN
+    sonar-scanner -Dsonar.projectKey=$p -Dsonar.host.url=$url -Dsonar.projectKey=test:project1 -Dsonar.branch.name=$b -Dsonar.login=$SONAR_TOKEN -Dsonar.token=$SONAR_TOKEN
 done
 
 projects=" \

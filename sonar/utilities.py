@@ -40,8 +40,8 @@ import requests
 import Levenshtein
 
 import sonar.logging as log
-from sonar import version, errcodes
-from sonar.util import types, cache_helper
+from sonar import version, errcodes, exceptions
+from sonar.util import types, constants as c
 import cli.options as opt
 
 
@@ -71,29 +71,25 @@ def check_last_version(package_url: str) -> None:
 
 def token_type(token: str) -> str:
     """Returns the type of token"""
-    if len(token) != 44:
+    if len(token) not in (c.SQS_TOKEN_LENGTH, c.SQC_TOKEN_LENGTH):
         return "wrong format"
-    elif token[0:4] == "sqa_":
+    if token[0:4] == "sqa_":
         return "global-analysis"
-    elif token[0:4] == "sqp_":
+    if token[0:4] == "sqp_":
         return "project-analysis"
-    elif token[0:4] == "squ_":
+    if token[0:4] == "squ_":
         return "user"
-    return "wrong format"
+    return "user"
 
 
 def check_token(token: Optional[str], is_sonarcloud: bool = False) -> None:
     """Verifies if a proper user token has been provided"""
-    log.info("Checking token %s SQC %s token type = %s", token, is_sonarcloud, token_type(token))
     if token is None:
-        final_exit(
-            errcodes.SONAR_API_AUTHENTICATION,
-            "Token is missing (Argument -t/--token)",
-        )
+        raise exceptions.SonarException("Token is missing (Argument -t/--token)", errcodes.SONAR_API_AUTHENTICATION)
     if not is_sonarcloud and token_type(token) != "user":
-        final_exit(
-            errcodes.TOKEN_NOT_SUITED,
+        raise exceptions.SonarException(
             f"The provided token {redacted_token(token)} is a {token_type(token)} token, a user token is required for sonar-tools",
+            errcodes.TOKEN_NOT_SUITED,
         )
 
 
@@ -250,9 +246,9 @@ def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
     return data
 
 
-def dict_subset(d: dict[str, str], subset_list: list[str]) -> dict[str, str]:
+def dict_subset(d: dict[str, str], key_subset: list[str]) -> dict[str, str]:
     """Returns the subset of dict only with subset_list keys"""
-    return {key: d[key] for key in subset_list if key in d}
+    return {key: d[key] for key in key_subset if key in d}
 
 
 def allowed_values_string(original_str: str, allowed_values: list[str]) -> str:
@@ -394,7 +390,6 @@ def dict_add(dict1: dict[str, int], dict2: dict[str, int]) -> dict[str, int]:
 
 def final_exit(exit_code: int, err_msg: Optional[str] = None, start_time: Optional[datetime.datetime] = None) -> None:
     """Fatal exit with error msg"""
-    cache_helper.clear_cache()
     if exit_code != errcodes.OK:
         log.fatal(err_msg)
         print(f"FATAL: {err_msg}", file=sys.stderr)
@@ -713,13 +708,13 @@ def dict_reverse(map: dict[str, str]) -> dict[str, str]:
     return {v: k for k, v in map.items()}
 
 
-def inline_lists(element: Any, exceptions: tuple[str]) -> Any:
+def inline_lists(element: Any, exception_values: tuple[str]) -> Any:
     """Recursively explores a dict and replace string lists by CSV strings, if list values do not contain commas"""
     if isinstance(element, dict):
         new_dict = element.copy()
         for k, v in element.items():
-            if k not in exceptions:
-                new_dict[k] = inline_lists(v, exceptions=exceptions)
+            if k not in exception_values:
+                new_dict[k] = inline_lists(v, exception_values=exception_values)
         return new_dict
     elif isinstance(element, (list, set)):
         cannot_be_csv = any(not isinstance(v, str) or "," in v for v in element)
@@ -835,8 +830,9 @@ def sort_list_by_key(list_to_sort: list[dict[str, Any]], key: str, priority_fiel
     return first_elem + list(dict(sorted(tmp_dict.items())).values())
 
 
-def order_keys(original_dict: dict[str, any], *keys) -> dict[str, any]:
+def order_keys(original_dict: dict[str, any], *keys: str) -> dict[str, any]:
     """Orders a dict keys in a chosen order, existings keys not in *keys are pushed to the end
+
     :param dict[str, any] original_dict: Dict to order
     :param str *keys: List of keys in desired order
     :return: same dict with keys in desired order
@@ -866,3 +862,8 @@ def perms_to_list(perms: dict[str, Any]) -> list[str, Any]:
     if not perms or not isinstance(perms, dict):
         return perms
     return dict_to_list(perms.get("groups", {}), "group", "permissions") + dict_to_list(perms.get("users", {}), "user", "permissions")
+
+
+def search_list(obj_list: list[Any], field: str, value: str) -> dict[str, Any]:
+    """Returns the first dict elem in a list whose field is a given value"""
+    return next((elem for elem in obj_list if elem[field] == value), None)

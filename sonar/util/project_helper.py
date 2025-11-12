@@ -78,6 +78,7 @@ _JSON_KEY_ORDER = (
     "qualityProfiles",
     "links",
     "webhooks",
+    "migrationData",
 )
 
 
@@ -93,6 +94,7 @@ def convert_project_json(old_json: dict[str, Any]) -> dict[str, Any]:
             new_json.pop(k, None)
             new_json["settings"] = new_json.get("settings", None) or {}
             new_json["settings"][k] = v
+
     if "settings" in new_json:
         if AI_CODE_FIX in new_json["settings"] and not new_json["settings"][AI_CODE_FIX]:
             new_json["settings"].pop(AI_CODE_FIX)

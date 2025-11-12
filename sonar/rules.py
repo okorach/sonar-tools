@@ -28,7 +28,7 @@ from __future__ import annotations
 import json
 import concurrent.futures
 from threading import Lock
-from typing import Optional, Any
+from typing import Optional
 
 import sonar.logging as log
 import sonar.sqobject as sq
@@ -360,8 +360,7 @@ class Rule(sq.SqObject):
 
         if substitute_with_default:
             return {k: c.DEFAULT if qp_impacts[k] == default_impacts.get(k, qp_impacts[k]) else v for k, v in qp_impacts.items()}
-        else:
-            return qp_impacts
+        return qp_impacts
 
     def rule_severity(self, quality_profile_id: Optional[str] = None, substitute_with_default: bool = True) -> str:
         """Returns the severity, potentially customized in a QP"""

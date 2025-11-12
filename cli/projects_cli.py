@@ -33,6 +33,7 @@ import sonar.logging as log
 from sonar import errcodes, exceptions, utilities, version
 from sonar import platform, projects
 import sonar.util.constants as c
+import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-projects"
 
@@ -154,12 +155,16 @@ def main() -> None:
         else:
             raise options.ArgumentsError(f"One of --{options.EXPORT} or --{options.IMPORT} option must be chosen")
     except (PermissionError, FileNotFoundError) as e:
-        utilities.final_exit(errcodes.OS_ERROR, f'OS error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {str(e)}')
+        chelp.clear_cache_and_exit(
+            errcodes.OS_ERROR, f'OS error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {str(e)}'
+        )
     except exceptions.SonarException as e:
-        utilities.final_exit(e.errcode, e.message)
+        chelp.clear_cache_and_exit(e.errcode, e.message)
     except RequestException as e:
-        utilities.final_exit(errcodes.SONAR_API, f'HTTP error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {str(e)}')
-    utilities.final_exit(errcodes.OK, start_time=start_time)
+        chelp.clear_cache_and_exit(
+            errcodes.SONAR_API, f'HTTP error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {str(e)}'
+        )
+    chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
 
 
 if __name__ == "__main__":

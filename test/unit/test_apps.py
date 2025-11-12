@@ -285,11 +285,3 @@ def test_app_branches(get_test_app: Generator[App]) -> None:
     br = obj.branches()
     assert set(br.keys()) >= {APP_BRANCH_MAIN, APP_BRANCH_2, APP_BRANCH_3}
     assert obj.main_branch().name == APP_BRANCH_MAIN
-
-
-def test_convert_for_yaml() -> None:
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
-    data = apps.export(tutil.SQ, {})
-    yaml_list = apps.convert_for_yaml(data)
-    assert len(yaml_list) == len(data)

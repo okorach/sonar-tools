@@ -169,16 +169,13 @@ def test_export() -> None:
     """test_export"""
     json_exp = qualitygates.export(endpoint=tutil.SQ, export_settings={})
     _PERCENTAGE_METRICS = ("density", "ratio", "percent", "security_hotspots_reviewed", "coverage")
-    for qg in json_exp.values():
+    for qg in json_exp:
         for cond in qg.get("conditions", []):
             if any(d in cond for d in _PERCENTAGE_METRICS):
                 assert cond.endswith("%")
 
-    yaml_exp = qualitygates.convert_for_yaml(json_exp)
     assert len(json_exp) > 0
-    assert isinstance(json_exp, dict)
-    assert isinstance(yaml_exp, list)
-    assert len(yaml_exp) == len(json_exp)
+    assert isinstance(json_exp, list)
 
 
 def test_audit_disabled() -> None:

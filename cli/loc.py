@@ -22,7 +22,6 @@
 Exports LoC per projects
 """
 
-import sys
 import csv
 import datetime
 from requests import RequestException
@@ -33,6 +32,7 @@ from sonar import platform, portfolios, applications, projects, errcodes, except
 import sonar.utilities as util
 import sonar.util.constants as c
 from sonar.util import component_helper
+import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-loc"
 
@@ -199,9 +199,9 @@ def __check_options(edition: str, kwargs: dict[str, str]) -> dict[str, str]:
     """Verifies a certain number of options for compatibility with edition"""
     kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE])
     if kwargs[options.BRANCH_REGEXP] and edition == c.CE:
-        util.final_exit(errcodes.UNSUPPORTED_OPERATION, f"No branches in {edition} edition, aborting...")
+        chelp.clear_cache_and_exit(errcodes.UNSUPPORTED_OPERATION, f"No branches in {edition} edition, aborting...")
     if kwargs[options.COMPONENT_TYPE] == "portfolios" and edition in (c.CE, c.DE):
-        util.final_exit(errcodes.UNSUPPORTED_OPERATION, f"No portfolios in {edition} edition, aborting...")
+        chelp.clear_cache_and_exit(errcodes.UNSUPPORTED_OPERATION, f"No portfolios in {edition} edition, aborting...")
     if kwargs[options.COMPONENT_TYPE] == "portfolios" and kwargs[options.BRANCH_REGEXP]:
         log.warning("Portfolio LoC export selected, branch option is ignored")
         kwargs[options.BRANCH_REGEXP] = None
@@ -236,11 +236,11 @@ def main() -> None:
             raise exceptions.SonarException(f"No object matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
         __dump_loc(objects_list, **kwargs)
     except exceptions.SonarException as e:
-        util.final_exit(e.errcode, e.message)
+        chelp.clear_cache_and_exit(e.errcode, e.message)
     except (PermissionError, FileNotFoundError) as e:
-        util.final_exit(errcodes.OS_ERROR, f"OS error while writing LoCs: {e}")
+        chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error while writing LoCs: {e}")
 
-    util.final_exit(0, start_time=start_time)
+    chelp.clear_cache_and_exit(0, start_time=start_time)
 
 
 if __name__ == "__main__":
