@@ -87,9 +87,10 @@ def check_token(token: Optional[str], is_sonarcloud: bool = False) -> None:
     if token is None:
         raise exceptions.SonarException("Token is missing (Argument -t/--token)", errcodes.SONAR_API_AUTHENTICATION)
     if not is_sonarcloud and token_type(token) != "user":
-        raise exceptions.SonarException(f"The provided token {redacted_token(token)} is a {token_type(token)} token, a user token is required for sonar-tools", 
-            errcodes.TOKEN_NOT_SUITED
-            )
+        raise exceptions.SonarException(
+            f"The provided token {redacted_token(token)} is a {token_type(token)} token, a user token is required for sonar-tools",
+            errcodes.TOKEN_NOT_SUITED,
+        )
 
 
 def json_dump_debug(json_data: Union[list[str], dict[str, str]], pre_string: str = "") -> None:
