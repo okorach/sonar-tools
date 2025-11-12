@@ -1003,14 +1003,13 @@ class Project(components.Component):
             settings_to_export = {k: s for k, s in settings_dict.items() if with_inherited or not s.inherited and s.key != "visibility"}
             for s in settings_to_export.values():
                 json_data["settings"] |= s.to_json()
-
+            log.debug("Exporting %s done, returning %s", str(self), util.json_dump(json_data))
         except Exception as e:
             traceback.print_exc()
             util.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
             json_data["error"] = f"{util.error_msg(e)} while exporting project"
-        else:
-            log.debug("Exporting %s done, returning %s", str(self), util.json_dump(json_data))
-            return json_data
+
+        return json_data
 
     def new_code(self) -> str:
         """
@@ -1524,7 +1523,7 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
         status, file = project.export_zip(timeout=export_timeout)
     except exceptions.UnsupportedOperation as e:
         # chelp.clear_cache_and_exit(errcodes.UNSUPPORTED_OPERATION, "Zip export unsupported on your SonarQube version")
-        raise exceptions.UnsupportedOperation("Zip export unsupported on your SonarQube version", errcodes.UNSUPPORTED_OPERATION) from e
+        raise exceptions.UnsupportedOperation("Zip export unsupported on your SonarQube version") from e
     log.debug("Exporting thread for %s done, status: %s", str(project), status)
     data = {"key": project.key, "exportProjectUrl": project.url(), "exportStatus": status}
     if status.startswith(tasks.SUCCESS):

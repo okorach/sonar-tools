@@ -87,10 +87,9 @@ def check_token(token: Optional[str], is_sonarcloud: bool = False) -> None:
     if token is None:
         raise exceptions.SonarException("Token is missing (Argument -t/--token)", errcodes.SONAR_API_AUTHENTICATION)
     if not is_sonarcloud and token_type(token) != "user":
-        raise exceptions.SonarException(
-            f"The provided token {redacted_token(token)} is a {token_type(token)} token, a user token is required for sonar-tools",
-            errcodes.TOKEN_NOT_SUITED,
-        )
+        raise exceptions.SonarException(f"The provided token {redacted_token(token)} is a {token_type(token)} token, a user token is required for sonar-tools", 
+            errcodes.TOKEN_NOT_SUITED
+            )
 
 
 def json_dump_debug(json_data: Union[list[str], dict[str, str]], pre_string: str = "") -> None:
@@ -708,13 +707,13 @@ def dict_reverse(map: dict[str, str]) -> dict[str, str]:
     return {v: k for k, v in map.items()}
 
 
-def inline_lists(element: Any, exceptions: tuple[str]) -> Any:
+def inline_lists(element: Any, exception_values: tuple[str]) -> Any:
     """Recursively explores a dict and replace string lists by CSV strings, if list values do not contain commas"""
     if isinstance(element, dict):
         new_dict = element.copy()
         for k, v in element.items():
-            if k not in exceptions:
-                new_dict[k] = inline_lists(v, exceptions=exceptions)
+            if k not in exception_values:
+                new_dict[k] = inline_lists(v, exception_values=exception_values)
         return new_dict
     elif isinstance(element, (list, set)):
         cannot_be_csv = any(not isinstance(v, str) or "," in v for v in element)
