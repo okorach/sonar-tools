@@ -187,8 +187,8 @@ def test_export_fields() -> None:
     rule_list = rules.export(endpoint=tutil.SQ, export_settings={})
     assert "standard" not in rule_list
     assert len(rule_list["extended"]) > 0
-    for r in rule_list["extended"].values():
+    for r in rule_list["extended"]:
         assert any(key in r for key in ("description", "tags", "params"))
     assert len(rule_list["instantiated"]) > 0
-    for r in rule_list["instantiated"].values():
+    for r in rule_list["instantiated"]:
         assert all(key in r for key in ("language", "params", "severity", "impacts", "templateKey"))

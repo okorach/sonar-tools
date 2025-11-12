@@ -169,7 +169,7 @@ def test_export() -> None:
     """test_export"""
     json_exp = qualitygates.export(endpoint=tutil.SQ, export_settings={})
     _PERCENTAGE_METRICS = ("density", "ratio", "percent", "security_hotspots_reviewed", "coverage")
-    for qg in json_exp.values():
+    for qg in json_exp:
         for cond in qg.get("conditions", []):
             if any(d in cond for d in _PERCENTAGE_METRICS):
                 assert cond.endswith("%")
