@@ -28,6 +28,7 @@ from datetime import datetime
 import pytest
 import utilities as tutil
 from sonar import settings
+from sonar import platform
 import sonar.util.platform_helper as phelp
 
 
