@@ -220,19 +220,19 @@ def __verify_inputs(params: types.ApiParams) -> bool:
     errcode = errcodes.WRONG_SEARCH_CRITERIA
     diff = util.difference(util.csv_to_list(params.get(options.RESOLUTIONS, None)), idefs.RESOLUTIONS + hotspots.RESOLUTIONS)
     if diff:
-        chelp.clear_cache_and_exit(errcode, f"Resolutions {str(diff)} are not legit resolutions")
+        chelp.clear_cache_and_exit(errcode, f"Resolutions {diff} are not legit resolutions")
 
     diff = util.difference(util.csv_to_list(params.get(options.STATUSES, None)), idefs.STATUSES + hotspots.STATUSES)
     if diff:
-        chelp.clear_cache_and_exit(errcode, f"Statuses {str(diff)} are not legit statuses")
+        chelp.clear_cache_and_exit(errcode, f"Statuses {diff} are not legit statuses")
 
     diff = util.difference(util.csv_to_list(params.get(options.SEVERITIES, None)), idefs.STD_SEVERITIES + hotspots.SEVERITIES)
     if diff:
-        chelp.clear_cache_and_exit(errcode, f"Severities {str(diff)} are not legit severities")
+        chelp.clear_cache_and_exit(errcode, f"Severities {diff} are not legit severities")
 
     diff = util.difference(util.csv_to_list(params.get(options.TYPES, None)), idefs.STD_TYPES + hotspots.TYPES)
     if diff:
-        chelp.clear_cache_and_exit(errcode, f"Types {str(diff)} are not legit types")
+        chelp.clear_cache_and_exit(errcode, f"Types {diff} are not legit types")
     if len(params[options.CSV_SEPARATOR]) > 1:
         chelp.clear_cache_and_exit(errcode, f"CSV separator must be a single character, {params[options.CSV_SEPARATOR]} is not legit")
 

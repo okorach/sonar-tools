@@ -1571,7 +1571,7 @@ def export_zips(
                 status = f"{ZIP_TIMEOUT}({export_timeout}s)"
                 result = {"key": futures_map[future].key, "exportProjectUrl": futures_map[future].url(), "exportStatus": status}
                 log.error(f"Project Zip export timed out after {export_timeout} seconds for {str(future)}.")
-            except exceptions.UnsupportedOperation as e:
+            except exceptions.UnsupportedOperation:
                 raise
             except Exception as e:
                 status = f"{ZIP_EXCEPTION}({e})"
