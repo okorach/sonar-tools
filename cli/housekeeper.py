@@ -254,11 +254,11 @@ def main() -> None:
             log.info("%d tokens older than %d days %s", revoked_tokens, token_age, "revoked" if mode == "deleted" else "to revoke")
 
     except (PermissionError, FileNotFoundError) as e:
-        chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error while housekeeping: {str(e)}")
+        chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error while housekeeping: {e}")
     except ex.SonarException as e:
         chelp.clear_cache_and_exit(e.errcode, e.message)
     except RequestException as e:
-        chelp.clear_cache_and_exit(errcodes.SONAR_API, f"HTTP error while housekeeping: {str(e)}")
+        chelp.clear_cache_and_exit(errcodes.SONAR_API, f"HTTP error while housekeeping: {e}")
     chelp.clear_cache_and_exit(0, start_time=start_time)
 
 

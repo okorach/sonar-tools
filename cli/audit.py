@@ -272,7 +272,7 @@ def main() -> None:
             errcodes.SIF_AUDIT_ERROR, f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting..."
         )
     except RequestException as e:
-        chelp.clear_cache_and_exit(errcodes.SONAR_API, f"HTTP error while auditing: {str(e)}")
+        chelp.clear_cache_and_exit(errcodes.SONAR_API, f"HTTP error while auditing: {e}")
     chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
 
 

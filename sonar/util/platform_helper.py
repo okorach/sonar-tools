@@ -64,7 +64,7 @@ def convert_global_settings_json(old_json: dict[str, Any], full: bool = False) -
         new_json[settings.LANGUAGES_SETTINGS][k] = util.sort_list_by_key(util.dict_to_list(v, "key"), "key")
     new_json[settings.LANGUAGES_SETTINGS] = util.dict_to_list(dict(sorted(new_json[settings.LANGUAGES_SETTINGS].items())), "language", "settings")
     new_json[settings.DEVOPS_INTEGRATION] = util.dict_to_list(dict(sorted(old_json[settings.DEVOPS_INTEGRATION].items())), "key")
-    for k in new_json["permissionTemplates"].keys():
+    for k in new_json["permissionTemplates"]:
         new_json["permissionTemplates"][k] = convert_template_json(new_json["permissionTemplates"][k], full)
     new_json["permissionTemplates"] = util.dict_to_list(new_json["permissionTemplates"], "key")
     new_json = common_json_helper.convert_common_fields(new_json)
