@@ -175,6 +175,7 @@ extend-ignore = [
     "C901", # Complexity rule, better covered by SonarQube
     "ANN401", # Disallow Any type annotation
     "TD001", # Disallow TODO/FIXME comments
+    "EM101", # Don't use string literals in exceptions raise
 ]
 
 exclude = [
