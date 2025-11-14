@@ -155,15 +155,11 @@ def main() -> None:
         else:
             raise options.ArgumentsError(f"One of --{options.EXPORT} or --{options.IMPORT} option must be chosen")
     except (PermissionError, FileNotFoundError) as e:
-        chelp.clear_cache_and_exit(
-            errcodes.OS_ERROR, f'OS error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {e}'
-        )
+        chelp.clear_cache_and_exit(errcodes.OS_ERROR, f'OS error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {e}')
     except exceptions.SonarException as e:
         chelp.clear_cache_and_exit(e.errcode, e.message)
     except RequestException as e:
-        chelp.clear_cache_and_exit(
-            errcodes.SONAR_API, f'HTTP error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {e}'
-        )
+        chelp.clear_cache_and_exit(errcodes.SONAR_API, f'HTTP error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {e}')
     chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
 
 
