@@ -56,8 +56,13 @@ def load(config_name: Optional[str] = None, settings: types.ConfigSettings = Non
         settings = {}
 
     _CONFIG_SETTINGS = _load_properties_file(pathlib.Path(__file__).parent / f"{config_name}.properties")
-    _CONFIG_SETTINGS.update(_load_properties_file(f"{os.path.expanduser('~')}{os.sep}.{config_name}.properties"))
-    _CONFIG_SETTINGS.update(_load_properties_file(f"{os.getcwd()}{os.sep}.{config_name}.properties"))
+    for file in (f"{os.path.expanduser('~')}{os.sep}.{config_name}.properties", f"{os.getcwd()}{os.sep}.{config_name}.properties"):
+        try:
+            _CONFIG_SETTINGS.update(_load_properties_file(f"{os.path.expanduser('~')}{os.sep}.{config_name}.properties"))
+        except FileNotFoundError:
+            pass
+        except PermissionError:
+            log.warning("Insufficient permissions to open file %s, configuration will be skipped", file)
     _CONFIG_SETTINGS.update(settings)
 
     _CONFIG_SETTINGS = {k: util.convert_string(v) for k, v in _CONFIG_SETTINGS.items()}

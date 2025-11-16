@@ -281,28 +281,32 @@
         }
     },
     "qualityGates": {
-        "type": "object",
+        "type": "array",
         "description": "The list of quality gates",
-        "required": ["name", "conditions"],
-        "properties": {
-            "name": {
-                "type": "string",
-                "description": "The quality gate name"
-            },
-            "conditions": {
-                "type": "array",
-                "description": "The quality gate conditions",
-                "items": {
-                    "type": "string"
+        "items": {
+            "type": "object",
+            "description": "A quality gate",
+            "required": ["name"],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The quality gate name"
+                },
+                "conditions": {
+                    "type": "array",
+                    "description": "The quality gate conditions",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "isDefault": {
+                    "type": "boolean",
+                    "description": "Whether this quality gate is the default one"
+                },
+                "isBuiltIn": {
+                    "type": "boolean",
+                    "description": "Whether this quality gate is built-in"
                 }
-            },
-            "isDefault": {
-                "type": "boolean",
-                "description": "Whether this quality gate is the default one"
-            },
-            "isBuiltIn": {
-                "type": "boolean",
-                "description": "Whether this quality gate is built-in"
             }
         }
     },
@@ -311,7 +315,8 @@
         "description": "The list of quality profiles organized by language",
         "items": {
             "type": "object",
-            "required": ["language", "profiles"],
+            "required": ["language"],
+            "description": "A quality profile",
             "properties": {
                 "language": {
                     "type": "string",
@@ -323,6 +328,14 @@
                     "items": {
                         "$ref": "#/$defs/qualityProfile"
                     }
+                }, 
+                "isDefault": {
+                    "type": "boolean",
+                    "description": "Whether this quality profile is the default for the given language"
+                },
+                "isBuiltIn": {
+                    "type": "boolean",
+                    "description": "Whether this quality profile is built-in"
                 }
             }
         }

@@ -25,4 +25,4 @@ tmp/
 !test/files/*
 .sonar/
 test/gen/
-!conf/sonar-config.schema.json
+!sonar/cli/sonar-config.schema.json
