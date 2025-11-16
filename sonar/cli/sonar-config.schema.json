@@ -347,15 +347,17 @@
                     }
                 },
                 "webhooks": {
-                    "type": "object",
+                    "type": "array",
                     "description": "Global webhooks configuration",
-                    "additionalProperties": {
+                    "items": {
                         "type": "object",
                         "description": "Webhook configuration",
-                        "required": [
-                            "url"
-                        ],
+                        "required": ["name", "url"],
                         "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The webhook name"
+                            },
                             "url": {
                                 "type": "string",
                                 "format": "uri",
@@ -623,6 +625,30 @@
                                 },
                                 "value": {
                                     "description": "Setting value (can be string, number, boolean, or array)"
+                                }
+                            }
+                        }
+                    },
+                    "webhooks": {
+                        "type": "array",
+                        "description": "Project webhooks configuration",
+                        "items": {
+                            "type": "object",
+                            "description": "Webhook configuration",
+                            "required": ["name", "url"],
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "The webhook name"
+                                },
+                                "url": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "description": "The webhook URL"
+                                },
+                                "secret": {
+                                    "type": "string",
+                                    "description": "The webhook secret (optional)"
                                 }
                             }
                         }
