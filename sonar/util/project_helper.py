@@ -89,6 +89,8 @@ def convert_project_json(old_json: dict[str, Any]) -> dict[str, Any]:
         new_json["qualityProfiles"] = util.dict_to_list(old_json["qualityProfiles"], "language", "name")
     if "branches" in old_json:
         new_json["branches"] = util.dict_to_list(old_json["branches"], "name")
+    if "webhooks" in old_json:
+        new_json["webhooks"] = util.dict_to_list(old_json["webhooks"], "name")
     for k, v in old_json.items():
         if k not in _JSON_KEY_ORDER:
             new_json.pop(k, None)
