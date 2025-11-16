@@ -21,7 +21,7 @@
 """Abstract permissions class, parent of sub-objects permissions classes"""
 
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Any
 
 import json
 from abc import ABC, abstractmethod
@@ -347,9 +347,7 @@ def decode(encoded_perms: dict[str, str]) -> dict[str, list[str]]:
 def decode_full(encoded_perms: dict[str, str]) -> dict[str, list[str]]:
     """Decodes sonar-config encoded perms"""
     decoded_perms = {}
-    for ptype in PERMISSION_TYPES:
-        if ptype not in encoded_perms:
-            continue
+    for ptype in [p for p in PERMISSION_TYPES if p in encoded_perms]:
         decoded_perms[ptype] = {u: utilities.csv_to_list(v) for u, v in encoded_perms[ptype].items()}
     return decoded_perms
 
@@ -438,3 +436,12 @@ def black_list(perms: types.JsonPermissions, disallowed_perms: list[str]) -> typ
             if len(resulting_perms[perm_type][user_or_group]) == 0:
                 resulting_perms[perm_type].pop(user_or_group)
     return resulting_perms
+
+
+def list_to_dict(perms: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Converts permissions in list format to dict format"""
+    converted = {}
+    for ptype in PERMISSION_TYPES:
+        if len(perms := [p for p in perms if ptype[:-1] in p]) > 0:
+            converted[ptype] = {p[ptype[:-1]]: p["permissions"] for p in perms}
+    return converted

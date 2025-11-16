@@ -1256,20 +1256,19 @@ class Project(components.Component):
 
         :param config: JSON of configuration settings
         """
-        if visi := config.get("visibility", None):
+        if (visi := config.get("visibility", None)) is not None:
             self.set_visibility(visi)
         if "permissions" in config:
-            decoded_perms = {
-                p: {u: perms.decode(v) for u, v in config["permissions"][p].items()} for p in perms.PERMISSION_TYPES if p in config["permissions"]
-            }
-            self.set_permissions(decoded_perms)
+            self.set_permissions(config["permissions"])
         self.set_links(config)
-        self.set_tags(util.csv_to_list(config.get("tags", None)))
+        if (tags := config.get("tags", None)) is not None:
+            self.set_tags(util.csv_to_list(tags))
         self.set_quality_gate(config.get("qualityGate", None))
 
         for lang, qp_name in config.get("qualityProfiles", {}).items():
             self.set_quality_profile(language=lang, quality_profile=qp_name)
         if branch_config := config.get("branches", None):
+            branch_config = util.list_to_dict(branch_config, "name")
             try:
                 bname = next(bname for bname, bdata in branch_config.items() if bdata.get("isMain", False))
                 self.rename_main_branch(bname)
@@ -1491,15 +1490,16 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     :param KeyList key_list: List of project keys to be considered for the import, defaults to None (all projects)
     :returns: Nothing
     """
-    if "projects" not in config_data:
+    if not (project_data := config_data.get("projects", None)):
         log.info("No projects to import")
         return
     log.info("Importing projects")
     get_list(endpoint=endpoint)
-    nb_projects = len(config_data["projects"])
+    project_data = util.list_to_dict(project_data, "key")
+    nb_projects = len(project_data)
     i = 0
     new_key_list = util.csv_to_list(key_list)
-    for key, data in config_data["projects"].items():
+    for key, data in project_data.items():
         if new_key_list and key not in new_key_list:
             continue
         log.info("Importing project key '%s'", key)
