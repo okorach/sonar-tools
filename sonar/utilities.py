@@ -731,7 +731,7 @@ def dict_remap_and_stringify(original_dict: dict[str, str], remapping: dict[str,
     return dict_stringify(dict_remap(original_dict, remapping))
 
 
-def list_to_dict(original_list: list[dict[str, Any]], key_field: str) -> dict[str, any]:
+def list_to_dict(original_list: list[dict[str, Any]], key_field: str) -> dict[str, Any]:
     """Converts a list to dict with list key_field as dict key"""
     if original_list is None:
         return original_list
@@ -741,7 +741,7 @@ def list_to_dict(original_list: list[dict[str, Any]], key_field: str) -> dict[st
     return converted_dict
 
 
-def dict_to_list(original_dict: dict[str, Any], key_field: str, value_field: Optional[str] = "value") -> list[str, any]:
+def dict_to_list(original_dict: dict[str, Any], key_field: str, value_field: Optional[str] = "value") -> list[dict[str, Any]]:
     """Converts a dict to list adding dict key in list key_field"""
     if original_dict is None or isinstance(original_dict, list):
         return original_dict
