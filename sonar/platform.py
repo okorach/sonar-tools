@@ -515,23 +515,22 @@ class Platform(object):
         :param config_data: the sonar-config configuration representation of the platform
         :return: Number of imported settings
         """
-        if "globalSettings" not in config_data:
+        if not (config_data := config_data.get("globalSettings", None)):
             log.info("No global settings to import")
             return 0
         count = 0
-        config_data = config_data.get("globalSettings", {})
         flat_settings = util.flatten(config_data)
         count += sum(1 if self.set_setting(k, v) else 0 for k, v in flat_settings.items())
 
         try:
-            wh_data = config_data["generalSettings"]["webhooks"]
+            wh_data = util.list_to_dict(config_data["webhooks"], "name")
             self.set_webhooks(wh_data)
             count += len(wh_data)
         except KeyError:
             pass
 
-        if settings.NEW_CODE_PERIOD in config_data.get("generalSettings", {}):
-            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data["generalSettings"][settings.NEW_CODE_PERIOD])
+        if settings.NEW_CODE_PERIOD in config_data[settings.GENERAL_SETTINGS]:
+            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data[settings.GENERAL_SETTINGS][settings.NEW_CODE_PERIOD])
             try:
                 settings.set_new_code_period(self, nc_type, nc_val)
                 count += 1
