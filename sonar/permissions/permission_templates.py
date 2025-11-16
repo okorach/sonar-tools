@@ -278,13 +278,14 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> i
     """Imports sonar-conmfig JSON as permission templates
     :return: Number of permission templates imported sucessfully
     """
-    if "permissionTemplates" not in config_data:
+    if not (config_data := config_data.get("permissionTemplates", None)):
         log.info("No permissions templates in config, skipping import...")
         return 0
     log.info("Importing permission templates")
     get_list(endpoint)
     count = 0
-    for name, data in config_data["permissionTemplates"].items():
+    config_data = utilities.list_to_dict(config_data, "key")
+    for name, data in config_data.items():
         utilities.json_dump_debug(data, f"Importing: {name}:")
         o = create_or_update(endpoint=endpoint, name=name, data=data)
         count += 1
