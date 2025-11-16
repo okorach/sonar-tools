@@ -502,7 +502,8 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
         raise exceptions.UnsupportedOperation("Can't import rules in SonarQube Cloud")
     log.info("Importing customized (custom tags, extended description) rules")
     get_list(endpoint=endpoint, use_cache=False)
-    for key, custom in config_data["rules"].get("extended", {}).items():
+    converted_data = utilities.list_to_dict(config_data["rules"], "key")
+    for key, custom in converted_data.get("extended", {}).items():
         try:
             rule = Rule.get_object(endpoint, key)
         except exceptions.ObjectNotFound:
@@ -512,7 +513,7 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
         rule.set_tags(utilities.csv_to_list(custom.get("tags", None)))
 
     log.info("Importing custom rules (instantiated from rule templates)")
-    for key, instantiation_data in config_data["rules"].get("instantiated", {}).items():
+    for key, instantiation_data in converted_data.get("instantiated", {}).items():
         try:
             rule = Rule.get_object(endpoint, key)
             log.debug("Instantiated rule key '%s' already exists, instantiation skipped", key)
