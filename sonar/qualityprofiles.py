@@ -340,7 +340,7 @@ class QualityProfile(sq.SqObject):
             return False
         current_rules = list(self.rules(use_cache=False).keys())
         ruleset_d = {r["key"]: r for r in ruleset}
-        log.info("%s: Setting rules %s", self, util.json_dump(ruleset_d))
+        log.debug("%s: Setting rules %s", self, util.json_dump(ruleset_d))
         keys_to_activate = util.difference(list(ruleset_d.keys()), current_rules)
         rules_to_activate = [ruleset_d[k] for k in keys_to_activate]
         rules_to_deactivate = util.difference(current_rules, list(ruleset_d.keys()))
