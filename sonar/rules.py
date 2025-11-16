@@ -495,14 +495,14 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
 
 def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports a sonar-config configuration"""
-    if "rules" not in config_data:
+    if rule_data := config_data.get("rules", None):
         log.info("No customized rules (custom tags, extended description) to import")
         return True
     if endpoint.is_sonarcloud():
         raise exceptions.UnsupportedOperation("Can't import rules in SonarQube Cloud")
     log.info("Importing customized (custom tags, extended description) rules")
     get_list(endpoint=endpoint, use_cache=False)
-    converted_data = utilities.list_to_dict(config_data["rules"], "key")
+    converted_data = utilities.list_to_dict(rule_data.get("extended", {}), "key")
     for key, custom in converted_data.get("extended", {}).items():
         try:
             rule = Rule.get_object(endpoint, key)
@@ -513,7 +513,8 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
         rule.set_tags(utilities.csv_to_list(custom.get("tags", None)))
 
     log.info("Importing custom rules (instantiated from rule templates)")
-    for key, instantiation_data in converted_data.get("instantiated", {}).items():
+    converted_data = utilities.list_to_dict(rule_data.get("instantiated", {}), "key")
+    for key, instantiation_data in converted_data.items():
         try:
             rule = Rule.get_object(endpoint, key)
             log.debug("Instantiated rule key '%s' already exists, instantiation skipped", key)
