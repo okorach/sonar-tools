@@ -417,12 +417,9 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         log.info("No groups to import")
         return
     log.info("Importing groups")
-    for name, data in config_data["groups"].items():
-        if isinstance(data, dict):
-            desc = data["description"]
-        else:
-            desc = data
-        create_or_update(endpoint, name, desc)
+    converted_data = util.list_to_dict(config_data["groups"], "name")
+    for name, data in converted_data.items():
+        create_or_update(endpoint, name, data["description"])
 
 
 def exists(endpoint: pf.Platform, name: str) -> bool:

@@ -26,7 +26,7 @@ ConfigSettings = dict[str, str]
 
 ObjectFilter = dict[str, str]
 
-ObjectJsonRepr = dict[str, Any]
+ObjectJsonRepr = Union[list[Any], dict[str, Any]]
 
 ApiParams = Optional[dict[str, str]]
 

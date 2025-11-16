@@ -480,7 +480,8 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         return True
     log.info("Importing quality gates")
     ok = True
-    for name, data in config_data["qualityGates"].items():
+    converted_data = util.list_to_dict(config_data["qualityGates"], "name")
+    for name, data in converted_data.items():
         try:
             o = QualityGate.get_object(endpoint, name)
             log.debug("Found existing %s", str(o))

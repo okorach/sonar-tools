@@ -551,7 +551,8 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     if endpoint.is_sonarcloud():
         raise exceptions.UnsupportedOperation("Can't import users in SonarQube Cloud")
     log.info("Importing users")
-    for login, data in config_data["users"].items():
+    converted_data = util.list_to_dict(config_data["users"], "login")
+    for login, data in converted_data.items():
         data["scmAccounts"] = util.csv_to_list(data.pop("scmAccounts", ""))
         data["groups"] = util.csv_to_list(data.pop("groups", ""))
         data.pop("login", None)
