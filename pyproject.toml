@@ -25,6 +25,7 @@ dependencies = [
     "jprops (>=2.0.2)",
     "levenshtein (>=0.27.1)",
     "PyYAML (>=6.0.2)",
+    "jsonschema (>=4.25.1)",
 ]
 
 classifiers = [

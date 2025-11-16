@@ -27,7 +27,9 @@ from threading import Thread
 from queue import Queue
 
 import json
+import jsonschema
 import yaml
+import pathlib
 
 from cli import options
 from sonar import exceptions, errcodes, utilities, version
@@ -132,6 +134,13 @@ def __parse_args(desc: str) -> object:
         help="Target sonar-config new JSON format",
     )
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME, verify_token=False)
+
+
+def __get_schema() -> dict[str, Any]:
+    """Gets the JSON schema for sonar-config"""
+    schema_file = pathlib.Path(__file__).parent / "sonar-config.schema.json"
+    with open(schema_file, encoding="utf-8") as fh:
+        return json.loads(fh.read())
 
 
 def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remove_none: bool = True) -> dict[str, any]:
@@ -276,10 +285,14 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     """Imports a platform configuration from a JSON file"""
     log.info("Importing configuration to %s", kwargs[options.URL])
     try:
-        with open(kwargs[options.REPORT_FILE], "r", encoding="utf-8") as fd:
+        with open(kwargs[options.REPORT_FILE], encoding="utf-8") as fd:
             data = json.loads(fd.read())
     except FileNotFoundError as e:
         chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error while reading file: {e}")
+
+    log.info("Validating import JSON file %s against schema", kwargs[options.REPORT_FILE])
+    jsonschema.validate(data, __get_schema())
+    log.info("JSON file %s is valid", kwargs[options.REPORT_FILE])
     key_list = kwargs[options.KEY_REGEXP]
 
     calls = {
