@@ -25,6 +25,7 @@ from sonar.util import constants as c
 from sonar.util import types
 from sonar.util import common_json_helper
 
+
 KEY_PARENT = "parent"
 KEY_CHILDREN = "children"
 KEY_ORDER = ("name", "isBuiltIn", "isDefault", "children", "addedRules", "modifiedRules", "permissions")
@@ -67,6 +68,11 @@ def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
                         for k in ("SECURITY", "RELIABILITY", "MAINTAINABILITY")
                         if k in r["impacts"] and r["impacts"][k] != c.DEFAULT
                     }
+                if "params" in r:
+                    r["params"] = util.dict_to_list(r["params"], "key")
+        for rule in v.get("rules", []):
+            if "params" in rule:
+                rule["params"] = util.dict_to_list(rule["params"], "key")
         if "children" in v:
             v["children"] = __convert_qp_json(v["children"])
         qp_json[k] = util.order_keys(common_json_helper.convert_common_fields(v, with_permissions=False), *KEY_ORDER)
