@@ -1265,7 +1265,8 @@ class Project(components.Component):
             self.set_tags(util.csv_to_list(tags))
         self.set_quality_gate(config.get("qualityGate", None))
 
-        for lang, qp_name in config.get("qualityProfiles", {}).items():
+        qps = util.list_to_dict(config.get("qualityProfiles", []), "language")
+        for lang, qp_name in qps.items():
             self.set_quality_profile(language=lang, quality_profile=qp_name)
         if branch_config := config.get("branches", None):
             branch_config = util.list_to_dict(branch_config, "name")
