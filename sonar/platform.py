@@ -519,7 +519,8 @@ class Platform(object):
             log.info("No global settings to import")
             return 0
         count = 0
-        flat_settings = util.flatten(config_data)
+        flat_settings = util.flatten({k: v for k, v in config_data.items() if k not in ("devopsIntegration", "permissionTemplates", "webhooks")})
+        log.debug("Flat settings = %s", util.json_dump(flat_settings))
         count += sum(1 if self.set_setting(k, v) else 0 for k, v in flat_settings.items())
 
         try:
