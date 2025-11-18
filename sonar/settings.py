@@ -70,6 +70,7 @@ _SQ_INTERNAL_SETTINGS = (
     "sonar.core.id",
     "sonar.core.startTime",
     "sonar.plsql.jdbc.driver.class",
+    "sonar.documentation.baseUrl",
 )
 
 _SC_INTERNAL_SETTINGS = (
