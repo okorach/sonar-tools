@@ -212,13 +212,14 @@ class Application(aggr.Aggregation):
         :param str branch_name: The Application branch to set
         :raises ObjectNotFound: if the branch name does not exist
         """
-        app_branches.ApplicationBranch.get_object(self, branch_name).delete()
+        return app_branches.ApplicationBranch.get_object(self, branch_name).delete()
 
     def update_branch(self, branch_name: str, branch_definition: types.ObjectJsonRepr) -> object:
         o_app_branch = app_branches.ApplicationBranch.get_object(self, branch_name)
         o_app_branch.update_project_branches(new_project_branches=self.__get_project_branches(branch_definition))
+        return o_app_branch
 
-    def set_branches(self, branch_name: str, branch_data: types.ObjectJsonRepr) -> Application:
+    def set_branches(self, branch_name: str, projects_data: list[types.AppBranchProjectDef]) -> Application:
         """Creates or updates an Application branch with a set of project branches
 
         :param str branch_name: The Application branch to set
@@ -227,13 +228,8 @@ class Application(aggr.Aggregation):
         :return: self:
         :rtype: Application
         """
-        log.debug("%s: Updating application branch '%s' with %s", self, branch_name, util.json_dump(branch_data))
-        branch_definition = {}
-        for p in branch_data.get("projects", []):
-            if isinstance(p, list):
-                branch_definition[p["projectKey"]] = p["branch"]
-            else:
-                branch_definition[p] = branch_data["projects"][p]
+        log.debug("%s: Updating application branch '%s' with %s", self, branch_name, util.json_dump(projects_data))
+        branch_definition = {p["key"]: p.get("branch", c.DEFAULT_BRANCH) for p in projects_data}
         try:
             o = app_branches.ApplicationBranch.get_object(self, branch_name)
             o.update_project_branches(new_project_branches=self.__get_project_branches(branch_definition))
@@ -348,10 +344,10 @@ class Application(aggr.Aggregation):
         json_data = convert_app_json(json_data)
         return util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
-    def set_permissions(self, data: types.JsonPermissions) -> application_permissions.ApplicationPermissions:
+    def set_permissions(self, data: list[types.PermissionDef]) -> application_permissions.ApplicationPermissions:
         """Sets an application permissions
 
-        :param dict data: dict of permission {"users": [<user1>, <user2>, ...], "groups": [<group1>, <group2>, ...]}
+        :param data: list of permissions definitions
         :raises: ObjectNotFound if a user or a group does not exists
         :return: self
         """
@@ -405,19 +401,17 @@ class Application(aggr.Aggregation):
             log.warning("%s visibility to an invalid value in JSON configuration file, it must be 'public' or 'private'")
         if perms := data.get("permissions", None):
             log.info("Setting %s permissions with %s", self, perms)
-            decoded_perms = {}
-            for ptype in [p for p in permissions.PERMISSION_TYPES if p in perms]:
-                decoded_perms[ptype] = {u: permissions.decode(v) for u, v in perms[ptype].items()}
-            self.set_permissions(decoded_perms)
+            self.set_permissions(perms)
 
         self.add_projects(_project_list(data))
         self.set_tags(util.csv_to_list(data.get("tags", [])))
 
-        main_branch_name = next((k for k, v in data.get("branches", {}).items() if v.get("isMain", False)), None)
+        app_branches: list[types.AppBranchDef] = data.get("branches", [])
+        main_branch_name = next((e["name"] for e in app_branches if e.get("isMain", False)), None)
         main_branch_name is None or self.main_branch().rename(main_branch_name)
 
-        for name, branch_data in data.get("branches", {}).items():
-            self.set_branches(name, branch_data)
+        for branch_data in app_branches:
+            self.set_branches(branch_data["name"], branch_data.get("projects", []))
 
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         ops = {c.READ: {"application": self.key}, c.RECOMPUTE: {"key": self.key}}
@@ -439,15 +433,10 @@ class Application(aggr.Aggregation):
 
 def _project_list(data: types.ObjectJsonRepr) -> types.KeyList:
     """Returns the list of project keys of an application"""
-    plist = {}
-    for b in data.get("branches", {}).values():
-        if "projects" not in b:
-            continue
-        if isinstance(b["projects"], dict):
-            plist.update(b["projects"])
-        else:
-            plist.update({p["projectKey"]: "" for p in b["projects"]})
-    return list(plist.keys())
+    plist = []
+    for b in [b for b in data.get("branches", []) if "projects" in b]:
+        plist += [p["key"] for p in b["projects"]]
+    return sorted(set(plist))
 
 
 def count(endpoint: pf.Platform) -> int:
@@ -572,7 +561,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     log.info("Importing applications")
     search(endpoint=endpoint)
     new_key_list = util.csv_to_list(key_list)
-    for key, data in config_data["applications"].items():
+    for key, data in util.list_to_dict(config_data["applications"], "key").items():
         if new_key_list and key not in new_key_list:
             log.debug("App key '%s' not in selected apps", key)
             continue
