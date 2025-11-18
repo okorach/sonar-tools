@@ -500,7 +500,7 @@ class Platform(object):
     def set_webhooks(self, webhooks_data: types.ObjectJsonRepr) -> bool:
         """Sets global webhooks with a list of webhooks represented as JSON
 
-        :param webhooks_data: the webhooks JSON representation
+        :param webhooks_data: The list of webhooks JSON representation
         :return: The number of webhooks configured
         """
         log.debug("%s setting webhooks %s", str(self), str(webhooks_data))
@@ -523,9 +523,9 @@ class Platform(object):
         count += sum(1 if self.set_setting(k, v) else 0 for k, v in flat_settings.items())
 
         try:
-            wh_data = util.list_to_dict(config_data["webhooks"], "name")
-            self.set_webhooks(wh_data)
-            count += len(wh_data)
+            # wh_data = util.list_to_dict(config_data["webhooks"], "name")
+            self.set_webhooks(config_data["webhooks"])
+            count += len(config_data["webhooks"])
         except KeyError:
             pass
 
