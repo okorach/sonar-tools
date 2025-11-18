@@ -89,7 +89,7 @@ class WebHook(sq.SqObject):
         :param ApiPayload data: The webhook data received from the API
         :return: The created WebHook
         """
-        log.debug("LOading Webhook with %s", data)
+        log.debug("Loading Webhook with %s", data)
         name, project = data["name"], data.get("project", None)
         if (o := WebHook.CACHE.get(name, project, endpoint.local_url)) is None:
             o = WebHook(endpoint, name, data["url"], data.get("secret", None), project)
@@ -216,9 +216,10 @@ def import_config(endpoint: pf.Platform, data: types.ObjectJsonRepr, project_key
     existing_webhooks = {wh.name: k for k, wh in current_wh.items()}
 
     # FIXME: Handle several webhooks with same name
-    for wh_name, wh_data in data.items():
+    for wh_data in data:
+        wh_name = wh_data["name"]
         if wh_name in existing_webhooks:
-            current_wh[existing_webhooks[wh_name]].update(name=wh_name, **wh_data)
+            current_wh[existing_webhooks[wh_name]].update(**wh_data)
         else:
             hook = WebHook.create(endpoint=endpoint, name=wh_name, url=wh_data.get("url", "https://to.be.defined"), project=project_key)
             hook.update(**wh_data)

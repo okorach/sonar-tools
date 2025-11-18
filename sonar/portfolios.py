@@ -725,7 +725,8 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     search(endpoint=endpoint)
     # First pass to create all top level porfolios that may be referenced
     new_key_list = util.csv_to_list(key_list)
-    for key, data in config_data["portfolios"].items():
+    for data in config_data["portfolios"]:
+        key = data["key"]
         if new_key_list and key not in new_key_list:
             continue
         log.info("Importing portfolio key '%s'", key)
@@ -734,14 +735,15 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         except exceptions.ObjectNotFound:
             log.info("Portfolio not found, creating it")
             newdata = data.copy()
-            name = newdata.pop("name")
+            key, name = newdata.pop("key"), newdata.pop("name")
             o = Portfolio.create(endpoint=endpoint, name=name, key=key, **newdata)
             o.parent_portfolio = None
             o.root_portfolio = o
 
     # Second pass to define hierarchies
     log.info("Importing portfolios - pass 2: Creating sub-portfolios")
-    for key, data in config_data["portfolios"].items():
+    for data in config_data["portfolios"]:
+        key = data["key"]
         if new_key_list and key not in new_key_list:
             continue
         try:

@@ -1037,7 +1037,7 @@ class Project(components.Component):
         :type desired_permissions: dict
         :return: Nothing
         """
-        self.permissions().set(desired_permissions)
+        return self.permissions().set(desired_permissions)
 
     def set_links(self, desired_links: types.ObjectJsonRepr) -> bool:
         """Sets project links
@@ -1107,7 +1107,7 @@ class Project(components.Component):
     def set_webhooks(self, webhook_data: types.ObjectJsonRepr) -> None:
         """Sets project webhooks
 
-        :param dict webhook_data: JSON describing the webhooks
+        :param list webhook_data: JSON describing the webhooks
         :return: Nothing
         """
         webhooks.import_config(self.endpoint, webhook_data, self.key)
@@ -1266,8 +1266,8 @@ class Project(components.Component):
         self.set_quality_gate(config.get("qualityGate", None))
 
         qps = util.list_to_dict(config.get("qualityProfiles", []), "language")
-        for lang, qp_name in qps.items():
-            self.set_quality_profile(language=lang, quality_profile=qp_name)
+        for lang, qp_data in qps.items():
+            self.set_quality_profile(language=lang, quality_profile=qp_data["name"])
         if branch_config := config.get("branches", None):
             branch_config = util.list_to_dict(branch_config, "name")
             try:
