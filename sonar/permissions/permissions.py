@@ -84,27 +84,17 @@ class Permissions(ABC):
     def __str__(self) -> str:
         return f"permissions of {str(self.concerned_object)}"
 
-    def to_json(self, perm_type: str | None = None, csv: bool = False) -> types.JsonPermissions:
+    def to_json(self, perm_type: Optional[str] = None) -> types.JsonPermissions:
         """Converts a permission object to JSON"""
-        if not csv:
-            return self.permissions.get(perm_type, {}) if is_valid(perm_type) else self.permissions
-        perms = {}
+        perm_list = []
         for ptype in normalize(perm_type):
-            for k, v in self.permissions.get(ptype, {}).copy().items():
-                if len(v) == 0:
-                    self.permissions[ptype].pop(k)
-        for ptype in normalize(perm_type):
-            if ptype not in self.permissions or len(self.permissions[ptype]) == 0:
-                continue
-            perms[ptype] = {k: encode(v) for k, v in self.permissions.get(ptype, {}).items()}
-        return perms if len(perms) > 0 else None
+            perm_list += [p for p in self.permissions if ptype[:-1] in p]
+        return list_to_dict(perm_list)
 
-    def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
+    def export(self, export_settings: types.ConfigSettings) -> types.JsonPermissions:
         """Exports permissions as JSON"""
-        inlined = export_settings.get("INLINE_LISTS", True)
-        perms = self.to_json(csv=inlined)
-        if not inlined:
-            perms = {k: v for k, v in perms.items() if len(v) > 0}
+        perms = self.to_json()
+        perms = {k: v for k, v in perms.items() if len(v) > 0}
         if not perms or len(perms) == 0:
             return None
         return perms
