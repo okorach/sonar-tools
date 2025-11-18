@@ -42,10 +42,10 @@ class AggregationPermissions(project_permissions.ProjectPermissions):
         self.white_list(AGGREGATION_PERMISSIONS)
         return self
 
-    def set(self, new_perms: types.JsonPermissions) -> AggregationPermissions:
+    def set(self, new_perms: list[types.PermissionDef]) -> AggregationPermissions:
         """Sets permissions of an aggregation
 
-        :param JsonPermissions new_perms:
+        :param new_perms: list of permissions definitions
         :return: Permissions associated to the aggregation
         :rtype: self
         """

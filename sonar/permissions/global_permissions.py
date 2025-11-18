@@ -21,11 +21,11 @@
 """Abstraction of SonarQube global permissions"""
 
 from __future__ import annotations
-from typing import Optional
 
 import sonar.logging as log
 from sonar.permissions import permissions
 from sonar.util import types
+from sonar import utilities as util
 import sonar.util.constants as c
 
 
@@ -39,9 +39,8 @@ class GlobalPermissions(permissions.Permissions):
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
     def __init__(self, concerned_object: object) -> None:
-        self.concerned_object = concerned_object
+        super().__init__(concerned_object)
         self.endpoint = concerned_object
-        self.permissions: Optional[dict[str, str[str, str]]] = None
         self.read()
 
     def __str__(self) -> str:
@@ -49,26 +48,44 @@ class GlobalPermissions(permissions.Permissions):
 
     def read(self) -> GlobalPermissions:
         """Reads global permissions"""
-        self.permissions = permissions.NO_PERMISSIONS
+        read_perms = {}
         for ptype in permissions.PERMISSION_TYPES:
-            self.permissions[ptype] = self._get_api(
+            read_perms[ptype] = self._get_api(
                 GlobalPermissions.API_GET[ptype], ptype, GlobalPermissions.API_GET_FIELD[ptype], ps=permissions.MAX_PERMS
             )
+        self.permissions = permissions.dict_to_list(read_perms)
         return self
 
-    def set(self, new_perms: types.JsonPermissions) -> GlobalPermissions:
+    def set(self, new_perms: list[types.PermissionDef]) -> GlobalPermissions:
         log.debug("Setting %s to %s", str(self), str(new_perms))
         if self.permissions is None:
             self.read()
         ed = self.endpoint.edition()
-        for perm_type in permissions.PERMISSION_TYPES:
-            if new_perms is None or perm_type not in new_perms:
-                continue
-            decoded_perms = {k: permissions.decode(v) for k, v in new_perms[perm_type].items()}
-            to_remove = edition_filter(permissions.diff(self.permissions[perm_type], decoded_perms), ed)
-            self._post_api(GlobalPermissions.API_REMOVE[perm_type], GlobalPermissions.API_SET_FIELD[perm_type], to_remove)
-            to_add = edition_filter(permissions.diff(decoded_perms, self.permissions[perm_type]), ed)
-            self._post_api(GlobalPermissions.API_SET[perm_type], GlobalPermissions.API_SET_FIELD[perm_type], to_add)
+        # Remove all permissions of users or groups that are not in the new permissions
+        for old_perm in self.permissions:
+            ptype = "group" if "group" in old_perm else "user"
+            atype = f"{ptype}s"
+            is_in_new = any(new_perm.get(ptype, "") == old_perm[ptype] for new_perm in new_perms)
+            if not is_in_new:
+                self._post_api(
+                    api=GlobalPermissions.API_REMOVE[atype],
+                    set_field=GlobalPermissions.API_SET_FIELD[atype],
+                    identifier=old_perm[ptype],
+                    perms=old_perm["permissions"],
+                )
+        # Add or modify permissions of users or groups that are in the new permissions
+        for new_perm in new_perms:
+            ptype = "group" if "group" in new_perm else "user"
+            atype = f"{ptype}s"
+            current_perm: list[str] = next((p["permissions"] for p in self.permissions if p.get(ptype) == new_perm[ptype]), [])
+            to_remove = edition_filter(util.difference(current_perm, new_perm["permissions"]), ed)
+            to_add = edition_filter(util.difference(new_perm["permissions"], current_perm), ed)
+            self._post_api(
+                api=GlobalPermissions.API_SET[atype], set_field=GlobalPermissions.API_SET_FIELD[atype], identifier=new_perm[ptype], perms=to_add
+            )
+            self._post_api(
+                api=GlobalPermissions.API_REMOVE[atype], set_field=GlobalPermissions.API_SET_FIELD[atype], identifier=new_perm[ptype], perms=to_remove
+            )
         return self.read()
 
 
@@ -76,7 +93,7 @@ def import_config(endpoint: object, config_data: types.ObjectJsonRepr) -> int:
     """Imports global permissions in a SonarQube platform
     :return: number of global permissions imported
     """
-    my_permissions = config_data.get("permissions", {})
+    my_permissions = config_data.get("permissions", [])
     if len(my_permissions) == 0:
         log.info("No global permissions in config, skipping import...")
         return 0
@@ -86,7 +103,7 @@ def import_config(endpoint: object, config_data: types.ObjectJsonRepr) -> int:
     return len(my_permissions)
 
 
-def edition_filter(perms: types.JsonPermissions, ed: str) -> types.JsonPermissions:
+def edition_filter(perms: list[str], ed: str) -> list[str]:
     """Filters permissions available in a given edition"""
     for p in perms.copy():
         if ed == c.CE and p in ("portfoliocreator", "applicationcreator") or ed == c.DE and p == "portfoliocreator":

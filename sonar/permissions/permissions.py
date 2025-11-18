@@ -21,7 +21,7 @@
 """Abstract permissions class, parent of sub-objects permissions classes"""
 
 from __future__ import annotations
-from typing import Optional, Any
+from typing import Optional, Union, Any
 
 import json
 from abc import ABC, abstractmethod
@@ -62,7 +62,7 @@ _PORTFOLIOS = 6
 
 OBJECTS_WITH_PERMISSIONS = (_GLOBAL, _PROJECTS, _TEMPLATES, _QG, _QP, _APPS, _PORTFOLIOS)
 PERMISSION_TYPES = ("users", "groups")
-NO_PERMISSIONS = {"users": None, "groups": None}
+NO_PERMISSIONS: list[types.PermissionDef] = []
 
 MAX_PERMS = 100
 
@@ -74,8 +74,11 @@ class Permissions(ABC):
 
     def __init__(self, concerned_object: object) -> None:
         self.concerned_object = concerned_object
-        self.endpoint = concerned_object.endpoint
-        self.permissions: Optional[dict[str, dict[str, str]]] = None
+        try:
+            self.endpoint = concerned_object.endpoint
+        except AttributeError:
+            self.endpoint = concerned_object
+        self.permissions: list[types.PermissionDef] = None
         self.read()
 
     def __str__(self) -> str:
@@ -114,7 +117,7 @@ class Permissions(ABC):
         """
 
     @abstractmethod
-    def set(self, new_perms: types.JsonPermissions) -> Permissions:
+    def set(self, new_perms: list[types.PermissionDef]) -> Permissions:
         """Sets permissions of an object
 
         :param JsonPermissions new_perms: The permissions to set
@@ -180,7 +183,7 @@ class Permissions(ABC):
         """
         self.permissions = white_list(self.permissions, allowed_perms)
 
-    def _filter_permissions_for_edition(self, perms: types.JsonPermissions) -> types.JsonPermissions:
+    def _filter_permissions_for_edition(self, perms: list[types.PermissionDef]) -> list[types.PermissionDef]:
         ed = self.endpoint.edition()
         allowed_perms = list(PROJECT_PERMISSIONS.keys())
         if ed == c.CE:
@@ -189,16 +192,7 @@ class Permissions(ABC):
             allowed_perms += list(DEVELOPER_GLOBAL_PERMISSIONS.keys())
         else:
             allowed_perms += list(ENTERPRISE_GLOBAL_PERMISSIONS.keys())
-        for p in perms.copy():
-            if p not in allowed_perms:
-                log.warning("Can't set permission '%s' on a %s edition", p, ed)
-                perms.remove(p)
-        if "admin" in perms:
-            # Set admin permission before anything
-            old_perms = perms.copy()
-            perms = ["admin"] + [p for p in old_perms if p != "admin"]
-            return perms
-        return perms
+        return [perm for perm in perms if perm in allowed_perms]
 
     def __audit_nbr_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits that at least one permission is granted to a user or a group
@@ -306,20 +300,14 @@ class Permissions(ABC):
                 page += 1
         return perms
 
-    def _post_api(self, api: str, set_field: str, perms_dict: types.JsonPermissions, **extra_params) -> bool:
-        if perms_dict is None:
-            return True
+    def _post_api(self, api: str, set_field: str, identifier: str, perms: list[types.PermissionDef], **extra_params) -> bool:
         ok = True
-        params = extra_params.copy()
-        for u, perms in perms_dict.items():
-            params[set_field] = u
-            filtered_perms = self._filter_permissions_for_edition(perms)
-            for p in filtered_perms:
-                params["permission"] = p
-                try:
-                    ok = self.endpoint.post(api, params=params).ok and ok
-                except exceptions.SonarException:
-                    ok = False
+        params = extra_params | {set_field: identifier}
+        for p in self._filter_permissions_for_edition(perms):
+            try:
+                ok = self.endpoint.post(api, params=params | {"permission": p}).ok and ok
+            except exceptions.SonarException:
+                ok = False
         return ok
 
 
@@ -392,7 +380,7 @@ def diff_full(perms_1: types.JsonPermissions, perms_2: types.JsonPermissions) ->
     return diff_perms
 
 
-def diff(perms_1: types.JsonPermissions, perms_2: types.JsonPermissions) -> types.JsonPermissions:
+def diff(perms_1: types.PermissionDef, perms_2: types.PermissionDef) -> types.PermissionDef:
     """Performs the difference between two permissions dictionaries
     :meta private:
     """
@@ -410,38 +398,44 @@ def diffarray(perms_1: list[str], perms_2: list[str]) -> list[str]:
     return list(set(perms_1) - set(perms_2))
 
 
-def white_list(perms: types.JsonPermissions, allowed_perms: list[str]) -> types.JsonPermissions:
+def white_list(perms: list[types.PermissionDef], allowed_perms: list[str]) -> list[types.PermissionDef]:
     """Returns permissions filtered from a white list of allowed permissions"""
-    resulting_perms = {}
-    for perm_type, sub_perms in perms.items():
+    log.debug("Filtering permissions with white list %s on %s", allowed_perms, perms)
+    for perm in perms:
         # if perm_type not in PERMISSION_TYPES:
         #    continue
-        resulting_perms[perm_type] = {}
-        for user_or_group, original_perms in sub_perms.items():
-            resulting_perms[perm_type][user_or_group] = [p for p in original_perms if p in allowed_perms]
-            if len(resulting_perms[perm_type][user_or_group]) == 0:
-                resulting_perms[perm_type].pop(user_or_group)
-    return resulting_perms
+        perm["permissions"] = [p for p in perm["permissions"] if p in allowed_perms]
+    return perms
 
 
-def black_list(perms: types.JsonPermissions, disallowed_perms: list[str]) -> types.JsonPermissions:
+def black_list(perms: list[types.PermissionDef], disallowed_perms: list[str]) -> list[types.PermissionDef]:
     """Returns permissions filtered after a black list of disallowed permissions"""
-    resulting_perms = {}
-    for perm_type, sub_perms in perms.items():
+    log.debug("Filtering permissions with black list %s on %s", disallowed_perms, perms)
+    for perm in perms:
         # if perm_type not in PERMISSION_TYPES:
         #    continue
-        resulting_perms[perm_type] = {}
-        for user_or_group, original_perms in sub_perms.items():
-            resulting_perms[perm_type][user_or_group] = [p for p in original_perms if p not in disallowed_perms]
-            if len(resulting_perms[perm_type][user_or_group]) == 0:
-                resulting_perms[perm_type].pop(user_or_group)
-    return resulting_perms
+        perm["permissions"] = [p for p in perm["permissions"] if p not in disallowed_perms]
+    return perms
 
 
-def list_to_dict(perms: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+def list_to_dict(perms: list[types.PermissionDef]) -> dict[str, dict[str, list[str]]]:
     """Converts permissions in list format to dict format"""
     converted = {}
     for ptype in PERMISSION_TYPES:
-        if len(perms := [p for p in perms if ptype[:-1] in p]) > 0:
-            converted[ptype] = {p[ptype[:-1]]: p["permissions"] for p in perms}
+        if len(new_perms := [p for p in perms if ptype[:-1] in p]) > 0:
+            converted[ptype] = {p[ptype[:-1]]: p["permissions"] for p in new_perms}
+    return converted
+
+
+def dict_to_list(perms: dict[str, Any]) -> list[types.PermissionDef]:
+    """Converts permissions in dict format to list format"""
+    converted = []
+    log.debug("Converting permissions in dict format to list format %s", perms)
+    for ptype in [p for p in PERMISSION_TYPES if p in perms]:
+        log.debug("Converting permissions for %s", perms[ptype])
+        ptype_perms = [{ptype[:-1]: k, "permissions": v} for k, v in perms[ptype].items()]
+        log.debug("Converting permissions for %s to list format %s", ptype, ptype_perms)
+        if len(ptype_perms) > 0:
+            log.debug("Converting permissions for %s to list format %s", ptype, ptype_perms)
+            converted += ptype_perms
     return converted

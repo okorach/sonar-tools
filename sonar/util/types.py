@@ -26,7 +26,7 @@ ConfigSettings = dict[str, str]
 
 ObjectFilter = dict[str, str]
 
-ObjectJsonRepr = Union[list[Any], dict[str, Any]]
+ObjectJsonRepr = dict[str, Any]
 
 ApiParams = Optional[dict[str, str]]
 
@@ -41,3 +41,7 @@ ObjectDict = Optional[dict[str, object]]
 CliParams = Optional[dict[str, Union[str, int, float, list[str]]]]
 
 JsonPermissions = dict[str, dict[str, list[str]]]
+PermissionDef = dict[str, Any]
+
+AppBranchDef = dict[str, Any]
+AppBranchProjectDef = dict[str, str]
