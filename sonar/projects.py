@@ -889,20 +889,26 @@ class Project(components.Component):
         log.debug("Getting %s webhooks", str(self))
         return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
 
-    def links(self) -> Optional[list[dict[str, str]]]:
-        """
+    def links(self, custom_only=True) -> list[dict[str, str]]:
+        """Returns the list of project links
+
+        :param custom_only: Whether to only return custom links
         :return: list of project links
         :rtype: list[{type, name, url}]
         """
+        log.debug("Getting %s links", self)
         try:
             data = json.loads(self.get(api="project_links/search", params={"projectKey": self.key}).text)
         except exceptions.SonarException:
-            return None
-        link_list = None
+            return []
+        link_list = []
+        # for link in [l for l in data["links"] if not custom_only or l["type"] not in ("homepage", "scm", "issue")]:
         for link in data["links"]:
-            if link_list is None:
-                link_list = []
-            link_list.append({"type": link["type"], "name": link.get("name", link["type"]), "url": link["url"]})
+            if custom_only and link["type"] in ("homepage", "scm", "issue"):
+                log.debug("%s link %s is a standard one, not exported", self, link)
+                continue
+            link_list.append({k: v for k, v in link.items() if k in ("name", "url")})
+        log.debug("%s links = %s", self, link_list)
         return link_list
 
     def __export_get_binding(self) -> Optional[types.ObjectJsonRepr]:
@@ -1039,20 +1045,19 @@ class Project(components.Component):
         """
         return self.permissions().set(desired_permissions)
 
-    def set_links(self, desired_links: types.ObjectJsonRepr) -> bool:
+    def set_links(self, desired_links: list[dict[str, str]]) -> bool:
         """Sets project links
 
-        :param desired_links: dict describing links
-        :type desired_links: dict
+        :param desired_links: List of links
         :return: Whether the operation was successful
         """
-        params = {"projectKey": self.key}
+        log.info("Setting links with %s", desired_links.get("links", {}))
         ok = True
-        for link in desired_links.get("links", {}):
+        for link in desired_links:
             if link.get("type", "") != "custom":
+                log.warning("Link %s is not custom, can't recreate it, this will be automatic at first analysis", link)
                 continue
-            params.update(link)
-            ok = ok and self.post("project_links/create", params=params).ok
+            ok = ok and self.post("project_links/create", params={"projectKey": self.key} | link).ok
         return ok
 
     def set_quality_gate(self, quality_gate: str) -> bool:
@@ -1260,7 +1265,8 @@ class Project(components.Component):
             self.set_visibility(visi)
         if "permissions" in config:
             self.set_permissions(config["permissions"])
-        self.set_links(config)
+        if "links" in config:
+            self.set_links(config["links"])
         if (tags := config.get("tags", None)) is not None:
             self.set_tags(util.csv_to_list(tags))
         self.set_quality_gate(config.get("qualityGate", None))
