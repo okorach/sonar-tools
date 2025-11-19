@@ -967,7 +967,7 @@ class Project(components.Component):
             json_data["binding"] = self.__export_get_binding()
             json_data["qualityProfiles"] = self.__export_get_qp()
             json_data["links"] = self.links()
-            json_data["permissions"] = self.permissions().to_json(csv=export_settings.get("INLINE_LISTS", True))
+            json_data["permissions"] = self.permissions().to_json()
             if self.endpoint.version() >= (10, 7, 0):
                 json_data[phelp.AI_CODE_FIX] = self.ai_code_fix()
             json_data["branches"] = self.__get_branch_export(export_settings)
