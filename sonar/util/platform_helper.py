@@ -60,14 +60,18 @@ def convert_global_settings_json(old_json: dict[str, Any], full: bool = False) -
     for categ in [cat for cat in settings.CATEGORIES if cat not in special_categories]:
         new_json[categ] = util.sort_list_by_key(util.dict_to_list(dict(sorted(old_json[categ].items())), "key"), "key")
     for k, v in old_json[settings.LANGUAGES_SETTINGS].items():
-        new_json[settings.LANGUAGES_SETTINGS] = new_json.get(settings.LANGUAGES_SETTINGS, None) or {}
+        new_json[settings.LANGUAGES_SETTINGS] = new_json.get(settings.LANGUAGES_SETTINGS) or {}
         new_json[settings.LANGUAGES_SETTINGS][k] = util.sort_list_by_key(util.dict_to_list(v, "key"), "key")
+
     new_json[settings.LANGUAGES_SETTINGS] = util.dict_to_list(dict(sorted(new_json[settings.LANGUAGES_SETTINGS].items())), "language", "settings")
-    new_json[settings.DEVOPS_INTEGRATION] = util.dict_to_list(dict(sorted(old_json[settings.DEVOPS_INTEGRATION].items())), "key")
-    for k in new_json["permissionTemplates"]:
+    new_json[settings.DEVOPS_INTEGRATION] = util.dict_to_list(dict(sorted(new_json[settings.DEVOPS_INTEGRATION].items())), "key")
+
+    for k in new_json.get("permissionTemplates", {}):
         new_json["permissionTemplates"][k] = convert_template_json(new_json["permissionTemplates"][k], full)
-    new_json["permissionTemplates"] = util.dict_to_list(new_json["permissionTemplates"], "key")
-    new_json["webhooks"] = util.dict_to_list(new_json["webhooks"], "name")
+
+    for k, v in {k: v for k, v in {"permissionTemplates": "key", "webhooks": "name"}.items() if k in new_json}.items():
+        new_json[k] = util.dict_to_list(new_json[k], v)
+
     new_json = common_json_helper.convert_common_fields(new_json)
 
     return util.order_dict(new_json, [*settings.CATEGORIES, "permissions", "permissionTemplates"])
