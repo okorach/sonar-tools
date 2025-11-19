@@ -553,7 +553,6 @@
                         "items": {
                             "type": "object",
                             "required": [
-                                "type",
                                 "name",
                                 "url"
                             ],
