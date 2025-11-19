@@ -807,6 +807,15 @@ def flatten(original_dict: dict[str, any]) -> dict[str, any]:
     for k, v in original_dict.items():
         if isinstance(v, dict):
             flat_dict |= flatten(v)
+        elif isinstance(v, list):
+            for elem in v:
+                log.info("Flattening %s", elem)
+                if "settings" in elem:
+                    flat_dict |= {e["key"]: e["value"] for e in elem["settings"]}
+                elif "key" in elem:
+                    flat_dict |= {elem["key"]: elem["value"]}
+                else:
+                    log.info("Cant flatten %s", elem)
         else:
             flat_dict[k] = v
     return flat_dict
@@ -861,7 +870,8 @@ def perms_to_list(perms: dict[str, Any]) -> list[str, Any]:
     """Converts permissions in dict format to list format"""
     if not perms or not isinstance(perms, dict):
         return perms
-    return dict_to_list(perms.get("groups", {}), "group", "permissions") + dict_to_list(perms.get("users", {}), "user", "permissions")
+    list_perms = dict_to_list(perms.get("groups", {}), "group", "permissions") + dict_to_list(perms.get("users", {}), "user", "permissions")
+    return [p for p in list_perms if p.get("permissions") is not None and p.get("permissions") != []]
 
 
 def search_list(obj_list: list[Any], field: str, value: str) -> dict[str, Any]:
