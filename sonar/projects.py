@@ -101,6 +101,8 @@ _SETTINGS_WITH_SPECIFIC_IMPORT = (
     "visibility",
 )
 
+_PREDEFINED_LINKS = ("homepage", "scm", "issue")
+
 
 class Project(components.Component):
     """Abstraction of the SonarQube project concept"""
@@ -902,9 +904,8 @@ class Project(components.Component):
         except exceptions.SonarException:
             return []
         link_list = []
-        # for link in [l for l in data["links"] if not custom_only or l["type"] not in ("homepage", "scm", "issue")]:
         for link in data["links"]:
-            if custom_only and link["type"] in ("homepage", "scm", "issue"):
+            if custom_only and link["type"] in _PREDEFINED_LINKS:
                 log.debug("%s link %s is a standard one, not exported", self, link)
                 continue
             link_list.append({k: v for k, v in link.items() if k in ("name", "url")})
@@ -1051,13 +1052,13 @@ class Project(components.Component):
         :param desired_links: List of links
         :return: Whether the operation was successful
         """
-        log.info("Setting links with %s", desired_links.get("links", {}))
+        log.info("Setting links with %s", desired_links)
         ok = True
-        for link in desired_links:
-            if link.get("type", "") != "custom":
+        for link in desired_links.copy():
+            if link.get("type", "") in _PREDEFINED_LINKS:
                 log.warning("Link %s is not custom, can't recreate it, this will be automatic at first analysis", link)
                 continue
-            ok = ok and self.post("project_links/create", params={"projectKey": self.key} | link).ok
+            ok = ok and self.post("project_links/create", params={"projectKey": self.key} | {"name": link["name"], "url": link["url"]}).ok
         return ok
 
     def set_quality_gate(self, quality_gate: str) -> bool:
