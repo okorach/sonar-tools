@@ -891,7 +891,7 @@ class Project(components.Component):
         log.debug("Getting %s webhooks", str(self))
         return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
 
-    def links(self, custom_only=True) -> list[dict[str, str]]:
+    def links(self, custom_only: bool = True, with_id: bool = False) -> list[dict[str, str]]:
         """Returns the list of project links
 
         :param custom_only: Whether to only return custom links
@@ -904,11 +904,12 @@ class Project(components.Component):
         except exceptions.SonarException:
             return []
         link_list = []
+        fields = ["name", "url"] + (["id"] if with_id else [])
         for link in data["links"]:
             if custom_only and link["type"] in _PREDEFINED_LINKS:
                 log.debug("%s link %s is a standard one, not exported", self, link)
                 continue
-            link_list.append({k: v for k, v in link.items() if k in ("name", "url")})
+            link_list.append({k: v for k, v in link.items() if k in fields})
         log.debug("%s links = %s", self, link_list)
         return link_list
 
@@ -1055,12 +1056,20 @@ class Project(components.Component):
         :return: Whether the operation was successful
         """
         log.info("Setting links with %s", desired_links)
+        dict_current = util.list_to_dict(self.links(with_id=True), "name", keep_in_values=True)
+        dict_desired = util.list_to_dict(desired_links, "name", keep_in_values=True)
         ok = True
-        for link in desired_links.copy():
-            if link.get("type", "") in _PREDEFINED_LINKS:
-                log.warning("Link %s is not custom, can't recreate it, this will be automatic at first analysis", link)
+        # FIXME: Although not recommended it's possible to have multiple links with same name
+        for link_name in [name for name in dict_desired if name not in dict_current]:
+            link_name = dict_desired[link_name]
+            if link_name.get("type", "") in _PREDEFINED_LINKS:
+                log.warning("Link %s is not custom, can't recreate it, this will be automatic at first analysis", link_name)
                 continue
-            ok = ok and self.post("project_links/create", params={"projectKey": self.key} | {"name": link["name"], "url": link["url"]}).ok
+            ok = ok and self.post("project_links/create", params={"projectKey": self.key} | {"name": link_name["name"], "url": link_name["url"]}).ok
+        for link_name in [name for name in dict_current if name not in dict_desired]:
+            link_id = next(v["id"] for k, v in link_name if k == link_name)
+            ok = ok and self.post("project_links/delete", params={"id": link_id}).ok
+        self.links()
         return ok
 
     def set_quality_gate(self, quality_gate: str) -> bool:
