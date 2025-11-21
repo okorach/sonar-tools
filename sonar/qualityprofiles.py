@@ -351,7 +351,7 @@ class QualityProfile(sq.SqObject):
 
     def update(self, data: types.ObjectJsonRepr) -> QualityProfile:
         """Updates a QP with data coming from sonar-config"""
-        if self.is_built_in:
+        if self.is_built_in or data.get("isBuiltIn", False):
             log.debug("Not updating built-in %s", str(self))
         else:
             log.debug("Updating %s with %s", str(self), str(data))
@@ -366,10 +366,13 @@ class QualityProfile(sq.SqObject):
             self.activate_rules(data.get("modifiedRules", []))
             self.set_permissions(data.get("permissions", []))
             self.is_built_in = data.get("isBuiltIn", False)
-            if data.get("isDefault", False):
-                self.set_as_default()
 
-        for child_name, child_data in data.get(qphelp.KEY_CHILDREN, {}).items():
+        if data.get("isDefault", False):
+            self.set_as_default()
+        if not data.get(qphelp.KEY_CHILDREN):
+            return self
+        children_data = util.list_to_dict(data.get(qphelp.KEY_CHILDREN), "name")
+        for child_name, child_data in children_data.items():
             try:
                 child_qp = get_object(self.endpoint, child_name, self.language)
             except exceptions.ObjectNotFound:
@@ -820,6 +823,7 @@ def import_qp(endpoint: pf.Platform, name: str, lang: str, qp_data: types.Object
     log.info("Importing %s", o)
     o.update(qp_data)
     log.info("Imported %s", o)
+    return True
 
 
 def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
