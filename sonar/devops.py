@@ -251,16 +251,16 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
     """Imports DevOps platform configuration in SonarQube/Cloud
     :return: Nbr of devops platforms imported
     """
-    devops_settings = config_data.get("devopsIntegration", {})
-    if len(devops_settings) == 0:
+    if not (devops_settings := config_data.get("devopsIntegration", {})):
         log.info("No devops integration settings in config, skipping import...")
         return 0
     if endpoint.is_sonarcloud():
-        raise exceptions.UnsupportedOperation("Can't get import DevOps platforms in SonarQube Cloud")
+        raise exceptions.UnsupportedOperation("Can't import DevOps platforms in SonarQube Cloud")
     log.info("Importing DevOps config %s", util.json_dump(devops_settings))
     if len(DevopsPlatform.CACHE) == 0:
         get_list(endpoint)
     counter = 0
+    devops_settings = util.list_to_dict(devops_settings, "key")
     for name, data in devops_settings.items():
         try:
             o = DevopsPlatform.read(endpoint, name)

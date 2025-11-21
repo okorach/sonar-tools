@@ -731,17 +731,18 @@ def dict_remap_and_stringify(original_dict: dict[str, str], remapping: dict[str,
     return dict_stringify(dict_remap(original_dict, remapping))
 
 
-def list_to_dict(original_list: list[dict[str, Any]], key_field: str) -> dict[str, any]:
+def list_to_dict(original_list: list[dict[str, Any]], key_field: str, keep_in_values: bool = False) -> dict[str, Any]:
     """Converts a list to dict with list key_field as dict key"""
     if original_list is None:
         return original_list
     converted_dict = {elem[key_field]: elem for elem in original_list}
-    for e in converted_dict.values():
-        e.pop(key_field)
+    if not keep_in_values:
+        for e in converted_dict.values():
+            e.pop(key_field)
     return converted_dict
 
 
-def dict_to_list(original_dict: dict[str, Any], key_field: str, value_field: Optional[str] = "value") -> list[str, any]:
+def dict_to_list(original_dict: dict[str, Any], key_field: str, value_field: Optional[str] = "value") -> list[dict[str, Any]]:
     """Converts a dict to list adding dict key in list key_field"""
     if original_dict is None or isinstance(original_dict, list):
         return original_dict
@@ -807,6 +808,15 @@ def flatten(original_dict: dict[str, any]) -> dict[str, any]:
     for k, v in original_dict.items():
         if isinstance(v, dict):
             flat_dict |= flatten(v)
+        elif isinstance(v, list):
+            for elem in v:
+                log.info("Flattening %s", elem)
+                if "settings" in elem:
+                    flat_dict |= {e["key"]: e["value"] for e in elem["settings"]}
+                elif "key" in elem:
+                    flat_dict |= {elem["key"]: elem["value"]}
+                else:
+                    log.info("Cant flatten %s", elem)
         else:
             flat_dict[k] = v
     return flat_dict
@@ -845,7 +855,7 @@ def order_keys(original_dict: dict[str, any], *keys: str) -> dict[str, any]:
     return ordered_dict
 
 
-def order_dict(d: dict[str, Any], key_order: list[str]) -> dict[str, Any]:
+def order_dict(d: dict[str, Any], *key_order: str) -> dict[str, Any]:
     """Orders keys of a dictionary in a given order"""
     new_d = {k: d[k] for k in key_order if k in d}
     return new_d | {k: v for k, v in d.items() if k not in new_d}
@@ -861,7 +871,8 @@ def perms_to_list(perms: dict[str, Any]) -> list[str, Any]:
     """Converts permissions in dict format to list format"""
     if not perms or not isinstance(perms, dict):
         return perms
-    return dict_to_list(perms.get("groups", {}), "group", "permissions") + dict_to_list(perms.get("users", {}), "user", "permissions")
+    list_perms = dict_to_list(perms.get("groups", {}), "group", "permissions") + dict_to_list(perms.get("users", {}), "user", "permissions")
+    return [p for p in list_perms if p.get("permissions") is not None and p.get("permissions") != []]
 
 
 def search_list(obj_list: list[Any], field: str, value: str) -> dict[str, Any]:

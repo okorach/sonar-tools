@@ -489,7 +489,7 @@ class Platform(object):
             j.pop("name", None)
             hooks[wb.name] = j
         if len(hooks) > 0:
-            json_data[settings.GENERAL_SETTINGS].update({"webhooks": hooks})
+            json_data["webhooks"] = hooks
         json_data["permissions"] = self.global_permissions().export(export_settings=export_settings)
         json_data["permissionTemplates"] = permission_templates.export(self, export_settings=export_settings)
         if not self.is_sonarcloud():
@@ -500,7 +500,7 @@ class Platform(object):
     def set_webhooks(self, webhooks_data: types.ObjectJsonRepr) -> bool:
         """Sets global webhooks with a list of webhooks represented as JSON
 
-        :param webhooks_data: the webhooks JSON representation
+        :param webhooks_data: The list of webhooks JSON representation
         :return: The number of webhooks configured
         """
         log.debug("%s setting webhooks %s", str(self), str(webhooks_data))
@@ -515,23 +515,22 @@ class Platform(object):
         :param config_data: the sonar-config configuration representation of the platform
         :return: Number of imported settings
         """
-        if "globalSettings" not in config_data:
+        if not (config_data := config_data.get("globalSettings", None)):
             log.info("No global settings to import")
             return 0
         count = 0
-        config_data = config_data.get("globalSettings", {})
-        flat_settings = util.flatten(config_data)
+        flat_settings = util.flatten({k: v for k, v in config_data.items() if k not in ("devopsIntegration", "permissionTemplates", "webhooks")})
+        log.debug("Flat settings = %s", util.json_dump(flat_settings))
         count += sum(1 if self.set_setting(k, v) else 0 for k, v in flat_settings.items())
 
         try:
-            wh_data = config_data["generalSettings"]["webhooks"]
-            self.set_webhooks(wh_data)
-            count += len(wh_data)
+            self.set_webhooks(config_data["webhooks"])
+            count += len(config_data["webhooks"])
         except KeyError:
             pass
 
-        if settings.NEW_CODE_PERIOD in config_data.get("generalSettings", {}):
-            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data["generalSettings"][settings.NEW_CODE_PERIOD])
+        if settings.NEW_CODE_PERIOD in config_data[settings.GENERAL_SETTINGS]:
+            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data[settings.GENERAL_SETTINGS][settings.NEW_CODE_PERIOD])
             try:
                 settings.set_new_code_period(self, nc_type, nc_val)
                 count += 1

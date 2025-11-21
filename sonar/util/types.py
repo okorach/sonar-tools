@@ -30,7 +30,7 @@ ObjectJsonRepr = dict[str, Any]
 
 ApiParams = Optional[dict[str, str]]
 
-ApiPayload = Optional[dict[str, Any]]
+ApiPayload = dict[str, Any]
 
 KeyList = Optional[list[str]]
 
@@ -41,3 +41,7 @@ ObjectDict = Optional[dict[str, object]]
 CliParams = Optional[dict[str, Union[str, int, float, list[str]]]]
 
 JsonPermissions = dict[str, dict[str, list[str]]]
+PermissionDef = dict[str, Any]
+
+AppBranchDef = dict[str, Any]
+AppBranchProjectDef = dict[str, str]

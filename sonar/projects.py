@@ -32,7 +32,7 @@ import concurrent.futures
 from datetime import datetime
 import traceback
 
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from http import HTTPStatus
 from threading import Lock
 from requests import HTTPError, RequestException
@@ -73,16 +73,16 @@ ZIP_EXCEPTION = "FAILED/EXCEPTION"
 _IMPORTABLE_PROPERTIES = (
     "key",
     "name",
-    "binding",
     settings.NEW_CODE_PERIOD,
-    "qualityProfiles",
-    "links",
-    "permissions",
-    "branches",
-    "tags",
-    "visibility",
     "qualityGate",
+    "qualityProfiles",
+    "branches",
+    "binding",
+    "visibility",
+    "permissions",
+    "tags",
     "webhooks",
+    "links",
     phelp.AI_CODE_FIX,
 )
 
@@ -100,6 +100,8 @@ _SETTINGS_WITH_SPECIFIC_IMPORT = (
     "name",
     "visibility",
 )
+
+_PREDEFINED_LINKS = ("homepage", "scm", "issue")
 
 
 class Project(components.Component):
@@ -889,20 +891,26 @@ class Project(components.Component):
         log.debug("Getting %s webhooks", str(self))
         return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
 
-    def links(self) -> Optional[list[dict[str, str]]]:
-        """
+    def links(self, custom_only: bool = True, with_id: bool = False) -> list[dict[str, str]]:
+        """Returns the list of project links
+
+        :param custom_only: Whether to only return custom links
         :return: list of project links
         :rtype: list[{type, name, url}]
         """
+        log.debug("Getting %s links", self)
         try:
             data = json.loads(self.get(api="project_links/search", params={"projectKey": self.key}).text)
         except exceptions.SonarException:
-            return None
-        link_list = None
+            return []
+        link_list = []
+        fields = ["name", "url"] + (["id"] if with_id else [])
         for link in data["links"]:
-            if link_list is None:
-                link_list = []
-            link_list.append({"type": link["type"], "name": link.get("name", link["type"]), "url": link["url"]})
+            if custom_only and link["type"] in _PREDEFINED_LINKS:
+                log.debug("%s link %s is a standard one, not exported", self, link)
+                continue
+            link_list.append({k: v for k, v in link.items() if k in fields})
+        log.debug("%s links = %s", self, link_list)
         return link_list
 
     def __export_get_binding(self) -> Optional[types.ObjectJsonRepr]:
@@ -926,11 +934,12 @@ class Project(components.Component):
 
     def __get_branch_export(self, export_settings: types.ConfigSettings) -> Optional[types.ObjectJsonRepr]:
         """Export project branches as JSON"""
-        branch_data = {name: branch.export(export_settings=export_settings) for name, branch in self.branches().items()}
+        branch_data = {name: branch.export(export_settings=export_settings) for name, branch in sorted(self.branches().items())}
         # If there is only 1 branch with no specific config except being main, don't return anything
         if len(branch_data) == 0 or (len(branch_data) == 1 and "main" in branch_data and len(branch_data["main"]) <= 1):
             return None
-        return branch_data
+        main_br = {k: v for k, v in branch_data.items() if v and v.get("isMain")}
+        return main_br | branch_data
 
     def migration_export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Produces the data that is exported for SQ to SC migration"""
@@ -958,7 +967,6 @@ class Project(components.Component):
         """Exports the entire project configuration as JSON
 
         :return: All project configuration settings
-        :rtype: dict
         """
         log.info("Exporting %s", str(self))
         json_data = self.sq_json.copy()
@@ -967,7 +975,7 @@ class Project(components.Component):
             json_data["binding"] = self.__export_get_binding()
             json_data["qualityProfiles"] = self.__export_get_qp()
             json_data["links"] = self.links()
-            json_data["permissions"] = self.permissions().to_json(csv=export_settings.get("INLINE_LISTS", True))
+            json_data["permissions"] = self.permissions().to_json()
             if self.endpoint.version() >= (10, 7, 0):
                 json_data[phelp.AI_CODE_FIX] = self.ai_code_fix()
             json_data["branches"] = self.__get_branch_export(export_settings)
@@ -1001,15 +1009,19 @@ class Project(components.Component):
             with_inherited = export_settings.get("INCLUDE_INHERITED", False)
             json_data["settings"] = {}
             settings_to_export = {k: s for k, s in settings_dict.items() if with_inherited or not s.inherited and s.key != "visibility"}
-            for s in settings_to_export.values():
-                json_data["settings"] |= s.to_json()
+            for key, s in settings_to_export.items():
+                json_setting = s.to_json()
+                if key == settings.NEW_CODE_PERIOD:
+                    json_data[settings.NEW_CODE_PERIOD] = json_setting[settings.NEW_CODE_PERIOD]
+                else:
+                    json_data["settings"] |= json_setting
             log.debug("Exporting %s done, returning %s", str(self), util.json_dump(json_data))
         except Exception as e:
             traceback.print_exc()
             util.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
-            json_data["error"] = f"{util.error_msg(e)} while exporting project"
+            json_data["ERROR"] = f"{util.error_msg(e)} while exporting project"
 
-        return json_data
+        return util.order_dict(json_data, *_IMPORTABLE_PROPERTIES)
 
     def new_code(self) -> str:
         """
@@ -1019,6 +1031,7 @@ class Project(components.Component):
         if self._new_code is None:
             new_code = settings.Setting.read(settings.NEW_CODE_PERIOD, self.endpoint, component=self)
             self._new_code = new_code.value if new_code else ""
+            log.info("%s new code is %s", self, self._new_code)
         return self._new_code
 
     def permissions(self) -> pperms.ProjectPermissions:
@@ -1030,29 +1043,35 @@ class Project(components.Component):
             self._permissions = pperms.ProjectPermissions(self)
         return self._permissions
 
-    def set_permissions(self, desired_permissions: types.ObjectJsonRepr) -> bool:
+    def set_permissions(self, desired_permissions: list[types.PermissionDef]) -> bool:
         """Sets project permissions
 
-        :param desired_permissions: dict describing permissions
-        :type desired_permissions: dict
+        :param desired_permissions: List of permissions
         :return: Nothing
         """
-        self.permissions().set(desired_permissions)
+        return self.permissions().set(desired_permissions)
 
-    def set_links(self, desired_links: types.ObjectJsonRepr) -> bool:
+    def set_links(self, desired_links: list[dict[str, str]]) -> bool:
         """Sets project links
 
-        :param desired_links: dict describing links
-        :type desired_links: dict
+        :param desired_links: List of links
         :return: Whether the operation was successful
         """
-        params = {"projectKey": self.key}
+        log.info("Setting links with %s", desired_links)
+        dict_current = util.list_to_dict(self.links(with_id=True), "name", keep_in_values=True)
+        dict_desired = util.list_to_dict(desired_links, "name", keep_in_values=True)
         ok = True
-        for link in desired_links.get("links", {}):
-            if link.get("type", "") != "custom":
+        # FIXME: Although not recommended it's possible to have multiple links with same name
+        for link_name in [name for name in dict_desired if name not in dict_current]:
+            link_name = dict_desired[link_name]
+            if link_name.get("type", "") in _PREDEFINED_LINKS:
+                log.warning("Link %s is not custom, can't recreate it, this will be automatic at first analysis", link_name)
                 continue
-            params.update(link)
-            ok = ok and self.post("project_links/create", params=params).ok
+            ok = ok and self.post("project_links/create", params={"projectKey": self.key} | {"name": link_name["name"], "url": link_name["url"]}).ok
+        for link_name in [name for name in dict_current if name not in dict_desired]:
+            link_id = next(v["id"] for k, v in link_name if k == link_name)
+            ok = ok and self.post("project_links/delete", params={"id": link_id}).ok
+        self.links()
         return ok
 
     def set_quality_gate(self, quality_gate: str) -> bool:
@@ -1107,35 +1126,26 @@ class Project(components.Component):
     def set_webhooks(self, webhook_data: types.ObjectJsonRepr) -> None:
         """Sets project webhooks
 
-        :param dict webhook_data: JSON describing the webhooks
+        :param list webhook_data: JSON describing the webhooks
         :return: Nothing
         """
         webhooks.import_config(self.endpoint, webhook_data, self.key)
 
-    def set_settings(self, data: types.ObjectJsonRepr) -> None:
+    def set_settings(self, data: list[dict[str, Any]]) -> None:
         """Sets project settings (webhooks, settings, new code period)
 
-        :param dict data: JSON describing the settings
+        :param data: JSON describing the settings
         :return: Nothing
         """
-        log.debug("Setting %s settings with %s", str(self), util.json_dump(data))
-        for key, value in data.items():
+        log.debug("XSetting %s settings with %s", str(self), util.json_dump(data))
+        for key, value in {s["key"]: s["value"] for s in data}.items():
             if key in ("branches", settings.NEW_CODE_PERIOD):
                 continue
             if key == "webhooks":
                 self.set_webhooks(value)
             else:
+                log.debug("Setting 2 %s settings with %s %s", str(self), key, value)
                 settings.set_setting(endpoint=self.endpoint, key=key, value=value, component=self)
-
-        nc = data.get(settings.NEW_CODE_PERIOD, None)
-        if nc is not None:
-            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, nc)
-            settings.set_new_code_period(self.endpoint, nc_type, nc_val, project_key=self.key)
-        # TODO: Update branches (main, new code definition, keepWhenInactive)
-        # log.debug("Checking main branch")
-        # for branch, branch_data in data.get("branches", {}).items():
-        #    if branches.exists(branch_name=branch, project_key=self.key, endpoint=self.endpoint):
-        #        branches.get_object(branch, self, endpoint=self.endpoint).update(branch_data)()
 
     def set_devops_binding(self, data: types.ObjectJsonRepr) -> bool:
         """Sets project devops binding settings
@@ -1256,20 +1266,21 @@ class Project(components.Component):
 
         :param config: JSON of configuration settings
         """
-        if visi := config.get("visibility", None):
+        if (visi := config.get("visibility", None)) is not None:
             self.set_visibility(visi)
         if "permissions" in config:
-            decoded_perms = {
-                p: {u: perms.decode(v) for u, v in config["permissions"][p].items()} for p in perms.PERMISSION_TYPES if p in config["permissions"]
-            }
-            self.set_permissions(decoded_perms)
-        self.set_links(config)
-        self.set_tags(util.csv_to_list(config.get("tags", None)))
+            self.set_permissions(config["permissions"])
+        if "links" in config:
+            self.set_links(config["links"])
+        if (tags := config.get("tags", None)) is not None:
+            self.set_tags(util.csv_to_list(tags))
         self.set_quality_gate(config.get("qualityGate", None))
 
-        for lang, qp_name in config.get("qualityProfiles", {}).items():
-            self.set_quality_profile(language=lang, quality_profile=qp_name)
+        qps = util.list_to_dict(config.get("qualityProfiles", []), "language")
+        for lang, qp_data in qps.items():
+            self.set_quality_profile(language=lang, quality_profile=qp_data["name"])
         if branch_config := config.get("branches", None):
+            branch_config = util.list_to_dict(branch_config, "name")
             try:
                 bname = next(bname for bname, bdata in branch_config.items() if bdata.get("isMain", False))
                 self.rename_main_branch(bname)
@@ -1288,11 +1299,16 @@ class Project(components.Component):
                 log.warning(e.message)
         else:
             log.debug("%s has no devops binding, skipped", str(self))
-        settings_to_apply = {k: v for k, v in config.items() if k not in _SETTINGS_WITH_SPECIFIC_IMPORT}
-        self.set_settings(settings_to_apply)
+
+        if settings_to_apply := config.get("settings"):
+            self.set_settings(settings_to_apply)
+        if nc := config.get(settings.NEW_CODE_PERIOD):
+            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, nc)
+            settings.set_new_code_period(self.endpoint, nc_type, nc_val, project_key=self.key)
         if "aiCodeAssurance" in config:
             log.warning("'aiCodeAssurance' project setting is deprecated, please use '%s' instead", _CONTAINS_AI_CODE)
         self.set_contains_ai_code(config.get(_CONTAINS_AI_CODE, config.get("aiCodeAssurance", False)))
+
         # TODO: Set branch settings See https://github.com/okorach/sonar-tools/issues/1828
 
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:
@@ -1491,15 +1507,16 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     :param KeyList key_list: List of project keys to be considered for the import, defaults to None (all projects)
     :returns: Nothing
     """
-    if "projects" not in config_data:
+    if not (project_data := config_data.get("projects", None)):
         log.info("No projects to import")
         return
     log.info("Importing projects")
     get_list(endpoint=endpoint)
-    nb_projects = len(config_data["projects"])
+    project_data = util.list_to_dict(project_data, "key")
+    nb_projects = len(project_data)
     i = 0
     new_key_list = util.csv_to_list(key_list)
-    for key, data in config_data["projects"].items():
+    for key, data in project_data.items():
         if new_key_list and key not in new_key_list:
             continue
         log.info("Importing project key '%s'", key)

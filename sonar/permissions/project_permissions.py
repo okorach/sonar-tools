@@ -27,6 +27,7 @@ from sonar.util import types
 from sonar.permissions import permissions
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
+import sonar.utilities as util
 
 PROJECT_PERMISSIONS = {
     "user": "Browse",
@@ -50,37 +51,50 @@ class ProjectPermissions(permissions.Permissions):
     def read(self) -> ProjectPermissions:
         """Reads permissions in SonarQube"""
         self.permissions = permissions.NO_PERMISSIONS.copy()
+        perms = {}
         for p in permissions.PERMISSION_TYPES:
-            self.permissions[p] = self._get_api(
+            perms[p] = self._get_api(
                 ProjectPermissions.APIS["get"][p],
                 p,
                 ProjectPermissions.API_GET_FIELD[p],
                 projectKey=self.concerned_object.key,
                 ps=permissions.MAX_PERMS,
             )
+        self.permissions = permissions.dict_to_list(perms)
         # Hack: SonarQube returns application/portfoliocreator even for objects that don't have this permission
         # so these perms needs to be removed manually
         self.white_list(tuple(PROJECT_PERMISSIONS.keys()))
-        self.permissions = {p: k for p, k in self.permissions.items() if k and len(k) > 0}
+        self.permissions = [p for p in self.permissions if len(p["permissions"]) > 0]
         return self
 
     def _set_perms(
-        self, new_perms: types.JsonPermissions, apis: dict[str, dict[str, str]], field: dict[str, str], diff_func: Callable, **kwargs
+        self, new_perms: list[types.PermissionDef], apis: dict[str, dict[str, str]], field: dict[str, str], diff_func: Callable, **kwargs
     ) -> ProjectPermissions:
-        log.debug("Setting %s with %s", str(self), str(new_perms))
+        log.info("Setting %s with %s", self, new_perms)
         if self.permissions is None:
             self.read()
-        for p in permissions.PERMISSION_TYPES:
-            to_remove = diff_func(self.permissions.get(p, {}), new_perms.get(p, {}))
-            if p == "users" and "admin" in to_remove:
+        # Remove all permissions of users or groups that are not in the new permissions
+        for old_perm in self.permissions:
+            ptype = "group" if "group" in old_perm else "user"
+            atype = f"{ptype}s"
+            is_in_new = any(new_perm.get(ptype, "") == old_perm[ptype] for new_perm in new_perms)
+            if not is_in_new:
+                self._post_api(apis["remove"][atype], field[atype], old_perm[ptype], old_perm["permissions"], **kwargs)
+        # Add or modify permissions of users or groups that are in the new permissions
+        for new_perm in new_perms:
+            ptype = "group" if "group" in new_perm else "user"
+            atype = f"{ptype}s"
+            current_perm: list[str] = next((p["permissions"] for p in self.permissions if p.get(ptype) == new_perm[ptype]), [])
+            to_remove = util.difference(current_perm, new_perm["permissions"])
+            to_add = util.difference(new_perm["permissions"], current_perm)
+            if ptype == "user" and new_perm[ptype] == "admin" and "admin" in to_remove:
                 # Don't remove admin permission to the admin user, this is not possible anyway
-                to_remove["admin"] = [v for v in to_remove["admin"] if v != "admin"]
-            self._post_api(apis["remove"][p], field[p], to_remove, **kwargs)
-            to_add = diff_func(new_perms.get(p, {}), self.permissions.get(p, {}))
-            self._post_api(apis["add"][p], field[p], to_add, **kwargs)
+                to_remove.remove("admin")
+            self._post_api(apis["remove"][atype], field[atype], new_perm[ptype], to_remove, **kwargs)
+            self._post_api(apis["add"][atype], field[atype], new_perm[ptype], to_add, **kwargs)
         return self.read()
 
-    def set(self, new_perms: types.JsonPermissions) -> ProjectPermissions:
+    def set(self, new_perms: list[types.PermissionDef]) -> ProjectPermissions:
         """Sets permissions of a project
 
         :param JsonPermissions new_perms: New permissions to apply

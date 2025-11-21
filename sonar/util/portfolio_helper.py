@@ -73,7 +73,7 @@ def convert_portfolio_json(old_json: dict[str, Any]) -> dict[str, Any]:
     return util.order_keys(new_json, "key", "name", "visibility", "projectSelection", "applications", "portfolios", "permissions")
 
 
-def convert_portfolios_json(old_json: dict[str, Any]) -> dict[str, Any]:
+def convert_portfolios_json(old_json: dict[str, Any]) -> list[dict[str, Any]]:
     """Converts the sonar-config portfolios old JSON report format to the new one"""
     for k, v in old_json.items():
         old_json[k] = convert_portfolio_json(v)

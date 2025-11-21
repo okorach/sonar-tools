@@ -106,27 +106,31 @@ class PermissionTemplate(sqobject.SqObject):
         """Returns whether a template is the default for portfolios"""
         return self.is_default_for("VW")
 
-    def set_permissions(self, perms: types.ObjectJsonRepr) -> PermissionTemplate:
+    def set_permissions(self, perms: list[types.PermissionDef]) -> template_permissions.TemplatePermissions:
         """Sets the permissions of a permission template"""
-        if perms is None or len(perms) == 0:
-            return self
+        log.debug("Setting %s permissions with %s", str(self), str(perms))
         return self.permissions().set(perms)
 
     def update(self, **pt_data) -> PermissionTemplate:
         """Updates a permission template"""
+        log.debug("Updating %s with %s", str(self), str(pt_data))
         params = {"id": self.key}
         # Hack: On SQ 8.9 if you pass all params otherwise SQ does NPE
-        params["name"] = pt_data.get("name", self.name if self.name else "")
-        params["description"] = pt_data.get("description", self.description if self.description else "")
-        params["projectKeyPattern"] = pt_data.get("pattern", self.project_key_pattern)
-        log.info("Updating %s with %s", str(self), str(params))
+
+        for k, v in {"name": "name", "description": "description", "pattern": "projectKeyPattern"}.items():
+            if k in pt_data:
+                params[v] = pt_data[k]
+
+        log.debug("Updating %s with params %s", str(self), str(params))
         self.post(_UPDATE_API, params=params)
-        _MAP.pop(self.name, None)
-        self.name = params["name"]
-        _MAP[self.name] = self.key
-        self.description = params["description"]
-        self.project_key_pattern = params["projectKeyPattern"]
-        self.permissions().set(pt_data.get("permissions", None))
+        if "name" in pt_data and pt_data["name"] != self.name:
+            _MAP.pop(self.name, None)
+            self.name = params["name"]
+            _MAP[self.name] = self.key
+        self.description = params.get("description", self.description)
+        self.project_key_pattern = params.get("projectKeyPattern", self.project_key_pattern)
+        if "permissions" in pt_data:
+            self.permissions().set(pt_data["permissions"])
         return self
 
     def permissions(self) -> template_permissions.TemplatePermissions:
@@ -278,13 +282,14 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> i
     """Imports sonar-conmfig JSON as permission templates
     :return: Number of permission templates imported sucessfully
     """
-    if "permissionTemplates" not in config_data:
+    if not (config_data := config_data.get("permissionTemplates", None)):
         log.info("No permissions templates in config, skipping import...")
         return 0
     log.info("Importing permission templates")
     get_list(endpoint)
     count = 0
-    for name, data in config_data["permissionTemplates"].items():
+    config_data = utilities.list_to_dict(config_data, "key")
+    for name, data in config_data.items():
         utilities.json_dump_debug(data, f"Importing: {name}:")
         o = create_or_update(endpoint=endpoint, name=name, data=data)
         count += 1

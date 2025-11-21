@@ -340,7 +340,7 @@ class QualityProfile(sq.SqObject):
             return False
         current_rules = list(self.rules(use_cache=False).keys())
         ruleset_d = {r["key"]: r for r in ruleset}
-        log.info("%s: Setting rules %s", self, util.json_dump(ruleset_d))
+        log.debug("%s: Setting rules %s", self, util.json_dump(ruleset_d))
         keys_to_activate = util.difference(list(ruleset_d.keys()), current_rules)
         rules_to_activate = [ruleset_d[k] for k in keys_to_activate]
         rules_to_deactivate = util.difference(current_rules, list(ruleset_d.keys()))
@@ -829,20 +829,22 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     :param dict config_data: the configuration to import
     :return: Whether the operation succeeded
     """
-    if "qualityProfiles" not in config_data:
+    if not (qps_data := config_data.get("qualityProfiles", None)):
         log.info("No quality profiles to import")
         return False
     log.info("Importing quality profiles")
     get_list(endpoint=endpoint)
 
+    qps_data = util.list_to_dict(qps_data, "language")
     with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="QPImport") as executor:
         futures, futures_map = [], {}
-        for lang, lang_data in config_data["qualityProfiles"].items():
+        for lang, lang_data in qps_data.items():
+            lang_data = util.list_to_dict(lang_data["profiles"], "name")
             if not languages.exists(endpoint=endpoint, language=lang):
                 log.warning("Language '%s' does not exist, quality profiles import skipped for this language", lang)
                 continue
-            for name, qp_data in lang_data.items():
-                futures.append(future := executor.submit(import_qp, endpoint, name, lang, qp_data))
+            for name, qps_data in lang_data.items():
+                futures.append(future := executor.submit(import_qp, endpoint, name, lang, qps_data))
                 futures_map[future] = f"quality profile '{name}' of language '{lang}'"
         for future in concurrent.futures.as_completed(futures):
             qp = futures_map[future]

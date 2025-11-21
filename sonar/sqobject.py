@@ -45,7 +45,7 @@ class SqObject(object):
     def __init__(self, endpoint: object, key: str) -> None:
         if not self.__class__.CACHE:
             self.__class__.CACHE.set_class(self.__class__)
-        self.key: Optional[str] = key  #: Object unique key (unique in its class)
+        self.key: str = key  #: Object unique key (unique in its class)
         self.endpoint: object = endpoint  #: Reference to the SonarQube platform
         self.concerned_object: Optional[object] = None
         self._tags: Optional[list[str]] = None

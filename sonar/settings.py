@@ -70,6 +70,7 @@ _SQ_INTERNAL_SETTINGS = (
     "sonar.core.id",
     "sonar.core.startTime",
     "sonar.plsql.jdbc.driver.class",
+    "sonar.documentation.baseUrl",
 )
 
 _SC_INTERNAL_SETTINGS = (
@@ -195,11 +196,12 @@ class Setting(sqobject.SqObject):
             self.inherited = True
         return self.inherited
 
-    def reload(self, data: types.ApiPayload) -> None:
+    def reload(self, data: Optional[types.ApiPayload] = None) -> None:
         """Reloads a Setting with JSON returned from Sonar API"""
         if not data:
             return
-        self.multi_valued = data.get("multiValues", False)
+        if self.multi_valued is None:
+            self.multi_valued = data.get("multiValues")
         if self.key == NEW_CODE_PERIOD:
             self.value = new_code_to_string(data)
         elif self.key == MQR_ENABLED:
@@ -256,6 +258,10 @@ class Setting(sqobject.SqObject):
             log.warning("GitHub URL (%s) cannot be set, skipping this setting", self.key)
             return False
 
+        if self.multi_valued and isinstance(value, str):
+            value = util.csv_to_list(value)
+        if not self.multi_valued and isinstance(value, list):
+            value = util.list_to_csv(value)
         log.debug("Setting %s to value '%s'", str(self), str(value))
         params = {"key": self.key, "component": self.component.key if self.component else None} | encode(self, value)
         try:
@@ -372,13 +378,13 @@ class Setting(sqobject.SqObject):
 
 def get_object(endpoint: pf.Platform, key: str, component: Optional[object] = None) -> Setting:
     """Returns a Setting object from its key and, optionally, component"""
-    o = Setting.CACHE.get(key, component, endpoint.local_url)
+    o = Setting.CACHE.get(key, component.key if component else None, endpoint.local_url)
     if not o:
         get_all(endpoint, component)
-    return Setting.CACHE.get(key, component, endpoint.local_url)
+    return Setting.CACHE.get(key, component.key if component else None, endpoint.local_url)
 
 
-def __get_settings(endpoint: pf.Platform, data: types.ApiPayload, component: Optional[object] = None) -> dict[str, Setting]:
+def __get_settings(endpoint: pf.Platform, data: types.ApiPayload, component: Optional[sqobject.SqObject] = None) -> dict[str, Setting]:
     """Returns settings of the global platform or a specific component object (Project, Branch, App, Portfolio)"""
     settings = {}
     settings_type_list = ["settings"]
@@ -390,11 +396,14 @@ def __get_settings(endpoint: pf.Platform, data: types.ApiPayload, component: Opt
         log.debug("Looking at %s", setting_type)
         for s in data.get(setting_type, {}):
             (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
-            o = Setting(endpoint=endpoint, key=key, component=component, data=None)
+            o: Optional[Setting] = Setting.CACHE.get(key, component.key if component else None, endpoint.local_url)
+            if not o:
+                o = Setting(endpoint=endpoint, key=key, component=component, data=sdata)
+            else:
+                o.reload(sdata)
             if o.is_internal():
                 log.debug("Skipping internal setting %s", s["key"])
                 continue
-            o = Setting.load(key=key, endpoint=endpoint, component=component, data=sdata)
             settings[o.key] = o
     return settings
 
@@ -418,6 +427,7 @@ def get_bulk(
         params["keys"] = util.list_to_csv(settings_list)
 
     data = json.loads(endpoint.get(Setting.API[c.GET], params=params, with_organization=(component is None)).text)
+    log.debug("DATA FROM GET BULK %s", util.json_dump(data))
     settings_dict |= __get_settings(endpoint, data, component)
 
     # Hack since projects.default.visibility is not returned by settings/list_definitions
