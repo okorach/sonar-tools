@@ -70,7 +70,7 @@ class ProjectPermissions(permissions.Permissions):
     def _set_perms(
         self, new_perms: list[types.PermissionDef], apis: dict[str, dict[str, str]], field: dict[str, str], diff_func: Callable, **kwargs
     ) -> ProjectPermissions:
-        log.info("Setting %s with %s", self, util.json_dump(new_perms))
+        log.info("Setting %s with %s", self, new_perms)
         if self.permissions is None:
             self.read()
         # Remove all permissions of users or groups that are not in the new permissions
