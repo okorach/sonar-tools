@@ -195,6 +195,7 @@ class Portfolio(aggregations.Aggregation):
         for data in self.sq_json["subViews"]:
             if data["qualifier"] in ("VW", "SVW"):
                 self.load_sub_portfolio(data.copy())
+        self._sub_portfolios = dict(sorted(self._sub_portfolios.items()))
 
     def load_selection_mode(self) -> None:
         """Loads the portfolio selection mode"""
@@ -204,7 +205,10 @@ class Portfolio(aggregations.Aggregation):
         branch = self.sq_json.get("branch", c.DEFAULT_BRANCH)
         if mode == _SELECTION_MODE_MANUAL:
             self._selection_mode = {mode: {}}
-            for projdata in self.sq_json.get("selectedProjects", {}):
+            if not (sprojects := self.sq_json.get("selectedProjects")):
+                return
+            selected_projects = dict(sorted(util.list_to_dict(sprojects, "projectKey", keep_in_values=True).items()))
+            for projdata in selected_projects.values():
                 branch_list = projdata.get("selectedBranches", [c.DEFAULT_BRANCH])
                 self._selection_mode[mode].update({projdata["projectKey"]: set(branch_list)})
         elif mode == _SELECTION_MODE_REGEXP:
