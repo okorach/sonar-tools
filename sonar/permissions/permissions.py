@@ -420,12 +420,8 @@ def list_to_dict(perms: list[types.PermissionDef]) -> dict[str, dict[str, list[s
 def dict_to_list(perms: dict[str, Any]) -> list[types.PermissionDef]:
     """Converts permissions in dict format to list format"""
     converted = []
-    log.debug("Converting permissions in dict format to list format %s", perms)
     for ptype in [p for p in PERMISSION_TYPES if p in perms]:
-        log.debug("Converting permissions for %s", perms[ptype])
         ptype_perms = [{ptype[:-1]: k, "permissions": v} for k, v in perms[ptype].items()]
-        log.debug("Converting permissions for %s to list format %s", ptype, ptype_perms)
         if len(ptype_perms) > 0:
-            log.debug("Converting permissions for %s to list format %s", ptype, ptype_perms)
             converted += ptype_perms
     return converted
