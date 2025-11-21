@@ -1148,16 +1148,6 @@ class Project(components.Component):
                 log.debug("Setting 2 %s settings with %s", str(self), key, value)
                 settings.set_setting(endpoint=self.endpoint, key=key, value=value, component=self)
 
-        nc = data.get(settings.NEW_CODE_PERIOD)
-        if nc is not None:
-            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, nc)
-            settings.set_new_code_period(self.endpoint, nc_type, nc_val, project_key=self.key)
-        # TODO: Update branches (main, new code definition, keepWhenInactive)
-        # log.debug("Checking main branch")
-        # for branch, branch_data in data.get("branches", {}).items():
-        #    if branches.exists(branch_name=branch, project_key=self.key, endpoint=self.endpoint):
-        #        branches.get_object(branch, self, endpoint=self.endpoint).update(branch_data)()
-
     def set_devops_binding(self, data: types.ObjectJsonRepr) -> bool:
         """Sets project devops binding settings
 
@@ -1313,9 +1303,13 @@ class Project(components.Component):
         settings_to_apply = {k: v for k, v in config.items() if k not in _SETTINGS_WITH_SPECIFIC_IMPORT}
         if settings_to_apply := config.get("settings"):
             self.set_settings(settings_to_apply)
+        if nc := config.get(settings.NEW_CODE_PERIOD):
+            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, nc)
+            settings.set_new_code_period(self.endpoint, nc_type, nc_val, project_key=self.key)
         if "aiCodeAssurance" in config:
             log.warning("'aiCodeAssurance' project setting is deprecated, please use '%s' instead", _CONTAINS_AI_CODE)
         self.set_contains_ai_code(config.get(_CONTAINS_AI_CODE, config.get("aiCodeAssurance", False)))
+
         # TODO: Set branch settings See https://github.com/okorach/sonar-tools/issues/1828
 
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:
