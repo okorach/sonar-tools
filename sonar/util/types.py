@@ -30,7 +30,7 @@ ObjectJsonRepr = dict[str, Any]
 
 ApiParams = Optional[dict[str, str]]
 
-ApiPayload = Optional[dict[str, Any]]
+ApiPayload = dict[str, Any]
 
 KeyList = Optional[list[str]]
 
