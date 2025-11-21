@@ -76,10 +76,11 @@ _IMPORTABLE_PROPERTIES = (
     "visibility",
     "permissions",
     "projects",
-    "projectsList",
+    "projectSelection",
+    "applications",
     "portfolios",
     "subPortfolios",
-    "applications",
+    "projectsList",
 )
 
 
@@ -363,7 +364,7 @@ class Portfolio(aggregations.Aggregation):
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Returns the portfolio representation as JSON"""
         self.refresh()
-        json_data = {"key": self.key, "name": self.name}
+        json_data: types.ObjectJsonRepr = {"key": self.key, "name": self.name}
         if self._description:
             json_data["description"] = self._description
         subportfolios = self.sub_portfolios()
@@ -399,7 +400,7 @@ class Portfolio(aggregations.Aggregation):
             self._permissions = pperms.PortfolioPermissions(self)
         return self._permissions
 
-    def set_permissions(self, portfolio_perms: dict[str, str]) -> None:
+    def set_permissions(self, portfolio_perms: list[types.PermissionDef]) -> None:
         """Sets a portfolio permissions described as JSON"""
         if not self.is_sub_portfolio():
             # No permissions for SVW
@@ -485,17 +486,17 @@ class Portfolio(aggregations.Aggregation):
             self._selection_mode = {}
         return self
 
-    def set_selection_mode(self, data: dict[str, str]) -> Portfolio:
+    def set_selection_mode(self, data: dict[str, Any]) -> Portfolio:
         """Sets a portfolio selection mode"""
-        params = data.get("projects", {})
+        params = data
         log.info("Setting %s selection mode params %s", str(self), str(params))
-        branch = params.get("branch", None)
+        branch = params.get("branch")
         if _SELECTION_MODE_MANUAL.lower() in params:
-            projs = params[_SELECTION_MODE_MANUAL.lower()]
             self.set_manual_mode()
-            self.add_projects(set(projs.keys()))
-            for p, b in projs.items():
-                self.add_project_branches(p, set(util.csv_to_list(b)))
+            projs_data = {p["key"]: p.get("branches", [c.DEFAULT_BRANCH]) for p in params[_SELECTION_MODE_MANUAL.lower()]}
+            self.add_projects(set(projs_data.keys()))
+            for p, b in projs_data.items():
+                self.add_project_branches(p, b)
         elif _SELECTION_MODE_TAGS.lower() in params:
             self.set_tags_mode(params[_SELECTION_MODE_TAGS.lower()], branch)
         elif _SELECTION_MODE_REGEXP.lower() in params:
@@ -601,9 +602,8 @@ class Portfolio(aggregations.Aggregation):
         log.debug("%s projects list = %s", str(self), str(proj_key_list))
         return proj_key_list
 
-    def update(self, data: dict[str, str], recurse: bool) -> None:
+    def update(self, data: dict[str, Any], recurse: bool) -> None:
         """Updates a portfolio with sonar-config JSON data, if recurse is true, this recurses in sub portfolios"""
-        log.debug("Updating %s with %s", str(self), util.json_dump(data))
         if "byReference" in data and data["byReference"]:
             log.debug("Skipping setting portfolio details, it's a reference")
             return
@@ -613,12 +613,14 @@ class Portfolio(aggregations.Aggregation):
         self.set_name(data.get("name", None))
         self.set_visibility(data.get("visibility", None))
         if "permissions" in data:
-            self.set_permissions(perms.decode_full(data["permissions"]))
+            self.set_permissions(data["permissions"])
         log.debug("1.Setting root of %s is %s", str(self), str(self.root_portfolio))
-        self.set_selection_mode(data)
-        for app_key, branches in data.get("applications", {}).items():
-            for branch in util.csv_to_list(branches):
-                self.add_application_branch(app_key=app_key, branch=branch)
+        if "projectSelection" in data:
+            self.set_selection_mode(data["projectSelection"])
+        if "applications" in data:
+            for app_key, branches in {a["key"]: a.get("branches", [c.DEFAULT_BRANCH]) for a in data["applications"]}.items():
+                for branch in util.csv_to_list(branches):
+                    self.add_application_branch(app_key=app_key, branch=branch)
         if not recurse:
             return
 
@@ -628,7 +630,9 @@ class Portfolio(aggregations.Aggregation):
         key_list = []
         if subps:
             key_list = list(subps.keys())
-        subportfolios_json = data.get("portfolios", data.get("subPortfolios", {}))
+        if not data.get("portfolios"):
+            return
+        subportfolios_json = util.list_to_dict(data["portfolios"], "key")
         for key, subp_data in subportfolios_json.items():
             log.info("Processing subportfolio %s", key)
             if subp_data.get("byReference", False):
