@@ -855,7 +855,7 @@ def order_keys(original_dict: dict[str, any], *keys: str) -> dict[str, any]:
     return ordered_dict
 
 
-def order_dict(d: dict[str, Any], key_order: list[str]) -> dict[str, Any]:
+def order_dict(d: dict[str, Any], key_order: tuple[str, ...]) -> dict[str, Any]:
     """Orders keys of a dictionary in a given order"""
     new_d = {k: d[k] for k in key_order if k in d}
     return new_d | {k: v for k, v in d.items() if k not in new_d}
