@@ -196,11 +196,12 @@ class Setting(sqobject.SqObject):
             self.inherited = True
         return self.inherited
 
-    def reload(self, data: types.ApiPayload) -> None:
+    def reload(self, data: Optional[types.ApiPayload] = None) -> None:
         """Reloads a Setting with JSON returned from Sonar API"""
         if not data:
             return
-        self.multi_valued = data.get("multiValues", False)
+        if self.multi_valued is None:
+            self.multi_valued = data.get("multiValues")
         if self.key == NEW_CODE_PERIOD:
             self.value = new_code_to_string(data)
         elif self.key == MQR_ENABLED:
@@ -257,6 +258,10 @@ class Setting(sqobject.SqObject):
             log.warning("GitHub URL (%s) cannot be set, skipping this setting", self.key)
             return False
 
+        if self.multi_valued and isinstance(value, str):
+            value = util.csv_to_list(value)
+        if not self.multi_valued and isinstance(value, list):
+            value = util.list_to_csv(value)
         log.debug("Setting %s to value '%s'", str(self), str(value))
         params = {"key": self.key, "component": self.component.key if self.component else None} | encode(self, value)
         try:

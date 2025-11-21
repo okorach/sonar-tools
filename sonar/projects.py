@@ -1138,13 +1138,13 @@ class Project(components.Component):
         :return: Nothing
         """
         log.debug("XSetting %s settings with %s", str(self), util.json_dump(data))
-        for key, value in util.list_to_dict(data, "key").items():
+        for key, value in {s["key"]: s["value"] for s in data}.items():
             if key in ("branches", settings.NEW_CODE_PERIOD):
                 continue
             if key == "webhooks":
                 self.set_webhooks(value)
             else:
-                log.debug("Setting 2 %s settings with %s", str(self), key, value)
+                log.debug("Setting 2 %s settings with %s %s", str(self), key, value)
                 settings.set_setting(endpoint=self.endpoint, key=key, value=value, component=self)
 
     def set_devops_binding(self, data: types.ObjectJsonRepr) -> bool:
@@ -1299,7 +1299,7 @@ class Project(components.Component):
                 log.warning(e.message)
         else:
             log.debug("%s has no devops binding, skipped", str(self))
-        
+
         if settings_to_apply := config.get("settings"):
             self.set_settings(settings_to_apply)
         if nc := config.get(settings.NEW_CODE_PERIOD):
