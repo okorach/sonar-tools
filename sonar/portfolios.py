@@ -195,6 +195,7 @@ class Portfolio(aggregations.Aggregation):
         for data in self.sq_json["subViews"]:
             if data["qualifier"] in ("VW", "SVW"):
                 self.load_sub_portfolio(data.copy())
+        self._sub_portfolios = dict(sorted(self._sub_portfolios.items()))
 
     def load_selection_mode(self) -> None:
         """Loads the portfolio selection mode"""
