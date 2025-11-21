@@ -1043,11 +1043,10 @@ class Project(components.Component):
             self._permissions = pperms.ProjectPermissions(self)
         return self._permissions
 
-    def set_permissions(self, desired_permissions: types.ObjectJsonRepr) -> bool:
+    def set_permissions(self, desired_permissions: list[types.PermissionDef]) -> bool:
         """Sets project permissions
 
-        :param desired_permissions: dict describing permissions
-        :type desired_permissions: dict
+        :param desired_permissions: List of permissions
         :return: Nothing
         """
         return self.permissions().set(desired_permissions)
