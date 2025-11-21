@@ -1299,7 +1299,7 @@ class Project(components.Component):
                 log.warning(e.message)
         else:
             log.debug("%s has no devops binding, skipped", str(self))
-        settings_to_apply = {k: v for k, v in config.items() if k not in _SETTINGS_WITH_SPECIFIC_IMPORT}
+        
         if settings_to_apply := config.get("settings"):
             self.set_settings(settings_to_apply)
         if nc := config.get(settings.NEW_CODE_PERIOD):
