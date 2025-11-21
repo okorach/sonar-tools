@@ -74,4 +74,4 @@ def convert_global_settings_json(old_json: dict[str, Any], full: bool = False) -
 
     new_json = common_json_helper.convert_common_fields(new_json)
 
-    return util.order_dict(new_json, [*settings.CATEGORIES, "permissions", "permissionTemplates"])
+    return util.order_dict(new_json, *settings.CATEGORIES, "permissions", "permissionTemplates")
