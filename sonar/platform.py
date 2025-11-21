@@ -524,7 +524,6 @@ class Platform(object):
         count += sum(1 if self.set_setting(k, v) else 0 for k, v in flat_settings.items())
 
         try:
-            # wh_data = util.list_to_dict(config_data["webhooks"], "name")
             self.set_webhooks(config_data["webhooks"])
             count += len(config_data["webhooks"])
         except KeyError:

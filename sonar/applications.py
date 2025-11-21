@@ -36,7 +36,7 @@ import sonar.platform as pf
 from sonar.util import types, cache
 
 from sonar import exceptions, projects, branches, app_branches
-from sonar.permissions import permissions, application_permissions
+from sonar.permissions import application_permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
 import sonar.utilities as util
@@ -406,11 +406,11 @@ class Application(aggr.Aggregation):
         self.add_projects(_project_list(data))
         self.set_tags(util.csv_to_list(data.get("tags", [])))
 
-        app_branches: list[types.AppBranchDef] = data.get("branches", [])
-        main_branch_name = next((e["name"] for e in app_branches if e.get("isMain", False)), None)
+        appl_branches: list[types.AppBranchDef] = data.get("branches", [])
+        main_branch_name = next((e["name"] for e in appl_branches if e.get("isMain", False)), None)
         main_branch_name is None or self.main_branch().rename(main_branch_name)
 
-        for branch_data in app_branches:
+        for branch_data in appl_branches:
             self.set_branches(branch_data["name"], branch_data.get("projects", []))
 
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:
@@ -598,13 +598,13 @@ def convert_app_json(old_app_json: dict[str, Any]) -> dict[str, Any]:
     for br, data in new_json["branches"].items():
         if "projects" not in data:
             continue
-        new_json["branches"][br] = util.order_dict(data, ["name", "isMain", "projects"])
+        new_json["branches"][br] = util.order_dict(data, "name", "isMain", "projects")
         new_json["branches"][br]["projects"] = util.dict_to_list(new_json["branches"][br]["projects"], "key", "branch")
         for proj_data in new_json["branches"][br]["projects"]:
             if proj_data.get("branch", None) in ("__default__", c.DEFAULT_BRANCH):
                 proj_data.pop("branch")
     new_json["branches"] = util.sort_list_by_key(util.dict_to_list(new_json["branches"], "name"), "name", "isMain")
-    return util.order_dict(new_json, ["key", "name", "visibility", "tags", "branches", "permissions"])
+    return util.order_dict(new_json, "key", "name", "visibility", "tags", "branches", "permissions")
 
 
 def convert_apps_json(old_json: dict[str, Any]) -> dict[str, Any]:
