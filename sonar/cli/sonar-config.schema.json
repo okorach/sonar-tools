@@ -454,6 +454,10 @@
                         "type": "string",
                         "description": "The project name"
                     },
+                    "newCodePeriod": {
+                        "type": "string",
+                        "description": "The project new code period definition"
+                    },
                     "visibility": {
                         "type": "string",
                         "enum": [

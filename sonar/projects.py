@@ -32,7 +32,7 @@ import concurrent.futures
 from datetime import datetime
 import traceback
 
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from http import HTTPStatus
 from threading import Lock
 from requests import HTTPError, RequestException
@@ -73,16 +73,16 @@ ZIP_EXCEPTION = "FAILED/EXCEPTION"
 _IMPORTABLE_PROPERTIES = (
     "key",
     "name",
-    "binding",
     settings.NEW_CODE_PERIOD,
-    "qualityProfiles",
-    "links",
-    "permissions",
-    "branches",
-    "tags",
-    "visibility",
     "qualityGate",
+    "qualityProfiles",
+    "branches",
+    "binding",
+    "visibility",
+    "permissions",
+    "tags",
     "webhooks",
+    "links",
     phelp.AI_CODE_FIX,
 )
 
@@ -938,8 +938,7 @@ class Project(components.Component):
         # If there is only 1 branch with no specific config except being main, don't return anything
         if len(branch_data) == 0 or (len(branch_data) == 1 and "main" in branch_data and len(branch_data["main"]) <= 1):
             return None
-
-        main_br = {k: v for k, v in branch_data.items() if v.get("isMain")}
+        main_br = {k: v for k, v in branch_data.items() if v and v.get("isMain")}
         return main_br | branch_data
 
     def migration_export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
@@ -968,7 +967,6 @@ class Project(components.Component):
         """Exports the entire project configuration as JSON
 
         :return: All project configuration settings
-        :rtype: dict
         """
         log.info("Exporting %s", str(self))
         json_data = self.sq_json.copy()
@@ -1011,15 +1009,19 @@ class Project(components.Component):
             with_inherited = export_settings.get("INCLUDE_INHERITED", False)
             json_data["settings"] = {}
             settings_to_export = {k: s for k, s in settings_dict.items() if with_inherited or not s.inherited and s.key != "visibility"}
-            for s in settings_to_export.values():
-                json_data["settings"] |= s.to_json()
+            for key, s in settings_to_export.items():
+                json_setting = s.to_json()
+                if key == settings.NEW_CODE_PERIOD:
+                    json_data[settings.NEW_CODE_PERIOD] = json_setting[settings.NEW_CODE_PERIOD]
+                else:
+                    json_data["settings"] |= json_setting
             log.debug("Exporting %s done, returning %s", str(self), util.json_dump(json_data))
         except Exception as e:
             traceback.print_exc()
             util.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
-            json_data["error"] = f"{util.error_msg(e)} while exporting project"
+            json_data["ERROR"] = f"{util.error_msg(e)} while exporting project"
 
-        return json_data
+        return util.order_dict(json_data, _IMPORTABLE_PROPERTIES)
 
     def new_code(self) -> str:
         """
@@ -1029,6 +1031,7 @@ class Project(components.Component):
         if self._new_code is None:
             new_code = settings.Setting.read(settings.NEW_CODE_PERIOD, self.endpoint, component=self)
             self._new_code = new_code.value if new_code else ""
+            log.info("%s new code is %s", self, self._new_code)
         return self._new_code
 
     def permissions(self) -> pperms.ProjectPermissions:
@@ -1129,22 +1132,23 @@ class Project(components.Component):
         """
         webhooks.import_config(self.endpoint, webhook_data, self.key)
 
-    def set_settings(self, data: types.ObjectJsonRepr) -> None:
+    def set_settings(self, data: list[dict[str, Any]]) -> None:
         """Sets project settings (webhooks, settings, new code period)
 
-        :param dict data: JSON describing the settings
+        :param data: JSON describing the settings
         :return: Nothing
         """
-        log.debug("Setting %s settings with %s", str(self), util.json_dump(data))
-        for key, value in data.items():
+        log.debug("XSetting %s settings with %s", str(self), util.json_dump(data))
+        for key, value in util.list_to_dict(data, "key").items():
             if key in ("branches", settings.NEW_CODE_PERIOD):
                 continue
             if key == "webhooks":
                 self.set_webhooks(value)
             else:
+                log.debug("Setting 2 %s settings with %s", str(self), key, value)
                 settings.set_setting(endpoint=self.endpoint, key=key, value=value, component=self)
 
-        nc = data.get(settings.NEW_CODE_PERIOD, None)
+        nc = data.get(settings.NEW_CODE_PERIOD)
         if nc is not None:
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, nc)
             settings.set_new_code_period(self.endpoint, nc_type, nc_val, project_key=self.key)
@@ -1307,7 +1311,8 @@ class Project(components.Component):
         else:
             log.debug("%s has no devops binding, skipped", str(self))
         settings_to_apply = {k: v for k, v in config.items() if k not in _SETTINGS_WITH_SPECIFIC_IMPORT}
-        self.set_settings(settings_to_apply)
+        if settings_to_apply := config.get("settings"):
+            self.set_settings(settings_to_apply)
         if "aiCodeAssurance" in config:
             log.warning("'aiCodeAssurance' project setting is deprecated, please use '%s' instead", _CONTAINS_AI_CODE)
         self.set_contains_ai_code(config.get(_CONTAINS_AI_CODE, config.get("aiCodeAssurance", False)))
