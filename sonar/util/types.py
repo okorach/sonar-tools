@@ -28,7 +28,7 @@ ObjectFilter = dict[str, str]
 
 ObjectJsonRepr = dict[str, Any]
 
-ApiParams = Optional[dict[str, str]]
+ApiParams = dict[str, Any]
 
 ApiPayload = dict[str, Any]
 
