@@ -33,7 +33,12 @@ import sonar.utilities as util
 import sonar.util.constants as c
 
 #: DevOps platform types in SonarQube
-DEVOPS_PLATFORM_TYPES = ("github", "azure", "bitbucket", "bitbucketcloud", "gitlab")
+DEVOPS_AZURE = "azure"
+DEVOPS_BITBUCKET = "bitbucket"
+DEVOPS_BITBUCKET_CLOUD = "bitbucketcloud"
+DEVOPS_GITHUB = "github"
+DEVOPS_GITLAB = "gitlab"
+DEVOPS_PLATFORM_TYPES = (DEVOPS_AZURE, DEVOPS_BITBUCKET, DEVOPS_BITBUCKET_CLOUD, DEVOPS_GITHUB, DEVOPS_GITLAB)
 
 _CREATE_API_GITHUB = "alm_settings/create_github"
 _CREATE_API_GITLAB = "alm_settings/create_gitlab"
@@ -89,21 +94,21 @@ class DevopsPlatform(sq.SqObject):
         """Creates a devops platform"""
         params = {"key": key}
         try:
-            if plt_type == "github":
+            if plt_type == DEVOPS_GITHUB:
                 params.update(dict.fromkeys(("appId", "clientId", "clientSecret", "privateKey"), _TO_BE_SET))
                 params["url"] = url_or_workspace
                 endpoint.post(_CREATE_API_GITHUB, params=params)
-            elif plt_type == "azure":
+            elif plt_type == DEVOPS_AZURE:
                 # TODO: pass secrets on the cmd line
                 params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
                 endpoint.post(_CREATE_API_AZURE, params=params)
-            elif plt_type == "gitlab":
+            elif plt_type == DEVOPS_GITLAB:
                 params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
                 endpoint.post(_CREATE_API_GITLAB, params=params)
-            elif plt_type == "bitbucket":
+            elif plt_type == DEVOPS_BITBUCKET:
                 params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
                 endpoint.post(_CREATE_API_BITBUCKET, params=params)
-            elif plt_type == "bitbucketcloud":
+            elif plt_type == DEVOPS_BITBUCKET_CLOUD:
                 params.update({"clientSecret": _TO_BE_SET, "clientId": _TO_BE_SET, "workspace": url_or_workspace})
                 endpoint.post(_CREATE_API_BBCLOUD, params=params)
         except exceptions.SonarException as e:
@@ -152,7 +157,7 @@ class DevopsPlatform(sq.SqObject):
 
     def set_pat(self, pat: str, user_name: Optional[str] = None) -> bool:
         """Sets the PAT for GitLab, BitBucket and Azure DevOps"""
-        if self.type == "github":
+        if self.type == DEVOPS_GITHUB:
             log.warning("Can't set PAT for GitHub devops platform")
             return False
         return self.post("alm_integrations/set_pat", params={"almSettings": self.key, "pat": pat, "username": user_name}).ok
@@ -171,9 +176,9 @@ class DevopsPlatform(sq.SqObject):
 
         params = {"key": self.key, "url": kwargs["url"]}
         additional = ()
-        if alm_type == "bitbucketcloud":
+        if alm_type == DEVOPS_BITBUCKET_CLOUD:
             additional = ("clientId", "workspace")
-        elif alm_type == "github":
+        elif alm_type == DEVOPS_GITHUB:
             additional = ("clientId", "appId", "privateKey", "clientSecret")
         for k in additional:
             params[k] = kwargs.get(k, _TO_BE_SET)
@@ -265,7 +270,7 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
         try:
             o = DevopsPlatform.read(endpoint, name)
         except exceptions.ObjectNotFound:
-            info = data["workspace"] if data["type"] == "bitbucketcloud" else data["url"]
+            info = data["workspace"] if data["type"] == devops.DEVOPS_BITBUCKET_CLOUD else data["url"]
             try:
                 o = DevopsPlatform.create(key=name, endpoint=endpoint, plt_type=data["type"], url_or_workspace=info)
             except exceptions.UnsupportedOperation as e:
