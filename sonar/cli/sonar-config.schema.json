@@ -456,6 +456,48 @@
                         "type": "string",
                         "description": "The project new code period definition"
                     },
+                    "binding": {
+                        "type": "object",
+                        "description": "DevOps platform binding configuration",
+                        "required": [
+                            "key",
+                            "repository"
+                        ],
+                        "properties": {
+                            "key": {
+                                "type": "string",
+                                "description": "The DevOps platform key"
+                            },
+                            "repository": {
+                                "description": "The repository identifier (can be a string or number)",
+                                "type": "string"
+                            },
+                            "summaryCommentEnabled": {
+                                "type": "boolean",
+                                "description": "Whether summary comments are enabled for GitHub PRs"
+                            },
+                            "monorepo": {
+                                "type": "boolean",
+                                "description": "Whether this is a monorepo project"
+                            },
+                            "slug": {
+                                "type": "string",
+                                "description": "The project repository slug (for Bitbucket Server)"
+                            },
+                            "projectName": {
+                                "type": "string",
+                                "description": "The project name in Azure DevOps"
+                            },
+                            "repositoryName": {
+                                "description": "The repository name in Azure DevOps (can be a string or number)",
+                                "type": "string"
+                            },
+                            "inlineAnnotations": {
+                                "type": "boolean",
+                                "description": "Whether inline annotations are enabled for Azure DevOps PRs"
+                            }
+                        }
+                    },
                     "visibility": {
                         "type": "string",
                         "enum": [
