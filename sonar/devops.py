@@ -270,7 +270,7 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
         try:
             o = DevopsPlatform.read(endpoint, name)
         except exceptions.ObjectNotFound:
-            info = data["workspace"] if data["type"] == devops.DEVOPS_BITBUCKET_CLOUD else data["url"]
+            info = data["workspace"] if data["type"] == DEVOPS_BITBUCKET_CLOUD else data["url"]
             try:
                 o = DevopsPlatform.create(key=name, endpoint=endpoint, plt_type=data["type"], url_or_workspace=info)
             except exceptions.UnsupportedOperation as e:
