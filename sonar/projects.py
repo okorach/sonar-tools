@@ -342,6 +342,7 @@ class Project(components.Component):
                 self._binding = {"has_binding": True, "binding": json.loads(resp.text)}
                 if self._binding["binding"]["alm"] == devops.DEVOPS_AZURE:
                     self._binding["binding"]["projectName"] = self._binding["binding"].pop("slug")
+                self._binding["binding"] = util.order_dict(self._binding["binding"], "key", "repository", "slug", "projectName", "monorepo")
             except exceptions.SonarException:
                 # Hack: 8.9 returns 404, 9.x returns 400
                 self._binding = {"has_binding": False}
@@ -923,6 +924,8 @@ class Project(components.Component):
         if binding:
             binding = binding.copy()
             # Remove redundant fields
+            if binding["alm"] == devops.DEVOPS_GITLAB:
+                binding.pop("summaryCommentEnabled", None)
             binding.pop("alm", None)
             binding.pop("url", None)
             if not binding.get("monorepo", False):
