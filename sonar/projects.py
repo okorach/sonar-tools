@@ -41,7 +41,7 @@ import sonar.logging as log
 import sonar.platform as pf
 
 from sonar.util import types, cache
-from sonar import exceptions, errcodes
+from sonar import exceptions
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops
 import sonar.permissions.permissions as perms
 from sonar import pull_requests, branches
@@ -331,7 +331,7 @@ class Project(components.Component):
             self.binding()
         return self._binding.get("has_binding", False)
 
-    def binding(self) -> Optional[dict[str, str]]:
+    def binding(self) -> Optional[dict[str, Any]]:
         """
         :return: The project DevOps platform binding
         :rtype: dict
@@ -340,11 +340,13 @@ class Project(components.Component):
             try:
                 resp = self.get("alm_settings/get_binding", params={"project": self.key}, mute=(HTTPStatus.NOT_FOUND,))
                 self._binding = {"has_binding": True, "binding": json.loads(resp.text)}
+                if self._binding["binding"]["alm"] == devops.DEVOPS_AZURE:
+                    self._binding["binding"]["projectName"] = self._binding["binding"].pop("slug")
             except exceptions.SonarException:
                 # Hack: 8.9 returns 404, 9.x returns 400
                 self._binding = {"has_binding": False}
         log.debug("%s binding = %s", str(self), str(self._binding.get("binding", None)))
-        return self._binding.get("binding", None)
+        return self._binding.get("binding")
 
     def binding_key(self) -> Optional[str]:
         """Computes a unique project binding key"""
@@ -353,8 +355,10 @@ class Project(components.Component):
         p_bind = self.binding()
         log.debug("%s binding_key = %s", str(self), str(p_bind))
         key = f'{p_bind["alm"]}{_BIND_SEP}{p_bind["repository"]}'
-        if p_bind["alm"] in ("azure", "bitbucket"):
+        if p_bind["alm"] == devops.DEVOPS_BITBUCKET:
             key += f'{_BIND_SEP}{p_bind["slug"]}'
+        elif p_bind["alm"] == devops.DEVOPS_AZURE:
+            key += f'{_BIND_SEP}{p_bind["projectName"]}'
         return key
 
     def is_part_of_monorepo(self) -> bool:
@@ -1162,11 +1166,11 @@ class Project(components.Component):
         mono = binding_data.get("monorepo", False)
         repo = binding_data["repository"]
         try:
-            if alm_type == "github":
+            if alm_type == devops.DEVOPS_GITHUB:
                 self.set_binding_github(alm_key, repository=repo, monorepo=mono, summary_comment=binding_data.get("summaryCommentEnabled", True))
-            elif alm_type == "gitlab":
+            elif alm_type == devops.DEVOPS_GITLAB:
                 self.set_binding_gitlab(alm_key, repository=repo, monorepo=mono)
-            elif alm_type == "azure":
+            elif alm_type == devops.DEVOPS_AZURE:
                 self.set_binding_azure_devops(
                     alm_key,
                     repository=repo,
@@ -1174,9 +1178,9 @@ class Project(components.Component):
                     project_name=binding_data["projectName"],
                     inline_annotations=binding_data.get("inlineAnnotations", False),
                 )
-            elif alm_type == "bitbucket":
+            elif alm_type == devops.DEVOPS_BITBUCKET:
                 self.set_binding_bitbucket_server(alm_key, repository=repo, slug=binding_data["slug"], monorepo=mono)
-            elif alm_type == "bitbucketcloud":
+            elif alm_type == devops.DEVOPS_BITBUCKET_CLOUD:
                 self.set_binding_bitbucket_cloud(alm_key, repository=repo, monorepo=mono)
             else:
                 log.error("Invalid devops platform type '%s' for %s, setting skipped", alm_key, str(self))
