@@ -470,7 +470,14 @@
                             },
                             "repository": {
                                 "description": "The repository identifier (can be a string or number)",
-                                "type": "string"
+                                "oneOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "integer"
+                                    }
+                                ]
                             },
                             "summaryCommentEnabled": {
                                 "type": "boolean",
