@@ -307,8 +307,9 @@ class Rule(sq.SqObject):
         """Returns the JSON corresponding to a rule export"""
         rule = self.to_json()
         d = {"severity": rule.get("severity", ""), "impacts": self.impacts(), "description": self.custom_desc}
-        if len(rule.get("params", {})) > 0:
-            d["params"] = rule["params"] if full else {p["key"]: p.get("defaultValue", "") for p in rule["params"]}
+        if len(rule.get("params", [])) > 0:
+            params = utilities.sort_list_by_key(rule["params"], "key")
+            d["params"] = params if full else {p["key"]: p.get("defaultValue", "") for p in params}
         mapping = {"isTemplate": "isTemplate", "tags": "tags", "lang": "language", "templateKey": "templateKey"}
         d |= {newkey: rule[oldkey] for oldkey, newkey in mapping.items() if oldkey in rule}
         if not d["isTemplate"]:

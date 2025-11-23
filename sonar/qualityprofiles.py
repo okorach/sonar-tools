@@ -407,7 +407,7 @@ class QualityProfile(sq.SqObject):
         """
         json_data = self.sq_json.copy()
         json_data.update({"name": self.name, "language": self.language, "parentName": self.parent_name})
-        full = export_settings.get("FULL_EXPORT", False)
+        full: bool = export_settings.get("FULL_EXPORT", False)
         if not self.is_default:
             json_data.pop("isDefault", None)
         if not self.is_built_in:
@@ -419,6 +419,9 @@ class QualityProfile(sq.SqObject):
                     for k, v in rule.export(full).items()
                     if k not in ("isTemplate", "templateKey", "language", "tags", "severity", "severities", "impacts")
                 }
+                if "params" in data:
+                    data["params"] = dict(sorted(data["params"].items()))
+                log.info("QP RULE EXPORT %s", util.json_dump(data))
                 if self.rule_is_prioritized(rule.key):
                     data["prioritized"] = True
                 if self.rule_has_custom_severity(rule.key):
@@ -799,6 +802,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     for qp in get_list(endpoint=endpoint).values():
         log.info("Exporting %s", str(qp))
         json_data = qp.to_json(export_settings=export_settings)
+        log.info("QPX EXPORT %s", util.json_dump(json_data))
         lang = json_data.pop("language")
         name = json_data.pop("name")
         if lang not in qp_list:
