@@ -1130,7 +1130,7 @@ class Project(components.Component):
         log.warning("No main branch to rename found for %s", str(self))
         return False
 
-    def set_webhooks(self, webhook_data: types.ObjectJsonRepr) -> None:
+    def set_webhooks(self, webhook_data: list[dict[str, str]]) -> None:
         """Sets project webhooks
 
         :param list webhook_data: JSON describing the webhooks
@@ -1148,11 +1148,8 @@ class Project(components.Component):
         for key, value in {s["key"]: s["value"] for s in data}.items():
             if key in ("branches", settings.NEW_CODE_PERIOD):
                 continue
-            if key == "webhooks":
-                self.set_webhooks(value)
-            else:
-                log.debug("Setting 2 %s settings with %s %s", str(self), key, value)
-                settings.set_setting(endpoint=self.endpoint, key=key, value=value, component=self)
+            log.debug("Setting 2 %s settings with %s %s", str(self), key, value)
+            settings.set_setting(endpoint=self.endpoint, key=key, value=value, component=self)
 
     def set_devops_binding(self, binding_data: types.ObjectJsonRepr) -> bool:
         """Sets project devops binding settings
@@ -1279,32 +1276,31 @@ class Project(components.Component):
 
         :param config: JSON of configuration settings
         """
-        if (visi := config.get("visibility", None)) is not None:
-            self.set_visibility(visi)
+        if "visibility" in config:
+            self.set_visibility(config["visibility"])
         if "permissions" in config:
             self.set_permissions(config["permissions"])
         if "links" in config:
             self.set_links(config["links"])
-        if (tags := config.get("tags", None)) is not None:
-            self.set_tags(util.csv_to_list(tags))
-        self.set_quality_gate(config.get("qualityGate", None))
-
-        qps = util.list_to_dict(config.get("qualityProfiles", []), "language")
-        for lang, qp_data in qps.items():
-            self.set_quality_profile(language=lang, quality_profile=qp_data["name"])
-        if branch_config := config.get("branches", None):
-            branch_config = util.list_to_dict(branch_config, "name")
-            try:
-                bname = next(bname for bname, bdata in branch_config.items() if bdata.get("isMain", False))
-                self.rename_main_branch(bname)
-            except StopIteration:
-                log.warning("No main branch defined in %s configuration", self)
-            for branch_name, branch_data in branch_config.items():
+        if "tags" in config:
+            self.set_tags(util.csv_to_list(config["tags"]))
+        if "qualityGate" in config:
+            self.set_quality_gate(config["qualityGate"])
+        if "webhooks" in config:
+            log.info("WH Setting webhooks for %s with %s", str(self), util.json_dump(config["webhooks"]))
+            self.set_webhooks(config["webhooks"])
+        else:
+            log.warning("WH %s has no webhooks, skipped", str(self))
+        if "qualityProfiles" in config:
+            for qp_data in config["qualityProfiles"]:
+                self.set_quality_profile(language=qp_data["language"], quality_profile=qp_data["name"])
+        if "branches" in config:
+            for branch_data in config["branches"]:
                 try:
-                    branch = branches.Branch.get_object(self, branch_name)
+                    branch = branches.Branch.get_object(self, branch_data["name"])
                     branch.import_config(branch_data)
                 except exceptions.ObjectNotFound:
-                    log.warning("Branch '%s' of %s does not exists, can't update its configuuration", branch_name, str(self))
+                    log.warning("Branch '%s' of %s does not exists, can't update its configuration", branch_data["name"], str(self))
         if "binding" in config:
             try:
                 self.set_devops_binding(config["binding"])

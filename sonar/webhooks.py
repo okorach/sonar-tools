@@ -209,9 +209,9 @@ def export(endpoint: pf.Platform, project_key: Optional[str] = None, full: bool 
     return json_data if len(json_data) > 0 else None
 
 
-def import_config(endpoint: pf.Platform, data: types.ObjectJsonRepr, project_key: Optional[str] = None) -> None:
+def import_config(endpoint: pf.Platform, data: list[dict[str, str]], project_key: Optional[str] = None) -> None:
     """Imports a set of webhooks defined from a JSON description"""
-    log.debug("Importing webhooks %s for %s", str(data), str(project_key))
+    log.info("Importing webhooks %s for %s", str(data), str(project_key))
     current_wh = get_list(endpoint, project_key=project_key)
     existing_webhooks = {wh.name: k for k, wh in current_wh.items()}
 
