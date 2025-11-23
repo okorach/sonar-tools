@@ -69,7 +69,7 @@ def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
                         if k in r["impacts"] and r["impacts"][k] != c.DEFAULT
                     }
                 if "params" in r:
-                    r["params"] = util.dict_to_list(r["params"], "key")
+                    r["params"] = util.dict_to_list(dict(sorted(r["params"].items())), "key")
         if "removedRules" in v:
             v["removedRules"] = list(v["removedRules"])
         for rule in v.get("rules", []):

@@ -831,7 +831,7 @@ def similar_strings(key1: str, key2: str, max_distance: int = 5) -> bool:
 
 
 def sort_list_by_key(list_to_sort: list[dict[str, Any]], key: str, priority_field: Optional[str] = None) -> list[dict[str, Any]]:
-    """Sorts a lits of dicts by a given key, exception for the priority field that would go first"""
+    """Sorts a list of dicts by a given key, exception for the priority field that would go first"""
     f_elem = None
     if priority_field:
         f_elem = next((elem for elem in list_to_sort if priority_field in elem), None)
