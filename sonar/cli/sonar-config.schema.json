@@ -1077,6 +1077,10 @@
                                     }
                                 }
                             },
+                            "severity": {
+                                "type": "string",
+                                "description": "The rule severity"
+                            },
                             "impacts": {
                                 "type": "object",
                                 "description": "Rule impacts in MQR mode",
@@ -1094,6 +1098,10 @@
                                         "description": "Maintainability impact"
                                     }
                                 }
+                            },
+                            "prioritized": {
+                                "type": "boolean",
+                                "description": "Whether this rule is prioritized"
                             }
                         }
                     }
