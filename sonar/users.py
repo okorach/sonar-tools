@@ -553,8 +553,6 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     log.info("Importing users")
     converted_data = util.list_to_dict(config_data["users"], "login")
     for login, data in converted_data.items():
-        data["scmAccounts"] = util.csv_to_list(data.pop("scmAccounts", ""))
-        data["groups"] = util.csv_to_list(data.pop("groups", ""))
         data.pop("login", None)
         try:
             o = User.get_object(endpoint, login)
