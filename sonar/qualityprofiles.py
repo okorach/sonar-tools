@@ -374,9 +374,13 @@ class QualityProfile(sq.SqObject):
                 self.name = data["name"]
                 QualityProfile.CACHE.put(self)
             log.debug("Updating %s setting parent to %s", str(self), str(data.get(qphelp.KEY_PARENT)))
-            self.set_parent(data.pop(qphelp.KEY_PARENT, None))
-            self.set_rules(data.get("rules", []) + data.get("addedRules", []))
-            self.activate_rules(data.get("modifiedRules", []))
+            if parent_key := data.pop(qphelp.KEY_PARENT, None):
+                self.set_parent(parent_key)
+                parent_qp = get_object(self.endpoint, parent_key, self.language)
+                log.info("%s activating parent rules", self, list(parent_qp.rules().keys()))
+                self.activate_rules([{"key": k} for k in parent_qp.rules()])
+            self.activate_rules(data.get("rules", []) + data.get("addedRules", []) + data.get("modifiedRules", []))
+            self.deactivate_rules(data.get("removedRules", []))
             self.set_permissions(data.get("permissions", []))
             self.is_built_in = data.get("isBuiltIn", False)
         if data.get("isDefault", False):
