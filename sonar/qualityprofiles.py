@@ -492,13 +492,13 @@ class QualityProfile(sq.SqObject):
         compare_result = self.compare(another_qp)
         diff_rules = {"addedRules": {}, "modifiedRules": {}}
         if len(compare_result["inLeft"]) > 0:
-            diff_rules["addedRules"] = self.__process_rules_diff(compare_result["inLeft"])
+            diff_rules["addedRules"] = util.sort_list_by_key(self.__process_rules_diff(compare_result["inLeft"]), "key")
         if len(compare_result["modified"]) > 0:
-            diff_rules["modifiedRules"] = self.__process_rules_diff(compare_result["modified"])
+            diff_rules["modifiedRules"] = util.sort_list_by_key(self.__process_rules_diff(compare_result["modified"]), "key")
         if len(compare_result["inRight"]) > 0:
-            diff_rules["removedRules"] = {r["key"]: True for r in compare_result["inRight"]}
+            diff_rules["removedRules"] = sorted(r["key"] for r in compare_result["inRight"])
         elif self.endpoint.version() >= (10, 3, 0):
-            diff_rules["removedRules"] = {}
+            diff_rules["removedRules"] = []
         return diff_rules
 
     def projects(self) -> types.KeyList:
