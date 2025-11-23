@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube Quality Profile concept"""
 
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Any
 import json
 from datetime import datetime
 import traceback
@@ -269,7 +269,9 @@ class QualityProfile(sq.SqObject):
         self._rules = {k: rules.Rule.get_object(self.endpoint, k) for k in rule_key_list}
         return self._rules
 
-    def activate_rule(self, rule_key: str, impacts: Optional[dict[str, str]] = None, severity: Optional[str] = None, **params) -> bool:
+    def activate_rule(
+        self, rule_key: str, impacts: Optional[dict[str, str]] = None, severity: Optional[str] = None, prioritized: bool = False, **params
+    ) -> bool:
         """Activates a rule in the quality profile
 
         :param str rule_key: Rule key to activate
@@ -279,13 +281,14 @@ class QualityProfile(sq.SqObject):
         :rtype: bool
         """
         log.debug("Activating rule %s in %s", rule_key, str(self))
-        api_params = {"key": self.key, "rule": rule_key}
+        api_params = {"key": self.key, "rule": rule_key, "prioritizedRule": prioritized}
         if not self.endpoint.is_mqr_mode():
             api_params["severity"] = severity
         elif impacts:
             api_params = {"key": self.key, "rule": rule_key, "impacts": ";".join([f"{k}={v}" for k, v in impacts.items()])}
         if len(params) > 0:
-            api_params["params"] = ";".join([f"{k}={v}" for k, v in params.items()])
+            str_params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
+            api_params["params"] = ";".join([f"{k}={v}" for k, v in str_params.items()])
         try:
             ok = self.post("qualityprofiles/activate_rule", params=api_params).ok
         except exceptions.SonarException:
@@ -318,7 +321,7 @@ class QualityProfile(sq.SqObject):
         self.rules(use_cache=False)
         return ok
 
-    def activate_rules(self, ruleset: list[dict[str, str]]) -> bool:
+    def activate_rules(self, ruleset: list[dict[str, Any]]) -> bool:
         """Activates a list of rules in the quality profile
         :return: Whether the activation of all rules was successful
         :rtype: bool
@@ -329,11 +332,8 @@ class QualityProfile(sq.SqObject):
         for r_key, r_data in ruleset_d.items():
             sev = r_data.get("severity")
             impacts = r_data.get("impacts")
-            if "params" in r_data:
-                rule_params = {p["key"]: p["value"] for p in r_data["params"]}
-                ok = ok and self.activate_rule(rule_key=r_key, impacts=impacts, severity=sev, **rule_params)
-            else:
-                ok = ok and self.activate_rule(rule_key=r_key, impacts=impacts, severity=sev)
+            rule_params = {p["key"]: p["value"] for p in r_data["params"]} if "params" in r_data else {}
+            ok = ok and self.activate_rule(rule_key=r_key, impacts=impacts, severity=sev, prioritized=r_data.get("prioritized", False), **rule_params)
         self.rules(use_cache=False)
         return ok
 
@@ -349,6 +349,11 @@ class QualityProfile(sq.SqObject):
         ruleset_d = util.list_to_dict(ruleset, "key", keep_in_values=True)
         log.debug("%s: Setting rules %s", self, util.json_dump(ruleset_d))
         keys_to_activate = util.difference(list(ruleset_d.keys()), current_rules)
+        keys_to_activate += [
+            r["key"]
+            for r in ruleset_d.values()
+            if any(r.get(k) for k in ("prioritized", "params", "severity", "impacts")) and r["key"] not in keys_to_activate
+        ]
         rules_to_activate = [ruleset_d[k] for k in keys_to_activate]
         rules_to_deactivate = util.difference(current_rules, list(ruleset_d.keys()))
         log.info("set_rules: Activating %d rules and deactivating %d rules", len(rules_to_activate), len(rules_to_deactivate))
@@ -358,7 +363,6 @@ class QualityProfile(sq.SqObject):
 
     def update(self, data: types.ObjectJsonRepr) -> QualityProfile:
         """Updates a QP with data coming from sonar-config"""
-        log.info("QP_IMPORT of %s, data = %s", str(self), util.json_dump(data))
         if self.is_built_in or data.get("isBuiltIn", False):
             log.debug("Not updating built-in %s", str(self))
         else:
@@ -375,29 +379,22 @@ class QualityProfile(sq.SqObject):
             self.activate_rules(data.get("modifiedRules", []))
             self.set_permissions(data.get("permissions", []))
             self.is_built_in = data.get("isBuiltIn", False)
-        log.info("QP_IMPORT 2 of %s", str(self))
         if data.get("isDefault", False):
             self.set_as_default()
         if not data.get(qphelp.KEY_CHILDREN):
-            log.info("QP_IMPORT of %s, no children found", str(self))
             return self
-        log.info("QP_IMPORT 3 of %s CHILDREN_DATA = %s", str(self), util.json_dump(data.get(qphelp.KEY_CHILDREN)))
         children_data = util.list_to_dict(data[qphelp.KEY_CHILDREN], "name")
-        log.info("QP_IMPORT 3.1 of %s found CHILDREN %s", str(self), str(children_data.keys()))
         for child_name, child_data in children_data.items():
-            log.info("QP_IMPORT CHILD %s", child_name)
             try:
                 child_qp = get_object(self.endpoint, child_name, self.language)
             except exceptions.ObjectNotFound:
                 child_qp = QualityProfile.create(self.endpoint, child_name, self.language)
-            log.info("QP_IMPORT CHILD2 %s parent = %s Child data = %s", child_qp, self.name, util.json_dump(child_data))
             try:
                 child_qp.update(child_data | {qphelp.KEY_PARENT: self.name})
             except Exception as e:
                 traceback.print_exc()
                 log.error("Child quality Profile import error: %s", e)
                 continue
-            log.info("QP_IMPORT CHILD3 %s", child_name)
         return self
 
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
@@ -421,7 +418,6 @@ class QualityProfile(sq.SqObject):
                 }
                 if "params" in data:
                     data["params"] = dict(sorted(data["params"].items()))
-                log.info("QP RULE EXPORT %s", util.json_dump(data))
                 if self.rule_is_prioritized(rule.key):
                     data["prioritized"] = True
                 if self.rule_has_custom_severity(rule.key):
@@ -800,9 +796,8 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     rules.get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", 8))
     qp_list = {}
     for qp in get_list(endpoint=endpoint).values():
-        log.info("Exporting %s", str(qp))
+        log.debug("Exporting %s", str(qp))
         json_data = qp.to_json(export_settings=export_settings)
-        log.info("QPX EXPORT %s", util.json_dump(json_data))
         lang = json_data.pop("language")
         name = json_data.pop("name")
         if lang not in qp_list:

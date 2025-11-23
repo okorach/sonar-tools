@@ -240,7 +240,7 @@ class Rule(sq.SqObject):
         except exceptions.ObjectNotFound:
             pass
         log.info("Instantiating rule key '%s' from template key '%s'", key, template_key)
-        rule_params = ";".join([f'{p["key"]}={p["value"]}' for p in data["params"]])
+        rule_params = ";".join([f'{p["key"]}={str(p["value"]).lower() if isinstance(p["value"], bool) else p["value"]}' for p in data["params"]])
         return Rule.create(
             key=key,
             endpoint=endpoint,
