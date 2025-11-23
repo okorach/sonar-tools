@@ -321,7 +321,7 @@ class Rule(sq.SqObject):
 
     def set_tags(self, tags: list[str]) -> bool:
         """Sets rule custom tags"""
-        log.debug("Settings custom tags of %s to '%s' ", str(self), str(tags))
+        log.info("Setting %s custom tags to '%s' ", str(self), str(tags))
         ok = self.post(Rule.API[c.UPDATE], params={"key": self.key, "tags": utilities.list_to_csv(tags)}).ok
         if ok:
             self.tags = sorted(tags) if len(tags) > 0 else None
@@ -336,7 +336,7 @@ class Rule(sq.SqObject):
         """Extends rule description"""
         if self.endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Can't extend rules description on SonarQube Cloud")
-        log.debug("Settings custom description of %s to '%s'", str(self), description)
+        log.info("Setting %s custom description to '%s'", str(self), description)
         ok = self.post(Rule.API[c.UPDATE], params={"key": self.key, "markdown_note": description}).ok
         if ok:
             self.custom_desc = description if description != "" else None
@@ -508,22 +508,23 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
         return True
     if endpoint.is_sonarcloud():
         raise exceptions.UnsupportedOperation("Can't import rules in SonarQube Cloud")
-    log.info("Importing customized (custom tags, extended description) rules")
     get_list(endpoint=endpoint, use_cache=False)
-    converted_data = utilities.list_to_dict(rule_data.get("extended", {}), "key")
     log.info("Importing extended rules (custom tags, extended description)")
-    for key, custom in converted_data.get("extended", {}).items():
+    converted_data = utilities.list_to_dict(rule_data.get("extended", []), "key")
+    for key, custom in converted_data.items():
         log.info("Importing rule key '%s' with customization %s", key, custom)
         try:
             rule = Rule.get_object(endpoint, key)
         except exceptions.ObjectNotFound:
             log.warning("Rule key '%s' does not exist, can't import it", key)
             continue
-        rule.set_description(custom.get("description", ""))
-        rule.set_tags(utilities.csv_to_list(custom.get("tags", None)))
+        if "description" in custom:
+            rule.set_description(custom["description"])
+        if "tags" in custom:
+            rule.set_tags(utilities.csv_to_list(custom["tags"]))
 
     log.info("Importing custom rules (instantiated from rule templates)")
-    converted_data = utilities.list_to_dict(rule_data.get("instantiated", {}), "key")
+    converted_data = utilities.list_to_dict(rule_data.get("instantiated", []), "key")
     for key, instantiation_data in converted_data.items():
         log.info("Importing instantiated rule key '%s' with instantiation data %s", key, instantiation_data)
         try:
