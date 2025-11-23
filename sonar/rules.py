@@ -152,7 +152,7 @@ class Rule(sq.SqObject):
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "rules"
 
-    API = {c.CREATE: "rules/create", c.READ: "rules/show", c.UPDATE: "rules/update", c.DELETE: "rules/delete", c.LIST: "rules/search"}
+    API: dict[str, str] = {c.CREATE: "rules/create", c.READ: "rules/show", c.UPDATE: "rules/update", c.DELETE: "rules/delete", c.LIST: "rules/search"}  # type: ignore
 
     def __init__(self, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)
@@ -190,8 +190,8 @@ class Rule(sq.SqObject):
     def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
         """Returns a rule object from it key, taken from the cache or from the platform itself
 
-        :param Platform endpoint: The SonarQube reference
-        :param str key: The rule key
+        :param endpoint: The SonarQube reference
+        :param key: The rule key
         :return: The Rule object corresponding to the input rule key
         :raises: ObjectNotFound if rule does not exist
         """
@@ -201,8 +201,16 @@ class Rule(sq.SqObject):
         return Rule(endpoint=endpoint, key=key, data=json.loads(r.text)["rule"])
 
     @classmethod
-    def create(cls, endpoint: platform.Platform, key: str, **kwargs) -> Optional[Rule]:
-        """Creates a rule object"""
+    def create(cls, endpoint: platform.Platform, key: str, **kwargs) -> Rule:
+        """Creates a rule object
+
+        :param endpoint: The SonarQube reference
+        :param key: The rule key
+        :param kwargs: Additional parameters to create the rule
+        :return: The created rule object
+        :raises: UnsupportedOperation if the rule creation is not supported on SonarQube Cloud
+        :raises: SonarException if the rule creation fails
+        """
         if endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Can't create or extend rules on SonarQube Cloud")
         params = kwargs.copy()
@@ -210,8 +218,7 @@ class Rule(sq.SqObject):
         params["impacts"] = ";".join([f"{k}={v}" for k, v in params.get("impacts", {}).items()])
         log.debug("Creating rule key '%s'", key)
         params.pop("severity" if endpoint.is_mqr_mode() else "impacts", None)
-        if not endpoint.post(cls.API[c.CREATE], params=params).ok:
-            return None
+        endpoint.post(cls.API[c.CREATE], params=params)
         return cls.get_object(endpoint=endpoint, key=key)
 
     @classmethod
@@ -233,14 +240,14 @@ class Rule(sq.SqObject):
         except exceptions.ObjectNotFound:
             pass
         log.info("Instantiating rule key '%s' from template key '%s'", key, template_key)
-        rule_params = ";".join([f"{k}={v}" for k, v in data["params"].items()])
+        rule_params = ";".join([f'{p["key"]}={p["value"]}' for p in data["params"]])
         return Rule.create(
             key=key,
             endpoint=endpoint,
             templateKey=template_key,
             name=data.get("name", key),
-            impacts=data.get("severities", data.get("impacts", None)),
-            severity=data.get("severity", None),
+            impacts=data.get("impacts"),
+            severity=data.get("severity"),
             params=rule_params,
             markdownDescription=data.get("description", "NO DESCRIPTION"),
         )
@@ -495,7 +502,7 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
 
 def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports a sonar-config configuration"""
-    if rule_data := config_data.get("rules", None):
+    if not (rule_data := config_data.get("rules")):
         log.info("No customized rules (custom tags, extended description) to import")
         return True
     if endpoint.is_sonarcloud():
@@ -503,7 +510,9 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
     log.info("Importing customized (custom tags, extended description) rules")
     get_list(endpoint=endpoint, use_cache=False)
     converted_data = utilities.list_to_dict(rule_data.get("extended", {}), "key")
+    log.info("Importing extended rules (custom tags, extended description)")
     for key, custom in converted_data.get("extended", {}).items():
+        log.info("Importing rule key '%s' with customization %s", key, custom)
         try:
             rule = Rule.get_object(endpoint, key)
         except exceptions.ObjectNotFound:
@@ -515,6 +524,7 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
     log.info("Importing custom rules (instantiated from rule templates)")
     converted_data = utilities.list_to_dict(rule_data.get("instantiated", {}), "key")
     for key, instantiation_data in converted_data.items():
+        log.info("Importing instantiated rule key '%s' with instantiation data %s", key, instantiation_data)
         try:
             rule = Rule.get_object(endpoint, key)
             log.debug("Instantiated rule key '%s' already exists, instantiation skipped", key)
