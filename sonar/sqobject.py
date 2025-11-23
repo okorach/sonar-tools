@@ -40,7 +40,7 @@ class SqObject(object):
     """Abstraction of Sonar objects"""
 
     CACHE = cache.Cache()
-    API = {c.SEARCH: None}
+    API: dict[str, str] = {c.LIST: "error"}   # Will be defined in the subclass
 
     def __init__(self, endpoint: object, key: str) -> None:
         if not self.__class__.CACHE:
