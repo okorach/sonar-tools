@@ -152,7 +152,7 @@ class Rule(sq.SqObject):
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "rules"
 
-    API: dict[str, str] = {c.CREATE: "rules/create", c.READ: "rules/show", c.UPDATE: "rules/update", c.DELETE: "rules/delete", c.LIST: "rules/search"}   # type: ignore
+    API: dict[str, str] = {c.CREATE: "rules/create", c.READ: "rules/show", c.UPDATE: "rules/update", c.DELETE: "rules/delete", c.LIST: "rules/search"}  # type: ignore
 
     def __init__(self, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)
@@ -203,7 +203,7 @@ class Rule(sq.SqObject):
     @classmethod
     def create(cls, endpoint: platform.Platform, key: str, **kwargs) -> Rule:
         """Creates a rule object
-        
+
         :param endpoint: The SonarQube reference
         :param key: The rule key
         :param kwargs: Additional parameters to create the rule
