@@ -22,7 +22,7 @@
 
 from typing import Union, Optional, Any
 
-ConfigSettings = dict[str, str]
+ConfigSettings = dict[str, Any]
 
 ObjectFilter = dict[str, str]
 
