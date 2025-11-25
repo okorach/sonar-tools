@@ -25,6 +25,7 @@ Abstraction of the SonarQube platform or instance concept
 
 from __future__ import annotations
 
+from typing import Union, Callable
 from http import HTTPStatus
 import sys
 import os
@@ -255,18 +256,26 @@ class Platform(object):
         """
         return self.__run_request(requests.delete, api, params, **kwargs)
 
-    def __run_request(self, request: callable, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
+    def __run_request(self, request: callable, api: str, params: Union[types.ApiParams, str] = None, **kwargs) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
         mute = kwargs.pop("mute", ())
         api = pfhelp.normalize_api(api)
         headers = {"user-agent": self._user_agent, "accept": _APP_JSON} | kwargs.get("headers", {})
         params = params or {}
-        params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
+        if isinstance(params, dict):
+            params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
+        elif isinstance(params, (list, tuple)):
+            params = [(k, str(v).lower() if isinstance(v, bool) else v) for k, v in params]
         with_org = kwargs.pop("with_organization", True)
         if self.is_sonarcloud():
             headers["Authorization"] = f"Bearer {self.__token}"
             if with_org:
-                params["organization"] = self.organization
+                if isinstance(params, dict):
+                    params["organization"] = self.organization
+                elif isinstance(params, (list, tuple)):
+                    params.append(("organization", self.organization))
+                elif isinstance(params, str):
+                    params += f"&organization={self.organization}"
         req_type, url = getattr(request, "__name__", repr(request)).upper(), ""
         if log.get_level() <= log.DEBUG:
             url = self.__urlstring(api, params, kwargs.get("data", {}))
@@ -447,16 +456,22 @@ class Platform(object):
     def __urlstring(self, api: str, params: types.ApiParams, data: Optional[str] = None) -> str:
         """Returns a string corresponding to the URL and parameters"""
         url = f"{str(self)}{api}"
-        if params is not None:
-            good_params = {k: v for k, v in params.items() if v is not None}
+        params_string = ""
+        if isinstance(params, str):
+            params_string = params
+        elif params:
+            if isinstance(params, dict):
+                good_params = {k: v for k, v in params.items() if v is not None}
+            elif isinstance(params, (list, tuple)):
+                good_params = {t[0]: [t[1]] for t in params if t[1] is not None}
             for k, v in good_params.items():
                 if isinstance(v, datetime.date):
                     good_params[k] = util.format_date(v)
                 elif isinstance(v, (list, tuple, set)):
                     good_params[k] = ",".join([str(x) for x in v])
             params_string = "&".join([f"{k}={requests.utils.quote(str(v))}" for k, v in good_params.items()])
-            if len(params_string) > 0:
-                url += f"?{params_string}"
+        if len(params_string) > 0:
+            url += f"?{params_string}"
         if data is not None and len(data) > 0:
             url += f" - BODY: {data}"
         return url
