@@ -837,12 +837,7 @@ def import_qp(endpoint: pf.Platform, name: str, lang: str, qp_data: types.Object
         o = get_object(endpoint=endpoint, name=name, language=lang)
     except exceptions.ObjectNotFound:
         log.info("Quality profile '%s' of language '%s' does not exist, creating it", name, lang)
-        try:
-            # Statistically a new QP is close to Sonar way so better start with the Sonar way ruleset and
-            # add/remove a few rules, than adding all rules from 0
-            o = QualityProfile.clone(endpoint=endpoint, name=name, language=lang, original_qp_name="Sonar way")
-        except Exception:
-            o = QualityProfile.create(endpoint=endpoint, name=name, language=lang)
+        o = QualityProfile.create(endpoint=endpoint, name=name, language=lang)
     log.info("Importing %s", o)
     o.update(qp_data)
     log.info("Imported %s", o)
