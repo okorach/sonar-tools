@@ -21,7 +21,7 @@
 """Abstraction of Sonar Application Branch"""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING
 import json
 from requests.utils import quote
 
@@ -31,7 +31,8 @@ from sonar.util import cache
 from sonar.components import Component
 
 from sonar.branches import Branch
-from sonar import exceptions, projects, utilities
+from sonar.projects import Project
+from sonar import exceptions, utilities
 import sonar.util.constants as c
 
 if TYPE_CHECKING:
@@ -55,7 +56,12 @@ class ApplicationBranch(Component):
     }
 
     def __init__(
-        self, app: object, name: str, project_branches: list[Branch], is_main: bool = False, branch_data: Optional[types.ApiPayload] = None
+        self,
+        app: object,
+        name: str,
+        project_branches: list[Union[Project, Branch]],
+        is_main: bool = False,
+        branch_data: Optional[types.ApiPayload] = None,
     ) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=app.endpoint, key=f"{app.key} BRANCH {name}")
@@ -65,7 +71,7 @@ class ApplicationBranch(Component):
         self._is_main = is_main
         self._project_branches = project_branches
         self._last_analysis: Optional[datetime] = None
-        log.debug("Created object %s with uuid %d id %x", str(self), hash(self), id(self))
+        log.debug("Built object %s with uuid %d id %x", str(self), hash(self), id(self))
         ApplicationBranch.CACHE.put(self)
 
     @classmethod
@@ -73,7 +79,7 @@ class ApplicationBranch(Component):
         """Gets an Application object from SonarQube
 
         :param Application app: Reference to the Application holding that branch
-        :param str branch_name: Name of the application branch
+        :param branch_name: Name of the application branch
         :raises UnsupportedOperation: If on a Community Edition
         :raises ObjectNotFound: If Application or Brnach not found
         :return: The found ApplicationBranch
@@ -81,18 +87,16 @@ class ApplicationBranch(Component):
         """
         if app.endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        o = ApplicationBranch.CACHE.get(app.key, branch_name, app.base_url())
-        if o:
+        if o := ApplicationBranch.CACHE.get(app.key, branch_name, app.base_url()):
             return o
         app.refresh()
         app.branches()
-        o = ApplicationBranch.CACHE.get(app.key, branch_name, app.base_url())
-        if o:
+        if o := ApplicationBranch.CACHE.get(app.key, branch_name, app.base_url()):
             return o
         raise exceptions.ObjectNotFound(app.key, f"Application key '{app.key}' branch '{branch_name}' not found")
 
     @classmethod
-    def create(cls, app: object, name: str, project_branches: list[Branch]) -> ApplicationBranch:
+    def create(cls, app: object, name: str, projects_or_branches: list[Union[Project, Branch]]) -> ApplicationBranch:
         """Creates an ApplicationBranch object in SonarQube
 
         :param Application app: Reference to the Application holding that branch
@@ -104,22 +108,22 @@ class ApplicationBranch(Component):
         """
         if app.endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        params = {"application": app.key, "branch": name, "project": [], "projectBranch": []}
-        for obj in project_branches:
-            if isinstance(obj, Branch):
-                params["project"].append(obj.concerned_object.key)
-                params["projectBranch"].append(obj.name)
-            else:  # Default main branch of project
-                params["project"].append(obj.key)
-                params["projectBranch"].append("")
-        app.endpoint.post(ApplicationBranch.API[c.CREATE], params=params)
-        return ApplicationBranch(app=app, name=name, project_branches=project_branches)
+        custom_branches = [e for e in projects_or_branches if isinstance(e, Branch)]
+        if len(custom_branches) == 0:
+            raise exceptions.UnsupportedOperation("No custom branch defined in Application Branch")
+        params = [("application", app.key), ("branch", name)]
+        for branch in custom_branches:
+            params.append(("project", branch.concerned_object.key))
+            params.append(("projectBranch", branch.name))
+        string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
+        app.endpoint.post(ApplicationBranch.API[c.CREATE], params=string_params)
+        return ApplicationBranch(app=app, name=name, project_branches=projects_or_branches)
 
     @classmethod
     def load(cls, app: object, branch_data: types.ApiPayload) -> ApplicationBranch:
         project_branches = []
         for proj_data in branch_data["projects"]:
-            proj = projects.Project.get_object(app.endpoint, proj_data["key"])
+            proj = Project.get_object(app.endpoint, proj_data["key"])
             project_branches.append(Branch.get_object(concerned_object=proj, branch_name=proj_data["branch"]))
         return ApplicationBranch(
             app=app, name=branch_data["branch"], project_branches=project_branches, is_main=branch_data.get("isMain", False), branch_data=branch_data
@@ -177,32 +181,33 @@ class ApplicationBranch(Component):
             jsondata["isMain"] = True
         return jsondata
 
-    def update(self, name: str, project_branches: list[Branch]) -> bool:
+    def update(self, name: Optional[str] = None, projects_or_branches: Optional[list[Union[Project, Branch]]] = None) -> bool:
         """Updates an ApplicationBranch name and project branches
 
-        :param str name: New application branch name
-        :param list[Branch] project_branches: New application project branches
+        :param name: New application branch name
+        :param projects_or_branches: Updated application project branches
         :raises ObjectNotFound: If ApplicationBranch not found in SonarQube
+        :raises UnsupportedOperation: If no custom branch defined in Application Branch
         :return: whether the operation succeeded
         """
-        if not name:
-            name = self.name
-        if not project_branches or len(project_branches) == 0:
-            return False
-        params = self.api_params()
-        params.update({"name": name, "project": [], "projectBranch": []})
-        for branch in project_branches:
-            params["project"].append(branch.concerned_object.key)
-            br_name = "" if branch.is_main() else branch.name
-            params["projectBranch"].append(br_name)
+        name = name or self.name
+        projects_or_branches = projects_or_branches or self._project_branches
+        custom_branches = [e for e in projects_or_branches if isinstance(e, Branch)]
+        if len(custom_branches) == 0:
+            raise exceptions.UnsupportedOperation("No custom branch defined in Application Branch")
+        params = [("name", name)] + [(k, v) for k, v in self.api_params().items()]
+        for branch in custom_branches:
+            params.append(("project", branch.concerned_object.key))
+            params.append(("projectBranch", branch.name))
+        string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
         try:
-            ok = self.post(ApplicationBranch.API[c.UPDATE], params=params).ok
+            ok = self.post(ApplicationBranch.API[c.UPDATE], params=string_params).ok
         except exceptions.ObjectNotFound:
             ApplicationBranch.CACHE.pop(self)
             raise
 
         self.name = name
-        self._project_branches = project_branches
+        self._project_branches = projects_or_branches
         return ok
 
     def rename(self, new_name: str) -> bool:
@@ -212,23 +217,27 @@ class ApplicationBranch(Component):
         :raises ObjectNotFound: If ApplicationBranch not found in SonarQube
         :return: whether the operation succeeded
         """
-        return self.update(name=new_name, project_branches=self._project_branches)
+        return self.update(name=new_name, projects_or_branches=self._project_branches)
 
-    def update_project_branches(self, new_project_branches: list[Branch]) -> bool:
+    def update_project_branches(self, new_project_branches: list[Union[Project, Branch]]) -> bool:
         """Updates an Application list of project branches
 
         :param list[Branch] project_branches: New application project branches
         :raises ObjectNotFound: If ApplicationBranch not found in SonarQube
         :return: whether the operation succeeded
         """
-        return self.update(name=self.name, project_branches=new_project_branches)
+        try:
+            return self.update(name=self.name, projects_or_branches=new_project_branches)
+        except exceptions.UnsupportedOperation as e:
+            log.error("Error updating project branches %s: %s", self, e.message)
+            return False
 
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {c.READ: {"application": self.concerned_object.key, "branch": self.name}}
         return ops[op] if op and op in ops else ops[c.READ]
 
-    def component_data(self) -> types.Obj:
+    def component_data(self) -> types.ObjectJsonRepr:
         """Returns key data"""
         return {
             "key": self.concerned_object.key,
