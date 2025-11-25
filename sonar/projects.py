@@ -1551,7 +1551,7 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
         # chelp.clear_cache_and_exit(errcodes.UNSUPPORTED_OPERATION, "Zip export unsupported on your SonarQube version")
         raise exceptions.UnsupportedOperation("Zip export unsupported on your SonarQube version") from e
     log.debug("Exporting thread for %s done, status: %s", str(project), status)
-    data = {"key": project.key, "exportProjectUrl": project.url(), "exportStatus": status}
+    data = {"key": project.key, "name": project.name, "exportProjectUrl": project.url(), "exportStatus": status}
     if status.startswith(tasks.SUCCESS):
         data["file"] = os.path.basename(file)
         data["exportPath"] = file
