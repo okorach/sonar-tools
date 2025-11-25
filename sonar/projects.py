@@ -1551,7 +1551,7 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
         # chelp.clear_cache_and_exit(errcodes.UNSUPPORTED_OPERATION, "Zip export unsupported on your SonarQube version")
         raise exceptions.UnsupportedOperation("Zip export unsupported on your SonarQube version") from e
     log.debug("Exporting thread for %s done, status: %s", str(project), status)
-    data = {"key": project.key, "exportProjectUrl": project.url(), "exportStatus": status}
+    data = {"key": project.key, "name": project.name, "exportProjectUrl": project.url(), "exportStatus": status}
     if status.startswith(tasks.SUCCESS):
         data["file"] = os.path.basename(file)
         data["exportPath"] = file
@@ -1576,7 +1576,9 @@ def export_zips(
     nbr_projects = len(projects_list)
     if skip_zero_loc:
         results = [
-            {"key": p.key, "exportProjectUrl": p.url(), "exportStatus": f"SKIPPED/{ZIP_ZERO_LOC}"} for p in projects_list.values() if p.loc() == 0
+            {"key": p.key, "name": p.name, "exportProjectUrl": p.url(), "exportStatus": f"SKIPPED/{ZIP_ZERO_LOC}"}
+            for p in projects_list.values()
+            if p.loc() == 0
         ]
         statuses[f"SKIPPED/{ZIP_ZERO_LOC}"] = len(results)
         projects_list = {k: v for k, v in projects_list.items() if v.loc() > 0}
@@ -1595,13 +1597,15 @@ def export_zips(
                 status = result["exportStatus"]
             except TimeoutError as e:
                 status = f"{ZIP_TIMEOUT}({export_timeout}s)"
-                result = {"key": futures_map[future].key, "exportProjectUrl": futures_map[future].url(), "exportStatus": status}
+                o_proj = futures_map[future]
+                result = {"key": o_proj.key, "name": o_proj.name, "exportProjectUrl": o_proj.url(), "exportStatus": status}
                 log.error(f"Project Zip export timed out after {export_timeout} seconds for {str(future)}.")
             except exceptions.UnsupportedOperation:
                 raise
             except Exception as e:
                 status = f"{ZIP_EXCEPTION}({e})"
-                result = {"key": futures_map[future].key, "exportProjectUrl": futures_map[future].url(), "exportStatus": status}
+                o_proj = futures_map[future]
+                result = {"key": o_proj.key, "name": o_proj.name, "exportProjectUrl": o_proj.url(), "exportStatus": status}
 
             if re.match(r"\d\d\d .*", status):
                 status = f"FAILED/HTTP_ERROR {status[0:3]}"
@@ -1624,10 +1628,11 @@ def export_zips(
     return results
 
 
-def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30) -> tuple[Project, str]:
+def import_zip(endpoint: pf.Platform, project_key: str, project_name: Optional[str] = None, import_timeout: int = 30) -> tuple[Project, str]:
     """Imports a project zip file"""
+    project_name = project_name or project_key
     try:
-        o_proj = Project.create(key=project_key, endpoint=endpoint, name=project_key)
+        o_proj = Project.create(key=project_key, endpoint=endpoint, name=project_name)
     except exceptions.ObjectAlreadyExists:
         o_proj = Project.get_object(key=project_key, endpoint=endpoint)
     if o_proj.last_analysis() is None:
@@ -1656,7 +1661,7 @@ def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipImport") as executor:
         futures, futures_map = [], {}
         for proj in project_list:
-            future = executor.submit(import_zip, endpoint, proj, import_timeout)
+            future = executor.submit(import_zip, endpoint, proj["key"], proj["name"], import_timeout)
             futures.append(future)
             futures_map[future] = proj
         for future in concurrent.futures.as_completed(futures):
