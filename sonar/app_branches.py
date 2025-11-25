@@ -71,7 +71,7 @@ class ApplicationBranch(Component):
         self._is_main = is_main
         self._project_branches = project_branches
         self._last_analysis: Optional[datetime] = None
-        log.debug("Built object %s with uuid %d id %x", str(self), hash(self), id(self))
+        log.debug("Constructed object %s with uuid %d id %x", str(self), hash(self), id(self))
         ApplicationBranch.CACHE.put(self)
 
     @classmethod
@@ -110,7 +110,7 @@ class ApplicationBranch(Component):
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         custom_branches = [e for e in projects_or_branches if isinstance(e, Branch)]
         if len(custom_branches) == 0:
-            raise exceptions.UnsupportedOperation("No custom branch defined in Application Branch")
+            raise exceptions.UnsupportedOperation("No custom branch defined in during creation")
         params = [("application", app.key), ("branch", name)]
         for branch in custom_branches:
             params.append(("project", branch.concerned_object.key))
@@ -194,7 +194,7 @@ class ApplicationBranch(Component):
         projects_or_branches = projects_or_branches or self._project_branches
         custom_branches = [e for e in projects_or_branches if isinstance(e, Branch)]
         if len(custom_branches) == 0:
-            raise exceptions.UnsupportedOperation("No custom branch defined in Application Branch")
+            raise exceptions.UnsupportedOperation("No custom branch defined in Application Branch during update")
         params = [("name", name)] + [(k, v) for k, v in self.api_params().items()]
         for branch in custom_branches:
             params.append(("project", branch.concerned_object.key))
@@ -217,12 +217,17 @@ class ApplicationBranch(Component):
         :raises ObjectNotFound: If ApplicationBranch not found in SonarQube
         :return: whether the operation succeeded
         """
-        return self.update(name=new_name, projects_or_branches=self._project_branches)
+        log.info("Renaming %s with %s", self, new_name)
+        try:
+            return self.update(name=new_name, projects_or_branches=self._project_branches)
+        except exceptions.UnsupportedOperation as e:
+            log.error("Error renaming %s: %s", self, e.message)
+            return False
 
     def update_project_branches(self, new_project_branches: list[Union[Project, Branch]]) -> bool:
         """Updates an Application list of project branches
 
-        :param list[Branch] project_branches: New application project branches
+        :param project_branches: New application project branches
         :raises ObjectNotFound: If ApplicationBranch not found in SonarQube
         :return: whether the operation succeeded
         """

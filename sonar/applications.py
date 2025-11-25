@@ -76,7 +76,7 @@ class Application(aggr.Aggregation):
         self._projects: Optional[dict[str, str]] = None
         self._description: Optional[str] = None
         self.name = name
-        log.debug("Created object %s with uuid %d id %x", str(self), hash(self), id(self))
+        log.debug("Constructed object %s with uuid %d id %x", str(self), hash(self), id(self))
         Application.CACHE.put(self)
 
     @classmethod
@@ -280,7 +280,6 @@ class Application(aggr.Aggregation):
         pattern = new_filters.pop("branch", None) if new_filters else None
         if not pattern:
             return super().get_issues(new_filters)
-        log.debug("APP BRANCHES = %s", self.branches())
         matching_branches = [b for b in self.branches().values() if re.match(rf"^{pattern}$", b.name)]
         findings_list = {}
         for comp in matching_branches:
@@ -556,16 +555,15 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     :param key_list: list of Application keys to import, defaults to all if None
     :return: Whether import succeeded
     """
-    if "applications" not in config_data:
-        log.info("No applications to import")
+    apps_data = config_data.get("applications", [])
+    log.info("Importing %d applications", len(apps_data))
+    if len(apps_data) == 0:
         return True
-    ed = endpoint.edition()
-    if ed not in (c.DE, c.EE, c.DCE):
+    if (ed := endpoint.edition()) not in (c.DE, c.EE, c.DCE):
         log.warning("Can't import applications in %s edition", ed)
         return False
-    log.info("Importing applications")
     search(endpoint=endpoint)
-    for key, data in util.list_to_dict(config_data["applications"], "key").items():
+    for key, data in util.list_to_dict(apps_data, "key").items():
         if key_list and key not in key_list:
             log.debug("App key '%s' not in selected apps", key)
             continue
@@ -577,7 +575,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         try:
             o.update(data)
             o.recompute()
-        except exceptions.ObjectNotFound as e:
+        except (exceptions.ObjectNotFound, exceptions.UnsupportedOperation) as e:
             log.error("%s configuration incomplete: %s", str(o), e.message)
     return True
 
