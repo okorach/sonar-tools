@@ -1576,7 +1576,9 @@ def export_zips(
     nbr_projects = len(projects_list)
     if skip_zero_loc:
         results = [
-            {"key": p.key, "exportProjectUrl": p.url(), "exportStatus": f"SKIPPED/{ZIP_ZERO_LOC}"} for p in projects_list.values() if p.loc() == 0
+            {"key": p.key, "name": p.name, "exportProjectUrl": p.url(), "exportStatus": f"SKIPPED/{ZIP_ZERO_LOC}"}
+            for p in projects_list.values()
+            if p.loc() == 0
         ]
         statuses[f"SKIPPED/{ZIP_ZERO_LOC}"] = len(results)
         projects_list = {k: v for k, v in projects_list.items() if v.loc() > 0}
@@ -1595,13 +1597,15 @@ def export_zips(
                 status = result["exportStatus"]
             except TimeoutError as e:
                 status = f"{ZIP_TIMEOUT}({export_timeout}s)"
-                result = {"key": futures_map[future].key, "exportProjectUrl": futures_map[future].url(), "exportStatus": status}
+                o_proj = futures_map[future]
+                result = {"key": o_proj.key, "name": o_proj.name, "exportProjectUrl": o_proj.url(), "exportStatus": status}
                 log.error(f"Project Zip export timed out after {export_timeout} seconds for {str(future)}.")
             except exceptions.UnsupportedOperation:
                 raise
             except Exception as e:
                 status = f"{ZIP_EXCEPTION}({e})"
-                result = {"key": futures_map[future].key, "exportProjectUrl": futures_map[future].url(), "exportStatus": status}
+                o_proj = futures_map[future]
+                result = {"key": o_proj.key, "name": o_proj.name, "exportProjectUrl": o_proj.url(), "exportStatus": status}
 
             if re.match(r"\d\d\d .*", status):
                 status = f"FAILED/HTTP_ERROR {status[0:3]}"
