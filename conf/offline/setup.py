@@ -75,7 +75,7 @@ setuptools.setup(
             "sonar-issues-export = cli.findings_export:main",
             "sonar-findings-export = cli.findings_export:main",
             "sonar-loc = cli.loc:main",
-            "sonar-config = cli.config:main",
+            "sonar-config = sonar.cli.config:main",
             "support-audit = cli.support:main",
             "sonar-rules = cli.rules_cli:main",
         ]
