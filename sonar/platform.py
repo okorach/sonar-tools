@@ -25,12 +25,11 @@ Abstraction of the SonarQube platform or instance concept
 
 from __future__ import annotations
 
-from typing import Union, Callable
 from http import HTTPStatus
 import sys
 import os
 import re
-from typing import Any, Optional
+from typing import Any, Union, Optional, Callable
 import time
 import datetime
 import json
@@ -256,7 +255,7 @@ class Platform(object):
         """
         return self.__run_request(requests.delete, api, params, **kwargs)
 
-    def __run_request(self, request: callable, api: str, params: Union[types.ApiParams, str] = None, **kwargs) -> requests.Response:
+    def __run_request(self, request: Callable, api: str, params: Union[types.ApiParams, str] = None, **kwargs) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
         mute = kwargs.pop("mute", ())
         api = pfhelp.normalize_api(api)
