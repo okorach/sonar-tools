@@ -23,7 +23,7 @@ Abstraction of the SonarQube "application" concept
 """
 
 from __future__ import annotations
-from typing import Optional, Any
+from typing import Optional, Any, Union
 import re
 import json
 from datetime import datetime
@@ -76,7 +76,7 @@ class Application(aggr.Aggregation):
         self._projects: Optional[dict[str, str]] = None
         self._description: Optional[str] = None
         self.name = name
-        log.debug("Created object %s with uuid %d id %x", str(self), hash(self), id(self))
+        log.debug("Constructed object %s with uuid %d id %x", str(self), hash(self), id(self))
         Application.CACHE.put(self)
 
     @classmethod
@@ -101,13 +101,12 @@ class Application(aggr.Aggregation):
     def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Application:
         """Loads an Application object with data retrieved from SonarQube
 
-        :param pf.Platform endpoint: Reference to the SonarQube platform
-        :param str key: Application key, must not already exist on SonarQube
-        :param dict data: Data coming from api/components/search_projects or api/applications/show
+        :param endpoint: Reference to the SonarQube platform
+        :param key: Application key, must not already exist on SonarQube
+        :param data: Data coming from api/components/search_projects or api/applications/show
         :raises UnsupportedOperation: If on a Community Edition
         :raises ObjectNotFound: If Application key not found in SonarQube
         :return: The found Application object
-        :rtype: Application
         """
         check_supported(endpoint)
         o: Application = Application.CACHE.get(data["key"], endpoint.local_url)
@@ -120,13 +119,12 @@ class Application(aggr.Aggregation):
     def create(cls, endpoint: pf.Platform, key: str, name: str) -> Application:
         """Creates an Application object in SonarQube
 
-        :param pf.Platform endpoint: Reference to the SonarQube platform
-        :param str key: Application key, must not already exist on SonarQube
-        :param str name: Application name
+        :param endpoint: Reference to the SonarQube platform
+        :param key: Application key, must not already exist on SonarQube
+        :param name: Application name
         :raises UnsupportedOperation: If on a Community Edition
         :raises ObjectAlreadyExists: If key already exist for another Application
         :return: The created Application object
-        :rtype: Application
         """
         check_supported(endpoint)
         endpoint.post(Application.API["CREATE"], params={"key": key, "name": name})
@@ -134,11 +132,9 @@ class Application(aggr.Aggregation):
         return Application(endpoint=endpoint, key=key, name=name)
 
     def refresh(self) -> None:
-        """Refreshes the by re-reading SonarQube
+        """Refreshes the application by re-reading SonarQube
 
         :raises ObjectNotFound: If the Application does not exists anymore
-        :return: self:
-        :rtype: Appplication
         """
         try:
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
@@ -155,7 +151,6 @@ class Application(aggr.Aggregation):
     def permissions(self) -> application_permissions.ApplicationPermissions:
         """
         :return: The application permissions
-        :rtype: ApplicationPermissions
         """
         if self._permissions is None:
             self._permissions = application_permissions.ApplicationPermissions(self)
@@ -204,7 +199,13 @@ class Application(aggr.Aggregation):
         :raises ObjectAlreadyExists: if the branch name already exists
         :raises ObjectNotFound: if one of the specified projects or project branches does not exists
         """
-        return app_branches.ApplicationBranch.create(app=self, name=branch_name, project_branches=self.__get_project_branches(branch_definition))
+        try:
+            return app_branches.ApplicationBranch.create(
+                app=self, name=branch_name, projects_or_branches=self.__get_project_branches(branch_definition)
+            )
+        except exceptions.UnsupportedOperation as e:
+            log.error("Error creating %s branch '%s': %s", self, branch_name, e.message)
+            return None
 
     def delete_branch(self, branch_name: str) -> bool:
         """Deletes an application branch
@@ -216,25 +217,30 @@ class Application(aggr.Aggregation):
 
     def update_branch(self, branch_name: str, branch_definition: types.ObjectJsonRepr) -> object:
         o_app_branch = app_branches.ApplicationBranch.get_object(self, branch_name)
-        o_app_branch.update_project_branches(new_project_branches=self.__get_project_branches(branch_definition))
+        try:
+            o_app_branch.update_project_branches(new_project_branches=self.__get_project_branches(branch_definition))
+        except exceptions.UnsupportedOperation as e:
+            log.error("Error updating %s branch '%s': %s", self, branch_name, e.message)
+            return None
         return o_app_branch
 
     def set_branches(self, branch_name: str, projects_data: list[types.AppBranchProjectDef]) -> Application:
         """Creates or updates an Application branch with a set of project branches
 
-        :param str branch_name: The Application branch to set
-        :param dict branch_data: in format returned by api/applications/show or {"projects": {<projectKey>: <branch>, ...}}
+        :param branch_name: The Application branch to set
+        :param branch_data: in format returned by api/applications/show or {"projects": {<projectKey>: <branch>, ...}}
         :raises ObjectNotFound: if a project key does not exist or project branch does not exist
-        :return: self:
-        :rtype: Application
+        :return: self
         """
-        log.debug("%s: Updating application branch '%s' with %s", self, branch_name, util.json_dump(projects_data))
+        log.debug("%s: APPL Updating application branch '%s' with %s", self, branch_name, util.json_dump(projects_data))
         branch_definition = {p["key"]: p.get("branch", c.DEFAULT_BRANCH) for p in projects_data}
         try:
             o = app_branches.ApplicationBranch.get_object(self, branch_name)
             o.update_project_branches(new_project_branches=self.__get_project_branches(branch_definition))
         except exceptions.ObjectNotFound:
             self.create_branch(branch_name=branch_name, branch_definition=branch_definition)
+        except exceptions.UnsupportedOperation as e:
+            log.error("Error creating %s branch '%s': %s", self, branch_name, e.message)
         return self
 
     def branches(self) -> dict[str, object]:
@@ -274,7 +280,6 @@ class Application(aggr.Aggregation):
         pattern = new_filters.pop("branch", None) if new_filters else None
         if not pattern:
             return super().get_issues(new_filters)
-        log.debug("APP BRANCHES = %s", self.branches())
         matching_branches = [b for b in self.branches().values() if re.match(rf"^{pattern}$", b.name)]
         findings_list = {}
         for comp in matching_branches:
@@ -389,7 +394,7 @@ class Application(aggr.Aggregation):
     def update(self, data: types.ObjectJsonRepr) -> None:
         """Updates an Application with data coming from a JSON (export)
 
-        :param dict data:
+        :param data: Data coming from a JSON (export)
         """
         log.info("Updating %s with %s", self, util.json_dump(data))
         visi = data.get("visibility", None)
@@ -417,9 +422,8 @@ class Application(aggr.Aggregation):
         ops = {c.READ: {"application": self.key}, c.RECOMPUTE: {"key": self.key}}
         return ops[op] if op and op in ops else ops[c.READ]
 
-    def __get_project_branches(self, branch_definition: types.ObjectJsonRepr):
+    def __get_project_branches(self, branch_definition: types.ObjectJsonRepr) -> list[Union[projects.Project, branches.Branch]]:
         project_branches = []
-        log.debug("Getting branch definition for %s", str(branch_definition))
         list_mode = isinstance(branch_definition, list)
         for proj in branch_definition:
             o_proj = projects.Project.get_object(self.endpoint, proj)
@@ -427,7 +431,7 @@ class Application(aggr.Aggregation):
                 proj_br = o_proj.main_branch().name
             else:
                 proj_br = branch_definition[proj]
-            project_branches.append(o_proj if proj_br == util.DEFAULT else branches.Branch.get_object(o_proj, proj_br))
+            project_branches.append(o_proj if proj_br == c.DEFAULT_BRANCH else branches.Branch.get_object(o_proj, proj_br))
         return project_branches
 
 
@@ -543,7 +547,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     return problems
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: Optional[types.KeyList] = None) -> bool:
     """Imports a list of application configuration in a SonarQube platform
 
     :param endpoint: Reference to the SonarQube platform
@@ -551,18 +555,16 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     :param key_list: list of Application keys to import, defaults to all if None
     :return: Whether import succeeded
     """
-    if "applications" not in config_data:
-        log.info("No applications to import")
+    apps_data = config_data.get("applications", [])
+    log.info("Importing %d applications", len(apps_data))
+    if len(apps_data) == 0:
         return True
-    ed = endpoint.edition()
-    if ed not in (c.DE, c.EE, c.DCE):
+    if (ed := endpoint.edition()) not in (c.DE, c.EE, c.DCE):
         log.warning("Can't import applications in %s edition", ed)
         return False
-    log.info("Importing applications")
     search(endpoint=endpoint)
-    new_key_list = util.csv_to_list(key_list)
-    for key, data in util.list_to_dict(config_data["applications"], "key").items():
-        if new_key_list and key not in new_key_list:
+    for key, data in util.list_to_dict(apps_data, "key").items():
+        if key_list and key not in key_list:
             log.debug("App key '%s' not in selected apps", key)
             continue
         log.info("Importing application key '%s'", key)
@@ -573,7 +575,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         try:
             o.update(data)
             o.recompute()
-        except exceptions.ObjectNotFound as e:
+        except (exceptions.ObjectNotFound, exceptions.UnsupportedOperation) as e:
             log.error("%s configuration incomplete: %s", str(o), e.message)
     return True
 
