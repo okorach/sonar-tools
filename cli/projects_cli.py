@@ -87,7 +87,7 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
     else:
         # 3.12 and lower format
         key, status_key = "project_exports", "status"
-    project_list = [projdata["key"] for projdata in data[key] if projdata.get(status_key, "").startswith("SUCCESS")]
+    project_list = [projdata for projdata in data[key] if projdata.get(status_key, "").startswith("SUCCESS")]
     log.info("Skipping import of %d projects since export was failed or skipped", len(data[key]) - len(project_list))
     if kwargs.get("skipZeroLoc", False):
         raw_count = len(project_list)

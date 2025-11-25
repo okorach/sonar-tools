@@ -1628,10 +1628,11 @@ def export_zips(
     return results
 
 
-def import_zip(endpoint: pf.Platform, project_key: str, import_timeout: int = 30) -> tuple[Project, str]:
+def import_zip(endpoint: pf.Platform, project_key: str, project_name: Optional[str] = None, import_timeout: int = 30) -> tuple[Project, str]:
     """Imports a project zip file"""
+    project_name = project_name or project_key
     try:
-        o_proj = Project.create(key=project_key, endpoint=endpoint, name=project_key)
+        o_proj = Project.create(key=project_key, endpoint=endpoint, name=project_name)
     except exceptions.ObjectAlreadyExists:
         o_proj = Project.get_object(key=project_key, endpoint=endpoint)
     if o_proj.last_analysis() is None:
@@ -1660,7 +1661,7 @@ def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipImport") as executor:
         futures, futures_map = [], {}
         for proj in project_list:
-            future = executor.submit(import_zip, endpoint, proj, import_timeout)
+            future = executor.submit(import_zip, endpoint, proj["key"], proj["name"], import_timeout)
             futures.append(future)
             futures_map[future] = proj
         for future in concurrent.futures.as_completed(futures):
