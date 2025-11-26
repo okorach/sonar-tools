@@ -29,11 +29,12 @@ import Levenshtein
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
-from sonar.util import constants as c, issue_defs as idefs
+from sonar.util import constants as c
 from sonar import exceptions
 
 import sonar.utilities as util
 from sonar import projects, rules
+import sonar.util.issue_defs as idefs
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -194,10 +195,10 @@ class Finding(sq.SqObject):
         """
         data = self.to_json(without_time)
         if self.endpoint.is_mqr_mode():
-            data["securityImpact"] = data["impacts"].get("SECURITY", "")
-            data["reliabilityImpact"] = data["impacts"].get("RELIABILITY", "")
-            data["maintainabilityImpact"] = data["impacts"].get("MAINTAINABILITY", "")
-            data["otherImpact"] = data["impacts"].get("NONE", "")
+            data["securityImpact"] = data["impacts"].get(idefs.QUALITY_SECURITY, "")
+            data["reliabilityImpact"] = data["impacts"].get(idefs.QUALITY_RELIABILITY, "")
+            data["maintainabilityImpact"] = data["impacts"].get(idefs.QUALITY_MAINTAINABILITY, "")
+            data["otherImpact"] = data["impacts"].get(idefs.QUALITY_NONE, "")
             data.pop("impacts", None)
         data["projectName"] = projects.Project.get_object(endpoint=self.endpoint, key=self.projectKey).name
         if self.endpoint.version() >= c.MQR_INTRO_VERSION:
@@ -228,10 +229,10 @@ class Finding(sq.SqObject):
         if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION:
             data["status"] = STATUS_MAPPING.get(data["status"], data["status"])
         if self.endpoint.version() >= c.MQR_INTRO_VERSION:
-            data["securityImpact"] = self.impacts.get("SECURITY", "")
-            data["reliabilityImpact"] = self.impacts.get("RELIABILITY", "")
-            data["maintainabilityImpact"] = self.impacts.get("MAINTAINABILITY", "")
-            data["otherImpact"] = self.impacts.get("NONE", "")
+            data["securityImpact"] = self.impacts.get(idefs.QUALITY_SECURITY, "")
+            data["reliabilityImpact"] = self.impacts.get(idefs.QUALITY_RELIABILITY, "")
+            data["maintainabilityImpact"] = self.impacts.get(idefs.QUALITY_MAINTAINABILITY, "")
+            data["otherImpact"] = self.impacts.get(idefs.QUALITY_NONE, "")
             data["legacyType"] = data.pop("type", "")
             data["legacySeverity"] = data.pop("severity", "")
         return {k: v for k, v in data.items() if v is not None and k not in _JSON_FIELDS_PRIVATE}
@@ -275,16 +276,16 @@ class Finding(sq.SqObject):
         return data
 
     def is_vulnerability(self) -> bool:
-        return "SECURITY" in self.impacts if self.endpoint.is_mqr_mode() else self.type == "VULNERABILITY"
+        return idefs.QUALITY_SECURITY in self.impacts if self.endpoint.is_mqr_mode() else self.type == idefs.TYPE_VULN
 
     def is_hotspot(self) -> bool:
-        return self.type == "SECURITY_HOTSPOT"
+        return self.type == idefs.TYPE_HOTSPOT
 
     def is_bug(self) -> bool:
-        return "RELIABILITY" in self.impacts if self.endpoint.is_mqr_mode() else self.type == "BUG"
+        return idefs.QUALITY_RELIABILITY in self.impacts if self.endpoint.is_mqr_mode() else self.type == idefs.TYPE_BUG
 
     def is_code_smell(self) -> bool:
-        return "MAINTAINABILITY" in self.impacts if self.endpoint.is_mqr_mode() else self.type == "CODE_SMELL"
+        return idefs.QUALITY_MAINTAINABILITY in self.impacts if self.endpoint.is_mqr_mode() else self.type == idefs.TYPE_CODE_SMELL
 
     def is_security_issue(self) -> bool:
         return self.is_vulnerability() or self.is_hotspot()

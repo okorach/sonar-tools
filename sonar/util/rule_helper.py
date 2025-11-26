@@ -23,6 +23,7 @@ from typing import Any
 from sonar import utilities
 from sonar.util import constants as c
 from sonar.util import common_json_helper
+import sonar.util.issue_defs as idefs
 
 
 def __convert_rule_json(json_to_convert: dict[str, Any]) -> dict[str, Any]:
@@ -31,7 +32,7 @@ def __convert_rule_json(json_to_convert: dict[str, Any]) -> dict[str, Any]:
     if "impacts" in json_to_convert:
         json_to_convert["impacts"] = {
             k: json_to_convert["impacts"][k]
-            for k in ("SECURITY", "RELIABILITY", "MAINTAINABILITY")
+            for k in idefs.MQR_QUALITIES
             if k in json_to_convert["impacts"] and json_to_convert["impacts"][k] != c.DEFAULT
         }
     if "params" in json_to_convert:

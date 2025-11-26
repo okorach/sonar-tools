@@ -30,7 +30,7 @@ from sonar import sqobject, rules
 import sonar.platform as pf
 from sonar.util.types import ApiPayload
 from sonar.util import cache
-from sonar.util import constants as c
+import sonar.util.issue_defs as idefs
 
 #: List of language APIs
 APIS = {"list": "languages/list"}
@@ -50,7 +50,7 @@ class Language(sqobject.SqObject):
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.name = name  #: Language name
-        self._nb_rules = {"_ALL": None, "BUG": None, "VULNERABILITY": None, "CODE_SMELL": None, "SECURITY_HOTSPOT": None}
+        self._nb_rules = {"_ALL": None, idefs.TYPE_BUG: None, idefs.TYPE_VULN: None, idefs.TYPE_CODE_SMELL: None, idefs.TYPE_HOTSPOT: None}
         Language.CACHE.put(self)
 
     @classmethod
@@ -77,7 +77,7 @@ class Language(sqobject.SqObject):
         :returns: Nbr of rules for that language (and optional type)
         :rtype: int
         """
-        if not rule_type or rule_type not in (c.VULN, c.HOTSPOT, c.BUG, c.CODE_SMELL):
+        if not rule_type or rule_type not in (idefs.TYPE_VULN, idefs.TYPE_HOTSPOT, idefs.TYPE_BUG, idefs.TYPE_CODE_SMELL):
             rule_type = "_ALL"
         if not self._nb_rules[rule_type]:
             self._nb_rules[rule_type] = rules.search(self.endpoint, params={"languages": self.key, "types": rule_type})

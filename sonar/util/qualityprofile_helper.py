@@ -24,6 +24,7 @@ from sonar import utilities as util
 from sonar.util import constants as c
 from sonar.util import types
 from sonar.util import common_json_helper
+import sonar.util.issue_defs as idefs
 
 
 KEY_PARENT = "parent"
@@ -63,11 +64,7 @@ def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
                     r["impacts"] = r["severities"]
                     r.pop("severities")
                 if "impacts" in r:
-                    r["impacts"] = {
-                        k: r["impacts"][k]
-                        for k in ("SECURITY", "RELIABILITY", "MAINTAINABILITY")
-                        if k in r["impacts"] and r["impacts"][k] != c.DEFAULT
-                    }
+                    r["impacts"] = {k: r["impacts"][k] for k in idefs.MQR_QUALITIES if k in r["impacts"] and r["impacts"][k] != c.DEFAULT}
                 if "params" in r:
                     r["params"] = util.dict_to_list(dict(sorted(r["params"].items())), "key")
         if "removedRules" in v:
