@@ -33,7 +33,7 @@ import sonar.util.constants as c
 import sonar.utilities as sutil
 
 import cli.options as opt
-from cli import config
+from sonar.cli import config
 
 CMD = "config.py"
 OPTS = f"{CMD} {tutil.SQS_OPTS} -{opt.EXPORT_SHORT}"
