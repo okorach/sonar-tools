@@ -201,17 +201,8 @@ def test_permissions_1(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
     p = get_test_portfolio
-    p.set_permissions({"groups": {tutil.SQ.default_user_group(): ["user", "admin"], "sonar-administrators": ["user", "admin"]}})
+    p.set_permissions([{"group": tutil.SQ.default_user_group(), "permissions": ["user", "admin"]}, {"group": "sonar-administrators", "permissions": ["user", "admin"]}])
     # assert p.permissions().to_json()["groups"] == {tutil.SQ.default_user_group(): ["user", "admin"], "sonar-administrators": ["user", "admin"]}
-
-
-def test_permissions_2(get_test_portfolio: Generator[pf.Portfolio]) -> None:
-    """Test permissions"""
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
-    p = get_test_portfolio
-    p.set_permissions({"groups": {tutil.SQ.default_user_group(): ["user"], "sonar-administrators": ["user", "admin"]}})
-    # assert p.permissions().to_json()["groups"] == {tutil.SQ.default_user_group(): ["user"], "sonar-administrators": ["user", "admin"]}
 
 
 def test_audit(get_test_portfolio: Generator[pf.Portfolio]) -> None:
