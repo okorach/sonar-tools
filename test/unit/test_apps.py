@@ -122,17 +122,7 @@ def test_permissions_1(get_test_app: Generator[App]) -> None:
     if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name="An app", key=TEST_KEY):
         return
     obj = get_test_app
-    obj.set_permissions({"groups": {tutil.SQ.default_user_group(): ["user", "admin"], "sonar-administrators": ["user", "admin"]}})
-    # assert apps.permissions().to_json()["groups"] == {tutil.SQ.default_user_group(): ["user", "admin"], "sonar-administrators": ["user", "admin"]}
-
-
-def test_permissions_2(get_test_app: Generator[App]) -> None:
-    """Test permissions"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name=tutil.TEMP_NAME, key=tutil.TEMP_KEY):
-        return
-    obj = get_test_app
-    obj.set_permissions({"groups": {tutil.SQ.default_user_group(): ["user"], "sonar-administrators": ["user", "admin"]}})
-    # assert apps.permissions().to_json()["groups"] == {tutil.SQ.default_user_group(): ["user"], "sonar-administrators": ["user", "admin"]}
+    obj.set_permissions([{"group": tutil.SQ.default_user_group(), "permissions": ["user", "admin"]}, {"group": "sonar-administrators", "permissions": ["user", "admin"]}])
 
 
 def test_get_projects() -> None:
@@ -258,13 +248,25 @@ def test_app_branches(get_test_app: Generator[App]) -> None:
     obj = get_test_app
     APP_BRANCH_MAIN, APP_BRANCH_2 = "BRANCH foo", "Other Branch"
     definition = {
-        "branches": {
-            APP_BRANCH_2: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_MAIN, tutil.PROJECT_1: "main", "demo:java-security": "main"}},
-            APP_BRANCH_MAIN: {
-                "projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, tutil.PROJECT_1: "main", "demo:java-security": "main"},
+        "branches": [
+            {
+                "name": APP_BRANCH_2,
+                "projects": [
+                    {"key": tutil.PROJ_WITH_BRANCHES, "branch": tutil.BRANCH_MAIN},
+                    {"key": tutil.PROJECT_1, "branch": "main"},
+                    {"key": "demo:java-security", "branch": "main"}
+                ]
+            },
+            {
+                "name": APP_BRANCH_MAIN,
+                "projects": [
+                    {"key": tutil.PROJ_WITH_BRANCHES, "branch": tutil.BRANCH_3},
+                    {"key": tutil.PROJECT_1, "branch": "main"},
+                    {"key": "demo:java-security", "branch": "main"}
+                ],
                 "isMain": True,
             },
-        }
+        ]
     }
     obj.update(definition)
     br = obj.branches()
@@ -272,14 +274,33 @@ def test_app_branches(get_test_app: Generator[App]) -> None:
     assert obj.main_branch().name == APP_BRANCH_MAIN
     APP_BRANCH_MAIN, APP_BRANCH_2, APP_BRANCH_3 = "Main Branch", "Master", "MiBranch"
     definition = {
-        "branches": {
-            APP_BRANCH_2: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_MAIN, tutil.PROJECT_1: "main", "demo:java-security": "main"}},
-            APP_BRANCH_3: {"projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, tutil.PROJECT_1: "main", "demo:java-security": "main"}},
-            APP_BRANCH_MAIN: {
-                "projects": {tutil.PROJ_WITH_BRANCHES: tutil.BRANCH_3, tutil.PROJECT_1: "main", "demo:java-security": "main"},
+        "branches": [
+            {
+                "name": APP_BRANCH_2,
+                "projects": [
+                    {"key": tutil.PROJ_WITH_BRANCHES, "branch": tutil.BRANCH_MAIN},
+                    {"key": tutil.PROJECT_1, "branch": "main"},
+                    {"key": "demo:java-security", "branch": "main"}
+                ]
+            },
+            {
+                "name": APP_BRANCH_3,
+                "projects": [
+                    {"key": tutil.PROJ_WITH_BRANCHES, "branch": tutil.BRANCH_3},
+                    {"key": tutil.PROJECT_1, "branch": "main"},
+                    {"key": "demo:java-security", "branch": "main"}
+                ]
+            },
+            {
+                "name": APP_BRANCH_MAIN,
+                "projects": [
+                    {"key": tutil.PROJ_WITH_BRANCHES, "branch": tutil.BRANCH_3},
+                    {"key": tutil.PROJECT_1, "branch": "main"},
+                    {"key": "demo:java-security", "branch": "main"}
+                ],
                 "isMain": True,
             },
-        }
+        ]
     }
     obj.update(definition)
     br = obj.branches()
