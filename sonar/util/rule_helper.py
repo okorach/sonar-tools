@@ -31,10 +31,12 @@ def __convert_rule_json(json_to_convert: dict[str, Any]) -> dict[str, Any]:
     json_to_convert = common_json_helper.convert_common_fields(json_to_convert)
     if "impacts" in json_to_convert:
         json_to_convert["impacts"] = {
-            k: json_to_convert["impacts"][k]
+            k.lower(): json_to_convert["impacts"][k].lower()
             for k in idefs.MQR_QUALITIES
             if k in json_to_convert["impacts"] and json_to_convert["impacts"][k] != c.DEFAULT
         }
+    if "severity" in json_to_convert:
+        json_to_convert["severity"] = json_to_convert["severity"].lower()
     if "params" in json_to_convert:
         json_to_convert["params"] = utilities.dict_to_list(json_to_convert["params"], "key")
     return json_to_convert
