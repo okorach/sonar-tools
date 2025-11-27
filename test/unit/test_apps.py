@@ -122,7 +122,12 @@ def test_permissions_1(get_test_app: Generator[App]) -> None:
     if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name="An app", key=TEST_KEY):
         return
     obj = get_test_app
-    obj.set_permissions([{"group": tutil.SQ.default_user_group(), "permissions": ["user", "admin"]}, {"group": "sonar-administrators", "permissions": ["user", "admin"]}])
+    obj.set_permissions(
+        [
+            {"group": tutil.SQ.default_user_group(), "permissions": ["user", "admin"]},
+            {"group": "sonar-administrators", "permissions": ["user", "admin"]},
+        ]
+    )
 
 
 def test_get_projects() -> None:
@@ -254,15 +259,15 @@ def test_app_branches(get_test_app: Generator[App]) -> None:
                 "projects": [
                     {"key": tutil.PROJ_WITH_BRANCHES, "branch": tutil.BRANCH_MAIN},
                     {"key": tutil.PROJECT_1, "branch": "main"},
-                    {"key": "demo:java-security", "branch": "main"}
-                ]
+                    {"key": "demo:java-security", "branch": "main"},
+                ],
             },
             {
                 "name": APP_BRANCH_MAIN,
                 "projects": [
                     {"key": tutil.PROJ_WITH_BRANCHES, "branch": tutil.BRANCH_3},
                     {"key": tutil.PROJECT_1, "branch": "main"},
-                    {"key": "demo:java-security", "branch": "main"}
+                    {"key": "demo:java-security", "branch": "main"},
                 ],
                 "isMain": True,
             },
@@ -280,23 +285,23 @@ def test_app_branches(get_test_app: Generator[App]) -> None:
                 "projects": [
                     {"key": tutil.PROJ_WITH_BRANCHES, "branch": tutil.BRANCH_MAIN},
                     {"key": tutil.PROJECT_1, "branch": "main"},
-                    {"key": "demo:java-security", "branch": "main"}
-                ]
+                    {"key": "demo:java-security", "branch": "main"},
+                ],
             },
             {
                 "name": APP_BRANCH_3,
                 "projects": [
                     {"key": tutil.PROJ_WITH_BRANCHES, "branch": tutil.BRANCH_3},
                     {"key": tutil.PROJECT_1, "branch": "main"},
-                    {"key": "demo:java-security", "branch": "main"}
-                ]
+                    {"key": "demo:java-security", "branch": "main"},
+                ],
             },
             {
                 "name": APP_BRANCH_MAIN,
                 "projects": [
                     {"key": tutil.PROJ_WITH_BRANCHES, "branch": tutil.BRANCH_3},
                     {"key": tutil.PROJECT_1, "branch": "main"},
-                    {"key": "demo:java-security", "branch": "main"}
+                    {"key": "demo:java-security", "branch": "main"},
                 ],
                 "isMain": True,
             },
