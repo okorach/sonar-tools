@@ -136,11 +136,11 @@ def test_import() -> None:
     data = {}
     groups.import_config(tutil.SQ, data)
     data = {
-        "groups": {
-            "Group1": "This is Group1",
-            "Group2": "This is Group2",
-            "Group3": "This is Group3",
-        }
+        "groups": [
+            {"name": "Group1", "description": "This is Group1"},
+            {"name": "Group2", "description": "This is Group2"},
+            {"name": "Group3", "description": "This is Group3"},
+        ]
     }
     groups.import_config(tutil.SQ, data)
     for g in "Group1", "Group2", "Group3":
