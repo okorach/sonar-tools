@@ -36,6 +36,7 @@ from sonar.util import types, cache, constants as c
 from sonar import users
 from sonar import findings, rules, changelog
 from sonar import exceptions
+import sonar.util.issue_defs as idefs
 
 PROJECT_FILTER = "project"
 PROJECT_FILTER_OLD = "projectKey"
@@ -65,7 +66,7 @@ SEARCH_CRITERIAS = (
     "status",
 )
 
-TYPES = ("SECURITY_HOTSPOT",)
+TYPES = (idefs.TYPE_HOTSPOT,)
 RESOLUTIONS = ("SAFE", "ACKNOWLEDGED", "FIXED")
 STATUSES = ("TO_REVIEW", "REVIEWED")
 SEVERITIES = ()
@@ -94,7 +95,7 @@ class Hotspot(findings.Finding):
     def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
-        self.type = "SECURITY_HOTSPOT"
+        self.type = idefs.TYPE_HOTSPOT
         self.__details: types.ApiPayload = None
         Hotspot.CACHE.put(self)
         self.refresh()
@@ -123,7 +124,7 @@ class Hotspot(findings.Finding):
         """
         data = super().to_json(without_time)
         if self.endpoint.is_mqr_mode():
-            data["impacts"]["SECURITY"] += "(HOTSPOT)"
+            data["impacts"][idefs.QUALITY_SECURITY] += f"({idefs.TYPE_HOTSPOT})"
         return data
 
     def _load(self, data: types.ApiPayload, from_export: bool = False) -> None:
@@ -132,7 +133,7 @@ class Hotspot(findings.Finding):
         if not self.rule:
             self.rule = data.get("ruleKey", None)
         self.severity = data.get("vulnerabilityProbability", "UNDEFINED")
-        self.impacts = {"SECURITY": self.severity}
+        self.impacts = {idefs.QUALITY_SECURITY: self.severity}
 
     def refresh(self) -> bool:
         """Refreshes and reads hotspots details in SonarQube
@@ -147,7 +148,7 @@ class Hotspot(findings.Finding):
                     self.file = d["component"]["path"]
                 self.branch, self.pull_request = self.get_branch_and_pr(d["project"])
                 self.severity = d["rule"].get("vulnerabilityProbability", "UNDEFINED")
-                self.impacts = {"SECURITY": self.severity}
+                self.impacts = {idefs.QUALITY_SECURITY: self.severity}
                 if not self.rule:
                     self.rule = d["rule"]["key"]
                 self.assignee = d.get("assignee", None)

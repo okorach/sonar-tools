@@ -29,6 +29,7 @@ from requests.exceptions import ConnectionError
 import utilities as tutil
 from sonar import issues, exceptions, logging
 from sonar.util import constants as c
+import sonar.util.issue_defs as idefs
 import credentials as tconf
 
 
@@ -109,7 +110,7 @@ def test_set_severity() -> None:
     issue.refresh()
     assert issue.impacts == new_impacts
     with pytest.raises(exceptions.UnsupportedOperation):
-        issue.set_mqr_severity("MAINTAINABILITY", "NON_EXISTING")
+        issue.set_mqr_severity(idefs.QUALITY_MAINTAINABILITY, "NON_EXISTING")
     with pytest.raises(exceptions.SonarException):
         issue.set_mqr_severity("NON_EXISTING", "HIGH")
     for k, v in old_impacts.items():

@@ -246,8 +246,8 @@ class Rule(sq.SqObject):
             endpoint=endpoint,
             templateKey=template_key,
             name=data.get("name", key),
-            impacts=data.get("impacts"),
-            severity=data.get("severity"),
+            impacts={k.upper(): v.upper() for k, v in data.get("impacts", {}).items()} if "impacts" in data else None,
+            severity=data.get("severity").upper() if "severity" in data else None,
             params=rule_params,
             markdownDescription=data.get("description", "NO DESCRIPTION"),
         )

@@ -29,7 +29,8 @@ from sonar import errcodes
 import utilities as tutil
 import credentials as creds
 from cli import options as opt
-from cli import findings_export, projects_cli as proj_cli, measures_export, audit, config, findings_sync, housekeeper, loc, rules_cli
+from cli import findings_export, projects_cli as proj_cli, measures_export, audit, findings_sync, housekeeper, loc, rules_cli
+from sonar.cli import config
 
 CLIS_DATA = [
     ["findings_export.py", findings_export.main, ""],

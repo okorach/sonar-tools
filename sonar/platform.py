@@ -333,11 +333,10 @@ class Platform(object):
             data[return_field].update(json.loads(self.get(api, params=params | {"p": page}).text)[return_field])
         return data
 
-    def global_permissions(self) -> dict[str, any]:
+    def global_permissions(self) -> global_permissions.GlobalPermissions:
         """Returns the SonarQube platform global permissions
 
         :return: dict{"users": {<login>: <permissions comma separated>, ...}, "groups"; {<name>: <permissions comma separated>, ...}}}
-        :rtype: dict
         """
         if self._permissions is None:
             self._permissions = global_permissions.GlobalPermissions(self)

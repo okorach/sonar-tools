@@ -22,7 +22,8 @@
 Exports SonarQube platform configuration as JSON
 """
 
-from cli import options, config
+from cli import options
+from sonar.cli import config
 from sonar import exceptions, errcodes, utilities, version
 import sonar.logging as log
 from sonar import platform

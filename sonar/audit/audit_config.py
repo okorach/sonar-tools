@@ -52,13 +52,12 @@ def load(config_name: Optional[str] = None, settings: types.ConfigSettings = Non
     """Loads a particular configuration file"""
     global _CONFIG_SETTINGS
 
-    if settings is None:
-        settings = {}
+    settings = settings or {}
 
     _CONFIG_SETTINGS = _load_properties_file(pathlib.Path(__file__).parent / f"{config_name}.properties")
     for file in (f"{os.path.expanduser('~')}{os.sep}.{config_name}.properties", f"{os.getcwd()}{os.sep}.{config_name}.properties"):
         try:
-            _CONFIG_SETTINGS.update(_load_properties_file(f"{os.path.expanduser('~')}{os.sep}.{config_name}.properties"))
+            _CONFIG_SETTINGS.update(_load_properties_file(file))
         except FileNotFoundError:
             pass
         except PermissionError:

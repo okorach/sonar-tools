@@ -94,10 +94,9 @@ class Permissions(ABC):
     def export(self, export_settings: types.ConfigSettings) -> types.JsonPermissions:
         """Exports permissions as JSON"""
         perms = self.to_json()
-        perms = {k: v for k, v in perms.items() if len(v) > 0}
         if not perms or len(perms) == 0:
             return None
-        return perms
+        return {k: v for k, v in perms.items() if len(v) > 0}
 
     @abstractmethod
     def read(self) -> Permissions:
@@ -254,18 +253,15 @@ class Permissions(ABC):
         :param perm_filter: Optional filter to count only specific types of permissions, defaults to None.
         :return: The number of permissions.
         """
-        perms = PERMISSION_TYPES if perm_type is None else (perm_type,)
-        perm_counter = 0
         if not self.permissions:
             self.read()
         if not self.permissions:
             return 0
-        for ptype in perms:
-            perms = self.permissions.get(ptype, {}).copy()
-            if isinstance(perms, list):
-                perms = {u: ["admin"] for u in perms}
-            for elem_perms in perms.values():
-                perm_counter += sum(1 for p in elem_perms if perm_filter is None or p in perm_filter)
+        perm_types = [p[:-1] for p in (PERMISSION_TYPES if perm_type is None else (perm_type,))]
+        perm_counter = 0
+        for perm in self.permissions:
+            if any(p in perm for p in perm_types):
+                perm_counter += len(perm["permissions"]) if perm_filter is None else len(utilities.intersection(perm["permissions"], perm_filter))
         return perm_counter
 
     def _get_api(self, api: str, perm_type: str, ret_field: str, **extra_params) -> types.JsonPermissions:

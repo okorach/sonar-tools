@@ -942,26 +942,10 @@
                                     "description": "The rule template key"
                                 },
                                 "severity": {
-                                    "type": "string",
-                                    "description": "Severity in Std Experience"
+                                    "$ref": "#/$defs/severity"
                                 },
                                 "impacts": {
-                                    "type": "object",
-                                    "description": "The rule impacts in MQR mode",
-                                    "properties": {
-                                        "SECURITY": {
-                                            "type": "string",
-                                            "description": "Security impact"
-                                        },
-                                        "RELIABILITY": {
-                                            "type": "string",
-                                            "description": "Reliability impact"
-                                        },
-                                        "MAINTAINABILITY": {
-                                            "type": "string",
-                                            "description": "Maintainability impact"
-                                        }
-                                    }
+                                    "$ref": "#/$defs/impacts"
                                 },
                                 "params": {
                                     "type": "array",
@@ -1019,6 +1003,32 @@
         }
     },
     "$defs": {
+        "impacts": {
+            "type": "object",
+            "description": "Rule impacts in MQR mode",
+            "properties": {
+                "security": {
+                    "type": "string",
+                    "description": "Security impact",
+                    "enum": ["info", "low", "medium", "high", "blocker"]
+                },
+                "reliability": {
+                    "type": "string",
+                    "description": "Reliability impact",
+                    "enum": ["info", "low", "medium", "high", "blocker"]
+                },
+                "maintainability": {
+                    "type": "string",
+                    "description": "Maintainability impact",
+                    "enum": ["info", "low", "medium", "high", "blocker"]
+                }
+            }
+        },
+        "severity": {
+            "type": "string",
+            "description": "Rule legacy severity in std experience",
+            "enum": ["info", "minor", "major", "critical", "blocker"]
+        },
         "qualityProfile": {
             "type": "object",
             "required": [
@@ -1078,26 +1088,10 @@
                                 }
                             },
                             "severity": {
-                                "type": "string",
-                                "description": "The rule severity"
+                                "$ref": "#/$defs/severity"
                             },
                             "impacts": {
-                                "type": "object",
-                                "description": "Rule impacts in MQR mode",
-                                "properties": {
-                                    "SECURITY": {
-                                        "type": "string",
-                                        "description": "Security impact"
-                                    },
-                                    "RELIABILITY": {
-                                        "type": "string",
-                                        "description": "Reliability impact"
-                                    },
-                                    "MAINTAINABILITY": {
-                                        "type": "string",
-                                        "description": "Maintainability impact"
-                                    }
-                                }
+                                "$ref": "#/$defs/impacts"
                             },
                             "prioritized": {
                                 "type": "boolean",
@@ -1127,26 +1121,10 @@
                                 "description": "The rule key"
                             },
                             "severity": {
-                                "type": "string",
-                                "description": "The rule severity"
+                                "$ref": "#/$defs/severity"
                             },
                             "impacts": {
-                                "type": "object",
-                                "description": "Rule impacts in MQR mode",
-                                "properties": {
-                                    "SECURITY": {
-                                        "type": "string",
-                                        "description": "Security impact"
-                                    },
-                                    "RELIABILITY": {
-                                        "type": "string",
-                                        "description": "Reliability impact"
-                                    },
-                                    "MAINTAINABILITY": {
-                                        "type": "string",
-                                        "description": "Maintainability impact"
-                                    }
-                                }
+                                "$ref": "#/$defs/impacts"
                             },
                             "prioritized": {
                                 "type": "boolean",

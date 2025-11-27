@@ -330,8 +330,8 @@ class QualityProfile(sq.SqObject):
         ruleset_d = util.list_to_dict(ruleset, "key", keep_in_values=True)
         log.info("%s: Activating rules %s", self, util.json_dump(ruleset_d))
         for r_key, r_data in ruleset_d.items():
-            sev = r_data.get("severity")
-            impacts = r_data.get("impacts")
+            sev = r_data.get("severity").upper() if "severity" in r_data else None
+            impacts = {k.upper(): v.upper() for k, v in r_data.get("impacts", {}).items()} if "impacts" in r_data else None
             rule_params = {p["key"]: p["value"] for p in r_data["params"]} if "params" in r_data else {}
             ok = ok and self.activate_rule(rule_key=r_key, impacts=impacts, severity=sev, prioritized=r_data.get("prioritized", False), **rule_params)
         self.rules(use_cache=False)

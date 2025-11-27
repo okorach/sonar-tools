@@ -51,7 +51,7 @@ class QualityPermissions(permissions.Permissions):
             result = result and r.ok
         return result
 
-    def to_json(self, perm_type: Optional[tuple[str, ...]] = None, csv: bool = False) -> types.ObjectJsonRepr:
+    def to_json(self, perm_type: Optional[tuple[str, ...]] = None, csv: bool = False) -> types.JsonPermissions:
         """Returns the JSON representation of permissions"""
         if not self.permissions:
             return None
@@ -75,13 +75,11 @@ class QualityPermissions(permissions.Permissions):
 
     def _get_api(self, api: str, perm_type: tuple[str, ...], ret_field: str, **extra_params) -> list[str]:
         perms = []
-        params = extra_params.copy()
-        params["ps"] = MAX_PERMS
+        params = extra_params.copy() | {"ps": MAX_PERMS}
         page, nbr_pages = 1, 1
         while page <= nbr_pages:
-            params["p"] = page
             try:
-                resp = self.endpoint.get(api, params=params)
+                resp = self.endpoint.get(api, params=params | {"p": page})
                 data = json.loads(resp.text)
                 perms += [p[ret_field] for p in data[perm_type]]
                 page, nbr_pages = page + 1, utilities.nbr_pages(data)
@@ -109,12 +107,32 @@ class QualityPermissions(permissions.Permissions):
         self.read()
         return True
 
-    def _read_perms(self, apis: dict[str, dict[str, str]], field: str, **kwargs) -> types.ObjectJsonRepr:
-        """Reads permissions of a QP or QG"""
-        self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
+    def _read_perms(self, apis: dict[str, dict[str, str]], fields: dict[str, str], **kwargs) -> dict[str, list[str]]:
+        """Reads permissions of a QP or QG
+
+        :param apis: A dict with "get" key and values as dicts with "users" and "groups" keys and values as API endpoints
+        :param fields: The fields that are returned by the API
+        :return: a dict with "users" and "groups" keys and list of logins or group names as values
+        Examples: {"users": ["olivier", "john"], "groups": ["developers", "testers"]}"""
+        self.permissions = {}
         if self.concerned_object.is_built_in:
             log.debug("No permissions for %s because it's built-in", str(self))
         else:
             for p in permissions.PERMISSION_TYPES:
-                self.permissions[p] = self._get_api(apis["get"][p], p, field[p], **kwargs)
+                self.permissions[p] = self._get_api(apis["get"][p], p, fields[p], **kwargs)
         return self.permissions
+
+    def count(self, perm_type: Optional[str] = None, perm_filter: Optional[list[str]] = None) -> int:
+        """Counts number of permissions of an QG or QP object
+
+        :param perm_type: Optional "users" or "groups", both assumed if not specified.
+        :param perm_filter: Ignored (present just to keep compatibility with parent class)
+        :return: The number of permissions of the object for a given type.
+        """
+        if not self.permissions:
+            self.read()
+        if not self.permissions:
+            return 0
+        perm_types = permissions.PERMISSION_TYPES if perm_type is None else (perm_type,)
+        log.info("PERM Counting permissions with %s with type %s and filter %s", self.permissions, perm_type, perm_filter)
+        return sum(len(self.permissions[p]) for p in perm_types)

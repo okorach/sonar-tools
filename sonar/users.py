@@ -89,7 +89,7 @@ class User(sqobject.SqObject):
         self.nb_tokens: Optional[int] = None  #: Nbr of tokens (int) - read-only
         self.__tokens: Optional[list[tokens.UserToken]] = None
         self.__load(data)
-        log.debug("Created %s id '%s'", str(self), str(self.id))
+        log.debug("Constructed object %s id '%s'", str(self), str(self.id))
         User.CACHE.put(self)
 
     @classmethod
@@ -97,11 +97,8 @@ class User(sqobject.SqObject):
         """Creates a user object from the result of a SonarQube API user search data
 
         :param endpoint: Reference to the SonarQube platform
-        :type endpoint: Platform
         :param data: The JSON data corresponding to the group
-        :type data: dict
         :return: The user object
-        :rtype: User or None
         """
         log.debug("Loading user '%s'", data["login"])
         return cls(login=data["login"], endpoint=endpoint, data=data)
@@ -186,24 +183,25 @@ class User(sqobject.SqObject):
         self.email = data.get("email", None)  #: User email
         self.is_local = data.get("local", False)  #: User is local - read-only
         self.last_login = None  #: User last login - read-only
-        self.nb_tokens: Optional[int] = None
+        self.sq_json = (self.sq_json or {}) | data
         if self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
-            self.last_login = util.string_to_date(data.get("lastConnectionDate", None))
-            self.nb_tokens = data.get("tokenCount", None)  #: Nbr of tokens - read-only
+            self.last_login = util.string_to_date(data.get("lastConnectionDate"))
+            self.nb_tokens = data.get("tokenCount")  #: Nbr of tokens - read-only
         else:
-            dt1 = util.string_to_date(data.get("sonarQubeLastConnectionDate", None))
-            dt2 = util.string_to_date(data.get("sonarLintLastConnectionDate", None))
+            dt1 = util.string_to_date(data.get("sonarQubeLastConnectionDate"))
+            dt2 = util.string_to_date(data.get("sonarLintLastConnectionDate"))
             if not dt1:
                 self.last_login = dt2
             elif not dt2:
                 self.last_login = dt1
             else:
                 self.last_login = max(dt1, dt2)
-            self.id = data["id"]
+            if "id" not in self.sq_json:
+                log.warning("No 'id' in API payload for %s", self)
+            self.id = self.sq_json.get("id")
         self.__tokens = None
-        self.sq_json = data
 
-    def groups(self, data: types.ApiPayload = None, **kwargs) -> types.KeyList:
+    def groups(self, **kwargs) -> types.KeyList:
         """Returns the list of groups of a user"""
         log.info("Getting %s groups = %s", str(self), str(self._groups))
         if self._groups is not None and kwargs.get(c.USE_CACHE, True):
@@ -212,9 +210,7 @@ class User(sqobject.SqObject):
             data = json.loads(self.get(_GROUPS_API_SC, self.api_params(c.GET)).text)["groups"]
             self._groups = [g["name"] for g in data]
         elif self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
-            if data is None:
-                data = self.sq_json
-            self._groups = list(set(data.get("groups", []) + [self.endpoint.default_user_group()]))
+            self._groups = list(set(self.sq_json.get("groups", []) + [self.endpoint.default_user_group()]))
             log.debug("Updated %s groups = %s", str(self), str(self._groups))
         else:
             data = json.loads(self.get(User.API["GROUP_MEMBERSHIPS"], {"userId": self.id, "pageSize": 500}).text)["groupMemberships"]

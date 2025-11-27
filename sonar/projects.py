@@ -40,6 +40,7 @@ from requests import HTTPError, RequestException
 import sonar.logging as log
 import sonar.platform as pf
 
+import sonar.util.issue_defs as idefs
 from sonar.util import types, cache
 from sonar import exceptions
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops
@@ -746,8 +747,8 @@ class Project(components.Component):
         params = util.remove_nones({"project": self.key, "branch": branch, "pullRequest": pr})
 
         data = json.loads(self.get("projects/export_findings", params=params).text)["export_findings"]
-        findings_conflicts = {"SECURITY_HOTSPOT": 0, "BUG": 0, "CODE_SMELL": 0, "VULNERABILITY": 0}
-        nbr_findings = {"SECURITY_HOTSPOT": 0, "BUG": 0, "CODE_SMELL": 0, "VULNERABILITY": 0}
+        findings_conflicts = dict.fromkeys(idefs.ALL_TYPES, 0)
+        nbr_findings = dict.fromkeys(idefs.ALL_TYPES, 0)
         for i in data:
             key = i["key"]
             if key in findings_list:
