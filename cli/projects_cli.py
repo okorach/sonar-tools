@@ -92,7 +92,7 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
     if kwargs.get("skipZeroLoc", False):
         raw_count = len(project_list)
         project_list = [
-            projdata["key"]
+            projdata
             for projdata in data[key]
             if projdata.get(status_key, "").startswith("SUCCESS") and "ZERO_LOC" not in projdata.get(status_key, "")
         ]
