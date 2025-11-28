@@ -387,7 +387,7 @@ def test_project_key(get_test_project: Generator[projects.Project]) -> None:
 
 def test_import_zips() -> None:
     """test_import_zips"""
-    proj_list = [tutil.PROJECT_0, tutil.PROJECT_1, tutil.PROJECT_2, "non-existing"]
+    proj_list = [{"key": k, "name": k} for k in [tutil.PROJECT_0, tutil.PROJECT_1, tutil.PROJECT_2, "non-existing"]]
     if tutil.SQ.edition() == c.CE:
         with pytest.raises(exceptions.UnsupportedOperation):
             projects.import_zips(tutil.SQ, project_list=proj_list)
