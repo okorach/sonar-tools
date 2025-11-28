@@ -81,13 +81,13 @@ def test_get_object_non_existing() -> None:
 
 def test_exists(get_test_app: Generator[App]) -> None:
     """Test exist"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.exists, endpoint=tutil.SQ, key=EXISTING_KEY) and not tutil.verify_support(
+    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.Application.exists, endpoint=tutil.SQ, key=EXISTING_KEY) and not tutil.verify_support(
         SUPPORTED_EDITIONS, apps.exists, endpoint=tutil.SQ, key=NON_EXISTING_KEY
     ):
         return
     obj = get_test_app
-    assert apps.exists(endpoint=tutil.SQ, key=obj.key)
-    assert not apps.exists(endpoint=tutil.SQ, key=NON_EXISTING_KEY)
+    assert apps.Application.exists(endpoint=tutil.SQ, key=obj.key)
+    assert not apps.Application.exists(endpoint=tutil.SQ, key=NON_EXISTING_KEY)
 
 
 def test_get_list() -> None:
@@ -96,7 +96,7 @@ def test_get_list() -> None:
     if not tutil.verify_support(SUPPORTED_EDITIONS, apps.get_list, endpoint=tutil.SQ, key_list=k_list):
         return
     p_dict = apps.get_list(endpoint=tutil.SQ, key_list=k_list)
-    assert sorted(k_list) == sorted(list(p_dict.keys()))
+    assert sorted(k_list) == sorted(p_dict.keys())
 
 
 def test_create_delete(get_test_app: Generator[App]) -> None:
@@ -108,13 +108,13 @@ def test_create_delete(get_test_app: Generator[App]) -> None:
     assert obj.key == tutil.TEMP_KEY
     assert obj.name == tutil.TEMP_KEY
     obj.delete()
-    assert not apps.exists(endpoint=tutil.SQ, key=tutil.TEMP_KEY)
+    assert not apps.Application.exists(endpoint=tutil.SQ, key=tutil.TEMP_KEY)
 
     # Test delete with 1 project in the app
     obj = App.create(endpoint=tutil.SQ, name=tutil.TEMP_NAME, key=tutil.TEMP_KEY)
     obj.add_projects([tutil.LIVE_PROJECT])
     obj.delete()
-    assert not apps.exists(endpoint=tutil.SQ, key=tutil.TEMP_KEY)
+    assert not apps.Application.exists(endpoint=tutil.SQ, key=tutil.TEMP_KEY)
 
 
 def test_permissions_1(get_test_app: Generator[App]) -> None:

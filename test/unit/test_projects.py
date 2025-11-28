@@ -217,8 +217,8 @@ def test_already_exists() -> None:
 
 
 def test_exists() -> None:
-    assert projects.exists(tutil.SQ, tutil.LIVE_PROJECT)
-    assert not projects.exists(tutil.SQ, "non-existing")
+    assert projects.Project.exists(tutil.SQ, tutil.LIVE_PROJECT)
+    assert not projects.Project.exists(tutil.SQ, "non-existing")
 
 
 def test_binding() -> None:

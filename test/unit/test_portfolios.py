@@ -59,10 +59,10 @@ def test_get_object_non_existing() -> None:
 
 def test_exists() -> None:
     """Test exist"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.exists, endpoint=tutil.SQ, key="PORT_FAV_PROJECTS"):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.exists, endpoint=tutil.SQ, key="PORT_FAV_PROJECTS"):
         return
-    assert pf.exists(endpoint=tutil.SQ, key="PORT_FAV_PROJECTS")
-    assert not pf.exists(endpoint=tutil.SQ, key="NON_EXISTING")
+    assert pf.Portfolio.exists(endpoint=tutil.SQ, key="PORT_FAV_PROJECTS")
+    assert not pf.Portfolio.exists(endpoint=tutil.SQ, key="NON_EXISTING")
 
 
 def test_get_list() -> None:
@@ -88,7 +88,7 @@ def test_create_delete(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     with pytest.raises(exceptions.ObjectAlreadyExists):
         pf.Portfolio.create(endpoint=tutil.SQ, key=tutil.TEMP_KEY)
     portfolio.delete()
-    assert not pf.exists(endpoint=tutil.SQ, key=tutil.TEMP_KEY)
+    assert not pf.Portfolio.exists(endpoint=tutil.SQ, key=tutil.TEMP_KEY)
 
 
 def test_add_project(get_test_portfolio: Generator[pf.Portfolio]) -> None:
@@ -297,7 +297,7 @@ def test_import() -> None:
     # Compare portfolios
     o_list = pf.get_list(tutil.TEST_SQ)
     assert len(o_list) == len(json_exp)
-    assert sorted(o_list.keys()) == sorted(json_exp.keys())
+    assert sorted(o_list.keys()) == sorted([o["k"] for o in json_exp])
 
 
 def test_audit_disabled() -> None:

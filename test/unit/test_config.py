@@ -174,7 +174,7 @@ def test_config_import_portfolios() -> None:
     # Compare portfolios
     portfolio_list = portfolios.get_list(tutil.TEST_SQ)
     assert len(portfolio_list) == len(json_config)
-    assert sorted(portfolio_list.keys()) == sorted(json_config.keys())
+    assert sorted(portfolio_list.keys()) == sorted([o["key"] for o in json_config])
 
 
 def test_config_import_apps() -> None:
