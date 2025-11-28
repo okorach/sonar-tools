@@ -747,6 +747,9 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             o = Portfolio.create(endpoint=endpoint, name=name, key=key, **newdata)
             o.parent_portfolio = None
             o.root_portfolio = o
+        except exceptions.SonarException as e:
+            log.error("Error during import of portfolio with key '%s', %s", key, e.message)
+            continue
 
     # Second pass to define hierarchies
     log.info("Importing portfolios - pass 2: Creating sub-portfolios")
@@ -758,7 +761,8 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             o = Portfolio.get_object(endpoint, key)
             o.update(data=data, recurse=True)
         except exceptions.SonarException as e:
-            log.error(e.message)
+            log.error("Error during import of portfolio with key '%s', %s", key, e.message)
+            continue
     return True
 
 
