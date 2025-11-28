@@ -1539,12 +1539,12 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
                 log.info("Project with key '%s' already exists, updating its conifguration, %s", key)
                 continue
         except exceptions.SonarException as e:
-            log.error("Error during config import ofproject with key '%s', %s", key, e.message)
+            log.error("Error during config import of project with key '%s', %s", key, e.message)
             continue
         try:
             o.update(data)
         except exceptions.SonarException as e:
-            log.error("Error during config import ofproject with key '%s', %s", key, e.message)
+            log.error("Error during config import of project with key '%s', %s", key, e.message)
             continue
         i += 1
         if i % 20 == 0 or i == nb_projects:
