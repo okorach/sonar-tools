@@ -1538,7 +1538,14 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             except exceptions.ObjectAlreadyExists as e:
                 log.warning("Can't create project with key '%s', %s", key, e.message)
                 continue
-        o.update(data)
+        except exceptions.SonarException as e:
+            log.error("Can't import project with key '%s', %s", key, e.message)
+            continue
+        try:
+            o.update(data)
+        except exceptions.SonarException as e:
+            log.error("Can't import project with key '%s', %s", key, e.message)
+            continue
         i += 1
         if i % 20 == 0 or i == nb_projects:
             log.info("Imported %d/%d projects (%d%%)", i, nb_projects, (i * 100 // nb_projects))
