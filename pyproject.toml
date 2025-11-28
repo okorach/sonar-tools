@@ -66,7 +66,7 @@ sonar-loc = "cli.loc:main"
 sonar-config = "sonar.cli.config:main"
 support-audit = "cli.support:main"
 sonar-rules = "cli.rules_cli:main"
-sonar-tools-help = "cli.sonar_tools:main"
+sonar-tools = "cli.sonar_tools:main"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
