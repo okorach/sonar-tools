@@ -493,15 +493,6 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
     return object_list
 
 
-def exists(endpoint: pf.Platform, key: str) -> bool:
-    """Tells whether a application with a given key exists"""
-    try:
-        Application.get_object(endpoint, key)
-        return True
-    except exceptions.ObjectNotFound:
-        return False
-
-
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs: Any) -> list[dict[str, Any]]:
     """Exports applications as JSON
 
@@ -569,10 +560,12 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             continue
         log.info("Importing application key '%s'", key)
         try:
-            o = Application.get_object(endpoint, key)
-        except exceptions.ObjectNotFound:
-            o = Application.create(endpoint, key, data["name"])
-        try:
+            if Application.exists(endpoint, key):
+                if not Application.has_access(endpoint, key):
+                    Application.restore_access(endpoint, key)
+                o = Application.get_object(endpoint, key)
+            else:
+                o = Application.create(endpoint, key, data["name"])
             o.update(data)
             o.recompute()
         except (exceptions.ObjectNotFound, exceptions.UnsupportedOperation) as e:

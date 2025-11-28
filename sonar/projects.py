@@ -1495,20 +1495,6 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     return dict(sorted(results.items()))
 
 
-def exists(endpoint: pf.Platform, key: str) -> bool:
-    """Returns whether a project exists
-
-    :param Platform endpoint: reference to the SonarQube platform
-    :param str key: project key to check
-    :return: whether the project exists
-    """
-    try:
-        Project.get_object(endpoint, key)
-        return True
-    except exceptions.ObjectNotFound:
-        return False
-
-
 def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
     """Imports a configuration in SonarQube
 
@@ -1531,13 +1517,12 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             continue
         log.info("Importing project key '%s'", key)
         try:
-            o = Project.get_object(endpoint, key)
-        except exceptions.ObjectNotFound:
-            try:
+            if Project.exists(endpoint, key):
+                if not Project.has_access(endpoint, key):
+                    Project.restore_access(endpoint, key)
+                o = Project.get_object(endpoint, key)
+            else:
                 o = Project.create(endpoint, key, data["name"])
-            except exceptions.ObjectAlreadyExists as e:
-                log.info("Project with key '%s' already exists, updating its conifguration, %s", key)
-                continue
         except exceptions.SonarException as e:
             log.error("Error during config import of project with key '%s', %s", key, e.message)
             continue

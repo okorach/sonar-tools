@@ -39,7 +39,6 @@ import sonar.util.constants as c
 from sonar import aggregations, exceptions, applications, app_branches
 from sonar.projects import Project
 
-import sonar.permissions.permissions as perms
 import sonar.permissions.portfolio_permissions as pperms
 import sonar.sqobject as sq
 import sonar.utilities as util
@@ -142,7 +141,7 @@ class Portfolio(aggregations.Aggregation):
     def create(cls, endpoint: pf.Platform, key: str, name: Optional[str] = None, **kwargs) -> Portfolio:
         """Creates a portfolio object"""
         check_supported(endpoint)
-        if exists(endpoint=endpoint, key=key):
+        if Portfolio.exists(endpoint=endpoint, key=key):
             raise exceptions.ObjectAlreadyExists(key=key, message=f"Portfolio '{key}' already exists")
         parent_key = kwargs["parent"].key if "parent" in kwargs else None
         if not name:
@@ -708,15 +707,6 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     return problems
 
 
-def exists(endpoint: pf.Platform, key: str) -> bool:
-    """Tells whether a portfolio with a given key exists"""
-    try:
-        Portfolio.get_object(endpoint, key)
-        return True
-    except exceptions.ObjectNotFound:
-        return False
-
-
 def delete(endpoint: pf.Platform, key: str) -> bool:
     """Deletes a portfolio by its key"""
     return Portfolio.get_object(endpoint, key).delete()
@@ -739,14 +729,16 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             continue
         log.info("Importing portfolio key '%s'", key)
         try:
-            o = Portfolio.get_object(endpoint, key)
-        except exceptions.ObjectNotFound:
-            log.info("Portfolio not found, creating it")
-            newdata = data.copy()
-            key, name = newdata.pop("key"), newdata.pop("name")
-            o = Portfolio.create(endpoint=endpoint, name=name, key=key, **newdata)
-            o.parent_portfolio = None
-            o.root_portfolio = o
+            if Portfolio.exists(endpoint, key):
+                if not Portfolio.has_access(endpoint, key):
+                    Portfolio.restore_access(endpoint, key)
+                o = Portfolio.get_object(endpoint, key)
+            else:
+                newdata = data.copy()
+                key, name = newdata.pop("key"), newdata.pop("name")
+                o = Portfolio.create(endpoint=endpoint, name=name, key=key, **newdata)
+                o.parent_portfolio = None
+                o.root_portfolio = o
         except exceptions.SonarException as e:
             log.error("Error during import of portfolio with key '%s', %s", key, e.message)
             continue
