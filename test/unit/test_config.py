@@ -193,7 +193,7 @@ def test_config_import_apps() -> None:
     # Compare apps
     app_list = applications.get_list(tutil.TEST_SQ)
     assert len(app_list) == len(json_config)
-    assert sorted(app_list.keys()) == sorted(json_config.keys())
+    assert sorted(app_list.keys()) == sorted([a["key"] for a in json_config])
 
 
 def test_config_import_projects() -> None:
@@ -212,4 +212,4 @@ def test_config_import_projects() -> None:
     # Compare projects
     project_list = projects.get_list(tutil.TEST_SQ)
     assert len(project_list) == len(json_config)
-    assert sorted(project_list.keys()) == sorted(json_config.keys())
+    assert sorted(project_list.keys()) == sorted([p["key"] for p in json_config])
