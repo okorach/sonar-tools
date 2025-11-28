@@ -303,6 +303,8 @@ class Platform(object):
             log.log(lvl, "%s (%s request)", util.error_msg(e), req_type)
             if code == HTTPStatus.UNAUTHORIZED:
                 raise exceptions.SonarException(util.error_msg(e), errcodes.SONAR_API_AUTHENTICATION) from e
+            if code == HTTPStatus.FORBIDDEN:
+                raise exceptions.NoPermissions(util.error_msg(e)) from e
             err_msg = util.sonar_error(e.response)
             err_msg_lower = err_msg.lower()
             key = next((params[k] for k in ("key", "project", "component", "componentKey") if k in params), "Unknown")
