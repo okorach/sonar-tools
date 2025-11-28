@@ -270,10 +270,10 @@ def test_ci(get_test_project: Generator[projects.Project]) -> None:
 def test_set_links(get_test_project: Generator[projects.Project]) -> None:
     """test_set_links"""
     proj = get_test_project
-    proj.set_links({"links": [{"type": "custom", "name": "google", "url": "https://google.com"}]})
+    proj.set_links([{"name": "google", "url": "https://google.com"}])
     proj.key = tutil.NON_EXISTING_KEY
     with pytest.raises(exceptions.ObjectNotFound):
-        proj.set_links({"links": [{"type": "custom", "name": "yahoo", "url": "https://yahoo.com"}]})
+        proj.set_links([{"name": "yahoo", "url": "https://yahoo.com"}])
 
 
 def test_set_tags(get_test_project: Generator[projects.Project]) -> None:
@@ -370,7 +370,10 @@ def test_set_permissions(get_test_project: Generator[projects.Project]) -> None:
     proj = get_test_project
     perms = proj.permissions().to_json()
     assert "tech-leads" in perms["groups"]
-    proj.set_permissions({"users": {"admin": ["admin", "user"], "olivier": ["user"]}})
+    proj.set_permissions([
+        {"user": "admin", "permissions": ["admin", "user"]},
+        {"user": "olivier", "permissions": ["user"]}
+    ])
     # TODO @okorach: If project default visibility is Public the permission count is different
     perms = proj.permissions().to_json()
     assert "groups" not in perms
