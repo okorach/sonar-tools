@@ -1643,7 +1643,7 @@ def import_zip(endpoint: pf.Platform, project_key: str, project_name: Optional[s
     return o_proj, s
 
 
-def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60) -> dict[str, Project]:
+def import_zips(endpoint: pf.Platform, project_list: list[dict[str, str]], threads: int = 2, import_timeout: int = 60) -> dict[str, dict[str, str]]:
     """Imports as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1658,13 +1658,13 @@ def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2
     log.info("Importing zip of %d projects", nb_projects)
     i = 0
     statuses_count = {tasks.SUCCESS: 0}
-    statuses = {}
+    statuses: dict[str, dict[str, str]] = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipImport") as executor:
         futures, futures_map = [], {}
         for proj in project_list:
             future = executor.submit(import_zip, endpoint, proj["key"], proj["name"], import_timeout)
             futures.append(future)
-            futures_map[future] = proj
+            futures_map[future] = proj["key"]
         for future in concurrent.futures.as_completed(futures):
             o_proj = None
             try:
