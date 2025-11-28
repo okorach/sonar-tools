@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 import math
 from datetime import date, datetime, timedelta
 import json
@@ -231,7 +232,7 @@ class Issue(findings.Finding):
                 idefs.TYPE_QUALITY_MAPPING[data.get("type", idefs.TYPE_NONE)]: idefs.SEVERITY_MAPPING[data.get("severity", idefs.SEVERITY_NONE)]
             }
 
-    def changelog(self, after: Optional[datetime] = None, manual_only: Optional[bool] = True) -> dict[str, changelog.Changelog]:
+    def changelog(self, after: Optional[datetime] = None, manual_only: bool = True) -> dict[str, changelog.Changelog]:
         """
         :param Optional[datetime] after: If set, only changes after that date are returned
         :param Optional[bool] manual_only: Whether the only manual changes should be returned or all changes, defaults to True
@@ -260,7 +261,7 @@ class Issue(findings.Finding):
             return {k: v for k, v in self._changelog.items() if v.date_time() > after}
         return self._changelog
 
-    def comments(self, after: Optional[datetime] = None) -> dict[str, str]:
+    def comments(self, after: Optional[datetime] = None) -> dict[str, dict[str, Any]]:
         """
         :param Optional[datetime] after: If set will only return comments after this date, else all
         :return: The issue comments
