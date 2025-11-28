@@ -760,16 +760,16 @@ class Project(components.Component):
             i["branch"] = branch
             i["pullRequest"] = pr
             nbr_findings[i["type"]] += 1
-            if i["type"] == "SECURITY_HOTSPOT":
+            if i["type"] == idefs.TYPE_HOTSPOT:
                 if i.get("status", "") != "CLOSED":
                     findings_list[key] = hotspots.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
             else:
                 findings_list[key] = issues.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
-        for t in ("SECURITY_HOTSPOT", "BUG", "CODE_SMELL", "VULNERABILITY"):
+        for t in idefs.ALL_TYPES:
             if findings_conflicts[t] > 0:
                 log.warning("%d %s findings missed because of JSON conflict", findings_conflicts[t], t)
         log.info("%d findings exported for %s branch %s PR %s", len(findings_list), str(self), branch, pr)
-        for t in ("SECURITY_HOTSPOT", "BUG", "CODE_SMELL", "VULNERABILITY"):
+        for t in idefs.ALL_TYPES:
             log.info("%d %s exported", nbr_findings[t], t)
 
         return findings_list
