@@ -1536,15 +1536,15 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             try:
                 o = Project.create(endpoint, key, data["name"])
             except exceptions.ObjectAlreadyExists as e:
-                log.warning("Can't create project with key '%s', %s", key, e.message)
+                log.info("Project with key '%s' already exists, updating its conifguration, %s", key)
                 continue
         except exceptions.SonarException as e:
-            log.error("Can't import project with key '%s', %s", key, e.message)
+            log.error("Error during config import ofproject with key '%s', %s", key, e.message)
             continue
         try:
             o.update(data)
         except exceptions.SonarException as e:
-            log.error("Can't import project with key '%s', %s", key, e.message)
+            log.error("Error during config import ofproject with key '%s', %s", key, e.message)
             continue
         i += 1
         if i % 20 == 0 or i == nb_projects:
