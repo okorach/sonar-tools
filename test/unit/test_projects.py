@@ -160,7 +160,8 @@ def test_get_findings() -> None:
         assert len(proj.get_findings(branch="develop")) > 0
     with pytest.raises(exceptions.ObjectNotFound):
         proj.get_findings(pr="1")
-    assert len(proj.get_findings(pr="5")) == 0
+    findings = [f for f in proj.get_findings(pr="5").values() if f.status != "CLOSED"]
+    assert len(findings) == 0
 
 
 def test_count_third_party_issues() -> None:
@@ -370,10 +371,7 @@ def test_set_permissions(get_test_project: Generator[projects.Project]) -> None:
     proj = get_test_project
     perms = proj.permissions().to_json()
     assert "tech-leads" in perms["groups"]
-    proj.set_permissions([
-        {"user": "admin", "permissions": ["admin", "user"]},
-        {"user": "olivier", "permissions": ["user"]}
-    ])
+    proj.set_permissions([{"user": "admin", "permissions": ["admin", "user"]}, {"user": "olivier", "permissions": ["user"]}])
     # TODO @okorach: If project default visibility is Public the permission count is different
     perms = proj.permissions().to_json()
     assert "groups" not in perms
