@@ -17,11 +17,8 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
 
-Utilities for sonar-tools
-
-"""
+"""Utilities for sonar-tools"""
 
 from typing import Any, TextIO, Union, Optional
 from collections.abc import Generator
@@ -96,11 +93,6 @@ def check_token(token: Optional[str], is_sonarcloud: bool = False) -> None:
 def json_dump_debug(json_data: Union[list[str], dict[str, str]], pre_string: str = "") -> None:
     """Dumps a dict as JSON in logs"""
     log.debug("%s%s", pre_string, json_dump(json_data))
-
-
-def format_date_ymd(year: int, month: int, day: int) -> str:
-    """Returns a date as an ISO string"""
-    return ISO_DATE_FORMAT % (year, month, day)
 
 
 def format_date(somedate: datetime.datetime) -> str:
@@ -330,15 +322,6 @@ def difference(list1: list[Any], list2: list[Any]) -> list[Any]:
     return list(set(list1) - set(list2))
 
 
-def quote(string: str, sep: str) -> str:
-    """Quotes a string if needed"""
-    if sep in string:
-        string = '"' + string.replace('"', '""') + '"'
-    if "\n" in string:
-        string = string.replace("\n", " ")
-    return string
-
-
 def jvm_heap(cmdline: str) -> Union[int, None]:
     """Computes JVM heap in MB from a Java cmd line string"""
     for s in cmdline.split(" "):
@@ -349,9 +332,9 @@ def jvm_heap(cmdline: str) -> Union[int, None]:
             unit = s[-1].upper()
             if unit == "M":
                 return val
-            elif unit == "G":
+            if unit == "G":
                 return val * 1024
-            elif unit == "K":
+            if unit == "K":
                 return val // 1024
         except ValueError:
             log.warning("JVM -Xmx heap specified seems invalid in '%s'", cmdline)
@@ -374,8 +357,6 @@ def int_memory(string: str) -> Union[int, None]:
         int_val = int(val * 1024 * 1024)
     elif unit == "PB":
         int_val = int(val * 1024 * 1024 * 1024)
-    elif unit == "EB":
-        int_val = int(val * 1024 * 1024 * 1024 * 1024)
     elif unit == "KB":
         int_val = val / 1024
     elif unit == "bytes":
@@ -399,7 +380,7 @@ def final_exit(exit_code: int, err_msg: Optional[str] = None, start_time: Option
 
 
 def convert_string(value: str) -> Union[str, int, float, bool]:
-    """Converst strings to corresponding types"""
+    """Converts strings to corresponding types"""
     if not isinstance(value, str):
         return value
     if value.lower() in ("yes", "true", "on"):
@@ -555,14 +536,6 @@ def handle_error(e: Exception, context: str, **kwargs) -> None:
     raise e
 
 
-def object_key(key_or_obj: Union[str, object]) -> str:
-    """Returns the key of an object of an object key"""
-    if isinstance(key_or_obj, str):
-        return key_or_obj
-    else:
-        return key_or_obj.key
-
-
 def check_what(what: Union[str, list[str]], allowed_values: list[str], operation: str = "processed") -> list[str]:
     """Check if what is requested is in allowed values"""
     if what == "":
@@ -684,28 +657,7 @@ def dict_remap(original_dict: dict[str, str], remapping: dict[str, str]) -> dict
     """Key old keys by new key in a dict"""
     if not original_dict:
         return {}
-    return {remapping[k] if k in remapping else k: v for k, v in original_dict.items()}
-
-
-def list_remap(a_list: list[str], mapping: dict[str, str]) -> list[str]:
-    if not a_list or len(a_list) == 0:
-        return []
-    return list({mapping[v] if v in mapping else v for v in a_list})
-
-
-def dict_stringify(original_dict: dict[str, str]) -> dict[str, str]:
-    """Covert dict list values into CSV string"""
-    if not original_dict:
-        return {}
-    for k, v in original_dict.copy().items():
-        if isinstance(v, list):
-            original_dict[k] = list_to_csv(v)
-    return original_dict
-
-
-def dict_reverse(map: dict[str, str]) -> dict[str, str]:
-    """Reverses a dict"""
-    return {v: k for k, v in map.items()}
+    return {remapping.get(k, k): v for k, v in original_dict.items()}
 
 
 def inline_lists(element: Any, exception_values: tuple[str]) -> Any:
@@ -724,11 +676,6 @@ def inline_lists(element: Any, exception_values: tuple[str]) -> Any:
             return list_to_csv(element, separator=", ")
     else:
         return element
-
-
-def dict_remap_and_stringify(original_dict: dict[str, str], remapping: dict[str, str]) -> dict[str, str]:
-    """Remaps keys and stringify values of a dict"""
-    return dict_stringify(dict_remap(original_dict, remapping))
 
 
 def list_to_dict(original_list: list[dict[str, Any]], key_field: str, keep_in_values: bool = False) -> dict[str, Any]:
@@ -779,14 +726,13 @@ def to_days(time_expression: str) -> Optional[int]:
     value = int(value)
     if unit == "day":
         return value
-    elif unit == "week":
+    if unit == "week":
         return value * 7
-    elif unit == "month":
+    if unit == "month":
         return value * 30  # Approximate month length
-    elif unit == "year":
+    if unit == "year":
         return value * 365  # Approximate year length
-    else:
-        return None
+    return None
 
 
 def pretty_print_json(file: str) -> bool:
@@ -859,12 +805,6 @@ def order_dict(d: dict[str, Any], *key_order: str) -> dict[str, Any]:
     """Orders keys of a dictionary in a given order"""
     new_d = {k: d[k] for k in key_order if k in d}
     return new_d | {k: v for k, v in d.items() if k not in new_d}
-
-
-def order_list(list_to_order: list[str], *key_order: str) -> list[str]:
-    """Orders elements of a list in a given order"""
-    new_l = [k for k in key_order if k in list_to_order]
-    return new_l + [k for k in list_to_order if k not in new_l]
 
 
 def perms_to_list(perms: dict[str, Any]) -> list[str, Any]:
