@@ -66,7 +66,7 @@ def test_import() -> None:
     with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
         json_config = json.load(f)
     nc = next((s for s in json_config["globalSettings"]["generalSettings"] if s["key"] == settings.NEW_CODE_PERIOD), None)
-    nc["value"] = "60 DAYS"
+    nc["value"] = "NUMBER_OF_DAYS = 60"
     platform.import_config(tutil.TEST_SQ, json_config)
 
     json_config.pop("globalSettings")
