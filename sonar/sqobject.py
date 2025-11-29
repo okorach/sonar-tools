@@ -210,7 +210,7 @@ class SqObject(object):
 
     def set_tags(self, tags: list[str]) -> bool:
         """Sets object tags
-        :raises exceptions.UnsupportedOperation: if can't set tags on such objects
+        :raises UnsupportedOperation: if can't set tags on such objects
         :return: Whether the operation was successful
         """
         if tags is None:
