@@ -31,7 +31,7 @@ SYNC_PROJECT_KEY="TESTSYNC"
 
 echo "Running tests"
 
-. "${CONF_DIR}/build_tests.sh"
+. "${ROOT_DIR}/test/build"
 
 cd "${ROOT_DIR}" || exit 1
 
