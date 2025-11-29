@@ -64,7 +64,6 @@ class Cache(object):
 
     def pop(self, obj: object) -> Optional[object]:
         o = self.objects.pop(hash(obj), None)
-        log.debug("POP %s: %s", self, self.contents())
         return o
 
     def values(self) -> list[object]:
