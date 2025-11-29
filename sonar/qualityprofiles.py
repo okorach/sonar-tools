@@ -24,12 +24,12 @@ from __future__ import annotations
 from typing import Optional, Any
 import json
 from datetime import datetime
+from copy import deepcopy
 import traceback
 import concurrent.futures
 
 from threading import Lock
 import requests.utils
-from copy import deepcopy
 
 import sonar.logging as log
 import sonar.platform as pf
