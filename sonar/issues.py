@@ -22,13 +22,11 @@
 
 from __future__ import annotations
 
-from typing import Any
 import math
 from datetime import date, datetime, timedelta
 import json
 import re
-
-from typing import Union, Optional
+from typing import Any, Union, Optional
 
 import concurrent.futures
 import requests.utils
