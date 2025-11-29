@@ -275,8 +275,10 @@ class QualityProfile(sq.SqObject):
     ) -> bool:
         """Activates a rule in the quality profile
 
-        :param str rule_key: Rule key to activate
-        :param str severity: Severity of the rule in the quality profiles, defaults to the rule default severity
+        :param rule_key: Rule key to activate
+        :param impacts: Impacts of the rule in the quality profile, defaults to the rule default impacts
+        :param severity: Severity of the rule in the quality profiles, defaults to the rule default severity
+        :param prioritized: Whether the rule is prioritized, defaults to False
         :param params: List of parameters associated to the rules, defaults to None
         :return: Whether the activation succeeded
         :rtype: bool
@@ -286,7 +288,7 @@ class QualityProfile(sq.SqObject):
         if not self.endpoint.is_mqr_mode():
             api_params["severity"] = severity
         elif impacts:
-            api_params = {"key": self.key, "rule": rule_key, "impacts": ";".join([f"{k}={v}" for k, v in impacts.items()])}
+            api_params = {"key": self.key, "rule": rule_key, "impacts": ";".join([f"{k.upper()}={v.upper()}" for k, v in impacts.items()])}
         if len(params) > 0:
             str_params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
             api_params["params"] = ";".join([f"{k}={v}" for k, v in str_params.items()])
