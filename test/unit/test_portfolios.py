@@ -297,7 +297,7 @@ def test_import() -> None:
     # Compare portfolios
     o_list = pf.get_list(tutil.TEST_SQ)
     assert len(o_list) == len(json_exp)
-    assert sorted(o_list.keys()) == sorted([o["k"] for o in json_exp])
+    assert sorted(o_list.keys()) == sorted([o["key"] for o in json_exp])
 
 
 def test_audit_disabled() -> None:
