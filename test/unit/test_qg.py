@@ -203,9 +203,9 @@ def test_import_config() -> None:
             "new_software_quality_reliability_issues >= 0",
             "new_software_quality_security_issues >= 0",
         ]
-    conf = {"qualityGates": {"TEMP GATE": {"conditions": conds}}}
+    conf = {"qualityGates": [{"name": "TEMP GATE", "conditions": conds}]}
     assert qualitygates.import_config(tutil.SQ, conf)
     qg = qualitygates.QualityGate.get_object(tutil.SQ, "TEMP GATE")
     assert len(qg.conditions()) == 4
-    assert conf["qualityGates"]["TEMP GATE"]["conditions"] == qg.conditions(encoded=True)
+    assert conf["qualityGates"][0]["conditions"] == qg.conditions(encoded=True)
     qg.delete()

@@ -21,7 +21,7 @@
 
 from __future__ import annotations
 import concurrent.futures
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 import re
 import Levenshtein
@@ -181,7 +181,7 @@ class Finding(sq.SqObject):
         # Must be implemented in sub classes
         raise NotImplementedError()
 
-    def assign(self, assignee: Optional[str] = None) -> str:
+    def assign(self, assignee: Optional[str] = None) -> bool:
         # Must be implemented in sub classes
         raise NotImplementedError()
 
@@ -293,7 +293,7 @@ class Finding(sq.SqObject):
     def is_closed(self) -> bool:
         return self.status == "CLOSED"
 
-    def changelog(self, after: Optional[datetime] = None, manual_only: bool = True) -> bool:
+    def changelog(self, after: Optional[datetime] = None, manual_only: bool = True) -> dict[str, changelog.Changelog]:
         # Implemented in subclasses, should not reach this
         raise NotImplementedError()
 
@@ -302,7 +302,7 @@ class Finding(sq.SqObject):
         ch = self.changelog(manual_only=True)
         return list(ch.values())[-1].date_time() if len(ch) > 0 else None
 
-    def comments(self, after: Optional[datetime] = None) -> dict[str, str]:
+    def comments(self, after: Optional[datetime] = None) -> dict[str, dict[str, Any]]:
         # Implemented in subclasses, should not reach this
         raise NotImplementedError()
 

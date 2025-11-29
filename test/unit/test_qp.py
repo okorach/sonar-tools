@@ -129,14 +129,14 @@ def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]
     qp = get_test_qp
     RULE1, RULE2, RULE3 = "python:S1142", "python:FunctionComplexity", "python:S139"
     ruleset = [
-        {"key": RULE1, "severities": {idefs.QUALITY_MAINTAINABILITY: "MAJOR"}},
-        {"key": RULE2, "severities": {idefs.QUALITY_MAINTAINABILITY: "MAJOR"}},
+        {"key": RULE1, "impacts": {"maintainability": "medium"}},
+        {"key": RULE2, "impacts": {"maintainability": "medium"}},
     ]
     qp.activate_rules(ruleset)
     qp_rules = qp.rules()
     assert sorted(qp_rules.keys()) == sorted([r["key"] for r in ruleset])
-    qp.activate_rule(RULE3, "MAJOR")
-    ruleset.append({"key": RULE3, "severities": {idefs.QUALITY_MAINTAINABILITY: "MAJOR"}})
+    qp.activate_rule(RULE3, impacts={"maintainability": "medium"})
+    ruleset.append({"key": RULE3, "impacts": {"maintainability": "medium"}})
     assert sorted(qp.rules().keys()) == sorted([r["key"] for r in ruleset])
 
     assert len(qp.rules()) == 3
@@ -172,7 +172,7 @@ def test_import() -> None:
     assert qualityprofiles.import_config(tutil.TEST_SQ, {"qualityProfiles": json_exp})
 
     # Compare QP list
-    json_name_list = sorted([k for k, v in qhelp.flatten(json_exp).items() if not v.get("isBuiltIn", False)])
+    json_name_list = sorted([qp["name"] for qp in qhelp.flatten(json_exp) if not qp.get("isBuiltIn", False)])
     qp_name_list = sorted([f"{o.language}:{o.name}" for o in qualityprofiles.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in])
     logging.debug("Imported  list = %s", str(json_name_list))
     logging.debug("SonarQube list = %s", str(qp_name_list))

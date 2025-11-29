@@ -309,7 +309,7 @@ class Rule(sq.SqObject):
         d = {"severity": rule.get("severity", ""), "impacts": self.impacts(), "description": self.custom_desc}
         if len(rule.get("params", [])) > 0:
             params = utilities.sort_list_by_key(rule["params"], "key")
-            d["params"] = params if full else {p["key"]: p.get("defaultValue", "") for p in params}
+            d["params"] = {p["key"]: p for p in params} if full else {p["key"]: p.get("defaultValue", "") for p in params}
         mapping = {"isTemplate": "isTemplate", "tags": "tags", "lang": "language", "templateKey": "templateKey"}
         d |= {newkey: rule[oldkey] for oldkey, newkey in mapping.items() if oldkey in rule}
         if not d["isTemplate"]:

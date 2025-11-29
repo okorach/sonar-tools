@@ -24,6 +24,7 @@ from __future__ import annotations
 from typing import Optional, Any
 import json
 from datetime import datetime
+from copy import deepcopy
 import traceback
 import concurrent.futures
 
@@ -274,8 +275,10 @@ class QualityProfile(sq.SqObject):
     ) -> bool:
         """Activates a rule in the quality profile
 
-        :param str rule_key: Rule key to activate
-        :param str severity: Severity of the rule in the quality profiles, defaults to the rule default severity
+        :param rule_key: Rule key to activate
+        :param impacts: Impacts of the rule in the quality profile, defaults to the rule default impacts
+        :param severity: Severity of the rule in the quality profiles, defaults to the rule default severity
+        :param prioritized: Whether the rule is prioritized, defaults to False
         :param params: List of parameters associated to the rules, defaults to None
         :return: Whether the activation succeeded
         :rtype: bool
@@ -285,7 +288,7 @@ class QualityProfile(sq.SqObject):
         if not self.endpoint.is_mqr_mode():
             api_params["severity"] = severity
         elif impacts:
-            api_params = {"key": self.key, "rule": rule_key, "impacts": ";".join([f"{k}={v}" for k, v in impacts.items()])}
+            api_params = {"key": self.key, "rule": rule_key, "impacts": ";".join([f"{k.upper()}={v.upper()}" for k, v in impacts.items()])}
         if len(params) > 0:
             str_params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
             api_params["params"] = ";".join([f"{k}={v}" for k, v in str_params.items()])
@@ -364,20 +367,20 @@ class QualityProfile(sq.SqObject):
     def update(self, data: types.ObjectJsonRepr) -> QualityProfile:
         """Updates a QP with data coming from sonar-config"""
         if self.is_built_in or data.get("isBuiltIn", False):
-            log.debug("Not updating built-in %s", str(self))
+            log.debug("Not updating built-in %s", self)
         else:
-            log.debug("Updating %s with %s", str(self), str(data))
+            log.debug("Updating %s with %s", self, data)
             if "name" in data and data["name"] != self.name:
-                log.info("Renaming %s with %s", str(self), data["name"])
+                log.info("Renaming %s with %s", self, data["name"])
                 self.post(QualityProfile.API[c.RENAME], params={"id": self.key, "name": data["name"]})
                 QualityProfile.CACHE.pop(self)
                 self.name = data["name"]
                 QualityProfile.CACHE.put(self)
-            log.debug("Updating %s setting parent to %s", str(self), str(data.get(qphelp.KEY_PARENT)))
+            log.debug("Updating %s setting parent to %s", self, data.get(qphelp.KEY_PARENT))
             if parent_key := data.pop(qphelp.KEY_PARENT, None):
                 self.set_parent(parent_key)
                 parent_qp = get_object(self.endpoint, parent_key, self.language)
-                log.info("%s activating parent rules", self, list(parent_qp.rules().keys()))
+                log.info("%s activating parent rules %s", self, list(parent_qp.rules().keys()))
                 self.activate_rules([{"key": k} for k in parent_qp.rules()])
             self.activate_rules(data.get("rules", []) + data.get("addedRules", []) + data.get("modifiedRules", []))
             self.deactivate_rules(data.get("removedRules", []))
@@ -386,8 +389,10 @@ class QualityProfile(sq.SqObject):
         if data.get("isDefault", False):
             self.set_as_default()
         if not data.get(qphelp.KEY_CHILDREN):
+            log.debug("%s has no children, end of update", self)
             return self
-        children_data = util.list_to_dict(data[qphelp.KEY_CHILDREN], "name")
+        log.debug("%s has children, updating children", self)
+        children_data = util.list_to_dict(data[qphelp.KEY_CHILDREN], "name", keep_in_values=True)
         for child_name, child_data in children_data.items():
             try:
                 child_qp = get_object(self.endpoint, child_name, self.language)
@@ -851,17 +856,18 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     :param dict config_data: the configuration to import
     :return: Whether the operation succeeded
     """
+    config_data = deepcopy(config_data)
     if not (qps_data := config_data.get("qualityProfiles", None)):
         log.info("No quality profiles to import")
         return False
     log.info("Importing quality profiles")
     get_list(endpoint=endpoint)
 
-    qps_data = util.list_to_dict(qps_data, "language")
+    qps_data = util.list_to_dict(qps_data, "language", keep_in_values=True)
     with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="QPImport") as executor:
         futures, futures_map = [], {}
         for lang, lang_data in qps_data.items():
-            lang_data = util.list_to_dict(lang_data["profiles"], "name")
+            lang_data = util.list_to_dict(lang_data["profiles"], "name", keep_in_values=True)
             if not languages.exists(endpoint=endpoint, language=lang):
                 log.warning("Language '%s' does not exist, quality profiles import skipped for this language", lang)
                 continue

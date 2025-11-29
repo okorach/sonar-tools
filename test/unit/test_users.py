@@ -203,16 +203,17 @@ def test_import() -> None:
     users.import_config(tutil.SQ, data)
     now_str = {str(datetime.now()).replace(" ", "-").replace(":", "-")}
     data = {
-        "users": {
-            "TEMP": {"local": True, "name": "User name TEMP", "scmAccounts": "temp@acme.com, temp@gmail.com"},
-            "TEMP_ADMIN": {
+        "users": [
+            {"login": "TEMP", "local": True, "name": "User name TEMP", "scmAccounts": ["temp@acme.com", "temp@gmail.com"]},
+            {
+                "login": "TEMP_ADMIN",
                 "email": "admin@acme.com",
-                "groups": "sonar-administrators",
+                "groups": ["sonar-administrators"],
                 "local": True,
                 "name": "User name TEMP_ADMIN",
-                "scmAccounts": f"admin-acme{now_str}, administrator-acme{now_str}",
+                "scmAccounts": [f"admin-acme{now_str}, administrator-acme{now_str}"],
             },
-        }
+        ]
     }
     users.import_config(tutil.SQ, data)
     for uname in "TEMP", "TEMP_ADMIN":

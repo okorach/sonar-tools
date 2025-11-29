@@ -22,7 +22,6 @@
 from typing import Any
 from sonar import utilities as util
 from sonar.util import constants as c
-from sonar.util import types
 from sonar.util import common_json_helper
 import sonar.util.issue_defs as idefs
 
@@ -32,26 +31,30 @@ KEY_CHILDREN = "children"
 KEY_ORDER = ("name", "isBuiltIn", "isDefault", "children", "addedRules", "modifiedRules", "permissions")
 
 
-def flatten_language(language: str, qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+def flatten_language(language: str, qp_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Converts a hierarchical list of QP of a given language into a flat list"""
-    flat_list = {}
-    for qp_name, qp_data in qp_list.copy().items():
+    flat_list = []
+    for qp_data in [qp.copy() for qp in qp_list]:
+        qp_name = qp_data["name"]
+        qp_data["name"] = f"{language}:{qp_name}"
+        qp_data["language"] = language
+        flat_list.append(qp_data)
         if KEY_CHILDREN in qp_data:
             children = flatten_language(language, qp_data[KEY_CHILDREN])
-            for child in children.values():
+            for child in children:
                 if "parent" not in child:
                     child["parent"] = f"{language}:{qp_name}"
+                    child["language"] = language
             qp_data.pop(KEY_CHILDREN)
-            flat_list.update(children)
-        flat_list[f"{language}:{qp_name}"] = qp_data
+            flat_list += children
     return flat_list
 
 
-def flatten(qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+def flatten(qp_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Organize a hierarchical list of QP in a flat list"""
-    flat_list = {}
-    for lang, lang_qp_list in qp_list.items():
-        flat_list.update(flatten_language(lang, lang_qp_list))
+    flat_list = []
+    for lang_data in qp_list:
+        flat_list += flatten_language(lang_data["language"], lang_data["profiles"])
     return flat_list
 
 

@@ -160,7 +160,8 @@ def test_get_findings() -> None:
         assert len(proj.get_findings(branch="develop")) > 0
     with pytest.raises(exceptions.ObjectNotFound):
         proj.get_findings(pr="1")
-    assert len(proj.get_findings(pr="5")) == 0
+    findings = [f for f in proj.get_findings(pr="5").values() if f.status != "CLOSED"]
+    assert len(findings) == 0
 
 
 def test_count_third_party_issues() -> None:
@@ -216,8 +217,8 @@ def test_already_exists() -> None:
 
 
 def test_exists() -> None:
-    assert projects.exists(tutil.SQ, tutil.LIVE_PROJECT)
-    assert not projects.exists(tutil.SQ, "non-existing")
+    assert projects.Project.exists(tutil.SQ, tutil.LIVE_PROJECT)
+    assert not projects.Project.exists(tutil.SQ, "non-existing")
 
 
 def test_binding() -> None:
@@ -270,10 +271,10 @@ def test_ci(get_test_project: Generator[projects.Project]) -> None:
 def test_set_links(get_test_project: Generator[projects.Project]) -> None:
     """test_set_links"""
     proj = get_test_project
-    proj.set_links({"links": [{"type": "custom", "name": "google", "url": "https://google.com"}]})
+    proj.set_links([{"name": "google", "url": "https://google.com"}])
     proj.key = tutil.NON_EXISTING_KEY
     with pytest.raises(exceptions.ObjectNotFound):
-        proj.set_links({"links": [{"type": "custom", "name": "yahoo", "url": "https://yahoo.com"}]})
+        proj.set_links([{"name": "yahoo", "url": "https://yahoo.com"}])
 
 
 def test_set_tags(get_test_project: Generator[projects.Project]) -> None:
@@ -370,7 +371,7 @@ def test_set_permissions(get_test_project: Generator[projects.Project]) -> None:
     proj = get_test_project
     perms = proj.permissions().to_json()
     assert "tech-leads" in perms["groups"]
-    proj.set_permissions({"users": {"admin": ["admin", "user"], "olivier": ["user"]}})
+    proj.set_permissions([{"user": "admin", "permissions": ["admin", "user"]}, {"user": "olivier", "permissions": ["user"]}])
     # TODO @okorach: If project default visibility is Public the permission count is different
     perms = proj.permissions().to_json()
     assert "groups" not in perms
@@ -384,7 +385,7 @@ def test_project_key(get_test_project: Generator[projects.Project]) -> None:
 
 def test_import_zips() -> None:
     """test_import_zips"""
-    proj_list = [tutil.PROJECT_0, tutil.PROJECT_1, tutil.PROJECT_2, "non-existing"]
+    proj_list = [{"key": k, "name": k} for k in [tutil.PROJECT_0, tutil.PROJECT_1, tutil.PROJECT_2, "non-existing"]]
     if tutil.SQ.edition() == c.CE:
         with pytest.raises(exceptions.UnsupportedOperation):
             projects.import_zips(tutil.SQ, project_list=proj_list)

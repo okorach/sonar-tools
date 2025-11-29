@@ -89,6 +89,38 @@ class SqObject(object):
         except AttributeError:
             pass
 
+    @classmethod
+    def exists(cls, endpoint: object, key: str) -> bool:
+        """Tells whether an object with a given key exists"""
+        if cls.__name__ not in ("Project", "Portfolio", "Application"):
+            raise exceptions.UnsupportedOperation(f"Can't check existence of {cls.__name__.lower()}s")
+        try:
+            return cls.get_object(endpoint, key) is not None
+        except exceptions.NoPermissions:
+            return True
+        except exceptions.ObjectNotFound:
+            return False
+
+    @classmethod
+    def has_access(cls, endpoint: object, obj_key: str) -> bool:
+        """Returns whether the current user has access to a project"""
+        if cls.__name__ not in ("Project", "Portfolio", "Application"):
+            raise exceptions.UnsupportedOperation(f"Can't check access on {cls.__name__.lower()}s")
+        try:
+            cls.get_object(endpoint, obj_key)
+        except (exceptions.NoPermissions, exceptions.ObjectNotFound):
+            return False
+        return True
+
+    @classmethod
+    def restore_access(cls, endpoint: object, obj_key: str, user: Optional[str] = None) -> bool:
+        """Restores access to a project, portfolio or application for the given user"""
+        if cls.__name__ not in ("Project", "Portfolio", "Application"):
+            raise exceptions.UnsupportedOperation(f"Can't restore access of {cls.__name__.lower()}s")
+        log.info("Restoring access to %s '%s' for user '%s'", cls.__name__, obj_key, user or endpoint.user())
+        obj = cls(endpoint, obj_key)
+        return obj.set_permissions([{"user": user or endpoint.user(), "permissions": ["admin", "user"]}])
+
     def reload(self, data: types.ApiPayload) -> None:
         """Loads a SonarQube API JSON payload in a SonarObject"""
         log.debug("%s: Reloading with %s", str(self), utilities.json_dump(data))
@@ -178,7 +210,7 @@ class SqObject(object):
 
     def set_tags(self, tags: list[str]) -> bool:
         """Sets object tags
-        :raises exceptions.UnsupportedOperation: if can't set tags on such objects
+        :raises UnsupportedOperation: if can't set tags on such objects
         :return: Whether the operation was successful
         """
         if tags is None:

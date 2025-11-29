@@ -760,16 +760,16 @@ class Project(components.Component):
             i["branch"] = branch
             i["pullRequest"] = pr
             nbr_findings[i["type"]] += 1
-            if i["type"] == "SECURITY_HOTSPOT":
+            if i["type"] == idefs.TYPE_HOTSPOT:
                 if i.get("status", "") != "CLOSED":
                     findings_list[key] = hotspots.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
             else:
                 findings_list[key] = issues.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
-        for t in ("SECURITY_HOTSPOT", "BUG", "CODE_SMELL", "VULNERABILITY"):
+        for t in idefs.ALL_TYPES:
             if findings_conflicts[t] > 0:
                 log.warning("%d %s findings missed because of JSON conflict", findings_conflicts[t], t)
         log.info("%d findings exported for %s branch %s PR %s", len(findings_list), str(self), branch, pr)
-        for t in ("SECURITY_HOTSPOT", "BUG", "CODE_SMELL", "VULNERABILITY"):
+        for t in idefs.ALL_TYPES:
             log.info("%d %s exported", nbr_findings[t], t)
 
         return findings_list
@@ -1495,20 +1495,6 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     return dict(sorted(results.items()))
 
 
-def exists(endpoint: pf.Platform, key: str) -> bool:
-    """Returns whether a project exists
-
-    :param Platform endpoint: reference to the SonarQube platform
-    :param str key: project key to check
-    :return: whether the project exists
-    """
-    try:
-        Project.get_object(endpoint, key)
-        return True
-    except exceptions.ObjectNotFound:
-        return False
-
-
 def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
     """Imports a configuration in SonarQube
 
@@ -1531,14 +1517,20 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             continue
         log.info("Importing project key '%s'", key)
         try:
-            o = Project.get_object(endpoint, key)
-        except exceptions.ObjectNotFound:
-            try:
+            if Project.exists(endpoint, key):
+                if not Project.has_access(endpoint, key):
+                    Project.restore_access(endpoint, key)
+                o = Project.get_object(endpoint, key)
+            else:
                 o = Project.create(endpoint, key, data["name"])
-            except exceptions.ObjectAlreadyExists as e:
-                log.warning("Can't create project with key '%s', %s", key, e.message)
-                continue
-        o.update(data)
+        except exceptions.SonarException as e:
+            log.error("Error during config import of project with key '%s', %s", key, e.message)
+            continue
+        try:
+            o.update(data)
+        except exceptions.SonarException as e:
+            log.error("Error during config import of project with key '%s', %s", key, e.message)
+            continue
         i += 1
         if i % 20 == 0 or i == nb_projects:
             log.info("Imported %d/%d projects (%d%%)", i, nb_projects, (i * 100 // nb_projects))
@@ -1643,7 +1635,7 @@ def import_zip(endpoint: pf.Platform, project_key: str, project_name: Optional[s
     return o_proj, s
 
 
-def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2, import_timeout: int = 60) -> dict[str, Project]:
+def import_zips(endpoint: pf.Platform, project_list: list[dict[str, str]], threads: int = 2, import_timeout: int = 60) -> dict[str, dict[str, str]]:
     """Imports as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1658,13 +1650,13 @@ def import_zips(endpoint: pf.Platform, project_list: list[str], threads: int = 2
     log.info("Importing zip of %d projects", nb_projects)
     i = 0
     statuses_count = {tasks.SUCCESS: 0}
-    statuses = {}
+    statuses: dict[str, dict[str, str]] = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipImport") as executor:
         futures, futures_map = [], {}
         for proj in project_list:
             future = executor.submit(import_zip, endpoint, proj["key"], proj["name"], import_timeout)
             futures.append(future)
-            futures_map[future] = proj
+            futures_map[future] = proj["key"]
         for future in concurrent.futures.as_completed(futures):
             o_proj = None
             try:

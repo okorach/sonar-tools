@@ -44,4 +44,4 @@ def test_clear_cache() -> None:
 
 def test_sonar_tools_help() -> None:
     """test_sonar_tools_help"""
-    assert tutil.run_cmd(sonar_tools.main, "sonar-tools-help") == errcodes.OK
+    assert tutil.run_cmd(sonar_tools.main, "sonar-tools") == errcodes.OK
