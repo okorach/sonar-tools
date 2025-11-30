@@ -52,7 +52,7 @@ def test_check_token() -> None:
         sutil.check_token("sqp_" + token)
     assert sutil.check_token("squ_" + token) is None
     with pytest.raises(exceptions.SonarException):
-        sutil.check_token(token)
+        sutil.check_token(token[:30])
     assert sutil.check_token(token, is_sonarcloud=True) is None
 
 
@@ -169,7 +169,7 @@ def test_none_to_zero() -> None:
 
 def test_clean_data() -> None:
     """test_clean_data"""
-    d = {"a": {"1": None, "2": [], "3": "foo", "4": {}}, "b": [5, {}, [], "bar"], "c": "5"}
+    d = {"a": {"1": None, "2": [], "3": "foo", "4": {}, "5": set()}, "b": [5, {}, [], "bar"], "c": "5"}
     res = sutil.clean_data(d, remove_none=True, remove_empty=True)
     assert res == {"a": {"3": "foo"}, "b": [5, "bar"], "c": 5}
 
