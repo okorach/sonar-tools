@@ -89,8 +89,7 @@ def test_exists() -> None:
     for k in GH_KEY, GL_KEY, ADO_KEY:
         assert devops.exists(endpoint=tutil.SQ, key=k)
     for k in "foo", "bar":
-        with pytest.raises(exceptions.ObjectNotFound):
-            devops.exists(endpoint=tutil.SQ, key=k)
+        assert not devops.exists(endpoint=tutil.SQ, key=k)
 
 
 def test_devops_type() -> None:
