@@ -205,7 +205,6 @@ class Finding(sq.SqObject):
         fields = CSV_EXPORT_FIELDS if self.endpoint.version() >= c.MQR_INTRO_VERSION else LEGACY_CSV_EXPORT_FIELDS
         return [str(data.get(field, "")) for field in fields]
 
-
     def to_json(self, without_time: bool = False) -> types.ObjectJsonRepr:
         """Returns the finding as dict
 
@@ -239,7 +238,7 @@ class Finding(sq.SqObject):
 
     def to_sarif(self, full: bool = True) -> dict[str, str]:
         """Returns the finding in SARIF format
-        
+
         :param full: Whether all properties of the issues should be exported or only the SARIF ones
         :return: The finding in SARIF format
         """
