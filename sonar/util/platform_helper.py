@@ -57,7 +57,7 @@ def convert_global_settings_json(old_json: dict[str, Any], full: bool = False) -
     """Converts sonar-config "globalSettings" section old JSON report format to new format"""
     new_json = old_json.copy()
     special_categories = (settings.LANGUAGES_SETTINGS, settings.DEVOPS_INTEGRATION, "permissions", "permissionTemplates")
-    for categ in [cat for cat in settings.CATEGORIES if cat not in special_categories]:
+    for categ in [cat for cat in settings.CATEGORIES if cat not in special_categories and cat in old_json]:
         new_json[categ] = util.sort_list_by_key(util.dict_to_list(dict(sorted(old_json[categ].items())), "key"), "key")
     for k, v in old_json[settings.LANGUAGES_SETTINGS].items():
         new_json[settings.LANGUAGES_SETTINGS] = new_json.get(settings.LANGUAGES_SETTINGS) or {}
