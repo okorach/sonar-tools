@@ -28,7 +28,7 @@ from sonar import errcodes, exceptions
 from sonar import organizations
 
 import cli.options as opt
-from cli import config
+from sonar.cli import config
 
 CMD = "config.py"
 SC_OPTS = f'-{opt.URL_SHORT} https://sonarcloud.io -{opt.TOKEN_SHORT} {os.getenv("SONAR_TOKEN_SONARCLOUD")}'

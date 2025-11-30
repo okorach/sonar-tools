@@ -23,7 +23,7 @@ Abstraction of the SonarQube general object concept
 
 """
 
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 import json
 
 from http import HTTPStatus
@@ -34,6 +34,9 @@ import sonar.logging as log
 from sonar.util import types, cache
 from sonar.util import constants as c
 from sonar import utilities, exceptions, errcodes
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
 
 
 class SqObject(object):
@@ -46,7 +49,7 @@ class SqObject(object):
         if not self.__class__.CACHE:
             self.__class__.CACHE.set_class(self.__class__)
         self.key: str = key  #: Object unique key (unique in its class)
-        self.endpoint: object = endpoint  #: Reference to the SonarQube platform
+        self.endpoint: Platform = endpoint  #: Reference to the SonarQube platform
         self.concerned_object: Optional[object] = None
         self._tags: Optional[list[str]] = None
         self.sq_json: Optional[types.ApiPayload] = None

@@ -990,7 +990,7 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
     for field in filters:
         allowed = config.get_issue_search_allowed_values(field, old_or_new)
         if allowed is not None and filters[field] is not None:
-            filters[field] = list(set(util.intersection(filters[field], allowed)))
+            filters[field] = list(set(filters[field]) & set(allowed))
 
     disallowed = _STD_SEARCH_FIELDS if endpoint.is_mqr_mode() else _MQR_SEARCH_FIELDS
     filters = {k: v for k, v in filters.items() if k not in disallowed}

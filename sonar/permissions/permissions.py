@@ -21,7 +21,7 @@
 """Abstract permissions class, parent of sub-objects permissions classes"""
 
 from __future__ import annotations
-from typing import Optional, Union, Any
+from typing import Optional, Any
 
 import json
 from abc import ABC, abstractmethod
@@ -261,10 +261,10 @@ class Permissions(ABC):
         perm_counter = 0
         for perm in self.permissions:
             if any(p in perm for p in perm_types):
-                perm_counter += len(perm["permissions"]) if perm_filter is None else len(utilities.intersection(perm["permissions"], perm_filter))
+                perm_counter += len(perm["permissions"]) if perm_filter is None else len(set(perm["permissions"]) & set(perm_filter))
         return perm_counter
 
-    def _get_api(self, api: str, perm_type: str, ret_field: str, **extra_params) -> types.JsonPermissions:
+    def _get_api(self, api: str, perm_type: str, ret_field: str, **extra_params: str) -> types.JsonPermissions:
         perms = {}
         params = extra_params.copy()
         page, nbr_pages = 1, 1

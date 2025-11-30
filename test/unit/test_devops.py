@@ -32,6 +32,10 @@ GL_KEY = "gitlab.com"
 
 def test_get_list() -> None:
     """test_get_list"""
+    if tutil.SQ.is_sonarcloud():
+        with pytest.raises(exceptions.UnsupportedOperation):
+            devops.get_list(endpoint=tutil.SQ)
+        return
     plt_list = devops.get_list(endpoint=tutil.SQ)
     assert len(plt_list) >= 3
     for k in GH_KEY, ADO_KEY, GL_KEY:
@@ -96,3 +100,31 @@ def test_devops_type() -> None:
     assert devops.devops_type(endpoint=tutil.SQ, key=ADO_KEY) == "azure"
     with pytest.raises(exceptions.ObjectNotFound):
         devops.devops_type(endpoint=tutil.SQ, key="foobar")
+
+
+def test_import_config_1() -> None:
+    """test_import_config_1"""
+    assert devops.import_config(endpoint=tutil.SQ, config_data={}) == 0
+
+
+def test_import_config_2() -> None:
+    """test_import_config_2"""
+    dop = {
+        "devopsIntegration": [
+            {"key": "ADO2", "type": "azure", "url": "https://dev.azure.com/olivierkorach"},
+            {"key": "GH2", "type": "github", "url": "https://api.github.com", "clientId": "Iv23ligl0iLhGRRvwFGO", "appId": 946159},
+            {"key": "GL2", "type": "gitlab", "url": "https://gitlab.com/api/v4"},
+        ]
+    }
+    if tutil.SQ.is_sonarcloud():
+        with pytest.raises(exceptions.UnsupportedOperation):
+            devops.import_config(endpoint=tutil.SQ, config_data=dop)
+        return
+    assert devops.import_config(endpoint=tutil.SQ, config_data=dop) == 3
+    assert devops.exists(endpoint=tutil.SQ, key="ADO2")
+    assert devops.exists(endpoint=tutil.SQ, key="GH2")
+    assert devops.exists(endpoint=tutil.SQ, key="GL2")
+    for key in "ADO2", "GH2", "GL2":
+        obj = devops.get_object(endpoint=tutil.SQ, key=key) is not None
+        obj.delete()
+        assert devops.exists(endpoint=tutil.SQ, key=key) is False

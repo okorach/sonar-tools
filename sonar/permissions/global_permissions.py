@@ -25,7 +25,6 @@ from __future__ import annotations
 import sonar.logging as log
 from sonar.permissions import permissions
 from sonar.util import types
-from sonar import utilities as util
 import sonar.util.constants as c
 
 
@@ -78,8 +77,8 @@ class GlobalPermissions(permissions.Permissions):
             ptype = "group" if "group" in new_perm else "user"
             atype = f"{ptype}s"
             current_perm: list[str] = next((p["permissions"] for p in self.permissions if p.get(ptype) == new_perm[ptype]), [])
-            to_remove = edition_filter(util.difference(current_perm, new_perm["permissions"]), ed)
-            to_add = edition_filter(util.difference(new_perm["permissions"], current_perm), ed)
+            to_remove = edition_filter(list(set(current_perm) - set(new_perm["permissions"])), ed)
+            to_add = edition_filter(list(set(new_perm["permissions"]) - set(current_perm)), ed)
             self._post_api(
                 api=GlobalPermissions.API_SET[atype], set_field=GlobalPermissions.API_SET_FIELD[atype], identifier=new_perm[ptype], perms=to_add
             )
