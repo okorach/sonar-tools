@@ -135,7 +135,7 @@ def age(some_date: datetime.datetime, rounded: bool = True, now: Optional[dateti
     return delta.days if rounded else delta
 
 
-def get_setting(settings: dict[str, str], key: str, default: Any) -> Any:
+def get_setting(settings: dict[str, Any], key: str, default: Any) -> Any:
     """Gets a setting or the default value"""
     if settings is None:
         return default
@@ -171,7 +171,7 @@ def convert_to_type(value: str) -> Any:
     return value
 
 
-def none_to_zero(d: dict[str, any], key_match: str = "^.+$") -> dict[str, any]:
+def none_to_zero(d: dict[str, Any], key_match: str = "^.+$") -> dict[str, Any]:
     """Replaces None values in a dict with 0"""
     new_d = d.copy()
     for k, v in d.items():
@@ -180,6 +180,7 @@ def none_to_zero(d: dict[str, any], key_match: str = "^.+$") -> dict[str, any]:
         elif isinstance(v, dict):
             new_d[k] = none_to_zero(v)
         elif isinstance(v, list):
+            v = [0 if elem is None else elem for elem in v]
             new_d[k] = [none_to_zero(elem) if isinstance(elem, dict) else elem for elem in v]
     return new_d
 
@@ -573,6 +574,8 @@ def string_to_version(sif_v: Optional[str], digits: int = 3) -> Optional[tuple[i
         return None
     try:
         split_version = sif_v.split(".")
+        if len(split_version) < digits:
+            split_version += ["0"] * (digits - len(split_version))
     except KeyError:
         return None
     try:
@@ -632,7 +635,7 @@ def deduct_format(fmt: Union[str, None], filename: Union[str, None], allowed_for
     return fmt
 
 
-def dict_remap(original_dict: dict[str, str], remapping: dict[str, str]) -> dict[str, str]:
+def dict_remap(original_dict: dict[str, Any], remapping: dict[str, str]) -> dict[str, Any]:
     """Key old keys by new key in a dict"""
     if not original_dict:
         return {}
