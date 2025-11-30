@@ -33,7 +33,7 @@ from sonar.util import constants as c
 from sonar import exceptions
 
 import sonar.utilities as util
-from sonar import projects, rules, changelog
+from sonar import projects, rules
 import sonar.util.issue_defs as idefs
 
 if TYPE_CHECKING:
@@ -292,7 +292,7 @@ class Finding(sq.SqObject):
     def is_closed(self) -> bool:
         return self.status == "CLOSED"
 
-    def changelog(self, after: Optional[datetime] = None, manual_only: bool = True) -> dict[str, changelog.Changelog]:
+    def changelog(self, after: Optional[datetime] = None, manual_only: bool = True) -> dict[str, Changelog]:
         # Implemented in subclasses, should not reach this
         raise NotImplementedError()
 
