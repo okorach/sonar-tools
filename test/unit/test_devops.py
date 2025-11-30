@@ -125,6 +125,6 @@ def test_import_config_2() -> None:
     assert devops.exists(endpoint=tutil.SQ, key="GH2")
     assert devops.exists(endpoint=tutil.SQ, key="GL2")
     for key in "ADO2", "GH2", "GL2":
-        obj = devops.get_object(endpoint=tutil.SQ, key=key) is not None
+        obj = devops.get_object(endpoint=tutil.SQ, key=key)
         obj.delete()
         assert devops.exists(endpoint=tutil.SQ, key=key) is False
