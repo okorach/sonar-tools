@@ -92,7 +92,8 @@ disable=raw-checker-failed,
         W0107,
         R1721,
         R1711,
-        R0913
+        R0913,
+        W0212        # Covered by ruff
 
 
 
