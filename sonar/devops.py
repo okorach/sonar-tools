@@ -56,7 +56,7 @@ class DevopsPlatform(sq.SqObject):
     """
 
     CACHE = cache.Cache()
-    API = {c.LIST: "alm_settings/list_definitions"}
+    API = {c.LIST: "alm_settings/list_definitions", c.DELETE: "alm_settings/delete"}
 
     def __init__(self, endpoint: platform.Platform, key: str, platform_type: str) -> None:
         """Constructor"""
@@ -70,8 +70,7 @@ class DevopsPlatform(sq.SqObject):
     @classmethod
     def read(cls, endpoint: platform.Platform, key: str) -> DevopsPlatform:
         """Reads a devops platform object in Sonar instance"""
-        o = DevopsPlatform.CACHE.get(key, endpoint.local_url)
-        if o:
+        if o := DevopsPlatform.CACHE.get(key, endpoint.local_url):
             return o
         data = json.loads(endpoint.get(DevopsPlatform.API[c.LIST]).text)
         for plt_type, platforms in data.items():
@@ -133,6 +132,10 @@ class DevopsPlatform(sq.SqObject):
             string += f" workspace '{self._specific['workspace']}'"
         return string
 
+    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
+        """Returns the API parameters for the operation"""
+        return {"key": self.key}
+
     def refresh(self) -> bool:
         """Reads / Refresh a DevOps platform information
 
@@ -174,7 +177,7 @@ class DevopsPlatform(sq.SqObject):
             log.error("DevOps platform type '%s' for update of %s is incompatible", alm_type, str(self))
             return False
 
-        params = {"key": self.key, "url": kwargs["url"]}
+        params = self.api_params() | {"url": kwargs["url"]}
         additional = ()
         if alm_type == DEVOPS_BITBUCKET_CLOUD:
             additional = ("clientId", "workspace")
@@ -236,7 +239,11 @@ def exists(endpoint: platform.Platform, key: str) -> bool:
     :param key: Key of the devops platform (its name)
     :return: Whether the platform exists
     """
-    return get_object(endpoint=endpoint, key=key) is not None
+    try:
+        get_object(endpoint=endpoint, key=key)
+    except exceptions.ObjectNotFound:
+        return False
+    return True
 
 
 def export(endpoint: platform.Platform, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
