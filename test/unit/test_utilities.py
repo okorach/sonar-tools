@@ -26,6 +26,7 @@ import sonar.utilities as sutil
 from sonar import exceptions
 from datetime import datetime
 
+
 def test_token_type() -> None:
     """test_token_type"""
     token = "x" * 40
@@ -72,6 +73,7 @@ def test_get_setting() -> None:
     assert sutil.get_setting(None, "a", 5) == 5
     assert sutil.get_setting(settings, "c", 8) == 8
 
+
 def test_jvm_heap() -> None:
     """test_jvm_heap"""
 
@@ -82,6 +84,7 @@ def test_jvm_heap() -> None:
     assert sutil.jvm_heap("-Xmx10r") is None
     assert sutil.jvm_heap("-Xmxinvalid -Xms256M") is None
     assert sutil.jvm_heap("") is None
+
 
 def test_int_memory() -> None:
     """test_int_memory"""
@@ -119,6 +122,7 @@ def test_edition_normalize() -> None:
     assert sutil.edition_normalize("unknown") == "unknown"
     assert sutil.edition_normalize(None) is None
 
+
 def test_string_to_version() -> None:
     """test_string_to_version"""
 
@@ -135,7 +139,7 @@ def test_dict_remap() -> None:
 
     input_dict = {"a": 1, "b": 2, "c": 3}
     remap = {"a": "alpha", "b": "beta"}
-    assert sutil.dict_remap(input_dict, remap) == { "alpha": 1, "beta": 2, "c": 3}
+    assert sutil.dict_remap(input_dict, remap) == {"alpha": 1, "beta": 2, "c": 3}
     assert sutil.dict_remap(None, remap) == {}
 
 
@@ -157,6 +161,7 @@ def test_list_to_dict() -> None:
         v.pop("letter")
     assert sutil.list_to_dict(input_list, "letter") == expected_dict
 
+
 def test_to_days() -> None:
     """test_to_days"""
 
@@ -166,3 +171,47 @@ def test_to_days() -> None:
     assert sutil.to_days("1 year") == 365
     assert sutil.to_days("5 invalid") is None
     assert sutil.to_days("invalid") is None
+
+
+def test_none_to_zero() -> None:
+    """test_none_to_zero"""
+
+    d = {"a": {"1": None, "2": 0, "3": "foo"}, "b": [5, None, "bar"], "c": None}
+    res = sutil.none_to_zero(d)
+    assert res == {"a": {"1": 0, "2": 0, "3": "foo"}, "b": [5, 0, "bar"], "c": 0}
+
+
+def test_clean_data() -> None:
+    """test_clean_data"""
+
+    d = {"a": {"1": None, "2": [], "3": "foo", "4": {}}, "b": [5, {}, [], "bar"], "c": "5"}
+    res = sutil.clean_data(d, remove_none=True, remove_empty=True)
+    assert res == {"a": {"3": "foo"}, "b": [5, "bar"], "c": 5}
+
+
+def test_sort_lists() -> None:
+    """test_sort_lists"""
+
+    d = {"c": [3, 1, 2], "b": {"y": [5, 4], "x": "foo"}, "a": "bar"}
+    res = sutil.sort_lists(d)
+    assert res == {"a": "bar", "b": {"x": [4, 5], "y": "foo"}, "c": [1, 2, 3]}
+
+
+def test_csv_to_set() -> None:
+    """test_csv_to_set"""
+
+    assert sutil.csv_to_set("a,b,c") == {"a", "b", "c"}
+    assert sutil.csv_to_set("") == set()
+    assert sutil.csv_to_set(None) == set()
+    assert sutil.csv_to_set("  a , b , c  ") == {"a", "b", "c"}
+    assert sutil.csv_to_set([1, 2, 3]) == {1, 2, 3}
+
+
+def test_list_to_csv() -> None:
+    """test_list_to_csv"""
+
+    assert sutil.list_to_csv(["a", "b", "c"]) == "a,b,c"
+    assert sutil.list_to_csv([]) == ""
+    assert sutil.list_to_csv(None) is None
+    assert sutil.list_to_csv(["  a ", " b ", " c  "]) == "a,b,c"
+    assert sutil.list_to_csv("  a , b , c  ") == "a,b,c"
