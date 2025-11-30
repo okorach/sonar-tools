@@ -257,13 +257,15 @@ class Rule(sq.SqObject):
 
     def refresh(self, use_cache: bool = True) -> bool:
         """Refreshes a rule object from the platform
+
         :param use_cache: If True, will use the cache to avoid unnecessary calls
-        :return: True if the rule was actually refreshed, False cache was used"""
+        :return: True if the rule was actually refreshed, False cache was used
+        """
         if use_cache and "actives" in self.sq_json:
             return False
 
         try:
-            data = json.loads(self.get(Rule.API[c.READ], params={"key": self.key, "actives": "true"}).text)
+            data = json.loads(self.get(Rule.API[c.READ], params=self.api_params() | {"actives": "true"}).text)
         except exceptions.ObjectNotFound:
             Rule.CACHE.pop(self)
             raise
@@ -322,8 +324,7 @@ class Rule(sq.SqObject):
     def set_tags(self, tags: list[str]) -> bool:
         """Sets rule custom tags"""
         log.info("Setting %s custom tags to '%s' ", str(self), str(tags))
-        ok = self.post(Rule.API[c.UPDATE], params={"key": self.key, "tags": utilities.list_to_csv(tags)}).ok
-        if ok:
+        if ok := self.post(Rule.API[c.UPDATE], params=self.api_params() | {"tags": utilities.list_to_csv(tags)}).ok:
             self.tags = sorted(tags) if len(tags) > 0 else None
         return ok
 
@@ -337,8 +338,7 @@ class Rule(sq.SqObject):
         if self.endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Can't extend rules description on SonarQube Cloud")
         log.info("Setting %s custom description to '%s'", str(self), description)
-        ok = self.post(Rule.API[c.UPDATE], params={"key": self.key, "markdown_note": description}).ok
-        if ok:
+        if ok := self.post(Rule.API[c.UPDATE], params=self.api_params() | {"markdown_note": description}).ok:
             self.custom_desc = description if description != "" else None
         return ok
 
