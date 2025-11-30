@@ -25,6 +25,7 @@ sonar-rules tests
 """
 
 from collections.abc import Generator
+import pytest
 import utilities as tutil
 from cli import rules_cli
 import cli.options as opt
@@ -192,3 +193,34 @@ def test_export_fields() -> None:
     assert len(rule_list["instantiated"]) > 0
     for r in rule_list["instantiated"]:
         assert all(key in r for key in ("language", "params", "severity", "impacts", "templateKey"))
+
+def test_instantiate() -> None:
+    """test_create_rule"""
+    params = {
+        "severity": "major",
+        "impacts": {"security": "medium", "maintainability": "medium"},
+        "name": "Thou shalt not be rude",
+        "description": "Behave yourself in your code",
+        "params": [
+            {"key": "message", "value": "Hey don't be rude!"},
+            {"key": "regularExpression", "value": "(f-word|s-word)"}
+        ]
+    }
+    if tutil.SQ.is_sonarcloud():
+        with pytest.raises(exceptions.UnsupportedOperation):
+            rules.Rule.instantiate(endpoint=tutil.SQ, key="java:rudeness_is_bad", template_key="java:S124", data=params)
+        return
+    new_rule = rules.Rule.instantiate(endpoint=tutil.SQ, key="java:rudeness_is_bad", template_key="java:S124", data=params)
+    assert new_rule.key == "java:rudeness_is_bad"
+    assert new_rule.name == "Thou shalt not be rude"
+    assert new_rule.custom_desc == "Hey don't be rude!"
+    assert new_rule.language == "java"
+    if tutil.SQ.is_mqr_mode():
+        assert new_rule.impacts == {"SECURITY": "MEDIUM", "MAINTAINABILITY": "MEDIUM"}
+    else:
+        assert new_rule.severity == "MAJOR"
+        assert new_rule.type == "CODE_SMELL"
+    new_rule.delete()
+    assert rules.Rule.exists(endpoint=tutil.SQ, key="java:rudeness_is_bad") is False
+    with pytest.raises(exceptions.ObjectNotFound):
+        new_rule.refresh(use_cache=False)
