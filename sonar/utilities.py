@@ -202,6 +202,7 @@ def clean_data(d: Any, remove_empty: bool = True, remove_none: bool = True) -> A
         # Remove empty strings and nones
         if remove_empty:
             d = [elem for elem in d if not (isinstance(elem, str) and elem == "")]
+            d = [elem for elem in d if not (isinstance(elem, (list, dict, tuple, set)) and len(elem) == 0)]
         if remove_none:
             d = [elem for elem in d if elem is not None]
         return [clean_data(elem, remove_empty, remove_none) for elem in d]
@@ -323,9 +324,12 @@ def jvm_heap(cmdline: str) -> Union[int, None]:
     return None
 
 
-def int_memory(string: str) -> Union[int, None]:
+def int_memory(string: str) -> Optional[int]:
     """Converts memory from string to int in MB"""
-    (val, unit) = string.split(" ")
+    try:
+        (val, unit) = string.split(" ")
+    except ValueError:
+        return None
     # For decimal separator in some countries
     val = float(val.replace(",", "."))
     int_val = None
@@ -338,9 +342,9 @@ def int_memory(string: str) -> Union[int, None]:
     elif unit == "PB":
         int_val = int(val * 1024 * 1024 * 1024)
     elif unit == "KB":
-        int_val = val / 1024
+        int_val = int(val / 1024)
     elif unit == "bytes":
-        int_val = val / 1024 / 1024
+        int_val = int(val / 1024 / 1024)
     return int_val
 
 
