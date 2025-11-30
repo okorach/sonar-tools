@@ -194,6 +194,7 @@ def test_export_fields() -> None:
     for r in rule_list["instantiated"]:
         assert all(key in r for key in ("language", "params", "severity", "impacts", "templateKey"))
 
+
 def test_instantiate() -> None:
     """test_create_rule"""
     params = {
@@ -201,10 +202,7 @@ def test_instantiate() -> None:
         "impacts": {"security": "medium", "maintainability": "medium"},
         "name": "Thou shalt not be rude",
         "description": "Behave yourself in your code",
-        "params": [
-            {"key": "message", "value": "Hey don't be rude!"},
-            {"key": "regularExpression", "value": "(f-word|s-word)"}
-        ]
+        "params": [{"key": "message", "value": "Hey don't be rude!"}, {"key": "regularExpression", "value": "(f-word|s-word)"}],
     }
     if tutil.SQ.is_sonarcloud():
         with pytest.raises(exceptions.UnsupportedOperation):
