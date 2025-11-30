@@ -21,7 +21,7 @@
 """Parent permissions class for quality gates and quality profiles permissions subclasses"""
 
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Callable
 
 import json
 
@@ -87,7 +87,7 @@ class QualityPermissions(permissions.Permissions):
                 page += 1
         return perms
 
-    def _set_perms(self, new_perms: types.ObjectJsonRepr, apis: dict[str, dict[str, str]], field: str, diff_func: callable, **kwargs) -> bool:
+    def _set_perms(self, new_perms: types.ObjectJsonRepr, apis: dict[str, dict[str, str]], field: str, diff_func: Callable, **kwargs) -> bool:
         """Sets permissions of a QG or QP"""
         if self.concerned_object.is_built_in:
             log.debug("Can't set %s because it's built-in", str(self))
@@ -107,13 +107,14 @@ class QualityPermissions(permissions.Permissions):
         self.read()
         return True
 
-    def _read_perms(self, apis: dict[str, dict[str, str]], fields: dict[str, str], **kwargs) -> dict[str, list[str]]:
+    def _read_perms(self, apis: dict[str, dict[str, str]], fields: dict[str, str], **kwargs: str) -> dict[str, list[str]]:
         """Reads permissions of a QP or QG
 
         :param apis: A dict with "get" key and values as dicts with "users" and "groups" keys and values as API endpoints
         :param fields: The fields that are returned by the API
         :return: a dict with "users" and "groups" keys and list of logins or group names as values
-        Examples: {"users": ["olivier", "john"], "groups": ["developers", "testers"]}"""
+        Examples: {"users": ["olivier", "john"], "groups": ["developers", "testers"]}
+        """
         self.permissions = {}
         if self.concerned_object.is_built_in:
             log.debug("No permissions for %s because it's built-in", str(self))

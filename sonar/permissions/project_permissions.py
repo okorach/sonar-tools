@@ -27,7 +27,6 @@ from sonar.util import types
 from sonar.permissions import permissions
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
-import sonar.utilities as util
 
 PROJECT_PERMISSIONS = {
     "user": "Browse",
@@ -68,7 +67,7 @@ class ProjectPermissions(permissions.Permissions):
         return self
 
     def _set_perms(
-        self, new_perms: list[types.PermissionDef], apis: dict[str, dict[str, str]], field: dict[str, str], diff_func: Callable, **kwargs
+        self, new_perms: list[types.PermissionDef], apis: dict[str, dict[str, str]], field: dict[str, str], diff_func: Callable, **kwargs: str
     ) -> ProjectPermissions:
         log.info("Setting %s with %s", self, new_perms)
         if self.permissions is None:

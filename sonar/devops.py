@@ -254,6 +254,11 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings) -
 
 def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> int:
     """Imports DevOps platform configuration in SonarQube/Cloud
+
+    :param endpoint: Reference to the SonarQube platform
+    :param config_data: Configuration data to import
+    :param key_list: List of keys to import, defaults to None
+    :raises: UnsupportedOperation if the target platform is SonarQube Cloud
     :return: Nbr of devops platforms imported
     """
     if not (devops_settings := config_data.get("devopsIntegration", {})):
@@ -281,11 +286,12 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
     return counter
 
 
-def devops_type(endpoint: platform.Platform, key: str) -> Optional[str]:
+def devops_type(endpoint: platform.Platform, key: str) -> str:
+    """Returns the type of a DevOps platform (see DEVOPS_PLATFORM_TYPES)
+
+    :param endpoint: Reference to the SonarQube platform
+    :param key: Key of the devops platform (its name)
+    :raises: ObjectNotFound if the devops key is not found
+    :return: The type of a DevOps platform (see DEVOPS_PLATFORM_TYPES)
     """
-    :return: The type of a DevOps platform (see DEVOPS_PLATFORM_TYPES), or None if not found
-    """
-    o = get_object(endpoint=endpoint, key=key)
-    if o is None:
-        return None
-    return o.type
+    return get_object(endpoint=endpoint, key=key).type

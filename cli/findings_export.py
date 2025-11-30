@@ -18,11 +18,9 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-This script exports findings as CSV, JSON, or SARIF
+"""Script that exports findings as CSV, JSON, or SARIF
 
 Usage: sonar-findings-export.py -t <SQ_TOKEN> -u <SQ_URL> [<filters>]
-
 """
 
 import os
@@ -166,16 +164,16 @@ def __write_header(file: str, endpoint: platform.Platform, **kwargs) -> None:
             csvwriter.writerow(row)
 
 
-def __write_footer(file: str, format: str) -> None:
+def __write_footer(file: str, fmt: str) -> None:
     """Writes the closing characters of export file depending on export format"""
-    if format not in ("json", "sarif"):
+    if fmt not in ("json", "sarif"):
         return
     with util.open_file(file=file, mode="a") as fd:
-        closing_sequence = "\n]\n}\n]\n}" if format == "sarif" else "\n]"
+        closing_sequence = "\n]\n}\n]\n}" if fmt == "sarif" else "\n]"
         print(f"{closing_sequence}", file=fd)
 
 
-def __write_json_findings(findings_list: dict[str, findings.Finding], fd: TextIO, **kwargs) -> None:
+def __write_json_findings(findings_list: dict[str, findings.Finding], fd: TextIO, **kwargs: str) -> None:
     """Appends a list of findings in JSON or SARIF format in a file"""
     log.debug("in write_json_findings")
     i = len(findings_list)
@@ -193,7 +191,7 @@ def __write_json_findings(findings_list: dict[str, findings.Finding], fd: TextIO
         print(f"{util.json_dump(json_data, indent=1)}{comma}", file=fd)
 
 
-def __write_csv_findings(findings_list: dict[str, findings.Finding], fd: TextIO, **kwargs) -> None:
+def __write_csv_findings(findings_list: dict[str, findings.Finding], fd: TextIO, **kwargs: str) -> None:
     """Appends a list of findings in a CSV file"""
     csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
     for finding in findings_list.values():
@@ -203,7 +201,7 @@ def __write_csv_findings(findings_list: dict[str, findings.Finding], fd: TextIO,
         csvwriter.writerow(row)
 
 
-def __write_findings(findings_list: list[findings.Finding], file: str, is_first: bool, **kwargs) -> None:
+def __write_findings(findings_list: dict[str, findings.Finding], file: str, is_first: bool, **kwargs: str) -> None:
     """Writes a list of findings in a file"""
     log.info("Writing %d more findings in format %s", len(findings_list), kwargs[options.FORMAT])
     with util.open_file(file=file, mode="a") as fd:

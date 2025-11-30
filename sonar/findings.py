@@ -33,7 +33,7 @@ from sonar.util import constants as c
 from sonar import exceptions
 
 import sonar.utilities as util
-from sonar import projects, rules
+from sonar import projects, rules, changelog
 import sonar.util.issue_defs as idefs
 
 if TYPE_CHECKING:
@@ -178,11 +178,11 @@ class Finding(sq.SqObject):
         self.modification_date = util.string_to_date(jsondata["updatedAt"])
 
     def url(self) -> str:
-        # Must be implemented in sub classes
+        """Returns the URL of the finding, must be implemented in subclasses"""
         raise NotImplementedError()
 
     def assign(self, assignee: Optional[str] = None) -> bool:
-        # Must be implemented in sub classes
+        """Assign the finding to a user, must be implemented in subclasses"""
         raise NotImplementedError()
 
     def language(self) -> str:
@@ -190,8 +190,9 @@ class Finding(sq.SqObject):
         return rules.Rule.get_object(endpoint=self.endpoint, key=self.rule).language
 
     def to_csv(self, without_time: bool = False) -> list[str]:
-        """
-        :return: The finding attributes as list
+        """Returns The finding attributes as list
+
+        :param without_time: Whether to include the time in the date fields
         """
         data = self.to_json(without_time)
         if self.endpoint.is_mqr_mode():
@@ -201,15 +202,14 @@ class Finding(sq.SqObject):
             data["otherImpact"] = data["impacts"].get(idefs.QUALITY_NONE, "")
             data.pop("impacts", None)
         data["projectName"] = projects.Project.get_object(endpoint=self.endpoint, key=self.projectKey).name
-        if self.endpoint.version() >= c.MQR_INTRO_VERSION:
-            return [str(data.get(field, "")) for field in CSV_EXPORT_FIELDS]
-        else:
-            return [str(data.get(field, "")) for field in LEGACY_CSV_EXPORT_FIELDS]
+        fields = CSV_EXPORT_FIELDS if self.endpoint.version() >= c.MQR_INTRO_VERSION else LEGACY_CSV_EXPORT_FIELDS
+        return [str(data.get(field, "")) for field in fields]
+
 
     def to_json(self, without_time: bool = False) -> types.ObjectJsonRepr:
-        """
-        :return: The finding as dict
-        :rtype: dict
+        """Returns the finding as dict
+
+        :param without_time: Whether to include the time in the date fields
         """
         fmt = util.SQ_DATETIME_FORMAT
         if without_time:
@@ -238,10 +238,10 @@ class Finding(sq.SqObject):
         return {k: v for k, v in data.items() if v is not None and k not in _JSON_FIELDS_PRIVATE}
 
     def to_sarif(self, full: bool = True) -> dict[str, str]:
-        """
-        :param bool full: Whether all properties of the issues should be exported or only the SARIF ones
+        """Returns the finding in SARIF format
+        
+        :param full: Whether all properties of the issues should be exported or only the SARIF ones
         :return: The finding in SARIF format
-        :rtype: dict
         """
         data = {"level": "warning", "ruleId": self.rule, "message": {"text": self.message}}
         if (

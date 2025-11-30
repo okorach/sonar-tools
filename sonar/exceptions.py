@@ -28,45 +28,42 @@ from sonar import errcodes
 
 
 class SonarException(Exception):
-    """
-    sonar-tools exceptions
-    """
+    """sonar-tools exceptions"""
 
     def __init__(self, message: str, code: int) -> None:
+        """Constructor"""
         super().__init__()
         self.message = message
         self.errcode = code
 
     def __str__(self) -> str:
+        """String representation of the exception"""
         return f"ERROR {self.errcode}: {self.message}"
 
 
 class ObjectNotFound(SonarException):
-    """
-    Object not found during a SonarQube search
-    """
+    """Object not found during a SonarQube search"""
 
     def __init__(self, key: str, message: str) -> None:
+        """Constructor"""
         super().__init__(message, errcodes.NO_SUCH_KEY)
         self.key = key
 
 
 class ObjectAlreadyExists(SonarException):
-    """
-    Object already exists when trying to create it
-    """
+    """Object already exists when trying to create it"""
 
     def __init__(self, key: str, message: str) -> None:
+        """Constructor"""
         super().__init__(message, errcodes.OBJECT_ALREADY_EXISTS)
         self.key = key
 
 
 class UnsupportedOperation(SonarException):
-    """
-    Unsupported operation (most often due to edition not allowing it)
-    """
+    """Unsupported operation (most often due to edition not allowing it)"""
 
     def __init__(self, message: str) -> None:
+        """Constructor"""
         super().__init__(message, errcodes.UNSUPPORTED_OPERATION)
 
 
@@ -74,6 +71,7 @@ class ConnectionError(SonarException):
     """ConnectionError error"""
 
     def __init__(self, message: str) -> None:
+        """Constructor"""
         super().__init__(message, errcodes.CONNECTION_ERROR)
 
 
@@ -81,4 +79,5 @@ class NoPermissions(SonarException):
     """NoPermissions error"""
 
     def __init__(self, message: str) -> None:
+        """Constructor"""
         super().__init__(message, errcodes.SONAR_API_AUTHORIZATION)

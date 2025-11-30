@@ -25,7 +25,6 @@ from __future__ import annotations
 import sonar.logging as log
 from sonar.permissions import permissions
 from sonar.util import types
-from sonar import utilities as util
 import sonar.util.constants as c
 
 

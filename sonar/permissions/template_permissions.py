@@ -24,7 +24,6 @@ from __future__ import annotations
 import sonar.logging as log
 from sonar.util import types
 from sonar.permissions import permissions, project_permissions
-from sonar import utilities as util
 
 
 class TemplatePermissions(project_permissions.ProjectPermissions):
