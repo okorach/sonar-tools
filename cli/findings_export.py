@@ -230,7 +230,7 @@ def __verify_inputs(params: types.ApiParams) -> bool:
     if diff:
         chelp.clear_cache_and_exit(errcode, f"Severities {diff} are not legit severities")
 
-    diff = list(set(util.csv_to_list(params.get(options.TYPES))) - (idefs.STD_TYPES + hotspots.TYPES))
+    diff = list(set(util.csv_to_list(params.get(options.TYPES))) - set(idefs.STD_TYPES + hotspots.TYPES))
     if diff:
         chelp.clear_cache_and_exit(errcode, f"Types {diff} are not legit types")
     if len(params[options.CSV_SEPARATOR]) > 1:
