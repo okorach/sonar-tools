@@ -102,7 +102,7 @@ def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyS
         wanted_metrics = main_metrics
     else:
         # Verify that requested metrics do exist
-        non_existing_metrics = util.difference(list(wanted_metrics), metrics.search(endpoint).keys())
+        non_existing_metrics = set(wanted_metrics) - set(metrics.search(endpoint).keys())
         if len(non_existing_metrics) > 0:
             miss = ",".join(non_existing_metrics)
             chelp.clear_cache_and_exit(errcodes.NO_SUCH_KEY, f"Requested metric keys '{miss}' don't exist")

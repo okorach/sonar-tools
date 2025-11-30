@@ -218,19 +218,19 @@ def __write_findings(findings_list: list[findings.Finding], file: str, is_first:
 def __verify_inputs(params: types.ApiParams) -> bool:
     """Verifies if findings-export inputs are correct"""
     errcode = errcodes.WRONG_SEARCH_CRITERIA
-    diff = util.difference(util.csv_to_list(params.get(options.RESOLUTIONS, None)), idefs.RESOLUTIONS + hotspots.RESOLUTIONS)
+    diff = list(set(util.csv_to_list(params.get(options.RESOLUTIONS))) - set(idefs.RESOLUTIONS + hotspots.RESOLUTIONS))
     if diff:
         chelp.clear_cache_and_exit(errcode, f"Resolutions {diff} are not legit resolutions")
 
-    diff = util.difference(util.csv_to_list(params.get(options.STATUSES, None)), idefs.STATUSES + hotspots.STATUSES)
+    diff = list(set(util.csv_to_list(params.get(options.STATUSES))) - set(idefs.STATUSES + hotspots.STATUSES))
     if diff:
         chelp.clear_cache_and_exit(errcode, f"Statuses {diff} are not legit statuses")
 
-    diff = util.difference(util.csv_to_list(params.get(options.SEVERITIES, None)), idefs.STD_SEVERITIES + hotspots.SEVERITIES)
+    diff = list(set(util.csv_to_list(params.get(options.SEVERITIES))) - set(idefs.STD_SEVERITIES + hotspots.SEVERITIES))
     if diff:
         chelp.clear_cache_and_exit(errcode, f"Severities {diff} are not legit severities")
 
-    diff = util.difference(util.csv_to_list(params.get(options.TYPES, None)), idefs.STD_TYPES + hotspots.TYPES)
+    diff = list(set(util.csv_to_list(params.get(options.TYPES))) - (idefs.STD_TYPES + hotspots.TYPES))
     if diff:
         chelp.clear_cache_and_exit(errcode, f"Types {diff} are not legit types")
     if len(params[options.CSV_SEPARATOR]) > 1:

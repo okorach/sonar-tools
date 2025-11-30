@@ -261,7 +261,7 @@ class Permissions(ABC):
         perm_counter = 0
         for perm in self.permissions:
             if any(p in perm for p in perm_types):
-                perm_counter += len(perm["permissions"]) if perm_filter is None else len(utilities.intersection(perm["permissions"], perm_filter))
+                perm_counter += len(perm["permissions"]) if perm_filter is None else len(set(perm["permissions"]) & set(perm_filter))
         return perm_counter
 
     def _get_api(self, api: str, perm_type: str, ret_field: str, **extra_params) -> types.JsonPermissions:

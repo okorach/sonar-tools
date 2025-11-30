@@ -351,14 +351,14 @@ class QualityProfile(sq.SqObject):
         current_rules = list(self.rules(use_cache=False).keys())
         ruleset_d = util.list_to_dict(ruleset, "key", keep_in_values=True)
         log.debug("%s: Setting rules %s", self, util.json_dump(ruleset_d))
-        keys_to_activate = util.difference(list(ruleset_d.keys()), current_rules)
+        keys_to_activate = list(set(ruleset_d.keys()) - set(current_rules))
         keys_to_activate += [
             r["key"]
             for r in ruleset_d.values()
             if any(r.get(k) for k in ("prioritized", "params", "severity", "impacts")) and r["key"] not in keys_to_activate
         ]
         rules_to_activate = [ruleset_d[k] for k in keys_to_activate]
-        rules_to_deactivate = util.difference(current_rules, list(ruleset_d.keys()))
+        rules_to_deactivate = list(set(current_rules) - set(ruleset_d.keys()))
         log.info("set_rules: Activating %d rules and deactivating %d rules", len(rules_to_activate), len(rules_to_deactivate))
         ok = self.activate_rules(rules_to_activate)
         ok = ok and self.deactivate_rules(rules_to_deactivate)

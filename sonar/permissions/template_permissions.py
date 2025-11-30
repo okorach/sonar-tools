@@ -78,8 +78,8 @@ class TemplatePermissions(project_permissions.ProjectPermissions):
             ptype = "group" if "group" in new_perm else "user"
             current_perm: list[str] = next((p["permissions"] for p in self.permissions if p.get(ptype) == new_perm[ptype]), [])
             log.info("comparing current_perm: %s with new_perm: %s", str(current_perm), str(new_perm["permissions"]))
-            to_remove = util.difference(current_perm, new_perm["permissions"])
-            to_add = util.difference(new_perm["permissions"], current_perm)
+            to_remove = list(set(current_perm) - set(new_perm["permissions"]))
+            to_add = list(set(new_perm["permissions"]) - set(current_perm))
             atype = f"{ptype}s"
             self._post_api(
                 api=TemplatePermissions.API_SET[atype],

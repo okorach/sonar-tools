@@ -85,8 +85,8 @@ class ProjectPermissions(permissions.Permissions):
             ptype = "group" if "group" in new_perm else "user"
             atype = f"{ptype}s"
             current_perm: list[str] = next((p["permissions"] for p in self.permissions if p.get(ptype) == new_perm[ptype]), [])
-            to_remove = util.difference(current_perm, new_perm["permissions"])
-            to_add = util.difference(new_perm["permissions"], current_perm)
+            to_remove = list(set(current_perm) - set(new_perm["permissions"]))
+            to_add = list(set(new_perm["permissions"]) - set(current_perm))
             if ptype == "user" and new_perm[ptype] == "admin" and "admin" in to_remove:
                 # Don't remove admin permission to the admin user, this is not possible anyway
                 to_remove.remove("admin")

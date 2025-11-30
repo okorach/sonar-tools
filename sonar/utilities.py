@@ -219,9 +219,8 @@ def clean_data(d: Any, remove_empty: bool = True, remove_none: bool = True) -> A
 
 
 def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
-    """Recursively removes empty lists and dicts and none from a dict"""
+    """Recursively sort lists in a dict or list, and redact tokens if needed"""
     if isinstance(data, (list, set, tuple)):
-        data = list(data)
         if len(data) > 0 and isinstance(data[0], (str, int, float)):
             return sorted(data)
         return [sort_lists(elem) for elem in data]
@@ -229,9 +228,7 @@ def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
         for k, v in data.items():
             if redact_tokens and k in ("token", "tokenTarget"):
                 data[k] = redacted_token(v)
-            if isinstance(v, set):
-                v = list(v)
-            if isinstance(v, list) and len(v) > 0 and isinstance(v[0], (str, int, float)):
+            if isinstance(v, (list, set, tuple)) and len(v) > 0 and isinstance(v[0], (str, int, float)):
                 data[k] = sorted(v)
             elif isinstance(v, dict):
                 data[k] = sort_lists(v)
@@ -302,24 +299,6 @@ def list_to_csv(array: Union[None, str, float, list[str], set[str], tuple[str]],
 def csv_normalize(string: str, separator: str = ",") -> str:
     """Normalizes a CSV string (no spaces next to separators)"""
     return list_to_csv(csv_to_list(string, separator))
-
-
-def intersection(list1: list[any], list2: list[any]) -> list[any]:
-    """Computes intersection of 2 lists"""
-    # FIXME - This should be sets
-    return [value for value in list1 if value in list2]
-
-
-def union(list1: list[any], list2: list[any]) -> list[any]:
-    """Computes union of 2 lists"""
-    # FIXME - This should be sets
-    return list1 + [value for value in list2 if value not in list1]
-
-
-def difference(list1: list[Any], list2: list[Any]) -> list[Any]:
-    """Computes difference of 2 lists"""
-    # FIXME - This should be sets
-    return list(set(list1) - set(list2))
 
 
 def jvm_heap(cmdline: str) -> Union[int, None]:
