@@ -195,29 +195,25 @@ def clean_data(d: Any, remove_empty: bool = True, remove_none: bool = True) -> A
     # log.debug("Cleaning up %s", json_dump(d))
     if isinstance(d, str):
         return convert_string(d)
-    if not isinstance(d, (list, dict)):
+    if not isinstance(d, (list, dict, set, tuple)):
         return d
 
-    if isinstance(d, list):
+    if isinstance(d, (list, set, tuple)):
         # Remove empty strings and nones
-        if remove_empty:
-            d = [elem for elem in d if not (isinstance(elem, str) and elem == "")]
-            d = [elem for elem in d if not (isinstance(elem, (list, dict, tuple, set)) and len(elem) == 0)]
         if remove_none:
             d = [elem for elem in d if elem is not None]
+        if remove_empty:
+            d = [elem for elem in d if not isinstance(elem, (str, list, dict, tuple, set)) or len(elem) != 0]
         return [clean_data(elem, remove_empty, remove_none) for elem in d]
 
     # Remove empty dict string values
-    if remove_empty:
-        new_d = {k: v for k, v in d.items() if not isinstance(v, str) or v != ""}
     if remove_none:
-        new_d = {k: v for k, v in d.items() if v is not None}
-
-    # Remove empty dict list or dict values
-    new_d = {k: v for k, v in new_d.items() if not isinstance(v, (list, dict)) or len(v) > 0}
+        d = {k: v for k, v in d.items() if v is not None}
+    if remove_empty:
+        d = {k: v for k, v in d.items() if not isinstance(v, (str, list, dict, tuple, set)) or len(v) != 0}
 
     # Recurse
-    return {k: clean_data(v, remove_empty, remove_none) for k, v in new_d.items()}
+    return {k: clean_data(v, remove_empty, remove_none) for k, v in d.items()}
 
 
 def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
@@ -227,6 +223,7 @@ def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
             return sorted(data)
         return [sort_lists(elem) for elem in data]
     elif isinstance(data, dict):
+        data = dict(sorted(data.items()))
         for k, v in data.items():
             if redact_tokens and k in ("token", "tokenTarget"):
                 data[k] = redacted_token(v)
