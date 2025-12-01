@@ -169,7 +169,7 @@ def test_none_to_zero() -> None:
 
 def test_clean_data() -> None:
     """test_clean_data"""
-    d = {"a": {"1": None, "2": [], "3": "foo", "4": {}, "5": set()}, "b": [5, {}, [], "bar"], "c": "5"}
+    d = {"a": {"1": None, "2": [], "3": "foo", "4": {}, "5": set(), "6": ()}, "b": [5, {}, [], "bar", set(), ()], "c": "5"}
     res = sutil.clean_data(d, remove_none=True, remove_empty=True)
     assert res == {"a": {"3": "foo"}, "b": [5, "bar"], "c": 5}
 
@@ -178,7 +178,9 @@ def test_sort_lists() -> None:
     """test_sort_lists"""
     d = {"c": [3, 1, 2], "b": {"y": [5, 4], "x": "foo"}, "a": "bar"}
     res = sutil.sort_lists(d)
-    assert res == {"a": "bar", "b": {"x": [4, 5], "y": "foo"}, "c": [1, 2, 3]}
+    print("GOTTEN: ", str(res))
+    print("EXPECT: ", str({"a": "bar", "b": {"x": "foo", "y": [4, 5]}, "c": [1, 2, 3]}))
+    assert res == {"a": "bar", "b": {"x": "foo", "y": [4, 5]}, "c": [1, 2, 3]}
 
 
 def test_csv_to_set() -> None:
