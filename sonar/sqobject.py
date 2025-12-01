@@ -95,7 +95,7 @@ class SqObject(object):
     @classmethod
     def exists(cls, endpoint: object, key: str) -> bool:
         """Tells whether an object with a given key exists"""
-        if cls.__name__ not in ("Project", "Portfolio", "Application"):
+        if cls.__name__ not in ("Project", "Portfolio", "Application", "Rule"):
             raise exceptions.UnsupportedOperation(f"Can't check existence of {cls.__name__.lower()}s")
         try:
             return cls.get_object(endpoint, key) is not None
