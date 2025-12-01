@@ -53,13 +53,13 @@ def test_migration(json_file: Generator[str]) -> None:
         assert item in json_config
 
     item_list = ["detectedCi", "lastAnalysis", "issues", "hotspots", "ncloc", "revision"]
-    if tutil.SQ.edition() != c.CE:
-        item_list.append("branches")
     for p in json_config["projects"]:
+        if tutil.SQ.edition() != c.CE:
+            assert "branches" in p or "error" in p
         for item in item_list:
             assert item in p["migrationData"] or "error" in p
 
-    u = json_config["users"]["admin"]
+    u = next(u for u in json_config["users"] if u["login"] == "admin")
     assert tutil.SQ.default_user_group() in u["groups"]
     assert u["local"] and u["active"]
     if tutil.SQ.version() >= (10, 0, 0):
@@ -67,12 +67,14 @@ def test_migration(json_file: Generator[str]) -> None:
         assert "sonarLintLastConnectionDate" in u
     else:
         assert "lastConnectionDate" in u
-    assert json_config["users"]["olivier"]["externalProvider"] == "sonarqube"
+
+    u = next(u for u in json_config["users"] if u["login"] == "olivier")
+    assert u["externalProvider"] == "sonarqube"
 
     GH_USER = "olivier-korach65532"
     GL_USER = "olivier-korach22656" if tutil.SQ.version() > (10, 0, 0) else "olivier-korach82556"
     USER = GL_USER
-    u = json_config["users"][USER]
+    u = next(u for u in json_config["users"] if u["login"] == USER)
     assert u["name"] == "Olivier Korach"
     assert not u["local"]
     assert u["externalProvider"] == ("gitlab" if USER == GL_USER else "github")
@@ -80,15 +82,17 @@ def test_migration(json_file: Generator[str]) -> None:
         assert u["externalLogin"] == "okorach"
         assert u["email"] == "olivier.korach@gmail.com"
 
-    p = json_config["projects"][tutil.LIVE_PROJECT]
-    assert "lastTaskScannerContext" in p["backgroundTasks"]
+    p = next(p for p in json_config["projects"] if p["key"] == tutil.LIVE_PROJECT)
+    mdata = p["migrationData"]
+    assert "lastTaskScannerContext" in mdata["backgroundTasks"]
     for elem in "detectedCi", "lastAnalysis", "revision":
-        assert elem in p
-    assert p["ncloc"]["py"] > 0
-    assert p["ncloc"]["total"] > 0
+        assert elem in mdata
+    assert mdata["ncloc"]["py"] > 0
+    assert mdata["ncloc"]["total"] > 0
 
     if tutil.SQ.edition() != c.CE:
-        iss = p["branches"]["master"]["issues"]
+        master_branch = next(b for b in p["branches"] if b["name"] == "master")
+        iss = master_branch["issues"]
         if tutil.SQ.version() >= (10, 0, 0):
             assert iss["accepted"] > 0
         else:
@@ -97,18 +101,19 @@ def test_migration(json_file: Generator[str]) -> None:
         assert iss["falsePositives"] > 0
         assert iss["thirdParty"] == 0
 
-        assert p["branches"]["master"]["hotspots"]["safe"] > 0
-        assert p["branches"]["master"]["hotspots"]["acknowledged"] == 0
-
-    p = json_config["projects"]["checkstyle-issues"]
+        assert master_branch["hotspots"]["safe"] > 0
+        assert master_branch["hotspots"]["acknowledged"] == 0
 
     if tutil.SQ.version() >= (10, 0, 0):
-        assert json_config["projects"]["demo:gitlab-ci-maven"]["detectedCi"] == "Gitlab CI"
-        assert json_config["projects"]["demo:github-actions-cli"]["detectedCi"] == "Github Actions"
+        p = next(p for p in json_config["projects"] if p["key"] == "demo:gitlab-ci-maven")
+        assert p["detectedCi"] == "Gitlab CI"
+        p = next(p for p in json_config["projects"] if p["key"] == "demo:github-actions-cli")
+        assert p["detectedCi"] == "Github Actions"
         if tutil.SQ.edition() != c.CE:
-            assert sum(list(p["branches"]["main"]["issues"]["thirdParty"].values())) > 0
+            b = next(b for b in p["branches"] if b["name"] == "main")
+            assert sum(list(b["issues"]["thirdParty"].values())) > 0
 
-    for p in json_config["portfolios"].values():
+    for p in json_config["portfolios"]:
         assert "projects" in p
         assert "keys" in p["projects"]
 

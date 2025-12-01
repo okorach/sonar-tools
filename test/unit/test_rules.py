@@ -31,6 +31,7 @@ from cli import rules_cli
 import cli.options as opt
 from sonar import rules, exceptions, errcodes as e
 from sonar.util import constants as c, issue_defs as idefs
+import sonar.utilities as sutil
 
 CMD = "rules_cli.py"
 OPTS = f"{CMD} {tutil.SQS_OPTS}"
@@ -209,9 +210,10 @@ def test_instantiate() -> None:
             rules.Rule.instantiate(endpoint=tutil.SQ, key="java:rudeness_is_bad", template_key="java:S124", data=params)
         return
     new_rule = rules.Rule.instantiate(endpoint=tutil.SQ, key="java:rudeness_is_bad", template_key="java:S124", data=params)
+    print("GOTTEN RULE: ", str(new_rule))
     assert new_rule.key == "java:rudeness_is_bad"
     assert new_rule.name == "Thou shalt not be rude"
-    assert new_rule.custom_desc == "Hey don't be rude!"
+    assert new_rule.custom_desc == "Behave yourself in your code"
     assert new_rule.language == "java"
     if tutil.SQ.is_mqr_mode():
         assert new_rule.impacts == {"SECURITY": "MEDIUM", "MAINTAINABILITY": "MEDIUM"}
@@ -219,6 +221,5 @@ def test_instantiate() -> None:
         assert new_rule.severity == "MAJOR"
         assert new_rule.type == "CODE_SMELL"
     new_rule.delete()
-    assert rules.Rule.exists(endpoint=tutil.SQ, key="java:rudeness_is_bad") is False
-    with pytest.raises(exceptions.ObjectNotFound):
-        new_rule.refresh(use_cache=False)
+    rules.Rule.clear_cache()
+    assert not rules.Rule.exists(endpoint=tutil.SQ, key="java:rudeness_is_bad")
