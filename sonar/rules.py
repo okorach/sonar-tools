@@ -175,7 +175,8 @@ class Rule(sq.SqObject):
         if not self.language:
             log.debug("Guessing rule '%s' language from repo '%s'", self.key, str(data.get("repo", "")))
             self.language = EXTERNAL_REPOS.get(data.get("repo", ""), "UNKNOWN")
-        self.custom_desc = data.get("mdNote", None)
+
+        self.custom_desc = data.get("mdNote", data.get("mdDesc"))
         self.created_at = data["createdAt"]
         self.is_template = data.get("isTemplate", False)
         self.template_key = data.get("templateKey", None)
@@ -197,8 +198,10 @@ class Rule(sq.SqObject):
         """
         if o := Rule.CACHE.get(key, endpoint.local_url):
             return o
-        r = endpoint.get(Rule.API[c.READ], params={"key": key, "actives": "true"})
-        return Rule(endpoint=endpoint, key=key, data=json.loads(r.text)["rule"])
+        sq.search_objects(endpoint=endpoint, object_class=Rule, params={"q": key})
+        if o := Rule.CACHE.get(key, endpoint.local_url):
+            return o
+        raise exceptions.ObjectNotFound(key, f"Rule key '{key}' not found")
 
     @classmethod
     def create(cls, endpoint: platform.Platform, key: str, **kwargs) -> Rule:
@@ -219,7 +222,9 @@ class Rule(sq.SqObject):
         log.debug("Creating rule key '%s'", key)
         params.pop("severity" if endpoint.is_mqr_mode() else "impacts", None)
         endpoint.post(cls.API[c.CREATE], params=params)
-        return cls.get_object(endpoint=endpoint, key=key)
+        created_rule = cls.get_object(endpoint=endpoint, key=key)
+        created_rule.custom_desc = kwargs.get("markdownDescription", "NO DESCRIPTION")
+        return created_rule
 
     @classmethod
     def load(cls, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> Rule:
@@ -235,7 +240,7 @@ class Rule(sq.SqObject):
             raise exceptions.UnsupportedOperation("Can't instantiate rules on SonarQube Cloud")
         try:
             rule = Rule.get_object(endpoint, key)
-            log.info("Rule key '%s' already exists, instantiation skipped...", key)
+            log.info("Rule key '%s' already exists, instantiation skipped..., returning %s", key, rule)
             return rule
         except exceptions.ObjectNotFound:
             pass
