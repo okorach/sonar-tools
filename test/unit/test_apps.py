@@ -82,7 +82,7 @@ def test_get_object_non_existing() -> None:
 def test_exists(get_test_app: Generator[App]) -> None:
     """Test exist"""
     if not tutil.verify_support(SUPPORTED_EDITIONS, apps.Application.exists, endpoint=tutil.SQ, key=EXISTING_KEY) and not tutil.verify_support(
-        SUPPORTED_EDITIONS, apps.exists, endpoint=tutil.SQ, key=NON_EXISTING_KEY
+        SUPPORTED_EDITIONS, apps.Application.exists, endpoint=tutil.SQ, key=NON_EXISTING_KEY
     ):
         return
     obj = get_test_app
