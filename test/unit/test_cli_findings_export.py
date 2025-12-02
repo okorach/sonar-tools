@@ -26,12 +26,16 @@ import utilities as tutil
 from sonar import errcodes as e
 import cli.options as opt
 from cli import findings_export
+import sonar.util.constants as c
 
 CMD = f"sonar-findings-export.py {tutil.SQS_OPTS}"
 
 
 def test_export_portfolios_findings(csv_file: Generator[str]) -> None:
     """test_export_portfolios_findings"""
+    if tutil.SQ.edition() in (c.CE, c.DE):
+        assert tutil.run_cmd(findings_export.main, f"{CMD} --portfolios --{opt.KEY_REGEXP} Banking --{opt.REPORT_FILE} {csv_file}") == e.UNSUPPORTED_OPERATION
+        return
     assert tutil.run_cmd(findings_export.main, f"{CMD} --portfolios --{opt.KEY_REGEXP} Banking --{opt.REPORT_FILE} {csv_file}") == e.OK
     # Portfolio 'Banking' has only 4 small projects and less than 300 issues in total
     assert tutil.csv_nbr_lines(csv_file) < 300
