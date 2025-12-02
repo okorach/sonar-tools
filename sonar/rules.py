@@ -189,7 +189,7 @@ class Rule(sq.SqObject):
 
     @classmethod
     def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
-        """Returns a rule object from it key, taken from the cache or from the platform itself
+        """Returns a rule object from it key
 
         :param endpoint: The SonarQube reference
         :param key: The rule key
@@ -202,6 +202,20 @@ class Rule(sq.SqObject):
         if o := Rule.CACHE.get(key, endpoint.local_url):
             return o
         raise exceptions.ObjectNotFound(key, f"Rule key '{key}' not found")
+
+    @classmethod
+    def get_external_rule(cls, endpoint: platform.Platform, key: str) -> Rule:
+        """Returns an external rule object from it key, that may not be listed by a search
+
+        :param endpoint: The SonarQube reference
+        :param key: The rule key
+        :return: The Rule object corresponding to the input rule key
+        :raises: ObjectNotFound if rule does not exist
+        """
+        if o := Rule.CACHE.get(key, endpoint.local_url):
+            return o
+        rule_data = json.loads(endpoint.get(Rule.API[c.READ], params={"key": key, "actives": "true"}).text)["rule"]
+        return Rule(endpoint=endpoint, key=key, data=rule_data)
 
     @classmethod
     def create(cls, endpoint: platform.Platform, key: str, **kwargs) -> Rule:
