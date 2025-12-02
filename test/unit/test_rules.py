@@ -215,7 +215,7 @@ def test_instantiate() -> None:
     assert new_rule.custom_desc == "Behave yourself in your code"
     assert new_rule.language == "java"
     if tutil.SQ.is_mqr_mode():
-        assert new_rule.impacts == {"SECURITY": "MEDIUM", "MAINTAINABILITY": "MEDIUM"}
+        assert new_rule.impacts() == {"SECURITY": "MEDIUM", "MAINTAINABILITY": "MEDIUM"}
     else:
         assert new_rule.severity == "MAJOR"
         assert new_rule.type == "CODE_SMELL"
