@@ -187,7 +187,10 @@ class Finding(sq.SqObject):
 
     def language(self) -> str:
         """Returns the finding language"""
-        return rules.Rule.get_object(endpoint=self.endpoint, key=self.rule).language
+        try:
+            return rules.Rule.get_object(endpoint=self.endpoint, key=self.rule).language
+        except exceptions.ObjectNotFound:
+            return rules.Rule.get_external_rule(endpoint=self.endpoint, key=self.rule).language
 
     def to_csv(self, without_time: bool = False) -> list[str]:
         """Returns The finding attributes as list

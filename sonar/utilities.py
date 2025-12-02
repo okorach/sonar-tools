@@ -135,7 +135,7 @@ def age(some_date: datetime.datetime, rounded: bool = True, now: Optional[dateti
     return delta.days if rounded else delta
 
 
-def get_setting(settings: dict[str, str], key: str, default: Any) -> Any:
+def get_setting(settings: dict[str, Any], key: str, default: Any) -> Any:
     """Gets a setting or the default value"""
     if settings is None:
         return default
@@ -171,7 +171,7 @@ def convert_to_type(value: str) -> Any:
     return value
 
 
-def none_to_zero(d: dict[str, any], key_match: str = "^.+$") -> dict[str, any]:
+def none_to_zero(d: dict[str, Any], key_match: str = "^.+$") -> dict[str, Any]:
     """Replaces None values in a dict with 0"""
     new_d = d.copy()
     for k, v in d.items():
@@ -180,6 +180,7 @@ def none_to_zero(d: dict[str, any], key_match: str = "^.+$") -> dict[str, any]:
         elif isinstance(v, dict):
             new_d[k] = none_to_zero(v)
         elif isinstance(v, list):
+            v = [0 if elem is None else elem for elem in v]
             new_d[k] = [none_to_zero(elem) if isinstance(elem, dict) else elem for elem in v]
     return new_d
 
@@ -194,28 +195,25 @@ def clean_data(d: Any, remove_empty: bool = True, remove_none: bool = True) -> A
     # log.debug("Cleaning up %s", json_dump(d))
     if isinstance(d, str):
         return convert_string(d)
-    if not isinstance(d, (list, dict)):
+    if not isinstance(d, (list, dict, set, tuple)):
         return d
 
-    if isinstance(d, list):
+    if isinstance(d, (list, set, tuple)):
         # Remove empty strings and nones
-        if remove_empty:
-            d = [elem for elem in d if not (isinstance(elem, str) and elem == "")]
         if remove_none:
             d = [elem for elem in d if elem is not None]
+        if remove_empty:
+            d = [elem for elem in d if not isinstance(elem, (str, list, dict, tuple, set)) or len(elem) != 0]
         return [clean_data(elem, remove_empty, remove_none) for elem in d]
 
     # Remove empty dict string values
-    if remove_empty:
-        new_d = {k: v for k, v in d.items() if not isinstance(v, str) or v != ""}
     if remove_none:
-        new_d = {k: v for k, v in d.items() if v is not None}
-
-    # Remove empty dict list or dict values
-    new_d = {k: v for k, v in new_d.items() if not isinstance(v, (list, dict)) or len(v) > 0}
+        d = {k: v for k, v in d.items() if v is not None}
+    if remove_empty:
+        d = {k: v for k, v in d.items() if not isinstance(v, (str, list, dict, tuple, set)) or len(v) != 0}
 
     # Recurse
-    return {k: clean_data(v, remove_empty, remove_none) for k, v in new_d.items()}
+    return {k: clean_data(v, remove_empty, remove_none) for k, v in d.items()}
 
 
 def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
@@ -225,6 +223,7 @@ def sort_lists(data: Any, redact_tokens: bool = True) -> Any:
             return sorted(data)
         return [sort_lists(elem) for elem in data]
     elif isinstance(data, dict):
+        data = dict(sorted(data.items()))
         for k, v in data.items():
             if redact_tokens and k in ("token", "tokenTarget"):
                 data[k] = redacted_token(v)
@@ -322,9 +321,12 @@ def jvm_heap(cmdline: str) -> Union[int, None]:
     return None
 
 
-def int_memory(string: str) -> Union[int, None]:
+def int_memory(string: str) -> Optional[int]:
     """Converts memory from string to int in MB"""
-    (val, unit) = string.split(" ")
+    try:
+        (val, unit) = string.split(" ")
+    except ValueError:
+        return None
     # For decimal separator in some countries
     val = float(val.replace(",", "."))
     int_val = None
@@ -337,9 +339,9 @@ def int_memory(string: str) -> Union[int, None]:
     elif unit == "PB":
         int_val = int(val * 1024 * 1024 * 1024)
     elif unit == "KB":
-        int_val = val / 1024
+        int_val = int(val / 1024)
     elif unit == "bytes":
-        int_val = val / 1024 / 1024
+        int_val = int(val / 1024 / 1024)
     return int_val
 
 
@@ -573,6 +575,8 @@ def string_to_version(sif_v: Optional[str], digits: int = 3) -> Optional[tuple[i
         return None
     try:
         split_version = sif_v.split(".")
+        if len(split_version) < digits:
+            split_version += ["0"] * (digits - len(split_version))
     except KeyError:
         return None
     try:
@@ -632,7 +636,7 @@ def deduct_format(fmt: Union[str, None], filename: Union[str, None], allowed_for
     return fmt
 
 
-def dict_remap(original_dict: dict[str, str], remapping: dict[str, str]) -> dict[str, str]:
+def dict_remap(original_dict: dict[str, Any], remapping: dict[str, str]) -> dict[str, Any]:
     """Key old keys by new key in a dict"""
     if not original_dict:
         return {}

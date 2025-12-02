@@ -175,10 +175,11 @@ class Rule(sq.SqObject):
         if not self.language:
             log.debug("Guessing rule '%s' language from repo '%s'", self.key, str(data.get("repo", "")))
             self.language = EXTERNAL_REPOS.get(data.get("repo", ""), "UNKNOWN")
-        self.custom_desc = data.get("mdNote", None)
+        self.template_key = data.get("templateKey")
+        self.description = data.get("mdDesc")
+        self.custom_desc = data.get("mdDesc" if self.template_key else "mdNote")
         self.created_at = data["createdAt"]
         self.is_template = data.get("isTemplate", False)
-        self.template_key = data.get("templateKey", None)
         self._clean_code_attribute = {
             "attribute": data.get("cleanCodeAttribute", None),
             "attribute_category": data.get("cleanCodeAttributeCategory", None),
@@ -188,7 +189,7 @@ class Rule(sq.SqObject):
 
     @classmethod
     def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
-        """Returns a rule object from it key, taken from the cache or from the platform itself
+        """Returns a rule object from it key
 
         :param endpoint: The SonarQube reference
         :param key: The rule key
@@ -197,8 +198,24 @@ class Rule(sq.SqObject):
         """
         if o := Rule.CACHE.get(key, endpoint.local_url):
             return o
-        r = endpoint.get(Rule.API[c.READ], params={"key": key, "actives": "true"})
-        return Rule(endpoint=endpoint, key=key, data=json.loads(r.text)["rule"])
+        sq.search_objects(endpoint=endpoint, object_class=Rule, params={"q": key})
+        if o := Rule.CACHE.get(key, endpoint.local_url):
+            return o
+        raise exceptions.ObjectNotFound(key, f"Rule key '{key}' not found")
+
+    @classmethod
+    def get_external_rule(cls, endpoint: platform.Platform, key: str) -> Rule:
+        """Returns an external rule object from it key, that may not be listed by a search
+
+        :param endpoint: The SonarQube reference
+        :param key: The rule key
+        :return: The Rule object corresponding to the input rule key
+        :raises: ObjectNotFound if rule does not exist
+        """
+        if o := Rule.CACHE.get(key, endpoint.local_url):
+            return o
+        rule_data = json.loads(endpoint.get(Rule.API[c.READ], params={"key": key, "actives": "true"}).text)["rule"]
+        return Rule(endpoint=endpoint, key=key, data=rule_data)
 
     @classmethod
     def create(cls, endpoint: platform.Platform, key: str, **kwargs) -> Rule:
@@ -219,7 +236,9 @@ class Rule(sq.SqObject):
         log.debug("Creating rule key '%s'", key)
         params.pop("severity" if endpoint.is_mqr_mode() else "impacts", None)
         endpoint.post(cls.API[c.CREATE], params=params)
-        return cls.get_object(endpoint=endpoint, key=key)
+        created_rule = cls.get_object(endpoint=endpoint, key=key)
+        created_rule.custom_desc = kwargs.get("markdownDescription", "NO DESCRIPTION")
+        return created_rule
 
     @classmethod
     def load(cls, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> Rule:
@@ -235,7 +254,7 @@ class Rule(sq.SqObject):
             raise exceptions.UnsupportedOperation("Can't instantiate rules on SonarQube Cloud")
         try:
             rule = Rule.get_object(endpoint, key)
-            log.info("Rule key '%s' already exists, instantiation skipped...", key)
+            log.info("Rule key '%s' already exists, instantiation skipped..., returning %s", key, rule)
             return rule
         except exceptions.ObjectNotFound:
             pass
@@ -275,7 +294,7 @@ class Rule(sq.SqObject):
 
     def is_extended(self) -> bool:
         """Returns True if the rule has been extended with tags or a custom description, False otherwise"""
-        return self.tags is not None or self.custom_desc is not None
+        return self.tags is not None or (not self.template_key and self.custom_desc is not None)
 
     def is_instantiated(self) -> bool:
         """Returns True if the rule is instantiated from a template, False otherwise"""

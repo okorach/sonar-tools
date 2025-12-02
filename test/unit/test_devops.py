@@ -24,10 +24,13 @@
 import pytest
 import utilities as tutil
 from sonar import devops, exceptions
+import sonar.util.constants as c
 
 GH_KEY = "GitHub okorach"
 ADO_KEY = "ADO"
 GL_KEY = "gitlab.com"
+BBS_KEY = "Bitbucket Server 1"
+BBC_KEY = "Bitbucket Cloud 1"
 
 
 def test_get_list() -> None:
@@ -77,11 +80,13 @@ def test_count() -> None:
     """Verify count works"""
     assert devops.count(tutil.SQ, "azure") == 1
     assert devops.count(tutil.SQ, "gitlab") == 1
+    assert devops.count(tutil.SQ, "bitbucket") == 1
+    assert devops.count(tutil.SQ, "bitbucketcloud") == 1
     # TODO: Find out if normal than multiple devops platforms allowed on CE
-    # nb_gh = 1 if util.SQ.edition() == c.CE else 2
+    # nb_gh = 2 if tutil.SQ.edition() in (c.EE, c.DCE) else 1
     nb_gh = 2
     assert devops.count(tutil.SQ, "github") == nb_gh
-    assert nb_gh + 2 <= devops.count(tutil.SQ) <= nb_gh + 3
+    assert devops.count(tutil.SQ) == nb_gh + 4
 
 
 def test_exists() -> None:
@@ -89,8 +94,7 @@ def test_exists() -> None:
     for k in GH_KEY, GL_KEY, ADO_KEY:
         assert devops.exists(endpoint=tutil.SQ, key=k)
     for k in "foo", "bar":
-        with pytest.raises(exceptions.ObjectNotFound):
-            devops.exists(endpoint=tutil.SQ, key=k)
+        assert not devops.exists(endpoint=tutil.SQ, key=k)
 
 
 def test_devops_type() -> None:
@@ -120,11 +124,24 @@ def test_import_config_2() -> None:
         with pytest.raises(exceptions.UnsupportedOperation):
             devops.import_config(endpoint=tutil.SQ, config_data=dop)
         return
-    assert devops.import_config(endpoint=tutil.SQ, config_data=dop) == 3
-    assert devops.exists(endpoint=tutil.SQ, key="ADO2")
-    assert devops.exists(endpoint=tutil.SQ, key="GH2")
-    assert devops.exists(endpoint=tutil.SQ, key="GL2")
-    for key in "ADO2", "GH2", "GL2":
-        obj = devops.get_object(endpoint=tutil.SQ, key=key) is not None
+    if tutil.SQ.edition() in (c.CE, c.DE):
+        counts = {"azure": devops.count(tutil.SQ, "azure"), "gitlab": devops.count(tutil.SQ, "gitlab"), "github": devops.count(tutil.SQ, "github")}
+    else:
+        counts = {"azure": 0, "gitlab": 0, "github": 0}
+    deduction = min(1, counts["azure"]) + min(1, counts["gitlab"]) + min(1, counts["github"])
+    assert devops.import_config(endpoint=tutil.SQ, config_data=dop) == 3 - deduction
+    if counts["azure"] == 0:
+        assert devops.exists(endpoint=tutil.SQ, key="ADO2")
+        obj = devops.get_object(endpoint=tutil.SQ, key="ADO2")
         obj.delete()
-        assert devops.exists(endpoint=tutil.SQ, key=key) is False
+        assert not devops.exists(endpoint=tutil.SQ, key="ADO2")
+    if counts["github"] == 0:
+        assert devops.exists(endpoint=tutil.SQ, key="GH2")
+        obj = devops.get_object(endpoint=tutil.SQ, key="GH2")
+        obj.delete()
+        assert not devops.exists(endpoint=tutil.SQ, key="GH2")
+    if counts["azure"] == 0:
+        assert devops.exists(endpoint=tutil.SQ, key="GL2")
+        obj = devops.get_object(endpoint=tutil.SQ, key="GL2")
+        obj.delete()
+        assert not devops.exists(endpoint=tutil.SQ, key="GL2")
