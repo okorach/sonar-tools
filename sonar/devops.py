@@ -199,11 +199,7 @@ def count(endpoint: platform.Platform, platf_type: Optional[str] = None) -> int:
     :param platf_type: Filter for a specific type, defaults to None (see DEVOPS_PLATFORM_TYPES set)
     :return: Count of DevOps platforms
     """
-    get_list(endpoint=endpoint)
-    if platf_type is None:
-        return len(DevopsPlatform.CACHE)
-    # Hack: check first 5 chars to that bitbucket cloud and bitbucket server match
-    return sum(1 for o in DevopsPlatform.CACHE.values() if o.type[0:4] == platf_type[0:4])
+    return len([o for o in get_list(endpoint=endpoint).values() if not platf_type or o.type == platf_type])
 
 
 def get_list(endpoint: platform.Platform) -> dict[str, DevopsPlatform]:
