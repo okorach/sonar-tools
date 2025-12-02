@@ -175,11 +175,11 @@ class Rule(sq.SqObject):
         if not self.language:
             log.debug("Guessing rule '%s' language from repo '%s'", self.key, str(data.get("repo", "")))
             self.language = EXTERNAL_REPOS.get(data.get("repo", ""), "UNKNOWN")
+        self.template_key = data.get("templateKey")
         self.description = data.get("mdDesc")
-        self.custom_desc = data.get("mdNote")
+        self.custom_desc = data.get("mdDesc" if self.template_key else "mdNote")
         self.created_at = data["createdAt"]
         self.is_template = data.get("isTemplate", False)
-        self.template_key = data.get("templateKey", None)
         self._clean_code_attribute = {
             "attribute": data.get("cleanCodeAttribute", None),
             "attribute_category": data.get("cleanCodeAttributeCategory", None),
@@ -294,7 +294,7 @@ class Rule(sq.SqObject):
 
     def is_extended(self) -> bool:
         """Returns True if the rule has been extended with tags or a custom description, False otherwise"""
-        return self.tags is not None or self.custom_desc is not None
+        return self.tags is not None or (not self.template_key and self.custom_desc is not None)
 
     def is_instantiated(self) -> bool:
         """Returns True if the rule is instantiated from a template, False otherwise"""
