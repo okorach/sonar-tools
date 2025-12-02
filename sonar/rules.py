@@ -175,8 +175,8 @@ class Rule(sq.SqObject):
         if not self.language:
             log.debug("Guessing rule '%s' language from repo '%s'", self.key, str(data.get("repo", "")))
             self.language = EXTERNAL_REPOS.get(data.get("repo", ""), "UNKNOWN")
-
-        self.custom_desc = data.get("mdNote", data.get("mdDesc"))
+        self.description = data.get("mdDesc")
+        self.custom_desc = data.get("mdNote")
         self.created_at = data["createdAt"]
         self.is_template = data.get("isTemplate", False)
         self.template_key = data.get("templateKey", None)
@@ -493,13 +493,17 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
         )
     if full:
         rule_list["standard"] = {k: rule.export(full) for k, rule in all_rules if not rule.is_instantiated() and not rule.is_extended()}
+        log.info("RULE FULL EXPORT: %s", {k: len(rule_list[k]) for k in rule_list.keys()})
     if export_settings.get("MODE", "") == "MIGRATION":
         rule_list["thirdParty"] = {r.key: r.export() for r in third_party(endpoint=endpoint)}
 
+    log.info("RULE LIST BEFORE CONVERT1: %s", {k: len(rule_list[k]) for k in rule_list.keys()})
     for k in ("instantiated", "extended", "standard", "thirdParty"):
         if len(rule_list.get(k, {})) == 0:
             rule_list.pop(k, None)
+    log.info("RULE LIST BEFORE CONVERT2: %s", {k: len(rule_list[k]) for k in rule_list.keys()})
     rule_list = rhelp.convert_rules_json(rule_list)
+    log.info("RULE LIST AFTER CONVERT: %s", {k: len(rule_list[k]) for k in rule_list.keys()})
     if write_q := kwargs.get("write_q", None):
         write_q.put(rule_list)
         write_q.put(utilities.WRITE_END)
