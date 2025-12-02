@@ -210,7 +210,6 @@ def test_instantiate() -> None:
             rules.Rule.instantiate(endpoint=tutil.SQ, key="java:rudeness_is_bad", template_key="java:S124", data=params)
         return
     new_rule = rules.Rule.instantiate(endpoint=tutil.SQ, key="java:rudeness_is_bad", template_key="java:S124", data=params)
-    print("GOTTEN RULE: ", str(new_rule))
     assert new_rule.key == "java:rudeness_is_bad"
     assert new_rule.name == "Thou shalt not be rude"
     assert new_rule.custom_desc == "Behave yourself in your code"
