@@ -21,9 +21,11 @@
 
 """portfolio reference tests"""
 
+import pytest
 import utilities as tutil
 from sonar import portfolios as pf
 from sonar import portfolio_reference as pfr
+from sonar import exceptions
 import sonar.util.constants as c
 
 EXISTING_PORTFOLIO = "CORP-INSURANCE"
@@ -44,8 +46,17 @@ def test_get_object_from_root() -> None:
 
 
 def test_get_object() -> None:
-    """Test get_object and verify that if requested twice the same object is returned"""
+    """Test get_object method"""
 
     ref_pf = pfr.PortfolioReference.get_object(endpoint=tutil.SQ, key=REF_PORTFOLIO, parent_key=EXISTING_PORTFOLIO)
     assert ref_pf.key == f"{EXISTING_PORTFOLIO}:{REF_PORTFOLIO}"
     assert str(ref_pf) == f"Portfolio reference '{EXISTING_PORTFOLIO}:{REF_PORTFOLIO}'"
+
+
+def test_get_object_not_found() -> None:
+    """Test exception raised when providing non existing portfolio reference key"""
+
+    with pytest.raises(exceptions.ObjectNotFound):
+        pfr.PortfolioReference.get_object(endpoint=tutil.SQ, key="non-existing", parent_key=EXISTING_PORTFOLIO)
+    with pytest.raises(exceptions.ObjectNotFound):
+        pfr.PortfolioReference.get_object(endpoint=tutil.SQ, key=REF_PORTFOLIO, parent_key="non-existing")
