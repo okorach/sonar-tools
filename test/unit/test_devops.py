@@ -24,10 +24,13 @@
 import pytest
 import utilities as tutil
 from sonar import devops, exceptions
+import sonar.util.constants as c
 
 GH_KEY = "GitHub okorach"
 ADO_KEY = "ADO"
 GL_KEY = "gitlab.com"
+BBS_KEY = "Bitbucket Server 1"
+BBC_KEY = "Bitbucket Cloud 1"
 
 
 def test_get_list() -> None:
@@ -77,11 +80,12 @@ def test_count() -> None:
     """Verify count works"""
     assert devops.count(tutil.SQ, "azure") == 1
     assert devops.count(tutil.SQ, "gitlab") == 1
+    assert devops.count(tutil.SQ, "bitbucket") == 1
+    assert devops.count(tutil.SQ, "bitbucketcloud") == 1
     # TODO: Find out if normal than multiple devops platforms allowed on CE
-    # nb_gh = 1 if util.SQ.edition() == c.CE else 2
-    nb_gh = 2
+    nb_gh = 2 if tutil.SQ.edition() in (c.EE, c.DCE) else 1
     assert devops.count(tutil.SQ, "github") == nb_gh
-    assert nb_gh + 2 <= devops.count(tutil.SQ) <= nb_gh + 3
+    assert devops.count(tutil.SQ) == nb_gh + 4
 
 
 def test_exists() -> None:
