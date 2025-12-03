@@ -24,6 +24,8 @@ from typing import Union, Optional, Any
 
 ConfigSettings = dict[str, Any]
 
+AuditSettings = dict[str, Union[str, int, float, bool]]
+
 ObjectFilter = dict[str, str]
 
 ObjectJsonRepr = dict[str, Any]
