@@ -269,14 +269,12 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
 
 def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
     """Cleans up the JSON before writing"""
-    log.debug("Exporting settings %s", utilities.json_dump(export_settings))
     json_data = utilities.sort_lists(json_data)
     if export_settings.get("MODE", "CONFIG") == "MIGRATION":
         return json_data
     if not export_settings.get("FULL_EXPORT", False):
         json_data = utilities.remove_nones(json_data)
         if not export_settings.get(EXPORT_EMPTY, False):
-            log.debug("Removing empties")
             json_data = utilities.clean_data(json_data, remove_empty=False)
     return json_data
 

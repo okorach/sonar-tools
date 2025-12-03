@@ -427,7 +427,6 @@ def get_bulk(
         params["keys"] = util.list_to_csv(settings_list)
 
     data = json.loads(endpoint.get(Setting.API[c.GET], params=params, with_organization=(component is None)).text)
-    log.debug("DATA FROM GET BULK %s", util.json_dump(data))
     settings_dict |= __get_settings(endpoint, data, component)
 
     # Hack since projects.default.visibility is not returned by settings/list_definitions
