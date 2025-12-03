@@ -623,6 +623,12 @@
         "object": "User",
         "message": "{} did not connect since {} days, it should be deactivated"
     },
+    "USER_EXCESSIVE_NBR_OF_TOKENS": {
+        "severity": "MEDIUM",
+        "type": "SECURITY",
+        "object": "User",
+        "message": "{} has {} unexpired tokens, that's more than a reasonable need of max {}, this is a security risk"
+    },
     "PORTFOLIO_EMPTY": {
         "severity": "LOW",
         "type": "OPERATIONS",

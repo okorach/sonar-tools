@@ -230,6 +230,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - Tokens created but never used after `audit.tokens.maxUnusedAge` days (default 30 days)
   - Tokens not used for `audit.tokens.maxUnusedAge` days (default 30 days)
   - Tokens without expiration date
+  - Users with too many active (unexpired) tokens
 - Groups: (if `audit.groups = yes`, default `yes`)
   - Empty groups
 - WebHooks:

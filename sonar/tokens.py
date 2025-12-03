@@ -25,7 +25,7 @@ from __future__ import annotations
 from typing import Optional
 import json
 
-import datetime
+import datetime as dt
 
 import sonar.logging as log
 import sonar.sqobject as sq
@@ -54,9 +54,9 @@ class UserToken(sq.SqObject):
             self.name = json_data.get("name", None)
         self.created_at = util.string_to_date(json_data["createdAt"]) if "createdAt" in json_data else None
         self.last_connection_date = util.string_to_date(json_data["lastConnectionDate"]) if "lastConnectionDate" in json_data else None
-        self.expiration_date = util.string_to_date(json_data["expirationDate"]) if "expirationDate" in json_data else None
+        self.expiration_date: Optional[dt.datetime] = util.string_to_date(json_data["expirationDate"]) if "expirationDate" in json_data else None
         self.token = json_data.get("token", None)
-        log.debug("Created '%s'", str(self))
+        log.debug("Constructed '%s'", str(self))
 
     @classmethod
     def create(cls, endpoint: pf.Platform, login: str, name: str) -> UserToken:
@@ -86,18 +86,24 @@ class UserToken(sq.SqObject):
         ops = {c.GET: {"name": self.name, "login": self.login}}
         return ops[op] if op in ops else ops[c.GET]
 
-    def audit(self, settings: types.ConfigSettings, today: Optional[datetime.datetime] = None) -> list[Problem]:
+    def is_expired(self) -> bool:
+        """Returns True if the token is expired, False otherwise"""
+        return self.sq_json.get("isExpired", False) or (
+            self.expiration_date is not None and self.expiration_date < dt.datetime.now(dt.timezone.utc).astimezone()
+        )
+
+    def audit(self, settings: types.ConfigSettings, today: Optional[dt.datetime] = None) -> list[Problem]:
         """Audits a token
 
         :return: List of problem found
         """
-        if self.sq_json.get("isExpired", False):
+        if self.is_expired():
             return [Problem(get_rule(RuleId.TOKEN_EXPIRED), self, str(self))]
         problems = []
         mode = settings.get(c.AUDIT_MODE_PARAM, "")
         max_age = settings.get("audit.tokens.maxAge", 90)
         if not today:
-            today = datetime.datetime.now(datetime.timezone.utc).astimezone()
+            today = dt.datetime.now(dt.timezone.utc).astimezone()
         age = util.age(self.created_at, now=today)
         if mode != "housekeeper" and not self.expiration_date:
             problems.append(Problem(get_rule(RuleId.TOKEN_WITHOUT_EXPIRATION), self, str(self), age))
