@@ -404,10 +404,10 @@ class User(sqobject.SqObject):
         self.scm_accounts = list(set(accounts_list))
         return True
 
-    def audit_active_tokens(self, settings: types.ConfigSettings = None) -> list[Problem]:
+    def __audit_active_tokens(self, settings: types.AuditSettings) -> list[Problem]:
         """Counts the user nbr of active (non expired) tokens and raises a problem if exceeding threshold
 
-        :param ConfigSettings settings: Options of what to audit and thresholds to raise problems
+        :param settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
         """
         log.debug("Auditing %s active tokens", str(self))
@@ -417,11 +417,11 @@ class User(sqobject.SqObject):
             return [Problem(get_rule(RuleId.USER_EXCESSIVE_NBR_OF_TOKENS), self, str(self), len(active_tokens), max_tokens)]
         return []
 
-    def audit(self, settings: types.ConfigSettings = None) -> list[Problem]:
+    def audit(self, settings: types.AuditSettings) -> list[Problem]:
         """Audits a user (user last connection date and tokens) and
         returns the list of problems found
 
-        :param ConfigSettings settings: Options of what to audit and thresholds to raise problems
+        :param settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
         """
         log.debug("Auditing %s", str(self))
@@ -432,7 +432,7 @@ class User(sqobject.SqObject):
 
         today = datetime.now(timezone.utc).astimezone()
         problems = [p for t in self.tokens() for p in t.audit(settings=settings, today=today)]
-        problems += self.audit_active_tokens(settings=settings)
+        problems += self.__audit_active_tokens(settings=settings)
         if self.last_login and settings.get(c.AUDIT_MODE_PARAM, "") != "housekeeper":
             age = util.age(self.last_login, now=today)
             if age > settings.get("audit.users.maxLoginAge", 180):
