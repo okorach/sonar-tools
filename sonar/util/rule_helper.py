@@ -29,11 +29,11 @@ import sonar.util.issue_defs as idefs
 def __convert_rule_json(json_to_convert: dict[str, Any]) -> dict[str, Any]:
     """Converts a rule JSON from old to new export format"""
     json_to_convert = common_json_helper.convert_common_fields(json_to_convert)
-    if "impacts" in json_to_convert:
+    for field in [f for f in ("severities", "impacts") if f in json_to_convert]:
         json_to_convert["impacts"] = {
-            k.lower(): json_to_convert["impacts"][k].lower()
+            k.lower(): json_to_convert[field][k].lower()
             for k in idefs.MQR_QUALITIES
-            if k in json_to_convert["impacts"] and json_to_convert["impacts"][k] != c.DEFAULT
+            if k in json_to_convert[field] and json_to_convert[field][k] != c.DEFAULT
         }
     if "severity" in json_to_convert:
         json_to_convert["severity"] = json_to_convert["severity"].lower()
