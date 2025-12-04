@@ -408,7 +408,7 @@ class Platform(object):
             sysinfo = sysinfo["Application Nodes"][0]
         return sif.Sif(sysinfo).plugins()
 
-    def get_settings(self, settings_list: Optional[list[str]] = None) -> dict[str, any]:
+    def get_settings(self, settings_list: Optional[list[str]] = None) -> dict[str, Any]:
         """Returns a list of (or all) platform global settings value from their key
         :return: the list of settings values
         :rtype: dict{<key>: <value>, ...}
@@ -425,6 +425,7 @@ class Platform(object):
     def __settings(self, settings_list: types.KeyList = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
         log.info("getting global settings")
         settings_dict = settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
+        # settings_dict = {k: v for k, v in settings_dict.items() if not v.inherited}
         ai_code_fix = settings.Setting.read(endpoint=self, key=settings.AI_CODE_FIX)
         if ai_code_fix:
             settings_dict[ai_code_fix.key] = ai_code_fix
@@ -491,9 +492,9 @@ class Platform(object):
         """
         log.info("Exporting platform global settings")
         json_data = {}
-        settings_list = self.__settings(include_not_set=export_settings.get("EXPORT_DEFAULTS", False)).values()
+        settings_list = list(self.__settings(include_not_set=export_settings.get("EXPORT_DEFAULTS", False)).values())
         settings_list = [s for s in settings_list if s.is_global() and not s.is_internal()]
-        for s in self.__settings(include_not_set=export_settings.get("EXPORT_DEFAULTS", False)).values():
+        for s in settings_list:
             (categ, subcateg) = s.category()
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
                 # What is reported as 3rd part are SonarQube Cloud internal settings

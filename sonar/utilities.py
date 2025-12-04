@@ -541,7 +541,7 @@ def __prefix(value: Any) -> Any:
         return value
 
 
-def filter_export(json_data: dict[str, Any], key_properties: list[str], full: bool) -> dict[str, Any]:
+def filter_export(json_data: dict[str, Any], key_properties: Union[list[str], tuple[str, ...]], full: bool) -> dict[str, Any]:
     """Filters dict for export removing or prefixing non-key properties"""
     new_json_data = {k: json_data[k] for k in key_properties if k in json_data}
     if full:

@@ -221,7 +221,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
     export_settings = kwargs.copy()
     export_settings.update(
         {
-            "EXPORT_DEFAULTS": True,
+            "EXPORT_DEFAULTS": kwargs.get(FULL_EXPORT, False),
             "FULL_EXPORT": kwargs.get(FULL_EXPORT, False),
             "MODE": mode,
             "SKIP_ISSUES": kwargs.get("skipIssues", False),
@@ -273,9 +273,7 @@ def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: type
     if export_settings.get("MODE", "CONFIG") == "MIGRATION":
         return json_data
     if not export_settings.get("FULL_EXPORT", False):
-        json_data = utilities.remove_nones(json_data)
-        if not export_settings.get(EXPORT_EMPTY, False):
-            json_data = utilities.clean_data(json_data, remove_empty=False)
+        json_data = utilities.clean_data(json_data, remove_none=True, remove_empty=not export_settings.get(EXPORT_EMPTY, False))
     return json_data
 
 
