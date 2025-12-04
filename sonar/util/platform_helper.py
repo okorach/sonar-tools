@@ -59,15 +59,19 @@ def convert_global_settings_json(old_json: dict[str, Any], full: bool = False) -
     special_categories = (settings.LANGUAGES_SETTINGS, settings.DEVOPS_INTEGRATION, "permissions", "permissionTemplates")
     for categ in [cat for cat in settings.CATEGORIES if cat not in special_categories and cat in old_json]:
         new_json[categ] = util.sort_list_by_key(util.dict_to_list(dict(sorted(old_json[categ].items())), "key"), "key")
-    for k, v in old_json[settings.LANGUAGES_SETTINGS].items():
-        new_json[settings.LANGUAGES_SETTINGS] = new_json.get(settings.LANGUAGES_SETTINGS) or {}
-        new_json[settings.LANGUAGES_SETTINGS][k] = util.sort_list_by_key(util.dict_to_list(v, "key"), "key")
+    if settings.LANGUAGES_SETTINGS in old_json:
+        for k, v in old_json[settings.LANGUAGES_SETTINGS].items():
+            new_json[settings.LANGUAGES_SETTINGS] = new_json.get(settings.LANGUAGES_SETTINGS, {})
+            new_json[settings.LANGUAGES_SETTINGS][k] = util.sort_list_by_key(util.dict_to_list(v, "key"), "key")
 
-    new_json[settings.LANGUAGES_SETTINGS] = util.dict_to_list(dict(sorted(new_json[settings.LANGUAGES_SETTINGS].items())), "language", "settings")
-    new_json[settings.DEVOPS_INTEGRATION] = util.dict_to_list(dict(sorted(new_json[settings.DEVOPS_INTEGRATION].items())), "key")
+        new_json[settings.LANGUAGES_SETTINGS] = util.dict_to_list(dict(sorted(new_json[settings.LANGUAGES_SETTINGS].items())), "language", "settings")
+    if settings.DEVOPS_INTEGRATION in new_json:
+        new_json[settings.DEVOPS_INTEGRATION] = util.dict_to_list(dict(sorted(new_json[settings.DEVOPS_INTEGRATION].items())), "key")
 
-    for k in new_json.get("permissionTemplates", {}):
-        new_json["permissionTemplates"][k] = convert_template_json(new_json["permissionTemplates"][k], full)
+    if "permissionTemplates" in new_json:
+        new_json["permissionTemplates"] = {
+            k: convert_template_json(new_json["permissionTemplates"][k], full) for k in new_json["permissionTemplates"]
+        }
 
     for k, v in {k: v for k, v in {"permissionTemplates": "key", "webhooks": "name"}.items() if k in new_json}.items():
         new_json[k] = util.dict_to_list(new_json[k], v)
