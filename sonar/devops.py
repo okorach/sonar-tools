@@ -47,7 +47,7 @@ _CREATE_API_BITBUCKET = "alm_settings/create_bitbucket"
 _CREATE_API_BBCLOUD = "alm_settings/create_bitbucketcloud"
 
 _TO_BE_SET = "TO_BE_SET"
-_IMPORTABLE_PROPERTIES = ("key", "type", "url", "workspace", "clientId", "appId")
+_IMPORTABLE_PROPERTIES = ("key", "type", "url", "workspace", "appId", "clientId")
 
 
 class DevopsPlatform(sq.SqObject):
