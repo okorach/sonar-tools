@@ -88,7 +88,7 @@ class Platform(object):
         self.http_timeout = int(http_timeout)
         self.organization = org
         self._user_agent = _SONAR_TOOLS_AGENT
-        self._global_settings_definitions: types.ApiPayload = None
+        self._global_settings_definitions: dict[str, dict[str, str]] = None
 
     def __str__(self) -> str:
         """
@@ -344,16 +344,16 @@ class Platform(object):
             self._permissions = global_permissions.GlobalPermissions(self)
         return self._permissions
 
-    def global_settings_definitions(self) -> list[dict[str, str]]:
+    def global_settings_definitions(self) -> dict[str, dict[str, str]]:
         """Returns the platform global settings definitions"""
         if not self._global_settings_definitions:
             try:
-                self._global_settings_definitions = json.loads(self.get("settings/list_definitions").text)["definitions"]
+                self._global_settings_definitions = {s["key"]: s for s in json.loads(self.get("settings/list_definitions").text)["definitions"]}
             except (ConnectionError, RequestException):
-                return []
+                return {}
         return self._global_settings_definitions
 
-    def sys_info(self) -> dict[str, any]:
+    def sys_info(self) -> dict[str, Any]:
         """
         :return: the SonarQube platform system info file
         """
@@ -378,7 +378,7 @@ class Platform(object):
             success = True
         return self._sys_info
 
-    def global_nav(self) -> dict[str, any]:
+    def global_nav(self) -> dict[str, Any]:
         """
         :return: the SonarQube platform global navigation data
         """
@@ -431,7 +431,7 @@ class Platform(object):
             settings_dict[ai_code_fix.key] = ai_code_fix
         return settings_dict
 
-    def get_setting(self, key: str) -> any:
+    def get_setting(self, key: str) -> Any:
         """Returns a platform global setting value from its key
 
         :param key: Setting key
@@ -487,13 +487,14 @@ class Platform(object):
         """Exports the global platform properties as JSON
 
         :param full: Whether to also export properties that cannot be set, defaults to False
-        :type full: bool, optional
         :return: dict of all properties with their values
         """
         log.info("Exporting platform global settings")
         json_data = {}
         settings_list = list(self.__settings(include_not_set=export_settings.get("EXPORT_DEFAULTS", False)).values())
         settings_list = [s for s in settings_list if s.is_global() and not s.is_internal()]
+        if not export_settings.get("EXPORT_DEFAULTS", False):
+            settings_list = [s for s in settings_list if not s.is_default_value()]
         for s in settings_list:
             (categ, subcateg) = s.category()
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
@@ -865,7 +866,7 @@ def _audit_maintainability_rating_range(value: float, range: tuple[float, float]
     return [Problem(get_rule(RuleId.SETTING_MAINT_GRID), url, msg)]
 
 
-def _audit_maintainability_rating_grid(platform_settings: dict[str, any], audit_settings: types.ConfigSettings, url: str) -> list[Problem]:
+def _audit_maintainability_rating_grid(platform_settings: dict[str, Any], audit_settings: types.ConfigSettings, url: str) -> list[Problem]:
     """Audits the maintainability rating grid setting, verifying ranges are meaningful"""
     thresholds = util.csv_to_list(platform_settings["sonar.technicalDebt.ratingGrid"])
     problems = []

@@ -121,15 +121,15 @@ VALID_SETTINGS = set()
 
 
 class Setting(sqobject.SqObject):
-    """
-    Abstraction of the Sonar setting concept
-    """
+    """Abstraction of the Sonar setting concept"""
 
     CACHE = cache.Cache()
     API = {
         c.CREATE: "settings/set",
-        c.GET: "settings/values",
-        c.LIST: "settings/list_definitions",
+        c.READ: "settings/values",
+        c.UPDATE: "settings/set",
+        c.LIST: "settings/values",
+        "LIST_DEFS": "settings/list_definitions",
         "NEW_CODE_GET": "new_code_periods/show",
         "NEW_CODE_SET": "new_code_periods/set",
         "MQR_MODE": "v2/clean-code-policy/mode",
@@ -139,21 +139,21 @@ class Setting(sqobject.SqObject):
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.component = component
+        self.default_value: Optional[Any] = None
         self.value: Optional[Any] = None
         self.multi_valued: Optional[bool] = None
         self.inherited: Optional[bool] = None
         self._definition: types.ApiPayload = None
         self._is_global: Optional[bool] = None
         self.reload(data)
-        log.debug("Created %s uuid %d value %s", str(self), hash(self), str(self.value))
+        log.debug("Constructed %s uuid %d value %s", str(self), hash(self), str(self.value))
         Setting.CACHE.put(self)
 
     @classmethod
     def read(cls, key: str, endpoint: pf.Platform, component: Optional[object] = None) -> Setting:
         """Reads a setting from the platform"""
         log.debug("Reading setting '%s' for %s", key, str(component))
-        o = Setting.CACHE.get(key, component, endpoint.local_url)
-        if o:
+        if o := Setting.CACHE.get(key, component, endpoint.local_url):
             return o
         data = get_settings_data(endpoint, key, component)
         return Setting.load(key=key, endpoint=endpoint, data=data, component=component)
@@ -178,6 +178,18 @@ class Setting(sqobject.SqObject):
         o.reload(data)
         return o
 
+    @classmethod
+    def load_from_definition(cls, key: str, endpoint: pf.Platform, def_data: types.ApiPayload) -> Setting:
+        """Loads a setting with  JSON data"""
+        log.debug("Loading setting '%s' from definition %s", key, def_data)
+        if not (o := Setting.CACHE.get(key, None, endpoint.local_url)):
+            o = cls(key=key, endpoint=endpoint, data=None, component=None)
+        o._definition = def_data
+        o.multi_valued = def_data.get("multiValues")
+        default_val = def_data.get("defaultValue")
+        o.default_value = sorted(util.csv_to_list(default_val)) if o.multi_valued else util.convert_to_type(default_val)
+        return o
+
     def __reload_inheritance(self, data: types.ApiPayload) -> bool:
         """Verifies if a setting is inherited from the data returned by SQ"""
         if "inherited" in data:
@@ -200,8 +212,6 @@ class Setting(sqobject.SqObject):
         """Reloads a Setting with JSON returned from Sonar API"""
         if not data:
             return
-        if self.multi_valued is None:
-            self.multi_valued = data.get("multiValues")
         if self.key == NEW_CODE_PERIOD:
             self.value = new_code_to_string(data)
         elif self.key == MQR_ENABLED:
@@ -214,8 +224,10 @@ class Setting(sqobject.SqObject):
                 self.value = data["values"][0]
         else:
             self.value = util.convert_to_type(next((data[key] for key in ("fieldValues", "values", "value") if key in data), None))
-            if not self.value and "defaultValue" in data:
-                self.value = util.DEFAULT
+            if not self.value:
+                self.value = self.default_value
+            if isinstance(self.value, list):
+                self.value = sorted(self.value)
         self.__reload_inheritance(data)
 
     def refresh(self) -> None:
@@ -299,9 +311,7 @@ class Setting(sqobject.SqObject):
 
     def definition(self) -> Optional[dict[str, str]]:
         """Returns the setting global definition"""
-        if self._definition is None:
-            self._definition = next((s for s in self.endpoint.global_settings_definitions() if s["key"] == self.key), None)
-        return self._definition
+        return self.endpoint.global_settings_definitions().get(self.key)
 
     def is_global(self) -> bool:
         """Returns whether a setting global or specific for one component (project, branch, application, portfolio)"""
@@ -322,6 +332,10 @@ class Setting(sqobject.SqObject):
                     return True
 
         return any(self.key.startswith(prefix) for prefix in internal_settings)
+
+    def is_default_value(self) -> bool:
+        """Returns whether a setting is at its default value"""
+        return self.value == self.default_value
 
     def is_settable(self) -> bool:
         """Returns whether a setting can be set"""
@@ -413,20 +427,18 @@ def get_bulk(
 ) -> dict[str, Setting]:
     """Gets several settings as bulk (returns a dict)"""
     settings_dict = {}
-    params = get_component_params(component)
 
     if include_not_set:
-        data = json.loads(endpoint.get(Setting.API[c.LIST], params=params, with_organization=(component is None)).text)
-        for s in data["definitions"]:
-            if s["key"].endswith("coverage.reportPath") or s["key"] == "languageSpecificParameters":
+        for key, data in endpoint.global_settings_definitions().items():
+            if key.endswith("coverage.reportPath") or key == "languageSpecificParameters":
                 continue
-            o = Setting.load(key=s["key"], endpoint=endpoint, data=s, component=component)
-            settings_dict[o.key] = o
+            settings_dict[key] = Setting.load_from_definition(key=key, endpoint=endpoint, def_data=data)
 
+    params = get_component_params(component)
     if settings_list is not None:
         params["keys"] = util.list_to_csv(settings_list)
 
-    data = json.loads(endpoint.get(Setting.API[c.GET], params=params, with_organization=(component is None)).text)
+    data = json.loads(endpoint.get(Setting.API[c.LIST], params=params, with_organization=(component is None)).text)
     settings_dict |= __get_settings(endpoint, data, component)
 
     # Hack since projects.default.visibility is not returned by settings/list_definitions
@@ -496,7 +508,7 @@ def get_visibility(endpoint: pf.Platform, component: object) -> str:
     else:
         if endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Project default visibility does not exist in SonarQube Cloud")
-        data = json.loads(endpoint.get(Setting.API[c.GET], params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
+        data = json.loads(endpoint.get(Setting.API[c.READ], params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
         return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 
 
@@ -571,9 +583,9 @@ def get_component_params(component: object, name: str = "component") -> types.Ap
 def get_settings_data(endpoint: pf.Platform, key: str, component: Optional[object]) -> types.ApiPayload:
     """Reads a setting data with different API depending on setting key
 
-    :param Platform endpoint: The SonarQube Platform object
-    :param str key: The setting key
-    :param object component: The component (Project) concerned, optional
+    :param endpoint: The SonarQube Platform object
+    :param key: The setting key
+    :param component: The component (Project) concerned, optional
     :return: The returned API data
     """
     if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
@@ -586,7 +598,7 @@ def get_settings_data(endpoint: pf.Platform, key: str, component: Optional[objec
             key = "sonar.leak.period.type"
         params = get_component_params(component)
         params.update({"keys": key})
-        data = json.loads(endpoint.get(Setting.API[c.GET], params=params, with_organization=(component is None)).text)["settings"]
+        data = json.loads(endpoint.get(Setting.API[c.READ], params=params, with_organization=(component is None)).text)["settings"]
         if not endpoint.is_sonarcloud() and len(data) > 0:
             data = data[0]
         else:
