@@ -61,7 +61,7 @@ def flatten(qp_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
     """Converts a profile's children profiles to list"""
     for k, v in sorted(qp_json.items()):
-        for rtype in "addedRules", "modifiedRules":
+        for rtype in "addedRules", "modifiedRules", "rules":
             for r in v.get(rtype, {}):
                 if "severities" in r:
                     r["impacts"] = r.pop("severities")
