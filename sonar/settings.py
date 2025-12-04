@@ -226,7 +226,7 @@ class Setting(sqobject.SqObject):
             self.value = util.convert_to_type(next((data[key] for key in ("fieldValues", "values", "value") if key in data), None))
             if not self.value:
                 self.value = self.default_value
-            if isinstance(self.value, list):
+            if isinstance(self.value, list) and all(isinstance(v, str) for v in self.value):
                 self.value = sorted(self.value)
         self.__reload_inheritance(data)
 
