@@ -8,6 +8,23 @@ During import:
 - When the object already exists it is updated according to the config file
 - When an object exists in the target platform and is not defined in the config file, this object remains unmodified. As such the import of configuration is "additive" to the current config, it does not replace it.
 
+## `sonar-config` file format
+
+Starting from `sonar-config` 3.17, a JSON schema file that describes the expected format is provided. See [sonar-config JSON schema](https://github.com/okorach/sonar-tools/blob/master/sonar/cli/sonar-config.schema.json).
+Adherence to the schema is verified before importing a configuration.
+
+## Format change with `sonar-config` 3.17
+
+Starting with version 3.17, the `sonar-config` tool is using a new config format. Still JSon but multiple fields have a different structure.
+The new format is enforced to be able to import a configuration.
+To help with the transition, a conversion tool comes with version 3.17. You can convert the old to the new format with
+
+`sonar-config --convertFrom <old-pre-3.17-json-config-file> --convertTo <new-json-config-file>`
+
+Example:
+
+`sonar-config --convertFrom myConfig.json --convertTo myConfigNew.json`
+
 ## Required Permissions
 
 `sonar-config` needs `Browse` and `Administer` permission on more or less everything that may be exported or imported
@@ -39,6 +56,8 @@ When `--what` is not specified, everything is exported or
 - `-f <file>`: Sends export to or read import from `<file>`, `stdout` for export and `stdin` for import is the default.
 - `-k "<key1>,<key2>,...,<keyn>"`: Limits the export or import operation to projects, apps or portfolios matching these keys
 - `--fullExport`: Will also export object properties that are not used for an import by may be of interest anyway
+- `--convertFrom <filename>`: Used for config file format conversion. Defines a source config file in sonar-config 3.16 or older format to be converted to the sonar-config 3.17 format
+- `--convertTo <filename>`: Used for config file format conversion. Defines the target config file in sonar-config 3.17 format to generate
 - `-h`: Displays help and exits
 - `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
