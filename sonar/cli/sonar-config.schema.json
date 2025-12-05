@@ -20,8 +20,15 @@
             "exclusiveMinimum": 1,
             "properties": {
                 "edition": {
-                    "description": "The SonarQube Edition, community, developer, enterprise or sonarcloud",
-                    "type": "string"
+                    "description": "The SonarQube Edition: 'community', 'developer', 'enterprise', 'datacenter' or 'sonarcloud'",
+                    "type": "string",
+                    "enum": [
+                        "community",
+                        "developer",
+                        "enterprise",
+                        "datacenter",
+                        "sonarcloud"
+                    ]
                 },
                 "url": {
                     "description": "The SonarQube platform URL",
@@ -44,8 +51,7 @@
                         "type": "object",
                         "required": [
                             "key",
-                            "version",
-                            "name"
+                            "version"
                         ],
                         "properties": {
                             "key": {
