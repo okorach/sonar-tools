@@ -913,7 +913,7 @@ class Project(components.Component):
         fields = ["name", "url"] + (["id"] if with_id else [])
         for link in data["links"]:
             if custom_only and link["type"] in _PREDEFINED_LINKS:
-                log.debug("%s link %s is a standard one, not exported", self, link)
+                log.info("%s link %s is a standard one, not exported", self, link)
                 continue
             link_list.append({k: v for k, v in link.items() if k in fields})
         log.debug("%s links = %s", self, link_list)

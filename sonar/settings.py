@@ -224,10 +224,15 @@ class Setting(sqobject.SqObject):
                 self.value = data["values"][0]
         else:
             self.value = util.convert_to_type(next((data[key] for key in ("fieldValues", "values", "value") if key in data), None))
-            if not self.value:
+            if self.value is None:
                 self.value = self.default_value
-            if isinstance(self.value, list):
+            if isinstance(self.value, list) and all(isinstance(v, str) for v in self.value):
                 self.value = sorted(self.value)
+            def_value = util.convert_to_type(next((data[key] for key in ("parentFieldValues", "parentValues", "parentValue") if key in data), None))
+            if def_value is not None:
+                self.default_value = def_value
+            if isinstance(self.default_value, list) and all(isinstance(v, str) for v in self.default_value):
+                self.default_value = sorted(self.default_value)
         self.__reload_inheritance(data)
 
     def refresh(self) -> None:
@@ -295,19 +300,16 @@ class Setting(sqobject.SqObject):
         else:
             return ok
 
-    def to_json(self, list_as_csv: bool = True) -> types.ObjectJsonRepr:
+    def to_json(self) -> types.ObjectJsonRepr:
         val = self.value
+        def_val = self.default_value
         if self.key == NEW_CODE_PERIOD:
             val = new_code_to_string(self.value)
-        elif list_as_csv and isinstance(self.value, list):
-            for reg in _INLINE_SETTINGS:
-                if re.match(reg, self.key):
-                    val = util.list_to_csv(val, separator=", ", check_for_separator=True)
-                    break
+            def_val = new_code_to_string(self.default_value)
         if val is None:
             val = ""
         # log.debug("JSON of %s = %s", self, {self.key: val})
-        return {self.key: val}
+        return {self.key: {"key": self.key, "value": val, "defaultValue": def_val}}
 
     def definition(self) -> Optional[dict[str, str]]:
         """Returns the setting global definition"""

@@ -381,18 +381,12 @@ def convert_string(value: str) -> Union[str, int, float, bool]:
 
 def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: Any) -> dict[str, str]:
     """Updates a 2 levels JSON"""
-    if categ not in json_data:
-        if subcateg is None:
-            json_data[categ] = value
-        else:
-            json_data[categ] = {subcateg: value}
-    elif subcateg is not None:
-        if subcateg in json_data[categ]:
-            json_data[categ][subcateg].update(value)
-        else:
-            json_data[categ][subcateg] = value
-    else:
+    json_data[categ] = json_data.get(categ) or {}
+    if subcateg is None:
         json_data[categ].update(value)
+    else:
+        json_data[categ][subcateg] = json_data[categ].get(subcateg) or {}
+        json_data[categ][subcateg].update(value)
     return json_data
 
 
