@@ -1021,8 +1021,7 @@ class Project(components.Component):
                 json_setting = s.to_json()
                 if json_setting[key]["defaultValue"] == json_setting[key]["value"]:
                     continue
-                else:
-                    json_setting[key].pop("defaultValue")
+                json_setting[key].pop("defaultValue")
                 if key == settings.NEW_CODE_PERIOD:
                     json_data[settings.NEW_CODE_PERIOD] = json_setting[settings.NEW_CODE_PERIOD]
                 else:
