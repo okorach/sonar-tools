@@ -179,7 +179,7 @@ class Platform(object):
         :return: the basic information of the platform: ServerId, Edition, Version and Plugins
         :rtype: dict{"serverId": <id>, "edition": <edition>, "version": <version>, "plugins": <dict>}
         """
-        url = self.get_setting(key="sonar.core.serverBaseURL")
+        url = self.get_setting(key="sonar.core.serverBaseURL").get("value")
         if url in (None, ""):
             url = self.local_url
         data = {"edition": self.edition(), "url": url}
@@ -539,8 +539,8 @@ class Platform(object):
             log.info("No global settings to import")
             return 0
         count = 0
-        flat_settings = util.flatten({k: v for k, v in config_data.items() if k not in ("devopsIntegration", "permissionTemplates", "webhooks")})
-        log.debug("Flat settings = %s", util.json_dump(flat_settings))
+        settings_to_import = {k: v for k, v in config_data.items() if k not in ("devopsIntegration", "permissionTemplates", "webhooks")}
+        flat_settings = util.flatten(settings_to_import)
         count += sum(1 if self.set_setting(k, v) else 0 for k, v in flat_settings.items())
 
         try:

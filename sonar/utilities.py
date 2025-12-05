@@ -733,13 +733,13 @@ def flatten(original_dict: dict[str, any]) -> dict[str, any]:
             flat_dict |= flatten(v)
         elif isinstance(v, list):
             for elem in v:
-                log.info("Flattening %s", elem)
+                log.debug("Flattening %s", elem)
                 if "settings" in elem:
-                    flat_dict |= {e["key"]: e["value"] for e in elem["settings"]}
-                elif "key" in elem:
+                    flat_dict |= {e["key"]: e["value"] for e in elem["settings"] if "value" in e}
+                elif "key" in elem and "value" in elem:
                     flat_dict |= {elem["key"]: elem["value"]}
                 else:
-                    log.info("Cant flatten %s", elem)
+                    log.debug("Can't flatten %s", elem)
         else:
             flat_dict[k] = v
     return flat_dict
