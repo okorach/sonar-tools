@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://raw.githubusercontent.com/okorach/sonar-tools/master/sonar/cli/sonar-config.schema.json",
     "title": "SonarConfig",
-    "description": "JSON schema for SonarQube native configuration export",
+    "description": "JSON schema for SonarQube sonar-config configuration export/import tool",
     "type": "object",
     "required": [
         "platform"
