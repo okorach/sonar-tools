@@ -493,14 +493,15 @@ class Platform(object):
         json_data = {}
         settings_list = list(self.__settings(include_not_set=export_settings.get("EXPORT_DEFAULTS", False)).values())
         settings_list = [s for s in settings_list if s.is_global() and not s.is_internal()]
-        if not export_settings.get("EXPORT_DEFAULTS", False):
-            settings_list = [s for s in settings_list if not s.is_default_value()]
         for s in settings_list:
             (categ, subcateg) = s.category()
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
                 # What is reported as 3rd part are SonarQube Cloud internal settings
                 continue
-            util.update_json(json_data, categ, subcateg, s.to_json(export_settings.get("INLINE_LISTS", True)))
+            setting_json = s.to_json()
+            if setting_json[s.key]["defaultValue"] == setting_json[s.key]["value"]:
+                setting_json[s.key].pop("value")
+            util.update_json(json_data, categ, subcateg, setting_json)
 
         hooks = {}
         for wb in self.webhooks().values():
