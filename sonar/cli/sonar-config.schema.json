@@ -4,12 +4,14 @@
     "title": "SonarConfig",
     "description": "JSON schema for SonarQube sonar-config configuration export/import tool",
     "type": "object",
+    "additionalProperties": false,
     "required": [
         "platform"
     ],
     "properties": {
         "platform": {
             "type": "object",
+            "additionalProperties": false,
             "description": "Platform information",
             "required": [
                 "edition",
@@ -17,7 +19,6 @@
                 "version",
                 "serverId"
             ],
-            "exclusiveMinimum": 1,
             "properties": {
                 "edition": {
                     "description": "The SonarQube Edition: 'community', 'developer', 'enterprise', 'datacenter' or 'sonarcloud'",
@@ -49,6 +50,7 @@
                     "exclusiveMinimum": 0,
                     "items": {
                         "type": "object",
+                        "additionalProperties": false,
                         "required": [
                             "key",
                             "version"
@@ -73,77 +75,32 @@
         },
         "globalSettings": {
             "type": "object",
+            "additionalProperties": false,
             "exclusiveMinimum": 1,
             "description": "Global SonarQube settings",
             "required": [
-                "generalSettings",
-                "languages"
+                "generalSettings"
             ],
             "properties": {
                 "generalSettings": {
                     "type": "array",
                     "description": "General configuration settings",
                     "items": {
-                        "type": "object",
-                        "required": [
-                            "key"
-                        ],
-                        "properties": {
-                            "key": {
-                                "type": "string",
-                                "description": "Setting key"
-                            },
-                            "value": {
-                                "description": "Setting value"
-                            },
-                            "defaultValue": {
-                                "description": "Setting default value"
-                            }
-                        }
+                        "$ref": "#/$defs/setting"
                     }
                 },
                 "analysisScope": {
                     "type": "array",
                     "description": "Analysis scope settings",
                     "items": {
-                        "type": "object",
-                        "required": [
-                            "key"
-                        ],
-                        "properties": {
-                            "key": {
-                                "type": "string",
-                                "description": "Setting key"
-                            },
-                            "value": {
-                                "description": "Setting value"
-                            },
-                            "defaultValue": {
-                                "description": "Setting default value"
-                            }
-                        }
+                        "$ref": "#/$defs/setting"
                     }
                 },
                 "authentication": {
                     "type": "array",
                     "description": "Authentication settings",
                     "items": {
-                        "type": "object",
-                        "required": [
-                            "key"
-                        ],
-                        "properties": {
-                            "key": {
-                                "type": "string",
-                                "description": "Setting key"
-                            },
-                            "value": {
-                                "description": "Setting value"
-                            },
-                            "defaultValue": {
-                                "description": "Setting default value"
-                            }
-                        }
+                        "$ref": "#/$defs/setting"
                     }
                 },
                 "devopsIntegration": {
@@ -151,6 +108,7 @@
                     "description": "Devops integration settings",
                     "items": {
                         "type": "object",
+                        "additionalProperties": false,
                         "description": "A DevOps platform configuration",
                         "required": [
                             "key",
@@ -197,66 +155,28 @@
                     "type": "array",
                     "description": "SAST configuration settings",
                     "items": {
-                        "type": "object",
-                        "required": [
-                            "key"
-                        ],
-                        "properties": {
-                            "key": {
-                                "type": "string",
-                                "description": "Setting key"
-                            },
-                            "value": {
-                                "description": "Setting value"
-                            },
-                            "defaultValue": {
-                                "description": "Setting default value"
-                            }
-                        }
+                        "$ref": "#/$defs/setting"
                     }
                 },
                 "linters": {
                     "type": "array",
                     "description": "Linter settings",
                     "items": {
-                        "type": "object",
-                        "required": [
-                            "key"
-                        ],
-                        "properties": {
-                            "key": {
-                                "type": "string",
-                                "description": "Setting key"
-                            },
-                            "value": {
-                                "description": "Setting value"
-                            },
-                            "defaultValue": {
-                                "description": "Setting default value"
-                            }
-                        }
+                        "$ref": "#/$defs/setting"
                     }
                 },
                 "thirdParty": {
                     "type": "array",
                     "description": "Third party settings",
                     "items": {
-                        "type": "object",
-                        "required": [
-                            "key"
-                        ],
-                        "properties": {
-                            "key": {
-                                "type": "string",
-                                "description": "Setting key"
-                            },
-                            "value": {
-                                "description": "Setting value"
-                            },
-                            "defaultValue": {
-                                "description": "Setting default value"
-                            }
-                        }
+                        "$ref": "#/$defs/setting"
+                    }
+                },
+                "tests": {
+                    "type": "array",
+                    "description": "Test configuration settings",
+                    "items": {
+                        "$ref": "#/$defs/setting"
                     }
                 },
                 "permissions": {
@@ -266,6 +186,7 @@
                         "oneOf": [
                             {
                                 "type": "object",
+                                "additionalProperties": false,
                                 "required": [
                                     "group",
                                     "permissions"
@@ -295,6 +216,7 @@
                             },
                             {
                                 "type": "object",
+                                "additionalProperties": false,
                                 "required": [
                                     "user",
                                     "permissions"
@@ -330,6 +252,7 @@
                     "description": "Language-specific settings",
                     "items": {
                         "type": "object",
+                        "additionalProperties": false,
                         "required": [
                             "language",
                             "settings"
@@ -343,22 +266,7 @@
                                 "type": "array",
                                 "description": "Language-specific settings",
                                 "items": {
-                                    "type": "object",
-                                    "required": [
-                                        "key"
-                                    ],
-                                    "properties": {
-                                        "key": {
-                                            "type": "string",
-                                            "description": "Setting key"
-                                        },
-                                        "value": {
-                                            "description": "Setting value"
-                                        },
-                                        "defaultValue": {
-                                            "description": "Setting default value"
-                                        }
-                                    }
+                                    "$ref": "#/$defs/setting"
                                 }
                             }
                         }
@@ -369,8 +277,12 @@
                     "description": "Global webhooks configuration",
                     "items": {
                         "type": "object",
+                        "additionalProperties": false,
                         "description": "Webhook configuration",
-                        "required": ["name", "url"],
+                        "required": [
+                            "name",
+                            "url"
+                        ],
                         "properties": {
                             "name": {
                                 "type": "string",
@@ -387,6 +299,103 @@
                             }
                         }
                     }
+                },
+                "permissionTemplates": {
+                    "type": "array",
+                    "description": "Permission templates configuration",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "description": "A permission template",
+                        "required": [
+                            "key",
+                            "permissions"
+                        ],
+                        "properties": {
+                            "key": {
+                                "type": "string",
+                                "description": "The permission template key/name"
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "The permission template description"
+                            },
+                            "defaultFor": {
+                                "type": "string",
+                                "description": "Comma-separated list of qualifiers this template is default for (e.g., 'projects, applications' or 'portfolios')"
+                            },
+                            "pattern": {
+                                "type": "string",
+                                "description": "Regular expression pattern for project key matching"
+                            },
+                            "permissions": {
+                                "type": "array",
+                                "description": "List of permissions for this template",
+                                "items": {
+                                    "oneOf": [
+                                        {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "required": [
+                                                "group",
+                                                "permissions"
+                                            ],
+                                            "properties": {
+                                                "group": {
+                                                    "type": "string",
+                                                    "description": "The group name"
+                                                },
+                                                "permissions": {
+                                                    "type": "array",
+                                                    "description": "List of permissions",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "user",
+                                                            "codeviewer",
+                                                            "issueadmin",
+                                                            "securityhotspotadmin",
+                                                            "scan",
+                                                            "admin"
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "required": [
+                                                "user",
+                                                "permissions"
+                                            ],
+                                            "properties": {
+                                                "user": {
+                                                    "type": "string",
+                                                    "description": "The user login"
+                                                },
+                                                "permissions": {
+                                                    "type": "array",
+                                                    "description": "List of permissions",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "user",
+                                                            "codeviewer",
+                                                            "issueadmin",
+                                                            "securityhotspotadmin",
+                                                            "scan",
+                                                            "admin"
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -395,6 +404,7 @@
             "description": "The list of quality gates",
             "items": {
                 "type": "object",
+                "additionalProperties": false,
                 "description": "A quality gate",
                 "required": [
                     "name"
@@ -418,6 +428,27 @@
                     "isBuiltIn": {
                         "type": "boolean",
                         "description": "Whether this quality gate is built-in"
+                    },
+                    "permissions": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "description": "Quality gate permissions",
+                        "properties": {
+                            "users": {
+                                "type": "array",
+                                "description": "List of user logins with permissions on this quality gate",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "groups": {
+                                "type": "array",
+                                "description": "List of group names with permissions on this quality gate",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -427,6 +458,7 @@
             "description": "The list of quality profiles organized by language",
             "items": {
                 "type": "object",
+                "additionalProperties": false,
                 "required": [
                     "language"
                 ],
@@ -459,6 +491,7 @@
             "description": "The list of projects",
             "items": {
                 "type": "object",
+                "additionalProperties": false,
                 "required": [
                     "key",
                     "name"
@@ -478,6 +511,7 @@
                     },
                     "binding": {
                         "type": "object",
+                        "additionalProperties": false,
                         "description": "DevOps platform binding configuration",
                         "required": [
                             "key",
@@ -540,6 +574,7 @@
                             "oneOf": [
                                 {
                                     "type": "object",
+                                    "additionalProperties": false,
                                     "required": [
                                         "group",
                                         "permissions"
@@ -568,6 +603,7 @@
                                 },
                                 {
                                     "type": "object",
+                                    "additionalProperties": false,
                                     "required": [
                                         "user",
                                         "permissions"
@@ -597,11 +633,16 @@
                             ]
                         }
                     },
+                    "qualityGate": {
+                        "type": "string",
+                        "description": "The quality gate name assigned to this project"
+                    },
                     "qualityProfiles": {
                         "type": "array",
                         "description": "Quality profiles assigned to this project",
                         "items": {
                             "type": "object",
+                            "additionalProperties": false,
                             "required": [
                                 "language",
                                 "name"
@@ -623,6 +664,7 @@
                         "description": "Project links",
                         "items": {
                             "type": "object",
+                            "additionalProperties": false,
                             "required": [
                                 "name",
                                 "url"
@@ -649,6 +691,7 @@
                         "description": "Project branches",
                         "items": {
                             "type": "object",
+                            "additionalProperties": false,
                             "required": [
                                 "name"
                             ],
@@ -684,6 +727,7 @@
                         "description": "Project settings",
                         "items": {
                             "type": "object",
+                            "additionalProperties": false,
                             "required": [
                                 "key",
                                 "value"
@@ -704,8 +748,12 @@
                         "description": "Project webhooks configuration",
                         "items": {
                             "type": "object",
+                            "additionalProperties": false,
                             "description": "Webhook configuration",
-                            "required": ["name", "url"],
+                            "required": [
+                                "name",
+                                "url"
+                            ],
                             "properties": {
                                 "name": {
                                     "type": "string",
@@ -731,6 +779,7 @@
             "description": "The list of applications",
             "items": {
                 "type": "object",
+                "additionalProperties": false,
                 "required": [
                     "key",
                     "name"
@@ -757,6 +806,7 @@
                         "description": "Application branches",
                         "items": {
                             "type": "object",
+                            "additionalProperties": false,
                             "required": [
                                 "name"
                             ],
@@ -774,6 +824,7 @@
                                     "description": "Projects in this branch",
                                     "items": {
                                         "type": "object",
+                                        "additionalProperties": false,
                                         "required": [
                                             "key"
                                         ],
@@ -799,6 +850,7 @@
                             "oneOf": [
                                 {
                                     "type": "object",
+                                    "additionalProperties": false,
                                     "required": [
                                         "group",
                                         "permissions"
@@ -823,6 +875,7 @@
                                 },
                                 {
                                     "type": "object",
+                                    "additionalProperties": false,
                                     "required": [
                                         "user",
                                         "permissions"
@@ -870,6 +923,7 @@
             "description": "The list of users",
             "items": {
                 "type": "object",
+                "additionalProperties": false,
                 "description": "User description",
                 "required": [
                     "login",
@@ -915,6 +969,7 @@
             "description": "Groups defined",
             "items": {
                 "type": "object",
+                "additionalProperties": false,
                 "required": [
                     "name"
                 ],
@@ -933,88 +988,89 @@
         "rules": {
             "description": "List of rules that were instantiated or parameterized",
             "type": "object",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "instantiated": {
-                        "description": "List of instantiated rules",
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": [
-                                "key",
-                                "language",
-                                "templateKey",
-                                "severity",
-                                "impacts"
-                            ],
-                            "properties": {
-                                "key": {
-                                    "type": "string",
-                                    "description": "The rule key"
-                                },
-                                "language": {
-                                    "type": "string",
-                                    "description": "The rule language"
-                                },
-                                "templateKey": {
-                                    "type": "string",
-                                    "description": "The rule template key"
-                                },
-                                "severity": {
-                                    "$ref": "#/$defs/severity"
-                                },
-                                "impacts": {
-                                    "$ref": "#/$defs/impacts"
-                                },
-                                "params": {
-                                    "type": "array",
-                                    "description": "The rule parameters",
-                                    "items": {
-                                        "type": "object",
-                                        "required": [
-                                            "key",
-                                            "value"
-                                        ],
-                                        "properties": {
-                                            "key": {
-                                                "type": "string",
-                                                "description": "Parameter key"
-                                            },
-                                            "value": {
-                                                "type": "string",
-                                                "description": "Parameter value"
-                                            }
+            "additionalProperties": false,
+            "properties": {
+                "instantiated": {
+                    "description": "List of instantiated rules",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "key",
+                            "language",
+                            "templateKey",
+                            "severity",
+                            "impacts"
+                        ],
+                        "properties": {
+                            "key": {
+                                "type": "string",
+                                "description": "The rule key"
+                            },
+                            "language": {
+                                "type": "string",
+                                "description": "The rule language"
+                            },
+                            "templateKey": {
+                                "type": "string",
+                                "description": "The rule template key"
+                            },
+                            "severity": {
+                                "$ref": "#/$defs/severity"
+                            },
+                            "impacts": {
+                                "$ref": "#/$defs/impacts"
+                            },
+                            "params": {
+                                "type": "array",
+                                "description": "The rule parameters",
+                                "items": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                        "key",
+                                        "value"
+                                    ],
+                                    "properties": {
+                                        "key": {
+                                            "type": "string",
+                                            "description": "Parameter key"
+                                        },
+                                        "value": {
+                                            "type": "string",
+                                            "description": "Parameter value"
                                         }
                                     }
                                 }
                             }
                         }
-                    },
-                    "extended": {
-                        "description": "List of extended/customized rules",
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": [
-                                "key"
-                            ],
-                            "properties": {
-                                "key": {
-                                    "type": "string",
-                                    "description": "The rule key"
-                                },
-                                "tags": {
-                                    "type": "array",
-                                    "description": "The rule language",
-                                    "items": {
-                                        "type": "string"
-                                    }
-                                },
-                                "description": {
-                                    "type": "string",
-                                    "description": "The rule extended description"
+                    }
+                },
+                "extended": {
+                    "description": "List of extended/customized rules",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "key"
+                        ],
+                        "properties": {
+                            "key": {
+                                "type": "string",
+                                "description": "The rule key"
+                            },
+                            "tags": {
+                                "type": "array",
+                                "description": "The rule language",
+                                "items": {
+                                    "type": "string"
                                 }
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "The rule extended description"
                             }
                         }
                     }
@@ -1023,34 +1079,79 @@
         }
     },
     "$defs": {
+        "setting": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "key"
+            ],
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "description": "Setting key"
+                },
+                "value": {
+                    "description": "Setting value"
+                },
+                "defaultValue": {
+                    "description": "Setting default value"
+                }
+            }
+        },
         "impacts": {
             "type": "object",
+            "additionalProperties": false,
             "description": "Rule impacts in MQR mode",
             "properties": {
                 "security": {
                     "type": "string",
                     "description": "Security impact",
-                    "enum": ["info", "low", "medium", "high", "blocker"]
+                    "enum": [
+                        "info",
+                        "low",
+                        "medium",
+                        "high",
+                        "blocker"
+                    ]
                 },
                 "reliability": {
                     "type": "string",
                     "description": "Reliability impact",
-                    "enum": ["info", "low", "medium", "high", "blocker"]
+                    "enum": [
+                        "info",
+                        "low",
+                        "medium",
+                        "high",
+                        "blocker"
+                    ]
                 },
                 "maintainability": {
                     "type": "string",
                     "description": "Maintainability impact",
-                    "enum": ["info", "low", "medium", "high", "blocker"]
+                    "enum": [
+                        "info",
+                        "low",
+                        "medium",
+                        "high",
+                        "blocker"
+                    ]
                 }
             }
         },
         "severity": {
             "type": "string",
             "description": "Rule legacy severity in std experience",
-            "enum": ["info", "minor", "major", "critical", "blocker"]
+            "enum": [
+                "info",
+                "minor",
+                "major",
+                "critical",
+                "blocker"
+            ]
         },
         "qualityProfile": {
             "type": "object",
+            "additionalProperties": false,
             "required": [
                 "name"
             ],
@@ -1079,6 +1180,7 @@
                     "description": "Rules added to this quality profile from its parent profile or if a root profile",
                     "items": {
                         "type": "object",
+                        "additionalProperties": false,
                         "required": [
                             "key"
                         ],
@@ -1092,6 +1194,7 @@
                                 "description": "Rule parameters",
                                 "items": {
                                     "type": "object",
+                                    "additionalProperties": false,
                                     "required": [
                                         "key",
                                         "value"
@@ -1132,6 +1235,7 @@
                     "description": "Rules modified in this quality profile",
                     "items": {
                         "type": "object",
+                        "additionalProperties": false,
                         "required": [
                             "key"
                         ],
@@ -1162,6 +1266,7 @@
                                 "description": "Rule parameters",
                                 "items": {
                                     "type": "object",
+                                    "additionalProperties": false,
                                     "required": [
                                         "key",
                                         "value"
@@ -1185,6 +1290,7 @@
                     "description": "Rules in this quality profile (simpler format)",
                     "items": {
                         "type": "object",
+                        "additionalProperties": false,
                         "required": [
                             "key"
                         ],
@@ -1204,6 +1310,7 @@
         },
         "portfolio": {
             "type": "object",
+            "additionalProperties": false,
             "required": [
                 "key"
             ],
@@ -1233,6 +1340,7 @@
                 },
                 "projectSelection": {
                     "type": "object",
+                    "additionalProperties": false,
                     "description": "Project selection criteria",
                     "properties": {
                         "rest": {
@@ -1259,6 +1367,7 @@
                             "description": "Manually selected projects",
                             "items": {
                                 "type": "object",
+                                "additionalProperties": false,
                                 "required": [
                                     "key"
                                 ],
@@ -1288,6 +1397,7 @@
                     "description": "Applications in this portfolio",
                     "items": {
                         "type": "object",
+                        "additionalProperties": false,
                         "required": [
                             "key"
                         ],
@@ -1313,6 +1423,7 @@
                         "oneOf": [
                             {
                                 "type": "object",
+                                "additionalProperties": false,
                                 "required": [
                                     "group",
                                     "permissions"
@@ -1341,6 +1452,7 @@
                             },
                             {
                                 "type": "object",
+                                "additionalProperties": false,
                                 "required": [
                                     "user",
                                     "permissions"
