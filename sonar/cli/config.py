@@ -290,8 +290,12 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     try:
         jsonschema.validate(data, __get_schema())
     except jsonschema.ValidationError as e:
+        schema_url = "https://github.com/okorach/sonar-tools/blob/master/sonar/cli/sonar-config.schema.json"
         raise exceptions.SonarException(
-            f"JSON file '{kwargs[options.REPORT_FILE]}' does not respect the sonar-config JSON schema:\nSee schema at: https://github.com/okorach/sonar-tools/blob/master/sonar/cli/sonar-config.schema.json\n-> Schema error: {e.message}\n-> Error occured at JSON path: {e.json_path}",
+            f"JSON file '{kwargs[options.REPORT_FILE]}' does not respect the sonar-config JSON schema:\n"
+            f"See schema at: {schema_url}\n"
+            f"-> Schema error: {e.message}\n"
+            f"-> Error occured at JSON path: {e.json_path}",
             errcodes.ARGS_ERROR,
         ) from e
     log.info("JSON file %s is valid", kwargs[options.REPORT_FILE])
