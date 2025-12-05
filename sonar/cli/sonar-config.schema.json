@@ -80,8 +80,7 @@
                     "items": {
                         "type": "object",
                         "required": [
-                            "key",
-                            "value"
+                            "key"
                         ],
                         "properties": {
                             "key": {
@@ -90,6 +89,9 @@
                             },
                             "value": {
                                 "description": "Setting value"
+                            },
+                            "defaultValue": {
+                                "description": "Setting default value"
                             }
                         }
                     }
@@ -100,8 +102,7 @@
                     "items": {
                         "type": "object",
                         "required": [
-                            "key",
-                            "value"
+                            "key"
                         ],
                         "properties": {
                             "key": {
@@ -110,6 +111,9 @@
                             },
                             "value": {
                                 "description": "Setting value"
+                            },
+                            "defaultValue": {
+                                "description": "Setting default value"
                             }
                         }
                     }
@@ -120,8 +124,7 @@
                     "items": {
                         "type": "object",
                         "required": [
-                            "key",
-                            "value"
+                            "key"
                         ],
                         "properties": {
                             "key": {
@@ -130,6 +133,9 @@
                             },
                             "value": {
                                 "description": "Setting value"
+                            },
+                            "defaultValue": {
+                                "description": "Setting default value"
                             }
                         }
                     }
@@ -187,8 +193,7 @@
                     "items": {
                         "type": "object",
                         "required": [
-                            "key",
-                            "value"
+                            "key"
                         ],
                         "properties": {
                             "key": {
@@ -197,6 +202,9 @@
                             },
                             "value": {
                                 "description": "Setting value"
+                            },
+                            "defaultValue": {
+                                "description": "Setting default value"
                             }
                         }
                     }
@@ -207,8 +215,7 @@
                     "items": {
                         "type": "object",
                         "required": [
-                            "key",
-                            "value"
+                            "key"
                         ],
                         "properties": {
                             "key": {
@@ -217,6 +224,9 @@
                             },
                             "value": {
                                 "description": "Setting value"
+                            },
+                            "defaultValue": {
+                                "description": "Setting default value"
                             }
                         }
                     }
@@ -227,8 +237,7 @@
                     "items": {
                         "type": "object",
                         "required": [
-                            "key",
-                            "value"
+                            "key"
                         ],
                         "properties": {
                             "key": {
@@ -237,6 +246,9 @@
                             },
                             "value": {
                                 "description": "Setting value"
+                            },
+                            "defaultValue": {
+                                "description": "Setting default value"
                             }
                         }
                     }
@@ -327,8 +339,7 @@
                                 "items": {
                                     "type": "object",
                                     "required": [
-                                        "key",
-                                        "value"
+                                        "key"
                                     ],
                                     "properties": {
                                         "key": {
@@ -337,6 +348,9 @@
                                         },
                                         "value": {
                                             "description": "Setting value"
+                                        },
+                                        "defaultValue": {
+                                            "description": "Setting default value"
                                         }
                                     }
                                 }
