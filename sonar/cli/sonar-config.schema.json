@@ -308,8 +308,7 @@
                         "additionalProperties": false,
                         "description": "A permission template",
                         "required": [
-                            "key",
-                            "permissions"
+                            "key"
                         ],
                         "properties": {
                             "key": {
@@ -430,25 +429,7 @@
                         "description": "Whether this quality gate is built-in"
                     },
                     "permissions": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "description": "Quality gate permissions",
-                        "properties": {
-                            "users": {
-                                "type": "array",
-                                "description": "List of user logins with permissions on this quality gate",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "groups": {
-                                "type": "array",
-                                "description": "List of group names with permissions on this quality gate",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
-                        }
+                        "$ref": "#/$defs/qualityPermissions"
                     }
                 }
             }
@@ -1025,6 +1006,10 @@
                             "impacts": {
                                 "$ref": "#/$defs/impacts"
                             },
+                            "description": {
+                                "type": "string",
+                                "description": "The rule description"
+                            },
                             "params": {
                                 "type": "array",
                                 "description": "The rule parameters",
@@ -1101,6 +1086,27 @@
                 }
             }
         },
+        "qualityPermissions": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Quality object permissions (for quality gates or quality profiles)",
+            "properties": {
+                "users": {
+                    "type": "array",
+                    "description": "List of user logins with permissions",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "groups": {
+                    "type": "array",
+                    "description": "List of group names with permissions",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "impacts": {
             "type": "object",
             "additionalProperties": false,
@@ -1170,6 +1176,9 @@
                 "isDefault": {
                     "type": "boolean",
                     "description": "Whether this quality profile is the default one"
+                },
+                "permissions": {
+                    "$ref": "#/$defs/qualityPermissions"
                 },
                 "children": {
                     "type": "array",
