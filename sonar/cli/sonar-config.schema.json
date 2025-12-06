@@ -541,12 +541,7 @@
                         }
                     },
                     "visibility": {
-                        "type": "string",
-                        "enum": [
-                            "public",
-                            "private"
-                        ],
-                        "description": "The project visibility (public or private)"
+                        "$ref": "#/$defs/componentVisibility"
                     },
                     "permissions": {
                         "type": "array",
@@ -778,12 +773,7 @@
                         "description": "The application description"
                     },
                     "visibility": {
-                        "type": "string",
-                        "enum": [
-                            "public",
-                            "private"
-                        ],
-                        "description": "The application visibility (public or private)"
+                        "$ref": "#/$defs/componentVisibility"
                     },
                     "branches": {
                         "type": "array",
@@ -983,9 +973,7 @@
                         "required": [
                             "key",
                             "language",
-                            "templateKey",
-                            "severity",
-                            "impacts"
+                            "templateKey"
                         ],
                         "properties": {
                             "key": {
@@ -1011,26 +999,7 @@
                                 "description": "The rule description"
                             },
                             "params": {
-                                "type": "array",
-                                "description": "The rule parameters",
-                                "items": {
-                                    "type": "object",
-                                    "additionalProperties": false,
-                                    "required": [
-                                        "key",
-                                        "value"
-                                    ],
-                                    "properties": {
-                                        "key": {
-                                            "type": "string",
-                                            "description": "Parameter key"
-                                        },
-                                        "value": {
-                                            "type": "string",
-                                            "description": "Parameter value"
-                                        }
-                                    }
-                                }
+                                "$ref": "#/$defs/ruleParams"
                             }
                         }
                     }
@@ -1158,6 +1127,35 @@
                 "blocker"
             ]
         },
+        "ruleParams": {
+            "type": "array",
+            "description": "Rule parameters",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "key",
+                    "value"
+                ],
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "Parameter key"
+                    },
+                    "value": {
+                        "description": "Parameter value"
+                    }
+                }
+            }
+        },
+        "componentVisibility": {
+            "type": "string",
+            "enum": [
+                "public",
+                "private"
+            ],
+            "description": "The component visibility (public or private)"
+        },
         "qualityProfile": {
             "type": "object",
             "additionalProperties": false,
@@ -1202,25 +1200,7 @@
                                 "description": "The rule key"
                             },
                             "params": {
-                                "type": "array",
-                                "description": "Rule parameters",
-                                "items": {
-                                    "type": "object",
-                                    "additionalProperties": false,
-                                    "required": [
-                                        "key",
-                                        "value"
-                                    ],
-                                    "properties": {
-                                        "key": {
-                                            "type": "string",
-                                            "description": "Parameter key"
-                                        },
-                                        "value": {
-                                            "description": "Parameter value"
-                                        }
-                                    }
-                                }
+                                "$ref": "#/$defs/ruleParams"
                             },
                             "severity": {
                                 "$ref": "#/$defs/severity"
@@ -1274,25 +1254,7 @@
                                 }
                             },
                             "params": {
-                                "type": "array",
-                                "description": "Rule parameters",
-                                "items": {
-                                    "type": "object",
-                                    "additionalProperties": false,
-                                    "required": [
-                                        "key",
-                                        "value"
-                                    ],
-                                    "properties": {
-                                        "key": {
-                                            "type": "string",
-                                            "description": "Parameter key"
-                                        },
-                                        "value": {
-                                            "description": "Parameter value"
-                                        }
-                                    }
-                                }
+                                "$ref": "#/$defs/ruleParams"
                             }
                         }
                     }
@@ -1314,6 +1276,9 @@
                             "prioritized": {
                                 "type": "boolean",
                                 "description": "Whether this rule is prioritized"
+                            },
+                            "params": {
+                                "$ref": "#/$defs/ruleParams"
                             }
                         }
                     }
@@ -1336,12 +1301,7 @@
                     "description": "The portfolio name"
                 },
                 "visibility": {
-                    "type": "string",
-                    "enum": [
-                        "public",
-                        "private"
-                    ],
-                    "description": "The portfolio visibility (public or private)"
+                    "$ref": "#/$defs/componentVisibility"
                 },
                 "portfolios": {
                     "type": "array",
@@ -1452,10 +1412,6 @@
                                             "type": "string",
                                             "enum": [
                                                 "user",
-                                                "codeviewer",
-                                                "issueadmin",
-                                                "securityhotspotadmin",
-                                                "scan",
                                                 "admin"
                                             ]
                                         }
