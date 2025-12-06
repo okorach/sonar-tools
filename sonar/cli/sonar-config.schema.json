@@ -1295,7 +1295,7 @@
                     }
                 },
                 "permissions": {
-                    "$ref": "#/$defs/componentPermissions"
+                    "$ref": "#/$defs/aggregationPermissions"
                 }
             }
         }
