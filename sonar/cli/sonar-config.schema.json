@@ -197,20 +197,7 @@
                                         "description": "The group name"
                                     },
                                     "permissions": {
-                                        "type": "array",
-                                        "description": "List of permissions",
-                                        "items": {
-                                            "type": "string",
-                                            "enum": [
-                                                "admin",
-                                                "applicationcreator",
-                                                "gateadmin",
-                                                "portfoliocreator",
-                                                "profileadmin",
-                                                "provisioning",
-                                                "scan"
-                                            ]
-                                        }
+                                        "$ref": "#/$defs/globalPermissionsList"
                                     }
                                 }
                             },
@@ -227,20 +214,7 @@
                                         "description": "The user login"
                                     },
                                     "permissions": {
-                                        "type": "array",
-                                        "description": "List of permissions",
-                                        "items": {
-                                            "type": "string",
-                                            "enum": [
-                                                "admin",
-                                                "applicationcreator",
-                                                "gateadmin",
-                                                "portfoliocreator",
-                                                "profileadmin",
-                                                "provisioning",
-                                                "scan"
-                                            ]
-                                        }
+                                        "$ref": "#/$defs/globalPermissionsList"
                                     }
                                 }
                             }
@@ -981,15 +955,7 @@
                                 "description": "The group name"
                             },
                             "permissions": {
-                                "type": "array",
-                                "description": "List of permissions",
-                                "items": {
-                                    "type": "string",
-                                    "enum": [
-                                        "user",
-                                        "admin"
-                                    ]
-                                }
+                                "$ref": "#/$defs/aggregationPermissionsList"
                             }
                         }
                     },
@@ -1006,15 +972,7 @@
                                 "description": "The user login"
                             },
                             "permissions": {
-                                "type": "array",
-                                "description": "List of permissions",
-                                "items": {
-                                    "type": "string",
-                                    "enum": [
-                                        "user",
-                                        "admin"
-                                    ]
-                                }
+                                "$ref": "#/$defs/aggregationPermissionsList"
                             }
                         }
                     }
@@ -1039,19 +997,7 @@
                                 "description": "The group name"
                             },
                             "permissions": {
-                                "type": "array",
-                                "description": "List of permissions",
-                                "items": {
-                                    "type": "string",
-                                    "enum": [
-                                        "user",
-                                        "codeviewer",
-                                        "issueadmin",
-                                        "securityhotspotadmin",
-                                        "scan",
-                                        "admin"
-                                    ]
-                                }
+                                "$ref": "#/$defs/projectPermissionsList"
                             }
                         }
                     },
@@ -1068,19 +1014,7 @@
                                 "description": "The user login"
                             },
                             "permissions": {
-                                "type": "array",
-                                "description": "List of permissions",
-                                "items": {
-                                    "type": "string",
-                                    "enum": [
-                                        "user",
-                                        "codeviewer",
-                                        "issueadmin",
-                                        "securityhotspotadmin",
-                                        "scan",
-                                        "admin"
-                                    ]
-                                }
+                                "$ref": "#/$defs/projectPermissionsList"
                             }
                         }
                     }
@@ -1092,6 +1026,48 @@
             "description": "Object tags",
             "items": {
                 "type": "string"
+            }
+        },
+        "globalPermissionsList": {
+            "type": "array",
+            "description": "List of permissions",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "admin",
+                    "applicationcreator",
+                    "gateadmin",
+                    "portfoliocreator",
+                    "profileadmin",
+                    "provisioning",
+                    "scan"
+                ]
+            }
+        },
+        "aggregationPermissionsList": {
+            "type": "array",
+            "description": "List of permissions for aggregation objects (portfolios or applications)",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "user",
+                    "admin"
+                ]
+            }
+        },
+        "projectPermissionsList": {
+            "type": "array",
+            "description": "List of permissions for projects",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "user",
+                    "codeviewer",
+                    "issueadmin",
+                    "securityhotspotadmin",
+                    "scan",
+                    "admin"
+                ]
             }
         },
         "qualityProfile": {
