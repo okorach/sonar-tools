@@ -1,5 +1,18 @@
 # Next version
 
+# Version 3.17
+
+* `sonar-config`:
+  - The export/import format has been vastly redefined. Import with the previous format will be rejected
+    but a format conversion tool is provided
+  - A [JSON schema](https://github.com/okorach/sonar-tools/blob/master/sonar/cli/sonar-config.schema.json) is available that defines the export/import format
+  - Several improvements in export/import: New config elements are exported and imported (webhooks, MQR qualities
+    new settings, and more...)
+* `sonar-housekeeper`:
+  - Added the `--keepWhenInactive` parameter that overrides the SonarQube defined one to decide which branches
+    should be kept and which branches should be deleted
+  - Projects, Branches, PRs and tokens can be deleted separately
+
 # Version 3.16
 
 * `sonar-config`:
