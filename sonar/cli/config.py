@@ -287,7 +287,17 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error while reading file: {e}")
 
     log.info("Validating import JSON file %s against schema", kwargs[options.REPORT_FILE])
-    jsonschema.validate(data, __get_schema())
+    try:
+        jsonschema.validate(data, __get_schema())
+    except jsonschema.ValidationError as e:
+        schema_url = "https://github.com/okorach/sonar-tools/blob/master/sonar/cli/sonar-config.schema.json"
+        raise exceptions.SonarException(
+            f"JSON file '{kwargs[options.REPORT_FILE]}' does not respect the sonar-config JSON schema:\n"
+            f"See schema at: {schema_url}\n"
+            f"-> Schema error: {e.message}\n"
+            f"-> Error occured at JSON path: {e.json_path}",
+            errcodes.ARGS_ERROR,
+        ) from e
     log.info("JSON file %s is valid", kwargs[options.REPORT_FILE])
     key_list = kwargs[options.KEY_REGEXP]
 

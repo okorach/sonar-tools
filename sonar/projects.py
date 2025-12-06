@@ -1019,6 +1019,9 @@ class Project(components.Component):
             settings_to_export = {k: s for k, s in settings_dict.items() if with_inherited or not s.inherited and s.key != "visibility"}
             for key, s in settings_to_export.items():
                 json_setting = s.to_json()
+                if json_setting[key]["defaultValue"] == json_setting[key]["value"]:
+                    continue
+                json_setting[key].pop("defaultValue")
                 if key == settings.NEW_CODE_PERIOD:
                     json_data[settings.NEW_CODE_PERIOD] = json_setting[settings.NEW_CODE_PERIOD]
                 else:
