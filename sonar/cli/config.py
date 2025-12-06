@@ -72,9 +72,6 @@ _MIGRATION_EXPORT_SETTINGS = {
     EXPORT_EMPTY: True,
 }
 
-_CONVERT_FROM = "convertFrom"
-_CONVERT_TO = "convertTo"
-
 _EXPORT_CALLS = {
     c.CONFIG_KEY_PLATFORM: [c.CONFIG_KEY_PLATFORM, platform.basics],
     options.WHAT_SETTINGS: [c.CONFIG_KEY_SETTINGS, platform.export],
@@ -124,14 +121,20 @@ def __parse_args(desc: str) -> object:
         help="By default, sonar-config does not export empty values, setting this flag will add empty values in the export",
     )
     parser.add_argument(
-        f"--{_CONVERT_FROM}",
+        f"--{options.CONVERT_FROM}",
         required=False,
-        help="Source sonar-config old JSON format",
+        help="Source sonar-config old JSON format file to convert to the new format",
     )
     parser.add_argument(
-        f"--{_CONVERT_TO}",
+        f"--{options.CONVERT_TO}",
         required=False,
-        help="Target sonar-config new JSON format",
+        help="Target sonar-config new JSON format file to write the converted data to",
+    )
+    parser.add_argument(
+        f"--{options.VALIDATE_JSON}",
+        required=False,
+        action="store_true",
+        help="Validate the JSON file against the schema",
     )
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME, verify_token=False)
 
@@ -277,28 +280,40 @@ def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: type
     return json_data
 
 
-def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
-    """Imports a platform configuration from a JSON file"""
-    log.info("Importing configuration to %s", kwargs[options.URL])
-    try:
-        with open(kwargs[options.REPORT_FILE], encoding="utf-8") as fd:
-            data = json.loads(fd.read())
-    except FileNotFoundError as e:
-        chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error while reading file: {e}")
+def validate_json(file: str) -> dict[str, Any]:
+    """Validates a sonar-config JSON file against the schema
 
-    log.info("Validating import JSON file %s against schema", kwargs[options.REPORT_FILE])
+    :param: file: JSON file to validate
+    :return: JSON data
+    :raises: SonarException if the JSON file is not valid
+    :raises: FileNotFoundError if the JSON file does not exist
+    """
+    log.info("Validating JSON file %s", file)
     try:
-        jsonschema.validate(data, __get_schema())
+        with open(file, encoding="utf-8") as fd:
+            json_data = json.loads(fd.read())
+        jsonschema.validate(json_data, __get_schema())
     except jsonschema.ValidationError as e:
+        log.error("JSON file '%s' is not valid", file)
         schema_url = "https://github.com/okorach/sonar-tools/blob/master/sonar/cli/sonar-config.schema.json"
         raise exceptions.SonarException(
-            f"JSON file '{kwargs[options.REPORT_FILE]}' does not respect the sonar-config JSON schema:\n"
+            f"JSON file '{file}' does not respect the sonar-config JSON schema:\n"
             f"See schema at: {schema_url}\n"
             f"-> Schema error: {e.message}\n"
             f"-> Error occured at JSON path: {e.json_path}",
             errcodes.ARGS_ERROR,
         ) from e
-    log.info("JSON file %s is valid", kwargs[options.REPORT_FILE])
+    except FileNotFoundError as e:
+        chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error while reading file: {e}")
+
+    log.info("JSON file '%s' is valid", file)
+    return json_data
+
+
+def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
+    """Imports a platform configuration from a JSON file"""
+    log.info("Importing configuration to %s", kwargs[options.URL])
+    data = validate_json(kwargs[options.REPORT_FILE])
     key_list = kwargs[options.KEY_REGEXP]
 
     calls = {
@@ -357,8 +372,11 @@ def main() -> None:
     start_time = utilities.start_clock()
     try:
         kwargs = utilities.convert_args(__parse_args("Extract SonarQube Server or Cloud platform configuration"))
-        if kwargs[_CONVERT_FROM] is not None:
-            convert_json_file(kwargs[_CONVERT_FROM], kwargs.get(_CONVERT_TO, None))
+        if kwargs[options.CONVERT_FROM] is not None:
+            convert_json_file(kwargs[options.CONVERT_FROM], kwargs.get(options.CONVERT_TO, None))
+            chelp.clear_cache_and_exit(errcodes.OK, "", start_time)
+        if kwargs[options.VALIDATE_JSON] is True:
+            validate_json(kwargs[options.REPORT_FILE])
             chelp.clear_cache_and_exit(errcodes.OK, "", start_time)
         log.info("Checking token")
         utilities.check_token(kwargs[options.TOKEN], utilities.is_sonarcloud_url(kwargs[options.URL]))
