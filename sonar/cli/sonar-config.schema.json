@@ -566,11 +566,7 @@
                         }
                     },
                     "tags": {
-                        "type": "array",
-                        "description": "Project tags",
-                        "items": {
-                            "type": "string"
-                        }
+                        "$ref": "#/$defs/tags"
                     },
                     "settings": {
                         "type": "array",
@@ -695,11 +691,7 @@
                         "$ref": "#/$defs/aggregationPermissions"
                     },
                     "tags": {
-                        "type": "array",
-                        "description": "Application tags",
-                        "items": {
-                            "type": "string"
-                        }
+                        "$ref": "#/$defs/tags"
                     }
                 }
             }
@@ -838,11 +830,7 @@
                                 "description": "The rule key"
                             },
                             "tags": {
-                                "type": "array",
-                                "description": "The rule language",
-                                "items": {
-                                    "type": "string"
-                                }
+                                "$ref": "#/$defs/tags"
                             },
                             "description": {
                                 "type": "string",
@@ -1099,6 +1087,13 @@
                 ]
             }
         },
+        "tags": {
+            "type": "array",
+            "description": "Object tags",
+            "items": {
+                "type": "string"
+            }
+        },
         "qualityProfile": {
             "type": "object",
             "additionalProperties": false,
@@ -1190,11 +1185,7 @@
                                 "description": "Whether this rule is prioritized"
                             },
                             "tags": {
-                                "type": "array",
-                                "description": "Rule tags",
-                                "items": {
-                                    "type": "string"
-                                }
+                                "$ref": "#/$defs/tags"
                             },
                             "params": {
                                 "$ref": "#/$defs/ruleParams"
@@ -1267,11 +1258,7 @@
                             "description": "Regular expression pattern for project selection"
                         },
                         "tags": {
-                            "type": "array",
-                            "description": "Tags for project selection",
-                            "items": {
-                                "type": "string"
-                            }
+                            "$ref": "#/$defs/tags"
                         },
                         "branch": {
                             "type": "string",
