@@ -17,7 +17,7 @@ Command line tools to help in SonarQube administration tasks. Available as a **p
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonar-tools&metric=bugs)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
 [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonar-tools&metric=ncloc)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
 
-**DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource S.A. Switzerland, the company publishing the [SonarQube Server](https://www.sonarsource.com/products/sonarqube/), [SonarQube Cloud](https://sonarcloud.io) and [SonarQube for IDE (ex- SonarLint](https://www.sonarsource.com/products/sonarlint/) products
+**DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource Sarl, the company publishing the [SonarQube Server](https://www.sonarsource.com/products/sonarqube/), [SonarQube Cloud](https://sonarcloud.io) and [SonarQube for IDE (ex- SonarLint)](https://www.sonarsource.com/products/sonarlint/) products
 
 The following utilities are available:
 - [sonar-audit](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-audit.md): Audits a SonarQube Server or Cloud instance, and reports all the problems
