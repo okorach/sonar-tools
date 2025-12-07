@@ -213,3 +213,29 @@ def test_config_import_projects() -> None:
     project_list = projects.get_list(tutil.TEST_SQ)
     assert len(project_list) == len(json_config)
     assert sorted(project_list.keys()) == sorted([p["key"] for p in json_config])
+
+
+def test_config_validate_non_compliant_json() -> None:
+    """test_config_validate_non_compliant_json"""
+    for i in range(1, 6):
+        config_file = f"{tutil.FILES_ROOT}/config.noncompliant.{i}.json"
+        assert tutil.run_cmd(config.main, f"{CMD} --{opt.VALIDATE_JSON} --{opt.REPORT_FILE} {config_file}") == e.SCHEMA_ERROR
+
+
+def test_config_validate_compliant_json() -> None:
+    """test_config_validate_compliant_json"""
+    config_file = f"{tutil.FILES_ROOT}/config.json"
+    assert tutil.run_cmd(config.main, f"{CMD} --{opt.VALIDATE_JSON} --{opt.REPORT_FILE} {config_file}") == e.OK
+
+
+def test_config_import_non_compliant_json() -> None:
+    """test_config_import_non_compliant_json"""
+    for i in range(1, 6):
+        config_file = f"{tutil.FILES_ROOT}/config.noncompliant.{i}.json"
+        assert tutil.run_cmd(config.main, f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} {config_file}") == e.SCHEMA_ERROR
+
+
+def test_config_import_compliant_json() -> None:
+    """test_config_import_compliant_json"""
+    config_file = f"{tutil.FILES_ROOT}/config.json"
+    assert tutil.run_cmd(config.main, f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} {config_file}") == e.OK
