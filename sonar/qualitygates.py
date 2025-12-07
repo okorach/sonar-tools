@@ -560,12 +560,15 @@ def _decode_condition(cond: str) -> tuple[str, str, str]:
     return (metric, op, val)
 
 
-def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, QualityGate]:
+def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Any]:
     """Searches quality gates matching name"""
     return util.search_by_name(endpoint, name, QualityGate.API[c.LIST], "qualitygates")
 
 
-def convert_qgs_json(old_json: dict[str, Any]) -> dict[str, Any]:
+def convert_qgs_json(old_json: dict[str, Any]) -> list[dict[str, Any]]:
     """Converts the sonar-config quality gates old JSON report format to the new one"""
     old_json = common_json_helper.convert_common_fields(old_json, with_permissions=False)
+    for qg in [q for q in old_json.values() if "permissions" in q]:
+        for ptype in [p for p in ("users", "groups") if p in qg["permissions"]]:
+            qg["permissions"][ptype] = util.csv_to_list(qg["permissions"][ptype])
     return util.dict_to_list(old_json, "name")
