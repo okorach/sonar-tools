@@ -240,6 +240,7 @@ def test_config_import_compliant_json() -> None:
     config_file = f"{tutil.FILES_ROOT}/config.json"
     assert tutil.run_cmd(config.main, f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} {config_file}") == e.OK
 
+
 def test_config_conversion(json_file: Generator[str]) -> None:
     """test_config_conversion"""
     config_file = f"{tutil.FILES_ROOT}/config.3.16.json"
