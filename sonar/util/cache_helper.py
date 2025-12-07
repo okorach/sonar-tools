@@ -79,6 +79,6 @@ def clear_cache(class_list: Optional[tuple] = None) -> None:
             permission_templates.PermissionTemplate,
             webhooks.WebHook,
         )
-    log.info("Clearing cache")
+    log.debug("Clearing cache")
     for a_class in class_list:
         a_class.CACHE.clear()
