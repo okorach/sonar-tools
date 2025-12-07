@@ -179,8 +179,7 @@ class Platform(object):
         :return: the basic information of the platform: ServerId, Edition, Version and Plugins
         :rtype: dict{"serverId": <id>, "edition": <edition>, "version": <version>, "plugins": <dict>}
         """
-        setting = self.get_setting(key="sonar.core.serverBaseURL")
-        url = setting.get("value") if setting else None
+        url = self.get_setting(key="sonar.core.serverBaseURL")
         if url in (None, ""):
             url = self.local_url
         data = {"edition": self.edition(), "url": url}
@@ -438,7 +437,7 @@ class Platform(object):
         :param key: Setting key
         :return: the setting value
         """
-        return settings.get_object(endpoint=self, key=key).to_json().get("value")
+        return settings.get_object(endpoint=self, key=key).to_json()[key].get("value")
 
     def reset_setting(self, key: str) -> bool:
         """Resets a platform global setting to the SonarQube internal default value
