@@ -316,8 +316,7 @@ def validate_json(file: str) -> dict[str, Any]:
         raise exceptions.SonarException(
             f"JSON file '{file}' does not respect the sonar-config JSON schema:\n"
             f"-> See schema at: {schema_url}\n"
-            f"-> Schema error: {e.message}\n"
-            f"-> Error occured at JSON path: {path_str.lstrip('.')}",
+            f"-> Error occured at: {path_str.lstrip('.')} -> {e.message}",
             errcodes.SCHEMA_ERROR,
         ) from e
     except FileNotFoundError as e:
