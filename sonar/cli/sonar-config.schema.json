@@ -197,20 +197,7 @@
                                         "description": "The group name"
                                     },
                                     "permissions": {
-                                        "type": "array",
-                                        "description": "List of permissions",
-                                        "items": {
-                                            "type": "string",
-                                            "enum": [
-                                                "admin",
-                                                "applicationcreator",
-                                                "gateadmin",
-                                                "portfoliocreator",
-                                                "profileadmin",
-                                                "provisioning",
-                                                "scan"
-                                            ]
-                                        }
+                                        "$ref": "#/$defs/globalPermissionsList"
                                     }
                                 }
                             },
@@ -227,20 +214,7 @@
                                         "description": "The user login"
                                     },
                                     "permissions": {
-                                        "type": "array",
-                                        "description": "List of permissions",
-                                        "items": {
-                                            "type": "string",
-                                            "enum": [
-                                                "admin",
-                                                "applicationcreator",
-                                                "gateadmin",
-                                                "portfoliocreator",
-                                                "profileadmin",
-                                                "provisioning",
-                                                "scan"
-                                            ]
-                                        }
+                                        "$ref": "#/$defs/globalPermissionsList"
                                     }
                                 }
                             }
@@ -328,70 +302,7 @@
                                 "description": "Regular expression pattern for project key matching"
                             },
                             "permissions": {
-                                "type": "array",
-                                "description": "List of permissions for this template",
-                                "items": {
-                                    "oneOf": [
-                                        {
-                                            "type": "object",
-                                            "additionalProperties": false,
-                                            "required": [
-                                                "group",
-                                                "permissions"
-                                            ],
-                                            "properties": {
-                                                "group": {
-                                                    "type": "string",
-                                                    "description": "The group name"
-                                                },
-                                                "permissions": {
-                                                    "type": "array",
-                                                    "description": "List of permissions",
-                                                    "items": {
-                                                        "type": "string",
-                                                        "enum": [
-                                                            "user",
-                                                            "codeviewer",
-                                                            "issueadmin",
-                                                            "securityhotspotadmin",
-                                                            "scan",
-                                                            "admin"
-                                                        ]
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "type": "object",
-                                            "additionalProperties": false,
-                                            "required": [
-                                                "user",
-                                                "permissions"
-                                            ],
-                                            "properties": {
-                                                "user": {
-                                                    "type": "string",
-                                                    "description": "The user login"
-                                                },
-                                                "permissions": {
-                                                    "type": "array",
-                                                    "description": "List of permissions",
-                                                    "items": {
-                                                        "type": "string",
-                                                        "enum": [
-                                                            "user",
-                                                            "codeviewer",
-                                                            "issueadmin",
-                                                            "securityhotspotadmin",
-                                                            "scan",
-                                                            "admin"
-                                                        ]
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
+                                "$ref": "#/$defs/projectPermissions"
                             }
                         }
                     }
@@ -541,78 +452,10 @@
                         }
                     },
                     "visibility": {
-                        "type": "string",
-                        "enum": [
-                            "public",
-                            "private"
-                        ],
-                        "description": "The project visibility (public or private)"
+                        "$ref": "#/$defs/componentVisibility"
                     },
                     "permissions": {
-                        "type": "array",
-                        "description": "Project permissions",
-                        "items": {
-                            "oneOf": [
-                                {
-                                    "type": "object",
-                                    "additionalProperties": false,
-                                    "required": [
-                                        "group",
-                                        "permissions"
-                                    ],
-                                    "properties": {
-                                        "group": {
-                                            "type": "string",
-                                            "description": "The group name"
-                                        },
-                                        "permissions": {
-                                            "type": "array",
-                                            "description": "List of permissions",
-                                            "items": {
-                                                "type": "string",
-                                                "enum": [
-                                                    "user",
-                                                    "codeviewer",
-                                                    "issueadmin",
-                                                    "securityhotspotadmin",
-                                                    "scan",
-                                                    "admin"
-                                                ]
-                                            }
-                                        }
-                                    }
-                                },
-                                {
-                                    "type": "object",
-                                    "additionalProperties": false,
-                                    "required": [
-                                        "user",
-                                        "permissions"
-                                    ],
-                                    "properties": {
-                                        "user": {
-                                            "type": "string",
-                                            "description": "The user login"
-                                        },
-                                        "permissions": {
-                                            "type": "array",
-                                            "description": "List of permissions",
-                                            "items": {
-                                                "type": "string",
-                                                "enum": [
-                                                    "user",
-                                                    "codeviewer",
-                                                    "issueadmin",
-                                                    "securityhotspotadmin",
-                                                    "scan",
-                                                    "admin"
-                                                ]
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
+                        "$ref": "#/$defs/projectPermissions"
                     },
                     "qualityGate": {
                         "type": "string",
@@ -697,11 +540,7 @@
                         }
                     },
                     "tags": {
-                        "type": "array",
-                        "description": "Project tags",
-                        "items": {
-                            "type": "string"
-                        }
+                        "$ref": "#/$defs/tags"
                     },
                     "settings": {
                         "type": "array",
@@ -778,12 +617,7 @@
                         "description": "The application description"
                     },
                     "visibility": {
-                        "type": "string",
-                        "enum": [
-                            "public",
-                            "private"
-                        ],
-                        "description": "The application visibility (public or private)"
+                        "$ref": "#/$defs/componentVisibility"
                     },
                     "branches": {
                         "type": "array",
@@ -828,69 +662,10 @@
                         }
                     },
                     "permissions": {
-                        "type": "array",
-                        "description": "Application permissions",
-                        "items": {
-                            "oneOf": [
-                                {
-                                    "type": "object",
-                                    "additionalProperties": false,
-                                    "required": [
-                                        "group",
-                                        "permissions"
-                                    ],
-                                    "properties": {
-                                        "group": {
-                                            "type": "string",
-                                            "description": "The group name"
-                                        },
-                                        "permissions": {
-                                            "type": "array",
-                                            "description": "List of permissions",
-                                            "items": {
-                                                "type": "string",
-                                                "enum": [
-                                                    "user",
-                                                    "admin"
-                                                ]
-                                            }
-                                        }
-                                    }
-                                },
-                                {
-                                    "type": "object",
-                                    "additionalProperties": false,
-                                    "required": [
-                                        "user",
-                                        "permissions"
-                                    ],
-                                    "properties": {
-                                        "user": {
-                                            "type": "string",
-                                            "description": "The user login"
-                                        },
-                                        "permissions": {
-                                            "type": "array",
-                                            "description": "List of permissions",
-                                            "items": {
-                                                "type": "string",
-                                                "enum": [
-                                                    "user",
-                                                    "admin"
-                                                ]
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
+                        "$ref": "#/$defs/aggregationPermissions"
                     },
                     "tags": {
-                        "type": "array",
-                        "description": "Application tags",
-                        "items": {
-                            "type": "string"
-                        }
+                        "$ref": "#/$defs/tags"
                     }
                 }
             }
@@ -983,9 +758,7 @@
                         "required": [
                             "key",
                             "language",
-                            "templateKey",
-                            "severity",
-                            "impacts"
+                            "templateKey"
                         ],
                         "properties": {
                             "key": {
@@ -1008,29 +781,10 @@
                             },
                             "description": {
                                 "type": "string",
-                                "description": "The rule description"
+                                "description": "The rule extended description"
                             },
                             "params": {
-                                "type": "array",
-                                "description": "The rule parameters",
-                                "items": {
-                                    "type": "object",
-                                    "additionalProperties": false,
-                                    "required": [
-                                        "key",
-                                        "value"
-                                    ],
-                                    "properties": {
-                                        "key": {
-                                            "type": "string",
-                                            "description": "Parameter key"
-                                        },
-                                        "value": {
-                                            "type": "string",
-                                            "description": "Parameter value"
-                                        }
-                                    }
-                                }
+                                "$ref": "#/$defs/ruleParams"
                             }
                         }
                     }
@@ -1050,11 +804,7 @@
                                 "description": "The rule key"
                             },
                             "tags": {
-                                "type": "array",
-                                "description": "The rule language",
-                                "items": {
-                                    "type": "string"
-                                }
+                                "$ref": "#/$defs/tags"
                             },
                             "description": {
                                 "type": "string",
@@ -1158,6 +908,167 @@
                 "blocker"
             ]
         },
+        "ruleParams": {
+            "type": "array",
+            "description": "Rule parameters",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "key"
+                ],
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "Parameter key"
+                    },
+                    "value": {
+                        "description": "Parameter value"
+                    }
+                }
+            }
+        },
+        "componentVisibility": {
+            "type": "string",
+            "enum": [
+                "public",
+                "private"
+            ],
+            "description": "The component visibility (public or private)"
+        },
+        "aggregationPermissions": {
+            "type": "array",
+            "description": "Application or Portfolio permissions",
+            "items": {
+                "oneOf": [
+                    {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "group",
+                            "permissions"
+                        ],
+                        "properties": {
+                            "group": {
+                                "type": "string",
+                                "description": "The group name"
+                            },
+                            "permissions": {
+                                "$ref": "#/$defs/aggregationPermissionsList"
+                            }
+                        }
+                    },
+                    {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "user",
+                            "permissions"
+                        ],
+                        "properties": {
+                            "user": {
+                                "type": "string",
+                                "description": "The user login"
+                            },
+                            "permissions": {
+                                "$ref": "#/$defs/aggregationPermissionsList"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "projectPermissions": {
+            "type": "array",
+            "description": "Project or permission template permissions",
+            "items": {
+                "oneOf": [
+                    {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "group",
+                            "permissions"
+                        ],
+                        "properties": {
+                            "group": {
+                                "type": "string",
+                                "description": "The group name"
+                            },
+                            "permissions": {
+                                "$ref": "#/$defs/projectPermissionsList"
+                            }
+                        }
+                    },
+                    {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "user",
+                            "permissions"
+                        ],
+                        "properties": {
+                            "user": {
+                                "type": "string",
+                                "description": "The user login"
+                            },
+                            "permissions": {
+                                "$ref": "#/$defs/projectPermissionsList"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "tags": {
+            "type": "array",
+            "description": "Object tags",
+            "items": {
+                "type": "string"
+            }
+        },
+        "globalPermissionsList": {
+            "type": "array",
+            "description": "List of permissions",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "admin",
+                    "applicationcreator",
+                    "gateadmin",
+                    "portfoliocreator",
+                    "profileadmin",
+                    "provisioning",
+                    "scan"
+                ]
+            }
+        },
+        "aggregationPermissionsList": {
+            "type": "array",
+            "description": "List of permissions for aggregation objects (portfolios or applications)",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "user",
+                    "admin"
+                ]
+            }
+        },
+        "projectPermissionsList": {
+            "type": "array",
+            "description": "List of permissions for projects",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "user",
+                    "codeviewer",
+                    "issueadmin",
+                    "securityhotspotadmin",
+                    "scan",
+                    "admin"
+                ]
+            }
+        },
         "qualityProfile": {
             "type": "object",
             "additionalProperties": false,
@@ -1202,25 +1113,7 @@
                                 "description": "The rule key"
                             },
                             "params": {
-                                "type": "array",
-                                "description": "Rule parameters",
-                                "items": {
-                                    "type": "object",
-                                    "additionalProperties": false,
-                                    "required": [
-                                        "key",
-                                        "value"
-                                    ],
-                                    "properties": {
-                                        "key": {
-                                            "type": "string",
-                                            "description": "Parameter key"
-                                        },
-                                        "value": {
-                                            "description": "Parameter value"
-                                        }
-                                    }
-                                }
+                                "$ref": "#/$defs/ruleParams"
                             },
                             "severity": {
                                 "$ref": "#/$defs/severity"
@@ -1267,32 +1160,10 @@
                                 "description": "Whether this rule is prioritized"
                             },
                             "tags": {
-                                "type": "array",
-                                "description": "Rule tags",
-                                "items": {
-                                    "type": "string"
-                                }
+                                "$ref": "#/$defs/tags"
                             },
                             "params": {
-                                "type": "array",
-                                "description": "Rule parameters",
-                                "items": {
-                                    "type": "object",
-                                    "additionalProperties": false,
-                                    "required": [
-                                        "key",
-                                        "value"
-                                    ],
-                                    "properties": {
-                                        "key": {
-                                            "type": "string",
-                                            "description": "Parameter key"
-                                        },
-                                        "value": {
-                                            "description": "Parameter value"
-                                        }
-                                    }
-                                }
+                                "$ref": "#/$defs/ruleParams"
                             }
                         }
                     }
@@ -1314,6 +1185,13 @@
                             "prioritized": {
                                 "type": "boolean",
                                 "description": "Whether this rule is prioritized"
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "The rule extended description"
+                            },
+                            "params": {
+                                "$ref": "#/$defs/ruleParams"
                             }
                         }
                     }
@@ -1336,12 +1214,7 @@
                     "description": "The portfolio name"
                 },
                 "visibility": {
-                    "type": "string",
-                    "enum": [
-                        "public",
-                        "private"
-                    ],
-                    "description": "The portfolio visibility (public or private)"
+                    "$ref": "#/$defs/componentVisibility"
                 },
                 "portfolios": {
                     "type": "array",
@@ -1364,11 +1237,7 @@
                             "description": "Regular expression pattern for project selection"
                         },
                         "tags": {
-                            "type": "array",
-                            "description": "Tags for project selection",
-                            "items": {
-                                "type": "string"
-                            }
+                            "$ref": "#/$defs/tags"
                         },
                         "branch": {
                             "type": "string",
@@ -1429,70 +1298,7 @@
                     }
                 },
                 "permissions": {
-                    "type": "array",
-                    "description": "Portfolio permissions",
-                    "items": {
-                        "oneOf": [
-                            {
-                                "type": "object",
-                                "additionalProperties": false,
-                                "required": [
-                                    "group",
-                                    "permissions"
-                                ],
-                                "properties": {
-                                    "group": {
-                                        "type": "string",
-                                        "description": "The group name"
-                                    },
-                                    "permissions": {
-                                        "type": "array",
-                                        "description": "List of permissions",
-                                        "items": {
-                                            "type": "string",
-                                            "enum": [
-                                                "user",
-                                                "codeviewer",
-                                                "issueadmin",
-                                                "securityhotspotadmin",
-                                                "scan",
-                                                "admin"
-                                            ]
-                                        }
-                                    }
-                                }
-                            },
-                            {
-                                "type": "object",
-                                "additionalProperties": false,
-                                "required": [
-                                    "user",
-                                    "permissions"
-                                ],
-                                "properties": {
-                                    "user": {
-                                        "type": "string",
-                                        "description": "The user login"
-                                    },
-                                    "permissions": {
-                                        "type": "array",
-                                        "description": "List of permissions",
-                                        "items": {
-                                            "type": "string",
-                                            "enum": [
-                                                "user",
-                                                "codeviewer",
-                                                "issueadmin",
-                                                "securityhotspotadmin",
-                                                "scan",
-                                                "admin"
-                                            ]
-                                        }
-                                    }
-                                }
-                            }
-                        ]
-                    }
+                    "$ref": "#/$defs/aggregationPermissions"
                 }
             }
         }

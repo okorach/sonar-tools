@@ -68,6 +68,9 @@ EXPORT = "export"
 EXPORT_SHORT = "e"
 IMPORT = "import"
 IMPORT_SHORT = "i"
+VALIDATE_JSON = "validate"
+CONVERT_FROM = "convertFrom"
+CONVERT_TO = "convertTo"
 
 METRIC_KEYS_SHORT = "m"
 METRIC_KEYS = "metricKeys"
@@ -176,7 +179,7 @@ def __convert_args_to_lists(kwargs: dict[str, str]) -> dict[str, str]:
     return kwargs
 
 
-def __check_file_writeable(file: str) -> None:
+def __check_file_writeable(file: Optional[str]) -> None:
     """If not stdout, verifies that the chosen output file is writeable"""
     if file and file != "-":
         try:
@@ -206,8 +209,8 @@ def parse_and_check(parser: ArgumentParser, logger_name: Optional[str] = None, v
         kwargs[URL] = kwargs[URL].replace("http://localhost", "http://host.docker.internal")
     kwargs = __convert_args_to_lists(kwargs=kwargs)
     log.debug("CLI arguments = %s", utilities.json_dump(kwargs, redact_tokens=True))
-    if not kwargs.get(IMPORT, False):
-        __check_file_writeable(kwargs.get(REPORT_FILE, None))
+    if not kwargs.get(IMPORT, False) and not kwargs.get(VALIDATE_JSON, False) and not kwargs.get(CONVERT_FROM, False):
+        __check_file_writeable(kwargs.get(REPORT_FILE))
     # Verify version randomly once every 10 runs
     if not kwargs[SKIP_VERSION_CHECK] and random.randrange(10) == 0:
         utilities.check_last_version(f"https://pypi.org/simple/{tool}")

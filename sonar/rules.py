@@ -259,7 +259,9 @@ class Rule(sq.SqObject):
         except exceptions.ObjectNotFound:
             pass
         log.info("Instantiating rule key '%s' from template key '%s'", key, template_key)
-        rule_params = ";".join([f'{p["key"]}={str(p["value"]).lower() if isinstance(p["value"], bool) else p["value"]}' for p in data["params"]])
+        rule_params = ";".join(
+            [f'{p["key"]}={str(p.get("value", "")).lower() if isinstance(p["value"], bool) else p.get("value", "")}' for p in data["params"]]
+        )
         return Rule.create(
             key=key,
             endpoint=endpoint,
@@ -416,7 +418,7 @@ class Rule(sq.SqObject):
         """Returns the rule custom params in the QP if any, else None"""
         if (found_qp := self.__get_quality_profile_data(quality_profile_id)) is None:
             return None
-        return None if "params" not in found_qp or len(found_qp["params"]) == 0 else {p["key"]: p["value"] for p in found_qp["params"]}
+        return None if "params" not in found_qp or len(found_qp["params"]) == 0 else {p["key"]: p.get("value", "") for p in found_qp["params"]}
 
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""

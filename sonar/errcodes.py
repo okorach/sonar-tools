@@ -69,3 +69,6 @@ OS_ERROR = 15
 OBJECT_NOT_FOUND = 16
 
 SONAR_INTERNAL_ERROR = 17
+
+# sonar-config JSON schema error
+SCHEMA_ERROR = 18

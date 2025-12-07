@@ -305,7 +305,7 @@ class Setting(sqobject.SqObject):
         def_val = self.default_value
         if self.key == NEW_CODE_PERIOD:
             val = new_code_to_string(self.value)
-            def_val = new_code_to_string(self.default_value)
+            def_val = None if self.default_value is None else new_code_to_string(self.default_value)
         if val is None:
             val = ""
         # log.debug("JSON of %s = %s", self, {self.key: val})
