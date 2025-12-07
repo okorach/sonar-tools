@@ -294,13 +294,11 @@ def validate_json(file: str) -> dict[str, Any]:
             json_data = json.loads(fd.read())
         jsonschema.validate(json_data, __get_schema())
     except jsonschema.ValidationError as e:
-        log.error("JSON file '%s' is not valid", file)
         json_path = e.json_path.split(".")
         json_path.pop(0)
         cur_obj = json_data
         path_str = ""
         for path in json_path:
-            log.debug("path: %s", path)
             # if m := re.match(r"^([a-zA-Z_]+)[(\d+)]$", path):
             #     log.info("Match found: %s", m.group(0))
             #     obj_type = m.group(1)
