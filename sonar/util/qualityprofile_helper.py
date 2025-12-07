@@ -61,6 +61,14 @@ def flatten(qp_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
     """Converts a profile's children profiles to list"""
     for k, v in sorted(qp_json.items()):
+        for qp in [q for q in qp_json.values() if "permissions" in q]:
+            for ptype in [p for p in ("users", "groups") if p in qp["permissions"]]:
+                qp["permissions"][ptype] = util.csv_to_list(qp["permissions"][ptype])
+        for r in v.get("rules", {}):
+            r.pop("severities", None)
+            r.pop("severity", None)
+            r.pop("impacts", None)
+            r.pop("params", None)
         for rtype in "addedRules", "modifiedRules", "rules":
             for r in v.get(rtype, {}):
                 if "severities" in r:
