@@ -179,8 +179,7 @@ class Platform(object):
         :return: the basic information of the platform: ServerId, Edition, Version and Plugins
         :rtype: dict{"serverId": <id>, "edition": <edition>, "version": <version>, "plugins": <dict>}
         """
-        setting = self.get_setting(key="sonar.core.serverBaseURL")
-        url = setting.get("value") if setting else None
+        url = self.get_setting(key="sonar.core.serverBaseURL")
         if url in (None, ""):
             url = self.local_url
         data = {"edition": self.edition(), "url": url}
@@ -438,7 +437,7 @@ class Platform(object):
         :param key: Setting key
         :return: the setting value
         """
-        return settings.get_object(endpoint=self, key=key).to_json().get(key, None)
+        return settings.get_object(endpoint=self, key=key).to_json()[key].get("value")
 
     def reset_setting(self, key: str) -> bool:
         """Resets a platform global setting to the SonarQube internal default value
@@ -574,7 +573,7 @@ class Platform(object):
         """
         log.info("--- Auditing global settings ---")
         problems = []
-        platform_settings = self.get_settings()
+        platform_settings = {k: v["value"] for k, v in self.get_settings().items()}
         settings_url = f"{self.local_url}/admin/settings"
         for key in audit_settings:
             if key.startswith("audit.globalSettings.range"):
@@ -664,7 +663,7 @@ class Platform(object):
             )
             visi = json.loads(resp.text)["organization"]["projectVisibility"]
         else:
-            resp = self.get(settings.Setting.API[c.GET], params={"keys": "projects.default.visibility"})
+            resp = self.get(settings.Setting.API[c.READ], params={"keys": "projects.default.visibility"})
             visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)
         if audit_settings.get("audit.globalSettings.defaultProjectVisibility", "private") != visi:
