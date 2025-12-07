@@ -295,13 +295,32 @@ def validate_json(file: str) -> dict[str, Any]:
         jsonschema.validate(json_data, __get_schema())
     except jsonschema.ValidationError as e:
         log.error("JSON file '%s' is not valid", file)
+        json_path = e.json_path.split(".")
+        json_path.pop(0)
+        cur_obj = json_data
+        path_str = ""
+        for path in json_path:
+            log.debug("path: %s", path)
+            # if m := re.match(r"^([a-zA-Z_]+)[(\d+)]$", path):
+            #     log.info("Match found: %s", m.group(0))
+            #     obj_type = m.group(1)
+            #     obj_index = int(m.group(2))
+            if "[" in path:
+                obj_type = path.split("[")[0]
+                obj_index = int(path.split("[")[1].split("]")[0])
+                cur_obj = cur_obj[obj_type][obj_index]
+                key = next((k for k in cur_obj if k in ("key", "name", "login", "group", "language")), None)
+                path_str += f".{path}" if key is None else f".{obj_type}[{cur_obj[key]}]"
+            else:
+                cur_obj = cur_obj[path]
+                path_str += f".{path}"
         schema_url = "https://github.com/okorach/sonar-tools/blob/master/sonar/cli/sonar-config.schema.json"
         raise exceptions.SonarException(
             f"JSON file '{file}' does not respect the sonar-config JSON schema:\n"
-            f"See schema at: {schema_url}\n"
+            f"-> See schema at: {schema_url}\n"
             f"-> Schema error: {e.message}\n"
-            f"-> Error occured at JSON path: {e.json_path}",
-            errcodes.ARGS_ERROR,
+            f"-> Error occured at JSON path: {path_str.lstrip('.')}",
+            errcodes.SCHEMA_ERROR,
         ) from e
     except FileNotFoundError as e:
         chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error while reading file: {e}")
