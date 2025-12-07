@@ -435,8 +435,8 @@ def open_file(file: Optional[str] = None, mode: str = "w") -> Generator[TextIO, 
 
 def search_by_name(
     endpoint: object, name: str, api: str, returned_field: str, extra_params: Optional[dict[str, str]] = None
-) -> Union[dict[str, str], None]:
-    """Searches a object by name"""
+) -> Optional[dict[str, Any]]:
+    """Searches a object by name and returns its JSON data"""
     params = {"q": name} | (extra_params or {})
     data = json.loads(endpoint.get(api, params=params).text)
     return next((d for d in data[returned_field] if d["name"] == name), None)

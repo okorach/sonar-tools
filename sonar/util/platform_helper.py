@@ -56,7 +56,9 @@ def convert_template_json(json_data: dict[str, Any], full: bool = False) -> dict
 def convert_global_settings_json(old_json: dict[str, Any], full: bool = False) -> dict[str, Any]:
     """Converts sonar-config "globalSettings" section old JSON report format to new format"""
     new_json = old_json.copy()
-    special_categories = (settings.LANGUAGES_SETTINGS, settings.DEVOPS_INTEGRATION, "permissions", "permissionTemplates")
+    if "webhooks" in new_json["generalSettings"]:
+        new_json["webhooks"] = new_json["generalSettings"].pop("webhooks")
+    special_categories = (settings.LANGUAGES_SETTINGS, settings.DEVOPS_INTEGRATION, "permissions", "permissionTemplates", "webhooks")
     for categ in [cat for cat in settings.CATEGORIES if cat not in special_categories and cat in old_json]:
         new_json[categ] = util.sort_list_by_key(util.dict_to_list(dict(sorted(old_json[categ].items())), "key"), "key")
     if settings.LANGUAGES_SETTINGS in old_json:
@@ -75,7 +77,6 @@ def convert_global_settings_json(old_json: dict[str, Any], full: bool = False) -
 
     for k, v in {k: v for k, v in {"permissionTemplates": "key", "webhooks": "name"}.items() if k in new_json}.items():
         new_json[k] = util.dict_to_list(new_json[k], v)
-
     new_json = common_json_helper.convert_common_fields(new_json)
 
     return util.order_dict(new_json, *settings.CATEGORIES, "permissions", "permissionTemplates")
