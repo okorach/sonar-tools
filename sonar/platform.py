@@ -438,7 +438,7 @@ class Platform(object):
         :param key: Setting key
         :return: the setting value
         """
-        return settings.get_object(endpoint=self, key=key).to_json().get(key, None)
+        return settings.get_object(endpoint=self, key=key).to_json().get("value")
 
     def reset_setting(self, key: str) -> bool:
         """Resets a platform global setting to the SonarQube internal default value
@@ -664,7 +664,7 @@ class Platform(object):
             )
             visi = json.loads(resp.text)["organization"]["projectVisibility"]
         else:
-            resp = self.get(settings.Setting.API[c.GET], params={"keys": "projects.default.visibility"})
+            resp = self.get(settings.Setting.API[c.READ], params={"keys": "projects.default.visibility"})
             visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)
         if audit_settings.get("audit.globalSettings.defaultProjectVisibility", "private") != visi:
