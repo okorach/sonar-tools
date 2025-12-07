@@ -781,7 +781,7 @@
                             },
                             "description": {
                                 "type": "string",
-                                "description": "The rule description"
+                                "description": "The rule extended description"
                             },
                             "params": {
                                 "$ref": "#/$defs/ruleParams"
@@ -1186,6 +1186,10 @@
                             "prioritized": {
                                 "type": "boolean",
                                 "description": "Whether this rule is prioritized"
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "The rule extended description"
                             },
                             "params": {
                                 "$ref": "#/$defs/ruleParams"
