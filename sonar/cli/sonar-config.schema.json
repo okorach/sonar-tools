@@ -915,8 +915,7 @@
                 "type": "object",
                 "additionalProperties": false,
                 "required": [
-                    "key",
-                    "value"
+                    "key"
                 ],
                 "properties": {
                     "key": {
