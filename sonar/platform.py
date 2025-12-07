@@ -574,7 +574,7 @@ class Platform(object):
         """
         log.info("--- Auditing global settings ---")
         problems = []
-        platform_settings = self.get_settings()
+        platform_settings = {k: v["value"] for k, v in self.get_settings().items()}
         settings_url = f"{self.local_url}/admin/settings"
         for key in audit_settings:
             if key.startswith("audit.globalSettings.range"):
