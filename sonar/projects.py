@@ -1023,7 +1023,7 @@ class Project(components.Component):
                     continue
                 json_setting[key].pop("defaultValue")
                 if key == settings.NEW_CODE_PERIOD:
-                    json_data[settings.NEW_CODE_PERIOD] = json_setting[settings.NEW_CODE_PERIOD]
+                    json_data[settings.NEW_CODE_PERIOD] = json_setting[settings.NEW_CODE_PERIOD]["value"]
                 else:
                     json_data["settings"] |= json_setting
             log.debug("Exporting %s done, returning %s", str(self), util.json_dump(json_data))
