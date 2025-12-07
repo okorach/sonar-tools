@@ -23,7 +23,6 @@ from typing import Any
 from sonar import settings
 from sonar import utilities as util
 from sonar.util import common_json_helper
-from sonar import logging as log
 
 _PERM_TPL_IMPORTABLE_PROPERTIES = ("name", "description", "pattern", "defaultFor", "permissions")
 
@@ -56,7 +55,6 @@ def convert_template_json(json_data: dict[str, Any], full: bool = False) -> dict
 
 def convert_global_settings_json(old_json: dict[str, Any], full: bool = False) -> dict[str, Any]:
     """Converts sonar-config "globalSettings" section old JSON report format to new format"""
-    log.info("Converting globalSettings JSON %s", util.json_dump(old_json))
     new_json = old_json.copy()
     if "webhooks" in new_json["generalSettings"]:
         new_json["webhooks"] = new_json["generalSettings"].pop("webhooks")
@@ -77,14 +75,8 @@ def convert_global_settings_json(old_json: dict[str, Any], full: bool = False) -
             k: convert_template_json(new_json["permissionTemplates"][k], full) for k in new_json["permissionTemplates"]
         }
 
-    log.info("New JSON before conversion: %s", util.json_dump(new_json))
     for k, v in {k: v for k, v in {"permissionTemplates": "key", "webhooks": "name"}.items() if k in new_json}.items():
         new_json[k] = util.dict_to_list(new_json[k], v)
-    # if "webhooks" in new_json["generalSettings"]:
-    #    log.info("webhooks in generalSettings: %s", str(new_json["generalSettings"]["webhooks"]))
-    #     new_json["webhooks"] = new_json.get("webhooks", [])
-    #     new_json["webhooks"] += util.dict_to_list(new_json["generalSettings"]["webhooks"], "name")
-    #     new_json["generalSettings"].pop("webhooks")
     new_json = common_json_helper.convert_common_fields(new_json)
 
     return util.order_dict(new_json, *settings.CATEGORIES, "permissions", "permissionTemplates")
