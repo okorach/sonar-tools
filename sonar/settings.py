@@ -266,10 +266,6 @@ class Setting(sqobject.SqObject):
                 self.value = value
             return ok
 
-        # Hack: Up to 9.4 cobol settings are comma separated mono-valued, in 9.5+ they are multi-valued
-        if self.endpoint.version() > (9, 4, 0) or not self.key.startswith("sonar.cobol"):
-            value = decode(self.key, value)
-
         # With SonarQube 10.x you can't set the github URL
         if re.match(r"^sonar\.auth\.(.*)[Uu]rl$", self.key) and self.endpoint.version() >= (10, 0, 0):
             log.warning("GitHub URL (%s) cannot be set, skipping this setting", self.key)

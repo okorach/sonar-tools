@@ -441,11 +441,8 @@ def get_list(endpoint: pf.Platform) -> dict[str, QualityGate]:
         qg_obj = QualityGate.CACHE.get(qg["name"], endpoint.local_url)
         if qg_obj is None:
             qg_obj = QualityGate(endpoint=endpoint, name=qg["name"], data=qg.copy())
-        if endpoint.version() < (7, 9, 0) and "default" in data and data["default"] == qg["id"]:
-            qg_obj.is_default = True
-        else:
-            qg_obj.is_default = qg.get("isDefault", False)
-            qg_obj.is_built_in = qg.get("isBuiltIn", False)
+        qg_obj.is_default = qg.get("isDefault", False)
+        qg_obj.is_built_in = qg.get("isBuiltIn", False)
         qg_list[qg_obj.name] = qg_obj
     return dict(sorted(qg_list.items()))
 

@@ -185,10 +185,7 @@ class Hotspot(findings.Finding):
 
         :return: Whether the operation succeeded
         """
-        if self.endpoint.version() < (9, 4, 0) and not self.endpoint.is_sonarcloud():
-            log.warning("Can't acknowledge %s, this is not supported by SonarQube Server < 9.4", str(self))
-            return False
-        elif self.endpoint.is_sonarcloud():
+        if self.endpoint.is_sonarcloud():
             log.warning("Can't acknowledge %s, this is not supported by SonarQube Cloud", str(self))
             return False
         return self.__mark_as(resolution="ACKNOWLEDGED")

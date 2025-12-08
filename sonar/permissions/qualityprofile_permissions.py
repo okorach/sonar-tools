@@ -41,9 +41,6 @@ class QualityProfilePermissions(quality_permissions.QualityPermissions):
     API_SET_FIELD = {"users": "login", "groups": "group"}
 
     def read(self) -> QualityProfilePermissions:
-        if not self.endpoint.is_sonarcloud() and self.endpoint.version() < (9, 2, 0):
-            log.warning("Can't read %s on SonarQube Server < 9.2", str(self))
-            return self
         self._read_perms(
             QualityProfilePermissions.APIS,
             QualityProfilePermissions.API_GET_FIELD,
@@ -53,9 +50,6 @@ class QualityProfilePermissions(quality_permissions.QualityPermissions):
         return self
 
     def set(self, new_perms: types.JsonPermissions) -> bool:
-        if self.endpoint.version() < (6, 6, 0):
-            log.debug("Can set %s on SonarQube < 6.6", str(self))
-            return self
         return self._set_perms(
             new_perms,
             QualityProfilePermissions.APIS,

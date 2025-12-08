@@ -103,10 +103,7 @@ class Sif(object):
 
     def database(self) -> str:
         """Returns the databse engine of the SQ instance represented by the SIF"""
-        if self.version() < (9, 7, 0):
-            return self.json[_STATS]["database"]["name"]
-        else:
-            return self.json["Database"]["Database"]
+        return self.json["Database"]["Database"]
 
     def plugins(self) -> dict[str, dict[str, str]]:
         """Returns plugins installed on the SQ instance represented by the SIF"""
@@ -240,21 +237,6 @@ class Sif(object):
         """Returns the search JVM cmd line"""
         return self.__process_cmdline("search")
 
-    def __audit_log4shell(self, jvm_settings: str, broken_rule: RuleId) -> list[Problem]:
-        """Audits for the log4shell vulnerability"""
-        # If SIF is older than 2022 don't audit for log4shell to avoid noise
-        st_time = self.start_time()
-        if not st_time or st_time > _MIN_DATE_LOG4SHELL:
-            return []
-        log.info("Auditing log4shell vulnerability fix")
-        sq_version = self.version()
-        if sq_version < (8, 9, 6) or ((9, 0, 0) <= sq_version < (9, 2, 4)):
-            try:
-                _ = jvm_settings.split(" ").index("-Dlog4j2.formatMsgNoLookups=true")
-            except ValueError:
-                return [Problem(get_rule(broken_rule), self)]
-        return []
-
     def __audit_jdbc_url(self) -> list[Problem]:
         """Audits if JDBC URL points on another machine than localhost"""
         log.info("Auditing JDBC settings")
@@ -317,7 +299,6 @@ class Sif(object):
             problems.append(Problem(get_rule(RuleId.ES_HEAP_TOO_HIGH), self, "ES", es_ram, 32 * 1024))
         else:
             log.debug("Search server memory %d MB is correct wrt to index size of %d MB", es_ram, index_size)
-        problems += self.__audit_log4shell(jvm_cmdline, RuleId.LOG4SHELL_ES)
         return problems
 
 

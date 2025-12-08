@@ -49,10 +49,7 @@ def main():
         sqenv = platform.Platform(**kwargs)
         sqenv.verify_connection()
         sqenv.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-        if sqenv.version() >= (9, 0, 0):
-            raise exceptions.UnsupportedOperation("Custom measures are no longer supported after 8.9.x")
-        if sqenv.is_sonarcloud():
-            raise exceptions.UnsupportedOperation("Custom measures are not supported on SonarQube Cloud")
+        raise exceptions.UnsupportedOperation("Custom measures are not supported on SonarQube Cloud")
 
         log.warning("Custom measures are are deprecated in 8.9 and lower and are dropped starting from SonarQube 9.0")
         params = utilities.remove_nones(kwargs).update({"env": sqenv})
