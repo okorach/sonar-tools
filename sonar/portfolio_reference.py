@@ -68,6 +68,7 @@ class PortfolioReference(sq.SqObject):
     @classmethod
     def create(cls, reference: object, parent: object, params: types.ApiParams = None) -> PortfolioReference:
         """Constructor, don't use - use class methods instead"""
+        check_supported(parent.endpoint)
         parent.endpoint.post("views/add_portfolio", params={"portfolio": parent.key, "reference": reference.key})
         return PortfolioReference(reference=reference, parent=parent)
 

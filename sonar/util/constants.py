@@ -56,6 +56,7 @@ CE = "community"
 DE = "developer"
 EE = "enterprise"
 DCE = "datacenter"
+EDITIONS_SUPPORTING_PORTFOLIOS = (EE, DCE)
 
 SC = "sonarcloud"
 SQS = "SonarQube Server"

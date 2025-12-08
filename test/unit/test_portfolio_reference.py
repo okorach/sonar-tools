@@ -31,12 +31,12 @@ import sonar.util.constants as c
 EXISTING_PORTFOLIO = "CORP-INSURANCE"
 REF_PORTFOLIO = "CORP-INSURANCE-HEALTH"
 
-SUPPORTED_EDITIONS = (c.EE, c.DCE)
-
 
 def test_get_object_from_root() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pfr.PortfolioReference.create, endpoint=tutil.SQ, key=tutil.TEMP_KEY, name=tutil.TEMP_KEY):
+    if tutil.SQ.edition() not in c.EDITIONS_SUPPORTING_PORTFOLIOS:
+        with pytest.raises(exceptions.UnsupportedOperation):
+            _ = pf.Portfolio.get_object(endpoint=tutil.SQ, key=EXISTING_PORTFOLIO)
         return
     root_pf = pf.Portfolio.get_object(endpoint=tutil.SQ, key=EXISTING_PORTFOLIO)
     ref_pf = root_pf.sub_portfolios()[REF_PORTFOLIO]
@@ -48,6 +48,10 @@ def test_get_object_from_root() -> None:
 def test_get_object() -> None:
     """Test get_object method"""
 
+    if tutil.SQ.edition() not in c.EDITIONS_SUPPORTING_PORTFOLIOS:
+        with pytest.raises(exceptions.UnsupportedOperation):
+            _ = pfr.PortfolioReference.get_object(endpoint=tutil.SQ, key=REF_PORTFOLIO, parent_key=EXISTING_PORTFOLIO)
+        return
     ref_pf = pfr.PortfolioReference.get_object(endpoint=tutil.SQ, key=REF_PORTFOLIO, parent_key=EXISTING_PORTFOLIO)
     assert ref_pf.key == f"{EXISTING_PORTFOLIO}:{REF_PORTFOLIO}"
     assert str(ref_pf) == f"Portfolio reference '{EXISTING_PORTFOLIO}:{REF_PORTFOLIO}'"
@@ -56,6 +60,10 @@ def test_get_object() -> None:
 def test_get_object_not_found() -> None:
     """Test exception raised when providing non existing portfolio reference key"""
 
+    if tutil.SQ.edition() not in c.EDITIONS_SUPPORTING_PORTFOLIOS:
+        with pytest.raises(exceptions.UnsupportedOperation):
+            _ = pfr.PortfolioReference.get_object(endpoint=tutil.SQ, key=REF_PORTFOLIO, parent_key=EXISTING_PORTFOLIO)
+        return
     with pytest.raises(exceptions.ObjectNotFound):
         pfr.PortfolioReference.get_object(endpoint=tutil.SQ, key="non-existing", parent_key=EXISTING_PORTFOLIO)
     with pytest.raises(exceptions.ObjectNotFound):

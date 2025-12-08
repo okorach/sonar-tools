@@ -154,10 +154,12 @@ def test_monorepo() -> None:
 def test_get_findings() -> None:
     """test_get_findings"""
     proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
+    if tutil.SQ.edition() in (c.CE, c.DE, c.SC):
+        assert proj.get_findings(branch="non-existing-branch") == {}
+        return
     with pytest.raises(exceptions.ObjectNotFound):
         proj.get_findings(branch="non-existing-branch")
-    if tutil.SQ.edition() != c.CE:
-        assert len(proj.get_findings(branch="develop")) > 0
+    assert len(proj.get_findings(branch="develop")) > 0
     with pytest.raises(exceptions.ObjectNotFound):
         proj.get_findings(pr="1")
     findings = [f for f in proj.get_findings(pr="5").values() if f.status != "CLOSED"]

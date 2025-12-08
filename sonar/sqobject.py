@@ -124,10 +124,11 @@ class SqObject(object):
         obj = cls(endpoint, obj_key)
         return obj.set_permissions([{"user": user or endpoint.user(), "permissions": ["admin", "user"]}])
 
-    def reload(self, data: types.ApiPayload) -> None:
+    def reload(self, data: types.ApiPayload) -> object:
         """Loads a SonarQube API JSON payload in a SonarObject"""
         log.debug("%s: Reloading with %s", str(self), utilities.json_dump(data))
         self.sq_json = (self.sq_json or {}) | data
+        return self
 
     def base_url(self, local: bool = True) -> str:
         """Returns the platform base URL"""
@@ -136,9 +137,9 @@ class SqObject(object):
     def get(
         self,
         api: str,
-        params: types.ApiParams = None,
+        params: Optional[types.ApiParams] = None,
         data: Optional[str] = None,
-        mute: tuple[HTTPStatus] = (),
+        mute: tuple[HTTPStatus, ...] = (),
         **kwargs: Any,
     ) -> requests.Response:
         """Executes and HTTP GET against the SonarQube platform
@@ -158,8 +159,8 @@ class SqObject(object):
     def post(
         self,
         api: str,
-        params: types.ApiParams = None,
-        mute: tuple[HTTPStatus] = (),
+        params: Optional[types.ApiParams] = None,
+        mute: tuple[HTTPStatus, ...] = (),
         **kwargs: Any,
     ) -> requests.Response:
         """Executes and HTTP POST against the SonarQube platform
@@ -180,8 +181,8 @@ class SqObject(object):
     def patch(
         self,
         api: str,
-        params: types.ApiParams = None,
-        mute: tuple[HTTPStatus] = (),
+        params: Optional[types.ApiParams] = None,
+        mute: tuple[HTTPStatus, ...] = (),
         **kwargs: Any,
     ) -> requests.Response:
         """Executes and HTTP PATCH against the SonarQube platform
