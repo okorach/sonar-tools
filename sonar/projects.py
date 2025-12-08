@@ -1281,21 +1281,25 @@ class Project(components.Component):
 
         :param config: JSON of configuration settings
         """
-        if "visibility" in config:
-            self.set_visibility(config["visibility"])
-        if "permissions" in config:
-            self.set_permissions(config["permissions"])
-        if "links" in config:
-            self.set_links(config["links"])
-        if "tags" in config:
-            self.set_tags(util.csv_to_list(config["tags"]))
-        if "qualityGate" in config:
-            self.set_quality_gate(config["qualityGate"])
-        if "webhooks" in config:
-            log.info("WH Setting webhooks for %s with %s", str(self), util.json_dump(config["webhooks"]))
-            self.set_webhooks(config["webhooks"])
-        else:
-            log.warning("WH %s has no webhooks, skipped", str(self))
+        props = {
+            "visibility": self.set_visibility,
+            "permissions": self.set_permissions,
+            "links": self.set_links,
+            "tags": self.set_tags,
+            "qualityGate": self.set_quality_gate,
+            "webhooks": self.set_webhooks,
+            "binding": self.set_devops_binding,
+        }
+        for prop, func in props.items():
+            if prop in config:
+                try:
+                    log.info("Setting %s of %s", prop, self)
+                    func(config[prop])
+                except exceptions.UnsupportedOperation as e:
+                    log.warning(e.message)
+            else:
+                log.info("%s has no %s configuration, skipped", self, prop)
+
         if "qualityProfiles" in config:
             for qp_data in config["qualityProfiles"]:
                 self.set_quality_profile(language=qp_data["language"], quality_profile=qp_data["name"])
@@ -1306,13 +1310,6 @@ class Project(components.Component):
                     branch.import_config(branch_data)
                 except exceptions.ObjectNotFound:
                     log.warning("Branch '%s' of %s does not exists, can't update its configuration", branch_data["name"], str(self))
-        if "binding" in config:
-            try:
-                self.set_devops_binding(config["binding"])
-            except exceptions.UnsupportedOperation as e:
-                log.warning(e.message)
-        else:
-            log.debug("%s has no devops binding, skipped", str(self))
 
         if settings_to_apply := config.get("settings"):
             self.set_settings(settings_to_apply)
