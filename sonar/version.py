@@ -18,11 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""
+"""sonar-tools project version"""
 
-sonar-tools project version
-
-"""
-
-PACKAGE_VERSION = "3.17"
+PACKAGE_VERSION = "3.17.1"
 MIGRATION_TOOL_VERSION = "0.7"

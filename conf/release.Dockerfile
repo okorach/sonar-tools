@@ -28,7 +28,7 @@ COPY ./LICENSE .
 COPY ./sonar/audit sonar/audit
 
 RUN pip install --upgrade pip \
-&& pip install sonar-tools==3.17
+&& pip install sonar-tools==3.17.1
 
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}
