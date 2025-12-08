@@ -182,6 +182,7 @@ class Project(components.Component):
         endpoint.post(Project.API[c.CREATE], params={"project": key, "name": name})
         o = cls(endpoint, key)
         o.name = name
+        o.refresh()
         return o
 
     def __str__(self) -> str:
@@ -732,8 +733,8 @@ class Project(components.Component):
     def get_findings(self, branch: Optional[str] = None, pr: Optional[str] = None) -> dict[str, object]:
         """Returns a project list of findings (issues and hotspots)
 
-        :param str branch: optional branch name to consider, if any
-        :param str pr: optional PR key to consider, if any
+        :param branch: optional branch name to consider, if any
+        :param pr: optional PR key to consider, if any
         :return: JSON of all findings, with finding key as key
         :rtype: dict{key: Finding}
         """
