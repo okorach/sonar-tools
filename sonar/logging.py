@@ -118,6 +118,6 @@ def set_debug_level(level: str) -> None:
     __LOGGER.info("Set logging level to %s", level)
 
 
-def get_level() -> None:
+def get_level() -> int:
     """Returns the logging level"""
     return __LOGGER.level

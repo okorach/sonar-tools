@@ -17,11 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-Abstraction of the SonarQube platform or instance concept
-
-"""
+"""Abstraction of the SonarQube platform or instance concept"""
 
 from __future__ import annotations
 
@@ -86,7 +82,7 @@ class Platform(object):
         self._server_id: Optional[str] = None
         self._permissions: Optional[object] = None
         self.http_timeout = int(http_timeout)
-        self.organization = org
+        self.organization: str = org or ""
         self._user_agent = _SONAR_TOOLS_AGENT
         self._global_settings_definitions: dict[str, dict[str, str]] = None
 
@@ -101,6 +97,9 @@ class Platform(object):
         return self.__token, ""
 
     def verify_connection(self) -> None:
+        """Verifies the connection to the SonarQube platform
+
+        :raises: ConnectionError if the connection cannot be established"""
         try:
             log.info("Connecting to %s", self.local_url)
             self.get("server/version")
@@ -140,10 +139,7 @@ class Platform(object):
         """Returns the SonarQube edition: 'community', 'developer', 'enterprise', 'datacenter' or 'sonarcloud'"""
         if self.is_sonarcloud():
             return c.SC
-        if "edition" in self.global_nav():
-            return util.edition_normalize(self.global_nav()["edition"])
-        else:
-            return util.edition_normalize(self.sys_info()["Statistics"]["edition"])
+        return util.edition_normalize(self.global_nav().get("edition") or self.sys_info()["Statistics"]["edition"])
 
     def user(self) -> str:
         """Returns the user corresponding to the provided token"""
@@ -151,8 +147,7 @@ class Platform(object):
 
     def user_data(self) -> types.ApiPayload:
         """Returns the user data corresponding to the provided token"""
-        if self.__user_data is None:
-            self.__user_data = json.loads(self.get("api/users/current").text)
+        self.__user_data = self.__user_data or json.loads(self.get("api/users/current").text)
         return self.__user_data
 
     def set_user_agent(self, user_agent: str) -> None:
@@ -179,8 +174,7 @@ class Platform(object):
         :return: the basic information of the platform: ServerId, Edition, Version and Plugins
         :rtype: dict{"serverId": <id>, "edition": <edition>, "version": <version>, "plugins": <dict>}
         """
-        url = self.get_setting(key="sonar.core.serverBaseURL")
-        if url in (None, ""):
+        if (url := self.get_setting(key="sonar.core.serverBaseURL")) in (None, ""):
             url = self.local_url
         data = {"edition": self.edition(), "url": url}
         if self.is_sonarcloud():
@@ -222,10 +216,7 @@ class Platform(object):
         :return: the HTTP response
         """
         if util.is_api_v2(api):
-            if "headers" in kwargs:
-                kwargs["headers"]["content-type"] = _APP_JSON
-            else:
-                kwargs["headers"] = {"content-type": _APP_JSON}
+            kwargs["headers"] = kwargs.get("headers", {}) | {"content-type": _APP_JSON}
             return self.__run_request(requests.post, api, data=json.dumps(params), **kwargs)
         else:
             return self.__run_request(requests.post, api, params, **kwargs)
@@ -238,10 +229,7 @@ class Platform(object):
         :return: the HTTP response
         """
         if util.is_api_v2(api):
-            if "headers" in kwargs:
-                kwargs["headers"]["content-type"] = "application/merge-patch+json"
-            else:
-                kwargs["headers"] = {"content-type": "application/merge-patch+json"}
+            kwargs["headers"] = kwargs.get("headers", {}) | {"content-type": "application/merge-patch+json"}
             return self.__run_request(requests.patch, api=api, data=json.dumps(params), **kwargs)
         else:
             return self.__run_request(requests.patch, api, params, **kwargs)
@@ -354,9 +342,8 @@ class Platform(object):
         return self._global_settings_definitions
 
     def sys_info(self) -> dict[str, Any]:
-        """
-        :return: the SonarQube platform system info file
-        """
+        """Returns the SonarQube platform system info JSON"""
+        MAX_RETRIES = 10
         if self.is_sonarcloud():
             return {"System": {_SERVER_ID_KEY: "sonarcloud"}}
         if self._sys_info is None:
@@ -367,7 +354,7 @@ class Platform(object):
                     success = True
                 except (ConnectionError, RequestException) as e:
                     # Hack: SonarQube randomly returns Error 500 on this API, retry up to 10 times
-                    if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR and counter < 10:
+                    if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR and counter < MAX_RETRIES:
                         log.error("HTTP Error 500 for api/system/info, retrying...")
                         time.sleep(0.5)
                         counter += 1
@@ -388,19 +375,15 @@ class Platform(object):
         return self.__global_nav
 
     def database(self) -> str:
-        """
-        :return: the SonarQube platform backend database
-        """
+        """Returns the SonarQube platform backend database"""
         if self.is_sonarcloud():
             return "postgresql"
         if self.version() < (9, 7, 0):
             return self.sys_info()["Statistics"]["database"]["name"]
         return self.sys_info()["Database"]["Database"]
 
-    def plugins(self) -> dict[str, str]:
-        """
-        :return: the SonarQube platform plugins
-        """
+    def plugins(self) -> dict[str, dict[str, str]]:
+        """Returns the SonarQube platform plugins data"""
         if self.is_sonarcloud():
             return {}
         sysinfo = self.sys_info()
@@ -408,11 +391,8 @@ class Platform(object):
             sysinfo = sysinfo["Application Nodes"][0]
         return sif.Sif(sysinfo).plugins()
 
-    def get_settings(self, settings_list: Optional[list[str]] = None) -> dict[str, Any]:
-        """Returns a list of (or all) platform global settings value from their key
-        :return: the list of settings values
-        :rtype: dict{<key>: <value>, ...}
-        """
+    def get_settings(self, settings_list: Optional[list[str]] = None) -> dict[str, dict[str, Any]]:
+        """Returns a list of (or all) platform global settings dict representation from their key"""
         if settings_list is None:
             settings_dict = settings.get_bulk(endpoint=self)
         else:
@@ -423,11 +403,9 @@ class Platform(object):
         return platform_settings
 
     def __settings(self, settings_list: types.KeyList = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
-        log.info("getting global settings")
+        log.info("Getting global settings")
         settings_dict = settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
-        # settings_dict = {k: v for k, v in settings_dict.items() if not v.inherited}
-        ai_code_fix = settings.Setting.read(endpoint=self, key=settings.AI_CODE_FIX)
-        if ai_code_fix:
+        if ai_code_fix := settings.Setting.read(endpoint=self, key=settings.AI_CODE_FIX):
             settings_dict[ai_code_fix.key] = ai_code_fix
         return settings_dict
 
@@ -581,9 +559,13 @@ class Platform(object):
             elif key.startswith("audit.globalSettings.value"):
                 problems += _audit_setting_value(key, platform_settings, audit_settings, settings_url)
             elif key.startswith("audit.globalSettings.isSet"):
-                problems += _audit_setting_set(key, True, platform_settings, audit_settings, settings_url)
+                problems += _audit_setting_set(
+                    key, check_is_set=True, platform_settings=platform_settings, audit_settings=audit_settings, url=settings_url
+                )
             elif key.startswith("audit.globalSettings.isNotSet"):
-                problems += _audit_setting_set(key, False, platform_settings, audit_settings, settings_url)
+                problems += _audit_setting_set(
+                    key, check_is_set=False, platform_settings=platform_settings, audit_settings=audit_settings, url=settings_url
+                )
 
         problems += (
             self._audit_project_default_visibility(audit_settings)
@@ -921,7 +903,7 @@ def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
     return False, None
 
 
-def export(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs: Any) -> types.ObjectJsonRepr:
     """Exports all or a list of projects configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -935,7 +917,7 @@ def export(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs) 
     return exp
 
 
-def basics(endpoint: Platform, **kwargs) -> types.ObjectJsonRepr:
+def basics(endpoint: Platform, **kwargs: Any) -> types.ObjectJsonRepr:
     """Returns an endpooint basic info (license, edition, version etc..)"""
     exp = endpoint.basics()
     if write_q := kwargs.get("write_q", None):
@@ -944,7 +926,7 @@ def basics(endpoint: Platform, **kwargs) -> types.ObjectJsonRepr:
     return exp
 
 
-def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
+def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs: Any) -> list[Problem]:
     """Audits a platform"""
     if not audit_settings.get("audit.globalSettings", True):
         log.info("Auditing global settings is disabled, audit skipped...")
