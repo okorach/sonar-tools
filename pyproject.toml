@@ -177,6 +177,7 @@ extend-ignore = [
     "ANN401", # Disallow Any type annotation
     "TD001", # Disallow TODO/FIXME comments
     "EM101", # Don't use string literals in exceptions raise
+    "UP004", # Useless inheritance to object
 ]
 
 exclude = [
