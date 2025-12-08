@@ -1,6 +1,6 @@
 # Next version
 
-# Version 3.17
+# Version 3.17.1
 
 * `sonar-config`:
   - The export/import format has been vastly redefined. Import with the previous format will be rejected
