@@ -247,7 +247,6 @@ class Project(components.Component):
         self._branches_last_analysis = self._last_analysis
         return self._branches_last_analysis
 
-
     def loc(self) -> int:
         """
         :return: Number of LoCs of the project, taking into account branches and pull requests, if any
@@ -729,6 +728,7 @@ class Project(components.Component):
         :rtype: dict{key: Finding}
         """
         from sonar import issues, hotspots
+
         log.info("Exporting findings for %s", str(self))
         findings_list = {}
         params = util.remove_nones({"project": self.key, "branch": branch, "pullRequest": pr})
