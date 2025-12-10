@@ -402,54 +402,7 @@
                         "description": "The project new code period definition"
                     },
                     "binding": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "description": "DevOps platform binding configuration",
-                        "required": [
-                            "key",
-                            "repository"
-                        ],
-                        "properties": {
-                            "key": {
-                                "type": "string",
-                                "description": "The DevOps platform key"
-                            },
-                            "repository": {
-                                "description": "The repository identifier (can be a string or number)",
-                                "oneOf": [
-                                    {
-                                        "type": "string"
-                                    },
-                                    {
-                                        "type": "integer"
-                                    }
-                                ]
-                            },
-                            "summaryCommentEnabled": {
-                                "type": "boolean",
-                                "description": "Whether summary comments are enabled for GitHub PRs"
-                            },
-                            "monorepo": {
-                                "type": "boolean",
-                                "description": "Whether this is a monorepo project"
-                            },
-                            "slug": {
-                                "type": "string",
-                                "description": "The project repository slug (for Bitbucket Server)"
-                            },
-                            "projectName": {
-                                "type": "string",
-                                "description": "The project name in Azure DevOps"
-                            },
-                            "repositoryName": {
-                                "description": "The repository name in Azure DevOps (can be a string or number)",
-                                "type": "string"
-                            },
-                            "inlineAnnotationsEnabled": {
-                                "type": "boolean",
-                                "description": "Whether inline annotations are enabled for Azure DevOps PRs"
-                            }
-                        }
+                        "$ref": "#/$defs/devopsBinding"
                     },
                     "visibility": {
                         "$ref": "#/$defs/componentVisibility"
@@ -1301,6 +1254,300 @@
                     "$ref": "#/$defs/aggregationPermissions"
                 }
             }
+        },
+        "devopsPlatform": {
+            "description": "A DevOps platform configuration",
+            "oneOf": [
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "GitHub DevOps platform configuration",
+                    "required": [
+                        "key",
+                        "url",
+                        "type"
+                    ],
+                    "properties": {
+                        "key": {
+                            "type": "string",
+                            "description": "The DevOps platform key/name"
+                        },
+                        "url": {
+                            "type": "string",
+                            "format": "uri",
+                            "description": "The DevOps platform URL"
+                        },
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "github"
+                            ],
+                            "description": "The DevOps platform type"
+                        },
+                        "clientId": {
+                            "type": "string",
+                            "description": "The client ID (for GitHub)"
+                        },
+                        "appId": {
+                            "type": "integer",
+                            "description": "The application ID (for GitHub)"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "GitLab DevOps platform configuration",
+                    "required": [
+                        "key",
+                        "url",
+                        "type"
+                    ],
+                    "properties": {
+                        "key": {
+                            "type": "string",
+                            "description": "The DevOps platform key/name"
+                        },
+                        "url": {
+                            "type": "string",
+                            "format": "uri",
+                            "description": "The DevOps platform URL"
+                        },
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "gitlab"
+                            ],
+                            "description": "The DevOps platform type"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Azure DevOps platform configuration",
+                    "required": [
+                        "key",
+                        "url",
+                        "type"
+                    ],
+                    "properties": {
+                        "key": {
+                            "type": "string",
+                            "description": "The DevOps platform key/name"
+                        },
+                        "url": {
+                            "type": "string",
+                            "format": "uri",
+                            "description": "The DevOps platform URL"
+                        },
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "azure"
+                            ],
+                            "description": "The DevOps platform type"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Bitbucket Server DevOps platform configuration",
+                    "required": [
+                        "key",
+                        "url",
+                        "type"
+                    ],
+                    "properties": {
+                        "key": {
+                            "type": "string",
+                            "description": "The DevOps platform key/name"
+                        },
+                        "url": {
+                            "type": "string",
+                            "format": "uri",
+                            "description": "The DevOps platform URL"
+                        },
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "bitbucket"
+                            ],
+                            "description": "The DevOps platform type"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Bitbucket Cloud DevOps platform configuration",
+                    "required": [
+                        "key",
+                        "type",
+                        "workspace"
+                    ],
+                    "properties": {
+                        "key": {
+                            "type": "string",
+                            "description": "The DevOps platform key/name"
+                        },
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "bitbucketcloud"
+                            ],
+                            "description": "The DevOps platform type"
+                        },
+                        "workspace": {
+                            "type": "string",
+                            "description": "The workspace (for Bitbucket Cloud)"
+                        }
+                    }
+                }
+            ]
+        },
+        "devopsBinding": {
+            "description": "DevOps platform binding configuration for a project",
+            "oneOf": [
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "GitHub DevOps platform binding",
+                    "required": [
+                        "key",
+                        "repository"
+                    ],
+                    "properties": {
+                        "key": {
+                            "type": "string",
+                            "description": "The DevOps platform key"
+                        },
+                        "repository": {
+                            "type": "string",
+                            "description": "The repository identifier"
+                        },
+                        "summaryCommentEnabled": {
+                            "type": "boolean",
+                            "description": "Whether summary comments are enabled for GitHub PRs"
+                        },
+                        "monorepo": {
+                            "type": "boolean",
+                            "description": "Whether this is a monorepo project"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "GitLab DevOps platform binding",
+                    "required": [
+                        "key",
+                        "repository"
+                    ],
+                    "properties": {
+                        "key": {
+                            "type": "string",
+                            "description": "The DevOps platform key"
+                        },
+                        "repository": {
+                            "type": "integer",
+                            "description": "The repository identifier"
+                        },
+                        "monorepo": {
+                            "type": "boolean",
+                            "description": "Whether this is a monorepo project"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Azure DevOps platform binding",
+                    "required": [
+                        "key",
+                        "repository",
+                        "projectName"
+                    ],
+                    "properties": {
+                        "key": {
+                            "type": "string",
+                            "description": "The DevOps platform key"
+                        },
+                        "repository": {
+                            "type": "string",
+                            "description": "The repository identifier"
+                        },
+                        "projectName": {
+                            "type": "string",
+                            "description": "The project name in Azure DevOps"
+                        },
+                        "repositoryName": {
+                            "description": "The repository name in Azure DevOps (can be a string or number)",
+                            "type": "string"
+                        },
+                        "inlineAnnotationsEnabled": {
+                            "type": "boolean",
+                            "description": "Whether inline annotations are enabled for Azure DevOps PRs"
+                        },
+                        "monorepo": {
+                            "type": "boolean",
+                            "description": "Whether this is a monorepo project"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Bitbucket Server DevOps platform binding",
+                    "required": [
+                        "key",
+                        "repository",
+                        "slug"
+                    ],
+                    "properties": {
+                        "key": {
+                            "type": "string",
+                            "description": "The DevOps platform key"
+                        },
+                        "repository": {
+                            "type": "string",
+                            "description": "The repository identifier"
+                        },
+                        "slug": {
+                            "type": "string",
+                            "description": "The project repository slug (for Bitbucket Server)"
+                        },
+                        "monorepo": {
+                            "type": "boolean",
+                            "description": "Whether this is a monorepo project"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Bitbucket Cloud DevOps platform binding",
+                    "required": [
+                        "key",
+                        "repository"
+                    ],
+                    "properties": {
+                        "key": {
+                            "type": "string",
+                            "description": "The DevOps platform key"
+                        },
+                        "repository": {
+                            "type": "string",
+                            "description": "The repository identifier"
+                        },
+                        "monorepo": {
+                            "type": "boolean",
+                            "description": "Whether this is a monorepo project"
+                        }
+                    }
+                }
+            ]
         }
     }
 }
