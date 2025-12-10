@@ -271,7 +271,7 @@ class Component(sq.SqObject):
         if version < (10, 7, 0):
             raise exceptions.UnsupportedOperation(f"AI code assurance is not available for {self.endpoint.edition()} edition version {str(version)}")
         api = "project/get_ai_code_assurance"
-        if self.endpoint.version() >= (2025, 1, 0):
+        if version >= (2025, 1, 0):
             api = "project_branches/get_ai_code_assurance"
         try:
             params = utilities.dict_remap(self.api_params(c.READ), {"component": "project"})

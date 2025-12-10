@@ -46,8 +46,6 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
     ed = endpoint.edition()
     if ed == "sonarcloud":
         raise exceptions.UnsupportedOperation("Can't export projects on SonarQube Cloud, aborting...")
-    if ed in (c.CE, c.DE) and endpoint.version()[:2] < (9, 2):
-        raise exceptions.UnsupportedOperation(f"Can't export projects on {ed} Edition before 9.2, aborting...")
     dump = projects.export_zips(
         endpoint=endpoint,
         key_regexp=kwargs[options.KEY_REGEXP],

@@ -279,18 +279,13 @@ class Portfolio(aggregations.Aggregation):
 
     def add_reference_subportfolio(self, reference: Portfolio) -> object:
         ref = PortfolioReference.create(parent=self, reference=reference)
-        if self.endpoint.version() >= (9, 3, 0):
-            self.post("views/add_portfolio", params={"portfolio": self.key, "reference": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
-        else:
-            self.post("views/add_local_view", params={"key": self.key, "ref_key": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
+        self.post("views/add_portfolio", params={"portfolio": self.key, "reference": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
         self._sub_portfolios.update({reference.key: ref})
         return ref
 
     def add_standard_subportfolio(self, key: str, name: str, **kwargs) -> Portfolio:
         """Adds a subportfolio"""
         subp = Portfolio.create(endpoint=self.endpoint, key=key, name=name, parent=self, **kwargs)
-        if self.endpoint.version() < (9, 3, 0):
-            self.post("views/add_sub_view", params={"key": self.key, "name": name, "subKey": key}, mute=(HTTPStatus.BAD_REQUEST,))
         self._sub_portfolios.update({subp.key: subp})
         return subp
 
@@ -482,10 +477,7 @@ class Portfolio(aggregations.Aggregation):
         # Hack: API change between 9.0 and 9.1
         mode = self._selection_mode
         if not mode or len(mode) > 0:
-            if self.endpoint.version() < (9, 1, 0):
-                self.post("views/mode", params={"key": self.key, _API_SELECTION_MODE_FIELD: "NONE"})
-            else:
-                self.post("views/set_none_mode", params={"portfolio": self.key})
+            self.post("views/set_none_mode", params={"portfolio": self.key})
             self._selection_mode = {}
         return self
 

@@ -245,13 +245,6 @@ class Project(components.Component):
             return self._branches_last_analysis
 
         self._branches_last_analysis = self._last_analysis
-        if self.endpoint.version() >= (9, 2, 0):
-            # Starting from 9.2 project last analysis date takes into account branches and PR
-            return self._branches_last_analysis
-
-        self._branches_last_analysis = max(
-            b.last_analysis() for b in list(self.branches().values()) + list(self.pull_requests().values()) if b.last_analysis()
-        )
         return self._branches_last_analysis
 
     def loc(self) -> int:
@@ -639,10 +632,6 @@ class Project(components.Component):
         :returns: export status (success/failure/timeout), and zip file path
         """
         log.info("Exporting %s (%s)", str(self), "asynchronously" if asynchronous else "synchronously")
-        if self.endpoint.version() < (9, 2, 0) and self.endpoint.edition() not in (c.EE, c.DCE):
-            raise exceptions.UnsupportedOperation(
-                "Project export is only available with Enterprise and Datacenter Edition, or with SonarQube 9.2 or higher for any Edition"
-            )
         try:
             resp = self.post("project_dump/export", params={"key": self.key})
         except exceptions.ObjectNotFound:
@@ -740,9 +729,6 @@ class Project(components.Component):
         """
         from sonar import issues, hotspots
 
-        if self.endpoint.version() < (9, 1, 0) or self.endpoint.edition() not in (c.EE, c.DCE):
-            log.warning("export_findings only available in EE and DCE starting from SonarQube 9.1, returning no issues")
-            return {}
         log.info("Exporting findings for %s", str(self))
         findings_list = {}
         params = util.remove_nones({"project": self.key, "branch": branch, "pullRequest": pr})

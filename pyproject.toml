@@ -1,6 +1,6 @@
 [project]
 name = "sonar-tools"
-version = "3.17.1"
+version = "3.18"
 description = "A collection of utility tools for the SonarQube ecosystem"
 authors = [
   {name = "Olivier Korach", email = "olivier.korach@gmail.com"},
@@ -59,7 +59,6 @@ sonar-measures-export = "cli.measures_export:main"
 sonar-housekeeper = "cli.housekeeper:main"
 sonar-issues-sync = "cli.findings_sync:main"
 sonar-findings-sync = "cli.findings_sync:main"
-sonar-custom-measures = "cli.cust_measures:main"
 sonar-issues-export = "cli.findings_export:main"
 sonar-findings-export = "cli.findings_export:main"
 sonar-loc = "cli.loc:main"

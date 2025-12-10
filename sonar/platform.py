@@ -378,8 +378,6 @@ class Platform(object):
         """Returns the SonarQube platform backend database"""
         if self.is_sonarcloud():
             return "postgresql"
-        if self.version() < (9, 7, 0):
-            return self.sys_info()["Statistics"]["database"]["name"]
         return self.sys_info()["Database"]["Database"]
 
     def plugins(self) -> dict[str, dict[str, str]]:
@@ -579,10 +577,7 @@ class Platform(object):
         if self.is_sonarcloud():
             return problems
 
-        pf_sif = self.sys_info()
-        if self.version() >= (9, 7, 0):
-            # Hack: Manually add edition in SIF (it's removed starting from 9.7 :-()
-            pf_sif["edition"] = self.edition()
+        pf_sif = self.sys_info() | {"edition": self.edition()}
         problems += (
             _audit_maintainability_rating_grid(platform_settings, audit_settings, settings_url)
             + self._audit_admin_password()
@@ -638,15 +633,8 @@ class Platform(object):
         """Audits whether project default visibility is public"""
         log.info("Auditing project default visibility")
         problems = []
-        if self.version() < (8, 7, 0):
-            resp = self.get(
-                "navigation/organization",
-                params={"organization": "default-organization"},
-            )
-            visi = json.loads(resp.text)["organization"]["projectVisibility"]
-        else:
-            resp = self.get(settings.Setting.API[c.READ], params={"keys": "projects.default.visibility"})
-            visi = json.loads(resp.text)["settings"][0]["value"]
+        resp = self.get(settings.Setting.API[c.READ], params={"keys": "projects.default.visibility"})
+        visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)
         if audit_settings.get("audit.globalSettings.defaultProjectVisibility", "private") != visi:
             rule = get_rule(RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)

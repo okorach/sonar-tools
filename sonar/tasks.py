@@ -205,11 +205,7 @@ class Task(sq.SqObject):
         """
         wait_time = 0
         sleep_time = 0.5
-        params = {"status": ",".join(STATUSES), "type": self.type()}
-        if self.endpoint.version() >= (8, 0, 0):
-            params["component"] = self.component()
-        else:
-            params["q"] = self.component()
+        params = {"status": ",".join(STATUSES), "type": self.type(), "component": self.component()}
         status = PENDING
         while status not in (SUCCESS, FAILED, CANCELED, TIMEOUT):
             time.sleep(sleep_time)
