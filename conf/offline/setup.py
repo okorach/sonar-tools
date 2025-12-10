@@ -67,7 +67,6 @@ setuptools.setup(
             "sonar-housekeeper = cli.housekeeper:main",
             "sonar-issues-sync = cli.findings_sync:main",
             "sonar-findings-sync = cli.findings_sync:main",
-            "sonar-custom-measures = cli.cust_measures:main",
             "sonar-issues-export = cli.findings_export:main",
             "sonar-findings-export = cli.findings_export:main",
             "sonar-loc = cli.loc:main",

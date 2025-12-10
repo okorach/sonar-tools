@@ -26,43 +26,15 @@ Update a custom measure value:
 """
 
 from cli import options
-import sonar.logging as log
-from sonar import custom_measures, platform, utilities, exceptions, version
+from sonar import errcodes, utilities
 import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-custom-measures"
 
 
-def parse_args(desc):
-    parser = options.set_common_args(desc)
-    parser = options.set_key_arg(parser)
-    parser.add_argument("-m", "--metricKey", required=True, help="What custom metric to work on")
-    parser.add_argument("--value", required=False, help="Updates the value of the metric")
-    parser.add_argument("--description", required=False, help="Updates the description of the metric")
-    return options.parse_and_check(parser, logger_name=TOOL_NAME)
-
-
 def main():
     start_time = utilities.start_clock()
-    try:
-        kwargs = utilities.convert_args(parse_args("Manipulate custom metrics"))
-        sqenv = platform.Platform(**kwargs)
-        sqenv.verify_connection()
-        sqenv.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-        raise exceptions.UnsupportedOperation("Custom measures are not supported on SonarQube Cloud")
-
-        log.warning("Custom measures are are deprecated in 8.9 and lower and are dropped starting from SonarQube 9.0")
-        params = utilities.remove_nones(kwargs).update({"env": sqenv})
-        if params.get("value", None) is not None:
-            custom_measures.update(
-                project_key=params["componentKeys"],
-                metric_key=params["metricKey"],
-                value=params["value"],
-                description=params.get("description", None),
-            )
-    except exceptions.SonarException as e:
-        chelp.clear_cache_and_exit(e.errcode, e.message)
-    chelp.clear_cache_and_exit(0, start_time=start_time)
+    chelp.clear_cache_and_exit(errcodes.UNSUPPORTED_OPERATION, "Custom measures are not supported anymore", start_time=start_time)
 
 
 if __name__ == "__main__":
