@@ -43,7 +43,7 @@ def test_housekeeper() -> None:
 
 def test_keep_branches_override(csv_file: Generator[str]) -> None:
     """test_keep_branches_override"""
-    if tutil.SQ.version() == "community":
+    if tutil.SQ.edition() == "community":
         pytest.skip("No branches in Community")
     opts = f"{CMD} {tutil.SQS_OPTS} -P 730 -T 730 -R 730 -B 90 -f {csv_file}"
     assert tutil.run_cmd(housekeeper.main, opts) == errcodes.OK
