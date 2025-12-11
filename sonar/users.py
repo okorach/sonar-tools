@@ -496,7 +496,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     write_q = kwargs.get("write_q", None)
     u_list = []
     for _, u_obj in sorted(search(endpoint=endpoint).items()):
-        u_data = u_obj.to_json(export_settings)
+        u_data = util.clean_data(u_obj.to_json(export_settings), True, True)
         u_list.append(u_data)
         if write_q:
             write_q.put(u_data)

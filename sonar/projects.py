@@ -1019,6 +1019,10 @@ class Project(components.Component):
             util.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
             json_data["ERROR"] = f"{util.error_msg(e)} while exporting project"
 
+        tmp_branches = json_data.pop("branches", None)
+        json_data = util.clean_data(json_data, remove_none=True, remove_empty=True)
+        if tmp_branches:
+            json_data["branches"] = tmp_branches
         return util.order_dict(json_data, *_IMPORTABLE_PROPERTIES)
 
     def new_code(self) -> str:

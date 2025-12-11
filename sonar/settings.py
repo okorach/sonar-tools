@@ -186,8 +186,10 @@ class Setting(sqobject.SqObject):
             o = cls(key=key, endpoint=endpoint, data=None, component=None)
         o._definition = def_data
         o.multi_valued = def_data.get("multiValues")
-        default_val = def_data.get("defaultValue")
+        default_val = def_data.get("defaultValue", "" if o.multi_valued else None)
         o.default_value = sorted(util.csv_to_list(default_val)) if o.multi_valued else util.convert_to_type(default_val)
+        if o.value is None:
+            o.value = o.default_value
         return o
 
     def __reload_inheritance(self, data: types.ApiPayload) -> bool:
@@ -210,6 +212,7 @@ class Setting(sqobject.SqObject):
 
     def reload(self, data: Optional[types.ApiPayload] = None) -> None:
         """Reloads a Setting with JSON returned from Sonar API"""
+        log.debug("Reloading setting %s data: %s", self.key, data)
         if not data:
             return
         if self.key == NEW_CODE_PERIOD:
@@ -224,6 +227,7 @@ class Setting(sqobject.SqObject):
                 self.value = data["values"][0]
         else:
             self.value = util.convert_to_type(next((data[key] for key in ("fieldValues", "values", "value") if key in data), None))
+            log.debug("Setting 1 %s value: %s", self.key, self.value)
             if self.value is None:
                 self.value = self.default_value
             if isinstance(self.value, list) and all(isinstance(v, str) for v in self.value):
