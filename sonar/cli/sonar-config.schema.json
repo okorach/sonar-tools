@@ -771,23 +771,48 @@
     },
     "$defs": {
         "setting": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-                "key"
-            ],
-            "properties": {
-                "key": {
-                    "type": "string",
-                    "description": "Setting key"
+            "anyOf": [
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "key",
+                        "value"
+                    ],
+                    "properties": {
+                        "key": {
+                            "type": "string",
+                            "description": "Setting key"
+                        },
+                        "value": {
+                            "description": "Setting value"
+                        },
+                        "defaultValue": {
+                            "description": "Setting default value"
+                        }
+                    }
                 },
-                "value": {
-                    "description": "Setting value"
-                },
-                "defaultValue": {
-                    "description": "Setting default value"
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "key",
+                        "defaultValue"
+                    ],
+                    "properties": {
+                        "key": {
+                            "type": "string",
+                            "description": "Setting key"
+                        },
+                        "defaultValue": {
+                            "description": "Setting default value"
+                        },
+                        "value": {
+                            "description": "Setting value"
+                        }
+                    }
                 }
-            }
+            ]
         },
         "qualityPermissions": {
             "type": "object",
