@@ -426,7 +426,10 @@ class QualityProfile(sq.SqObject):
                     if k not in ("isTemplate", "templateKey", "language", "tags", "severity", "severities", "impacts")
                 }
                 if "params" in data:
-                    data["params"] = dict(sorted(data["params"].items()))
+                    if rule.is_instantiated():
+                        data.pop("params")
+                    else:
+                        data["params"] = dict(sorted(data["params"].items()))
                 if self.rule_is_prioritized(rule.key):
                     data["prioritized"] = True
                 if self.rule_has_custom_severity(rule.key):
@@ -476,6 +479,7 @@ class QualityProfile(sq.SqObject):
         diff_rules = {}
         for rule in rule_set:
             r_key = rule["key"]
+            o_rule = rules.Rule.get_object(self.endpoint, r_key)
             diff_rules[r_key] = {}
             if self.rule_has_custom_severity(r_key):
                 diff_rules[r_key]["severity"] = self.rule_severity(r_key, substitute_with_default=True)
@@ -483,7 +487,7 @@ class QualityProfile(sq.SqObject):
                 diff_rules[r_key]["impacts"] = {k: v for k, v in self.rule_impacts(r_key, substitute_with_default=True).items() if v != c.DEFAULT}
             if self.rule_is_prioritized(r_key):
                 diff_rules[r_key]["prioritized"] = True
-            if (params := self.rule_custom_params(r_key)) is not None:
+            if (params := self.rule_custom_params(r_key)) is not None and not o_rule.is_instantiated():
                 diff_rules[r_key]["params"] = params.copy()
             rule_params = rule["left"].get("params", {}) if "left" in rule else rule.get("params", {})
             if len(rule_params) > 0:
