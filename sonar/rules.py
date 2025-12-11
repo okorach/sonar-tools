@@ -307,9 +307,7 @@ class Rule(sq.SqObject):
 
     def to_csv(self) -> list[str]:
         data = vars(self)
-        tags = self.systags
-        if self.tags:
-            tags += self.tags
+        tags = self.systags + (self.tags if self.tags else [])
         data["tags"] = ",".join(sorted(tags))
         data["ruleType"] = "STANDARD"
         if self.is_template:
@@ -321,10 +319,9 @@ class Rule(sq.SqObject):
             data["legacyType"] = data.pop("type", "")
             for qual in idefs.MQR_QUALITIES:
                 data[qual.lower() + "Impact"] = self._impacts.get(qual, "")
-            data = [data[key] for key in CSV_EXPORT_FIELDS]
+            return [data[key] for key in CSV_EXPORT_FIELDS]
         else:
-            data = [data[key] for key in LEGACY_CSV_EXPORT_FIELDS]
-        return data
+            return [data[key] for key in LEGACY_CSV_EXPORT_FIELDS]
 
     def export(self, full: bool = False) -> types.ObjectJsonRepr:
         """Returns the JSON corresponding to a rule export"""
