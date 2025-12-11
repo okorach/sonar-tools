@@ -780,7 +780,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     for k, p in portfolio_list.items():
         try:
             if not p.is_sub_portfolio():
-                exp = p.export(export_settings)
+                exp = util.clean_data(p.export(export_settings), True, True)
                 if write_q:
                     write_q.put(phelp.convert_portfolio_json(exp))
                 else:

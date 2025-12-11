@@ -150,7 +150,6 @@ def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remov
     """Sorts a JSON file and optionally remove empty and none values"""
     sort_fields = {"users": "login", "groups": "name", "qualityGates": "name", "qualityProfiles": "language"}
     log.debug("Normalizing JSON - remove empty = %s, remove nones = %s", str(remove_empty), str(remove_none))
-    json_data = utilities.clean_data(json_data, remove_none=remove_none, remove_empty=remove_empty)
     json_data = utilities.order_keys(json_data, *_SECTIONS_ORDER)
     for key in [k for k in _SECTIONS_TO_SORT if k in json_data]:
         if isinstance(json_data[key], dict):
@@ -200,7 +199,7 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
     while not done:
         obj_json = queue.get()
         if not (done := obj_json is utilities.WRITE_END):
-            if object_type == "groups":
+            if object_type in ("groups", "globalSettings"):
                 obj_json = __prep_json_for_write(obj_json, {**export_settings, EXPORT_EMPTY: True})
             else:
                 obj_json = __prep_json_for_write(obj_json, export_settings)
@@ -299,10 +298,7 @@ def validate_json(file: str) -> dict[str, Any]:
         cur_obj = json_data
         path_str = ""
         for path in json_path:
-            # if m := re.match(r"^([a-zA-Z_]+)[(\d+)]$", path):
-            #     log.info("Match found: %s", m.group(0))
-            #     obj_type = m.group(1)
-            #     obj_index = int(m.group(2))
+            # TODO: Replace with jsonschema.PathElement when moving to python 3.11+
             if "[" in path:
                 obj_type = path.split("[")[0]
                 obj_index = int(path.split("[")[1].split("]")[0])
