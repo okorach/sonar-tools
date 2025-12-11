@@ -467,7 +467,7 @@ class Platform(object):
         """
         log.info("Exporting platform global settings")
         json_data = {}
-        settings_list = list(self.__settings(include_not_set=export_settings.get("EXPORT_DEFAULTS", False)).values())
+        settings_list = list(self.__settings(include_not_set=True).values())
         settings_list = [s for s in settings_list if s.is_global() and not s.is_internal()]
         for s in settings_list:
             (categ, subcateg) = s.category()
