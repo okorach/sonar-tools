@@ -1,0 +1,1130 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://raw.githubusercontent.com/okorach/sonar-tools/master/sonar/cli/sonar-config.schema.yaml
+title: sonar-config schema
+description: YAML schema for SonarQube sonar-config configuration export/import tool
+type: object
+additionalProperties: false
+required:
+- platform
+properties:
+  platform:
+    type: object
+    additionalProperties: false
+    description: Platform information
+    required:
+    - edition
+    - url
+    - version
+    - serverId
+    properties:
+      edition:
+        description: 'The SonarQube Edition: ''community'', ''developer'', ''enterprise'', ''datacenter'' or ''sonarcloud'''
+        type: string
+        enum:
+        - community
+        - developer
+        - enterprise
+        - datacenter
+        - sonarcloud
+      url:
+        description: The SonarQube platform URL
+        type: string
+        format: uri
+      version:
+        description: The SonarQube version
+        type: string
+      serverId:
+        description: The SonarQube server id
+        type: string
+      plugins:
+        description: The list of plugins installed on the instance
+        type: array
+        items:
+          type: object
+          additionalProperties: false
+          required:
+          - key
+          - version
+          properties:
+            key:
+              description: The plugin key
+              type: string
+            version:
+              description: The plugin version
+              type: string
+            name:
+              description: The plugin name
+              type: string
+  globalSettings:
+    type: object
+    additionalProperties: false
+    exclusiveMinimum: 1
+    description: Global SonarQube settings
+    required:
+    - generalSettings
+    properties:
+      generalSettings:
+        type: array
+        description: General configuration settings
+        items:
+          $ref: '#/$defs/setting'
+      analysisScope:
+        type: array
+        description: Analysis scope settings
+        items:
+          $ref: '#/$defs/setting'
+      authentication:
+        type: array
+        description: Authentication settings
+        items:
+          $ref: '#/$defs/setting'
+      devopsIntegration:
+        type: array
+        description: Devops integration settings
+        items:
+          type: object
+          additionalProperties: false
+          description: A DevOps platform configuration
+          required:
+          - key
+          - url
+          - type
+          properties:
+            key:
+              type: string
+              description: The DevOps platform key/name
+            url:
+              type: string
+              format: uri
+              description: The DevOps platform URL
+            type:
+              type: string
+              enum:
+              - github
+              - azure
+              - bitbucket
+              - bitbucketcloud
+              - gitlab
+              description: The DevOps platform type
+            workspace:
+              type: string
+              description: The workspace (for Bitbucket Cloud)
+            clientId:
+              type: string
+              description: The client ID (for GitHub)
+            appId:
+              type: integer
+              description: The application ID (for GitHub)
+      sastConfig:
+        type: array
+        description: SAST configuration settings
+        items:
+          $ref: '#/$defs/setting'
+      linters:
+        type: array
+        description: Linter settings
+        items:
+          $ref: '#/$defs/setting'
+      thirdParty:
+        type: array
+        description: Third party settings
+        items:
+          $ref: '#/$defs/setting'
+      tests:
+        type: array
+        description: Test configuration settings
+        items:
+          $ref: '#/$defs/setting'
+      permissions:
+        type: array
+        description: Permissions settings
+        items:
+          oneOf:
+          - type: object
+            additionalProperties: false
+            required:
+            - group
+            - permissions
+            properties:
+              group:
+                type: string
+                description: The group name
+              permissions:
+                $ref: '#/$defs/globalPermissionsList'
+          - type: object
+            additionalProperties: false
+            required:
+            - user
+            - permissions
+            properties:
+              user:
+                type: string
+                description: The user login
+              permissions:
+                $ref: '#/$defs/globalPermissionsList'
+      languages:
+        type: array
+        description: Language-specific settings
+        items:
+          type: object
+          additionalProperties: false
+          required:
+          - language
+          - settings
+          properties:
+            language:
+              type: string
+              description: Programming language identifier
+            settings:
+              type: array
+              description: Language-specific settings
+              items:
+                $ref: '#/$defs/setting'
+      webhooks:
+        type: array
+        description: Global webhooks configuration
+        items:
+          type: object
+          additionalProperties: false
+          description: Webhook configuration
+          required:
+          - name
+          - url
+          properties:
+            name:
+              type: string
+              description: The webhook name
+            url:
+              type: string
+              format: uri
+              description: The webhook URL
+            secret:
+              type: string
+              description: The webhook secret (optional)
+      permissionTemplates:
+        type: array
+        description: Permission templates configuration
+        items:
+          type: object
+          additionalProperties: false
+          description: A permission template
+          required:
+          - key
+          properties:
+            key:
+              type: string
+              description: The permission template key/name
+            description:
+              type: string
+              description: The permission template description
+            defaultFor:
+              type: string
+              description: Comma-separated list of qualifiers this template is default for (e.g., 'projects, applications'
+                or 'portfolios')
+            pattern:
+              type: string
+              description: Regular expression pattern for project key matching
+            permissions:
+              $ref: '#/$defs/projectPermissions'
+  qualityGates:
+    type: array
+    description: The list of quality gates
+    items:
+      type: object
+      additionalProperties: false
+      description: A quality gate
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          description: The quality gate name
+        conditions:
+          type: array
+          description: The quality gate conditions
+          items:
+            type: string
+        isDefault:
+          type: boolean
+          description: Whether this quality gate is the default one
+        isBuiltIn:
+          type: boolean
+          description: Whether this quality gate is built-in
+        permissions:
+          $ref: '#/$defs/qualityPermissions'
+  qualityProfiles:
+    type: array
+    description: The list of quality profiles organized by language
+    items:
+      type: object
+      additionalProperties: false
+      required:
+      - language
+      description: A quality profile
+      properties:
+        language:
+          type: string
+          description: The programming language identifier
+        profiles:
+          type: array
+          description: List of quality profiles for this language
+          items:
+            $ref: '#/$defs/qualityProfile'
+        isDefault:
+          type: boolean
+          description: Whether this quality profile is the default for the given language
+        isBuiltIn:
+          type: boolean
+          description: Whether this quality profile is built-in
+  projects:
+    type: array
+    description: The list of projects
+    items:
+      type: object
+      additionalProperties: false
+      required:
+      - key
+      - name
+      properties:
+        key:
+          type: string
+          description: The project key
+        name:
+          type: string
+          description: The project name
+        newCodePeriod:
+          type: string
+          description: The project new code period definition
+        binding:
+          $ref: '#/$defs/devopsBinding'
+        visibility:
+          $ref: '#/$defs/componentVisibility'
+        permissions:
+          $ref: '#/$defs/projectPermissions'
+        qualityGate:
+          type: string
+          description: The quality gate name assigned to this project
+        qualityProfiles:
+          type: array
+          description: Quality profiles assigned to this project
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - language
+            - name
+            properties:
+              language:
+                type: string
+                description: The programming language
+              name:
+                type: string
+                description: The quality profile name
+        links:
+          type: array
+          description: Project links
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - name
+            - url
+            properties:
+              type:
+                type: string
+                description: The link type
+              name:
+                type: string
+                description: The link name
+              url:
+                type: string
+                format: uri
+                description: The link URL
+        branches:
+          type: array
+          description: Project branches
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - name
+            properties:
+              name:
+                type: string
+                description: The branch name
+              isMain:
+                type: boolean
+                description: Whether this is the main branch
+              keepWhenInactive:
+                type: boolean
+                description: Whether to keep this branch when inactive
+              newCodePeriod:
+                type: string
+                description: The new code period setting for this branch
+        tags:
+          $ref: '#/$defs/tags'
+        settings:
+          type: array
+          description: Project settings
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - key
+            - value
+            properties:
+              key:
+                type: string
+                description: Setting key
+              value:
+                description: Setting value (can be string, number, boolean, or array)
+        webhooks:
+          type: array
+          description: Project webhooks configuration
+          items:
+            type: object
+            additionalProperties: false
+            description: Webhook configuration
+            required:
+            - name
+            - url
+            properties:
+              name:
+                type: string
+                description: The webhook name
+              url:
+                type: string
+                format: uri
+                description: The webhook URL
+              secret:
+                type: string
+                description: The webhook secret (optional)
+  applications:
+    type: array
+    description: The list of applications
+    items:
+      type: object
+      additionalProperties: false
+      required:
+      - key
+      properties:
+        key:
+          type: string
+          description: The application key
+        name:
+          type: string
+          description: The application name
+        description:
+          type: string
+          description: The application description
+        visibility:
+          $ref: '#/$defs/componentVisibility'
+        branches:
+          type: array
+          description: Application branches
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - name
+            properties:
+              name:
+                type: string
+                description: The branch name
+              isMain:
+                type: boolean
+                description: Whether this is the main branch
+              projects:
+                type: array
+                description: Projects in this branch
+                items:
+                  type: object
+                  additionalProperties: false
+                  required:
+                  - key
+                  properties:
+                    key:
+                      type: string
+                      description: The project key
+                    branch:
+                      type: string
+                      description: The project branch
+        permissions:
+          $ref: '#/$defs/aggregationPermissions'
+        tags:
+          $ref: '#/$defs/tags'
+  portfolios:
+    type: array
+    description: The list of portfolios
+    items:
+      $ref: '#/$defs/portfolio'
+  users:
+    type: array
+    description: The list of users
+    items:
+      type: object
+      additionalProperties: false
+      description: User description
+      required:
+      - login
+      - name
+      properties:
+        login:
+          type: string
+          description: The user login
+        name:
+          type: string
+          description: The user name
+        email:
+          type: string
+          format: email
+          description: The user email
+        groups:
+          type: array
+          description: The user list of groups
+          items:
+            type: string
+        scmAccounts:
+          type: array
+          description: The user list of SCM accounts
+          items:
+            type: string
+        local:
+          type: boolean
+          description: Whether the user is local or not
+  groups:
+    type: array
+    description: Groups defined
+    items:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          description: The unique group name
+        description:
+          type: string
+          description: The group description
+  rules:
+    description: List of rules that were instantiated or parameterized
+    type: object
+    additionalProperties: false
+    properties:
+      instantiated:
+        description: List of instantiated rules
+        type: array
+        items:
+          type: object
+          additionalProperties: false
+          required:
+          - key
+          - language
+          - templateKey
+          properties:
+            key:
+              type: string
+              description: The rule key
+            language:
+              type: string
+              description: The rule language
+            templateKey:
+              type: string
+              description: The rule template key
+            severity:
+              $ref: '#/$defs/severity'
+            impacts:
+              $ref: '#/$defs/impacts'
+            description:
+              type: string
+              description: The rule extended description
+            params:
+              $ref: '#/$defs/ruleParams'
+      extended:
+        description: List of extended/customized rules
+        type: array
+        items:
+          type: object
+          additionalProperties: false
+          required:
+          - key
+          properties:
+            key:
+              type: string
+              description: The rule key
+            tags:
+              $ref: '#/$defs/tags'
+            description:
+              type: string
+              description: The rule extended description
+$defs:
+  setting:
+    anyOf:
+    - type: object
+      additionalProperties: false
+      required:
+      - key
+      - value
+      properties:
+        key:
+          type: string
+          description: Setting key
+        value:
+          description: Setting value
+        defaultValue:
+          description: Setting default value
+    - type: object
+      additionalProperties: false
+      required:
+      - key
+      - defaultValue
+      properties:
+        key:
+          type: string
+          description: Setting key
+        defaultValue:
+          description: Setting default value
+        value:
+          description: Setting value
+  qualityPermissions:
+    type: object
+    additionalProperties: false
+    description: Quality object permissions (for quality gates or quality profiles)
+    properties:
+      users:
+        type: array
+        description: List of user logins with permissions
+        items:
+          type: string
+      groups:
+        type: array
+        description: List of group names with permissions
+        items:
+          type: string
+  impacts:
+    type: object
+    additionalProperties: false
+    description: Rule impacts in MQR mode
+    properties:
+      security:
+        type: string
+        description: Security impact
+        enum:
+        - info
+        - low
+        - medium
+        - high
+        - blocker
+      reliability:
+        type: string
+        description: Reliability impact
+        enum:
+        - info
+        - low
+        - medium
+        - high
+        - blocker
+      maintainability:
+        type: string
+        description: Maintainability impact
+        enum:
+        - info
+        - low
+        - medium
+        - high
+        - blocker
+  severity:
+    type: string
+    description: Rule legacy severity in std experience
+    enum:
+    - info
+    - minor
+    - major
+    - critical
+    - blocker
+  ruleParams:
+    type: array
+    description: Rule parameters
+    items:
+      type: object
+      additionalProperties: false
+      required:
+      - key
+      properties:
+        key:
+          type: string
+          description: Parameter key
+        value:
+          description: Parameter value
+  componentVisibility:
+    type: string
+    enum:
+    - public
+    - private
+    description: The component visibility (public or private)
+  aggregationPermissions:
+    type: array
+    description: Application or Portfolio permissions
+    items:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - group
+        - permissions
+        properties:
+          group:
+            type: string
+            description: The group name
+          permissions:
+            $ref: '#/$defs/aggregationPermissionsList'
+      - type: object
+        additionalProperties: false
+        required:
+        - user
+        - permissions
+        properties:
+          user:
+            type: string
+            description: The user login
+          permissions:
+            $ref: '#/$defs/aggregationPermissionsList'
+  projectPermissions:
+    type: array
+    description: Project or permission template permissions
+    items:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - group
+        - permissions
+        properties:
+          group:
+            type: string
+            description: The group name
+          permissions:
+            $ref: '#/$defs/projectPermissionsList'
+      - type: object
+        additionalProperties: false
+        required:
+        - user
+        - permissions
+        properties:
+          user:
+            type: string
+            description: The user login
+          permissions:
+            $ref: '#/$defs/projectPermissionsList'
+  tags:
+    type: array
+    description: Object tags
+    items:
+      type: string
+  globalPermissionsList:
+    type: array
+    description: List of permissions
+    items:
+      type: string
+      enum:
+      - admin
+      - applicationcreator
+      - gateadmin
+      - portfoliocreator
+      - profileadmin
+      - provisioning
+      - scan
+  aggregationPermissionsList:
+    type: array
+    description: List of permissions for aggregation objects (portfolios or applications)
+    items:
+      type: string
+      enum:
+      - user
+      - admin
+  projectPermissionsList:
+    type: array
+    description: List of permissions for projects
+    items:
+      type: string
+      enum:
+      - user
+      - codeviewer
+      - issueadmin
+      - securityhotspotadmin
+      - scan
+      - admin
+  qualityProfile:
+    type: object
+    additionalProperties: false
+    required:
+    - name
+    properties:
+      name:
+        type: string
+        description: The quality profile name
+      isBuiltIn:
+        type: boolean
+        description: Whether this quality profile is built-in
+      isDefault:
+        type: boolean
+        description: Whether this quality profile is the default one
+      permissions:
+        $ref: '#/$defs/qualityPermissions'
+      children:
+        type: array
+        description: Child quality profiles that inherit from this one
+        items:
+          $ref: '#/$defs/qualityProfile'
+      addedRules:
+        type: array
+        description: Rules added to this quality profile from its parent profile or if a root profile
+        items:
+          type: object
+          additionalProperties: false
+          required:
+          - key
+          properties:
+            key:
+              type: string
+              description: The rule key
+            params:
+              $ref: '#/$defs/ruleParams'
+            severity:
+              $ref: '#/$defs/severity'
+            impacts:
+              $ref: '#/$defs/impacts'
+            prioritized:
+              type: boolean
+              description: Whether this rule is prioritized
+      removedRules:
+        type: array
+        description: Rules removed from this quality profile
+        items:
+          type: string
+      modifiedRules:
+        type: array
+        description: Rules modified in this quality profile
+        items:
+          type: object
+          additionalProperties: false
+          required:
+          - key
+          properties:
+            key:
+              type: string
+              description: The rule key
+            severity:
+              $ref: '#/$defs/severity'
+            impacts:
+              $ref: '#/$defs/impacts'
+            prioritized:
+              type: boolean
+              description: Whether this rule is prioritized
+            tags:
+              $ref: '#/$defs/tags'
+            params:
+              $ref: '#/$defs/ruleParams'
+      rules:
+        type: array
+        description: Rules in this quality profile (simpler format)
+        items:
+          type: object
+          additionalProperties: false
+          required:
+          - key
+          properties:
+            key:
+              type: string
+              description: The rule key
+            prioritized:
+              type: boolean
+              description: Whether this rule is prioritized
+            description:
+              type: string
+              description: The rule extended description
+            params:
+              $ref: '#/$defs/ruleParams'
+  portfolio:
+    type: object
+    additionalProperties: false
+    required:
+    - key
+    properties:
+      key:
+        type: string
+        description: The portfolio key
+      name:
+        type: string
+        description: The portfolio name
+      visibility:
+        $ref: '#/$defs/componentVisibility'
+      portfolios:
+        type: array
+        description: Nested portfolios
+        items:
+          $ref: '#/$defs/portfolio'
+      projectSelection:
+        type: object
+        additionalProperties: false
+        description: Project selection criteria
+        properties:
+          rest:
+            type: boolean
+            description: Select all remaining projects
+          regexp:
+            type: string
+            description: Regular expression pattern for project selection
+          tags:
+            $ref: '#/$defs/tags'
+          branch:
+            type: string
+            description: Branch filter for project selection
+          manual:
+            type: array
+            description: Manually selected projects
+            items:
+              type: object
+              additionalProperties: false
+              required:
+              - key
+              properties:
+                key:
+                  type: string
+                  description: The project key
+                branches:
+                  type: array
+                  description: Project branches
+                  items:
+                    type: string
+      byReference:
+        type: boolean
+        description: Whether this portfolio is referenced by key
+      applications:
+        type: array
+        description: Applications in this portfolio
+        items:
+          type: object
+          additionalProperties: false
+          required:
+          - key
+          properties:
+            key:
+              type: string
+              description: The application key
+            branches:
+              type: array
+              description: Application branches
+              items:
+                type: string
+      permissions:
+        $ref: '#/$defs/aggregationPermissions'
+  devopsPlatform:
+    description: A DevOps platform configuration
+    oneOf:
+    - type: object
+      additionalProperties: false
+      description: GitHub DevOps platform configuration
+      required:
+      - key
+      - url
+      - type
+      properties:
+        key:
+          type: string
+          description: The DevOps platform key/name
+        url:
+          type: string
+          format: uri
+          description: The DevOps platform URL
+        type:
+          type: string
+          enum:
+          - github
+          description: The DevOps platform type
+        clientId:
+          type: string
+          description: The client ID (for GitHub)
+        appId:
+          type: integer
+          description: The application ID (for GitHub)
+    - type: object
+      additionalProperties: false
+      description: GitLab DevOps platform configuration
+      required:
+      - key
+      - url
+      - type
+      properties:
+        key:
+          type: string
+          description: The DevOps platform key/name
+        url:
+          type: string
+          format: uri
+          description: The DevOps platform URL
+        type:
+          type: string
+          enum:
+          - gitlab
+          description: The DevOps platform type
+    - type: object
+      additionalProperties: false
+      description: Azure DevOps platform configuration
+      required:
+      - key
+      - url
+      - type
+      properties:
+        key:
+          type: string
+          description: The DevOps platform key/name
+        url:
+          type: string
+          format: uri
+          description: The DevOps platform URL
+        type:
+          type: string
+          enum:
+          - azure
+          description: The DevOps platform type
+    - type: object
+      additionalProperties: false
+      description: Bitbucket Server DevOps platform configuration
+      required:
+      - key
+      - url
+      - type
+      properties:
+        key:
+          type: string
+          description: The DevOps platform key/name
+        url:
+          type: string
+          format: uri
+          description: The DevOps platform URL
+        type:
+          type: string
+          enum:
+          - bitbucket
+          description: The DevOps platform type
+    - type: object
+      additionalProperties: false
+      description: Bitbucket Cloud DevOps platform configuration
+      required:
+      - key
+      - type
+      - workspace
+      properties:
+        key:
+          type: string
+          description: The DevOps platform key/name
+        type:
+          type: string
+          enum:
+          - bitbucketcloud
+          description: The DevOps platform type
+        workspace:
+          type: string
+          description: The workspace (for Bitbucket Cloud)
+  devopsBinding:
+    description: DevOps platform binding configuration for a project
+    oneOf:
+    - type: object
+      additionalProperties: false
+      description: GitHub DevOps platform binding
+      required:
+      - key
+      - repository
+      properties:
+        key:
+          type: string
+          description: The DevOps platform key
+        repository:
+          type: string
+          description: The repository identifier
+        summaryCommentEnabled:
+          type: boolean
+          description: Whether summary comments are enabled for GitHub PRs
+        monorepo:
+          type: boolean
+          description: Whether this is a monorepo project
+    - type: object
+      additionalProperties: false
+      description: GitLab DevOps platform binding
+      required:
+      - key
+      - repository
+      properties:
+        key:
+          type: string
+          description: The DevOps platform key
+        repository:
+          type: integer
+          description: The repository identifier
+        monorepo:
+          type: boolean
+          description: Whether this is a monorepo project
+    - type: object
+      additionalProperties: false
+      description: Azure DevOps platform binding
+      required:
+      - key
+      - repository
+      - projectName
+      properties:
+        key:
+          type: string
+          description: The DevOps platform key
+        repository:
+          type: string
+          description: The repository identifier
+        projectName:
+          type: string
+          description: The project name in Azure DevOps
+        repositoryName:
+          description: The repository name in Azure DevOps (can be a string or number)
+          type: string
+        inlineAnnotationsEnabled:
+          type: boolean
+          description: Whether inline annotations are enabled for Azure DevOps PRs
+        monorepo:
+          type: boolean
+          description: Whether this is a monorepo project
+    - type: object
+      additionalProperties: false
+      description: Bitbucket Server DevOps platform binding
+      required:
+      - key
+      - repository
+      - slug
+      properties:
+        key:
+          type: string
+          description: The DevOps platform key
+        repository:
+          type: string
+          description: The repository identifier
+        slug:
+          type: string
+          description: The project repository slug (for Bitbucket Server)
+        monorepo:
+          type: boolean
+          description: Whether this is a monorepo project
+    - type: object
+      additionalProperties: false
+      description: Bitbucket Cloud DevOps platform binding
+      required:
+      - key
+      - repository
+      properties:
+        key:
+          type: string
+          description: The DevOps platform key
+        repository:
+          type: string
+          description: The repository identifier
+        monorepo:
+          type: boolean
+          description: Whether this is a monorepo project
