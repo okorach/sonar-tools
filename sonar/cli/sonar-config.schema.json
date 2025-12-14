@@ -47,7 +47,6 @@
                 "plugins": {
                     "description": "The list of plugins installed on the instance",
                     "type": "array",
-                    "exclusiveMinimum": 0,
                     "items": {
                         "type": "object",
                         "additionalProperties": false,
