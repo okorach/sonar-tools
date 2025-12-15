@@ -8,6 +8,8 @@ During import:
 - When the object already exists it is updated according to the config file
 - When an object exists in the target platform and is not defined in the config file, this object remains unmodified. As such the import of configuration is "additive" to the current config, it does not replace it.
 
+Starting with version 3.18, both JSON and YAML format can be used for export, but above all for import of configuration
+
 ## `sonar-config` file format
 
 Starting from `sonar-config` 3.17.1, a JSON schema file that describes the expected format is provided. See [sonar-config JSON schema](https://github.com/okorach/sonar-tools/blob/master/sonar/cli/sonar-config.schema.json).
@@ -15,7 +17,7 @@ Adherence to the schema is verified before importing a configuration.
 
 ## Format change with `sonar-config` 3.17.1
 
-Starting with version 3.17.1, the `sonar-config` tool is using a new config format. Still JSon but multiple fields have a different structure.
+Starting with version 3.17.1, the `sonar-config` tool is using a new config format. Still JSON but multiple fields have a different structure.
 The new format is enforced to be able to import a configuration.
 To help with the transition, a conversion tool comes with version 3.17.1. You can convert the old to the new format with
 
