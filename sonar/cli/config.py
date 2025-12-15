@@ -139,11 +139,14 @@ def __parse_args(desc: str) -> object:
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME, verify_token=False)
 
 
-def __get_schema() -> dict[str, Any]:
+def __get_schema(fmt: Optional[str] = "json") -> dict[str, Any]:
     """Gets the JSON schema for sonar-config"""
-    schema_file = pathlib.Path(__file__).parent / "sonar-config.schema.json"
+
+    schema_file = pathlib.Path(__file__).parent / f"sonar-config.schema.{fmt}"
     with open(schema_file, encoding="utf-8") as fh:
-        return json.loads(fh.read())
+        txt = fh.read()
+    json_schema = yaml.safe_load(txt) if fmt == "yaml" else json.loads(txt)
+    return json_schema
 
 
 def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remove_none: bool = True) -> dict[str, any]:
@@ -287,11 +290,13 @@ def validate_json(file: str) -> dict[str, Any]:
     :raises: SonarException if the JSON file is not valid
     :raises: FileNotFoundError if the JSON file does not exist
     """
-    log.info("Validating JSON file %s", file)
+    fmt = "yaml" if file.split(".")[-1].lower() in ("yaml", "yml") else "json"
+    log.info("Validating %s file %s", fmt.upper(), file)
     try:
         with open(file, encoding="utf-8") as fd:
-            json_data = json.loads(fd.read())
-        jsonschema.validate(json_data, __get_schema())
+            txt = fd.read()
+        json_data = yaml.safe_load(txt) if fmt == "yaml" else json.loads(txt)
+        jsonschema.validate(json_data, __get_schema(fmt))
     except jsonschema.ValidationError as e:
         json_path = e.json_path.split(".")
         json_path.pop(0)
@@ -308,9 +313,9 @@ def validate_json(file: str) -> dict[str, Any]:
             else:
                 cur_obj = cur_obj[path]
                 path_str += f".{path}"
-        schema_url = "https://github.com/okorach/sonar-tools/blob/master/sonar/cli/sonar-config.schema.json"
+        schema_url = f"https://github.com/okorach/sonar-tools/blob/master/sonar/cli/sonar-config.schema.{fmt}"
         raise exceptions.SonarException(
-            f"JSON file '{file}' does not respect the sonar-config JSON schema:\n"
+            f"{fmt.upper()} file '{file}' does not respect the sonar-config {fmt.upper()} schema:\n"
             f"-> See schema at: {schema_url}\n"
             f"-> Error occured at: {path_str.lstrip('.')} -> {e.message}",
             errcodes.SCHEMA_ERROR,

@@ -335,6 +335,7 @@ class Project(components.Component):
             try:
                 resp = self.get("alm_settings/get_binding", params={"project": self.key}, mute=(HTTPStatus.NOT_FOUND,))
                 self._binding = {"has_binding": True, "binding": json.loads(resp.text)}
+                self._binding["binding"].pop("repositoryUrl", None)
                 if self._binding["binding"]["alm"] == devops.DEVOPS_AZURE:
                     self._binding["binding"]["projectName"] = self._binding["binding"].pop("slug")
                 self._binding["binding"] = util.order_dict(self._binding["binding"], "key", "repository", "slug", "projectName", "monorepo")
