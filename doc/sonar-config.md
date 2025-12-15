@@ -60,6 +60,7 @@ When `--what` is not specified, everything is exported or
 - `--fullExport`: Will also export object properties that are not used for an import by may be of interest anyway
 - `--convertFrom <filename>`: Used for config file format conversion. Defines a source config file in sonar-config 3.16 or older format to be converted to the sonar-config 3.17.1 format
 - `--convertTo <filename>`: Used for config file format conversion. Defines the target config file in sonar-config 3.17 format to generate
+- `--validate`: Verifies that a JSON or YAML config file is valid, i.e. it could be imported.
 - `-h`: Displays help and exits
 - `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
