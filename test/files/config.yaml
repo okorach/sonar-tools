@@ -319,6 +319,8 @@ globalSettings:
       value: ''
     - key: sonar.cfamily.gcov.reportsPath
       value: ''
+    - key: sonar.cfamily.ignoreHeaderComments
+      value: true
     - key: sonar.cfamily.llvm-cov.reportPath
       value: ''
     - key: sonar.cfamily.valgrind.reportsPaths
@@ -936,7 +938,6 @@ globalSettings:
     url: https://dev.azure.com/olivierkorach
   - key: Bitbucket Cloud 1
     type: bitbucketcloud
-    url: https://bitbucket.org
     workspace: okorach
     clientId: x
   - key: Bitbucket Server 1
@@ -4856,9 +4857,8 @@ projects:
     - cobol
     - cobolli
   binding:
-    key: GitHub okorach
-    repository: okorach/sonar-tools
-    summaryCommentEnabled: true
+    key: Bitbucket Cloud 1
+    repository: my-slug
   branches:
   - name: main
     isMain: true
@@ -4896,6 +4896,10 @@ projects:
 - key: test:project3
   name: Project 3
   visibility: private
+  binding:
+    key: Bitbucket Server 1
+    repository: project3-BBS
+    slug: project3-SLUG
   branches:
   - name: main
     isMain: true
