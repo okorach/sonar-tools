@@ -61,7 +61,7 @@ AI_CODE_FIX = "sonar.ai.suggestions.enabled"
 MQR_ENABLED = "sonar.multi-quality-mode.enabled"
 TOKEN_MAX_LIFETIME = "sonar.auth.token.max.allowed.lifetime"
 
-_GLOBAL_SETTINGS_WITHOUT_DEF = (AI_CODE_FIX, MQR_ENABLED)
+_GLOBAL_SETTINGS_WITHOUT_DEF = (AI_CODE_FIX, MQR_ENABLED, "sonar.cfamily.ignoreHeaderComments")
 
 _SQ_INTERNAL_SETTINGS = (
     "sonaranalyzer",
@@ -117,7 +117,7 @@ _INLINE_SETTINGS = (
     r"^sonar\.auth\.gitlab\.allowedGroups",
 )
 
-VALID_SETTINGS = set()
+VALID_SETTINGS: set[str] = set()
 
 
 class Setting(sqobject.SqObject):
@@ -227,7 +227,6 @@ class Setting(sqobject.SqObject):
                 self.value = data["values"][0]
         else:
             self.value = util.convert_to_type(next((data[key] for key in ("fieldValues", "values", "value") if key in data), None))
-            log.debug("Setting 1 %s value: %s", self.key, self.value)
             if self.value is None:
                 self.value = self.default_value
             if isinstance(self.value, list) and all(isinstance(v, str) for v in self.value):
@@ -308,7 +307,6 @@ class Setting(sqobject.SqObject):
             def_val = None if self.default_value is None else new_code_to_string(self.default_value)
         if val is None:
             val = ""
-        # log.debug("JSON of %s = %s", self, {self.key: val})
         return {self.key: {"key": self.key, "value": val, "defaultValue": def_val}}
 
     def definition(self) -> Optional[dict[str, str]]:
@@ -418,7 +416,7 @@ def __get_settings(endpoint: pf.Platform, data: types.ApiPayload, component: Opt
             else:
                 o.reload(sdata)
             if o.is_internal():
-                log.debug("Skipping internal setting %s", s["key"])
+                log.debug("Skipping internal setting %s", key)
                 continue
             settings[o.key] = o
     return settings
@@ -428,6 +426,7 @@ def get_bulk(
     endpoint: pf.Platform, settings_list: Optional[types.KeyList] = None, component: Optional[object] = None, include_not_set: bool = False
 ) -> dict[str, Setting]:
     """Gets several settings as bulk (returns a dict)"""
+    global VALID_SETTINGS
     settings_dict = {}
 
     if include_not_set:
@@ -453,8 +452,7 @@ def get_bulk(
     if not endpoint.is_sonarcloud():
         o = get_new_code_period(endpoint, component)
         settings_dict[o.key] = o
-    VALID_SETTINGS.update(set(settings_dict.keys()))
-    VALID_SETTINGS.update({"sonar.scm.provider", MQR_ENABLED})
+    VALID_SETTINGS |= set(settings_dict.keys()) | {"sonar.scm.provider", MQR_ENABLED, "sonar.cfamily.ignoreHeaderComments"}
     return settings_dict
 
 
@@ -498,7 +496,7 @@ def set_new_code_period(endpoint: pf.Platform, nc_type: str, nc_value: str, proj
     return ok
 
 
-def get_visibility(endpoint: pf.Platform, component: object) -> str:
+def get_visibility(endpoint: pf.Platform, component: object) -> Setting:
     """Returns the platform global or component visibility"""
     key = COMPONENT_VISIBILITY if component else PROJECT_DEFAULT_VISIBILITY
     o = Setting.CACHE.get(key, component, endpoint.local_url)
