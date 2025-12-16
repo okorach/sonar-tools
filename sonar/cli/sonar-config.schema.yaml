@@ -1035,31 +1035,50 @@ $defs:
     oneOf:
     - description: GitHub, GitLab or Bitbucket Cloud DevOps platform binding
       properties:
-        key: {}
+        key:
+          type: string
         repository:
           type: string
-        monorepo: {}
-        summaryCommentEnabled: {}
+        monorepo:
+          type: boolean
+        summaryCommentEnabled:
+          type: boolean
+      additionalProperties: false
+    - description: GitLab DevOps platform binding
+      properties:
+        key:
+          type: string
+        repository:
+          type: integer
+        monorepo:
+          type: boolean
       additionalProperties: false
     - description: Azure DevOps platform binding
       required:
       - projectName
       properties:
-        key: {}
+        key:
+          type: string
         repository:
           type: string
-        projectName: {}
-        monorepo: {}
-        inlineAnnotationsEnabled: {}
+        projectName:
+          type: string
+        monorepo:
+          type: boolean
+        inlineAnnotationsEnabled:
+          type: boolean
       additionalProperties: false
     - description: Bitbucket Server DevOps platform binding
       required:
       - slug
       properties:
-        key: {}
+        key:
+          type: string
         repository:
           type: string
-        slug: {}
-        monorepo: {}
+        slug:
+          type: string
+        monorepo:
+          type: boolean
       additionalProperties: false
 

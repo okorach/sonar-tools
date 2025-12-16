@@ -1451,9 +1451,7 @@
                     "description": "GitHub, GitLab or Bitbucket Cloud DevOps platform binding",
                     "properties": {
                         "key": {},
-                        "repository": {
-                            "type": "string"
-                        },
+                        "repository": {},
                         "monorepo": {},
                         "summaryCommentEnabled": {}
                     },
