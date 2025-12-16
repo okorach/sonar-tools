@@ -178,7 +178,7 @@ class DevopsPlatform(sq.SqObject):
             log.error("DevOps platform type '%s' for update of %s is incompatible", alm_type, str(self))
             return False
 
-        params = self.api_params() | {"url": kwargs["url"]}
+        params = self.api_params() | {"url": kwargs.get("url")}
         additional = ()
         if alm_type == DEVOPS_BITBUCKET_CLOUD:
             additional = ("clientId", "workspace")
@@ -188,7 +188,7 @@ class DevopsPlatform(sq.SqObject):
             params[k] = kwargs.get(k, _TO_BE_SET)
         try:
             ok = self.post(f"alm_settings/update_{alm_type}", params=params).ok
-            self.url = kwargs["url"]
+            self.url = kwargs.get("url")
             self._specific = {k: v for k, v in params.items() if k not in ("key", "url")}
         except exceptions.SonarException:
             ok = False
