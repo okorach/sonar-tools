@@ -219,13 +219,13 @@ def test_config_validate_non_compliant_json() -> None:
     """test_config_validate_non_compliant_json"""
     for i in range(1, 6):
         config_file = f"{tutil.FILES_ROOT}/config.noncompliant.{i}.json"
-        assert tutil.run_cmd(config.main, f"{CMD} --{opt.VALIDATE_JSON} --{opt.REPORT_FILE} {config_file}") == e.SCHEMA_ERROR
+        assert tutil.run_cmd(config.main, f"{CMD} --{opt.VALIDATE_FILE} --{opt.REPORT_FILE} {config_file}") == e.SCHEMA_ERROR
 
 
 def test_config_validate_compliant_json() -> None:
     """test_config_validate_compliant_json"""
     config_file = f"{tutil.FILES_ROOT}/config.json"
-    assert tutil.run_cmd(config.main, f"{CMD} --{opt.VALIDATE_JSON} --{opt.REPORT_FILE} {config_file}") == e.OK
+    assert tutil.run_cmd(config.main, f"{CMD} --{opt.VALIDATE_FILE} --{opt.REPORT_FILE} {config_file}") == e.OK
 
 
 def test_config_import_non_compliant_json() -> None:
@@ -245,20 +245,20 @@ def test_config_conversion(json_file: Generator[str]) -> None:
     """test_config_conversion"""
     config_file = f"{tutil.FILES_ROOT}/config.3.16.json"
     assert tutil.run_cmd(config.main, f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.CONVERT_FROM} {config_file} --{opt.CONVERT_TO} {json_file}") == e.OK
-    assert tutil.run_cmd(config.main, f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.VALIDATE_JSON} --{opt.REPORT_FILE} {json_file}") == e.OK
+    assert tutil.run_cmd(config.main, f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.VALIDATE_FILE} --{opt.REPORT_FILE} {json_file}") == e.OK
 
 
 def test_config_validate_non_compliant_yaml() -> None:
     """test_config_validate_non_compliant_yaml"""
     for i in range(1, 6):
         config_file = f"{tutil.FILES_ROOT}/config.noncompliant.{i}.yaml"
-        assert tutil.run_cmd(config.main, f"{CMD} --{opt.VALIDATE_JSON} --{opt.REPORT_FILE} {config_file}") == e.SCHEMA_ERROR
+        assert tutil.run_cmd(config.main, f"{CMD} --{opt.VALIDATE_FILE} --{opt.REPORT_FILE} {config_file}") == e.SCHEMA_ERROR
 
 
 def test_config_validate_compliant_yaml() -> None:
     """test_config_validate_compliant_yaml"""
     config_file = f"{tutil.FILES_ROOT}/config.yaml"
-    assert tutil.run_cmd(config.main, f"{CMD} --{opt.VALIDATE_JSON} --{opt.REPORT_FILE} {config_file}") == e.OK
+    assert tutil.run_cmd(config.main, f"{CMD} --{opt.VALIDATE_FILE} --{opt.REPORT_FILE} {config_file}") == e.OK
 
 
 def test_config_import_non_compliant_yaml() -> None:

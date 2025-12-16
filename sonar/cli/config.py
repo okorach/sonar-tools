@@ -131,7 +131,7 @@ def __parse_args(desc: str) -> object:
         help="Target sonar-config new JSON format file to write the converted data to",
     )
     parser.add_argument(
-        f"--{options.VALIDATE_JSON}",
+        f"--{options.VALIDATE_FILE}",
         required=False,
         action="store_true",
         help="Validate the JSON file against the schema",
@@ -282,13 +282,13 @@ def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: type
     return json_data
 
 
-def validate_json(file: str) -> dict[str, Any]:
+def validate_schema(file: str) -> dict[str, Any]:
     """Validates a sonar-config JSON file against the schema
 
-    :param: file: JSON file to validate
-    :return: JSON data
-    :raises: SonarException if the JSON file is not valid
-    :raises: FileNotFoundError if the JSON file does not exist
+    :param: file: JSON or YAML file to validate
+    :return: The loaded schema in JSOn format
+    :raises: SonarException if the JSON or YAML file is not valid
+    :raises: FileNotFoundError if the file does not exist
     """
     fmt = "yaml" if file.split(".")[-1].lower() in ("yaml", "yml") else "json"
     log.info("Validating %s file %s", fmt.upper(), file)
@@ -330,7 +330,7 @@ def validate_json(file: str) -> dict[str, Any]:
 def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
     """Imports a platform configuration from a JSON file"""
     log.info("Importing configuration to %s", kwargs[options.URL])
-    data = validate_json(kwargs[options.REPORT_FILE])
+    data = validate_schema(kwargs[options.REPORT_FILE])
     key_list = kwargs[options.KEY_REGEXP]
 
     calls = {
@@ -392,8 +392,8 @@ def main() -> None:
         if kwargs[options.CONVERT_FROM] is not None:
             convert_json_file(kwargs[options.CONVERT_FROM], kwargs.get(options.CONVERT_TO, None))
             chelp.clear_cache_and_exit(errcodes.OK, "", start_time)
-        if kwargs[options.VALIDATE_JSON] is True:
-            validate_json(kwargs[options.REPORT_FILE])
+        if kwargs[options.VALIDATE_FILE] is True:
+            validate_schema(kwargs[options.REPORT_FILE])
             chelp.clear_cache_and_exit(errcodes.OK, "", start_time)
         log.info("Checking token")
         utilities.check_token(kwargs[options.TOKEN], utilities.is_sonarcloud_url(kwargs[options.URL]))
