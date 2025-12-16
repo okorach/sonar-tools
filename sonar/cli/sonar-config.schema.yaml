@@ -82,41 +82,7 @@ properties:
         type: array
         description: Devops integration settings
         items:
-          type: object
-          additionalProperties: false
-          description: A DevOps platform configuration
-          required:
-          - key
-          - url
-          - type
-          properties:
-            key:
-              type: string
-              description: The DevOps platform key/name
-            url:
-              type: string
-              format: uri
-              description: The DevOps platform URL
-            type:
-              type: string
-              enum:
-              - github
-              - azure
-              - bitbucket
-              - bitbucketcloud
-              - gitlab
-              description: The DevOps platform type
-            workspace:
-              type: string
-              description: The workspace (for Bitbucket Cloud)
-            clientId:
-              type: string
-              description: The client ID (for GitHub)
-            appId:
-              anyOf:
-              - type: integer
-              - type: string
-              description: The application ID (for GitHub)
+          $ref: '#/$defs/devopsPlatform'
       sastConfig:
         type: array
         description: SAST configuration settings
