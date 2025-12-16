@@ -1506,10 +1506,6 @@
                             "type": "string",
                             "description": "The project name in Azure DevOps"
                         },
-                        "repositoryName": {
-                            "description": "The repository name in Azure DevOps (can be a string or number)",
-                            "type": "string"
-                        },
                         "inlineAnnotationsEnabled": {
                             "type": "boolean",
                             "description": "Whether inline annotations are enabled for Azure DevOps PRs"
