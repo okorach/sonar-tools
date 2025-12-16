@@ -997,7 +997,10 @@ $defs:
           description: The DevOps platform type
         workspace:
           type: string
-          description: The workspace (for Bitbucket Cloud)
+          description: The workspace
+        clientId:
+          type: string
+          description: The client ID
   devopsBinding:
     description: DevOps platform binding configuration for a project
     type: object

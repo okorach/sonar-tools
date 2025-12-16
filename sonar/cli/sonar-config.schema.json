@@ -1269,7 +1269,7 @@
                         },
                         "clientId": {
                             "type": "string",
-                            "description": "The client ID (for GitHub)"
+                            "description": "The client ID (for GitHub and Bitbucket Cloud)"
                         },
                         "appId": {
                             "anyOf": [
@@ -1391,7 +1391,11 @@
                         },
                         "workspace": {
                             "type": "string",
-                            "description": "The workspace (for Bitbucket Cloud)"
+                            "description": "The workspace"
+                        },
+                        "clientId": {
+                            "type": "string",
+                            "description": "The client ID"
                         }
                     }
                 }
