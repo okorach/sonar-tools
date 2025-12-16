@@ -113,7 +113,9 @@ properties:
               type: string
               description: The client ID (for GitHub)
             appId:
-              type: integer
+              anyOf:
+              - type: integer
+              - type: string
               description: The application ID (for GitHub)
       sastConfig:
         type: array
@@ -947,7 +949,9 @@ $defs:
           type: string
           description: The client ID (for GitHub)
         appId:
-          type: integer
+          anyOf:
+          - type: integer
+          - type: string
           description: The application ID (for GitHub)
     - type: object
       additionalProperties: false
@@ -1030,98 +1034,63 @@ $defs:
           description: The workspace (for Bitbucket Cloud)
   devopsBinding:
     description: DevOps platform binding configuration for a project
+    type: object
+    additionalProperties: false
+    required:
+    - key
+    - repository
+    properties:
+      key:
+        type: string
+        description: The DevOps platform key (all DOP)
+      repository:
+        anyOf:
+        - type: integer
+        - type: string
+        description: The repository identifier (all DOP)
+      monorepo:
+        type: boolean
+        description: Whether this is a monorepo project (all DOP)
+      summaryCommentEnabled:
+        type: boolean
+        description: Whether summary comments are enabled for GitHub PRs
+      projectName:
+        type: string
+        description: The project name in Azure DevOps
+      inlineAnnotationsEnabled:
+        type: boolean
+        description: Whether inline annotations are enabled for Azure DevOps PRs
+      slug:
+        type: string
+        description: The project repository slug (for Bitbucket Server)
     oneOf:
-    - type: object
-      additionalProperties: false
-      description: GitHub DevOps platform binding
-      required:
-      - key
-      - repository
+    - description: GitHub, GitLab or Bitbucket Cloud DevOps platform binding
       properties:
-        key:
-          type: string
-          description: The DevOps platform key
+        key: {}
         repository:
           type: string
-          description: The repository identifier
-        summaryCommentEnabled:
-          type: boolean
-          description: Whether summary comments are enabled for GitHub PRs
-        monorepo:
-          type: boolean
-          description: Whether this is a monorepo project
-    - type: object
+        monorepo: {}
+        summaryCommentEnabled: {}
       additionalProperties: false
-      description: GitLab DevOps platform binding
+    - description: Azure DevOps platform binding
       required:
-      - key
-      - repository
-      properties:
-        key:
-          type: string
-          description: The DevOps platform key
-        repository:
-          type: integer
-          description: The repository identifier
-        monorepo:
-          type: boolean
-          description: Whether this is a monorepo project
-    - type: object
-      additionalProperties: false
-      description: Azure DevOps platform binding
-      required:
-      - key
-      - repository
       - projectName
       properties:
-        key:
-          type: string
-          description: The DevOps platform key
+        key: {}
         repository:
           type: string
-          description: The repository identifier
-        projectName:
-          type: string
-          description: The project name in Azure DevOps
-        inlineAnnotationsEnabled:
-          type: boolean
-          description: Whether inline annotations are enabled for Azure DevOps PRs
-        monorepo:
-          type: boolean
-          description: Whether this is a monorepo project
-    - type: object
+        projectName: {}
+        monorepo: {}
+        inlineAnnotationsEnabled: {}
       additionalProperties: false
-      description: Bitbucket Server DevOps platform binding
+    - description: Bitbucket Server DevOps platform binding
       required:
-      - key
-      - repository
       - slug
       properties:
-        key:
-          type: string
-          description: The DevOps platform key
+        key: {}
         repository:
           type: string
-          description: The repository identifier
-        slug:
-          type: string
-          description: The project repository slug (for Bitbucket Server)
-        monorepo:
-          type: boolean
-          description: Whether this is a monorepo project
-    - type: object
+        slug: {}
+        monorepo: {}
       additionalProperties: false
-      description: Bitbucket Cloud DevOps platform binding
-      required:
-      - key
-      - repository
-      properties:
-        key:
-          type: string
-          description: The DevOps platform key
-        repository:
-          type: string
-          description: The repository identifier
-        monorepo:
-          type: boolean
-          description: Whether this is a monorepo project
+
