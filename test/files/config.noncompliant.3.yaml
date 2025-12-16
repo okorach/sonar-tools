@@ -1,0 +1,5782 @@
+platform:
+  edition: enterprise
+  url: https://latest.olivierk.ngrok.io
+  version: 2025.6.0
+  serverId: 243B8A4D-AY5SFSbmgIK8PCmM81th
+  plugins:
+  - key: ecocodephp
+    version: 1.4.4
+    name: ecoCode - PHP language
+  - key: checkstyle
+    version: 10.17.0
+    name: Checkstyle
+  - key: creedengojava
+    version: 2.1.1
+    name: creedengo - Java language
+globalSettings:
+  generalSettings:
+  - key: provisioning.github.project.visibility.enabled
+    defaultValue: true
+  - key: provisioning.gitlab.enabled
+    defaultValue: false
+  - key: provisioning.gitlab.token.secured
+    value: ''
+  - key: sonar.ai.suggestions.enabled
+    value: ENABLED_FOR_ALL_PROJECTS
+  - key: sonar.allowPermissionManagementForProjectAdmins
+    value: false
+    defaultValue: true
+  - key: sonar.announcement.displayMessage
+    defaultValue: false
+  - key: sonar.announcement.message
+    value: You are on [LATEST](https://docs.sonarqube.com)
+  - key: sonar.autodetect.ai.code
+    defaultValue: true
+  - key: sonar.builtInQualityProfiles.disableNotificationOnUpdate
+    defaultValue: false
+  - key: sonar.ce.parallelProjectTasks
+    value: false
+    defaultValue: true
+  - key: sonar.core.serverBaseURL
+    value: https://latest.olivierk.ngrok.io
+  - key: sonar.cpd.cross_project
+    defaultValue: false
+  - key: sonar.dbcleaner.auditHousekeeping
+    defaultValue: Monthly
+  - key: sonar.dbcleaner.branchesToKeepWhenInactive
+    value:
+    - comma,branch
+    - develop
+    - main
+    - master
+    - release-.*
+    - trunk
+    defaultValue:
+    - develop
+    - main
+    - master
+    - trunk
+  - key: sonar.dbcleaner.daysBeforeDeletingAnticipatedTransitions
+    defaultValue: 30
+  - key: sonar.dbcleaner.daysBeforeDeletingClosedIssues
+    defaultValue: 30
+  - key: sonar.dbcleaner.daysBeforeDeletingInactiveBranchesAndPRs
+    defaultValue: 30
+  - key: sonar.dbcleaner.hoursBeforeKeepingOnlyOneSnapshotByDay
+    defaultValue: 24
+  - key: sonar.dbcleaner.weeksBeforeDeletingAllSnapshots
+    defaultValue: 260
+  - key: sonar.dbcleaner.weeksBeforeKeepingOnlyAnalysesWithVersion
+    defaultValue: 104
+  - key: sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByMonth
+    defaultValue: 52
+  - key: sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByWeek
+    defaultValue: 4
+  - key: sonar.developerAggregatedInfo.disabled
+    defaultValue: false
+  - key: sonar.dre.apex.activate
+    defaultValue: true
+  - key: sonar.dre.baselineTimeout
+    defaultValue: 90000
+  - key: sonar.dre.enabled
+    defaultValue: true
+  - key: sonar.dre.go.activate
+    defaultValue: true
+  - key: sonar.dre.ruby.activate
+    defaultValue: true
+  - key: sonar.enforceAzureOpenAiDomainValidation
+    defaultValue: true
+  - key: sonar.githubactions.activate
+    defaultValue: true
+  - key: sonar.governance.report.project.branch.frequency
+    defaultValue: Monthly
+  - key: sonar.governance.report.view.frequency
+    defaultValue: Monthly
+  - key: sonar.governance.report.view.recipients
+    defaultValue: []
+  - key: sonar.issues.defaultAssigneeLogin
+    value: ''
+  - key: sonar.jreAutoProvisioning.disabled
+    defaultValue: false
+  - key: sonar.kubernetes.activate
+    defaultValue: true
+  - key: sonar.kubernetes.helm.activate
+    defaultValue: true
+  - key: sonar.lf.enableGravatar
+    defaultValue: false
+  - key: sonar.lf.gravatarServerUrl
+    defaultValue: https://secure.gravatar.com/avatar/{EMAIL_MD5}.jpg?s={SIZE}&d=identicon
+  - key: sonar.lf.logoUrl
+    value: ''
+  - key: sonar.lf.logoWidthPx
+    value: ''
+  - key: sonar.login.displayMessage
+    value: true
+  - key: sonar.login.message
+    value: 'Welcome to [superbank.com](https://www.superbank.com) SonarQube.
+
+      Please log in using your GitHub account'
+  - key: sonar.multi-quality-mode.enabled
+    value: true
+  - key: sonar.pdf.confidential.header.enabled
+    defaultValue: true
+  - key: sonar.plugins.downloadOnlyRequired
+    defaultValue: true
+  - key: sonar.portfolios.recompute.hours
+    defaultValue: []
+  - key: sonar.projectCreation.mainBranchName
+    defaultValue: main
+  - key: sonar.qualityProfiles.allowDisableInheritedRules
+    value: false
+    defaultValue: true
+  - key: sonar.qualitygate.ignoreSmallChanges
+    defaultValue: true
+  - key: sonar.sca.enabled
+    defaultValue: true
+  - key: sonar.sca.featureEnabled
+    value: true
+    defaultValue: false
+  - key: sonar.sca.rescan.branch_type
+    defaultValue: Kept branches only
+  - key: sonar.sca.rescan.frequency
+    defaultValue: Daily
+  - key: sonar.scanner.skipNodeProvisioning
+    defaultValue: false
+  - key: sonar.scm.disabled
+    defaultValue: false
+  - key: sonar.shell.activate
+    defaultValue: true
+  - key: sonar.shell.file.suffixes
+    defaultValue:
+    - .bash
+    - .sh
+  - key: sonar.technicalDebt.developmentCost
+    defaultValue: 30
+  - key: sonar.technicalDebt.ratingGrid
+    value: 0.03,0.07,0.2,0.5
+    defaultValue: 0.05,0.1,0.2,0.5
+  - key: sonar.validateWebhooks
+    defaultValue: true
+  analysisScope:
+  - key: sonar.coverage.exclusions
+    defaultValue: []
+  - key: sonar.cpd.exclusions
+    defaultValue: []
+  - key: sonar.exclusions
+    defaultValue: []
+  - key: sonar.global.exclusions
+    value:
+    - '**/lib/**'
+    - '**/vendor/**'
+    defaultValue: []
+  - key: sonar.global.test.exclusions
+    defaultValue: []
+  - key: sonar.inclusions
+    defaultValue: []
+  - key: sonar.issue.enforce.multicriteria
+    value: ''
+  - key: sonar.issue.ignore.allfile
+    value: ''
+  - key: sonar.issue.ignore.block
+    value: ''
+  - key: sonar.issue.ignore.multicriteria
+    value: ''
+  - key: sonar.test.exclusions
+    defaultValue: []
+  - key: sonar.test.inclusions
+    defaultValue: []
+  authentication:
+  - key: sonar.auth.bitbucket.allowUsersToSignUp
+    defaultValue: true
+  - key: sonar.auth.bitbucket.clientId.secured
+    value: ''
+  - key: sonar.auth.bitbucket.clientSecret.secured
+    value: ''
+  - key: sonar.auth.bitbucket.enabled
+    defaultValue: false
+  - key: sonar.auth.bitbucket.workspaces
+    defaultValue: []
+  - key: sonar.auth.github.allowUsersToSignUp
+    defaultValue: true
+  - key: sonar.auth.github.apiUrl
+    defaultValue: https://api.github.com/
+  - key: sonar.auth.github.appId
+    value: 946173
+  - key: sonar.auth.github.clientId.secured
+    value: ''
+  - key: sonar.auth.github.clientSecret.secured
+    value: ''
+  - key: sonar.auth.github.enabled
+    value: true
+    defaultValue: false
+  - key: sonar.auth.github.groupsSync
+    defaultValue: false
+  - key: sonar.auth.github.organizations
+    value:
+    - okorach-org
+    defaultValue: []
+  - key: sonar.auth.github.privateKey.secured
+    value: ''
+  - key: sonar.auth.github.webUrl
+    defaultValue: https://github.com/
+  - key: sonar.auth.gitlab.allowUsersToSignUp
+    defaultValue: true
+  - key: sonar.auth.gitlab.allowedGroups
+    value:
+    - gl-admins
+    defaultValue: []
+  - key: sonar.auth.gitlab.applicationId.secured
+    value: ''
+  - key: sonar.auth.gitlab.enabled
+    value: true
+    defaultValue: false
+  - key: sonar.auth.gitlab.groupsSync
+    value: true
+    defaultValue: false
+  - key: sonar.auth.gitlab.secret.secured
+    value: ''
+  - key: sonar.auth.gitlab.url
+    value: https://gitlab.com/
+    defaultValue: https://gitlab.com
+  - key: sonar.auth.saml.applicationId
+    defaultValue: sonarqube
+  - key: sonar.auth.saml.certificate.secured
+    value: ''
+  - key: sonar.auth.saml.enabled
+    defaultValue: false
+  - key: sonar.auth.saml.group.name
+    value: ''
+  - key: sonar.auth.saml.loginUrl
+    value: ''
+  - key: sonar.auth.saml.providerId
+    value: ''
+  - key: sonar.auth.saml.providerName
+    defaultValue: SAML
+  - key: sonar.auth.saml.signature.enabled
+    defaultValue: false
+  - key: sonar.auth.saml.sp.certificate.secured
+    value: ''
+  - key: sonar.auth.saml.sp.privateKey.secured
+    value: ''
+  - key: sonar.auth.saml.user.email
+    value: ''
+  - key: sonar.auth.saml.user.login
+    value: ''
+  - key: sonar.auth.saml.user.name
+    value: ''
+  - key: sonar.auth.token.max.allowed.lifetime
+    value: 1 year
+    defaultValue: No expiration
+  - key: sonar.forceAuthentication
+    defaultValue: true
+  languages:
+  - language: abap
+    settings:
+    - key: sonar.abap.file.suffixes
+      defaultValue:
+      - .ab4
+      - .abap
+      - .asprog
+      - .flow
+  - language: ansible
+    settings:
+    - key: sonar.ansible.activate
+      defaultValue: true
+    - key: sonar.ansible.ansible-lint.reportPaths
+      defaultValue: []
+  - language: apex
+    settings:
+    - key: sonar.apex.file.suffixes
+      defaultValue:
+      - .cls
+      - .trigger
+    - key: sonar.apex.pmd.reportPaths
+      defaultValue: []
+  - language: azureresourcemanager
+    settings:
+    - key: sonar.azureresourcemanager.activate
+      defaultValue: true
+    - key: sonar.azureresourcemanager.file.identifier
+      value:
+      - https://schema.management.azure.com/schemas/
+      defaultValue:
+      - http://schema.management.azure.com/schemas/
+      - https://schema.management.azure.com/schemas/
+    - key: sonar.azureresourcemanager.file.suffixes
+      defaultValue:
+      - .bicep
+  - language: cfamily
+    settings:
+    - key: sonar.c.file.suffixes
+      defaultValue:
+      - .c
+      - .h
+    - key: sonar.cfamily.bullseye.reportPath
+      value: ''
+    - key: sonar.cfamily.cobertura.reportPaths
+      defaultValue: []
+    - key: sonar.cfamily.cppunit.reportsPath
+      value: ''
+    - key: sonar.cfamily.gcov.reportsPath
+      value: ''
+    - key: sonar.cfamily.llvm-cov.reportPath
+      value: ''
+    - key: sonar.cfamily.valgrind.reportsPaths
+      defaultValue: []
+    - key: sonar.cfamily.vscoveragexml.reportsPath
+      value: ''
+    - key: sonar.cpp.file.suffixes
+      value:
+      - .c++
+      - .cc
+      - .cpp
+      - .cxx
+      - .h++
+      - .hh
+      - .hpp
+      - .hxx
+      - .ipp
+      defaultValue:
+      - .c++
+      - .c++m
+      - .cc
+      - .ccm
+      - .cpp
+      - .cppm
+      - .cxx
+      - .cxxm
+      - .h++
+      - .hh
+      - .hpp
+      - .hxx
+      - .ipp
+      - .ixx
+      - .mxx
+    - key: sonar.objc.file.suffixes
+      defaultValue:
+      - .m
+  - language: cloudformation
+    settings:
+    - key: sonar.cloudformation.activate
+      defaultValue: true
+    - key: sonar.cloudformation.cfn-lint.reportPaths
+      defaultValue: []
+    - key: sonar.cloudformation.file.identifier
+      defaultValue: AWSTemplateFormatVersion
+  - language: cobol
+    settings:
+    - key: sonar.cobol.adaprep.activation
+      defaultValue: false
+    - key: sonar.cobol.aucobol.preprocessor.directives.default
+      value: ''
+    - key: sonar.cobol.byteBasedColumnCount
+      defaultValue: false
+    - key: sonar.cobol.compilationConstants
+      defaultValue: []
+    - key: sonar.cobol.copy.directories
+      defaultValue: []
+    - key: sonar.cobol.copy.exclusions
+      defaultValue: []
+    - key: sonar.cobol.copy.suffixes
+      defaultValue: []
+    - key: sonar.cobol.db2include.directories
+      defaultValue: []
+    - key: sonar.cobol.dialect
+      defaultValue: ibm-enterprise-cobol
+    - key: sonar.cobol.exec.recoveryMode
+      defaultValue: true
+    - key: sonar.cobol.file.suffixes
+      defaultValue: []
+    - key: sonar.cobol.preprocessor.skipping.first.matching.characters
+      value: ''
+    - key: sonar.cobol.sourceFormat
+      defaultValue: fixed
+    - key: sonar.cobol.sql.catalog.csv.path
+      value: ''
+    - key: sonar.cobol.sql.catalog.defaultSchema
+      defaultValue: []
+    - key: sonar.cobol.tab.width
+      defaultValue: 8
+    - key: sonar.cpd.cobol.ignoreLiteral
+      defaultValue: true
+  - language: cs
+    settings:
+    - key: sonar.cs.analyzeGeneratedCode
+      defaultValue: false
+    - key: sonar.cs.analyzeRazorCode
+      defaultValue: true
+    - key: sonar.cs.file.suffixes
+      value:
+      - .cs
+      defaultValue:
+      - .cs
+      - .razor
+    - key: sonar.cs.ignoreHeaderComments
+      defaultValue: true
+    - key: sonar.cs.roslyn.bugCategories
+      defaultValue: []
+    - key: sonar.cs.roslyn.codeSmellCategories
+      defaultValue: []
+    - key: sonar.cs.roslyn.ignoreIssues
+      defaultValue: false
+    - key: sonar.cs.roslyn.vulnerabilityCategories
+      defaultValue: []
+  - language: css
+    settings:
+    - key: sonar.css.file.suffixes
+      value:
+      - .css
+      - .less
+      - .scss
+      defaultValue:
+      - .css
+      - .less
+      - .sass
+      - .scss
+    - key: sonar.css.stylelint.reportPaths
+      defaultValue: []
+  - language: dart
+    settings:
+    - key: sonar.dart.file.suffixes
+      defaultValue:
+      - .dart
+    - key: sonar.dart.lcov.reportPaths
+      defaultValue: []
+  - language: docker
+    settings:
+    - key: sonar.docker.activate
+      defaultValue: true
+    - key: sonar.docker.file.patterns
+      value:
+      - '*.Dockerfile'
+      - '*.dockerfile'
+      - Dockerfile
+      defaultValue:
+      - '*.dockerfile'
+      - Dockerfile
+    - key: sonar.docker.hadolint.reportPaths
+      defaultValue: []
+  - language: flex
+    settings:
+    - key: sonar.flex.cobertura.reportPaths
+      defaultValue: []
+    - key: sonar.flex.file.suffixes
+      defaultValue:
+      - as
+  - language: go
+    settings:
+    - key: sonar.go.coverage.reportPaths
+      defaultValue: []
+    - key: sonar.go.exclusions
+      defaultValue:
+      - '**/vendor/**'
+    - key: sonar.go.file.suffixes
+      defaultValue:
+      - .go
+    - key: sonar.go.golangci-lint.reportPaths
+      defaultValue: []
+    - key: sonar.go.golint.reportPaths
+      defaultValue: []
+    - key: sonar.go.gometalinter.reportPaths
+      defaultValue: []
+    - key: sonar.go.govet.reportPaths
+      defaultValue: []
+    - key: sonar.go.tests.reportPaths
+      defaultValue: []
+  - language: html
+    settings:
+    - key: sonar.html.file.suffixes
+      defaultValue:
+      - .ascx
+      - .aspx
+      - .cmp
+      - .cshtml
+      - .erb
+      - .html
+      - .rhtml
+      - .shtm
+      - .shtml
+      - .twig
+      - .vbhtml
+      - .xhtml
+  - language: ipynb
+    settings:
+    - key: sonar.ipynb.file.suffixes
+      defaultValue:
+      - ipynb
+  - language: java
+    settings:
+    - key: sonar.java.checkstyle.reportPaths
+      value:
+      - target/checkstyle-result.xml
+      - target/sonar/checkstyle-result.xml
+      defaultValue: []
+    - key: sonar.java.enablePreview
+      defaultValue: false
+    - key: sonar.java.file.suffixes
+      value:
+      - .jav
+      - .java
+      - .javax
+      defaultValue:
+      - .jav
+      - .java
+    - key: sonar.java.ignoreUnnamedModuleForSplitPackage
+      defaultValue: false
+    - key: sonar.java.jvmframeworkconfig.activate
+      defaultValue: true
+    - key: sonar.java.jvmframeworkconfig.file.patterns
+      value:
+      - '**/src/main/resources/**/application*.properties'
+      - '**/src/main/resources/**/application*.yaml'
+      - '**/src/main/resources/**/application*.yml'
+      defaultValue:
+      - '**/src/main/resources/**/*app*.properties'
+      - '**/src/main/resources/**/*app*.yaml'
+      - '**/src/main/resources/**/*app*.yml'
+    - key: sonar.java.pmd.reportPaths
+      defaultValue: []
+    - key: sonar.java.spotbugs.reportPaths
+      defaultValue: []
+  - language: javascript
+    settings:
+    - key: sonar.eslint.reportPaths
+      defaultValue: []
+    - key: sonar.javascript.environments
+      value:
+      - amd
+      - applescript
+      - atomtest
+      - browser
+      - commonjs
+      - couch
+      - embertest
+      - flow
+      - greasemonkey
+      - jasmine
+      - jest
+      - jquery
+      - meteor
+      - mocha
+      - mongo
+      - nashorn
+      - node
+      - phantomjs
+      - prototypejs
+      - protractor
+      - qunit
+      - rhino
+      - serviceworker
+      - shared-node-browser
+      - shelljs
+      - webextensions
+      - worker
+      - wsh
+      - yui
+      defaultValue:
+      - amd
+      - applescript
+      - atomtest
+      - browser
+      - commonjs
+      - embertest
+      - greasemonkey
+      - jasmine
+      - jest
+      - jquery
+      - meteor
+      - mocha
+      - mongo
+      - nashorn
+      - node
+      - phantomjs
+      - prototypejs
+      - protractor
+      - qunit
+      - serviceworker
+      - shared-node-browser
+      - shelljs
+      - webextensions
+      - worker
+    - key: sonar.javascript.file.suffixes
+      defaultValue:
+      - .cjs
+      - .js
+      - .jsx
+      - .mjs
+      - .vue
+    - key: sonar.javascript.globals
+      value:
+      - Backbone
+      - OenLayers
+      - _
+      - angular
+      - casper
+      - d3
+      - dijit
+      - dojo
+      - dojox
+      - goog
+      - google
+      - moment
+      - sap
+      defaultValue:
+      - Backbone
+      - OpenLayers
+      - _
+      - angular
+      - casper
+      - d3
+      - dijit
+      - dojo
+      - dojox
+      - goog
+      - google
+      - moment
+      - sap
+    - key: sonar.javascript.ignoreHeaderComments
+      defaultValue: true
+    - key: sonar.javascript.lcov.reportPaths
+      defaultValue: []
+    - key: sonar.javascript.maxFileSize
+      defaultValue: 1000
+  - language: jcl
+    settings:
+    - key: sonar.jcl.file.suffixes
+      defaultValue:
+      - .jcl
+  - language: json
+    settings:
+    - key: sonar.json.activate
+      defaultValue: false
+    - key: sonar.json.file.suffixes
+      defaultValue:
+      - .json
+  - language: jsp
+    settings:
+    - key: sonar.jsp.file.suffixes
+      defaultValue:
+      - .jsp
+      - .jspf
+      - .jspx
+  - language: kotlin
+    settings:
+    - key: sonar.androidLint.reportPaths
+      defaultValue: []
+    - key: sonar.kotlin.detekt.reportPaths
+      defaultValue: []
+    - key: sonar.kotlin.file.suffixes
+      value:
+      - .kt
+      defaultValue:
+      - .kt
+      - .kts
+    - key: sonar.kotlin.ktlint.reportPaths
+      defaultValue: []
+  - language: php
+    settings:
+    - key: sonar.php.coverage.reportPaths
+      defaultValue: []
+    - key: sonar.php.exclusions
+      defaultValue:
+      - '**/vendor/**'
+    - key: sonar.php.file.suffixes
+      defaultValue:
+      - inc
+      - php
+      - php3
+      - php4
+      - php5
+      - phtml
+    - key: sonar.php.frameworkDetection
+      defaultValue: true
+    - key: sonar.php.phpstan.reportPaths
+      defaultValue: []
+    - key: sonar.php.psalm.reportPaths
+      defaultValue: []
+    - key: sonar.php.tests.reportPath
+      defaultValue: []
+  - language: pli
+    settings:
+    - key: sonar.pli.extralingualCharacters
+      defaultValue: '#@$'
+    - key: sonar.pli.file.suffixes
+      defaultValue:
+      - .pli
+    - key: sonar.pli.ignoreHeaderComments
+      defaultValue: true
+    - key: sonar.pli.marginLeft
+      defaultValue: 2
+    - key: sonar.pli.marginRight
+      defaultValue: 72
+  - language: plsql
+    settings:
+    - key: sonar.plsql.file.suffixes
+      defaultValue:
+      - pkb
+      - pks
+      - sql
+    - key: sonar.plsql.ignoreHeaderComments
+      defaultValue: false
+  - language: python
+    settings:
+    - key: sonar.python.bandit.reportPaths
+      defaultValue: []
+    - key: sonar.python.coverage.reportPaths
+      defaultValue:
+      - coverage-reports/*coverage-*.xml
+    - key: sonar.python.file.suffixes
+      value:
+      - py
+      - python
+      defaultValue:
+      - py
+    - key: sonar.python.flake8.reportPaths
+      defaultValue: []
+    - key: sonar.python.mypy.reportPaths
+      defaultValue: []
+    - key: sonar.python.pylint.reportPaths
+      defaultValue: []
+    - key: sonar.python.ruff.reportPaths
+      defaultValue: []
+    - key: sonar.python.version
+      defaultValue: []
+    - key: sonar.python.xunit.reportPath
+      value: build//xunit-results*.xml
+      defaultValue: xunit-reports/xunit-result-*.xml
+    - key: sonar.python.xunit.skipDetails
+      defaultValue: false
+  - language: rpg
+    settings:
+    - key: sonar.rpg.file.suffixes
+      defaultValue:
+      - .RPG
+      - .RPGLE
+      - .SQLRPGLE
+      - .rpg
+      - .rpgle
+      - .sqlrpgle
+    - key: sonar.rpg.leftMarginWidth
+      defaultValue: 12
+  - language: ruby
+    settings:
+    - key: sonar.ruby.coverage.reportPaths
+      defaultValue:
+      - coverage/.resultset.json
+    - key: sonar.ruby.exclusions
+      defaultValue:
+      - '**/vendor/**'
+    - key: sonar.ruby.file.suffixes
+      defaultValue:
+      - .rb
+    - key: sonar.ruby.rubocop.reportPaths
+      defaultValue: []
+  - language: rust
+    settings:
+    - key: sonar.rust.cargo.manifestPaths
+      defaultValue: []
+    - key: sonar.rust.clippy.enabled
+      defaultValue: true
+    - key: sonar.rust.clippy.offline
+      defaultValue: false
+    - key: sonar.rust.clippyReport.reportPaths
+      defaultValue: []
+    - key: sonar.rust.cobertura.reportPaths
+      defaultValue: []
+    - key: sonar.rust.file.suffixes
+      defaultValue:
+      - .rs
+    - key: sonar.rust.lcov.reportPaths
+      defaultValue: []
+  - language: scala
+    settings:
+    - key: sonar.scala.coverage.reportPaths
+      defaultValue: []
+    - key: sonar.scala.file.suffixes
+      defaultValue:
+      - .scala
+    - key: sonar.scala.scalastyle.reportPaths
+      defaultValue: []
+    - key: sonar.scala.scapegoat.reportPaths
+      defaultValue: []
+  - language: swift
+    settings:
+    - key: sonar.swift.coverage.reportPaths
+      defaultValue: []
+    - key: sonar.swift.file.suffixes
+      defaultValue:
+      - .swift
+    - key: sonar.swift.swiftLint.reportPaths
+      defaultValue: []
+  - language: terraform
+    settings:
+    - key: sonar.terraform.activate
+      defaultValue: true
+    - key: sonar.terraform.file.suffixes
+      defaultValue:
+      - .tf
+    - key: sonar.terraform.provider.aws.version
+      value: ''
+    - key: sonar.terraform.provider.azure.version
+      value: ''
+    - key: sonar.terraform.tflint.reportPaths
+      defaultValue: []
+  - language: text
+    settings:
+    - key: sonar.text.activate
+      defaultValue: true
+    - key: sonar.text.excluded.file.suffixes
+      defaultValue: []
+    - key: sonar.text.inclusions
+      value:
+      - '**/*.bash'
+      - '**/*.conf'
+      - '**/*.config'
+      - '**/*.ksh'
+      - '**/*.pem'
+      - '**/*.properties'
+      - '**/*.ps1'
+      - '**/*.sh'
+      - '**/*.zsh'
+      - .aws/config
+      - .env
+      defaultValue:
+      - '**/*.bash'
+      - '**/*.conf'
+      - '**/*.config'
+      - '**/*.key'
+      - '**/*.ksh'
+      - '**/*.pem'
+      - '**/*.properties'
+      - '**/*.ps1'
+      - '**/*.sh'
+      - '**/*.zsh'
+      - .aws/config
+      - .env
+    - key: sonar.text.inclusions.activate
+      defaultValue: true
+  - language: tsql
+    settings:
+    - key: sonar.tsql.file.suffixes
+      defaultValue:
+      - .tsql
+  - language: typescript
+    settings:
+    - key: sonar.typescript.file.suffixes
+      defaultValue:
+      - .cts
+      - .mts
+      - .ts
+      - .tsx
+    - key: sonar.typescript.tsconfigPaths
+      defaultValue: []
+    - key: sonar.typescript.tslint.reportPaths
+      defaultValue: []
+  - language: vb
+    settings:
+    - key: sonar.vb.file.suffixes
+      value:
+      - .BAS
+      - .CLS
+      - .CTL
+      - .FRM
+      - .bas
+      - .cls
+      - .ctl
+      - .frm
+      defaultValue:
+      - .bas
+      - .ctl
+      - .frm
+    - key: sonar.vb.ignoreHeaderComments
+      defaultValue: true
+  - language: vbnet
+    settings:
+    - key: sonar.vbnet.analyzeGeneratedCode
+      defaultValue: false
+    - key: sonar.vbnet.file.suffixes
+      defaultValue:
+      - .vb
+    - key: sonar.vbnet.ignoreHeaderComments
+      defaultValue: true
+    - key: sonar.vbnet.roslyn.bugCategories
+      defaultValue: []
+    - key: sonar.vbnet.roslyn.codeSmellCategories
+      defaultValue: []
+    - key: sonar.vbnet.roslyn.ignoreIssues
+      defaultValue: false
+    - key: sonar.vbnet.roslyn.vulnerabilityCategories
+      defaultValue: []
+  - language: xml
+    settings:
+    - key: sonar.xml.file.suffixes
+      defaultValue:
+      - .config
+      - .xml
+      - .xsd
+      - .xsl
+  - language: yaml
+    settings:
+    - key: sonar.yaml.activate
+      defaultValue: false
+    - key: sonar.yaml.file.suffixes
+      defaultValue:
+      - .yaml
+      - .yml
+  tests:
+  - key: sonar.coverage.jacoco.xmlReportPaths
+    value:
+    - '**/jacoco*.xml'
+    defaultValue: []
+  - key: sonar.junit.reportPaths
+    defaultValue: []
+  devopsIntegration:
+  - key: ADO
+    type: azure
+    url: https://dev.azure.com/olivierkorach
+  - key: Bitbucket Cloud 1
+    type: bitbucketcloud
+    url: https://bitbucket.org
+    workspace: okorach
+    clientId: x
+  - key: Bitbucket Server 1
+    type: bitbucket
+    url: https://bitbucket-server.your-company.com
+  - key: GitHub okorach
+    type: github
+    url: https://api.github.com
+    appId: 946159
+    clientId: Iv23ligl0iLhGRRvwFGO
+  - key: GitHub okorach-org
+    type: github
+    url: https://api.github.com
+    appId: 946173
+    clientId: Iv23limDid9ft2WPgTPK
+  - key: gitlab.com
+    type: gitlab
+    url: https://gitlab.com/api/v4
+  sastConfig:
+  - key: sonar.security.config.gosecurity
+    value: ''
+  - key: sonar.security.config.javasecurity
+    value: ''
+  - key: sonar.security.config.kotlinsecurity
+    value: ''
+  - key: sonar.security.config.phpsecurity
+    value: ''
+  - key: sonar.security.config.pythonsecurity
+    value: ''
+  - key: sonar.security.config.roslyn.sonaranalyzer.security.cs
+    value: ''
+  linters:
+  - key: sonar.checkstyle.checker.tabWidth
+    value: ''
+  - key: sonar.checkstyle.filters
+    defaultValue: <module name="SuppressWarningsFilter" />
+  - key: sonar.checkstyle.treewalkerfilters
+    defaultValue: <module name="SuppressionCommentFilter" />
+  permissions:
+  - group: ci-tools
+    permissions:
+    - provisioning
+    - scan
+  - group: language-experts
+    permissions:
+    - profileadmin
+  - group: quality-managers
+    permissions:
+    - gateadmin
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - applicationcreator
+    - gateadmin
+    - portfoliocreator
+    - profileadmin
+    - provisioning
+    - scan
+  - group: sonar-users
+    permissions:
+    - applicationcreator
+    - portfoliocreator
+  permissionTemplates:
+  - key: 0. Default template
+    description: This permission template will be used as default when no other permission
+      configuration is available
+    defaultFor: projects, applications
+    permissions:
+    - group: developers
+      permissions:
+      - codeviewer
+      - user
+    - group: project-admins
+      permissions:
+      - admin
+      - codeviewer
+      - user
+    - group: security-auditors
+      permissions:
+      - codeviewer
+      - issueadmin
+      - securityhotspotadmin
+      - user
+    - group: sonar-administrators
+      permissions:
+      - admin
+      - codeviewer
+      - user
+    - group: sonar-users
+      permissions:
+      - user
+    - group: tech-leads
+      permissions:
+      - codeviewer
+      - issueadmin
+      - user
+  - key: 0. Default Template for portfolio
+    description: Default portfolio permissions
+    defaultFor: portfolios
+    permissions:
+    - group: sonar-users
+      permissions:
+      - admin
+      - codeviewer
+      - issueadmin
+      - scan
+      - securityhotspotadmin
+      - user
+  - key: 1. Banking projects
+    description: Template for banking BU projects
+    pattern: BANKING-.*
+    permissions:
+    - group: security-auditors
+      permissions:
+      - codeviewer
+      - issueadmin
+      - securityhotspotadmin
+      - user
+    - group: sonar-administrators
+      permissions:
+      - admin
+      - codeviewer
+      - issueadmin
+      - scan
+      - securityhotspotadmin
+      - user
+    - group: sonar-users
+      permissions:
+      - codeviewer
+      - user
+    - user: olivier-k31581
+      permissions:
+      - admin
+      - user
+  - key: 9. Bad Template - Bad pattern
+    description: A wrong template whose projectKeyPattern would select a single project...
+      at best. This is probably not the intended behavior. Templates make sense only
+      if used for multiple projects
+    pattern: my_favorite_project
+    permissions:
+    - group: ci-tools
+      permissions:
+      - scan
+    - group: developers
+      permissions:
+      - codeviewer
+      - user
+    - group: quality-managers
+      permissions:
+      - issueadmin
+      - securityhotspotadmin
+    - group: security-auditors
+      permissions:
+      - issueadmin
+      - securityhotspotadmin
+    - group: tech-leads
+      permissions:
+      - codeviewer
+      - issueadmin
+      - securityhotspotadmin
+      - user
+  - key: 9. Bad template - no permissions
+    description: A template with no permissions granted. This makes little sense
+    pattern: FOOBAR.*
+  - key: 9. Bad template - Permissions granted to Anyone
+    description: A permission template that grants permissions to Anyone (ie unauthenticated
+      users), this is a bad practice
+    pattern: BAD9.*
+    permissions:
+    - group: Anyone
+      permissions:
+      - user
+    - group: ci-tools
+      permissions:
+      - scan
+    - group: developers
+      permissions:
+      - codeviewer
+      - user
+  - key: 9. Bad template - Permission templates granted to users
+    description: A bad perm template with perms granted directly to user
+    pattern: badbadbad.*
+    permissions:
+    - user: james
+      permissions:
+      - admin
+      - codeviewer
+      - issueadmin
+      - scan
+      - securityhotspotadmin
+      - user
+    - user: michal
+      permissions:
+      - admin
+      - codeviewer
+      - issueadmin
+      - scan
+      - securityhotspotadmin
+      - user
+    - user: olivier
+      permissions:
+      - admin
+      - codeviewer
+      - issueadmin
+      - scan
+      - securityhotspotadmin
+      - user
+  webhooks:
+  - name: Jenkins
+    url: https://my.jenkins.server/sonar-webhook/
+qualityGates:
+- name: Sonar way
+  isDefault: true
+  isBuiltIn: true
+- name: Sonar way + SCA
+  conditions:
+  - new_coverage <= 80%
+  - new_duplicated_lines_density >= 3%
+  - new_security_hotspots_reviewed <= 100%
+  - new_violations >= 0
+  - sca_rating_any_issue >= C
+  - sca_severity_licensing >= High
+  - sca_severity_vulnerability >= High
+- name: Sonar way for AI Code
+  isBuiltIn: true
+- name: Sonar way w/o coverage
+  conditions:
+  - new_duplicated_lines_density >= 3%
+  - new_security_hotspots_reviewed <= 100%
+  - new_violations >= 0
+- name: "\U0001F947 1 - Corp Gold"
+  conditions:
+  - new_coverage <= 85%
+  - new_duplicated_lines_density >= 2%
+  - new_sca_severity_any_issue >= 14
+  - new_security_hotspots_reviewed <= 100%
+  - new_violations >= 0
+  - sca_severity_any_issue >= High
+  - software_quality_blocker_issues >= 0
+  - software_quality_reliability_rating >= D
+  - software_quality_security_rating >= C
+- name: "\U0001F948 2 - Corp Silver"
+  conditions:
+  - new_coverage <= 50%
+  - new_duplicated_lines_density >= 3%
+  - new_security_hotspots_reviewed <= 100%
+  - new_violations >= 0
+  - software_quality_security_rating >= C
+  permissions:
+    users:
+    - james
+    groups:
+    - developers
+- name: "\U0001F949 3 - Corp base"
+  conditions:
+  - new_duplicated_lines_density >= 3%
+  - new_software_quality_maintainability_rating >= A
+  - new_software_quality_reliability_issues >= 0
+  - new_software_quality_security_issues >= 0
+qualityProfiles:
+- language: abap
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: ansible
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+    children:
+    - name: Test
+- language: apex
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: azureresourcemanager
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: c
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: cloudformation
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: cobol
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: cpp
+  profiles:
+  - name: Mission critical
+    isBuiltIn: true
+  - name: Sonar MISRA C++:2023 Compliance
+    isBuiltIn: true
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: cs
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: css
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: dart
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    children:
+    - name: Corp Way
+      isDefault: true
+      children:
+      - name: Critical projects
+        addedRules:
+        - key: dart:S106
+        - key: dart:S113
+        - key: dart:S115
+        - key: dart:S1541
+          params:
+          - key: threshold
+            value: 10
+        - key: dart:S1854
+        - key: dart:S7084
+        - key: dart:S7103
+          impacts:
+            maintainability: high
+- language: docker
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: flex
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: githubactions
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: go
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: ipynb
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: java
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+    children:
+    - name: Security Max
+      addedRules:
+      - key: java:Don_t_be_rude
+        impacts:
+          security: low
+      - key: java:S2647
+      - key: java:S2658
+      - key: java:S6374
+    - name: Sonar Way + Checkstyle
+      addedRules:
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.NoCodeInFileCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.OuterTypeFilenameCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.UpperEllCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.annotation.PackageAnnotationCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.AvoidDoubleBraceInitializationCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.AvoidInlineConditionalsCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.AvoidNoArgumentSuperConstructorCallCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.ConstructorsDeclarationGroupingCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.CovariantEqualsCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.EmptyStatementCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.EqualsHashCodeCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.InnerAssignmentCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.MissingCtorCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.MissingSwitchDefaultCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.MultipleVariableDeclarationsCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoArrayTrailingCommaCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoCloneCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoEnumTrailingCommaCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.NoFinalizerCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.OverloadMethodsDeclarationOrderCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.ParameterAssignmentCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SimplifyBooleanExpressionCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SimplifyBooleanReturnCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.StringLiteralEqualityCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SuperCloneCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.SuperFinalizeCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.UnnecessarySemicolonInEnumerationCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.coding.UnusedLocalVariableCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.design.FinalClassCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.design.HideUtilityClassConstructorCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.design.InnerTypeLastCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.design.OneTopLevelClassCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.imports.RedundantImportCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.javadoc.InvalidJavadocPositionCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocPackageCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.modifier.ModifierOrderCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.whitespace.GenericWhitespaceCheck
+      - key: checkstyle:com.puppycrawl.tools.checkstyle.checks.whitespace.NoWhitespaceBeforeCaseDefaultColonCheck
+- language: jcl
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+    children:
+    - name: All rules
+      addedRules:
+      - key: jcl:S2260
+      - key: jcl:S6935
+      - key: jcl:S6942
+      - key: jcl:S6945
+        params:
+        - key: allowedUnconditionalSteps
+          value: 2
+      - key: jcl:S6947
+        params:
+        - key: maxSteps
+          value: 50
+      - key: jcl:S6977
+      - key: jcl:Track_usage_of_rogue_programs
+        impacts:
+          security: info
+- language: js
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+    children:
+    - name: security-max
+      addedRules:
+      - key: javascript:S1442
+      - key: javascript:S1525
+      - key: javascript:S2817
+- language: json
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: jsp
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: kotlin
+  profiles:
+  - name: No rules
+    rules:
+    - key: kotlin:S3329
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: kubernetes
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: objc
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: php
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: pli
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: plsql
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: py
+  profiles:
+  - name: Corp way copy
+    rules:
+    - key: python:BackticksUsage
+    - key: python:ExecStatementUsage
+    - key: python:InequalityUsage
+    - key: python:PreIncrementDecrement
+    - key: python:PrintStatementUsage
+    - key: python:S100
+    - key: python:S101
+    - key: python:S1045
+    - key: python:S1066
+    - key: python:S107
+    - key: python:S108
+    - key: python:S1110
+    - key: python:S112
+    - key: python:S1134
+    - key: python:S1135
+    - key: python:S1143
+    - key: python:S1144
+    - key: python:S116
+    - key: python:S117
+    - key: python:S1172
+    - key: python:S1186
+    - key: python:S1192
+    - key: python:S1226
+    - key: python:S1244
+    - key: python:S125
+    - key: python:S1313
+    - key: python:S1515
+    - key: python:S1542
+    - key: python:S1607
+    - key: python:S1656
+    - key: python:S1700
+    - key: python:S1716
+    - key: python:S1751
+    - key: python:S1763
+    - key: python:S1764
+    - key: python:S1845
+    - key: python:S1854
+    - key: python:S1862
+    - key: python:S1871
+    - key: python:S1940
+    - key: python:S2053
+    - key: python:S2068
+    - key: python:S2077
+    - key: python:S2092
+    - key: python:S2115
+    - key: python:S2159
+    - key: python:S2190
+    - key: python:S2201
+    - key: python:S2208
+    - key: python:S2245
+    - key: python:S2257
+    - key: python:S2275
+    - key: python:S2612
+    - key: python:S2638
+    - key: python:S2710
+    - key: python:S2711
+    - key: python:S2734
+      description: Par convention __init__ retourne un object de la classe, donc it
+        ne doit pas y avoir de return
+    - key: python:S2737
+      description: Ben sinon pourquoi to catch l'exception pour re-raiser?
+    - key: python:S2755
+    - key: python:S2757
+    - key: python:S2761
+    - key: python:S2772
+    - key: python:S2823
+    - key: python:S2836
+    - key: python:S2876
+    - key: python:S3329
+    - key: python:S3330
+    - key: python:S3358
+    - key: python:S3403
+    - key: python:S3457
+    - key: python:S3516
+    - key: python:S3626
+    - key: python:S3699
+    - key: python:S3752
+    - key: python:S3776
+    - key: python:S3827
+    - key: python:S3862
+    - key: python:S3923
+    - key: python:S3981
+    - key: python:S3984
+    - key: python:S3985
+    - key: python:S4143
+    - key: python:S4144
+    - key: python:S4423
+    - key: python:S4426
+    - key: python:S4433
+    - key: python:S4487
+    - key: python:S4502
+    - key: python:S4507
+    - key: python:S4790
+    - key: python:S4828
+    - key: python:S4830
+    - key: python:S5042
+    - key: python:S5122
+    - key: python:S5247
+    - key: python:S5332
+    - key: python:S5344
+    - key: python:S5361
+    - key: python:S5443
+    - key: python:S5445
+    - key: python:S5527
+    - key: python:S5542
+    - key: python:S5547
+    - key: python:S5549
+    - key: python:S5603
+    - key: python:S5607
+    - key: python:S5632
+    - key: python:S5642
+    - key: python:S5644
+    - key: python:S5655
+    - key: python:S5659
+    - key: python:S5685
+    - key: python:S5704
+    - key: python:S5706
+    - key: python:S5707
+    - key: python:S5708
+    - key: python:S5709
+    - key: python:S5712
+    - key: python:S5713
+    - key: python:S5714
+    - key: python:S5717
+    - key: python:S5719
+    - key: python:S5720
+    - key: python:S5722
+    - key: python:S5724
+    - key: python:S5727
+    - key: python:S5747
+    - key: python:S5754
+    - key: python:S5756
+    - key: python:S5780
+    - key: python:S5781
+    - key: python:S5795
+    - key: python:S5796
+    - key: python:S5797
+    - key: python:S5799
+    - key: python:S5806
+    - key: python:S5807
+    - key: python:S5828
+    - key: python:S5842
+    - key: python:S5843
+    - key: python:S5845
+    - key: python:S5850
+    - key: python:S5852
+    - key: python:S5855
+    - key: python:S5857
+    - key: python:S5860
+    - key: python:S5864
+    - key: python:S5868
+    - key: python:S5869
+    - key: python:S5886
+    - key: python:S5890
+    - key: python:S5899
+    - key: python:S5905
+    - key: python:S5906
+    - key: python:S5914
+    - key: python:S5915
+    - key: python:S5918
+    - key: python:S5994
+    - key: python:S5996
+    - key: python:S6001
+    - key: python:S6002
+    - key: python:S6019
+    - key: python:S6035
+    - key: python:S6243
+    - key: python:S6246
+    - key: python:S6249
+    - key: python:S6252
+    - key: python:S6262
+    - key: python:S6265
+    - key: python:S6270
+    - key: python:S6275
+    - key: python:S6281
+    - key: python:S6302
+    - key: python:S6303
+    - key: python:S6304
+    - key: python:S6308
+    - key: python:S6317
+    - key: python:S6319
+    - key: python:S6321
+    - key: python:S6323
+    - key: python:S6326
+    - key: python:S6327
+    - key: python:S6328
+    - key: python:S6329
+    - key: python:S6330
+    - key: python:S6331
+    - key: python:S6332
+    - key: python:S6333
+    - key: python:S6353
+    - key: python:S6377
+    - key: python:S6395
+    - key: python:S6396
+    - key: python:S6397
+    - key: python:S6418
+    - key: python:S6437
+    - key: python:S6463
+    - key: python:S6468
+    - key: python:S6537
+    - key: python:S6546
+    - key: python:S6552
+    - key: python:S6553
+    - key: python:S6556
+    - key: python:S6559
+    - key: python:S6560
+    - key: python:S6659
+    - key: python:S6660
+    - key: python:S6662
+    - key: python:S6663
+    - key: python:S6709
+    - key: python:S6711
+    - key: python:S6714
+    - key: python:S6725
+    - key: python:S6727
+    - key: python:S6729
+    - key: python:S6730
+    - key: python:S6734
+    - key: python:S6735
+    - key: python:S6741
+    - key: python:S6742
+    - key: python:S6779
+    - key: python:S6781
+    - key: python:S6785
+    - key: python:S6786
+    - key: python:S6792
+    - key: python:S6794
+    - key: python:S6795
+    - key: python:S6796
+    - key: python:S6799
+    - key: python:S6882
+    - key: python:S6883
+    - key: python:S6887
+    - key: python:S6890
+    - key: python:S6894
+    - key: python:S6900
+    - key: python:S6903
+    - key: python:S6908
+    - key: python:S6911
+    - key: python:S6918
+    - key: python:S6919
+    - key: python:S6925
+    - key: python:S6928
+    - key: python:S6929
+    - key: python:S6969
+    - key: python:S6971
+    - key: python:S6972
+    - key: python:S6973
+    - key: python:S6974
+    - key: python:S6978
+    - key: python:S6979
+    - key: python:S6982
+    - key: python:S6983
+    - key: python:S6984
+    - key: python:S6985
+    - key: python:S7483
+    - key: python:S7484
+    - key: python:S7486
+    - key: python:S7487
+    - key: python:S7488
+    - key: python:S7489
+    - key: python:S7490
+    - key: python:S7491
+    - key: python:S7492
+    - key: python:S7493
+    - key: python:S7494
+    - key: python:S7496
+    - key: python:S7497
+    - key: python:S7498
+    - key: python:S7499
+    - key: python:S7500
+    - key: python:S7501
+    - key: python:S7502
+    - key: python:S7503
+    - key: python:S7504
+    - key: python:S7505
+    - key: python:S7506
+    - key: python:S7507
+    - key: python:S7508
+    - key: python:S7510
+    - key: python:S7511
+    - key: python:S7512
+    - key: python:S7513
+    - key: python:S7514
+    - key: python:S7515
+    - key: python:S7516
+    - key: python:S7517
+    - key: python:S7519
+    - key: python:S7608
+    - key: python:S7609
+    - key: python:S7613
+    - key: python:S7614
+    - key: python:S7617
+    - key: python:S7618
+    - key: python:S7619
+    - key: python:S7620
+    - key: python:S7621
+    - key: python:S7622
+    - key: python:S7625
+    - key: python:S7632
+    - key: python:S905
+    - key: python:S930
+    - key: python:S935
+    - key: pythonbugs:S2259
+    - key: pythonbugs:S2583
+    - key: pythonbugs:S2589
+    - key: pythonbugs:S3518
+    - key: pythonbugs:S5633
+    - key: pythonbugs:S6417
+    - key: pythonbugs:S6464
+    - key: pythonbugs:S6465
+    - key: pythonbugs:S6466
+    - key: pythonbugs:S6886
+    - key: pythonbugs:S6899
+    - key: pythonenterprise:S7181
+    - key: pythonenterprise:S7182
+    - key: pythonenterprise:S7187
+    - key: pythonenterprise:S7189
+    - key: pythonenterprise:S7191
+    - key: pythonenterprise:S7192
+    - key: pythonenterprise:S7193
+    - key: pythonenterprise:S7195
+    - key: pythonenterprise:S7196
+    - key: pythonenterprise:S7468
+    - key: pythonenterprise:S7469
+    - key: pythonenterprise:S7470
+    - key: pythonenterprise:S7471
+    - key: pythonenterprise:S7616
+    - key: pythonenterprise:S7675
+    - key: pythonenterprise:S7695
+    - key: pythonsecurity:S2076
+    - key: pythonsecurity:S2078
+    - key: pythonsecurity:S2083
+    - key: pythonsecurity:S2091
+    - key: pythonsecurity:S2631
+    - key: pythonsecurity:S3649
+    - key: pythonsecurity:S5131
+    - key: pythonsecurity:S5135
+    - key: pythonsecurity:S5144
+    - key: pythonsecurity:S5145
+    - key: pythonsecurity:S5146
+    - key: pythonsecurity:S5147
+    - key: pythonsecurity:S5334
+    - key: pythonsecurity:S5496
+    - key: pythonsecurity:S6287
+    - key: pythonsecurity:S6350
+    - key: pythonsecurity:S6639
+    - key: pythonsecurity:S6680
+    - key: pythonsecurity:S6776
+    - key: pythonsecurity:S6839
+    - key: pythonsecurity:S7044
+  - name: Prioritized
+    rules:
+    - key: python:BackticksUsage
+    - key: python:ExecStatementUsage
+    - key: python:InequalityUsage
+      prioritized: true
+    - key: python:PreIncrementDecrement
+    - key: python:PrintStatementUsage
+    - key: python:S100
+    - key: python:S101
+    - key: python:S1045
+    - key: python:S1066
+    - key: python:S107
+    - key: python:S108
+    - key: python:S1110
+    - key: python:S112
+    - key: python:S1134
+    - key: python:S1135
+    - key: python:S1143
+    - key: python:S1144
+    - key: python:S116
+    - key: python:S117
+    - key: python:S1172
+    - key: python:S1186
+    - key: python:S1192
+    - key: python:S1226
+    - key: python:S1244
+    - key: python:S125
+    - key: python:S1313
+    - key: python:S1481
+    - key: python:S1515
+    - key: python:S1542
+    - key: python:S1607
+    - key: python:S1656
+    - key: python:S1700
+    - key: python:S1716
+    - key: python:S1751
+    - key: python:S1763
+    - key: python:S1764
+    - key: python:S1845
+    - key: python:S1854
+    - key: python:S1862
+    - key: python:S1871
+    - key: python:S1940
+    - key: python:S2053
+    - key: python:S2068
+    - key: python:S2077
+    - key: python:S2092
+    - key: python:S2115
+    - key: python:S2159
+    - key: python:S2190
+    - key: python:S2201
+    - key: python:S2208
+    - key: python:S2245
+    - key: python:S2257
+    - key: python:S2275
+    - key: python:S2612
+    - key: python:S2638
+    - key: python:S2710
+    - key: python:S2711
+      prioritized: true
+    - key: python:S2734
+      description: Par convention __init__ retourne un object de la classe, donc it
+        ne doit pas y avoir de return
+      prioritized: true
+    - key: python:S2737
+      description: Ben sinon pourquoi to catch l'exception pour re-raiser?
+    - key: python:S2755
+    - key: python:S2757
+    - key: python:S2761
+    - key: python:S2772
+    - key: python:S2823
+    - key: python:S2836
+    - key: python:S2876
+    - key: python:S3329
+    - key: python:S3330
+    - key: python:S3358
+    - key: python:S3403
+    - key: python:S3457
+    - key: python:S3516
+    - key: python:S3626
+    - key: python:S3699
+    - key: python:S3752
+    - key: python:S3776
+    - key: python:S3827
+    - key: python:S3862
+    - key: python:S3923
+    - key: python:S3981
+    - key: python:S3984
+    - key: python:S3985
+    - key: python:S4143
+    - key: python:S4144
+    - key: python:S4423
+    - key: python:S4426
+    - key: python:S4433
+    - key: python:S4487
+    - key: python:S4502
+    - key: python:S4507
+    - key: python:S4790
+    - key: python:S4828
+    - key: python:S4830
+    - key: python:S5042
+    - key: python:S5122
+    - key: python:S5247
+    - key: python:S5332
+    - key: python:S5344
+    - key: python:S5361
+    - key: python:S5443
+    - key: python:S5445
+    - key: python:S5527
+    - key: python:S5542
+    - key: python:S5547
+    - key: python:S5549
+    - key: python:S5603
+    - key: python:S5607
+    - key: python:S5632
+    - key: python:S5642
+    - key: python:S5644
+    - key: python:S5655
+    - key: python:S5659
+    - key: python:S5685
+    - key: python:S5704
+    - key: python:S5706
+    - key: python:S5707
+    - key: python:S5708
+    - key: python:S5709
+    - key: python:S5712
+    - key: python:S5713
+    - key: python:S5714
+    - key: python:S5717
+    - key: python:S5719
+    - key: python:S5720
+    - key: python:S5722
+    - key: python:S5724
+    - key: python:S5727
+    - key: python:S5747
+    - key: python:S5754
+    - key: python:S5756
+    - key: python:S5780
+    - key: python:S5781
+    - key: python:S5795
+    - key: python:S5796
+    - key: python:S5797
+    - key: python:S5799
+    - key: python:S5806
+    - key: python:S5807
+    - key: python:S5828
+    - key: python:S5842
+    - key: python:S5843
+    - key: python:S5845
+    - key: python:S5850
+    - key: python:S5852
+    - key: python:S5855
+    - key: python:S5857
+    - key: python:S5860
+    - key: python:S5864
+    - key: python:S5868
+    - key: python:S5869
+    - key: python:S5886
+    - key: python:S5890
+    - key: python:S5899
+    - key: python:S5905
+    - key: python:S5906
+    - key: python:S5914
+    - key: python:S5915
+    - key: python:S5918
+    - key: python:S5994
+    - key: python:S5996
+    - key: python:S6001
+    - key: python:S6002
+    - key: python:S6019
+    - key: python:S6035
+    - key: python:S6252
+    - key: python:S6265
+    - key: python:S6270
+    - key: python:S6275
+    - key: python:S6281
+    - key: python:S6302
+    - key: python:S6303
+    - key: python:S6304
+    - key: python:S6308
+    - key: python:S6317
+    - key: python:S6319
+    - key: python:S6321
+    - key: python:S6323
+    - key: python:S6326
+    - key: python:S6327
+    - key: python:S6328
+    - key: python:S6329
+    - key: python:S6330
+    - key: python:S6331
+    - key: python:S6332
+    - key: python:S6333
+    - key: python:S6353
+    - key: python:S6377
+    - key: python:S6395
+    - key: python:S6396
+    - key: python:S6397
+    - key: python:S6418
+    - key: python:S6437
+    - key: python:S6463
+    - key: python:S6468
+    - key: python:S6537
+    - key: python:S6546
+    - key: python:S6552
+    - key: python:S6553
+    - key: python:S6556
+    - key: python:S6559
+    - key: python:S6560
+    - key: python:S6659
+    - key: python:S6660
+    - key: python:S6662
+    - key: python:S6663
+    - key: python:S6709
+    - key: python:S6711
+    - key: python:S6714
+    - key: python:S6725
+    - key: python:S6727
+    - key: python:S6729
+    - key: python:S6730
+    - key: python:S6734
+    - key: python:S6735
+    - key: python:S6741
+    - key: python:S6742
+    - key: python:S6779
+    - key: python:S6781
+    - key: python:S6785
+    - key: python:S6786
+    - key: python:S6792
+    - key: python:S6794
+    - key: python:S6795
+    - key: python:S6796
+    - key: python:S6799
+    - key: python:S6882
+    - key: python:S6883
+    - key: python:S6887
+    - key: python:S6890
+    - key: python:S6894
+    - key: python:S6900
+    - key: python:S6903
+    - key: python:S6908
+    - key: python:S6911
+    - key: python:S6918
+    - key: python:S6919
+    - key: python:S6925
+    - key: python:S6928
+    - key: python:S6929
+    - key: python:S6969
+    - key: python:S6971
+    - key: python:S6972
+    - key: python:S6973
+    - key: python:S6974
+    - key: python:S6978
+    - key: python:S6979
+    - key: python:S6982
+    - key: python:S6983
+    - key: python:S6984
+    - key: python:S6985
+    - key: python:S905
+    - key: python:S930
+    - key: python:S935
+    - key: pythonbugs:S2259
+    - key: pythonbugs:S2583
+    - key: pythonbugs:S2589
+    - key: pythonbugs:S3518
+    - key: pythonbugs:S5633
+    - key: pythonbugs:S6417
+    - key: pythonbugs:S6464
+    - key: pythonbugs:S6465
+    - key: pythonbugs:S6466
+      prioritized: true
+    - key: pythonbugs:S6886
+    - key: pythonbugs:S6899
+    - key: pythonenterprise:S7181
+    - key: pythonenterprise:S7182
+    - key: pythonenterprise:S7187
+    - key: pythonenterprise:S7189
+    - key: pythonenterprise:S7191
+    - key: pythonenterprise:S7192
+    - key: pythonenterprise:S7193
+    - key: pythonenterprise:S7195
+    - key: pythonenterprise:S7196
+    - key: pythonenterprise:S7468
+    - key: pythonenterprise:S7469
+    - key: pythonenterprise:S7470
+    - key: pythonenterprise:S7471
+    - key: pythonsecurity:S2076
+    - key: pythonsecurity:S2078
+    - key: pythonsecurity:S2083
+    - key: pythonsecurity:S2091
+    - key: pythonsecurity:S2631
+    - key: pythonsecurity:S3649
+    - key: pythonsecurity:S5131
+    - key: pythonsecurity:S5135
+    - key: pythonsecurity:S5144
+    - key: pythonsecurity:S5145
+    - key: pythonsecurity:S5146
+    - key: pythonsecurity:S5147
+    - key: pythonsecurity:S5334
+    - key: pythonsecurity:S5496
+    - key: pythonsecurity:S6287
+    - key: pythonsecurity:S6350
+    - key: pythonsecurity:S6639
+    - key: pythonsecurity:S6680
+    - key: pythonsecurity:S6776
+    - key: pythonsecurity:S6839
+    - key: pythonsecurity:S7044
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+    children:
+    - name: Corp way
+      removedRules:
+      - python:S1481
+    - name: Olivier Way
+      addedRules:
+      - key: python:NoSonar
+      - key: python:S104
+        params:
+        - key: maximum
+          value: 1000
+      - key: python:S1128
+        severity: major
+        impacts:
+          maintainability: medium
+        prioritized: true
+      - key: python:S134
+        params:
+        - key: max
+          value: 4
+      - key: python:S1451
+        params:
+        - key: headerFormat
+          value: (\#!.+\n)?(\#.*\n)?\#\ Copyright\ \(C\)\ ([12][0-9]{3}-)?2025\ Olivier\
+            Korach\n\#\ mailto:olivier\.korach\ AT\ gmail\ DOT\ com\n\#\n\#\ This\
+            program\ is\ free\ software;\ you\ can\ redistribute\ it\ and/or\n\#\
+            modify\ it\ under\ the\ terms\ of\ the\ GNU\ Lesser\ General\ Public\n\#\
+            License\ as\ published\ by\ the\ Free\ Software\ Foundation;\ either\n\#\
+            version\ 3\ of\ the\ License,\ or\ \(at\ your\ option\)\ any\ later\ version\.\n\#\n\#\
+            This\ program\ is\ distributed\ in\ the\ hope\ that\ it\ will\ be\ useful,\n\#\
+            but\ WITHOUT\ ANY\ WARRANTY;\ without\ even\ the\ implied\ warranty\ of\n\#\
+            MERCHANTABILITY\ or\ FITNESS\ FOR\ A\ PARTICULAR\ PURPOSE\.\ See\ the\
+            GNU\n\#\ Lesser\ General\ Public\ License\ for\ more\ details\.\n\#\n\#\
+            You\ should\ have\ received\ a\ copy\ of\ the\ GNU\ Lesser\ General\ Public\
+            License\n\#\ along\ with\ this\ program;\ if\ not,\ write\ to\ the\ Free\
+            Software\ Foundation,\n\#\ Inc\.,\ 51\ Franklin\ Street,\ Fifth\ Floor,\
+            Boston,\ MA\ \ 02110-1301,\ USA\.\n\#
+        - key: isRegularExpression
+          value: true
+      - key: python:S2712
+      - key: python:S4721
+      - key: python:S4784
+      - key: python:S4823
+      - key: python:S5856
+      - key: python:S5953
+      - key: python:S6543
+      modifiedRules:
+      - key: python:InequalityUsage
+        severity: critical
+        impacts:
+          maintainability: high
+        prioritized: true
+      - key: python:S3776
+        params:
+        - key: threshold
+          value: 20
+      permissions:
+        users:
+        - michal
+        groups:
+        - quality-managers
+- language: rpg
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: ruby
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: rust
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: scala
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: secrets
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+    children:
+    - name: Corp Way
+      addedRules:
+      - key: secrets:Corp_secrets_should_not_leak
+      - key: secrets:My_custom_secret_rule
+        impacts:
+          security: blocker
+- language: shell
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: swift
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: terraform
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: text
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: ts
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: tsql
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: vb
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: vbnet
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: web
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: xml
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+- language: yaml
+  profiles:
+  - name: Sonar way
+    isBuiltIn: true
+    isDefault: true
+projects:
+- key: 25k-issues
+  name: 25k-issues
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-ACQUISITIONS
+  name: BANKING-ACQUISITIONS
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-ACQUISITIONS-DILIGENCE
+  name: BANKING-ACQUISITIONS-DILIGENCE
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-AFRICA-OPS
+  name: Banking Africa operations
+  tags:
+  - africa
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-ASIA-OPS
+  name: BANKING-ASIA-OPS
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-INVESTMENT-ACQUISITIONS
+  name: BANKING-INVESTMENT-ACQUISITIONS
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-INVESTMENT-DILIGENCE
+  name: BANKING-INVESTMENT-DILIGENCE
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-INVESTMENT-EQUITY
+  name: BANKING-INVESTMENT-EQUITY
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-INVESTMENT-MERGER
+  name: BANKING-INVESTMENT-MERGER
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-MERGERS
+  name: BANKING-MERGERS
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-PORTAL
+  name: BANKING-PORTAL
+  visibility: private
+  branches:
+  - name: main
+    isMain: true
+  - name: comma,branch
+    keepWhenInactive: true
+  - name: release-3.2
+    keepWhenInactive: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-PRIVATE-ASSETS
+  name: BANKING-PRIVATE-ASSETS
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-PRIVATE-WEALTH
+  name: Wealth Management
+  tags:
+  - banking
+  - private-banking
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-RETAIL-ATM
+  name: Retail - ATM
+  tags:
+  - banking
+  - retail
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-RETAIL-CLERK
+  name: Retail Clerk
+  tags:
+  - banking
+  - retail
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-RETAIL-WEB
+  name: BANKING-RETAIL-WEB
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-TRADING-EURO
+  name: BANKING-TRADING-EURO
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-TRADING-JAPAN
+  name: BANKING-TRADING-JAPAN
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: BANKING-TRADING-NASDAQ
+  name: BANKING-TRADING-NASDAQ
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: INSURANCE-HEALTH
+  name: INSURANCE-HEALTH
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: INSURANCE-HOME
+  name: INSURANCE-HOME
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: INSURANCE-LIFE
+  name: INSURANCE-LIFE
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: INSURANCE-PET
+  name: INSURANCE-PET
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: Project-with-no-perms
+  name: Project with no perms
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: RETAIL-WEB
+  name: Retail Web
+  tags:
+  - banking
+  - retail
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: TEST
+  name: name
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: TESTSYNC
+  name: TESTSYNC
+  visibility: private
+  branches:
+  - name: main
+    isMain: true
+  - name: develop
+    keepWhenInactive: true
+  - name: release-3.x
+    keepWhenInactive: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+  - user: admin
+    permissions:
+    - admin
+- key: ai-code-fix
+  name: AI CodeFix examples
+  tags:
+  - demo
+  visibility: private
+  settings:
+  - key: containsAiCode
+    value: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: bad:stale-project
+  name: BANKING-ASIA-OPS
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: checkstyle-issues
+  name: Project with checkstyle issues
+  visibility: private
+  branches:
+  - name: main
+    isMain: true
+  - name: develop
+    keepWhenInactive: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+  qualityProfiles:
+  - language: java
+    name: Sonar Way + Checkstyle
+- key: code-variants
+  name: code-variants
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: creedengo
+  name: Creedengo
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: creedengo-issues
+  name: Creedengo
+  visibility: private
+  settings:
+  - key: sonar.coverage.exclusions
+    value:
+    - '**/*.css'
+    - '**/.htm*'
+  branches:
+  - name: main
+    isMain: true
+  - name: develop
+    keepWhenInactive: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo-autoconfig
+  name: demo-autoconfig
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo-rules
+  name: demo-rules
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo:ado-cli
+  name: demo:ado-cli
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo:autoconfig
+  name: demo:autoconfig
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo:autoconfig:carbon
+  name: demo:autoconfig:carbon
+  visibility: private
+  branches:
+  - name: develop
+    isMain: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo:coverage
+  name: demo:coverage
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo:github-actions-cli
+  name: GitHub / Actions / CLI
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo:github-actions-maven
+  name: demo:github-actions-maven
+  visibility: private
+  binding:
+    key: GitHub okorach
+    repository: 6875589
+    summaryCommentEnabled: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo:github-actions-mono-cli
+  name: GitHub / Actions / monorepo CLI
+  visibility: private
+  branches:
+  - name: master
+    isMain: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo:github-actions-mono-dotnet
+  name: GitHub / Actions / monorepo .Net Core
+  visibility: private
+  settings:
+  - key: sonar.text.inclusions
+    value:
+    - '**/*'
+    - '**/*.bash'
+    - '**/*.conf'
+    - '**/*.config'
+    - '**/*.ksh'
+    - '**/*.pem'
+    - '**/*.properties'
+    - '**/*.ps1'
+    - '**/*.sh'
+    - '**/*.zsh'
+    - .aws/config
+    - .env
+  branches:
+  - name: master
+    isMain: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo:github-actions-mono-gradle
+  name: GitHub / Actions / monorepo Gradle
+  visibility: private
+  branches:
+  - name: master
+    isMain: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo:github-actions-mono-maven
+  name: demo:github-actions-mono-maven
+  visibility: private
+  branches:
+  - name: main
+    isMain: true
+  - name: master
+    keepWhenInactive: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo:gitlab-ci-maven
+  name: GitLab-CI / Maven
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo:gitlab:gradle
+  name: demo:gitlab:gradle
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo:gitlab:scanner-cli
+  name: demo:gitlab:scanner-cli
+  visibility: private
+  binding:
+    key: gitlab.com
+    repository: 30584574
+  branches:
+  - name: main
+    isMain: true
+  - name: master
+    keepWhenInactive: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo:java-security
+  name: Java Web App
+  visibility: private
+  binding:
+    key: GitHub okorach
+    repository: okorach/demo:security
+    summaryCommentEnabled: true
+  branches:
+  - name: main
+    isMain: true
+  - name: first-commit
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+  qualityGate: Sonar way w/o coverage
+- key: demo:sca-log4shell-detect-maven
+  name: SCA demo - Log4shell detect - Maven
+  visibility: private
+  branches:
+  - name: main
+    isMain: true
+  - name: fix-log4shell
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: demo:secrets
+  name: Secrets detection
+  tags:
+  - demo
+  visibility: private
+  settings:
+  - key: sonar.text.inclusions
+    value:
+    - '**/*'
+    - '**/*.bash'
+    - '**/*.conf'
+    - '**/*.config'
+    - '**/*.ksh'
+    - '**/*.pem'
+    - '**/*.properties'
+    - '**/*.ps1'
+    - '**/*.sh'
+    - '**/*.xml'
+    - '**/*.zsh'
+    - .aws/config
+    - .env
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+  qualityProfiles:
+  - language: secrets
+    name: Corp Way
+- key: demo:target-awareness
+  name: demo:target-awareness
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: dotnet-with-cli
+  name: dotnet-with-cli
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: dvpa
+  name: dvpa
+  visibility: private
+  newCodePeriod: NUMBER_OF_DAYS = 30
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: exclusions-2
+  name: exclusions-2
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: file-issue
+  name: file-issue
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: gradle-with-cli
+  name: gradle-with-cli
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: maven-with-cli
+  name: maven-with-cli
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: mute-in-ide
+  name: Mute issue in IDE
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: no-scm
+  name: no-scm
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: okorach-org_pr-demo_3a1857ec-cebc-49f2-96ac-9bbc99111469
+  name: pr-demo
+  visibility: private
+  binding:
+    key: GitHub okorach-org
+    repository: okorach-org/pr-demo
+    summaryCommentEnabled: true
+  branches:
+  - name: master
+    isMain: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: okorach_audio-video-tools
+  name: okorach_audio-video-tools
+  visibility: private
+  branches:
+  - name: main
+    isMain: true
+  - name: develop
+    keepWhenInactive: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: okorach_demo-gitlabci-cli_e81d5112-e681-44b2-aee4-62b56c8ac5cb
+  name: okorach_demo-gitlabci-cli_e81d5112-e681-44b2-aee4-62b56c8ac5cb
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: okorach_demo-gitlabci-maven
+  name: okorach_demo-gitlabci-maven
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: okorach_demo-jenkins-maven_605e4e16-531b-4c2c-9a30-c98c254c6e15
+  name: Demo Jenkins Maven
+  visibility: private
+  binding:
+    key: gitlab.com
+    repository: 30452699
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+  - user: admin
+    permissions:
+    - admin
+    - scan
+- key: okorach_docker-hello-world
+  name: okorach_docker-hello-world
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: okorach_sonar-tools
+  name: Sonar Tools
+  tags:
+  - python
+  visibility: private
+  settings:
+  - key: sonar.cfamily.ignoreHeaderComments
+    value: false
+  - key: sonar.issue.ignore.allfile
+    value:
+    - fileRegexp: Generated with Generator
+  - key: sonar.issue.ignore.multicriteria
+    value:
+    - resourceKey: '**/*.java'
+      ruleKey: java:S1195
+    - resourceKey: '**/*.py'
+      ruleKey: python:S211
+  branches:
+  - name: master
+    isMain: true
+  - name: develop
+    newCodePeriod: REFERENCE_BRANCH = master
+    keepWhenInactive: true
+  - name: release-3.x
+    keepWhenInactive: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+  qualityGate: "\U0001F947 1 - Corp Gold"
+  qualityProfiles:
+  - language: py
+    name: Olivier Way
+  links:
+  - name: Bug Tracker
+    url: https://github.com/okorach/sonar-tools/issues
+- key: okorach_sonar-tools-target
+  name: Sonar Tools Target
+  visibility: private
+  branches:
+  - name: master
+    isMain: true
+  - name: comma,branch
+    keepWhenInactive: true
+  - name: develop
+    keepWhenInactive: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: org.owasp.webgoat:webgoat
+  name: WebGoat
+  visibility: private
+  branches:
+  - name: main
+    isMain: true
+  - name: max-security
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+  qualityProfiles:
+  - language: java
+    name: Security Max
+- key: org.sonarqube:example-coverage
+  name: Coverage demo
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: project-without-analyses
+  name: Project without analyses
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: source-key
+  name: Source
+  visibility: private
+  branches:
+  - name: master
+    isMain: true
+  - name: develop
+    keepWhenInactive: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: test:juice-shop
+  name: Juice Shop and sandboxing
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+  links:
+  - name: repo
+    url: https://github.com
+- key: test:project1
+  name: Project 1
+  visibility: private
+  newCodePeriod: NUMBER_OF_DAYS = 60
+  settings:
+  - key: sonar.coverage.jacoco.xmlReportPaths
+    value:
+    - '**/*jacoco*.xml'
+  binding:
+    key: ADO
+    repository: ddd
+    projectName: fooo
+    monorepo: true
+    inlineAnnotationsEnabled: true
+  branches:
+  - name: main
+    newCodePeriod: PREVIOUS_VERSION
+    isMain: true
+  - name: comma,branch
+    keepWhenInactive: true
+  - name: develop
+    newCodePeriod: REFERENCE_BRANCH = main
+    keepWhenInactive: true
+  - name: feature/new-feature
+  - name: release-2.x
+    keepWhenInactive: true
+  - name: release-3.x
+    newCodePeriod: NUMBER_OF_DAYS = 80
+    keepWhenInactive: true
+  - name: some-branch
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+  webhooks:
+  - name: Jenkins Team 1
+    url: https://jenkins.team1.server/sonar-webhook/
+- key: test:project2
+  name: Project 2
+  visibility: private
+  settings:
+  - key: sonar.cobol.file.suffixes
+    value:
+    - cobol
+    - cobolli
+  binding:
+    key: GitHub okorach
+    repository: okorach/sonar-tools
+    summaryCommentEnabled: true
+  branches:
+  - name: main
+    isMain: true
+  - name: develop
+    keepWhenInactive: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: test:project3
+  name: Project 3
+  visibility: private
+  branches:
+  - name: main
+    isMain: true
+  - name: develop
+    keepWhenInactive: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: test:project4
+  name: Project 4
+  visibility: private
+  branches:
+  - name: main
+    isMain: true
+  - name: develop
+    keepWhenInactive: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: test:proyecto5
+  name: Project 5
+  tags:
+  - python
+  visibility: private
+  branches:
+  - name: main
+    isMain: true
+  - name: develop
+    keepWhenInactive: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: third-party-issues
+  name: Third party issues
+  visibility: private
+  branches:
+  - name: main
+    isMain: true
+  - name: develop
+    keepWhenInactive: true
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: training:complexity
+  name: 'Training: Cyclomatic vs Cognitive complexity'
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: training:external-issues
+  name: 'Training: External issues import'
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: training:security
+  name: Vulnerable Java App
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: web-backend
+  name: Web back-end
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+- key: web-frontend
+  name: Web front-end
+  tags:
+  - 3ds
+  visibility: private
+  permissions:
+  - group: developers
+    permissions:
+    - codeviewer
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: security-auditors
+    permissions:
+    - codeviewer
+    - issueadmin
+    - securityhotspotadmin
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - codeviewer
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - codeviewer
+    - issueadmin
+    - user
+applications:
+- key: APPY
+  name: App Test 2
+  visibility: public
+  branches:
+  - name: main
+    isMain: true
+  permissions:
+  - group: sonar-administrators
+    permissions:
+    - admin
+- key: APP_TEST
+  name: Test App
+  visibility: private
+  branches:
+  - name: main
+    isMain: true
+    projects:
+    - key: ai-code-fix
+      branch: main
+    - key: BANKING-AFRICA-OPS
+      branch: main
+    - key: dvpa
+      branch: main
+  - name: BRANCH foo
+    projects:
+    - key: ai-code-fix
+      branch: main
+    - key: BANKING-AFRICA-OPS
+      branch: main
+    - key: dvpa
+      branch: main
+  - name: Other Branch
+    projects:
+    - key: ai-code-fix
+      branch: main
+    - key: BANKING-AFRICA-OPS
+      branch: main
+    - key: dvpa
+      branch: main
+  - name: some-branch
+    projects:
+    - key: ai-code-fix
+      branch: main
+    - key: BANKING-AFRICA-OPS
+      branch: main
+    - key: dvpa
+      branch: main
+  permissions:
+  - group: developers
+    permissions:
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - user
+  - group: security-auditors
+    permissions:
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: tech-leads
+    permissions:
+    - user
+  tags:
+  - africa
+- key: App_with_no_perms
+  name: App with no perms
+  visibility: private
+  branches:
+  - name: main
+    isMain: true
+  permissions:
+  - user: admin
+    permissions:
+    - admin
+    - user
+- key: FE-BE
+  name: Front-end / Back-end
+  description: A web app with a separate front-end and back-end project
+  visibility: private
+  branches:
+  - name: main
+    isMain: true
+    projects:
+    - key: web-backend
+      branch: main
+    - key: web-frontend
+      branch: main
+  permissions:
+  - group: developers
+    permissions:
+    - user
+  - group: project-admins
+    permissions:
+    - admin
+    - user
+  - group: security-auditors
+    permissions:
+    - user
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - user
+  - group: tech-leads
+    permissions:
+    - user
+  - user: admin
+    permissions:
+    - admin
+    - user
+- key: MON
+  name: My monorepo
+  visibility: public
+  branches:
+  - name: main
+    isMain: true
+    projects:
+    - key: test:project1
+      branch: main
+    - key: test:project2
+      branch: main
+    - key: test:project3
+      branch: main
+    - key: test:project4
+      branch: main
+    - key: test:proyecto5
+      branch: main
+  - name: Another
+    projects:
+    - key: test:project1
+      branch: release-2.x
+    - key: test:project2
+      branch: main
+    - key: test:project3
+      branch: develop
+    - key: test:project4
+    - key: test:proyecto5
+      branch: main
+  permissions:
+  - group: project-admins
+    permissions:
+    - admin
+  - group: sonar-administrators
+    permissions:
+    - admin
+portfolios:
+- key: All
+  name: Company global portfolio
+  visibility: public
+  portfolios:
+  - key: Banking
+    byReference: true
+  - key: CORP-INSURANCE
+    byReference: true
+  - key: Other_unclassified_projects
+    name: Other unclassified projects
+    projectSelection:
+      rest: true
+  permissions:
+  - group: sonar-administrators
+    permissions:
+    - admin
+- key: Banking
+  name: Banking
+  visibility: private
+  portfolios:
+  - key: Investment_Banking
+    name: Investment Banking
+    projectSelection:
+      regexp: .*-INVESTMENT-.*
+      branch: develop
+    portfolios:
+    - key: Corporate_Mergers_and_Acquisitions
+      name: Corporate Mergers and Acquisitions
+      projectSelection:
+        regexp: .*MERgER.*
+    - key: Corporate_loans
+      name: Corporate loans
+  - key: Private_Banking
+    byReference: true
+  - key: Retail_Banking
+    name: Retail Banking
+    projectSelection:
+      regexp: .*-RETAIL-.*
+  permissions:
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+- key: CEO_Strategic_Projects
+  name: CEO Strategic Projects
+  visibility: private
+  permissions:
+  - group: sonar-administrators
+    permissions:
+    - admin
+  - group: sonar-users
+    permissions:
+    - user
+- key: CORP-INSURANCE
+  name: Insurance
+  visibility: public
+  portfolios:
+  - key: CORP-INSURANCE-HEALTH
+    byReference: true
+  - key: CORP-INSURANCE-LIFE
+    byReference: true
+  - key: Other_Insurance
+    name: Other Insurance
+  permissions:
+  - group: sonar-administrators
+    permissions:
+    - admin
+- key: CORP-INSURANCE-HEALTH
+  name: Health Insurance
+  visibility: private
+  projectSelection:
+    regexp: .*HEALTH.*
+  permissions:
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+  - group: z comma , group
+    permissions:
+    - user
+  - user: michal
+    permissions:
+    - user
+  - user: olivier
+    permissions:
+    - admin
+  - user: syncer
+    permissions:
+    - user
+- key: CORP-INSURANCE-LIFE
+  name: Life Insurance
+  visibility: public
+  projectSelection:
+    manual:
+    - key: INSURANCE-LIFE
+    - key: INSURANCE-PET
+  permissions:
+  - group: sonar-administrators
+    permissions:
+    - admin
+- key: DEMOS
+  name: Demo projects
+  visibility: public
+  projectSelection:
+    tags:
+    - demo
+  permissions:
+  - group: sonar-users
+    permissions:
+    - admin
+- key: PORTFOLIO-OLIVIER
+  name: Olivier's projects
+  visibility: public
+  projectSelection:
+    regexp: .*okorach.*
+  permissions:
+  - group: sonar-administrators
+    permissions:
+    - admin
+- key: PORTFOLIO-PYTHON
+  name: Python Projects
+  visibility: public
+  projectSelection:
+    tags:
+    - python
+  permissions:
+  - group: sonar-administrators
+    permissions:
+    - admin
+- key: PORTFOLIO_ALL
+  name: All projects
+  visibility: private
+  projectSelection:
+    rest: true
+  permissions:
+  - group: sonar-administrators
+    permissions:
+    - admin
+    - user
+  - group: sonar-users
+    permissions:
+    - user
+- key: PORTFOLIO_APPS
+  name: Portfolio of Apps
+  visibility: private
+  applications:
+  - key: APPY
+  - key: APP_TEST
+    branches:
+    - Other Branch
+  permissions:
+  - group: sonar-administrators
+    permissions:
+    - admin
+  - group: sonar-users
+    permissions:
+    - user
+- key: PORTFOLIO_MULTI_BRANCHES
+  name: Portfolios multiple branches
+  visibility: private
+  projectSelection:
+    manual:
+    - key: BANKING-INVESTMENT-EQUITY
+    - key: BANKING-INVESTMENT-MERGER
+    - key: BANKING-PORTAL
+      branches:
+      - comma,branch
+      - main
+      - release-3.2
+  permissions:
+  - group: sonar-administrators
+    permissions:
+    - admin
+  - group: sonar-users
+    permissions:
+    - user
+- key: PORT_FAV_PROJECTS
+  name: My favorite projects
+  visibility: private
+  projectSelection:
+    manual:
+    - key: ai-code-fix
+    - key: code-variants
+    - key: creedengo-issues
+    - key: demo-rules
+    - key: demo:autoconfig
+    - key: demo:coverage
+    - key: mute-in-ide
+  permissions:
+  - group: sonar-administrators
+    permissions:
+    - admin
+  - group: sonar-users
+    permissions:
+    - user
+- key: Private_Banking
+  name: Private Banking
+  visibility: public
+  projectSelection:
+    tags:
+    - private-banking
+  permissions:
+  - group: sonar-administrators
+    permissions:
+    - admin
+users:
+- login: admin
+  name: Administrator
+  email: admin@acme.com
+  groups:
+  - ci-tools
+  - security-auditors
+  - sonar-administrators
+  - tech-leads
+  scmAccounts:
+  - admin-acme
+  - administrator-acme
+  local: true
+- login: ado
+  name: Azure DevOps Service Account
+  groups:
+  - ci-tools
+  local: true
+- login: bbTEMPaa
+  name: User name bbTEMPaa
+  local: true
+- login: james
+  name: James Amable
+  groups:
+  - sonar-administrators
+  local: true
+- login: michal
+  name: michal
+  groups:
+  - language-experts
+  - tech-leads
+  local: true
+- login: olivier
+  name: olivier
+  groups:
+  - project-admins
+  - tech-leads
+  local: true
+- login: olivier-k31581
+  name: Olivier K
+  email: olivier.korach@sonarsource.com
+  groups:
+  - language-experts
+  - project-admins
+  - quality-managers
+- login: olivier-korach22656
+  name: Olivier Korach
+  email: olivier.korach@gmail.com
+  groups:
+  - gl-admins
+  - gl-admins/gl-devs
+- login: syncer
+  name: syncer
+  groups:
+  - developers
+  - language-experts
+  - quality-managers
+  - security-auditors
+  - sonar-administrators
+  - tech-leads
+  local: true
+groups:
+- name: ci-tools
+  description: Service accounts for CI tools
+- name: developers
+  description: Developers
+- name: gl-admins
+  description: ''
+- name: gl-admins/gl-devs
+  description: ''
+- name: language-experts
+  description: Language experts in charge of defining the company governance in terms
+    of Quality Profiles (rulesets enforced in the company)
+- name: project-admins
+  description: Project administrators in charge of project configuration
+- name: quality-managers
+  description: Quality Managers in charge of defining company governance in terms
+    of quality gates
+- name: security-auditors
+  description: Security Auditors in charge of reviewing security issues
+- name: sonar-administrators
+  description: SonarQube administrators
+- name: tech-leads
+  description: Senior developers in charge of reviewing issues
+- name: z comma , group
+  description: ''
+rules:
+  instantiated:
+  - key: java:Don_t_be_rude
+    severity: major
+    impacts:
+      security: medium
+      maintainability: medium
+    description: Don't be rude
+    params:
+    - key: message
+      value: Hey don't be rude!
+    - key: regularExpression
+      value: (fuck|shit|merde)
+    language: java
+    templateKey: java:S124
+  - key: java:rudeness_is_bad
+    severity: major
+    impacts:
+      security: medium
+      maintainability: medium
+    description: Behave yourself in your code
+    params:
+    - key: message
+      value: Hey don't be rude!
+    - key: regularExpression
+      value: (f-word|s-word)
+    language: java
+    templateKey: java:S124
+  - key: jcl:Track_usage_of_rogue_programs
+    severity: info
+    impacts:
+      security: high
+      reliability: medium
+      maintainability: low
+    description: You should not run programs starting by rogue
+    params:
+    - key: programName
+      value: ROGUEPROG
+    - key: replacementProgramName
+      value: OKPROG
+    language: jcl
+    templateKey: jcl:S3688
+  - key: python:Do_not_use_offending_words_for_symbols_or_comments
+    severity: major
+    impacts:
+      maintainability: medium
+    description: Don't write fuck or shit in code
+    params:
+    - key: message
+      value: Don't write fuck or shit in code
+    - key: regularExpression
+      value: (fuck|shit)
+    language: py
+    templateKey: python:CommentRegularExpression
+  - key: python:Do_not_use_offensive_words_in_comments
+    severity: major
+    impacts:
+      maintainability: medium
+    description: NO DESCRIPTION
+    params:
+    - key: message
+      value: Don't use shit or fuck in comments
+    - key: regularExpression
+      value: (shit|fuck)
+    language: py
+    templateKey: python:CommentRegularExpression
+  - key: secrets:Corp_secrets_should_not_leak
+    severity: blocker
+    impacts:
+      security: blocker
+    description: Corp secrets should not leak
+    params:
+    - key: detectionSpecification
+      value: "matching:\n  pattern: \"\\\\bCORP_SECRET_\\\\d{10}\\\\b\""
+    language: secrets
+    templateKey: secrets:S6784
+  - key: secrets:My_custom_secret_rule
+    severity: blocker
+    impacts:
+      security: high
+    description: Track presence of custom tokens for company specific app
+    params:
+    - key: detectionSpecification
+      value: "matching:\n  pattern: \"\\\\bCORP_SECRET_\\\\d{10}\\\\b\"\n  context:\n\
+        \     patternAround:\n         pattern: \"<CorpConnectionSpec>\"\n       \
+        \  maxLineDistance: 10\n         maxCharDistance: 500"
+    language: secrets
+    templateKey: secrets:S6784
+  - key: secrets:Siemens_custom_keys_should_not_leak
+    severity: blocker
+    impacts:
+      security: blocker
+    description: Make sure that you don't commit files that contain Siemens secrets
+      of the format SIEMENS_XXXXXXXX
+    params:
+    - key: detectionSpecification
+      value: SIEMENS_\d\d\d\d\d\d\d\d
+    language: secrets
+    templateKey: secrets:S6784
+  extended:
+  - key: csharpsquid:S3884
+    tags:
+    - ubs-critical
+  - key: java:S115
+    description: 'En Francais: Les constantes doivent suivre des conventions de nommage'
+  - key: java:S1451
+    description: Avec la meme version en francais
+  - key: java:S1698
+    description: 'Traduction francaise de la regle:
+
+      Il ne faut pas comparer les objets avec == si la methode equals n''a pas ete
+      surchargee'
+  - key: python:S1721
+    tags:
+    - improve-description
+    description: 'Actually in the context of an ``if``, parens are necessary:
+
+      ``if value in ("foo", "bar")`` for instance'
+  - key: python:S2734
+    description: Par convention __init__ retourne un object de la classe, donc it
+      ne doit pas y avoir de return
+  - key: python:S2737
+    tags:
+    - best-practice
+    description: Ben sinon pourquoi to catch l'exception pour re-raiser?
+
