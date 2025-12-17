@@ -154,8 +154,9 @@ class DevopsPlatform(sq.SqObject):
         :param ConfigSettings export_settings: Config params for the export
         :return: The configuration of the DevOps platform (except secrets)
         """
-        json_data = {"key": self.key, "type": self.type, "url": self.url}
-        json_data.update(self.sq_json.copy())
+        json_data = {"key": self.key, "type": self.type, "url": self.url} | self.sq_json.copy()
+        if self.type == "bitbucketcloud":
+            json_data.pop("url", None)
         return util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
     def set_pat(self, pat: str, user_name: Optional[str] = None) -> bool:
@@ -177,7 +178,7 @@ class DevopsPlatform(sq.SqObject):
             log.error("DevOps platform type '%s' for update of %s is incompatible", alm_type, str(self))
             return False
 
-        params = self.api_params() | {"url": kwargs["url"]}
+        params = self.api_params() | {"url": kwargs.get("url")}
         additional = ()
         if alm_type == DEVOPS_BITBUCKET_CLOUD:
             additional = ("clientId", "workspace")
@@ -187,7 +188,7 @@ class DevopsPlatform(sq.SqObject):
             params[k] = kwargs.get(k, _TO_BE_SET)
         try:
             ok = self.post(f"alm_settings/update_{alm_type}", params=params).ok
-            self.url = kwargs["url"]
+            self.url = kwargs.get("url")
             self._specific = {k: v for k, v in params.items() if k not in ("key", "url")}
         except exceptions.SonarException:
             ok = False
@@ -250,8 +251,8 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings) -
     json_data = {}
     for s in get_list(endpoint).values():
         export_data = s.to_json(export_settings)
-        key = export_data.pop("key")
-        json_data[key] = export_data
+        json_data[export_data.pop("key")] = export_data
+        log.debug("Export devops: %s", util.json_dump(export_data))
     return json_data
 
 

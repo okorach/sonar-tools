@@ -2,7 +2,7 @@
    "platform": {
       "edition": "enterprise",
       "url": "https://latest.olivierk.ngrok.io",
-      "version": "2025.5.0",
+      "version": "2025.6.0",
       "serverId": "243B8A4D-AY5SFSbmgIK8PCmM81th",
       "plugins": [
          {
@@ -16,11 +16,6 @@
             "name": "Checkstyle"
          },
          {
-            "key": "dependencycheck",
-            "version": "5.0.0",
-            "name": "Dependency-Check"
-         },
-         {
             "key": "creedengojava",
             "version": "2.1.1",
             "name": "creedengo - Java language"
@@ -30,28 +25,16 @@
    "globalSettings": {
       "generalSettings": [
          {
-            "key": "newCodePeriod",
-            "value": "PREVIOUS_VERSION"
-         },
-         {
-            "key": "projects.default.visibility",
-            "value": "private"
-         },
-         {
             "key": "provisioning.github.project.visibility.enabled",
-            "value": true
+            "defaultValue": true
          },
          {
             "key": "provisioning.gitlab.enabled",
-            "value": false
+            "defaultValue": false
          },
          {
             "key": "provisioning.gitlab.token.secured",
             "value": ""
-         },
-         {
-            "key": "sonar.ai.codefix.hidden",
-            "value": false
          },
          {
             "key": "sonar.ai.suggestions.enabled",
@@ -59,39 +42,29 @@
          },
          {
             "key": "sonar.allowPermissionManagementForProjectAdmins",
-            "value": false
+            "value": false,
+            "defaultValue": true
          },
          {
             "key": "sonar.announcement.displayMessage",
-            "value": false
-         },
-         {
-            "key": "sonar.announcement.htmlMessage",
-            "value": "You are on <a href=\"https://docs.sonarqube.com\" target=\"_blank\" rel=\"noopener noreferrer\">LATEST</a>"
+            "defaultValue": false
          },
          {
             "key": "sonar.announcement.message",
             "value": "You are on [LATEST](https://docs.sonarqube.com)"
          },
          {
-            "key": "sonar.architecture.config.model",
-            "value": "Model is not configured."
-         },
-         {
-            "key": "sonar.architecture.visualization.enabled",
-            "value": false
-         },
-         {
             "key": "sonar.autodetect.ai.code",
-            "value": true
+            "defaultValue": true
          },
          {
             "key": "sonar.builtInQualityProfiles.disableNotificationOnUpdate",
-            "value": false
+            "defaultValue": false
          },
          {
             "key": "sonar.ce.parallelProjectTasks",
-            "value": false
+            "value": false,
+            "defaultValue": true
          },
          {
             "key": "sonar.core.serverBaseURL",
@@ -99,11 +72,11 @@
          },
          {
             "key": "sonar.cpd.cross_project",
-            "value": false
+            "defaultValue": false
          },
          {
             "key": "sonar.dbcleaner.auditHousekeeping",
-            "value": "Monthly"
+            "defaultValue": "Monthly"
          },
          {
             "key": "sonar.dbcleaner.branchesToKeepWhenInactive",
@@ -114,111 +87,113 @@
                "master",
                "release-.*",
                "trunk"
+            ],
+            "defaultValue": [
+               "develop",
+               "main",
+               "master",
+               "trunk"
             ]
          },
          {
             "key": "sonar.dbcleaner.daysBeforeDeletingAnticipatedTransitions",
-            "value": 30
+            "defaultValue": 30
          },
          {
             "key": "sonar.dbcleaner.daysBeforeDeletingClosedIssues",
-            "value": 30
+            "defaultValue": 30
          },
          {
             "key": "sonar.dbcleaner.daysBeforeDeletingInactiveBranchesAndPRs",
-            "value": 30
+            "defaultValue": 30
          },
          {
             "key": "sonar.dbcleaner.hoursBeforeKeepingOnlyOneSnapshotByDay",
-            "value": 24
+            "defaultValue": 24
          },
          {
             "key": "sonar.dbcleaner.weeksBeforeDeletingAllSnapshots",
-            "value": 260
+            "defaultValue": 260
          },
          {
             "key": "sonar.dbcleaner.weeksBeforeKeepingOnlyAnalysesWithVersion",
-            "value": 104
+            "defaultValue": 104
          },
          {
             "key": "sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByMonth",
-            "value": 52
+            "defaultValue": 52
          },
          {
             "key": "sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByWeek",
-            "value": 4
+            "defaultValue": 4
          },
          {
             "key": "sonar.developerAggregatedInfo.disabled",
-            "value": false
+            "defaultValue": false
          },
          {
-            "key": "sonar.earlyAccess.misra.enabled",
-            "value": true
+            "key": "sonar.dre.apex.activate",
+            "defaultValue": true
+         },
+         {
+            "key": "sonar.dre.baselineTimeout",
+            "defaultValue": 90000
+         },
+         {
+            "key": "sonar.dre.enabled",
+            "defaultValue": true
+         },
+         {
+            "key": "sonar.dre.go.activate",
+            "defaultValue": true
+         },
+         {
+            "key": "sonar.dre.ruby.activate",
+            "defaultValue": true
          },
          {
             "key": "sonar.enforceAzureOpenAiDomainValidation",
-            "value": true
-         },
-         {
-            "key": "sonar.filesize.limit",
-            "value": 20
+            "defaultValue": true
          },
          {
             "key": "sonar.githubactions.activate",
-            "value": true
+            "defaultValue": true
          },
          {
             "key": "sonar.governance.report.project.branch.frequency",
-            "value": "Monthly"
+            "defaultValue": "Monthly"
          },
          {
             "key": "sonar.governance.report.view.frequency",
-            "value": "Monthly"
+            "defaultValue": "Monthly"
          },
          {
             "key": "sonar.governance.report.view.recipients",
-            "value": ""
+            "defaultValue": []
          },
          {
             "key": "sonar.issues.defaultAssigneeLogin",
             "value": ""
          },
          {
-            "key": "sonar.issues.sandbox.default",
-            "value": true
-         },
-         {
-            "key": "sonar.issues.sandbox.enabled",
-            "value": true
-         },
-         {
-            "key": "sonar.issues.sandbox.override.enabled",
-            "value": true
-         },
-         {
-            "key": "sonar.issues.sandbox.software-qualities",
-            "value": "[{\"softwareQuality\":\"MAINTAINABILITY\",\"impactSeverities\":[\"BLOCKER\",\"HIGH\",\"MEDIUM\"]},{\"softwareQuality\":\"RELIABILITY\",\"impactSeverities\":[\"BLOCKER\",\"HIGH\",\"MEDIUM\",\"LOW\",\"INFO\"]},{\"softwareQuality\":\"SECURITY\",\"impactSeverities\":[\"BLOCKER\",\"HIGH\",\"MEDIUM\",\"LOW\",\"INFO\"]}]"
-         },
-         {
             "key": "sonar.jreAutoProvisioning.disabled",
-            "value": false
+            "defaultValue": false
          },
          {
             "key": "sonar.kubernetes.activate",
-            "value": true
+            "defaultValue": true
          },
          {
             "key": "sonar.kubernetes.helm.activate",
-            "value": true
+            "defaultValue": true
          },
          {
             "key": "sonar.lf.enableGravatar",
-            "value": false
+            "defaultValue": false
          },
          {
             "key": "sonar.lf.gravatarServerUrl",
-            "value": "https://secure.gravatar.com/avatar/{EMAIL_MD5}.jpg?s={SIZE}&d=identicon"
+            "defaultValue": "https://secure.gravatar.com/avatar/{EMAIL_MD5}.jpg?s={SIZE}&d=identicon"
          },
          {
             "key": "sonar.lf.logoUrl",
@@ -241,98 +216,108 @@
             "value": true
          },
          {
-            "key": "sonar.notifications.delay",
-            "value": 60
-         },
-         {
-            "key": "sonar.notifications.runningDelayBeforeReportingStatus",
-            "value": 600
-         },
-         {
             "key": "sonar.pdf.confidential.header.enabled",
-            "value": true
+            "defaultValue": true
          },
          {
             "key": "sonar.plugins.downloadOnlyRequired",
-            "value": true
+            "defaultValue": true
          },
          {
             "key": "sonar.portfolios.recompute.hours",
-            "value": ""
+            "defaultValue": []
          },
          {
             "key": "sonar.projectCreation.mainBranchName",
-            "value": "main"
+            "defaultValue": "main"
          },
          {
             "key": "sonar.qualityProfiles.allowDisableInheritedRules",
-            "value": false
+            "value": false,
+            "defaultValue": true
          },
          {
             "key": "sonar.qualitygate.ignoreSmallChanges",
-            "value": true
+            "defaultValue": true
          },
          {
             "key": "sonar.sca.enabled",
-            "value": true
+            "defaultValue": true
          },
          {
             "key": "sonar.sca.featureEnabled",
-            "value": true
+            "value": true,
+            "defaultValue": false
          },
          {
             "key": "sonar.sca.rescan.branch_type",
-            "value": "Kept branches only"
+            "defaultValue": "Kept branches only"
          },
          {
             "key": "sonar.sca.rescan.frequency",
-            "value": "Daily"
+            "defaultValue": "Daily"
          },
          {
             "key": "sonar.scanner.skipNodeProvisioning",
-            "value": false
+            "defaultValue": false
          },
          {
             "key": "sonar.scm.disabled",
-            "value": false
+            "defaultValue": false
+         },
+         {
+            "key": "sonar.shell.activate",
+            "defaultValue": true
+         },
+         {
+            "key": "sonar.shell.file.suffixes",
+            "defaultValue": [
+               ".bash",
+               ".sh"
+            ]
          },
          {
             "key": "sonar.technicalDebt.developmentCost",
-            "value": 30
+            "defaultValue": 30
          },
          {
             "key": "sonar.technicalDebt.ratingGrid",
-            "value": "0.03,0.07,0.2,0.5"
+            "value": "0.03,0.07,0.2,0.5",
+            "defaultValue": "0.05,0.1,0.2,0.5"
          },
          {
             "key": "sonar.validateWebhooks",
-            "value": true
+            "defaultValue": true
          }
       ],
       "analysisScope": [
          {
             "key": "sonar.coverage.exclusions",
-            "value": ""
+            "defaultValue": []
          },
          {
             "key": "sonar.cpd.exclusions",
-            "value": ""
+            "defaultValue": []
          },
          {
             "key": "sonar.exclusions",
-            "value": ""
+            "defaultValue": []
          },
          {
             "key": "sonar.global.exclusions",
-            "value": "**/vendor/**, **/lib/**"
+            "value": [
+               "**/lib/**",
+               "**/vendor/**"
+            ],
+            "defaultValue": []
          },
          {
             "key": "sonar.global.test.exclusions",
-            "value": ""
+            "defaultValue": []
          },
          {
             "key": "sonar.inclusions",
-            "value": ""
+            "defaultValue": []
          },
          {
             "key": "sonar.issue.enforce.multicriteria",
@@ -352,17 +337,17 @@
          },
          {
             "key": "sonar.test.exclusions",
-            "value": ""
+            "defaultValue": []
          },
          {
             "key": "sonar.test.inclusions",
-            "value": ""
+            "defaultValue": []
          }
       ],
       "authentication": [
          {
             "key": "sonar.auth.bitbucket.allowUsersToSignUp",
-            "value": true
+            "defaultValue": true
          },
          {
             "key": "sonar.auth.bitbucket.clientId.secured",
@@ -374,19 +359,19 @@
          },
          {
             "key": "sonar.auth.bitbucket.enabled",
-            "value": false
+            "defaultValue": false
          },
          {
             "key": "sonar.auth.bitbucket.workspaces",
-            "value": ""
+            "defaultValue": []
          },
          {
             "key": "sonar.auth.github.allowUsersToSignUp",
-            "value": true
+            "defaultValue": true
          },
          {
             "key": "sonar.auth.github.apiUrl",
-            "value": "https://api.github.com/"
+            "defaultValue": "https://api.github.com/"
          },
          {
             "key": "sonar.auth.github.appId",
@@ -402,15 +387,19 @@
          },
          {
             "key": "sonar.auth.github.enabled",
-            "value": true
+            "value": true,
+            "defaultValue": false
          },
          {
             "key": "sonar.auth.github.groupsSync",
-            "value": false
+            "defaultValue": false
          },
          {
             "key": "sonar.auth.github.organizations",
-            "value": "okorach-org"
+            "value": [
+               "okorach-org"
+            ],
+            "defaultValue": []
          },
          {
             "key": "sonar.auth.github.privateKey.secured",
@@ -418,15 +407,18 @@
          },
          {
             "key": "sonar.auth.github.webUrl",
-            "value": "https://github.com/"
+            "defaultValue": "https://github.com/"
          },
          {
             "key": "sonar.auth.gitlab.allowUsersToSignUp",
-            "value": true
+            "defaultValue": true
          },
          {
             "key": "sonar.auth.gitlab.allowedGroups",
-            "value": "gl-admins"
+            "value": [
+               "gl-admins"
+            ],
+            "defaultValue": []
          },
          {
             "key": "sonar.auth.gitlab.applicationId.secured",
@@ -434,11 +426,13 @@
          },
          {
             "key": "sonar.auth.gitlab.enabled",
-            "value": true
+            "value": true,
+            "defaultValue": false
          },
          {
             "key": "sonar.auth.gitlab.groupsSync",
-            "value": true
+            "value": true,
+            "defaultValue": false
          },
          {
             "key": "sonar.auth.gitlab.secret.secured",
@@ -446,11 +440,12 @@
          },
          {
             "key": "sonar.auth.gitlab.url",
-            "value": "https://gitlab.com/"
+            "value": "https://gitlab.com/",
+            "defaultValue": "https://gitlab.com"
          },
          {
             "key": "sonar.auth.saml.applicationId",
-            "value": "sonarqube"
+            "defaultValue": "sonarqube"
          },
          {
             "key": "sonar.auth.saml.certificate.secured",
@@ -458,7 +453,7 @@
          },
          {
             "key": "sonar.auth.saml.enabled",
-            "value": false
+            "defaultValue": false
          },
          {
             "key": "sonar.auth.saml.group.name",
@@ -474,11 +469,11 @@
          },
          {
             "key": "sonar.auth.saml.providerName",
-            "value": "SAML"
+            "defaultValue": "SAML"
          },
          {
             "key": "sonar.auth.saml.signature.enabled",
-            "value": false
+            "defaultValue": false
          },
          {
             "key": "sonar.auth.saml.sp.certificate.secured",
@@ -502,15 +497,12 @@
          },
          {
             "key": "sonar.auth.token.max.allowed.lifetime",
-            "value": "1 year"
-         },
-         {
-            "key": "sonar.authenticator.downcase",
-            "value": false
+            "value": "1 year",
+            "defaultValue": "No expiration"
          },
          {
             "key": "sonar.forceAuthentication",
-            "value": true
+            "defaultValue": true
          }
       ],
       "languages": [
@@ -519,15 +511,12 @@
             "settings": [
                {
                   "key": "sonar.abap.file.suffixes",
-                  "value": ".ab4, .abap, .asprog, .flow"
-               },
-               {
-                  "key": "sonar.cpd.abap.minimumLines",
-                  "value": 20
-               },
-               {
-                  "key": "sonar.cpd.abap.minimumTokens",
-                  "value": 100
+                  "defaultValue": [
+                     ".ab4",
+                     ".abap",
+                     ".asprog",
+                     ".flow"
+                  ]
                }
             ]
          },
@@ -536,11 +525,11 @@
             "settings": [
                {
                   "key": "sonar.ansible.activate",
-                  "value": true
+                  "defaultValue": true
                },
                {
                   "key": "sonar.ansible.ansible-lint.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -549,11 +538,14 @@
             "settings": [
                {
                   "key": "sonar.apex.file.suffixes",
-                  "value": ".cls, .trigger"
+                  "defaultValue": [
+                     ".cls",
+                     ".trigger"
+                  ]
                },
                {
                   "key": "sonar.apex.pmd.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -562,15 +554,23 @@
             "settings": [
                {
                   "key": "sonar.azureresourcemanager.activate",
-                  "value": true
+                  "defaultValue": true
                },
                {
                   "key": "sonar.azureresourcemanager.file.identifier",
-                  "value": "https://schema.management.azure.com/schemas/"
+                  "value": [
+                     "https://schema.management.azure.com/schemas/"
+                  ],
+                  "defaultValue": [
+                     "http://schema.management.azure.com/schemas/",
+                     "https://schema.management.azure.com/schemas/"
+                  ]
                },
                {
                   "key": "sonar.azureresourcemanager.file.suffixes",
-                  "value": ".bicep"
+                  "defaultValue": [
+                     ".bicep"
+                  ]
                }
             ]
          },
@@ -579,7 +579,10 @@
             "settings": [
                {
                   "key": "sonar.c.file.suffixes",
-                  "value": ".c, .h"
+                  "defaultValue": [
+                     ".c",
+                     ".h"
+                  ]
                },
                {
                   "key": "sonar.cfamily.bullseye.reportPath",
@@ -587,7 +590,7 @@
                },
                {
                   "key": "sonar.cfamily.cobertura.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.cfamily.cppunit.reportsPath",
@@ -596,10 +599,6 @@
                {
                   "key": "sonar.cfamily.gcov.reportsPath",
                   "value": ""
-               },
-               {
-                  "key": "sonar.cfamily.generateComputedConfig",
-                  "value": false
                },
                {
                   "key": "sonar.cfamily.ignoreHeaderComments",
@@ -611,7 +610,7 @@
                },
                {
                   "key": "sonar.cfamily.valgrind.reportsPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.cfamily.vscoveragexml.reportsPath",
@@ -619,11 +618,40 @@
                },
                {
                   "key": "sonar.cpp.file.suffixes",
-                  "value": ".c++, .cc, .cpp, .cxx, .h++, .hh, .hpp, .hxx, .ipp"
+                  "value": [
+                     ".c++",
+                     ".cc",
+                     ".cpp",
+                     ".cxx",
+                     ".h++",
+                     ".hh",
+                     ".hpp",
+                     ".hxx",
+                     ".ipp"
+                  ],
+                  "defaultValue": [
+                     ".c++",
+                     ".c++m",
+                     ".cc",
+                     ".ccm",
+                     ".cpp",
+                     ".cppm",
+                     ".cxx",
+                     ".cxxm",
+                     ".h++",
+                     ".hh",
+                     ".hpp",
+                     ".hxx",
+                     ".ipp",
+                     ".ixx",
+                     ".mxx"
+                  ]
                },
                {
                   "key": "sonar.objc.file.suffixes",
-                  "value": ".m"
+                  "defaultValue": [
+                     ".m"
+                  ]
                }
             ]
          },
@@ -632,15 +660,15 @@
             "settings": [
                {
                   "key": "sonar.cloudformation.activate",
-                  "value": true
+                  "defaultValue": true
                },
                {
                   "key": "sonar.cloudformation.cfn-lint.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.cloudformation.file.identifier",
-                  "value": "AWSTemplateFormatVersion"
+                  "defaultValue": "AWSTemplateFormatVersion"
                }
             ]
          },
@@ -649,7 +677,7 @@
             "settings": [
                {
                   "key": "sonar.cobol.adaprep.activation",
-                  "value": false
+                  "defaultValue": false
                },
                {
                   "key": "sonar.cobol.aucobol.preprocessor.directives.default",
@@ -657,39 +685,39 @@
                },
                {
                   "key": "sonar.cobol.byteBasedColumnCount",
-                  "value": false
+                  "defaultValue": false
                },
                {
                   "key": "sonar.cobol.compilationConstants",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.cobol.copy.directories",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.cobol.copy.exclusions",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.cobol.copy.suffixes",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.cobol.db2include.directories",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.cobol.dialect",
-                  "value": "ibm-enterprise-cobol"
+                  "defaultValue": "ibm-enterprise-cobol"
                },
                {
                   "key": "sonar.cobol.exec.recoveryMode",
-                  "value": true
+                  "defaultValue": true
                },
                {
                   "key": "sonar.cobol.file.suffixes",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.cobol.preprocessor.skipping.first.matching.characters",
@@ -697,7 +725,7 @@
                },
                {
                   "key": "sonar.cobol.sourceFormat",
-                  "value": "fixed"
+                  "defaultValue": "fixed"
                },
                {
                   "key": "sonar.cobol.sql.catalog.csv.path",
@@ -705,23 +733,15 @@
                },
                {
                   "key": "sonar.cobol.sql.catalog.defaultSchema",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.cobol.tab.width",
-                  "value": 8
+                  "defaultValue": 8
                },
                {
                   "key": "sonar.cpd.cobol.ignoreLiteral",
-                  "value": true
-               },
-               {
-                  "key": "sonar.cpd.cobol.minimumLines",
-                  "value": 30
-               },
-               {
-                  "key": "sonar.cpd.cobol.minimumTokens",
-                  "value": 100
+                  "defaultValue": true
                }
             ]
          },
@@ -730,59 +750,41 @@
             "settings": [
                {
                   "key": "sonar.cs.analyzeGeneratedCode",
-                  "value": false
+                  "defaultValue": false
                },
                {
                   "key": "sonar.cs.analyzeRazorCode",
-                  "value": true
-               },
-               {
-                  "key": "sonar.cs.analyzer.dotnet.pluginKey",
-                  "value": "csharpenterprise"
-               },
-               {
-                  "key": "sonar.cs.analyzer.dotnet.pluginVersion",
-                  "value": "10.15.0.120848"
-               },
-               {
-                  "key": "sonar.cs.analyzer.dotnet.staticResourceName",
-                  "value": "SonarAnalyzer-csharpenterprise-10.15.0.120848.zip"
-               },
-               {
-                  "key": "sonar.cs.analyzer.security.pluginKey",
-                  "value": "securitycsharpfrontend"
-               },
-               {
-                  "key": "sonar.cs.analyzer.security.pluginVersion",
-                  "value": "11.10.0.40378"
-               },
-               {
-                  "key": "sonar.cs.analyzer.security.staticResourceName",
-                  "value": "SonarAnalyzer.Security.CSharp-11.10.0.40378.zip"
+                  "defaultValue": true
                },
                {
                   "key": "sonar.cs.file.suffixes",
-                  "value": ".cs"
+                  "value": [
+                     ".cs"
+                  ],
+                  "defaultValue": [
+                     ".cs",
+                     ".razor"
+                  ]
                },
                {
                   "key": "sonar.cs.ignoreHeaderComments",
-                  "value": true
+                  "defaultValue": true
                },
                {
                   "key": "sonar.cs.roslyn.bugCategories",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.cs.roslyn.codeSmellCategories",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.cs.roslyn.ignoreIssues",
-                  "value": false
+                  "defaultValue": false
                },
                {
                   "key": "sonar.cs.roslyn.vulnerabilityCategories",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -791,11 +793,21 @@
             "settings": [
                {
                   "key": "sonar.css.file.suffixes",
-                  "value": ".css, .less, .scss"
+                  "value": [
+                     ".css",
+                     ".less",
+                     ".scss"
+                  ],
+                  "defaultValue": [
+                     ".css",
+                     ".less",
+                     ".sass",
+                     ".scss"
+                  ]
                },
                {
                   "key": "sonar.css.stylelint.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -804,11 +816,13 @@
             "settings": [
                {
                   "key": "sonar.dart.file.suffixes",
-                  "value": ".dart"
+                  "defaultValue": [
+                     ".dart"
+                  ]
                },
                {
                   "key": "sonar.dart.lcov.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -817,15 +831,23 @@
             "settings": [
                {
                   "key": "sonar.docker.activate",
-                  "value": true
+                  "defaultValue": true
                },
                {
                   "key": "sonar.docker.file.patterns",
-                  "value": "*.dockerfile, Dockerfile, *.Dockerfile"
+                  "value": [
+                     "*.Dockerfile",
+                     "*.dockerfile",
+                     "Dockerfile"
+                  ],
+                  "defaultValue": [
+                     "*.dockerfile",
+                     "Dockerfile"
+                  ]
                },
                {
                   "key": "sonar.docker.hadolint.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -834,11 +856,13 @@
             "settings": [
                {
                   "key": "sonar.flex.cobertura.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.flex.file.suffixes",
-                  "value": "as"
+                  "defaultValue": [
+                     "as"
+                  ]
                }
             ]
          },
@@ -847,35 +871,39 @@
             "settings": [
                {
                   "key": "sonar.go.coverage.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.go.exclusions",
-                  "value": "**/vendor/**"
+                  "defaultValue": [
+                     "**/vendor/**"
+                  ]
                },
                {
                   "key": "sonar.go.file.suffixes",
-                  "value": ".go"
+                  "defaultValue": [
+                     ".go"
+                  ]
                },
                {
                   "key": "sonar.go.golangci-lint.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.go.golint.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.go.gometalinter.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.go.govet.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.go.tests.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -884,7 +912,20 @@
             "settings": [
                {
                   "key": "sonar.html.file.suffixes",
-                  "value": ".ascx, .aspx, .cmp, .cshtml, .erb, .html, .rhtml, .shtm, .shtml, .twig, .vbhtml, .xhtml"
+                  "defaultValue": [
+                     ".ascx",
+                     ".aspx",
+                     ".cmp",
+                     ".cshtml",
+                     ".erb",
+                     ".html",
+                     ".rhtml",
+                     ".shtm",
+                     ".shtml",
+                     ".twig",
+                     ".vbhtml",
+                     ".xhtml"
+                  ]
                }
             ]
          },
@@ -893,7 +934,9 @@
             "settings": [
                {
                   "key": "sonar.ipynb.file.suffixes",
-                  "value": "ipynb"
+                  "defaultValue": [
+                     "ipynb"
+                  ]
                }
             ]
          },
@@ -902,35 +945,56 @@
             "settings": [
                {
                   "key": "sonar.java.checkstyle.reportPaths",
-                  "value": "target/checkstyle-result.xml, target/sonar/checkstyle-result.xml"
+                  "value": [
+                     "target/checkstyle-result.xml",
+                     "target/sonar/checkstyle-result.xml"
+                  ],
+                  "defaultValue": []
                },
                {
                   "key": "sonar.java.enablePreview",
-                  "value": false
+                  "defaultValue": false
                },
                {
                   "key": "sonar.java.file.suffixes",
-                  "value": ".java, .jav"
+                  "value": [
+                     ".jav",
+                     ".java",
+                     ".javax"
+                  ],
+                  "defaultValue": [
+                     ".jav",
+                     ".java"
+                  ]
                },
                {
                   "key": "sonar.java.ignoreUnnamedModuleForSplitPackage",
-                  "value": false
+                  "defaultValue": false
                },
                {
                   "key": "sonar.java.jvmframeworkconfig.activate",
-                  "value": true
+                  "defaultValue": true
                },
                {
                   "key": "sonar.java.jvmframeworkconfig.file.patterns",
-                  "value": "**/src/main/resources/**/application*.properties, **/src/main/resources/**/application*.yaml, **/src/main/resources/**/application*.yml"
+                  "value": [
+                     "**/src/main/resources/**/application*.properties",
+                     "**/src/main/resources/**/application*.yaml",
+                     "**/src/main/resources/**/application*.yml"
+                  ],
+                  "defaultValue": [
+                     "**/src/main/resources/**/*app*.properties",
+                     "**/src/main/resources/**/*app*.yaml",
+                     "**/src/main/resources/**/*app*.yml"
+                  ]
                },
                {
                   "key": "sonar.java.pmd.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.java.spotbugs.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -939,35 +1003,122 @@
             "settings": [
                {
                   "key": "sonar.eslint.reportPaths",
-                  "value": ""
-               },
-               {
-                  "key": "sonar.jasmin.internal.disabled",
-                  "value": false
+                  "defaultValue": []
                },
                {
                   "key": "sonar.javascript.environments",
-                  "value": "amd, applescript, atomtest, browser, commonjs, couch, embertest, flow, greasemonkey, jasmine, jest, jquery, meteor, mocha, mongo, nashorn, node, phantomjs, prototypejs, protractor, qunit, rhino, serviceworker, shared-node-browser, shelljs, webextensions, worker, wsh, yui"
+                  "value": [
+                     "amd",
+                     "applescript",
+                     "atomtest",
+                     "browser",
+                     "commonjs",
+                     "couch",
+                     "embertest",
+                     "flow",
+                     "greasemonkey",
+                     "jasmine",
+                     "jest",
+                     "jquery",
+                     "meteor",
+                     "mocha",
+                     "mongo",
+                     "nashorn",
+                     "node",
+                     "phantomjs",
+                     "prototypejs",
+                     "protractor",
+                     "qunit",
+                     "rhino",
+                     "serviceworker",
+                     "shared-node-browser",
+                     "shelljs",
+                     "webextensions",
+                     "worker",
+                     "wsh",
+                     "yui"
+                  ],
+                  "defaultValue": [
+                     "amd",
+                     "applescript",
+                     "atomtest",
+                     "browser",
+                     "commonjs",
+                     "embertest",
+                     "greasemonkey",
+                     "jasmine",
+                     "jest",
+                     "jquery",
+                     "meteor",
+                     "mocha",
+                     "mongo",
+                     "nashorn",
+                     "node",
+                     "phantomjs",
+                     "prototypejs",
+                     "protractor",
+                     "qunit",
+                     "serviceworker",
+                     "shared-node-browser",
+                     "shelljs",
+                     "webextensions",
+                     "worker"
+                  ]
                },
                {
                   "key": "sonar.javascript.file.suffixes",
-                  "value": ".cjs, .js, .jsx, .mjs, .vue"
+                  "defaultValue": [
+                     ".cjs",
+                     ".js",
+                     ".jsx",
+                     ".mjs",
+                     ".vue"
+                  ]
                },
                {
                   "key": "sonar.javascript.globals",
-                  "value": "Backbone, OenLayers, _, angular, casper, d3, dijit, dojo, dojox, goog, google, moment, sap"
+                  "value": [
+                     "Backbone",
+                     "OenLayers",
+                     "_",
+                     "angular",
+                     "casper",
+                     "d3",
+                     "dijit",
+                     "dojo",
+                     "dojox",
+                     "goog",
+                     "google",
+                     "moment",
+                     "sap"
+                  ],
+                  "defaultValue": [
+                     "Backbone",
+                     "OpenLayers",
+                     "_",
+                     "angular",
+                     "casper",
+                     "d3",
+                     "dijit",
+                     "dojo",
+                     "dojox",
+                     "goog",
+                     "google",
+                     "moment",
+                     "sap"
+                  ]
                },
                {
                   "key": "sonar.javascript.ignoreHeaderComments",
-                  "value": true
+                  "defaultValue": true
                },
                {
                   "key": "sonar.javascript.lcov.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.javascript.maxFileSize",
-                  "value": 1000
+                  "defaultValue": 1000
                }
             ]
          },
@@ -976,7 +1127,9 @@
             "settings": [
                {
                   "key": "sonar.jcl.file.suffixes",
-                  "value": ".jcl"
+                  "defaultValue": [
+                     ".jcl"
+                  ]
                }
             ]
          },
@@ -985,11 +1138,13 @@
             "settings": [
                {
                   "key": "sonar.json.activate",
-                  "value": false
+                  "defaultValue": false
                },
                {
                   "key": "sonar.json.file.suffixes",
-                  "value": ".json"
+                  "defaultValue": [
+                     ".json"
+                  ]
                }
             ]
          },
@@ -998,7 +1153,11 @@
             "settings": [
                {
                   "key": "sonar.jsp.file.suffixes",
-                  "value": ".jsp, .jspf, .jspx"
+                  "defaultValue": [
+                     ".jsp",
+                     ".jspf",
+                     ".jspx"
+                  ]
                }
             ]
          },
@@ -1007,19 +1166,25 @@
             "settings": [
                {
                   "key": "sonar.androidLint.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.kotlin.detekt.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.kotlin.file.suffixes",
-                  "value": ".kt"
+                  "value": [
+                     ".kt"
+                  ],
+                  "defaultValue": [
+                     ".kt",
+                     ".kts"
+                  ]
                },
                {
                   "key": "sonar.kotlin.ktlint.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -1028,31 +1193,40 @@
             "settings": [
                {
                   "key": "sonar.php.coverage.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.php.exclusions",
-                  "value": "**/vendor/**"
+                  "defaultValue": [
+                     "**/vendor/**"
+                  ]
                },
                {
                   "key": "sonar.php.file.suffixes",
-                  "value": "inc, php, php3, php4, php5, phtml"
+                  "defaultValue": [
+                     "inc",
+                     "php",
+                     "php3",
+                     "php4",
+                     "php5",
+                     "phtml"
+                  ]
                },
                {
                   "key": "sonar.php.frameworkDetection",
-                  "value": true
+                  "defaultValue": true
                },
                {
                   "key": "sonar.php.phpstan.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.php.psalm.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.php.tests.reportPath",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -1061,23 +1235,25 @@
             "settings": [
                {
                   "key": "sonar.pli.extralingualCharacters",
-                  "value": "#@$"
+                  "defaultValue": "#@$"
                },
                {
                   "key": "sonar.pli.file.suffixes",
-                  "value": ".pli"
+                  "defaultValue": [
+                     ".pli"
+                  ]
                },
                {
                   "key": "sonar.pli.ignoreHeaderComments",
-                  "value": true
+                  "defaultValue": true
                },
                {
                   "key": "sonar.pli.marginLeft",
-                  "value": 2
+                  "defaultValue": 2
                },
                {
                   "key": "sonar.pli.marginRight",
-                  "value": 72
+                  "defaultValue": 72
                }
             ]
          },
@@ -1086,11 +1262,15 @@
             "settings": [
                {
                   "key": "sonar.plsql.file.suffixes",
-                  "value": "pkb, pks, sql"
+                  "defaultValue": [
+                     "pkb",
+                     "pks",
+                     "sql"
+                  ]
                },
                {
                   "key": "sonar.plsql.ignoreHeaderComments",
-                  "value": false
+                  "defaultValue": false
                }
             ]
          },
@@ -1099,43 +1279,52 @@
             "settings": [
                {
                   "key": "sonar.python.bandit.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.python.coverage.reportPaths",
-                  "value": "coverage-reports/*coverage-*.xml"
+                  "defaultValue": [
+                     "coverage-reports/*coverage-*.xml"
+                  ]
                },
                {
                   "key": "sonar.python.file.suffixes",
-                  "value": "py, python"
+                  "value": [
+                     "py",
+                     "python"
+                  ],
+                  "defaultValue": [
+                     "py"
+                  ]
                },
                {
                   "key": "sonar.python.flake8.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.python.mypy.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.python.pylint.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.python.ruff.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.python.version",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.python.xunit.reportPath",
-                  "value": "build//xunit-results*.xml"
+                  "value": "build//xunit-results*.xml",
+                  "defaultValue": "xunit-reports/xunit-result-*.xml"
                },
                {
                   "key": "sonar.python.xunit.skipDetails",
-                  "value": false
+                  "defaultValue": false
                }
             ]
          },
@@ -1144,11 +1333,18 @@
             "settings": [
                {
                   "key": "sonar.rpg.file.suffixes",
-                  "value": ".RPG, .RPGLE, .SQLRPGLE, .rpg, .rpgle, .sqlrpgle"
+                  "defaultValue": [
+                     ".RPG",
+                     ".RPGLE",
+                     ".SQLRPGLE",
+                     ".rpg",
+                     ".rpgle",
+                     ".sqlrpgle"
+                  ]
                },
                {
                   "key": "sonar.rpg.leftMarginWidth",
-                  "value": 12
+                  "defaultValue": 12
                }
             ]
          },
@@ -1157,19 +1353,25 @@
             "settings": [
                {
                   "key": "sonar.ruby.coverage.reportPaths",
-                  "value": "coverage/.resultset.json"
+                  "defaultValue": [
+                     "coverage/.resultset.json"
+                  ]
                },
                {
                   "key": "sonar.ruby.exclusions",
-                  "value": "**/vendor/**"
+                  "defaultValue": [
+                     "**/vendor/**"
+                  ]
                },
                {
                   "key": "sonar.ruby.file.suffixes",
-                  "value": ".rb"
+                  "defaultValue": [
+                     ".rb"
+                  ]
                },
                {
                   "key": "sonar.ruby.rubocop.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -1178,31 +1380,33 @@
             "settings": [
                {
                   "key": "sonar.rust.cargo.manifestPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.rust.clippy.enabled",
-                  "value": true
+                  "defaultValue": true
                },
                {
                   "key": "sonar.rust.clippy.offline",
-                  "value": false
+                  "defaultValue": false
                },
                {
                   "key": "sonar.rust.clippyReport.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.rust.cobertura.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.rust.file.suffixes",
-                  "value": ".rs"
+                  "defaultValue": [
+                     ".rs"
+                  ]
                },
                {
                   "key": "sonar.rust.lcov.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -1211,19 +1415,21 @@
             "settings": [
                {
                   "key": "sonar.scala.coverage.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.scala.file.suffixes",
-                  "value": ".scala"
+                  "defaultValue": [
+                     ".scala"
+                  ]
                },
                {
                   "key": "sonar.scala.scalastyle.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.scala.scapegoat.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -1232,15 +1438,17 @@
             "settings": [
                {
                   "key": "sonar.swift.coverage.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.swift.file.suffixes",
-                  "value": ".swift"
+                  "defaultValue": [
+                     ".swift"
+                  ]
                },
                {
                   "key": "sonar.swift.swiftLint.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -1249,11 +1457,13 @@
             "settings": [
                {
                   "key": "sonar.terraform.activate",
-                  "value": true
+                  "defaultValue": true
                },
                {
                   "key": "sonar.terraform.file.suffixes",
-                  "value": ".tf"
+                  "defaultValue": [
+                     ".tf"
+                  ]
                },
                {
                   "key": "sonar.terraform.provider.aws.version",
@@ -1265,7 +1475,7 @@
                },
                {
                   "key": "sonar.terraform.tflint.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -1274,19 +1484,45 @@
             "settings": [
                {
                   "key": "sonar.text.activate",
-                  "value": true
+                  "defaultValue": true
                },
                {
                   "key": "sonar.text.excluded.file.suffixes",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.text.inclusions",
-                  "value": "**/*.sh, **/*.bash, **/*.zsh, **/*.ksh, **/*.ps1, **/*.properties, **/*.conf, **/*.pem, **/*.config, .env, .aws/config"
+                  "value": [
+                     "**/*.bash",
+                     "**/*.conf",
+                     "**/*.config",
+                     "**/*.ksh",
+                     "**/*.pem",
+                     "**/*.properties",
+                     "**/*.ps1",
+                     "**/*.sh",
+                     "**/*.zsh",
+                     ".aws/config",
+                     ".env"
+                  ],
+                  "defaultValue": [
+                     "**/*.bash",
+                     "**/*.conf",
+                     "**/*.config",
+                     "**/*.key",
+                     "**/*.ksh",
+                     "**/*.pem",
+                     "**/*.properties",
+                     "**/*.ps1",
+                     "**/*.sh",
+                     "**/*.zsh",
+                     ".aws/config",
+                     ".env"
+                  ]
                },
                {
                   "key": "sonar.text.inclusions.activate",
-                  "value": true
+                  "defaultValue": true
                }
             ]
          },
@@ -1295,7 +1531,9 @@
             "settings": [
                {
                   "key": "sonar.tsql.file.suffixes",
-                  "value": ".tsql"
+                  "defaultValue": [
+                     ".tsql"
+                  ]
                }
             ]
          },
@@ -1304,15 +1542,20 @@
             "settings": [
                {
                   "key": "sonar.typescript.file.suffixes",
-                  "value": ".cts, .mts, .ts, .tsx"
+                  "defaultValue": [
+                     ".cts",
+                     ".mts",
+                     ".ts",
+                     ".tsx"
+                  ]
                },
                {
                   "key": "sonar.typescript.tsconfigPaths",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.typescript.tslint.reportPaths",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -1321,11 +1564,25 @@
             "settings": [
                {
                   "key": "sonar.vb.file.suffixes",
-                  "value": ".BAS, .CLS, .CTL, .FRM, .bas, .cls, .ctl, .frm"
+                  "value": [
+                     ".BAS",
+                     ".CLS",
+                     ".CTL",
+                     ".FRM",
+                     ".bas",
+                     ".cls",
+                     ".ctl",
+                     ".frm"
+                  ],
+                  "defaultValue": [
+                     ".bas",
+                     ".ctl",
+                     ".frm"
+                  ]
                },
                {
                   "key": "sonar.vb.ignoreHeaderComments",
-                  "value": true
+                  "defaultValue": true
                }
             ]
          },
@@ -1334,55 +1591,33 @@
             "settings": [
                {
                   "key": "sonar.vbnet.analyzeGeneratedCode",
-                  "value": false
-               },
-               {
-                  "key": "sonar.vbnet.analyzer.dotnet.pluginKey",
-                  "value": "vbnetenterprise"
-               },
-               {
-                  "key": "sonar.vbnet.analyzer.dotnet.pluginVersion",
-                  "value": "10.15.0.120848"
-               },
-               {
-                  "key": "sonar.vbnet.analyzer.dotnet.staticResourceName",
-                  "value": "SonarAnalyzer-vbnetenterprise-10.15.0.120848.zip"
-               },
-               {
-                  "key": "sonar.vbnet.analyzer.security.pluginKey",
-                  "value": "securityvbnetfrontend"
-               },
-               {
-                  "key": "sonar.vbnet.analyzer.security.pluginVersion",
-                  "value": "11.10.0.40378"
-               },
-               {
-                  "key": "sonar.vbnet.analyzer.security.staticResourceName",
-                  "value": "SonarAnalyzer.Security.VisualBasic-11.10.0.40378.zip"
+                  "defaultValue": false
                },
                {
                   "key": "sonar.vbnet.file.suffixes",
-                  "value": ".vb"
+                  "defaultValue": [
+                     ".vb"
+                  ]
                },
                {
                   "key": "sonar.vbnet.ignoreHeaderComments",
-                  "value": true
+                  "defaultValue": true
                },
                {
                   "key": "sonar.vbnet.roslyn.bugCategories",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.vbnet.roslyn.codeSmellCategories",
-                  "value": ""
+                  "defaultValue": []
                },
                {
                   "key": "sonar.vbnet.roslyn.ignoreIssues",
-                  "value": false
+                  "defaultValue": false
                },
                {
                   "key": "sonar.vbnet.roslyn.vulnerabilityCategories",
-                  "value": ""
+                  "defaultValue": []
                }
             ]
          },
@@ -1391,7 +1626,12 @@
             "settings": [
                {
                   "key": "sonar.xml.file.suffixes",
-                  "value": ".xml, .xsd, .xsl"
+                  "defaultValue": [
+                     ".config",
+                     ".xml",
+                     ".xsd",
+                     ".xsl"
+                  ]
                }
             ]
          },
@@ -1400,11 +1640,14 @@
             "settings": [
                {
                   "key": "sonar.yaml.activate",
-                  "value": false
+                  "defaultValue": false
                },
                {
                   "key": "sonar.yaml.file.suffixes",
-                  "value": ".yaml, .yml"
+                  "defaultValue": [
+                     ".yaml",
+                     ".yml"
+                  ]
                }
             ]
          }
@@ -1414,11 +1657,12 @@
             "key": "sonar.coverage.jacoco.xmlReportPaths",
             "value": [
                "**/jacoco*.xml"
-            ]
+            ],
+            "defaultValue": []
          },
          {
             "key": "sonar.junit.reportPaths",
-            "value": ""
+            "defaultValue": []
          }
       ],
       "devopsIntegration": [
@@ -1428,18 +1672,29 @@
             "url": "https://dev.azure.com/olivierkorach"
          },
          {
+            "key": "Bitbucket Cloud 1",
+            "type": "bitbucketcloud",
+            "workspace": "okorach",
+            "clientId": "x"
+         },
+         {
+            "key": "Bitbucket Server 1",
+            "type": "bitbucket",
+            "url": "https://bitbucket-server.your-company.com"
+         },
+         {
             "key": "GitHub okorach",
             "type": "github",
             "url": "https://api.github.com",
-            "clientId": "Iv23ligl0iLhGRRvwFGO",
-            "appId": 946159
+            "appId": 946159,
+            "clientId": "Iv23ligl0iLhGRRvwFGO"
          },
          {
             "key": "GitHub okorach-org",
             "type": "github",
             "url": "https://api.github.com",
-            "clientId": "Iv23limDid9ft2WPgTPK",
-            "appId": 946173
+            "appId": 946173,
+            "clientId": "Iv23limDid9ft2WPgTPK"
          },
          {
             "key": "gitlab.com",
@@ -1480,53 +1735,11 @@
          },
          {
             "key": "sonar.checkstyle.filters",
-            "value": "<module name=\"SuppressWarningsFilter\" />"
-         },
-         {
-            "key": "sonar.checkstyle.generateXml",
-            "value": false
+            "defaultValue": "<module name=\"SuppressWarningsFilter\" />"
          },
          {
             "key": "sonar.checkstyle.treewalkerfilters",
-            "value": "<module name=\"SuppressionCommentFilter\" />"
-         }
-      ],
-      "thirdParty": [
-         {
-            "key": "sonar.dependencyCheck.htmlReportPath",
-            "value": "${WORKSPACE}/dependency-check-report.html"
-         },
-         {
-            "key": "sonar.dependencyCheck.jsonReportPath",
-            "value": "${WORKSPACE}/dependency-check-report.json"
-         },
-         {
-            "key": "sonar.dependencyCheck.securityHotspot",
-            "value": false
-         },
-         {
-            "key": "sonar.dependencyCheck.severity.high",
-            "value": 7.0
-         },
-         {
-            "key": "sonar.dependencyCheck.severity.low",
-            "value": 0.0
-         },
-         {
-            "key": "sonar.dependencyCheck.severity.medium",
-            "value": 4.0
-         },
-         {
-            "key": "sonar.dependencyCheck.skip",
-            "value": false
-         },
-         {
-            "key": "sonar.dependencyCheck.summarize",
-            "value": false
-         },
-         {
-            "key": "sonar.dependencyCheck.useFilePath",
-            "value": false
+            "defaultValue": "<module name=\"SuppressionCommentFilter\" />"
          }
       ],
       "permissions": [
@@ -1807,6 +2020,7 @@
    "qualityGates": [
       {
          "name": "Sonar way",
+         "isDefault": true,
          "isBuiltIn": true
       },
       {
@@ -1838,6 +2052,7 @@
          "conditions": [
             "new_coverage <= 85%",
             "new_duplicated_lines_density >= 2%",
+            "new_sca_severity_any_issue >= 14",
             "new_security_hotspots_reviewed <= 100%",
             "new_violations >= 0",
             "sca_severity_any_issue >= High",
@@ -1866,7 +2081,6 @@
       },
       {
          "name": "\ud83e\udd49 3 - Corp base",
-         "isDefault": true,
          "conditions": [
             "new_duplicated_lines_density >= 3%",
             "new_software_quality_maintainability_rating >= A",
@@ -1956,6 +2170,10 @@
          "profiles": [
             {
                "name": "Mission critical",
+               "isBuiltIn": true
+            },
+            {
+               "name": "Sonar MISRA C++:2023 Compliance",
                "isBuiltIn": true
             },
             {
@@ -2102,17 +2320,7 @@
                            "key": "java:Don_t_be_rude",
                            "impacts": {
                               "security": "low"
-                           },
-                           "params": [
-                              {
-                                 "key": "message",
-                                 "value": "Hey don't be rude!"
-                              },
-                              {
-                                 "key": "regularExpression",
-                                 "value": "(fuck|shit|merde)"
-                              }
-                           ]
+                           }
                         },
                         {
                            "key": "java:S2647"
@@ -2293,17 +2501,7 @@
                            "key": "jcl:Track_usage_of_rogue_programs",
                            "impacts": {
                               "security": "info"
-                           },
-                           "params": [
-                              {
-                                 "key": "programName",
-                                 "value": "ROGUEPROG"
-                              },
-                              {
-                                 "key": "replacementProgramName",
-                                 "value": "OKPROG"
-                              }
-                           ]
+                           }
                         }
                      ]
                   }
@@ -2386,16 +2584,6 @@
          ]
       },
       {
-         "language": "neutral",
-         "profiles": [
-            {
-               "name": "Neutral",
-               "isBuiltIn": true,
-               "isDefault": true
-            }
-         ]
-      },
-      {
          "language": "objc",
          "profiles": [
             {
@@ -2457,22 +2645,10 @@
                      "key": "python:PrintStatementUsage"
                   },
                   {
-                     "key": "python:S100",
-                     "params": [
-                        {
-                           "key": "format",
-                           "value": "^[a-z_][a-z0-9_]*$"
-                        }
-                     ]
+                     "key": "python:S100"
                   },
                   {
-                     "key": "python:S101",
-                     "params": [
-                        {
-                           "key": "format",
-                           "value": "^_?([A-Z_][a-zA-Z0-9]*|[a-z_][a-z0-9_]*)$"
-                        }
-                     ]
+                     "key": "python:S101"
                   },
                   {
                      "key": "python:S1045"
@@ -2481,13 +2657,7 @@
                      "key": "python:S1066"
                   },
                   {
-                     "key": "python:S107",
-                     "params": [
-                        {
-                           "key": "max",
-                           "value": 13
-                        }
-                     ]
+                     "key": "python:S107"
                   },
                   {
                      "key": "python:S108"
@@ -2511,22 +2681,10 @@
                      "key": "python:S1144"
                   },
                   {
-                     "key": "python:S116",
-                     "params": [
-                        {
-                           "key": "format",
-                           "value": "^[_a-z][_a-z0-9]*$"
-                        }
-                     ]
+                     "key": "python:S116"
                   },
                   {
-                     "key": "python:S117",
-                     "params": [
-                        {
-                           "key": "format",
-                           "value": "^[_a-z][a-z0-9_]*$"
-                        }
-                     ]
+                     "key": "python:S117"
                   },
                   {
                      "key": "python:S1172"
@@ -2535,17 +2693,7 @@
                      "key": "python:S1186"
                   },
                   {
-                     "key": "python:S1192",
-                     "params": [
-                        {
-                           "key": "exclusionRegex",
-                           "value": ""
-                        },
-                        {
-                           "key": "threshold",
-                           "value": 3
-                        }
-                     ]
+                     "key": "python:S1192"
                   },
                   {
                      "key": "python:S1226"
@@ -2554,13 +2702,7 @@
                      "key": "python:S1244"
                   },
                   {
-                     "key": "python:S125",
-                     "params": [
-                        {
-                           "key": "exception",
-                           "value": "(fmt|py\\w+):.*"
-                        }
-                     ]
+                     "key": "python:S125"
                   },
                   {
                      "key": "python:S1313"
@@ -2569,13 +2711,7 @@
                      "key": "python:S1515"
                   },
                   {
-                     "key": "python:S1542",
-                     "params": [
-                        {
-                           "key": "format",
-                           "value": "^[a-z_][a-z0-9_]*$"
-                        }
-                     ]
+                     "key": "python:S1542"
                   },
                   {
                      "key": "python:S1607"
@@ -2617,13 +2753,7 @@
                      "key": "python:S2053"
                   },
                   {
-                     "key": "python:S2068",
-                     "params": [
-                        {
-                           "key": "credentialWords",
-                           "value": "password,passwd,pwd,passphrase"
-                        }
-                     ]
+                     "key": "python:S2068"
                   },
                   {
                      "key": "python:S2077"
@@ -2662,13 +2792,7 @@
                      "key": "python:S2638"
                   },
                   {
-                     "key": "python:S2710",
-                     "params": [
-                        {
-                           "key": "classParameterNames",
-                           "value": "cls,mcs,metacls"
-                        }
-                     ]
+                     "key": "python:S2710"
                   },
                   {
                      "key": "python:S2711"
@@ -2730,13 +2854,7 @@
                      "key": "python:S3752"
                   },
                   {
-                     "key": "python:S3776",
-                     "params": [
-                        {
-                           "key": "threshold",
-                           "value": 15
-                        }
-                     ]
+                     "key": "python:S3776"
                   },
                   {
                      "key": "python:S3827"
@@ -2772,13 +2890,7 @@
                      "key": "python:S4433"
                   },
                   {
-                     "key": "python:S4487",
-                     "params": [
-                        {
-                           "key": "enableSingleUnderscoreIssues",
-                           "value": false
-                        }
-                     ]
+                     "key": "python:S4487"
                   },
                   {
                      "key": "python:S4502"
@@ -2886,13 +2998,7 @@
                      "key": "python:S5719"
                   },
                   {
-                     "key": "python:S5720",
-                     "params": [
-                        {
-                           "key": "ignoredDecorators",
-                           "value": "abstractmethod"
-                        }
-                     ]
+                     "key": "python:S5720"
                   },
                   {
                      "key": "python:S5722"
@@ -2943,13 +3049,7 @@
                      "key": "python:S5842"
                   },
                   {
-                     "key": "python:S5843",
-                     "params": [
-                        {
-                           "key": "maxComplexity",
-                           "value": 20
-                        }
-                     ]
+                     "key": "python:S5843"
                   },
                   {
                      "key": "python:S5845"
@@ -3111,17 +3211,7 @@
                      "key": "python:S6397"
                   },
                   {
-                     "key": "python:S6418",
-                     "params": [
-                        {
-                           "key": "credentialWords",
-                           "value": "api[_.-]?key,auth,credential,secret,token"
-                        },
-                        {
-                           "key": "randomnessSensibility",
-                           "value": 3.0
-                        }
-                     ]
+                     "key": "python:S6418"
                   },
                   {
                      "key": "python:S6437"
@@ -3436,17 +3526,7 @@
                      "key": "python:S7632"
                   },
                   {
-                     "key": "python:S905",
-                     "params": [
-                        {
-                           "key": "ignoredOperators",
-                           "value": "<<,>>,|"
-                        },
-                        {
-                           "key": "reportOnStrings",
-                           "value": false
-                        }
-                     ]
+                     "key": "python:S905"
                   },
                   {
                      "key": "python:S930"
@@ -3512,17 +3592,7 @@
                      "key": "pythonenterprise:S7195"
                   },
                   {
-                     "key": "pythonenterprise:S7196",
-                     "params": [
-                        {
-                           "key": "comparisonThreshold",
-                           "value": 5
-                        },
-                        {
-                           "key": "nestedCallThreshold",
-                           "value": 5
-                        }
-                     ]
+                     "key": "pythonenterprise:S7196"
                   },
                   {
                      "key": "pythonenterprise:S7468"
@@ -3630,22 +3700,10 @@
                      "key": "python:PrintStatementUsage"
                   },
                   {
-                     "key": "python:S100",
-                     "params": [
-                        {
-                           "key": "format",
-                           "value": "^[a-z_][a-z0-9_]*$"
-                        }
-                     ]
+                     "key": "python:S100"
                   },
                   {
-                     "key": "python:S101",
-                     "params": [
-                        {
-                           "key": "format",
-                           "value": "^_?([A-Z_][a-zA-Z0-9]*|[a-z_][a-z0-9_]*)$"
-                        }
-                     ]
+                     "key": "python:S101"
                   },
                   {
                      "key": "python:S1045"
@@ -3654,13 +3712,7 @@
                      "key": "python:S1066"
                   },
                   {
-                     "key": "python:S107",
-                     "params": [
-                        {
-                           "key": "max",
-                           "value": 13
-                        }
-                     ]
+                     "key": "python:S107"
                   },
                   {
                      "key": "python:S108"
@@ -3684,22 +3736,10 @@
                      "key": "python:S1144"
                   },
                   {
-                     "key": "python:S116",
-                     "params": [
-                        {
-                           "key": "format",
-                           "value": "^[_a-z][_a-z0-9]*$"
-                        }
-                     ]
+                     "key": "python:S116"
                   },
                   {
-                     "key": "python:S117",
-                     "params": [
-                        {
-                           "key": "format",
-                           "value": "^[_a-z][a-z0-9_]*$"
-                        }
-                     ]
+                     "key": "python:S117"
                   },
                   {
                      "key": "python:S1172"
@@ -3708,17 +3748,7 @@
                      "key": "python:S1186"
                   },
                   {
-                     "key": "python:S1192",
-                     "params": [
-                        {
-                           "key": "exclusionRegex",
-                           "value": ""
-                        },
-                        {
-                           "key": "threshold",
-                           "value": 3
-                        }
-                     ]
+                     "key": "python:S1192"
                   },
                   {
                      "key": "python:S1226"
@@ -3727,37 +3757,19 @@
                      "key": "python:S1244"
                   },
                   {
-                     "key": "python:S125",
-                     "params": [
-                        {
-                           "key": "exception",
-                           "value": "(fmt|py\\w+):.*"
-                        }
-                     ]
+                     "key": "python:S125"
                   },
                   {
                      "key": "python:S1313"
                   },
                   {
-                     "key": "python:S1481",
-                     "params": [
-                        {
-                           "key": "regex",
-                           "value": "(_[a-zA-Z0-9_]*|dummy|unused|ignored)"
-                        }
-                     ]
+                     "key": "python:S1481"
                   },
                   {
                      "key": "python:S1515"
                   },
                   {
-                     "key": "python:S1542",
-                     "params": [
-                        {
-                           "key": "format",
-                           "value": "^[a-z_][a-z0-9_]*$"
-                        }
-                     ]
+                     "key": "python:S1542"
                   },
                   {
                      "key": "python:S1607"
@@ -3799,13 +3811,7 @@
                      "key": "python:S2053"
                   },
                   {
-                     "key": "python:S2068",
-                     "params": [
-                        {
-                           "key": "credentialWords",
-                           "value": "password,passwd,pwd,passphrase"
-                        }
-                     ]
+                     "key": "python:S2068"
                   },
                   {
                      "key": "python:S2077"
@@ -3844,13 +3850,7 @@
                      "key": "python:S2638"
                   },
                   {
-                     "key": "python:S2710",
-                     "params": [
-                        {
-                           "key": "classParameterNames",
-                           "value": "cls,mcs,metacls"
-                        }
-                     ]
+                     "key": "python:S2710"
                   },
                   {
                      "key": "python:S2711",
@@ -3914,13 +3914,7 @@
                      "key": "python:S3752"
                   },
                   {
-                     "key": "python:S3776",
-                     "params": [
-                        {
-                           "key": "threshold",
-                           "value": 15
-                        }
-                     ]
+                     "key": "python:S3776"
                   },
                   {
                      "key": "python:S3827"
@@ -3956,13 +3950,7 @@
                      "key": "python:S4433"
                   },
                   {
-                     "key": "python:S4487",
-                     "params": [
-                        {
-                           "key": "enableSingleUnderscoreIssues",
-                           "value": false
-                        }
-                     ]
+                     "key": "python:S4487"
                   },
                   {
                      "key": "python:S4502"
@@ -4070,13 +4058,7 @@
                      "key": "python:S5719"
                   },
                   {
-                     "key": "python:S5720",
-                     "params": [
-                        {
-                           "key": "ignoredDecorators",
-                           "value": "abstractmethod"
-                        }
-                     ]
+                     "key": "python:S5720"
                   },
                   {
                      "key": "python:S5722"
@@ -4127,13 +4109,7 @@
                      "key": "python:S5842"
                   },
                   {
-                     "key": "python:S5843",
-                     "params": [
-                        {
-                           "key": "maxComplexity",
-                           "value": 20
-                        }
-                     ]
+                     "key": "python:S5843"
                   },
                   {
                      "key": "python:S5845"
@@ -4283,17 +4259,7 @@
                      "key": "python:S6397"
                   },
                   {
-                     "key": "python:S6418",
-                     "params": [
-                        {
-                           "key": "credentialWords",
-                           "value": "api[_.-]?key,auth,credential,secret,token"
-                        },
-                        {
-                           "key": "randomnessSensibility",
-                           "value": 3.0
-                        }
-                     ]
+                     "key": "python:S6418"
                   },
                   {
                      "key": "python:S6437"
@@ -4473,17 +4439,7 @@
                      "key": "python:S6985"
                   },
                   {
-                     "key": "python:S905",
-                     "params": [
-                        {
-                           "key": "ignoredOperators",
-                           "value": "<<,>>,|"
-                        },
-                        {
-                           "key": "reportOnStrings",
-                           "value": false
-                        }
-                     ]
+                     "key": "python:S905"
                   },
                   {
                      "key": "python:S930"
@@ -4550,17 +4506,7 @@
                      "key": "pythonenterprise:S7195"
                   },
                   {
-                     "key": "pythonenterprise:S7196",
-                     "params": [
-                        {
-                           "key": "comparisonThreshold",
-                           "value": 5
-                        },
-                        {
-                           "key": "nestedCallThreshold",
-                           "value": 5
-                        }
-                     ]
+                     "key": "pythonenterprise:S7196"
                   },
                   {
                      "key": "pythonenterprise:S7468"
@@ -4801,13 +4747,7 @@
                      "name": "Corp Way",
                      "addedRules": [
                         {
-                           "key": "secrets:Corp_secrets_should_not_leak",
-                           "params": [
-                              {
-                                 "key": "detectionSpecification",
-                                 "value": "matching:\n  pattern: \"\\\\bCORP_SECRET_\\\\d{10}\\\\b\""
-                              }
-                           ]
+                           "key": "secrets:Corp_secrets_should_not_leak"
                         },
                         {
                            "key": "secrets:My_custom_secret_rule",
@@ -4818,6 +4758,16 @@
                      ]
                   }
                ]
+            }
+         ]
+      },
+      {
+         "language": "shell",
+         "profiles": [
+            {
+               "name": "Sonar way",
+               "isBuiltIn": true,
+               "isDefault": true
             }
          ]
       },
@@ -6704,7 +6654,10 @@
          "settings": [
             {
                "key": "sonar.coverage.exclusions",
-               "value": "**/*.css, **/.htm*"
+               "value": [
+                  "**/*.css",
+                  "**/.htm*"
+               ]
             }
          ],
          "branches": [
@@ -7267,7 +7220,20 @@
          "settings": [
             {
                "key": "sonar.text.inclusions",
-               "value": "**/*.sh, **/*.bash, **/*.zsh, **/*.ksh, **/*.ps1, **/*.properties, **/*.conf, **/*.pem, **/*.config, .env, .aws/config, **/*"
+               "value": [
+                  "**/*",
+                  "**/*.bash",
+                  "**/*.conf",
+                  "**/*.config",
+                  "**/*.ksh",
+                  "**/*.pem",
+                  "**/*.properties",
+                  "**/*.ps1",
+                  "**/*.sh",
+                  "**/*.zsh",
+                  ".aws/config",
+                  ".env"
+               ]
             }
          ],
          "branches": [
@@ -7689,65 +7655,6 @@
          "qualityGate": "Sonar way w/o coverage"
       },
       {
-         "key": "demo:juice-shop",
-         "name": "Juice Shop and sandboxing",
-         "visibility": "private",
-         "permissions": [
-            {
-               "group": "developers",
-               "permissions": [
-                  "codeviewer",
-                  "user"
-               ]
-            },
-            {
-               "group": "project-admins",
-               "permissions": [
-                  "admin",
-                  "codeviewer",
-                  "user"
-               ]
-            },
-            {
-               "group": "security-auditors",
-               "permissions": [
-                  "codeviewer",
-                  "issueadmin",
-                  "securityhotspotadmin",
-                  "user"
-               ]
-            },
-            {
-               "group": "sonar-administrators",
-               "permissions": [
-                  "admin",
-                  "codeviewer",
-                  "user"
-               ]
-            },
-            {
-               "group": "sonar-users",
-               "permissions": [
-                  "user"
-               ]
-            },
-            {
-               "group": "tech-leads",
-               "permissions": [
-                  "codeviewer",
-                  "issueadmin",
-                  "user"
-               ]
-            }
-         ],
-         "links": [
-            {
-               "name": "repo",
-               "url": "https://github.com"
-            }
-         ]
-      },
-      {
          "key": "demo:sca-log4shell-detect-maven",
          "name": "SCA demo - Log4shell detect - Maven",
          "visibility": "private",
@@ -7819,7 +7726,21 @@
          "settings": [
             {
                "key": "sonar.text.inclusions",
-               "value": "**/*, **/*.bash, **/*.conf, **/*.config, **/*.ksh, **/*.pem, **/*.properties, **/*.ps1, **/*.sh, **/*.zsh, .aws/config, .env, **/*.xml"
+               "value": [
+                  "**/*",
+                  "**/*.bash",
+                  "**/*.conf",
+                  "**/*.config",
+                  "**/*.ksh",
+                  "**/*.pem",
+                  "**/*.properties",
+                  "**/*.ps1",
+                  "**/*.sh",
+                  "**/*.xml",
+                  "**/*.zsh",
+                  ".aws/config",
+                  ".env"
+               ]
             }
          ],
          "permissions": [
@@ -7988,12 +7909,6 @@
          "name": "dvpa",
          "visibility": "private",
          "newCodePeriod": "NUMBER_OF_DAYS = 30",
-         "settings": [
-            {
-               "key": "sonar.cfamily.generateComputedConfig",
-               "value": false
-            }
-         ],
          "permissions": [
             {
                "group": "developers",
@@ -8720,10 +8635,6 @@
          "visibility": "private",
          "settings": [
             {
-               "key": "sonar.autodetect.ai.code",
-               "value": true
-            },
-            {
                "key": "sonar.cfamily.ignoreHeaderComments",
                "value": false
             },
@@ -8747,10 +8658,6 @@
                      "ruleKey": "python:S211"
                   }
                ]
-            },
-            {
-               "key": "sonar.python.file.suffixes",
-               "value": "py, python"
             }
          ],
          "branches": [
@@ -9135,6 +9042,65 @@
          ]
       },
       {
+         "key": "test:juice-shop",
+         "name": "Juice Shop and sandboxing",
+         "visibility": "private",
+         "permissions": [
+            {
+               "group": "developers",
+               "permissions": [
+                  "codeviewer",
+                  "user"
+               ]
+            },
+            {
+               "group": "project-admins",
+               "permissions": [
+                  "admin",
+                  "codeviewer",
+                  "user"
+               ]
+            },
+            {
+               "group": "security-auditors",
+               "permissions": [
+                  "codeviewer",
+                  "issueadmin",
+                  "securityhotspotadmin",
+                  "user"
+               ]
+            },
+            {
+               "group": "sonar-administrators",
+               "permissions": [
+                  "admin",
+                  "codeviewer",
+                  "user"
+               ]
+            },
+            {
+               "group": "sonar-users",
+               "permissions": [
+                  "user"
+               ]
+            },
+            {
+               "group": "tech-leads",
+               "permissions": [
+                  "codeviewer",
+                  "issueadmin",
+                  "user"
+               ]
+            }
+         ],
+         "links": [
+            {
+               "name": "repo",
+               "url": "https://github.com"
+            }
+         ]
+      },
+      {
          "key": "test:project1",
          "name": "Project 1",
          "visibility": "private",
@@ -9244,10 +9210,18 @@
          "key": "test:project2",
          "name": "Project 2",
          "visibility": "private",
+         "settings": [
+            {
+               "key": "sonar.cobol.file.suffixes",
+               "value": [
+                  "cobol",
+                  "cobolli"
+               ]
+            }
+         ],
          "binding": {
-            "key": "GitHub okorach",
-            "repository": "okorach/sonar-tools",
-            "summaryCommentEnabled": true
+            "key": "Bitbucket Cloud 1",
+            "repository": "my-slug"
          },
          "branches": [
             {
@@ -9312,6 +9286,11 @@
          "key": "test:project3",
          "name": "Project 3",
          "visibility": "private",
+         "binding": {
+            "key": "Bitbucket Server 1",
+            "repository": "project3-BBS",
+            "slug": "project3-SLUG"
+         },
          "branches": [
             {
                "name": "main",
@@ -10413,7 +10392,6 @@
             {
                "key": "APP_TEST",
                "branches": [
-                  "",
                   "Other Branch"
                ]
             }
@@ -10677,6 +10655,7 @@
                "security": "medium",
                "maintainability": "medium"
             },
+            "description": "Don't be rude",
             "params": [
                {
                   "key": "message",
@@ -10691,6 +10670,27 @@
             "templateKey": "java:S124"
          },
          {
+            "key": "java:rudeness_is_bad",
+            "severity": "major",
+            "impacts": {
+               "security": "medium",
+               "maintainability": "medium"
+            },
+            "description": "Behave yourself in your code",
+            "params": [
+               {
+                  "key": "message",
+                  "value": "Hey don't be rude!"
+               },
+               {
+                  "key": "regularExpression",
+                  "value": "(f-word|s-word)"
+               }
+            ],
+            "language": "java",
+            "templateKey": "java:S124"
+         },
+         {
             "key": "jcl:Track_usage_of_rogue_programs",
             "severity": "info",
             "impacts": {
@@ -10698,6 +10698,7 @@
                "reliability": "medium",
                "maintainability": "low"
             },
+            "description": "You should not run programs starting by rogue",
             "params": [
                {
                   "key": "programName",
@@ -10717,6 +10718,7 @@
             "impacts": {
                "maintainability": "medium"
             },
+            "description": "Don't write fuck or shit in code",
             "params": [
                {
                   "key": "message",
@@ -10736,6 +10738,7 @@
             "impacts": {
                "maintainability": "medium"
             },
+            "description": "NO DESCRIPTION",
             "params": [
                {
                   "key": "message",
@@ -10755,6 +10758,7 @@
             "impacts": {
                "security": "blocker"
             },
+            "description": "Corp secrets should not leak",
             "params": [
                {
                   "key": "detectionSpecification",
@@ -10770,6 +10774,7 @@
             "impacts": {
                "security": "high"
             },
+            "description": "Track presence of custom tokens for company specific app",
             "params": [
                {
                   "key": "detectionSpecification",
@@ -10785,6 +10790,7 @@
             "impacts": {
                "security": "blocker"
             },
+            "description": "Make sure that you don't commit files that contain Siemens secrets of the format SIEMENS_XXXXXXXX",
             "params": [
                {
                   "key": "detectionSpecification",

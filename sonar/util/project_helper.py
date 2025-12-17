@@ -93,6 +93,13 @@ def convert_project_json(old_json: dict[str, Any]) -> dict[str, Any]:
         new_json["branches"] = util.dict_to_list(old_json["branches"], "name")
     if "webhooks" in old_json:
         new_json["webhooks"] = util.dict_to_list(old_json["webhooks"], "name")
+    if "binding" in old_json:
+        # Remove the legacy repositoryUrl element
+        new_json["binding"].pop("repositoryUrl", None)
+        # If that's an ADO binding (recognized by the inlineAnnotationsEnabled element), we need to rename the slug to projectName
+        if "inlineAnnotationsEnabled" in new_json["binding"] and "slug" in new_json["binding"]:
+            new_json["binding"]["projectName"] = new_json["binding"].pop("slug")
+            new_json["binding"] = util.order_dict(new_json["binding"], "key", "repository", "projectName", "monorepo", "inlineAnnotationsEnabled")
     for k, v in old_json.items():
         if k not in _JSON_KEY_ORDER:
             new_json.pop(k, None)

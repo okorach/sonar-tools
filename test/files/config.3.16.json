@@ -2,7 +2,7 @@
    "platform": {
       "edition": "enterprise",
       "url": "https://latest.olivierk.ngrok.io",
-      "version": "2025.5.0",
+      "version": "2025.6.0",
       "serverId": "243B8A4D-AY5SFSbmgIK8PCmM81th",
       "plugins": {
          "ecocodephp": {
@@ -26,9 +26,11 @@
          "sonar.sca.rescan.frequency": "Daily",
          "sonar.sca.rescan.branch_type": "Kept branches only",
          "sonar.autodetect.ai.code": "true",
-         "sonar.architecture.config.model": "Model is not configured.",
+         "sonar.dre.apex.activate": "true",
          "provisioning.gitlab.enabled": "false",
          "provisioning.github.project.visibility.enabled": "true",
+         "sonar.dre.baselineTimeout": "90000",
+         "sonar.dre.enabled": "true",
          "sonar.login.message": "Welcome to [superbank.com](https://www.superbank.com) SonarQube.\nPlease log in using your GitHub account",
          "sonar.login.displayMessage": "true",
          "sonar.plugins.downloadOnlyRequired": "true",
@@ -46,6 +48,7 @@
          "sonar.qualitygate.ignoreSmallChanges": "true",
          "sonar.core.serverBaseURL": "https://latest.olivierk.ngrok.io",
          "sonar.githubactions.activate": "true",
+         "sonar.dre.go.activate": "true",
          "sonar.pdf.confidential.header.enabled": "true",
          "sonar.governance.report.project.branch.frequency": "Monthly",
          "sonar.governance.report.view.frequency": "Monthly",
@@ -69,10 +72,13 @@
          "sonar.scanner.skipNodeProvisioning": "false",
          "sonar.kubernetes.activate": "true",
          "sonar.kubernetes.helm.activate": "true",
+         "sonar.dre.ruby.activate": "true",
          "sonar.scm.disabled": "false",
          "sonar.validateWebhooks": "true",
          "sonar.allowPermissionManagementForProjectAdmins": "false",
          "sonar.enforceAzureOpenAiDomainValidation": "true",
+         "sonar.shell.activate": "true",
+         "sonar.shell.file.suffixes": ".sh, .bash",
          "sonar.technicalDebt.developmentCost": "30",
          "sonar.technicalDebt.ratingGrid": "0.03,0.07,0.2,0.5",
          "sonar.multi-quality-mode.enabled": "true",
@@ -182,7 +188,7 @@
             "sonar.java.jvmframeworkconfig.activate": "true",
             "sonar.java.enablePreview": "false",
             "sonar.java.jvmframeworkconfig.file.patterns": "**/src/main/resources/**/application*.properties, **/src/main/resources/**/application*.yaml, **/src/main/resources/**/application*.yml",
-            "sonar.java.file.suffixes": ".java, .jav",
+            "sonar.java.file.suffixes": ".jav, .java, .javax",
             "sonar.java.ignoreUnnamedModuleForSplitPackage": "false"
          },
          "javascript": {
@@ -190,8 +196,7 @@
             "sonar.javascript.ignoreHeaderComments": "true",
             "sonar.javascript.environments": "amd, applescript, atomtest, browser, commonjs, couch, embertest, flow, greasemonkey, jasmine, jest, jquery, meteor, mocha, mongo, nashorn, node, phantomjs, prototypejs, protractor, qunit, rhino, serviceworker, shared-node-browser, shelljs, webextensions, worker, wsh, yui",
             "sonar.javascript.file.suffixes": ".cjs, .js, .jsx, .mjs, .vue",
-            "sonar.javascript.maxFileSize": "1000",
-            "sonar.jasmin.internal.disabled": "false"
+            "sonar.javascript.maxFileSize": "1000"
          },
          "php": {
             "sonar.php.file.suffixes": "inc, php, php3, php4, php5, phtml",
@@ -268,7 +273,7 @@
             "sonar.vb.ignoreHeaderComments": "true"
          },
          "xml": {
-            "sonar.xml.file.suffixes": ".xml, .xsd, .xsl"
+            "sonar.xml.file.suffixes": ".xml, .xsd, .xsl, .config"
          },
          "yaml": {
             "sonar.yaml.activate": "false",
@@ -433,6 +438,7 @@
          "conditions": [
             "new_coverage <= 85%",
             "new_duplicated_lines_density >= 2%",
+            "new_sca_severity_any_issue >= 14",
             "new_security_hotspots_reviewed <= 100%",
             "new_violations >= 0",
             "sca_severity_any_issue >= High",
@@ -511,6 +517,9 @@
       },
       "cpp": {
          "Mission critical": {
+            "isBuiltIn": true
+         },
+         "Sonar MISRA C++:2023 Compliance": {
             "isBuiltIn": true
          },
          "Sonar way": {
@@ -2394,8 +2403,8 @@
                   "severity": "MAJOR",
                   "impacts": {
                      "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "MEDIUM",
-                     "SECURITY": "LOW"
+                     "SECURITY": "LOW",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -2409,8 +2418,8 @@
                   "key": "python:S6714",
                   "severity": "MAJOR",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "LOW"
+                     "RELIABILITY": "LOW",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -2424,17 +2433,17 @@
                   "key": "python:S6727",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "SECURITY": "LOW",
                      "RELIABILITY": "HIGH",
-                     "MAINTAINABILITY": "LOW"
+                     "MAINTAINABILITY": "LOW",
+                     "SECURITY": "LOW"
                   }
                },
                {
                   "key": "python:S6729",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "HIGH",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "HIGH"
                   }
                },
                {
@@ -2448,8 +2457,8 @@
                   "key": "python:S6734",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "HIGH"
+                     "MAINTAINABILITY": "HIGH",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
@@ -2541,8 +2550,8 @@
                   "key": "python:S6882",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
                      "MAINTAINABILITY": "HIGH",
+                     "RELIABILITY": "MEDIUM",
                      "SECURITY": "LOW"
                   }
                },
@@ -2550,24 +2559,24 @@
                   "key": "python:S6883",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "HIGH"
+                     "MAINTAINABILITY": "HIGH",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S6887",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "HIGH",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "HIGH"
                   }
                },
                {
                   "key": "python:S6890",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
                      "MAINTAINABILITY": "HIGH",
+                     "RELIABILITY": "MEDIUM",
                      "SECURITY": "LOW"
                   }
                },
@@ -2575,25 +2584,25 @@
                   "key": "python:S6894",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S6900",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
                      "MAINTAINABILITY": "HIGH",
-                     "SECURITY": "LOW"
+                     "SECURITY": "LOW",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S6903",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -2629,24 +2638,24 @@
                   "key": "python:S6925",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "MEDIUM"
+                     "MAINTAINABILITY": "MEDIUM",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S6928",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S6929",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "MEDIUM"
+                     "MAINTAINABILITY": "MEDIUM",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
@@ -2660,8 +2669,8 @@
                   "key": "python:S6971",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -2675,16 +2684,16 @@
                   "key": "python:S6973",
                   "severity": "MAJOR",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "LOW"
+                     "RELIABILITY": "LOW",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S6974",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -2705,8 +2714,8 @@
                   "key": "python:S6982",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "LOW"
+                     "MAINTAINABILITY": "LOW",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
@@ -2819,8 +2828,8 @@
                   "key": "python:S7497",
                   "severity": "MAJOR",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -2862,8 +2871,8 @@
                   "key": "python:S7503",
                   "severity": "MINOR",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "LOW"
+                     "RELIABILITY": "LOW",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -2998,24 +3007,24 @@
                   "key": "python:S7617",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "HIGH"
+                     "MAINTAINABILITY": "HIGH",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S7618",
                   "severity": "MAJOR",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S7619",
                   "severity": "MAJOR",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "MEDIUM"
+                     "RELIABILITY": "MEDIUM",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -3029,8 +3038,8 @@
                   "key": "python:S7621",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "LOW"
+                     "MAINTAINABILITY": "LOW",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
@@ -3218,8 +3227,8 @@
                   "key": "pythonenterprise:S7196",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "LOW"
+                     "MAINTAINABILITY": "LOW",
+                     "RELIABILITY": "MEDIUM"
                   },
                   "params": {
                      "nestedCallThreshold": "5",
@@ -3237,8 +3246,8 @@
                   "key": "pythonenterprise:S7469",
                   "severity": "MAJOR",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -3252,16 +3261,16 @@
                   "key": "pythonenterprise:S7471",
                   "severity": "MINOR",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "MEDIUM"
+                     "RELIABILITY": "MEDIUM",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "pythonenterprise:S7616",
                   "severity": "BLOCKER",
                   "impacts": {
-                     "MAINTAINABILITY": "BLOCKER",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "BLOCKER"
                   }
                },
                {
@@ -3275,8 +3284,8 @@
                   "key": "pythonenterprise:S7695",
                   "severity": "BLOCKER",
                   "impacts": {
-                     "MAINTAINABILITY": "BLOCKER",
-                     "RELIABILITY": "BLOCKER"
+                     "RELIABILITY": "BLOCKER",
+                     "MAINTAINABILITY": "BLOCKER"
                   }
                },
                {
@@ -4925,8 +4934,8 @@
                   "severity": "MAJOR",
                   "impacts": {
                      "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "MEDIUM",
-                     "SECURITY": "LOW"
+                     "SECURITY": "LOW",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -4940,8 +4949,8 @@
                   "key": "python:S6714",
                   "severity": "MAJOR",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "LOW"
+                     "RELIABILITY": "LOW",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -4955,17 +4964,17 @@
                   "key": "python:S6727",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "SECURITY": "LOW",
                      "RELIABILITY": "HIGH",
-                     "MAINTAINABILITY": "LOW"
+                     "MAINTAINABILITY": "LOW",
+                     "SECURITY": "LOW"
                   }
                },
                {
                   "key": "python:S6729",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "HIGH",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "HIGH"
                   }
                },
                {
@@ -4979,8 +4988,8 @@
                   "key": "python:S6734",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "HIGH"
+                     "MAINTAINABILITY": "HIGH",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
@@ -5072,8 +5081,8 @@
                   "key": "python:S6882",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
                      "MAINTAINABILITY": "HIGH",
+                     "RELIABILITY": "MEDIUM",
                      "SECURITY": "LOW"
                   }
                },
@@ -5081,24 +5090,24 @@
                   "key": "python:S6883",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "HIGH"
+                     "MAINTAINABILITY": "HIGH",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S6887",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "HIGH",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "HIGH"
                   }
                },
                {
                   "key": "python:S6890",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
                      "MAINTAINABILITY": "HIGH",
+                     "RELIABILITY": "MEDIUM",
                      "SECURITY": "LOW"
                   }
                },
@@ -5106,25 +5115,25 @@
                   "key": "python:S6894",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S6900",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
                      "MAINTAINABILITY": "HIGH",
-                     "SECURITY": "LOW"
+                     "SECURITY": "LOW",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S6903",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -5160,24 +5169,24 @@
                   "key": "python:S6925",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "MEDIUM"
+                     "MAINTAINABILITY": "MEDIUM",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S6928",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S6929",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "MEDIUM"
+                     "MAINTAINABILITY": "MEDIUM",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
@@ -5191,8 +5200,8 @@
                   "key": "python:S6971",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -5206,16 +5215,16 @@
                   "key": "python:S6973",
                   "severity": "MAJOR",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "LOW"
+                     "RELIABILITY": "LOW",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
                   "key": "python:S6974",
                   "severity": "CRITICAL",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -5236,8 +5245,8 @@
                   "key": "python:S6982",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "LOW"
+                     "MAINTAINABILITY": "LOW",
+                     "RELIABILITY": "MEDIUM"
                   }
                },
                {
@@ -5426,8 +5435,8 @@
                   "key": "pythonenterprise:S7196",
                   "severity": "MAJOR",
                   "impacts": {
-                     "RELIABILITY": "MEDIUM",
-                     "MAINTAINABILITY": "LOW"
+                     "MAINTAINABILITY": "LOW",
+                     "RELIABILITY": "MEDIUM"
                   },
                   "params": {
                      "nestedCallThreshold": "5",
@@ -5445,8 +5454,8 @@
                   "key": "pythonenterprise:S7469",
                   "severity": "MAJOR",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "HIGH"
+                     "RELIABILITY": "HIGH",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -5460,8 +5469,8 @@
                   "key": "pythonenterprise:S7471",
                   "severity": "MINOR",
                   "impacts": {
-                     "MAINTAINABILITY": "MEDIUM",
-                     "RELIABILITY": "MEDIUM"
+                     "RELIABILITY": "MEDIUM",
+                     "MAINTAINABILITY": "MEDIUM"
                   }
                },
                {
@@ -5744,6 +5753,12 @@
                   ]
                }
             }
+         }
+      },
+      "shell": {
+         "Sonar way": {
+            "isDefault": true,
+            "isBuiltIn": true
          }
       },
       "swift": {
@@ -6348,11 +6363,11 @@
             }
          },
          "branches": {
-            "main": {
-               "isMain": true
-            },
             "develop": {
                "keepWhenInactive": true
+            },
+            "main": {
+               "isMain": true
             }
          },
          "sonar.coverage.exclusions": "**/*.css, **/.htm*"
@@ -6466,7 +6481,8 @@
          "binding": {
             "key": "GitHub okorach",
             "repository": "okorach/demo-actions-maven",
-            "summaryCommentEnabled": true
+            "summaryCommentEnabled": true,
+            "repositoryUrl": "https://github.com/okorach/demo-actions-maven"
          },
          "permissions": {
             "groups": {
@@ -6551,11 +6567,11 @@
             }
          },
          "branches": {
-            "main": {
-               "isMain": true
-            },
             "master": {
                "keepWhenInactive": true
+            },
+            "main": {
+               "isMain": true
             }
          }
       },
@@ -6619,7 +6635,8 @@
          "binding": {
             "key": "GitHub okorach",
             "repository": "okorach/demo:security",
-            "summaryCommentEnabled": true
+            "summaryCommentEnabled": true,
+            "repositoryUrl": "https://github.com/okorach/demo:security"
          },
          "links": [
             {
@@ -6829,7 +6846,8 @@
          "binding": {
             "key": "GitHub okorach-org",
             "repository": "okorach-org/pr-demo",
-            "summaryCommentEnabled": true
+            "summaryCommentEnabled": true,
+            "repositoryUrl": "https://github.com/okorach-org/pr-demo"
          },
          "permissions": {
             "groups": {
@@ -7191,9 +7209,8 @@
          "name": "Project 2",
          "visibility": "private",
          "binding": {
-            "key": "GitHub okorach",
-            "repository": "okorach/sonar-tools",
-            "summaryCommentEnabled": true
+            "key": "Bitbucket Cloud 1",
+            "repository": "my-slug"
          },
          "permissions": {
             "groups": {
@@ -7212,11 +7229,17 @@
             "develop": {
                "keepWhenInactive": true
             }
-         }
+         },
+         "sonar.cobol.file.suffixes": "cobol, cobolli"
       },
       "test:project3": {
          "name": "Project 3",
          "visibility": "private",
+         "binding": {
+            "key": "Bitbucket Server 1",
+            "repository": "project3-BBS",
+            "slug": "project3-SLUG"
+         },
          "permissions": {
             "groups": {
                "developers": "codeviewer, user",
@@ -7843,9 +7866,9 @@
          "jcl:Track_usage_of_rogue_programs": {
             "severity": "INFO",
             "impacts": {
-               "RELIABILITY": "MEDIUM",
                "MAINTAINABILITY": "LOW",
-               "SECURITY": "HIGH"
+               "SECURITY": "HIGH",
+               "RELIABILITY": "MEDIUM"
             },
             "params": {
                "programName": "ROGUEPROG",
@@ -7853,6 +7876,19 @@
             },
             "language": "jcl",
             "templateKey": "jcl:S3688"
+         },
+         "java:rudeness_is_bad": {
+            "severity": "MAJOR",
+            "impacts": {
+               "SECURITY": "MEDIUM",
+               "MAINTAINABILITY": "MEDIUM"
+            },
+            "params": {
+               "message": "Hey don't be rude!",
+               "regularExpression": "(f-word|s-word)"
+            },
+            "language": "java",
+            "templateKey": "java:S124"
          },
          "java:Don_t_be_rude": {
             "severity": "MAJOR",
