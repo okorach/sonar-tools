@@ -38,24 +38,40 @@ MISRA_PROJ = "test:carbon"
 
 def test_misra_json(json_file: Generator[str]) -> None:
     """test_misra_json"""
+    if tutil.SQ.edition() in (c.CE, c.DE):
+        pytest.skip("MISRA export requires Enterprise Edition or above")
+    if tutil.SQ.version() < (2025, 6, 0) or tutil.SQ.is_sonarcloud():
+        pytest.skip("MISRA export requires SonarQube Server 2025.6 or above")
     assert tutil.run_cmd(misra.main, f"{CMD} {tutil.SQS_OPTS} --{opt.KEY_REGEXP} {MISRA_PROJ} --{opt.REPORT_FILE} {json_file}") == e.OK
     assert tutil.file_not_empty(json_file)
 
 
 def test_misra_csv(csv_file: Generator[str]) -> None:
     """test_misra_csv"""
+    if tutil.SQ.edition() in (c.CE, c.DE):
+        pytest.skip("MISRA export requires Enterprise Edition or above")
+    if tutil.SQ.version() < (2025, 6, 0) or tutil.SQ.is_sonarcloud():
+        pytest.skip("MISRA export requires SonarQube Server 2025.6 or above")
     assert tutil.run_cmd(misra.main, f"{CMD} {tutil.SQS_OPTS} --{opt.KEY_REGEXP} {MISRA_PROJ} --{opt.REPORT_FILE} {csv_file}") == e.OK
     assert 7500 < tutil.csv_nbr_lines(csv_file) < 8500
 
 
 def test_misra_empty(csv_file: Generator[str]) -> None:
     """test_misra_empty"""
+    if tutil.SQ.edition() in (c.CE, c.DE):
+        pytest.skip("MISRA export requires Enterprise Edition or above")
+    if tutil.SQ.version() < (2025, 6, 0) or tutil.SQ.is_sonarcloud():
+        pytest.skip("MISRA export requires SonarQube Server 2025.6 or above")
     assert tutil.run_cmd(misra.main, f"{CMD} {tutil.SQS_OPTS} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} --{opt.REPORT_FILE} {csv_file}") == e.OK
     assert tutil.csv_nbr_lines(csv_file) == 0
 
 
 def test_misra_custom_tags(csv_file: Generator[str]) -> None:
     """test_misra_custom_tags"""
+    if tutil.SQ.edition() in (c.CE, c.DE):
+        pytest.skip("MISRA export requires Enterprise Edition or above")
+    if tutil.SQ.version() < (2025, 6, 0) or tutil.SQ.is_sonarcloud():
+        pytest.skip("MISRA export requires SonarQube Server 2025.6 or above")
     assert (
         tutil.run_cmd(misra.main, f"{CMD} {tutil.SQS_OPTS} --{opt.KEY_REGEXP} {MISRA_PROJ} --{opt.REPORT_FILE} {csv_file} --{opt.TAGS} misra-c2012")
         == e.OK
@@ -64,7 +80,11 @@ def test_misra_custom_tags(csv_file: Generator[str]) -> None:
 
 
 def test_misra_wrong_args(csv_file: Generator[str]) -> None:
-    """test_misra_custom_tags"""
+    """test_misra_wrong_args"""
+    if tutil.SQ.edition() in (c.CE, c.DE):
+        pytest.skip("MISRA export requires Enterprise Edition or above")
+    if tutil.SQ.version() < (2025, 6, 0) or tutil.SQ.is_sonarcloud():
+        pytest.skip("MISRA export requires SonarQube Server 2025.6 or above")
     assert (
         tutil.run_cmd(misra.main, f"{CMD} {tutil.SQS_OPTS} --{opt.KEY_REGEXP} {MISRA_PROJ} --{opt.REPORT_FILE} {csv_file} --misra-std c++2023")
         == e.ARGS_ERROR
