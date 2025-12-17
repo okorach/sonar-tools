@@ -349,7 +349,7 @@ class Setting(sqobject.SqObject):
         """Returns the 2 levels classification of a setting"""
         m = re.match(
             r"^sonar\.(cpd\.)?(abap|androidLint|ansible|apex|azureresourcemanager|cloudformation|c|cpp|cfamily|cobol|cs|css|dart|docker|"
-            r"eslint|flex|go|html|java|javascript|jcl|json|jsp|kotlin|objc|php|pli|plsql|python|ipynb|rpg|ruby|scala|swift|"
+            r"eslint|flex|go|html|java|javascript|jcl|json|jsp|kotlin|objc|php|pli|plsql|python|ipynb|rpg|ruby|scala|shell|swift|"
             r"terraform|text|tsql|typescript|vb|vbnet|xml|yaml|rust|jasmin)\.",
             self.key,
         )
