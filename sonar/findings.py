@@ -76,6 +76,7 @@ LEGACY_CSV_EXPORT_FIELDS = [
     "effort",
     "message",
     "author",
+    "tags",
 ]
 
 CSV_EXPORT_FIELDS = (
@@ -100,6 +101,7 @@ CSV_EXPORT_FIELDS = (
     "author",
     "legacyType",
     "legacySeverity",
+    "tags",
 )
 
 STATUS_MAPPING = {"WONTFIX": "ACCEPTED", "REOPENED": "OPEN", "REMOVED": "CLOSED", "FIXED": "CLOSED"}
@@ -237,6 +239,7 @@ class Finding(sq.SqObject):
             data["otherImpact"] = self.impacts.get(idefs.QUALITY_NONE, "")
             data["legacyType"] = data.pop("type", "")
             data["legacySeverity"] = data.pop("severity", "")
+        data["tags"] = util.list_to_csv(self.sq_json.get("tags", []))
         return {k: v for k, v in data.items() if v is not None and k not in _JSON_FIELDS_PRIVATE}
 
     def to_sarif(self, full: bool = True) -> dict[str, str]:
