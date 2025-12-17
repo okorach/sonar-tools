@@ -255,6 +255,8 @@ def needs_issue_search(params: types.ApiParams) -> bool:
 
 def needs_hotspot_search(params: types.ApiParams) -> bool:
     """Returns whether an hotspot search is needed based on the parameters"""
+    if options.TAGS in params:
+        return False
     return (options.TYPES not in params and options.STATUSES not in params and options.RESOLUTIONS not in params) or (
         has_filter(params, options.TYPES, hotspots.TYPES)
         or has_filter(params, options.STATUSES, hotspots.STATUSES)
