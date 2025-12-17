@@ -44,8 +44,8 @@ def test_misra_json(json_file: Generator[str]) -> None:
 
 def test_misra_csv(csv_file: Generator[str]) -> None:
     """test_misra_csv"""
-    assert tutil.run_cmd(misra.main, f"{CMD} {tutil.SQS_OPTS} {opt.KEY_REGEXP} {MISRA_PROJ} --{opt.REPORT_FILE} {csv_file}") == e.OK
-    assert 500 < tutil.csv_nbr_lines(csv_file) < 1500
+    assert tutil.run_cmd(misra.main, f"{CMD} {tutil.SQS_OPTS} --{opt.KEY_REGEXP} {MISRA_PROJ} --{opt.REPORT_FILE} {csv_file}") == e.OK
+    assert 7500 < tutil.csv_nbr_lines(csv_file) < 8500
 
 
 def test_misra_empty(csv_file: Generator[str]) -> None:
