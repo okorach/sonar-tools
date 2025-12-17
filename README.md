@@ -30,6 +30,7 @@ deletes tokens created since more than a certain number of days
 - [sonar-projects](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-projects.md): Exports or imports projects from/to a SonarQube Server instance (EE and higher required for import)
 - [sonar-config](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md): Exports or Imports a SonarQube Server or Cloud platform configuration to/from configuration as code file (JSON file).
 - [sonar-rules](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-rules.md): Exports SonarQube Server or Cloud rules.
+- [sonar-misra](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-misra.md): Exports a MISRA C++:2023 report.
 
 :information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube Server Jan LTA (Long Term Active, 2025.1.x as of Oct 2025), July LTA (2025.4.x as of Oct 2025), LATEST (2025.5.x as of Oct 2025), Community Build (25.9.x as of Oct 2025) and 9.9.9 versions, and SonarQube Clou**
 
