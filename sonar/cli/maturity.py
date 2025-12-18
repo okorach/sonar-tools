@@ -20,6 +20,7 @@
 #
 """Computes SonarQube maturity metrics"""
 
+from typing import Any
 from sonar import utilities as util
 from sonar import version
 from cli import options
@@ -44,7 +45,7 @@ def __parse_args(desc: str) -> object:
     return args
 
 
-def get_maturity_data(project: projects.Project) -> dict:
+def get_maturity_data(project: projects.Project) -> dict[str, Any]:
     """Gets the maturity data for a project"""
     data = {
         "key": project.key,
