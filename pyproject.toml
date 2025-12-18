@@ -66,6 +66,7 @@ sonar-config = "sonar.cli.config:main"
 support-audit = "cli.support:main"
 sonar-rules = "cli.rules_cli:main"
 sonar-misra = "sonar.cli.misra:main"
+sonar-maturity = "sonar.cli.maturity:main"
 sonar-tools = "cli.sonar_tools:main"
 
 [build-system]
