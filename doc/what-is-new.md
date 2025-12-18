@@ -3,6 +3,7 @@
 * Dropped compatibility with SonarQube versions older than 9.9.0
 * Dropped `sonar-custom-measures` tool (Custom measures are no longer supported since SonarQube 9.0)
 * Added `sonar-misra` to export a MISRA report. See [sonar-misra doc](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-misra.md) for details
+* Added `sonar-maturity` to compute metrics related to the maturity of SonarQube usage
 
 # Version 3.17.1
 
