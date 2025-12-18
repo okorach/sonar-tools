@@ -53,6 +53,8 @@ def get_maturity_data(project: projects.Project) -> dict[str, Any]:
         "ncloc": project.get_measure("ncloc"),
         "lines": project.get_measure("lines"),
         "new_lines": project.get_measure("new_lines"),
+        "lastAnalysis": util.age(project.last_analysis(include_branches=True)),
+        "mainBranchLastAnalysis": util.age(project.main_branch().last_analysis()),
     }
     if data["qualityGateStatus"] is None and data["lines"] is None:
         data["qualityGateStatus"] = "NONE/NEVER_ANALYZED"
@@ -76,13 +78,20 @@ def main() -> None:
         if len(project_list) == 0:
             raise exceptions.SonarException(f"No project matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
         maturity_data = {project.key: get_maturity_data(project) for project in project_list}
-        # print(util.json_dump(maturity_data))
-        for key, data in maturity_data.items():
-            print(f"{key}: {','.join([str(v) for v in data.values()])}")
+        print(util.json_dump(maturity_data))
+        # for key, data in maturity_data.items():
+        #    print(f"{key}: {','.join([str(v) for v in data.values()])}")
+        nbr_projects = len(maturity_data)
+        summary_data: dict[str, Any] = {}
         possible_status = {d["qualityGateStatus"] for d in maturity_data.values()}
-        percents = {status: sum(1 for d in maturity_data.values() if d["qualityGateStatus"] == status) for status in possible_status}
-        for status, count in percents.items():
-            print(f"{status}: {count} ({count * 100/len(maturity_data):.1f}%)")
+        summary_data["totalProjects"] = len(maturity_data)
+        summary_data["qualityGatesStatusCount"] = {
+            status: sum(1 for d in maturity_data.values() if d["qualityGateStatus"] == status) for status in possible_status
+        }
+        summary_data["qualityGatesStatusPercents"] = {
+            status: float(f"{val/nbr_projects:.3f}") for status, val in summary_data["qualityGatesStatusCount"].items()
+        }
+        print(util.json_dump(summary_data))
     except exceptions.SonarException as e:
         chelp.clear_cache_and_exit(e.errcode, e.message)
 
