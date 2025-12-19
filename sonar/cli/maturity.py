@@ -49,6 +49,11 @@ def __parse_args(desc: str) -> object:
 
     return args
 
+def __count_percentage(part: int, total: int) -> dict[str, float]:
+    """Computes percentage value"""
+    if total == 0:
+        return {"count": 0, "percentage": 0.0}
+    return {"count": part, "percentage": float(f"{part/total:.3f}")}
 
 def get_maturity_data(project: projects.Project) -> dict[str, Any]:
     """Gets the maturity data for a project"""
@@ -77,9 +82,9 @@ def compute_summary_age(data: dict[str, Any]) -> dict[str, Any]:
     for high_bound in segments:
         key = f"between_{low_bound+1}_and_{high_bound}_days"
         count = sum(1 for d in data.values() if d["lines"] is not None and low_bound < d[AGE] <= high_bound)
-        summary_data["any_branch"][key] = {"count": count, "percentage": float(f"{count/nbr_projects:.3f}")}
+        summary_data["any_branch"][key] = __count_percentage(count, nbr_projects)
         count = sum(1 for d in data.values() if d["lines"] is not None and low_bound < d[f"main_branch_{AGE}"] <= high_bound)
-        summary_data["main_branch"][key] = {"count": count, "percentage": float(f"{count/nbr_projects:.3f}")}
+        summary_data["main_branch"][key] = __count_percentage(count, nbr_projects)
         low_bound = high_bound
     return summary_data
 
@@ -131,25 +136,14 @@ def compute_pr_statistics(data: dict[str, Any]) -> dict[str, Any]:
     summary_data = {
         "nbr_of_pull_requests": total_prs,
         "nbr_of_pull_requests_not_analyzed_since_7_days": total_count_7_days_fail + total_count_7_days_pass,
-        "nbr_of_pull_requests_passing_quality_gate": {"count": total_count_pass, "percentage": float(f"{total_count_pass/total_prs:.3f}")},
-        "nbr_of_pull_requests_failing_quality_gate": {"count": total_count_fail, "percentage": float(f"{total_count_fail/total_prs:.3f}")},
-        "nbr_of_pull_requests_not_analyzed_since_7_days_passing_quality_gate": {
-            "count": total_count_7_days_pass,
-            "percentage": float(f"{total_count_7_days_pass/(total_count_7_days_pass + total_count_7_days_fail):.3f}"),
-        },
-        "nbr_of_pull_requests_not_analyzed_since_7_days_failing_quality_gate": {
-            "count": total_count_7_days_fail,
-            "percentage": float(f"{total_count_7_days_fail/(total_count_7_days_pass + total_count_7_days_fail):.3f}"),
-        },
-        "nbr_of_projects_enforcing_pr_quality_gate": {
-            "count": total_count_enforced,
-            "percentage": float(f"{total_count_enforced/len(data):.3f}"),
-        },
-        "nbr_of_projects_not_enforcing_pr_quality_gate": {
-            "count": total_count_non_enforced,
-            "percentage": float(f"{total_count_non_enforced/len(data):.3f}"),
-        },
-        "nbr_of_projects_with_no_pull_requests": {"count": total_count_no_prs, "percentage": float(f"{total_count_no_prs/len(data):.3f}")},
+        "nbr_of_pull_requests_passing_quality_gate": __count_percentage(total_count_pass, total_prs),
+        "nbr_of_pull_requests_failing_quality_gate": __count_percentage(total_count_fail, total_prs),
+        "nbr_of_pull_requests_not_analyzed_since_7_days_passing_quality_gate": __count_percentage(total_count_7_days_pass, total_count_7_days_pass + total_count_7_days_fail),
+        "nbr_of_pull_requests_not_analyzed_since_7_days_failing_quality_gate": __count_percentage(total_count_7_days_fail, total_count_7_days_pass + total_count_7_days_fail),
+        "nbr_of_projects_enforcing_pr_quality_gate": __count_percentage(total_count_enforced, len(data)),
+        "nbr_of_projects_not_enforcing_pr_quality_gate": __count_percentage(total_count_non_enforced, len(data)),
+        "projects_not_enforcing_pr_quality_gate": __count_percentage(total_count_non_enforced, len(data)),
+        "nbr_of_projects_with_no_pull_requests": __count_percentage(total_count_no_prs, len(data)),
     }
     return summary_data
 
@@ -161,7 +155,7 @@ def compute_summary_qg(data: dict[str, Any]) -> dict[str, Any]:
     possible_status = {d[QG] for d in data.values()}
     for status in possible_status:
         count = sum(1 for d in data.values() if d[QG] == status)
-        summary_data[status] = {"count": count, "percentage": float(f"{count/nbr_projects:.3f}")}
+        summary_data[status] = __count_percentage(count, nbr_projects)
     return summary_data
 
 
