@@ -61,6 +61,31 @@ def get_maturity_data(project: projects.Project) -> dict[str, Any]:
     return data
 
 
+def compute_summary_age(data: dict[str, Any]) -> dict[str, Any]:
+    nbr_projects = len(data)
+    summary_data = {"any_branch": {"never_analyzed": sum(1 for d in data.values() if d["lines"] is None)}, "main_branch": {}}
+    segments = [1, 3, 7, 15, 30, 90, 180, 365, 10000]
+    low_bound = -1
+    for high_bound in segments:
+        key = f"between_{low_bound+1}_and_{high_bound}_days"
+        count = sum(1 for d in data.values() if d["lines"] is not None and low_bound < d["lastAnalysis"] <= high_bound)
+        summary_data["any_branch"][key] = {"count": count, "percentage": float(f"{count/nbr_projects:.3f}")}
+        count = sum(1 for d in data.values() if d["lines"] is not None and low_bound < d["mainBranchLastAnalysis"] <= high_bound)
+        summary_data["main_branch"][key] = {"count": count, "percentage": float(f"{count/nbr_projects:.3f}")}
+        low_bound = high_bound
+    return summary_data
+
+
+def compute_summary_qg(data: dict[str, Any]) -> dict[str, Any]:
+    nbr_projects = len(data)
+    summary_data = {}
+    possible_status = {d["qualityGateStatus"] for d in data.values()}
+    for status in possible_status:
+        count = sum(1 for d in data.values() if d["qualityGateStatus"] == status)
+        summary_data[status] = {"count": count, "percentage": float(f"{count/nbr_projects:.3f}")}
+    return summary_data
+
+
 def main() -> None:
     """Entry point for sonar-maturity"""
     start_time = util.start_clock()
@@ -81,16 +106,10 @@ def main() -> None:
         print(util.json_dump(maturity_data))
         # for key, data in maturity_data.items():
         #    print(f"{key}: {','.join([str(v) for v in data.values()])}")
-        nbr_projects = len(maturity_data)
         summary_data: dict[str, Any] = {}
-        possible_status = {d["qualityGateStatus"] for d in maturity_data.values()}
-        summary_data["totalProjects"] = len(maturity_data)
-        summary_data["qualityGatesStatusCount"] = {
-            status: sum(1 for d in maturity_data.values() if d["qualityGateStatus"] == status) for status in possible_status
-        }
-        summary_data["qualityGatesStatusPercents"] = {
-            status: float(f"{val/nbr_projects:.3f}") for status, val in summary_data["qualityGatesStatusCount"].items()
-        }
+        summary_data["total_projects"] = len(maturity_data)
+        summary_data["quality_gate_statuses"] = compute_summary_qg(maturity_data)
+        summary_data["last_analysis"] = compute_summary_age(maturity_data)
         print(util.json_dump(summary_data))
     except exceptions.SonarException as e:
         chelp.clear_cache_and_exit(e.errcode, e.message)
