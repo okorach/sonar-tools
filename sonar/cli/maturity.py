@@ -62,6 +62,7 @@ def get_maturity_data(project: projects.Project) -> dict[str, Any]:
 
 
 def compute_summary_age(data: dict[str, Any]) -> dict[str, Any]:
+    """Computes statistics on last analysis"""
     nbr_projects = len(data)
     summary_data = {"any_branch": {"never_analyzed": sum(1 for d in data.values() if d["lines"] is None)}, "main_branch": {}}
     segments = [1, 3, 7, 15, 30, 90, 180, 365, 10000]
@@ -77,6 +78,7 @@ def compute_summary_age(data: dict[str, Any]) -> dict[str, Any]:
 
 
 def compute_summary_qg(data: dict[str, Any]) -> dict[str, Any]:
+    """Computes statistics on quality gate statuses"""
     nbr_projects = len(data)
     summary_data = {}
     possible_status = {d["qualityGateStatus"] for d in data.values()}
@@ -104,8 +106,6 @@ def main() -> None:
             raise exceptions.SonarException(f"No project matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
         maturity_data = {project.key: get_maturity_data(project) for project in project_list}
         print(util.json_dump(maturity_data))
-        # for key, data in maturity_data.items():
-        #    print(f"{key}: {','.join([str(v) for v in data.values()])}")
         summary_data: dict[str, Any] = {}
         summary_data["total_projects"] = len(maturity_data)
         summary_data["quality_gate_statuses"] = compute_summary_qg(maturity_data)
