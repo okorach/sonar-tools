@@ -85,6 +85,7 @@ def compute_summary_age(data: dict[str, Any]) -> dict[str, Any]:
 
 
 def compute_project_pr_statistics(project_data: dict[str, Any]) -> tuple[int, int, int, int, int]:
+    """Computes project level PR statistics related to maturity"""
     proj_count_7_days_pass, proj_count_7_days_fail = 0, 0
     proj_count_pass, proj_count_fail, count_no_prs = 0, 0, 0
     pr_list = project_data.get("pull_requests", {}).values()
