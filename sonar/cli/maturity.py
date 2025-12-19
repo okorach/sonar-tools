@@ -49,11 +49,13 @@ def __parse_args(desc: str) -> object:
 
     return args
 
+
 def __count_percentage(part: int, total: int) -> dict[str, float]:
     """Computes percentage value"""
     if total == 0:
         return {"count": 0, "percentage": 0.0}
     return {"count": part, "percentage": float(f"{part/total:.3f}")}
+
 
 def get_maturity_data(project: projects.Project) -> dict[str, Any]:
     """Gets the maturity data for a project"""
@@ -133,13 +135,14 @@ def compute_pr_statistics(data: dict[str, Any]) -> dict[str, Any]:
         total_count_fail += count_fail
         total_count_no_prs += count_no_prs
 
+    total_7_days = total_count_7_days_pass + total_count_7_days_fail
     summary_data = {
         "nbr_of_pull_requests": total_prs,
         "nbr_of_pull_requests_not_analyzed_since_7_days": total_count_7_days_fail + total_count_7_days_pass,
         "nbr_of_pull_requests_passing_quality_gate": __count_percentage(total_count_pass, total_prs),
         "nbr_of_pull_requests_failing_quality_gate": __count_percentage(total_count_fail, total_prs),
-        "nbr_of_pull_requests_not_analyzed_since_7_days_passing_quality_gate": __count_percentage(total_count_7_days_pass, total_count_7_days_pass + total_count_7_days_fail),
-        "nbr_of_pull_requests_not_analyzed_since_7_days_failing_quality_gate": __count_percentage(total_count_7_days_fail, total_count_7_days_pass + total_count_7_days_fail),
+        "nbr_of_pull_requests_not_analyzed_since_7_days_passing_quality_gate": __count_percentage(total_count_7_days_pass, total_7_days),
+        "nbr_of_pull_requests_not_analyzed_since_7_days_failing_quality_gate": __count_percentage(total_count_7_days_fail, total_7_days),
         "nbr_of_projects_enforcing_pr_quality_gate": __count_percentage(total_count_enforced, len(data)),
         "nbr_of_projects_not_enforcing_pr_quality_gate": __count_percentage(total_count_non_enforced, len(data)),
         "projects_not_enforcing_pr_quality_gate": __count_percentage(total_count_non_enforced, len(data)),
