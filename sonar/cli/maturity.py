@@ -30,6 +30,7 @@ from sonar.util import common_helper as chelp
 from sonar.util import component_helper
 from sonar import errcodes
 from sonar import projects
+from sonar import logging as log
 
 TOOL_NAME = "sonar-maturity"
 
@@ -38,7 +39,7 @@ def __parse_args(desc: str) -> object:
     """Set and parses CLI arguments"""
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
-    parser = options.set_output_file_args(parser, allowed_formats=("json", "csv"))
+    parser = options.set_output_file_args(parser, allowed_formats=("json",))
     parser = options.add_component_type_arg(parser)
     args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
@@ -53,10 +54,46 @@ def get_maturity_data(project: projects.Project) -> dict[str, Any]:
         "ncloc": project.get_measure("ncloc"),
         "lines": project.get_measure("lines"),
         "new_lines": project.get_measure("new_lines"),
+        "lastAnalysis": util.age(project.last_analysis(include_branches=True)),
+        "mainBranchLastAnalysis": util.age(project.main_branch().last_analysis()),
     }
     if data["qualityGateStatus"] is None and data["lines"] is None:
         data["qualityGateStatus"] = "NONE/NEVER_ANALYZED"
     return data
+
+
+def compute_summary_age(data: dict[str, Any]) -> dict[str, Any]:
+    """Computes statistics on last analysis"""
+    nbr_projects = len(data)
+    summary_data = {"any_branch": {"never_analyzed": sum(1 for d in data.values() if d["lines"] is None)}, "main_branch": {}}
+    segments = [1, 3, 7, 15, 30, 90, 180, 365, 10000]
+    low_bound = -1
+    for high_bound in segments:
+        key = f"between_{low_bound+1}_and_{high_bound}_days"
+        count = sum(1 for d in data.values() if d["lines"] is not None and low_bound < d["lastAnalysis"] <= high_bound)
+        summary_data["any_branch"][key] = {"count": count, "percentage": float(f"{count/nbr_projects:.3f}")}
+        count = sum(1 for d in data.values() if d["lines"] is not None and low_bound < d["mainBranchLastAnalysis"] <= high_bound)
+        summary_data["main_branch"][key] = {"count": count, "percentage": float(f"{count/nbr_projects:.3f}")}
+        low_bound = high_bound
+    return summary_data
+
+
+def compute_summary_qg(data: dict[str, Any]) -> dict[str, Any]:
+    """Computes statistics on quality gate statuses"""
+    nbr_projects = len(data)
+    summary_data = {}
+    possible_status = {d["qualityGateStatus"] for d in data.values()}
+    for status in possible_status:
+        count = sum(1 for d in data.values() if d["qualityGateStatus"] == status)
+        summary_data[status] = {"count": count, "percentage": float(f"{count/nbr_projects:.3f}")}
+    return summary_data
+
+
+def write_results(filename: str, data: dict[str, Any]) -> None:
+    """Writes results to a file"""
+    with util.open_file(filename) as fd:
+        print(util.json_dump(data), file=fd)
+    log.info(f"Maturity report written to file '{filename}'")
 
 
 def main() -> None:
@@ -76,13 +113,11 @@ def main() -> None:
         if len(project_list) == 0:
             raise exceptions.SonarException(f"No project matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
         maturity_data = {project.key: get_maturity_data(project) for project in project_list}
-        # print(util.json_dump(maturity_data))
-        for key, data in maturity_data.items():
-            print(f"{key}: {','.join([str(v) for v in data.values()])}")
-        possible_status = {d["qualityGateStatus"] for d in maturity_data.values()}
-        percents = {status: sum(1 for d in maturity_data.values() if d["qualityGateStatus"] == status) for status in possible_status}
-        for status, count in percents.items():
-            print(f"{status}: {count} ({count * 100/len(maturity_data):.1f}%)")
+        summary_data: dict[str, Any] = {}
+        summary_data["total_projects"] = len(maturity_data)
+        summary_data["quality_gate_statuses"] = compute_summary_qg(maturity_data)
+        summary_data["last_analysis"] = compute_summary_age(maturity_data)
+        write_results(kwargs.get(options.REPORT_FILE), {"summary": summary_data, "details": maturity_data})
     except exceptions.SonarException as e:
         chelp.clear_cache_and_exit(e.errcode, e.message)
 

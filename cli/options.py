@@ -313,7 +313,7 @@ def set_common_args(desc: str) -> ArgumentParser:
         f"--{URL}",
         required=False,
         default=os.getenv("SONAR_HOST_URL", "http://localhost:9000"),
-        help="""Root URL of the source SonarQube Server or Cloud platfrom,
+        help="""Root URL of the source SonarQube Server or Cloud platform,
         default is environment variable $SONAR_HOST_URL or http://localhost:9000 if not set""",
     )
     parser.add_argument(
