@@ -171,7 +171,12 @@ class ArgumentsError(exceptions.SonarException):
 def __convert_args_to_lists(kwargs: dict[str, str]) -> dict[str, str]:
     """Converts arguments that may be CSV into lists"""
     for argname in MULTI_VALUED_OPTS:
-        if argname in kwargs and kwargs[argname] is not None and len(kwargs[argname]) > 0:
+        if (
+            argname in kwargs
+            and kwargs[argname] is not None
+            and isinstance(kwargs[argname], (str, list))
+            and len(kwargs[argname]) > 0
+        ):
             kwargs[argname] = utilities.csv_to_list(kwargs[argname])
     if kwargs.get(LANGUAGES, None) not in (None, ""):
         kwargs[LANGUAGES] = [lang.lower() for lang in utilities.csv_to_list(kwargs[LANGUAGES])]

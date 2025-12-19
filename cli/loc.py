@@ -39,9 +39,7 @@ TOOL_NAME = "sonar-loc"
 
 def __get_csv_header_list(**kwargs) -> list[str]:
     """Returns CSV header"""
-    arr = [f"# {kwargs[options.COMPONENT_TYPE][0:-1]} key"]
-    if kwargs[options.BRANCH_REGEXP]:
-        arr.append("branch")
+    arr = [f"# {kwargs[options.COMPONENT_TYPE][0:-1]} key", "branch or pr", "type"]
     arr.append("ncloc")
     if kwargs[options.WITH_NAME]:
         arr.append(f"{kwargs[options.COMPONENT_TYPE][0:-1]} name")
@@ -58,7 +56,20 @@ def __get_csv_row(o: object, **kwargs) -> tuple[list[str], str]:
     """Returns CSV row of object"""
     d = __get_object_json_data(o, **kwargs)
     parent_type = kwargs[options.COMPONENT_TYPE][:-1]
-    arr = [d[k] for k in (parent_type, "branch", "ncloc", f"{parent_type}Name", "lastAnalysis", "tags", "url") if k in d]
+    # Always fill branch and type
+    branch = d.get("branch", "")
+    otype = type(o).__name__.lower()
+    if otype == "pullrequest":
+        row_type = "pr"
+    elif otype in ("branch", "applicationbranch"):
+        row_type = "branch"
+    else:
+        row_type = "project"
+    arr = [d[parent_type], branch, row_type]
+    # Add the rest of the columns as before
+    for k in ("ncloc", f"{parent_type}Name", "lastAnalysis", "tags", "url"):
+        if k in d:
+            arr.append(d[k])
     return arr, d["ncloc"]
 
 
@@ -69,7 +80,9 @@ def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
         log.warning("No objects with LoCs to dump, dump skipped")
         return
     obj_type = type(object_list[0]).__name__.lower()
-    nb_loc, nb_objects = 0, 0
+    nb_objects = 0
+    # For correct sum: group by project key, take max ncloc per project
+    project_max_loc = {}
     with util.open_file(file) as fd:
         writer = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         writer.writerow(__get_csv_header_list(**kwargs))
@@ -78,34 +91,44 @@ def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
             arr, loc = __get_csv_row(o, **kwargs)
             writer.writerow(arr)
             nb_objects += 1
-            if loc != "":
-                nb_loc += loc
+            # arr[0] is project key, arr[3] (or arr[-1] if columns change) is ncloc
+            project_key = arr[0]
+            try:
+                ncloc = int(arr[3])
+            except (ValueError, IndexError):
+                ncloc = 0
+            if project_key not in project_max_loc or ncloc > project_max_loc[project_key]:
+                project_max_loc[project_key] = ncloc
             if nb_objects % 50 != 0:
                 continue
-            if obj_type == "project":
-                log.info("%d %ss and %d LoCs, still counting...", nb_objects, obj_type, nb_loc)
-            else:
-                log.info("%d %ss objects dumped, still working...", nb_objects, obj_type)
-    if obj_type == "project":
-        log.info("%d %ss and %d LoCs in total", len(object_list), obj_type, nb_loc)
-    else:
-        log.info("%d %ss objects dumped in total...", len(object_list), obj_type)
+            log.info("%d objects dumped, still working...", nb_objects)
+    total_projects = len(project_max_loc)
+    total_loc = sum(project_max_loc.values())
+    log.info("%d projects (grouped) and %d LoCs in total (max per project)", total_projects, total_loc)
 
 
 def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
     """Returns the object data as JSON"""
     parent_type = kwargs[options.COMPONENT_TYPE][:-1]
-    is_branch = type(o).__name__.lower() in ("branch", "applicationbranch")
-    parent_o = o.concerned_object if is_branch else o
+    otype = type(o).__name__.lower()
+    is_branch = otype in ("branch", "applicationbranch")
+    is_pr = otype == "pullrequest"
+    parent_o = o.concerned_object if (is_branch or is_pr) else o
     d = {parent_type: parent_o.key, "ncloc": ""}
     try:
         d["ncloc"] = o.loc()
+        # Always fill branch: for project use 'main' or '', for branch use name, for PR use key
         if is_branch:
             d["branch"] = o.name
+        elif is_pr:
+            d["branch"] = getattr(o, "key", "")
+        else:
+            # Try to get main branch name if available, else empty string
+            d["branch"] = getattr(o, "main_branch_name", lambda: "main")()
         if kwargs[options.WITH_TAGS]:
             d["tags"] = util.list_to_csv(parent_o.get_tags())
         if kwargs[options.WITH_NAME]:
-            d[f"{parent_type}Name"] = parent_o.name if is_branch else o.name
+            d[f"{parent_type}Name"] = parent_o.name if (is_branch or is_pr) else o.name
         if kwargs[options.WITH_LAST_ANALYSIS]:
             d["lastAnalysis"] = ""
             if o.last_analysis() is not None:
@@ -181,6 +204,14 @@ def __parse_args(desc: str) -> object:
         action="store_true",
         help="Also include project tags in export",
     )
+    parser.add_argument(
+        "-pr",
+        "--pullRequests",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Include pull requests in LoC export"
+    )
     options.add_url_arg(parser)
     options.add_branch_arg(parser)
     options.add_component_type_arg(parser)
@@ -231,6 +262,7 @@ def main() -> None:
             key_regexp=kwargs[options.KEY_REGEXP],
             branch_regexp=kwargs[options.BRANCH_REGEXP],
             topLevelOnly=kwargs["topLevelOnly"],
+            pullRequests=kwargs.get("pullRequests", False),
         )
         if len(objects_list) == 0:
             raise exceptions.SonarException(f"No object matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
