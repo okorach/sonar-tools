@@ -30,6 +30,7 @@ from sonar.util import common_helper as chelp
 from sonar.util import component_helper
 from sonar import errcodes
 from sonar import projects
+from sonar import logging as log
 
 TOOL_NAME = "sonar-maturity"
 
@@ -38,7 +39,7 @@ def __parse_args(desc: str) -> object:
     """Set and parses CLI arguments"""
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
-    parser = options.set_output_file_args(parser, allowed_formats=("json", "csv"))
+    parser = options.set_output_file_args(parser, allowed_formats=("json",))
     parser = options.add_component_type_arg(parser)
     args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
@@ -88,6 +89,13 @@ def compute_summary_qg(data: dict[str, Any]) -> dict[str, Any]:
     return summary_data
 
 
+def write_results(filename: str, data: dict[str, Any]) -> None:
+    """Writes results to a file"""
+    with util.open_file(filename) as fd:
+        print(util.json_dump(data), file=fd)
+    log.info(f"Maturity report written to file '{filename}'")
+
+
 def main() -> None:
     """Entry point for sonar-maturity"""
     start_time = util.start_clock()
@@ -105,12 +113,11 @@ def main() -> None:
         if len(project_list) == 0:
             raise exceptions.SonarException(f"No project matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
         maturity_data = {project.key: get_maturity_data(project) for project in project_list}
-        print(util.json_dump(maturity_data))
         summary_data: dict[str, Any] = {}
         summary_data["total_projects"] = len(maturity_data)
         summary_data["quality_gate_statuses"] = compute_summary_qg(maturity_data)
         summary_data["last_analysis"] = compute_summary_age(maturity_data)
-        print(util.json_dump(summary_data))
+        write_results(kwargs.get(options.REPORT_FILE), {"summary": summary_data, "details": maturity_data})
     except exceptions.SonarException as e:
         chelp.clear_cache_and_exit(e.errcode, e.message)
 
