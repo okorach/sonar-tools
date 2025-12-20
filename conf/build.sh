@@ -55,7 +55,7 @@ if [[ "${offline}" = "1" ]]; then
     mv "${ROOT_DIR}/pyproject.toml" "${ROOT_DIR}/pyproject.toml.bak"
     python setup.py bdist_wheel
     mv "${ROOT_DIR}/pyproject.toml.bak" "${ROOT_DIR}/pyproject.toml"
-    rm "${ROOT_DIR}/setup.py" "${ROOT_DIR}/sonar-tools" "${ROOT_DIR}/sonar_tools.egg-info"
+    rm -r "${ROOT_DIR}/setup.py" "${ROOT_DIR}/sonar-tools" "${ROOT_DIR}/sonar_tools.egg-info"
     # python -m build
 else
     rm -rf "${ROOT_DIR}/build/lib/sonar" "${ROOT_DIR}/build/lib/cli" "${ROOT_DIR}"/build/scripts*/sonar-tools "${ROOT_DIR}"/dist/sonar_tools*
