@@ -183,6 +183,7 @@ class Platform(object):
         return {
             **data,
             "version": util.version_to_string(self.version()[:3]),
+            "edition": self.edition(),
             "serverId": self.server_id(),
             "plugins": util.dict_to_list(self.plugins(), "key"),
         }

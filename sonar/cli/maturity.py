@@ -238,6 +238,7 @@ def main() -> None:
                 log.info("Collected maturity data for %d/%d projects (%d%%)", i, nb_projects, int(100 * i / nb_projects))
 
         summary_data: dict[str, Any] = {}
+        summary_data["platform"] = sq.basics()
         summary_data["total_projects"] = len(maturity_data)
         summary_data["quality_gate_project_statistics"] = compute_summary_qg(maturity_data)
         summary_data["last_analysis_statistics"] = compute_summary_age(maturity_data)
