@@ -50,11 +50,15 @@ def __parse_args(desc: str) -> object:
     return args
 
 
+def __rounded(nbr: float) -> float:
+    return float(f"{nbr:.3f}")
+
+
 def __count_percentage(part: int, total: int) -> dict[str, float]:
     """Computes percentage value"""
     if total == 0:
         return {"count": 0, "percentage": 0.0}
-    return {"count": part, "percentage": float(f"{part/total:.3f}")}
+    return {"count": part, "percentage": __rounded(part / total)}
 
 
 def get_maturity_data(project: projects.Project) -> dict[str, Any]:
@@ -71,6 +75,7 @@ def get_maturity_data(project: projects.Project) -> dict[str, Any]:
     }
     if data[QG] is None and data["lines"] is None:
         data[QG] = "NONE/NEVER_ANALYZED"
+    data["new_code_lines_ratio"] = None if data["new_lines"] is None else __rounded(min(1.0, data["new_lines"] / data["lines"]))
     prs = project.pull_requests().values()
     data["pull_requests"] = {pr.key: {QG: pr.get_measure(QG_METRIC), AGE: util.age(pr.last_analysis())} for pr in prs}
     return data
@@ -138,16 +143,15 @@ def compute_pr_statistics(data: dict[str, Any]) -> dict[str, Any]:
 
     total_7_days = total_count_7_days_pass + total_count_7_days_fail
     summary_data = {
-        "nbr_of_pull_requests": total_prs,
-        "nbr_of_pull_requests_not_analyzed_since_7_days": total_count_7_days_fail + total_count_7_days_pass,
-        "nbr_of_pull_requests_passing_quality_gate": __count_percentage(total_count_pass, total_prs),
-        "nbr_of_pull_requests_failing_quality_gate": __count_percentage(total_count_fail, total_prs),
-        "nbr_of_pull_requests_not_analyzed_since_7_days_passing_quality_gate": __count_percentage(total_count_7_days_pass, total_7_days),
-        "nbr_of_pull_requests_not_analyzed_since_7_days_failing_quality_gate": __count_percentage(total_count_7_days_fail, total_7_days),
-        "nbr_of_projects_enforcing_pr_quality_gate": __count_percentage(total_count_enforced, len(data)),
-        "nbr_of_projects_not_enforcing_pr_quality_gate": __count_percentage(total_count_non_enforced, len(data)),
+        "pull_requests_total": total_prs,
+        "pull_requests_passing_quality_gate": __count_percentage(total_count_pass, total_prs),
+        "pull_requests_failing_quality_gate": __count_percentage(total_count_fail, total_prs),
+        "pull_requests_not_analyzed_since_7_days_total": total_7_days,
+        "pull_requests_not_analyzed_since_7_days_passing_quality_gate": __count_percentage(total_count_7_days_pass, total_7_days),
+        "pull_requests_not_analyzed_since_7_days_failing_quality_gate": __count_percentage(total_count_7_days_fail, total_7_days),
+        "projects_enforcing_pr_quality_gate": __count_percentage(total_count_enforced, len(data)),
         "projects_not_enforcing_pr_quality_gate": __count_percentage(total_count_non_enforced, len(data)),
-        "nbr_of_projects_with_no_pull_requests": __count_percentage(total_count_no_prs, len(data)),
+        "projects_with_no_pull_requests": __count_percentage(total_count_no_prs, len(data)),
     }
     return summary_data
 
@@ -166,27 +170,37 @@ def compute_summary_qg(data: dict[str, Any]) -> dict[str, Any]:
 def compute_new_code_statistics(data: dict[str, Any]) -> dict[str, Any]:
     """Computes statistics on new code"""
     nbr_projects = len(data)
-    summary_data = {"new_code": {}}
-    # Count project with no new node
-    count = sum(1 for d in data.values() if d["new_lines"] is not None)
-    summary_data["new_code"]["no_new_code"] = __count_percentage(count, nbr_projects)
+    summary_data = {"new_code_in_days": {}, "new_code_in_percentage": {}}
+    # Filter out projects with no new node
+    data_nc = {k: v for k, v in data.items() if v["new_lines"] is not None}
+    summary_data["new_code_in_days"]["no_new_code"] = __count_percentage(nbr_projects - len(data_nc), nbr_projects)
+    summary_data["new_code_in_percentage"]["no_new_code"] = summary_data["new_code_in_days"]["no_new_code"]
 
     segments = [30, 60, 90, 180, 365, 10000]
     low_bound = -1
-    for high_bound in segments:
-        key = f"between_{low_bound+1}_and_{high_bound}_days"
-        count = sum(1 for d in data.values() if d["new_lines"] is not None and low_bound < d["new_code_age"] <= high_bound)
-        summary_data["new_code"][key] = __count_percentage(count, nbr_projects)
+    for i in range(len(segments)):
+        high_bound = segments[i]
+        if i + 1 < len(segments):
+            key = f"between_{low_bound+1}_and_{high_bound}_days"
+            count = sum(1 for d in data_nc.values() if low_bound < d["new_code_age"] <= high_bound)
+        else:
+            key = f"more_than_{low_bound}_days"
+            count = sum(1 for d in data_nc.values() if low_bound < d["new_code_age"])
+        summary_data["new_code_in_days"][key] = __count_percentage(count, nbr_projects)
         low_bound = high_bound
-    low_bound = 0
+    low_bound = -0.001
     segments = [0.05, 0.1, 0.2, 0.4, 0.7, 1.0]
-    for high_bound in segments:
-        key = f"between_{int(low_bound*100)}_and_{int(high_bound*100)}_percent_of_new_code"
-        count = sum(
-            1 for d in data.values() if d["new_lines"] is not None and d["lines"] not in (None, 0) and d["new_lines"] / d["lines"] <= high_bound
-        )
-        summary_data["new_code"][key] = __count_percentage(count, nbr_projects)
+    for i in range(len(segments)):
+        high_bound = segments[i]
+        if i + 1 < len(segments):
+            key = f"between_{int(low_bound*100)}_and_{int(high_bound*100)}_percent"
+            count = sum(1 for d in data_nc.values() if d["lines"] != 0 and low_bound < d["new_lines"] / d["lines"] <= high_bound)
+        else:
+            key = f"more_than_{int(low_bound*100)}_percent"
+            count = sum(1 for d in data_nc.values() if d["lines"] != 0 and low_bound < d["new_lines"] / d["lines"])
+        summary_data["new_code_in_percentage"][key] = __count_percentage(count, nbr_projects)
         low_bound = high_bound
+
     return summary_data
 
 
