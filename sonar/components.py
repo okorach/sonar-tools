@@ -258,13 +258,14 @@ class Component(sq.SqObject):
 
     def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None) -> types.ApiPayload:
         """Returns a component analyses"""
+        log.debug("%s: Getting history of analyses", self)
         params = utilities.dict_remap(self.api_params(c.READ), {"component": "project"})
         data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", **params)["analyses"]
         if filter_in and len(filter_in) > 0:
             data = [d for d in data if any(e["category"] in filter_in for e in d["events"])]
         if filter_out and len(filter_out) > 0:
             data = [d for d in data if all(e["category"] not in filter_out for e in d["events"])]
-        log.debug("Component analyses = %s", utilities.json_dump(data))
+        log.debug("%s: Analyses = %s", self, utilities.json_dump(data))
         return data
 
     def get_versions(self) -> dict[str, datetime]:
