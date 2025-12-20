@@ -171,7 +171,7 @@ def compute_new_code_statistics(data: dict[str, Any]) -> dict[str, Any]:
     count = sum(1 for d in data.values() if d["new_lines"] is not None)
     summary_data["new_code"]["no_new_code"] = __count_percentage(count, nbr_projects)
 
-    segments = [0, 30, 60, 90, 180, 365, 10000]
+    segments = [30, 60, 90, 180, 365, 10000]
     low_bound = -1
     for high_bound in segments:
         key = f"between_{low_bound+1}_and_{high_bound}_days"
