@@ -40,7 +40,10 @@ TOOL_NAME = "sonar-maturity"
 QG_METRIC = "alert_status"
 QG = "quality_gate"
 AGE = "last_analysis_age"
-
+ANALYSES_ANY_BRANCH = "number_of_analyses_on_any_branch"
+NEW_CODE_LINES = "new_code_lines"
+NEW_CODE_RATIO = "new_code_lines_ratio"
+NEW_CODE_DAYS = "new_code_days"
 
 def __parse_args(desc: str) -> object:
     """Set and parses CLI arguments"""
@@ -74,14 +77,14 @@ def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
         QG: project.get_measure(QG_METRIC),
         "ncloc": project.get_measure("ncloc"),
         "lines": project.get_measure("lines"),
-        "new_lines": project.get_measure("new_lines"),
-        "new_code_age": util.age(project.new_code_start_date()),
+        NEW_CODE_LINES: project.get_measure("new_lines"),
+        NEW_CODE_DAYS: util.age(project.new_code_start_date()),
         AGE: util.age(project.last_analysis(include_branches=True)),
         f"main_branch_{AGE}": util.age(project.main_branch().last_analysis()),
     }
     if data[QG] is None and data["lines"] is None:
         data[QG] = "NONE/NEVER_ANALYZED"
-    data["new_code_lines_ratio"] = None if data["new_lines"] is None else __rounded(min(1.0, data["new_lines"] / data["lines"]))
+    data[NEW_CODE_RATIO] = None if data[NEW_CODE_LINES] is None else __rounded(min(1.0, data[NEW_CODE_LINES] / data["lines"]))
 
     # Extract project analysis history
     segments = [7, 30, 90]
@@ -96,7 +99,7 @@ def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
     history = []
     for branch in proj_branches:
         history += [util.age(util.string_to_date(d["date"])) for d in branch.get_analyses()]
-    section = "number_of_analyses_on_any_branch"
+    section = ANALYSES_ANY_BRANCH
     data[section] = {}
     for limit in [7, 30, 90]:
         data[section][f"{limit}_days_or_less"] = sum(1 for v in history if v <= limit)
@@ -201,9 +204,9 @@ def compute_new_code_statistics(data: dict[str, Any]) -> dict[str, Any]:
     nbr_projects = len(data)
     summary_data = {"new_code_in_days": {}, "new_code_in_percentage": {}}
     # Filter out projects with no new node
-    data_nc = {k: v for k, v in data.items() if v["new_lines"] is not None}
-    summary_data["new_code_in_days"]["no_new_code"] = __count_percentage(nbr_projects - len(data_nc), nbr_projects)
-    summary_data["new_code_in_percentage"]["no_new_code"] = summary_data["new_code_in_days"]["no_new_code"]
+    data_nc = {k: v for k, v in data.items() if v[NEW_CODE_LINES] is not None}
+    summary_data[NEW_CODE_DAYS]["no_new_code"] = __count_percentage(nbr_projects - len(data_nc), nbr_projects)
+    summary_data[NEW_CODE_RATIO]["no_new_code"] = summary_data[NEW_CODE_DAYS]["no_new_code"]
 
     segments = [30, 60, 90, 180, 365, 10000]
     low_bound = -1
@@ -211,11 +214,11 @@ def compute_new_code_statistics(data: dict[str, Any]) -> dict[str, Any]:
         high_bound = segments[i]
         if i + 1 < len(segments):
             key = f"between_{low_bound+1}_and_{high_bound}_days"
-            count = sum(1 for d in data_nc.values() if low_bound < d["new_code_age"] <= high_bound)
+            count = sum(1 for d in data_nc.values() if low_bound < d[NEW_CODE_DAYS] <= high_bound)
         else:
             key = f"more_than_{low_bound}_days"
-            count = sum(1 for d in data_nc.values() if low_bound < d["new_code_age"])
-        summary_data["new_code_in_days"][key] = __count_percentage(count, nbr_projects)
+            count = sum(1 for d in data_nc.values() if low_bound < d[NEW_CODE_DAYS])
+        summary_data[NEW_CODE_DAYS][key] = __count_percentage(count, nbr_projects)
         low_bound = high_bound
     low_bound = -0.001
     segments = [0.05, 0.1, 0.2, 0.4, 0.7, 1.0]
@@ -223,14 +226,25 @@ def compute_new_code_statistics(data: dict[str, Any]) -> dict[str, Any]:
         high_bound = segments[i]
         if i + 1 < len(segments):
             key = f"between_{int(low_bound*100)}_and_{int(high_bound*100)}_percent"
-            count = sum(1 for d in data_nc.values() if d["lines"] != 0 and low_bound < d["new_lines"] / d["lines"] <= high_bound)
+            count = sum(1 for d in data_nc.values() if d["lines"] != 0 and low_bound < d[NEW_CODE_LINES] / d["lines"] <= high_bound)
         else:
             key = f"more_than_{int(low_bound*100)}_percent"
-            count = sum(1 for d in data_nc.values() if d["lines"] != 0 and low_bound < d["new_lines"] / d["lines"])
-        summary_data["new_code_in_percentage"][key] = __count_percentage(count, nbr_projects)
+            count = sum(1 for d in data_nc.values() if d["lines"] != 0 and low_bound < d[NEW_CODE_LINES] / d["lines"])
+        summary_data[NEW_CODE_RATIO][key] = __count_percentage(count, nbr_projects)
         low_bound = high_bound
 
     return summary_data
+
+
+def compute_analysis_frequency_statistics(data: dict[str, Any]) -> dict[str, Any]:
+    """Computes the proportions of project that are analyzed more or less frequently"""
+    DAYS = "7_days_or_less"
+    return {
+        "more_than_20_times_over_the_last_7_days": sum(1 for proj in data.values() if 20 <= proj[ANALYSES_ANY_BRANCH][DAYS]),
+        "between_5_and_19_times_over_the_last_7_days": sum(1 for proj in data.values() if 5 <= proj[ANALYSES_ANY_BRANCH][DAYS] < 20),
+        "between_1_and_4_times_over_the_last_7_days": sum(1 for proj in data.values() if 1 <= proj[ANALYSES_ANY_BRANCH][DAYS] < 5),
+        "not_analyzed_over_the_last_7_days": sum(1 for proj in data.values() if proj[ANALYSES_ANY_BRANCH][DAYS] == 0),
+    }
 
 
 def write_results(filename: str, data: dict[str, Any]) -> None:
@@ -291,6 +305,7 @@ def main() -> None:
         summary_data["last_analysis_statistics"] = compute_summary_age(maturity_data)
         summary_data["quality_gate_enforcement_statistics"] = compute_pr_statistics(maturity_data)
         summary_data["new_code_statistics"] = compute_new_code_statistics(maturity_data)
+        summary_data["frequency_statistics"] = compute_analysis_frequency_statistics(maturity_data)
         write_results(kwargs.get(options.REPORT_FILE), {"summary": summary_data, "details": maturity_data})
     except exceptions.SonarException as e:
         chelp.clear_cache_and_exit(e.errcode, e.message)
