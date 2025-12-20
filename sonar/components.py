@@ -51,7 +51,7 @@ class Component(sq.SqObject):
     Abstraction of the Sonar component concept
     """
 
-    API = {c.SEARCH: "components/search"}
+    API = {c.READ: "components/show", c.LIST: "components/search"}
 
     def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None) -> None:
         """Constructor"""
@@ -62,6 +62,7 @@ class Component(sq.SqObject):
         self._description: Optional[str] = None
         self._last_analysis: Optional[datetime] = None
         self._visibility: Optional[str] = None
+        self._new_code_start_date: Optional[datetime] = None
         if data is not None:
             self.reload(data)
 
@@ -228,10 +229,20 @@ class Component(sq.SqObject):
                 self._last_analysis = utilities.string_to_date(self.sq_json["analysisDate"])
         return self._last_analysis
 
+    def new_code_start_date(self) -> Optional[datetime]:
+        """Returns the new code period start date of a component or None if this component has no new code start date"""
+        if self._new_code_start_date is None:
+            params = utilities.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(c.GET))
+            data = json.loads(self.get(Component.API[c.READ], params=params).text)["component"]
+            self.sq_json |= data
+            if "leakPeriodDate" in data:
+                self._new_code_start_date = utilities.string_to_date(data["leakPeriodDate"])
+        return self._new_code_start_date
+
     def url(self) -> str:
         """Returns a component permalink"""
         # Must be implemented in sub classes
-        pass
+        raise NotImplementedError
 
     def visibility(self) -> str:
         """Returns a component visibility (public or private)"""
