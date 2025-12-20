@@ -71,8 +71,10 @@ setuptools.setup(
             "sonar-findings-export = cli.findings_export:main",
             "sonar-loc = cli.loc:main",
             "sonar-config = sonar.cli.config:main",
-            "support-audit = cli.support:main",
             "sonar-rules = cli.rules_cli:main",
+            "sonar-misra = sonar.cli.misra:main",
+            "sonar-maturity = sonar.cli.maturity:main",
+            "support-audit = cli.support:main",
         ]
     },
     python_requires=">=3.8",
