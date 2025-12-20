@@ -51,6 +51,7 @@ def __parse_args(desc: str) -> object:
 
 
 def __rounded(nbr: float) -> float:
+    """Rounds a float to 3 decimal digits"""
     return float(f"{nbr:.3f}")
 
 
