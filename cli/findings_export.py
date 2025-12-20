@@ -317,7 +317,7 @@ def store_findings(components_list: list[object], endpoint: platform.Platform, p
                 __write_findings(found_findings, file, total_findings == 0, **local_params)
                 total_findings += len(found_findings)
             except TimeoutError as e:
-                log.error(f"Getting findings for {str(comp)} timed out after 180 seconds for {str(future)}.")
+                log.error(f"Getting findings for {str(comp)} timed out after 60 seconds for {str(future)}.")
             except Exception as e:
                 traceback.print_exc()
                 log.error(f"Exception {str(e)} when exporting findings of {str(comp)}.")
