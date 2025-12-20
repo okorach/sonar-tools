@@ -82,6 +82,29 @@ def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
     if data[QG] is None and data["lines"] is None:
         data[QG] = "NONE/NEVER_ANALYZED"
     data["new_code_lines_ratio"] = None if data["new_lines"] is None else __rounded(min(1.0, data["new_lines"] / data["lines"]))
+
+    # Extract project analysis history
+    segments = [7, 30, 90]
+    history = [util.age(util.string_to_date(d["date"])) for d in project.get_analyses()]
+    log.debug("%s history of analysis = %s", project, history)
+    section = "number_of_analyses_on_main_branch"
+    data[section] = {}
+    for limit in segments:
+        data[section][f"{limit}_days_or_less"] = sum(1 for v in history if v <= limit)
+    data[section][f"more_than_{segments[-1]}_days"] = sum(1 for v in history if v > segments[-1])
+    proj_branches = project.branches().values()
+    history = []
+    for branch in proj_branches:
+        history += [util.age(util.string_to_date(d["date"])) for d in branch.get_analyses()]
+    section = "number_of_analyses_on_any_branch"
+    data[section] = {}
+    for limit in [7, 30, 90]:
+        data[section][f"{limit}_days_or_less"] = sum(1 for v in history if v <= limit)
+    data[section][f"more_than_{segments[-1]}_days"] = sum(1 for v in history if v > segments[-1])
+    history = sorted(history)
+    log.debug("%s branches history of analysis = %s", project, history)
+
+    # extract pul requests stats
     prs = project.pull_requests().values()
     data["pull_requests"] = {pr.key: {QG: pr.get_measure(QG_METRIC), AGE: util.age(pr.last_analysis())} for pr in prs}
     return data
