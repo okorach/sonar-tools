@@ -65,6 +65,7 @@ def get_maturity_data(project: projects.Project) -> dict[str, Any]:
         "ncloc": project.get_measure("ncloc"),
         "lines": project.get_measure("lines"),
         "new_lines": project.get_measure("new_lines"),
+        "new_code_age": util.age(project.new_code_start_date()),
         AGE: util.age(project.last_analysis(include_branches=True)),
         f"main_branch_{AGE}": util.age(project.main_branch().last_analysis()),
     }
@@ -162,6 +163,33 @@ def compute_summary_qg(data: dict[str, Any]) -> dict[str, Any]:
     return summary_data
 
 
+def compute_new_code_statistics(data: dict[str, Any]) -> dict[str, Any]:
+    """Computes statistics on new code"""
+    nbr_projects = len(data)
+    summary_data = {"new_code": {}}
+    # Count project with no new node
+    count = sum(1 for d in data.values() if d["new_lines"] is not None)
+    summary_data["new_code"]["no_new_code"] = __count_percentage(count, nbr_projects)
+
+    segments = [0, 30, 60, 90, 180, 365, 10000]
+    low_bound = -1
+    for high_bound in segments:
+        key = f"between_{low_bound+1}_and_{high_bound}_days"
+        count = sum(1 for d in data.values() if d["new_lines"] is not None and low_bound < d["new_code_age"] <= high_bound)
+        summary_data["new_code"][key] = __count_percentage(count, nbr_projects)
+        low_bound = high_bound
+    low_bound = 0
+    segments = [0.05, 0.1, 0.2, 0.4, 0.7, 1.0]
+    for high_bound in segments:
+        key = f"between_{int(low_bound*100)}_and_{int(high_bound*100)}_percent_of_new_code"
+        count = sum(
+            1 for d in data.values() if d["new_lines"] is not None and d["lines"] not in (None, 0) and d["new_lines"] / d["lines"] <= high_bound
+        )
+        summary_data["new_code"][key] = __count_percentage(count, nbr_projects)
+        low_bound = high_bound
+    return summary_data
+
+
 def write_results(filename: str, data: dict[str, Any]) -> None:
     """Writes results to a file"""
     with util.open_file(filename) as fd:
@@ -199,6 +227,7 @@ def main() -> None:
         summary_data["quality_gate_project_statistics"] = compute_summary_qg(maturity_data)
         summary_data["last_analysis_statistics"] = compute_summary_age(maturity_data)
         summary_data["quality_gate_enforcement_statistics"] = compute_pr_statistics(maturity_data)
+        summary_data["new_code_statistics"] = compute_new_code_statistics(maturity_data)
         write_results(kwargs.get(options.REPORT_FILE), {"summary": summary_data, "details": maturity_data})
     except exceptions.SonarException as e:
         chelp.clear_cache_and_exit(e.errcode, e.message)
