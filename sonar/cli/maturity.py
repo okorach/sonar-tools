@@ -43,7 +43,8 @@ AGE = "last_analysis_age"
 ANALYSES_ANY_BRANCH = "number_of_analyses_on_any_branch"
 NEW_CODE_LINES = "new_code_lines"
 NEW_CODE_RATIO = "new_code_lines_ratio"
-NEW_CODE_DAYS = "new_code_days"
+NEW_CODE_DAYS = "new_code_in_days"
+
 
 def __parse_args(desc: str) -> object:
     """Set and parses CLI arguments"""
@@ -202,7 +203,7 @@ def compute_summary_qg(data: dict[str, Any]) -> dict[str, Any]:
 def compute_new_code_statistics(data: dict[str, Any]) -> dict[str, Any]:
     """Computes statistics on new code"""
     nbr_projects = len(data)
-    summary_data = {"new_code_in_days": {}, "new_code_in_percentage": {}}
+    summary_data = {NEW_CODE_DAYS: {}, NEW_CODE_RATIO: {}}
     # Filter out projects with no new node
     data_nc = {k: v for k, v in data.items() if v[NEW_CODE_LINES] is not None}
     summary_data[NEW_CODE_DAYS]["no_new_code"] = __count_percentage(nbr_projects - len(data_nc), nbr_projects)
