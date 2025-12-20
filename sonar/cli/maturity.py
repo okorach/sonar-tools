@@ -21,6 +21,9 @@
 """Computes SonarQube maturity metrics"""
 
 from typing import Any
+import traceback
+import concurrent.futures
+
 from sonar import utilities as util
 from sonar import version
 from cli import options
@@ -42,6 +45,7 @@ AGE = "last_analysis_age"
 def __parse_args(desc: str) -> object:
     """Set and parses CLI arguments"""
     parser = options.set_common_args(desc)
+    parser = options.add_thread_arg(parser, "collect project maturity data", 4)
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("json",))
     parser = options.add_component_type_arg(parser)
@@ -62,8 +66,9 @@ def __count_percentage(part: int, total: int) -> dict[str, float]:
     return {"count": part, "percentage": __rounded(part / total)}
 
 
-def get_maturity_data(project: projects.Project) -> dict[str, Any]:
+def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
     """Gets the maturity data for a project"""
+    log.debug("Collecting maturity data for %s", project)
     data = {
         "key": project.key,
         QG: project.get_measure(QG_METRIC),
@@ -212,6 +217,31 @@ def write_results(filename: str, data: dict[str, Any]) -> None:
     log.info(f"Maturity report written to file '{filename}'")
 
 
+def get_maturity_data(project_list: list[projects.Project], threads: int) -> dict[str, Any]:
+    """Gets project maturity data in multithreaded way"""
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjMaturity") as executor:
+        futures, futures_map = [], {}
+        for proj in project_list:
+            future = executor.submit(get_project_maturity_data, proj)
+            futures.append(future)
+            futures_map[future] = proj
+    i, nb_projects = 0, len(project_list)
+    maturity_data = {}
+    for future in concurrent.futures.as_completed(futures):
+        proj = futures_map[future]
+        try:
+            maturity_data[proj.key] = future.result(timeout=60)
+        except TimeoutError as e:
+            log.error(f"Getting maturity data for {str(proj)} timed out after 60 seconds for {str(future)}.")
+        except Exception as e:
+            traceback.print_exc()
+            log.error(f"Exception {str(e)} when collecting maturity data of {str(proj)}.")
+        i += 1
+        if i % 10 == 0 or i == nb_projects:
+            log.info("Collected maturity data for %d/%d projects (%d%%)", i, nb_projects, int(100 * i / nb_projects))
+    return maturity_data
+
+
 def main() -> None:
     """Entry point for sonar-maturity"""
     start_time = util.start_clock()
@@ -228,14 +258,8 @@ def main() -> None:
         )
         if len(project_list) == 0:
             raise exceptions.SonarException(f"No project matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
-        i, nb_projects = 0, len(project_list)
-        maturity_data = {}
-        for project in project_list:
-            log.debug("Collecting maturity data for %s", project)
-            maturity_data[project.key] = get_maturity_data(project)
-            i += 1
-            if i % 10 == 0 or i == nb_projects:
-                log.info("Collected maturity data for %d/%d projects (%d%%)", i, nb_projects, int(100 * i / nb_projects))
+
+        maturity_data = get_maturity_data(project_list, threads=kwargs[options.NBR_THREADS])
 
         summary_data: dict[str, Any] = {}
         summary_data["platform"] = sq.basics()
