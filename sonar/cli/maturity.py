@@ -39,11 +39,21 @@ TOOL_NAME = "sonar-maturity"
 
 QG_METRIC = "alert_status"
 QG = "quality_gate"
-AGE = "last_analysis_age"
-ANALYSES_ANY_BRANCH = "number_of_analyses_on_any_branch"
-NEW_CODE_LINES = "new_code_lines"
-NEW_CODE_RATIO = "new_code_lines_ratio"
-NEW_CODE_DAYS = "new_code_in_days"
+
+AGE_KEY = "last_analysis_age"
+NBR_OF_ANALYSES_KEY = "number_of_analyses"
+ANALYSES_ANY_BRANCH_KEY = f"{NBR_OF_ANALYSES_KEY}_on_any_branch"
+ANALYSES_MAIN_BRANCH_KEY = f"{NBR_OF_ANALYSES_KEY}_on_main_branch"
+
+OVERALL_LOC_KEY = "lines_of_code"
+OVERALL_LOC_METRIC = "ncloc"
+OVERALL_LINES_KEY = "lines"
+OVERALL_LINES_METRIC = "lines"
+NEW_CODE_LINES_KEY = "new_code_lines"
+NEW_CODE_LINES_METRIC = "new_lines"
+
+NEW_CODE_RATIO_KEY = "new_code_lines_ratio"
+NEW_CODE_DAYS_KEY = "new_code_in_days"
 
 
 def __parse_args(desc: str) -> object:
@@ -76,22 +86,22 @@ def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
     data = {
         "key": project.key,
         QG: project.get_measure(QG_METRIC),
-        "ncloc": project.get_measure("ncloc"),
-        "lines": project.get_measure("lines"),
-        NEW_CODE_LINES: project.get_measure("new_lines"),
-        NEW_CODE_DAYS: util.age(project.new_code_start_date()),
-        AGE: util.age(project.last_analysis(include_branches=True)),
-        f"main_branch_{AGE}": util.age(project.main_branch().last_analysis()),
+        OVERALL_LOC_KEY: project.get_measure(OVERALL_LOC_METRIC),
+        OVERALL_LINES_KEY: project.get_measure(OVERALL_LINES_METRIC),
+        NEW_CODE_LINES_KEY: project.get_measure(NEW_CODE_LINES_METRIC),
+        NEW_CODE_DAYS_KEY: util.age(project.new_code_start_date()),
+        AGE_KEY: util.age(project.last_analysis(include_branches=True)),
+        f"main_branch_{AGE_KEY}": util.age(project.main_branch().last_analysis()),
     }
     if data[QG] is None and data["lines"] is None:
         data[QG] = "NONE/NEVER_ANALYZED"
-    data[NEW_CODE_RATIO] = None if data[NEW_CODE_LINES] is None else __rounded(min(1.0, data[NEW_CODE_LINES] / data["lines"]))
+    data[NEW_CODE_RATIO_KEY] = None if data[NEW_CODE_LINES_KEY] is None else __rounded(min(1.0, data[NEW_CODE_LINES_KEY] / data["lines"]))
 
     # Extract project analysis history
     segments = [7, 30, 90]
     history = [util.age(util.string_to_date(d["date"])) for d in project.get_analyses()]
     log.debug("%s history of analysis = %s", project, history)
-    section = "number_of_analyses_on_main_branch"
+    section = ANALYSES_MAIN_BRANCH_KEY
     data[section] = {}
     for limit in segments:
         data[section][f"{limit}_days_or_less"] = sum(1 for v in history if v <= limit)
@@ -100,7 +110,7 @@ def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
     history = []
     for branch in proj_branches:
         history += [util.age(util.string_to_date(d["date"])) for d in branch.get_analyses()]
-    section = ANALYSES_ANY_BRANCH
+    section = ANALYSES_ANY_BRANCH_KEY
     data[section] = {}
     for limit in [7, 30, 90]:
         data[section][f"{limit}_days_or_less"] = sum(1 for v in history if v <= limit)
@@ -110,7 +120,7 @@ def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
 
     # extract pul requests stats
     prs = project.pull_requests().values()
-    data["pull_requests"] = {pr.key: {QG: pr.get_measure(QG_METRIC), AGE: util.age(pr.last_analysis())} for pr in prs}
+    data["pull_requests"] = {pr.key: {QG: pr.get_measure(QG_METRIC), AGE_KEY: util.age(pr.last_analysis())} for pr in prs}
     return data
 
 
@@ -122,9 +132,9 @@ def compute_summary_age(data: dict[str, Any]) -> dict[str, Any]:
     low_bound = -1
     for high_bound in segments:
         key = f"between_{low_bound+1}_and_{high_bound}_days"
-        count = sum(1 for d in data.values() if d["lines"] is not None and low_bound < d[AGE] <= high_bound)
+        count = sum(1 for d in data.values() if d["lines"] is not None and low_bound < d[AGE_KEY] <= high_bound)
         summary_data["any_branch"][key] = __count_percentage(count, nbr_projects)
-        count = sum(1 for d in data.values() if d["lines"] is not None and low_bound < d[f"main_branch_{AGE}"] <= high_bound)
+        count = sum(1 for d in data.values() if d["lines"] is not None and low_bound < d[f"main_branch_{AGE_KEY}"] <= high_bound)
         summary_data["main_branch"][key] = __count_percentage(count, nbr_projects)
         low_bound = high_bound
     return summary_data
@@ -138,11 +148,11 @@ def compute_project_pr_statistics(project_data: dict[str, Any]) -> tuple[int, in
     for pr_data in pr_list:
         if pr_data.get(QG) == "OK":
             proj_count_pass += 1
-            if pr_data.get(AGE) > 7:
+            if pr_data.get(AGE_KEY) > 7:
                 proj_count_7_days_pass += 1
         else:
             proj_count_fail += 1
-            if pr_data.get(AGE) > 7:
+            if pr_data.get(AGE_KEY) > 7:
                 proj_count_7_days_fail += 1
     project_data["pull_request_stats"] = {
         "pr_pass_total": proj_count_pass,
@@ -203,11 +213,13 @@ def compute_summary_qg(data: dict[str, Any]) -> dict[str, Any]:
 def compute_new_code_statistics(data: dict[str, Any]) -> dict[str, Any]:
     """Computes statistics on new code"""
     nbr_projects = len(data)
-    summary_data = {NEW_CODE_DAYS: {}, NEW_CODE_RATIO: {}}
+    summary_data = {NEW_CODE_DAYS_KEY: {}, NEW_CODE_RATIO_KEY: {}}
+
+    data_nc = {k: v for k, v in data.items() if v[NEW_CODE_LINES_KEY] is not None and v[NEW_CODE_DAYS_KEY] is not None}
+    log.info("Computes stats from %s", util.json_dump(data_nc))
     # Filter out projects with no new node
-    data_nc = {k: v for k, v in data.items() if v[NEW_CODE_LINES] is not None}
-    summary_data[NEW_CODE_DAYS]["no_new_code"] = __count_percentage(nbr_projects - len(data_nc), nbr_projects)
-    summary_data[NEW_CODE_RATIO]["no_new_code"] = summary_data[NEW_CODE_DAYS]["no_new_code"]
+    summary_data[NEW_CODE_DAYS_KEY]["no_new_code"] = __count_percentage(nbr_projects - len(data_nc), nbr_projects)
+    summary_data[NEW_CODE_RATIO_KEY]["no_new_code"] = summary_data[NEW_CODE_DAYS_KEY]["no_new_code"]
 
     segments = [30, 60, 90, 180, 365, 10000]
     low_bound = -1
@@ -215,11 +227,11 @@ def compute_new_code_statistics(data: dict[str, Any]) -> dict[str, Any]:
         high_bound = segments[i]
         if i + 1 < len(segments):
             key = f"between_{low_bound+1}_and_{high_bound}_days"
-            count = sum(1 for d in data_nc.values() if low_bound < d[NEW_CODE_DAYS] <= high_bound)
+            count = sum(1 for d in data_nc.values() if low_bound < d[NEW_CODE_DAYS_KEY] <= high_bound)
         else:
             key = f"more_than_{low_bound}_days"
-            count = sum(1 for d in data_nc.values() if low_bound < d[NEW_CODE_DAYS])
-        summary_data[NEW_CODE_DAYS][key] = __count_percentage(count, nbr_projects)
+            count = sum(1 for d in data_nc.values() if low_bound < d[NEW_CODE_DAYS_KEY])
+        summary_data[NEW_CODE_DAYS_KEY][key] = __count_percentage(count, nbr_projects)
         low_bound = high_bound
     low_bound = -0.001
     segments = [0.05, 0.1, 0.2, 0.4, 0.7, 1.0]
@@ -227,11 +239,11 @@ def compute_new_code_statistics(data: dict[str, Any]) -> dict[str, Any]:
         high_bound = segments[i]
         if i + 1 < len(segments):
             key = f"between_{int(low_bound*100)}_and_{int(high_bound*100)}_percent"
-            count = sum(1 for d in data_nc.values() if d["lines"] != 0 and low_bound < d[NEW_CODE_LINES] / d["lines"] <= high_bound)
+            count = sum(1 for d in data_nc.values() if d["lines"] != 0 and low_bound < d[NEW_CODE_LINES_KEY] / d["lines"] <= high_bound)
         else:
             key = f"more_than_{int(low_bound*100)}_percent"
-            count = sum(1 for d in data_nc.values() if d["lines"] != 0 and low_bound < d[NEW_CODE_LINES] / d["lines"])
-        summary_data[NEW_CODE_RATIO][key] = __count_percentage(count, nbr_projects)
+            count = sum(1 for d in data_nc.values() if d["lines"] != 0 and low_bound < d[NEW_CODE_LINES_KEY] / d["lines"])
+        summary_data[NEW_CODE_RATIO_KEY][key] = __count_percentage(count, nbr_projects)
         low_bound = high_bound
 
     return summary_data
@@ -241,10 +253,10 @@ def compute_analysis_frequency_statistics(data: dict[str, Any]) -> dict[str, Any
     """Computes the proportions of project that are analyzed more or less frequently"""
     DAYS = "7_days_or_less"
     return {
-        "more_than_20_times_over_the_last_7_days": sum(1 for proj in data.values() if 20 <= proj[ANALYSES_ANY_BRANCH][DAYS]),
-        "between_5_and_19_times_over_the_last_7_days": sum(1 for proj in data.values() if 5 <= proj[ANALYSES_ANY_BRANCH][DAYS] < 20),
-        "between_1_and_4_times_over_the_last_7_days": sum(1 for proj in data.values() if 1 <= proj[ANALYSES_ANY_BRANCH][DAYS] < 5),
-        "not_analyzed_over_the_last_7_days": sum(1 for proj in data.values() if proj[ANALYSES_ANY_BRANCH][DAYS] == 0),
+        "more_than_20_times_over_the_last_7_days": sum(1 for proj in data.values() if 20 <= proj[ANALYSES_ANY_BRANCH_KEY][DAYS]),
+        "between_5_and_19_times_over_the_last_7_days": sum(1 for proj in data.values() if 5 <= proj[ANALYSES_ANY_BRANCH_KEY][DAYS] < 20),
+        "between_1_and_4_times_over_the_last_7_days": sum(1 for proj in data.values() if 1 <= proj[ANALYSES_ANY_BRANCH_KEY][DAYS] < 5),
+        "not_analyzed_over_the_last_7_days": sum(1 for proj in data.values() if proj[ANALYSES_ANY_BRANCH_KEY][DAYS] == 0),
     }
 
 
