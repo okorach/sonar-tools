@@ -34,6 +34,7 @@ def get_components(
 ) -> list[components.Component]:
     """Returns list of components that match the filters"""
     key_regexp = key_regexp or ".+"
+    pr_components = []
     if component_type in ("apps", "applications"):
         components = [p for p in applications.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
     elif component_type == "portfolios":
@@ -42,12 +43,10 @@ def get_components(
             components = [p for p in components if p.is_toplevel()]
     else:
         components = [p for p in projects.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
+        if pull_requests:
+            for p in components:
+                pr_components += list(p.pull_requests().values())
     if component_type != "portfolios" and branch_regexp:
         components = [b for comp in components for b in comp.branches().values() if re.match(rf"^{branch_regexp}$", b.name)]
     # If pull_requests flag is set, include PRs for each project
-    if pull_requests and component_type == "projects":
-        pr_components = []
-        for p in [p for p in components if isinstance(p, projects.Project)]:
-            pr_components += list(p.pull_requests().values())
-        components += pr_components
-    return components
+    return components + pr_components
