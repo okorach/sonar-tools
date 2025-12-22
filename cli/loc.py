@@ -205,12 +205,12 @@ def __parse_args(desc: str) -> object:
         help="Also include project tags in export",
     )
     parser.add_argument(
-        "-pr",
-        "--pullRequests",
+        f"-{options.PULL_REQUESTS_SHORT}",
+        f"--{options.PULL_REQUESTS}",
         required=False,
         default=False,
         action="store_true",
-        help="Include pull requests in LoC export"
+        help="Include pull requests in LoC export",
     )
     options.add_url_arg(parser)
     options.add_branch_arg(parser)
@@ -262,7 +262,7 @@ def main() -> None:
             key_regexp=kwargs[options.KEY_REGEXP],
             branch_regexp=kwargs[options.BRANCH_REGEXP],
             topLevelOnly=kwargs["topLevelOnly"],
-            pullRequests=kwargs.get("pullRequests", False),
+            pull_requests=kwargs.get("pullRequests", False),
         )
         if len(objects_list) == 0:
             raise exceptions.SonarException(f"No object matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
