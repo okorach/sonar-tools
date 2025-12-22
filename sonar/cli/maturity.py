@@ -83,12 +83,13 @@ def __count_percentage(part: int, total: int) -> dict[str, float]:
 def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
     """Gets the maturity data for a project"""
     log.debug("Collecting maturity data for %s", project)
+    proj_measures = project.get_measures([QG_METRIC, OVERALL_LOC_METRIC, OVERALL_LINES_METRIC, NEW_CODE_LINES_METRIC])
     data = {
         "key": project.key,
-        QG: project.get_measure(QG_METRIC),
-        OVERALL_LOC_KEY: project.get_measure(OVERALL_LOC_METRIC),
-        OVERALL_LINES_KEY: project.get_measure(OVERALL_LINES_METRIC),
-        NEW_CODE_LINES_KEY: project.get_measure(NEW_CODE_LINES_METRIC),
+        QG: proj_measures[QG_METRIC].value,
+        OVERALL_LOC_KEY: proj_measures[OVERALL_LOC_METRIC].value,
+        OVERALL_LINES_KEY: proj_measures[OVERALL_LINES_METRIC].value,
+        NEW_CODE_LINES_KEY: proj_measures[NEW_CODE_LINES_METRIC].value,
         NEW_CODE_DAYS_KEY: util.age(project.new_code_start_date()),
         AGE_KEY: util.age(project.last_analysis(include_branches=True)),
         f"main_branch_{AGE_KEY}": util.age(project.main_branch().last_analysis()),
