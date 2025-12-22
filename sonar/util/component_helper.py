@@ -25,7 +25,7 @@ from sonar import platform, components, projects, applications, portfolios
 
 
 def get_components(
-    endpoint: platform.Platform, component_type: str, key_regexp: Optional[str] = None, branch_regexp: Optional[str] = None, **kwargs
+    endpoint: platform.Platform, component_type: str, key_regexp: Optional[str] = None, branch_regexp: Optional[str] = None, pullRequests: bool = False, **kwargs
 ) -> list[components.Component]:
     """Returns list of components that match the filters"""
     key_regexp = key_regexp or ".+"
@@ -39,4 +39,11 @@ def get_components(
         components = [p for p in projects.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
     if component_type != "portfolios" and branch_regexp:
         components = [b for comp in components for b in comp.branches().values() if re.match(rf"^{branch_regexp}$", b.name)]
+    # If pullRequests flag is set, include PRs for each project
+    if pullRequests and component_type in ("projects", "apps", "applications"):
+        pr_components = []
+        for comp in components:
+            if hasattr(comp, "pull_requests"):
+                pr_components.extend(comp.pull_requests().values())
+        components.extend(pr_components)
     return components
