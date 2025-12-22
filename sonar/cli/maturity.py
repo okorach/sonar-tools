@@ -274,26 +274,27 @@ def write_results(filename: str, data: dict[str, Any]) -> None:
 
 def get_maturity_data(project_list: list[projects.Project], threads: int) -> dict[str, Any]:
     """Gets project maturity data in multithreaded way"""
+    log.info("Collecting project maturity data on %d threads", threads)
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjMaturity") as executor:
         futures, futures_map = [], {}
         for proj in project_list:
             future = executor.submit(get_project_maturity_data, proj)
             futures.append(future)
             futures_map[future] = proj
-    i, nb_projects = 0, len(project_list)
-    maturity_data = {}
-    for future in concurrent.futures.as_completed(futures):
-        proj = futures_map[future]
-        try:
-            maturity_data[proj.key] = future.result(timeout=60)
-        except TimeoutError as e:
-            log.error(f"Getting maturity data for {str(proj)} timed out after 60 seconds for {str(future)}.")
-        except Exception as e:
-            traceback.print_exc()
-            log.error(f"Exception {str(e)} when collecting maturity data of {str(proj)}.")
-        i += 1
-        if i % 10 == 0 or i == nb_projects:
-            log.info("Collected maturity data for %d/%d projects (%d%%)", i, nb_projects, int(100 * i / nb_projects))
+        i, nb_projects = 0, len(project_list)
+        maturity_data = {}
+        for future in concurrent.futures.as_completed(futures):
+            proj = futures_map[future]
+            try:
+                maturity_data[proj.key] = future.result(timeout=60)
+            except TimeoutError as e:
+                log.error(f"Getting maturity data for {str(proj)} timed out after 60 seconds for {str(future)}.")
+            except Exception as e:
+                traceback.print_exc()
+                log.error(f"Exception {str(e)} when collecting maturity data of {str(proj)}.")
+            i += 1
+            if i % 10 == 0 or i == nb_projects:
+                log.info("Collected maturity data for %d/%d projects (%d%%)", i, nb_projects, int(100 * i / nb_projects))
     return dict(sorted(maturity_data.items()))
 
 
