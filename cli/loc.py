@@ -181,49 +181,26 @@ def __parse_args(desc: str) -> object:
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("json", "csv"))
-    parser.add_argument(
-        f"-{options.WITH_NAME_SHORT}",
-        f"--{options.WITH_NAME}",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Also list the project name on top of the project key",
-    )
-    parser.add_argument(
-        f"-{options.WITH_LAST_ANALYSIS_SHORT}",
-        f"--{options.WITH_LAST_ANALYSIS}",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Also list the last analysis date on top of nbr of LoC",
-    )
-    parser.add_argument(
-        f"--{options.WITH_TAGS}",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Also include project tags in export",
-    )
-    parser.add_argument(
-        f"-{options.PULL_REQUESTS_SHORT}",
-        f"--{options.PULL_REQUESTS}",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Include pull requests in LoC export",
-    )
+
+    args = [f"-{options.WITH_NAME_SHORT}", f"--{options.WITH_NAME}"]
+    options.add_optional_arg(parser, *args, action="store_true", help="Also list the project name on top of the project key")
+
+    args = [f"-{options.WITH_LAST_ANALYSIS_SHORT}", f"--{options.WITH_LAST_ANALYSIS}"]
+    options.add_optional_arg(parser, *args, action="store_true", help="Also list the last analysis date on top of nbr of LoC")
+
+    options.add_optional_arg(parser, f"--{options.WITH_TAGS}", action="store_true", help="Also include project tags in export")
+
+    args = [f"-{options.PULL_REQUESTS_SHORT}", f"--{options.PULL_REQUESTS}"]
+    options.add_optional_arg(parser, *args, action="store_true", help="Include pull requests in LoC export")
+
     options.add_url_arg(parser)
     options.add_branch_arg(parser)
     options.add_component_type_arg(parser)
-    parser.add_argument(
-        "--topLevelOnly",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Extracts only toplevel portfolios LoCs, not sub-portfolios",
-    )
-    args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
-    return args
+
+    help = "Extracts only toplevel portfolios LoCs, not sub-portfolios"
+    options.add_optional_arg(parser, "--topLevelOnly", action="store_true", help=help)
+
+    return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
 def __check_options(edition: str, kwargs: dict[str, str]) -> dict[str, str]:
