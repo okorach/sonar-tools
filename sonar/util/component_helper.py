@@ -47,6 +47,7 @@ def get_components(
     # If pull_requests flag is set, include PRs for each project
     if pull_requests and component_type == "projects":
         pr_components = []
-        pr_components += [p.pull_requests().values() for p in components]
+        for p in [p for p in components if isinstance(p, projects.Project)]:
+            pr_components += list(p.pull_requests().values())
         components += pr_components
     return components
