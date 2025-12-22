@@ -167,7 +167,7 @@ def __parser_args(desc: str) -> object:
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("csv", "json"))
-    parser = options.set_url_arg(parser)
+    parser = options.add_url_arg(parser)
     parser = options.add_thread_arg(parser, "project audit")
     parser = options.set_what(parser, what_list=WHAT_AUDITABLE, operation="audit")
     parser.add_argument("--sif", required=False, help="SIF file to audit when auditing SIF")
