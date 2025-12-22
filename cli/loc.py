@@ -39,7 +39,7 @@ TOOL_NAME = "sonar-loc"
 
 def __get_csv_header_list(**kwargs) -> list[str]:
     """Returns CSV header"""
-    arr = [f"# {kwargs[options.COMPONENT_TYPE][0:-1]} key", "branch or pr", "type"]
+    arr = [f"# {kwargs[options.COMPONENT_TYPE][0:-1]} key", "branch", "pr"]
     arr.append("ncloc")
     if kwargs[options.WITH_NAME]:
         arr.append(f"{kwargs[options.COMPONENT_TYPE][0:-1]} name")
@@ -74,7 +74,7 @@ def __get_csv_row(o: object, **kwargs) -> tuple[list[str], str]:
 
 
 def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
-    """Dumps LoC of passed list of objects (projects, branches or portfolios) as CSV"""
+    """Dumps LoC of passed list of objects (projects, apps or portfolios) as CSV"""
 
     if len(object_list) <= 0:
         log.warning("No objects with LoCs to dump, dump skipped")
@@ -104,7 +104,7 @@ def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
             log.info("%d objects dumped, still working...", nb_objects)
     total_projects = len(project_max_loc)
     total_loc = sum(project_max_loc.values())
-    log.info("%d projects (grouped) and %d LoCs in total (max per project)", total_projects, total_loc)
+    log.info("%d %s (grouped) and %d LoCs in total (max per project)", total_projects, obj_type, total_loc)
 
 
 def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
@@ -118,21 +118,16 @@ def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
     try:
         d["ncloc"] = o.loc()
         # Always fill branch: for project use 'main' or '', for branch use name, for PR use key
-        if is_branch:
-            d["branch"] = o.name
-        elif is_pr:
-            d["branch"] = getattr(o, "key", "")
-        else:
-            # Try to get main branch name if available, else empty string
-            d["branch"] = getattr(o, "main_branch_name", lambda: "main")()
+        d["branch"] = o.name if is_branch else ""
+        d["pr"] = o.key if is_pr else ""
         if kwargs[options.WITH_TAGS]:
             d["tags"] = util.list_to_csv(parent_o.get_tags())
         if kwargs[options.WITH_NAME]:
             d[f"{parent_type}Name"] = parent_o.name if (is_branch or is_pr) else o.name
         if kwargs[options.WITH_LAST_ANALYSIS]:
             d["lastAnalysis"] = ""
-            if o.last_analysis() is not None:
-                d["lastAnalysis"] = datetime.datetime.isoformat(o.last_analysis())
+            if (last_ana := o.last_analysis()) is not None:
+                d["lastAnalysis"] = datetime.datetime.isoformat(last_ana)
         if kwargs[options.WITH_URL]:
             d["url"] = o.url()
     except (ConnectionError, RequestException) as e:
