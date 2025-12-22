@@ -187,12 +187,10 @@ class Component(sq.SqObject):
 
         return json_data
 
-    def get_measures(self, metrics_list: types.KeyList) -> dict[str, any]:
+    def get_measures(self, metrics_list: types.KeyList) -> dict[str, measures.Measure]:
         """Retrieves a project list of measures
 
         :param list metrics_list: List of metrics to return
-        :return: List of measures of a projects
-        :rtype: dict
         """
         m = measures.get(self, metrics_list)
         if "ncloc" in m and m["ncloc"]:

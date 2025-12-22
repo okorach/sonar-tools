@@ -83,18 +83,23 @@ def __count_percentage(part: int, total: int) -> dict[str, float]:
 def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
     """Gets the maturity data for a project"""
     log.debug("Collecting maturity data for %s", project)
+    proj_measures = project.get_measures([QG_METRIC, OVERALL_LOC_METRIC, OVERALL_LINES_METRIC, NEW_CODE_LINES_METRIC])
+    if proj_measures[QG_METRIC] is None or proj_measures[QG_METRIC].value is None:
+        qg_status = "UNDEFINED"
+        if proj_measures[NEW_CODE_LINES_METRIC] is None or proj_measures[NEW_CODE_LINES_METRIC].value is None:
+            qg_status += "/NEVER_ANALYZED"
+    else:
+        qg_status = proj_measures[QG_METRIC].value
     data = {
         "key": project.key,
-        QG: project.get_measure(QG_METRIC),
-        OVERALL_LOC_KEY: project.get_measure(OVERALL_LOC_METRIC),
-        OVERALL_LINES_KEY: project.get_measure(OVERALL_LINES_METRIC),
-        NEW_CODE_LINES_KEY: project.get_measure(NEW_CODE_LINES_METRIC),
+        QG: qg_status,
+        OVERALL_LOC_KEY: None if not proj_measures[OVERALL_LOC_METRIC] else proj_measures[OVERALL_LOC_METRIC].value,
+        OVERALL_LINES_KEY: None if not proj_measures[OVERALL_LINES_METRIC] else proj_measures[OVERALL_LINES_METRIC].value,
+        NEW_CODE_LINES_KEY: None if not proj_measures[NEW_CODE_LINES_METRIC] else proj_measures[NEW_CODE_LINES_METRIC].value,
         NEW_CODE_DAYS_KEY: util.age(project.new_code_start_date()),
         AGE_KEY: util.age(project.last_analysis(include_branches=True)),
         f"main_branch_{AGE_KEY}": util.age(project.main_branch().last_analysis()),
     }
-    if data[QG] is None and data["lines"] is None:
-        data[QG] = "NONE/NEVER_ANALYZED"
     data[NEW_CODE_RATIO_KEY] = None if data[NEW_CODE_LINES_KEY] is None else __rounded(min(1.0, data[NEW_CODE_LINES_KEY] / data["lines"]))
 
     # Extract project analysis history
@@ -216,7 +221,7 @@ def compute_new_code_statistics(data: dict[str, Any]) -> dict[str, Any]:
     summary_data = {NEW_CODE_DAYS_KEY: {}, NEW_CODE_RATIO_KEY: {}}
 
     data_nc = {k: v for k, v in data.items() if v[NEW_CODE_LINES_KEY] is not None and v[NEW_CODE_DAYS_KEY] is not None}
-    log.info("Computes stats from %s", util.json_dump(data_nc))
+    log.debug("Computes stats from %s", util.json_dump(data_nc))
     # Filter out projects with no new node
     summary_data[NEW_CODE_DAYS_KEY]["no_new_code"] = __count_percentage(nbr_projects - len(data_nc), nbr_projects)
     summary_data[NEW_CODE_RATIO_KEY]["no_new_code"] = summary_data[NEW_CODE_DAYS_KEY]["no_new_code"]
@@ -269,27 +274,28 @@ def write_results(filename: str, data: dict[str, Any]) -> None:
 
 def get_maturity_data(project_list: list[projects.Project], threads: int) -> dict[str, Any]:
     """Gets project maturity data in multithreaded way"""
+    log.info("Collecting project maturity data on %d threads", threads)
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjMaturity") as executor:
         futures, futures_map = [], {}
         for proj in project_list:
             future = executor.submit(get_project_maturity_data, proj)
             futures.append(future)
             futures_map[future] = proj
-    i, nb_projects = 0, len(project_list)
-    maturity_data = {}
-    for future in concurrent.futures.as_completed(futures):
-        proj = futures_map[future]
-        try:
-            maturity_data[proj.key] = future.result(timeout=60)
-        except TimeoutError as e:
-            log.error(f"Getting maturity data for {str(proj)} timed out after 60 seconds for {str(future)}.")
-        except Exception as e:
-            traceback.print_exc()
-            log.error(f"Exception {str(e)} when collecting maturity data of {str(proj)}.")
-        i += 1
-        if i % 10 == 0 or i == nb_projects:
-            log.info("Collected maturity data for %d/%d projects (%d%%)", i, nb_projects, int(100 * i / nb_projects))
-    return maturity_data
+        i, nb_projects = 0, len(project_list)
+        maturity_data = {}
+        for future in concurrent.futures.as_completed(futures):
+            proj = futures_map[future]
+            try:
+                maturity_data[proj.key] = future.result(timeout=60)
+            except TimeoutError as e:
+                log.error(f"Getting maturity data for {str(proj)} timed out after 60 seconds for {str(future)}.")
+            except Exception as e:
+                traceback.print_exc()
+                log.error(f"Exception {str(e)} when collecting maturity data of {str(proj)}.")
+            i += 1
+            if i % 10 == 0 or i == nb_projects:
+                log.info("Collected maturity data for %d/%d projects (%d%%)", i, nb_projects, int(100 * i / nb_projects))
+    return dict(sorted(maturity_data.items()))
 
 
 def main() -> None:
