@@ -39,7 +39,7 @@ TOOL_NAME = "sonar-loc"
 
 def __get_csv_header_list(**kwargs) -> list[str]:
     """Returns CSV header"""
-    arr = [f"# {kwargs[options.COMPONENT_TYPE][0:-1]} key", "branch", "pr"]
+    arr = [f"# {kwargs[options.COMPONENT_TYPE][0:-1]} key", "type", "branch", "pr"]
     arr.append("ncloc")
     if kwargs[options.WITH_NAME]:
         arr.append(f"{kwargs[options.COMPONENT_TYPE][0:-1]} name")
@@ -56,16 +56,7 @@ def __get_csv_row(o: object, **kwargs) -> tuple[list[str], str]:
     """Returns CSV row of object"""
     d = __get_object_json_data(o, **kwargs)
     parent_type = kwargs[options.COMPONENT_TYPE][:-1]
-    # Always fill branch and type
-    branch = d.get("branch", "")
-    otype = type(o).__name__.lower()
-    if otype == "pullrequest":
-        row_type = "pr"
-    elif otype in ("branch", "applicationbranch"):
-        row_type = "branch"
-    else:
-        row_type = "project"
-    arr = [d[parent_type], branch, row_type]
+    arr = [d[parent_type], type(o).__name__.lower(), d["branch"], d["pr"]]
     # Add the rest of the columns as before
     for k in ("ncloc", f"{parent_type}Name", "lastAnalysis", "tags", "url"):
         if k in d:
