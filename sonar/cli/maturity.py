@@ -290,7 +290,7 @@ def get_maturity_data(project_list: list[projects.Project], threads: int) -> dic
         i += 1
         if i % 10 == 0 or i == nb_projects:
             log.info("Collected maturity data for %d/%d projects (%d%%)", i, nb_projects, int(100 * i / nb_projects))
-    return maturity_data
+    return dict(sorted(maturity_data.items()))
 
 
 def main() -> None:
