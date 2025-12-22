@@ -108,6 +108,17 @@ def test_loc_branches(csv_file: Generator[str]) -> None:
     assert tutil.csv_col_match(csv_file, "branch", r"^[^\s]+$")
 
 
+def test_loc_pull_requests(csv_file: Generator[str]) -> None:
+    """test_loc_pull_requests"""
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.PULL_REQUESTS} --{opt.WITH_TAGS}"
+    if tutil.SQ.edition() == c.CE:
+        assert tutil.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
+        return
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.csv_col_int(csv_file, "pr")
+    assert tutil.csv_col_is_value(csv_file, "type", "pullrequst")
+
+
 def test_loc_branches_json(json_file: Generator[str]) -> None:
     """test_loc"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {json_file} {ALL_OPTIONS} --{opt.WITH_TAGS}"
