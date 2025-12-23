@@ -242,8 +242,8 @@ def add_optional_arg(parser: ArgumentParser, *args, **kwargs: Any) -> ArgumentPa
 def add_thread_arg(parser: ArgumentParser, action: str, default_value=8) -> ArgumentParser:
     """Adds the threads argument for CLI"""
     args = [f"--{NBR_THREADS}"]
-    help = f"Define number of threads for {action}, default {default_value}"
-    return add_optional_arg(parser, *args, type=int, default=default_value, help=help)
+    help_str = f"Define number of threads for {action}, default {default_value}"
+    return add_optional_arg(parser, *args, type=int, default=default_value, help=help_str)
 
 
 def add_branch_arg(parser: ArgumentParser) -> ArgumentParser:
@@ -285,14 +285,14 @@ def set_common_args(desc: str) -> ArgumentParser:
     """Parses options common to all sonar-tools scripts"""
     parser = ArgumentParser(description=desc)
     args = [f"-{TOKEN_SHORT}", f"--{TOKEN}"]
-    help = """Token to authenticate to the source SonarQube, default is environment variable $SONAR_TOKEN
+    help_str = """Token to authenticate to the source SonarQube, default is environment variable $SONAR_TOKEN
         - Unauthenticated usage is not possible"""
-    parser = add_optional_arg(parser, *args, default=os.getenv("SONAR_TOKEN", None), help=help)
+    parser = add_optional_arg(parser, *args, default=os.getenv("SONAR_TOKEN", None), help=help_str)
 
     args = [f"-{URL_SHORT}", f"--{URL}"]
-    help = """Root URL of the source SonarQube Server or Cloud platform,
+    help_str = """Root URL of the source SonarQube Server or Cloud platform,
         default is environment variable $SONAR_HOST_URL or http://localhost:9000 if not set"""
-    parser = add_optional_arg(parser, *args, help=help, default=os.getenv("SONAR_HOST_URL", "http://localhost:9000"))
+    parser = add_optional_arg(parser, *args, help=help_str, default=os.getenv("SONAR_HOST_URL", "http://localhost:9000"))
 
     args = [f"-{ORG_SHORT}", f"--{ORG}"]
     parser = add_optional_arg(parser, *args, help="Organization when using sonar-tools with SonarQube Cloud")
@@ -342,12 +342,12 @@ def set_target_sonar_args(parser: ArgumentParser) -> ArgumentParser:
     parser = add_optional_arg(parser, *args, help="Root URL of the target platform when using sonar-findings-sync")
 
     args = ["-{TOKEN_TARGET_SHORT}", f"--{TOKEN_TARGET}"]
-    help = "Token of target platform when using sonar-findings-sync - Unauthenticated usage is not possible"
-    parser = add_optional_arg(parser, *args, help=help)
+    help_str = "Token of target platform when using sonar-findings-sync - Unauthenticated usage is not possible"
+    parser = add_optional_arg(parser, *args, help=help_str)
 
     args = [f"-{ORG_TARGET_SHORT}", f"--{ORG_TARGET}"]
-    help = "Organization when using sonar-findings-sync with SonarQube Cloud as target platform"
-    parser = add_optional_arg(parser, *args, help=help)
+    help_str = "Organization when using sonar-findings-sync with SonarQube Cloud as target platform"
+    parser = add_optional_arg(parser, *args, help=help_str)
     return parser
 
 
@@ -357,12 +357,12 @@ def set_output_file_args(parser: ArgumentParser, help_str: Optional[str] = None,
     parser.add_argument(f"-{REPORT_FILE_SHORT}", f"--{REPORT_FILE}", required=False, default=None, help=help_str)
     if len(allowed_formats) > 1:
         args = [f"--{FORMAT}"]
-        help = "Output format for generated report.\nIf not specified, it is the output file extension if json, csv or yaml, then csv by default"
-        parser = add_optional_arg(parser, *args, help=help)
+        help_str = "Output format for generated report.\nIf not specified, it is the output file extension if json, csv or yaml, then csv by default"
+        parser = add_optional_arg(parser, *args, help=help_str)
     if "csv" in allowed_formats:
         args = [f"--{CSV_SEPARATOR}"]
-        help = f"CSV separator (for CSV files), default '{__DEFAULT_CSV_SEPARATOR}'"
-        parser = add_optional_arg(parser, *args, default=__DEFAULT_CSV_SEPARATOR, help=help)
+        help_str = f"CSV separator (for CSV files), default '{__DEFAULT_CSV_SEPARATOR}'"
+        parser = add_optional_arg(parser, *args, default=__DEFAULT_CSV_SEPARATOR, help=help_str)
     return parser
 
 

@@ -183,8 +183,8 @@ def __parse_args(desc: str) -> object:
     options.add_branch_arg(parser)
     options.add_component_type_arg(parser)
 
-    help = "Extracts only toplevel portfolios LoCs, not sub-portfolios"
-    options.add_optional_arg(parser, "--topLevelOnly", action="store_true", help=help)
+    help_str = "Extracts only toplevel portfolios LoCs, not sub-portfolios"
+    options.add_optional_arg(parser, "--topLevelOnly", action="store_true", help=help_str)
 
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 

@@ -187,14 +187,14 @@ def __parser_args(desc: str) -> object:
         help="Pass audit configuration settings on command line (-D<setting>=<value>)",
     )
 
-    help = "Report only audit problems with the given severities (comma separate values LOW, MEDIUM, HIGH, CRITICAL)"
-    options.add_optional_arg(parser, f"--{options.SEVERITIES}", help=help)
+    help_str = "Report only audit problems with the given severities (comma separate values LOW, MEDIUM, HIGH, CRITICAL)"
+    options.add_optional_arg(parser, f"--{options.SEVERITIES}", help=help_str)
 
-    help = ("Report only audit problems of the given comma separated problem types",)
-    options.add_optional_arg(parser, f"--{options.TYPES}", help=help)
+    help_str = ("Report only audit problems of the given comma separated problem types",)
+    options.add_optional_arg(parser, f"--{options.TYPES}", help=help_str)
 
-    help = "Report only audit problems whose type key matches the given regexp"
-    options.add_optional_arg(parser, f"--{PROBLEM_KEYS}", help=help)
+    help_str = "Report only audit problems whose type key matches the given regexp"
+    options.add_optional_arg(parser, f"--{PROBLEM_KEYS}", help=help_str)
 
     args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME, verify_token=False)
     if args.sif is None and args.config is None:
