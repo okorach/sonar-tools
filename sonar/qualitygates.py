@@ -44,6 +44,9 @@ from sonar.util import common_json_helper
 __MAX_ISSUES_SHOULD_BE_ZERO = "Any numeric threshold on number of issues should be 0 or should be removed from QG conditions"
 __THRESHOLD_ON_OVERALL_CODE = "Threshold on overall code should not be too strict or passing the QG will often be impossible"
 __RATING_A = "Any rating other than A would let vulnerabilities slip through in new code"
+__SCA_THRESHOLD = "SCA severity threshold on overall code should not be too low"
+
+SCA_HIGH = 19
 
 GOOD_QG_CONDITIONS = {
     "new_reliability_rating": (1, 1, __RATING_A),
@@ -81,11 +84,13 @@ GOOD_QG_CONDITIONS = {
     "reliability_rating": (4, 4, __THRESHOLD_ON_OVERALL_CODE),
     "software_quality_security_rating": (3, 4, __THRESHOLD_ON_OVERALL_CODE),
     "software_quality_reliability_rating": (3, 4, __THRESHOLD_ON_OVERALL_CODE),
-    "sca_severity_licensing": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
-    "sca_severity_vulnerability": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
-    "new_sca_severity_licensing": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
-    "new_sca_severity_any_issue": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
-    "new_sca_severity_vulnerability": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "sca_severity_any_issue": (SCA_HIGH, SCA_HIGH, __SCA_THRESHOLD),
+    "sca_rating_any_issue": (3, 5, __SCA_THRESHOLD),
+    "sca_severity_licensing": (SCA_HIGH, SCA_HIGH, __SCA_THRESHOLD),
+    "sca_severity_vulnerability": (SCA_HIGH, SCA_HIGH, __SCA_THRESHOLD),
+    "new_sca_severity_licensing": (0, 1000, ""),
+    "new_sca_severity_any_issue": (0, 1000, ""),
+    "new_sca_severity_vulnerability": (0, 1000, ""),
     "blocker_violations": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
     "critical_violations": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
     "software_quality_blocker_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
@@ -534,7 +539,7 @@ def _encode_condition(cond: dict[str, str]) -> str:
         op = "<="
     if "rating" in metric:
         val = measures.get_rating_letter(val)
-    elif metric.startswith("sca_severity") and f"{val}" == "19":
+    elif metric.startswith("sca_severity") and f"{val}" == f"{SCA_HIGH}":
         val = "High"
     if any(d in metric for d in _PERCENTAGE_METRICS):
         val = f"{val}%"
