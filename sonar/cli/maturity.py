@@ -44,6 +44,12 @@ AGE_KEY = "last_analysis_age"
 NBR_OF_ANALYSES_KEY = "number_of_analyses"
 ANALYSES_ANY_BRANCH_KEY = f"{NBR_OF_ANALYSES_KEY}_on_any_branch"
 ANALYSES_MAIN_BRANCH_KEY = f"{NBR_OF_ANALYSES_KEY}_on_main_branch"
+NBR_OF_BRANCHES_KEY = "number_of_branches"
+
+OVERALL_MATURITY_KEY = "overall_maturity_level"
+ANALYSIS_MATURITY_KEY = "analysis_maturity_level"
+NEW_CODE_MATURITY_KEY = "new_code_maturity_level"
+QG_ENFORCEMENT_MATURITY_KEY = "quality_gate_enforcement_maturity_level"
 
 OVERALL_LOC_KEY = "lines_of_code"
 OVERALL_LOC_METRIC = "ncloc"
@@ -99,15 +105,17 @@ def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
         NEW_CODE_DAYS_KEY: util.age(project.new_code_start_date()),
         AGE_KEY: util.age(project.last_analysis(include_branches=True)),
         f"main_branch_{AGE_KEY}": util.age(project.main_branch().last_analysis()),
+        NBR_OF_BRANCHES_KEY: len(project.branches()),
     }
     data[NEW_CODE_RATIO_KEY] = None if data[NEW_CODE_LINES_KEY] is None else __rounded(min(1.0, data[NEW_CODE_LINES_KEY] / data["lines"]))
+    data["detectedCi"] = project.ci()
 
     # Extract project analysis history
     segments = [7, 30, 90]
     history = [util.age(util.string_to_date(d["date"])) for d in project.get_analyses()]
     log.debug("%s history of analysis = %s", project, history)
     section = ANALYSES_MAIN_BRANCH_KEY
-    data[section] = {}
+    data[section] = {"total": len(history)}
     for limit in segments:
         data[section][f"{limit}_days_or_less"] = sum(1 for v in history if v <= limit)
     data[section][f"more_than_{segments[-1]}_days"] = sum(1 for v in history if v > segments[-1])
@@ -116,7 +124,7 @@ def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
     for branch in proj_branches:
         history += [util.age(util.string_to_date(d["date"])) for d in branch.get_analyses()]
     section = ANALYSES_ANY_BRANCH_KEY
-    data[section] = {}
+    data[section] = {"total": len(history)}
     for limit in [7, 30, 90]:
         data[section][f"{limit}_days_or_less"] = sum(1 for v in history if v <= limit)
     data[section][f"more_than_{segments[-1]}_days"] = sum(1 for v in history if v > segments[-1])
@@ -126,6 +134,10 @@ def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
     # extract pul requests stats
     prs = project.pull_requests().values()
     data["pull_requests"] = {pr.key: {QG: pr.get_measure(QG_METRIC), AGE_KEY: util.age(pr.last_analysis())} for pr in prs}
+
+    data["projectType"] = project.get_type()
+    data["scanner"] = project.scanner()
+
     return data
 
 
@@ -215,6 +227,67 @@ def compute_summary_qg(data: dict[str, Any]) -> dict[str, Any]:
     return summary_data
 
 
+def _count_failed_prs(project_data: dict[str, Any]) -> int:
+    """Counts the number of failed PRs from PR stats"""
+    pr_list = project_data.get("pull_requests", {}).values()
+    return sum(1 for pr in pr_list if pr.get(AGE_KEY) > 7 and pr.get(QG) == "ERROR")
+
+
+def compute_project_analysis_maturity(data: dict[str, Any]) -> str:
+    """Computes the maturity level of a project"""
+    for proj in data.values():
+        if proj[AGE_KEY] is None:
+            analysis_level = 0
+        elif proj[AGE_KEY] > 30 or proj["detectedCi"] != "undetected":
+            analysis_level = 1
+        elif proj[AGE_KEY] > 7:
+            analysis_level = 2
+        elif proj[ANALYSES_ANY_BRANCH_KEY]["total"] > 50:
+            analysis_level = 3
+        if analysis_level == 3:
+            analysis_level = 4 if _count_failed_prs(proj) == 0 else 3
+        if proj["projectType"] != "UNKNOWN" and proj["scanner"] == proj["projectType"]:
+            analysis_level = min(analysis_level + 1, 5)
+        proj[ANALYSIS_MATURITY_KEY] = analysis_level
+
+
+def compute_project_new_code_maturity_level(data: dict[str, Any]) -> str:
+    """Computes the maturity level of a project"""
+    for proj in data.values():
+        maturity = 0
+        if proj[NEW_CODE_LINES_KEY] is not None:
+            if proj[NEW_CODE_LINES_KEY] > 0:
+                maturity += 1
+            if proj[NEW_CODE_RATIO_KEY] < 0.05:
+                maturity += 1
+            if proj[NEW_CODE_LINES_KEY] < 10000:
+                maturity += 1
+            if proj[NEW_CODE_DAYS_KEY] is not None and proj[NEW_CODE_DAYS_KEY] < 60:
+                maturity += 1
+        proj[NEW_CODE_MATURITY_KEY] = maturity
+
+
+def compute_quality_gate_enforcement_maturity(data: dict[str, Any]) -> str:
+    """Computes the maturity level of a project concerning quality gate enforcement on PRs"""
+    for proj in data.values():
+        log.debug("Computing new code maturity for project %s", proj)
+        pr_list = data.get("pull_requests", {}).values()
+        pr_count = sum(1 for pr in pr_list if pr.get(AGE_KEY) > 7 and pr.get(QG) == "ERROR")
+        fail_pr_count = sum(1 for pr in pr_list if pr.get(AGE_KEY) > 7 and pr.get(QG) == "ERROR")
+        maturity = 0
+        if pr_count > 10 and fail_pr_count == 0:
+            maturity = 4
+        elif pr_count > 5 and fail_pr_count == 0:
+            maturity = 3
+        elif pr_count > 0 and fail_pr_count / pr_count < 0.2:
+            maturity = 2
+        elif pr_count > 0 and fail_pr_count / pr_count < 0.5:
+            maturity = 1
+        if proj[QG] == "OK":
+            maturity = min(maturity + 1, 5)
+        proj[QG_ENFORCEMENT_MATURITY_KEY] = maturity
+
+
 def compute_new_code_statistics(data: dict[str, Any]) -> dict[str, Any]:
     """Computes statistics on new code"""
     nbr_projects = len(data)
@@ -298,6 +371,37 @@ def get_maturity_data(project_list: list[projects.Project], threads: int) -> dic
     return dict(sorted(maturity_data.items()))
 
 
+def compute_global_maturity_level_statistics(data: dict[str, Any]) -> dict[str, Any]:
+    """Computes statistics on global maturity levels"""
+    nbr_projects = len(data)
+    summary_data = {
+        ANALYSIS_MATURITY_KEY: __rounded(sum(proj[ANALYSIS_MATURITY_KEY] for proj in data.values()) / nbr_projects),
+        NEW_CODE_MATURITY_KEY: __rounded(sum(proj[NEW_CODE_MATURITY_KEY] for proj in data.values()) / nbr_projects),
+        QG_ENFORCEMENT_MATURITY_KEY: __rounded(sum(proj[QG_ENFORCEMENT_MATURITY_KEY] for proj in data.values()) / nbr_projects),
+    }
+    summary_data[OVERALL_MATURITY_KEY] = __rounded(sum(summary_data.values()) / 3)
+    summary_data[f"{ANALYSIS_MATURITY_KEY}_distribution"] = {}
+    summary_data[f"{NEW_CODE_MATURITY_KEY}_distribution"] = {}
+    summary_data[f"{QG_ENFORCEMENT_MATURITY_KEY}_distribution"] = {}
+    summary_data[f"{OVERALL_MATURITY_KEY}_distribution"] = {}
+
+    for rating in range(6):
+        summary_data[f"{ANALYSIS_MATURITY_KEY}_distribution"] |= {rating: sum(1 for p in data.values() if p[ANALYSIS_MATURITY_KEY] == rating)}
+        summary_data[f"{NEW_CODE_MATURITY_KEY}_distribution"] |= {rating: sum(1 for p in data.values() if p[NEW_CODE_MATURITY_KEY] == rating)}
+        summary_data[f"{QG_ENFORCEMENT_MATURITY_KEY}_distribution"] |= {
+            rating: sum(1 for p in data.values() if p[QG_ENFORCEMENT_MATURITY_KEY] == rating)
+        }
+        summary_data[f"{OVERALL_MATURITY_KEY}_distribution"] |= {
+            rating: sum(
+                1
+                for p in data.values()
+                if rating * 3 <= p[ANALYSIS_MATURITY_KEY] + p[NEW_CODE_MATURITY_KEY] + p[QG_ENFORCEMENT_MATURITY_KEY] < (rating + 1) * 3
+            )
+        }
+
+    return summary_data
+
+
 def main() -> None:
     """Entry point for sonar-maturity"""
     start_time = util.start_clock()
@@ -319,11 +423,26 @@ def main() -> None:
 
         summary_data: dict[str, Any] = {}
         summary_data["total_projects"] = len(maturity_data)
+        summary_data["quality_gate_enforcement_statistics"] = compute_pr_statistics(maturity_data)
+        compute_project_analysis_maturity(maturity_data)
+        compute_project_new_code_maturity_level(maturity_data)
+        compute_quality_gate_enforcement_maturity(maturity_data)
+        summary_data["global_maturity_level_statistics"] = compute_global_maturity_level_statistics(maturity_data)
         summary_data["quality_gate_project_statistics"] = compute_summary_qg(maturity_data)
         summary_data["last_analysis_statistics"] = compute_summary_age(maturity_data)
-        summary_data["quality_gate_enforcement_statistics"] = compute_pr_statistics(maturity_data)
         summary_data["new_code_statistics"] = compute_new_code_statistics(maturity_data)
         summary_data["frequency_statistics"] = compute_analysis_frequency_statistics(maturity_data)
+
+        summary_data = util.order_dict(
+            summary_data,
+            "total_projects",
+            "global_maturity_level_statistics",
+            "frequency_statistics",
+            "quality_gate_enforcement_statistics",
+            "new_code_statistics",
+            "quality_gate_project_statistics",
+            "last_analysis_statistics",
+        )
         write_results(kwargs.get(options.REPORT_FILE), {"platform": sq.basics(), "summary": summary_data, "details": maturity_data})
     except exceptions.SonarException as e:
         chelp.clear_cache_and_exit(e.errcode, e.message)
