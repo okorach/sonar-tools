@@ -25,6 +25,10 @@
    "globalSettings": {
       "generalSettings": [
          {
+            "key": "newCodePeriod",
+            "value": "PREVIOUS_VERSION"
+         },
+         {
             "key": "provisioning.github.project.visibility.enabled",
             "defaultValue": true
          },
@@ -132,23 +136,11 @@
             "defaultValue": false
          },
          {
-            "key": "sonar.dre.apex.activate",
-            "defaultValue": true
-         },
-         {
             "key": "sonar.dre.baselineTimeout",
             "defaultValue": 90000
          },
          {
             "key": "sonar.dre.enabled",
-            "defaultValue": true
-         },
-         {
-            "key": "sonar.dre.go.activate",
-            "defaultValue": true
-         },
-         {
-            "key": "sonar.dre.ruby.activate",
             "defaultValue": true
          },
          {
@@ -264,17 +256,6 @@
          {
             "key": "sonar.scm.disabled",
             "defaultValue": false
-         },
-         {
-            "key": "sonar.shell.activate",
-            "defaultValue": true
-         },
-         {
-            "key": "sonar.shell.file.suffixes",
-            "defaultValue": [
-               ".bash",
-               ".sh"
-            ]
          },
          {
             "key": "sonar.technicalDebt.developmentCost",
@@ -546,6 +527,10 @@
                {
                   "key": "sonar.apex.pmd.reportPaths",
                   "defaultValue": []
+               },
+               {
+                  "key": "sonar.dre.apex.activate",
+                  "defaultValue": true
                }
             ]
          },
@@ -869,6 +854,10 @@
          {
             "language": "go",
             "settings": [
+               {
+                  "key": "sonar.dre.go.activate",
+                  "defaultValue": true
+               },
                {
                   "key": "sonar.go.coverage.reportPaths",
                   "defaultValue": []
@@ -1352,6 +1341,10 @@
             "language": "ruby",
             "settings": [
                {
+                  "key": "sonar.dre.ruby.activate",
+                  "defaultValue": true
+               },
+               {
                   "key": "sonar.ruby.coverage.reportPaths",
                   "defaultValue": [
                      "coverage/.resultset.json"
@@ -1430,6 +1423,22 @@
                {
                   "key": "sonar.scala.scapegoat.reportPaths",
                   "defaultValue": []
+               }
+            ]
+         },
+         {
+            "language": "shell",
+            "settings": [
+               {
+                  "key": "sonar.shell.activate",
+                  "defaultValue": true
+               },
+               {
+                  "key": "sonar.shell.file.suffixes",
+                  "defaultValue": [
+                     ".bash",
+                     ".sh"
+                  ]
                }
             ]
          },
@@ -2174,12 +2183,12 @@
             },
             {
                "name": "Sonar MISRA C++:2023 Compliance",
-               "isBuiltIn": true
+               "isBuiltIn": true,
+               "isDefault": true
             },
             {
                "name": "Sonar way",
-               "isBuiltIn": true,
-               "isDefault": true
+               "isBuiltIn": true
             }
          ]
       },
@@ -6932,65 +6941,6 @@
          ]
       },
       {
-         "key": "demo:autoconfig:carbon",
-         "name": "demo:autoconfig:carbon",
-         "visibility": "private",
-         "branches": [
-            {
-               "name": "develop",
-               "isMain": true
-            }
-         ],
-         "permissions": [
-            {
-               "group": "developers",
-               "permissions": [
-                  "codeviewer",
-                  "user"
-               ]
-            },
-            {
-               "group": "project-admins",
-               "permissions": [
-                  "admin",
-                  "codeviewer",
-                  "user"
-               ]
-            },
-            {
-               "group": "security-auditors",
-               "permissions": [
-                  "codeviewer",
-                  "issueadmin",
-                  "securityhotspotadmin",
-                  "user"
-               ]
-            },
-            {
-               "group": "sonar-administrators",
-               "permissions": [
-                  "admin",
-                  "codeviewer",
-                  "user"
-               ]
-            },
-            {
-               "group": "sonar-users",
-               "permissions": [
-                  "user"
-               ]
-            },
-            {
-               "group": "tech-leads",
-               "permissions": [
-                  "codeviewer",
-                  "issueadmin",
-                  "user"
-               ]
-            }
-         ]
-      },
-      {
          "key": "demo:coverage",
          "name": "demo:coverage",
          "visibility": "private",
@@ -8639,6 +8589,12 @@
                "value": false
             },
             {
+               "key": "sonar.cpd.exclusions",
+               "value": [
+                  "**/*"
+               ]
+            },
+            {
                "key": "sonar.issue.ignore.allfile",
                "value": [
                   {
@@ -9598,59 +9554,6 @@
       {
          "key": "training:external-issues",
          "name": "Training: External issues import",
-         "visibility": "private",
-         "permissions": [
-            {
-               "group": "developers",
-               "permissions": [
-                  "codeviewer",
-                  "user"
-               ]
-            },
-            {
-               "group": "project-admins",
-               "permissions": [
-                  "admin",
-                  "codeviewer",
-                  "user"
-               ]
-            },
-            {
-               "group": "security-auditors",
-               "permissions": [
-                  "codeviewer",
-                  "issueadmin",
-                  "securityhotspotadmin",
-                  "user"
-               ]
-            },
-            {
-               "group": "sonar-administrators",
-               "permissions": [
-                  "admin",
-                  "codeviewer",
-                  "user"
-               ]
-            },
-            {
-               "group": "sonar-users",
-               "permissions": [
-                  "user"
-               ]
-            },
-            {
-               "group": "tech-leads",
-               "permissions": [
-                  "codeviewer",
-                  "issueadmin",
-                  "user"
-               ]
-            }
-         ]
-      },
-      {
-         "key": "training:security",
-         "name": "Vulnerable Java App",
          "visibility": "private",
          "permissions": [
             {
@@ -10664,27 +10567,6 @@
                {
                   "key": "regularExpression",
                   "value": "(fuck|shit|merde)"
-               }
-            ],
-            "language": "java",
-            "templateKey": "java:S124"
-         },
-         {
-            "key": "java:rudeness_is_bad",
-            "severity": "major",
-            "impacts": {
-               "security": "medium",
-               "maintainability": "medium"
-            },
-            "description": "Behave yourself in your code",
-            "params": [
-               {
-                  "key": "message",
-                  "value": "Hey don't be rude!"
-               },
-               {
-                  "key": "regularExpression",
-                  "value": "(f-word|s-word)"
                }
             ],
             "language": "java",
