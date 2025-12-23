@@ -276,7 +276,7 @@ def compute_quality_gate_enforcement_maturity(data: dict[str, Any]) -> str:
             maturity = 2
         elif pr_count > 0 and fail_pr_count / pr_count < 0.5:
             maturity = 1
-        if data[QG] == "OK":
+        if proj[QG] == "OK":
             maturity = min(maturity + 1, 5)
         proj[QG_ENFORCEMENT_MATURITY_KEY] = maturity
 
@@ -388,6 +388,7 @@ def main() -> None:
         summary_data["quality_gate_enforcement_statistics"] = compute_pr_statistics(maturity_data)
         compute_project_maturity_level(maturity_data)
         compute_project_new_code_maturity_level(maturity_data)
+        compute_quality_gate_enforcement_maturity(maturity_data)
         summary_data["quality_gate_project_statistics"] = compute_summary_qg(maturity_data)
         summary_data["last_analysis_statistics"] = compute_summary_age(maturity_data)
         summary_data["new_code_statistics"] = compute_new_code_statistics(maturity_data)
