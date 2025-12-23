@@ -395,13 +395,14 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     results["number_of_custom_quality_profiles"] = {}
     errcount = 0
     for lang in languages.get_list(endpoint).keys():
-        if (count := sum(1 for p in qp_list if p.language() == lang)) > 0:
-            results[f"number_of_custom_quality_profiles"][lang] = count
-            if count > 7:
-                errcount += 1
-    results["number_of_languages_with_too_many_quality+profiles"] = errcount
-    results["number_of_incorrect_quality_profiles"] = sum(1 for p in qp_list if len(p.audit()) > 0)
-    results["ratio_of_incorrect_quality_profiles"] = __rounded(results["number_of_incorrect_quality_profiles"] / len(qp_list)) if len(qp_list) > 0 else 0.0
+        if (count := sum(1 for p in qp_list if p.language() == lang)) == 0:
+            continue
+        results[f"number_of_custom_quality_profiles"][lang] = count
+        if count > 7:
+            errcount += 1
+    results["number_of_languages_with_too_many_quality_profiles"] = errcount
+    results["number_of_quality_profiles_with_anomalies"] = sum(1 for p in qp_list if len(p.audit()) > 0)
+    results["ratio_of_quality_profiles_with_anomalies"] = __rounded(results["number_of_quality_profiles_with_anomalies"] / len(qp_list)) if len(qp_list) > 0 else 0.0
     return results
 
 
