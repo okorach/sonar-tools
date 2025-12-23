@@ -32,7 +32,10 @@ from sonar import platform
 from sonar.util import common_helper as chelp
 from sonar.util import component_helper
 from sonar import errcodes
-from sonar import projects
+from sonar import projects, portfolios as pf
+from sonar import qualitygates as qg
+from sonar import qualityprofiles as qp
+from sonar import languages
 from sonar import logging as log
 
 TOOL_NAME = "sonar-maturity"
@@ -371,6 +374,40 @@ def get_maturity_data(project_list: list[projects.Project], threads: int) -> dic
     return dict(sorted(maturity_data.items()))
 
 
+def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
+    """Gets governance maturity data"""
+    portfolio_count = pf.count(endpoint)
+    project_count = projects.count(endpoint)
+    ratio = project_count / portfolio_count if portfolio_count > 0 else None
+
+    qg_list = [q for q in qg.get_list(endpoint) if not q.is_built_in()]
+
+    results = {
+        "number_of_portfolios": portfolio_count,
+        "ratio_of_projects_per_portfolio": __rounded(ratio),
+        "number_of_custom_quality_gates": len(qg_list),
+        "number_of_incorrect_quality_gates": sum(1 for q in qg_list if len(q.audit_conditions()) > 0),
+    }
+    results["ratio_of_incorrect_quality_gates"] = __rounded(results["number_of_incorrect_quality_gates"] / len(qg_list)) if len(qg_list) > 0 else 0.0
+
+    qp_list = [p for p in qp.get_list(endpoint) if not p.is_built_in()]
+    # We should count the nbr of custom profiles per language
+    results["number_of_custom_quality_profiles"] = {}
+    errcount = 0
+    for lang in languages.get_list(endpoint).keys():
+        if (count := sum(1 for p in qp_list if p.language() == lang)) == 0:
+            continue
+        results["number_of_custom_quality_profiles"][lang] = count
+        if count > 7:
+            errcount += 1
+    results["number_of_languages_with_too_many_quality_profiles"] = errcount
+    results["number_of_quality_profiles_with_anomalies"] = sum(1 for p in qp_list if len(p.audit()) > 0)
+    results["ratio_of_quality_profiles_with_anomalies"] = (
+        __rounded(results["number_of_quality_profiles_with_anomalies"] / len(qp_list)) if len(qp_list) > 0 else 0.0
+    )
+    return results
+
+
 def compute_global_maturity_level_statistics(data: dict[str, Any]) -> dict[str, Any]:
     """Computes statistics on global maturity levels"""
     nbr_projects = len(data)
@@ -421,12 +458,12 @@ def main() -> None:
 
         maturity_data = get_maturity_data(project_list, threads=kwargs[options.NBR_THREADS])
 
-        summary_data: dict[str, Any] = {}
-        summary_data["total_projects"] = len(maturity_data)
+        summary_data: dict[str, Any] = {"total_projects": len(maturity_data)}
         summary_data["quality_gate_enforcement_statistics"] = compute_pr_statistics(maturity_data)
         compute_project_analysis_maturity(maturity_data)
         compute_project_new_code_maturity_level(maturity_data)
         compute_quality_gate_enforcement_maturity(maturity_data)
+        summary_data["governance_maturity_statistics"] = get_governance_maturity_data(sq)
         summary_data["global_maturity_level_statistics"] = compute_global_maturity_level_statistics(maturity_data)
         summary_data["quality_gate_project_statistics"] = compute_summary_qg(maturity_data)
         summary_data["last_analysis_statistics"] = compute_summary_age(maturity_data)
@@ -437,6 +474,7 @@ def main() -> None:
             summary_data,
             "total_projects",
             "global_maturity_level_statistics",
+            "governance_maturity_statistics",
             "frequency_statistics",
             "quality_gate_enforcement_statistics",
             "new_code_statistics",

@@ -617,6 +617,45 @@ class QualityProfile(sq.SqObject):
         """
         return self.permissions().set(perms)
 
+    def audit_too_few_rules(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
+        """Audits a quality profile that woudl have too few rules
+
+        :param dict audit_settings: Options of what to audit and thresholds to raise problems
+        :return: A problem if the quality profile has too few rules, None otherwise
+        """
+        if self.is_built_in:
+            return []
+        total_rules = rules.count(endpoint=self.endpoint, languages=self.language)
+        if self.nbr_rules < int(total_rules * audit_settings.get("audit.qualityProfiles.minNumberOfRules", 0.5)):
+            return [Problem(get_rule(RuleId.QP_TOO_FEW_RULES), self, str(self), self.nbr_rules, total_rules)]
+        return []
+
+    def audit_not_used(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
+        """Audits whether a QP is used, raise problem if not used, or last use date is more than 60 days"""
+        age = util.age(self.last_use(), rounded=True)
+        if self.project_count == 0 or age is None:
+            return [Problem(get_rule(RuleId.QP_NOT_USED), self, str(self))]
+        elif age > audit_settings.get("audit.qualityProfiles.maxUnusedAge", 60):
+            rule = get_rule(RuleId.QP_LAST_USED_DATE)
+            return [Problem(rule, self, str(self), age)]
+        return []
+
+    def audit_last_change_date(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
+        """Audits if a QP is changed sufficiently frequently, raise problem if not"""
+        if (age := util.age(self.last_update(), rounded=True)) > audit_settings.get("audit.qualityProfiles.maxLastChangeAge", 180):
+            return [Problem(get_rule(RuleId.QP_LAST_CHANGE_DATE), self, str(self), age)]
+        return []
+
+    def audit_deprecated_rules(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
+        """Audits a quality profile for deprecated rules"""
+        if audit_settings.get("audit.qualityProfiles.checkDeprecatedRules", True):
+            max_deprecated_rules = 0
+            if (parent_qp := self.built_in_parent()) is not None:
+                max_deprecated_rules = parent_qp.nbr_deprecated_rules
+            if self.nbr_deprecated_rules > max_deprecated_rules:
+                return [Problem(get_rule(RuleId.QP_USE_DEPRECATED_RULES), self, str(self), self.nbr_deprecated_rules)]
+        return []
+
     def audit(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
         """Audits a quality profile and return list of problems found
 
@@ -629,28 +668,10 @@ class QualityProfile(sq.SqObject):
             return []
 
         log.debug("Auditing %s (key '%s')", str(self), self.key)
-        problems = []
-        age = util.age(self.last_update(), rounded=True)
-        if age > audit_settings.get("audit.qualityProfiles.maxLastChangeAge", 180):
-            problems.append(Problem(get_rule(RuleId.QP_LAST_CHANGE_DATE), self, str(self), age))
-
-        total_rules = rules.count(endpoint=self.endpoint, languages=self.language)
-        if self.nbr_rules < int(total_rules * audit_settings.get("audit.qualityProfiles.minNumberOfRules", 0.5)):
-            problems.append(Problem(get_rule(RuleId.QP_TOO_FEW_RULES), self, str(self), self.nbr_rules, total_rules))
-
-        age = util.age(self.last_use(), rounded=True)
-        if self.project_count == 0 or age is None:
-            problems.append(Problem(get_rule(RuleId.QP_NOT_USED), self, str(self)))
-        elif age > audit_settings.get("audit.qualityProfiles.maxUnusedAge", 60):
-            rule = get_rule(RuleId.QP_LAST_USED_DATE)
-            problems.append(Problem(rule, self, str(self), age))
-        if audit_settings.get("audit.qualityProfiles.checkDeprecatedRules", True):
-            max_deprecated_rules = 0
-            parent_qp = self.built_in_parent()
-            if parent_qp is not None:
-                max_deprecated_rules = parent_qp.nbr_deprecated_rules
-            if self.nbr_deprecated_rules > max_deprecated_rules:
-                problems.append(Problem(get_rule(RuleId.QP_USE_DEPRECATED_RULES), self, str(self), self.nbr_deprecated_rules))
+        problems = self.audit_last_change_date(audit_settings)
+        problems += self.audit_too_few_rules(audit_settings)
+        problems += self.audit_not_used(audit_settings)
+        problems += self.audit_deprecated_rules(audit_settings)
         problems += self.permissions().audit(audit_settings)
         return problems
 
