@@ -116,7 +116,7 @@ def test_loc_pull_requests(csv_file: Generator[str]) -> None:
         return
     assert tutil.run_cmd(loc.main, cmd) == e.OK
     assert tutil.csv_col_int(csv_file, "pr")
-    assert tutil.csv_col_is_value(csv_file, "type", "pullrequst")
+    assert tutil.csv_col_is_value(csv_file, "type", "pullrequest", "project")
 
 
 def test_loc_branches_json(json_file: Generator[str]) -> None:
