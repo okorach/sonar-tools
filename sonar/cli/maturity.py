@@ -373,39 +373,39 @@ def get_maturity_data(project_list: list[projects.Project], threads: int) -> dic
                 log.info("Collected maturity data for %d/%d projects (%d%%)", i, nb_projects, int(100 * i / nb_projects))
     return dict(sorted(maturity_data.items()))
 
+
 def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     """Gets governance maturity data"""
     portfolio_count = pf.count(endpoint)
     project_count = projects.count(endpoint)
     ratio = project_count / portfolio_count if portfolio_count > 0 else None
-    
+
     qg_list = [q for q in qg.get_list(endpoint) if not q.is_built_in()]
 
     results = {
         "number_of_portfolios": portfolio_count,
         "ratio_of_projects_per_portfolio": __rounded(ratio),
         "number_of_custom_quality_gates": len(qg_list),
-        "number_of_incorrect_quality_gates": sum(1 for q in qg_list if len(q.audit_conditions()) > 0)
+        "number_of_incorrect_quality_gates": sum(1 for q in qg_list if len(q.audit_conditions()) > 0),
     }
     results["ratio_of_incorrect_quality_gates"] = __rounded(results["number_of_incorrect_quality_gates"] / len(qg_list)) if len(qg_list) > 0 else 0.0
 
     qp_list = [p for p in qp.get_list(endpoint) if not p.is_built_in()]
     # We should count the nbr of custom profiles per language
-    results["number_of_custom_quality_profiles"] = len(qp_list)
     results["number_of_custom_quality_profiles"] = {}
     errcount = 0
     for lang in languages.get_list(endpoint).keys():
         if (count := sum(1 for p in qp_list if p.language() == lang)) == 0:
             continue
-        results[f"number_of_custom_quality_profiles"][lang] = count
+        results["number_of_custom_quality_profiles"][lang] = count
         if count > 7:
             errcount += 1
     results["number_of_languages_with_too_many_quality_profiles"] = errcount
     results["number_of_quality_profiles_with_anomalies"] = sum(1 for p in qp_list if len(p.audit()) > 0)
-    results["ratio_of_quality_profiles_with_anomalies"] = __rounded(results["number_of_quality_profiles_with_anomalies"] / len(qp_list)) if len(qp_list) > 0 else 0.0
+    results["ratio_of_quality_profiles_with_anomalies"] = (
+        __rounded(results["number_of_quality_profiles_with_anomalies"] / len(qp_list)) if len(qp_list) > 0 else 0.0
+    )
     return results
-
-
 
 
 def compute_global_maturity_level_statistics(data: dict[str, Any]) -> dict[str, Any]:
