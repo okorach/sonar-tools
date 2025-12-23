@@ -470,6 +470,7 @@ class Platform(object):
         json_data = {}
         settings_list = list(self.__settings(include_not_set=True).values())
         settings_list = [s for s in settings_list if s.is_global() and not s.is_internal()]
+        settings_list.append(settings.Setting.read(settings.NEW_CODE_PERIOD, self))
         for s in settings_list:
             (categ, subcateg) = s.category()
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
