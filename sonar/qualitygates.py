@@ -339,7 +339,7 @@ class QualityGate(sq.SqObject):
         ops = {c.GET: {"name": self.name}}
         return ops[op] if op in ops else ops[c.GET]
 
-    def __audit_conditions(self) -> list[Problem]:
+    def audit_conditions(self) -> list[Problem]:
         problems = []
         for cond in self.conditions():
             m = cond["metric"]
@@ -369,7 +369,7 @@ class QualityGate(sq.SqObject):
             problems.append(Problem(get_rule(RuleId.QG_NO_COND), self, my_name))
         elif nb_conditions > max_cond:
             problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_COND), self, my_name, nb_conditions, max_cond))
-        problems += self.__audit_conditions()
+        problems += self.audit_conditions()
         problems += self.permissions().audit(audit_settings)
         if not self.is_default and len(self.projects()) == 0:
             problems.append(Problem(get_rule(RuleId.QG_NOT_USED), self, my_name))
