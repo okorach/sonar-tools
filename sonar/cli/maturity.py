@@ -318,14 +318,13 @@ def main() -> None:
         maturity_data = get_maturity_data(project_list, threads=kwargs[options.NBR_THREADS])
 
         summary_data: dict[str, Any] = {}
-        summary_data["platform"] = sq.basics()
         summary_data["total_projects"] = len(maturity_data)
         summary_data["quality_gate_project_statistics"] = compute_summary_qg(maturity_data)
         summary_data["last_analysis_statistics"] = compute_summary_age(maturity_data)
         summary_data["quality_gate_enforcement_statistics"] = compute_pr_statistics(maturity_data)
         summary_data["new_code_statistics"] = compute_new_code_statistics(maturity_data)
         summary_data["frequency_statistics"] = compute_analysis_frequency_statistics(maturity_data)
-        write_results(kwargs.get(options.REPORT_FILE), {"summary": summary_data, "details": maturity_data})
+        write_results(kwargs.get(options.REPORT_FILE), {"platform": sq.basics(), "summary": summary_data, "details": maturity_data})
     except exceptions.SonarException as e:
         chelp.clear_cache_and_exit(e.errcode, e.message)
 

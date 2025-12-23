@@ -68,7 +68,7 @@ class PullRequest(components.Component):
 
     def url(self) -> str:
         """Returns the PR permalink (until PR is purged)"""
-        return f"{self.base_url(local=False)}/dashboard?id={self.concerned_object.key}&pullRequest={requests.utils.quote(self.key)}"
+        return f"{self.concerned_object.url()}&pullRequest={requests.utils.quote(self.key)}"
 
     def get_tags(self, **kwargs) -> list[str]:
         """

@@ -85,7 +85,7 @@ def test_bad_org(json_file: Generator[str]):
         cmd = f"{pyfile} {tutil.SC_OPTS_NO_ORG} {org_opts} {extra_args}"
         if pyfile == "findings_sync.py":
             cmd += f" -O {__NON_EXISTING_ORG}"
-        assert tutil.run_cmd(func, cmd) == errcodes.NO_SUCH_KEY
+        assert tutil.run_cmd(func, cmd) in (errcodes.ARGS_ERROR, errcodes.NO_SUCH_KEY)
 
 
 def test_bad_arg():

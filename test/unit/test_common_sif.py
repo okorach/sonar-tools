@@ -84,7 +84,7 @@ def test_sif_1(csv_file: Generator[str]) -> None:
     assert tutil.run_cmd(audit.main, cmd) == e.OK
 
 
-def test_sif_2(json_file) -> None:
+def test_sif_2(json_file: Generator[str]) -> None:
     """test_sif_2"""
     cmd = f"{CMD} --sif {tutil.FILES_ROOT}/sif2.json --{opt.REPORT_FILE} {json_file}"
     assert tutil.run_cmd(audit.main, cmd) == e.OK

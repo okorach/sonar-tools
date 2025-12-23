@@ -224,13 +224,6 @@ class Project(components.Component):
         self._revision = data.get("revision", self._revision)
         return self
 
-    def url(self) -> str:
-        """
-        :return: the SonarQube permalink to the project
-        :rtype: str
-        """
-        return f"{self.base_url(local=False)}/dashboard?id={self.key}"
-
     def last_analysis(self, include_branches: bool = False) -> Optional[datetime]:
         """
         :param include_branches: Take into account branch to determine last analysis, defaults to False

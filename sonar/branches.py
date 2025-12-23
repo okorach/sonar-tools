@@ -302,10 +302,8 @@ class Branch(components.Component):
             self.set_new_code(new_code, param)
 
     def url(self) -> str:
-        """
-        :return: The branch URL in SonarQube as permalink
-        """
-        return f"{self.base_url(local=False)}/dashboard?id={self.concerned_object.key}&branch={requests.utils.quote(self.name)}"
+        """returns the branch URL in SonarQube as permalink"""
+        return f"{self.concerned_object.url()}&branch={requests.utils.quote(self.name)}"
 
     def rename(self, new_name: str) -> bool:
         """Renames a branch

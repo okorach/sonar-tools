@@ -238,9 +238,8 @@ class Component(sq.SqObject):
         return self._new_code_start_date
 
     def url(self) -> str:
-        """Returns a component permalink"""
-        # Must be implemented in sub classes
-        raise NotImplementedError
+        """the SonarQube permalink to the project or app"""
+        return f"{self.base_url(local=False)}/dashboard?id={self.key}"
 
     def visibility(self) -> str:
         """Returns a component visibility (public or private)"""
