@@ -44,9 +44,8 @@ def test_migration_help(json_file: Generator[str]) -> None:
 
 def test_migration(json_file: Generator[str]) -> None:
     """test_config_export"""
-    file = json_file
-    assert tutil.run_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {file}") == errcodes.OK
-    with open(file=file, mode="r", encoding="utf-8") as fh:
+    assert tutil.run_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {json_file}") == errcodes.OK
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
 
     for item in GLOBAL_ITEMS:
@@ -120,9 +119,8 @@ def test_migration(json_file: Generator[str]) -> None:
 
 def test_migration_skip_issues(json_file: Generator[str]) -> None:
     """test_migration_skip_issues"""
-    file = json_file
-    assert tutil.run_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {file} --skipIssues") == errcodes.OK
-    with open(file=file, mode="r", encoding="utf-8") as fh:
+    assert tutil.run_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {json_file} --skipIssues") == errcodes.OK
+    with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
 
     for item in GLOBAL_ITEMS:
