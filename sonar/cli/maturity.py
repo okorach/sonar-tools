@@ -378,15 +378,22 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     project_count = projects.count(endpoint)
     ratio = project_count / portfolio_count if portfolio_count > 0 else None
     
-    qg_list = qg.get_list(endpoint)
-    nbr_of_qg = sum(1 for q in qg_list if not q.is_built_in())
-    nbr_of_incorrect_qg = sum(1 for q in qg_list if len(q.audit_conditions()) > 0)
-    return {
+    qg_list = [q for q in qg.get_list(endpoint) if not q.is_built_in()]
+
+    results = {
         "number_of_portfolios": portfolio_count,
         "ratio_of_projects_per_portfolio": __rounded(ratio),
-        "number_of_custom_quality_gates": nbr_of_qg,
-        "number_of_incorrect_quality_gates": nbr_of_incorrect_qg,
+        "number_of_custom_quality_gates": len(qg_list),
+        "number_of_incorrect_quality_gates": sum(1 for q in qg_list if len(q.audit_conditions()) > 0)
     }
+    results["ratio_of_incorrect_quality_gates"] = __rounded(results["number_of_incorrect_quality_gates"] / len(qg_list)) if len(qg_list) > 0 else 0.0
+
+    qp_list = [p for p in qp.get_list(endpoint) if not p.is_built_in()]
+    results["number_of_custom_quality_profiles"] = len(qp_list)
+    results["number_of_incorrect_quality_profiles"] = sum(1 for p in qp_list if len(p.audit()) > 0)
+    results["ratio_of_incorrect_quality_profiles"] = __rounded(results["number_of_incorrect_quality_profiles"] / len(qp_list)) if len(qp_list) > 0 else 0.0
+    return results
+
 
 
 
@@ -451,7 +458,6 @@ def main() -> None:
         summary_data["last_analysis_statistics"] = compute_summary_age(maturity_data)
         summary_data["new_code_statistics"] = compute_new_code_statistics(maturity_data)
         summary_data["frequency_statistics"] = compute_analysis_frequency_statistics(maturity_data)
-
 
         summary_data = util.order_dict(
             summary_data,
