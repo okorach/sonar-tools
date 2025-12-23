@@ -35,6 +35,7 @@ from sonar import errcodes
 from sonar import projects, portfolios as pf
 from sonar import qualitygates as qg
 from sonar import qualityprofiles as qp
+from sonar import languages
 from sonar import logging as log
 
 TOOL_NAME = "sonar-maturity"
@@ -389,7 +390,16 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     results["ratio_of_incorrect_quality_gates"] = __rounded(results["number_of_incorrect_quality_gates"] / len(qg_list)) if len(qg_list) > 0 else 0.0
 
     qp_list = [p for p in qp.get_list(endpoint) if not p.is_built_in()]
+    # We should count the nbr of custom profiles per language
     results["number_of_custom_quality_profiles"] = len(qp_list)
+    results["number_of_custom_quality_profiles"] = {}
+    errcount = 0
+    for lang in languages.get_list(endpoint).keys():
+        if (count := sum(1 for p in qp_list if p.language() == lang)) > 0:
+            results[f"number_of_custom_quality_profiles"][lang] = count
+            if count > 7:
+                errcount += 1
+    results["number_of_languages_with_too_many_quality+profiles"] = errcount
     results["number_of_incorrect_quality_profiles"] = sum(1 for p in qp_list if len(p.audit()) > 0)
     results["ratio_of_incorrect_quality_profiles"] = __rounded(results["number_of_incorrect_quality_profiles"] / len(qp_list)) if len(qp_list) > 0 else 0.0
     return results
