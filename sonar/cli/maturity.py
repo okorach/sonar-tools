@@ -46,6 +46,7 @@ ANALYSES_ANY_BRANCH_KEY = f"{NBR_OF_ANALYSES_KEY}_on_any_branch"
 ANALYSES_MAIN_BRANCH_KEY = f"{NBR_OF_ANALYSES_KEY}_on_main_branch"
 NBR_OF_BRANCHES_KEY = "number_of_branches"
 
+OVERALL_MATURITY_KEY = "overall_maturity_level"
 ANALYSIS_MATURITY_KEY = "analysis_maturity_level"
 NEW_CODE_MATURITY_KEY = "new_code_maturity_level"
 QG_ENFORCEMENT_MATURITY_KEY = "quality_gate_enforcement_maturity_level"
@@ -378,11 +379,11 @@ def compute_global_maturity_level_statistics(data: dict[str, Any]) -> dict[str, 
         NEW_CODE_MATURITY_KEY: __rounded(sum(proj[NEW_CODE_MATURITY_KEY] for proj in data.values()) / nbr_projects),
         QG_ENFORCEMENT_MATURITY_KEY: __rounded(sum(proj[QG_ENFORCEMENT_MATURITY_KEY] for proj in data.values()) / nbr_projects),
     }
-    summary_data["overall_maturity_level"] = __rounded(sum(summary_data.values()) / 3)
+    summary_data[OVERALL_MATURITY_KEY] = __rounded(sum(summary_data.values()) / 3)
     summary_data[f"{ANALYSIS_MATURITY_KEY}_distribution"] = {}
     summary_data[f"{NEW_CODE_MATURITY_KEY}_distribution"] = {}
     summary_data[f"{QG_ENFORCEMENT_MATURITY_KEY}_distribution"] = {}
-    summary_data[f"overall_maturity_level_distribution"] = {}
+    summary_data[f"{OVERALL_MATURITY_KEY}_distribution"] = {}
 
     for rating in range(6):
         summary_data[f"{ANALYSIS_MATURITY_KEY}_distribution"] |= {rating: sum(1 for p in data.values() if p[ANALYSIS_MATURITY_KEY] == rating)}
@@ -390,7 +391,7 @@ def compute_global_maturity_level_statistics(data: dict[str, Any]) -> dict[str, 
         summary_data[f"{QG_ENFORCEMENT_MATURITY_KEY}_distribution"] |= {
             rating: sum(1 for p in data.values() if p[QG_ENFORCEMENT_MATURITY_KEY] == rating)
         }
-        summary_data[f"overall_maturity_level_distribution"] |= {
+        summary_data[f"{OVERALL_MATURITY_KEY}_distribution"] |= {
             rating: sum(
                 1
                 for p in data.values()
