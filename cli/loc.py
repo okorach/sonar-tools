@@ -39,7 +39,7 @@ TOOL_NAME = "sonar-loc"
 
 def __get_csv_header_list(**kwargs) -> list[str]:
     """Returns CSV header"""
-    arr = [f"# {kwargs[options.COMPONENT_TYPE][0:-1]} key", "branch or pr", "type"]
+    arr = [f"# {kwargs[options.COMPONENT_TYPE][0:-1]} key", "type", "branch", "pr"]
     arr.append("ncloc")
     if kwargs[options.WITH_NAME]:
         arr.append(f"{kwargs[options.COMPONENT_TYPE][0:-1]} name")
@@ -56,16 +56,7 @@ def __get_csv_row(o: object, **kwargs) -> tuple[list[str], str]:
     """Returns CSV row of object"""
     d = __get_object_json_data(o, **kwargs)
     parent_type = kwargs[options.COMPONENT_TYPE][:-1]
-    # Always fill branch and type
-    branch = d.get("branch", "")
-    otype = type(o).__name__.lower()
-    if otype == "pullrequest":
-        row_type = "pr"
-    elif otype in ("branch", "applicationbranch"):
-        row_type = "branch"
-    else:
-        row_type = "project"
-    arr = [d[parent_type], branch, row_type]
+    arr = [d[parent_type], type(o).__name__.lower(), d["branch"], d["pr"]]
     # Add the rest of the columns as before
     for k in ("ncloc", f"{parent_type}Name", "lastAnalysis", "tags", "url"):
         if k in d:
@@ -74,7 +65,7 @@ def __get_csv_row(o: object, **kwargs) -> tuple[list[str], str]:
 
 
 def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
-    """Dumps LoC of passed list of objects (projects, branches or portfolios) as CSV"""
+    """Dumps LoC of passed list of objects (projects, apps or portfolios) as CSV"""
 
     if len(object_list) <= 0:
         log.warning("No objects with LoCs to dump, dump skipped")
@@ -104,7 +95,7 @@ def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
             log.info("%d objects dumped, still working...", nb_objects)
     total_projects = len(project_max_loc)
     total_loc = sum(project_max_loc.values())
-    log.info("%d projects (grouped) and %d LoCs in total (max per project)", total_projects, total_loc)
+    log.info("%d %s (grouped) and %d LoCs in total (max per project)", total_projects, obj_type, total_loc)
 
 
 def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
@@ -118,21 +109,16 @@ def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
     try:
         d["ncloc"] = o.loc()
         # Always fill branch: for project use 'main' or '', for branch use name, for PR use key
-        if is_branch:
-            d["branch"] = o.name
-        elif is_pr:
-            d["branch"] = getattr(o, "key", "")
-        else:
-            # Try to get main branch name if available, else empty string
-            d["branch"] = getattr(o, "main_branch_name", lambda: "main")()
+        d["branch"] = o.name if is_branch else ""
+        d["pr"] = o.key if is_pr else ""
         if kwargs[options.WITH_TAGS]:
             d["tags"] = util.list_to_csv(parent_o.get_tags())
         if kwargs[options.WITH_NAME]:
             d[f"{parent_type}Name"] = parent_o.name if (is_branch or is_pr) else o.name
         if kwargs[options.WITH_LAST_ANALYSIS]:
             d["lastAnalysis"] = ""
-            if o.last_analysis() is not None:
-                d["lastAnalysis"] = datetime.datetime.isoformat(o.last_analysis())
+            if (last_ana := o.last_analysis()) is not None:
+                d["lastAnalysis"] = datetime.datetime.isoformat(last_ana)
         if kwargs[options.WITH_URL]:
             d["url"] = o.url()
     except (ConnectionError, RequestException) as e:
@@ -181,49 +167,26 @@ def __parse_args(desc: str) -> object:
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("json", "csv"))
-    parser.add_argument(
-        f"-{options.WITH_NAME_SHORT}",
-        f"--{options.WITH_NAME}",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Also list the project name on top of the project key",
-    )
-    parser.add_argument(
-        f"-{options.WITH_LAST_ANALYSIS_SHORT}",
-        f"--{options.WITH_LAST_ANALYSIS}",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Also list the last analysis date on top of nbr of LoC",
-    )
-    parser.add_argument(
-        f"--{options.WITH_TAGS}",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Also include project tags in export",
-    )
-    parser.add_argument(
-        "-pr",
-        "--pullRequests",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Include pull requests in LoC export"
-    )
+
+    args = [f"-{options.WITH_NAME_SHORT}", f"--{options.WITH_NAME}"]
+    options.add_optional_arg(parser, *args, action="store_true", help="Also list the project name on top of the project key")
+
+    args = [f"-{options.WITH_LAST_ANALYSIS_SHORT}", f"--{options.WITH_LAST_ANALYSIS}"]
+    options.add_optional_arg(parser, *args, action="store_true", help="Also list the last analysis date on top of nbr of LoC")
+
+    options.add_optional_arg(parser, f"--{options.WITH_TAGS}", action="store_true", help="Also include project tags in export")
+
+    args = [f"-{options.PULL_REQUESTS_SHORT}", f"--{options.PULL_REQUESTS}"]
+    options.add_optional_arg(parser, *args, action="store_true", help="Include pull requests in LoC export")
+
     options.add_url_arg(parser)
     options.add_branch_arg(parser)
     options.add_component_type_arg(parser)
-    parser.add_argument(
-        "--topLevelOnly",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Extracts only toplevel portfolios LoCs, not sub-portfolios",
-    )
-    args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
-    return args
+
+    help_str = "Extracts only toplevel portfolios LoCs, not sub-portfolios"
+    options.add_optional_arg(parser, "--topLevelOnly", action="store_true", help=help_str)
+
+    return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
 def __check_options(edition: str, kwargs: dict[str, str]) -> dict[str, str]:
@@ -262,7 +225,7 @@ def main() -> None:
             key_regexp=kwargs[options.KEY_REGEXP],
             branch_regexp=kwargs[options.BRANCH_REGEXP],
             topLevelOnly=kwargs["topLevelOnly"],
-            pullRequests=kwargs.get("pullRequests", False),
+            pull_requests=kwargs.get("pullRequests", False),
         )
         if len(objects_list) == 0:
             raise exceptions.SonarException(f"No object matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)

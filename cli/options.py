@@ -27,7 +27,7 @@ import os
 import sys
 import random
 from argparse import ArgumentParser
-from typing import Optional
+from typing import Optional, Any
 
 import sonar.logging as log
 from sonar import errcodes, version, utilities, exceptions
@@ -171,12 +171,7 @@ class ArgumentsError(exceptions.SonarException):
 def __convert_args_to_lists(kwargs: dict[str, str]) -> dict[str, str]:
     """Converts arguments that may be CSV into lists"""
     for argname in MULTI_VALUED_OPTS:
-        if (
-            argname in kwargs
-            and kwargs[argname] is not None
-            and isinstance(kwargs[argname], (str, list))
-            and len(kwargs[argname]) > 0
-        ):
+        if argname in kwargs and kwargs[argname] is not None and isinstance(kwargs[argname], (str, list)) and len(kwargs[argname]) > 0:
             kwargs[argname] = utilities.csv_to_list(kwargs[argname])
     if kwargs.get(LANGUAGES, None) not in (None, ""):
         kwargs[LANGUAGES] = [lang.lower() for lang in utilities.csv_to_list(kwargs[LANGUAGES])]
@@ -235,69 +230,53 @@ def parse_and_check(parser: ArgumentParser, logger_name: Optional[str] = None, v
     return args
 
 
-def set_url_arg(parser: ArgumentParser) -> ArgumentParser:
-    """Adds the URL argument for CLI"""
-    parser.add_argument(f"--{WITH_URL}", action="store_true", default=False, required=False, help="Add objects URLs in report")
+def add_optional_arg(parser: ArgumentParser, *args, **kwargs: Any) -> ArgumentParser:
+    """Adds the branch argument to the parser"""
+    kwargs = {"required": False, "default": None} | kwargs
+    if kwargs.get("action") == "store_true":
+        kwargs["default"] = False
+    parser.add_argument(*args, **kwargs)
     return parser
 
 
 def add_thread_arg(parser: ArgumentParser, action: str, default_value=8) -> ArgumentParser:
     """Adds the threads argument for CLI"""
-    parser.add_argument(
-        f"--{NBR_THREADS}", required=False, type=int, default=default_value, help=f"Define number of threads for {action}, default {default_value}"
-    )
-    return parser
+    args = [f"--{NBR_THREADS}"]
+    help_str = f"Define number of threads for {action}, default {default_value}"
+    return add_optional_arg(parser, *args, type=int, default=default_value, help=help_str)
 
 
 def add_branch_arg(parser: ArgumentParser) -> ArgumentParser:
     """Adds the branch argument to the parser"""
-    parser.add_argument(
-        f"-{BRANCH_REGEXP_SHORT}",
-        f"--{BRANCH_REGEXP}",
-        required=False,
-        type=str,
-        help="Regexp to select branches that should be extracted",
-    )
-    return parser
+    args = [f"-{BRANCH_REGEXP_SHORT}", f"--{BRANCH_REGEXP}"]
+    return add_optional_arg(parser, *args, type=str, help="Regexp to select branches that should be extracted")
+
+
+def add_pull_request_arg(parser: ArgumentParser) -> ArgumentParser:
+    """Adds the PR argument to the parser"""
+    args = [f"-{PULL_REQUESTS_SHORT}", f"--{PULL_REQUESTS}"]
+    return add_optional_arg(parser, *args, help="Use .* to export for all PRs.")
 
 
 def add_dateformat_arg(parser: ArgumentParser) -> ArgumentParser:
     """Adds the date format argument to the parser"""
-    parser.add_argument(
-        f"-{DATES_WITHOUT_TIME_SHORT}",
-        f"--{DATES_WITHOUT_TIME}",
-        action="store_true",
-        default=False,
-        required=False,
-        help="Reports timestamps only with date, not time",
-    )
-    return parser
+    args = [f"-{DATES_WITHOUT_TIME_SHORT}", f"--{DATES_WITHOUT_TIME}"]
+    return add_optional_arg(parser, *args, action="store_true", help="Reports timestamps only with date, not time")
 
 
 def add_url_arg(parser: ArgumentParser) -> ArgumentParser:
     """Adds the option to export URL of objects"""
-    parser.add_argument(
-        f"--{WITH_URL}",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Also list the URL of the objects",
-    )
-    return parser
+    return add_optional_arg(parser, f"--{WITH_URL}", action="store_true", help="Also list the URL of the objects")
 
 
 def add_import_export_arg(parser: ArgumentParser, topic: str, import_opt: bool = True, export_opt: bool = True) -> ArgumentParser:
     """Adds the CLI params for export/import"""
     group = parser.add_mutually_exclusive_group()
     if export_opt:
-        msg = ""
-        if import_opt:
-            msg = f" (exclusive of --{IMPORT})"
+        msg = f" (exclusive of --{IMPORT})" if import_opt else ""
         group.add_argument(f"-{EXPORT_SHORT}", f"--{EXPORT}", required=False, default=False, action="store_true", help=f"To export {topic}{msg}")
     if import_opt:
-        msg = ""
-        if export_opt:
-            msg = f" (exclusive of --{EXPORT})"
+        msg = f" (exclusive of --{EXPORT})" if export_opt else ""
         group.add_argument(f"-{IMPORT_SHORT}", f"--{IMPORT}", required=False, default=False, action="store_true", help=f"To import {topic}{msg}")
     return parser
 
@@ -305,78 +284,41 @@ def add_import_export_arg(parser: ArgumentParser, topic: str, import_opt: bool =
 def set_common_args(desc: str) -> ArgumentParser:
     """Parses options common to all sonar-tools scripts"""
     parser = ArgumentParser(description=desc)
-    parser.add_argument(
-        f"-{TOKEN_SHORT}",
-        f"--{TOKEN}",
-        required=False,
-        default=os.getenv("SONAR_TOKEN", None),
-        help="""Token to authenticate to the source SonarQube, default is environment variable $SONAR_TOKEN
-        - Unauthenticated usage is not possible""",
-    )
-    parser.add_argument(
-        f"-{URL_SHORT}",
-        f"--{URL}",
-        required=False,
-        default=os.getenv("SONAR_HOST_URL", "http://localhost:9000"),
-        help="""Root URL of the source SonarQube Server or Cloud platform,
-        default is environment variable $SONAR_HOST_URL or http://localhost:9000 if not set""",
-    )
-    parser.add_argument(
-        f"-{ORG_SHORT}",
-        f"--{ORG}",
-        required=False,
-        help="Organization when using sonar-tools with SonarQube Cloud",
-    )
-    parser.add_argument(
-        f"-{VERBOSE_SHORT}",
-        f"--{VERBOSE}",
-        required=False,
-        choices=["WARN", "INFO", "DEBUG"],
-        default="INFO",
-        help="Logging verbosity level",
-    )
-    parser.add_argument(
-        f"-{CERT_SHORT}",
-        f"--{CERT}",
-        required=False,
-        default=None,
-        help="Optional client certificate file (as .pem file)",
-    )
-    parser.add_argument(
-        f"--{HTTP_TIMEOUT}",
-        required=False,
-        default=10,
-        help="HTTP timeout for requests to SonarQube, 10 by default (in seconds)",
-    )
-    parser.add_argument(
-        f"--{SKIP_VERSION_CHECK}",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Prevents sonar-tools to occasionnally check from more recent version",
-    )
-    parser.add_argument(
-        f"-{LOGFILE_SHORT}",
-        f"--{LOGFILE}",
-        required=False,
-        default=None,
-        help="Define location of logfile, logs are only sent to stderr if not set",
-    )
+    args = [f"-{TOKEN_SHORT}", f"--{TOKEN}"]
+    help_str = """Token to authenticate to the source SonarQube, default is environment variable $SONAR_TOKEN
+        - Unauthenticated usage is not possible"""
+    parser = add_optional_arg(parser, *args, default=os.getenv("SONAR_TOKEN", None), help=help_str)
+
+    args = [f"-{URL_SHORT}", f"--{URL}"]
+    help_str = """Root URL of the source SonarQube Server or Cloud platform,
+        default is environment variable $SONAR_HOST_URL or http://localhost:9000 if not set"""
+    parser = add_optional_arg(parser, *args, help=help_str, default=os.getenv("SONAR_HOST_URL", "http://localhost:9000"))
+
+    args = [f"-{ORG_SHORT}", f"--{ORG}"]
+    parser = add_optional_arg(parser, *args, help="Organization when using sonar-tools with SonarQube Cloud")
+
+    args = [f"-{VERBOSE_SHORT}", f"--{VERBOSE}"]
+    parser = add_optional_arg(parser, *args, choices=["WARN", "INFO", "DEBUG"], default="INFO", help="Logging verbosity level")
+
+    args = [f"-{CERT_SHORT}", f"--{CERT}"]
+    parser = add_optional_arg(parser, *args, help="Optional client certificate file (as .pem file)")
+
+    args = [f"--{HTTP_TIMEOUT}"]
+    parser = add_optional_arg(parser, *args, default=10, help="HTTP timeout for requests to SonarQube, 10 by default (in seconds)")
+
+    args = [f"--{SKIP_VERSION_CHECK}"]
+    parser = add_optional_arg(parser, *args, action="store_true", help="Prevents sonar-tools to occasionnally check from more recent version")
+
+    args = [f"-{LOGFILE_SHORT}", f"--{LOGFILE}"]
+    parser = add_optional_arg(parser, *args, help="Define location of logfile, logs are only sent to stderr if not set")
+
     return parser
 
 
 def set_key_arg(parser: ArgumentParser) -> ArgumentParser:
     """Adds the cmd line parameter to select object keys"""
-    parser.add_argument(
-        f"-{KEY_REGEXP_SHORT}",
-        f"--{KEY_REGEXP}",
-        "--keys",
-        "--projectKey",
-        required=False,
-        type=str,
-        help="Regexp to select projects, apps or portfolios keys",
-    )
-    return parser
+    args = [f"-{KEY_REGEXP_SHORT}", f"--{KEY_REGEXP}", "--keys", "--projectKey"]
+    return add_optional_arg(parser, *args, type=str, help="Regexp to select projects, apps or portfolios keys")
 
 
 def add_language_arg(parser: ArgumentParser, object_types: str) -> ArgumentParser:
@@ -396,57 +338,35 @@ def add_component_type_arg(parser: ArgumentParser, comp_types: tuple[str] = COMP
 
 def set_target_sonar_args(parser: ArgumentParser) -> ArgumentParser:
     """Sets the target SonarQube Server or Cloud CLI options"""
-    parser.add_argument(
-        f"-{URL_TARGET_SHORT}",
-        f"--{URL_TARGET}",
-        required=False,
-        help="Root URL of the target platform when using sonar-findings-sync",
-    )
-    parser.add_argument(
-        f"-{TOKEN_TARGET_SHORT}",
-        f"--{TOKEN_TARGET}",
-        required=False,
-        help="Token of target platform when using sonar-findings-sync - Unauthenticated usage is not possible",
-    )
-    parser.add_argument(
-        f"-{ORG_TARGET_SHORT}",
-        f"--{ORG_TARGET}",
-        required=False,
-        help="Organization when using sonar-findings-sync with SonarQube Cloud as target platform",
-    )
+    args = [f"-{URL_TARGET_SHORT}", f"--{URL_TARGET}"]
+    parser = add_optional_arg(parser, *args, help="Root URL of the target platform when using sonar-findings-sync")
+
+    args = ["-{TOKEN_TARGET_SHORT}", f"--{TOKEN_TARGET}"]
+    help_str = "Token of target platform when using sonar-findings-sync - Unauthenticated usage is not possible"
+    parser = add_optional_arg(parser, *args, help=help_str)
+
+    args = [f"-{ORG_TARGET_SHORT}", f"--{ORG_TARGET}"]
+    help_str = "Organization when using sonar-findings-sync with SonarQube Cloud as target platform"
+    parser = add_optional_arg(parser, *args, help=help_str)
     return parser
 
 
 def set_output_file_args(parser: ArgumentParser, help_str: Optional[str] = None, allowed_formats: tuple[str, ...] = ("csv",)) -> ArgumentParser:
     """Sets the output file CLI options"""
-    if not help_str:
-        help_str = "Report file, stdout by default"
+    help_str = help_str or "Report file, stdout by default"
     parser.add_argument(f"-{REPORT_FILE_SHORT}", f"--{REPORT_FILE}", required=False, default=None, help=help_str)
     if len(allowed_formats) > 1:
-        parser.add_argument(
-            f"--{FORMAT}",
-            choices=allowed_formats,
-            required=False,
-            default=None,
-            help="Output format for generated report.\nIf not specified, it is the output file extension if json, csv or yaml, then csv by default",
-        )
+        args = [f"--{FORMAT}"]
+        help_str = "Output format for generated report.\nIf not specified, it is the output file extension if json, csv or yaml, then csv by default"
+        parser = add_optional_arg(parser, *args, help=help_str)
     if "csv" in allowed_formats:
-        parser.add_argument(
-            f"--{CSV_SEPARATOR}",
-            required=False,
-            default=__DEFAULT_CSV_SEPARATOR,
-            help=f"CSV separator (for CSV files), default '{__DEFAULT_CSV_SEPARATOR}'",
-        )
+        args = [f"--{CSV_SEPARATOR}"]
+        help_str = f"CSV separator (for CSV files), default '{__DEFAULT_CSV_SEPARATOR}'"
+        parser = add_optional_arg(parser, *args, default=__DEFAULT_CSV_SEPARATOR, help=help_str)
     return parser
 
 
 def set_what(parser: ArgumentParser, what_list: list[str], operation: str) -> ArgumentParser:
     """Sets the argument to select what to audit or to export as config"""
-    parser.add_argument(
-        "-w",
-        f"--{WHAT}",
-        required=False,
-        default="",
-        help=f"What to {operation} {','.join(what_list)}",
-    )
-    return parser
+    args = ["-w", f"--{WHAT}"]
+    return add_optional_arg(parser, *args, default="", help=f"What to {operation} {','.join(what_list)}")
