@@ -497,12 +497,12 @@ def draw_charts(data: dict[str, Any]) -> None:
         dataset[key] = Data([[v] for v in data[key].values()], [str(k) for k in data[key].keys()])
 
     for key in kv.keys():
-        chart = BarChart(dataset[key], Args(title=kv[key], width=80, format="{:.0f}"))
-        chart.draw()
+        BarChart(dataset[key], Args(title=kv[key], width=80, format="{:.0f}")).draw()
 
-    gov_data = Data([[data["governance_maturity_level"]]], ["Governance maturity level"])
-    gov_chart = BarChart(gov_data, Args(title="Governance maturity level", width=80, format="{:.0f}"))
-    gov_chart.draw()
+    chart_data = Data([[data["governance_maturity_level"]]], ["Governance maturity"])
+    BarChart(chart_data, Args(title="Governance maturity", width=5, format="{:.0f}")).draw()
+    chart_data = Data([[data[OVERALL_MATURITY_KEY]]], ["Overall maturity"])
+    BarChart(chart_data, Args(title="Overall maturity", width=100, format="{:.3f}")).draw()
 
 
 def main() -> None:
