@@ -152,8 +152,7 @@ def compute_summary_age(data: dict[str, Any], settings: dict[str, Any]) -> dict[
     """Computes statistics on last analysis"""
     nbr_projects = len(data)
     summary_data = {"any_branch": {"never_analyzed": sum(1 for d in data.values() if d["lines"] is None)}, "main_branch": {}}
-    segments = [s.strip() for s in settings.get("projectLastAnalysisDaysThresholds", "1, 3, 7, 15, 30, 90, 180, 365").split(",")] + [10000]
-    segments = misc.convert_types(segments)
+    segments = [int(s.strip()) for s in settings.get("projectLastAnalysisDaysThresholds", "1, 3, 7, 15, 30, 90, 180, 365").split(",")] + [10000]
     low_bound = -1
     for high_bound in segments:
         key = f"between_{low_bound+1}_and_{high_bound}_days"
@@ -225,7 +224,7 @@ def compute_pr_statistics(data: dict[str, Any], config: dict[str, Any]) -> dict[
     return summary_data
 
 
-def compute_summary_qg(data: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
+def compute_summary_qg(data: dict[str, Any]) -> dict[str, Any]:
     """Computes statistics on quality gate statuses"""
     nbr_projects = len(data)
     summary_data = {}
@@ -317,7 +316,7 @@ def compute_new_code_statistics(data: dict[str, Any], settings: dict[str, Any]) 
     summary_data[NEW_CODE_DAYS_KEY]["no_new_code"] = __count_percentage(nbr_projects - len(data_nc), nbr_projects)
     summary_data[NEW_CODE_RATIO_KEY]["no_new_code"] = summary_data[NEW_CODE_DAYS_KEY]["no_new_code"]
 
-    segments = [30, 60, 90, 180, 365, 10000]
+    segments = [int(s.strip()) for s in settings.get("projectLastAnalysisDaysThresholds", "1, 3, 7, 15, 30, 90, 180, 365").split(",")] + [10000]
     low_bound = -1
     for i in range(len(segments)):
         high_bound = segments[i]
@@ -533,7 +532,7 @@ def main() -> None:
         gov_maturity_data = get_governance_maturity_data(sq)
         log.info("GOV maturity data: %s", util.json_dump(gov_maturity_data))
         summary_data["global_maturity_level_statistics"] = compute_global_maturity_level_statistics(maturity_data, gov_maturity_data)
-        summary_data["quality_gate_project_statistics"] = compute_summary_qg(maturity_data, config)
+        summary_data["quality_gate_project_statistics"] = compute_summary_qg(maturity_data)
         summary_data["last_analysis_statistics"] = compute_summary_age(maturity_data, config)
         summary_data["new_code_statistics"] = compute_new_code_statistics(maturity_data, config)
         summary_data["frequency_statistics"] = compute_analysis_frequency_statistics(maturity_data, config)
