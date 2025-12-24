@@ -262,7 +262,9 @@ def compute_project_analysis_maturity(data: dict[str, Any], settings: dict[str, 
         if analysis_level == 3 and _count_prs(proj, pr_threshold, "ERROR", "OK") > 0:
             analysis_level = 4 if _count_prs(proj, pr_threshold, "ERROR") == 0 else 3
         if proj["projectType"] != "UNKNOWN" and proj["scanner"] == proj["projectType"]:
+            log.info("Project '%s': Adding 1 point of maturity because the right scanner is used (%s)", proj["scanner"])
             analysis_level = min(analysis_level + 1, 5)
+        log.info("Project '%s' maturity = %d", proj["key"], analysis_level)
         proj[ANALYSIS_MATURITY_KEY] = analysis_level
 
 
