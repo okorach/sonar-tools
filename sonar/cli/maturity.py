@@ -167,18 +167,18 @@ def compute_summary_age(data: dict[str, Any], settings: dict[str, Any]) -> dict[
 
 def compute_project_pr_statistics(project_data: dict[str, Any], config: dict[str, Any]) -> tuple[int, int, int, int, int]:
     """Computes project level PR statistics related to maturity"""
-    pr_age_threshold = config.get("pullRequestAgeThreshold", 7)
+    pr_inactivity_threshold = config.get("prInactivityThreshold", 7)
     proj_count_7_days_pass, proj_count_7_days_fail = 0, 0
     proj_count_pass, proj_count_fail, count_no_prs = 0, 0, 0
     pr_list = project_data.get("pull_requests", {}).values()
     for pr_data in pr_list:
         if pr_data.get(QG) == "OK":
             proj_count_pass += 1
-            if pr_data.get(AGE_KEY) > pr_age_threshold:
+            if pr_data.get(AGE_KEY) > pr_inactivity_threshold:
                 proj_count_7_days_pass += 1
         else:
             proj_count_fail += 1
-            if pr_data.get(AGE_KEY) > pr_age_threshold:
+            if pr_data.get(AGE_KEY) > pr_inactivity_threshold:
                 proj_count_7_days_fail += 1
     project_data["pull_request_stats"] = {
         "pr_pass_total": proj_count_pass,
@@ -246,9 +246,9 @@ def compute_project_analysis_maturity(data: dict[str, Any], settings: dict[str, 
     """Computes the maturity level of a project"""
     l1_threshold = misc.convert_types(settings.get("projectLevel1MaturityMaximumLastAnalysisAge", 60))
     l1_ci = misc.convert_types(settings.get("projectLevel1MaturityNoCiDetected", True))
-    l2_threshold = misc.convert_types(settings.get("projectLevel2MaturityMaximumLastAnalysisAge", 7))
-    l3_threshold = misc.convert_types(settings.get("projectLevel3MaturityMinimumNbrOfAnalyses", 50))
-    pr_threshold = misc.convert_types(settings.get("pullRequestAgeThreshold", 7))
+    l2_threshold = misc.convert_types(settings.get("projectLevel2LastAnalysisMaxAge", 7))
+    l3_threshold = misc.convert_types(settings.get("projectLevel3MinimumNbrOfAnalyses", 50))
+    pr_threshold = misc.convert_types(settings.get("prInactivityThreshold", 7))
     for proj in data.values():
         if proj[AGE_KEY] is None:
             analysis_level = 0
@@ -262,7 +262,7 @@ def compute_project_analysis_maturity(data: dict[str, Any], settings: dict[str, 
         if analysis_level == 3 and _count_prs(proj, pr_threshold, "ERROR", "OK") > 0:
             analysis_level = 4 if _count_prs(proj, pr_threshold, "ERROR") == 0 else 3
         if proj["projectType"] != "UNKNOWN" and proj["scanner"] == proj["projectType"]:
-            log.info("Project '%s': Adding 1 point of maturity because the right scanner is used (%s)", proj["scanner"])
+            log.info("Project '%s': Adding 1 point of maturity because the right scanner is used (%s)", proj["key"], proj["scanner"])
             analysis_level = min(analysis_level + 1, 5)
         log.info("Project '%s' maturity = %d", proj["key"], analysis_level)
         proj[ANALYSIS_MATURITY_KEY] = analysis_level
@@ -434,19 +434,37 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     return results
 
 
-def compute_global_maturity_level_statistics(data: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
+def compute_global_maturity_level_statistics(data: dict[str, Any], gov_data: dict[str, Any]) -> dict[str, Any]:
     """Computes statistics on global maturity levels"""
     nbr_projects = len(data)
+    gov_mat = 0
+    # If enough portfolios and good ratio of portfolios to projects, then 1 point of governance maturity
+    if gov_data["number_of_portfolios"] > 5 and gov_data["ratio_of_projects_per_portfolio"] < 20:
+        gov_mat += 1
+    # If no more than 9 custom quality gates, then 1 point of governance maturity
+    if gov_data["number_of_custom_quality_gates"] < 10:
+        gov_mat += 1
+    # If no quality gates with incorrect conditions, then 1 point of governance maturity
+    if gov_data["number_of_incorrect_quality_gates"] == 0:
+        gov_mat += 1
+    # If no more than 10% of quality gates with incorrect conditions, then 1 point of governance maturity
+    if gov_data["ratio_of_incorrect_quality_gates"] < 0.1:
+        gov_mat += 1
+    # If no more than 5 custom quality profiles pein any language, then 1 point of governance maturity
+    if all(qp_count <= 5 for qp_count in gov_data["number_of_custom_quality_profiles"].values()):
+        gov_mat += 1
     summary_data = {
         ANALYSIS_MATURITY_KEY: __rounded(sum(proj[ANALYSIS_MATURITY_KEY] for proj in data.values()) / nbr_projects),
         NEW_CODE_MATURITY_KEY: __rounded(sum(proj[NEW_CODE_MATURITY_KEY] for proj in data.values()) / nbr_projects),
         QG_ENFORCEMENT_MATURITY_KEY: __rounded(sum(proj[QG_ENFORCEMENT_MATURITY_KEY] for proj in data.values()) / nbr_projects),
+        "governance_maturity_level": gov_mat,
     }
-    summary_data[OVERALL_MATURITY_KEY] = __rounded(sum(summary_data.values()) / 3)
+    summary_data[OVERALL_MATURITY_KEY] = __rounded(sum(summary_data.values()) / 4)
     summary_data[f"{ANALYSIS_MATURITY_KEY}_distribution"] = {}
     summary_data[f"{NEW_CODE_MATURITY_KEY}_distribution"] = {}
     summary_data[f"{QG_ENFORCEMENT_MATURITY_KEY}_distribution"] = {}
     summary_data[f"{OVERALL_MATURITY_KEY}_distribution"] = {}
+    summary_data["governance_maturity_level_details"] = gov_data
 
     for rating in range(6):
         summary_data[f"{ANALYSIS_MATURITY_KEY}_distribution"] |= {rating: sum(1 for p in data.values() if p[ANALYSIS_MATURITY_KEY] == rating)}
@@ -461,7 +479,6 @@ def compute_global_maturity_level_statistics(data: dict[str, Any], settings: dic
                 if rating <= (p[ANALYSIS_MATURITY_KEY] + p[NEW_CODE_MATURITY_KEY] + p[QG_ENFORCEMENT_MATURITY_KEY]) / 3 + 0.5 < rating + 1
             )
         }
-
     return summary_data
 
 
@@ -476,11 +493,16 @@ def draw_charts(data: dict[str, Any]) -> None:
     }
     dataset = {}
     for key in kv.keys():
+        log.info("%s: %s", key, util.json_dump(data[key]))
         dataset[key] = Data([[v] for v in data[key].values()], [str(k) for k in data[key].keys()])
 
     for key in kv.keys():
         chart = BarChart(dataset[key], Args(title=kv[key], width=80, format="{:.0f}"))
         chart.draw()
+
+    gov_data = Data([[data["governance_maturity_level"]]], ["Governance maturity level"])
+    gov_chart = BarChart(gov_data, Args(title="Governance maturity level", width=80, format="{:.0f}"))
+    gov_chart.draw()
 
 
 def main() -> None:
@@ -508,8 +530,9 @@ def main() -> None:
         compute_project_analysis_maturity(maturity_data, config)
         compute_project_new_code_maturity_level(maturity_data, config)
         compute_quality_gate_enforcement_maturity(maturity_data, config)
-        summary_data["governance_maturity_statistics"] = get_governance_maturity_data(sq)
-        summary_data["global_maturity_level_statistics"] = compute_global_maturity_level_statistics(maturity_data, config)
+        gov_maturity_data = get_governance_maturity_data(sq)
+        log.info("GOV maturity data: %s", util.json_dump(gov_maturity_data))
+        summary_data["global_maturity_level_statistics"] = compute_global_maturity_level_statistics(maturity_data, gov_maturity_data)
         summary_data["quality_gate_project_statistics"] = compute_summary_qg(maturity_data, config)
         summary_data["last_analysis_statistics"] = compute_summary_age(maturity_data, config)
         summary_data["new_code_statistics"] = compute_new_code_statistics(maturity_data, config)
@@ -528,7 +551,7 @@ def main() -> None:
         )
         write_results(kwargs.get(options.REPORT_FILE), {"platform": sq.basics(), "summary": summary_data, "details": maturity_data})
         draw_charts(summary_data["global_maturity_level_statistics"])
-        log.info("OVERALL MATURITY LEVEL: %.3f", summary_data["global_maturity_level_statistics"][OVERALL_MATURITY_KEY])
+        log.info("OVERALL AVERAGE MATURITY LEVEL: %.3f", summary_data["global_maturity_level_statistics"][OVERALL_MATURITY_KEY])
 
     except exceptions.SonarException as e:
         chelp.clear_cache_and_exit(e.errcode, e.message)
