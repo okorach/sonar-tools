@@ -135,5 +135,4 @@ class QualityPermissions(permissions.Permissions):
         if not self.permissions:
             return 0
         perm_types = permissions.PERMISSION_TYPES if perm_type is None else (perm_type,)
-        log.info("PERM Counting permissions with %s with type %s and filter %s", self.permissions, perm_type, perm_filter)
         return sum(len(self.permissions[p]) for p in perm_types)
