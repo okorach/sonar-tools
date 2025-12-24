@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # sonar-tools
 # Copyright (C) 2025 Olivier Korach
@@ -26,7 +25,6 @@ import concurrent.futures
 
 from termgraph import Data, Args, BarChart
 
-
 from sonar import utilities as util
 from sonar import version
 from cli import options
@@ -40,6 +38,8 @@ from sonar import qualitygates as qg
 from sonar import qualityprofiles as qp
 from sonar import languages
 from sonar import logging as log
+from sonar.util import conf_mgr as conf
+from sonar.util import misc
 
 TOOL_NAME = "sonar-maturity"
 
@@ -147,7 +147,7 @@ def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
     return data
 
 
-def compute_summary_age(data: dict[str, Any]) -> dict[str, Any]:
+def compute_summary_age(data: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
     """Computes statistics on last analysis"""
     nbr_projects = len(data)
     summary_data = {"any_branch": {"never_analyzed": sum(1 for d in data.values() if d["lines"] is None)}, "main_branch": {}}
@@ -163,19 +163,20 @@ def compute_summary_age(data: dict[str, Any]) -> dict[str, Any]:
     return summary_data
 
 
-def compute_project_pr_statistics(project_data: dict[str, Any]) -> tuple[int, int, int, int, int]:
+def compute_project_pr_statistics(project_data: dict[str, Any], config: dict[str, Any]) -> tuple[int, int, int, int, int]:
     """Computes project level PR statistics related to maturity"""
+    pr_age_threshold = config.get("pullRequestAgeThreshold", 7)
     proj_count_7_days_pass, proj_count_7_days_fail = 0, 0
     proj_count_pass, proj_count_fail, count_no_prs = 0, 0, 0
     pr_list = project_data.get("pull_requests", {}).values()
     for pr_data in pr_list:
         if pr_data.get(QG) == "OK":
             proj_count_pass += 1
-            if pr_data.get(AGE_KEY) > 7:
+            if pr_data.get(AGE_KEY) > pr_age_threshold:
                 proj_count_7_days_pass += 1
         else:
             proj_count_fail += 1
-            if pr_data.get(AGE_KEY) > 7:
+            if pr_data.get(AGE_KEY) > pr_age_threshold:
                 proj_count_7_days_fail += 1
     project_data["pull_request_stats"] = {
         "pr_pass_total": proj_count_pass,
@@ -187,7 +188,7 @@ def compute_project_pr_statistics(project_data: dict[str, Any]) -> tuple[int, in
     return proj_count_7_days_pass, proj_count_7_days_fail, proj_count_pass, proj_count_fail, count_no_prs
 
 
-def compute_pr_statistics(data: dict[str, Any]) -> dict[str, Any]:
+def compute_pr_statistics(data: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
     """Computes statistics on pull request analyses"""
     total_prs = sum(len(d.get("pull_requests", {})) for d in data.values())
     summary_data = {}
@@ -195,7 +196,7 @@ def compute_pr_statistics(data: dict[str, Any]) -> dict[str, Any]:
     total_count_pass, total_count_fail, total_count_no_prs = 0, 0, 0
     total_count_enforced, total_count_non_enforced = 0, 0
     for proj_data in data.values():
-        count_7_days_pass, count_7_days_fail, count_pass, count_fail, count_no_prs = compute_project_pr_statistics(proj_data)
+        count_7_days_pass, count_7_days_fail, count_pass, count_fail, count_no_prs = compute_project_pr_statistics(proj_data, config)
         if count_no_prs == 0:
             if count_7_days_fail == 0:
                 total_count_enforced += 1
@@ -222,7 +223,7 @@ def compute_pr_statistics(data: dict[str, Any]) -> dict[str, Any]:
     return summary_data
 
 
-def compute_summary_qg(data: dict[str, Any]) -> dict[str, Any]:
+def compute_summary_qg(data: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
     """Computes statistics on quality gate statuses"""
     nbr_projects = len(data)
     summary_data = {}
@@ -239,7 +240,7 @@ def _count_failed_prs(project_data: dict[str, Any]) -> int:
     return sum(1 for pr in pr_list if pr.get(AGE_KEY) > 7 and pr.get(QG) == "ERROR")
 
 
-def compute_project_analysis_maturity(data: dict[str, Any]) -> str:
+def compute_project_analysis_maturity(data: dict[str, Any], settings: dict[str, Any]) -> None:
     """Computes the maturity level of a project"""
     for proj in data.values():
         if proj[AGE_KEY] is None:
@@ -257,7 +258,7 @@ def compute_project_analysis_maturity(data: dict[str, Any]) -> str:
         proj[ANALYSIS_MATURITY_KEY] = analysis_level
 
 
-def compute_project_new_code_maturity_level(data: dict[str, Any]) -> str:
+def compute_project_new_code_maturity_level(data: dict[str, Any], settings: dict[str, Any]) -> None:
     """Computes the maturity level of a project"""
     for proj in data.values():
         maturity = 0
@@ -273,28 +274,26 @@ def compute_project_new_code_maturity_level(data: dict[str, Any]) -> str:
         proj[NEW_CODE_MATURITY_KEY] = maturity
 
 
-def compute_quality_gate_enforcement_maturity(data: dict[str, Any]) -> str:
+def compute_quality_gate_enforcement_maturity(data: dict[str, Any], settings: dict[str, Any]) -> None:
     """Computes the maturity level of a project concerning quality gate enforcement on PRs"""
+    thresholds = [s.strip() for s in settings.get("pullRequestMaturityThresholds", "1,0.5, 1,0.2, 5,0.1, 10,0.0").split(",")]
+    thresholds = misc.convert_types(thresholds)
+    min_age = settings.get("pullRequestAgeThreshold", 7)
     for proj in data.values():
-        log.debug("Computing new code maturity for project %s", proj)
-        pr_list = data.get("pull_requests", {}).values()
-        pr_count = sum(1 for pr in pr_list if pr.get(AGE_KEY) > 7 and pr.get(QG) == "ERROR")
-        fail_pr_count = sum(1 for pr in pr_list if pr.get(AGE_KEY) > 7 and pr.get(QG) == "ERROR")
+        pr_list = proj.get("pull_requests", {}).values()
+        pr_count = sum(1 for pr in pr_list if pr.get(AGE_KEY) > min_age)
+        fail_pr_count = sum(1 for pr in pr_list if pr.get(AGE_KEY) > min_age and pr.get(QG) == "ERROR")
         maturity = 0
-        if pr_count > 10 and fail_pr_count == 0:
-            maturity = 4
-        elif pr_count > 5 and fail_pr_count == 0:
-            maturity = 3
-        elif pr_count > 0 and fail_pr_count / pr_count < 0.2:
-            maturity = 2
-        elif pr_count > 0 and fail_pr_count / pr_count < 0.5:
-            maturity = 1
+        for i in range(0, len(thresholds), 2):
+            max_ratio = float(thresholds[i + 1])
+            if pr_count >= thresholds[i] and fail_pr_count / pr_count <= max_ratio:
+                maturity += 1
         if proj[QG] == "OK":
             maturity = min(maturity + 1, 5)
         proj[QG_ENFORCEMENT_MATURITY_KEY] = maturity
 
 
-def compute_new_code_statistics(data: dict[str, Any]) -> dict[str, Any]:
+def compute_new_code_statistics(data: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
     """Computes statistics on new code"""
     nbr_projects = len(data)
     summary_data = {NEW_CODE_DAYS_KEY: {}, NEW_CODE_RATIO_KEY: {}}
@@ -333,7 +332,7 @@ def compute_new_code_statistics(data: dict[str, Any]) -> dict[str, Any]:
     return summary_data
 
 
-def compute_analysis_frequency_statistics(data: dict[str, Any]) -> dict[str, Any]:
+def compute_analysis_frequency_statistics(data: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
     """Computes the proportions of project that are analyzed more or less frequently"""
     DAYS = "7_days_or_less"
     return {
@@ -414,7 +413,7 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     return results
 
 
-def compute_global_maturity_level_statistics(data: dict[str, Any]) -> dict[str, Any]:
+def compute_global_maturity_level_statistics(data: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
     """Computes statistics on global maturity levels"""
     nbr_projects = len(data)
     summary_data = {
@@ -467,10 +466,11 @@ def main() -> None:
     """Entry point for sonar-maturity"""
     start_time = util.start_clock()
     try:
-        kwargs = util.convert_args(__parse_args("Extracts a maturity score for a platform, a project or a portfolio"))
+        kwargs: dict[str, Any] = util.convert_args(__parse_args("Extracts a maturity score for a platform, a project or a portfolio"))
         sq = platform.Platform(**kwargs)
         sq.verify_connection()
         sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
+        config = conf.load("sonar-maturity.properties", __file__)
         project_list = component_helper.get_components(
             endpoint=sq,
             component_type="projects",
@@ -483,16 +483,16 @@ def main() -> None:
         maturity_data = get_maturity_data(project_list, threads=kwargs[options.NBR_THREADS])
 
         summary_data: dict[str, Any] = {"total_projects": len(maturity_data)}
-        summary_data["quality_gate_enforcement_statistics"] = compute_pr_statistics(maturity_data)
-        compute_project_analysis_maturity(maturity_data)
-        compute_project_new_code_maturity_level(maturity_data)
-        compute_quality_gate_enforcement_maturity(maturity_data)
+        summary_data["quality_gate_enforcement_statistics"] = compute_pr_statistics(maturity_data, config)
+        compute_project_analysis_maturity(maturity_data, config)
+        compute_project_new_code_maturity_level(maturity_data, config)
+        compute_quality_gate_enforcement_maturity(maturity_data, config)
         summary_data["governance_maturity_statistics"] = get_governance_maturity_data(sq)
-        summary_data["global_maturity_level_statistics"] = compute_global_maturity_level_statistics(maturity_data)
-        summary_data["quality_gate_project_statistics"] = compute_summary_qg(maturity_data)
-        summary_data["last_analysis_statistics"] = compute_summary_age(maturity_data)
-        summary_data["new_code_statistics"] = compute_new_code_statistics(maturity_data)
-        summary_data["frequency_statistics"] = compute_analysis_frequency_statistics(maturity_data)
+        summary_data["global_maturity_level_statistics"] = compute_global_maturity_level_statistics(maturity_data, config)
+        summary_data["quality_gate_project_statistics"] = compute_summary_qg(maturity_data, config)
+        summary_data["last_analysis_statistics"] = compute_summary_age(maturity_data, config)
+        summary_data["new_code_statistics"] = compute_new_code_statistics(maturity_data, config)
+        summary_data["frequency_statistics"] = compute_analysis_frequency_statistics(maturity_data, config)
 
         summary_data = util.order_dict(
             summary_data,
