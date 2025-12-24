@@ -92,7 +92,7 @@ def __count_percentage(part: int, total: int) -> dict[str, float]:
     return {"count": part, "percentage": __rounded(part / total)}
 
 
-def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
+def get_project_maturity_data(project: projects.Project, settings: dict[str, Any]) -> dict[str, Any]:
     """Gets the maturity data for a project"""
     log.debug("Collecting maturity data for %s", project)
     proj_measures = project.get_measures([QG_METRIC, OVERALL_LOC_METRIC, OVERALL_LINES_METRIC, NEW_CODE_LINES_METRIC])
@@ -117,7 +117,8 @@ def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
     data["detectedCi"] = project.ci()
 
     # Extract project analysis history
-    segments = [7, 30, 90]
+    segments = [s.strip() for s in settings.get("projectRecentAnalysisDaysThreshold", "7, 30, 90").split(",")]
+    segments = misc.convert_types(segments)
     history = [util.age(util.string_to_date(d["date"])) for d in project.get_analyses()]
     log.debug("%s history of analysis = %s", project, history)
     section = ANALYSES_MAIN_BRANCH_KEY
@@ -131,7 +132,7 @@ def get_project_maturity_data(project: projects.Project) -> dict[str, Any]:
         history += [util.age(util.string_to_date(d["date"])) for d in branch.get_analyses()]
     section = ANALYSES_ANY_BRANCH_KEY
     data[section] = {"total": len(history)}
-    for limit in [7, 30, 90]:
+    for limit in segments:
         data[section][f"{limit}_days_or_less"] = sum(1 for v in history if v <= limit)
     data[section][f"more_than_{segments[-1]}_days"] = sum(1 for v in history if v > segments[-1])
     history = sorted(history)
@@ -151,7 +152,8 @@ def compute_summary_age(data: dict[str, Any], settings: dict[str, Any]) -> dict[
     """Computes statistics on last analysis"""
     nbr_projects = len(data)
     summary_data = {"any_branch": {"never_analyzed": sum(1 for d in data.values() if d["lines"] is None)}, "main_branch": {}}
-    segments = [1, 3, 7, 15, 30, 90, 180, 365, 10000]
+    segments = [s.strip() for s in settings.get("projectLastAnalysisDaysThresholds", "1, 3, 7, 15, 30, 90, 180, 365").split(",")] + [10000]
+    segments = misc.convert_types(segments)
     low_bound = -1
     for high_bound in segments:
         key = f"between_{low_bound+1}_and_{high_bound}_days"
@@ -234,25 +236,31 @@ def compute_summary_qg(data: dict[str, Any], settings: dict[str, Any]) -> dict[s
     return summary_data
 
 
-def _count_failed_prs(project_data: dict[str, Any]) -> int:
+def _count_prs(project_data: dict[str, Any], min_age: int = 7, *statuses: str) -> int:
     """Counts the number of failed PRs from PR stats"""
     pr_list = project_data.get("pull_requests", {}).values()
-    return sum(1 for pr in pr_list if pr.get(AGE_KEY) > 7 and pr.get(QG) == "ERROR")
+    return sum(1 for pr in pr_list if pr.get(AGE_KEY) > min_age and pr.get(QG) in statuses)
 
 
 def compute_project_analysis_maturity(data: dict[str, Any], settings: dict[str, Any]) -> None:
     """Computes the maturity level of a project"""
+    l1_threshold = misc.convert_types(settings.get("projectLevel1MaturityMaximumLastAnalysisAge", 60))
+    l1_ci = misc.convert_types(settings.get("projectLevel1MaturityNoCiDetected", True))
+    l2_threshold = misc.convert_types(settings.get("projectLevel2MaturityMaximumLastAnalysisAge", 7))
+    l3_threshold = misc.convert_types(settings.get("projectLevel3MaturityMinimumNbrOfAnalyses", 50))
+    pr_threshold = misc.convert_types(settings.get("pullRequestAgeThreshold", 7))
     for proj in data.values():
         if proj[AGE_KEY] is None:
             analysis_level = 0
-        elif proj[AGE_KEY] > 30 or proj["detectedCi"] != "undetected":
-            analysis_level = 1
-        elif proj[AGE_KEY] > 7:
-            analysis_level = 2
-        elif proj[ANALYSES_ANY_BRANCH_KEY]["total"] > 50:
+        elif proj[ANALYSES_ANY_BRANCH_KEY]["total"] > l3_threshold:
             analysis_level = 3
-        if analysis_level == 3:
-            analysis_level = 4 if _count_failed_prs(proj) == 0 else 3
+        elif proj[AGE_KEY] > l2_threshold:
+            analysis_level = 2
+        elif proj[AGE_KEY] > l1_threshold or (l1_ci and proj["detectedCi"] != "undetected"):
+            analysis_level = 1
+
+        if analysis_level == 3 and _count_prs(proj, pr_threshold, "ERROR", "OK") > 0:
+            analysis_level = 4 if _count_prs(proj, pr_threshold, "ERROR") == 0 else 3
         if proj["projectType"] != "UNKNOWN" and proj["scanner"] == proj["projectType"]:
             analysis_level = min(analysis_level + 1, 5)
         proj[ANALYSIS_MATURITY_KEY] = analysis_level
@@ -260,16 +268,19 @@ def compute_project_analysis_maturity(data: dict[str, Any], settings: dict[str, 
 
 def compute_project_new_code_maturity_level(data: dict[str, Any], settings: dict[str, Any]) -> None:
     """Computes the maturity level of a project"""
+    max_lines = misc.convert_types(settings.get("newCodeMaxLines", 10000))
+    max_days = misc.convert_types(settings.get("newCodeMaxDays", 60))
+    max_ratio = misc.convert_types(settings.get("newCodeMaxRatio", 0.05))
     for proj in data.values():
         maturity = 0
         if proj[NEW_CODE_LINES_KEY] is not None:
             if proj[NEW_CODE_LINES_KEY] > 0:
                 maturity += 1
-            if proj[NEW_CODE_RATIO_KEY] < 0.05:
+            if proj[NEW_CODE_RATIO_KEY] < max_ratio:
                 maturity += 1
-            if proj[NEW_CODE_LINES_KEY] < 10000:
+            if proj[NEW_CODE_LINES_KEY] < max_lines:
                 maturity += 1
-            if proj[NEW_CODE_DAYS_KEY] is not None and proj[NEW_CODE_DAYS_KEY] < 60:
+            if proj[NEW_CODE_DAYS_KEY] is not None and proj[NEW_CODE_DAYS_KEY] < max_days:
                 maturity += 1
         proj[NEW_CODE_MATURITY_KEY] = maturity
 
@@ -334,13 +345,21 @@ def compute_new_code_statistics(data: dict[str, Any], settings: dict[str, Any]) 
 
 def compute_analysis_frequency_statistics(data: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
     """Computes the proportions of project that are analyzed more or less frequently"""
-    DAYS = "7_days_or_less"
-    return {
-        "more_than_20_times_over_the_last_7_days": sum(1 for proj in data.values() if 20 <= proj[ANALYSES_ANY_BRANCH_KEY][DAYS]),
-        "between_5_and_19_times_over_the_last_7_days": sum(1 for proj in data.values() if 5 <= proj[ANALYSES_ANY_BRANCH_KEY][DAYS] < 20),
-        "between_1_and_4_times_over_the_last_7_days": sum(1 for proj in data.values() if 1 <= proj[ANALYSES_ANY_BRANCH_KEY][DAYS] < 5),
-        "not_analyzed_over_the_last_7_days": sum(1 for proj in data.values() if proj[ANALYSES_ANY_BRANCH_KEY][DAYS] == 0),
-    }
+    recent_days = [s.strip() for s in settings.get("projectRecentAnalysisDaysThresholds", "7, 30, 90").split(",")][0]
+    DAYS = f"{recent_days}_days_or_less"
+    thresholds = [s.strip() for s in settings.get("projectAnalysisMaturityThresholds", "0, 5, 20").split(",")]
+    thresholds = misc.convert_types(thresholds)
+    summary = {f"not_analyzed_over_the_last_{recent_days}_days": sum(1 for p in data.values() if p[ANALYSES_ANY_BRANCH_KEY][DAYS] == 0)}
+    for i in range(len(thresholds)):
+        if i + 1 < len(thresholds):
+            i_min, i_max = thresholds[i], thresholds[i + 1]
+            key = f"between_{thresholds[i]}_and_{thresholds[i+1]}_times_over_the_last_{recent_days}_days"
+        else:
+            i_min, i_max = thresholds[i], 10000
+            key = f"more_than_{thresholds[i]}_times_over_the_last_{recent_days}_days"
+        count = sum(1 for p in data.values() if i_min <= p[ANALYSES_ANY_BRANCH_KEY][DAYS] < i_max)
+        summary[key] = count
+    return summary
 
 
 def write_results(filename: str, data: dict[str, Any]) -> None:
@@ -350,13 +369,13 @@ def write_results(filename: str, data: dict[str, Any]) -> None:
     log.info(f"Maturity report written to file '{filename}'")
 
 
-def get_maturity_data(project_list: list[projects.Project], threads: int) -> dict[str, Any]:
+def get_maturity_data(project_list: list[projects.Project], threads: int, settings: dict[str, Any]) -> dict[str, Any]:
     """Gets project maturity data in multithreaded way"""
     log.info("Collecting project maturity data on %d threads", threads)
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjMaturity") as executor:
         futures, futures_map = [], {}
         for proj in project_list:
-            future = executor.submit(get_project_maturity_data, proj)
+            future = executor.submit(get_project_maturity_data, proj, settings)
             futures.append(future)
             futures_map[future] = proj
         i, nb_projects = 0, len(project_list)
@@ -480,7 +499,7 @@ def main() -> None:
         if len(project_list) == 0:
             raise exceptions.SonarException(f"No project matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
 
-        maturity_data = get_maturity_data(project_list, threads=kwargs[options.NBR_THREADS])
+        maturity_data = get_maturity_data(project_list, threads=kwargs[options.NBR_THREADS], settings=config)
 
         summary_data: dict[str, Any] = {"total_projects": len(maturity_data)}
         summary_data["quality_gate_enforcement_statistics"] = compute_pr_statistics(maturity_data, config)
@@ -507,6 +526,8 @@ def main() -> None:
         )
         write_results(kwargs.get(options.REPORT_FILE), {"platform": sq.basics(), "summary": summary_data, "details": maturity_data})
         draw_charts(summary_data["global_maturity_level_statistics"])
+        log.info("OVERALL MATURITY LEVEL: %.3f", summary_data["global_maturity_level_statistics"][OVERALL_MATURITY_KEY])
+
     except exceptions.SonarException as e:
         chelp.clear_cache_and_exit(e.errcode, e.message)
 
