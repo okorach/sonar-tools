@@ -187,12 +187,12 @@ version = "0.4.6"
 description = "Cross-platform colored terminal text."
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
-groups = ["dev", "docs", "lint", "test"]
-markers = "sys_platform == \"win32\""
+groups = ["main", "dev", "docs", "lint", "test"]
 files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
+markers = {dev = "sys_platform == \"win32\"", docs = "sys_platform == \"win32\"", lint = "sys_platform == \"win32\"", test = "sys_platform == \"win32\""}
 
 [[package]]
 name = "coverage"
@@ -1820,6 +1820,21 @@ standalone = ["Sphinx (>=5)"]
 test = ["pytest"]
 
 [[package]]
+name = "termgraph"
+version = "0.7.5"
+description = "A command-line tool that draws basic graphs in the terminal."
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "termgraph-0.7.5-py3-none-any.whl", hash = "sha256:f153b5f5b78dea105275d42fe9e8c13ccc2df1e77da449444b79c6196cd3c7c2"},
+    {file = "termgraph-0.7.5.tar.gz", hash = "sha256:9660f3ce04cd182d34c9fb0390a57bc2ab596d8159ed544459b29d3f6db9d1da"},
+]
+
+[package.dependencies]
+colorama = ">=0.4.6"
+
+[[package]]
 name = "tomli"
 version = "2.2.1"
 description = "A lil' TOML parser"
@@ -1984,4 +1999,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.9"
-content-hash = "e7622a969ef9aad15092cd4652ab2ee35787f5ee988d893fe9063d636a466bf6"
+content-hash = "6f626bb58e18524d5762bd3a37d7be894356832c2acca29b0f0094bd5bd530af"

@@ -24,6 +24,9 @@ from typing import Any
 import traceback
 import concurrent.futures
 
+from termgraph import Data, Args, BarChart
+
+
 from sonar import utilities as util
 from sonar import version
 from cli import options
@@ -376,10 +379,12 @@ def get_maturity_data(project_list: list[projects.Project], threads: int) -> dic
 
 def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     """Gets governance maturity data"""
+    log.info("Collecting governance maturity data")
     portfolio_count = pf.count(endpoint)
     project_count = projects.count(endpoint)
     ratio = project_count / portfolio_count if portfolio_count > 0 else None
 
+    log.info("Collecting quality gates maturity data")
     qg_list = [q for q in qg.get_list(endpoint).values() if not q.is_built_in]
 
     results = {
@@ -390,6 +395,7 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     }
     results["ratio_of_incorrect_quality_gates"] = __rounded(results["number_of_incorrect_quality_gates"] / len(qg_list)) if len(qg_list) > 0 else 0.0
 
+    log.info("Collecting quality profiles maturity data")
     qp_list = [p for p in qp.get_list(endpoint).values() if not p.is_built_in]
     # We should count the nbr of custom profiles per language
     results["number_of_custom_quality_profiles"] = {}
@@ -432,11 +438,29 @@ def compute_global_maturity_level_statistics(data: dict[str, Any]) -> dict[str, 
             rating: sum(
                 1
                 for p in data.values()
-                if rating * 3 <= p[ANALYSIS_MATURITY_KEY] + p[NEW_CODE_MATURITY_KEY] + p[QG_ENFORCEMENT_MATURITY_KEY] < (rating + 1) * 3
+                if rating <= (p[ANALYSIS_MATURITY_KEY] + p[NEW_CODE_MATURITY_KEY] + p[QG_ENFORCEMENT_MATURITY_KEY]) / 3 + 0.5 < rating + 1
             )
         }
 
     return summary_data
+
+
+def draw_charts(data: dict[str, Any]) -> None:
+    """Draws. bar charts from maturity data"""
+
+    kv = {
+        f"{ANALYSIS_MATURITY_KEY}_distribution": "Projects Analysis Maturity Distribution",
+        f"{NEW_CODE_MATURITY_KEY}_distribution": "Projects New Code Maturity Distribution",
+        f"{QG_ENFORCEMENT_MATURITY_KEY}_distribution": "Projects QG Enforcement Maturity Distribution",
+        f"{OVERALL_MATURITY_KEY}_distribution": "Projects Overall Maturity Distribution",
+    }
+    dataset = {}
+    for key in kv.keys():
+        dataset[key] = Data([[v] for v in data[key].values()], [str(k) for k in data[key].keys()])
+
+    for key in kv.keys():
+        chart = BarChart(dataset[key], Args(title=kv[key], width=80, format="{:.0f}"))
+        chart.draw()
 
 
 def main() -> None:
@@ -482,6 +506,7 @@ def main() -> None:
             "last_analysis_statistics",
         )
         write_results(kwargs.get(options.REPORT_FILE), {"platform": sq.basics(), "summary": summary_data, "details": maturity_data})
+        draw_charts(summary_data["global_maturity_level_statistics"])
     except exceptions.SonarException as e:
         chelp.clear_cache_and_exit(e.errcode, e.message)
 
