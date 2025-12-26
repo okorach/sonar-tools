@@ -29,7 +29,8 @@ import sonar.platform as pf
 from sonar.util.types import ApiPayload
 from sonar.util import cache
 
-from sonar import sqobject, utilities, exceptions
+from sonar import sqobject, exceptions
+import sonar.utilities as sutil
 
 #: List of what can be considered the main metrics
 MAIN_METRICS = (
@@ -148,7 +149,7 @@ def search(endpoint: pf.Platform, show_hidden_metrics: bool = False, use_cache: 
                 data = json.loads(endpoint.get(APIS["search"], params={"ps": __MAX_PAGE_SIZE, "p": page}).text)
                 for m in data["metrics"]:
                     _ = Metric(endpoint=endpoint, key=m["key"], data=m)
-                nb_pages = utilities.nbr_pages(data)
+                nb_pages = sutil.nbr_pages(data)
                 page += 1
     m_list = {k: v for k, v in Metric.CACHE.items() if not v.hidden or show_hidden_metrics}
     return {m.key: m for m in m_list.values()}

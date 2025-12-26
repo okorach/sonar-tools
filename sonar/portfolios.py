@@ -41,7 +41,8 @@ from sonar.projects import Project
 
 import sonar.permissions.portfolio_permissions as pperms
 import sonar.sqobject as sq
-import sonar.utilities as util
+import sonar.util.misc as util
+import sonar.utilities as sutil
 from sonar.audit import rules, problem
 from sonar.portfolio_reference import PortfolioReference
 from sonar.util import portfolio_helper as phelp
@@ -369,7 +370,7 @@ class Portfolio(aggregations.Aggregation):
         if not self.is_sub_portfolio():
             json_data["visibility"] = self._visibility
             if pf_perms := self.permissions().export(export_settings=export_settings):
-                json_data["permissions"] = util.perms_to_list(pf_perms)
+                json_data["permissions"] = sutil.perms_to_list(pf_perms)
         json_data["tags"] = self._tags
         if subportfolios:
             json_data["portfolios"] = {}
@@ -584,11 +585,11 @@ class Portfolio(aggregations.Aggregation):
             params["p"] = page
             try:
                 data = json.loads(self.get("api/measures/component_tree", params=params).text)
-                nbr_projects = util.nbr_total_elements(data)
+                nbr_projects = sutil.nbr_total_elements(data)
                 proj_key_list += [comp["refKey"] for comp in data["components"]]
             except exceptions.SonarException:
                 break
-            nbr_pages = util.nbr_pages(data)
+            nbr_pages = sutil.nbr_pages(data)
             log.debug("Number of projects: %d - Page: %d/%d", nbr_projects, page, nbr_pages)
             if nbr_projects > Portfolio.MAX_SEARCH:
                 log.warning("Can't collect more than %d projects from %s", Portfolio.MAX_SEARCH, str(self))
@@ -752,12 +753,12 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
 
 def search_by_name(endpoint: pf.Platform, name: str) -> types.ApiPayload:
     """Searches portfolio by name and, if found, returns data as JSON"""
-    return util.search_by_name(endpoint, name, Portfolio.API[c.SEARCH], "components")
+    return sutil.search_by_name(endpoint, name, Portfolio.API[c.SEARCH], "components")
 
 
 def search_by_key(endpoint: pf.Platform, key: str) -> types.ApiPayload:
     """Searches portfolio by key and, if found, returns data as JSON"""
-    return util.search_by_key(endpoint, key, Portfolio.API[c.SEARCH], "components")
+    return sutil.search_by_key(endpoint, key, Portfolio.API[c.SEARCH], "components")
 
 
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
@@ -793,7 +794,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
         i += 1
         if i % 10 == 0 or i == nb_portfolios:
             log.info("Exported %d/%d portfolios (%d%%)", i, nb_portfolios, (i * 100) // nb_portfolios)
-    write_q and write_q.put(util.WRITE_END)
+    write_q and write_q.put(sutil.WRITE_END)
     return dict(sorted(exported_portfolios.items()))
 
 

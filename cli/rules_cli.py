@@ -28,7 +28,8 @@ import csv
 from cli import options
 import sonar.logging as log
 from sonar import rules, platform, exceptions, errcodes, version, qualityprofiles
-import sonar.utilities as util
+import sonar.utilities as sutil
+import sonar.util.misc as util
 import sonar.util.constants as c
 import sonar.util.common_helper as chelp
 
@@ -76,7 +77,7 @@ def main() -> int:
     """Main entry point"""
     start_time = util.start_clock()
     try:
-        kwargs = util.convert_args(__parse_args("Extract rules"))
+        kwargs = sutil.convert_args(__parse_args("Extract rules"))
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
@@ -107,6 +108,7 @@ def main() -> int:
         chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error: {e}")
     log.info("%d rules exported from %s", len(rule_list), endpoint.local_url)
     chelp.clear_cache_and_exit(0, start_time=start_time)
+    return 0
 
 
 if __name__ == "__main__":

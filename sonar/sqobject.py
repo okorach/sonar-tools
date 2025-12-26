@@ -33,7 +33,9 @@ import requests
 import sonar.logging as log
 from sonar.util import types, cache
 from sonar.util import constants as c
-from sonar import utilities, exceptions, errcodes
+from sonar import exceptions, errcodes
+import sonar.util.misc as util
+import sonar.utilities as sutil
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -126,7 +128,7 @@ class SqObject(object):
 
     def reload(self, data: types.ApiPayload) -> object:
         """Loads a SonarQube API JSON payload in a SonarObject"""
-        log.debug("%s: Reloading with %s", str(self), utilities.json_dump(data))
+        log.debug("%s: Reloading with %s", str(self), util.json_dump(data))
         self.sq_json = (self.sq_json or {}) | data
         return self
 
@@ -219,10 +221,10 @@ class SqObject(object):
         """
         if tags is None:
             return False
-        tags = list(set(utilities.csv_to_list(tags)))
+        tags = list(set(util.csv_to_list(tags)))
         log.info("Settings tags %s to %s", tags, str(self))
         try:
-            if ok := self.post(self.__class__.API[c.SET_TAGS], params={**self.api_params(c.SET_TAGS), "tags": utilities.list_to_csv(tags)}).ok:
+            if ok := self.post(self.__class__.API[c.SET_TAGS], params={**self.api_params(c.SET_TAGS), "tags": util.list_to_csv(tags)}).ok:
                 self._tags = sorted(tags)
         except exceptions.SonarException:
             return False
@@ -276,8 +278,8 @@ def search_objects(endpoint: object, object_class: Any, params: types.ApiParams,
     objects_list = {}
     cname = object_class.__name__.lower()
     data = __get(endpoint, api, {**new_params, p_field: 1})
-    nb_pages = utilities.nbr_pages(data, api_version)
-    nb_objects = max(len(data[returned_field]), utilities.nbr_total_elements(data, api_version))
+    nb_pages = sutil.nbr_pages(data, api_version)
+    nb_objects = max(len(data[returned_field]), sutil.nbr_total_elements(data, api_version))
     log.info(
         "Searching %d %ss, %d pages of %d elements, %d pages in parallel...",
         nb_objects,
@@ -286,7 +288,7 @@ def search_objects(endpoint: object, object_class: Any, params: types.ApiParams,
         len(data[returned_field]),
         threads,
     )
-    if utilities.nbr_total_elements(data) > 0 and len(data[returned_field]) == 0:
+    if sutil.nbr_total_elements(data) > 0 and len(data[returned_field]) == 0:
         log.fatal(msg := f"Index on {cname} is corrupted, please reindex before using API")
         raise exceptions.SonarException(msg, errcodes.SONAR_INTERNAL_ERROR)
 

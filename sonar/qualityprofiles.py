@@ -39,7 +39,8 @@ from sonar import exceptions
 from sonar import rules, languages
 import sonar.permissions.qualityprofile_permissions as permissions
 import sonar.sqobject as sq
-import sonar.utilities as util
+import sonar.util.misc as util
+import sonar.utilities as sutil
 
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
@@ -88,8 +89,8 @@ class QualityProfile(sq.SqObject):
         self.project_count = data.get("projectCount", None)  #: Number of projects using this quality profile
         self.parent_name = data.get("parentName", None)  #: Name of parent profile, or None if none
 
-        self.__last_use = util.string_to_date(data.get("lastUsed", None))
-        self.__last_update = util.string_to_date(data.get("rulesUpdatedAt", None))
+        self.__last_use = sutil.string_to_date(data.get("lastUsed", None))
+        self.__last_update = sutil.string_to_date(data.get("rulesUpdatedAt", None))
 
         log.debug("Created %s", str(self))
         QualityProfile.CACHE.put(self)
@@ -111,7 +112,7 @@ class QualityProfile(sq.SqObject):
         o = QualityProfile.CACHE.get(name, language, endpoint.local_url)
         if o:
             return o
-        data = util.search_by_name(
+        data = sutil.search_by_name(
             endpoint, name, QualityProfile.API[c.LIST], QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language}
         )
         return cls(key=data["key"], endpoint=endpoint, data=data)
@@ -533,7 +534,7 @@ class QualityProfile(sq.SqObject):
                     self._projects += [p["key"] for p in data["results"]]
                     page += 1
                     if self.endpoint.version() >= (10, 0, 0):
-                        more = util.nbr_pages(data) >= page
+                        more = sutil.nbr_pages(data) >= page
                     else:
                         more = data["more"]
 
@@ -841,7 +842,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     qp_list = qphelp.convert_qps_json(qp_list)
     if write_q := kwargs.get("write_q", None):
         write_q.put(qp_list)
-        write_q.put(util.WRITE_END)
+        write_q.put(sutil.WRITE_END)
     # return dict(sorted(qp_list.items()))
     return qp_list
 

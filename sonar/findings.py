@@ -32,7 +32,8 @@ import sonar.platform as pf
 from sonar.util import constants as c
 from sonar import exceptions
 
-import sonar.utilities as util
+import sonar.util.misc as util
+import sonar.utilities as sutil
 from sonar import projects, rules
 import sonar.util.issue_defs as idefs
 
@@ -170,14 +171,14 @@ class Finding(sq.SqObject):
         if self.component:
             self.file = self.component.replace(f"{self.projectKey}:", "", 1)
         self.branch, self.pull_request = self.get_branch_and_pr(jsondata)
-        self.creation_date = util.string_to_date(jsondata["creationDate"])
-        self.modification_date = util.string_to_date(jsondata["updateDate"])
+        self.creation_date = sutil.string_to_date(jsondata["creationDate"])
+        self.modification_date = sutil.string_to_date(jsondata["updateDate"])
 
     def _load_from_export(self, jsondata: types.ObjectJsonRepr) -> None:
         self._load_common(jsondata)
         self.projectKey = jsondata["projectKey"]
-        self.creation_date = util.string_to_date(jsondata["createdAt"])
-        self.modification_date = util.string_to_date(jsondata["updatedAt"])
+        self.creation_date = sutil.string_to_date(jsondata["createdAt"])
+        self.modification_date = sutil.string_to_date(jsondata["updatedAt"])
 
     def url(self) -> str:
         """Returns the URL of the finding, must be implemented in subclasses"""
@@ -215,9 +216,9 @@ class Finding(sq.SqObject):
 
         :param without_time: Whether to include the time in the date fields
         """
-        fmt = util.SQ_DATETIME_FORMAT
+        fmt = sutil.SQ_DATETIME_FORMAT
         if without_time:
-            fmt = util.SQ_DATE_FORMAT
+            fmt = sutil.SQ_DATE_FORMAT
         data = vars(self).copy()
         for old_name, new_name in _JSON_FIELDS_REMAPPED:
             data[new_name] = data.pop(old_name, None)

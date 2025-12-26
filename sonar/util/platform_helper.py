@@ -21,7 +21,7 @@
 
 from typing import Any
 from sonar import settings
-from sonar import utilities as util
+import sonar.util.misc as util
 from sonar.util import common_json_helper
 
 _PERM_TPL_IMPORTABLE_PROPERTIES = ("name", "description", "pattern", "defaultFor", "permissions")

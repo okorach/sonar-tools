@@ -28,7 +28,7 @@ import json
 import sonar.logging as log
 from sonar import platform as pf, exceptions
 from sonar.util import types, cache, constants as c
-import sonar.utilities as util
+import sonar.util.misc as util
 import sonar.sqobject as sq
 
 from sonar.audit import rules, problem

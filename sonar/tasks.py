@@ -31,11 +31,12 @@ import sonar.sqobject as sq
 import sonar.platform as pf
 
 from sonar import exceptions
-import sonar.utilities as util
+import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 from sonar.config import get_scanners_versions
 from sonar.util import types, cache
+from sonar.util import misc as util
 
 SUCCESS = "SUCCESS"
 PENDING = "PENDING"
@@ -376,7 +377,7 @@ class Task(sq.SqObject):
         if len(scanner_version) == 2:
             scanner_version.append(0)
         scanner_version = tuple(scanner_version[0:3])
-        str_version = util.version_to_string(scanner_version)
+        str_version = sutil.version_to_string(scanner_version)
         versions_list = SCANNER_VERSIONS[scanner_type].keys()
         log.debug("versions = %s", str(versions_list))
         try:
@@ -403,7 +404,7 @@ class Task(sq.SqObject):
         log.debug("Scanner used is %d versions old", index)
         if delta_days > audit_settings.get("audit.projects.scannerMaxAge", 730):
             rule = get_rule(RuleId.OBSOLETE_SCANNER) if index >= 3 else get_rule(RuleId.NOT_LATEST_SCANNER)
-            release_date = util.date_to_string(release_date, with_time=False)
+            release_date = sutil.date_to_string(release_date, with_time=False)
             problems.append(Problem(rule, proj, str(proj), scanner_type, str_version, release_date))
 
         return problems

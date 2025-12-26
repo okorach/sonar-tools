@@ -27,7 +27,8 @@ import datetime
 from dateutil.relativedelta import relativedelta
 
 import sonar.logging as log
-import sonar.utilities as util
+import sonar.util.misc as util
+import sonar.utilities as sutil
 from sonar.util import types, update_center
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
@@ -235,7 +236,7 @@ def audit_version(obj: object, obj_name: str) -> list[Problem]:
         log.warning("%s: Version information is missing, audit on node version is skipped...", obj_name)
         return []
     st_time = obj.start_time()
-    log.debug("%s: version %s, start time = %s", obj_name, util.version_to_string(obj.version()), str(st_time))
+    log.debug("%s: version %s, start time = %s", obj_name, sutil.version_to_string(obj.version()), str(st_time))
     if st_time > _RELEASE_DATE_9_9:
         current_lta = (9, 9, 0)
     elif st_time > _RELEASE_DATE_8_9:
@@ -246,12 +247,12 @@ def audit_version(obj: object, obj_name: str) -> list[Problem]:
         current_lta = (6, 7, 0)
     else:
         current_lta = (5, 9, 0)
-    lta_str = util.version_to_string(current_lta[:2])
+    lta_str = sutil.version_to_string(current_lta[:2])
     if sq_version >= current_lta:
-        log.info("%s: Version %s is correct wrt LTA (ex-LTS) %s", obj_name, util.version_to_string(obj.version()), lta_str)
+        log.info("%s: Version %s is correct wrt LTA (ex-LTS) %s", obj_name, sutil.version_to_string(obj.version()), lta_str)
         return []
 
-    return [Problem(get_rule(RuleId.BELOW_LTA), "", util.version_to_string(obj.version()), lta_str)]
+    return [Problem(get_rule(RuleId.BELOW_LTA), "", sutil.version_to_string(obj.version()), lta_str)]
 
 
 def audit_ce(obj: object, obj_name: str) -> list[Problem]:

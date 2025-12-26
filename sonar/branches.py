@@ -34,7 +34,8 @@ from sonar.util import cache
 import sonar.logging as log
 from sonar import components, settings, exceptions, tasks
 from sonar import projects as proj
-import sonar.utilities as util
+import sonar.util.misc as util
+import sonar.utilities as sutil
 
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
@@ -151,7 +152,7 @@ class Branch(components.Component):
         log.debug("Loading %s with data %s", self, data)
         self.sq_json = (self.sq_json or {}) | data
         self._is_main = self.sq_json["isMain"]
-        self._last_analysis = util.string_to_date(self.sq_json.get("analysisDate", None))
+        self._last_analysis = sutil.string_to_date(self.sq_json.get("analysisDate", None))
         self._keep_when_inactive = self.sq_json.get("excludedFromPurge", False)
         self._is_main = self.sq_json.get("isMain", False)
 
@@ -407,7 +408,7 @@ class Branch(components.Component):
                 return self.__audit_last_analysis(audit_settings)
             return self.__audit_last_analysis(audit_settings) + self.__audit_never_analyzed() + self._audit_component(audit_settings)
         except Exception as e:
-            log.error("%s while auditing %s, audit skipped", util.error_msg(e), str(self))
+            log.error("%s while auditing %s, audit skipped", sutil.error_msg(e), str(self))
         return []
 
     def api_params(self, op: Optional[str] = None) -> types.ApiParams:

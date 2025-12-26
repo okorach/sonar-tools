@@ -32,13 +32,16 @@ import yaml
 import pathlib
 
 from cli import options
-from sonar import exceptions, errcodes, utilities, version
+from sonar import exceptions, errcodes, version
+from sonar.util import misc as util
+import sonar.utilities as sutil
 from sonar.util import types, constants as c
 from sonar.util import platform_helper as pfhelp
 from sonar.util import project_helper as pjhelp
 from sonar.util import portfolio_helper as foliohelp
 from sonar.util import qualityprofile_helper as qphelp
 from sonar.util import rule_helper as rhelp
+from sonar.util import misc
 
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
@@ -110,7 +113,7 @@ def __parse_args(desc: str) -> object:
         default=False,
         action="store_true",
         help="Also exports settings values that are the platform defaults. "
-        f"By default the export will show the value as '{utilities.DEFAULT}' "
+        f"By default the export will show the value as '{sutil.DEFAULT}' "
         "and the setting will not be imported at import time",
     )
     parser.add_argument(
@@ -153,12 +156,12 @@ def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remov
     """Sorts a JSON file and optionally remove empty and none values"""
     sort_fields = {"users": "login", "groups": "name", "qualityGates": "name", "qualityProfiles": "language"}
     log.debug("Normalizing JSON - remove empty = %s, remove nones = %s", str(remove_empty), str(remove_none))
-    json_data = utilities.order_keys(json_data, *_SECTIONS_ORDER)
+    json_data = util.order_keys(json_data, *_SECTIONS_ORDER)
     for key in [k for k in _SECTIONS_TO_SORT if k in json_data]:
         if isinstance(json_data[key], dict):
             json_data[key] = {k: json_data[key][k] for k in sorted(json_data[key])}
         else:
-            json_data[key] = utilities.sort_list_by_key(json_data[key], sort_fields.get(key, "key"))
+            json_data[key] = util.sort_list_by_key(json_data[key], sort_fields.get(key, "key"))
     return json_data
 
 
@@ -168,17 +171,17 @@ def __normalize_file(file: str, format: str) -> bool:
     :param str format: File format (json or yaml)
     :return: whether normaizalization succeeded"""
     try:
-        with utilities.open_file(file, mode="r") as fd:
+        with util.open_file(file, mode="r") as fd:
             json_data = json.loads(fd.read())
     except json.decoder.JSONDecodeError:
         log.warning("JSON Decode error while normalizing JSON file '%s', is file complete?", file)
         return False
     json_data = __normalize_json(json_data, remove_empty=False, remove_none=True)
-    with utilities.open_file(file, mode="w") as fd:
+    with util.open_file(file, mode="w") as fd:
         if format == "yaml":
             print(yaml.dump(json_data, sort_keys=False), file=fd)
         else:
-            print(utilities.json_dump(json_data), file=fd)
+            print(util.json_dump(json_data), file=fd)
     return True
 
 
@@ -201,7 +204,7 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
     print(f'"{object_type}": ' + start, file=fd)
     while not done:
         obj_json = queue.get()
-        if not (done := obj_json is utilities.WRITE_END):
+        if not (done := obj_json is sutil.WRITE_END):
             if object_type in ("groups", "globalSettings"):
                 obj_json = __prep_json_for_write(obj_json, {**export_settings, EXPORT_EMPTY: True})
             else:
@@ -209,10 +212,10 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
             key = "" if isinstance(obj_json, list) else obj_json.get("key", obj_json.get("login", obj_json.get("name", "unknown")))
             log.debug("Writing %s key '%s'", object_type[:-1], key)
             if object_type in objects_exported_as_lists or object_type in objects_exported_as_whole:
-                print(f"{prefix}{utilities.json_dump(obj_json)}", end="", file=fd)
+                print(f"{prefix}{util.json_dump(obj_json)}", end="", file=fd)
             else:
                 log.debug("Writing %s", object_type)
-                print(f"{prefix}{utilities.json_dump(obj_json)[2:-1]}", end="", file=fd)
+                print(f"{prefix}{util.json_dump(obj_json)[2:-1]}", end="", file=fd)
             prefix = ",\n"
         queue.task_done()
     print("\n" + stop, file=fd, end="")
@@ -234,7 +237,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
     )
     if mode == "MIGRATION":
         export_settings |= _MIGRATION_EXPORT_SETTINGS
-    log.info("Exporting with settings: %s", utilities.json_dump(export_settings, redact_tokens=True))
+    log.info("Exporting with settings: %s", util.json_dump(sutil.redact_tokens(export_settings)))
     if "projects" in what and kwargs[options.KEY_REGEXP]:
         if len(component_helper.get_components(endpoint, "projects", kwargs[options.KEY_REGEXP])) == 0:
             chelp.clear_cache_and_exit(errcodes.WRONG_SEARCH_CRITERIA, f"No projects matching regexp '{kwargs[options.KEY_REGEXP]}'")
@@ -244,7 +247,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
 
     is_first = True
     write_q = Queue(maxsize=0)
-    with utilities.open_file(file, mode="w") as fd:
+    with util.open_file(file, mode="w") as fd:
         print("{", file=fd)
         for what_item, call_data in _EXPORT_CALLS.items():
             if what_item not in what:
@@ -261,7 +264,7 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
                 func(endpoint, export_settings=export_settings, key_list=kwargs[options.KEY_REGEXP], write_q=write_q)
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
-                write_q and write_q.put(utilities.WRITE_END)
+                write_q and write_q.put(sutil.WRITE_END)
             write_q.join()
         print("\n}", file=fd)
 
@@ -274,11 +277,11 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
 
 def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
     """Cleans up the JSON before writing"""
-    json_data = utilities.sort_lists(json_data)
+    json_data = misc.sort_lists(json_data)
     if export_settings.get("MODE", "CONFIG") == "MIGRATION":
         return json_data
     if not export_settings.get("FULL_EXPORT", False):
-        json_data = utilities.clean_data(json_data, remove_none=True, remove_empty=not export_settings.get(EXPORT_EMPTY, False))
+        json_data = misc.clean_data(json_data, remove_none=True, remove_empty=not export_settings.get(EXPORT_EMPTY, False))
     return json_data
 
 
@@ -380,15 +383,15 @@ def convert_json_file(from_file: str, to_file: Optional[str]) -> None:
     """Converts a sonar-config report from the old to the new JSON format"""
     with open(from_file, encoding="utf-8") as fd:
         new_json = convert_json(json.loads(fd.read()))
-    with utilities.open_file(to_file) as fd:
-        print(utilities.json_dump(new_json), file=fd)
+    with util.open_file(to_file) as fd:
+        print(util.json_dump(new_json), file=fd)
 
 
 def main() -> None:
     """Main entry point for sonar-config"""
-    start_time = utilities.start_clock()
+    start_time = util.start_clock()
     try:
-        kwargs = utilities.convert_args(__parse_args("Extract SonarQube Server or Cloud platform configuration"))
+        kwargs = sutil.convert_args(__parse_args("Extract SonarQube Server or Cloud platform configuration"))
         if kwargs[options.CONVERT_FROM] is not None:
             convert_json_file(kwargs[options.CONVERT_FROM], kwargs.get(options.CONVERT_TO, None))
             chelp.clear_cache_and_exit(errcodes.OK, "", start_time)
@@ -396,7 +399,7 @@ def main() -> None:
             validate_schema(kwargs[options.REPORT_FILE])
             chelp.clear_cache_and_exit(errcodes.OK, "", start_time)
         log.info("Checking token")
-        utilities.check_token(kwargs[options.TOKEN], utilities.is_sonarcloud_url(kwargs[options.URL]))
+        sutil.check_token(kwargs[options.TOKEN], sutil.is_sonarcloud_url(kwargs[options.URL]))
         log.info("Token OK")
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
@@ -405,10 +408,10 @@ def main() -> None:
         if not kwargs[options.EXPORT] and not kwargs[options.IMPORT]:
             raise exceptions.SonarException(f"One of --{options.EXPORT} or --{options.IMPORT} option must be chosen", errcodes.ARGS_ERROR)
 
-        what = utilities.check_what(kwargs.pop(options.WHAT, None), WHAT_EVERYTHING, "exported or imported")
+        what = sutil.check_what(kwargs.pop(options.WHAT, None), WHAT_EVERYTHING, "exported or imported")
         if options.WHAT_PROFILES in what and options.WHAT_RULES not in what:
             what.append(options.WHAT_RULES)
-        kwargs[options.FORMAT] = utilities.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE], allowed_formats=("json", "yaml"))
+        kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE], allowed_formats=("json", "yaml"))
         if kwargs[options.EXPORT]:
             export_config(endpoint, what, **kwargs)
         elif kwargs[options.IMPORT]:

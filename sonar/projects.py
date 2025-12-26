@@ -46,8 +46,9 @@ from sonar import exceptions
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops
 import sonar.permissions.permissions as perms
 from sonar import pull_requests, branches
-import sonar.utilities as util
+import sonar.util.misc as util
 import sonar.permissions.project_permissions as pperms
+import sonar.utilities as sutil
 
 from sonar.audit import severities
 from sonar.audit.rules import get_rule, RuleId
@@ -220,7 +221,7 @@ class Project(components.Component):
         self.name = data["name"]
         self._visibility = data["visibility"]
         key = next((k for k in ("lastAnalysisDate", "analysisDate") if k in data), None)
-        self._last_analysis = util.string_to_date(data[key]) if key else None
+        self._last_analysis = sutil.string_to_date(data[key]) if key else None
         self._revision = data.get("revision", self._revision)
         return self
 
@@ -469,7 +470,7 @@ class Project(components.Component):
             self.get("alm_settings/validate_binding", params={"project": self.key})
             log.debug("%s binding is valid", str(self))
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"auditing binding of {str(self)}", catch_all=True)
+            sutil.handle_error(e, f"auditing binding of {str(self)}", catch_all=True)
             # Hack: 8.9 returns 404, 9.x returns 400
             if isinstance(e, HTTPError) and e.response.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
                 return [Problem(get_rule(RuleId.PROJ_INVALID_BINDING), self, str(self))]
@@ -634,8 +635,8 @@ class Project(components.Component):
         except exceptions.SonarException as e:
             return f"FAILED/{e.message}", None
         except RequestException as e:
-            util.handle_error(e, f"exporting zip of {str(self)}", catch_all=True)
-            return f"FAILED/{util.http_error_string(e.response.status_code)}", None
+            sutil.handle_error(e, f"exporting zip of {str(self)}", catch_all=True)
+            return f"FAILED/{sutil.http_error_string(e.response.status_code)}", None
         except ConnectionError as e:
             return str(e), None
         if asynchronous:
@@ -1010,8 +1011,8 @@ class Project(components.Component):
             log.debug("Exporting %s done, returning %s", str(self), util.json_dump(json_data))
         except Exception as e:
             traceback.print_exc()
-            util.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
-            json_data["ERROR"] = f"{util.error_msg(e)} while exporting project"
+            sutil.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
+            json_data["ERROR"] = f"{sutil.error_msg(e)} while exporting project"
 
         tmp_branches = json_data.pop("branches", None)
         json_data = util.clean_data(json_data, remove_none=True, remove_empty=True)
@@ -1321,7 +1322,7 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
     new_params.update({"ps": 1, "p": 1})
     if not endpoint.is_sonarcloud():
         new_params["filter"] = _PROJECT_QUALIFIER
-    return util.nbr_total_elements(json.loads(endpoint.get(Project.API[c.LIST], params=params).text))
+    return sutil.nbr_total_elements(json.loads(endpoint.get(Project.API[c.LIST], params=params).text))
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None, threads: int = 8) -> dict[str, Project]:
@@ -1380,7 +1381,7 @@ def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.
     for key1, p in projects_list.items():
         for key2 in projects_list:
             pair = " ".join(sorted([key1, key2]))
-            if util.similar_strings(key1, key2, audit_settings.get("audit.projects.duplicates.maxDifferences", 4)) and pair not in pair_set:
+            if sutil.similar_strings(key1, key2, audit_settings.get("audit.projects.duplicates.maxDifferences", 4)) and pair not in pair_set:
                 duplicates.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
             pair_set.add(pair)
     return duplicates
@@ -1476,7 +1477,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
             lvl = log.INFO if current % 10 == 0 or total - current < 10 else log.DEBUG
             log.log(lvl, "%d/%d projects exported (%d%%)", current, total, (current * 100) // total)
     log.debug("Projects export complete")
-    write_q and write_q.put(util.WRITE_END)
+    write_q and write_q.put(sutil.WRITE_END)
     return dict(sorted(results.items()))
 
 

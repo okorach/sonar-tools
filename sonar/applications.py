@@ -39,7 +39,8 @@ from sonar import exceptions, projects, branches, app_branches
 from sonar.permissions import application_permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
-import sonar.utilities as util
+import sonar.util.misc as util
+import sonar.utilities as sutil
 from sonar.audit import rules, problem
 import sonar.util.constants as c
 from sonar.util import common_json_helper
@@ -371,7 +372,7 @@ class Application(aggr.Aggregation):
                 r = self.post("applications/add_project", params={"application": self.key, "project": proj})
                 ok = ok and r.ok
             except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"adding project '{proj}' to {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+                sutil.handle_error(e, f"adding project '{proj}' to {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
                 Application.CACHE.pop(self)
                 ok = False
         self._projects = None
@@ -383,7 +384,7 @@ class Application(aggr.Aggregation):
         if self._last_analysis is None:
             self.refresh()
         if "analysisDate" in self.sq_json:
-            self._last_analysis = util.string_to_date(self.sq_json["analysisDate"])
+            self._last_analysis = sutil.string_to_date(self.sq_json["analysisDate"])
         return self._last_analysis
 
     def recompute(self) -> bool:
@@ -450,7 +451,7 @@ def count(endpoint: pf.Platform) -> int:
     :return: Count of applications
     """
     check_supported(endpoint)
-    return util.nbr_total_elements(json.loads(endpoint.get(Application.API[c.LIST], params={"ps": 1, "filter": "qualifier = APP"}).text))
+    return sutil.nbr_total_elements(json.loads(endpoint.get(Application.API[c.LIST], params={"ps": 1, "filter": "qualifier = APP"}).text))
 
 
 def check_supported(endpoint: pf.Platform) -> None:
@@ -513,7 +514,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
             write_q.put(app_json)
         else:
             apps_settings.append(app_json)
-    write_q and write_q.put(util.WRITE_END)
+    write_q and write_q.put(sutil.WRITE_END)
     return apps_settings
 
 

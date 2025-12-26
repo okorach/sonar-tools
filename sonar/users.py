@@ -35,7 +35,8 @@ from sonar.util import types, cache
 import sonar.util.constants as c
 
 from sonar import groups, sqobject, tokens, exceptions
-import sonar.utilities as util
+import sonar.util.misc as util
+import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 
@@ -185,11 +186,11 @@ class User(sqobject.SqObject):
         self.last_login = None  #: User last login - read-only
         self.sq_json = (self.sq_json or {}) | data
         if self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
-            self.last_login = util.string_to_date(data.get("lastConnectionDate"))
+            self.last_login = sutil.string_to_date(data.get("lastConnectionDate"))
             self.nb_tokens = data.get("tokenCount")  #: Nbr of tokens - read-only
         else:
-            dt1 = util.string_to_date(data.get("sonarQubeLastConnectionDate"))
-            dt2 = util.string_to_date(data.get("sonarLintLastConnectionDate"))
+            dt1 = sutil.string_to_date(data.get("sonarQubeLastConnectionDate"))
+            dt2 = sutil.string_to_date(data.get("sonarLintLastConnectionDate"))
             if not dt1:
                 self.last_login = dt2
             elif not dt2:
@@ -500,7 +501,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
         u_list.append(u_data)
         if write_q:
             write_q.put(u_data)
-    write_q and write_q.put(util.WRITE_END)
+    write_q and write_q.put(sutil.WRITE_END)
     return u_list
 
 

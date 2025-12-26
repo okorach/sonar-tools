@@ -29,12 +29,14 @@ import re
 import sonar.logging as log
 from sonar.util import types, cache
 from sonar.util import platform_helper as phelp
-from sonar import sqobject, utilities, exceptions
+from sonar import sqobject, exceptions
 from sonar.permissions import template_permissions
 import sonar.platform as pf
 from sonar.audit.rules import get_rule, RuleId
 import sonar.audit.problem as pb
 import sonar.util.constants as c
+import sonar.util.misc as util
+import sonar.utilities as sutil
 
 _MAP = {}
 _DEFAULT_TEMPLATES = {}
@@ -59,7 +61,7 @@ class PermissionTemplate(sqobject.SqObject):
         self._permissions: Optional[template_permissions.TemplatePermissions] = None
         if create_data is not None:
             log.info("Creating permission template '%s'", name)
-            log.debug("from create_data %s", utilities.json_dump(create_data))
+            log.debug("from create_data %s", util.json_dump(create_data))
             create_data["name"] = name
             self.post(_CREATE_API, params=create_data)
             data = search_by_name(endpoint, name)
@@ -71,7 +73,7 @@ class PermissionTemplate(sqobject.SqObject):
             self.key = data.get("id", None)
             self.permissions().read()
             log.info("Creating permission template '%s'", name)
-            log.debug("from sync data %s", utilities.json_dump(data))
+            log.debug("from sync data %s", util.json_dump(data))
         self.sq_json = data
         self.name = name
         data.pop("name")
@@ -79,7 +81,7 @@ class PermissionTemplate(sqobject.SqObject):
         self.description = data.get("description", None)
         self.last_update = data.get("lastUpdate", None)
         self.project_key_pattern = data.pop("projectKeyPattern", "")
-        self.creation_date = utilities.string_to_date(data.pop("createdAt", None))
+        self.creation_date = sutil.string_to_date(data.pop("createdAt", None))
         PermissionTemplate.CACHE.put(self)
 
     def __str__(self) -> str:
@@ -181,11 +183,11 @@ class PermissionTemplate(sqobject.SqObject):
         if self.is_portfolios_default():
             defaults.append("portfolios")
         if len(defaults) > 0:
-            json_data["defaultFor"] = utilities.list_to_csv(defaults, ", ")
+            json_data["defaultFor"] = util.list_to_csv(defaults, ", ")
         if not self.project_key_pattern or self.project_key_pattern == "":
             json_data.pop("pattern")
-        json_data["creationDate"] = utilities.date_to_string(self.creation_date)
-        json_data["lastUpdate"] = utilities.date_to_string(self.last_update)
+        json_data["creationDate"] = sutil.date_to_string(self.creation_date)
+        json_data["lastUpdate"] = sutil.date_to_string(self.last_update)
         return phelp.convert_template_json(json_data, export_settings.get("FULL_EXPORT", False))
 
     def _audit_pattern(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
@@ -249,7 +251,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, P
 
 def search_by_name(endpoint: pf.Platform, name: str) -> types.ApiPayload:
     """Searches permissions templates by name"""
-    return utilities.search_by_name(endpoint=endpoint, name=name, api=_SEARCH_API, returned_field="permissionTemplates")
+    return sutil.search_by_name(endpoint=endpoint, name=name, api=_SEARCH_API, returned_field="permissionTemplates")
 
 
 def get_list(endpoint: pf.Platform) -> dict[str, PermissionTemplate]:
@@ -288,14 +290,14 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> i
     log.info("Importing permission templates")
     get_list(endpoint)
     count = 0
-    config_data = utilities.list_to_dict(config_data, "key")
+    config_data = util.list_to_dict(config_data, "key")
     for name, data in config_data.items():
-        utilities.json_dump_debug(data, f"Importing: {name}:")
+        log.debug("Importing: %s: %s", name, util.json_dump(data))
         o = create_or_update(endpoint=endpoint, name=name, data=data)
         count += 1
         defs = data.get("defaultFor", None)
         if defs is not None and defs != "":
-            o.set_as_default(utilities.csv_to_list(data.get("defaultFor", None)))
+            o.set_as_default(util.csv_to_list(data.get("defaultFor", None)))
     return count
 
 

@@ -32,7 +32,8 @@ import requests.utils
 import sonar.logging as log
 from sonar.util import types, cache
 from sonar import components, exceptions
-import sonar.utilities as util
+import sonar.util.misc as util
+import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
@@ -82,7 +83,7 @@ class PullRequest(components.Component):
 
     def last_analysis(self) -> datetime:
         if self._last_analysis is None and "analysisDate" in self.json:
-            self._last_analysis = util.string_to_date(self.json["analysisDate"])
+            self._last_analysis = sutil.string_to_date(self.json["analysisDate"])
         return self._last_analysis
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:

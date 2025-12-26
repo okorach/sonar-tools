@@ -28,7 +28,7 @@ import re
 from typing import Optional
 
 import sonar.logging as log
-import sonar.utilities as util
+import sonar.utilities as sutil
 from sonar.util import types
 import sonar.util.constants as c
 from sonar.audit.rules import get_rule, RuleId
@@ -99,7 +99,7 @@ class Sif(object):
             return None
 
         # Old SIFs could return "Enterprise Edition"
-        return util.edition_normalize(ed)
+        return sutil.edition_normalize(ed)
 
     def database(self) -> str:
         """Returns the databse engine of the SQ instance represented by the SIF"""
@@ -125,7 +125,7 @@ class Sif(object):
     def version(self) -> Optional[tuple[int, ...]]:
         """Returns the version of the SQ instance represented by the SIF"""
         try:
-            return util.string_to_version(self.json["System"]["Version"])
+            return sutil.string_to_version(self.json["System"]["Version"])
         except KeyError:
             return None
 
@@ -136,11 +136,11 @@ class Sif(object):
     def start_time(self) -> Optional[datetime.datetime]:
         """Returns the last start time of the SQ instance represented by the SIF"""
         try:
-            return util.string_to_date(self.json[_SETTINGS]["sonar.core.startTime"]).replace(tzinfo=None)
+            return sutil.string_to_date(self.json[_SETTINGS]["sonar.core.startTime"]).replace(tzinfo=None)
         except KeyError:
             pass
         try:
-            return util.string_to_date(self.json[_SYSTEM]["Start Time"]).replace(tzinfo=None)
+            return sutil.string_to_date(self.json[_SYSTEM]["Start Time"]).replace(tzinfo=None)
         except KeyError:
             return None
 
@@ -159,7 +159,7 @@ class Sif(object):
                 pass
         if setting is None:
             return None
-        return util.int_memory(setting)
+        return sutil.int_memory(setting)
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits a SIF"""
@@ -286,7 +286,7 @@ class Sif(object):
         if jvm_cmdline is None:
             log.warning("Can't retrieve search JVM command line, heap and logshell checks skipped")
             return []
-        es_ram = util.jvm_heap(jvm_cmdline)
+        es_ram = sutil.jvm_heap(jvm_cmdline)
         index_size = self.store_size()
 
         if index_size is None:

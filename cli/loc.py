@@ -29,7 +29,8 @@ from requests import RequestException
 from cli import options
 import sonar.logging as log
 from sonar import platform, portfolios, applications, projects, errcodes, exceptions, version
-import sonar.utilities as util
+import sonar.utilities as sutil
+import sonar.util.misc as util
 import sonar.util.constants as c
 from sonar.util import component_helper
 import sonar.util.common_helper as chelp
@@ -122,7 +123,7 @@ def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
         if kwargs[options.WITH_URL]:
             d["url"] = o.url()
     except (ConnectionError, RequestException) as e:
-        util.handle_error(e, f"LoC extract of {str(o)} failed", catch_all=True)
+        sutil.handle_error(e, f"LoC extract of {str(o)} failed", catch_all=True)
     return d
 
 
@@ -206,7 +207,7 @@ def main() -> None:
     """sonar-loc entry point"""
     start_time = util.start_clock()
     try:
-        kwargs = util.convert_args(
+        kwargs = sutil.convert_args(
             __parse_args("Extract projects, applications or portfolios lines of code - for projects LoC it is as computed for the license")
         )
         endpoint = platform.Platform(**kwargs)

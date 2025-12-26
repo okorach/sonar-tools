@@ -32,7 +32,8 @@ from sonar.components import Component
 
 from sonar.branches import Branch
 from sonar.projects import Project
-from sonar import exceptions, utilities
+from sonar import exceptions
+import sonar.utilities as sutil
 import sonar.util.constants as c
 
 if TYPE_CHECKING:
@@ -176,7 +177,7 @@ class ApplicationBranch(Component):
         :type full: bool, optional
         """
         log.info("Exporting %s from %s", self, self.sq_json)
-        jsondata = {"projects": {b["key"]: b["branch"] if b["selected"] else utilities.DEFAULT for b in self.sq_json["projects"]}}
+        jsondata = {"projects": {b["key"]: b["branch"] if b["selected"] else sutil.DEFAULT for b in self.sq_json["projects"]}}
         if self.is_main():
             jsondata["isMain"] = True
         return jsondata

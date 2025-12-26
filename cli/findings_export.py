@@ -39,7 +39,7 @@ from sonar import applications, portfolios
 from sonar.util import issue_defs as idefs, types, component_helper
 import sonar.util.constants as c
 
-import sonar.utilities as util
+import sonar.util.misc as util
 import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-findings"

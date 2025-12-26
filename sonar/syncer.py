@@ -26,7 +26,7 @@ import traceback
 from typing import Union
 
 import sonar.logging as log
-import sonar.utilities as util
+import sonar.util.misc as util
 from sonar.util import types
 from sonar import findings
 from sonar.projects import Project

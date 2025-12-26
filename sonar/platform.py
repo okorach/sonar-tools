@@ -33,7 +33,8 @@ import requests
 from requests import HTTPError, RequestException
 
 import sonar.logging as log
-import sonar.utilities as util
+import sonar.util.misc as util
+import sonar.utilities as sutil
 from sonar.util import types, update_center
 import sonar.util.constants as c
 import sonar.util.platform_helper as pfhelp
@@ -91,7 +92,7 @@ class Platform(object):
         Returns the string representation of the SonarQube connection,
         with the token recognizable but largely redacted
         """
-        return f"{util.redacted_token(self.__token)}@{self.local_url}"
+        return f"{sutil.redacted_token(self.__token)}@{self.local_url}"
 
     def __credentials(self) -> tuple[str, str]:
         return self.__token, ""
@@ -113,7 +114,7 @@ class Platform(object):
                 if s not in (None, ""):
                     self.external_url = s
         except (ConnectionError, RequestException) as e:
-            util.handle_error(e, "verifying connection", catch_all=True)
+            sutil.handle_error(e, "verifying connection", catch_all=True)
             raise exceptions.ConnectionError(f"{str(e)} while connecting to {self.local_url}")
 
     def url(self) -> str:
@@ -139,7 +140,7 @@ class Platform(object):
         """Returns the SonarQube edition: 'community', 'developer', 'enterprise', 'datacenter' or 'sonarcloud'"""
         if self.is_sonarcloud():
             return c.SC
-        return util.edition_normalize(self.global_nav().get("edition") or self.sys_info()["Statistics"]["edition"])
+        return sutil.edition_normalize(self.global_nav().get("edition") or self.sys_info()["Statistics"]["edition"])
 
     def user(self) -> str:
         """Returns the user corresponding to the provided token"""
@@ -166,7 +167,7 @@ class Platform(object):
 
     def is_sonarcloud(self) -> bool:
         """Returns whether the target platform is SonarQube Cloud"""
-        return util.is_sonarcloud_url(self.local_url)
+        return sutil.is_sonarcloud_url(self.local_url)
 
     def basics(self) -> dict[str, Any]:
         """Returns the platform basic info as JSON
@@ -182,7 +183,7 @@ class Platform(object):
 
         return {
             **data,
-            "version": util.version_to_string(self.version()[:3]),
+            "version": sutil.version_to_string(self.version()[:3]),
             "edition": self.edition(),
             "serverId": self.server_id(),
             "plugins": util.dict_to_list(self.plugins(), "key"),
@@ -216,7 +217,7 @@ class Platform(object):
         :param params: params to pass in the HTTP request, defaults to None
         :return: the HTTP response
         """
-        if util.is_api_v2(api):
+        if sutil.is_api_v2(api):
             kwargs["headers"] = kwargs.get("headers", {}) | {"content-type": _APP_JSON}
             return self.__run_request(requests.post, api, data=json.dumps(params), **kwargs)
         else:
@@ -229,7 +230,7 @@ class Platform(object):
         :param params: params to pass in the HTTP request, defaults to None
         :return: the HTTP response
         """
-        if util.is_api_v2(api):
+        if sutil.is_api_v2(api):
             kwargs["headers"] = kwargs.get("headers", {}) | {"content-type": "application/merge-patch+json"}
             return self.__run_request(requests.patch, api=api, data=json.dumps(params), **kwargs)
         else:
@@ -289,12 +290,12 @@ class Platform(object):
         except HTTPError as e:
             code = r.status_code
             lvl = log.DEBUG if code in mute else log.ERROR
-            log.log(lvl, "%s (%s request)", util.error_msg(e), req_type)
+            log.log(lvl, "%s (%s request)", sutil.error_msg(e), req_type)
             if code == HTTPStatus.UNAUTHORIZED:
-                raise exceptions.SonarException(util.error_msg(e), errcodes.SONAR_API_AUTHENTICATION) from e
+                raise exceptions.SonarException(sutil.error_msg(e), errcodes.SONAR_API_AUTHENTICATION) from e
             if code == HTTPStatus.FORBIDDEN:
-                raise exceptions.NoPermissions(util.error_msg(e)) from e
-            err_msg = util.sonar_error(e.response)
+                raise exceptions.NoPermissions(sutil.error_msg(e)) from e
+            err_msg = sutil.sonar_error(e.response)
             err_msg_lower = err_msg.lower()
             key = next((params[k] for k in ("key", "project", "component", "componentKey") if k in params), "Unknown")
             if any(
@@ -311,14 +312,14 @@ class Platform(object):
                 raise exceptions.UnsupportedOperation(err_msg) from e
             raise exceptions.SonarException(err_msg, errcodes.SONAR_API) from e
         except ConnectionError as e:
-            util.handle_error(e, "")
+            sutil.handle_error(e, "")
         return r
 
     def get_paginated(self, api: str, return_field: str, **kwargs: str) -> types.ObjectJsonRepr:
         """Returns all pages of a paginated API"""
         params = {"ps": 500} | kwargs
         data = json.loads(self.get(api, params=params | {"p": 1}).text)
-        if (nb_pages := util.nbr_pages(data, api_version=1)) == 1:
+        if (nb_pages := sutil.nbr_pages(data, api_version=1)) == 1:
             return data
         for page in range(2, nb_pages + 1):
             data[return_field].update(json.loads(self.get(api, params=params | {"p": page}).text)[return_field])
@@ -360,7 +361,7 @@ class Platform(object):
                         time.sleep(0.5)
                         counter += 1
                     else:
-                        log.error("%s while getting system info", util.error_msg(e))
+                        log.error("%s while getting system info", sutil.error_msg(e))
                         raise e
             self._sys_info = json.loads(resp.text)
             success = True
@@ -479,7 +480,7 @@ class Platform(object):
             setting_json = s.to_json()
             if setting_json[s.key]["defaultValue"] == setting_json[s.key]["value"]:
                 setting_json[s.key].pop("value")
-            util.update_json(json_data, categ, subcateg, setting_json)
+            sutil.update_json(json_data, categ, subcateg, setting_json)
 
         hooks = {}
         for wb in self.webhooks().values():
@@ -518,7 +519,7 @@ class Platform(object):
             return 0
         count = 0
         settings_to_import = {k: v for k, v in config_data.items() if k not in ("devopsIntegration", "permissionTemplates", "webhooks")}
-        flat_settings = util.flatten(settings_to_import)
+        flat_settings = sutil.flatten(settings_to_import)
         count += sum(1 if self.set_setting(k, v) else 0 for k, v in flat_settings.items())
 
         try:
@@ -604,7 +605,7 @@ class Platform(object):
             try:
                 logs = self.get("system/logs", params={"name": logtype}).text
             except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"retrieving {logtype} logs", catch_all=True)
+                sutil.handle_error(e, f"retrieving {logtype} logs", catch_all=True)
                 continue
             i = 0
             for line in logs.splitlines():
@@ -727,7 +728,7 @@ class Platform(object):
         if lifetime_setting is None:
             log.info("Token maximum lifetime setting not found, skipping audit")
             return []
-        max_lifetime = util.to_days(self.get_setting(settings.TOKEN_MAX_LIFETIME))
+        max_lifetime = sutil.to_days(self.get_setting(settings.TOKEN_MAX_LIFETIME))
         if max_lifetime is None:
             return [Problem(get_rule(RuleId.TOKEN_LIFETIME_UNLIMITED), self.external_url)]
         if max_lifetime > audit_settings.get("audit.tokens.maxAge", 90):
@@ -748,7 +749,7 @@ class Platform(object):
             log.error("Cannot change MQR mode on SonarQube Cloud")
             return False
         if self.version() < c.MQR_INTRO_VERSION:
-            log.error("MQR mode not available before SonarQube %s", util.version_to_string(c.MQR_INTRO_VERSION))
+            log.error("MQR mode not available before SonarQube %s", sutil.version_to_string(c.MQR_INTRO_VERSION))
             return False
         if self.version() >= (10, 8, 0):
             return self.set_setting(settings.MQR_ENABLED, enable)
@@ -903,7 +904,7 @@ def export(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs: 
     exp = endpoint.export(export_settings)
     if write_q := kwargs.get("write_q", None):
         write_q.put(exp)
-        write_q.put(util.WRITE_END)
+        write_q.put(sutil.WRITE_END)
     return exp
 
 
@@ -912,7 +913,7 @@ def basics(endpoint: Platform, **kwargs: Any) -> types.ObjectJsonRepr:
     exp = endpoint.basics()
     if write_q := kwargs.get("write_q", None):
         write_q.put(exp)
-        write_q.put(util.WRITE_END)
+        write_q.put(sutil.WRITE_END)
     return exp
 
 

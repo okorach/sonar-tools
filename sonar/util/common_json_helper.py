@@ -20,7 +20,8 @@
 """Helper tools for the Rule object"""
 
 from typing import Any
-from sonar import utilities
+import sonar.util.misc as util
+import sonar.utilities as sutil
 
 
 def convert_common_fields(json_data: dict[str, Any], with_permissions: bool = True) -> dict[str, Any]:
@@ -28,9 +29,9 @@ def convert_common_fields(json_data: dict[str, Any], with_permissions: bool = Tr
     if "permissions" in json_data and json_data["permissions"] is None:
         json_data.pop("permissions")
     if with_permissions and "permissions" in json_data:
-        json_data["permissions"] = utilities.perms_to_list(json_data["permissions"])
+        json_data["permissions"] = sutil.perms_to_list(json_data["permissions"])
         for perm in json_data["permissions"]:
-            perm["permissions"] = utilities.csv_to_list(perm["permissions"])
+            perm["permissions"] = util.csv_to_list(perm["permissions"])
     if "tags" in json_data:
-        json_data["tags"] = utilities.csv_to_list(json_data["tags"])
+        json_data["tags"] = util.csv_to_list(json_data["tags"])
     return json_data

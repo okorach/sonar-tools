@@ -22,7 +22,7 @@ import csv
 from typing import Optional
 
 import sonar.logging as log
-from sonar import utilities
+import sonar.util.misc as util
 
 
 class Problem:
@@ -88,7 +88,7 @@ def __dump_csv(problems: list[Problem], file: str, server_id: Optional[str] = No
     :return: Nothing
     :rtype: None
     """
-    with utilities.open_file(file, "w") as fd:
+    with util.open_file(file, "w") as fd:
         csvwriter = csv.writer(fd, delimiter=separator)
         header = ["Server Id"] if server_id else []
         header += ["Problem", "Category", "Severity", "Message"]
@@ -113,5 +113,5 @@ def __dump_json(problems: list[Problem], file: str, server_id: Optional[str] = N
     if server_id is not None:
         sid_dict = {"server_id": server_id}
     json = [{**p.to_json(with_url), **sid_dict} for p in problems]
-    with utilities.open_file(file) as fd:
-        print(utilities.json_dump(json), file=fd)
+    with util.open_file(file) as fd:
+        print(util.json_dump(json), file=fd)

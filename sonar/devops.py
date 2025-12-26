@@ -29,7 +29,7 @@ from sonar.util import types, cache
 from sonar import platform
 import sonar.sqobject as sq
 from sonar import exceptions
-import sonar.utilities as util
+import sonar.util.misc as util
 import sonar.util.constants as c
 
 #: DevOps platform types in SonarQube

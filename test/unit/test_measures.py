@@ -25,8 +25,10 @@ from collections.abc import Generator
 
 from datetime import datetime
 import utilities as tutil
-from sonar import errcodes as e, utilities, projects, measures
+from sonar import errcodes as e, projects, measures
+import sonar.util.misc as util
 import sonar.util.constants as c
+import sonar.utilities as sutil
 
 from cli import measures_export
 import cli.options as opt
@@ -187,7 +189,7 @@ def test_non_existing_project(csv_file: Generator[str]) -> None:
 def test_specific_project_keys(csv_file: Generator[str]) -> None:
     """test_non_existing_project"""
     projects = [tutil.LIVE_PROJECT, tutil.PROJECT_1, tutil.PROJECT_4]
-    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.KEY_REGEXP_SHORT} {utilities.list_to_regexp(projects)}"
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} -{opt.KEY_REGEXP_SHORT} {util.list_to_regexp(projects)}"
     assert tutil.run_cmd(measures_export.main, cmd) == e.OK
     assert tutil.csv_nbr_lines(csv_file) == len(projects)
     assert tutil.csv_col_is_value(csv_file, "key", *projects)
@@ -267,7 +269,7 @@ def test_history() -> None:
     assert len(hist) == counter
     last_date = None
     for k, v in hist.items():
-        this_date = utilities.string_to_date(k)
+        this_date = sutil.string_to_date(k)
         assert isinstance(this_date, datetime)
         assert last_date is None or this_date >= last_date
         last_date = this_date

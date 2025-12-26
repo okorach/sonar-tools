@@ -33,7 +33,7 @@ import sonar.platform as pf
 from sonar.util import types, cache, constants as c
 
 from sonar import sqobject, exceptions
-import sonar.utilities as util
+import sonar.util.misc as util
 
 _CLASS_LOCK = Lock()
 

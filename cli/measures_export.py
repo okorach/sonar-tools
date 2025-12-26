@@ -32,7 +32,8 @@ from sonar.util import types
 from cli import options
 import sonar.logging as log
 from sonar import metrics, platform, exceptions, errcodes, version, measures
-import sonar.utilities as util
+import sonar.utilities as sutil
+import sonar.util.misc as util
 import sonar.util.constants as c
 from sonar.util import component_helper
 import sonar.util.common_helper as chelp
@@ -66,7 +67,7 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: 
         percents = convert_options.get("percents", "float")
         measures_d = {k: v.format(ratings, percents) if v else None for k, v in measures_d.items()}
         last_analysis = obj.last_analysis()
-        measures_d["lastAnalysis"] = util.date_to_string(last_analysis, convert_options["dates"] != "dateonly") if last_analysis else "Never"
+        measures_d["lastAnalysis"] = sutil.date_to_string(last_analysis, convert_options["dates"] != "dateonly") if last_analysis else "Never"
         if not convert_options.get(options.WITH_TAGS, False):
             return measures_d
 
@@ -76,7 +77,7 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: 
         else:
             measures_d["tags"] = sep.join(obj.get_tags())
     except (ConnectionError, RequestException) as e:
-        util.handle_error(e, f"Measures extract of {str(obj)} failed", catch_all=True)
+        sutil.handle_error(e, f"Measures extract of {str(obj)} failed", catch_all=True)
         return {}
     return measures_d
 
@@ -224,7 +225,7 @@ def __write_measures_csv(file: str, wanted_metrics: types.KeyList, data: dict[st
     """writes measures in CSV"""
     mapping = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch", options.WITH_TAGS: "tags", options.WITH_URL: "url"}
     header_list = ["key", "type", "lastAnalysis"] + [v for k, v in mapping.items() if kwargs[k]] + list(wanted_metrics)
-    with util.open_file(file) as fd:
+    with sutil.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         print("# ", file=fd, end="")
         csvwriter.writerow(header_list)
@@ -246,7 +247,7 @@ def main() -> None:
     """Entry point for sonar-measures-export"""
     start_time = util.start_clock()
     try:
-        kwargs = util.convert_args(__parse_args("Extract measures of projects, apps or portfolios"))
+        kwargs = sutil.convert_args(__parse_args("Extract measures of projects, apps or portfolios"))
         kwargs["ratings"] = "numbers" if kwargs["ratingsAsNumbers"] else "letters"
         kwargs["percents"] = "percents" if kwargs["percentsAsString"] else "float"
         kwargs["dates"] = "dateonly" if kwargs["datesWithoutTime"] else "datetime"

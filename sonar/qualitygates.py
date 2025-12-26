@@ -34,7 +34,8 @@ import sonar.platform as pf
 from sonar.util import types, cache, constants as c
 from sonar import measures, exceptions, projects
 import sonar.permissions.qualitygate_permissions as permissions
-import sonar.utilities as util
+import sonar.util.misc as util
+import sonar.utilities as sutil
 
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
@@ -212,7 +213,7 @@ class QualityGate(sq.SqObject):
             for prj in data["results"]:
                 key = prj["key"] if "key" in prj else prj["id"]
                 self._projects[key] = projects.Project.get_object(self.endpoint, key)
-            nb_pages = util.nbr_pages(data)
+            nb_pages = sutil.nbr_pages(data)
             page += 1
         return self._projects
 
@@ -367,7 +368,7 @@ class QualityGate(sq.SqObject):
             return []
         problems = []
         audit_settings = audit_settings or {}
-        max_cond = int(util.get_setting(audit_settings, "audit.qualitygates.maxConditions", 8))
+        max_cond = int(sutil.get_setting(audit_settings, "audit.qualitygates.maxConditions", 8))
         nb_conditions = len(self.conditions())
         log.debug("Auditing %s number of conditions (%d) is OK", my_name, nb_conditions)
         if nb_conditions == 0:
@@ -423,7 +424,7 @@ def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = N
     problems = []
     all_qg = get_list(endpoint)
     custom_qg = {k: qg for k, qg in all_qg.items() if not qg.is_built_in}
-    max_qg = util.get_setting(audit_settings, "audit.qualitygates.maxNumber", 5)
+    max_qg = sutil.get_setting(audit_settings, "audit.qualitygates.maxNumber", 5)
     log.debug("Auditing that there are no more than %d quality gates", max_qg)
     if (nb_qg := len(custom_qg)) > max_qg:
         problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_GATES), f"{endpoint.external_url}/quality_gates", nb_qg, max_qg))
@@ -464,7 +465,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     write_q = kwargs.get("write_q", None)
     if write_q:
         write_q.put(qg_list)
-        write_q.put(util.WRITE_END)
+        write_q.put(sutil.WRITE_END)
     return qg_list
 
 
@@ -564,7 +565,7 @@ def _decode_condition(cond: str) -> tuple[str, str, str]:
 
 def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Any]:
     """Searches quality gates matching name"""
-    return util.search_by_name(endpoint, name, QualityGate.API[c.LIST], "qualitygates")
+    return sutil.search_by_name(endpoint, name, QualityGate.API[c.LIST], "qualitygates")
 
 
 def convert_qgs_json(old_json: dict[str, Any]) -> list[dict[str, Any]]:

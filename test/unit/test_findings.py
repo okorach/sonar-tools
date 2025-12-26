@@ -30,7 +30,8 @@ from unittest.mock import patch
 import pytest
 
 import utilities as tutil
-from sonar import utilities, projects
+from sonar import projects
+import sonar.util.misc as util
 from sonar import issues
 from sonar import errcodes as e
 from sonar.util import constants as c, issue_defs as idefs
@@ -233,7 +234,7 @@ def test_findings_filter_on_multiple_criteria_3(csv_file: Generator[str]) -> Non
 def test_findings_filter_on_hotspots_multi_1(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_hotspots_multi_1"""
     projs = [tutil.PROJECT_0, tutil.PROJECT_1]
-    regexp = utilities.list_to_regexp(projs)
+    regexp = util.list_to_regexp(projs)
     cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.RESOLUTIONS} "ACKNOWLEDGED, SAFE" -{opt.KEY_REGEXP_SHORT} {regexp}'
     assert tutil.run_cmd(findings_export.main, cmd) == e.OK
     assert tutil.csv_col_is_value(csv_file, "projectKey", *projs)
@@ -326,7 +327,7 @@ def test_output_format_sarif(sarif_file: Generator[str]) -> None:
     assert run["tool"]["driver"]["name"] == "SonarQube"
     type_for_issue = "legacyType" if tutil.SQ.version() >= c.MQR_INTRO_VERSION else "type"
     for issue in run["results"]:
-        print(f"{utilities.json_dump(issue)}")
+        # print(f"{util.json_dump(issue)}")
         for k in "message", "locations", "ruleId", "level":
             assert k in issue
         loc = issue["locations"][0]["physicalLocation"]
@@ -373,8 +374,8 @@ def test_output_format_branch(csv_file: Generator[str]) -> None:
     """test_output_format_branch"""
 
     for br in "develop", "master,develop":
-        br_list = utilities.csv_to_list(br)
-        regexp = utilities.csv_to_regexp(br)
+        br_list = util.csv_to_list(br)
+        regexp = util.csv_to_regexp(br)
         cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} --{opt.BRANCH_REGEXP} {regexp}"
         if tutil.SQ.edition() == c.CE:
             assert tutil.run_cmd(findings_export.main, cmd) == e.UNSUPPORTED_OPERATION

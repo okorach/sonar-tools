@@ -24,7 +24,9 @@ Exports SonarQube platform configuration as JSON
 
 from cli import options
 from sonar.cli import config
-from sonar import exceptions, errcodes, utilities, version
+from sonar import exceptions, errcodes, version
+import sonar.util.misc as util
+import sonar.utilities as sutil
 import sonar.logging as log
 from sonar import platform
 import sonar.util.common_helper as chelp
@@ -53,7 +55,7 @@ def __parse_args(desc: str) -> object:
         default=False,
         action="store_true",
         help="Also exports settings values that are the platform defaults. "
-        f"By default the export will show the value as '{utilities.DEFAULT}' "
+        f"By default the export will show the value as '{sutil.DEFAULT}' "
         "and the setting will not be imported at import time",
     )
     args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME, is_migration=True)
@@ -62,13 +64,13 @@ def __parse_args(desc: str) -> object:
 
 def main() -> None:
     """Main entry point for sonar-config"""
-    start_time = utilities.start_clock()
+    start_time = util.start_clock()
     try:
-        kwargs = utilities.convert_args(__parse_args("Extract SonarQube Server to Cloud migration data"))
+        kwargs = sutil.convert_args(__parse_args("Extract SonarQube Server to Cloud migration data"))
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.MIGRATION_TOOL_VERSION}")
-        what = utilities.check_what(kwargs.pop(options.WHAT, None), config.WHAT_EVERYTHING, "exported")
+        what = sutil.check_what(kwargs.pop(options.WHAT, None), config.WHAT_EVERYTHING, "exported")
         if options.WHAT_PROFILES in what and options.WHAT_RULES not in what:
             what.append(options.WHAT_RULES)
         kwargs[options.FORMAT] = "json"

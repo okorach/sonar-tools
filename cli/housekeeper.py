@@ -31,7 +31,8 @@ from cli import options
 import sonar.logging as log
 from sonar import platform, tokens, users, projects, branches, pull_requests, version, errcodes
 import sonar.util.constants as c
-import sonar.utilities as util
+import sonar.utilities as sutil
+import sonar.util.misc as util
 import sonar.exceptions as ex
 from sonar.audit import problem
 import sonar.util.common_helper as chelp
@@ -208,7 +209,7 @@ def main() -> None:
     """Main entry point"""
     start_time = util.start_clock()
     try:
-        kwargs = util.convert_args(_parse_arguments())
+        kwargs = sutil.convert_args(_parse_arguments())
         sq = platform.Platform(**kwargs)
         sq.verify_connection()
         sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
