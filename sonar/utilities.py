@@ -94,10 +94,10 @@ def check_token(token: Optional[str], is_sonarcloud: bool = False) -> None:
 
 def redact_tokens(data: Any) -> Any:
     """Recursively redacts Sonar tokens"""
-    if isinstance(data, (str, int, float)):
-        return data
     if isinstance(data, str) and is_a_token(data):
         return redacted_token(data)
+    if isinstance(data, (str, int, float)):
+        return data
     if isinstance(data, (list, set, tuple)):
         return [redact_tokens(elem) for elem in data]
     elif isinstance(data, dict):
