@@ -30,9 +30,10 @@ from requests import RequestException
 
 from cli import options
 import sonar.logging as log
-from sonar import errcodes, exceptions, utilities, version
+from sonar import errcodes, exceptions, version
+import sonar.util.misc as util
+import sonar.utilities as sutil
 from sonar import platform, projects
-import sonar.util.constants as c
 import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-projects"
@@ -64,8 +65,8 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
         "projects": dump,
     }
 
-    with utilities.open_file(kwargs[options.REPORT_FILE]) as fd:
-        print(utilities.json_dump(export_data), file=fd)
+    with util.open_file(kwargs[options.REPORT_FILE]) as fd:
+        print(util.json_dump(export_data), file=fd)
 
 
 def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
@@ -114,12 +115,12 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
         "plugins": endpoint.plugins(),
     }
     with open(file, "w", encoding="utf-8") as fd:
-        print(utilities.json_dump(data), file=fd)
+        print(util.json_dump(data), file=fd)
 
 
 def main() -> None:
     """Main entry point of sonar-projects"""
-    start_time = utilities.start_clock()
+    start_time = util.start_clock()
     try:
         parser = options.set_common_args("Exports/Imports all projects of a SonarQube Server platform")
         parser = options.set_key_arg(parser)
@@ -141,7 +142,7 @@ def main() -> None:
             required=False,
             help="Skips export or import of projects with zero lines of code",
         )
-        kwargs = utilities.convert_args(options.parse_and_check(parser=parser, logger_name=TOOL_NAME))
+        kwargs = sutil.convert_args(options.parse_and_check(parser=parser, logger_name=TOOL_NAME))
         sq = platform.Platform(**kwargs)
         sq.verify_connection()
         sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")

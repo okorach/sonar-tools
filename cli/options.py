@@ -30,7 +30,9 @@ from argparse import ArgumentParser
 from typing import Optional, Any
 
 import sonar.logging as log
-from sonar import errcodes, version, utilities, exceptions
+from sonar import errcodes, version, exceptions
+import sonar.util.misc as util
+import sonar.utilities as sutil
 
 # Command line options
 
@@ -172,10 +174,10 @@ def __convert_args_to_lists(kwargs: dict[str, str]) -> dict[str, str]:
     """Converts arguments that may be CSV into lists"""
     for argname in MULTI_VALUED_OPTS:
         if argname in kwargs and kwargs[argname] is not None and isinstance(kwargs[argname], (str, list)) and len(kwargs[argname]) > 0:
-            kwargs[argname] = utilities.csv_to_list(kwargs[argname])
+            kwargs[argname] = util.csv_to_list(kwargs[argname])
     if kwargs.get(LANGUAGES, None) not in (None, ""):
-        kwargs[LANGUAGES] = [lang.lower() for lang in utilities.csv_to_list(kwargs[LANGUAGES])]
-        kwargs[LANGUAGES] = [LANGUAGE_MAPPING[lang] if lang in LANGUAGE_MAPPING else lang for lang in utilities.csv_to_list(kwargs[LANGUAGES])]
+        kwargs[LANGUAGES] = [lang.lower() for lang in util.csv_to_list(kwargs[LANGUAGES])]
+        kwargs[LANGUAGES] = [LANGUAGE_MAPPING[lang] if lang in LANGUAGE_MAPPING else lang for lang in util.csv_to_list(kwargs[LANGUAGES])]
     return kwargs
 
 
@@ -208,14 +210,14 @@ def parse_and_check(parser: ArgumentParser, logger_name: Optional[str] = None, v
     if os.getenv("IN_DOCKER", "No") == "Yes":
         kwargs[URL] = kwargs[URL].replace("http://localhost", "http://host.docker.internal")
     kwargs = __convert_args_to_lists(kwargs=kwargs)
-    log.debug("CLI arguments = %s", utilities.json_dump(kwargs, redact_tokens=True))
+    log.debug("CLI arguments = %s", util.json_dump(sutil.redact_tokens(kwargs)))
     if not kwargs.get(IMPORT, False) and not kwargs.get(VALIDATE_FILE, False) and not kwargs.get(CONVERT_FROM, False):
         __check_file_writeable(kwargs.get(REPORT_FILE))
     # Verify version randomly once every 10 runs
     if not kwargs[SKIP_VERSION_CHECK] and random.randrange(10) == 0:
-        utilities.check_last_version(f"https://pypi.org/simple/{tool}")
+        sutil.check_last_version(f"https://pypi.org/simple/{tool}")
     kwargs.pop(SKIP_VERSION_CHECK, None)
-    if utilities.is_sonarcloud_url(kwargs[URL]) and kwargs[ORG] is None:
+    if sutil.is_sonarcloud_url(kwargs[URL]) and kwargs[ORG] is None:
         raise ArgumentsError(f"Organization (-{ORG_SHORT}) option is mandatory for SonarQube Cloud")
     if URL_TARGET in kwargs and kwargs[URL_TARGET] is None:
         kwargs[URL_TARGET] = kwargs[URL]
@@ -223,10 +225,10 @@ def parse_and_check(parser: ArgumentParser, logger_name: Optional[str] = None, v
         kwargs[TOKEN_TARGET] = kwargs[TOKEN]
     if ORG_TARGET in kwargs and kwargs[ORG_TARGET] is None:
         kwargs[ORG_TARGET] = kwargs[ORG]
-    if URL_TARGET in kwargs and utilities.is_sonarcloud_url(kwargs[URL_TARGET]) and kwargs[ORG_TARGET] is None:
+    if URL_TARGET in kwargs and sutil.is_sonarcloud_url(kwargs[URL_TARGET]) and kwargs[ORG_TARGET] is None:
         raise ArgumentsError(f"Organization (-{ORG_TARGET_SHORT}) option is mandatory for SonarQube Cloud")
     if verify_token:
-        utilities.check_token(args.token, utilities.is_sonarcloud_url(kwargs[URL]))
+        sutil.check_token(args.token, sutil.is_sonarcloud_url(kwargs[URL]))
     return args
 
 

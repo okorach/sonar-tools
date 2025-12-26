@@ -21,10 +21,11 @@
 """sonar.audit module"""
 
 from sonar.audit import rules
-from sonar import utilities, errcodes, config
+from sonar import errcodes, config
+import sonar.utilities as sutil
 
 config.load_config_data()
 try:
     rules.load()
 except rules.RuleConfigError as e:
-    utilities.final_exit(errcodes.RULES_LOADING_FAILED, e.message)
+    sutil.final_exit(errcodes.RULES_LOADING_FAILED, e.message)

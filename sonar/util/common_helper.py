@@ -22,10 +22,10 @@
 from typing import Optional
 from datetime import datetime
 from sonar.util import cache_helper
-from sonar import utilities
+import sonar.utilities as sutil
 
 
 def clear_cache_and_exit(exit_code: int, err_msg: Optional[str] = None, start_time: Optional[datetime] = None) -> None:
     """Fatal exit with error msg"""
     cache_helper.clear_cache()
-    utilities.final_exit(exit_code=exit_code, err_msg=err_msg, start_time=start_time)
+    sutil.final_exit(exit_code=exit_code, err_msg=err_msg, start_time=start_time)

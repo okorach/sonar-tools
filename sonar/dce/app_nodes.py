@@ -27,7 +27,7 @@ from typing import Optional, Union
 import datetime
 
 import sonar.logging as log
-import sonar.utilities as util
+import sonar.utilities as sutil
 from sonar.util import types
 from sonar.audit.rules import get_rule, RuleId
 import sonar.sif_node as sifn
@@ -63,7 +63,7 @@ class AppNode(dce_nodes.DceNode):
     def version(self) -> Union[tuple[int, ...], None]:
         """Returns the App Node SonarQube version"""
         try:
-            return util.string_to_version(self.json[_SYSTEM]["Version"])
+            return sutil.string_to_version(self.json[_SYSTEM]["Version"])
         except KeyError:
             return None
 

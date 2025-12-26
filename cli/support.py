@@ -36,7 +36,7 @@ import sonar.logging as log
 from sonar import sif, errcodes
 from sonar.audit import problem, audit_config
 from sonar.audit.severities import Severity
-import sonar.utilities as util
+import sonar.utilities as sutil
 import sonar.util.common_helper as chelp
 
 PRIVATE_COMMENT = [{"key": "sd.public.comment", "value": {"internal": "true"}}]

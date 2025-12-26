@@ -26,7 +26,8 @@ import jprops
 from typing import Optional
 import sonar.logging as log
 from sonar.util import types
-import sonar.utilities as util
+import sonar.utilities as sutil
+import sonar.util.misc as util
 
 _CONFIG_SETTINGS = None
 
@@ -64,7 +65,7 @@ def load(config_name: Optional[str] = None, settings: types.ConfigSettings = Non
             log.warning("Insufficient permissions to open file %s, configuration will be skipped", file)
     _CONFIG_SETTINGS.update(settings)
 
-    _CONFIG_SETTINGS = {k: util.convert_string(v) for k, v in _CONFIG_SETTINGS.items()}
+    _CONFIG_SETTINGS = {k: sutil.convert_string(v) for k, v in _CONFIG_SETTINGS.items()}
     for item in "globalSettings", "qualityGates", "qualityProfiles", "projects", "applications", "portfolios", "users", "groups", "plugins":
         main_switch = f"audit.{item}"
         if _CONFIG_SETTINGS.get(main_switch, True):

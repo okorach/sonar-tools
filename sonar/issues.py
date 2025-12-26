@@ -39,7 +39,8 @@ import sonar.util.constants as c
 from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
 from sonar import users, findings, changelog, projects, rules, config, exceptions
-import sonar.utilities as util
+import sonar.util.misc as util
+import sonar.utilities as sutil
 
 _OLD_SEARCH_COMPONENT_FIELD = "componentKeys"
 _NEW_SEARCH_COMPONENT_FIELD = "components"
@@ -715,12 +716,12 @@ def search_by_date(endpoint: pf.Platform, params: ApiParams, date_start: Optiona
     log.info(
         "Project '%s' Splitting search by date between [%s - %s]",
         new_params.get(component_search_field(endpoint), "None"),
-        util.date_to_string(date_start, False),
-        util.date_to_string(date_stop, False),
+        sutil.date_to_string(date_start, False),
+        sutil.date_to_string(date_stop, False),
     )
     issue_list = {}
-    new_params["createdAfter"] = util.date_to_string(date_start, with_time=False)
-    new_params["createdBefore"] = util.date_to_string(date_stop, with_time=False)
+    new_params["createdAfter"] = sutil.date_to_string(date_start, with_time=False)
+    new_params["createdBefore"] = sutil.date_to_string(date_stop, with_time=False)
     try:
         issue_list = search(endpoint=endpoint, params=new_params)
     except TooManyIssuesError as e:
@@ -742,8 +743,8 @@ def search_by_date(endpoint: pf.Platform, params: ApiParams, date_start: Optiona
             "Project '%s' has %d issues between %s and %s",
             new_params.get(component_search_field(endpoint), "None"),
             len(issue_list),
-            util.date_to_string(date_start, False),
-            util.date_to_string(date_stop, False),
+            sutil.date_to_string(date_start, False),
+            sutil.date_to_string(date_stop, False),
         )
     return issue_list
 
@@ -869,8 +870,8 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
     log.debug("Search filters = %s", str(filters))
     issue_list = {}
     data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text)
-    nbr_issues = util.nbr_total_elements(data)
-    nbr_pages = util.nbr_pages(data)
+    nbr_issues = sutil.nbr_total_elements(data)
+    nbr_pages = sutil.nbr_pages(data)
     log.debug("Number of issues: %d - Nbr pages: %d", nbr_issues, nbr_pages)
 
     if nbr_pages > 20 and raise_error:
@@ -928,7 +929,7 @@ def count(endpoint: pf.Platform, **kwargs) -> int:
     """Returns number of issues of a search"""
     filters = pre_search_filters(endpoint=endpoint, params=kwargs)
     filters["ps"] = 1
-    nbr_issues = util.nbr_total_elements(json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text))
+    nbr_issues = sutil.nbr_total_elements(json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text))
     log.debug("Count issues with filters %s returned %d issues", str(kwargs), nbr_issues)
     return nbr_issues
 
@@ -951,7 +952,7 @@ def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
             for k, v in added_count.items():
                 rulecount[k] = rulecount.get(k, 0) + v
         except Exception as e:
-            log.error("%s while counting issues per rule, count may be incomplete", util.error_msg(e))
+            log.error("%s while counting issues per rule, count may be incomplete", sutil.error_msg(e))
     return rulecount
 
 

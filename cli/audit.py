@@ -35,7 +35,8 @@ from sonar import errcodes, exceptions, version
 from sonar.util import types, component_helper
 import sonar.logging as log
 from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, portfolios, applications, projects
-import sonar.utilities as util
+import sonar.utilities as sutil
+import sonar.util.misc as util
 from sonar.audit import problem
 from sonar.audit import audit_config as audit_conf
 import sonar.util.common_helper as chelp
@@ -97,7 +98,7 @@ def write_csv(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.C
     header += ["Problem", "Type", "Severity", "Message"]
     header += ["URL"] if with_url else []
     csvwriter.writerow(header)
-    while (problems := queue.get()) is not util.WRITE_END:
+    while (problems := queue.get()) is not sutil.WRITE_END:
         problems = __filter_problems(problems, settings)
         for p in problems:
             json_data = p.to_json(with_url)
@@ -114,7 +115,7 @@ def write_json(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.
     with_url = settings.get("WITH_URL", False)
     comma = ""
     print("[", file=fd)
-    while (problems := queue.get()) is not util.WRITE_END:
+    while (problems := queue.get()) is not sutil.WRITE_END:
         problems = __filter_problems(problems, settings)
         for p in problems:
             json_data = p.to_json(with_url)
@@ -155,7 +156,7 @@ def _audit_sq(
             except exceptions.SonarException as e:
                 if not everything:
                     log.warning(e.message)
-        write_q.put(util.WRITE_END)
+        write_q.put(sutil.WRITE_END)
         write_q.join()
     if file and fmt == "json":
         util.pretty_print_json(file)
@@ -198,7 +199,7 @@ def __parser_args(desc: str) -> object:
 
     args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME, verify_token=False)
     if args.sif is None and args.config is None:
-        util.check_token(args.token)
+        sutil.check_token(args.token)
     return args
 
 
@@ -213,7 +214,7 @@ def main() -> None:
     start_time = util.start_clock()
     errcode = errcodes.OS_ERROR
     try:
-        kwargs = util.convert_args(__parser_args("Audits a SonarQube Server or Cloud platform or a SIF (Support Info File or System Info File)"))
+        kwargs = sutil.convert_args(__parser_args("Audits a SonarQube Server or Cloud platform or a SIF (Support Info File or System Info File)"))
         cli_settings = {}
         for val in kwargs.get("settings", []) or []:
             key, value = val[0].split("=", maxsplit=1)
@@ -246,7 +247,7 @@ def main() -> None:
             sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
             settings["SERVER_ID"] = sq.server_id()
             __check_keys_exist(kwargs[options.KEY_REGEXP], sq, kwargs[options.WHAT])
-            what = util.check_what(kwargs[options.WHAT], WHAT_AUDITABLE, "audited")
+            what = sutil.check_what(kwargs[options.WHAT], WHAT_AUDITABLE, "audited")
             problems = _audit_sq(sq, settings, what_to_audit=what, key_list=kwargs[options.KEY_REGEXP])
             loglevel = log.WARNING if len(problems) > 0 else log.INFO
             log.log(loglevel, "%d issues found during audit", len(problems))

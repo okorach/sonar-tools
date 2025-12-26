@@ -22,19 +22,20 @@
 """Common tests, independent of SonarQube version"""
 
 from cli import sonar_tools
-from sonar import utilities, errcodes
+from sonar import errcodes
+from sonar.util import misc as util
 from sonar.util import sonar_cache
 import utilities as tutil
 
 
 def test_deduct_fmt() -> None:
     """test_deduct_fmt"""
-    assert utilities.deduct_format("csv", None) == "csv"
-    assert utilities.deduct_format("foo", "file.csv") == "csv"
-    assert utilities.deduct_format("foo", "file.json") == "csv"
-    assert utilities.deduct_format(None, "file.json") == "json"
-    assert utilities.deduct_format(None, "file.csv") == "csv"
-    assert utilities.deduct_format(None, "file.txt") == "csv"
+    assert util.deduct_format("csv", None) == "csv"
+    assert util.deduct_format("foo", "file.csv") == "csv"
+    assert util.deduct_format("foo", "file.json") == "csv"
+    assert util.deduct_format(None, "file.json") == "json"
+    assert util.deduct_format(None, "file.csv") == "csv"
+    assert util.deduct_format(None, "file.txt") == "csv"
 
 
 def test_clear_cache() -> None:

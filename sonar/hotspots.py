@@ -30,13 +30,14 @@ import requests.utils
 import sonar.logging as log
 import sonar.platform as pf
 
-import sonar.utilities as util
+import sonar.util.misc as util
 from sonar.util import types, cache, constants as c
 
 from sonar import users
 from sonar import findings, rules, changelog
 from sonar import exceptions
 import sonar.util.issue_defs as idefs
+import sonar.utilities as sutil
 
 PROJECT_FILTER = "project"
 PROJECT_FILTER_OLD = "projectKey"
@@ -416,11 +417,11 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
             inline_filters["p"] = p
             try:
                 data = json.loads(endpoint.get(Hotspot.API[c.SEARCH], params=inline_filters, mute=(HTTPStatus.NOT_FOUND,)).text)
-                nbr_hotspots = util.nbr_total_elements(data)
+                nbr_hotspots = sutil.nbr_total_elements(data)
             except exceptions.SonarException:
                 nbr_hotspots = 0
                 return {}
-            nbr_pages = util.nbr_pages(data)
+            nbr_pages = sutil.nbr_pages(data)
             log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, p, nbr_pages)
             if nbr_hotspots > Hotspot.MAX_SEARCH:
                 raise TooManyHotspotsError(
@@ -486,11 +487,11 @@ def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: types.ApiPara
         filtered_findings = {k: v for k, v in filtered_findings.items() if v.severity in filters["severities"]}
         log.debug("%d hotspots remaining after filtering by severities %s", len(filtered_findings), str(filters["severities"]))
     if "createdAfter" in filters:
-        min_date = util.string_to_date(filters["createdAfter"])
+        min_date = sutil.string_to_date(filters["createdAfter"])
         filtered_findings = {k: v for k, v in filtered_findings.items() if v.creation_date >= min_date}
         log.debug("%d hotspots remaining after filtering by createdAfter %s", len(filtered_findings), str(filters["createdAfter"]))
     if "createdBefore" in filters:
-        max_date = util.string_to_date(filters["createdBefore"])
+        max_date = sutil.string_to_date(filters["createdBefore"])
         filtered_findings = {k: v for k, v in filtered_findings.items() if v.creation_date <= max_date}
         log.debug("%d hotspots remaining after filtering by createdBefore %s", len(filtered_findings), str(filters["createdBefore"]))
     if "languages" in filters:
@@ -507,6 +508,6 @@ def count(endpoint: pf.Platform, **kwargs) -> int:
     params = {} if not kwargs else kwargs.copy()
     params["ps"] = 1
     params = sanitize_search_filters(endpoint, params)
-    nbr_hotspots = util.nbr_total_elements(json.loads(endpoint.get(Hotspot.API[c.SEARCH], params=params, mute=(HTTPStatus.NOT_FOUND,)).text))
+    nbr_hotspots = sutil.nbr_total_elements(json.loads(endpoint.get(Hotspot.API[c.SEARCH], params=params, mute=(HTTPStatus.NOT_FOUND,)).text))
     log.debug("Hotspot counts with filters %s returned %d hotspots", str(kwargs), nbr_hotspots)
     return nbr_hotspots

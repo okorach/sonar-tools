@@ -27,7 +27,7 @@ from typing import Optional
 
 import sonar.logging as log
 
-import sonar.utilities as util
+import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 from sonar.dce import nodes
@@ -48,7 +48,7 @@ class SearchNode(nodes.DceNode):
 
     def store_size(self) -> int:
         """Returns the store size in MB"""
-        return util.int_memory(self.json[_ES_STATE][_STORE_SIZE])
+        return sutil.int_memory(self.json[_ES_STATE][_STORE_SIZE])
 
     def name(self) -> str:
         """Returns the node name"""
@@ -66,7 +66,7 @@ class SearchNode(nodes.DceNode):
     def max_heap(self) -> Optional[int]:
         """Returns the node max heap or None if not found"""
         if self.sif.edition() != c.DCE and self.sif.version() < (9, 0, 0):
-            return util.jvm_heap(self.sif.search_jvm_cmdline())
+            return sutil.jvm_heap(self.sif.search_jvm_cmdline())
         try:
             sz = self.json[_ES_STATE]["JVM Heap Max"]
         except KeyError:
@@ -103,7 +103,7 @@ class SearchNode(nodes.DceNode):
         """Audits whether the node has enough free disk space"""
         log.info("%s: Auditing available disk space", str(self))
         try:
-            space_avail = util.int_memory(self.json[_ES_STATE]["Disk Available"])
+            space_avail = sutil.int_memory(self.json[_ES_STATE]["Disk Available"])
         except ValueError:
             log.warning("%s: disk space available not found in SIF, skipping this check", str(self))
             return []

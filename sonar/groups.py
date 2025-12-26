@@ -29,7 +29,8 @@ from typing import Optional, Any
 import sonar.logging as log
 import sonar.platform as pf
 import sonar.sqobject as sq
-import sonar.utilities as util
+import sonar.util.misc as util
+import sonar.utilities as sutil
 from sonar import exceptions, users
 
 from sonar.audit import rules
@@ -93,7 +94,7 @@ class Group(sq.SqObject):
         o = Group.CACHE.get(name, endpoint.local_url)
         if o:
             return o
-        data = util.search_by_name(endpoint, name, Group.api_for(c.SEARCH, endpoint), "groups")
+        data = sutil.search_by_name(endpoint, name, Group.api_for(c.SEARCH, endpoint), "groups")
         if data is None:
             raise exceptions.ObjectNotFound(name, f"Group '{name}' not found.")
         # SonarQube 10 compatibility: "id" field is dropped, use "name" instead
@@ -353,7 +354,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     log.info("%s groups to export", len(g_list))
     if write_q := kwargs.get("write_q", None):
         write_q.put(g_list)
-        write_q.put(util.WRITE_END)
+        write_q.put(sutil.WRITE_END)
     return g_list
 
 

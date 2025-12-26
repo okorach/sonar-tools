@@ -25,7 +25,6 @@ import concurrent.futures
 
 from termgraph import Data, Args, BarChart
 
-from sonar import utilities as util
 from sonar import version
 from cli import options
 from sonar import exceptions
@@ -39,7 +38,8 @@ from sonar import qualityprofiles as qp
 from sonar import languages
 from sonar import logging as log
 from sonar.util import conf_mgr as conf
-from sonar.util import misc
+import sonar.utilities as sutil
+import sonar.util.misc as util
 
 TOOL_NAME = "sonar-maturity"
 
@@ -118,7 +118,7 @@ def get_project_maturity_data(project: projects.Project, settings: dict[str, Any
 
     # Extract project analysis history
     segments = [s.strip() for s in settings.get("projectRecentAnalysisDaysThreshold", "7, 30, 90").split(",")]
-    segments = misc.convert_types(segments)
+    segments = util.convert_types(segments)
     history = [util.age(util.string_to_date(d["date"])) for d in project.get_analyses()]
     log.debug("%s history of analysis = %s", project, history)
     section = ANALYSES_MAIN_BRANCH_KEY
@@ -243,11 +243,11 @@ def _count_prs(project_data: dict[str, Any], min_age: int = 7, *statuses: str) -
 
 def compute_project_analysis_maturity(data: dict[str, Any], settings: dict[str, Any]) -> None:
     """Computes the maturity level of a project"""
-    l1_threshold = misc.convert_types(settings.get("projectLevel1MaturityMaximumLastAnalysisAge", 60))
-    l1_ci = misc.convert_types(settings.get("projectLevel1MaturityNoCiDetected", True))
-    l2_threshold = misc.convert_types(settings.get("projectLevel2LastAnalysisMaxAge", 7))
-    l3_threshold = misc.convert_types(settings.get("projectLevel3MinimumNbrOfAnalyses", 50))
-    pr_threshold = misc.convert_types(settings.get("prInactivityThreshold", 7))
+    l1_threshold = util.convert_types(settings.get("projectLevel1MaturityMaximumLastAnalysisAge", 60))
+    l1_ci = util.convert_types(settings.get("projectLevel1MaturityNoCiDetected", True))
+    l2_threshold = util.convert_types(settings.get("projectLevel2LastAnalysisMaxAge", 7))
+    l3_threshold = util.convert_types(settings.get("projectLevel3MinimumNbrOfAnalyses", 50))
+    pr_threshold = util.convert_types(settings.get("prInactivityThreshold", 7))
     for proj in data.values():
         if proj[AGE_KEY] is None:
             analysis_level = 0
@@ -269,9 +269,9 @@ def compute_project_analysis_maturity(data: dict[str, Any], settings: dict[str, 
 
 def compute_project_new_code_maturity_level(data: dict[str, Any], settings: dict[str, Any]) -> None:
     """Computes the maturity level of a project"""
-    max_lines = misc.convert_types(settings.get("newCodeMaxLines", 10000))
-    max_days = misc.convert_types(settings.get("newCodeMaxDays", 60))
-    max_ratio = misc.convert_types(settings.get("newCodeMaxRatio", 0.05))
+    max_lines = util.convert_types(settings.get("newCodeMaxLines", 10000))
+    max_days = util.convert_types(settings.get("newCodeMaxDays", 60))
+    max_ratio = util.convert_types(settings.get("newCodeMaxRatio", 0.05))
     for proj in data.values():
         maturity = 0
         if proj[NEW_CODE_LINES_KEY] is not None:
@@ -289,7 +289,7 @@ def compute_project_new_code_maturity_level(data: dict[str, Any], settings: dict
 def compute_quality_gate_enforcement_maturity(data: dict[str, Any], settings: dict[str, Any]) -> None:
     """Computes the maturity level of a project concerning quality gate enforcement on PRs"""
     thresholds = [s.strip() for s in settings.get("pullRequestMaturityThresholds", "1,0.5, 1,0.2, 5,0.1, 10,0.0").split(",")]
-    thresholds = misc.convert_types(thresholds)
+    thresholds = util.convert_types(thresholds)
     min_age = settings.get("pullRequestAgeThreshold", 7)
     for proj in data.values():
         pr_list = proj.get("pull_requests", {}).values()
@@ -349,7 +349,7 @@ def compute_analysis_frequency_statistics(data: dict[str, Any], settings: dict[s
     recent_days = [s.strip() for s in settings.get("projectRecentAnalysisDaysThresholds", "7, 30, 90").split(",")][0]
     DAYS = f"{recent_days}_days_or_less"
     thresholds = [s.strip() for s in settings.get("projectAnalysisMaturityThresholds", "0, 5, 20").split(",")]
-    thresholds = misc.convert_types(thresholds)
+    thresholds = util.convert_types(thresholds)
     summary = {f"not_analyzed_over_the_last_{recent_days}_days": sum(1 for p in data.values() if p[ANALYSES_ANY_BRANCH_KEY][DAYS] == 0)}
     for i in range(len(thresholds)):
         if i + 1 < len(thresholds):
@@ -508,7 +508,7 @@ def main() -> None:
     """Entry point for sonar-maturity"""
     start_time = util.start_clock()
     try:
-        kwargs: dict[str, Any] = util.convert_args(__parse_args("Extracts a maturity score for a platform, a project or a portfolio"))
+        kwargs: dict[str, Any] = sutil.convert_args(__parse_args("Extracts a maturity score for a platform, a project or a portfolio"))
         sq = platform.Platform(**kwargs)
         sq.verify_connection()
         sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")

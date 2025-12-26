@@ -30,7 +30,8 @@ import datetime as dt
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
-import sonar.utilities as util
+import sonar.utilities as sutil
+import sonar.util.misc as util
 from sonar.util import types, cache, constants as c
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
@@ -52,9 +53,9 @@ class UserToken(sq.SqObject):
         self.sq_json = json_data  #: JSON data returned by the API
         if self.name is None:
             self.name = json_data.get("name", None)
-        self.created_at = util.string_to_date(json_data["createdAt"]) if "createdAt" in json_data else None
-        self.last_connection_date = util.string_to_date(json_data["lastConnectionDate"]) if "lastConnectionDate" in json_data else None
-        self.expiration_date: Optional[dt.datetime] = util.string_to_date(json_data["expirationDate"]) if "expirationDate" in json_data else None
+        self.created_at = sutil.string_to_date(json_data["createdAt"]) if "createdAt" in json_data else None
+        self.last_connection_date = sutil.string_to_date(json_data["lastConnectionDate"]) if "lastConnectionDate" in json_data else None
+        self.expiration_date: Optional[dt.datetime] = sutil.string_to_date(json_data["expirationDate"]) if "expirationDate" in json_data else None
         self.token = json_data.get("token", None)
         log.debug("Constructed '%s'", str(self))
 

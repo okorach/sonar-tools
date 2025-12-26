@@ -28,7 +28,8 @@ from sonar import metrics, exceptions, platform
 from sonar.util.types import ApiPayload, ApiParams, KeyList
 from sonar.util import cache, constants as c
 import sonar.logging as log
-import sonar.utilities as util
+import sonar.util.misc as util
+import sonar.utilities as sutil
 import sonar.sqobject as sq
 
 ALT_COMPONENTS = ("project", "application", "portfolio", "key")
@@ -68,7 +69,7 @@ class Measure(sq.SqObject):
         return cls(concerned_object=concerned_object, key=data["metric"], value=_search_value(data))
 
     def __converted_value(self, value: Any) -> Any:
-        value = util.string_to_date(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
+        value = sutil.string_to_date(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
         if self.is_a_rating():
             value = int(float(value))
         return value
@@ -89,7 +90,7 @@ class Measure(sq.SqObject):
         if params is None:
             params = {}
         params.update({"component": self.concerned_object.key, "metrics": self.metric, "ps": 1})
-        return util.nbr_total_elements(json.loads(self.get(Measure.API_HISTORY, params=params).text))
+        return sutil.nbr_total_elements(json.loads(self.get(Measure.API_HISTORY, params=params).text))
 
     def search_history(self, params: ApiParams = None) -> dict[str, any]:
         """Searches the history of the measure
@@ -108,7 +109,7 @@ class Measure(sq.SqObject):
             data = json.loads(self.get(Measure.API_HISTORY, params=new_params).text)
             for m in data["measures"][0]["history"]:
                 measures[m["date"]] = m["value"]
-            nbr_pages = util.nbr_pages(data)
+            nbr_pages = sutil.nbr_pages(data)
             page += 1
         return measures
 

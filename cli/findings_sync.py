@@ -34,9 +34,9 @@ from typing import Optional, Union
 from cli import options
 import sonar.logging as log
 import sonar.platform as pf
-import sonar.util.constants as c
 from sonar import syncer, exceptions, projects, branches, version
-import sonar.utilities as util
+import sonar.util.misc as util
+import sonar.utilities as sutil
 import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-findings-sync"
@@ -105,7 +105,7 @@ def __since_date(**kwargs) -> Optional[datetime.datetime]:
     since = None
     if kwargs["sinceDate"] is not None:
         try:
-            since = datetime.datetime.strptime(kwargs["sinceDate"], util.SQ_DATE_FORMAT).replace(tzinfo=datetime.timezone.utc)
+            since = datetime.datetime.strptime(kwargs["sinceDate"], sutil.SQ_DATE_FORMAT).replace(tzinfo=datetime.timezone.utc)
         except (ValueError, TypeError):
             log.warning("sinceDate value '%s' is not in the expected YYYY-MM-DD date format, ignored", kwargs["sinceDate"])
     return since
@@ -145,14 +145,14 @@ def main() -> None:
             "Synchronizes findings changelog of different branches of same or different projects, "
             "see: https://pypi.org/project/sonar-tools/#sonar-findings-sync"
         )
-        params = util.convert_args(args)
+        params = sutil.convert_args(args)
         source_env = pf.Platform(**params)
         source_env.verify_connection()
         source_env.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
 
-        util.check_token(args.tokenTarget)
+        sutil.check_token(args.tokenTarget)
 
-        target_params = util.convert_args(args, second_platform=True)
+        target_params = sutil.convert_args(args, second_platform=True)
         target_env = pf.Platform(**target_params)
         target_env.verify_connection()
         target_env.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")

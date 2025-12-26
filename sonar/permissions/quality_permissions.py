@@ -27,7 +27,8 @@ import json
 
 from sonar.util import types
 import sonar.logging as log
-from sonar import utilities, exceptions
+from sonar import exceptions
+import sonar.utilities as sutil
 from sonar.audit.problem import Problem
 from sonar.permissions import permissions
 
@@ -82,7 +83,7 @@ class QualityPermissions(permissions.Permissions):
                 resp = self.endpoint.get(api, params=params | {"p": page})
                 data = json.loads(resp.text)
                 perms += [p[ret_field] for p in data[perm_type]]
-                page, nbr_pages = page + 1, utilities.nbr_pages(data)
+                page, nbr_pages = page + 1, sutil.nbr_pages(data)
             except exceptions.SonarException:
                 page += 1
         return perms

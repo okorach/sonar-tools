@@ -20,7 +20,7 @@
 """Helper tools for the Rule object"""
 
 from typing import Any
-from sonar import utilities
+import sonar.util.misc as util
 from sonar.util import constants as c
 from sonar.util import common_json_helper
 import sonar.util.issue_defs as idefs
@@ -38,7 +38,7 @@ def __convert_rule_json(json_to_convert: dict[str, Any]) -> dict[str, Any]:
     if "severity" in json_to_convert:
         json_to_convert["severity"] = json_to_convert["severity"].lower()
     if "params" in json_to_convert:
-        json_to_convert["params"] = utilities.dict_to_list(json_to_convert["params"], "key")
+        json_to_convert["params"] = util.dict_to_list(json_to_convert["params"], "key")
     return json_to_convert
 
 
@@ -49,5 +49,5 @@ def convert_rules_json(old_json: dict[str, Any]) -> dict[str, Any]:
         if k in old_json:
             for key, r in old_json[k].items():
                 old_json[k][key] = __convert_rule_json(r)
-            new_json[k] = utilities.dict_to_list(dict(sorted(old_json[k].items())), "key")
+            new_json[k] = util.dict_to_list(dict(sorted(old_json[k].items())), "key")
     return new_json

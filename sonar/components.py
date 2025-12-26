@@ -37,8 +37,9 @@ import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
 
-from sonar import settings, tasks, measures, utilities, rules, exceptions
-
+from sonar import settings, tasks, measures, rules, exceptions
+import sonar.util.misc as util
+import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 
@@ -74,7 +75,7 @@ class Component(sq.SqObject):
         if "visibility" in data:
             self._visibility = data["visibility"]
         if "analysisDate" in data:
-            self._last_analysis = utilities.string_to_date(data["analysisDate"])
+            self._last_analysis = sutil.string_to_date(data["analysisDate"])
         return self
 
     def __str__(self) -> str:
@@ -93,7 +94,7 @@ class Component(sq.SqObject):
             "metricKeys": "bugs,vulnerabilities,code_smells,security_hotspots",
         }
         data = json.loads(self.get("measures/component_tree", params=parms).text)
-        nb_comp = utilities.nbr_total_elements(data)
+        nb_comp = sutil.nbr_total_elements(data)
         log.debug("Found %d subcomponents to %s", nb_comp, str(self))
         nb_pages = math.ceil(nb_comp / 500)
         comp_list = {}
@@ -147,7 +148,7 @@ class Component(sq.SqObject):
         from sonar.hotspots import component_filter, search
 
         log.info("Searching hotspots for %s with filters %s", str(self), str(filters))
-        params = utilities.replace_keys(measures.ALT_COMPONENTS, component_filter(self.endpoint), self.api_params(c.GET))
+        params = util.replace_keys(measures.ALT_COMPONENTS, component_filter(self.endpoint), self.api_params(c.GET))
         if filters is not None:
             params.update(filters)
         return search(endpoint=self.endpoint, filters=params)
@@ -156,7 +157,7 @@ class Component(sq.SqObject):
         from sonar.issues import count as issue_count
         from sonar.hotspots import count as hotspot_count
 
-        json_data = {"lastAnalysis": utilities.date_to_string(self.last_analysis())}
+        json_data = {"lastAnalysis": sutil.date_to_string(self.last_analysis())}
         lang_distrib = self.get_measure("ncloc_language_distribution")
         loc_distrib = {}
         if lang_distrib:
@@ -210,7 +211,7 @@ class Component(sq.SqObject):
 
     def get_navigation_data(self) -> types.ApiPayload:
         """Returns a component navigation data"""
-        params = utilities.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(c.GET))
+        params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(c.GET))
         data = json.loads(self.get("navigation/component", params=params).text)
         super().reload(data)
         return data
@@ -224,17 +225,17 @@ class Component(sq.SqObject):
         if not self._last_analysis:
             self.get_navigation_data()
             if "analysisDate" in self.sq_json:
-                self._last_analysis = utilities.string_to_date(self.sq_json["analysisDate"])
+                self._last_analysis = sutil.string_to_date(self.sq_json["analysisDate"])
         return self._last_analysis
 
     def new_code_start_date(self) -> Optional[datetime]:
         """Returns the new code period start date of a component or None if this component has no new code start date"""
         if self._new_code_start_date is None:
-            params = utilities.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(c.GET))
+            params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(c.GET))
             data = json.loads(self.get(Component.API[c.READ], params=params).text)["component"]
             self.sq_json |= data
             if "leakPeriodDate" in data:
-                self._new_code_start_date = utilities.string_to_date(data["leakPeriodDate"])
+                self._new_code_start_date = sutil.string_to_date(data["leakPeriodDate"])
         return self._new_code_start_date
 
     def url(self) -> str:
@@ -256,18 +257,18 @@ class Component(sq.SqObject):
     def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None) -> types.ApiPayload:
         """Returns a component analyses"""
         log.debug("%s: Getting history of analyses", self)
-        params = utilities.dict_remap(self.api_params(c.READ), {"component": "project"})
+        params = util.dict_remap(self.api_params(c.READ), {"component": "project"})
         data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", **params)["analyses"]
         if filter_in and len(filter_in) > 0:
             data = [d for d in data if any(e["category"] in filter_in for e in d["events"])]
         if filter_out and len(filter_out) > 0:
             data = [d for d in data if all(e["category"] not in filter_out for e in d["events"])]
-        log.debug("%s: Analyses = %s", self, utilities.json_dump(data))
+        log.debug("%s: Analyses = %s", self, util.json_dump(data))
         return data
 
     def get_versions(self) -> dict[str, datetime]:
         """Returns a dict of project versions and their dates"""
-        data = {a["projectVersion"]: utilities.string_to_date(a["date"]) for a in reversed(self.get_analyses(filter_in=["VERSION"]))}
+        data = {a["projectVersion"]: sutil.string_to_date(a["date"]) for a in reversed(self.get_analyses(filter_in=["VERSION"]))}
         log.debug("Component versions = %s", str(data.keys()))
         return data
 
@@ -283,11 +284,11 @@ class Component(sq.SqObject):
         if version >= (2025, 1, 0):
             api = "project_branches/get_ai_code_assurance"
         try:
-            params = utilities.dict_remap(self.api_params(c.READ), {"component": "project"})
+            params = util.dict_remap(self.api_params(c.READ), {"component": "project"})
             return str(json.loads(self.get(api, params=params).text)["aiCodeAssurance"]).upper()
         except (ConnectionError, RequestException) as e:
-            utilities.handle_error(e, f"getting AI code assurance of {str(self)}", catch_all=True)
-            if "Unknown url" in utilities.error_msg(e):
+            sutil.handle_error(e, f"getting AI code assurance of {str(self)}", catch_all=True)
+            if "Unknown url" in sutil.error_msg(e):
                 raise exceptions.UnsupportedOperation(
                     f"AI code assurance is not available for {self.endpoint.edition()} edition version {str(version)}"
                 )

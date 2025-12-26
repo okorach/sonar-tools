@@ -25,15 +25,15 @@ Update a custom measure value:
     Usage: cust_measures.py -t <SQ_TOKEN> -u <SQ_URL> -k <projectKey> -m <metricKey> --updateValue <value>
 """
 
-from cli import options
-from sonar import errcodes, utilities
+from sonar import errcodes
+import sonar.util.misc as util
 import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-custom-measures"
 
 
 def main():
-    start_time = utilities.start_clock()
+    start_time = util.start_clock()
     chelp.clear_cache_and_exit(errcodes.UNSUPPORTED_OPERATION, "Custom measures are not supported anymore", start_time=start_time)
 
 

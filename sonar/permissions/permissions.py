@@ -27,7 +27,9 @@ import json
 from abc import ABC, abstractmethod
 
 import sonar.logging as log
-from sonar import utilities, exceptions
+from sonar import exceptions
+import sonar.utilities as sutil
+import sonar.util.misc as util
 from sonar.util import types
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
@@ -281,7 +283,7 @@ class Permissions(ABC):
                         counter = 0
                     else:
                         counter += 1
-                page, nbr_pages = page + 1, utilities.nbr_pages(data)
+                page, nbr_pages = page + 1, sutil.nbr_pages(data)
             except exceptions.SonarException:
                 page += 1
         return perms
@@ -308,21 +310,21 @@ def encode(perms_array: dict[str, list[str]]) -> dict[str, str]:
     """
     :meta private:
     """
-    return utilities.list_to_csv(perms_array, ", ", check_for_separator=True)
+    return util.list_to_csv(perms_array, ", ", check_for_separator=True)
 
 
 def decode(encoded_perms: dict[str, str]) -> dict[str, list[str]]:
     """
     :meta private:
     """
-    return utilities.csv_to_list(encoded_perms)
+    return util.csv_to_list(encoded_perms)
 
 
 def decode_full(encoded_perms: dict[str, str]) -> dict[str, list[str]]:
     """Decodes sonar-config encoded perms"""
     decoded_perms = {}
     for ptype in [p for p in PERMISSION_TYPES if p in encoded_perms]:
-        decoded_perms[ptype] = {u: utilities.csv_to_list(v) for u, v in encoded_perms[ptype].items()}
+        decoded_perms[ptype] = {u: util.csv_to_list(v) for u, v in encoded_perms[ptype].items()}
     return decoded_perms
 
 

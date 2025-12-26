@@ -33,7 +33,9 @@ from typing import Optional
 import sonar.logging as log
 import sonar.sqobject as sq
 from sonar.util import types, cache, constants as c, issue_defs as idefs
-from sonar import platform, utilities, exceptions, languages
+from sonar import platform, exceptions, languages
+import sonar.util.misc as util
+import sonar.utilities as sutil
 from sonar.util import rule_helper as rhelp
 
 TYPE_TO_QUALITY = {
@@ -303,7 +305,7 @@ class Rule(sq.SqObject):
         return self.template_key is not None
 
     def to_json(self) -> types.ObjectJsonRepr:
-        return utilities.remove_nones(self.sq_json | {"templateKey": self.template_key})
+        return util.remove_nones(self.sq_json | {"templateKey": self.template_key})
 
     def to_csv(self) -> list[str]:
         data = vars(self)
@@ -328,7 +330,7 @@ class Rule(sq.SqObject):
         rule = self.to_json()
         d = {"severity": rule.get("severity", ""), "impacts": self.impacts(), "description": self.custom_desc}
         if len(rule.get("params", [])) > 0:
-            params = utilities.sort_list_by_key(rule["params"], "key")
+            params = util.sort_list_by_key(rule["params"], "key")
             d["params"] = {p["key"]: p for p in params} if full else {p["key"]: p.get("defaultValue", "") for p in params}
         mapping = {"isTemplate": "isTemplate", "tags": "tags", "lang": "language", "templateKey": "templateKey"}
         d |= {newkey: rule[oldkey] for oldkey, newkey in mapping.items() if oldkey in rule}
@@ -337,12 +339,12 @@ class Rule(sq.SqObject):
         if full:
             d.update({f"_{k}": v for k, v in rule.items() if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "lang")})
             d.pop("_key", None)
-        return utilities.remove_nones(d)
+        return util.remove_nones(d)
 
     def set_tags(self, tags: list[str]) -> bool:
         """Sets rule custom tags"""
         log.info("Setting %s custom tags to '%s' ", str(self), str(tags))
-        if ok := self.post(Rule.API[c.UPDATE], params=self.api_params() | {"tags": utilities.list_to_csv(tags)}).ok:
+        if ok := self.post(Rule.API[c.UPDATE], params=self.api_params() | {"tags": util.list_to_csv(tags)}).ok:
             self.tags = sorted(tags) if len(tags) > 0 else None
         return ok
 
@@ -444,7 +446,7 @@ def search_keys(endpoint: platform.Platform, **params) -> list[str]:
         while new_params["p"] < nbr_pages:
             new_params["p"] += 1
             data = json.loads(endpoint.get(Rule.API[c.SEARCH], params=new_params).text)
-            nbr_pages = utilities.nbr_pages(data)
+            nbr_pages = sutil.nbr_pages(data)
             rule_list += [r[Rule.SEARCH_KEY_FIELD] for r in data[Rule.SEARCH_RETURN_FIELD]]
     except exceptions.SonarException:
         pass
@@ -497,7 +499,7 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     rule_list["instantiated"] = {k: rule.export(full) for k, rule in all_rules if rule.is_instantiated()}
     rule_list["extended"] = {k: rule.export(full) for k, rule in all_rules if rule.is_extended()}
     if not full:
-        rule_list["extended"] = utilities.remove_nones(
+        rule_list["extended"] = util.remove_nones(
             {
                 k: {"tags": v.get("tags", None), "description": v.get("description", None)}
                 for k, v in rule_list["extended"].items()
@@ -515,7 +517,7 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     rule_list = rhelp.convert_rules_json(rule_list)
     if write_q := kwargs.get("write_q", None):
         write_q.put(rule_list)
-        write_q.put(utilities.WRITE_END)
+        write_q.put(sutil.WRITE_END)
     return rule_list
 
 
@@ -528,7 +530,7 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
         raise exceptions.UnsupportedOperation("Can't import rules in SonarQube Cloud")
     get_list(endpoint=endpoint, use_cache=False)
     log.info("Importing extended rules (custom tags, extended description)")
-    converted_data = utilities.list_to_dict(rule_data.get("extended", []), "key")
+    converted_data = util.list_to_dict(rule_data.get("extended", []), "key")
     for key, custom in converted_data.items():
         log.info("Importing rule key '%s' with customization %s", key, custom)
         try:
@@ -539,10 +541,10 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
         if "description" in custom:
             rule.set_description(custom["description"])
         if "tags" in custom:
-            rule.set_tags(utilities.csv_to_list(custom["tags"]))
+            rule.set_tags(util.csv_to_list(custom["tags"]))
 
     log.info("Importing custom rules (instantiated from rule templates)")
-    converted_data = utilities.list_to_dict(rule_data.get("instantiated", []), "key")
+    converted_data = util.list_to_dict(rule_data.get("instantiated", []), "key")
     for key, instantiation_data in converted_data.items():
         log.info("Importing instantiated rule key '%s' with instantiation data %s", key, instantiation_data)
         try:
@@ -592,7 +594,7 @@ def get_all_rules_details(endpoint: platform.Platform, threads: int = 8) -> bool
 
 def convert_rule_list_for_yaml(rule_list: types.ObjectJsonRepr) -> list[types.ObjectJsonRepr]:
     """Converts a rule dict (key: data) to prepare for yaml by adding severity and key"""
-    return utilities.dict_to_list(rule_list, "key", "severity")
+    return util.dict_to_list(rule_list, "key", "severity")
 
 
 def third_party(endpoint: platform.Platform) -> list[Rule]:
