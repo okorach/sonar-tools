@@ -20,8 +20,7 @@
 
 """Utilities for sonar-tools"""
 
-from typing import Any, TextIO, Union, Optional
-from collections.abc import Generator
+from typing import Any, Union, Optional
 from http import HTTPStatus
 import sys
 import os
@@ -36,6 +35,8 @@ import Levenshtein
 import sonar.logging as log
 from sonar import version, errcodes, exceptions
 from sonar.util import types, constants as c
+import sonar.util.misc as util
+
 import cli.options as opt
 
 
@@ -279,7 +280,7 @@ def sonar_error(response: requests.models.Response) -> str:
             # API v2 format
             return json_res["message"]
         else:
-            log.debug("No error found in Response %s", json_dump(json_res))
+            log.debug("No error found in Response %s", util.json_dump(json_res))
     except json.decoder.JSONDecodeError:
         pass
     return ""
@@ -335,7 +336,7 @@ def check_what(what: Union[str, list[str]], allowed_values: list[str], operation
     """Check if what is requested is in allowed values"""
     if what == "":
         return allowed_values
-    what = csv_to_list(what)
+    what = util.csv_to_list(what)
     w = next((w for w in what if w not in allowed_values), None)
     if w:
         final_exit(
@@ -416,7 +417,7 @@ def inline_lists(element: Any, exception_values: tuple[str]) -> Any:
         if cannot_be_csv:
             return element
         else:
-            return list_to_csv(element, separator=", ")
+            return util.list_to_csv(element, separator=", ")
     else:
         return element
 
@@ -435,11 +436,6 @@ def http_error_string(status: HTTPStatus) -> str:
         return "INTERNAL_SERVER_ERROR"
     else:
         return f"HTTP Error {status.value} - {status.phrase}"
-
-
-def filename(file: Optional[str]) -> str:
-    """Returns the filename or stdout if None or -"""
-    return "stdout" if file is None or file == "-" else file
 
 
 def to_days(time_expression: str) -> Optional[int]:
@@ -492,5 +488,5 @@ def perms_to_list(perms: dict[str, Any]) -> list[str, Any]:
     """Converts permissions in dict format to list format"""
     if not perms or not isinstance(perms, dict):
         return perms
-    list_perms = dict_to_list(perms.get("groups", {}), "group", "permissions") + dict_to_list(perms.get("users", {}), "user", "permissions")
+    list_perms = util.dict_to_list(perms.get("groups", {}), "group", "permissions") + util.dict_to_list(perms.get("users", {}), "user", "permissions")
     return [p for p in list_perms if p.get("permissions") is not None and p.get("permissions") != []]

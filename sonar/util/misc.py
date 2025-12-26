@@ -375,3 +375,8 @@ def pretty_print_json(file: str) -> bool:
 def search_list(obj_list: list[Any], field: str, value: str) -> dict[str, Any]:
     """Returns the first dict elem in a list whose given field is a given value"""
     return next((elem for elem in obj_list if elem[field] == value), None)
+
+
+def filename(file: Optional[str]) -> str:
+    """Returns the filename or stdout if None or -"""
+    return "stdout" if file is None or file == "-" else file

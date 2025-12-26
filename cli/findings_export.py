@@ -40,6 +40,8 @@ from sonar.util import issue_defs as idefs, types, component_helper
 import sonar.util.constants as c
 
 import sonar.util.misc as util
+import sonar.utilities as sutil
+
 import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-findings"
@@ -347,7 +349,7 @@ def main() -> None:
     global DATES_WITHOUT_TIME
     start_time = util.start_clock()
     try:
-        kwargs = util.convert_args(parse_args("Sonar findings export"))
+        kwargs = sutil.convert_args(parse_args("Sonar findings export"))
         sqenv = platform.Platform(**kwargs)
         sqenv.verify_connection()
         sqenv.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
