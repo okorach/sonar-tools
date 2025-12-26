@@ -20,7 +20,8 @@
 """Helper tools for the Project object"""
 
 from typing import Any
-from sonar import utilities as util
+import sonar.util.misc as util
+
 from sonar.util import constants as c
 from sonar.util import common_json_helper
 import sonar.util.issue_defs as idefs

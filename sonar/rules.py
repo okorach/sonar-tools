@@ -517,7 +517,7 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     rule_list = rhelp.convert_rules_json(rule_list)
     if write_q := kwargs.get("write_q", None):
         write_q.put(rule_list)
-        write_q.put(util.WRITE_END)
+        write_q.put(sutil.WRITE_END)
     return rule_list
 
 

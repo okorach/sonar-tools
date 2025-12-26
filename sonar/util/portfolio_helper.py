@@ -20,7 +20,7 @@
 """Helper tools for the Portfolio object"""
 
 from typing import Any
-from sonar import utilities as util
+import sonar.util.misc as util
 from sonar.util import constants as c
 from sonar.util import common_json_helper
 

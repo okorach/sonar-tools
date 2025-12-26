@@ -20,9 +20,8 @@
 """Helper tools for the Project object"""
 
 from typing import Any
-from sonar import utilities as util
+import sonar.util.misc as util
 from sonar.util import common_json_helper
-from sonar import logging as log
 
 UNNEEDED_TASK_DATA = (
     "analysisId",
