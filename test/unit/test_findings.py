@@ -54,7 +54,7 @@ __GOOD_OPTS = [
     f"--{opt.FORMAT} json -{opt.KEY_REGEXP_SHORT} ({tutil.PROJECT_0}|{tutil.PROJECT_1}) -{opt.REPORT_FILE_SHORT} {tutil.JSON_FILE}",
     f"--{opt.CSV_SEPARATOR} ; -d --{opt.TAGS} cwe,convention",
     f"-{opt.KEY_REGEXP_SHORT} {tutil.PROJECT_0} -{opt.BRANCH_REGEXP_SHORT} .+",
-    f"--{opt.KEY_REGEXP} training:security -{opt.BRANCH_REGEXP_SHORT} main",
+    f"--{opt.KEY_REGEXP} demo:java-security -{opt.BRANCH_REGEXP_SHORT} main",
     f"--{opt.USE_FINDINGS} -{opt.KEY_REGEXP_SHORT} ({tutil.PROJECT_0}|{tutil.PROJECT_1})",
     f"--{opt.APPS} -{opt.KEY_REGEXP_SHORT} APP_TEST --{opt.BRANCH_REGEXP} .+",
     # See issue #2011 f"--{opt.PORTFOLIOS} -{opt.KEY_REGEXP_SHORT} Banking -{opt.REPORT_FILE_SHORT} {tutil.CSV_FILE}",
