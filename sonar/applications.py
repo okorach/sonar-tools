@@ -33,7 +33,7 @@ from requests import RequestException
 
 import sonar.logging as log
 from sonar.platform import Platform
-from sonar.util import types, cache
+from sonar.util import cache
 
 from sonar import exceptions, projects, branches, app_branches
 from sonar.permissions import application_permissions
@@ -46,7 +46,7 @@ import sonar.util.constants as c
 from sonar.util import common_json_helper
 
 if TYPE_CHECKING:
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
+    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, AppBranchDef, PermissionDef, AppBranchProjectDef
 
 _CLASS_LOCK = Lock()
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")

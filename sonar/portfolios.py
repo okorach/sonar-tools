@@ -49,7 +49,7 @@ from sonar.util import portfolio_helper as phelp
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiPayload, ApiParams, ConfigSettings, KeyList, ObjectJsonRepr
+    from sonar.util.types import ApiPayload, ApiParams, ConfigSettings, KeyList, ObjectJsonRepr, PermissionDef
     from sonar.branches import Branch
 
 _CLASS_LOCK = Lock()

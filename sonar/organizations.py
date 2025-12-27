@@ -30,14 +30,14 @@ from threading import Lock
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import types, cache, constants as c
+from sonar.util import cache, constants as c
 
 from sonar import sqobject, exceptions
 import sonar.util.misc as util
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ConfigSettings, ApiPayload, ObjectJsonRepr, KeyList
+    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, KeyList
 
 _CLASS_LOCK = Lock()
 

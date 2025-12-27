@@ -30,8 +30,7 @@ import json
 from requests import RequestException
 
 import sonar.logging as log
-from sonar import platform as pf
-from sonar.util import types, cache
+from sonar.util import cache
 import sonar.util.constants as c
 
 from sonar import groups, sqobject, tokens, exceptions

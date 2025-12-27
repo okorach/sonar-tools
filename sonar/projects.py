@@ -59,7 +59,7 @@ import sonar.util.project_helper as phelp
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
+    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, PermissionDef
 
 _CLASS_LOCK = Lock()
 
