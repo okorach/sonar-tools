@@ -80,6 +80,7 @@ class TooManyHotspotsError(Exception):
     """Too many hotspots found during a search"""
 
     def __init__(self, nbr_issues: int, message: str) -> None:
+        """Exception constructor"""
         super().__init__()
         self.nbr_issues = nbr_issues
         self.message = message
@@ -152,7 +153,10 @@ class Hotspot(findings.Finding):
             return False
 
     def __mark_as(self, resolution: Optional[str], comment: Optional[str] = None, status: str = "REVIEWED") -> bool:
-        """Marks a hotspot with a particular resolution and status"""
+        """Marks a hotspot with a particular resolution and status
+        
+        :return: Whether the operation succeeded
+        """
         try:
             params = util.remove_nones({"hotspot": self.key, "status": status, "resolution": resolution, "commemt": comment})
             ok = self.post("hotspots/change_status", params=params).ok
@@ -203,7 +207,7 @@ class Hotspot(findings.Finding):
     def add_comment(self, comment: str) -> bool:
         """Adds a comment to a hotspot
 
-        :param str comment: Comment to add, in markdown format
+        :param comment: Comment to add, in markdown format
         :return: Whether the operation succeeded
         """
         try:
@@ -214,8 +218,8 @@ class Hotspot(findings.Finding):
     def assign(self, assignee: Optional[str], comment: Optional[str] = None) -> bool:
         """Assigns a hotspot (and optionally comment)
 
-        :param str assignee: User login to assign the hotspot, None to unassign
-        :param str comment: Optional comment to add
+        :param assignee: User login to assign the hotspot, None to unassign
+        :param comment: Optional comment to add
         :return: Whether the operation succeeded
         """
         try:
