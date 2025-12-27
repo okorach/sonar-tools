@@ -114,6 +114,7 @@ def test_version() -> None:
     else:
         assert tutil.SQ.version() >= (9, 9, 0)
 
+
 def test_lta_latest() -> None:
     """Tests that problem is raised if server is not LTA or LATEST"""
     if tutil.SQ.is_sonarcloud():
@@ -136,4 +137,3 @@ def test_mqr_mode() -> None:
         assert is_mqr
     elif tutil.SQ.version() < (10, 2, 0):
         assert not is_mqr
-    
