@@ -116,15 +116,14 @@ class TooManyIssuesError(Exception):
     """When a call to api/issues/search returns too many issues."""
 
     def __init__(self, nbr_issues: int, message: str) -> None:
+        """Exception constructor"""
         super().__init__()
         self.nbr_issues = nbr_issues
         self.message = message
 
 
 class Issue(findings.Finding):
-    """
-    Abstraction of the SonarQube 'issue' concept
-    """
+    """Abstraction of the SonarQube 'issue' concept"""
 
     CACHE = cache.Cache()
     MAX_PAGE_SIZE = 500
@@ -138,10 +137,7 @@ class Issue(findings.Finding):
         Issue.CACHE.put(self)
 
     def __str__(self) -> str:
-        """
-        :return: String representation of the issue
-        :rtype: str
-        """
+        """Returns a string representation of the issue"""
         return f"Issue key '{self.key}'"
 
     def __format__(self, format_spec: str = "") -> str:
@@ -155,10 +151,7 @@ class Issue(findings.Finding):
         return ops[op] if op in ops else ops[c.LIST]
 
     def url(self) -> str:
-        """
-        :return: A permalink URL to the issue in the SonarQube platform
-        :rtype: str
-        """
+        """Returns a permalink URL to the issue in the SonarQube platform"""
         branch = ""
         if self.branch is not None:
             branch = f"&branch={requests.utils.quote(self.branch)}"
@@ -167,25 +160,19 @@ class Issue(findings.Finding):
         return f"{self.base_url(local=False)}/project/issues?id={self.projectKey}{branch}&issues={self.key}"
 
     def debt(self) -> int:
-        """
-        :return: The remediation effort of the issue, in minutes
-        """
+        """Returns the remediation effort of the issue, in minutes"""
         if self._debt is not None:
             return self._debt
         if "debt" in self.sq_json:
             kdays, days, hours, minutes = 0, 0, 0, 0
             debt = self.sq_json["debt"]
-            m = re.search(r"(\d+)kd", debt)
-            if m:
+            if (m := re.search(r"(\d+)kd", debt)):
                 kdays = int(m.group(1))
-            m = re.search(r"(\d+)d", debt)
-            if m:
+            if (m := re.search(r"(\d+)d", debt)):
                 days = int(m.group(1))
-            m = re.search(r"(\d+)h", debt)
-            if m:
+            if (m := re.search(r"(\d+)h", debt)):
                 hours = int(m.group(1))
-            m = re.search(r"(\d+)min", debt)
-            if m:
+            if (m := re.search(r"(\d+)min", debt)):
                 minutes = int(m.group(1))
             self._debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
         elif "effort" in self.sq_json:
@@ -195,10 +182,7 @@ class Issue(findings.Finding):
         return self._debt
 
     def to_json(self, without_time: bool = False) -> ObjectJsonRepr:
-        """
-        :return: The issue attributes as JSON
-        :rtype: dict
-        """
+        """Returns the issue JSON representation"""
         data = super().to_json(without_time)
         if self.endpoint.version() >= c.MQR_INTRO_VERSION:
             data["impacts"] = {elem["softwareQuality"]: elem["severity"] for elem in self.sq_json["impacts"]}
@@ -207,8 +191,8 @@ class Issue(findings.Finding):
 
     def refresh(self) -> bool:
         """Refreshes an issue from the SonarQube platform live data
+    
         :return: whether the refresh was successful
-        :rtype: bool
         """
         resp = self.get(Issue.API[c.SEARCH], params={"issues": self.key, "additionalFields": "_all"})
         if resp.ok:
@@ -232,9 +216,10 @@ class Issue(findings.Finding):
             }
 
     def changelog(self, after: Optional[datetime] = None, manual_only: bool = True) -> dict[str, changelog.Changelog]:
-        """
-        :param Optional[datetime] after: If set, only changes after that date are returned
-        :param Optional[bool] manual_only: Whether the only manual changes should be returned or all changes, defaults to True
+        """Returns the changelog of an issue
+
+        :param after: If set, only changes after that date are returned
+        :param manual_only: Whether the only manual changes should be returned or all changes, defaults to True
         :return: The issue changelog
         :rtype: dict{"<date>_<sequence_nbr>": Changelog}
         """
@@ -261,8 +246,9 @@ class Issue(findings.Finding):
         return self._changelog
 
     def comments(self, after: Optional[datetime] = None) -> dict[str, dict[str, Any]]:
-        """
-        :param Optional[datetime] after: If set will only return comments after this date, else all
+        """Returns the comments of an issue
+
+        :param after: If set will only return comments after this date, else all
         :return: The issue comments
         :rtype: dict{"<date>_<sequence_nbr>": <comment>}
         """
@@ -287,9 +273,8 @@ class Issue(findings.Finding):
     def add_comment(self, comment: str) -> bool:
         """Adds a comment to an issue
 
-        :param str comment: The comment to add
+        :param comment: The comment to add
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Adding comment '%s' to %s", comment, str(self))
         try:
@@ -298,6 +283,7 @@ class Issue(findings.Finding):
             return False
 
     def __set_severity(self, **params) -> bool:
+        """Changes the severity of an issue, in std experience or MQR depending on params"""
         log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, str(params))
         r = self.post("issues/set_severity", {"issue": self.key, **params})
         return r.ok
@@ -305,7 +291,7 @@ class Issue(findings.Finding):
     def set_severity(self, severity: str) -> bool:
         """Changes the standard severity of an issue
 
-        :param str severity: The comment to add
+        :param severity: The severity to add
         :return: Whether the operation succeeded
         """
         if self.endpoint.is_mqr_mode():
@@ -317,10 +303,10 @@ class Issue(findings.Finding):
         return success
 
     def set_mqr_severity(self, software_quality: str, severity: str) -> bool:
-        """Changes the severity of an issue
+        """Changes the MQR severity/impact of an issue
 
-        :param str software_quality: The software quality to set
-        :param str severity: The severity to set
+        :param software_quality: The software quality to set
+        :param severity: The severity to set
         :return: Whether the operation succeeded
         """
         if self.endpoint.is_sonarcloud():
@@ -335,7 +321,7 @@ class Issue(findings.Finding):
     def assign(self, assignee: Optional[str] = None) -> bool:
         """Assigns an issue to a user
 
-        :param str assignee: The user login, set to None to unassign the issue
+        :param assignee: The user login, set to None to unassign the issue
         :return: Whether the operation succeeded
         """
         try:
@@ -349,7 +335,7 @@ class Issue(findings.Finding):
             return ok
 
     def get_tags(self, **kwargs) -> list[str]:
-        """Returns issues tags"""
+        """Returns the tags of an issue"""
         api = self.__class__.API[c.GET_TAGS]
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
@@ -361,22 +347,21 @@ class Issue(findings.Finding):
 
     def add_tag(self, tag: str) -> bool:
         """Adds a tag to an issue
-        :param str tag: Tags to add
+
+        :param tag: Tags to add
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Adding tag '%s' to %s", tag, str(self))
         return self.set_tags((self._tags or []) + [tag])
 
     def remove_tag(self, tag: str) -> bool:
         """Removes a tag from an issue
-        :param str tag: Tag to remove
+
+        :param tag: Tag to remove
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Removing tag '%s' from %s", tag, str(self))
-        if self._tags is None:
-            self._tags = []
+        self._tags = self._tags or []
         tags = self._tags.copy()
         if tag in self._tags:
             tags.remove(tag)
@@ -384,7 +369,9 @@ class Issue(findings.Finding):
 
     def set_type(self, new_type: str) -> bool:
         """Sets an issue type
-        :param str new_type: New type of the issue (Can be BUG, VULNERABILITY or CODE_SMELL)
+
+        :param new_type: New type of the issue (Can be BUG, VULNERABILITY or CODE_SMELL)
+        :raises: UnsupportedOperation if MQR mode (changing type is not supported in that mode)
         :return: Whether the operation succeeded
         """
         if self.endpoint.is_mqr_mode():
@@ -395,35 +382,28 @@ class Issue(findings.Finding):
         return ok
 
     def is_wont_fix(self) -> bool:
-        """
-        :return: Whether the issue is won't fix
-        :rtype: bool
-        """
+        """Returns whether the issue status is won't fix"""
         return self.resolution == "WONTFIX"
 
     def is_accepted(self) -> bool:
-        """
-        :return: Whether the issue is won't fix
-        :rtype: bool
-        """
+        """returns whether the issue status is Accepted"""
         return self.resolution == "ACCEPTED"
 
     def is_false_positive(self) -> bool:
-        """
-        :return: Whether the issue is a false positive
-        :rtype: bool
-        """
+        """Returns whether the issue status is false positive"""
         return self.resolution in ("FALSE-POSITIVE", "FALSE_POSITIVE")
 
     def strictly_identical_to(self, another_finding: Issue, ignore_component: bool = False) -> bool:
-        """
-        :meta private:
+        """Returns whether 2 issues are strictly identical
+        
+        :param ignore_comment: Whether to consider comments or not to consider identical
         """
         return super().strictly_identical_to(another_finding, ignore_component) and (self.debt() == another_finding.debt())
 
     def almost_identical_to(self, another_finding: Issue, ignore_component: bool = False, **kwargs) -> bool:
-        """
-        :meta private:
+        """Returns whether 2 issues are almost identical
+        
+        :param ignore_component: Whether to consider the componet or not to consider almost identical
         """
         rule_debt_calc = rules.Rule.get_object(self.endpoint, self.rule).sq_json.get("remFnType", "CONSTANT_ISSUE")
         # Rule that have linear remediation function may have slightly different debt
@@ -435,7 +415,6 @@ class Issue(findings.Finding):
         """Re-opens an issue
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Reopening %s", str(self))
         return self.do_transition("reopen")
@@ -444,7 +423,6 @@ class Issue(findings.Finding):
         """Sets an issue as false positive
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Marking %s as false positive", str(self))
         return self.do_transition("falsepositive")
@@ -453,7 +431,6 @@ class Issue(findings.Finding):
         """Confirms an issue
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Confirming %s", str(self))
         return self.do_transition("confirm")
@@ -462,7 +439,6 @@ class Issue(findings.Finding):
         """Unconfirms an issue
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Unconfirming %s", str(self))
         return self.do_transition("unconfirm")
@@ -471,7 +447,6 @@ class Issue(findings.Finding):
         """Marks an issue as resolved as fixed
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Marking %s as fixed", str(self))
         return self.do_transition("resolve")
@@ -480,19 +455,17 @@ class Issue(findings.Finding):
         """Marks an issue as resolved as won't fix
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
+        transition = "wontfix"
         if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION or self.endpoint.is_sonarcloud():
             log.warning("Marking %s as won't fix is deprecated, using Accept instead", str(self))
-            return self.do_transition("accept")
-        else:
-            return self.do_transition("wontfix")
+            transition = "accept"
+        return self.do_transition(transition)
 
     def accept(self) -> bool:
-        """Marks an issue as resolved as won't fix
+        """Accepts an issue
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Marking %s as accepted", str(self))
         return self.do_transition("accept")
@@ -576,9 +549,9 @@ class Issue(findings.Finding):
         return True
 
     def apply_changelog(self, source_issue: Issue, settings: ConfigSettings) -> int:
-        """
-        Applies a changelog and comments from a source to a target issue
-        :param Issue source_hotspot: The source issues to take changes from
+        """Applies a changelog and comments from a source to a target issue
+
+        :param source_issue: The source issues to take changes from
         :return: Number of changes applied
         """
         counter = 0
