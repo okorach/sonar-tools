@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 from http import HTTPStatus
 import requests.utils
 
@@ -475,7 +475,7 @@ def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: ApiParams) ->
     return filtered_findings
 
 
-def count(endpoint: Platform, **kwargs) -> int:
+def count(endpoint: Platform, **kwargs: Any) -> int:
     """Returns number of hotspots of a search"""
     params = {} if not kwargs else kwargs.copy()
     params["ps"] = 1

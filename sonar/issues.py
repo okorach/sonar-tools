@@ -884,7 +884,7 @@ def get_newest_issue(endpoint: Platform, params: ApiParams = None) -> Union[date
     return __get_one_issue_date(endpoint=endpoint, asc_sort="false", params=params)
 
 
-def count(endpoint: Platform, **kwargs) -> int:
+def count(endpoint: Platform, **kwargs: Any) -> int:
     """Returns number of issues of a search"""
     filters = pre_search_filters(endpoint=endpoint, params=kwargs)
     filters["ps"] = 1
