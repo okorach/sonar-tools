@@ -38,10 +38,12 @@ from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, p
 import sonar.utilities as sutil
 import sonar.util.misc as util
 from sonar.audit import problem
-from sonar.audit import audit_config as audit_conf
+import sonar.util.conf_mgr as audit_conf
 import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-audit"
+CONFIG_FILE = "sonar-audit.properties"
+
 WHAT_AUDITABLE = {
     options.WHAT_SETTINGS: platform.audit,
     options.WHAT_USERS: users.audit,
@@ -172,30 +174,17 @@ def __parser_args(desc: str) -> object:
     parser = options.add_thread_arg(parser, "project audit")
     parser = options.set_what(parser, what_list=WHAT_AUDITABLE, operation="audit")
     parser.add_argument("--sif", required=False, help="SIF file to audit when auditing SIF")
-    parser.add_argument(
-        "--config",
-        required=False,
-        dest="config",
-        action="store_true",
-        help="Creates the $HOME/.sonar-audit.properties configuration file, if not already present or outputs to stdout if it already exist",
-    )
-    parser.add_argument(
-        "-D",
-        required=False,
-        action="append",
-        dest="settings",
-        nargs="*",
-        help="Pass audit configuration settings on command line (-D<setting>=<value>)",
-    )
+    parser = options.add_config_arg(parser, file=f".{CONFIG_FILE}")
+    parser = options.add_settings_arg(parser)
 
     help_str = "Report only audit problems with the given severities (comma separate values LOW, MEDIUM, HIGH, CRITICAL)"
-    options.add_optional_arg(parser, f"--{options.SEVERITIES}", help=help_str)
+    parser = options.add_optional_arg(parser, f"--{options.SEVERITIES}", help=help_str)
 
-    help_str = ("Report only audit problems of the given comma separated problem types",)
-    options.add_optional_arg(parser, f"--{options.TYPES}", help=help_str)
+    help_str = "Report only audit problems of the given comma separated problem types"
+    parser = options.add_optional_arg(parser, f"--{options.TYPES}", help=help_str)
 
     help_str = "Report only audit problems whose type key matches the given regexp"
-    options.add_optional_arg(parser, f"--{PROBLEM_KEYS}", help=help_str)
+    parser = options.add_optional_arg(parser, f"--{PROBLEM_KEYS}", help=help_str)
 
     args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME, verify_token=False)
     if args.sif is None and args.config is None:
@@ -219,7 +208,7 @@ def main() -> None:
         for val in kwargs.get("settings", []) or []:
             key, value = val[0].split("=", maxsplit=1)
             cli_settings[key] = value
-        settings = audit_conf.load(TOOL_NAME, cli_settings)
+        settings = audit_conf.load(CONFIG_FILE, __file__) | cli_settings
         settings |= kwargs
         file = ofile = kwargs.pop(options.REPORT_FILE)
         fmt = util.deduct_format(kwargs[options.FORMAT], ofile)
@@ -232,7 +221,7 @@ def main() -> None:
             }
         )
         if kwargs.get("config", False):
-            audit_conf.configure()
+            audit_conf.configure(CONFIG_FILE, __file__)
             chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
 
         if kwargs["sif"]:

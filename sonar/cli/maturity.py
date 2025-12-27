@@ -42,6 +42,7 @@ import sonar.utilities as sutil
 import sonar.util.misc as util
 
 TOOL_NAME = "sonar-maturity"
+CONFIG_FILE = f"{TOOL_NAME}.properties"
 
 QG_METRIC = "alert_status"
 QG = "quality_gate"
@@ -75,6 +76,8 @@ def __parse_args(desc: str) -> object:
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("json",))
     parser = options.add_component_type_arg(parser)
+    parser = options.add_settings_arg(parser)
+    parser = options.add_config_arg(parser, TOOL_NAME)
     args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
     return args
@@ -512,7 +515,10 @@ def main() -> None:
         sq = platform.Platform(**kwargs)
         sq.verify_connection()
         sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-        config = conf.load("sonar-maturity.properties", __file__)
+        if kwargs.get("config", False):
+            conf.configure(CONFIG_FILE, __file__)
+            chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
+        config = conf.load(CONFIG_FILE, __file__)
         project_list = component_helper.get_components(
             endpoint=sq,
             component_type="projects",

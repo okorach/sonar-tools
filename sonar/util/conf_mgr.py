@@ -24,7 +24,7 @@ from pathlib import Path
 import json
 import jprops
 
-from typing import Optional, Any, Union
+from typing import Any, Union
 import sonar.logging as log
 from sonar.util import misc
 
@@ -43,13 +43,13 @@ def _load_json_file(file: Union[str, Path]) -> dict[str, Any]:
         return json.loads(fp.read()) or {}
 
 
-def load(filename: str, base_file: str) -> dict[str, Any]:
+def load(filename: str, package_location: str) -> dict[str, Any]:
     """Loads a particular configuration file"""
     config_type = filename.split(".")[-1].lower()
     if config_type not in ("properties", "json"):
         raise ValueError(f"Invalid config type: {config_type}")
 
-    files = (Path(base_file).parent / filename, f"{os.path.expanduser('~')}{os.sep}.{filename}", f"{os.getcwd()}{os.sep}.{filename}")
+    files = (Path(package_location).parent / filename, f"{os.path.expanduser('~')}{os.sep}.{filename}", f"{os.getcwd()}{os.sep}.{filename}")
     settings = {}
     for file in files:
         try:
@@ -64,13 +64,13 @@ def load(filename: str, base_file: str) -> dict[str, Any]:
     return misc.convert_types(settings)
 
 
-def configure(config_name: str, config_type: Optional[str] = "properties") -> None:
+def configure(config_file: str, package_location: str) -> None:
     """Configures a default config file"""
-    template_file = Path(__file__).parent / f"{config_name}.{config_type}"
+    template_file = Path(package_location).parent / config_file
     with open(template_file, "r", encoding="utf-8") as fh:
         text = fh.read()
 
-    config_file = f"{os.path.expanduser('~')}{os.sep}.{config_name}.{config_type}"
+    config_file = f"{os.path.expanduser('~')}{os.sep}.{config_file}"
     if os.path.isfile(config_file):
         log.info("Config file '%s' already exists, sending configuration to stdout", config_file)
         print(text)

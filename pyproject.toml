@@ -52,7 +52,7 @@ Issues = "https://github.com/okorach/sonar-tools/issues"
 Changelog = "https://github.com/okorach/sonar-tools/blob/master/doc/what-is-new.md"
 
 [project.scripts]
-sonar-audit = "cli.audit:main"
+sonar-audit = "sonar.cli.audit:main"
 sonar-projects-export = "cli.projects_export:main"
 sonar-projects-import = "cli.projects_import:main"
 sonar-projects = "cli.projects_cli:main"
