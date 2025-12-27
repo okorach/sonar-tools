@@ -31,6 +31,7 @@ from sonar import issues, exceptions, logging
 from sonar.util import constants as c
 import sonar.util.issue_defs as idefs
 import credentials as tconf
+import sonar.util.misc as util
 
 
 def test_issue() -> None:
@@ -297,3 +298,13 @@ def test_search_by_small() -> None:
     assert list1 == issues.search_by_severity(tutil.SQ, params)
     assert list1 == issues.search_by_date(tutil.SQ, params)
     assert list1 == issues.search_by_directory(tutil.SQ, params)
+
+
+def test_comments_after() -> None:
+    """test_comments_after"""
+    issue_key_accepted = tconf.ISSUE_ACCEPTED
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
+    issue = issues_d[issue_key_accepted]
+    after = util.add_tz(datetime(2024, 1, 1))
+    comments = issue.comments(after=after)
+    assert all(c["date"] >= after for c in comments.values())

@@ -357,7 +357,7 @@ class Hotspot(findings.Finding):
                 "commentKey": cmt["key"],
             }
         if after is not None:
-            return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > after}
+            return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > util.add_tz(after)}
         return self._comments
 
 
