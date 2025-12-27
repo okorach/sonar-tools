@@ -385,3 +385,10 @@ def add_settings_arg(parser: ArgumentParser) -> ArgumentParser:
         help="Pass configuration settings on command line (-D<setting>=<value>)",
     )
     return parser
+
+
+def add_config_arg(parser: ArgumentParser, file: str) -> ArgumentParser:
+    """Adds the config argument to the parser"""
+    help_str = f"Creates the $HOME/{file} configuration file, if not already present or outputs to stdout if it already exist"
+    add_optional_arg(parser, "--config", dest="config", action="store_true", help=help_str)
+    return parser
