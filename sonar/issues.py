@@ -618,7 +618,7 @@ def search_by_file(endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
             new_params["files"] = d["val"]
             issue_list.update(search(endpoint=endpoint, params=new_params, raise_error=True))
         except TooManyIssuesError:
-            log.error("Too many issues (>%s) in file %s, aborting search issue for this file", Issue.MAX_SEARCH, f'{proj_key}:{d["val"]}')
+            log.error("Too many issues (>%d) in file %s, aborting search issue for this file", Issue.MAX_SEARCH, f'{proj_key}:{d["val"]}')
             continue
         except exceptions.SonarException as e:
             log.error("Error while searching issues in file %s: %s", f'{proj_key}:{d["val"]}', str(e))
