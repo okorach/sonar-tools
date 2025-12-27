@@ -73,15 +73,22 @@ def test_audit_proj_non_existing_key() -> None:
     assert tutil.run_cmd(audit.main, f"{CMD} --{opt.WHAT} projects --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT},bad_key") == e.ARGS_ERROR
 
 
-def test_audit_cmd_line_settings(csv_file: Generator[str]) -> None:
-    """Verifies that passing audit settings from command line with -D<key>=<value> works"""
-    what_to_audit = ["logs", "projects", "portfolios", "applications", "qualityProfiles", "qualityGates", "users", "groups"]
-    cli_opt = " ".join([f"-Daudit.{what}=true" for what in what_to_audit])
-    assert tutil.run_cmd(audit.main, f"{CMD} {cli_opt} --{opt.REPORT_FILE} {csv_file}") == e.OK
+def run_cli_settings(file: str, toggle: bool) -> int:
+    """Helper to run audit with all audits toggled on or off"""
+    what_to_audit = ["globalSettings", "logs", "projects", "portfolios", "applications", "qualityProfiles", "qualityGates", "users", "groups"]
+    cli_opt = " ".join([f"-Daudit.{what}={str(toggle).lower()}" for what in what_to_audit])
+    return tutil.run_cmd(audit.main, f"{CMD} {cli_opt} --{opt.REPORT_FILE} {file}")
+
+
+def test_audit_cmd_line_settings_on(csv_file: Generator[str]) -> None:
+    """Verifies that passing audit settings from command line with -D<key>=<value> works, turning on everything"""
+    assert run_cli_settings(csv_file, True) == e.OK
     assert tutil.csv_nbr_lines(csv_file) > 0
 
-    cli_opt = " ".join([f"-Daudit.{what}=false" for what in what_to_audit + ["globalSettings"]])
-    assert tutil.run_cmd(audit.main, f"{CMD} {cli_opt} --{opt.REPORT_FILE} {csv_file}") == e.OK
+
+def test_audit_cmd_line_settings_off(csv_file: Generator[str]) -> None:
+    """Verifies that passing audit settings from command line with -D<key>=<value> works, turning off everything"""
+    assert run_cli_settings(csv_file, False) == e.OK
     assert tutil.csv_nbr_lines(csv_file) == 0
 
 
