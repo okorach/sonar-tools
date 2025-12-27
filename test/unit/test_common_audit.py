@@ -30,7 +30,7 @@ import pytest
 import utilities as tutil
 from sonar import errcodes as e
 import cli.options as opt
-from sonar.cli import audit
+from sonar.cli import audit, maturity
 
 CMD_ONLY = "sonar-audit.py"
 CMD = f"{CMD_ONLY} {tutil.SQS_OPTS}"
@@ -66,20 +66,32 @@ def test_audit(csv_file: Generator[str]) -> None:
 
 
 def test_configure() -> None:
-    DEFAULT_CONFIG = f"{os.path.expanduser('~')}{os.sep}.{audit.CONFIG_FILE}"
-    config_exists = os.path.exists(DEFAULT_CONFIG)
+    """test_configure"""
+    cmd_map = {
+        audit.CONFIG_FILE: audit.main,
+        maturity.CONFIG_FILE: maturity.main,
+    }
+    for file, cmd in cmd_map.items():
+        config_file = f"{os.path.expanduser('~')}{os.sep}.{file}"
+        config_exists = os.path.exists(config_file)
+        if config_exists:
+            os.rename(config_file, f"{config_file}.bak")
+        assert tutil.run_cmd(cmd, f"{CMD_ONLY} --config") == e.OK
+    assert os.path.exists(config_file)
     if config_exists:
-        os.rename(DEFAULT_CONFIG, f"{DEFAULT_CONFIG}.bak")
-    assert tutil.run_cmd(audit.main, f"{CMD_ONLY} --config") == e.OK
-    assert os.path.exists(DEFAULT_CONFIG)
-    if config_exists:
-        os.rename(f"{DEFAULT_CONFIG}.bak", DEFAULT_CONFIG)
+        os.rename(f"{config_file}.bak", config_file)
 
 
 def test_configure_stdout() -> None:
-    DEFAULT_CONFIG = f"{os.path.expanduser('~')}{os.sep}.{audit.CONFIG_FILE}"
-    if not os.path.exists(DEFAULT_CONFIG):
-        pytest.skip("No $HOME config file")
-    last_change = os.stat(DEFAULT_CONFIG).st_ctime_ns
-    assert tutil.run_cmd(audit.main, f"{CMD} --config") == e.OK
-    assert last_change == os.stat(DEFAULT_CONFIG).st_ctime_ns
+    """test_configure_stdout"""
+    cmd_map = {
+        audit.CONFIG_FILE: audit.main,
+        maturity.CONFIG_FILE: maturity.main,
+    }
+    for file, cmd in cmd_map.items():
+        config_file = f"{os.path.expanduser('~')}{os.sep}.{file}"
+        if not os.path.exists(config_file):
+            pytest.skip("No $HOME config file")
+        last_change = os.stat(config_file).st_ctime_ns
+        assert tutil.run_cmd(cmd, f"{CMD} --config") == e.OK
+        assert last_change == os.stat(config_file).st_ctime_ns
