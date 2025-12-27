@@ -21,6 +21,7 @@
 
 """Test of the hotspots module and class, as well as changelog"""
 
+from datetime import datetime
 import utilities as tutil
 from sonar import hotspots
 
@@ -33,10 +34,17 @@ def test_transitions() -> None:
     assert hotspot.mark_as_safe()
     assert hotspot.reopen()
 
-    assert hotspot.mark_as_acknowledged()
-    assert hotspot.reopen()
+    if tutil.SQ.is_sonarcloud():
+        hotspot = hotspots.search(endpoint=tutil.SQ, filters={"project": "okorach_sonar-tools"})[0]
+        assert not hotspot.mark_as_acknowledged()
+    else:
+        assert hotspot.mark_as_acknowledged()
+        assert hotspot.reopen()
 
     assert hotspot.mark_as_to_review()
+    assert hotspot.reopen()
+
+    assert hotspot.mark_as_fixed()
     assert hotspot.reopen()
 
     assert hotspot.assign("admin", "Assigning to admin")
@@ -47,3 +55,19 @@ def test_search_by_project() -> None:
     """test_search_by_project"""
     hotspot_d = hotspots.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
     assert len(hotspot_d) > 0
+
+
+def test_sanitize_filter() -> None:
+    """test_sanitize_filter"""
+    assert hotspots.sanitize_search_filters(endpoint=tutil.SQ, params={}) == {}
+    assert hotspots.sanitize_search_filters(endpoint=tutil.SQ, params=None) == {}
+    good = ["TO_REVIEW", "REVIEWED"]
+    assert hotspots.sanitize_search_filters(endpoint=tutil.SQ, params={"statuses": ["DEAD"] + good}) == {"statuses": good}
+    assert hotspots.sanitize_search_filters(endpoint=tutil.SQ, params={"statuses": good + ["DEAD"]}) == {"statuses": good}
+
+def test_comments_after() -> None:
+    """test_comments_after"""
+    hotspot_d = hotspots.search(endpoint=tutil.SQ, filters={"project": "test:juice-shop"})
+    hotspot = list(hotspot_d.values())[0]
+    comments = hotspot.comments(after=datetime(2024, 1, 1))
+    assert all(c.created_at >= datetime(2024, 1, 1) for c in comments)
