@@ -102,15 +102,11 @@ class Hotspot(findings.Finding):
         self.refresh()
 
     def __str__(self) -> str:
-        """
-        :return: String representation of the object
-        """
+        """Returns the string representation of the object"""
         return f"Hotspot key '{self.key}'"
 
     def url(self) -> str:
-        """
-        :return: Permalink URL to the hotspot in the SonarQube platform
-        """
+        """Returns the permalink URL to the hotspot in the SonarQube platform"""
         branch = ""
         if self.branch is not None:
             branch = f"branch={requests.utils.quote(self.branch)}&"
@@ -119,10 +115,7 @@ class Hotspot(findings.Finding):
         return f"{self.base_url(local=False)}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}"
 
     def to_json(self, without_time: bool = False) -> types.ObjectJsonRepr:
-        """
-        :return: JSON representation of the hotspot
-        :rtype: dict
-        """
+        """Returns the JSON representation of the hotspot"""
         data = super().to_json(without_time)
         if self.endpoint.is_mqr_mode():
             data["impacts"][idefs.QUALITY_SECURITY] += f"({idefs.TYPE_HOTSPOT})"
@@ -138,6 +131,7 @@ class Hotspot(findings.Finding):
 
     def refresh(self) -> bool:
         """Refreshes and reads hotspots details in SonarQube
+
         :return: Whether there operation succeeded
         """
         try:
@@ -158,6 +152,7 @@ class Hotspot(findings.Finding):
             return False
 
     def __mark_as(self, resolution: Optional[str], comment: Optional[str] = None, status: str = "REVIEWED") -> bool:
+        """Marks a hotspot with a particular resolution and status"""
         try:
             params = util.remove_nones({"hotspot": self.key, "status": status, "resolution": resolution, "commemt": comment})
             ok = self.post("hotspots/change_status", params=params).ok
@@ -280,18 +275,17 @@ class Hotspot(findings.Finding):
         return True
 
     def apply_changelog(self, source_hotspot: Hotspot, settings: types.ConfigSettings) -> int:
-        """
-        Applies a changelog and comments from a source to a target hotspot
-        :param Hotspot source_hotspot: The source hotspot to take changes from
+        """Applies a changelog and comments from a source to a target hotspot
+
+        :param source_hotspot: The source hotspot to take changes from
         :return: Number of changes applied
         """
         counter = 0
         last_target_change = self.last_changelog_date()
         events = source_hotspot.changelog(after=last_target_change)
+        msg = "Source %s has no changelog added after target %s last change (%s), no %s applied"
         if len(events) == 0:
-            log.info(
-                "Source %s has no changelog added after target %s last change (%s), no changelg applied", source_hotspot, self, last_target_change
-            )
+            log.info(msg, source_hotspot, self, last_target_change, "changelog")
         else:
             log.info("Applying %d changelogs of %s to %s, from %s", len(events), source_hotspot, self, last_target_change)
             for key in sorted(events.keys()):
@@ -301,7 +295,7 @@ class Hotspot(findings.Finding):
         last_target_change = self.last_comment_date()
         events = source_hotspot.comments(after=last_target_change)
         if len(events) == 0:
-            log.info("Source %s has no comments added after target %s last change (%s), no comment added", source_hotspot, self, last_target_change)
+            log.info(msg, source_hotspot, self, last_target_change, "comment")
         else:
             log.info("Applying %d comments of %s to %s, from %s", len(events), source_hotspot, self, last_target_change)
             for key in sorted(events.keys()):
@@ -310,9 +304,10 @@ class Hotspot(findings.Finding):
         return counter
 
     def changelog(self, after: Optional[datetime] = None, manual_only: bool = True) -> dict[str, changelog.Changelog]:
-        """
-        :param Optional[datetime] after: If set, only changes after that date are returned
-        :param bool manual_only: Whether the only manual changes should be returned or all changes
+        """Returns the changelog of a hotspot
+
+        :param after: If set, only changes after that date are returned
+        :param manual_only: Whether the only manual changes should be returned or all changes
         :return: The hotspot changelog
         :rtype: dict{"<date>_<sequence_nbr>": Changelog}
         """
@@ -341,7 +336,7 @@ class Hotspot(findings.Finding):
 
     def comments(self, after: Optional[datetime] = None) -> dict[str, str]:
         """
-        :param Optional[datetime] after: If set will only return comments after this date, else all
+        :param after: If set will only return comments after this date, else all
         :return: The hotspot comments
         :rtype: dict{"<date>_<sequence_nbr>": <comment>}
         """
@@ -354,7 +349,7 @@ class Hotspot(findings.Finding):
         for cmt in self.__details["comment"]:
             seq += 1
             self._comments[f"{cmt['createdAt']}_{seq:03d}"] = {
-                "date": datetime.strptime(cmt["createdAt"], "%Y-%m-%dT%H:%M:%S%z"),
+                "date": util.to_datetime(cmt["createdAt"]),
                 "event": "comment",
                 "value": cmt["markdown"],
                 "user": cmt["login"],
@@ -362,19 +357,17 @@ class Hotspot(findings.Finding):
                 "commentKey": cmt["key"],
             }
         if after is not None:
-            return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > after}
-
+            return {k: v for k, v in self._comments.items() if v["date"] and util.to_datetime(v["date"]) > after}
         return self._comments
 
 
 def search_by_project(endpoint: pf.Platform, project_key: str, filters: types.ApiParams = None) -> dict[str, Hotspot]:
     """Searches hotspots of a project
 
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param str project_key: Project key
-    :param dict params: Search filters to narrow down the search, defaults to None
-    :return: List of found hotspots
-    :rtype: dict{<key>: <Hotspot>}
+    :param endpoint: Reference to the SonarQube platform
+    :param project_key: Project key
+    :param filters: Search filters to narrow down the search, defaults to None
+    :return: Dict of found hotspots
     """
     key_list = util.csv_to_list(project_key)
     hotspots = {}
@@ -389,19 +382,15 @@ def search_by_project(endpoint: pf.Platform, project_key: str, filters: types.Ap
 
 def component_filter(endpoint: pf.Platform) -> str:
     """Returns the string to filter by porject in api/hotspots/search"""
-    if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION:
-        return PROJECT_FILTER
-    else:
-        return PROJECT_FILTER_OLD
+    return PROJECT_FILTER if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else PROJECT_FILTER_OLD
 
 
 def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, Hotspot]:
     """Searches hotspots
 
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param ApiParams filters: Search filters to narrow down the search, defaults to None
-    :return: List of found hotspots
-    :rtype: dict{<key>: <Hotspot>}
+    :param endpoint: Reference to the SonarQube platform
+    :param filters: Search filters to narrow down the search, defaults to None
+    :return: Dict of found hotspots
     """
     hotspots_list = {}
     new_params = sanitize_search_filters(endpoint=endpoint, params=filters)
@@ -424,10 +413,9 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
             nbr_pages = sutil.nbr_pages(data)
             log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, p, nbr_pages)
             if nbr_hotspots > Hotspot.MAX_SEARCH:
-                raise TooManyHotspotsError(
-                    nbr_hotspots,
-                    f"{nbr_hotspots} hotpots returned by api/{Hotspot.API[c.SEARCH]}, this is more than the max {Hotspot.MAX_SEARCH} possible",
-                )
+                errmsg = f"""{nbr_hotspots} hotpots returned by api/{Hotspot.API[c.SEARCH]}, """
+                """this is more than the max {Hotspot.MAX_SEARCH} possible"""
+                raise TooManyHotspotsError(nbr_hotspots, errmsg)
 
             for enrichment in "branch", "pullRequest":
                 if enrichment in inline_filters:
@@ -439,8 +427,7 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
 
 def get_object(endpoint: pf.Platform, key: str, data: Optional[dict[str]] = None, from_export: bool = False) -> Hotspot:
     """Returns a hotspot from its key"""
-    o = Hotspot.CACHE.get(key, endpoint.local_url)
-    if not o:
+    if not (o := Hotspot.CACHE.get(key, endpoint.local_url)):
         o = Hotspot(key=key, data=data, endpoint=endpoint, from_export=from_export)
     return o
 

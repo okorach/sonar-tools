@@ -274,14 +274,14 @@ class Issue(findings.Finding):
             for cmt in self.sq_json["comments"]:
                 seq += 1
                 self._comments[f"{cmt['createdAt']}_{seq:03}"] = {
-                    "date": datetime.strptime(cmt["createdAt"], "%Y-%m-%dT%H:%M:%S%z"),
+                    "date": util.to_datetime(cmt["createdAt"]),
                     "event": "comment",
                     "value": cmt["markdown"],
                     "user": cmt["login"],
                     "userName": cmt["login"],
                 }
         if after is not None:
-            return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > after}
+            return {k: v for k, v in self._comments.items() if v["date"] and util.to_datetime(v["date"]) > after}
         return self._comments
 
     def add_comment(self, comment: str) -> bool:

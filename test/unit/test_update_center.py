@@ -22,6 +22,7 @@
 """update_center tests"""
 
 import datetime
+import sonar.util.misc as util
 import sonar.util.update_center as uc
 
 
@@ -56,7 +57,7 @@ def test_release_date():
     dates = {"10.2": "2023-09-01", "5.4": "2016-03-08", "8.0": "2019-10-16", "9.7.1": "2022-10-28", "2025.2": "2025-03-26", "25.2": "2025-02-03"}
     for version, date_str in dates.items():
         release_date = uc.get_release_date(tuple(version.split(".")))
-        assert release_date == datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+        assert release_date == util.to_date(date_str)
 
     assert uc.get_release_date((9, 10, 3)) is None
 

@@ -119,10 +119,10 @@ def redacted_token(token: str) -> str:
 def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, str, None]:
     """Converts a string date to a date"""
     try:
-        return datetime.datetime.strptime(string, SQ_DATETIME_FORMAT)
+        return util.to_datetime(string, SQ_DATETIME_FORMAT)
     except (ValueError, TypeError):
         try:
-            return datetime.datetime.strptime(string, SQ_DATE_FORMAT).replace(tzinfo=datetime.timezone.utc)
+            return util.to_date(string, SQ_DATE_FORMAT).replace(tzinfo=datetime.timezone.utc)
         except (ValueError, TypeError):
             return None
 
@@ -139,6 +139,7 @@ def get_setting(settings: dict[str, Any], key: str, default: Any) -> Any:
     if settings is None:
         return default
     return settings.get(key, default)
+
 
 def jvm_heap(cmdline: str) -> Union[int, None]:
     """Computes JVM heap in MB from a Java cmd line string"""
@@ -410,7 +411,7 @@ def inline_lists(element: Any, exception_values: tuple[str]) -> Any:
     elif isinstance(element, (list, set)):
         cannot_be_csv = any(not isinstance(v, str) or "," in v for v in element)
         return element if cannot_be_csv else util.list_to_csv(element, separator=", ")
-    
+
     return element
 
 

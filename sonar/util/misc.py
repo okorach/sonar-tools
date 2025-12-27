@@ -23,7 +23,7 @@ from math import log
 from typing import Union, Optional, Any
 import json
 import re
-import datetime
+from datetime import datetime, date
 import contextlib
 import os
 import sys
@@ -380,3 +380,13 @@ def search_list(obj_list: list[Any], field: str, value: str) -> dict[str, Any]:
 def filename(file: Optional[str]) -> str:
     """Returns the filename or stdout if None or -"""
     return "stdout" if file is None or file == "-" else file
+
+
+def to_datetime(date_str: str, fmt: str = "%Y-%m-%dT%H:%M:%S%z") -> datetime:
+    """Converts an ISO datetime string to a datetime object"""
+    return datetime.strptime(date_str, fmt)
+
+
+def to_date(date_str: str, fmt: str = "%Y-%m-%d") -> date:
+    """Converts an ISO date string to a date object"""
+    return datetime.strptime(date_str, fmt).date()

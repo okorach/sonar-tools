@@ -62,8 +62,9 @@ def test_sanitize_filter() -> None:
     assert hotspots.sanitize_search_filters(endpoint=tutil.SQ, params={}) == {}
     assert hotspots.sanitize_search_filters(endpoint=tutil.SQ, params=None) == {}
     good = ["TO_REVIEW", "REVIEWED"]
-    assert hotspots.sanitize_search_filters(endpoint=tutil.SQ, params={"statuses": ["DEAD"] + good}) == {"statuses": good}
-    assert hotspots.sanitize_search_filters(endpoint=tutil.SQ, params={"statuses": good + ["DEAD"]}) == {"statuses": good}
+    assert hotspots.sanitize_search_filters(endpoint=tutil.SQ, params={"statuses": ["DEAD"] + good}) == {"status": ",".join(good)}
+    assert hotspots.sanitize_search_filters(endpoint=tutil.SQ, params={"statuses": good + ["DEAD"]}) == {"status": ",".join(good)}
+
 
 def test_comments_after() -> None:
     """test_comments_after"""
