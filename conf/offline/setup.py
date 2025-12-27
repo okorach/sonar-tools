@@ -42,7 +42,7 @@ setuptools.setup(
         "Source Code": "https://github.com/okorach/sonar-tools",
     },
     packages=setuptools.find_packages(),
-    package_data={"sonar": ["LICENSE", "audit/rules.json", "config.json", "audit/sonar-audit.properties"]},
+    package_data={"sonar": ["LICENSE", "audit/rules.json", "config.json", "sonar/cli/sonar-audit.properties", "sonar/cli/sonar-maturity.properties"]},
     install_requires=[
         "argparse",
         "datetime",
@@ -59,7 +59,7 @@ setuptools.setup(
     ],
     entry_points={
         "console_scripts": [
-            "sonar-audit = cli.audit:main",
+            "sonar-audit = sonar.cli.audit:main",
             "sonar-projects-export = cli.projects_export:main",
             "sonar-projects-import = cli.projects_import:main",
             "sonar-projects = cli.projects_cli:main",
