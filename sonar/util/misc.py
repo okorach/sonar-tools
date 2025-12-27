@@ -251,7 +251,7 @@ def __prefix(value: Any) -> Any:
         return value
 
 
-def replace_keys(key_list: list[str], new_key: str, data: dict[str, any]) -> dict[str, any]:
+def replace_keys(key_list: list[str], new_key: str, data: dict[str, Any]) -> dict[str, Any]:
     """Replace a list of old keys by a new key in a dict"""
     for k in key_list:
         if k in data:
@@ -305,11 +305,11 @@ def sort_list_by_key(list_to_sort: list[dict[str, Any]], key: str, priority_fiel
     return first_elem + list(dict(sorted(tmp_dict.items())).values())
 
 
-def order_keys(original_dict: dict[str, any], *keys: str) -> dict[str, any]:
+def order_keys(original_dict: dict[str, Any], *keys: str) -> dict[str, Any]:
     """Orders a dict keys in a chosen order, existings keys not in *keys are pushed to the end
 
-    :param dict[str, any] original_dict: Dict to order
-    :param str *keys: List of keys in desired order
+    :param original_dict: Dict to order
+    :param *keys: List of keys in desired order
     :return: same dict with keys in desired order
     """
     ordered_dict = {}

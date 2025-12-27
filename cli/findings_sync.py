@@ -29,7 +29,7 @@ Only issues with a 100% match are synchronized. When there's a doubt, nothing is
 """
 
 import datetime
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 from cli import options
 import sonar.logging as log
@@ -88,7 +88,7 @@ def __parse_args(desc: str) -> object:
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
-def __dump_report(report: dict[str, any], file: Optional[str]) -> None:
+def __dump_report(report: dict[str, Any], file: Optional[str]) -> None:
     """Dumps a problem report in a file or stdout"""
     txt = util.json_dump(report)
     if file is None:

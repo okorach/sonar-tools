@@ -152,7 +152,7 @@ def __get_schema(fmt: Optional[str] = "json") -> dict[str, Any]:
     return json_schema
 
 
-def __normalize_json(json_data: dict[str, any], remove_empty: bool = True, remove_none: bool = True) -> dict[str, any]:
+def __normalize_json(json_data: dict[str, Any], remove_empty: bool = True, remove_none: bool = True) -> dict[str, Any]:
     """Sorts a JSON file and optionally remove empty and none values"""
     sort_fields = {"users": "login", "groups": "name", "qualityGates": "name", "qualityProfiles": "language"}
     log.debug("Normalizing JSON - remove empty = %s, remove nones = %s", str(remove_empty), str(remove_none))
