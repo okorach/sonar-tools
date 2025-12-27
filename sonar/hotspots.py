@@ -30,7 +30,7 @@ import requests.utils
 import sonar.logging as log
 
 import sonar.util.misc as util
-from sonar.util import types, cache, constants as c
+from sonar.util import cache, constants as c
 
 from sonar import users
 from sonar import findings, rules, changelog
@@ -40,6 +40,7 @@ import sonar.utilities as sutil
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
+    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
 PROJECT_FILTER = "project"
 PROJECT_FILTER_OLD = "projectKey"
@@ -96,11 +97,11 @@ class Hotspot(findings.Finding):
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
-    def __init__(self, endpoint: Platform, key: str, data: types.ApiPayload = None, from_export: bool = False) -> None:
+    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self.type = idefs.TYPE_HOTSPOT
-        self.__details: types.ApiPayload = None
+        self.__details: ApiPayload = None
         Hotspot.CACHE.put(self)
         self.refresh()
 
@@ -108,7 +109,7 @@ class Hotspot(findings.Finding):
         """Returns the string representation of the object"""
         return f"Hotspot key '{self.key}'"
 
-    def api_params(self, op: str = c.GET) -> types.ApiParams:
+    def api_params(self, op: str = c.GET) -> ApiParams:
         """Returns the base API params to be used of a hotspot"""
         ops = {c.GET: {"hotspot": self.key}}
         return ops[op] if op in ops else ops[c.LIST]
@@ -122,14 +123,14 @@ class Hotspot(findings.Finding):
             branch = f"pullRequest={requests.utils.quote(self.pull_request)}&"
         return f"{self.base_url(local=False)}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}"
 
-    def to_json(self, without_time: bool = False) -> types.ObjectJsonRepr:
+    def to_json(self, without_time: bool = False) -> ObjectJsonRepr:
         """Returns the JSON representation of the hotspot"""
         data = super().to_json(without_time)
         if self.endpoint.is_mqr_mode():
             data["impacts"][idefs.QUALITY_SECURITY] += f"({idefs.TYPE_HOTSPOT})"
         return data
 
-    def _load(self, data: types.ApiPayload, from_export: bool = False) -> None:
+    def _load(self, data: ApiPayload, from_export: bool = False) -> None:
         """Loads the hotspot details from the provided data (coming from api/hotspots/search)"""
         super()._load(data, from_export)
         if not self.rule:
@@ -222,7 +223,7 @@ class Hotspot(findings.Finding):
         except exceptions.SonarException:
             return False
 
-    def __apply_event(self, event: object, settings: types.ConfigSettings) -> bool:
+    def __apply_event(self, event: object, settings: ConfigSettings) -> bool:
         """Applies a changelog event (transition, comment, assign) to the hotspot"""
         from sonar import syncer
 
@@ -258,7 +259,7 @@ class Hotspot(findings.Finding):
             return False
         return True
 
-    def apply_changelog(self, source_hotspot: Hotspot, settings: types.ConfigSettings) -> int:
+    def apply_changelog(self, source_hotspot: Hotspot, settings: ConfigSettings) -> int:
         """Applies a changelog and comments from a source to a target hotspot
 
         :param source_hotspot: The source hotspot to take changes from
@@ -345,7 +346,7 @@ class Hotspot(findings.Finding):
         return self._comments
 
 
-def search_by_project(endpoint: Platform, project_key: str, filters: types.ApiParams = None) -> dict[str, Hotspot]:
+def search_by_project(endpoint: Platform, project_key: str, filters: ApiParams = None) -> dict[str, Hotspot]:
     """Searches hotspots of a project
 
     :param endpoint: Reference to the SonarQube platform
@@ -369,7 +370,7 @@ def component_filter(endpoint: Platform) -> str:
     return PROJECT_FILTER if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else PROJECT_FILTER_OLD
 
 
-def search(endpoint: Platform, filters: types.ApiParams = None) -> dict[str, Hotspot]:
+def search(endpoint: Platform, filters: ApiParams = None) -> dict[str, Hotspot]:
     """Searches hotspots
 
     :param endpoint: Reference to the SonarQube platform
@@ -416,7 +417,7 @@ def get_object(endpoint: Platform, key: str, data: Optional[dict[str]] = None, f
     return o
 
 
-def sanitize_search_filters(endpoint: Platform, params: types.ApiParams) -> types.ApiParams:
+def sanitize_search_filters(endpoint: Platform, params: ApiParams) -> ApiParams:
     """Returns the filtered list of params that are allowed for api/hotspots/search"""
     log.debug("Sanitizing hotspot search criteria %s", str(params))
     if params is None:
@@ -437,20 +438,20 @@ def sanitize_search_filters(endpoint: Platform, params: types.ApiParams) -> type
     return criterias
 
 
-def __split_filter(params: types.ApiParams, criteria: str) -> list[types.ApiParams]:
+def __split_filter(params: ApiParams, criteria: str) -> list[ApiParams]:
     """Creates a list of filters from a single one that has values that requires multiple hotspot searches"""
     if (crits := params.pop(criteria, None)) is None:
         return [params]
     return [{**params, criteria: crit} for crit in util.csv_to_list(crits)]
 
 
-def split_search_filters(params: types.ApiParams) -> list[types.ApiParams]:
+def split_search_filters(params: ApiParams) -> list[ApiParams]:
     """Split search filters for which you can only pass 1 value at a time in api/hotspots/search"""
     list_2d = [__split_filter(f, "status") for f in __split_filter(params, "resolution")]
     return [crit2 for crit1 in list_2d for crit2 in crit1]
 
 
-def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: types.ApiParams) -> dict[str, Hotspot]:
+def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: ApiParams) -> dict[str, Hotspot]:
     """Filters a dict of hotspots with provided filters"""
     log.debug("Post filtering findings with %s - Starting with %d hotspots", str(filters), len(hotspots_dict))
     filtered_findings = hotspots_dict.copy()
