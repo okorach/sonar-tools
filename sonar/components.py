@@ -34,6 +34,7 @@ from requests import RequestException
 import sonar.util.constants as c
 import sonar.logging as log
 import sonar.sqobject as sq
+from sonar.audit.problem import Problem
 
 from sonar import settings, tasks, measures, rules, exceptions
 import sonar.util.misc as util
@@ -42,7 +43,6 @@ from sonar.audit.rules import get_rule, RuleId
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.audit.problem import Problem
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList
 
 # Character forbidden in keys that can be used to separate a key from a post fix
