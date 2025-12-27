@@ -24,9 +24,12 @@ Abstraction of the SonarQube "pull request" concept
 """
 
 from __future__ import annotations
+from typing import Optional, TYPE_CHECKING
+if TYPE_CHECKING:
+    from sonar.util.types import ApiPayload, ApiParams, ConfigSettings
+
 import json
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
 
 import requests.utils
 
@@ -39,8 +42,6 @@ from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
 
-if TYPE_CHECKING:
-    from sonar.util.types import ApiPayload, ApiParams, ConfigSettings
 
 _UNSUPPORTED_IN_CE = "Pull requests not available in Community Edition"
 
