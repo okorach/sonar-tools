@@ -221,7 +221,7 @@ def main() -> None:
             }
         )
         if kwargs.get("config", False):
-            audit_conf.configure()
+            audit_conf.configure(CONFIG_FILE, __file__)
             chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
 
         if kwargs["sif"]:
