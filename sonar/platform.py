@@ -581,7 +581,7 @@ class Platform(object):
         problems += (
             _audit_maintainability_rating_grid(platform_settings, audit_settings, settings_url)
             + self._audit_admin_password()
-            + self._audit_lta_latest()
+            + self.audit_lta_latest()
             + self._audit_token_max_lifetime(audit_settings)
             + sif.Sif(pf_sif, self).audit(audit_settings)
         )
@@ -699,7 +699,8 @@ class Platform(object):
         log.info("--- Auditing global permissions ---")
         return self.__audit_user_permissions() + self.__audit_group_permissions()
 
-    def _audit_lta_latest(self) -> list[Problem]:
+    def audit_lta_latest(self) -> list[Problem]:
+        """Audits that a SonarQube server version is LTA or LATEST"""
         if self.is_sonarcloud():
             return []
         sq_vers, v = self.version(), None

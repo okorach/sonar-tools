@@ -113,3 +113,27 @@ def test_version() -> None:
         assert tutil.SQ.version() == (0, 0, 0)
     else:
         assert tutil.SQ.version() >= (9, 9, 0)
+
+def test_lta_latest() -> None:
+    """Tests that problem is raised if server is not LTA or LATEST"""
+    if tutil.SQ.is_sonarcloud():
+        assert len(tutil.SQ.audit_lta_latest()) == 0
+    else:
+        lta = phelp.get_lta()
+        latest = phelp.get_latest()
+        sq_version = tutil.SQ.version()
+        pbs = tutil.SQ.audit_lta_latest()
+        if sq_version == lta or sq_version == latest:
+            assert pbs == []
+        else:
+            assert any(pb.rule_id == platform.rules.RuleId.SQ_NOT_LTA_OR_LATEST for pb in pbs)
+
+
+def test_mqr_mode() -> None:
+    """Tests that MQR mode is properly return"""
+    is_mqr = tutil.SQ.is_mqr_mode()
+    if tutil.SQ.is_sonarcloud():
+        assert is_mqr
+    elif tutil.SQ.version() < (10, 2, 0):
+        assert not is_mqr
+    
