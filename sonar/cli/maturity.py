@@ -519,7 +519,7 @@ def main() -> None:
         sq = platform.Platform(**kwargs)
         sq.verify_connection()
         sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-        config = conf.load(CONFIG_FILE, __file__)
+        config = conf.load(CONFIG_FILE, __file__) | conf.get_cli_settings(**kwargs) | kwargs
         project_list = component_helper.get_components(
             endpoint=sq,
             component_type="projects",

@@ -78,3 +78,13 @@ def configure(config_file: str, package_location: str) -> None:
         log.info("Creating file '%s'", config_file)
         with open(config_file, "w", encoding="utf-8") as fh:
             print(text, file=fh)
+
+
+def get_cli_settings(**kwargs: Any) -> dict[str, Any]:
+    """Extracts settings from CLI arguments"""
+    cli_settings: dict[str, Any] = {}
+    for val in kwargs.get("settings", []) or []:
+        key, value = val[0].split("=", maxsplit=1)
+        cli_settings[key] = misc.convert_string(value)
+    kwargs.pop("settings", None)
+    return cli_settings
