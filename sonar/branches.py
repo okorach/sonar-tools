@@ -22,7 +22,7 @@
 
 from __future__ import annotations
 from http import HTTPStatus
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 import json
 import re
@@ -271,7 +271,7 @@ class Branch(components.Component):
             b._is_main = b.name == self.name
         return True
 
-    def set_new_code(self, new_code_type: str, additional_data: Optional[any]) -> bool:
+    def set_new_code(self, new_code_type: str, additional_data: Optional[Any]) -> bool:
         """Sets the branch new code period
 
         :param str new_code_type: PREVIOUS_VERSION, NUMBER_OF_DAYS, REFERENCE_BRANCH, SPECIFIC_ANALYSIS

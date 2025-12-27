@@ -78,7 +78,7 @@ def __parse_args(desc: str) -> object:
     parser = options.add_component_type_arg(parser)
     parser = options.add_settings_arg(parser)
     parser = options.add_config_arg(parser, TOOL_NAME)
-    args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
+    args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME, verify_token=False)
 
     return args
 
@@ -512,13 +512,14 @@ def main() -> None:
     start_time = util.start_clock()
     try:
         kwargs: dict[str, Any] = sutil.convert_args(__parse_args("Extracts a maturity score for a platform, a project or a portfolio"))
-        sq = platform.Platform(**kwargs)
-        sq.verify_connection()
-        sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
         if kwargs.get("config", False):
             conf.configure(CONFIG_FILE, __file__)
             chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
-        config = conf.load(CONFIG_FILE, __file__)
+        sutil.check_token(kwargs[options.TOKEN], sutil.is_sonarcloud_url(kwargs[options.URL]))
+        sq = platform.Platform(**kwargs)
+        sq.verify_connection()
+        sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
+        config = conf.load(CONFIG_FILE, __file__) | conf.get_cli_settings(**kwargs) | kwargs
         project_list = component_helper.get_components(
             endpoint=sq,
             component_type="projects",
@@ -543,7 +544,7 @@ def main() -> None:
         summary_data["new_code_statistics"] = compute_new_code_statistics(maturity_data, config)
         summary_data["frequency_statistics"] = compute_analysis_frequency_statistics(maturity_data, config)
 
-        summary_data = util.order_dict(
+        summary_data = util.order_keys(
             summary_data,
             "total_projects",
             "global_maturity_level_statistics",

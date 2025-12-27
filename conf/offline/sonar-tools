@@ -41,5 +41,7 @@ Collections of utilities for SonarQube Server and Cloud:
 - sonar-projects: Exports / Imports projects to/from zip file (Import works for EE and higher)
 - sonar-config: Exports and imports an entire (or subsets of a) SonarQube Server or Cloud platform configuration as code (JSON)
 - sonar-rules: Exports Sonar rules
+- sonar-misra: Exports a Sonar MISRA report
+- sonar-maturity: Computes a maturity score for a platform, a project or a portfolio
 See tools built-in -h help and https://github.com/okorach/sonar-tools for more documentation
 ''')

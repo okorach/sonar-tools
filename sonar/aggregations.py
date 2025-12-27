@@ -23,7 +23,7 @@ Parent module of applications and portfolios
 
 """
 
-from typing import Optional
+from typing import Optional, Any
 import json
 
 import sonar.logging as log
@@ -44,7 +44,7 @@ class Aggregation(comp.Component):
         self._permissions: Optional[object] = None
         super().__init__(endpoint=endpoint, key=key)
 
-    def reload(self, data: dict[str, any]) -> None:
+    def reload(self, data: dict[str, Any]) -> None:
         """Reloads an Aggregation (Application or Portfolio) from the result of a search or get
 
         :return: self

@@ -42,7 +42,7 @@ setuptools.setup(
         "Source Code": "https://github.com/okorach/sonar-tools",
     },
     packages=setuptools.find_packages(),
-    package_data={"sonar": ["LICENSE", "audit/rules.json", "config.json", "sonar/cli/sonar-audit.properties", "sonar/cli/sonar-maturity.properties"]},
+    package_data={"sonar": ["LICENSE", "audit/rules.json", "config.json", "cli/sonar-audit.properties", "cli/sonar-maturity.properties"]},
     install_requires=[
         "argparse",
         "datetime",
@@ -50,7 +50,7 @@ setuptools.setup(
         "requests",
         "jprops",
         "levenshtein",
-        "PyYAML ",
+        "PyYAML",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

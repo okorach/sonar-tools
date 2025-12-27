@@ -22,14 +22,13 @@
 
 from __future__ import annotations
 
+from typing import Any
 import sonar.logging as log
 from sonar.permissions import permissions, quality_permissions
 
 
 class QualityGatePermissions(quality_permissions.QualityPermissions):
-    """
-    Abstraction of quality gates permissions
-    """
+    """Abstraction of quality gates permissions"""
 
     APIS = {
         "get": {"users": "qualitygates/search_users", "groups": "qualitygates/search_groups"},
@@ -46,7 +45,7 @@ class QualityGatePermissions(quality_permissions.QualityPermissions):
         self._read_perms(QualityGatePermissions.APIS, QualityGatePermissions.API_GET_FIELD, gateName=self.concerned_object.name)
         return self
 
-    def set(self, new_perms: dict[str, any]) -> QualityGatePermissions:
+    def set(self, new_perms: dict[str, Any]) -> QualityGatePermissions:
         """Sets permissions of a quality gate"""
         return self._set_perms(
             new_perms, QualityGatePermissions.APIS, QualityGatePermissions.API_SET_FIELD, permissions.diffarray, gateName=self.concerned_object.name

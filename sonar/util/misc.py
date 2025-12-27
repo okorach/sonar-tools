@@ -23,7 +23,7 @@ from math import log
 from typing import Union, Optional, Any
 import json
 import re
-import datetime
+from datetime import datetime, date, timezone, timedelta
 import contextlib
 import os
 import sys
@@ -213,32 +213,26 @@ def convert_to_type(value: str) -> Any:
     return value
 
 
-def format_date(somedate: datetime.datetime) -> str:
+def format_date(somedate: datetime) -> str:
     """Returns a date as an ISO string"""
     return ISO_DATE_FORMAT % (somedate.year, somedate.month, somedate.day)
 
 
-def age(some_date: datetime.datetime, rounded: bool = True, now: Optional[datetime.datetime] = None) -> Union[int, datetime.timedelta]:
+def age(some_date: Optional[datetime], rounded: bool = True, now: Optional[datetime] = None) -> Union[int, timedelta, None]:
     """returns the age (in days) of a date
 
-    :param datetime some_date: date
-    :param bool rounded: Whether to rounddown to nearest day
-    :param datetime now: The current datetime. Will be computed if None is provided
+    :param some_date: date to compute age
+    :param rounded: Whether to rounddown to nearest day
+    :param now: The current datetime. Will be computed if None is provided
     :return: The age in days, or by the second if not rounded
     :rtype: timedelta or int if rounded
     """
     if not some_date:
         return None
     if not now:
-        now = datetime.datetime.now(datetime.timezone.utc).astimezone()
+        now = datetime.now(timezone.utc).astimezone()
     delta = now - some_date
     return delta.days if rounded else delta
-
-
-def order_dict(d: dict[str, Any], *key_order: str) -> dict[str, Any]:
-    """Orders keys of a dictionary in a given order"""
-    new_d = {k: d[k] for k in key_order if k in d}
-    return new_d | {k: v for k, v in d.items() if k not in new_d}
 
 
 def __prefix(value: Any) -> Any:
@@ -251,7 +245,7 @@ def __prefix(value: Any) -> Any:
         return value
 
 
-def replace_keys(key_list: list[str], new_key: str, data: dict[str, any]) -> dict[str, any]:
+def replace_keys(key_list: list[str], new_key: str, data: dict[str, Any]) -> dict[str, Any]:
     """Replace a list of old keys by a new key in a dict"""
     for k in key_list:
         if k in data:
@@ -290,9 +284,9 @@ def dict_add(dict1: dict[str, int], dict2: dict[str, int]) -> dict[str, int]:
     return {k: dict1.get(k, 0) + dict2.get(k, 0) for k in dict1.keys() | dict2.keys()}
 
 
-def start_clock() -> datetime.datetime:
+def start_clock() -> datetime:
     """Returns the now timestamp"""
-    return datetime.datetime.now()
+    return datetime.now()
 
 
 def sort_list_by_key(list_to_sort: list[dict[str, Any]], key: str, priority_field: Optional[str] = None) -> list[dict[str, Any]]:
@@ -305,22 +299,18 @@ def sort_list_by_key(list_to_sort: list[dict[str, Any]], key: str, priority_fiel
     return first_elem + list(dict(sorted(tmp_dict.items())).values())
 
 
-def order_keys(original_dict: dict[str, any], *keys: str) -> dict[str, any]:
+def order_keys(original_dict: dict[str, Any], *key_order: str) -> dict[str, Any]:
     """Orders a dict keys in a chosen order, existings keys not in *keys are pushed to the end
 
-    :param dict[str, any] original_dict: Dict to order
-    :param str *keys: List of keys in desired order
-    :return: same dict with keys in desired order
+    :param original_dict: Dict to order
+    :param *keys: List of keys in desired order
+    :return: Copy of the dict with keys in desired order
     """
-    ordered_dict = {}
-    for key in [k for k in keys if k in original_dict]:
-        ordered_dict[key] = original_dict[key]
-    for key in [k for k in original_dict if k not in keys]:
-        ordered_dict[key] = original_dict[key]
-    return ordered_dict
+    new_d = {k: original_dict[k] for k in key_order if k in original_dict}
+    return new_d | {k: original_dict[k] for k in original_dict if k not in new_d}
 
 
-def deduct_format(fmt: Union[str, None], filename: Union[str, None], allowed_formats: tuple[str] = ("csv", "json")) -> str:
+def deduct_format(fmt: Optional[str], filename: Optional[str], allowed_formats: tuple[str, ...] = ("csv", "json")) -> str:
     """Deducts output format from CLI format and filename"""
     if fmt is None and filename is not None:
         fmt = filename.split(".").pop(-1).lower()
@@ -380,3 +370,13 @@ def search_list(obj_list: list[Any], field: str, value: str) -> dict[str, Any]:
 def filename(file: Optional[str]) -> str:
     """Returns the filename or stdout if None or -"""
     return "stdout" if file is None or file == "-" else file
+
+
+def to_datetime(date_str: str, fmt: str = "%Y-%m-%dT%H:%M:%S%z") -> datetime:
+    """Converts an ISO datetime string to a datetime object"""
+    return datetime.strptime(date_str, fmt)
+
+
+def to_date(date_str: str, fmt: str = "%Y-%m-%d") -> date:
+    """Converts an ISO date string to a date object"""
+    return datetime.strptime(date_str, fmt).date()

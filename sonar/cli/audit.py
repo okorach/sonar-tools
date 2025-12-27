@@ -38,7 +38,7 @@ from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, p
 import sonar.utilities as sutil
 import sonar.util.misc as util
 from sonar.audit import problem
-import sonar.util.conf_mgr as audit_conf
+from sonar.util import conf_mgr
 import sonar.util.common_helper as chelp
 
 TOOL_NAME = "sonar-audit"
@@ -204,12 +204,8 @@ def main() -> None:
     errcode = errcodes.OS_ERROR
     try:
         kwargs = sutil.convert_args(__parser_args("Audits a SonarQube Server or Cloud platform or a SIF (Support Info File or System Info File)"))
-        cli_settings = {}
-        for val in kwargs.get("settings", []) or []:
-            key, value = val[0].split("=", maxsplit=1)
-            cli_settings[key] = value
-        settings = audit_conf.load(CONFIG_FILE, __file__) | cli_settings
-        settings |= kwargs
+        settings = conf_mgr.load(CONFIG_FILE, __file__) | conf_mgr.get_cli_settings(**kwargs) | kwargs
+        log.info("Audit settings: %s", util.json_dump(settings))
         file = ofile = kwargs.pop(options.REPORT_FILE)
         fmt = util.deduct_format(kwargs[options.FORMAT], ofile)
         settings.update(
@@ -221,9 +217,8 @@ def main() -> None:
             }
         )
         if kwargs.get("config", False):
-            audit_conf.configure(CONFIG_FILE, __file__)
+            conf_mgr.configure(CONFIG_FILE, __file__)
             chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
-
         if kwargs["sif"]:
             file = kwargs["sif"]
             errcode = errcodes.SIF_AUDIT_ERROR
@@ -231,6 +226,7 @@ def main() -> None:
             problems = __filter_problems(problems, settings)
             problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], fmt=fmt)
         else:
+            sutil.check_token(kwargs[options.TOKEN], sutil.is_sonarcloud_url(kwargs[options.URL]))
             sq = platform.Platform(**kwargs)
             sq.verify_connection()
             sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")

@@ -100,7 +100,7 @@ def redact_tokens(data: Any) -> Any:
         return data
     if isinstance(data, (list, set, tuple)):
         return [redact_tokens(elem) for elem in data]
-    elif isinstance(data, dict):
+    if isinstance(data, dict):
         data = data.copy()
         for k, v in data.items():
             if isinstance(v, (dict, list, tuple, set, str)):
@@ -108,13 +108,21 @@ def redact_tokens(data: Any) -> Any:
     return data
 
 
+def redacted_token(token: str) -> str:
+    """Redacts a token for security (before printing)"""
+    if token[0:4] in ("squ_", "sqa_", "sqp_"):
+        return re.sub(r"(......).*(..)", r"\1***\2", token)
+    else:
+        return re.sub(r"(..).*(..)", r"\1***\2", token)
+
+
 def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, str, None]:
     """Converts a string date to a date"""
     try:
-        return datetime.datetime.strptime(string, SQ_DATETIME_FORMAT)
+        return util.to_datetime(string, SQ_DATETIME_FORMAT)
     except (ValueError, TypeError):
         try:
-            return datetime.datetime.strptime(string, SQ_DATE_FORMAT).replace(tzinfo=datetime.timezone.utc)
+            return util.to_date(string, SQ_DATE_FORMAT).replace(tzinfo=datetime.timezone.utc)
         except (ValueError, TypeError):
             return None
 
@@ -131,16 +139,6 @@ def get_setting(settings: dict[str, Any], key: str, default: Any) -> Any:
     if settings is None:
         return default
     return settings.get(key, default)
-
-
-def redacted_token(token: str) -> str:
-    """Redacts a token for security (before printing)"""
-    if token is None:
-        return "-"
-    if token[0:4] in ("squ_", "sqa_", "sqp_"):
-        return re.sub(r"(......).*(..)", r"\1***\2", token)
-    else:
-        return re.sub(r"(..).*(..)", r"\1***\2", token)
 
 
 def jvm_heap(cmdline: str) -> Union[int, None]:
@@ -233,10 +231,9 @@ def nbr_pages(sonar_api_json: dict[str, str], api_version: int = 1) -> int:
     paging = "page" if api_version == 2 else "paging"
     if paging in sonar_api_json:
         return math.ceil(sonar_api_json[paging]["total"] / sonar_api_json[paging]["pageSize"])
-    elif "total" in sonar_api_json:
+    if "total" in sonar_api_json:
         return math.ceil(sonar_api_json["total"] / sonar_api_json["ps"])
-    else:
-        return 1
+    return 1
 
 
 def nbr_total_elements(sonar_api_json: dict[str, str], api_version: int = 1) -> int:
@@ -244,10 +241,9 @@ def nbr_total_elements(sonar_api_json: dict[str, str], api_version: int = 1) -> 
     paging = "page" if api_version == 2 else "paging"
     if "total" in sonar_api_json:
         return sonar_api_json["total"]
-    elif paging in sonar_api_json:
+    if paging in sonar_api_json:
         return sonar_api_json[paging]["total"]
-    else:
-        return 0
+    return 0
 
 
 def is_api_v2(api: str) -> bool:
@@ -280,8 +276,7 @@ def sonar_error(response: requests.models.Response) -> str:
         elif "message" in json_res:
             # API v2 format
             return json_res["message"]
-        else:
-            log.debug("No error found in Response %s", util.json_dump(json_res))
+        log.debug("No error found in Response %s", util.json_dump(json_res))
     except json.decoder.JSONDecodeError:
         pass
     return ""
@@ -415,12 +410,9 @@ def inline_lists(element: Any, exception_values: tuple[str]) -> Any:
         return new_dict
     elif isinstance(element, (list, set)):
         cannot_be_csv = any(not isinstance(v, str) or "," in v for v in element)
-        if cannot_be_csv:
-            return element
-        else:
-            return util.list_to_csv(element, separator=", ")
-    else:
-        return element
+        return element if cannot_be_csv else util.list_to_csv(element, separator=", ")
+
+    return element
 
 
 def http_error_string(status: HTTPStatus) -> str:

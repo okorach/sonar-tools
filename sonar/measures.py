@@ -74,7 +74,7 @@ class Measure(sq.SqObject):
             value = int(float(value))
         return value
 
-    def refresh(self) -> any:
+    def refresh(self) -> Any:
         """Refreshes a measure by re-reading it in SonarQube
 
         :return: The new measure value
@@ -92,7 +92,7 @@ class Measure(sq.SqObject):
         params.update({"component": self.concerned_object.key, "metrics": self.metric, "ps": 1})
         return sutil.nbr_total_elements(json.loads(self.get(Measure.API_HISTORY, params=params).text))
 
-    def search_history(self, params: ApiParams = None) -> dict[str, any]:
+    def search_history(self, params: ApiParams = None) -> dict[str, Any]:
         """Searches the history of the measure
 
         :param params: List of search parameters to narrow down the search, defaults to None
@@ -122,7 +122,7 @@ class Measure(sq.SqObject):
     def is_an_effort(self) -> bool:
         return metrics.is_an_effort(self.endpoint, self.key)
 
-    def format(self, ratings: str = "letters", percents: str = "float") -> any:
+    def format(self, ratings: str = "letters", percents: str = "float") -> Any:
         return format(self.endpoint, self.key, self.value, ratings=ratings, percents=percents)
 
 
@@ -211,7 +211,7 @@ def format(endpoint: platform.Platform, metric_key: str, value: Any, ratings: st
     return value
 
 
-def _search_value(data: dict[str, str]) -> any:
+def _search_value(data: dict[str, str]) -> Any:
     """Searches a measure value in all possible field of a JSON returned by the Sonar API"""
     value = data.get("value", None)
     if not value and "periods" in data:

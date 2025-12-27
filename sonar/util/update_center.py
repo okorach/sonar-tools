@@ -27,6 +27,7 @@ import requests
 import tempfile
 import jprops
 import sonar.logging as log
+import sonar.util.misc as util
 from sonar import version
 
 _UPDATE_CENTER_URL = "https://downloads.sonarsource.com/sonarqube/update/update-center-all-versions.properties"
@@ -76,7 +77,7 @@ def get_release_date(version: tuple[int, ...]) -> Optional[datetime.date]:
         return None
     else:
         log.info("Release date for SonarQube version %s was found in update center properties: %s", formatted_release, str_date)
-        return datetime.datetime.strptime(str_date, "%Y-%m-%d").date()
+        return util.to_date(str_date)
 
 
 def get_lta() -> tuple[int, ...]:

@@ -32,7 +32,7 @@ from threading import Lock
 from requests import RequestException
 
 import sonar.logging as log
-import sonar.platform as pf
+from sonar.platform import Platform
 from sonar.util import types, cache
 
 from sonar import exceptions, projects, branches, app_branches
@@ -70,7 +70,7 @@ class Application(aggr.Aggregation):
         "UPDATE_BRANCH": "applications/update_branch",
     }
 
-    def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
+    def __init__(self, endpoint: Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=endpoint, key=key)
         self._branches: Optional[dict[str, app_branches.ApplicationBranch]] = None
@@ -81,10 +81,10 @@ class Application(aggr.Aggregation):
         Application.CACHE.put(self)
 
     @classmethod
-    def get_object(cls, endpoint: pf.Platform, key: str) -> Application:
+    def get_object(cls, endpoint: Platform, key: str) -> Application:
         """Gets an Application object from SonarQube
 
-        :param pf.Platform endpoint: Reference to the SonarQube platform
+        :param Platform endpoint: Reference to the SonarQube platform
         :param str key: Application key, must not already exist on SonarQube
         :raises UnsupportedOperation: If on a Community Edition
         :raises ObjectNotFound: If Application key not found in SonarQube
@@ -99,7 +99,7 @@ class Application(aggr.Aggregation):
         return cls.load(endpoint, data)
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Application:
+    def load(cls, endpoint: Platform, data: types.ApiPayload) -> Application:
         """Loads an Application object with data retrieved from SonarQube
 
         :param endpoint: Reference to the SonarQube platform
@@ -117,7 +117,7 @@ class Application(aggr.Aggregation):
         return o
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, key: str, name: str) -> Application:
+    def create(cls, endpoint: Platform, key: str, name: str) -> Application:
         """Creates an Application object in SonarQube
 
         :param endpoint: Reference to the SonarQube platform
@@ -444,7 +444,7 @@ def _project_list(data: types.ObjectJsonRepr) -> types.KeyList:
     return sorted(set(plist))
 
 
-def count(endpoint: pf.Platform) -> int:
+def count(endpoint: Platform) -> int:
     """returns count of applications
 
     :param endpoint: Reference to the SonarQube platform
@@ -454,7 +454,7 @@ def count(endpoint: pf.Platform) -> int:
     return sutil.nbr_total_elements(json.loads(endpoint.get(Application.API[c.LIST], params={"ps": 1, "filter": "qualifier = APP"}).text))
 
 
-def check_supported(endpoint: pf.Platform) -> None:
+def check_supported(endpoint: Platform) -> None:
     """Verifies the edition and raise exception if not supported"""
     if endpoint.edition() == c.CE:
         raise exceptions.UnsupportedOperation(f"No applications in {endpoint.edition()} edition")
@@ -462,7 +462,7 @@ def check_supported(endpoint: pf.Platform) -> None:
         raise exceptions.UnsupportedOperation("No applications in SonarQube Cloud")
 
 
-def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Application]:
+def search(endpoint: Platform, params: types.ApiParams = None) -> dict[str, Application]:
     """Searches applications
 
     :param endpoint: Reference to the SonarQube platform
@@ -477,7 +477,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, A
     return sq.search_objects(endpoint=endpoint, object_class=Application, params=new_params)
 
 
-def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Application]:
+def get_list(endpoint: Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Application]:
     """
     :return: List of Applications (all of them if key_list is None or empty)
     :param endpoint: Reference to the Sonar platform
@@ -494,7 +494,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
     return object_list
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs: Any) -> list[dict[str, Any]]:
+def export(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs: Any) -> list[dict[str, Any]]:
     """Exports applications as JSON
 
     :param endpoint: Reference to the Sonar platform
@@ -518,7 +518,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     return apps_settings
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[problem.Problem]:
+def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[problem.Problem]:
     """Audits applications and return list of problems found
 
     :param endpoint: Reference to the Sonar platform
@@ -539,7 +539,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     return problems
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: Optional[types.KeyList] = None) -> bool:
+def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_list: Optional[types.KeyList] = None) -> bool:
     """Imports a list of application configuration in a SonarQube platform
 
     :param endpoint: Reference to the SonarQube platform
@@ -574,7 +574,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     return True
 
 
-def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Application]:
+def search_by_name(endpoint: Platform, name: str) -> dict[str, Application]:
     """Searches applications by name. Several apps may match as name does not have to be unique"""
     get_list(endpoint=endpoint, use_cache=False)
     data = {}
@@ -594,13 +594,13 @@ def convert_app_json(old_app_json: dict[str, Any]) -> dict[str, Any]:
     for br, data in new_json["branches"].items():
         if "projects" not in data:
             continue
-        new_json["branches"][br] = util.order_dict(data, "name", "isMain", "projects")
+        new_json["branches"][br] = util.order_keys(data, "name", "isMain", "projects")
         new_json["branches"][br]["projects"] = util.dict_to_list(new_json["branches"][br]["projects"], "key", "branch")
         for proj_data in new_json["branches"][br]["projects"]:
             if proj_data.get("branch", None) in ("__default__", c.DEFAULT_BRANCH):
                 proj_data.pop("branch")
     new_json["branches"] = util.sort_list_by_key(util.dict_to_list(new_json["branches"], "name"), "name", "isMain")
-    return util.order_dict(new_json, "key", "name", "visibility", "tags", "branches", "permissions")
+    return util.order_keys(new_json, "key", "name", "visibility", "tags", "branches", "permissions")
 
 
 def convert_apps_json(old_json: dict[str, Any]) -> dict[str, Any]:

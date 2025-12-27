@@ -98,7 +98,7 @@ def convert_project_json(old_json: dict[str, Any]) -> dict[str, Any]:
         # If that's an ADO binding (recognized by the inlineAnnotationsEnabled element), we need to rename the slug to projectName
         if "inlineAnnotationsEnabled" in new_json["binding"] and "slug" in new_json["binding"]:
             new_json["binding"]["projectName"] = new_json["binding"].pop("slug")
-            new_json["binding"] = util.order_dict(new_json["binding"], "key", "repository", "projectName", "monorepo", "inlineAnnotationsEnabled")
+            new_json["binding"] = util.order_keys(new_json["binding"], "key", "repository", "projectName", "monorepo", "inlineAnnotationsEnabled")
     for k, v in old_json.items():
         if k not in _JSON_KEY_ORDER:
             new_json.pop(k, None)
@@ -110,7 +110,7 @@ def convert_project_json(old_json: dict[str, Any]) -> dict[str, Any]:
             new_json["settings"].pop(AI_CODE_FIX)
         new_json["settings"] = util.dict_to_list(dict(sorted(new_json["settings"].items())), "key", "value")
     new_json = common_json_helper.convert_common_fields(new_json)
-    return util.order_dict(new_json, *_JSON_KEY_ORDER)
+    return util.order_keys(new_json, *_JSON_KEY_ORDER)
 
 
 def convert_projects_json(old_json: dict[str, Any]) -> dict[str, Any]:

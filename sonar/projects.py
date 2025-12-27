@@ -332,7 +332,7 @@ class Project(components.Component):
                 self._binding["binding"].pop("repositoryUrl", None)
                 if self._binding["binding"]["alm"] == devops.DEVOPS_AZURE:
                     self._binding["binding"]["projectName"] = self._binding["binding"].pop("slug")
-                self._binding["binding"] = util.order_dict(self._binding["binding"], "key", "repository", "slug", "projectName", "monorepo")
+                self._binding["binding"] = util.order_keys(self._binding["binding"], "key", "repository", "slug", "projectName", "monorepo")
             except exceptions.SonarException:
                 # Hack: 8.9 returns 404, 9.x returns 400
                 self._binding = {"has_binding": False}
@@ -1018,7 +1018,7 @@ class Project(components.Component):
         json_data = util.clean_data(json_data, remove_none=True, remove_empty=True)
         if tmp_branches:
             json_data["branches"] = tmp_branches
-        return util.order_dict(json_data, *_IMPORTABLE_PROPERTIES)
+        return util.order_keys(json_data, *_IMPORTABLE_PROPERTIES)
 
     def new_code(self) -> str:
         """

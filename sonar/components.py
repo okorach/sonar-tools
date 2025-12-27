@@ -153,7 +153,7 @@ class Component(sq.SqObject):
             params.update(filters)
         return search(endpoint=self.endpoint, filters=params)
 
-    def migration_export(self, export_settings: types.ConfigSettings) -> dict[str, any]:
+    def migration_export(self, export_settings: types.ConfigSettings) -> dict[str, Any]:
         from sonar.issues import count as issue_count
         from sonar.hotspots import count as hotspot_count
 
