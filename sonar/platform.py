@@ -568,7 +568,7 @@ class Platform(object):
         problems += (
             self._audit_project_default_visibility(audit_settings)
             + self._audit_global_permissions()
-            + self._audit_logs(audit_settings)
+            + self.audit_logs(audit_settings)
             + permission_templates.audit(self, audit_settings)
         )
         for wh in self.webhooks().values():
@@ -587,7 +587,7 @@ class Platform(object):
         )
         return problems
 
-    def _audit_logs(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def audit_logs(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         if not audit_settings.get("audit.logs", True):
             log.info("Logs audit is disabled, skipping logs audit...")
             return []
