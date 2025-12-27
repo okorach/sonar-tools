@@ -588,6 +588,7 @@ class Platform(object):
         return problems
 
     def audit_logs(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits that there are no anomalies in logs (errors, warnings, deprecation warnings)"""
         if not audit_settings.get("audit.logs", True):
             log.info("Logs audit is disabled, skipping logs audit...")
             return []
@@ -605,28 +606,26 @@ class Platform(object):
                 sutil.handle_error(e, f"retrieving {logtype} logs", catch_all=True)
                 continue
             i = 0
+            error_rule, warn_rule = None, None
+            system_url = f"{self.local_url}/admin/system"
             for line in logs.splitlines():
                 if i % 1000 == 0:
                     log.debug("Inspecting log line (%d) %s", i, line)
                 i += 1
-                try:
-                    (_, level, _) = line.split(" ", maxsplit=2)
-                except ValueError:
-                    # Not the standard log line, must be a stacktrace or something, just skip
-                    continue
-                rule = None
-                if level == "ERROR":
+                if " ERROR " in line:
                     log.warning("Error found in %s: %s", logfile, line)
-                    rule = get_rule(RuleId.ERROR_IN_LOGS)
-                elif level == "WARN":
+                    if error_rule is None:
+                        error_rule = get_rule(RuleId.ERROR_IN_LOGS)
+                        problems.append(Problem(error_rule, system_url, logfile, line))
+                elif " WARN " in line:
                     log.warning("Warning found in %s: %s", logfile, line)
-                    rule = get_rule(RuleId.WARNING_IN_LOGS)
-                if rule is not None:
-                    problems.append(Problem(rule, f"{self.local_url}/admin/system", logfile, line))
+                    if warn_rule is None:
+                        warn_rule = get_rule(RuleId.WARNING_IN_LOGS)
+                        problems.append(Problem(warn_rule, system_url, logfile, line))
         logs = self.get("system/logs", params={"name": "deprecation"}).text
         if (nb_deprecation := len(logs.splitlines())) > 0:
             rule = get_rule(RuleId.DEPRECATION_WARNINGS)
-            problems.append(Problem(rule, f"{self.local_url}/admin/system", nb_deprecation))
+            problems.append(Problem(rule, system_url, nb_deprecation))
         return problems
 
     def _audit_project_default_visibility(self, audit_settings: types.ConfigSettings) -> list[Problem]:
