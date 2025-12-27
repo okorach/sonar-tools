@@ -230,11 +230,8 @@ class Platform(object):
         :param params: params to pass in the HTTP request, defaults to None
         :return: the HTTP response
         """
-        if sutil.is_api_v2(api):
-            kwargs["headers"] = kwargs.get("headers", {}) | {"content-type": "application/merge-patch+json"}
-            return self.__run_request(requests.patch, api=api, data=json.dumps(params), **kwargs)
-        else:
-            return self.__run_request(requests.patch, api, params, **kwargs)
+        kwargs["headers"] = kwargs.get("headers", {}) | {"content-type": "application/merge-patch+json"}
+        return self.__run_request(requests.patch, api=api, data=json.dumps(params), **kwargs)
 
     def delete(self, api: str, params: Optional[types.ApiParams] = None, **kwargs) -> requests.Response:
         """Makes an HTTP DELETE request to SonarQube
