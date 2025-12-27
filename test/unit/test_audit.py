@@ -43,3 +43,13 @@ def test_audit_proj_key_pattern() -> None:
     settings = {"audit.projects": True, "audit.projects.keyPattern": "(BANK|INSU|demo:).+"}
     pbs = projects.audit(tutil.SQ, settings, key_list="(BANKING|INSURANCE|demo:).+")
     assert all(pb.rule_id != rules.RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN for pb in pbs)
+
+
+def test_audit_platform_logs() -> None:
+    """test_audit_platform_logs"""
+    assert len(tutil.SQ.audit_logs({"audit.logs": False})) == 0
+    if tutil.SQ.is_sonarcloud():
+        assert len(tutil.SQ.audit_logs({"audit.logs": True})) == 0
+
+    pbs = tutil.SQ.audit_logs({"audit.logs": True})
+    assert any(pb.rule_id == rules.RuleId.WARNING_IN_LOGS for pb in pbs)
