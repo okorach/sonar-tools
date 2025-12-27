@@ -69,8 +69,7 @@ def test_sanitize_filter() -> None:
 
 def test_comments_after() -> None:
     """test_comments_after"""
-    hotspot_d = hotspots.search(endpoint=tutil.SQ, filters={"project": "test:juice-shop"})
-    hotspot = list(hotspot_d.values())[0]
+    hotspot = list(hotspots.search(endpoint=tutil.SQ, filters={"project": "test:juice-shop"}).values())[0]
     after = util.add_tz(datetime(2024, 1, 1))
     comments = hotspot.comments(after=after)
     assert all(c["date"] >= after for c in comments.values())
