@@ -223,7 +223,6 @@ def main() -> None:
         if kwargs.get("config", False):
             audit_conf.configure(CONFIG_FILE, __file__)
             chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
-
         if kwargs["sif"]:
             file = kwargs["sif"]
             errcode = errcodes.SIF_AUDIT_ERROR
@@ -231,6 +230,7 @@ def main() -> None:
             problems = __filter_problems(problems, settings)
             problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], fmt=fmt)
         else:
+            sutil.check_token(kwargs[options.TOKEN], sutil.is_sonarcloud_url(kwargs[options.URL]))
             sq = platform.Platform(**kwargs)
             sq.verify_connection()
             sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
