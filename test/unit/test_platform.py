@@ -29,6 +29,7 @@ import pytest
 import utilities as tutil
 from sonar import settings
 from sonar import platform
+import sonar.util.update_center as uc
 import sonar.util.platform_helper as phelp
 
 
@@ -120,8 +121,8 @@ def test_lta_latest() -> None:
     if tutil.SQ.is_sonarcloud():
         assert len(tutil.SQ.audit_lta_latest()) == 0
     else:
-        lta = phelp.get_lta()
-        latest = phelp.get_latest()
+        lta = uc.get_lta()
+        latest = uc.get_latest()
         sq_version = tutil.SQ.version()
         pbs = tutil.SQ.audit_lta_latest()
         if sq_version == lta or sq_version == latest:
