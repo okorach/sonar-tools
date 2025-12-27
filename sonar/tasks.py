@@ -29,7 +29,6 @@ import re
 
 import sonar.logging as log
 import sonar.sqobject as sq
-# import sonar.platform as pf
 
 from sonar import exceptions
 import sonar.utilities as sutil
