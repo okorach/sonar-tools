@@ -30,7 +30,7 @@ import pytest
 import utilities as tutil
 from sonar import errcodes as e
 import cli.options as opt
-from cli import audit
+from sonar.cli import audit
 
 CMD_ONLY = "sonar-audit.py"
 CMD = f"{CMD_ONLY} {tutil.SQS_OPTS}"
@@ -66,7 +66,7 @@ def test_audit(csv_file: Generator[str]) -> None:
 
 
 def test_configure() -> None:
-    DEFAULT_CONFIG = f"{os.path.expanduser('~')}{os.sep}.sonar-audit.properties"
+    DEFAULT_CONFIG = f"{os.path.expanduser('~')}{os.sep}.{audit.CONFIG_FILE}"
     config_exists = os.path.exists(DEFAULT_CONFIG)
     if config_exists:
         os.rename(DEFAULT_CONFIG, f"{DEFAULT_CONFIG}.bak")
@@ -77,7 +77,7 @@ def test_configure() -> None:
 
 
 def test_configure_stdout() -> None:
-    DEFAULT_CONFIG = f"{os.path.expanduser('~')}{os.sep}.sonar-audit.properties"
+    DEFAULT_CONFIG = f"{os.path.expanduser('~')}{os.sep}.{audit.CONFIG_FILE}"
     if not os.path.exists(DEFAULT_CONFIG):
         pytest.skip("No $HOME config file")
     last_change = os.stat(DEFAULT_CONFIG).st_ctime_ns

@@ -27,7 +27,7 @@ from collections.abc import Generator
 import utilities as tutil
 from sonar import errcodes as e
 import cli.options as opt
-from cli import audit
+from sonar.cli import audit
 
 CMD = f"sonar-audit.py {tutil.SQS_OPTS}"
 
@@ -46,10 +46,10 @@ audit.plugins = no"""
 
 def test_audit_disabled(csv_file: Generator[str]) -> None:
     """Tests that nothing is output when all audits are disabled"""
-    with open(".sonar-audit.properties", mode="w", encoding="utf-8") as fd:
+    with open(f".{audit.CONFIG_FILE}", mode="w", encoding="utf-8") as fd:
         print(AUDIT_DISABLED, file=fd)
     assert tutil.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {csv_file}") == e.OK
-    os.remove(".sonar-audit.properties")
+    os.remove(f".{audit.CONFIG_FILE}")
     assert tutil.csv_nbr_lines(csv_file) == 0
 
 

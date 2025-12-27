@@ -31,7 +31,7 @@ import pytest
 import utilities as tutil
 from sonar import sif
 from sonar.dce import app_nodes, search_nodes
-from cli import audit
+from sonar.cli import audit
 import cli.options as opt
 import sonar.util.constants as c
 import sonar.errcodes as e
