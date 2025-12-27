@@ -372,3 +372,16 @@ def set_what(parser: ArgumentParser, what_list: list[str], operation: str) -> Ar
     """Sets the argument to select what to audit or to export as config"""
     args = ["-w", f"--{WHAT}"]
     return add_optional_arg(parser, *args, default="", help=f"What to {operation} {','.join(what_list)}")
+
+
+def add_settings_arg(parser: ArgumentParser) -> ArgumentParser:
+    """Adds the settings argument to the parser"""
+    parser.add_argument(
+        "-D",
+        required=False,
+        action="append",
+        dest="settings",
+        nargs="*",
+        help="Pass configuration settings on command line (-D<setting>=<value>)",
+    )
+    return parser

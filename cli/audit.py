@@ -179,23 +179,16 @@ def __parser_args(desc: str) -> object:
         action="store_true",
         help="Creates the $HOME/.sonar-audit.properties configuration file, if not already present or outputs to stdout if it already exist",
     )
-    parser.add_argument(
-        "-D",
-        required=False,
-        action="append",
-        dest="settings",
-        nargs="*",
-        help="Pass audit configuration settings on command line (-D<setting>=<value>)",
-    )
+    parser = options.add_settings_arg(parser)
 
     help_str = "Report only audit problems with the given severities (comma separate values LOW, MEDIUM, HIGH, CRITICAL)"
-    options.add_optional_arg(parser, f"--{options.SEVERITIES}", help=help_str)
+    parser = options.add_optional_arg(parser, f"--{options.SEVERITIES}", help=help_str)
 
-    help_str = ("Report only audit problems of the given comma separated problem types",)
-    options.add_optional_arg(parser, f"--{options.TYPES}", help=help_str)
+    help_str = "Report only audit problems of the given comma separated problem types"
+    parser = options.add_optional_arg(parser, f"--{options.TYPES}", help=help_str)
 
     help_str = "Report only audit problems whose type key matches the given regexp"
-    options.add_optional_arg(parser, f"--{PROBLEM_KEYS}", help=help_str)
+    parser = options.add_optional_arg(parser, f"--{PROBLEM_KEYS}", help=help_str)
 
     args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME, verify_token=False)
     if args.sif is None and args.config is None:
