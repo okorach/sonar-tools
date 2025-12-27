@@ -23,7 +23,7 @@ from math import log
 from typing import Union, Optional, Any
 import json
 import re
-from datetime import datetime, date
+from datetime import datetime, date, timezone, timedelta
 import contextlib
 import os
 import sys
@@ -213,32 +213,26 @@ def convert_to_type(value: str) -> Any:
     return value
 
 
-def format_date(somedate: datetime.datetime) -> str:
+def format_date(somedate: datetime) -> str:
     """Returns a date as an ISO string"""
     return ISO_DATE_FORMAT % (somedate.year, somedate.month, somedate.day)
 
 
-def age(some_date: datetime.datetime, rounded: bool = True, now: Optional[datetime.datetime] = None) -> Union[int, datetime.timedelta]:
+def age(some_date: datetime, rounded: bool = True, now: Optional[datetime] = None) -> Union[int, timedelta]:
     """returns the age (in days) of a date
 
-    :param datetime some_date: date
-    :param bool rounded: Whether to rounddown to nearest day
-    :param datetime now: The current datetime. Will be computed if None is provided
+    :param some_date: date
+    :param rounded: Whether to rounddown to nearest day
+    :param now: The current datetime. Will be computed if None is provided
     :return: The age in days, or by the second if not rounded
     :rtype: timedelta or int if rounded
     """
     if not some_date:
         return None
     if not now:
-        now = datetime.datetime.now(datetime.timezone.utc).astimezone()
+        now = datetime.now(timezone.utc).astimezone()
     delta = now - some_date
     return delta.days if rounded else delta
-
-
-def order_dict(d: dict[str, Any], *key_order: str) -> dict[str, Any]:
-    """Orders keys of a dictionary in a given order"""
-    new_d = {k: d[k] for k in key_order if k in d}
-    return new_d | {k: v for k, v in d.items() if k not in new_d}
 
 
 def __prefix(value: Any) -> Any:
@@ -305,16 +299,15 @@ def sort_list_by_key(list_to_sort: list[dict[str, Any]], key: str, priority_fiel
     return first_elem + list(dict(sorted(tmp_dict.items())).values())
 
 
-def order_keys(original_dict: dict[str, Any], *keys: str) -> dict[str, Any]:
+def order_keys(original_dict: dict[str, Any], *key_order: str) -> dict[str, Any]:
     """Orders a dict keys in a chosen order, existings keys not in *keys are pushed to the end
 
     :param original_dict: Dict to order
     :param *keys: List of keys in desired order
-    :return: same dict with keys in desired order
+    :return: Copy of the dict with keys in desired order
     """
-    return \
-        {key: original_dict[key] for key in [k for k in keys if k in original_dict]} | \
-        {key: original_dict[key] for key in [k for k in original_dict if k not in keys]}
+    new_d = {k: original_dict[k] for k in key_order if k in original_dict}
+    return new_d | {k: original_dict[k] for k in original_dict if k not in new_d}
 
 
 def deduct_format(fmt: Optional[str], filename: Optional[str], allowed_formats: tuple[str, ...] = ("csv", "json")) -> str:

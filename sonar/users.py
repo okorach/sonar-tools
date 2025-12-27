@@ -586,7 +586,7 @@ def convert_user_json(old_json: dict[str, Any]) -> dict[str, Any]:
     for k in "groups", "scmAccounts":
         if k in old_json:
             old_json[k] = util.csv_to_list(old_json[k])
-    return util.order_dict(old_json, *SETTABLE_PROPERTIES)
+    return util.order_keys(old_json, *SETTABLE_PROPERTIES)
 
 
 def convert_users_json(old_json: dict[str, Any]) -> dict[str, Any]:

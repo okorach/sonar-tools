@@ -544,7 +544,7 @@ def main() -> None:
         summary_data["new_code_statistics"] = compute_new_code_statistics(maturity_data, config)
         summary_data["frequency_statistics"] = compute_analysis_frequency_statistics(maturity_data, config)
 
-        summary_data = util.order_dict(
+        summary_data = util.order_keys(
             summary_data,
             "total_projects",
             "global_maturity_level_statistics",
