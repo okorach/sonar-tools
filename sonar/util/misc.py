@@ -290,9 +290,9 @@ def dict_add(dict1: dict[str, int], dict2: dict[str, int]) -> dict[str, int]:
     return {k: dict1.get(k, 0) + dict2.get(k, 0) for k in dict1.keys() | dict2.keys()}
 
 
-def start_clock() -> datetime.datetime:
+def start_clock() -> datetime:
     """Returns the now timestamp"""
-    return datetime.datetime.now()
+    return datetime.now()
 
 
 def sort_list_by_key(list_to_sort: list[dict[str, Any]], key: str, priority_field: Optional[str] = None) -> list[dict[str, Any]]:
@@ -312,15 +312,12 @@ def order_keys(original_dict: dict[str, Any], *keys: str) -> dict[str, Any]:
     :param *keys: List of keys in desired order
     :return: same dict with keys in desired order
     """
-    ordered_dict = {}
-    for key in [k for k in keys if k in original_dict]:
-        ordered_dict[key] = original_dict[key]
-    for key in [k for k in original_dict if k not in keys]:
-        ordered_dict[key] = original_dict[key]
-    return ordered_dict
+    return \
+        {key: original_dict[key] for key in [k for k in keys if k in original_dict]} | \
+        {key: original_dict[key] for key in [k for k in original_dict if k not in keys]}
 
 
-def deduct_format(fmt: Union[str, None], filename: Union[str, None], allowed_formats: tuple[str] = ("csv", "json")) -> str:
+def deduct_format(fmt: Optional[str], filename: Optional[str], allowed_formats: tuple[str, ...] = ("csv", "json")) -> str:
     """Deducts output format from CLI format and filename"""
     if fmt is None and filename is not None:
         fmt = filename.split(".").pop(-1).lower()
