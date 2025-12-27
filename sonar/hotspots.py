@@ -23,14 +23,12 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from http import HTTPStatus
 import requests.utils
 
 import sonar.logging as log
-import sonar.platform as pf
 
-from sonar.util import types
 import sonar.util.misc as util
 from sonar.util import types, cache, constants as c
 
@@ -39,6 +37,9 @@ from sonar import findings, rules, changelog
 from sonar import exceptions
 import sonar.util.issue_defs as idefs
 import sonar.utilities as sutil
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
 
 PROJECT_FILTER = "project"
 PROJECT_FILTER_OLD = "projectKey"
@@ -95,7 +96,7 @@ class Hotspot(findings.Finding):
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None, from_export: bool = False) -> None:
+    def __init__(self, endpoint: Platform, key: str, data: types.ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self.type = idefs.TYPE_HOTSPOT
@@ -344,7 +345,7 @@ class Hotspot(findings.Finding):
         return self._comments
 
 
-def search_by_project(endpoint: pf.Platform, project_key: str, filters: types.ApiParams = None) -> dict[str, Hotspot]:
+def search_by_project(endpoint: Platform, project_key: str, filters: types.ApiParams = None) -> dict[str, Hotspot]:
     """Searches hotspots of a project
 
     :param endpoint: Reference to the SonarQube platform
@@ -363,12 +364,12 @@ def search_by_project(endpoint: pf.Platform, project_key: str, filters: types.Ap
     return post_search_filter(hotspots, filters=filters)
 
 
-def component_filter(endpoint: pf.Platform) -> str:
+def component_filter(endpoint: Platform) -> str:
     """Returns the string to filter by porject in api/hotspots/search"""
     return PROJECT_FILTER if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else PROJECT_FILTER_OLD
 
 
-def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, Hotspot]:
+def search(endpoint: Platform, filters: types.ApiParams = None) -> dict[str, Hotspot]:
     """Searches hotspots
 
     :param endpoint: Reference to the SonarQube platform
@@ -408,14 +409,14 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
     return post_search_filter(hotspots_list, filters)
 
 
-def get_object(endpoint: pf.Platform, key: str, data: Optional[dict[str]] = None, from_export: bool = False) -> Hotspot:
+def get_object(endpoint: Platform, key: str, data: Optional[dict[str]] = None, from_export: bool = False) -> Hotspot:
     """Returns a hotspot from its key"""
     if not (o := Hotspot.CACHE.get(key, endpoint.local_url)):
         o = Hotspot(key=key, data=data, endpoint=endpoint, from_export=from_export)
     return o
 
 
-def sanitize_search_filters(endpoint: pf.Platform, params: types.ApiParams) -> types.ApiParams:
+def sanitize_search_filters(endpoint: Platform, params: types.ApiParams) -> types.ApiParams:
     """Returns the filtered list of params that are allowed for api/hotspots/search"""
     log.debug("Sanitizing hotspot search criteria %s", str(params))
     if params is None:
@@ -473,7 +474,7 @@ def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: types.ApiPara
     return filtered_findings
 
 
-def count(endpoint: pf.Platform, **kwargs) -> int:
+def count(endpoint: Platform, **kwargs) -> int:
     """Returns number of hotspots of a search"""
     params = {} if not kwargs else kwargs.copy()
     params["ps"] = 1

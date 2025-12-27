@@ -26,21 +26,22 @@ import math
 from datetime import date, datetime, timedelta
 import json
 import re
-from typing import Any, Union, Optional
+from typing import Any, Union, Optional, TYPE_CHECKING
 
 import concurrent.futures
 import requests.utils
 
 import sonar.logging as log
-import sonar.platform as pf
 from sonar.util import cache, issue_defs as idefs
 import sonar.util.constants as c
-
-from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
 from sonar import users, findings, changelog, projects, rules, config, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
 _OLD_SEARCH_COMPONENT_FIELD = "componentKeys"
 _NEW_SEARCH_COMPONENT_FIELD = "components"
@@ -130,7 +131,7 @@ class Issue(findings.Finding):
     MAX_SEARCH = 10000
     API = {c.SEARCH: "issues/search", c.GET_TAGS: "issues/search", c.SET_TAGS: "issues/set_tags", c.ASSIGN: "issues/assign"}
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
+    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self._debt: Optional[int] = None
@@ -567,24 +568,24 @@ class Issue(findings.Finding):
 # ------------------------------- Static methods --------------------------------------
 
 
-def component_search_field(endpoint: pf.Platform) -> str:
+def component_search_field(endpoint: Platform) -> str:
     """Returns the fields used for issues/search filter by porject key"""
     return _NEW_SEARCH_COMPONENT_FIELD if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else _OLD_SEARCH_COMPONENT_FIELD
 
 
-def type_search_field(endpoint: pf.Platform) -> str:
+def type_search_field(endpoint: Platform) -> str:
     return _OLD_SEARCH_TYPE_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_TYPE_FIELD
 
 
-def severity_search_field(endpoint: pf.Platform) -> str:
+def severity_search_field(endpoint: Platform) -> str:
     return _OLD_SEARCH_SEVERITY_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_SEVERITY_FIELD
 
 
-def status_search_field(endpoint: pf.Platform) -> str:
+def status_search_field(endpoint: Platform) -> str:
     return _OLD_SEARCH_STATUS_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_STATUS_FIELD
 
 
-def search_by_directory(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
+def search_by_directory(endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by directory to avoid exceeding the 10K limit"""
     new_params = pre_search_filters(endpoint, params)
     proj_key = new_params.get("project", new_params.get(component_search_field(endpoint), None))
@@ -604,7 +605,7 @@ def search_by_directory(endpoint: pf.Platform, params: ApiParams) -> dict[str, I
     return issue_list
 
 
-def search_by_file(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
+def search_by_file(endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by directory to avoid exceeding the 10K limit"""
     new_params = pre_search_filters(endpoint, params)
     proj_key = new_params.get("project", new_params.get(component_search_field(endpoint), None))
@@ -626,7 +627,7 @@ def search_by_file(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]
     return issue_list
 
 
-def search_by_type(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
+def search_by_type(endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by type to avoid exceeding the 10K limit"""
     issue_list = {}
     new_params = pre_search_filters(endpoint, params)
@@ -643,7 +644,7 @@ def search_by_type(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]
     return issue_list
 
 
-def search_by_severity(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
+def search_by_severity(endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by severity to avoid exceeding the 10K limit"""
     issue_list = {}
     new_params = pre_search_filters(endpoint, params)
@@ -660,7 +661,7 @@ def search_by_severity(endpoint: pf.Platform, params: ApiParams) -> dict[str, Is
     return issue_list
 
 
-def search_by_date(endpoint: pf.Platform, params: ApiParams, date_start: Optional[date] = None, date_stop: Optional[date] = None) -> dict[str, Issue]:
+def search_by_date(endpoint: Platform, params: ApiParams, date_start: Optional[date] = None, date_stop: Optional[date] = None) -> dict[str, Issue]:
     """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
     new_params = pre_search_filters(endpoint, params)
     if date_start is None:
@@ -707,7 +708,7 @@ def search_by_date(endpoint: pf.Platform, params: ApiParams, date_start: Optiona
     return issue_list
 
 
-def __search_all_by_project(endpoint: pf.Platform, project_key: str, params: ApiParams = None) -> dict[str, Issue]:
+def __search_all_by_project(endpoint: Platform, project_key: str, params: ApiParams = None) -> dict[str, Issue]:
     """Search issues by project"""
     log.debug("Searching by project with params %s", params)
     new_params = pre_search_filters(endpoint, params)
@@ -722,7 +723,7 @@ def __search_all_by_project(endpoint: pf.Platform, project_key: str, params: Api
     return issue_list
 
 
-def search_by_project(endpoint: pf.Platform, project_key: str, params: ApiParams = None, search_findings: bool = False) -> dict[str, Issue]:
+def search_by_project(endpoint: Platform, project_key: str, params: ApiParams = None, search_findings: bool = False) -> dict[str, Issue]:
     """Search all issues of a given project
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -750,7 +751,7 @@ def search_by_project(endpoint: pf.Platform, project_key: str, params: ApiParams
     return issue_list
 
 
-def search_all(endpoint: pf.Platform, params: ApiParams = None) -> dict[str, Issue]:
+def search_all(endpoint: Platform, params: ApiParams = None) -> dict[str, Issue]:
     """Returns all issues of the platforms with chosen filtering parameters
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -779,7 +780,7 @@ def search_all(endpoint: pf.Platform, params: ApiParams = None) -> dict[str, Iss
     return issue_list
 
 
-def __get_issue_list(endpoint: pf.Platform, data: ApiPayload, params) -> dict[str, Issue]:
+def __get_issue_list(endpoint: Platform, data: ApiPayload, params) -> dict[str, Issue]:
     """Returns a list of issues from the API payload"""
     br, pr = params.get("branch", None), params.get("pullRequest", None)
     for i in data["issues"]:
@@ -787,7 +788,7 @@ def __get_issue_list(endpoint: pf.Platform, data: ApiPayload, params) -> dict[st
     return {i["key"]: get_object(endpoint=endpoint, key=i["key"], data=i) for i in data["issues"]}
 
 
-def __search_page(endpoint: pf.Platform, params: ApiParams, page: int) -> dict[str, Issue]:
+def __search_page(endpoint: Platform, params: ApiParams, page: int) -> dict[str, Issue]:
     """Searches a page of issues"""
     page_params = params.copy()
     page_params["p"] = page
@@ -797,7 +798,7 @@ def __search_page(endpoint: pf.Platform, params: ApiParams, page: int) -> dict[s
     return issue_list
 
 
-def search_first(endpoint: pf.Platform, **params) -> Union[Issue, None]:
+def search_first(endpoint: Platform, **params) -> Union[Issue, None]:
     """
     :return: The first issue of a search, for instance the oldest, if params = s="CREATION_DATE", asc=asc_sort
     :rtype: Issue or None if not issue found
@@ -810,7 +811,7 @@ def search_first(endpoint: pf.Platform, **params) -> Union[Issue, None]:
     return get_object(endpoint=endpoint, key=data[0]["key"], data=data[0])
 
 
-def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = True, threads: int = 8) -> dict[str, Issue]:
+def search(endpoint: Platform, params: ApiParams = None, raise_error: bool = True, threads: int = 8) -> dict[str, Issue]:
     """Multi-threaded search of issues
 
     :param dict params: Search filter criteria to narrow down the search
@@ -855,7 +856,7 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
     return issue_list
 
 
-def _get_facets(endpoint: pf.Platform, project_key: str, facets: str = "directories", params: ApiParams = None) -> dict[str, str]:
+def _get_facets(endpoint: Platform, project_key: str, facets: str = "directories", params: ApiParams = None) -> dict[str, str]:
     """Returns the facets of a search"""
     if not params:
         params = {}
@@ -865,7 +866,7 @@ def _get_facets(endpoint: pf.Platform, project_key: str, facets: str = "director
     return {f["property"]: f["values"] for f in data["facets"] if f["property"] in util.csv_to_list(facets)}
 
 
-def __get_one_issue_date(endpoint: pf.Platform, asc_sort: str = "false", params: ApiParams = None) -> Optional[datetime]:
+def __get_one_issue_date(endpoint: Platform, asc_sort: str = "false", params: ApiParams = None) -> Optional[datetime]:
     """Returns the date of one issue found"""
     issue = search_first(endpoint=endpoint, s="CREATION_DATE", asc=asc_sort, **params)
     if not issue:
@@ -873,17 +874,17 @@ def __get_one_issue_date(endpoint: pf.Platform, asc_sort: str = "false", params:
     return issue.creation_date
 
 
-def get_oldest_issue(endpoint: pf.Platform, params: ApiParams = None) -> Union[datetime, None]:
+def get_oldest_issue(endpoint: Platform, params: ApiParams = None) -> Union[datetime, None]:
     """Returns the oldest date of all issues found"""
     return __get_one_issue_date(endpoint=endpoint, asc_sort="true", params=params)
 
 
-def get_newest_issue(endpoint: pf.Platform, params: ApiParams = None) -> Union[datetime, None]:
+def get_newest_issue(endpoint: Platform, params: ApiParams = None) -> Union[datetime, None]:
     """Returns the newest date of all issues found"""
     return __get_one_issue_date(endpoint=endpoint, asc_sort="false", params=params)
 
 
-def count(endpoint: pf.Platform, **kwargs) -> int:
+def count(endpoint: Platform, **kwargs) -> int:
     """Returns number of issues of a search"""
     filters = pre_search_filters(endpoint=endpoint, params=kwargs)
     filters["ps"] = 1
@@ -892,7 +893,7 @@ def count(endpoint: pf.Platform, **kwargs) -> int:
     return nbr_issues
 
 
-def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
+def count_by_rule(endpoint: Platform, **kwargs) -> dict[str, int]:
     """Returns number of issues of a search"""
     nbr_slices = 1
     SLICE_SIZE = 50  # Search rules facets by bulks of 50
@@ -914,7 +915,7 @@ def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
     return rulecount
 
 
-def get_object(endpoint: pf.Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> Issue:
+def get_object(endpoint: Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> Issue:
     """Returns an issue from its key"""
     o = Issue.CACHE.get(key, endpoint.local_url)
     if not o:
@@ -922,7 +923,7 @@ def get_object(endpoint: pf.Platform, key: str, data: ApiPayload = None, from_ex
     return o
 
 
-def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
+def pre_search_filters(endpoint: Platform, params: ApiParams) -> ApiParams:
     """Returns the filtered list of params that are allowed for api/issues/search"""
     if not params:
         return {}
