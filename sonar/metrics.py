@@ -21,16 +21,17 @@
 """Abstraction of the SonarQube metric concept"""
 
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import json
 from threading import Lock
 
-import sonar.platform as pf
-from sonar.util.types import ApiPayload
 from sonar.util import cache
-
 from sonar import sqobject, exceptions
 import sonar.utilities as sutil
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiPayload
 
 #: List of what can be considered the main metrics
 MAIN_METRICS = (
@@ -90,7 +91,7 @@ class Metric(sqobject.SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None) -> None:
+    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.type: Optional[str] = None  #: Type (FLOAT, INT, STRING, WORK_DUR...)
@@ -105,7 +106,7 @@ class Metric(sqobject.SqObject):
         Metric.CACHE.put(self)
 
     @classmethod
-    def get_object(cls, endpoint: pf.Platform, key: str) -> Metric:
+    def get_object(cls, endpoint: Platform, key: str) -> Metric:
         search(endpoint=endpoint)
         if not (o := Metric.CACHE.get(key, endpoint.local_url)):
             raise exceptions.ObjectNotFound(key, f"Metric key '{key}' not found")
@@ -134,7 +135,7 @@ class Metric(sqobject.SqObject):
         return self.type == "WORK_DUR"
 
 
-def search(endpoint: pf.Platform, show_hidden_metrics: bool = False, use_cache: bool = True) -> dict[str, Metric]:
+def search(endpoint: Platform, show_hidden_metrics: bool = False, use_cache: bool = True) -> dict[str, Metric]:
     """
     :param Platform endpoint: Reference to the SonarQube platform object
     :param bool show_hidden_metrics: Whether to also include hidden (private) metrics
@@ -155,22 +156,22 @@ def search(endpoint: pf.Platform, show_hidden_metrics: bool = False, use_cache: 
     return {m.key: m for m in m_list.values()}
 
 
-def is_a_rating(endpoint: pf.Platform, metric_key: str) -> bool:
+def is_a_rating(endpoint: Platform, metric_key: str) -> bool:
     """Whether a metric is a rating"""
     return Metric.get_object(endpoint, metric_key).is_a_rating()
 
 
-def is_a_percent(endpoint: pf.Platform, metric_key: str) -> bool:
+def is_a_percent(endpoint: Platform, metric_key: str) -> bool:
     """Whether a metric is a percent"""
     return Metric.get_object(endpoint, metric_key).is_a_percent()
 
 
-def is_an_effort(endpoint: pf.Platform, metric_key: str) -> bool:
+def is_an_effort(endpoint: Platform, metric_key: str) -> bool:
     """Whether a metric is an effort"""
     Metric.get_object(endpoint, metric_key).is_an_effort()
 
 
-def count(endpoint: pf.Platform, use_cache: bool = True) -> int:
+def count(endpoint: Platform, use_cache: bool = True) -> int:
     """
     :param Platform endpoint: Reference to the SonarQube platform object
     :returns: Count of public metrics

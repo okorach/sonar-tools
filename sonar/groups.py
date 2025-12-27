@@ -24,7 +24,7 @@
 from __future__ import annotations
 import json
 
-from typing import Optional, Any
+from typing import Optional, Any, TYPE_CHECKING
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -32,10 +32,14 @@ import sonar.sqobject as sq
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar import exceptions, users
-
 from sonar.audit import rules
 from sonar.audit.problem import Problem
-from sonar.util import types, cache, constants as c
+
+from sonar.util import cache, constants as c
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings, KeyList
 
 ADD_USER = "ADD_USER"
 REMOVE_USER = "REMOVE_USER"
@@ -70,7 +74,7 @@ class Group(sq.SqObject):
     SEARCH_KEY_FIELD = "name"
     SEARCH_RETURN_FIELD = "groups"
 
-    def __init__(self, endpoint: pf.Platform, name: str, data: types.ApiPayload) -> None:
+    def __init__(self, endpoint: Platform, name: str, data: ApiPayload) -> None:
         """Do not use, use class methods to create objects"""
         super().__init__(endpoint=endpoint, key=name)
         self.name = name  #: Group name
@@ -83,7 +87,7 @@ class Group(sq.SqObject):
         log.debug("Created %s object, id '%s'", str(self), str(self.id))
 
     @classmethod
-    def read(cls, endpoint: pf.Platform, name: str) -> Group:
+    def read(cls, endpoint: Platform, name: str) -> Group:
         """Creates a Group object corresponding to the group with same name in SonarQube
         :param Platform endpoint: Reference to the SonarQube platform
         :param str name: Group name
@@ -104,7 +108,7 @@ class Group(sq.SqObject):
         return cls(endpoint, name, data=data)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, name: str, description: Optional[str] = None) -> Group:
+    def create(cls, endpoint: Platform, name: str, description: Optional[str] = None) -> Group:
         """Creates a new group in SonarQube and returns the corresponding Group object
 
         :param endpoint: Reference to the SonarQube platform
@@ -119,7 +123,7 @@ class Group(sq.SqObject):
         return o
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Group:
+    def load(cls, endpoint: Platform, data: ApiPayload) -> Group:
         """Creates a Group object from the result of a SonarQube API group search data
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -138,7 +142,7 @@ class Group(sq.SqObject):
         return api_to_use[op] if op in api_to_use else api_to_use[c.LIST]
 
     @classmethod
-    def get_object(cls, endpoint: pf.Platform, name: str) -> Group:
+    def get_object(cls, endpoint: Platform, name: str) -> Group:
         """Returns a group object
 
         :param Platform endpoint: reference to the SonarQube platform
@@ -169,7 +173,7 @@ class Group(sq.SqObject):
             raise
         return ok
 
-    def api_params(self, op: str) -> types.ApiParams:
+    def api_params(self, op: str) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
             ops = {c.GET: {}}
@@ -244,7 +248,7 @@ class Group(sq.SqObject):
             params = {"login": user.login, "name": self.name}
             return self.post(Group.api_for(REMOVE_USER, self.endpoint), params=params).ok
 
-    def audit(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
+    def audit(self, audit_settings: ConfigSettings = None) -> list[Problem]:
         """Audits a group and return list of problems found
         Current audit is limited to verifying that the group is not empty
 
@@ -259,7 +263,7 @@ class Group(sq.SqObject):
             problems = [Problem(rules.get_rule(rules.RuleId.GROUP_EMPTY), self, str(self))]
         return problems
 
-    def to_json(self, full_specs: bool = False) -> types.ObjectJsonRepr:
+    def to_json(self, full_specs: bool = False) -> ObjectJsonRepr:
         """Returns the group properties (name, description, default) as dict
 
         :param full_specs: Also include properties that are not modifiable, default to False
@@ -316,7 +320,7 @@ class Group(sq.SqObject):
         return r.ok
 
 
-def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Group]:
+def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Group]:
     """Search groups
 
     :params Platform endpoint: Reference to the SonarQube platform
@@ -326,7 +330,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, G
     return sq.search_objects(endpoint=endpoint, object_class=Group, params=params, api_version=api_version)
 
 
-def get_list(endpoint: pf.Platform) -> dict[str, Group]:
+def get_list(endpoint: Platform) -> dict[str, Group]:
     """Returns the list of groups
 
     :params Platform endpoint: Reference to the SonarQube platform
@@ -337,7 +341,7 @@ def get_list(endpoint: pf.Platform) -> dict[str, Group]:
     return dict(sorted(search(endpoint).items()))
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
     """Exports groups representation in JSON
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -358,7 +362,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     return g_list
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
+def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[Problem]:
     """Audits all groups
 
     :param dict audit_settings: Configuration of audit
@@ -378,7 +382,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     return problems
 
 
-def get_object_from_id(endpoint: pf.Platform, id: str) -> Group:
+def get_object_from_id(endpoint: Platform, id: str) -> Group:
     """Searches a Group object from its id - SonarQube 10.4+"""
     if endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
         raise exceptions.UnsupportedOperation("Operation unsupported before SonarQube 10.4")
@@ -389,7 +393,7 @@ def get_object_from_id(endpoint: pf.Platform, id: str) -> Group:
     raise exceptions.ObjectNotFound(id, message=f"Group '{id}' not found")
 
 
-def create_or_update(endpoint: pf.Platform, name: str, description: str) -> Group:
+def create_or_update(endpoint: Platform, name: str, description: str) -> Group:
     """Creates or updates a group
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -407,7 +411,7 @@ def create_or_update(endpoint: pf.Platform, name: str, description: str) -> Grou
         return Group.create(endpoint, name, description)
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
+def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: KeyList = None) -> None:
     """Imports a group configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -423,7 +427,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         create_or_update(endpoint, name, data["description"])
 
 
-def exists(endpoint: pf.Platform, name: str) -> bool:
+def exists(endpoint: Platform, name: str) -> bool:
     """
     :param endpoint: reference to the SonarQube platform
     :param name: group name to check

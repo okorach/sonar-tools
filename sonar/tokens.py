@@ -22,19 +22,22 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import json
 
 import datetime as dt
 
 import sonar.logging as log
 import sonar.sqobject as sq
-import sonar.platform as pf
 import sonar.utilities as sutil
 import sonar.util.misc as util
-from sonar.util import types, cache, constants as c
+from sonar.util import cache, constants as c
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings
 
 
 class UserToken(sq.SqObject):
@@ -45,7 +48,7 @@ class UserToken(sq.SqObject):
     CACHE = cache.Cache()
     API = {c.CREATE: "user_tokens/generate", c.DELETE: "user_tokens/revoke", c.LIST: "user_tokens/search"}
 
-    def __init__(self, endpoint: pf.Platform, login: str, json_data: types.ApiPayload, name: Optional[str] = None) -> None:
+    def __init__(self, endpoint: Platform, login: str, json_data: ApiPayload, name: Optional[str] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=login)
         self.login = login  #: User login
@@ -60,7 +63,7 @@ class UserToken(sq.SqObject):
         log.debug("Constructed '%s'", str(self))
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, login: str, name: str) -> UserToken:
+    def create(cls, endpoint: Platform, login: str, name: str) -> UserToken:
         """Creates a user token in SonarQube
 
         :param endpoint: Reference to the SonarQube platform
@@ -82,7 +85,7 @@ class UserToken(sq.SqObject):
         """
         return self.delete()
 
-    def api_params(self, op: str = c.GET) -> types.ApiParams:
+    def api_params(self, op: str = c.GET) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {c.GET: {"name": self.name, "login": self.login}}
         return ops[op] if op in ops else ops[c.GET]
@@ -93,7 +96,7 @@ class UserToken(sq.SqObject):
             self.expiration_date is not None and self.expiration_date < dt.datetime.now(dt.timezone.utc).astimezone()
         )
 
-    def audit(self, settings: types.ConfigSettings, today: Optional[dt.datetime] = None) -> list[Problem]:
+    def audit(self, settings: ConfigSettings, today: Optional[dt.datetime] = None) -> list[Problem]:
         """Audits a token
 
         :return: List of problem found
@@ -121,7 +124,7 @@ class UserToken(sq.SqObject):
         return problems
 
 
-def search(endpoint: pf.Platform, login: str) -> list[UserToken]:
+def search(endpoint: Platform, login: str) -> list[UserToken]:
     """Searches tokens of a given user
 
     :param login: login of the user

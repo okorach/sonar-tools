@@ -21,11 +21,13 @@
 """Abstraction of SonarQube global permissions"""
 
 from __future__ import annotations
-
+from typing import TYPE_CHECKING
 import sonar.logging as log
 from sonar.permissions import permissions
-from sonar.util import types
 import sonar.util.constants as c
+
+if TYPE_CHECKING:
+    from sonar.util.types import PermissionDef, ObjectJsonRepr
 
 
 class GlobalPermissions(permissions.Permissions):
@@ -55,7 +57,7 @@ class GlobalPermissions(permissions.Permissions):
         self.permissions = permissions.dict_to_list(read_perms)
         return self
 
-    def set(self, new_perms: list[types.PermissionDef]) -> GlobalPermissions:
+    def set(self, new_perms: list[PermissionDef]) -> GlobalPermissions:
         log.debug("Setting %s to %s", str(self), str(new_perms))
         if self.permissions is None:
             self.read()
@@ -88,7 +90,7 @@ class GlobalPermissions(permissions.Permissions):
         return self.read()
 
 
-def import_config(endpoint: object, config_data: types.ObjectJsonRepr) -> int:
+def import_config(endpoint: object, config_data: ObjectJsonRepr) -> int:
     """Imports global permissions in a SonarQube platform
     :return: number of global permissions imported
     """

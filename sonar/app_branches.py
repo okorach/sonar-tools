@@ -37,7 +37,7 @@ import sonar.utilities as sutil
 import sonar.util.constants as c
 
 if TYPE_CHECKING:
-    from sonar.util import types
+    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr
     from datetime import datetime
 
 _NOT_SUPPORTED = "Applications not supported in community edition"
@@ -62,7 +62,7 @@ class ApplicationBranch(Component):
         name: str,
         project_branches: list[Union[Project, Branch]],
         is_main: bool = False,
-        branch_data: Optional[types.ApiPayload] = None,
+        branch_data: Optional[ApiPayload] = None,
     ) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=app.endpoint, key=f"{app.key} BRANCH {name}")
@@ -121,7 +121,7 @@ class ApplicationBranch(Component):
         return ApplicationBranch(app=app, name=name, project_branches=projects_or_branches)
 
     @classmethod
-    def load(cls, app: object, branch_data: types.ApiPayload) -> ApplicationBranch:
+    def load(cls, app: object, branch_data: ApiPayload) -> ApplicationBranch:
         project_branches = []
         for proj_data in branch_data["projects"]:
             proj = Project.get_object(app.endpoint, proj_data["key"])
@@ -165,12 +165,12 @@ class ApplicationBranch(Component):
             return False
         return super().delete()
 
-    def reload(self, data: types.ApiPayload) -> None:
+    def reload(self, data: ApiPayload) -> None:
         """Reloads an App Branch from JSON data coming from Sonar"""
         super().reload(data)
         self.name = data.get("branch", "")
 
-    def export(self) -> types.ObjectJsonRepr:
+    def export(self) -> ObjectJsonRepr:
         """Exports an application branch
 
         :param full: Whether to do a full export including settings that can't be set, defaults to False
@@ -238,12 +238,12 @@ class ApplicationBranch(Component):
             log.error("Error updating project branches %s: %s", self, e.message)
             return False
 
-    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
+    def api_params(self, op: Optional[str] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {c.READ: {"application": self.concerned_object.key, "branch": self.name}}
         return ops[op] if op and op in ops else ops[c.READ]
 
-    def component_data(self) -> types.ObjectJsonRepr:
+    def component_data(self) -> ObjectJsonRepr:
         """Returns key data"""
         return {
             "key": self.concerned_object.key,
@@ -267,7 +267,7 @@ def exists(app: object, branch: str) -> bool:
         return False
 
 
-def list_from(app: object, data: types.ApiPayload) -> dict[str, ApplicationBranch]:
+def list_from(app: object, data: ApiPayload) -> dict[str, ApplicationBranch]:
     """Returns a dict of application branches form the pure App JSON"""
     if not data or "branches" not in data:
         return {}

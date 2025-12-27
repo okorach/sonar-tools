@@ -21,9 +21,11 @@
 """Quality profiles permissions class"""
 
 from __future__ import annotations
+from typing import TYPE_CHECKING
 
-import sonar.logging as log
-from sonar.util import types
+if TYPE_CHECKING:
+    from sonar.util.types import JsonPermissions
+
 from sonar.permissions import permissions, quality_permissions
 
 
@@ -49,7 +51,7 @@ class QualityProfilePermissions(quality_permissions.QualityPermissions):
         )
         return self
 
-    def set(self, new_perms: types.JsonPermissions) -> bool:
+    def set(self, new_perms: JsonPermissions) -> bool:
         return self._set_perms(
             new_perms,
             QualityProfilePermissions.APIS,

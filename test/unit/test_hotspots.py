@@ -24,6 +24,7 @@
 from datetime import datetime
 import utilities as tutil
 from sonar import hotspots
+import sonar.util.misc as util
 
 
 def test_transitions() -> None:
@@ -68,7 +69,7 @@ def test_sanitize_filter() -> None:
 
 def test_comments_after() -> None:
     """test_comments_after"""
-    hotspot_d = hotspots.search(endpoint=tutil.SQ, filters={"project": "test:juice-shop"})
-    hotspot = list(hotspot_d.values())[0]
-    comments = hotspot.comments(after=datetime(2024, 1, 1))
-    assert all(c.created_at >= datetime(2024, 1, 1) for c in comments)
+    hotspot = list(hotspots.search(endpoint=tutil.SQ, filters={"project": "test:juice-shop"}).values())[0]
+    after = util.add_tz(datetime(2024, 1, 1))
+    comments = hotspot.comments(after=after)
+    assert all(c["date"] >= after for c in comments.values())

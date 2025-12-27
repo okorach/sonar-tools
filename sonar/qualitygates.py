@@ -24,14 +24,13 @@ Abstraction of the SonarQube "quality gate" concept
 """
 
 from __future__ import annotations
-from typing import Union, Optional, Any
+from typing import Union, Optional, Any, TYPE_CHECKING
 
 import json
 
 import sonar.logging as log
 import sonar.sqobject as sq
-import sonar.platform as pf
-from sonar.util import types, cache, constants as c
+from sonar.util import cache, constants as c
 from sonar import measures, exceptions, projects
 import sonar.permissions.qualitygate_permissions as permissions
 import sonar.util.misc as util
@@ -41,6 +40,9 @@ from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 from sonar.util import common_json_helper
 
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, KeyList, ConfigSettings
 
 __MAX_ISSUES_SHOULD_BE_ZERO = "Any numeric threshold on number of issues should be 0 or should be removed from QG conditions"
 __THRESHOLD_ON_OVERALL_CODE = "Threshold on overall code should not be too strict or passing the QG will often be impossible"
@@ -117,7 +119,7 @@ class QualityGate(sq.SqObject):
     }
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: pf.Platform, name: str, data: types.ApiPayload) -> None:
+    def __init__(self, endpoint: Platform, name: str, data: ApiPayload) -> None:
         """Constructor, don't use directly, use class methods instead"""
         super().__init__(endpoint=endpoint, key=name)
         self.name = name  #: Object name
@@ -138,7 +140,7 @@ class QualityGate(sq.SqObject):
         QualityGate.CACHE.put(self)
 
     @classmethod
-    def get_object(cls, endpoint: pf.Platform, name: str) -> QualityGate:
+    def get_object(cls, endpoint: Platform, name: str) -> QualityGate:
         """Reads a quality gate from SonarQube
 
         :param endpoint: Reference to the SonarQube platform
@@ -154,7 +156,7 @@ class QualityGate(sq.SqObject):
         return cls.load(endpoint, data)
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> QualityGate:
+    def load(cls, endpoint: Platform, data: ApiPayload) -> QualityGate:
         """Creates a quality gate from returned API data
         :return: the QualityGate object
         """
@@ -169,7 +171,7 @@ class QualityGate(sq.SqObject):
         return o
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, name: str) -> Union[QualityGate, None]:
+    def create(cls, endpoint: Platform, name: str) -> Union[QualityGate, None]:
         """Creates an empty quality gate"""
         endpoint.post(QualityGate.API[c.CREATE], params={"name": name})
         return cls.get_object(endpoint, name)
@@ -283,7 +285,7 @@ class QualityGate(sq.SqObject):
             self._permissions = permissions.QualityGatePermissions(self)
         return self._permissions
 
-    def set_permissions(self, permissions_list: types.ObjectJsonRepr) -> bool:
+    def set_permissions(self, permissions_list: ObjectJsonRepr) -> bool:
         """Sets quality gate permissions
         :param permissions_list:
         :type permissions_list: dict {"users": [<userlist>], "groups": [<grouplist>]}
@@ -340,7 +342,7 @@ class QualityGate(sq.SqObject):
         """
         return sorted(self.conditions(encoded=True)) == sorted(other_qg.conditions(encoded=True))
 
-    def api_params(self, op: str = c.GET) -> types.ApiParams:
+    def api_params(self, op: str = c.GET) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {c.GET: {"name": self.name}}
         return ops[op] if op in ops else ops[c.GET]
@@ -360,7 +362,7 @@ class QualityGate(sq.SqObject):
                 problems.append(Problem(rule, self, str(self), val, m, mini, maxi, precise_msg))
         return problems
 
-    def audit(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
+    def audit(self, audit_settings: ConfigSettings = None) -> list[Problem]:
         """Audits a quality gate, returns found problems"""
         my_name = str(self)
         log.debug("Auditing %s", my_name)
@@ -381,7 +383,7 @@ class QualityGate(sq.SqObject):
             problems.append(Problem(get_rule(RuleId.QG_NOT_USED), self, my_name))
         return problems
 
-    def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
+    def to_json(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
         """Returns JSON representation of object"""
         json_data = self.sq_json
         full = export_settings.get("FULL_EXPORT", False)
@@ -398,7 +400,7 @@ class QualityGate(sq.SqObject):
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
 
-def __audit_duplicates(qg_list: dict[str, QualityGate], audit_settings: types.ConfigSettings = None) -> list[Problem]:
+def __audit_duplicates(qg_list: dict[str, QualityGate], audit_settings: ConfigSettings = None) -> list[Problem]:
     """Audits for duplicate quality gates
     :param qg_list: dict of QP indexed with their key
     :param audit_settings: Audit settings to use
@@ -415,7 +417,7 @@ def __audit_duplicates(qg_list: dict[str, QualityGate], audit_settings: types.Co
     return problems
 
 
-def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = None, **kwargs) -> list[Problem]:
+def audit(endpoint: Platform = None, audit_settings: ConfigSettings = None, **kwargs) -> list[Problem]:
     """Audits Sonar platform quality gates, returns found problems"""
     if not audit_settings.get("audit.qualityGates", True):
         log.info("Auditing quality gates is disabled, audit skipped...")
@@ -435,7 +437,7 @@ def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = N
     return problems
 
 
-def get_list(endpoint: pf.Platform) -> dict[str, QualityGate]:
+def get_list(endpoint: Platform) -> dict[str, QualityGate]:
     """
     :return: The whole list of quality gates
     :rtype: dict {<name>: <QualityGate>}
@@ -453,7 +455,7 @@ def get_list(endpoint: pf.Platform) -> dict[str, QualityGate]:
     return dict(sorted(qg_list.items()))
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
     """Exports quality gates as JSON
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -469,7 +471,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     return qg_list
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
+def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: KeyList = None) -> bool:
     """Imports quality gates in a SonarQube platform, fom sonar-config data
     Quality gates already existing are updates with the provided configuration
 
@@ -496,7 +498,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     return ok
 
 
-def count(endpoint: pf.Platform) -> int:
+def count(endpoint: Platform) -> int:
     """
     :param Platform endpoint: Reference to the SonarQube platform
     :return: Number of quality gates
@@ -505,7 +507,7 @@ def count(endpoint: pf.Platform) -> int:
     return len(get_list(endpoint))
 
 
-def exists(endpoint: pf.Platform, gate_name: str) -> bool:
+def exists(endpoint: Platform, gate_name: str) -> bool:
     """Returns whether a quality gate exists
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -563,7 +565,7 @@ def _decode_condition(cond: str) -> tuple[str, str, str]:
     return (metric, op, val)
 
 
-def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Any]:
+def search_by_name(endpoint: Platform, name: str) -> dict[str, Any]:
     """Searches quality gates matching name"""
     return sutil.search_by_name(endpoint, name, QualityGate.API[c.LIST], "qualitygates")
 

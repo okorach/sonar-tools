@@ -21,17 +21,21 @@
 """Abstraction of the SonarQube webhook concept"""
 
 from __future__ import annotations
-from typing import Optional, ClassVar
+from typing import Optional, ClassVar, TYPE_CHECKING
 
 import json
 
 import sonar.logging as log
-from sonar import platform as pf, exceptions
-from sonar.util import types, cache, constants as c
+from sonar import platform as exceptions
+from sonar.util import cache, constants as c
 import sonar.util.misc as util
 import sonar.sqobject as sq
 
 from sonar.audit import rules, problem
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr
 
 _IMPORTABLE_PROPERTIES = ("name", "url", "secret")
 
@@ -52,7 +56,7 @@ class WebHook(sq.SqObject):
     SEARCH_KEY_FIELD: ClassVar[str] = "key"
     SEARCH_RETURN_FIELD: ClassVar[str] = "webhooks"
 
-    def __init__(self, endpoint: pf.Platform, name: str, url: str, secret: Optional[str] = None, project: Optional[str] = None) -> None:
+    def __init__(self, endpoint: Platform, name: str, url: str, secret: Optional[str] = None, project: Optional[str] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=name)
         self.name = name  #: Webhook name
@@ -64,7 +68,7 @@ class WebHook(sq.SqObject):
         WebHook.CACHE.put(self)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, name: str, url: str, secret: Optional[str] = None, project: Optional[str] = None) -> WebHook:
+    def create(cls, endpoint: Platform, name: str, url: str, secret: Optional[str] = None, project: Optional[str] = None) -> WebHook:
         """Creates a WebHook object in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -82,7 +86,7 @@ class WebHook(sq.SqObject):
         return o
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> WebHook:
+    def load(cls, endpoint: Platform, data: ApiPayload) -> WebHook:
         """Creates and loads a local WebHook object with data payload received from API
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -97,7 +101,7 @@ class WebHook(sq.SqObject):
         return o
 
     @classmethod
-    def get_object(cls, endpoint: pf.Platform, name: str, project_key: Optional[str] = None) -> WebHook:
+    def get_object(cls, endpoint: Platform, name: str, project_key: Optional[str] = None) -> WebHook:
         """Gets a WebHook object from its name and an eventual project key"""
         log.debug("Getting webhook name %s project key %s", name, str(project_key))
         if o := WebHook.CACHE.get(name, project_key, endpoint.local_url):
@@ -131,7 +135,7 @@ class WebHook(sq.SqObject):
             raise exceptions.ObjectNotFound(name, f"{wh_name} not found")
         self.reload(wh_data)
 
-    def reload(self, data: types.ApiPayload) -> None:
+    def reload(self, data: ApiPayload) -> None:
         """Reloads a WebHook from the payload gotten from SonarQube"""
         log.debug("Loading %s with %s", str(self), str(data))
         self.sq_json = self.sq_json or {} | data
@@ -175,13 +179,13 @@ class WebHook(sq.SqObject):
         """
         return util.filter_export(self.sq_json, _IMPORTABLE_PROPERTIES, full)
 
-    def api_params(self, op: str) -> types.ApiParams:
+    def api_params(self, op: str) -> ApiParams:
         """Returns the std api params to pass for a given webhook"""
         ops = {c.READ: {"webhook": self.key}}
         return ops[op] if op and op in ops else ops[c.READ]
 
 
-def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, WebHook]:
+def search(endpoint: Platform, params: ApiParams = None) -> dict[str, WebHook]:
     """Searches webhooks
 
     :param ApiParams params: Filters to narrow down the search, can only be "project"
@@ -190,7 +194,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, W
     return sq.search_objects(endpoint=endpoint, object_class=WebHook, params=params)
 
 
-def get_list(endpoint: pf.Platform, project_key: Optional[str] = None) -> dict[str, WebHook]:
+def get_list(endpoint: Platform, project_key: Optional[str] = None) -> dict[str, WebHook]:
     """Returns the list of web hooks, global ones or for a project if project key is given"""
     log.debug("Getting webhooks for project key %s", str(project_key))
     wh_list = search(endpoint, {"project": project_key} if project_key else None)
@@ -199,7 +203,7 @@ def get_list(endpoint: pf.Platform, project_key: Optional[str] = None) -> dict[s
     return wh_list
 
 
-def export(endpoint: pf.Platform, project_key: Optional[str] = None, full: bool = False) -> types.ObjectJsonRepr:
+def export(endpoint: Platform, project_key: Optional[str] = None, full: bool = False) -> ObjectJsonRepr:
     """Export webhooks of a project as JSON"""
     json_data = {}
     for wb in get_list(endpoint, project_key).values():
@@ -209,7 +213,7 @@ def export(endpoint: pf.Platform, project_key: Optional[str] = None, full: bool 
     return json_data if len(json_data) > 0 else None
 
 
-def import_config(endpoint: pf.Platform, data: list[dict[str, str]], project_key: Optional[str] = None) -> None:
+def import_config(endpoint: Platform, data: list[dict[str, str]], project_key: Optional[str] = None) -> None:
     """Imports a set of webhooks defined from a JSON description"""
     log.info("Importing webhooks %s for %s", str(data), str(project_key))
     current_wh = get_list(endpoint, project_key=project_key)
@@ -225,7 +229,7 @@ def import_config(endpoint: pf.Platform, data: list[dict[str, str]], project_key
             hook.update(**wh_data)
 
 
-def audit(endpoint: pf.Platform) -> list[problem.Problem]:
+def audit(endpoint: Platform) -> list[problem.Problem]:
     """Audits web hooks and returns list of found problems"""
     log.info("Auditing webhooks")
     problems = []

@@ -21,8 +21,10 @@
 
 """Test fixtures"""
 
+from __future__ import annotations
 import os
 from typing import Union
+
 from collections.abc import Generator
 import pytest
 

@@ -21,16 +21,18 @@
 """Parent permissions class for quality gates and quality profiles permissions subclasses"""
 
 from __future__ import annotations
-from typing import Optional, Callable
+from typing import Optional, Callable, TYPE_CHECKING
 
 import json
 
-from sonar.util import types
 import sonar.logging as log
 from sonar import exceptions
 import sonar.utilities as sutil
 from sonar.audit.problem import Problem
 from sonar.permissions import permissions
+
+if TYPE_CHECKING:
+    from sonar.util.types import ConfigSettings, JsonPermissions, ObjectJsonRepr
 
 MAX_PERMS = 25
 
@@ -40,7 +42,7 @@ class QualityPermissions(permissions.Permissions):
     Abstractions of QP and QG permissions
     """
 
-    def _post_api(self, api: str, set_field: str, perms_dict: types.JsonPermissions, **extra_params) -> bool:
+    def _post_api(self, api: str, set_field: str, perms_dict: JsonPermissions, **extra_params) -> bool:
         """Runs a post on QG or QP permissions"""
         if perms_dict is None:
             return True
@@ -52,7 +54,7 @@ class QualityPermissions(permissions.Permissions):
             result = result and r.ok
         return result
 
-    def to_json(self, perm_type: Optional[tuple[str, ...]] = None, csv: bool = False) -> types.JsonPermissions:
+    def to_json(self, perm_type: Optional[tuple[str, ...]] = None, csv: bool = False) -> JsonPermissions:
         """Returns the JSON representation of permissions"""
         if not self.permissions:
             return None
@@ -65,7 +67,7 @@ class QualityPermissions(permissions.Permissions):
                 perms[p] = permissions.encode(self.permissions.get(p, None))
         return perms if len(perms) > 0 else None
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits permissions of the object"""
         self.read()
         return (
@@ -88,7 +90,7 @@ class QualityPermissions(permissions.Permissions):
                 page += 1
         return perms
 
-    def _set_perms(self, new_perms: types.ObjectJsonRepr, apis: dict[str, dict[str, str]], field: str, diff_func: Callable, **kwargs) -> bool:
+    def _set_perms(self, new_perms: ObjectJsonRepr, apis: dict[str, dict[str, str]], field: str, diff_func: Callable, **kwargs) -> bool:
         """Sets permissions of a QG or QP"""
         if self.concerned_object.is_built_in:
             log.debug("Can't set %s because it's built-in", str(self))
