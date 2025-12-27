@@ -101,6 +101,7 @@ def redact_tokens(data: Any) -> Any:
     if isinstance(data, (list, set, tuple)):
         return [redact_tokens(elem) for elem in data]
     elif isinstance(data, dict):
+        data = data.copy()
         for k, v in data.items():
             if isinstance(v, (dict, list, tuple, set, str)):
                 data[k] = redact_tokens(v)

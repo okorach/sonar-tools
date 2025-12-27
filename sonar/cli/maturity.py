@@ -119,7 +119,7 @@ def get_project_maturity_data(project: projects.Project, settings: dict[str, Any
     # Extract project analysis history
     segments = [s.strip() for s in settings.get("projectRecentAnalysisDaysThreshold", "7, 30, 90").split(",")]
     segments = util.convert_types(segments)
-    history = [util.age(util.string_to_date(d["date"])) for d in project.get_analyses()]
+    history = [util.age(sutil.string_to_date(d["date"])) for d in project.get_analyses()]
     log.debug("%s history of analysis = %s", project, history)
     section = ANALYSES_MAIN_BRANCH_KEY
     data[section] = {"total": len(history)}
@@ -129,7 +129,7 @@ def get_project_maturity_data(project: projects.Project, settings: dict[str, Any
     proj_branches = project.branches().values()
     history = []
     for branch in proj_branches:
-        history += [util.age(util.string_to_date(d["date"])) for d in branch.get_analyses()]
+        history += [util.age(sutil.string_to_date(d["date"])) for d in branch.get_analyses()]
     section = ANALYSES_ANY_BRANCH_KEY
     data[section] = {"total": len(history)}
     for limit in segments:
