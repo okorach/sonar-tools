@@ -75,6 +75,7 @@ def __parse_args(desc: str) -> object:
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("json",))
     parser = options.add_component_type_arg(parser)
+    parser = options.add_settings_arg(parser)
     args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
     return args
