@@ -218,10 +218,10 @@ def format_date(somedate: datetime) -> str:
     return ISO_DATE_FORMAT % (somedate.year, somedate.month, somedate.day)
 
 
-def age(some_date: datetime, rounded: bool = True, now: Optional[datetime] = None) -> Union[int, timedelta]:
+def age(some_date: Optional[datetime], rounded: bool = True, now: Optional[datetime] = None) -> Union[int, timedelta, None]:
     """returns the age (in days) of a date
 
-    :param some_date: date
+    :param some_date: date to compute age
     :param rounded: Whether to rounddown to nearest day
     :param now: The current datetime. Will be computed if None is provided
     :return: The age in days, or by the second if not rounded
