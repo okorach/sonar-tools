@@ -20,7 +20,8 @@
 
 """Abstraction of the SonarQube background task concept"""
 
-from typing import Optional, Any
+from __future__ import annotations
+from typing import Optional, Any, TYPE_CHECKING
 from datetime import datetime
 import time
 import json
@@ -28,15 +29,19 @@ import re
 
 import sonar.logging as log
 import sonar.sqobject as sq
-import sonar.platform as pf
+# import sonar.platform as pf
 
 from sonar import exceptions
 import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 from sonar.config import get_scanners_versions
-from sonar.util import types, cache
+from sonar.util import cache
 from sonar.util import misc as util
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiPayload, ConfigSettings
 
 SUCCESS = "SUCCESS"
 PENDING = "PENDING"
@@ -68,9 +73,7 @@ class Task(sq.SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(
-        self, endpoint: pf.Platform, task_id: str, concerned_object: Optional[object] = None, data: Optional[types.ApiPayload] = None
-    ) -> None:
+    def __init__(self, endpoint: Platform, task_id: str, concerned_object: Optional[object] = None, data: Optional[ApiPayload] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=task_id)
         self.sq_json = data
@@ -307,7 +310,7 @@ class Task(sq.SqObject):
                 break  # Report only on the 1st suspicious match
         return problems
 
-    def __audit_disabled_scm(self, audit_settings: types.ConfigSettings, scan_context: dict[str, str]) -> list[Problem]:
+    def __audit_disabled_scm(self, audit_settings: ConfigSettings, scan_context: dict[str, str]) -> list[Problem]:
         """Audits a bg task for eventual SCM disabled and reports the problem if found"""
         if not audit_settings.get("audit.project.scm.disabled", True):
             log.info("Auditing disabled SCM integration is turned off, skipping...")
@@ -317,7 +320,7 @@ class Task(sq.SqObject):
             return []
         return [Problem(get_rule(RuleId.PROJ_SCM_DISABLED), self, str(self.concerned_object))]
 
-    def __audit_warnings(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_warnings(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits for warning in background tasks and reports found problems"""
         if not audit_settings.get("audit.projects.analysisWarnings", True):
             log.info("Project analysis warnings auditing disabled, skipping...")
@@ -335,7 +338,7 @@ class Task(sq.SqObject):
             pbs.append(Problem(rule, self, str(self.concerned_object), " --- ".join(warnings_left)))
         return pbs
 
-    def __audit_failed_task(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_failed_task(self, audit_settings: ConfigSettings) -> list[Problem]:
         if not audit_settings.get("audit.projects.failedTasks", True):
             log.debug("Project failed background tasks auditing disabled, skipping...")
             return []
@@ -344,7 +347,7 @@ class Task(sq.SqObject):
             return []
         return [Problem(get_rule(RuleId.BG_TASK_FAILED), self, str(self.concerned_object))]
 
-    def __audit_scanner_version(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_scanner_version(self, audit_settings: ConfigSettings) -> list[Problem]:
         if not self.has_scanner_context():
             return []
         context = self.scanner_context()
@@ -409,7 +412,7 @@ class Task(sq.SqObject):
 
         return problems
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits a background task and returns the list of found problems"""
         if not audit_settings.get("audit.projects.exclusions", True):
             log.debug("Project exclusions auditing disabled, skipping...")
@@ -438,7 +441,7 @@ class Task(sq.SqObject):
         return problems
 
 
-def search(endpoint: pf.Platform, only_current: bool = False, component_key: Optional[str] = None, **kwargs: Any) -> list[Task]:
+def search(endpoint: Platform, only_current: bool = False, component_key: Optional[str] = None, **kwargs: Any) -> list[Task]:
     """Searches background tasks
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -461,12 +464,12 @@ def search(endpoint: pf.Platform, only_current: bool = False, component_key: Opt
         return []
 
 
-def search_all_last(endpoint: pf.Platform) -> list[Task]:
+def search_all_last(endpoint: Platform) -> list[Task]:
     """Searches for last background task of all found components"""
     return search(endpoint=endpoint, only_current=True)
 
 
-def search_last(endpoint: pf.Platform, component_key: str, **params) -> Optional[Task]:
+def search_last(endpoint: Platform, component_key: str, **params) -> Optional[Task]:
     """Searches for last background task of a component"""
     branch = params.pop("branch", None)
     bg_tasks = search(endpoint=endpoint, only_current=branch is None, component_key=component_key, **params)
@@ -479,6 +482,6 @@ def search_last(endpoint: pf.Platform, component_key: str, **params) -> Optional
     return bg_tasks[0]
 
 
-def search_all(endpoint: pf.Platform, component_key: str, **params) -> list[Task]:
+def search_all(endpoint: Platform, component_key: str, **params) -> list[Task]:
     """Search all background tasks of a given component"""
     return search(endpoint=endpoint, component_key=component_key, **params)

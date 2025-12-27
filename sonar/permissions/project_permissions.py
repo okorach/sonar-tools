@@ -21,12 +21,14 @@
 """Projects permissions class"""
 
 from __future__ import annotations
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 import sonar.logging as log
-from sonar.util import types
 from sonar.permissions import permissions
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
+
+if TYPE_CHECKING:
+    from sonar.util.types import PermissionDef, ConfigSettings
 
 PROJECT_PERMISSIONS = {
     "user": "Browse",
@@ -67,7 +69,7 @@ class ProjectPermissions(permissions.Permissions):
         return self
 
     def _set_perms(
-        self, new_perms: list[types.PermissionDef], apis: dict[str, dict[str, str]], field: dict[str, str], diff_func: Callable, **kwargs: str
+        self, new_perms: list[PermissionDef], apis: dict[str, dict[str, str]], field: dict[str, str], diff_func: Callable, **kwargs: str
     ) -> ProjectPermissions:
         log.info("Setting %s with %s", self, new_perms)
         if self.permissions is None:
@@ -93,7 +95,7 @@ class ProjectPermissions(permissions.Permissions):
             self._post_api(apis["add"][atype], field[atype], new_perm[ptype], to_add, **kwargs)
         return self.read()
 
-    def set(self, new_perms: list[types.PermissionDef]) -> ProjectPermissions:
+    def set(self, new_perms: list[PermissionDef]) -> ProjectPermissions:
         """Sets permissions of a project
 
         :param JsonPermissions new_perms: New permissions to apply
@@ -104,7 +106,7 @@ class ProjectPermissions(permissions.Permissions):
             new_perms, ProjectPermissions.APIS, ProjectPermissions.API_SET_FIELD, permissions.diff, projectKey=self.concerned_object.key
         )
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits project permissions"""
         if not audit_settings.get("audit.projects.permissions", True):
             log.debug("Auditing project permissions is disabled by configuration, skipping")
@@ -112,7 +114,7 @@ class ProjectPermissions(permissions.Permissions):
         log.debug("Auditing %s", str(self))
         return super().audit(audit_settings) + self.__audit_group_permissions(audit_settings)
 
-    def __audit_group_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_group_permissions(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits project group permissions"""
         problems = []
         max_scan = audit_settings.get("audit.projects.permissions.maxScanGroups", 1)

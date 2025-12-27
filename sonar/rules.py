@@ -28,15 +28,19 @@ from __future__ import annotations
 import json
 import concurrent.futures
 from threading import Lock
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import sonar.logging as log
 import sonar.sqobject as sq
-from sonar.util import types, cache, constants as c, issue_defs as idefs
-from sonar import platform, exceptions, languages
+from sonar.util import cache, constants as c, issue_defs as idefs
+from sonar import exceptions, languages
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.util import rule_helper as rhelp
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
 
 TYPE_TO_QUALITY = {
     idefs.TYPE_BUG: idefs.QUALITY_RELIABILITY,
@@ -156,7 +160,7 @@ class Rule(sq.SqObject):
 
     API: dict[str, str] = {c.CREATE: "rules/create", c.READ: "rules/show", c.UPDATE: "rules/update", c.DELETE: "rules/delete", c.LIST: "rules/search"}  # type: ignore
 
-    def __init__(self, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> None:
+    def __init__(self, endpoint: Platform, key: str, data: ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)
         log.debug("Loading rule object '%s'", key)
         self.sq_json = data.copy()
@@ -190,7 +194,7 @@ class Rule(sq.SqObject):
             Rule.CACHE.put(self)
 
     @classmethod
-    def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
+    def get_object(cls, endpoint: Platform, key: str) -> Rule:
         """Returns a rule object from it key
 
         :param endpoint: The SonarQube reference
@@ -206,7 +210,7 @@ class Rule(sq.SqObject):
         raise exceptions.ObjectNotFound(key, f"Rule key '{key}' not found")
 
     @classmethod
-    def get_external_rule(cls, endpoint: platform.Platform, key: str) -> Rule:
+    def get_external_rule(cls, endpoint: Platform, key: str) -> Rule:
         """Returns an external rule object from it key, that may not be listed by a search
 
         :param endpoint: The SonarQube reference
@@ -220,7 +224,7 @@ class Rule(sq.SqObject):
         return Rule(endpoint=endpoint, key=key, data=rule_data)
 
     @classmethod
-    def create(cls, endpoint: platform.Platform, key: str, **kwargs) -> Rule:
+    def create(cls, endpoint: Platform, key: str, **kwargs) -> Rule:
         """Creates a rule object
 
         :param endpoint: The SonarQube reference
@@ -243,7 +247,7 @@ class Rule(sq.SqObject):
         return created_rule
 
     @classmethod
-    def load(cls, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> Rule:
+    def load(cls, endpoint: Platform, key: str, data: ApiPayload) -> Rule:
         """Loads a rule object with a SonarQube API payload"""
         if o := Rule.CACHE.get(key, endpoint.local_url):
             o.reload(data)
@@ -251,7 +255,7 @@ class Rule(sq.SqObject):
         return cls(key=key, endpoint=endpoint, data=data)
 
     @classmethod
-    def instantiate(cls, endpoint: platform.Platform, key: str, template_key: str, data: types.ObjectJsonRepr) -> Rule:
+    def instantiate(cls, endpoint: Platform, key: str, template_key: str, data: ObjectJsonRepr) -> Rule:
         if endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Can't instantiate rules on SonarQube Cloud")
         try:
@@ -304,7 +308,7 @@ class Rule(sq.SqObject):
         """Returns True if the rule is instantiated from a template, False otherwise"""
         return self.template_key is not None
 
-    def to_json(self) -> types.ObjectJsonRepr:
+    def to_json(self) -> ObjectJsonRepr:
         return util.remove_nones(self.sq_json | {"templateKey": self.template_key})
 
     def to_csv(self) -> list[str]:
@@ -325,7 +329,7 @@ class Rule(sq.SqObject):
         else:
             return [data[key] for key in LEGACY_CSV_EXPORT_FIELDS]
 
-    def export(self, full: bool = False) -> types.ObjectJsonRepr:
+    def export(self, full: bool = False) -> ObjectJsonRepr:
         """Returns the JSON corresponding to a rule export"""
         rule = self.to_json()
         d = {"severity": rule.get("severity", ""), "impacts": self.impacts(), "description": self.custom_desc}
@@ -419,24 +423,24 @@ class Rule(sq.SqObject):
             return None
         return None if "params" not in found_qp or len(found_qp["params"]) == 0 else {p["key"]: p.get("value", "") for p in found_qp["params"]}
 
-    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
+    def api_params(self, op: Optional[str] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {c.READ: {"key": self.key}}
         return ops[op] if op and op in ops else ops[c.READ]
 
 
-def get_facet(facet: str, endpoint: platform.Platform) -> dict[str, str]:
+def get_facet(facet: str, endpoint: Platform) -> dict[str, str]:
     """Returns a facet as a count per item in the facet"""
     data = json.loads(endpoint.get(Rule.API[c.SEARCH], params={"ps": 1, "facets": facet}).text)
     return {f["val"]: f["count"] for f in data["facets"][0]["values"]}
 
 
-def search(endpoint: platform.Platform, params: dict[str, str]) -> dict[str, Rule]:
+def search(endpoint: Platform, params: dict[str, str]) -> dict[str, Rule]:
     """Searches rules with optional filters"""
     return sq.search_objects(endpoint=endpoint, object_class=Rule, params=params, threads=4)
 
 
-def search_keys(endpoint: platform.Platform, **params) -> list[str]:
+def search_keys(endpoint: Platform, **params) -> list[str]:
     """Searches rules with optional filters"""
     new_params = params.copy() if params else {}
     new_params["ps"] = 500
@@ -453,12 +457,12 @@ def search_keys(endpoint: platform.Platform, **params) -> list[str]:
     return rule_list
 
 
-def count(endpoint: platform.Platform, **params) -> int:
+def count(endpoint: Platform, **params) -> int:
     """Count number of rules that correspond to certain filters"""
     return json.loads(endpoint.get(Rule.API[c.SEARCH], params={**params, "ps": 1}).text)["total"]
 
 
-def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> dict[str, Rule]:
+def get_list(endpoint: Platform, use_cache: bool = True, **params) -> dict[str, Rule]:
     """Returns a list of rules corresponding to certain search filters"""
     if use_cache and not params and len(Rule.CACHE.objects) > 1000:
         return Rule.CACHE.objects
@@ -487,7 +491,7 @@ def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> d
     return rule_list
 
 
-def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
     """Returns a JSON export of all rules"""
     log.info("Exporting rules")
     full = export_settings.get("FULL_EXPORT", False)
@@ -521,7 +525,7 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     return rule_list
 
 
-def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
+def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: KeyList = None) -> bool:
     """Imports a sonar-config configuration"""
     if not (rule_data := config_data.get("rules")):
         log.info("No customized rules (custom tags, extended description) to import")
@@ -565,7 +569,7 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
     return True
 
 
-def get_all_rules_details(endpoint: platform.Platform, threads: int = 8) -> bool:
+def get_all_rules_details(endpoint: Platform, threads: int = 8) -> bool:
     """Collects all rules details
 
     :param Platform endpoint: The SonarQube Server or Cloud platform
@@ -592,22 +596,22 @@ def get_all_rules_details(endpoint: platform.Platform, threads: int = 8) -> bool
     return ok
 
 
-def convert_rule_list_for_yaml(rule_list: types.ObjectJsonRepr) -> list[types.ObjectJsonRepr]:
+def convert_rule_list_for_yaml(rule_list: ObjectJsonRepr) -> list[ObjectJsonRepr]:
     """Converts a rule dict (key: data) to prepare for yaml by adding severity and key"""
     return util.dict_to_list(rule_list, "key", "severity")
 
 
-def third_party(endpoint: platform.Platform) -> list[Rule]:
+def third_party(endpoint: Platform) -> list[Rule]:
     """Returns the list of rules coming from 3rd party plugins"""
     return [r for r in get_list(endpoint=endpoint).values() if r.repo and r.repo not in SONAR_REPOS and not r.repo.startswith("external_")]
 
 
-def instantiated(endpoint: platform.Platform) -> list[Rule]:
+def instantiated(endpoint: Platform) -> list[Rule]:
     """Returns the list of rules that are instantiated"""
     return [r for r in get_list(endpoint=endpoint).values() if r.template_key is not None]
 
 
-def severities(endpoint: platform.Platform, json_data: dict[str, any]) -> Optional[dict[str, str]]:
+def severities(endpoint: Platform, json_data: dict[str, any]) -> Optional[dict[str, str]]:
     """Returns the list of severities from a given rule JSON data"""
     if endpoint.is_mqr_mode():
         return {impact["softwareQuality"]: impact["severity"] for impact in json_data.get("impacts", [])}

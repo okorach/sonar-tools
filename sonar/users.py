@@ -23,7 +23,7 @@
 from __future__ import annotations
 
 import concurrent.futures
-from typing import Optional, Union, Any
+from typing import Optional, Union, Any, TYPE_CHECKING
 from datetime import datetime, timezone
 import json
 
@@ -40,6 +40,9 @@ import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, ObjectJsonRepr, KeyList
 
 _GROUPS_API_SC = "users/groups"
 
@@ -76,7 +79,7 @@ class User(sqobject.SqObject):
         c.SEARCH: "organizations/search_members",
     }
 
-    def __init__(self, endpoint: pf.Platform, login: str, data: types.ApiPayload) -> None:
+    def __init__(self, endpoint: Platform, login: str, data: ApiPayload) -> None:
         """Do not use to create users, use on of the constructor class methods"""
         super().__init__(endpoint=endpoint, key=login)
         self.login = login  #: User login (str)
@@ -94,7 +97,7 @@ class User(sqobject.SqObject):
         User.CACHE.put(self)
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> User:
+    def load(cls, endpoint: Platform, data: ApiPayload) -> User:
         """Creates a user object from the result of a SonarQube API user search data
 
         :param endpoint: Reference to the SonarQube platform
@@ -105,7 +108,7 @@ class User(sqobject.SqObject):
         return cls(login=data["login"], endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, login: str, name: str, is_local: bool = True, password: Optional[str] = None) -> User:
+    def create(cls, endpoint: Platform, login: str, name: str, is_local: bool = True, password: Optional[str] = None) -> User:
         """Creates a new user in SonarQube and returns the corresponding User object
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -127,7 +130,7 @@ class User(sqobject.SqObject):
         return cls.get_object(endpoint=endpoint, login=login)
 
     @classmethod
-    def get_object(cls, endpoint: pf.Platform, login: str) -> User:
+    def get_object(cls, endpoint: Platform, login: str) -> User:
         """Creates a User object corresponding to the user with same login in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -144,7 +147,7 @@ class User(sqobject.SqObject):
         raise exceptions.ObjectNotFound(login, f"User '{login}' not found")
 
     @classmethod
-    def get_object_by_id(cls, endpoint: pf.Platform, id: str) -> User:
+    def get_object_by_id(cls, endpoint: Platform, id: str) -> User:
         """Searches a user by its (API v2) id in SonarQube
 
         :param endpoint: Reference to the SonarQube platform
@@ -178,7 +181,7 @@ class User(sqobject.SqObject):
         """
         return f"user '{self.login}'"
 
-    def __load(self, data: types.ApiPayload) -> None:
+    def __load(self, data: ApiPayload) -> None:
         self.name = data["name"]  #: User name
         self.scm_accounts = list(set(util.csv_to_list(data.pop("scmAccounts", None))))  #: User SCM accounts
         self.email = data.get("email", None)  #: User email
@@ -202,7 +205,7 @@ class User(sqobject.SqObject):
             self.id = self.sq_json.get("id")
         self.__tokens = None
 
-    def groups(self, **kwargs) -> types.KeyList:
+    def groups(self, **kwargs) -> KeyList:
         """Returns the list of groups of a user"""
         log.info("Getting %s groups = %s", str(self), str(self._groups))
         if self._groups is not None and kwargs.get(c.USE_CACHE, True):
@@ -351,7 +354,7 @@ class User(sqobject.SqObject):
             raise
         return ok
 
-    def api_params(self, op: str = c.GET) -> types.ApiParams:
+    def api_params(self, op: str = c.GET) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         if self.endpoint.version() >= c.USER_API_V2_INTRO_VERSION:
             ops = {c.GET: {}}
@@ -405,7 +408,7 @@ class User(sqobject.SqObject):
         self.scm_accounts = list(set(accounts_list))
         return True
 
-    def __audit_active_tokens(self, settings: types.AuditSettings) -> list[Problem]:
+    def __audit_active_tokens(self, settings: AuditSettings) -> list[Problem]:
         """Counts the user nbr of active (non expired) tokens and raises a problem if exceeding threshold
 
         :param settings: Options of what to audit and thresholds to raise problems
@@ -418,7 +421,7 @@ class User(sqobject.SqObject):
             return [Problem(get_rule(RuleId.USER_EXCESSIVE_NBR_OF_TOKENS), self, str(self), len(active_tokens), max_tokens)]
         return []
 
-    def audit(self, settings: types.AuditSettings) -> list[Problem]:
+    def audit(self, settings: AuditSettings) -> list[Problem]:
         """Audits a user (user last connection date and tokens) and
         returns the list of problems found
 
@@ -440,7 +443,7 @@ class User(sqobject.SqObject):
                 problems.append(Problem(get_rule(RuleId.USER_UNUSED), self, str(self), age))
         return problems
 
-    def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
+    def to_json(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
         """Exports the user data (login, email, groups, SCM accounts local or not) as dict
 
         :return: User data
@@ -463,7 +466,7 @@ class User(sqobject.SqObject):
         return convert_user_json(json_data)
 
 
-def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, User]:
+def search(endpoint: Platform, params: ApiParams = None) -> dict[str, User]:
     """Searches users in SonarQube Server or Cloud
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -476,7 +479,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, U
     return dict(sorted(sqobject.search_objects(endpoint=endpoint, object_class=User, params=params, api_version=api_version).items()))
 
 
-def get_list(endpoint: pf.Platform) -> dict[str, User]:
+def get_list(endpoint: Platform) -> dict[str, User]:
     """Returns the list of users
 
     :params Platform endpoint: Reference to the SonarQube platform
@@ -486,7 +489,7 @@ def get_list(endpoint: pf.Platform) -> dict[str, User]:
     return search(endpoint)
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
     """Exports all users in JSON representation
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -505,7 +508,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     return u_list
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
+def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[Problem]:
     """Audits all users for last login date and too old tokens
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -533,7 +536,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     return problems
 
 
-def get_login_from_name(endpoint: pf.Platform, name: str) -> Union[str, None]:
+def get_login_from_name(endpoint: Platform, name: str) -> Union[str, None]:
     """Returns the login corresponding to name
     If more than one login matches the name, the first occurence is returned
 
@@ -549,7 +552,7 @@ def get_login_from_name(endpoint: pf.Platform, name: str) -> Union[str, None]:
     return list(u_list.keys()).pop(0)
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
+def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: KeyList = None) -> None:
     """Imports in SonarQube a complete users configuration described from a sonar-config JSON
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -572,7 +575,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         o.update(**data)
 
 
-def exists(endpoint: pf.Platform, login: str) -> bool:
+def exists(endpoint: Platform, login: str) -> bool:
     """
     :param endpoint: reference to the SonarQube platform
     :param login: user login to check

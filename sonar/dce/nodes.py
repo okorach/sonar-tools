@@ -23,7 +23,11 @@ Abstraction of the DCE Node concept
 
 """
 
-from sonar.util import types
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sonar.util.types import ConfigSettings
 
 HEALTH_GREEN = "GREEN"
 HEALTH_YELLOW = "YELLOW"
@@ -38,6 +42,6 @@ class DceNode(object):
         self.json = data
         self.sif = sif
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[object]:
+    def audit(self, audit_settings: ConfigSettings) -> list[object]:
         """Audits a node, implementation should be in subclasses"""
         return []

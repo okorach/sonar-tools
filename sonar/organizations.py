@@ -24,7 +24,7 @@ Abstraction of the SonarQube Cloud organization concept
 """
 
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import json
 from threading import Lock
 
@@ -34,6 +34,10 @@ from sonar.util import types, cache, constants as c
 
 from sonar import sqobject, exceptions
 import sonar.util.misc as util
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiParams, ConfigSettings, ApiPayload, ObjectJsonRepr, KeyList
 
 _CLASS_LOCK = Lock()
 
@@ -51,7 +55,7 @@ class Organization(sqobject.SqObject):
     SEARCH_RETURN_FIELD = "organizations"
     API = {c.SEARCH: "organizations/search"}
 
-    def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
+    def __init__(self, endpoint: Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=endpoint, key=key)
         self.description: Optional[str] = None
@@ -60,7 +64,7 @@ class Organization(sqobject.SqObject):
         Organization.CACHE.put(self)
 
     @classmethod
-    def get_object(cls, endpoint: pf.Platform, key: str) -> Organization:
+    def get_object(cls, endpoint: Platform, key: str) -> Organization:
         """Gets an Organization object from SonarQube Cloud
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -80,15 +84,14 @@ class Organization(sqobject.SqObject):
         return cls.load(endpoint, data["organizations"][0])
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Organization:
+    def load(cls, endpoint: Platform, data: ApiPayload) -> Organization:
         """Loads an Organization object with data retrieved from SonarQube Cloud
 
-        :param Platform endpoint: Reference to the SonarQube Cloud platform
-        :param dict data: Data coming from api/organizations/search
+        :param endpoint: Reference to the SonarQube Cloud platform
+        :param data: Data coming from api/organizations/search
         :raises UnsupportedOperation: If not running against SonarQube Cloud
         :raises ObjectNotFound: If Organization key not found
         :return: The found Organization object
-        :rtype: Organization
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
@@ -103,7 +106,7 @@ class Organization(sqobject.SqObject):
     def __str__(self) -> str:
         return f"organization key '{self.key}'"
 
-    def export(self) -> types.ObjectJsonRepr:
+    def export(self) -> ObjectJsonRepr:
         """Exports an organization"""
         log.info("Exporting %s", str(self))
         json_data = self.sq_json.copy()
@@ -115,7 +118,7 @@ class Organization(sqobject.SqObject):
             json_data["newCodePeriod"] = f"{nctype} = {ncval}"
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, True))
 
-    def search_params(self) -> types.ApiParams:
+    def search_params(self) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         return {"organizations": self.key}
 
@@ -127,11 +130,11 @@ class Organization(sqobject.SqObject):
     def subscription(self) -> str:
         return self.sq_json.get("subscription", "UNKNOWN")
 
-    def alm(self) -> types.ApiPayload:
+    def alm(self) -> ApiPayload:
         return self.sq_json.get("alm", None)
 
 
-def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Organization]:
+def get_list(endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Organization]:
     """
     :return: List of Organizations (all of them if key_list is None or empty)
     :param KeyList key_list: List of org keys to get, if None or empty all orgs are returned
@@ -148,7 +151,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
     return object_list
 
 
-def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Organization]:
+def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Organization]:
     """Searches organizations
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -165,7 +168,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, O
     return sqobject.search_objects(endpoint=endpoint, object_class=Organization, params=new_params)
 
 
-def export(endpoint: pf.Platform, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+def export(endpoint: Platform, key_list: KeyList = None) -> ObjectJsonRepr:
     """Exports organizations as JSON
 
     :param Platform endpoint: Reference to the SonarQube Cloud platform
@@ -180,7 +183,7 @@ def export(endpoint: pf.Platform, key_list: types.KeyList = None) -> types.Objec
     return org_settings
 
 
-def exists(endpoint: pf.Platform, org_key: str) -> bool:
+def exists(endpoint: Platform, org_key: str) -> bool:
     """Tells whether an organization exists with that user as member"""
     log.info("Verifying that organization '%s' exists", org_key)
     try:

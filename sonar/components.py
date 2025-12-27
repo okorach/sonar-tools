@@ -24,24 +24,26 @@ Abstraction of the SonarQube "component" concept
 """
 
 from __future__ import annotations
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 import math
 import json
 
 from datetime import datetime
 from requests import RequestException
 
-from sonar.util import types
 import sonar.util.constants as c
 import sonar.logging as log
 import sonar.sqobject as sq
-import sonar.platform as pf
 
 from sonar import settings, tasks, measures, rules, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
-from sonar.audit.problem import Problem
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.audit.problem import Problem
+    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList
 
 # Character forbidden in keys that can be used to separate a key from a post fix
 KEY_SEPARATOR = " "
@@ -54,7 +56,7 @@ class Component(sq.SqObject):
 
     API = {c.READ: "components/show", c.LIST: "components/search"}
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None) -> None:
+    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.name: Optional[str] = None
@@ -67,7 +69,7 @@ class Component(sq.SqObject):
         if data is not None:
             self.reload(data)
 
-    def reload(self, data: types.ApiPayload) -> Component:
+    def reload(self, data: ApiPayload) -> Component:
         """Loads a SonarQube API JSON payload in a Component"""
         super().reload(data)
         if "name" in data:
@@ -114,7 +116,7 @@ class Component(sq.SqObject):
                 log.debug("Component %s has %d issues", d["key"], nbr_issues)
         return comp_list
 
-    def get_issues(self, filters: types.ApiParams = None) -> dict[str, object]:
+    def get_issues(self, filters: ApiParams = None) -> dict[str, object]:
         """Returns list of issues for a component, optionally on branches or/and PRs"""
         from sonar.issues import search_all
 
@@ -124,7 +126,7 @@ class Component(sq.SqObject):
         self.nbr_issues = len(issue_list)
         return issue_list
 
-    def count_specific_rules_issues(self, ruleset: list[str], filters: types.ApiParams = None) -> dict[str, int]:
+    def count_specific_rules_issues(self, ruleset: list[str], filters: ApiParams = None) -> dict[str, int]:
         """Returns the count of issues of a component for a given ruleset"""
         from sonar.issues import count_by_rule
 
@@ -135,15 +137,15 @@ class Component(sq.SqObject):
         params["rules"] = [r.key for r in ruleset]
         return {k: v for k, v in count_by_rule(endpoint=self.endpoint, **params).items() if v > 0}
 
-    def count_third_party_issues(self, filters: types.ApiParams = None) -> dict[str, int]:
+    def count_third_party_issues(self, filters: ApiParams = None) -> dict[str, int]:
         """Returns the count of issues of a component  corresponding to 3rd party rules"""
         return self.count_specific_rules_issues(ruleset=rules.third_party(self.endpoint), filters=filters)
 
-    def count_instantiated_rules_issues(self, filters: types.ApiParams = None) -> dict[str, int]:
+    def count_instantiated_rules_issues(self, filters: ApiParams = None) -> dict[str, int]:
         """Returns the count of issues of a component corresponding to instantiated rules"""
         return self.count_specific_rules_issues(ruleset=rules.instantiated(self.endpoint), filters=filters)
 
-    def get_hotspots(self, filters: types.ApiParams = None) -> dict[str, object]:
+    def get_hotspots(self, filters: ApiParams = None) -> dict[str, object]:
         """Returns list of hotspots for a component, optionally on branches or/and PRs"""
         from sonar.hotspots import component_filter, search
 
@@ -153,7 +155,7 @@ class Component(sq.SqObject):
             params.update(filters)
         return search(endpoint=self.endpoint, filters=params)
 
-    def migration_export(self, export_settings: types.ConfigSettings) -> dict[str, Any]:
+    def migration_export(self, export_settings: ConfigSettings) -> dict[str, Any]:
         from sonar.issues import count as issue_count
         from sonar.hotspots import count as hotspot_count
 
@@ -188,7 +190,7 @@ class Component(sq.SqObject):
 
         return json_data
 
-    def get_measures(self, metrics_list: types.KeyList) -> dict[str, measures.Measure]:
+    def get_measures(self, metrics_list: KeyList) -> dict[str, measures.Measure]:
         """Retrieves a project list of measures
 
         :param list metrics_list: List of metrics to return
@@ -209,7 +211,7 @@ class Component(sq.SqObject):
             self.ncloc = int(self.get_measure("ncloc", fallback=0))
         return self.ncloc
 
-    def get_navigation_data(self) -> types.ApiPayload:
+    def get_navigation_data(self) -> ApiPayload:
         """Returns a component navigation data"""
         params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(c.GET))
         data = json.loads(self.get("navigation/component", params=params).text)
@@ -254,7 +256,7 @@ class Component(sq.SqObject):
             settings.set_visibility(self.endpoint, visibility=visibility, component=self)
             self._visibility = visibility
 
-    def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None) -> types.ApiPayload:
+    def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None) -> ApiPayload:
         """Returns a component analyses"""
         log.debug("%s: Getting history of analyses", self)
         params = util.dict_remap(self.api_params(c.READ), {"component": "project"})
@@ -294,7 +296,7 @@ class Component(sq.SqObject):
                 )
         return None
 
-    def _audit_bg_task(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def _audit_bg_task(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits project background tasks"""
         if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
@@ -314,7 +316,7 @@ class Component(sq.SqObject):
             return last_task.audit(audit_settings)
         return []
 
-    def __audit_history_retention(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_history_retention(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits whether a project has an excessive number of history data points
 
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
@@ -334,7 +336,7 @@ class Component(sq.SqObject):
             return [Problem(get_rule(RuleId.PROJ_HISTORY_COUNT), self, str(self), history_len)]
         return []
 
-    def __audit_accepted_or_fp_issues(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_accepted_or_fp_issues(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits whether a project or branch has too many accepted or FP issues
 
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
@@ -360,7 +362,7 @@ class Component(sq.SqObject):
             problems.append(Problem(get_rule(RuleId.PROJ_TOO_MANY_FP), self, str(self), nb_fp, ncloc))
         return problems
 
-    def __audit_new_code(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_new_code(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits whether the object (project, branch, PR) new code does not exceed a certain amount
 
         :param ConfigSettings audit_settings: Options of what to audit and thresholds to raise problems
@@ -371,7 +373,7 @@ class Component(sq.SqObject):
             return [Problem(get_rule(RuleId.PROJ_TOO_MUCH_NEW_CODE), self, str(self), new_lines)]
         return []
 
-    def audit_visibility(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def audit_visibility(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits project visibility and return problems if project is public
 
         :param audit_settings: Options and Settings (thresholds) to raise problems
@@ -389,7 +391,7 @@ class Component(sq.SqObject):
         log.debug("%s visibility is 'private'", str(self))
         return []
 
-    def _audit_component(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def _audit_component(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits a component (project, branch, PR) for various issues
 
         :param ConfigSettings audit_settings: Options of what to audit and thresholds to raise problems
@@ -403,7 +405,7 @@ class Component(sq.SqObject):
             + self.__audit_zero_loc(audit_settings)
         )
 
-    def __audit_zero_loc(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_zero_loc(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits whether a component (project, branch, PR) has 0 LoC"""
         if not audit_settings.get("audit.projects.zeroLoc", True):
             log.debug("Auditing %s zero LOC disabled, skipped...", str(self))
@@ -416,11 +418,11 @@ class Component(sq.SqObject):
         """Returns the last analysis background task of a problem, or none if not found"""
         return tasks.search_last(component_key=self.key, endpoint=self.endpoint)
 
-    def get_measures_history(self, metrics_list: types.KeyList) -> dict[str, str]:
+    def get_measures_history(self, metrics_list: KeyList) -> dict[str, str]:
         """Returns the history of a project metrics"""
         return measures.get_history(self, metrics_list)
 
-    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
+    def api_params(self, op: Optional[str] = None) -> ApiParams:
         from sonar.issues import component_search_field
 
         ops = {

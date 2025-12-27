@@ -24,9 +24,11 @@ Abstraction of the SonarQube "custom measure" concept
 """
 
 import json
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 import sonar.sqobject as sq
-import sonar.platform as pf
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
 
 
 class CustomMeasure(sq.SqObject):
@@ -35,7 +37,7 @@ class CustomMeasure(sq.SqObject):
     def __init__(
         self,
         key: str,
-        endpoint: pf.Platform,
+        endpoint: Platform,
         uuid: Optional[str] = None,
         project_key: Optional[str] = None,
         value: Any = None,
@@ -70,7 +72,7 @@ class CustomMeasure(sq.SqObject):
         return self.post(CustomMeasure.API_ROOT + "delete", {"id": self.uuid}).ok
 
 
-def search(endpoint: pf.Platform, project_key):
+def search(endpoint: Platform, project_key):
     data = json.loads(endpoint.get(CustomMeasure.API_ROOT + "search", params={"projectKey": project_key, "ps": 500}).text)
     # nbr_measures = data['total'] if > 500, we're screwed...
     measures = []
@@ -88,12 +90,12 @@ def search(endpoint: pf.Platform, project_key):
     return measures
 
 
-def update(project_key, metric_key, value, description=None, endpoint: pf.Platform = None):
+def update(project_key, metric_key, value, description=None, endpoint: Platform = None):
     for m in search(endpoint, project_key):
         if m.key == metric_key:
             m.update(value, description)
             break
 
 
-def delete(id, endpoint: pf.Platform):
+def delete(id, endpoint: Platform):
     return endpoint.post(CustomMeasure.API_ROOT + "delete", {"id": id})

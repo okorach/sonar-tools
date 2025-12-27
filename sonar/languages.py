@@ -24,13 +24,15 @@
 from __future__ import annotations
 
 import json
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from threading import Lock
 from sonar import sqobject, rules
-import sonar.platform as pf
-from sonar.util.types import ApiPayload
 from sonar.util import cache
 import sonar.util.issue_defs as idefs
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiPayload
 
 #: List of language APIs
 APIS = {"list": "languages/list"}
@@ -46,7 +48,7 @@ class Language(sqobject.SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
+    def __init__(self, endpoint: Platform, key: str, name: str) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.name = name  #: Language name
@@ -54,14 +56,14 @@ class Language(sqobject.SqObject):
         Language.CACHE.put(self)
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: ApiPayload) -> Language:
+    def load(cls, endpoint: Platform, data: ApiPayload) -> Language:
         o = Language.CACHE.get(data["key"], endpoint.local_url)
         if not o:
             o = cls(endpoint=endpoint, key=data["key"], name=data["name"])
         return o
 
     @classmethod
-    def read(cls, endpoint: pf.Platform, key: str) -> Language:
+    def read(cls, endpoint: Platform, key: str) -> Language:
         """Reads a language and return the corresponding object
         :return: Language object
         :rtype: Language or None if not found
@@ -84,7 +86,7 @@ class Language(sqobject.SqObject):
         return self._nb_rules[rule_type]
 
 
-def read_list(endpoint: pf.Platform) -> dict[str, Language]:
+def read_list(endpoint: Platform) -> dict[str, Language]:
     """Reads the list of languages existing on the SonarQube platform
     :param Platform endpoint: Reference of the SonarQube platform
     :return: List of languages
@@ -96,7 +98,7 @@ def read_list(endpoint: pf.Platform) -> dict[str, Language]:
     return {o.key: o for o in Language.CACHE.objects.values()}
 
 
-def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Language]:
+def get_list(endpoint: Platform, use_cache: bool = True) -> dict[str, Language]:
     """Gets the list of languages existing on the SonarQube platform
     Unlike read_list, get_list() is using a local cache if available (so no API call)
     :param Platform endpoint: Reference of the SonarQube platform
@@ -110,7 +112,7 @@ def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Languag
     return {o.key: o for o in Language.CACHE.objects.values()}
 
 
-def exists(endpoint: pf.Platform, language: str) -> bool:
+def exists(endpoint: Platform, language: str) -> bool:
     """Returns whether a language exists
     :param Platform endpoint: Reference of the SonarQube platform
     :param str language: The language key

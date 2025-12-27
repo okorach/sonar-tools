@@ -33,7 +33,7 @@ from typing import Optional, Union, Any
 
 from cli import options
 import sonar.logging as log
-import sonar.platform as pf
+from sonar.platform import Platform
 from sonar import syncer, exceptions, projects, branches, version
 import sonar.util.misc as util
 import sonar.utilities as sutil
@@ -112,7 +112,7 @@ def __since_date(**kwargs) -> Optional[datetime.datetime]:
 
 
 def __get_objects_pairs_to_sync(
-    source_env: pf.Platform, target_env: pf.Platform, **kwargs
+    source_env: Platform, target_env: Platform, **kwargs: Any
 ) -> tuple[Union[projects.Project, branches.Branch], Union[projects.Project, branches.Branch]]:
     """Returns the 2 objects to compare (projects or branches)"""
     source_pattern = kwargs.get(options.KEY_REGEXP, ".+")
@@ -146,14 +146,14 @@ def main() -> None:
             "see: https://pypi.org/project/sonar-tools/#sonar-findings-sync"
         )
         params = sutil.convert_args(args)
-        source_env = pf.Platform(**params)
+        source_env = Platform(**params)
         source_env.verify_connection()
         source_env.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
 
         sutil.check_token(args.tokenTarget)
 
         target_params = sutil.convert_args(args, second_platform=True)
-        target_env = pf.Platform(**target_params)
+        target_env = Platform(**target_params)
         target_env.verify_connection()
         target_env.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
 

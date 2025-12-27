@@ -23,14 +23,15 @@ Abstraction of the SonarQube "pull request" concept
 
 """
 
+from __future__ import annotations
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import requests.utils
 
 import sonar.logging as log
-from sonar.util import types, cache
+from sonar.util import cache
 from sonar import components, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
@@ -38,6 +39,8 @@ from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
 
+if TYPE_CHECKING:
+    from sonar.util.types import ApiPayload, ApiParams, ConfigSettings
 
 _UNSUPPORTED_IN_CE = "Pull requests not available in Community Edition"
 
@@ -50,7 +53,7 @@ class PullRequest(components.Component):
     CACHE = cache.Cache()
     API = {c.DELETE: "project_pull_requests/delete", c.LIST: "project_pull_requests/list"}
 
-    def __init__(self, project: object, key: str, data: Optional[types.ApiPayload] = None) -> None:
+    def __init__(self, project: object, key: str, data: Optional[ApiPayload] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=project.endpoint, key=key)
         self.concerned_object = project
@@ -86,7 +89,7 @@ class PullRequest(components.Component):
             self._last_analysis = sutil.string_to_date(self.json["analysisDate"])
         return self._last_analysis
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits the pull request according to the audit settings"""
         problems = [] if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper" else self._audit_component(audit_settings)
         if (age := util.age(self.last_analysis())) is None:
@@ -105,12 +108,12 @@ class PullRequest(components.Component):
         """Returns the project key"""
         return self.concerned_object.key
 
-    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
+    def api_params(self, op: Optional[str] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {c.READ: {"project": self.concerned_object.key, "pullRequest": self.key}}
         return ops[op] if op and op in ops else ops[c.READ]
 
-    def get_findings(self, filters: Optional[types.ApiParams] = None) -> dict[str, object]:
+    def get_findings(self, filters: Optional[ApiParams] = None) -> dict[str, object]:
         """Returns a PR list of findings
 
         :return: dict of Findings, with finding key as key
@@ -121,7 +124,7 @@ class PullRequest(components.Component):
         return self.get_issues(filters) | self.get_hotspots(filters)
 
 
-def get_object(pull_request_key: str, project: object, data: Optional[types.ApiPayload] = None) -> Optional[PullRequest]:
+def get_object(pull_request_key: str, project: object, data: Optional[ApiPayload] = None) -> Optional[PullRequest]:
     """Returns a PR object from a PR key and a project"""
     if project.endpoint.edition() == c.CE:
         log.debug("Pull requests not available in Community Edition")
