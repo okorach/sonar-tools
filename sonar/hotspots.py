@@ -30,6 +30,7 @@ import requests.utils
 import sonar.logging as log
 import sonar.platform as pf
 
+from sonar.util import types
 import sonar.util.misc as util
 from sonar.util import types, cache, constants as c
 
@@ -90,7 +91,7 @@ class Hotspot(findings.Finding):
     """Abstraction of the Sonar hotspot concept"""
 
     CACHE = cache.Cache()
-    API = {c.GET: "hotspots/show", c.SEARCH: "hotspots/search"}
+    API = {c.GET: "hotspots/show", c.SEARCH: "hotspots/search", c.ASSIGN: "hotspots/assign"}
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
@@ -105,6 +106,10 @@ class Hotspot(findings.Finding):
     def __str__(self) -> str:
         """Returns the string representation of the object"""
         return f"Hotspot key '{self.key}'"
+
+    def api_params(self, op: str = c.GET) -> types.ApiParams:
+        ops = {c.GET: {"hotspot": self.key}}
+        return ops[op] if op in ops else ops[c.LIST]
 
     def url(self) -> str:
         """Returns the permalink URL to the hotspot in the SonarQube platform"""
@@ -136,7 +141,7 @@ class Hotspot(findings.Finding):
         :return: Whether there operation succeeded
         """
         try:
-            resp = self.get(Hotspot.API[c.GET], {"hotspot": self.key})
+            resp = self.get(Hotspot.API[c.GET], self.api_params())
             if resp.ok:
                 d = json.loads(resp.text)
                 self.__details = d
@@ -154,11 +159,11 @@ class Hotspot(findings.Finding):
 
     def __mark_as(self, resolution: Optional[str], comment: Optional[str] = None, status: str = "REVIEWED") -> bool:
         """Marks a hotspot with a particular resolution and status
-        
+
         :return: Whether the operation succeeded
         """
         try:
-            params = util.remove_nones({"hotspot": self.key, "status": status, "resolution": resolution, "commemt": comment})
+            params = util.remove_nones({**self.api_params(), "status": status, "resolution": resolution, "commemt": comment})
             ok = self.post("hotspots/change_status", params=params).ok
             self.refresh()
         except exceptions.SonarException:
@@ -211,36 +216,9 @@ class Hotspot(findings.Finding):
         :return: Whether the operation succeeded
         """
         try:
-            return self.post("hotspots/add_comment", params={"hotspot": self.key, "comment": comment}).ok
+            return self.post("hotspots/add_comment", params={**self.api_params(), "comment": comment}).ok
         except exceptions.SonarException:
             return False
-
-    def assign(self, assignee: Optional[str], comment: Optional[str] = None) -> bool:
-        """Assigns a hotspot (and optionally comment)
-
-        :param assignee: User login to assign the hotspot, None to unassign
-        :param comment: Optional comment to add
-        :return: Whether the operation succeeded
-        """
-        try:
-            if assignee is None:
-                log.debug("Unassigning %s", str(self))
-            else:
-                log.debug("Assigning %s to '%s'", str(self), str(assignee))
-            ok = self.post("hotspots/assign", util.remove_nones({"hotspot": self.key, "assignee": assignee, "comment": comment})).ok
-            if ok:
-                self.assignee = assignee
-        except exceptions.SonarException:
-            return False
-        else:
-            return ok
-
-    def unassign(self, comment: Optional[str] = None) -> bool:
-        """Unassigns a hotspot (and optionally comment)
-
-        :return: Whether the operation succeeded
-        """
-        return self.assign(assignee=None, comment=comment)
 
     def __apply_event(self, event: object, settings: types.ConfigSettings) -> bool:
         """Applies a changelog event (transition, comment, assign) to the hotspot"""

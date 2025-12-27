@@ -184,10 +184,6 @@ class Finding(sq.SqObject):
         """Returns the URL of the finding, must be implemented in subclasses"""
         raise NotImplementedError()
 
-    def assign(self, assignee: Optional[str] = None) -> bool:
-        """Assign the finding to a user, must be implemented in subclasses"""
-        raise NotImplementedError()
-
     def language(self) -> str:
         """Returns the finding language"""
         try:
@@ -317,12 +313,33 @@ class Finding(sq.SqObject):
         ch = self.comments()
         return list(ch.values())[-1]["date"] if len(ch) > 0 else None
 
-    def unassign(self) -> bool:
-        """Unassigns an issue
+    def assign(self, assignee: Optional[str], comment: Optional[str] = None) -> bool:
+        """Assigns a finding (and optionally comment)
 
+        :param assignee: User login to assign the hotspot, None to unassign
+        :param comment: Optional comment to add
         :return: Whether the operation succeeded
         """
-        return self.assign(None)
+        try:
+            if assignee is None:
+                log.debug("Unassigning %s", self)
+            else:
+                log.debug("Assigning %s to '%s'", self, assignee)
+            params = util.remove_nones({**self.api_params(), "assignee": assignee, "comment": comment})
+            if ok := self.post(self.__class__.API[c.ASSIGN], params=params).ok:
+                self.assignee = assignee
+        except exceptions.SonarException:
+            return False
+        else:
+            return ok
+
+    def unassign(self, comment: Optional[str] = None) -> bool:
+        """Unassigns a Finding (and optionally comment)
+
+        :param comment: Optional comment to add
+        :return: Whether the operation succeeded
+        """
+        return self.assign(assignee=None, comment=comment)
 
     def has_changelog(self, after: Optional[datetime] = None, manual_only: Optional[bool] = True) -> bool:
         """

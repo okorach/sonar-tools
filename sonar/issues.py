@@ -128,7 +128,7 @@ class Issue(findings.Finding):
     CACHE = cache.Cache()
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
-    API = {c.SEARCH: "issues/search", c.GET_TAGS: "issues/search", c.SET_TAGS: "issues/set_tags"}
+    API = {c.SEARCH: "issues/search", c.GET_TAGS: "issues/search", c.SET_TAGS: "issues/set_tags", c.ASSIGN: "issues/assign"}
 
     def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
@@ -146,9 +146,9 @@ class Issue(findings.Finding):
             f" - File/Line: {self.component}/{self.line} - Rule: {self.rule} - Project: {self.projectKey}"
         )
 
-    def api_params(self, op: str = c.LIST) -> ApiParams:
-        ops = {c.LIST: {"issues": self.key}, c.SET_TAGS: {"issue": self.key}, c.GET_TAGS: {"issues": self.key}}
-        return ops[op] if op in ops else ops[c.LIST]
+    def api_params(self, op: str = c.GET) -> ApiParams:
+        ops = {c.GET: {"issue": self.key}, c.LIST: {"issues": self.key}, c.SET_TAGS: {"issue": self.key}, c.GET_TAGS: {"issues": self.key}}
+        return ops[op] if op in ops else ops[c.GET]
 
     def url(self) -> str:
         """Returns a permalink URL to the issue in the SonarQube platform"""
@@ -166,13 +166,13 @@ class Issue(findings.Finding):
         if "debt" in self.sq_json:
             kdays, days, hours, minutes = 0, 0, 0, 0
             debt = self.sq_json["debt"]
-            if (m := re.search(r"(\d+)kd", debt)):
+            if m := re.search(r"(\d+)kd", debt):
                 kdays = int(m.group(1))
-            if (m := re.search(r"(\d+)d", debt)):
+            if m := re.search(r"(\d+)d", debt):
                 days = int(m.group(1))
-            if (m := re.search(r"(\d+)h", debt)):
+            if m := re.search(r"(\d+)h", debt):
                 hours = int(m.group(1))
-            if (m := re.search(r"(\d+)min", debt)):
+            if m := re.search(r"(\d+)min", debt):
                 minutes = int(m.group(1))
             self._debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
         elif "effort" in self.sq_json:
@@ -191,7 +191,7 @@ class Issue(findings.Finding):
 
     def refresh(self) -> bool:
         """Refreshes an issue from the SonarQube platform live data
-    
+
         :return: whether the refresh was successful
         """
         resp = self.get(Issue.API[c.SEARCH], params={"issues": self.key, "additionalFields": "_all"})
@@ -318,22 +318,6 @@ class Issue(findings.Finding):
         else:
             return self.__set_severity(impact=f"{software_quality}={severity}")
 
-    def assign(self, assignee: Optional[str] = None) -> bool:
-        """Assigns an issue to a user
-
-        :param assignee: The user login, set to None to unassign the issue
-        :return: Whether the operation succeeded
-        """
-        try:
-            params = util.remove_nones({"issue": self.key, "assignee": assignee})
-            log.debug("Assigning %s to '%s'", str(self), str(assignee))
-            if ok := self.post("issues/assign", params).ok:
-                self.assignee = assignee
-        except exceptions.SonarException:
-            return False
-        else:
-            return ok
-
     def get_tags(self, **kwargs) -> list[str]:
         """Returns the tags of an issue"""
         api = self.__class__.API[c.GET_TAGS]
@@ -395,14 +379,14 @@ class Issue(findings.Finding):
 
     def strictly_identical_to(self, another_finding: Issue, ignore_component: bool = False) -> bool:
         """Returns whether 2 issues are strictly identical
-        
+
         :param ignore_comment: Whether to consider comments or not to consider identical
         """
         return super().strictly_identical_to(another_finding, ignore_component) and (self.debt() == another_finding.debt())
 
     def almost_identical_to(self, another_finding: Issue, ignore_component: bool = False, **kwargs) -> bool:
         """Returns whether 2 issues are almost identical
-        
+
         :param ignore_component: Whether to consider the componet or not to consider almost identical
         """
         rule_debt_calc = rules.Rule.get_object(self.endpoint, self.rule).sq_json.get("remFnType", "CONSTANT_ISSUE")
