@@ -108,6 +108,7 @@ class Hotspot(findings.Finding):
         return f"Hotspot key '{self.key}'"
 
     def api_params(self, op: str = c.GET) -> types.ApiParams:
+        """Returns the base API params to be used of a hotspot"""
         ops = {c.GET: {"hotspot": self.key}}
         return ops[op] if op in ops else ops[c.LIST]
 

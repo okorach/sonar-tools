@@ -147,6 +147,7 @@ class Issue(findings.Finding):
         )
 
     def api_params(self, op: str = c.GET) -> ApiParams:
+        """Returns the base API params to be used of an issue"""
         ops = {c.GET: {"issue": self.key}, c.LIST: {"issues": self.key}, c.SET_TAGS: {"issue": self.key}, c.GET_TAGS: {"issues": self.key}}
         return ops[op] if op in ops else ops[c.GET]
 
