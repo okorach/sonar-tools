@@ -302,14 +302,15 @@ def test_search_by_small() -> None:
 
 def test_changelog_after() -> None:
     """test_changelog_after"""
-    issue = issues.search_by_project(tutil.SQ, util.PROJECT_1).values()[tconf.ISSUE_ACCEPTED]
+    issue = issues.search_by_project(tutil.SQ, tutil.PROJECT_1)[tconf.ISSUE_ACCEPTED]
     after = util.add_tz(datetime(2024, 1, 1))
     changelog = issue.changelog(after=after)
     assert all(c.date_time() >= after for c in changelog.values())
 
+
 def test_comments_after() -> None:
     """test_comments_after"""
-    issue = issues.search_by_project(tutil.SQ, tutil.PROJECT_1).values()[tconf.ISSUE_ACCEPTED]
+    issue = issues.search_by_project(tutil.SQ, tutil.PROJECT_1)[tconf.ISSUE_ACCEPTED]
     after = util.add_tz(datetime(2024, 1, 1))
     comments = issue.comments(after=after)
     assert all(c["date"] >= after for c in comments.values())
