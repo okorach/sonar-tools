@@ -25,7 +25,7 @@ from collections.abc import Generator
 import pytest
 
 from sonar import projects, exceptions, qualityprofiles, qualitygates
-from sonar.audit import audit_config
+from sonar.util import conf_mgr
 import sonar.util.constants as c
 from sonar.util import project_helper as phelp
 import utilities as tutil
@@ -70,7 +70,7 @@ def test_audit() -> None:
     """test_audit"""
     import json
 
-    settings = {k: False for k, v in audit_config.load("sonar-audit").items() if isinstance(v, bool)}
+    settings = {k: False for k, v in conf_mgr.load("sonar-audit").items() if isinstance(v, bool)}
     settings["audit.projects"] = True
     for p in (
         "minLocPerAcceptedIssue",
