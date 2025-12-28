@@ -18,10 +18,9 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-Exports LoC per projects
-"""
+"""Exports LoC per projects"""
 
+from typing import Any
 import csv
 import datetime
 from requests import RequestException
@@ -38,7 +37,7 @@ import sonar.util.common_helper as chelp
 TOOL_NAME = "sonar-loc"
 
 
-def __get_csv_header_list(**kwargs) -> list[str]:
+def __get_csv_header_list(**kwargs: Any) -> list[str]:
     """Returns CSV header"""
     arr = [f"# {kwargs[options.COMPONENT_TYPE][0:-1]} key", "type", "branch", "pr"]
     arr.append("ncloc")
@@ -53,19 +52,17 @@ def __get_csv_header_list(**kwargs) -> list[str]:
     return arr
 
 
-def __get_csv_row(o: object, **kwargs) -> tuple[list[str], str]:
+def __get_csv_row(o: object, **kwargs: Any) -> tuple[list[str], str]:
     """Returns CSV row of object"""
     d = __get_object_json_data(o, **kwargs)
     parent_type = kwargs[options.COMPONENT_TYPE][:-1]
     arr = [d[parent_type], type(o).__name__.lower(), d["branch"], d["pr"]]
     # Add the rest of the columns as before
-    for k in ("ncloc", f"{parent_type}Name", "lastAnalysis", "tags", "url"):
-        if k in d:
-            arr.append(d[k])
+    arr += [d[k] for k in ("ncloc", f"{parent_type}Name", "lastAnalysis", "tags", "url") if k in d]
     return arr, d["ncloc"]
 
 
-def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
+def __dump_csv(object_list: list[object], file: str, **kwargs: Any) -> None:
     """Dumps LoC of passed list of objects (projects, apps or portfolios) as CSV"""
 
     if len(object_list) <= 0:
@@ -99,7 +96,7 @@ def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
     log.info("%d %s (grouped) and %d LoCs in total (max per project)", total_projects, obj_type, total_loc)
 
 
-def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
+def __get_object_json_data(o: object, **kwargs: Any) -> dict[str, str]:
     """Returns the object data as JSON"""
     parent_type = kwargs[options.COMPONENT_TYPE][:-1]
     otype = type(o).__name__.lower()
@@ -127,7 +124,7 @@ def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
     return d
 
 
-def __dump_json(object_list: list[object], file: str, **kwargs) -> None:
+def __dump_json(object_list: list[object], file: str, **kwargs: Any) -> None:
     """Dumps LoC of passed list of objects (projects, branches or portfolios) as JSON"""
     nb_loc, nb_objects = 0, 0
     data = []
@@ -154,7 +151,7 @@ def __dump_json(object_list: list[object], file: str, **kwargs) -> None:
         log.info("%d %ss dumped in total", len(object_list), str(obj_type))
 
 
-def __dump_loc(object_list: list[object], file: str, **kwargs) -> None:
+def __dump_loc(object_list: list[object], file: str, **kwargs: Any) -> None:
     """Dumps the LoC of collection of objects either in CSV or JSON format"""
     log.info("%d objects with LoCs to export, in format %s...", len(object_list), kwargs[options.FORMAT])
     if kwargs[options.FORMAT] == "json":
@@ -207,9 +204,9 @@ def main() -> None:
     """sonar-loc entry point"""
     start_time = util.start_clock()
     try:
-        kwargs = sutil.convert_args(
-            __parse_args("Extract projects, applications or portfolios lines of code - for projects LoC it is as computed for the license")
-        )
+        desc = """Extract projects, applications or portfolios lines of code -
+        for projects LoC it is as computed for the license"""
+        kwargs = sutil.convert_args(__parse_args(desc))
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
