@@ -20,7 +20,7 @@
 """Abstraction of the SonarQube platform or instance concept"""
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import Any, Union, Optional, Callable, TYPE_CHECKING
 
 from http import HTTPStatus
 import sys
@@ -46,8 +46,6 @@ import sonar.audit.severities as sev
 import sonar.audit.types as typ
 from sonar.audit.problem import Problem
 from sonar import webhooks
-
-from typing import Any, Union, Optional, Callable
 
 if TYPE_CHECKING:
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr

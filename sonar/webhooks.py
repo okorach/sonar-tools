@@ -26,7 +26,7 @@ from typing import Optional, ClassVar, TYPE_CHECKING
 import json
 
 import sonar.logging as log
-from sonar import platform as exceptions
+from sonar import exceptions
 from sonar.util import cache, constants as c
 import sonar.util.misc as util
 import sonar.sqobject as sq
