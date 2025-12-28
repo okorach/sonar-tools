@@ -64,7 +64,6 @@ def __get_csv_row(o: object, **kwargs: Any) -> tuple[list[str], str]:
 
 def __dump_csv(object_list: list[object], file: str, **kwargs: Any) -> None:
     """Dumps LoC of passed list of objects (projects, apps or portfolios) as CSV"""
-
     if len(object_list) <= 0:
         log.warning("No objects with LoCs to dump, dump skipped")
         return
