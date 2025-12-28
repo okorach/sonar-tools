@@ -418,7 +418,7 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     # We should count the nbr of custom profiles per language
     results["number_of_custom_quality_profiles"] = {}
     errcount = 0
-    for lang in languages.get_list(endpoint).keys():
+    for lang in languages.get_list(endpoint):
         if (count := sum(1 for p in qp_list if p.language == lang)) == 0:
             continue
         results["number_of_custom_quality_profiles"][lang] = count
@@ -490,11 +490,11 @@ def draw_charts(data: dict[str, Any]) -> None:
         f"{OVERALL_MATURITY_KEY}_distribution": "Projects Overall Maturity Distribution",
     }
     dataset = {}
-    for key in kv.keys():
+    for key in kv:
         log.info("%s: %s", key, util.json_dump(data[key]))
-        dataset[key] = Data([[v] for v in data[key].values()], [str(k) for k in data[key].keys()])
+        dataset[key] = Data([[v] for v in data[key].values()], [str(k) for k in data[key]])
 
-    for key in kv.keys():
+    for key in kv:
         BarChart(dataset[key], Args(title=kv[key], width=80, format="{:.0f}")).draw()
 
     chart_data = Data([[data["governance_maturity_level"]]], ["Governance maturity"])

@@ -156,6 +156,7 @@ class Component(sq.SqObject):
         return search(endpoint=self.endpoint, filters=params)
 
     def migration_export(self, export_settings: ConfigSettings) -> dict[str, Any]:
+        """Prepares all data for a sonar-migration export"""
         from sonar.issues import count as issue_count
         from sonar.hotspots import count as hotspot_count
 
@@ -289,7 +290,7 @@ class Component(sq.SqObject):
             params = util.dict_remap(self.api_params(c.READ), {"component": "project"})
             return str(json.loads(self.get(api, params=params).text)["aiCodeAssurance"]).upper()
         except (ConnectionError, RequestException) as e:
-            sutil.handle_error(e, f"getting AI code assurance of {str(self)}", catch_all=True)
+            sutil.handle_error(e, f"getting AI code assurance of {self}", catch_all=True)
             if "Unknown url" in sutil.error_msg(e):
                 raise exceptions.UnsupportedOperation(
                     f"AI code assurance is not available for {self.endpoint.edition()} edition version {str(version)}"
@@ -423,6 +424,7 @@ class Component(sq.SqObject):
         return measures.get_history(self, metrics_list)
 
     def api_params(self, op: Optional[str] = None) -> ApiParams:
+        """Returns the base params for any API call for this object"""
         from sonar.issues import component_search_field
 
         ops = {
