@@ -23,16 +23,20 @@ Abstraction of the App Node concept
 
 """
 
-from typing import Optional, Union
+from __future__ import annotations
+from typing import Optional, Union, TYPE_CHECKING
+
 import datetime
 
 import sonar.logging as log
 import sonar.utilities as sutil
-from sonar.util import types
 from sonar.audit.rules import get_rule, RuleId
 import sonar.sif_node as sifn
 from sonar.audit.problem import Problem
 import sonar.dce.nodes as dce_nodes
+
+if TYPE_CHECKING:
+    from sonar.util.types import ConfigSettings
 
 _SYSTEM = "System"
 
@@ -75,7 +79,7 @@ class AppNode(dce_nodes.DceNode):
         """Returns the App Node name"""
         return self.json["Name"]
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits and app node (from a SIF)"""
         log.info("Auditing %s", str(self))
         return (
@@ -107,7 +111,7 @@ class AppNode(dce_nodes.DceNode):
             return []
 
 
-def audit(sub_sif: dict[str, str], sif_object: object, audit_settings: types.ConfigSettings) -> list[Problem]:
+def audit(sub_sif: dict[str, str], sif_object: object, audit_settings: ConfigSettings) -> list[Problem]:
     """Audits application nodes of a DCE instance
 
     :param sub_sif: The JSON subsection of the SIF pertaining to the App Nodes

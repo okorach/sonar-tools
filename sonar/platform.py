@@ -20,12 +20,12 @@
 """Abstraction of the SonarQube platform or instance concept"""
 
 from __future__ import annotations
+from typing import Any, Union, Optional, Callable, TYPE_CHECKING
 
 from http import HTTPStatus
 import sys
 import os
 import re
-from typing import Any, Union, Optional, Callable
 import time
 import datetime
 import json
@@ -35,7 +35,7 @@ from requests import HTTPError, RequestException
 import sonar.logging as log
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar.util import types, update_center
+from sonar.util import update_center
 import sonar.util.constants as c
 import sonar.util.platform_helper as pfhelp
 
@@ -46,6 +46,9 @@ import sonar.audit.severities as sev
 import sonar.audit.types as typ
 from sonar.audit.problem import Problem
 from sonar import webhooks
+
+if TYPE_CHECKING:
+    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
 
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
@@ -76,10 +79,10 @@ class Platform(object):
         self.external_url = self.local_url
         self.__token = token
         self.__cert_file = cert_file
-        self.__user_data: types.ApiPayload = None
+        self.__user_data: ApiPayload = None
         self._version: Optional[tuple[int, ...]] = None
         self._sys_info: Optional[dict[str, Any]] = None
-        self.__global_nav: types.ApiPayload = None
+        self.__global_nav: ApiPayload = None
         self._server_id: Optional[str] = None
         self._permissions: Optional[object] = None
         self.http_timeout = int(http_timeout)
@@ -146,7 +149,7 @@ class Platform(object):
         """Returns the user corresponding to the provided token"""
         return self.user_data()["login"]
 
-    def user_data(self) -> types.ApiPayload:
+    def user_data(self) -> ApiPayload:
         """Returns the user data corresponding to the provided token"""
         self.__user_data = self.__user_data or json.loads(self.get("api/users/current").text)
         return self.__user_data
@@ -201,7 +204,7 @@ class Platform(object):
         """
         return group_name == self.default_user_group()
 
-    def get(self, api: str, params: Optional[types.ApiParams] = None, **kwargs) -> requests.Response:
+    def get(self, api: str, params: Optional[ApiParams] = None, **kwargs) -> requests.Response:
         """Makes an HTTP GET request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -210,7 +213,7 @@ class Platform(object):
         """
         return self.__run_request(requests.get, api, params, **kwargs)
 
-    def post(self, api: str, params: Optional[types.ApiParams] = None, **kwargs) -> requests.Response:
+    def post(self, api: str, params: Optional[ApiParams] = None, **kwargs) -> requests.Response:
         """Makes an HTTP POST request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -223,7 +226,7 @@ class Platform(object):
         else:
             return self.__run_request(requests.post, api, params, **kwargs)
 
-    def patch(self, api: str, params: Optional[types.ApiParams] = None, **kwargs) -> requests.Response:
+    def patch(self, api: str, params: Optional[ApiParams] = None, **kwargs) -> requests.Response:
         """Makes an HTTP PATCH request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -233,7 +236,7 @@ class Platform(object):
         kwargs["headers"] = kwargs.get("headers", {}) | {"content-type": "application/merge-patch+json"}
         return self.__run_request(requests.patch, api=api, data=json.dumps(params), **kwargs)
 
-    def delete(self, api: str, params: Optional[types.ApiParams] = None, **kwargs) -> requests.Response:
+    def delete(self, api: str, params: Optional[ApiParams] = None, **kwargs) -> requests.Response:
         """Makes an HTTP DELETE request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -242,7 +245,7 @@ class Platform(object):
         """
         return self.__run_request(requests.delete, api, params, **kwargs)
 
-    def __run_request(self, request: Callable, api: str, params: Optional[Union[types.ApiParams, str]] = None, **kwargs) -> requests.Response:
+    def __run_request(self, request: Callable, api: str, params: Optional[Union[ApiParams, str]] = None, **kwargs) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
         mute = kwargs.pop("mute", ())
         api = pfhelp.normalize_api(api)
@@ -312,7 +315,7 @@ class Platform(object):
             sutil.handle_error(e, "")
         return r
 
-    def get_paginated(self, api: str, return_field: str, **kwargs: str) -> types.ObjectJsonRepr:
+    def get_paginated(self, api: str, return_field: str, **kwargs: str) -> ObjectJsonRepr:
         """Returns all pages of a paginated API"""
         params = {"ps": 500} | kwargs
         data = json.loads(self.get(api, params=params | {"p": 1}).text)
@@ -399,7 +402,7 @@ class Platform(object):
             platform_settings |= v.to_json()
         return platform_settings
 
-    def __settings(self, settings_list: types.KeyList = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
+    def __settings(self, settings_list: KeyList = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
         log.info("Getting global settings")
         settings_dict = settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
         if ai_code_fix := settings.Setting.read(endpoint=self, key=settings.AI_CODE_FIX):
@@ -431,7 +434,7 @@ class Platform(object):
         """
         return settings.set_setting(self, key, value)
 
-    def __urlstring(self, api: str, params: Optional[types.ApiParams] = None, data: Optional[str] = None) -> str:
+    def __urlstring(self, api: str, params: Optional[ApiParams] = None, data: Optional[str] = None) -> str:
         """Returns a string corresponding to the URL and parameters"""
         url = f"{str(self)}{api}"
         params_string = ""
@@ -458,7 +461,7 @@ class Platform(object):
         """Returns the list of global webhooks"""
         return webhooks.get_list(self)
 
-    def export(self, export_settings: types.ConfigSettings, full: bool = False) -> types.ObjectJsonRepr:
+    def export(self, export_settings: ConfigSettings, full: bool = False) -> ObjectJsonRepr:
         """Exports the global platform properties as JSON
 
         :param full: Whether to also export properties that cannot be set, defaults to False
@@ -493,7 +496,7 @@ class Platform(object):
 
         return pfhelp.convert_global_settings_json(json_data)
 
-    def set_webhooks(self, webhooks_data: types.ObjectJsonRepr) -> bool:
+    def set_webhooks(self, webhooks_data: ObjectJsonRepr) -> bool:
         """Sets global webhooks with a list of webhooks represented as JSON
 
         :param webhooks_data: The list of webhooks JSON representation
@@ -505,7 +508,7 @@ class Platform(object):
         webhooks.import_config(self, webhooks_data)
         return True
 
-    def import_config(self, config_data: types.ObjectJsonRepr) -> int:
+    def import_config(self, config_data: ObjectJsonRepr) -> int:
         """Imports a whole SonarQube platform global configuration represented as JSON
 
         :param config_data: the sonar-config configuration representation of the platform
@@ -541,7 +544,7 @@ class Platform(object):
         log.debug("Imported and set %d settings", count)
         return count
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits a global platform configuration and returns the list of problems found
 
         :param audit_settings: Audit options and thresholds to raise problems
@@ -587,7 +590,7 @@ class Platform(object):
         )
         return problems
 
-    def audit_logs(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def audit_logs(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits that there are no anomalies in logs (errors, warnings, deprecation warnings)"""
         if not audit_settings.get("audit.logs", True):
             log.info("Logs audit is disabled, skipping logs audit...")
@@ -628,7 +631,7 @@ class Platform(object):
             problems.append(Problem(rule, system_url, nb_deprecation))
         return problems
 
-    def _audit_project_default_visibility(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def _audit_project_default_visibility(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits whether project default visibility is public"""
         log.info("Auditing project default visibility")
         problems = []
@@ -718,7 +721,7 @@ class Platform(object):
         # pylint: disable-next=E0606
         return [Problem(rule, self.external_url, ".".join([str(n) for n in sq_vers]), ".".join([str(n) for n in v]))]
 
-    def _audit_token_max_lifetime(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def _audit_token_max_lifetime(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits the maximum lifetime of a token"""
         log.info("Auditing maximum token lifetime global setting")
         lifetime_setting = settings.get_object(self, settings.TOKEN_MAX_LIFETIME)
@@ -763,7 +766,7 @@ this = sys.modules[__name__]
 this.context = Platform(os.getenv("SONAR_HOST_URL", "http://localhost:9000"), os.getenv("SONAR_TOKEN", ""))
 
 
-def _audit_setting_value(key: str, platform_settings: dict[str, Any], audit_settings: types.ConfigSettings, url: str) -> list[Problem]:
+def _audit_setting_value(key: str, platform_settings: dict[str, Any], audit_settings: ConfigSettings, url: str) -> list[Problem]:
     """Audits a particular platform setting is set to expected value"""
     if (v := _get_multiple_values(4, audit_settings[key], "MEDIUM", "CONFIGURATION")) is None:
         log.error(WRONG_CONFIG_MSG, key, audit_settings[key])
@@ -782,7 +785,7 @@ def _audit_setting_value(key: str, platform_settings: dict[str, Any], audit_sett
 
 
 def _audit_setting_in_range(
-    key: str, platform_settings: dict[str, Any], audit_settings: types.ConfigSettings, sq_version: tuple[int, int, int], url: str
+    key: str, platform_settings: dict[str, Any], audit_settings: ConfigSettings, sq_version: tuple[int, int, int], url: str
 ) -> list[Problem]:
     """Audits a particular platform setting is within expected range of values"""
     if (v := _get_multiple_values(5, audit_settings[key], "MEDIUM", "CONFIGURATION")) is None:
@@ -802,9 +805,7 @@ def _audit_setting_in_range(
     return [Problem(get_rule(RuleId.DUBIOUS_GLOBAL_SETTING), url, msg)]
 
 
-def _audit_setting_set(
-    key: str, check_is_set: bool, platform_settings: dict[str, Any], audit_settings: types.ConfigSettings, url: str
-) -> list[Problem]:
+def _audit_setting_set(key: str, check_is_set: bool, platform_settings: dict[str, Any], audit_settings: ConfigSettings, url: str) -> list[Problem]:
     """Audits that a setting is set or not set"""
     if (v := _get_multiple_values(3, audit_settings[key], "MEDIUM", "CONFIGURATION")) is None:
         log.error(WRONG_CONFIG_MSG, key, audit_settings[key])
@@ -837,7 +838,7 @@ def _audit_maintainability_rating_range(value: float, range: tuple[float, float]
     return [Problem(get_rule(RuleId.SETTING_MAINT_GRID), url, msg)]
 
 
-def _audit_maintainability_rating_grid(platform_settings: dict[str, Any], audit_settings: types.ConfigSettings, url: str) -> list[Problem]:
+def _audit_maintainability_rating_grid(platform_settings: dict[str, Any], audit_settings: ConfigSettings, url: str) -> list[Problem]:
     """Audits the maintainability rating grid setting, verifying ranges are meaningful"""
     thresholds = util.csv_to_list(platform_settings["sonar.technicalDebt.ratingGrid"])
     problems = []
@@ -872,7 +873,7 @@ def _get_multiple_values(n: int, setting: str, severity: sev.Severity, domain: t
     return values
 
 
-def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> int:
+def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: KeyList = None) -> int:
     """Imports a configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -891,7 +892,7 @@ def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
     return False, None
 
 
-def export(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs: Any) -> types.ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -> ObjectJsonRepr:
     """Exports all or a list of projects configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -905,7 +906,7 @@ def export(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs: 
     return exp
 
 
-def basics(endpoint: Platform, **kwargs: Any) -> types.ObjectJsonRepr:
+def basics(endpoint: Platform, **kwargs: Any) -> ObjectJsonRepr:
     """Returns an endpooint basic info (license, edition, version etc..)"""
     exp = endpoint.basics()
     if write_q := kwargs.get("write_q", None):
@@ -914,7 +915,7 @@ def basics(endpoint: Platform, **kwargs: Any) -> types.ObjectJsonRepr:
     return exp
 
 
-def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs: Any) -> list[Problem]:
+def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs: Any) -> list[Problem]:
     """Audits a platform"""
     if not audit_settings.get("audit.globalSettings", True):
         log.info("Auditing global settings is disabled, audit skipped...")

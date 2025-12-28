@@ -21,9 +21,9 @@
 """Abstraction of the SonarQube project branch concept"""
 
 from __future__ import annotations
-from http import HTTPStatus
 from typing import Optional, Any, TYPE_CHECKING
 
+from http import HTTPStatus
 import json
 import re
 from urllib.parse import unquote
@@ -42,7 +42,7 @@ from sonar.audit.rules import get_rule, RuleId
 import sonar.util.constants as c
 
 if TYPE_CHECKING:
-    from sonar.util import types
+    from sonar.util.types import ApiPayload, ApiParams, ConfigSettings, ObjectJsonRepr
     from datetime import datetime
 
 _UNSUPPORTED_IN_CE = "Branches not available in Community Edition"
@@ -101,7 +101,7 @@ class Branch(components.Component):
         return cls.load(concerned_object, branch_name, br)
 
     @classmethod
-    def load(cls, concerned_object: proj.Project, branch_name: str, data: types.ApiPayload) -> Branch:
+    def load(cls, concerned_object: proj.Project, branch_name: str, data: ApiPayload) -> Branch:
         """Gets a Branch object from JSON data gotten from a list API call
 
         :param Project concerned_object: the Project the branch belonsg to
@@ -148,7 +148,7 @@ class Branch(components.Component):
             Branch.load(self.concerned_object, br["name"], data)
         return self
 
-    def _load(self, data: types.ApiPayload) -> None:
+    def _load(self, data: ApiPayload) -> None:
         log.debug("Loading %s with data %s", self, data)
         self.sq_json = (self.sq_json or {}) | data
         self._is_main = self.sq_json["isMain"]
@@ -181,9 +181,7 @@ class Branch(components.Component):
             log.warning(e.message)
             return False
 
-    def get(
-        self, api: str, params: types.ApiParams = None, data: Optional[str] = None, mute: tuple[HTTPStatus] = (), **kwargs: str
-    ) -> requests.Response:
+    def get(self, api: str, params: ApiParams = None, data: Optional[str] = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
         """Performs an HTTP GET request for the object"""
         try:
             return super().get(api=api, params=params, data=data, mute=mute, **kwargs)
@@ -193,7 +191,7 @@ class Branch(components.Component):
                 proj.Project.CACHE.clear()
             raise
 
-    def post(self, api: str, params: types.ApiParams = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
+    def post(self, api: str, params: ApiParams = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
         """Performs an HTTP POST request for the object"""
         try:
             return super().post(api=api, params=params, mute=mute, **kwargs)
@@ -221,7 +219,7 @@ class Branch(components.Component):
                     Branch.get_object(self.concerned_object, b["branchKey"])._new_code = new_code
         return self._new_code
 
-    def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
+    def export(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
         """Exports a branch configuration (is main, keep when inactive, optionally name, project)
 
         :param full_export: Also export branches attributes that are not needed for import, defaults to True
@@ -283,7 +281,7 @@ class Branch(components.Component):
             endpoint=self.endpoint, nc_type=new_code_type, nc_value=additional_data, project_key=self.concerned_object.key, branch=self.name
         )
 
-    def import_config(self, config_data: types.ObjectJsonRepr) -> None:
+    def import_config(self, config_data: ObjectJsonRepr) -> None:
         """Imports a branch configuration
 
         :param config_data: The branch configuration to import
@@ -328,7 +326,7 @@ class Branch(components.Component):
         Branch.CACHE.put(self)
         return True
 
-    def get_findings(self, filters: Optional[types.ApiParams] = None) -> dict[str, object]:
+    def get_findings(self, filters: Optional[ApiParams] = None) -> dict[str, object]:
         """Returns a branch list of findings
 
         :return: dict of Findings, with finding key as key
@@ -352,7 +350,7 @@ class Branch(components.Component):
         """Returns the project key"""
         return self.concerned_object.key
 
-    def sync(self, another_branch: Branch, sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
+    def sync(self, another_branch: Branch, sync_settings: ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs branch findings with another branch
 
         :param Branch another_branch: other branch to sync issues into (not necessarily of same project)
@@ -370,7 +368,7 @@ class Branch(components.Component):
             return [Problem(get_rule(RuleId.BRANCH_NEVER_ANALYZED), self, str(self))]
         return []
 
-    def __audit_last_analysis(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_last_analysis(self, audit_settings: ConfigSettings) -> list[Problem]:
         if self.is_main():
             log.info("%s is main (not purgeable)", str(self))
             return []
@@ -393,7 +391,7 @@ class Branch(components.Component):
             log.debug("%s age is %d days", str(self), age)
         return problems
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits a branch and return list of problems found
 
         :param ConfigSettings audit_settings: Options of what to audit and thresholds to raise problems
@@ -411,7 +409,7 @@ class Branch(components.Component):
             log.error("%s while auditing %s, audit skipped", sutil.error_msg(e), str(self))
         return []
 
-    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
+    def api_params(self, op: Optional[str] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {c.READ: {"project": self.concerned_object.key, "branch": self.name}, c.LIST: {"project": self.concerned_object.key}}
         return ops[op] if op and op in ops else ops[c.READ]

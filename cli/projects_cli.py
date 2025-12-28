@@ -24,6 +24,8 @@ Exports/Imports all projects of a SonarQube Server platform
 
 """
 
+from __future__ import annotations
+from typing import Any
 import json
 
 from requests import RequestException
@@ -33,8 +35,9 @@ import sonar.logging as log
 from sonar import errcodes, exceptions, version
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar import platform, projects
+from sonar import projects
 import sonar.util.common_helper as chelp
+from sonar.platform import Platform
 
 TOOL_NAME = "sonar-projects"
 
@@ -42,7 +45,7 @@ _EXPORT_IMPORT_TIMEOUT = 180
 _EXPORT_IMPORT_THREADS = 1
 
 
-def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
+def __export_projects(endpoint: Platform, **kwargs: Any) -> None:
     """Exports a list (or all) of projects into zip files"""
     ed = endpoint.edition()
     if ed == "sonarcloud":
@@ -69,7 +72,7 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
         print(util.json_dump(export_data), file=fd)
 
 
-def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
+def __import_projects(endpoint: Platform, **kwargs: Any) -> None:
     """Imports a list of projects in SonarQube Server EE+"""
     file = kwargs[options.REPORT_FILE]
     if not file:
@@ -143,7 +146,7 @@ def main() -> None:
             help="Skips export or import of projects with zero lines of code",
         )
         kwargs = sutil.convert_args(options.parse_and_check(parser=parser, logger_name=TOOL_NAME))
-        sq = platform.Platform(**kwargs)
+        sq = Platform(**kwargs)
         sq.verify_connection()
         sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
 

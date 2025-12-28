@@ -21,8 +21,12 @@
 """Abstraction of aggregations (portfolios or apps) permissions"""
 
 from __future__ import annotations
-from sonar.util import types
+from typing import TYPE_CHECKING
+
 from sonar.permissions import permissions, project_permissions
+
+if TYPE_CHECKING:
+    from sonar.util.types import PermissionDef
 
 AGGREGATION_PERMISSIONS = {
     "user": "Browse",
@@ -42,7 +46,7 @@ class AggregationPermissions(project_permissions.ProjectPermissions):
         self.white_list(AGGREGATION_PERMISSIONS)
         return self
 
-    def set(self, new_perms: list[types.PermissionDef]) -> AggregationPermissions:
+    def set(self, new_perms: list[PermissionDef]) -> AggregationPermissions:
         """Sets permissions of an aggregation
 
         :param new_perms: list of permissions definitions

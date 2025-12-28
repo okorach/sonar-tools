@@ -23,21 +23,24 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any, TYPE_CHECKING
 from http import HTTPStatus
 import requests.utils
 
 import sonar.logging as log
-import sonar.platform as pf
 
 import sonar.util.misc as util
-from sonar.util import types, cache, constants as c
+from sonar.util import cache, constants as c
 
 from sonar import users
 from sonar import findings, rules, changelog
 from sonar import exceptions
 import sonar.util.issue_defs as idefs
 import sonar.utilities as sutil
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
 PROJECT_FILTER = "project"
 PROJECT_FILTER_OLD = "projectKey"
@@ -80,6 +83,7 @@ class TooManyHotspotsError(Exception):
     """Too many hotspots found during a search"""
 
     def __init__(self, nbr_issues: int, message: str) -> None:
+        """Exception constructor"""
         super().__init__()
         self.nbr_issues = nbr_issues
         self.message = message
@@ -89,21 +93,26 @@ class Hotspot(findings.Finding):
     """Abstraction of the Sonar hotspot concept"""
 
     CACHE = cache.Cache()
-    API = {c.GET: "hotspots/show", c.SEARCH: "hotspots/search"}
+    API = {c.GET: "hotspots/show", c.SEARCH: "hotspots/search", c.ASSIGN: "hotspots/assign"}
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None, from_export: bool = False) -> None:
+    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self.type = idefs.TYPE_HOTSPOT
-        self.__details: types.ApiPayload = None
+        self.__details: ApiPayload = None
         Hotspot.CACHE.put(self)
         self.refresh()
 
     def __str__(self) -> str:
         """Returns the string representation of the object"""
         return f"Hotspot key '{self.key}'"
+
+    def api_params(self, op: str = c.GET) -> ApiParams:
+        """Returns the base API params to be used of a hotspot"""
+        ops = {c.GET: {"hotspot": self.key}}
+        return ops[op] if op in ops else ops[c.LIST]
 
     def url(self) -> str:
         """Returns the permalink URL to the hotspot in the SonarQube platform"""
@@ -114,14 +123,14 @@ class Hotspot(findings.Finding):
             branch = f"pullRequest={requests.utils.quote(self.pull_request)}&"
         return f"{self.base_url(local=False)}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}"
 
-    def to_json(self, without_time: bool = False) -> types.ObjectJsonRepr:
+    def to_json(self, without_time: bool = False) -> ObjectJsonRepr:
         """Returns the JSON representation of the hotspot"""
         data = super().to_json(without_time)
         if self.endpoint.is_mqr_mode():
             data["impacts"][idefs.QUALITY_SECURITY] += f"({idefs.TYPE_HOTSPOT})"
         return data
 
-    def _load(self, data: types.ApiPayload, from_export: bool = False) -> None:
+    def _load(self, data: ApiPayload, from_export: bool = False) -> None:
         """Loads the hotspot details from the provided data (coming from api/hotspots/search)"""
         super()._load(data, from_export)
         if not self.rule:
@@ -135,7 +144,7 @@ class Hotspot(findings.Finding):
         :return: Whether there operation succeeded
         """
         try:
-            resp = self.get(Hotspot.API[c.GET], {"hotspot": self.key})
+            resp = self.get(Hotspot.API[c.GET], self.api_params())
             if resp.ok:
                 d = json.loads(resp.text)
                 self.__details = d
@@ -152,9 +161,12 @@ class Hotspot(findings.Finding):
             return False
 
     def __mark_as(self, resolution: Optional[str], comment: Optional[str] = None, status: str = "REVIEWED") -> bool:
-        """Marks a hotspot with a particular resolution and status"""
+        """Marks a hotspot with a particular resolution and status
+
+        :return: Whether the operation succeeded
+        """
         try:
-            params = util.remove_nones({"hotspot": self.key, "status": status, "resolution": resolution, "commemt": comment})
+            params = util.remove_nones({**self.api_params(), "status": status, "resolution": resolution, "commemt": comment})
             ok = self.post("hotspots/change_status", params=params).ok
             self.refresh()
         except exceptions.SonarException:
@@ -203,42 +215,15 @@ class Hotspot(findings.Finding):
     def add_comment(self, comment: str) -> bool:
         """Adds a comment to a hotspot
 
-        :param str comment: Comment to add, in markdown format
+        :param comment: Comment to add, in markdown format
         :return: Whether the operation succeeded
         """
         try:
-            return self.post("hotspots/add_comment", params={"hotspot": self.key, "comment": comment}).ok
+            return self.post("hotspots/add_comment", params={**self.api_params(), "comment": comment}).ok
         except exceptions.SonarException:
             return False
 
-    def assign(self, assignee: Optional[str], comment: Optional[str] = None) -> bool:
-        """Assigns a hotspot (and optionally comment)
-
-        :param str assignee: User login to assign the hotspot, None to unassign
-        :param str comment: Optional comment to add
-        :return: Whether the operation succeeded
-        """
-        try:
-            if assignee is None:
-                log.debug("Unassigning %s", str(self))
-            else:
-                log.debug("Assigning %s to '%s'", str(self), str(assignee))
-            ok = self.post("hotspots/assign", util.remove_nones({"hotspot": self.key, "assignee": assignee, "comment": comment})).ok
-            if ok:
-                self.assignee = assignee
-        except exceptions.SonarException:
-            return False
-        else:
-            return ok
-
-    def unassign(self, comment: Optional[str] = None) -> bool:
-        """Unassigns a hotspot (and optionally comment)
-
-        :return: Whether the operation succeeded
-        """
-        return self.assign(assignee=None, comment=comment)
-
-    def __apply_event(self, event: object, settings: types.ConfigSettings) -> bool:
+    def __apply_event(self, event: object, settings: ConfigSettings) -> bool:
         """Applies a changelog event (transition, comment, assign) to the hotspot"""
         from sonar import syncer
 
@@ -274,7 +259,7 @@ class Hotspot(findings.Finding):
             return False
         return True
 
-    def apply_changelog(self, source_hotspot: Hotspot, settings: types.ConfigSettings) -> int:
+    def apply_changelog(self, source_hotspot: Hotspot, settings: ConfigSettings) -> int:
         """Applies a changelog and comments from a source to a target hotspot
 
         :param source_hotspot: The source hotspot to take changes from
@@ -357,11 +342,11 @@ class Hotspot(findings.Finding):
                 "commentKey": cmt["key"],
             }
         if after is not None:
-            return {k: v for k, v in self._comments.items() if v["date"] and util.to_datetime(v["date"]) > after}
+            return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > util.add_tz(after)}
         return self._comments
 
 
-def search_by_project(endpoint: pf.Platform, project_key: str, filters: types.ApiParams = None) -> dict[str, Hotspot]:
+def search_by_project(endpoint: Platform, project_key: str, filters: ApiParams = None) -> dict[str, Hotspot]:
     """Searches hotspots of a project
 
     :param endpoint: Reference to the SonarQube platform
@@ -380,12 +365,12 @@ def search_by_project(endpoint: pf.Platform, project_key: str, filters: types.Ap
     return post_search_filter(hotspots, filters=filters)
 
 
-def component_filter(endpoint: pf.Platform) -> str:
+def component_filter(endpoint: Platform) -> str:
     """Returns the string to filter by porject in api/hotspots/search"""
     return PROJECT_FILTER if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else PROJECT_FILTER_OLD
 
 
-def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, Hotspot]:
+def search(endpoint: Platform, filters: ApiParams = None) -> dict[str, Hotspot]:
     """Searches hotspots
 
     :param endpoint: Reference to the SonarQube platform
@@ -425,14 +410,14 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
     return post_search_filter(hotspots_list, filters)
 
 
-def get_object(endpoint: pf.Platform, key: str, data: Optional[dict[str]] = None, from_export: bool = False) -> Hotspot:
+def get_object(endpoint: Platform, key: str, data: Optional[dict[str]] = None, from_export: bool = False) -> Hotspot:
     """Returns a hotspot from its key"""
     if not (o := Hotspot.CACHE.get(key, endpoint.local_url)):
         o = Hotspot(key=key, data=data, endpoint=endpoint, from_export=from_export)
     return o
 
 
-def sanitize_search_filters(endpoint: pf.Platform, params: types.ApiParams) -> types.ApiParams:
+def sanitize_search_filters(endpoint: Platform, params: ApiParams) -> ApiParams:
     """Returns the filtered list of params that are allowed for api/hotspots/search"""
     log.debug("Sanitizing hotspot search criteria %s", str(params))
     if params is None:
@@ -453,20 +438,20 @@ def sanitize_search_filters(endpoint: pf.Platform, params: types.ApiParams) -> t
     return criterias
 
 
-def __split_filter(params: types.ApiParams, criteria: str) -> list[types.ApiParams]:
+def __split_filter(params: ApiParams, criteria: str) -> list[ApiParams]:
     """Creates a list of filters from a single one that has values that requires multiple hotspot searches"""
     if (crits := params.pop(criteria, None)) is None:
         return [params]
     return [{**params, criteria: crit} for crit in util.csv_to_list(crits)]
 
 
-def split_search_filters(params: types.ApiParams) -> list[types.ApiParams]:
+def split_search_filters(params: ApiParams) -> list[ApiParams]:
     """Split search filters for which you can only pass 1 value at a time in api/hotspots/search"""
     list_2d = [__split_filter(f, "status") for f in __split_filter(params, "resolution")]
     return [crit2 for crit1 in list_2d for crit2 in crit1]
 
 
-def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: types.ApiParams) -> dict[str, Hotspot]:
+def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: ApiParams) -> dict[str, Hotspot]:
     """Filters a dict of hotspots with provided filters"""
     log.debug("Post filtering findings with %s - Starting with %d hotspots", str(filters), len(hotspots_dict))
     filtered_findings = hotspots_dict.copy()
@@ -490,7 +475,7 @@ def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: types.ApiPara
     return filtered_findings
 
 
-def count(endpoint: pf.Platform, **kwargs) -> int:
+def count(endpoint: Platform, **kwargs: Any) -> int:
     """Returns number of hotspots of a search"""
     params = {} if not kwargs else kwargs.copy()
     params["ps"] = 1

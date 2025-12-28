@@ -20,18 +20,21 @@
 
 """Findings syncer"""
 
+from __future__ import annotations
+from typing import Union, TYPE_CHECKING
+
 import concurrent.futures
 import traceback
 
-from typing import Union
-
 import sonar.logging as log
 import sonar.util.misc as util
-from sonar.util import types
 from sonar import findings
 from sonar.projects import Project
 from sonar.branches import Branch
 from sonar import exceptions
+
+if TYPE_CHECKING:
+    from sonar.util.types import ConfigSettings
 
 
 SYNC_IGNORE_COMPONENTS = "ignore_components"
@@ -75,7 +78,7 @@ def __issue_data(finding: findings.Finding, prefix: str) -> dict[str, str]:
     return {k: v for k, v in data.items() if v is not None}
 
 
-def __process_exact_sibling(finding: findings.Finding, sibling: findings.Finding, settings: types.ConfigSettings) -> dict[str, str]:
+def __process_exact_sibling(finding: findings.Finding, sibling: findings.Finding, settings: ConfigSettings) -> dict[str, str]:
     """Returns data about an exact finding match"""
     finding_type = util.class_name(finding).lower()
     last_target_change = sibling.last_changelog_date()
@@ -156,9 +159,7 @@ def __process_modified_siblings(finding: findings.Finding, siblings: list[findin
     )
 
 
-def __sync_one_finding(
-    src_finding: findings.Finding, tgt_findings: list[findings.Finding], settings: types.ConfigSettings
-) -> tuple[int, dict[str, str]]:
+def __sync_one_finding(src_finding: findings.Finding, tgt_findings: list[findings.Finding], settings: ConfigSettings) -> tuple[int, dict[str, str]]:
     """Syncs one finding"""
     (exact_siblings, approx_siblings, modified_siblings) = src_finding.search_siblings(
         tgt_findings,
@@ -179,7 +180,7 @@ def __sync_one_finding(
 
 
 def __sync_curated_list(
-    src_findings: list[findings.Finding], tgt_findings: list[findings.Finding], settings: types.ConfigSettings
+    src_findings: list[findings.Finding], tgt_findings: list[findings.Finding], settings: ConfigSettings
 ) -> tuple[list[dict[str, str]], dict[str, int]]:
     """Syncs 2 list of findings"""
     counters = dict.fromkeys((EXACT_MATCH, APPROX_MATCH, MODIFIED_MATCH, MULTIPLE_MATCHES, NO_MATCH, "timeout", "exception"), 0)
@@ -212,7 +213,7 @@ def sync_lists(
     tgt_findings: list[findings.Finding],
     src_object: object,
     tgt_object: object,
-    sync_settings: types.ConfigSettings = None,
+    sync_settings: ConfigSettings = None,
 ) -> tuple[list[dict[str, str]], dict[str, int]]:
     """Syncs 2 list of findings and returns report and count of syncs"""
     # Mass collect changelogs with multithreading, that will be needed later
@@ -254,7 +255,7 @@ def sync_lists(
 
 
 def sync_objects(
-    src_object: Union[Project, Branch], tgt_object: Union[Project, Branch], sync_settings: types.ConfigSettings = None
+    src_object: Union[Project, Branch], tgt_object: Union[Project, Branch], sync_settings: ConfigSettings = None
 ) -> tuple[list[dict[str, str]], dict[str, int]]:
     """Syncs findings from a source object into a target object"""
     log.info("Syncing %s and %s issues", str(src_object), str(tgt_object))

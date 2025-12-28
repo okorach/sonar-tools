@@ -26,21 +26,22 @@ import math
 from datetime import date, datetime, timedelta
 import json
 import re
-from typing import Any, Union, Optional
+from typing import Any, Union, Optional, TYPE_CHECKING
 
 import concurrent.futures
 import requests.utils
 
 import sonar.logging as log
-import sonar.platform as pf
 from sonar.util import cache, issue_defs as idefs
 import sonar.util.constants as c
-
-from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
 from sonar import users, findings, changelog, projects, rules, config, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
 _OLD_SEARCH_COMPONENT_FIELD = "componentKeys"
 _NEW_SEARCH_COMPONENT_FIELD = "components"
@@ -116,32 +117,28 @@ class TooManyIssuesError(Exception):
     """When a call to api/issues/search returns too many issues."""
 
     def __init__(self, nbr_issues: int, message: str) -> None:
+        """Exception constructor"""
         super().__init__()
         self.nbr_issues = nbr_issues
         self.message = message
 
 
 class Issue(findings.Finding):
-    """
-    Abstraction of the SonarQube 'issue' concept
-    """
+    """Abstraction of the SonarQube 'issue' concept"""
 
     CACHE = cache.Cache()
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
-    API = {c.SEARCH: "issues/search", c.GET_TAGS: "issues/search", c.SET_TAGS: "issues/set_tags"}
+    API = {c.SEARCH: "issues/search", c.GET_TAGS: "issues/search", c.SET_TAGS: "issues/set_tags", c.ASSIGN: "issues/assign"}
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
+    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self._debt: Optional[int] = None
         Issue.CACHE.put(self)
 
     def __str__(self) -> str:
-        """
-        :return: String representation of the issue
-        :rtype: str
-        """
+        """Returns a string representation of the issue"""
         return f"Issue key '{self.key}'"
 
     def __format__(self, format_spec: str = "") -> str:
@@ -150,15 +147,13 @@ class Issue(findings.Finding):
             f" - File/Line: {self.component}/{self.line} - Rule: {self.rule} - Project: {self.projectKey}"
         )
 
-    def api_params(self, op: str = c.LIST) -> ApiParams:
-        ops = {c.LIST: {"issues": self.key}, c.SET_TAGS: {"issue": self.key}, c.GET_TAGS: {"issues": self.key}}
-        return ops[op] if op in ops else ops[c.LIST]
+    def api_params(self, op: str = c.GET) -> ApiParams:
+        """Returns the base API params to be used of an issue"""
+        ops = {c.GET: {"issue": self.key}, c.LIST: {"issues": self.key}, c.SET_TAGS: {"issue": self.key}, c.GET_TAGS: {"issues": self.key}}
+        return ops[op] if op in ops else ops[c.GET]
 
     def url(self) -> str:
-        """
-        :return: A permalink URL to the issue in the SonarQube platform
-        :rtype: str
-        """
+        """Returns a permalink URL to the issue in the SonarQube platform"""
         branch = ""
         if self.branch is not None:
             branch = f"&branch={requests.utils.quote(self.branch)}"
@@ -167,25 +162,19 @@ class Issue(findings.Finding):
         return f"{self.base_url(local=False)}/project/issues?id={self.projectKey}{branch}&issues={self.key}"
 
     def debt(self) -> int:
-        """
-        :return: The remediation effort of the issue, in minutes
-        """
+        """Returns the remediation effort of the issue, in minutes"""
         if self._debt is not None:
             return self._debt
         if "debt" in self.sq_json:
             kdays, days, hours, minutes = 0, 0, 0, 0
             debt = self.sq_json["debt"]
-            m = re.search(r"(\d+)kd", debt)
-            if m:
+            if m := re.search(r"(\d+)kd", debt):
                 kdays = int(m.group(1))
-            m = re.search(r"(\d+)d", debt)
-            if m:
+            if m := re.search(r"(\d+)d", debt):
                 days = int(m.group(1))
-            m = re.search(r"(\d+)h", debt)
-            if m:
+            if m := re.search(r"(\d+)h", debt):
                 hours = int(m.group(1))
-            m = re.search(r"(\d+)min", debt)
-            if m:
+            if m := re.search(r"(\d+)min", debt):
                 minutes = int(m.group(1))
             self._debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
         elif "effort" in self.sq_json:
@@ -195,10 +184,7 @@ class Issue(findings.Finding):
         return self._debt
 
     def to_json(self, without_time: bool = False) -> ObjectJsonRepr:
-        """
-        :return: The issue attributes as JSON
-        :rtype: dict
-        """
+        """Returns the issue JSON representation"""
         data = super().to_json(without_time)
         if self.endpoint.version() >= c.MQR_INTRO_VERSION:
             data["impacts"] = {elem["softwareQuality"]: elem["severity"] for elem in self.sq_json["impacts"]}
@@ -207,8 +193,8 @@ class Issue(findings.Finding):
 
     def refresh(self) -> bool:
         """Refreshes an issue from the SonarQube platform live data
+
         :return: whether the refresh was successful
-        :rtype: bool
         """
         resp = self.get(Issue.API[c.SEARCH], params={"issues": self.key, "additionalFields": "_all"})
         if resp.ok:
@@ -232,9 +218,10 @@ class Issue(findings.Finding):
             }
 
     def changelog(self, after: Optional[datetime] = None, manual_only: bool = True) -> dict[str, changelog.Changelog]:
-        """
-        :param Optional[datetime] after: If set, only changes after that date are returned
-        :param Optional[bool] manual_only: Whether the only manual changes should be returned or all changes, defaults to True
+        """Returns the changelog of an issue
+
+        :param after: If set, only changes after that date are returned
+        :param manual_only: Whether the only manual changes should be returned or all changes, defaults to True
         :return: The issue changelog
         :rtype: dict{"<date>_<sequence_nbr>": Changelog}
         """
@@ -261,8 +248,9 @@ class Issue(findings.Finding):
         return self._changelog
 
     def comments(self, after: Optional[datetime] = None) -> dict[str, dict[str, Any]]:
-        """
-        :param Optional[datetime] after: If set will only return comments after this date, else all
+        """Returns the comments of an issue
+
+        :param after: If set will only return comments after this date, else all
         :return: The issue comments
         :rtype: dict{"<date>_<sequence_nbr>": <comment>}
         """
@@ -281,15 +269,14 @@ class Issue(findings.Finding):
                     "userName": cmt["login"],
                 }
         if after is not None:
-            return {k: v for k, v in self._comments.items() if v["date"] and util.to_datetime(v["date"]) > after}
+            return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > util.add_tz(after)}
         return self._comments
 
     def add_comment(self, comment: str) -> bool:
         """Adds a comment to an issue
 
-        :param str comment: The comment to add
+        :param comment: The comment to add
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Adding comment '%s' to %s", comment, str(self))
         try:
@@ -298,6 +285,7 @@ class Issue(findings.Finding):
             return False
 
     def __set_severity(self, **params) -> bool:
+        """Changes the severity of an issue, in std experience or MQR depending on params"""
         log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, str(params))
         r = self.post("issues/set_severity", {"issue": self.key, **params})
         return r.ok
@@ -305,7 +293,7 @@ class Issue(findings.Finding):
     def set_severity(self, severity: str) -> bool:
         """Changes the standard severity of an issue
 
-        :param str severity: The comment to add
+        :param severity: The severity to add
         :return: Whether the operation succeeded
         """
         if self.endpoint.is_mqr_mode():
@@ -317,10 +305,10 @@ class Issue(findings.Finding):
         return success
 
     def set_mqr_severity(self, software_quality: str, severity: str) -> bool:
-        """Changes the severity of an issue
+        """Changes the MQR severity/impact of an issue
 
-        :param str software_quality: The software quality to set
-        :param str severity: The severity to set
+        :param software_quality: The software quality to set
+        :param severity: The severity to set
         :return: Whether the operation succeeded
         """
         if self.endpoint.is_sonarcloud():
@@ -332,24 +320,8 @@ class Issue(findings.Finding):
         else:
             return self.__set_severity(impact=f"{software_quality}={severity}")
 
-    def assign(self, assignee: Optional[str] = None) -> bool:
-        """Assigns an issue to a user
-
-        :param str assignee: The user login, set to None to unassign the issue
-        :return: Whether the operation succeeded
-        """
-        try:
-            params = util.remove_nones({"issue": self.key, "assignee": assignee})
-            log.debug("Assigning %s to '%s'", str(self), str(assignee))
-            if ok := self.post("issues/assign", params).ok:
-                self.assignee = assignee
-        except exceptions.SonarException:
-            return False
-        else:
-            return ok
-
     def get_tags(self, **kwargs) -> list[str]:
-        """Returns issues tags"""
+        """Returns the tags of an issue"""
         api = self.__class__.API[c.GET_TAGS]
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
@@ -361,22 +333,21 @@ class Issue(findings.Finding):
 
     def add_tag(self, tag: str) -> bool:
         """Adds a tag to an issue
-        :param str tag: Tags to add
+
+        :param tag: Tags to add
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Adding tag '%s' to %s", tag, str(self))
         return self.set_tags((self._tags or []) + [tag])
 
     def remove_tag(self, tag: str) -> bool:
         """Removes a tag from an issue
-        :param str tag: Tag to remove
+
+        :param tag: Tag to remove
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Removing tag '%s' from %s", tag, str(self))
-        if self._tags is None:
-            self._tags = []
+        self._tags = self._tags or []
         tags = self._tags.copy()
         if tag in self._tags:
             tags.remove(tag)
@@ -384,7 +355,9 @@ class Issue(findings.Finding):
 
     def set_type(self, new_type: str) -> bool:
         """Sets an issue type
-        :param str new_type: New type of the issue (Can be BUG, VULNERABILITY or CODE_SMELL)
+
+        :param new_type: New type of the issue (Can be BUG, VULNERABILITY or CODE_SMELL)
+        :raises: UnsupportedOperation if MQR mode (changing type is not supported in that mode)
         :return: Whether the operation succeeded
         """
         if self.endpoint.is_mqr_mode():
@@ -395,35 +368,28 @@ class Issue(findings.Finding):
         return ok
 
     def is_wont_fix(self) -> bool:
-        """
-        :return: Whether the issue is won't fix
-        :rtype: bool
-        """
+        """Returns whether the issue status is won't fix"""
         return self.resolution == "WONTFIX"
 
     def is_accepted(self) -> bool:
-        """
-        :return: Whether the issue is won't fix
-        :rtype: bool
-        """
+        """returns whether the issue status is Accepted"""
         return self.resolution == "ACCEPTED"
 
     def is_false_positive(self) -> bool:
-        """
-        :return: Whether the issue is a false positive
-        :rtype: bool
-        """
+        """Returns whether the issue status is false positive"""
         return self.resolution in ("FALSE-POSITIVE", "FALSE_POSITIVE")
 
     def strictly_identical_to(self, another_finding: Issue, ignore_component: bool = False) -> bool:
-        """
-        :meta private:
+        """Returns whether 2 issues are strictly identical
+
+        :param ignore_comment: Whether to consider comments or not to consider identical
         """
         return super().strictly_identical_to(another_finding, ignore_component) and (self.debt() == another_finding.debt())
 
     def almost_identical_to(self, another_finding: Issue, ignore_component: bool = False, **kwargs) -> bool:
-        """
-        :meta private:
+        """Returns whether 2 issues are almost identical
+
+        :param ignore_component: Whether to consider the componet or not to consider almost identical
         """
         rule_debt_calc = rules.Rule.get_object(self.endpoint, self.rule).sq_json.get("remFnType", "CONSTANT_ISSUE")
         # Rule that have linear remediation function may have slightly different debt
@@ -435,7 +401,6 @@ class Issue(findings.Finding):
         """Re-opens an issue
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Reopening %s", str(self))
         return self.do_transition("reopen")
@@ -444,7 +409,6 @@ class Issue(findings.Finding):
         """Sets an issue as false positive
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Marking %s as false positive", str(self))
         return self.do_transition("falsepositive")
@@ -453,7 +417,6 @@ class Issue(findings.Finding):
         """Confirms an issue
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Confirming %s", str(self))
         return self.do_transition("confirm")
@@ -462,7 +425,6 @@ class Issue(findings.Finding):
         """Unconfirms an issue
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Unconfirming %s", str(self))
         return self.do_transition("unconfirm")
@@ -471,7 +433,6 @@ class Issue(findings.Finding):
         """Marks an issue as resolved as fixed
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Marking %s as fixed", str(self))
         return self.do_transition("resolve")
@@ -480,19 +441,17 @@ class Issue(findings.Finding):
         """Marks an issue as resolved as won't fix
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
+        transition = "wontfix"
         if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION or self.endpoint.is_sonarcloud():
             log.warning("Marking %s as won't fix is deprecated, using Accept instead", str(self))
-            return self.do_transition("accept")
-        else:
-            return self.do_transition("wontfix")
+            transition = "accept"
+        return self.do_transition(transition)
 
     def accept(self) -> bool:
-        """Marks an issue as resolved as won't fix
+        """Accepts an issue
 
         :return: Whether the operation succeeded
-        :rtype: bool
         """
         log.debug("Marking %s as accepted", str(self))
         return self.do_transition("accept")
@@ -576,9 +535,9 @@ class Issue(findings.Finding):
         return True
 
     def apply_changelog(self, source_issue: Issue, settings: ConfigSettings) -> int:
-        """
-        Applies a changelog and comments from a source to a target issue
-        :param Issue source_hotspot: The source issues to take changes from
+        """Applies a changelog and comments from a source to a target issue
+
+        :param source_issue: The source issues to take changes from
         :return: Number of changes applied
         """
         counter = 0
@@ -609,24 +568,24 @@ class Issue(findings.Finding):
 # ------------------------------- Static methods --------------------------------------
 
 
-def component_search_field(endpoint: pf.Platform) -> str:
+def component_search_field(endpoint: Platform) -> str:
     """Returns the fields used for issues/search filter by porject key"""
     return _NEW_SEARCH_COMPONENT_FIELD if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else _OLD_SEARCH_COMPONENT_FIELD
 
 
-def type_search_field(endpoint: pf.Platform) -> str:
+def type_search_field(endpoint: Platform) -> str:
     return _OLD_SEARCH_TYPE_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_TYPE_FIELD
 
 
-def severity_search_field(endpoint: pf.Platform) -> str:
+def severity_search_field(endpoint: Platform) -> str:
     return _OLD_SEARCH_SEVERITY_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_SEVERITY_FIELD
 
 
-def status_search_field(endpoint: pf.Platform) -> str:
+def status_search_field(endpoint: Platform) -> str:
     return _OLD_SEARCH_STATUS_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_STATUS_FIELD
 
 
-def search_by_directory(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
+def search_by_directory(endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by directory to avoid exceeding the 10K limit"""
     new_params = pre_search_filters(endpoint, params)
     proj_key = new_params.get("project", new_params.get(component_search_field(endpoint), None))
@@ -646,7 +605,7 @@ def search_by_directory(endpoint: pf.Platform, params: ApiParams) -> dict[str, I
     return issue_list
 
 
-def search_by_file(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
+def search_by_file(endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by directory to avoid exceeding the 10K limit"""
     new_params = pre_search_filters(endpoint, params)
     proj_key = new_params.get("project", new_params.get(component_search_field(endpoint), None))
@@ -659,7 +618,7 @@ def search_by_file(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]
             new_params["files"] = d["val"]
             issue_list.update(search(endpoint=endpoint, params=new_params, raise_error=True))
         except TooManyIssuesError:
-            log.error("Too many issues (>10000) in file %s, aborting search issue for this file", f'{proj_key}:{d["val"]}')
+            log.error("Too many issues (>%d) in file %s, aborting search issue for this file", Issue.MAX_SEARCH, f'{proj_key}:{d["val"]}')
             continue
         except exceptions.SonarException as e:
             log.error("Error while searching issues in file %s: %s", f'{proj_key}:{d["val"]}', str(e))
@@ -668,7 +627,7 @@ def search_by_file(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]
     return issue_list
 
 
-def search_by_type(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
+def search_by_type(endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by type to avoid exceeding the 10K limit"""
     issue_list = {}
     new_params = pre_search_filters(endpoint, params)
@@ -685,7 +644,7 @@ def search_by_type(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]
     return issue_list
 
 
-def search_by_severity(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
+def search_by_severity(endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by severity to avoid exceeding the 10K limit"""
     issue_list = {}
     new_params = pre_search_filters(endpoint, params)
@@ -702,7 +661,7 @@ def search_by_severity(endpoint: pf.Platform, params: ApiParams) -> dict[str, Is
     return issue_list
 
 
-def search_by_date(endpoint: pf.Platform, params: ApiParams, date_start: Optional[date] = None, date_stop: Optional[date] = None) -> dict[str, Issue]:
+def search_by_date(endpoint: Platform, params: ApiParams, date_start: Optional[date] = None, date_stop: Optional[date] = None) -> dict[str, Issue]:
     """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
     new_params = pre_search_filters(endpoint, params)
     if date_start is None:
@@ -749,7 +708,7 @@ def search_by_date(endpoint: pf.Platform, params: ApiParams, date_start: Optiona
     return issue_list
 
 
-def __search_all_by_project(endpoint: pf.Platform, project_key: str, params: ApiParams = None) -> dict[str, Issue]:
+def __search_all_by_project(endpoint: Platform, project_key: str, params: ApiParams = None) -> dict[str, Issue]:
     """Search issues by project"""
     log.debug("Searching by project with params %s", params)
     new_params = pre_search_filters(endpoint, params)
@@ -764,7 +723,7 @@ def __search_all_by_project(endpoint: pf.Platform, project_key: str, params: Api
     return issue_list
 
 
-def search_by_project(endpoint: pf.Platform, project_key: str, params: ApiParams = None, search_findings: bool = False) -> dict[str, Issue]:
+def search_by_project(endpoint: Platform, project_key: str, params: ApiParams = None, search_findings: bool = False) -> dict[str, Issue]:
     """Search all issues of a given project
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -792,7 +751,7 @@ def search_by_project(endpoint: pf.Platform, project_key: str, params: ApiParams
     return issue_list
 
 
-def search_all(endpoint: pf.Platform, params: ApiParams = None) -> dict[str, Issue]:
+def search_all(endpoint: Platform, params: ApiParams = None) -> dict[str, Issue]:
     """Returns all issues of the platforms with chosen filtering parameters
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -821,7 +780,7 @@ def search_all(endpoint: pf.Platform, params: ApiParams = None) -> dict[str, Iss
     return issue_list
 
 
-def __get_issue_list(endpoint: pf.Platform, data: ApiPayload, params) -> dict[str, Issue]:
+def __get_issue_list(endpoint: Platform, data: ApiPayload, params: ApiParams) -> dict[str, Issue]:
     """Returns a list of issues from the API payload"""
     br, pr = params.get("branch", None), params.get("pullRequest", None)
     for i in data["issues"]:
@@ -829,7 +788,7 @@ def __get_issue_list(endpoint: pf.Platform, data: ApiPayload, params) -> dict[st
     return {i["key"]: get_object(endpoint=endpoint, key=i["key"], data=i) for i in data["issues"]}
 
 
-def __search_page(endpoint: pf.Platform, params: ApiParams, page: int) -> dict[str, Issue]:
+def __search_page(endpoint: Platform, params: ApiParams, page: int) -> dict[str, Issue]:
     """Searches a page of issues"""
     page_params = params.copy()
     page_params["p"] = page
@@ -839,7 +798,7 @@ def __search_page(endpoint: pf.Platform, params: ApiParams, page: int) -> dict[s
     return issue_list
 
 
-def search_first(endpoint: pf.Platform, **params) -> Union[Issue, None]:
+def search_first(endpoint: Platform, **params) -> Union[Issue, None]:
     """
     :return: The first issue of a search, for instance the oldest, if params = s="CREATION_DATE", asc=asc_sort
     :rtype: Issue or None if not issue found
@@ -852,7 +811,7 @@ def search_first(endpoint: pf.Platform, **params) -> Union[Issue, None]:
     return get_object(endpoint=endpoint, key=data[0]["key"], data=data[0])
 
 
-def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = True, threads: int = 8) -> dict[str, Issue]:
+def search(endpoint: Platform, params: ApiParams = None, raise_error: bool = True, threads: int = 8) -> dict[str, Issue]:
     """Multi-threaded search of issues
 
     :param dict params: Search filter criteria to narrow down the search
@@ -897,7 +856,7 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
     return issue_list
 
 
-def _get_facets(endpoint: pf.Platform, project_key: str, facets: str = "directories", params: ApiParams = None) -> dict[str, str]:
+def _get_facets(endpoint: Platform, project_key: str, facets: str = "directories", params: ApiParams = None) -> dict[str, str]:
     """Returns the facets of a search"""
     if not params:
         params = {}
@@ -907,7 +866,7 @@ def _get_facets(endpoint: pf.Platform, project_key: str, facets: str = "director
     return {f["property"]: f["values"] for f in data["facets"] if f["property"] in util.csv_to_list(facets)}
 
 
-def __get_one_issue_date(endpoint: pf.Platform, asc_sort: str = "false", params: ApiParams = None) -> Optional[datetime]:
+def __get_one_issue_date(endpoint: Platform, asc_sort: str = "false", params: ApiParams = None) -> Optional[datetime]:
     """Returns the date of one issue found"""
     issue = search_first(endpoint=endpoint, s="CREATION_DATE", asc=asc_sort, **params)
     if not issue:
@@ -915,17 +874,17 @@ def __get_one_issue_date(endpoint: pf.Platform, asc_sort: str = "false", params:
     return issue.creation_date
 
 
-def get_oldest_issue(endpoint: pf.Platform, params: ApiParams = None) -> Union[datetime, None]:
+def get_oldest_issue(endpoint: Platform, params: ApiParams = None) -> Union[datetime, None]:
     """Returns the oldest date of all issues found"""
     return __get_one_issue_date(endpoint=endpoint, asc_sort="true", params=params)
 
 
-def get_newest_issue(endpoint: pf.Platform, params: ApiParams = None) -> Union[datetime, None]:
+def get_newest_issue(endpoint: Platform, params: ApiParams = None) -> Union[datetime, None]:
     """Returns the newest date of all issues found"""
     return __get_one_issue_date(endpoint=endpoint, asc_sort="false", params=params)
 
 
-def count(endpoint: pf.Platform, **kwargs) -> int:
+def count(endpoint: Platform, **kwargs: Any) -> int:
     """Returns number of issues of a search"""
     filters = pre_search_filters(endpoint=endpoint, params=kwargs)
     filters["ps"] = 1
@@ -934,7 +893,7 @@ def count(endpoint: pf.Platform, **kwargs) -> int:
     return nbr_issues
 
 
-def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
+def count_by_rule(endpoint: Platform, **kwargs) -> dict[str, int]:
     """Returns number of issues of a search"""
     nbr_slices = 1
     SLICE_SIZE = 50  # Search rules facets by bulks of 50
@@ -956,7 +915,7 @@ def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
     return rulecount
 
 
-def get_object(endpoint: pf.Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> Issue:
+def get_object(endpoint: Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> Issue:
     """Returns an issue from its key"""
     o = Issue.CACHE.get(key, endpoint.local_url)
     if not o:
@@ -964,7 +923,7 @@ def get_object(endpoint: pf.Platform, key: str, data: ApiPayload = None, from_ex
     return o
 
 
-def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
+def pre_search_filters(endpoint: Platform, params: ApiParams) -> ApiParams:
     """Returns the filtered list of params that are allowed for api/issues/search"""
     if not params:
         return {}

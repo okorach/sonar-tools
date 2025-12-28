@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube DevOps platform concept"""
 
 from __future__ import annotations
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 import json
 
 import sonar.logging as log
@@ -31,6 +31,9 @@ import sonar.sqobject as sq
 from sonar import exceptions
 import sonar.util.misc as util
 import sonar.util.constants as c
+
+if TYPE_CHECKING:
+    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
 
 #: DevOps platform types in SonarQube
 DEVOPS_AZURE = "azure"
@@ -80,7 +83,7 @@ class DevopsPlatform(sq.SqObject):
         raise exceptions.ObjectNotFound(key, f"DevOps platform key '{key}' not found")
 
     @classmethod
-    def load(cls, endpoint: platform.Platform, plt_type: str, data: types.ApiPayload) -> DevopsPlatform:
+    def load(cls, endpoint: platform.Platform, plt_type: str, data: ApiPayload) -> DevopsPlatform:
         """Finds a devops platform object and loads it with data"""
         key = data["key"]
         o = DevopsPlatform.CACHE.get(key, endpoint.local_url)
@@ -118,7 +121,7 @@ class DevopsPlatform(sq.SqObject):
         o.refresh()
         return o
 
-    def _load(self, data: types.ApiPayload) -> DevopsPlatform:
+    def _load(self, data: ApiPayload) -> DevopsPlatform:
         """Loads a devops platform object with data"""
         self.sq_json = data
         self.url = "https://bitbucket.org" if self.type == "bitbucketcloud" else data["url"]
@@ -132,7 +135,7 @@ class DevopsPlatform(sq.SqObject):
             string += f" workspace '{self._specific['workspace']}'"
         return string
 
-    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
+    def api_params(self, op: Optional[str] = None) -> ApiParams:
         """Returns the API parameters for the operation"""
         return {"key": self.key}
 
@@ -148,7 +151,7 @@ class DevopsPlatform(sq.SqObject):
                 return True
         return False
 
-    def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
+    def to_json(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
         """Exports a DevOps platform configuration in JSON format
 
         :param ConfigSettings export_settings: Config params for the export
@@ -243,7 +246,7 @@ def exists(endpoint: platform.Platform, key: str) -> bool:
     return True
 
 
-def export(endpoint: platform.Platform, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
+def export(endpoint: platform.Platform, export_settings: ConfigSettings) -> ObjectJsonRepr:
     """
     :meta private:
     """
@@ -256,7 +259,7 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings) -
     return json_data
 
 
-def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> int:
+def import_config(endpoint: platform.Platform, config_data: ObjectJsonRepr, key_list: KeyList = None) -> int:
     """Imports DevOps platform configuration in SonarQube/Cloud
 
     :param endpoint: Reference to the SonarQube platform

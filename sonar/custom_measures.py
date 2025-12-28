@@ -24,9 +24,11 @@ Abstraction of the SonarQube "custom measure" concept
 """
 
 import json
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 import sonar.sqobject as sq
-import sonar.platform as pf
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
 
 
 class CustomMeasure(sq.SqObject):
@@ -35,7 +37,7 @@ class CustomMeasure(sq.SqObject):
     def __init__(
         self,
         key: str,
-        endpoint: pf.Platform,
+        endpoint: Platform,
         uuid: Optional[str] = None,
         project_key: Optional[str] = None,
         value: Any = None,
@@ -70,30 +72,29 @@ class CustomMeasure(sq.SqObject):
         return self.post(CustomMeasure.API_ROOT + "delete", {"id": self.uuid}).ok
 
 
-def search(endpoint: pf.Platform, project_key):
+def search(endpoint: Platform, project_key: str) -> list[CustomMeasure]:
+    """Searches custom measures of a project"""
     data = json.loads(endpoint.get(CustomMeasure.API_ROOT + "search", params={"projectKey": project_key, "ps": 500}).text)
     # nbr_measures = data['total'] if > 500, we're screwed...
-    measures = []
-    for m in data["customMeasures"]:
-        measures.append(
-            CustomMeasure(
-                uuid=m["id"],
-                key=m["metric"]["key"],
-                project_key=m["projectKey"],
-                value=m["value"],
-                description=m["description"],
-                endpoint=endpoint,
-            )
+    return [
+        CustomMeasure(
+            uuid=m["id"],
+            key=m["metric"]["key"],
+            project_key=m["projectKey"],
+            value=m["value"],
+            description=m["description"],
+            endpoint=endpoint,
         )
-    return measures
+        for m in data["customMeasures"]
+    ]
 
 
-def update(project_key, metric_key, value, description=None, endpoint: pf.Platform = None):
-    for m in search(endpoint, project_key):
-        if m.key == metric_key:
-            m.update(value, description)
-            break
+def update(project_key: str, metric_key: str, value: Any, description: Optional[str] = None, endpoint: Optional[Platform] = None) -> None:
+    """Update custom measure of a project"""
+    c_meas = next(m for m in search(endpoint, project_key) if m.key == metric_key)
+    c_meas.update(value, description)
 
 
-def delete(id, endpoint: pf.Platform):
+def delete(id: str, endpoint: Platform) -> bool:
+    """Delects a custom measure, returns whether the operation succeeded"""
     return endpoint.post(CustomMeasure.API_ROOT + "delete", {"id": id})

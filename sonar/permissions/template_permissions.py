@@ -21,9 +21,13 @@
 """Permissions templates permissions class"""
 
 from __future__ import annotations
+from typing import TYPE_CHECKING
+
 import sonar.logging as log
-from sonar.util import types
 from sonar.permissions import permissions, project_permissions
+
+if TYPE_CHECKING:
+    from sonar.util.types import PermissionDef
 
 
 class TemplatePermissions(project_permissions.ProjectPermissions):
@@ -55,7 +59,7 @@ class TemplatePermissions(project_permissions.ProjectPermissions):
         self.white_list(tuple(project_permissions.PROJECT_PERMISSIONS.keys()))
         return self
 
-    def set(self, new_perms: list[types.PermissionDef]) -> TemplatePermissions:
+    def set(self, new_perms: list[PermissionDef]) -> TemplatePermissions:
         """Sets permissions of a permission template"""
         log.info("Setting %s with %s", str(self), str(new_perms))
         if self.permissions is None:

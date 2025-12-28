@@ -23,7 +23,11 @@ Abstraction of the Search Node concept
 
 """
 
-from typing import Optional
+from __future__ import annotations
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sonar.util.types import ConfigSettings
 
 import sonar.logging as log
 
@@ -31,7 +35,6 @@ import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 from sonar.dce import nodes
-from sonar.util import types
 import sonar.util.constants as c
 
 
@@ -58,7 +61,7 @@ class SearchNode(nodes.DceNode):
         """Returns the node type"""
         return "SEARCH"
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audit a DCE search node"""
         log.info("%s: Auditing...", str(self))
         return self.__audit_store_size() + self.__audit_available_disk()
@@ -137,7 +140,7 @@ def __audit_index_balance(searchnodes: list[SearchNode]) -> list[Problem]:
     return []
 
 
-def audit(sub_sif: dict[str, any], sif: dict[str, any], audit_settings: types.ConfigSettings) -> list[Problem]:
+def audit(sub_sif: dict[str, any], sif: dict[str, any], audit_settings: ConfigSettings) -> list[Problem]:
     """Audits search nodes of a DCE"""
     log.info("Auditing search node(s)")
     searchnodes = []

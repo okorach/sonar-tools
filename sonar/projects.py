@@ -17,13 +17,10 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-Abstraction of the SonarQube "project" concept
-
-"""
+"""Abstraction of the SonarQube "project" concept"""
 
 from __future__ import annotations
+from typing import Optional, Union, Any, TYPE_CHECKING
 
 import os
 import re
@@ -32,19 +29,17 @@ import concurrent.futures
 from datetime import datetime
 import traceback
 
-from typing import Optional, Union, Any
+
 from http import HTTPStatus
 from threading import Lock
 from requests import HTTPError, RequestException
 
 import sonar.logging as log
-import sonar.platform as pf
-
+from sonar.components import Component
 import sonar.util.issue_defs as idefs
-from sonar.util import types, cache
+from sonar.util import cache
 from sonar import exceptions
-from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops
-import sonar.permissions.permissions as perms
+from sonar import sqobject, qualitygates, qualityprofiles, tasks, settings, webhooks, devops
 from sonar import pull_requests, branches
 import sonar.util.misc as util
 import sonar.permissions.project_permissions as pperms
@@ -55,6 +50,10 @@ from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
 import sonar.util.project_helper as phelp
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, PermissionDef
 
 _CLASS_LOCK = Lock()
 
@@ -106,7 +105,7 @@ _SETTINGS_WITH_SPECIFIC_IMPORT = (
 _PREDEFINED_LINKS = ("homepage", "scm", "issue")
 
 
-class Project(components.Component):
+class Project(Component):
     """Abstraction of the SonarQube project concept"""
 
     CACHE = cache.Cache()
@@ -121,7 +120,7 @@ class Project(components.Component):
         c.GET_TAGS: "components/show",
     }
 
-    def __init__(self, endpoint: pf.Platform, key: str) -> None:
+    def __init__(self, endpoint: Platform, key: str) -> None:
         """
         :param Platform endpoint: Reference to the SonarQube platform
         :param str key: The project key
@@ -141,7 +140,7 @@ class Project(components.Component):
         log.debug("Created object %s", str(self))
 
     @classmethod
-    def get_object(cls, endpoint: pf.Platform, key: str) -> Project:
+    def get_object(cls, endpoint: Platform, key: str) -> Project:
         """Creates a project from a search in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -155,7 +154,7 @@ class Project(components.Component):
         return cls.load(endpoint, data["component"])
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Project:
+    def load(cls, endpoint: Platform, data: ApiPayload) -> Project:
         """Creates a project loaded with JSON data coming from api/components/search request
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -171,7 +170,7 @@ class Project(components.Component):
         return o
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, key: str, name: str) -> Project:
+    def create(cls, endpoint: Platform, key: str, name: str) -> Project:
         """Creates a Project object after creating it in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -210,7 +209,7 @@ class Project(components.Component):
             raise
         return self.reload(data["component"])
 
-    def reload(self, data: types.ApiPayload) -> Project:
+    def reload(self, data: ApiPayload) -> Project:
         """Reloads a project with JSON data coming from api/components/search request
 
         :param dict data: Data to load
@@ -360,7 +359,7 @@ class Project(components.Component):
         bind = self.binding()
         return bind is not None and bind.get("has_binding", False) and bind.get("monorepo", False)
 
-    def __audit_last_analysis(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_last_analysis(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits whether the last analysis of the project is too old or not
 
         :param audit_settings: Settings (thresholds) to raise problems
@@ -391,7 +390,7 @@ class Project(components.Component):
         log.debug("%s last analysis is %d days old", str(self), age)
         return problems
 
-    def __audit_branches(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_branches(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits project branches
 
         :param audit_settings: Settings (thresholds) to raise problems
@@ -413,7 +412,7 @@ class Project(components.Component):
                     problems.append(Problem(get_rule(RuleId.PROJ_MAIN_AND_MASTER), self, str(self)))
         return problems
 
-    def __audit_pull_requests(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_pull_requests(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits project pull requests
 
         :param ConfigSettings audit_settings: Settings (thresholds) to raise problems
@@ -424,7 +423,7 @@ class Project(components.Component):
             problems += pr.audit(audit_settings)
         return problems
 
-    def audit_languages(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def audit_languages(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits project utility languages and returns problems if too many LoCs of these
 
         :param audit_settings: Settings (thresholds) to raise problems
@@ -454,7 +453,7 @@ class Project(components.Component):
         log.debug("%s utility LoCs count (%d) seems reasonable", str(self), utility_locs)
         return []
 
-    def __audit_binding_valid(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_binding_valid(self, audit_settings: ConfigSettings) -> list[Problem]:
         if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
         if self.endpoint.edition() == c.CE:
@@ -559,7 +558,7 @@ class Project(components.Component):
                 self.sq_json.update(p_data)
         return self.sq_json.get("isAiCodeFixEnabled", None)
 
-    def __audit_scanner(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_scanner(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits whether the project is analyzed with the right scanner"""
         if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
             return []
@@ -578,7 +577,7 @@ class Project(components.Component):
             return []
         return [Problem(get_rule(RuleId.PROJ_WRONG_SCANNER), self, str(self), proj_type, scanner)]
 
-    def __audit_key_pattern(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def __audit_key_pattern(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits whether the project key matches the desired pattern"""
         if audit_settings.get("audit.projects.keyPattern", None) is None:
             log.debug("%s: audit project key pattern is disabled, audit skipped", str(self))
@@ -589,7 +588,7 @@ class Project(components.Component):
             log.debug("%s: matches the desired project key pattern '%s'", str(self), f"^{audit_settings['audit.projects.keyPattern']}$")
             return []
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits a project and returns the list of problems found
 
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
@@ -791,9 +790,7 @@ class Project(components.Component):
         log.debug("Issues count = %s", str(issue_counts))
         return issue_counts
 
-    def sync(
-        self, another_project: Union[Project, branches.Branch], sync_settings: types.ConfigSettings
-    ) -> tuple[list[dict[str, str]], dict[str, int]]:
+    def sync(self, another_project: Union[Project, branches.Branch], sync_settings: ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs project findings with another project
 
         :param Project|Branch another_project: other project to sync findings into
@@ -836,7 +833,7 @@ class Project(components.Component):
             counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
 
-    def sync_branches(self, sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
+    def sync_branches(self, sync_settings: ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs project issues across all its branches
 
         :param dict sync_settings: Parameters to configure the sync
@@ -901,7 +898,7 @@ class Project(components.Component):
         log.debug("%s links = %s", self, link_list)
         return link_list
 
-    def __export_get_binding(self) -> Optional[types.ObjectJsonRepr]:
+    def __export_get_binding(self) -> Optional[ObjectJsonRepr]:
         """Exports a binding as JSON"""
         binding = self.binding()
         if binding:
@@ -915,14 +912,14 @@ class Project(components.Component):
                 binding.pop("monorepo", None)
         return binding
 
-    def __export_get_qp(self) -> Optional[types.ObjectJsonRepr]:
+    def __export_get_qp(self) -> Optional[ObjectJsonRepr]:
         """Exports a QP as JSON"""
         qp_json = {qp.language: f"{qp.name}" for qp in self.quality_profiles().values()}
         if len(qp_json) == 0:
             return None
         return qp_json
 
-    def __get_branch_export(self, export_settings: types.ConfigSettings) -> Optional[types.ObjectJsonRepr]:
+    def __get_branch_export(self, export_settings: ConfigSettings) -> Optional[ObjectJsonRepr]:
         """Export project branches as JSON"""
         branch_data = {name: branch.export(export_settings=export_settings) for name, branch in sorted(self.branches().items())}
         # If there is only 1 branch with no specific config except being main, don't return anything
@@ -931,7 +928,7 @@ class Project(components.Component):
         main_br = {k: v for k, v in branch_data.items() if v and v.get("isMain")}
         return main_br | branch_data
 
-    def migration_export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
+    def migration_export(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
         """Produces the data that is exported for SQ to SC migration"""
         json_data = super().migration_export(export_settings)
         json_data["detectedCi"] = self.ci()
@@ -953,7 +950,7 @@ class Project(components.Component):
         log.debug("Returning %s migration data %s", str(self), util.json_dump(json_data))
         return json_data
 
-    def export(self, export_settings: types.ConfigSettings, settings_list: Optional[dict[str, str]] = None) -> types.ObjectJsonRepr:
+    def export(self, export_settings: ConfigSettings, settings_list: Optional[dict[str, str]] = None) -> ObjectJsonRepr:
         """Exports the entire project configuration as JSON
 
         :return: All project configuration settings
@@ -1040,7 +1037,7 @@ class Project(components.Component):
             self._permissions = pperms.ProjectPermissions(self)
         return self._permissions
 
-    def set_permissions(self, desired_permissions: list[types.PermissionDef]) -> bool:
+    def set_permissions(self, desired_permissions: list[PermissionDef]) -> bool:
         """Sets project permissions
 
         :param desired_permissions: List of permissions
@@ -1141,7 +1138,7 @@ class Project(components.Component):
             log.debug("Setting 2 %s settings with %s %s", str(self), key, value)
             settings.set_setting(endpoint=self.endpoint, key=key, value=value, component=self)
 
-    def set_devops_binding(self, binding_data: types.ObjectJsonRepr) -> bool:
+    def set_devops_binding(self, binding_data: ObjectJsonRepr) -> bool:
         """Sets project devops binding settings
 
         :param data: JSON describing the devops binding
@@ -1182,7 +1179,7 @@ class Project(components.Component):
         self.binding()
         return True
 
-    def __std_binding_params(self, alm_key: str, repo: str, monorepo: bool) -> types.ApiParams:
+    def __std_binding_params(self, alm_key: str, repo: str, monorepo: bool) -> ApiParams:
         return {"almSetting": alm_key, "project": self.key, "repository": repo, "monorepo": str(monorepo).lower()}
 
     def _check_binding_supported(self) -> bool:
@@ -1261,7 +1258,7 @@ class Project(components.Component):
         params["inlineAnnotations"] = str(inline_annotations).lower()
         return self.post("alm_settings/set_azure_binding", params=params).ok
 
-    def update(self, config: types.ObjectJsonRepr) -> None:
+    def update(self, config: ObjectJsonRepr) -> None:
         """Updates a project with a whole configuration set
 
         :param config: JSON of configuration settings
@@ -1307,13 +1304,13 @@ class Project(components.Component):
 
         # TODO: Set branch settings See https://github.com/okorach/sonar-tools/issues/1828
 
-    def api_params(self, op: Optional[str] = None) -> types.ApiParams:
+    def api_params(self, op: Optional[str] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {c.READ: {"component": self.key}, c.DELETE: {"project": self.key}, c.SET_TAGS: {"project": self.key}}
         return ops[op] if op and op in ops else {"project": self.key}
 
 
-def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
+def count(endpoint: Platform, params: ApiParams = None) -> int:
     """Counts projects
 
     :param params: list of parameters to filter projects to search
@@ -1325,7 +1322,7 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
     return sutil.nbr_total_elements(json.loads(endpoint.get(Project.API[c.LIST], params=params).text))
 
 
-def search(endpoint: pf.Platform, params: types.ApiParams = None, threads: int = 8) -> dict[str, Project]:
+def search(endpoint: Platform, params: ApiParams = None, threads: int = 8) -> dict[str, Project]:
     """Searches projects in SonarQube
 
     :param endpoint: Reference to the SonarQube platform
@@ -1338,7 +1335,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None, threads: int =
     return sqobject.search_objects(endpoint=endpoint, object_class=Project, params=new_params, threads=threads)
 
 
-def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, use_cache: bool = True) -> dict[str, Project]:
+def get_list(endpoint: Platform, key_list: KeyList = None, threads: int = 8, use_cache: bool = True) -> dict[str, Project]:
     """
     :param Platform endpoint: Reference to the SonarQube platform
     :param KeyList key_list: List of portfolios keys to get, if None or empty all portfolios are returned
@@ -1354,7 +1351,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int
     return {key: Project.get_object(endpoint, key) for key in sorted(key_list)}
 
 
-def get_matching_list(endpoint: pf.Platform, pattern: str, threads: int = 8) -> dict[str, Project]:
+def get_matching_list(endpoint: Platform, pattern: str, threads: int = 8) -> dict[str, Project]:
     """Returns the list of projects whose keys are matching the pattern
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -1368,7 +1365,7 @@ def get_matching_list(endpoint: pf.Platform, pattern: str, threads: int = 8) -> 
     return matches
 
 
-def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
+def __audit_duplicates(projects_list: dict[str, Project], audit_settings: ConfigSettings) -> list[Problem]:
     """Audits for suspected duplicate projects"""
     if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
         return []
@@ -1387,7 +1384,7 @@ def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.
     return duplicates
 
 
-def __audit_bindings(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
+def __audit_bindings(projects_list: dict[str, Project], audit_settings: ConfigSettings) -> list[Problem]:
     """Audits for duplicate project bindings"""
     if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
         return []
@@ -1405,7 +1402,7 @@ def __audit_bindings(projects_list: dict[str, Project], audit_settings: types.Co
     return problems
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
+def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[Problem]:
     """Audits all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1444,7 +1441,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     return problems
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
     """Exports all or a list of projects configuration as dict
 
     :param endpoint: reference to the SonarQube platform
@@ -1481,7 +1478,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     return dict(sorted(results.items()))
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
+def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: KeyList = None) -> None:
     """Imports a configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1540,7 +1537,7 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
 
 
 def export_zips(
-    endpoint: pf.Platform, key_regexp: Optional[str] = None, threads: int = 8, export_timeout: int = 30, skip_zero_loc: bool = False
+    endpoint: Platform, key_regexp: Optional[str] = None, threads: int = 8, export_timeout: int = 30, skip_zero_loc: bool = False
 ) -> list[dict[str, str]]:
     """Export as zip all or a list of projects
 
@@ -1607,7 +1604,7 @@ def export_zips(
     return results
 
 
-def import_zip(endpoint: pf.Platform, project_key: str, project_name: Optional[str] = None, import_timeout: int = 30) -> tuple[Project, str]:
+def import_zip(endpoint: Platform, project_key: str, project_name: Optional[str] = None, import_timeout: int = 30) -> tuple[Project, str]:
     """Imports a project zip file"""
     project_name = project_name or project_key
     try:
@@ -1621,7 +1618,7 @@ def import_zip(endpoint: pf.Platform, project_key: str, project_name: Optional[s
     return o_proj, s
 
 
-def import_zips(endpoint: pf.Platform, project_list: list[dict[str, str]], threads: int = 2, import_timeout: int = 60) -> dict[str, dict[str, str]]:
+def import_zips(endpoint: Platform, project_list: list[dict[str, str]], threads: int = 2, import_timeout: int = 60) -> dict[str, dict[str, str]]:
     """Imports as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform

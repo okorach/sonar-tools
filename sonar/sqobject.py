@@ -23,15 +23,16 @@ Abstraction of the SonarQube general object concept
 
 """
 
+from __future__ import annotations
 from typing import Any, Optional, TYPE_CHECKING
-import json
 
+import json
 from http import HTTPStatus
 import concurrent.futures
 import requests
 
 import sonar.logging as log
-from sonar.util import types, cache
+from sonar.util import cache
 from sonar.util import constants as c
 from sonar import exceptions, errcodes
 import sonar.util.misc as util
@@ -39,6 +40,7 @@ import sonar.utilities as sutil
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
+    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr
 
 
 class SqObject(object):
@@ -54,7 +56,7 @@ class SqObject(object):
         self.endpoint: Platform = endpoint  #: Reference to the SonarQube platform
         self.concerned_object: Optional[object] = None
         self._tags: Optional[list[str]] = None
-        self.sq_json: Optional[types.ApiPayload] = None
+        self.sq_json: Optional[ApiPayload] = None
 
     def __hash__(self) -> int:
         """Default UUID for SQ objects"""
@@ -126,7 +128,7 @@ class SqObject(object):
         obj = cls(endpoint, obj_key)
         return obj.set_permissions([{"user": user or endpoint.user(), "permissions": ["admin", "user"]}])
 
-    def reload(self, data: types.ApiPayload) -> object:
+    def reload(self, data: ApiPayload) -> object:
         """Loads a SonarQube API JSON payload in a SonarObject"""
         log.debug("%s: Reloading with %s", str(self), util.json_dump(data))
         self.sq_json = (self.sq_json or {}) | data
@@ -139,7 +141,7 @@ class SqObject(object):
     def get(
         self,
         api: str,
-        params: Optional[types.ApiParams] = None,
+        params: Optional[ApiParams] = None,
         data: Optional[str] = None,
         mute: tuple[HTTPStatus, ...] = (),
         **kwargs: Any,
@@ -161,7 +163,7 @@ class SqObject(object):
     def post(
         self,
         api: str,
-        params: Optional[types.ApiParams] = None,
+        params: Optional[ApiParams] = None,
         mute: tuple[HTTPStatus, ...] = (),
         **kwargs: Any,
     ) -> requests.Response:
@@ -183,7 +185,7 @@ class SqObject(object):
     def patch(
         self,
         api: str,
-        params: Optional[types.ApiParams] = None,
+        params: Optional[ApiParams] = None,
         mute: tuple[HTTPStatus, ...] = (),
         **kwargs: Any,
     ) -> requests.Response:
@@ -251,12 +253,13 @@ class SqObject(object):
         return self._tags
 
 
-def __get(endpoint: object, api: str, params: types.ApiParams) -> requests.Response:
+def __get(endpoint: object, api: str, params: ApiParams) -> requests.Response:
     """Returns a Sonar object from its key"""
     return json.loads(endpoint.get(api, params=params).text)
 
 
-def __load(endpoint: object, object_class: Any, data: types.ObjectJsonRepr) -> dict[str, object]:
+def __load(endpoint: object, object_class: Any, data: ObjectJsonRepr) -> dict[str, object]:
+    """Loads any SonarQube object with the contents of an API payload"""
     key_field = object_class.SEARCH_KEY_FIELD
     if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook"):
         return {obj[key_field]: object_class.load(endpoint=endpoint, data=obj) for obj in data}
@@ -265,7 +268,7 @@ def __load(endpoint: object, object_class: Any, data: types.ObjectJsonRepr) -> d
     return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}
 
 
-def search_objects(endpoint: object, object_class: Any, params: types.ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
+def search_objects(endpoint: object, object_class: Any, params: ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
     """Runs a multi-threaded object search for searchable Sonar Objects"""
     api = object_class.api_for(c.SEARCH, endpoint)
     returned_field = object_class.SEARCH_RETURN_FIELD

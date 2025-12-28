@@ -78,9 +78,7 @@ def __parse_args(desc: str) -> object:
     parser = options.add_component_type_arg(parser)
     parser = options.add_settings_arg(parser)
     parser = options.add_config_arg(parser, TOOL_NAME)
-    args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME, verify_token=False)
-
-    return args
+    return options.parse_and_check(parser=parser, logger_name=TOOL_NAME, verify_token=False)
 
 
 def __rounded(nbr: float) -> float:
@@ -195,7 +193,6 @@ def compute_project_pr_statistics(project_data: dict[str, Any], config: dict[str
 def compute_pr_statistics(data: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
     """Computes statistics on pull request analyses"""
     total_prs = sum(len(d.get("pull_requests", {})) for d in data.values())
-    summary_data = {}
     total_count_7_days_pass, total_count_7_days_fail = 0, 0
     total_count_pass, total_count_fail, total_count_no_prs = 0, 0, 0
     total_count_enforced, total_count_non_enforced = 0, 0
@@ -213,7 +210,7 @@ def compute_pr_statistics(data: dict[str, Any], config: dict[str, Any]) -> dict[
         total_count_no_prs += count_no_prs
 
     total_7_days = total_count_7_days_pass + total_count_7_days_fail
-    summary_data = {
+    return {
         "pull_requests_total": total_prs,
         "pull_requests_passing_quality_gate": __count_percentage(total_count_pass, total_prs),
         "pull_requests_failing_quality_gate": __count_percentage(total_count_fail, total_prs),
@@ -224,7 +221,6 @@ def compute_pr_statistics(data: dict[str, Any], config: dict[str, Any]) -> dict[
         "projects_not_enforcing_pr_quality_gate": __count_percentage(total_count_non_enforced, len(data)),
         "projects_with_no_pull_requests": __count_percentage(total_count_no_prs, len(data)),
     }
-    return summary_data
 
 
 def compute_summary_qg(data: dict[str, Any]) -> dict[str, Any]:
@@ -349,11 +345,11 @@ def compute_new_code_statistics(data: dict[str, Any], settings: dict[str, Any]) 
 
 def compute_analysis_frequency_statistics(data: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
     """Computes the proportions of project that are analyzed more or less frequently"""
-    recent_days = [s.strip() for s in settings.get("projectRecentAnalysisDaysThresholds", "7, 30, 90").split(",")][0]
-    DAYS = f"{recent_days}_days_or_less"
+    recent_days = next(s.strip() for s in settings.get("projectRecentAnalysisDaysThresholds", "7, 30, 90").split(","))
+    days = f"{recent_days}_days_or_less"
     thresholds = [s.strip() for s in settings.get("projectAnalysisMaturityThresholds", "0, 5, 20").split(",")]
     thresholds = util.convert_types(thresholds)
-    summary = {f"not_analyzed_over_the_last_{recent_days}_days": sum(1 for p in data.values() if p[ANALYSES_ANY_BRANCH_KEY][DAYS] == 0)}
+    summary = {f"not_analyzed_over_the_last_{recent_days}_days": sum(1 for p in data.values() if p[ANALYSES_ANY_BRANCH_KEY][days] == 0)}
     for i in range(len(thresholds)):
         if i + 1 < len(thresholds):
             i_min, i_max = thresholds[i], thresholds[i + 1]
@@ -361,7 +357,7 @@ def compute_analysis_frequency_statistics(data: dict[str, Any], settings: dict[s
         else:
             i_min, i_max = thresholds[i], 10000
             key = f"more_than_{thresholds[i]}_times_over_the_last_{recent_days}_days"
-        count = sum(1 for p in data.values() if i_min <= p[ANALYSES_ANY_BRANCH_KEY][DAYS] < i_max)
+        count = sum(1 for p in data.values() if i_min <= p[ANALYSES_ANY_BRANCH_KEY][days] < i_max)
         summary[key] = count
     return summary
 
@@ -382,18 +378,17 @@ def get_maturity_data(project_list: list[projects.Project], threads: int, settin
             future = executor.submit(get_project_maturity_data, proj, settings)
             futures.append(future)
             futures_map[future] = proj
-        i, nb_projects = 0, len(project_list)
+        nb_projects = len(project_list)
         maturity_data = {}
-        for future in concurrent.futures.as_completed(futures):
+        for i, future in enumerate(concurrent.futures.as_completed(futures)):
             proj = futures_map[future]
             try:
                 maturity_data[proj.key] = future.result(timeout=60)
-            except TimeoutError as e:
-                log.error(f"Getting maturity data for {str(proj)} timed out after 60 seconds for {str(future)}.")
+            except TimeoutError:
+                log.error(f"Getting maturity data for {proj} timed out after 60 seconds for {future!s}.")
             except Exception as e:
                 traceback.print_exc()
-                log.error(f"Exception {str(e)} when collecting maturity data of {str(proj)}.")
-            i += 1
+                log.error(f"Exception {e} when collecting maturity data of {proj}.")
             if i % 10 == 0 or i == nb_projects:
                 log.info("Collected maturity data for %d/%d projects (%d%%)", i, nb_projects, int(100 * i / nb_projects))
     return dict(sorted(maturity_data.items()))
@@ -422,7 +417,7 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     # We should count the nbr of custom profiles per language
     results["number_of_custom_quality_profiles"] = {}
     errcount = 0
-    for lang in languages.get_list(endpoint).keys():
+    for lang in languages.get_list(endpoint):
         if (count := sum(1 for p in qp_list if p.language == lang)) == 0:
             continue
         results["number_of_custom_quality_profiles"][lang] = count
@@ -494,11 +489,11 @@ def draw_charts(data: dict[str, Any]) -> None:
         f"{OVERALL_MATURITY_KEY}_distribution": "Projects Overall Maturity Distribution",
     }
     dataset = {}
-    for key in kv.keys():
+    for key in kv:
         log.info("%s: %s", key, util.json_dump(data[key]))
-        dataset[key] = Data([[v] for v in data[key].values()], [str(k) for k in data[key].keys()])
+        dataset[key] = Data([[v] for v in data[key].values()], [str(k) for k in data[key]])
 
-    for key in kv.keys():
+    for key in kv:
         BarChart(dataset[key], Args(title=kv[key], width=80, format="{:.0f}")).draw()
 
     chart_data = Data([[data["governance_maturity_level"]]], ["Governance maturity"])

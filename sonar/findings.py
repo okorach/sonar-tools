@@ -28,7 +28,6 @@ import Levenshtein
 
 import sonar.logging as log
 import sonar.sqobject as sq
-import sonar.platform as pf
 from sonar.util import constants as c
 from sonar import exceptions
 
@@ -38,8 +37,9 @@ from sonar import projects, rules
 import sonar.util.issue_defs as idefs
 
 if TYPE_CHECKING:
+    from sonar.platform import Platform
     from datetime import datetime
-    from sonar.util import types
+    from sonar.util.types import ApiPayload, ObjectJsonRepr
     from sonar.changelog import Changelog
 
 _JSON_FIELDS_REMAPPED = (("pull_request", "pullRequest"), ("_comments", "comments"))
@@ -114,7 +114,7 @@ class Finding(sq.SqObject):
     A finding is a general concept that can be either an issue or a security hotspot
     """
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None, from_export: bool = False) -> None:
+    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.severity = None  # BLOCKER, CRITICAL, MAJOR, MINOR, INFO
@@ -139,14 +139,14 @@ class Finding(sq.SqObject):
         self.pull_request: Optional[str] = None  #: Pull request (str)
         self._load(data, from_export)
 
-    def _load(self, data: types.ApiPayload, from_export: bool = False) -> None:
+    def _load(self, data: ApiPayload, from_export: bool = False) -> None:
         if data is not None:
             if from_export:
                 self._load_from_export(data)
             else:
                 self._load_from_search(data)
 
-    def _load_common(self, jsondata: types.ApiPayload) -> None:
+    def _load_common(self, jsondata: ApiPayload) -> None:
         if self.sq_json is None:
             self.sq_json = jsondata
         else:
@@ -162,7 +162,7 @@ class Finding(sq.SqObject):
         except ValueError:
             self.line = 0
 
-    def _load_from_search(self, jsondata: types.ApiPayload) -> None:
+    def _load_from_search(self, jsondata: ApiPayload) -> None:
         self._load_common(jsondata)
         self.projectKey = jsondata.get("project", None)
         self.component = jsondata.get("component", None)
@@ -174,7 +174,7 @@ class Finding(sq.SqObject):
         self.creation_date = sutil.string_to_date(jsondata["creationDate"])
         self.modification_date = sutil.string_to_date(jsondata["updateDate"])
 
-    def _load_from_export(self, jsondata: types.ObjectJsonRepr) -> None:
+    def _load_from_export(self, jsondata: ObjectJsonRepr) -> None:
         self._load_common(jsondata)
         self.projectKey = jsondata["projectKey"]
         self.creation_date = sutil.string_to_date(jsondata["createdAt"])
@@ -182,10 +182,6 @@ class Finding(sq.SqObject):
 
     def url(self) -> str:
         """Returns the URL of the finding, must be implemented in subclasses"""
-        raise NotImplementedError()
-
-    def assign(self, assignee: Optional[str] = None) -> bool:
-        """Assign the finding to a user, must be implemented in subclasses"""
         raise NotImplementedError()
 
     def language(self) -> str:
@@ -211,7 +207,7 @@ class Finding(sq.SqObject):
         fields = CSV_EXPORT_FIELDS if self.endpoint.version() >= c.MQR_INTRO_VERSION else LEGACY_CSV_EXPORT_FIELDS
         return [str(data.get(field, "")) for field in fields]
 
-    def to_json(self, without_time: bool = False) -> types.ObjectJsonRepr:
+    def to_json(self, without_time: bool = False) -> ObjectJsonRepr:
         """Returns the finding as dict
 
         :param without_time: Whether to include the time in the date fields
@@ -317,12 +313,33 @@ class Finding(sq.SqObject):
         ch = self.comments()
         return list(ch.values())[-1]["date"] if len(ch) > 0 else None
 
-    def unassign(self) -> bool:
-        """Unassigns an issue
+    def assign(self, assignee: Optional[str], comment: Optional[str] = None) -> bool:
+        """Assigns a finding (and optionally comment)
 
+        :param assignee: User login to assign the hotspot, None to unassign
+        :param comment: Optional comment to add
         :return: Whether the operation succeeded
         """
-        return self.assign(None)
+        try:
+            if assignee is None:
+                log.debug("Unassigning %s", self)
+            else:
+                log.debug("Assigning %s to '%s'", self, assignee)
+            params = util.remove_nones({**self.api_params(), "assignee": assignee, "comment": comment})
+            if ok := self.post(self.__class__.API[c.ASSIGN], params=params).ok:
+                self.assignee = assignee
+        except exceptions.SonarException:
+            return False
+        else:
+            return ok
+
+    def unassign(self, comment: Optional[str] = None) -> bool:
+        """Unassigns a Finding (and optionally comment)
+
+        :param comment: Optional comment to add
+        :return: Whether the operation succeeded
+        """
+        return self.assign(assignee=None, comment=comment)
 
     def has_changelog(self, after: Optional[datetime] = None, manual_only: Optional[bool] = True) -> bool:
         """
@@ -474,7 +491,7 @@ class Finding(sq.SqObject):
                 raise exceptions.UnsupportedOperation(e.message) from e
             raise
 
-    def get_branch_and_pr(self, data: types.ApiPayload) -> tuple[Optional[str], Optional[str]]:
+    def get_branch_and_pr(self, data: ApiPayload) -> tuple[Optional[str], Optional[str]]:
         """
         :param data: The data to extract the branch and pull request from
         :return: The branch name or pull request id
@@ -484,7 +501,7 @@ class Finding(sq.SqObject):
         return branch, pr
 
 
-def export_findings(endpoint: pf.Platform, project_key: str, branch: Optional[str] = None, pull_request: Optional[str] = None) -> dict[str, Finding]:
+def export_findings(endpoint: Platform, project_key: str, branch: Optional[str] = None, pull_request: Optional[str] = None) -> dict[str, Finding]:
     """Export all findings of a given project
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -499,7 +516,7 @@ def export_findings(endpoint: pf.Platform, project_key: str, branch: Optional[st
     return projects.Project(key=project_key, endpoint=endpoint).get_findings(branch, pull_request)
 
 
-def to_csv_header(endpoint: pf.Platform) -> list[str]:
+def to_csv_header(endpoint: Platform) -> list[str]:
     """Returns the list of CSV fields provided by an issue CSV export"""
     if endpoint.version() >= c.MQR_INTRO_VERSION:
         return list(CSV_EXPORT_FIELDS)

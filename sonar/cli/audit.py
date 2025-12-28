@@ -21,18 +21,18 @@
 """Audits a SonarQube platform"""
 
 from __future__ import annotations
+from typing import TextIO, Optional, TYPE_CHECKING
 
 import json
 import csv
 import re
-from typing import TextIO, Optional
 from threading import Thread
 from queue import Queue
 from requests import RequestException
-from cli import options
 
+from cli import options
 from sonar import errcodes, exceptions, version
-from sonar.util import types, component_helper
+from sonar.util import component_helper
 import sonar.logging as log
 from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, portfolios, applications, projects
 import sonar.utilities as sutil
@@ -40,6 +40,9 @@ import sonar.util.misc as util
 from sonar.audit import problem
 from sonar.util import conf_mgr
 import sonar.util.common_helper as chelp
+
+if TYPE_CHECKING:
+    from sonar.util.types import ConfigSettings, KeyList
 
 TOOL_NAME = "sonar-audit"
 CONFIG_FILE = "sonar-audit.properties"
@@ -58,7 +61,7 @@ WHAT_AUDITABLE = {
 PROBLEM_KEYS = "problems"
 
 
-def _audit_sif(sysinfo: str, audit_settings: types.ConfigSettings) -> tuple[str, list[problem.Problem]]:
+def _audit_sif(sysinfo: str, audit_settings: ConfigSettings) -> tuple[str, list[problem.Problem]]:
     """Audits a SIF and return found problems"""
     log.info("Auditing SIF file '%s'", sysinfo)
     try:
@@ -77,7 +80,7 @@ def _audit_sif(sysinfo: str, audit_settings: types.ConfigSettings) -> tuple[str,
     return sif_obj.server_id(), sif_obj.audit(audit_settings)
 
 
-def __filter_problems(problems: list[problem.Problem], settings: types.ConfigSettings) -> list[problem.Problem]:
+def __filter_problems(problems: list[problem.Problem], settings: ConfigSettings) -> list[problem.Problem]:
     """Filters audit problems by severity and/or type and/or problem key"""
     if settings.get(options.SEVERITIES, None):
         log.debug("Filtering audit problems with severities: %s", settings[options.SEVERITIES])
@@ -91,7 +94,7 @@ def __filter_problems(problems: list[problem.Problem], settings: types.ConfigSet
     return problems
 
 
-def write_csv(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.ConfigSettings) -> None:
+def write_csv(queue: Queue[list[problem.Problem]], fd: TextIO, settings: ConfigSettings) -> None:
     """Thread callback to write audit problems in a CSV file"""
     server_id = settings.get("SERVER_ID", None)
     with_url = settings.get("WITH_URL", False)
@@ -111,7 +114,7 @@ def write_csv(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.C
     queue.task_done()
 
 
-def write_json(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.ConfigSettings) -> None:
+def write_json(queue: Queue[list[problem.Problem]], fd: TextIO, settings: ConfigSettings) -> None:
     """Thread callback to write problems in a JSON file"""
     server_id = settings.get("SERVER_ID", None)
     with_url = settings.get("WITH_URL", False)
@@ -132,7 +135,7 @@ def write_json(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.
 
 
 def _audit_sq(
-    sq: platform.Platform, settings: types.ConfigSettings, what_to_audit: Optional[list[str]] = None, key_list: Optional[types.KeyList] = None
+    sq: platform.Platform, settings: ConfigSettings, what_to_audit: Optional[list[str]] = None, key_list: Optional[KeyList] = None
 ) -> list[problem.Problem]:
     """Audits a SonarQube/Cloud platform"""
     everything = what_to_audit is None

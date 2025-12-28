@@ -23,23 +23,27 @@ Parent module of applications and portfolios
 
 """
 
-from typing import Optional, Any
+from __future__ import annotations
+from typing import Optional, Any, TYPE_CHECKING
 import json
 
 import sonar.logging as log
-from sonar.util import types
-import sonar.platform as pf
 
 import sonar.components as comp
 import sonar.utilities as sutil
 from sonar.audit.rules import get_rule
 from sonar.audit.problem import Problem
 
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiPayload, ApiParams, ConfigSettings
+
 
 class Aggregation(comp.Component):
     """Parent class of applications and portfolios"""
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None) -> None:
+    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
+        """Constructor"""
         self._nbr_projects: Optional[int] = None
         self._permissions: Optional[object] = None
         super().__init__(endpoint=endpoint, key=key)
@@ -47,8 +51,7 @@ class Aggregation(comp.Component):
     def reload(self, data: dict[str, Any]) -> None:
         """Reloads an Aggregation (Application or Portfolio) from the result of a search or get
 
-        :return: self
-        :rtype: None
+        :param data: Payload from SonarQube API
         """
         super().reload(data)
         for d in ("description", "desc"):
@@ -57,7 +60,8 @@ class Aggregation(comp.Component):
 
     def nbr_projects(self, use_cache: bool = False) -> int:
         """Returns the number of projects of an Aggregation (Application or Portfolio)
-        :return: The number of projects
+
+        :param use_cache: Whether to use the local cache or call the API every time
         """
         if self._nbr_projects is None or not use_cache:
             self._nbr_projects = 0
@@ -88,13 +92,13 @@ class Aggregation(comp.Component):
         """Should be implement in child classes"""
         return self._permissions
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
         if self.permissions() is None:
             return []
         return self.permissions().audit(audit_settings)
 
 
-def count(api: str, endpoint: pf.Platform, params: types.ApiParams = None) -> int:
+def count(api: str, endpoint: Platform, params: ApiParams = None) -> int:
     """Returns number of aggregations of a given type (Application OR Portfolio)
     :return: number of Apps or Portfolios
     :rtype: int

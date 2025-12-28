@@ -380,3 +380,8 @@ def to_datetime(date_str: str, fmt: str = "%Y-%m-%dT%H:%M:%S%z") -> datetime:
 def to_date(date_str: str, fmt: str = "%Y-%m-%d") -> date:
     """Converts an ISO date string to a date object"""
     return datetime.strptime(date_str, fmt).date()
+
+
+def add_tz(dt: datetime) -> datetime:
+    """Ensures a datetime has timezone info, adding UTC if missing"""
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)

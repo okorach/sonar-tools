@@ -1,6 +1,6 @@
 #
-# sonar-tools
-# Copyright (C) 2022-2025 Olivier Korach
+# sonar-tools tests
+# Copyright (C) 2024-2025 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -17,31 +17,18 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
 
-Abstraction of the DCE Node concept
+"""sonar.languages tests"""
 
-"""
-
-from __future__ import annotations
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from sonar.util.types import ConfigSettings
-
-HEALTH_GREEN = "GREEN"
-HEALTH_YELLOW = "YELLOW"
-HEALTH_RED = "RED"
+from sonar import languages
+import utilities as tutil
 
 
-class DceNode(object):
-    """Abstraction of a DCE platform node"""
-
-    def __init__(self, data: dict[str, any], sif: object) -> None:
-        """Constructor"""
-        self.json = data
-        self.sif = sif
-
-    def audit(self, audit_settings: ConfigSettings) -> list[object]:
-        """Audits a node, implementation should be in subclasses"""
-        return []
+def test_read() -> None:
+    """test_read"""
+    lang = languages.Language.read(tutil.SQ, "py")
+    nbr_total_rules = lang.number_of_rules()
+    counts = {t: lang.number_of_rules(t) for t in ("VULNERABILITY", "BUG", "CODE_SMELL", "SECURITY_HOTSPOT")}
+    print(f"COUNTS = {str(counts)}")
+    assert sum(counts.values()) >= nbr_total_rules
+    assert lang.number_of_rules("FOO") == nbr_total_rules
