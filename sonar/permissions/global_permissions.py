@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 import sonar.logging as log
 from sonar.permissions import permissions
 import sonar.util.constants as c

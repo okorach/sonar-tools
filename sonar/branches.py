@@ -21,9 +21,9 @@
 """Abstraction of the SonarQube project branch concept"""
 
 from __future__ import annotations
-from http import HTTPStatus
 from typing import Optional, Any, TYPE_CHECKING
 
+from http import HTTPStatus
 import json
 import re
 from urllib.parse import unquote

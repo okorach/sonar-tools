@@ -193,7 +193,6 @@ def compute_project_pr_statistics(project_data: dict[str, Any], config: dict[str
 def compute_pr_statistics(data: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
     """Computes statistics on pull request analyses"""
     total_prs = sum(len(d.get("pull_requests", {})) for d in data.values())
-    summary_data = {}
     total_count_7_days_pass, total_count_7_days_fail = 0, 0
     total_count_pass, total_count_fail, total_count_no_prs = 0, 0, 0
     total_count_enforced, total_count_non_enforced = 0, 0

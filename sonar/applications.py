@@ -18,16 +18,10 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""
-Abstraction of the SonarQube "application" concept
-"""
+"""Abstraction of the SonarQube "application" concept"""
 
 from __future__ import annotations
 from typing import Optional, Any, Union, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, AppBranchDef, PermissionDef, AppBranchProjectDef
 
 import re
 import json
@@ -48,6 +42,11 @@ import sonar.utilities as sutil
 from sonar.audit import rules, problem
 import sonar.util.constants as c
 from sonar.util import common_json_helper
+
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, AppBranchDef, PermissionDef, AppBranchProjectDef
 
 
 _CLASS_LOCK = Lock()

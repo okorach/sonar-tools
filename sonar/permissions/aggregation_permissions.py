@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 from sonar.permissions import permissions, project_permissions
 
 if TYPE_CHECKING:

@@ -25,8 +25,8 @@ Abstraction of the SonarQube general object concept
 
 from __future__ import annotations
 from typing import Any, Optional, TYPE_CHECKING
-import json
 
+import json
 from http import HTTPStatus
 import concurrent.futures
 import requests
@@ -259,6 +259,7 @@ def __get(endpoint: object, api: str, params: ApiParams) -> requests.Response:
 
 
 def __load(endpoint: object, object_class: Any, data: ObjectJsonRepr) -> dict[str, object]:
+    """Loads any SonarQube object with the contents of an API payload"""
     key_field = object_class.SEARCH_KEY_FIELD
     if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook"):
         return {obj[key_field]: object_class.load(endpoint=endpoint, data=obj) for obj in data}

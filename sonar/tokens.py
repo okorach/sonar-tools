@@ -21,10 +21,9 @@
 """Abstraction of the SonarQube User Token concept"""
 
 from __future__ import annotations
-
 from typing import Optional, TYPE_CHECKING
-import json
 
+import json
 import datetime as dt
 
 import sonar.logging as log

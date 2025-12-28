@@ -21,18 +21,16 @@
 """Abstraction of the SonarQube User concept"""
 
 from __future__ import annotations
+from typing import Optional, Union, Any, TYPE_CHECKING
 
 import concurrent.futures
-from typing import Optional, Union, Any, TYPE_CHECKING
 from datetime import datetime, timezone
 import json
-
 from requests import RequestException
 
 import sonar.logging as log
 from sonar.util import cache
 import sonar.util.constants as c
-
 from sonar import groups, sqobject, tokens, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
@@ -41,7 +39,7 @@ from sonar.audit.problem import Problem
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, ObjectJsonRepr, KeyList
+    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, ObjectJsonRepr, KeyList, AuditSettings
 
 _GROUPS_API_SC = "users/groups"
 

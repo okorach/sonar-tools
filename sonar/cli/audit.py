@@ -21,16 +21,16 @@
 """Audits a SonarQube platform"""
 
 from __future__ import annotations
+from typing import TextIO, Optional, TYPE_CHECKING
 
 import json
 import csv
 import re
-from typing import TextIO, Optional, TYPE_CHECKING
 from threading import Thread
 from queue import Queue
 from requests import RequestException
-from cli import options
 
+from cli import options
 from sonar import errcodes, exceptions, version
 from sonar.util import component_helper
 import sonar.logging as log

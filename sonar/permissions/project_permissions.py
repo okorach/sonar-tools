@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 from typing import Callable, TYPE_CHECKING
+
 import sonar.logging as log
 from sonar.permissions import permissions
 from sonar.audit.rules import get_rule, RuleId

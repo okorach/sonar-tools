@@ -780,7 +780,7 @@ def search_all(endpoint: Platform, params: ApiParams = None) -> dict[str, Issue]
     return issue_list
 
 
-def __get_issue_list(endpoint: Platform, data: ApiPayload, params) -> dict[str, Issue]:
+def __get_issue_list(endpoint: Platform, data: ApiPayload, params: ApiParams) -> dict[str, Issue]:
     """Returns a list of issues from the API payload"""
     br, pr = params.get("branch", None), params.get("pullRequest", None)
     for i in data["issues"]:

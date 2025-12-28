@@ -23,12 +23,8 @@
 from __future__ import annotations
 from typing import Union, TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from sonar.util.types import ConfigSettings
-
 import concurrent.futures
 import traceback
-
 
 import sonar.logging as log
 import sonar.util.misc as util
@@ -36,6 +32,9 @@ from sonar import findings
 from sonar.projects import Project
 from sonar.branches import Branch
 from sonar import exceptions
+
+if TYPE_CHECKING:
+    from sonar.util.types import ConfigSettings
 
 
 SYNC_IGNORE_COMPONENTS = "ignore_components"

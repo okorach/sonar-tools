@@ -26,9 +26,6 @@ Abstraction of the App Node concept
 from __future__ import annotations
 from typing import Optional, Union, TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from sonar.util.types import ConfigSettings
-
 import datetime
 
 import sonar.logging as log
@@ -38,6 +35,8 @@ import sonar.sif_node as sifn
 from sonar.audit.problem import Problem
 import sonar.dce.nodes as dce_nodes
 
+if TYPE_CHECKING:
+    from sonar.util.types import ConfigSettings
 
 _SYSTEM = "System"
 

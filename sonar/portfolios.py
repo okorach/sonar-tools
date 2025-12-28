@@ -24,9 +24,9 @@ Abstraction of the SonarQube "portfolio" concept
 """
 
 from __future__ import annotations
+from typing import Optional, Union, Any, TYPE_CHECKING
 
 import re
-from typing import Optional, Union, Any, TYPE_CHECKING
 import json
 from http import HTTPStatus
 from threading import Lock

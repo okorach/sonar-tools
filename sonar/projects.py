@@ -17,13 +17,10 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-Abstraction of the SonarQube "project" concept
-
-"""
+"""Abstraction of the SonarQube "project" concept"""
 
 from __future__ import annotations
+from typing import Optional, Union, Any, TYPE_CHECKING
 
 import os
 import re
@@ -32,16 +29,13 @@ import concurrent.futures
 from datetime import datetime
 import traceback
 
-from typing import Optional, Union, Any, TYPE_CHECKING
-from sonar.components import Component
-
 
 from http import HTTPStatus
 from threading import Lock
 from requests import HTTPError, RequestException
 
 import sonar.logging as log
-
+from sonar.components import Component
 import sonar.util.issue_defs as idefs
 from sonar.util import cache
 from sonar import exceptions

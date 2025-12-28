@@ -23,11 +23,11 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from sonar.util.types import PermissionDef
-
 import sonar.logging as log
 from sonar.permissions import permissions, project_permissions
+
+if TYPE_CHECKING:
+    from sonar.util.types import PermissionDef
 
 
 class TemplatePermissions(project_permissions.ProjectPermissions):

@@ -22,9 +22,10 @@ Abstraction of the SonarQube setting concept
 """
 
 from __future__ import annotations
+from typing import Any, Union, Optional, TYPE_CHECKING
+
 import re
 import json
-from typing import Any, Union, Optional, TYPE_CHECKING
 
 import sonar.logging as log
 from sonar.util import cache, constants as c
@@ -33,7 +34,7 @@ import sonar.util.misc as util
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiPayload, ObjectJsonRepr, KeyList
+    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, KeyList
 
 DEVOPS_INTEGRATION = "devopsIntegration"
 GENERAL_SETTINGS = "generalSettings"
@@ -573,7 +574,7 @@ def reset_setting(endpoint: Platform, setting_key: str, project: Optional[object
     return get_object(endpoint=endpoint, key=setting_key, component=project).reset()
 
 
-def get_component_params(component: object, name: str = "component") -> ApiParamss:
+def get_component_params(component: object, name: str = "component") -> ApiParams:
     """Gets the parameters to read or write settings"""
     if not component:
         return {}
