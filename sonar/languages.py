@@ -27,6 +27,7 @@ import json
 from typing import Optional, TYPE_CHECKING
 from threading import Lock
 from sonar import sqobject, rules
+from sonar.util import misc
 from sonar.util import cache
 import sonar.util.issue_defs as idefs
 
@@ -79,11 +80,13 @@ class Language(sqobject.SqObject):
         :returns: Nbr of rules for that language (and optional type)
         :rtype: int
         """
-        if not rule_type or rule_type not in (idefs.TYPE_VULN, idefs.TYPE_HOTSPOT, idefs.TYPE_BUG, idefs.TYPE_CODE_SMELL):
-            rule_type = "_ALL"
-        if not self._nb_rules[rule_type]:
-            self._nb_rules[rule_type] = rules.search(self.endpoint, params={"languages": self.key, "types": rule_type})
-        return self._nb_rules[rule_type]
+        if rule_type not in (idefs.TYPE_VULN, idefs.TYPE_HOTSPOT, idefs.TYPE_BUG, idefs.TYPE_CODE_SMELL):
+            rule_type = None
+        if self._nb_rules[rule_type or "_ALL"] is None:
+            self._nb_rules[rule_type or "_ALL"] = len(
+                rules.search(self.endpoint, params=misc.remove_nones({"languages": self.key, "types": rule_type}))
+            )
+        return self._nb_rules[rule_type or "_ALL"]
 
 
 def read_list(endpoint: Platform) -> dict[str, Language]:
