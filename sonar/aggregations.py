@@ -43,6 +43,7 @@ class Aggregation(comp.Component):
     """Parent class of applications and portfolios"""
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
+        """Constructor"""
         self._nbr_projects: Optional[int] = None
         self._permissions: Optional[object] = None
         super().__init__(endpoint=endpoint, key=key)
@@ -50,8 +51,7 @@ class Aggregation(comp.Component):
     def reload(self, data: dict[str, Any]) -> None:
         """Reloads an Aggregation (Application or Portfolio) from the result of a search or get
 
-        :return: self
-        :rtype: None
+        :param data: Payload from SonarQube API
         """
         super().reload(data)
         for d in ("description", "desc"):
@@ -60,7 +60,8 @@ class Aggregation(comp.Component):
 
     def nbr_projects(self, use_cache: bool = False) -> int:
         """Returns the number of projects of an Aggregation (Application or Portfolio)
-        :return: The number of projects
+
+        :param use_cache: Whether to use the local cache or call the API every time
         """
         if self._nbr_projects is None or not use_cache:
             self._nbr_projects = 0

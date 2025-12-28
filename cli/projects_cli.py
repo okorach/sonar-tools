@@ -25,6 +25,7 @@ Exports/Imports all projects of a SonarQube Server platform
 """
 
 from __future__ import annotations
+from typing import Any
 import json
 
 from requests import RequestException
@@ -44,7 +45,7 @@ _EXPORT_IMPORT_TIMEOUT = 180
 _EXPORT_IMPORT_THREADS = 1
 
 
-def __export_projects(endpoint: Platform, **kwargs) -> None:
+def __export_projects(endpoint: Platform, **kwargs: Any) -> None:
     """Exports a list (or all) of projects into zip files"""
     ed = endpoint.edition()
     if ed == "sonarcloud":
@@ -71,7 +72,7 @@ def __export_projects(endpoint: Platform, **kwargs) -> None:
         print(util.json_dump(export_data), file=fd)
 
 
-def __import_projects(endpoint: Platform, **kwargs) -> None:
+def __import_projects(endpoint: Platform, **kwargs: Any) -> None:
     """Imports a list of projects in SonarQube Server EE+"""
     file = kwargs[options.REPORT_FILE]
     if not file:

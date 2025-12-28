@@ -76,7 +76,7 @@ def __dump_csv(object_list: list[object], file: str, **kwargs: Any) -> None:
         writer.writerow(__get_csv_header_list(**kwargs))
 
         for o in object_list:
-            arr, loc = __get_csv_row(o, **kwargs)
+            arr, _ = __get_csv_row(o, **kwargs)
             writer.writerow(arr)
             nb_objects += 1
             # arr[0] is project key, arr[3] (or arr[-1] if columns change) is ncloc

@@ -148,8 +148,7 @@ def __get_schema(fmt: Optional[str] = "json") -> dict[str, Any]:
     schema_file = pathlib.Path(__file__).parent / f"sonar-config.schema.{fmt}"
     with open(schema_file, encoding="utf-8") as fh:
         txt = fh.read()
-    json_schema = yaml.safe_load(txt) if fmt == "yaml" else json.loads(txt)
-    return json_schema
+    return yaml.safe_load(txt) if fmt == "yaml" else json.loads(txt)
 
 
 def __normalize_json(json_data: dict[str, Any], remove_empty: bool = True, remove_none: bool = True) -> dict[str, Any]:

@@ -177,7 +177,7 @@ def __convert_args_to_lists(kwargs: dict[str, str]) -> dict[str, str]:
             kwargs[argname] = util.csv_to_list(kwargs[argname])
     if kwargs.get(LANGUAGES, None) not in (None, ""):
         kwargs[LANGUAGES] = [lang.lower() for lang in util.csv_to_list(kwargs[LANGUAGES])]
-        kwargs[LANGUAGES] = [LANGUAGE_MAPPING[lang] if lang in LANGUAGE_MAPPING else lang for lang in util.csv_to_list(kwargs[LANGUAGES])]
+        kwargs[LANGUAGES] = [LANGUAGE_MAPPING.get(lang, lang) for lang in util.csv_to_list(kwargs[LANGUAGES])]
     return kwargs
 
 
@@ -232,7 +232,7 @@ def parse_and_check(parser: ArgumentParser, logger_name: Optional[str] = None, v
     return args
 
 
-def add_optional_arg(parser: ArgumentParser, *args, **kwargs: Any) -> ArgumentParser:
+def add_optional_arg(parser: ArgumentParser, *args: Any, **kwargs: Any) -> ArgumentParser:
     """Adds the branch argument to the parser"""
     kwargs = {"required": False, "default": None} | kwargs
     if kwargs.get("action") == "store_true":

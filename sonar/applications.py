@@ -24,6 +24,11 @@ Abstraction of the SonarQube "application" concept
 
 from __future__ import annotations
 from typing import Optional, Any, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
+    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, AppBranchDef, PermissionDef, AppBranchProjectDef
+
 import re
 import json
 from datetime import datetime
@@ -32,7 +37,6 @@ from threading import Lock
 from requests import RequestException
 
 import sonar.logging as log
-from sonar.platform import Platform
 from sonar.util import cache
 
 from sonar import exceptions, projects, branches, app_branches
@@ -45,8 +49,6 @@ from sonar.audit import rules, problem
 import sonar.util.constants as c
 from sonar.util import common_json_helper
 
-if TYPE_CHECKING:
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, AppBranchDef, PermissionDef, AppBranchProjectDef
 
 _CLASS_LOCK = Lock()
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")
@@ -106,7 +108,6 @@ class Application(aggr.Aggregation):
         """Loads an Application object with data retrieved from SonarQube
 
         :param endpoint: Reference to the SonarQube platform
-        :param key: Application key, must not already exist on SonarQube
         :param data: Data coming from api/components/search_projects or api/applications/show
         :raises UnsupportedOperation: If on a Community Edition
         :raises ObjectNotFound: If Application key not found in SonarQube
@@ -198,8 +199,8 @@ class Application(aggr.Aggregation):
     def create_branch(self, branch_name: str, branch_definition: ObjectJsonRepr) -> object:
         """Creates an application branch
 
-        :param str branch_name: The Application branch to set
-        :param dict[str, str] branch_definition, {<projectKey!>: <branchName1>, <projectKey2>: <branchName2>, ...}
+        :param branch_name: The Application branch to set
+        :param branch_definition, {<projectKey!>: <branchName1>, <projectKey2>: <branchName2>, ...}
         :raises ObjectAlreadyExists: if the branch name already exists
         :raises ObjectNotFound: if one of the specified projects or project branches does not exists
         """
@@ -214,12 +215,13 @@ class Application(aggr.Aggregation):
     def delete_branch(self, branch_name: str) -> bool:
         """Deletes an application branch
 
-        :param str branch_name: The Application branch to set
+        :param branch_name: The Application branch to set
         :raises ObjectNotFound: if the branch name does not exist
         """
         return app_branches.ApplicationBranch.get_object(self, branch_name).delete()
 
     def update_branch(self, branch_name: str, branch_definition: ObjectJsonRepr) -> object:
+        """Updates an Application branch with a branch definition"""
         o_app_branch = app_branches.ApplicationBranch.get_object(self, branch_name)
         try:
             o_app_branch.update_project_branches(new_project_branches=self.__get_project_branches(branch_definition))
@@ -291,6 +293,7 @@ class Application(aggr.Aggregation):
         return findings_list
 
     def nbr_projects(self, use_cache: bool = False) -> int:
+        """Returns the nbr of projects of an application"""
         return len(self.projects())
 
     def _audit_empty(self, audit_settings: ConfigSettings) -> list[problem.Problem]:
@@ -312,8 +315,6 @@ class Application(aggr.Aggregation):
         """Audits an application and returns list of problems found
 
         :param dict audit_settings: Audit configuration settings from sonar-audit properties config file
-        :return: list of problems found
-        :rtype: list [Problem]
         """
         if not audit_settings.get("audit.applications", True):
             log.debug("Auditing applications is disabled, skipping...")
@@ -330,11 +331,7 @@ class Application(aggr.Aggregation):
         return problems
 
     def export(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
-        """Exports an application
-
-        :param full: Whether to do a full export including settings that can't be set, defaults to False
-        :type full: bool, optional
-        """
+        """Exports an application"""
         log.info("Exporting %s", str(self))
         self.refresh()
         json_data = self.sq_json.copy()
@@ -423,6 +420,7 @@ class Application(aggr.Aggregation):
             self.set_branches(branch_data["name"], branch_data.get("projects", []))
 
     def api_params(self, op: Optional[str] = None) -> ApiParams:
+        """Returns the base params to be used for the object API"""
         ops = {c.READ: {"application": self.key}, c.RECOMPUTE: {"key": self.key}}
         return ops[op] if op and op in ops else ops[c.READ]
 
@@ -486,7 +484,6 @@ def get_list(endpoint: Platform, key_list: KeyList = None, use_cache: bool = Tru
     :param endpoint: Reference to the Sonar platform
     :param key_list: List of app keys to get, if None or empty all applications are returned
     :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-    :rtype: dict{<branchName>: <Branch>}
     """
     check_supported(endpoint)
     with _CLASS_LOCK:
@@ -521,7 +518,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -
     return apps_settings
 
 
-def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[problem.Problem]:
+def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs: Any) -> list[problem.Problem]:
     """Audits applications and return list of problems found
 
     :param endpoint: Reference to the Sonar platform
