@@ -49,7 +49,7 @@ class SqObject(object):
     CACHE = cache.Cache()
     API: dict[str, str] = {}  # Will be defined in the subclass
 
-    def __init__(self, endpoint: object, key: str) -> None:
+    def __init__(self, endpoint: Platform, key: str) -> None:
         if not self.__class__.CACHE:
             self.__class__.CACHE.set_class(self.__class__)
         self.key: str = key  #: Object unique key (unique in its class)
@@ -80,7 +80,7 @@ class SqObject(object):
         return cls.API[op] if op in cls.API else cls.API[c.SEARCH]
 
     @classmethod
-    def clear_cache(cls, endpoint: Optional[object] = None) -> None:
+    def clear_cache(cls, endpoint: Optional[Platform] = None) -> None:
         """Clears the cache of a given class
 
         :param endpoint: Optional, clears only the cache fo rthis platfiorm if specified, clear all if not
@@ -97,7 +97,7 @@ class SqObject(object):
             pass
 
     @classmethod
-    def exists(cls, endpoint: object, key: str) -> bool:
+    def exists(cls, endpoint: Platform, key: str) -> bool:
         """Tells whether an object with a given key exists"""
         if cls.__name__ not in ("Project", "Portfolio", "Application", "Rule"):
             raise exceptions.UnsupportedOperation(f"Can't check existence of {cls.__name__.lower()}s")
@@ -109,7 +109,7 @@ class SqObject(object):
             return False
 
     @classmethod
-    def has_access(cls, endpoint: object, obj_key: str) -> bool:
+    def has_access(cls, endpoint: Platform, obj_key: str) -> bool:
         """Returns whether the current user has access to a project"""
         if cls.__name__ not in ("Project", "Portfolio", "Application"):
             raise exceptions.UnsupportedOperation(f"Can't check access on {cls.__name__.lower()}s")
@@ -120,7 +120,7 @@ class SqObject(object):
         return True
 
     @classmethod
-    def restore_access(cls, endpoint: object, obj_key: str, user: Optional[str] = None) -> bool:
+    def restore_access(cls, endpoint: Platform, obj_key: str, user: Optional[str] = None) -> bool:
         """Restores access to a project, portfolio or application for the given user"""
         if cls.__name__ not in ("Project", "Portfolio", "Application"):
             raise exceptions.UnsupportedOperation(f"Can't restore access of {cls.__name__.lower()}s")
@@ -293,12 +293,12 @@ class SqObject(object):
         return self._tags
 
 
-def __get(endpoint: object, api: str, params: ApiParams) -> requests.Response:
+def __get(endpoint: Platform, api: str, params: ApiParams) -> requests.Response:
     """Returns a Sonar object from its key"""
     return json.loads(endpoint.get(api, params=params).text)
 
 
-def _load(endpoint: object, object_class: Any, data: ObjectJsonRepr) -> dict[str, object]:
+def _load(endpoint: Platform, object_class: Any, data: ObjectJsonRepr) -> dict[str, object]:
     """Loads any SonarQube object with the contents of an API payload"""
     key_field = object_class.SEARCH_KEY_FIELD
     if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook"):
