@@ -24,10 +24,10 @@ from __future__ import annotations
 from typing import Optional, Union, TYPE_CHECKING
 import json
 
+from sonar.sqobject import SqObject
 import sonar.logging as log
-from sonar.util import types, cache
+from sonar.util import cache
 from sonar import platform
-import sonar.sqobject as sq
 from sonar import exceptions
 import sonar.util.misc as util
 import sonar.util.constants as c
@@ -53,7 +53,7 @@ _TO_BE_SET = "TO_BE_SET"
 _IMPORTABLE_PROPERTIES = ("key", "type", "url", "workspace", "appId", "clientId")
 
 
-class DevopsPlatform(sq.SqObject):
+class DevopsPlatform(SqObject):
     """
     Abstraction of the SonarQube ALM/DevOps Platform concept
     """

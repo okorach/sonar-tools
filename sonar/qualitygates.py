@@ -28,8 +28,8 @@ from typing import Union, Optional, Any, TYPE_CHECKING
 
 import json
 
+from sonar.sqobject import SqObject
 import sonar.logging as log
-import sonar.sqobject as sq
 from sonar.util import cache, constants as c
 from sonar import measures, exceptions, projects
 import sonar.permissions.qualitygate_permissions as permissions
@@ -104,7 +104,7 @@ GOOD_QG_CONDITIONS = {
 _IMPORTABLE_PROPERTIES = ("name", "isDefault", "isBuiltIn", "conditions", "permissions")
 
 
-class QualityGate(sq.SqObject):
+class QualityGate(SqObject):
     """
     Abstraction of the Sonar Quality Gate concept
     """

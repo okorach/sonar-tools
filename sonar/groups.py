@@ -26,16 +26,15 @@ import json
 
 from typing import Optional, Any, TYPE_CHECKING
 
+from sonar.sqobject import SqObject
 import sonar.logging as log
-import sonar.platform as pf
-import sonar.sqobject as sq
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar import exceptions, users
+from sonar.util import cache, constants as c
+
 from sonar.audit import rules
 from sonar.audit.problem import Problem
-
-from sonar.util import cache, constants as c
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -47,7 +46,7 @@ GROUPS_API = "v2/authorizations/groups"
 MEMBERSHIP_API = "v2/authorizations/group-memberships"
 
 
-class Group(sq.SqObject):
+class Group(SqObject):
     """
     Abstraction of the SonarQube "group" concept.
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
@@ -327,7 +326,7 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Group]:
     :return: dict of groups with group name as key
     """
     api_version = 1 if endpoint.version() < c.GROUP_API_V2_INTRO_VERSION else 2
-    return sq.search_objects(endpoint=endpoint, object_class=Group, params=params, api_version=api_version)
+    return Group.search_objects(endpoint=endpoint, params=params, api_version=api_version)
 
 
 def get_list(endpoint: Platform) -> dict[str, Group]:

@@ -25,14 +25,14 @@ Abstraction of the SonarQube Cloud organization concept
 
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
+
 import json
 from threading import Lock
 
+from sonar.sqobject import SqObject
 import sonar.logging as log
-import sonar.platform as pf
 from sonar.util import cache, constants as c
-
-from sonar import sqobject, exceptions
+from sonar import exceptions
 import sonar.util.misc as util
 
 if TYPE_CHECKING:
@@ -45,7 +45,7 @@ _IMPORTABLE_PROPERTIES = ("key", "name", "description", "url", "avatar", "newCod
 _NOT_SUPPORTED = "Organizations do not exist in SonarQube"
 
 
-class Organization(sqobject.SqObject):
+class Organization(SqObject):
     """
     Abstraction of the SonarQube Cloud "organization" concept
     """
@@ -165,7 +165,7 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Organizati
     new_params = {"member": "true"}
     if params is not None:
         new_params.update(params)
-    return sqobject.search_objects(endpoint=endpoint, object_class=Organization, params=new_params)
+    return Organization.search_objects(endpoint=endpoint, params=new_params)
 
 
 def export(endpoint: Platform, key_list: KeyList = None) -> ObjectJsonRepr:

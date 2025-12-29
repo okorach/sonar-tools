@@ -32,13 +32,13 @@ import concurrent.futures
 from threading import Lock
 import requests.utils
 
+from sonar.sqobject import SqObject
 import sonar.logging as log
 from sonar.util import cache, constants as c
 from sonar.util import qualityprofile_helper as qphelp
 from sonar import exceptions
 from sonar import rules, languages
 import sonar.permissions.qualityprofile_permissions as permissions
-import sonar.sqobject as sq
 import sonar.util.misc as util
 import sonar.utilities as sutil
 
@@ -54,7 +54,7 @@ _IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefa
 _CLASS_LOCK = Lock()
 
 
-class QualityProfile(sq.SqObject):
+class QualityProfile(SqObject):
     """
     Abstraction of the SonarQube "quality profile" concept
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
@@ -699,7 +699,7 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, QualityPro
     :return: list of quality profiles
     :rtype: dict{key: QualityProfile}
     """
-    return sq.search_objects(endpoint=endpoint, object_class=QualityProfile, params=params)
+    return QualityProfile.search_objects(endpoint=endpoint, params=params)
 
 
 def get_list(endpoint: Platform, use_cache: bool = True) -> dict[str, QualityProfile]:

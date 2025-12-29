@@ -28,10 +28,11 @@ from datetime import datetime, timezone
 import json
 from requests import RequestException
 
+from sonar.sqobject import SqObject
 import sonar.logging as log
 from sonar.util import cache
 import sonar.util.constants as c
-from sonar import groups, sqobject, tokens, exceptions
+from sonar import groups, tokens, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
@@ -47,7 +48,7 @@ SETTABLE_PROPERTIES = ("login", "name", "email", "groups", "scmAccounts", "local
 USER_API = "v2/users-management/users"
 
 
-class User(sqobject.SqObject):
+class User(SqObject):
     """
     Abstraction of the SonarQube "user" concept
     Objects of this class must be created with one of the 3 available class constructor methods. Don't use __init__
@@ -473,7 +474,7 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, User]:
     """
     log.debug("Searching users with params %s", str(params))
     api_version = 2 if endpoint.version() >= c.USER_API_V2_INTRO_VERSION else 1
-    return dict(sorted(sqobject.search_objects(endpoint=endpoint, object_class=User, params=params, api_version=api_version).items()))
+    return dict(sorted(User.search_objects(endpoint=endpoint, params=params, api_version=api_version).items()))
 
 
 def get_list(endpoint: Platform) -> dict[str, User]:
@@ -520,7 +521,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[
     futures, futures_map = [], {}
     api_version = 2 if endpoint.version() >= c.USER_API_V2_INTRO_VERSION else 1
     with concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="UserAudit") as executor:
-        for user in sqobject.search_objects(endpoint=endpoint, object_class=User, params={}, api_version=api_version).values():
+        for user in User.search_objects(endpoint=endpoint, params={}, api_version=api_version).values():
             futures.append(future := executor.submit(User.audit, user, audit_settings))
             futures_map[future] = user
         for future in concurrent.futures.as_completed(futures):

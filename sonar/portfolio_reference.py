@@ -24,13 +24,13 @@ Abstraction of the Sonar sub-portfolio by reference concept
 """
 
 from __future__ import annotations
-
 from typing import TYPE_CHECKING
+
+from sonar.sqobject import SqObject
 import sonar.logging as log
 from sonar.util import cache
 
 from sonar import exceptions
-import sonar.sqobject as sq
 import sonar.util.constants as c
 
 if TYPE_CHECKING:
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     from sonar.util.types import ApiParams, ObjectJsonRepr, ConfigSettings
 
 
-class PortfolioReference(sq.SqObject):
+class PortfolioReference(SqObject):
     """
     Abstraction of the Sonar portfolio reference concept
     """

@@ -26,8 +26,8 @@ from typing import Optional, Any, TYPE_CHECKING
 import re
 import Levenshtein
 
+from sonar.sqobject import SqObject
 import sonar.logging as log
-import sonar.sqobject as sq
 from sonar.util import constants as c
 from sonar import exceptions
 
@@ -108,7 +108,7 @@ CSV_EXPORT_FIELDS = (
 STATUS_MAPPING = {"WONTFIX": "ACCEPTED", "REOPENED": "OPEN", "REMOVED": "CLOSED", "FIXED": "CLOSED"}
 
 
-class Finding(sq.SqObject):
+class Finding(SqObject):
     """
     Abstraction of the SonarQube "findings" concept.
     A finding is a general concept that can be either an issue or a security hotspot

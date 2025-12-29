@@ -47,9 +47,9 @@ class SqObject(object):
     """Abstraction of Sonar objects"""
 
     CACHE = cache.Cache()
-    API: dict[str, str] = {c.LIST: "error"}  # Will be defined in the subclass
+    API: dict[str, str] = {}  # Will be defined in the subclass
 
-    def __init__(self, endpoint: object, key: str) -> None:
+    def __init__(self, endpoint: Platform, key: str) -> None:
         if not self.__class__.CACHE:
             self.__class__.CACHE.set_class(self.__class__)
         self.key: str = key  #: Object unique key (unique in its class)
@@ -68,8 +68,8 @@ class SqObject(object):
         return NotImplemented
 
     @classmethod
-    def api_for(cls, op: str, endpoint: object) -> Optional[str]:
-        """Returns the API to use for a particular operation.
+    def api_for(cls, op: str, endpoint: Platform) -> str:
+        """Returns the API to use for a particular operation for a particular object class.
         This function must be overloaded for classes that need specific treatment. e.g. API V1 or V2
         depending on SonarQube version, different API for SonarQube Cloud
 
@@ -77,10 +77,10 @@ class SqObject(object):
         :param endpoint: The SQS or SQC to invoke the API
         :return: The API to use for the operation, or None if not defined
         """
-        return cls.API[op] if op in cls.API else cls.API[c.LIST]
+        return cls.API[op] if op in cls.API else cls.API[c.SEARCH]
 
     @classmethod
-    def clear_cache(cls, endpoint: Optional[object] = None) -> None:
+    def clear_cache(cls, endpoint: Optional[Platform] = None) -> None:
         """Clears the cache of a given class
 
         :param endpoint: Optional, clears only the cache fo rthis platfiorm if specified, clear all if not
@@ -97,7 +97,7 @@ class SqObject(object):
             pass
 
     @classmethod
-    def exists(cls, endpoint: object, key: str) -> bool:
+    def exists(cls, endpoint: Platform, key: str) -> bool:
         """Tells whether an object with a given key exists"""
         if cls.__name__ not in ("Project", "Portfolio", "Application", "Rule"):
             raise exceptions.UnsupportedOperation(f"Can't check existence of {cls.__name__.lower()}s")
@@ -109,7 +109,7 @@ class SqObject(object):
             return False
 
     @classmethod
-    def has_access(cls, endpoint: object, obj_key: str) -> bool:
+    def has_access(cls, endpoint: Platform, obj_key: str) -> bool:
         """Returns whether the current user has access to a project"""
         if cls.__name__ not in ("Project", "Portfolio", "Application"):
             raise exceptions.UnsupportedOperation(f"Can't check access on {cls.__name__.lower()}s")
@@ -120,13 +120,53 @@ class SqObject(object):
         return True
 
     @classmethod
-    def restore_access(cls, endpoint: object, obj_key: str, user: Optional[str] = None) -> bool:
+    def restore_access(cls, endpoint: Platform, obj_key: str, user: Optional[str] = None) -> bool:
         """Restores access to a project, portfolio or application for the given user"""
         if cls.__name__ not in ("Project", "Portfolio", "Application"):
             raise exceptions.UnsupportedOperation(f"Can't restore access of {cls.__name__.lower()}s")
         log.info("Restoring access to %s '%s' for user '%s'", cls.__name__, obj_key, user or endpoint.user())
         obj = cls(endpoint, obj_key)
         return obj.set_permissions([{"user": user or endpoint.user(), "permissions": ["admin", "user"]}])
+
+    @classmethod
+    def search_objects(cls, endpoint: Platform, params: ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
+        """Runs a multi-threaded object search for searchable Sonar Objects"""
+        api = cls.api_for(c.SEARCH, endpoint)
+        returned_field = cls.SEARCH_RETURN_FIELD
+        new_params = {} if params is None else params.copy()
+        p_field = "pageIndex" if api_version == 2 else "p"
+        ps_field = "pageSize" if api_version == 2 else "ps"
+        if ps_field not in new_params:
+            new_params[ps_field] = 500
+
+        objects_list = {}
+        cname = cls.__name__.lower()
+        data = json.loads(endpoint.get(api, {**new_params, p_field: 1}).text)
+        nb_pages = sutil.nbr_pages(data, api_version)
+        nb_objects = max(len(data[returned_field]), sutil.nbr_total_elements(data, api_version))
+        log.info(
+            "Searching %d %ss, %d pages of %d elements, %d pages in parallel...",
+            nb_objects,
+            cname,
+            nb_pages,
+            len(data[returned_field]),
+            threads,
+        )
+        if sutil.nbr_total_elements(data, api_version) > 0 and len(data[returned_field]) == 0:
+            log.fatal(msg := f"Index on {cname} is corrupted, please reindex before using API")
+            raise exceptions.SonarException(msg, errcodes.SONAR_INTERNAL_ERROR)
+
+        objects_list |= _load(endpoint, cls, data[returned_field])
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f"{cname}Search") as executor:
+            futures = [executor.submit(__get, endpoint, api, {**new_params, p_field: page}) for page in range(2, nb_pages + 1)]
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    data = future.result(timeout=60)
+                    objects_list |= _load(endpoint, cls, data[returned_field])
+                except Exception as e:
+                    log.error(f"Error {e} while searching {cname}.")
+        return objects_list
 
     def reload(self, data: ApiPayload) -> object:
         """Loads a SonarQube API JSON payload in a SonarObject"""
@@ -253,12 +293,12 @@ class SqObject(object):
         return self._tags
 
 
-def __get(endpoint: object, api: str, params: ApiParams) -> requests.Response:
+def __get(endpoint: Platform, api: str, params: ApiParams) -> requests.Response:
     """Returns a Sonar object from its key"""
     return json.loads(endpoint.get(api, params=params).text)
 
 
-def __load(endpoint: object, object_class: Any, data: ObjectJsonRepr) -> dict[str, object]:
+def _load(endpoint: Platform, object_class: Any, data: ObjectJsonRepr) -> dict[str, object]:
     """Loads any SonarQube object with the contents of an API payload"""
     key_field = object_class.SEARCH_KEY_FIELD
     if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook"):
@@ -266,43 +306,3 @@ def __load(endpoint: object, object_class: Any, data: ObjectJsonRepr) -> dict[st
     if object_class.__name__ in ("Rule"):
         return {obj[key_field]: object_class.load(endpoint=endpoint, key=obj[key_field], data=obj) for obj in data}
     return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}
-
-
-def search_objects(endpoint: object, object_class: Any, params: ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
-    """Runs a multi-threaded object search for searchable Sonar Objects"""
-    api = object_class.api_for(c.SEARCH, endpoint)
-    returned_field = object_class.SEARCH_RETURN_FIELD
-    new_params = {} if params is None else params.copy()
-    p_field = "pageIndex" if api_version == 2 else "p"
-    ps_field = "pageSize" if api_version == 2 else "ps"
-    if ps_field not in new_params:
-        new_params[ps_field] = 500
-
-    objects_list = {}
-    cname = object_class.__name__.lower()
-    data = __get(endpoint, api, {**new_params, p_field: 1})
-    nb_pages = sutil.nbr_pages(data, api_version)
-    nb_objects = max(len(data[returned_field]), sutil.nbr_total_elements(data, api_version))
-    log.info(
-        "Searching %d %ss, %d pages of %d elements, %d pages in parallel...",
-        nb_objects,
-        cname,
-        nb_pages,
-        len(data[returned_field]),
-        threads,
-    )
-    if sutil.nbr_total_elements(data) > 0 and len(data[returned_field]) == 0:
-        log.fatal(msg := f"Index on {cname} is corrupted, please reindex before using API")
-        raise exceptions.SonarException(msg, errcodes.SONAR_INTERNAL_ERROR)
-
-    objects_list |= __load(endpoint, object_class, data[returned_field])
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f"{cname}Search") as executor:
-        futures = [executor.submit(__get, endpoint, api, {**new_params, p_field: page}) for page in range(2, nb_pages + 1)]
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                data = future.result(timeout=60)
-                objects_list |= __load(endpoint, object_class, data[returned_field])
-            except Exception as e:
-                log.error(f"Error {e} while searching {cname}.")
-    return objects_list

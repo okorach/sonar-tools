@@ -25,12 +25,11 @@ from typing import Optional, ClassVar, TYPE_CHECKING
 
 import json
 
+from sonar.sqobject import SqObject
 import sonar.logging as log
 from sonar import exceptions
 from sonar.util import cache, constants as c
 import sonar.util.misc as util
-import sonar.sqobject as sq
-
 from sonar.audit import rules, problem
 
 if TYPE_CHECKING:
@@ -40,7 +39,7 @@ if TYPE_CHECKING:
 _IMPORTABLE_PROPERTIES = ("name", "url", "secret")
 
 
-class WebHook(sq.SqObject):
+class WebHook(SqObject):
     """
     Abstraction of the SonarQube "webhook" concept
     """
@@ -191,7 +190,7 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, WebHook]:
     :param ApiParams params: Filters to narrow down the search, can only be "project"
     :return: List of webhooks
     """
-    return sq.search_objects(endpoint=endpoint, object_class=WebHook, params=params)
+    return WebHook.search_objects(endpoint=endpoint, params=params)
 
 
 def get_list(endpoint: Platform, project_key: Optional[str] = None) -> dict[str, WebHook]:

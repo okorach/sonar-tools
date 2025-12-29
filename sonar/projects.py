@@ -1332,7 +1332,7 @@ def search(endpoint: Platform, params: ApiParams = None, threads: int = 8) -> di
     new_params = {} if params is None else params.copy()
     if not endpoint.is_sonarcloud():
         new_params["filter"] = _PROJECT_QUALIFIER
-    return sqobject.search_objects(endpoint=endpoint, object_class=Project, params=new_params, threads=threads)
+    return Project.search_objects(endpoint=endpoint, params=new_params, threads=threads)
 
 
 def get_list(endpoint: Platform, key_list: KeyList = None, threads: int = 8, use_cache: bool = True) -> dict[str, Project]:
