@@ -33,6 +33,8 @@ if TYPE_CHECKING:
 
 
 class CustomMeasure(SqObject):
+    """Abstraction of the SonarQube customer measure concept"""
+
     API_ROOT = "api/custom_measures/"
 
     def __init__(
