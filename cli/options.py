@@ -343,7 +343,7 @@ def set_target_sonar_args(parser: ArgumentParser) -> ArgumentParser:
     args = [f"-{URL_TARGET_SHORT}", f"--{URL_TARGET}"]
     parser = add_optional_arg(parser, *args, help="Root URL of the target platform when using sonar-findings-sync")
 
-    args = ["-{TOKEN_TARGET_SHORT}", f"--{TOKEN_TARGET}"]
+    args = [f"-{TOKEN_TARGET_SHORT}", f"--{TOKEN_TARGET}"]
     help_str = "Token of target platform when using sonar-findings-sync - Unauthenticated usage is not possible"
     parser = add_optional_arg(parser, *args, help=help_str)
 
