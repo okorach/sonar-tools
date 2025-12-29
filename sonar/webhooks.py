@@ -25,12 +25,11 @@ from typing import Optional, ClassVar, TYPE_CHECKING
 
 import json
 
+from sonar.sqobject import SqObject
 import sonar.logging as log
 from sonar import exceptions
 from sonar.util import cache, constants as c
 import sonar.util.misc as util
-import sonar.sqobject as sq
-
 from sonar.audit import rules, problem
 
 if TYPE_CHECKING:
@@ -40,7 +39,7 @@ if TYPE_CHECKING:
 _IMPORTABLE_PROPERTIES = ("name", "url", "secret")
 
 
-class WebHook(sq.SqObject):
+class WebHook(SqObject):
     """
     Abstraction of the SonarQube "webhook" concept
     """

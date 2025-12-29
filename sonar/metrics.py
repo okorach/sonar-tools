@@ -22,11 +22,13 @@
 
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
+
 import json
 from threading import Lock
 
+from sonar.sqobject import SqObject
 from sonar.util import cache
-from sonar import sqobject, exceptions
+from sonar import exceptions
 import sonar.utilities as sutil
 
 if TYPE_CHECKING:
@@ -84,7 +86,7 @@ __MAX_PAGE_SIZE = 500
 _CLASS_LOCK = Lock()
 
 
-class Metric(sqobject.SqObject):
+class Metric(SqObject):
     """
     Abstraction of the SonarQube "metric" concept
     """

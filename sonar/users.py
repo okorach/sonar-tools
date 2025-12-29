@@ -28,10 +28,11 @@ from datetime import datetime, timezone
 import json
 from requests import RequestException
 
+from sonar.sqobject import SqObject
 import sonar.logging as log
 from sonar.util import cache
 import sonar.util.constants as c
-from sonar import groups, sqobject, tokens, exceptions
+from sonar import groups, tokens, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
@@ -47,7 +48,7 @@ SETTABLE_PROPERTIES = ("login", "name", "email", "groups", "scmAccounts", "local
 USER_API = "v2/users-management/users"
 
 
-class User(sqobject.SqObject):
+class User(SqObject):
     """
     Abstraction of the SonarQube "user" concept
     Objects of this class must be created with one of the 3 available class constructor methods. Don't use __init__

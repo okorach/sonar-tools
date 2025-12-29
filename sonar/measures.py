@@ -21,23 +21,27 @@
 """Abstraction of the SonarQube measure concept"""
 
 from __future__ import annotations
+from typing import Any, Optional, Union, TYPE_CHECKING
 
 import json
-from typing import Any, Optional, Union
-from sonar import metrics, exceptions, platform
+
+from sonar.sqobject import SqObject
+from sonar import metrics, exceptions
 from sonar.util.types import ApiPayload, ApiParams, KeyList
 from sonar.util import cache, constants as c
 import sonar.logging as log
 import sonar.util.misc as util
 import sonar.utilities as sutil
-import sonar.sqobject as sq
+
+if TYPE_CHECKING:
+    from sonar.platform import Platform
 
 ALT_COMPONENTS = ("project", "application", "portfolio", "key")
 
 DATETIME_METRICS = ("last_analysis", "createdAt", "updatedAt", "creation_date", "modification_date")
 
 
-class Measure(sq.SqObject):
+class Measure(SqObject):
     """
     Abstraction of the SonarQube "measure" concept
     """
@@ -198,7 +202,7 @@ def get_rating_number(rating_letter: str) -> int:
     return rating_letter
 
 
-def format(endpoint: platform.Platform, metric_key: str, value: Any, ratings: str = "letters", percents: str = "float") -> Any:
+def format(endpoint: Platform, metric_key: str, value: Any, ratings: str = "letters", percents: str = "float") -> Any:
     """Formats a measure"""
     try:
         metric = metrics.Metric.get_object(endpoint, metric_key)

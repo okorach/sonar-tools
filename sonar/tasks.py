@@ -28,9 +28,8 @@ import time
 import json
 import re
 
+from sonar.sqobject import SqObject
 import sonar.logging as log
-import sonar.sqobject as sq
-
 from sonar import exceptions
 import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
@@ -66,7 +65,7 @@ IMPORT_ERRORS = (ZIP_MISSING, ZIP_CORRUPTED, ZIP_DOESNT_MATCH, CANT_UNZIP, INCOM
 SCANNER_VERSIONS = get_scanners_versions()
 
 
-class Task(sq.SqObject):
+class Task(SqObject):
     """
     Abstraction of the SonarQube "background task" concept
     """

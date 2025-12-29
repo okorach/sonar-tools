@@ -26,8 +26,8 @@ from typing import Optional, TYPE_CHECKING
 import json
 import datetime as dt
 
+from sonar.sqobject import SqObject
 import sonar.logging as log
-import sonar.sqobject as sq
 import sonar.utilities as sutil
 import sonar.util.misc as util
 from sonar.util import cache, constants as c
@@ -39,10 +39,8 @@ if TYPE_CHECKING:
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings
 
 
-class UserToken(sq.SqObject):
-    """
-    Abstraction of the SonarQube "user token" concept
-    """
+class UserToken(SqObject):
+    """Abstraction of the SonarQube "user token" concept"""
 
     CACHE = cache.Cache()
     API = {c.CREATE: "user_tokens/generate", c.DELETE: "user_tokens/revoke", c.LIST: "user_tokens/search"}

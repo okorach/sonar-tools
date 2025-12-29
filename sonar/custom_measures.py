@@ -25,13 +25,14 @@ Abstraction of the SonarQube "custom measure" concept
 
 import json
 from typing import Any, Optional, TYPE_CHECKING
-import sonar.sqobject as sq
+
+from sonar.sqobject import SqObject
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
 
 
-class CustomMeasure(sq.SqObject):
+class CustomMeasure(SqObject):
     API_ROOT = "api/custom_measures/"
 
     def __init__(

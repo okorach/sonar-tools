@@ -27,8 +27,8 @@ import json
 import concurrent.futures
 from threading import Lock
 
+from sonar.sqobject import SqObject
 import sonar.logging as log
-import sonar.sqobject as sq
 from sonar.util import cache, constants as c, issue_defs as idefs
 from sonar import exceptions, languages
 import sonar.util.misc as util
@@ -146,7 +146,7 @@ LEGACY_CSV_EXPORT_FIELDS = ["key", "language", "repo", "type", "severity", "name
 _CLASS_LOCK = Lock()
 
 
-class Rule(sq.SqObject):
+class Rule(SqObject):
     """
     Abstraction of the Sonar Rule concept
     """

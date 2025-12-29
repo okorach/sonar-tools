@@ -31,14 +31,14 @@ import json
 from datetime import datetime
 from requests import RequestException
 
+from sonar.sqobject import SqObject
 import sonar.util.constants as c
 import sonar.logging as log
-import sonar.sqobject as sq
-from sonar.audit.problem import Problem
-
 from sonar import settings, tasks, measures, rules, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
+
+from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 
 if TYPE_CHECKING:
@@ -49,7 +49,7 @@ if TYPE_CHECKING:
 KEY_SEPARATOR = " "
 
 
-class Component(sq.SqObject):
+class Component(SqObject):
     """
     Abstraction of the Sonar component concept
     """

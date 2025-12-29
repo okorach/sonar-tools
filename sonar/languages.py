@@ -22,11 +22,13 @@
 """Abstraction of the SonarQube language concept"""
 
 from __future__ import annotations
+from typing import Optional, TYPE_CHECKING
 
 import json
-from typing import Optional, TYPE_CHECKING
 from threading import Lock
-from sonar import sqobject, rules
+
+from sonar.sqobject import SqObject
+from sonar import rules
 from sonar.util import misc
 from sonar.util import cache
 import sonar.util.issue_defs as idefs
@@ -42,7 +44,7 @@ APIS = {"list": "languages/list"}
 _CLASS_LOCK = Lock()
 
 
-class Language(sqobject.SqObject):
+class Language(SqObject):
     """Abstraction of the Sonar language concept"""
 
     CACHE = cache.Cache()
