@@ -462,7 +462,7 @@ def check_supported(endpoint: Platform) -> None:
         raise exceptions.UnsupportedOperation("No applications in SonarQube Cloud")
 
 
-def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Application]:
+def search(endpoint: Platform, params: Optional[ApiParams] = None) -> dict[str, Application]:
     """Searches applications
 
     :param endpoint: Reference to the SonarQube platform
@@ -474,7 +474,7 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Applicatio
     new_params = {"filter": "qualifier = APP"}
     if params is not None:
         new_params.update(params)
-    return sq.search_objects(endpoint=endpoint, object_class=Application, params=new_params)
+    return Application.search_objects(endpoint=endpoint, params=new_params)
 
 
 def get_list(endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Application]:

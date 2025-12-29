@@ -327,7 +327,7 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Group]:
     :return: dict of groups with group name as key
     """
     api_version = 1 if endpoint.version() < c.GROUP_API_V2_INTRO_VERSION else 2
-    return sq.search_objects(endpoint=endpoint, object_class=Group, params=params, api_version=api_version)
+    return Group.search_objects(endpoint=endpoint, params=params, api_version=api_version)
 
 
 def get_list(endpoint: Platform) -> dict[str, Group]:

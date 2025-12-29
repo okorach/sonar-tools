@@ -699,7 +699,7 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, QualityPro
     :return: list of quality profiles
     :rtype: dict{key: QualityProfile}
     """
-    return sq.search_objects(endpoint=endpoint, object_class=QualityProfile, params=params)
+    return QualityProfile.search_objects(endpoint=endpoint, params=params)
 
 
 def get_list(endpoint: Platform, use_cache: bool = True) -> dict[str, QualityProfile]:

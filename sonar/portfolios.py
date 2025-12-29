@@ -676,7 +676,7 @@ def get_list(endpoint: Platform, key_list: KeyList = None, use_cache: bool = Tru
 def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Portfolio]:
     """Search all portfolios of a platform and returns as dict"""
     check_supported(endpoint)
-    return sq.search_objects(endpoint=endpoint, object_class=Portfolio, params=params)
+    return Portfolio.search_objects(endpoint=endpoint, params=params)
 
 
 def check_supported(endpoint: Platform) -> None:

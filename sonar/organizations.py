@@ -165,7 +165,7 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Organizati
     new_params = {"member": "true"}
     if params is not None:
         new_params.update(params)
-    return sqobject.search_objects(endpoint=endpoint, object_class=Organization, params=new_params)
+    return Organization.search_objects(endpoint=endpoint, params=new_params)
 
 
 def export(endpoint: Platform, key_list: KeyList = None) -> ObjectJsonRepr:

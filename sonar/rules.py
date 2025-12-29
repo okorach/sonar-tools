@@ -201,7 +201,7 @@ class Rule(sq.SqObject):
         """
         if o := Rule.CACHE.get(key, endpoint.local_url):
             return o
-        sq.search_objects(endpoint=endpoint, object_class=Rule, params={"q": key})
+        Rule.search_objects(endpoint=endpoint, params={"q": key})
         if o := Rule.CACHE.get(key, endpoint.local_url):
             return o
         raise exceptions.ObjectNotFound(key, f"Rule key '{key}' not found")
@@ -434,7 +434,7 @@ def get_facet(facet: str, endpoint: Platform) -> dict[str, str]:
 
 def search(endpoint: Platform, params: dict[str, str]) -> dict[str, Rule]:
     """Searches rules with optional filters"""
-    return sq.search_objects(endpoint=endpoint, object_class=Rule, params=params, threads=4)
+    return Rule.search_objects(endpoint=endpoint, params=params, threads=4)
 
 
 def search_keys(endpoint: Platform, **params) -> list[str]:
