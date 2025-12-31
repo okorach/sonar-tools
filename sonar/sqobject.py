@@ -31,6 +31,7 @@ from http import HTTPStatus
 import concurrent.futures
 import requests
 
+import sonar.api.manager as api_mgr
 import sonar.logging as log
 from sonar.util import cache
 from sonar.util import constants as c
@@ -160,6 +161,39 @@ class SqObject(object):
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f"{cname}Search") as executor:
             futures = [executor.submit(__get, endpoint, api, {**new_params, p_field: page}) for page in range(2, nb_pages + 1)]
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    data = future.result(timeout=60)
+                    objects_list |= _load(endpoint, cls, data[returned_field])
+                except Exception as e:
+                    log.error(f"Error {e} while searching {cname}.")
+        return objects_list
+
+    @classmethod
+    def get_paginated(cls, endpoint: Platform, params: Optional[ApiParams] = None, threads: int = 8) -> dict[str, SqObject]:
+        """Returns all pages of a paginated API"""
+        cname = cls.__name__.lower()
+        api_def = api_mgr.get_api_def(cls.__name__, c.READ, endpoint.version())
+        page_field = api_mgr.page_field(api_def)
+        max_ps = api_mgr.max_page_size(api_def)
+        new_params = {"ps": max_ps, "pageSize": max_ps} | (params or {})
+        api, _, new_params = api_mgr.prep_params(api_def, **new_params)
+        returned_field = api_mgr.return_field(api_def)
+
+        objects_list: dict[str, cls] = {}
+        data = json.loads(endpoint.get(api, new_params).text)
+        nb_pages = sutil.nbr_pages(data)
+        nb_objects = max(len(data[returned_field]), sutil.nbr_total_elements(data))
+        msg = "Searching %d %ss, %d pages of %d elements, %d pages in parallel..."
+        log.info(msg, nb_objects, cname, nb_pages, len(data[returned_field]), threads)
+        if sutil.nbr_total_elements(data) > 0 and len(data[returned_field]) == 0:
+            log.fatal(msg := f"Index on {cname} is corrupted, please reindex before using API")
+            raise exceptions.SonarException(msg, errcodes.SONAR_INTERNAL_ERROR)
+
+        objects_list |= _load(endpoint, cls, data[returned_field])
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f"{cname}Search") as executor:
+            futures = [executor.submit(__get, endpoint, api, {**new_params, page_field: page}) for page in range(2, nb_pages + 1)]
             for future in concurrent.futures.as_completed(futures):
                 try:
                     data = future.result(timeout=60)
@@ -301,8 +335,6 @@ def __get(endpoint: Platform, api: str, params: ApiParams) -> requests.Response:
 def _load(endpoint: Platform, object_class: Any, data: ObjectJsonRepr) -> dict[str, object]:
     """Loads any SonarQube object with the contents of an API payload"""
     key_field = object_class.SEARCH_KEY_FIELD
-    if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook"):
+    if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook", "Rule"):
         return {obj[key_field]: object_class.load(endpoint=endpoint, data=obj) for obj in data}
-    if object_class.__name__ in ("Rule"):
-        return {obj[key_field]: object_class.load(endpoint=endpoint, key=obj[key_field], data=obj) for obj in data}
     return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}
