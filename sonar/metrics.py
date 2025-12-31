@@ -137,6 +137,17 @@ class Metric(SqObject):
                     page += 1
         return {v.key: v for v in Metric.CACHE.values() if not v.hidden or include_hidden_metrics}
 
+    @classmethod
+    def count(cls, endpoint: Platform, include_hidden_metrics: bool = False, use_cache: bool = True) -> int:
+        """Returns the number of public metrics
+
+        :param endpoint: Reference to the SonarQube platform object
+        :param include_hidden_metrics: Whether to also include hidden (private) metrics
+        :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        :return: Number of public metrics
+        """
+        return len(Metric.search(endpoint, include_hidden_metrics=include_hidden_metrics, use_cache=use_cache))
+
     def __load(self, data: ApiPayload) -> bool:
         self.type = data["type"]
         self.name = data["name"]
@@ -158,30 +169,3 @@ class Metric(SqObject):
     def is_an_effort(self) -> bool:
         """Whether a metric is an effort"""
         return self.type == "WORK_DUR"
-
-
-def is_a_rating(endpoint: Platform, metric_key: str) -> bool:
-    """Whether a metric is a rating"""
-    return Metric.get_object(endpoint, metric_key).is_a_rating()
-
-
-def is_a_percent(endpoint: Platform, metric_key: str) -> bool:
-    """Whether a metric is a percent"""
-    return Metric.get_object(endpoint, metric_key).is_a_percent()
-
-
-def is_an_effort(endpoint: Platform, metric_key: str) -> bool:
-    """Whether a metric is an effort"""
-    Metric.get_object(endpoint, metric_key).is_an_effort()
-
-
-def count(endpoint: Platform, use_cache: bool = True) -> int:
-    """
-    :param Platform endpoint: Reference to the SonarQube platform object
-    :returns: Count of public metrics
-    :rtype: int
-    """
-    with _CLASS_LOCK:
-        if len(Metric.CACHE) == 0 or not use_cache:
-            search(endpoint, True)
-    return len([v for v in Metric.CACHE.values() if not v.hidden])
