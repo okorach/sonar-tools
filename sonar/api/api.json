@@ -37,13 +37,7 @@
                 "method": "POST",
                 "api": "v2/users-management/users",
                 "content_type": "application/json",
-                "params": {
-                    "login": "{login}",
-                    "name": "{name}",
-                    "email": "{email}",
-                    "password": "{password}",
-                    "local": "{is_local}"
-                }
+                "params": ["login", "name", "email", "password", "local"]
             },
             "read": {
                 "method": "GET",
@@ -54,12 +48,7 @@
                 "method": "PATCH",
                 "api": "v2/users-management/users/{id}",
                 "content_type": "application/merge-patch+json",
-                "params": {
-                    "login": "{login}",
-                    "name": "{name}",
-                    "email": "{email}",
-                    "scmAccounts": "{scm_accounts}"
-                }
+                "params": ["login", "name", "email", "scmAccounts"]
             },
             "delete": {
                 "method": "DELETE",
@@ -68,10 +57,7 @@
             "list": {
                 "method": "GET",
                 "api": "v2/users-management/users",
-                "params": {
-                    "organization": "{organization}",
-                    "q": "{q}"
-                },
+                "params": ["organization", "q"],
                 "return_field": "users"
             }
         },
@@ -79,38 +65,24 @@
             "create": {
                 "method": "POST",
                 "api": "users/create",
-                "params": {
-                    "login": "{login}",
-                    "name": "{name}",
-                    "email": "{email}",
-                    "password": "{password}",
-                    "local": "{is_local}"
-                },
+                "params": ["login", "name", "email", "password", "local"],
                 "return_field": "user"
             },
             "read": {
                 "method": "GET",
                 "api": "users/search",
-                "params": {
-                    "q": "{login}"
-                },
+                "params": ["q"],
                 "return_field": "users"
             },
             "update": {
                 "method": "POST",
                 "api": "users/update",
-                "params": {
-                    "login": "{login}",
-                    "name": "{name}",
-                    "email": "{email}"
-                }
+                "params": ["login", "name", "email"]
             },
             "delete": {
                 "method": "POST",
                 "api": "users/deactivate",
-                "params": {
-                    "login": "{login}"
-                }
+                "params": ["login"]
             },
             "list": {
                 "method": "GET",
@@ -120,10 +92,7 @@
             "update_login": {
                 "method": "POST",
                 "api": "users/update_login",
-                "params": {
-                    "login": "{login}",
-                    "new_login": "{new_login}"
-                }
+                "params": ["login", "new_login"]
             }
         }
     },
@@ -133,10 +102,7 @@
                 "method": "POST",
                 "api": "v2/authorizations/groups",
                 "content_type": "application/json",
-                "params": {
-                    "name": "{name}",
-                    "description": "{description}"
-                }
+                "params": ["name", "description"]
             },
             "READ": {
                 "method": "GET",
@@ -147,10 +113,7 @@
                 "method": "PATCH",
                 "api": "v2/authorizations/groups/{id}",
                 "content_type": "application/merge-patch+json",
-                "params": {
-                    "name": "{name}",
-                    "description": "{description}"
-                }
+                "params": ["name", "description"]
             },
             "DELETE": {
                 "method": "DELETE",
@@ -159,34 +122,20 @@
             "LIST": {
                 "method": "GET",
                 "api": "v2/authorizations/groups",
-                "params": {
-                    "managed": "{managed}",
-                    "userId": "{userId}",
-                    "organization": "{organization}",
-                    "q": "{q}",
-                    "pageIndex": "{pageIndex}",
-                    "pageSize": "{pageSize}"
-                },
+                "params": ["managed", "userId", "organization", "q", "pageIndex", "pageSize"],
                 "return_field": "groups"
             },
             "LIST_MEMBERS": {
                 "method": "GET",
                 "api": "v2/authorizations/group-memberships",
-                "params": {
-                    "groupId": "{groupId}",
-                    "pageIndex": "{pageIndex}",
-                    "pageSize": "{pageSize}"
-                },
+                "params": ["groupId", "pageIndex", "pageSize"],
                 "return_field": "groupMemberships"
             },
             "ADD_MEMBER": {
                 "method": "POST",
                 "api": "v2/authorizations/group-memberships",
                 "content_type": "application/json",
-                "params": {
-                    "groupId": "{groupId}",
-                    "userId": "{userId}"
-                },
+                "params": ["groupId", "userId"],
                 "return_field": "groupMemberships"
             },
             "REMOVE_MEMBER": {
@@ -198,74 +147,45 @@
             "CREATE": {
                 "method": "POST",
                 "api": "api/user_groups/create",
-                "params": {
-                    "name": "{name}",
-                    "description": "{description}"
-                }
+                "params": ["name", "description"]
             },
             "READ": {
                 "method": "GET",
                 "api": "api/user_groups/search",
-                "params": {
-                    "q": "{q}",
-                    "p": "{p}",
-                    "ps": "{ps}"
-                },
+                "params": ["q", "p", "ps"],
                 "return_field": "groups"
             },
             "UPDATE": {
                 "method": "POST",
                 "api": "api/user_groups/update",
-                "params": {
-                    "currentName": "{currentName}",
-                    "name": "{name}",
-                    "description": "{description}"
-                }
+                "params": ["currentName", "name", "description"]
             },
             "DELETE": {
                 "method": "POST",
                 "api": "api/user_groups/delete",
-                "params": {
-                    "name": "{name}"
-                }
+                "params": ["name"]
             },
             "LIST": {
                 "method": "GET",
                 "api": "api/user_groups/search",
-                "params": {
-                    "q": "{q}",
-                    "p": "{p}",
-                    "ps": "{ps}"
-                },
+                "params": ["q", "p", "ps"],
                 "return_field": "groups"
             },
             "LIST_MEMBERS": {
                 "method": "GET",
                 "api": "api/user_groups/users",
-                "params": {
-                    "name": "{name}",
-                    "p": "{p}",
-                    "ps": "{ps}",
-                    "q": "{q}",
-                    "selected": "{selected}"
-                },
+                "params": ["name", "p", "ps", "q", "selected"],
                 "return_field": "users"
             },
             "ADD_MEMBER": {
                 "method": "POST",
                 "api": "api/user_groups/add_user",
-                "params": {
-                    "login": "{login}",
-                    "name": "{name}"
-                }
+                "params": ["login", "name"]
             },
             "REMOVE_MEMBER": {
                 "method": "POST",
                 "api": "api/user_groups/remove_user",
-                "params": {
-                    "login": "{login}",
-                    "name": "{name}"
-                }
+                "params": ["login", "name"]
             }
         }
     },

@@ -54,6 +54,9 @@ def get_api_def(obj_name: str, op: str, sonar_version: tuple[int, int, int]) -> 
 def prep_params(api_def: dict[str, Any], **kwargs: Any) -> tuple[str, str, dict[str, Any]]:
     """Prepares the parameters for the API call"""
     api = api_def["api"].format(**kwargs)
-    params = {k: v.format_map(defaultdict(str, **kwargs)) for k, v in api_def.get("params", {}).items()}
+    params = api_def.get("params", {})
+    if isinstance(params, list):
+        params = {p: "{" + p + "}" for p in api_def.get("params", [])}
+    params = {k: v.format_map(defaultdict(str, **kwargs)) for k, v in params.items()}
     params = {k: v for k, v in params.items() if v is not None and v != ""}
     return api, api_def["method"], params
