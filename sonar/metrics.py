@@ -23,7 +23,6 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
-import json
 from threading import Lock
 
 import sonar.util.constants as c
@@ -106,7 +105,7 @@ class Metric(SqObject):
         self.qualitative: Optional[bool] = None  #: Qualitative
         self.hidden: Optional[bool] = None  #: Hidden
         self.custom: Optional[bool] = None  #: Custom
-        self.__load(data)
+        self.reload(data)
         Metric.CACHE.put(self)
 
     @classmethod
@@ -126,15 +125,7 @@ class Metric(SqObject):
         """
         with _CLASS_LOCK:
             if len(Metric.CACHE) == 0 or not use_cache:
-                api_def = api_mgr.get_api_def("Metric", c.READ, endpoint.version())
-                api, _, params = api_mgr.prep_params(api_def, ps=api_mgr.max_page_size(api_def))
-                page, nb_pages = 1, 1
-                while page <= nb_pages:
-                    data = json.loads(endpoint.get(api, params=params | {"p": page}).text)
-                    for m in data[api_mgr.return_field(api_def)]:
-                        _ = Metric(endpoint=endpoint, key=m["key"], data=m)
-                    nb_pages = sutil.nbr_pages(data)
-                    page += 1
+                _ = Metric.get_paginated(endpoint, threads=2)
         return {v.key: v for v in Metric.CACHE.values() if not v.hidden or include_hidden_metrics}
 
     @classmethod
@@ -148,7 +139,18 @@ class Metric(SqObject):
         """
         return len(Metric.search(endpoint, include_hidden_metrics=include_hidden_metrics, use_cache=use_cache))
 
-    def __load(self, data: ApiPayload) -> bool:
+    @classmethod
+    def load(cls, endpoint: Platform, data: ApiPayload) -> Metric:
+        """Loads a metric from data"""
+        key = data["key"]
+        o: Optional[Metric] = cls.CACHE.get(key, endpoint.local_url)
+        if not o:
+            o = cls(endpoint, key, data=data)
+        else:
+            o.reload(data)
+        return o
+
+    def reload(self, data: ApiPayload) -> bool:
         self.type = data["type"]
         self.name = data["name"]
         self.description = data.get("description", "")
