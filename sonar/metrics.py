@@ -23,10 +23,11 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
-import json
 from threading import Lock
 
+import sonar.util.constants as c
 from sonar.sqobject import SqObject
+import sonar.api.manager as api_mgr
 from sonar.util import cache
 from sonar import exceptions
 import sonar.utilities as sutil
@@ -82,7 +83,7 @@ APIS = {
     "search": "metrics/search",
 }
 
-__MAX_PAGE_SIZE = 500
+MAX_PAGE_SIZE = 500
 _CLASS_LOCK = Lock()
 
 
@@ -104,17 +105,52 @@ class Metric(SqObject):
         self.qualitative: Optional[bool] = None  #: Qualitative
         self.hidden: Optional[bool] = None  #: Hidden
         self.custom: Optional[bool] = None  #: Custom
-        self.__load(data)
+        self.reload(data)
         Metric.CACHE.put(self)
 
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Metric:
-        search(endpoint=endpoint)
-        if not (o := Metric.CACHE.get(key, endpoint.local_url)):
+        cls.search(endpoint=endpoint)
+        if not (o := cls.CACHE.get(key, endpoint.local_url)):
             raise exceptions.ObjectNotFound(key, f"Metric key '{key}' not found")
         return o
 
-    def __load(self, data: ApiPayload) -> bool:
+    @classmethod
+    def search(cls, endpoint: Platform, include_hidden_metrics: bool = False, use_cache: bool = True) -> dict[str, Metric]:
+        """
+        :param endpoint: Reference to the SonarQube platform object
+        :param include_hidden_metrics: Whether to also include hidden (private) metrics
+        :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        :return: Dict of metrics indexed by metric key
+        """
+        with _CLASS_LOCK:
+            if len(cls.CACHE) == 0 or not use_cache:
+                _ = cls.get_paginated(endpoint, threads=1)
+        return {v.key: v for v in cls.CACHE.values() if not v.hidden or include_hidden_metrics}
+
+    @classmethod
+    def count(cls, endpoint: Platform, include_hidden_metrics: bool = False, use_cache: bool = True) -> int:
+        """Returns the number of public metrics
+
+        :param endpoint: Reference to the SonarQube platform object
+        :param include_hidden_metrics: Whether to also include hidden (private) metrics
+        :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        :return: Number of public metrics
+        """
+        return len(cls.search(endpoint, include_hidden_metrics=include_hidden_metrics, use_cache=use_cache))
+
+    @classmethod
+    def load(cls, endpoint: Platform, data: ApiPayload) -> Metric:
+        """Loads a metric from data"""
+        key = data["key"]
+        o: Optional[Metric] = cls.CACHE.get(key, endpoint.local_url)
+        if not o:
+            o = cls(endpoint, key, data=data)
+        else:
+            o.reload(data)
+        return o
+
+    def reload(self, data: ApiPayload) -> bool:
         self.type = data["type"]
         self.name = data["name"]
         self.description = data.get("description", "")
@@ -135,51 +171,3 @@ class Metric(SqObject):
     def is_an_effort(self) -> bool:
         """Whether a metric is an effort"""
         return self.type == "WORK_DUR"
-
-
-def search(endpoint: Platform, show_hidden_metrics: bool = False, use_cache: bool = True) -> dict[str, Metric]:
-    """
-    :param Platform endpoint: Reference to the SonarQube platform object
-    :param bool show_hidden_metrics: Whether to also include hidden (private) metrics
-    :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-    :return: List of metrics
-    :rtype: dict of Metric
-    """
-    with _CLASS_LOCK:
-        if len(Metric.CACHE) == 0 or not use_cache:
-            page, nb_pages = 1, 1
-            while page <= nb_pages:
-                data = json.loads(endpoint.get(APIS["search"], params={"ps": __MAX_PAGE_SIZE, "p": page}).text)
-                for m in data["metrics"]:
-                    _ = Metric(endpoint=endpoint, key=m["key"], data=m)
-                nb_pages = sutil.nbr_pages(data)
-                page += 1
-    m_list = {k: v for k, v in Metric.CACHE.items() if not v.hidden or show_hidden_metrics}
-    return {m.key: m for m in m_list.values()}
-
-
-def is_a_rating(endpoint: Platform, metric_key: str) -> bool:
-    """Whether a metric is a rating"""
-    return Metric.get_object(endpoint, metric_key).is_a_rating()
-
-
-def is_a_percent(endpoint: Platform, metric_key: str) -> bool:
-    """Whether a metric is a percent"""
-    return Metric.get_object(endpoint, metric_key).is_a_percent()
-
-
-def is_an_effort(endpoint: Platform, metric_key: str) -> bool:
-    """Whether a metric is an effort"""
-    Metric.get_object(endpoint, metric_key).is_an_effort()
-
-
-def count(endpoint: Platform, use_cache: bool = True) -> int:
-    """
-    :param Platform endpoint: Reference to the SonarQube platform object
-    :returns: Count of public metrics
-    :rtype: int
-    """
-    with _CLASS_LOCK:
-        if len(Metric.CACHE) == 0 or not use_cache:
-            search(endpoint, True)
-    return len([v for v in Metric.CACHE.values() if not v.hidden])

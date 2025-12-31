@@ -31,6 +31,11 @@ import sonar.logging as log
 
 API_DEF = {}
 
+__RETURN_FIELD_KEY = "return_field"
+__PAGE_FIELD_KEY = "page_field"
+__MAX_PAGE_SIZE_KEY = "max_page_size"
+__DEFAULT_MAX_PAGE_SIZE = 500
+
 
 def load() -> dict[str, Any]:
     """Loads the API definitions"""
@@ -61,3 +66,20 @@ def prep_params(api_def: dict[str, Any], **kwargs: Any) -> tuple[str, str, dict[
     params = {k: v.format_map(defaultdict(str, **kwargs)) for k, v in params.items()}
     params = {k: v for k, v in params.items() if v is not None and v != ""}
     return api, api_def["method"], params
+
+
+def max_page_size(api_def: dict[str, Any]) -> int:
+    """Returns the maximum page size for the API call"""
+    return api_def.get(__MAX_PAGE_SIZE_KEY, __DEFAULT_MAX_PAGE_SIZE)
+
+
+def return_field(api_def: dict[str, Any]) -> str:
+    """Returns the return field for the API call"""
+    if __RETURN_FIELD_KEY not in api_def:
+        raise ValueError(f"Return field not found in API definition for {api_def['api']}")
+    return api_def[__RETURN_FIELD_KEY]
+
+
+def page_field(api_def: dict[str, Any]) -> str:
+    """Returns the page field for the API call"""
+    return api_def.get(__PAGE_FIELD_KEY, "p")

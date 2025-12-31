@@ -69,7 +69,7 @@ class Measure(SqObject):
         :return: The created measure
         :rtype: Measure
         """
-        metrics.search(concerned_object.endpoint)
+        metrics.Metric.search(concerned_object.endpoint)
         return cls(concerned_object=concerned_object, key=data["metric"], value=_search_value(data))
 
     def __converted_value(self, value: Any) -> Any:
@@ -118,13 +118,13 @@ class Measure(SqObject):
         return measures
 
     def is_a_rating(self) -> bool:
-        return metrics.is_a_rating(self.endpoint, self.key)
+        return metrics.Metric.get_object(self.endpoint, self.key).is_a_rating()
 
     def is_a_percent(self) -> bool:
-        return metrics.is_a_percent(self.endpoint, self.key)
+        return metrics.Metric.get_object(self.endpoint, self.key).is_a_percent()
 
     def is_an_effort(self) -> bool:
-        return metrics.is_an_effort(self.endpoint, self.key)
+        return metrics.Metric.get_object(self.endpoint, self.key).is_an_effort()
 
     def format(self, ratings: str = "letters", percents: str = "float") -> Any:
         return format(self.endpoint, self.key, self.value, ratings=ratings, percents=percents)

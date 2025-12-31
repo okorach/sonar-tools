@@ -33,63 +33,65 @@
     },
     "User": {
         "10.4.0": {
-            "create": {
+            "CREATE": {
                 "method": "POST",
                 "api": "v2/users-management/users",
                 "content_type": "application/json",
                 "params": ["login", "name", "email", "password", "local"]
             },
-            "read": {
+            "READ": {
                 "method": "GET",
                 "api": "v2/users-management/users/{id}",
                 "return_field": "user"
             },
-            "update": {
+            "UPDATE": {
                 "method": "PATCH",
                 "api": "v2/users-management/users/{id}",
                 "content_type": "application/merge-patch+json",
                 "params": ["login", "name", "email", "scmAccounts"]
             },
-            "delete": {
+            "DELETE": {
                 "method": "DELETE",
                 "api": "v2/users-management/users/{id}"
             },
-            "list": {
+            "LIST": {
                 "method": "GET",
                 "api": "v2/users-management/users",
                 "params": ["organization", "q"],
-                "return_field": "users"
+                "return_field": "users",
+                "max_page_size": 500
             }
         },
         "0.0.1": {
-            "create": {
+            "CREATE": {
                 "method": "POST",
                 "api": "users/create",
                 "params": ["login", "name", "email", "password", "local"],
                 "return_field": "user"
             },
-            "read": {
+            "READ": {
                 "method": "GET",
                 "api": "users/search",
                 "params": ["q"],
                 "return_field": "users"
             },
-            "update": {
+            "UPDATE": {
                 "method": "POST",
                 "api": "users/update",
                 "params": ["login", "name", "email"]
             },
-            "delete": {
+            "DELETE": {
                 "method": "POST",
                 "api": "users/deactivate",
                 "params": ["login"]
             },
-            "list": {
+            "LIST": {
                 "method": "GET",
                 "api": "users/search",
-                "return_field": "users"
+                "return_field": "users",
+                "max_page_size": 500
             },
-            "update_login": {
+            "UPDATE_LOGIN": {
                 "method": "POST",
                 "api": "users/update_login",
                 "params": ["login", "new_login"]
@@ -123,7 +125,8 @@
                 "method": "GET",
                 "api": "v2/authorizations/groups",
                 "params": ["managed", "userId", "organization", "q", "pageIndex", "pageSize"],
-                "return_field": "groups"
+                "return_field": "groups",
+                "max_page_size": 500
             },
             "LIST_MEMBERS": {
                 "method": "GET",
@@ -169,13 +172,15 @@
                 "method": "GET",
                 "api": "api/user_groups/search",
                 "params": ["q", "p", "ps"],
-                "return_field": "groups"
+                "return_field": "groups",
+                "max_page_size": 500
             },
             "LIST_MEMBERS": {
                 "method": "GET",
                 "api": "api/user_groups/users",
                 "params": ["name", "p", "ps", "q", "selected"],
-                "return_field": "users"
+                "return_field": "users",
+                "max_page_size": 500
             },
             "ADD_MEMBER": {
                 "method": "POST",
@@ -189,13 +194,35 @@
             }
         }
     },
-    "Rule": {
-        "create": "rules/create",
-        "get": "rules/show",
-        "update": "rules/update",
-        "delete": "rules/delete",
-        "list": "rules/search",
-        "search": "rules/search"
+    "Metric": {
+        "5.2.0": {
+            "CREATE":
+                {},
+            "READ": {
+                "method": "GET",
+                "api": "api/metrics/search",
+                "params": ["p", "ps"],
+                "return_field": "metrics",
+                "max_page_size": 500
+            },
+            "UPDATE": {
+            },
+            "DELETE": {
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "metrics/search",
+                "params": ["p", "ps"],
+                "return_field": "metrics",
+                "page_field": "p",
+                "max_page_size": 500
+            },
+            "METRIC_TYPES": {
+                "method": "GET",
+                "api": "api/metrics/types",
+                "return_field": "types"
+            }
+        }
     },
     "QualityGate": {
         "create": "qualitygates/create",

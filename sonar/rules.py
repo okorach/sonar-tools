@@ -244,8 +244,9 @@ class Rule(SqObject):
         return created_rule
 
     @classmethod
-    def load(cls, endpoint: Platform, key: str, data: ApiPayload) -> Rule:
+    def load(cls, endpoint: Platform, data: ApiPayload) -> Rule:
         """Loads a rule object with a SonarQube API payload"""
+        key = data["key"]
         if o := Rule.CACHE.get(key, endpoint.local_url):
             o.reload(data)
             return o
