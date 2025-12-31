@@ -1,49 +1,297 @@
 {
     "Project": {
-        "name": "Sonar API",
-        "version": "1.0.0",
-        "description": "API for Sonar, a project management tool.",
-        "endpoints": {
-            "CREATE": {
-                "path": "api/components/show",
-                "keyParam": "component",
-                "branchParam": "branch",
-                "prParam": "pullRequest",
+        "create": "projects/create",
+        "get": "projects/show",
+        "update": "projects/update",
+        "delete": "projects/delete",
+        "list": "projects/search",
+        "search": "projects/search"
+    },
+    "Portfolio": {
+        "create": "portfolios/create",
+        "get": "portfolios/show",
+        "update": "portfolios/update",
+        "delete": "portfolios/delete",
+        "list": "portfolios/search",
+        "search": "portfolios/search"
+    },
+    "Application": {
+        "create": "applications/create",
+        "get": "applications/show",
+        "update": "applications/update",
+        "delete": "applications/delete",
+        "list": "applications/search",
+        "search": "applications/search"
+    },
+    "Component": {
+        "create": "components/create",
+        "get": "components/show",
+        "update": "components/update",
+        "delete": "components/delete",
+        "list": "components/search",
+        "search": "components/search"
+    },
+    "User": {
+        "10.4.0": {
+            "create": {
+                "method": "POST",
+                "api": "v2/users-management/users",
+                "content_type": "application/json",
+                "params": {
+                    "login": "{login}",
+                    "name": "{name}",
+                    "email": "{email}",
+                    "password": "{password}",
+                    "local": "{is_local}"
+                }
+            },
+            "read": {
                 "method": "GET",
-                "returnField": "component"
+                "api": "v2/users-management/users/{id}",
+                "return_field": "user"
+            },
+            "update": {
+                "method": "PATCH",
+                "api": "v2/users-management/users/{id}",
+                "content_type": "application/merge-patch+json",
+                "params": {
+                    "login": "{login}",
+                    "name": "{name}",
+                    "email": "{email}",
+                    "scmAccounts": "{scm_accounts}"
+                }
+            },
+            "delete": {
+                "method": "DELETE",
+                "api": "v2/users-management/users/{id}"
+            },
+            "list": {
+                "method": "GET",
+                "api": "v2/users-management/users",
+                "params": {
+                    "organization": "{organization}",
+                    "q": "{q}"
+                },
+                "return_field": "users"
+            }
+        },
+        "0.0.1": {
+            "create": {
+                "method": "POST",
+                "api": "users/create",
+                "params": {
+                    "login": "{login}",
+                    "name": "{name}",
+                    "email": "{email}",
+                    "password": "{password}",
+                    "local": "{is_local}"
+                },
+                "return_field": "user"
+            },
+            "read": {
+                "method": "GET",
+                "api": "users/search",
+                "params": {
+                    "q": "{login}"
+                },
+                "return_field": "users"
+            },
+            "update": {
+                "method": "POST",
+                "api": "users/update",
+                "params": {
+                    "login": "{login}",
+                    "name": "{name}",
+                    "email": "{email}"
+                }
+            },
+            "delete": {
+                "method": "POST",
+                "api": "users/deactivate",
+                "params": {
+                    "login": "{login}"
+                }
+            },
+            "list": {
+                "method": "GET",
+                "api": "users/search",
+                "return_field": "users"
+            },
+            "update_login": {
+                "method": "POST",
+                "api": "users/update_login",
+                "params": {
+                    "login": "{login}",
+                    "new_login": "{new_login}"
+                }
+            }
+        }
+    },
+    "Group": {
+        "10.4.0": {
+            "CREATE": {
+                "method": "POST",
+                "api": "v2/authorizations/groups",
+                "content_type": "application/json",
+                "params": {
+                    "name": "{name}",
+                    "description": "{description}"
+                }
             },
             "READ": {
-                "path": "api/components/show",
-                "keyParam": "component",
-                "branchParam": "branch",
-                "prParam": "pullRequest",
                 "method": "GET",
-                "returnField": "component"
+                "api": "v2/authorizations/groups/{id}",
+                "return_field": ""
             },
             "UPDATE": {
-                "path": "api/components/show",
-                "keyParam": "component",
-                "branchParam": "branch",
-                "prParam": "pullRequest",
-                "method": "GET",
-                "returnField": "component"
+                "method": "PATCH",
+                "api": "v2/authorizations/groups/{id}",
+                "content_type": "application/merge-patch+json",
+                "params": {
+                    "name": "{name}",
+                    "description": "{description}"
+                }
             },
             "DELETE": {
-                "path": "api/components/show",
-                "keyParam": "component",
-                "branchParam": "branch",
-                "prParam": "pullRequest",
-                "method": "GET",
-                "returnField": "component"
+                "method": "DELETE",
+                "api": "v2/authorizations/groups/{id}"
             },
             "LIST": {
-                "path": "api/components/show",
-                "keyParam": "component",
-                "branchParam": "branch",
-                "prParam": "pullRequest",
                 "method": "GET",
-                "returnField": "component"
+                "api": "v2/authorizations/groups",
+                "params": {
+                    "managed": "{managed}",
+                    "userId": "{userId}",
+                    "organization": "{organization}",
+                    "q": "{q}",
+                    "pageIndex": "{pageIndex}",
+                    "pageSize": "{pageSize}"
+                },
+                "return_field": "groups"
+            },
+            "LIST_MEMBERS": {
+                "method": "GET",
+                "api": "v2/authorizations/group-memberships",
+                "params": {
+                    "groupId": "{groupId}",
+                    "pageIndex": "{pageIndex}",
+                    "pageSize": "{pageSize}"
+                },
+                "return_field": "groupMemberships"
+            },
+            "ADD_MEMBER": {
+                "method": "POST",
+                "api": "v2/authorizations/group-memberships",
+                "content_type": "application/json",
+                "params": {
+                    "groupId": "{groupId}",
+                    "userId": "{userId}"
+                },
+                "return_field": "groupMemberships"
+            },
+            "REMOVE_MEMBER": {
+                "method": "DELETE",
+                "api": "v2/authorizations/group-memberships/{id}"
             }
-        ]
+        },
+        "5.2.0": {
+            "CREATE": {
+                "method": "POST",
+                "api": "api/user_groups/create",
+                "params": {
+                    "name": "{name}",
+                    "description": "{description}"
+                }
+            },
+            "READ": {
+                "method": "GET",
+                "api": "api/user_groups/search",
+                "params": {
+                    "q": "{q}",
+                    "p": "{p}",
+                    "ps": "{ps}"
+                },
+                "return_field": "groups"
+            },
+            "UPDATE": {
+                "method": "POST",
+                "api": "api/user_groups/update",
+                "params": {
+                    "currentName": "{currentName}",
+                    "name": "{name}",
+                    "description": "{description}"
+                }
+            },
+            "DELETE": {
+                "method": "POST",
+                "api": "api/user_groups/delete",
+                "params": {
+                    "name": "{name}"
+                }
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "api/user_groups/search",
+                "params": {
+                    "q": "{q}",
+                    "p": "{p}",
+                    "ps": "{ps}"
+                },
+                "return_field": "groups"
+            },
+            "LIST_MEMBERS": {
+                "method": "GET",
+                "api": "api/user_groups/users",
+                "params": {
+                    "name": "{name}",
+                    "p": "{p}",
+                    "ps": "{ps}",
+                    "q": "{q}",
+                    "selected": "{selected}"
+                },
+                "return_field": "users"
+            },
+            "ADD_MEMBER": {
+                "method": "POST",
+                "api": "api/user_groups/add_user",
+                "params": {
+                    "login": "{login}",
+                    "name": "{name}"
+                }
+            },
+            "REMOVE_MEMBER": {
+                "method": "POST",
+                "api": "api/user_groups/remove_user",
+                "params": {
+                    "login": "{login}",
+                    "name": "{name}"
+                }
+            }
+        }
+    },
+    "Rule": {
+        "create": "rules/create",
+        "get": "rules/show",
+        "update": "rules/update",
+        "delete": "rules/delete",
+        "list": "rules/search",
+        "search": "rules/search"
+    },
+    "QualityGate": {
+        "create": "qualitygates/create",
+        "get": "qualitygates/show",
+        "update": "qualitygates/update",
+        "delete": "qualitygates/delete",
+        "list": "qualitygates/search",
+        "search": "qualitygates/search"
+    },
+    "QualityProfile": {
+        "create": "qualityprofiles/create",
+        "get": "qualityprofiles/show",
+        "update": "qualityprofiles/update",
+        "delete": "qualityprofiles/delete",
+        "list": "qualityprofiles/search",
+        "search": "qualityprofiles/search"
     }
+
 }
