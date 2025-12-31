@@ -111,7 +111,7 @@ class Metric(SqObject):
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Metric:
         cls.search(endpoint=endpoint)
-        if not (o := Metric.CACHE.get(key, endpoint.local_url)):
+        if not (o := cls.CACHE.get(key, endpoint.local_url)):
             raise exceptions.ObjectNotFound(key, f"Metric key '{key}' not found")
         return o
 
@@ -137,7 +137,7 @@ class Metric(SqObject):
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
         :return: Number of public metrics
         """
-        return len(Metric.search(endpoint, include_hidden_metrics=include_hidden_metrics, use_cache=use_cache))
+        return len(cls.search(endpoint, include_hidden_metrics=include_hidden_metrics, use_cache=use_cache))
 
     @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> Metric:
