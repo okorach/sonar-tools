@@ -190,14 +190,14 @@ class SqObject(object):
             log.fatal(msg := f"Index on {cname} is corrupted, please reindex before using API")
             raise exceptions.SonarException(msg, errcodes.SONAR_INTERNAL_ERROR)
 
-        objects_list |= _load(endpoint, cls, data[returned_field])
+        objects_list |= _new_load(endpoint, cls, data[returned_field])
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f"{cname}Search") as executor:
             futures = [executor.submit(__get, endpoint, api, {**new_params, page_field: page}) for page in range(2, nb_pages + 1)]
             for future in concurrent.futures.as_completed(futures):
                 try:
                     data = future.result(timeout=60)
-                    objects_list |= _load(endpoint, cls, data[returned_field])
+                    objects_list |= _new_load(endpoint, cls, data[returned_field])
                 except Exception as e:
                     log.error(f"Error {e} while searching {cname}.")
         return objects_list
@@ -338,3 +338,13 @@ def _load(endpoint: Platform, object_class: Any, data: ObjectJsonRepr) -> dict[s
     if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook", "Rule"):
         return {obj[key_field]: object_class.load(endpoint=endpoint, data=obj) for obj in data}
     return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}
+
+
+def _new_load(endpoint: Platform, object_class: Any, dataset: ObjectJsonRepr) -> dict[str, object]:
+    """Loads any SonarQube object with the contents of an API payload"""
+    try:
+        load_method = object_class.load
+    except AttributeError as e:
+        raise exceptions.UnsupportedOperation(f"Can't load {object_class.__name__.lower()}s") from e
+    obj_list = [load_method(endpoint=endpoint, data=data) for data in dataset]
+    return {obj.key: obj for obj in obj_list}
