@@ -133,13 +133,13 @@ class SqObject(object):
         """Runs a multi-threaded object search for searchable Sonar Objects"""
         api = cls.api_for(c.SEARCH, endpoint)
         returned_field = cls.SEARCH_RETURN_FIELD
-        new_params = {} if params is None else params.copy()
+        new_params: dict[str, Any] = (params or {}).copy()
         p_field = "pageIndex" if api_version == 2 else "p"
         ps_field = "pageSize" if api_version == 2 else "ps"
         if ps_field not in new_params:
             new_params[ps_field] = 500
 
-        objects_list = {}
+        objects_list: dict[str, Any] = {}
         cname = cls.__name__.lower()
         data = json.loads(endpoint.get(api, {**new_params, p_field: 1}).text)
         nb_pages = sutil.nbr_pages(data, api_version)
