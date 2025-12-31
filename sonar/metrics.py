@@ -124,9 +124,9 @@ class Metric(SqObject):
         :return: Dict of metrics indexed by metric key
         """
         with _CLASS_LOCK:
-            if len(Metric.CACHE) == 0 or not use_cache:
-                _ = Metric.get_paginated(endpoint, threads=2)
-        return {v.key: v for v in Metric.CACHE.values() if not v.hidden or include_hidden_metrics}
+            if len(cls.CACHE) == 0 or not use_cache:
+                _ = cls.get_paginated(endpoint, threads=1)
+        return {v.key: v for v in cls.CACHE.values() if not v.hidden or include_hidden_metrics}
 
     @classmethod
     def count(cls, endpoint: Platform, include_hidden_metrics: bool = False, use_cache: bool = True) -> int:
