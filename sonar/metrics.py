@@ -26,7 +26,9 @@ from typing import Optional, TYPE_CHECKING
 import json
 from threading import Lock
 
+import sonar.util.constants as c
 from sonar.sqobject import SqObject
+import sonar.api.manager as api_mgr
 from sonar.util import cache
 from sonar import exceptions
 import sonar.utilities as sutil
@@ -124,10 +126,12 @@ class Metric(SqObject):
         """
         with _CLASS_LOCK:
             if len(Metric.CACHE) == 0 or not use_cache:
+                api_def = api_mgr.get_api_def("Metric", c.READ, endpoint.version())
+                api, _, params = api_mgr.prep_params(api_def, ps=api_mgr.max_page_size(api_def))
                 page, nb_pages = 1, 1
                 while page <= nb_pages:
-                    data = json.loads(endpoint.get(APIS["search"], params={"ps": MAX_PAGE_SIZE, "p": page}).text)
-                    for m in data["metrics"]:
+                    data = json.loads(endpoint.get(api, params=params | {"p": page}).text)
+                    for m in data[api_mgr.return_field(api_def)]:
                         _ = Metric(endpoint=endpoint, key=m["key"], data=m)
                     nb_pages = sutil.nbr_pages(data)
                     page += 1
