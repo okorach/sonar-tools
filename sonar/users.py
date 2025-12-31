@@ -128,15 +128,18 @@ class User(SqObject):
         return cls.get_object(endpoint=endpoint, login=login)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, login: str) -> User:
+    def get_object(cls, endpoint: Platform, login: Optional[str] = None, id: Optional[str] = None) -> User:
         """Creates a User object corresponding to the user with same login in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
-        :param str login: User login
+        :param login: User login (SonarQube 10.3 and lower)
+        :param id: User id (SonarQube 10.4 and above)
         :raises ObjectNotFound: if login not found
         :return: The user object
         :rtype: User
         """
+        if id is not None:
+            return cls.__get_object_by_id(endpoint, id)
         if o := User.CACHE.get(login, endpoint.local_url):
             return o
         log.debug("Getting user '%s'", login)
@@ -145,7 +148,7 @@ class User(SqObject):
         raise exceptions.ObjectNotFound(login, f"User '{login}' not found")
 
     @classmethod
-    def get_object_by_id(cls, endpoint: Platform, id: str) -> User:
+    def __get_object_by_id(cls, endpoint: Platform, id: str) -> User:
         """Searches a user by its (API v2) id in SonarQube
 
         :param endpoint: Reference to the SonarQube platform
