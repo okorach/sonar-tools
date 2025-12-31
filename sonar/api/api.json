@@ -214,6 +214,7 @@
                 "api": "metrics/search",
                 "params": ["p", "ps"],
                 "return_field": "metrics",
+                "page_field": "p",
                 "max_page_size": 500
             },
             "METRIC_TYPES": {
