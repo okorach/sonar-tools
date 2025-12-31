@@ -18,6 +18,8 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""SonarQube API manager"""
+
 from typing import Any
 
 from pathlib import Path
@@ -30,7 +32,7 @@ import sonar.logging as log
 API_DEF = {}
 
 
-def load():
+def load() -> dict[str, Any]:
     """Loads the API definitions"""
     global API_DEF
     with misc.open_file(Path(__file__).parent / "api.json", "r") as f:
@@ -42,7 +44,6 @@ def load():
 
 def get_api_def(obj_name: str, op: str, sonar_version: tuple[int, int, int]) -> dict[str, Any]:
     """Gets the API definition for a given object and Sonar version"""
-    global API_DEF
     if obj_name not in API_DEF:
         raise ValueError(f"Object {obj_name} not found in API definitions")
     data = next(v for k, v in API_DEF[obj_name].items() if sonar_version >= tuple(int(s) for s in k.split(".")))
