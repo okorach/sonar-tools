@@ -32,6 +32,7 @@ import sonar.logging as log
 API_DEF = {}
 
 __RETURN_FIELD_KEY = "return_field"
+__PAGE_FIELD_KEY = "page_field"
 __MAX_PAGE_SIZE_KEY = "max_page_size"
 __DEFAULT_MAX_PAGE_SIZE = 500
 
@@ -77,3 +78,8 @@ def return_field(api_def: dict[str, Any]) -> str:
     if __RETURN_FIELD_KEY not in api_def:
         raise ValueError(f"Return field not found in API definition for {api_def['api']}")
     return api_def[__RETURN_FIELD_KEY]
+
+
+def page_field(api_def: dict[str, Any]) -> str:
+    """Returns the page field for the API call"""
+    return api_def.get(__PAGE_FIELD_KEY, "p")
