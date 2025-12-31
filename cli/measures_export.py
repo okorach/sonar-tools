@@ -93,14 +93,14 @@ def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyS
         if endpoint.version() >= (2025, 3, 0):
             main_metrics += metrics.MAIN_METRICS_ENTERPRISE_2025_3
     if "_all" in wanted_metrics or "*" in wanted_metrics:
-        all_metrics = list(metrics.search(endpoint).keys())
+        all_metrics = list(metrics.Metric.search(endpoint).keys())
         all_metrics.remove("quality_gate_details")
         wanted_metrics = main_metrics + sorted(set(all_metrics) - set(main_metrics))
     elif "_main" in wanted_metrics:
         wanted_metrics = main_metrics
     else:
         # Verify that requested metrics do exist
-        non_existing_metrics = set(wanted_metrics) - set(metrics.search(endpoint).keys())
+        non_existing_metrics = set(wanted_metrics) - set(metrics.Metric.search(endpoint).keys())
         if len(non_existing_metrics) > 0:
             miss = ",".join(non_existing_metrics)
             chelp.clear_cache_and_exit(errcodes.NO_SUCH_KEY, f"Requested metric keys '{miss}' don't exist")
