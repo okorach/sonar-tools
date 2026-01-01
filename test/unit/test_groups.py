@@ -152,6 +152,7 @@ def test_create_or_update(get_test_group: Generator[groups.Group]) -> None:
     assert gr2 is gr
     assert gr.description == "Some new group description"
 
+
 def test_get_from_id(get_test_group: Generator[groups.Group]) -> None:
     gr: groups.Group = get_test_group
     if tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
