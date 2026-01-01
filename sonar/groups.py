@@ -130,6 +130,16 @@ class Group(SqObject):
             return o
         raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
 
+    @classmethod
+    def search(cls, endpoint: Platform, params: Optional[ApiParams] = None) -> dict[str, Group]:
+        """Search groups
+
+        :params Platform endpoint: Reference to the SonarQube platform
+        :params ApiParams params: Parameters to narrow down the search
+        :return: dict of groups with group name as key
+        """
+        return cls.get_paginated(endpoint=endpoint, params=params)
+
     def __str__(self) -> str:
         """String representation of the object"""
         return f"group '{self.name}'"
@@ -316,16 +326,6 @@ class Group(SqObject):
         return util.remove_nones(json_data)
 
 
-def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Group]:
-    """Search groups
-
-    :params Platform endpoint: Reference to the SonarQube platform
-    :return: dict of groups with group name as key
-    """
-    api_version = 1 if endpoint.version() < c.GROUP_API_V2_INTRO_VERSION else 2
-    return Group.search_objects(endpoint=endpoint, params=params, api_version=api_version)
-
-
 def get_list(endpoint: Platform) -> dict[str, Group]:
     """Returns the list of groups
 
@@ -334,7 +334,7 @@ def get_list(endpoint: Platform) -> dict[str, Group]:
     :rtype: dict
     """
     log.info("Listing groups")
-    return dict(sorted(search(endpoint).items()))
+    return dict(sorted(Group.search(endpoint).items()))
 
 
 def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
@@ -371,7 +371,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[
         return []
     log.info("--- Auditing groups ---")
     problems = []
-    for g in search(endpoint=endpoint).values():
+    for g in Group.search(endpoint=endpoint).values():
         problems += g.audit(audit_settings)
     if "write_q" in kwargs:
         kwargs["write_q"].put(problems)
