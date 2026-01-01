@@ -35,7 +35,6 @@ from sonar.util import cache
 
 from sonar import exceptions, projects, branches, app_branches
 from sonar.permissions import application_permissions
-import sonar.sqobject as sq
 import sonar.aggregations as aggr
 import sonar.util.misc as util
 import sonar.utilities as sutil
@@ -131,9 +130,28 @@ class Application(aggr.Aggregation):
         :return: The created Application object
         """
         check_supported(endpoint)
+        api_def = api_mgr.get_api_def(cls.__name__, c.CREATE, endpoint.version())
+        max_ps = api_mgr.max_page_size(api_def)
+        api, _, params = api_mgr.prep_params(api_def, userId=self.id, q=self.login, id=self.id, ps=max_ps)
+        data = json.loads(self.endpoint.get(api, params=params).text)
         endpoint.post(Application.API["CREATE"], params={"key": key, "name": name})
         log.info("Creating object")
         return Application(endpoint=endpoint, key=key, name=name)
+
+    @classmethod
+    def search(cls, endpoint: Platform, params: Optional[ApiParams] = None) -> dict[str, Application]:
+        """Searches applications
+
+        :param endpoint: Reference to the SonarQube platform
+        :param params: Search filters (see api/components/search_projects parameters)
+        :raises UnsupportedOperation: If on a community edition
+        :return: dict of applications
+        """
+        check_supported(endpoint)
+        new_params = {"filter": "qualifier = APP"}
+        if params is not None:
+            new_params.update(params)
+        return Application.search_objects(endpoint=endpoint, params=new_params)
 
     def refresh(self) -> None:
         """Refreshes the application by re-reading SonarQube
@@ -462,21 +480,6 @@ def check_supported(endpoint: Platform) -> None:
         raise exceptions.UnsupportedOperation("No applications in SonarQube Cloud")
 
 
-def search(endpoint: Platform, params: Optional[ApiParams] = None) -> dict[str, Application]:
-    """Searches applications
-
-    :param endpoint: Reference to the SonarQube platform
-    :param params: Search filters (see api/components/search parameters)
-    :raises UnsupportedOperation: If on a community edition
-    :return: dict of applications
-    """
-    check_supported(endpoint)
-    new_params = {"filter": "qualifier = APP"}
-    if params is not None:
-        new_params.update(params)
-    return Application.search_objects(endpoint=endpoint, params=new_params)
-
-
 def get_list(endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Application]:
     """
     :return: List of Applications (all of them if key_list is None or empty)
@@ -488,7 +491,7 @@ def get_list(endpoint: Platform, key_list: KeyList = None, use_cache: bool = Tru
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 or not use_cache:
             log.info("Listing applications")
-            return dict(sorted(search(endpoint=endpoint).items()))
+            return dict(sorted(Application.search(endpoint=endpoint).items()))
         object_list = {key: Application.get_object(endpoint, key) for key in sorted(key_list)}
     return object_list
 
@@ -553,7 +556,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Opt
     if (ed := endpoint.edition()) not in (c.DE, c.EE, c.DCE):
         log.warning("Can't import applications in %s edition", ed)
         return False
-    search(endpoint=endpoint)
+    Application.search(endpoint=endpoint)
     for key, data in util.list_to_dict(apps_data, "key").items():
         if key_list and key not in key_list:
             log.debug("App key '%s' not in selected apps", key)

@@ -59,9 +59,9 @@ def test_count() -> None:
 
 def test_search() -> None:
     """Verify that search with criterias work"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.search, endpoint=tutil.SQ, params={"s": "analysisDate"}):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.Application.search, endpoint=tutil.SQ, params={"s": "analysisDate"}):
         return
-    res_list = apps.search(endpoint=tutil.SQ, params={"s": "analysisDate"})
+    res_list = apps.Application.search(endpoint=tutil.SQ, params={"s": "analysisDate"})
     oldest = datetime.datetime(1970, 1, 1).replace(tzinfo=datetime.timezone.utc)
     for obj in res_list.values():
         app_date = obj.last_analysis()
