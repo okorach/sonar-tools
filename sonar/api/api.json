@@ -119,6 +119,50 @@
                 "return_field": "groups",
                 "max_page_size": 500
             }
+        },
+        "0.0.0": {
+            "CREATE": {
+                "method": "POST",
+                "api": "v2/users-management/users",
+                "content_type": "application/json",
+                "params": ["login", "name", "email", "password", "local", "scmAccounts"]
+            },
+            "READ": {
+                "method": "GET",
+                "api": "v2/users-management/users/{id}",
+                "return_field": "user"
+            },
+            "UPDATE": {
+                "method": "PATCH",
+                "api": "v2/users-management/users/{id}",
+                "content_type": "application/merge-patch+json",
+                "params": ["login", "name", "email", "scmAccounts"]
+            },
+            "DELETE": {
+                "method": "DELETE",
+                "api": "v2/users-management/users/{id}"
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "v2/users-management/users",
+                "params": ["organization", "active", "managed", "q", "groupId", "pageIndex", "pageSize", "sonarLintLastConnectionDateFrom", "sonarLintLastConnectionDateTo"],
+                "return_field": "users",
+                "page_field": "pageIndex",
+                "max_page_size": 500
+            },
+            "UPDATE_LOGIN": {
+                "method": "PATCH",
+                "api": "v2/users-management/users/{id}",
+                "content_type": "application/merge-patch+json",
+                "params": ["login", "name", "email", "scmAccounts"]
+            },
+            "LIST_GROUPS": {
+                "method": "GET",
+                "api": "api/users/groups",
+                "params": ["login","organization", "p", "ps", "q", "selected"],
+                "return_field": "groups",
+                "max_page_size": 500
+            }
         }
     },
     "Group": {
