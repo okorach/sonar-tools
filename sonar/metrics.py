@@ -76,11 +76,6 @@ MAIN_METRICS_ENTERPRISE_2025_3 = ("contains_ai_code", "sca_count_any_issue", "ne
 #: Dict of metric grouped by type (INT, FLOAT, WORK_DUR etc...)
 METRICS_BY_TYPE = {}
 
-#: Metrics API
-APIS = {
-    "search": "metrics/search",
-}
-
 MAX_PAGE_SIZE = 500
 _CLASS_LOCK = Lock()
 
