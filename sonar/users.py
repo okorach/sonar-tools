@@ -123,9 +123,12 @@ class User(SqObject):
             params["password"] = password or login
         api_def = api_mgr.get_api_def("User", c.CREATE, endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, **params)
-        data = json.loads(endpoint.post(api, params=params).text)[api_mgr.return_field(api_def)]
+        try:
+            ret = api_mgr.return_field(api_def)
+            data = json.loads(endpoint.post(api, params=params).text)[ret]
+        except ValueError:
+            data = json.loads(endpoint.post(api, params=params).text)
         return cls.load(endpoint=endpoint, data=data)
-
 
     @classmethod
     def search(cls, endpoint: Platform, params: Optional[ApiParams] = None) -> dict[str, User]:
@@ -150,10 +153,10 @@ class User(SqObject):
         :return: The user object
         :rtype: User
         """
+        if o := cls.CACHE.get(login, endpoint.local_url):
+            return o
         if id is not None:
             return cls.__get_object_by_id(endpoint, id)
-        if o := User.CACHE.get(login, endpoint.local_url):
-            return o
         log.debug("Getting user '%s'", login)
         if user := next((o for k, o in cls.search(endpoint, params={"q": login}).items() if k == login), None):
             return user
@@ -173,7 +176,9 @@ class User(SqObject):
         if endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             raise exceptions.UnsupportedOperation("Get by ID is an APIv2 features, staring from SonarQube 10.4")
         log.debug("Getting user id '%s'", id)
-        data = json.loads(endpoint.get(f"/api/v2/users-management/users/{id}", mute=()).text)
+        api_def = api_mgr.get_api_def("User", c.READ, endpoint.version())
+        api, _, params = api_mgr.prep_params(api_def, id=id)
+        data = json.loads(endpoint.get(api, params=params, mute=()).text)
         return cls.load(endpoint, data)
 
     def __str__(self) -> str:
@@ -201,7 +206,7 @@ class User(SqObject):
         else:
             dt1 = sutil.string_to_date(data.get("sonarQubeLastConnectionDate"))
             dt2 = sutil.string_to_date(data.get("sonarLintLastConnectionDate"))
-            oldest = datetime(MINYEAR, 1, 1)
+            oldest = datetime(MINYEAR, 1, 1).replace(tzinfo=timezone.utc)
             self.last_login = max(dt1 or oldest, dt2 or oldest)
             if "id" not in self.sq_json:
                 log.warning("No 'id' in API payload for %s", self)
@@ -220,7 +225,7 @@ class User(SqObject):
         elif self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             self._groups = list(set(self.sq_json.get("groups", []) + [self.endpoint.default_user_group()]))
         else:
-            api_def = api_mgr.get_api_def("Users", c.LIST_GROUPS, self.endpoint.version())
+            api_def = api_mgr.get_api_def("User", c.LIST_GROUPS, self.endpoint.version())
             ret = api_mgr.return_field(api_def)
             max_ps = api_mgr.max_page_size(api_def)
             # TODO: handle pagination
@@ -237,7 +242,7 @@ class User(SqObject):
         :return:  The user itself
         """
         vers = self.endpoint.version()
-        api_def = api_mgr.get_api_def("Users", c.READ, vers)
+        api_def = api_mgr.get_api_def("User", c.READ, vers)
         max_ps = api_mgr.max_page_size(api_def)
         api, _, params = api_mgr.prep_params(api_def, userId=self.id, q=self.login, id=self.id, ps=max_ps)
         data = json.loads(self.endpoint.get(api, params=params).text)
@@ -245,7 +250,7 @@ class User(SqObject):
             data = next((d for d in data[api_mgr.return_field(api_def)] if d["login"] == self.login), None)
             if not data:
                 raise exceptions.ObjectNotFound(f"{self} not found.")
-        self.load(data)
+        self.reload(data)
         self.groups(use_cache=False)
         return self
 
@@ -273,8 +278,7 @@ class User(SqObject):
         :raises ObjectAlreadyExists: if new login already exists
         :return: self
         """
-        o = User.CACHE.get(new_login, self.base_url())
-        if o:
+        if User.CACHE.get(new_login, self.base_url()):
             raise exceptions.ObjectAlreadyExists(f"User '{new_login}' already exists")
         api_def = api_mgr.get_api_def("User", c.UPDATE, self.endpoint.version())
         api, method, params = api_mgr.prep_params(api_def, login=self.login, newLogin=new_login, id=self.id)
@@ -300,10 +304,14 @@ class User(SqObject):
         """
         log.debug("Updating %s with %s", self, kwargs)
         self.set_groups(util.csv_to_list(kwargs.get("groups", "")))
+        if kwargs.get("scmAccounts"):
+            self.set_scm_accounts(kwargs["scmAccounts"])
         if not self.is_local:
             return self
+        if kwargs.get("login"):
+            self.update_login(kwargs["login"])
         api_def = api_mgr.get_api_def("User", c.UPDATE, self.endpoint.version())
-        api, method, params = api_mgr.prep_params(api_def, email=kwargs.get("email", None), name=kwargs.get("name", None))
+        api, method, params = api_mgr.prep_params(api_def, id=self.id, email=kwargs.get("email"), name=kwargs.get("name"))
         if len(params) == 0:
             return self
         if method == "PATCH":
@@ -311,15 +319,10 @@ class User(SqObject):
         else:
             ok = self.endpoint.post(api, params=params).ok
         if ok:
-            if "name" in kwargs:
+            if kwargs.get("name"):
                 self.name = kwargs["name"]
-            if "email" in kwargs:
+            if kwargs.get("email"):
                 self.email = kwargs["email"]
-
-        if "scmAccounts" in kwargs:
-            self.set_scm_accounts(kwargs["scmAccounts"])
-        if "login" in kwargs:
-            self.update_login(kwargs["login"]) 
         return self
 
     def add_to_group(self, group_name: str) -> bool:
@@ -408,6 +411,8 @@ class User(SqObject):
         :return: Whether SCM accounts were successfully set
         """
         log.info("Adding SCM accounts '%s' to %s", str(accounts_list), str(self))
+        if len(accounts_list) == 0:
+            return False
         return self.set_scm_accounts(list(set(self.scm_accounts) | set(accounts_list)))
 
     def set_scm_accounts(self, accounts_list: list[str]) -> bool:
@@ -421,14 +426,14 @@ class User(SqObject):
         if not self.is_local:
             return self
         api_def = api_mgr.get_api_def("User", c.UPDATE, self.endpoint.version())
-        api, method, params = api_mgr.prep_params(api_def, scmAccount=accounts_list)
+        api, method, params = api_mgr.prep_params(api_def, id=self.id, scmAccount=accounts_list)
         if method == "PATCH":
-            params = {"scmAccounts": {"value": accounts_list, "defined": "true"}}
-            r = self.endpoint.patch(api, params=params).ok
+            params = {"scmAccounts": accounts_list}
+            ok = self.endpoint.patch(api, params=params).ok
         else:
             params = (("scmAccount", v) for v in accounts_list)
-            r = self.endpoint.post(api, params=params).ok
-        if not r.ok:
+            ok = self.endpoint.post(api, params=params).ok
+        if not ok:
             self.scm_accounts = []
             return False
         self.scm_accounts = list(set(accounts_list))
