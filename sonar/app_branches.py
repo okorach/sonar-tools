@@ -34,6 +34,7 @@ from sonar.branches import Branch
 from sonar.projects import Project
 from sonar import exceptions
 import sonar.utilities as sutil
+import sonar.api.manager as api_mgr
 import sonar.util.constants as c
 
 if TYPE_CHECKING:
@@ -50,10 +51,10 @@ class ApplicationBranch(Component):
 
     CACHE = cache.Cache()
     API = {
-        c.CREATE: "applications/create_branch",
-        c.GET: "applications/show",
-        c.UPDATE: "applications/update_branch",
-        c.DELETE: "applications/delete_branch",
+        api_mgr.CREATE: "applications/create_branch",
+        api_mgr.GET: "applications/show",
+        api_mgr.UPDATE: "applications/update_branch",
+        api_mgr.DELETE: "applications/delete_branch",
     }
 
     def __init__(
@@ -117,7 +118,7 @@ class ApplicationBranch(Component):
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
-        app.endpoint.post(ApplicationBranch.API[c.CREATE], params=string_params)
+        app.endpoint.post(ApplicationBranch.API[api_mgr.CREATE], params=string_params)
         return ApplicationBranch(app=app, name=name, project_branches=projects_or_branches)
 
     @classmethod
@@ -202,7 +203,7 @@ class ApplicationBranch(Component):
             params.append(("projectBranch", branch.name))
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
         try:
-            ok = self.post(ApplicationBranch.API[c.UPDATE], params=string_params).ok
+            ok = self.post(ApplicationBranch.API[api_mgr.UPDATE], params=string_params).ok
         except exceptions.ObjectNotFound:
             ApplicationBranch.CACHE.pop(self)
             raise
@@ -240,8 +241,8 @@ class ApplicationBranch(Component):
 
     def api_params(self, op: Optional[str] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.READ: {"application": self.concerned_object.key, "branch": self.name}}
-        return ops[op] if op and op in ops else ops[c.READ]
+        ops = {api_mgr.READ: {"application": self.concerned_object.key, "branch": self.name}}
+        return ops[op] if op and op in ops else ops[api_mgr.READ]
 
     def component_data(self) -> ObjectJsonRepr:
         """Returns key data"""
@@ -273,7 +274,9 @@ def list_from(app: object, data: ApiPayload) -> dict[str, ApplicationBranch]:
         return {}
     branch_list = {}
     for br in data["branches"]:
-        branch_data = json.loads(app.get(ApplicationBranch.API[c.GET], params={"application": app.key, "branch": br["name"]}).text)["application"]
+        branch_data = json.loads(app.get(ApplicationBranch.API[api_mgr.GET], params={"application": app.key, "branch": br["name"]}).text)[
+            "application"
+        ]
         branch_list[branch_data["branch"]] = ApplicationBranch.load(app, branch_data)
     log.debug("Returning Application branch list %s", str(list(branch_list.keys())))
     return branch_list

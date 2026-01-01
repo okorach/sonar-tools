@@ -39,6 +39,7 @@ import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 from sonar.util import common_json_helper
+import sonar.api.manager as api_mgr
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -110,11 +111,11 @@ class QualityGate(SqObject):
     """
 
     API = {
-        c.CREATE: "qualitygates/create",
-        c.GET: "qualitygates/show",
-        c.DELETE: "qualitygates/destroy",
-        c.LIST: "qualitygates/list",
-        c.RENAME: "qualitygates/rename",
+        api_mgr.CREATE: "qualitygates/create",
+        api_mgr.GET: "qualitygates/show",
+        api_mgr.DELETE: "qualitygates/destroy",
+        api_mgr.LIST: "qualitygates/list",
+        api_mgr.RENAME: "qualitygates/rename",
         "get_projects": "qualitygates/search",
     }
     CACHE = cache.Cache()
@@ -173,7 +174,7 @@ class QualityGate(SqObject):
     @classmethod
     def create(cls, endpoint: Platform, name: str) -> Union[QualityGate, None]:
         """Creates an empty quality gate"""
-        endpoint.post(QualityGate.API[c.CREATE], params={"name": name})
+        endpoint.post(QualityGate.API[api_mgr.CREATE], params={"name": name})
         return cls.get_object(endpoint, name)
 
     def __str__(self) -> str:
@@ -228,7 +229,7 @@ class QualityGate(SqObject):
         """
         if self._conditions is None:
             self._conditions = []
-            data = json.loads(self.get(QualityGate.API[c.GET], params=self.api_params()).text)
+            data = json.loads(self.get(QualityGate.API[api_mgr.GET], params=self.api_params()).text)
             log.debug("Loading %s with conditions %s", self, util.json_dump(data))
             for cond in data.get("conditions", []):
                 self._conditions.append(cond)
@@ -324,7 +325,7 @@ class QualityGate(SqObject):
             return True
         if "name" in data and data["name"] != self.name:
             log.info("Renaming %s with %s", str(self), data["name"])
-            self.post(QualityGate.API[c.RENAME], params={"id": self.key, "name": data["name"]})
+            self.post(QualityGate.API[api_mgr.RENAME], params={"id": self.key, "name": data["name"]})
             QualityGate.CACHE.pop(self)
             self.name = data["name"]
             self.key = data["name"]
@@ -342,10 +343,10 @@ class QualityGate(SqObject):
         """
         return sorted(self.conditions(encoded=True)) == sorted(other_qg.conditions(encoded=True))
 
-    def api_params(self, op: str = c.GET) -> ApiParams:
+    def api_params(self, op: str = api_mgr.GET) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.GET: {"name": self.name}}
-        return ops[op] if op in ops else ops[c.GET]
+        ops = {api_mgr.GET: {"name": self.name}}
+        return ops[op] if op in ops else ops[api_mgr.GET]
 
     def audit_conditions(self) -> list[Problem]:
         problems = []
@@ -443,7 +444,7 @@ def get_list(endpoint: Platform) -> dict[str, QualityGate]:
     :rtype: dict {<name>: <QualityGate>}
     """
     log.info("Getting quality gates")
-    data = json.loads(endpoint.get(QualityGate.API[c.LIST]).text)
+    data = json.loads(endpoint.get(QualityGate.API[api_mgr.LIST]).text)
     qg_list = {}
     for qg in data["qualitygates"]:
         qg_obj = QualityGate.CACHE.get(qg["name"], endpoint.local_url)
@@ -567,7 +568,7 @@ def _decode_condition(cond: str) -> tuple[str, str, str]:
 
 def search_by_name(endpoint: Platform, name: str) -> dict[str, Any]:
     """Searches quality gates matching name"""
-    return sutil.search_by_name(endpoint, name, QualityGate.API[c.LIST], "qualitygates")
+    return sutil.search_by_name(endpoint, name, QualityGate.API[api_mgr.LIST], "qualitygates")
 
 
 def convert_qgs_json(old_json: dict[str, Any]) -> list[dict[str, Any]]:

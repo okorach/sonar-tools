@@ -35,6 +35,7 @@ import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar import projects, rules
 import sonar.util.issue_defs as idefs
+import sonar.api.manager as api_mgr
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -326,7 +327,7 @@ class Finding(SqObject):
             else:
                 log.debug("Assigning %s to '%s'", self, assignee)
             params = util.remove_nones({**self.api_params(), "assignee": assignee, "comment": comment})
-            if ok := self.post(self.__class__.API[c.ASSIGN], params=params).ok:
+            if ok := self.post(self.__class__.API[api_mgr.ASSIGN], params=params).ok:
                 self.assignee = assignee
         except exceptions.SonarException:
             return False

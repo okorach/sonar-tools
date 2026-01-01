@@ -244,14 +244,14 @@
                 "return_field": "groupMemberships",
                 "max_page_size": 500
             },
-            "ADD_MEMBER": {
+            "ADD_USER": {
                 "method": "POST",
                 "api": "v2/authorizations/group-memberships",
                 "content_type": "application/json",
                 "params": ["groupId", "userId"],
                 "return_field": "groupMemberships"
             },
-            "REMOVE_MEMBER": {
+            "REMOVE_USER": {
                 "method": "DELETE",
                 "api": "v2/authorizations/group-memberships/{id}"
             }
@@ -294,12 +294,12 @@
                 "return_field": "users",
                 "max_page_size": 500
             },
-            "ADD_MEMBER": {
+            "ADD_USER": {
                 "method": "POST",
                 "api": "api/user_groups/add_user",
                 "params": ["login", "name"]
             },
-            "REMOVE_MEMBER": {
+            "REMOVE_USER": {
                 "method": "POST",
                 "api": "api/user_groups/remove_user",
                 "params": ["login", "name"]

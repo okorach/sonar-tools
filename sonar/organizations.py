@@ -34,6 +34,7 @@ import sonar.logging as log
 from sonar.util import cache, constants as c
 from sonar import exceptions
 import sonar.util.misc as util
+import sonar.api.manager as api_mgr
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -53,7 +54,7 @@ class Organization(SqObject):
     CACHE = cache.Cache()
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "organizations"
-    API = {c.SEARCH: "organizations/search"}
+    API = {api_mgr.SEARCH: "organizations/search"}
 
     def __init__(self, endpoint: Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
@@ -78,7 +79,7 @@ class Organization(SqObject):
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         if o := Organization.CACHE.get(key, endpoint.local_url):
             return o
-        data = json.loads(endpoint.get(Organization.API[c.SEARCH], params={"organizations": key}).text)
+        data = json.loads(endpoint.get(Organization.API[api_mgr.SEARCH], params={"organizations": key}).text)
         if len(data["organizations"]) == 0:
             raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")
         return cls.load(endpoint, data["organizations"][0])

@@ -40,6 +40,7 @@ import sonar.utilities as sutil
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 import sonar.util.constants as c
+import sonar.api.manager as api_mgr
 
 if TYPE_CHECKING:
     from sonar.util.types import ApiPayload, ApiParams, ConfigSettings, ObjectJsonRepr
@@ -55,9 +56,9 @@ class Branch(components.Component):
 
     CACHE = cache.Cache()
     API = {
-        c.LIST: "project_branches/list",
-        c.DELETE: "project_branches/delete",
-        c.RENAME: "project_branches/rename",
+        api_mgr.LIST: "project_branches/list",
+        api_mgr.DELETE: "project_branches/delete",
+        api_mgr.RENAME: "project_branches/rename",
         "get_new_code": "new_code_periods/list",
     }
 
@@ -94,7 +95,7 @@ class Branch(components.Component):
         o = Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())
         if o:
             return o
-        data = json.loads(concerned_object.get(Branch.API[c.LIST], params={"project": concerned_object.key}).text)
+        data = json.loads(concerned_object.get(Branch.API[api_mgr.LIST], params={"project": concerned_object.key}).text)
         br = next((b for b in data.get("branches", []) if b["name"] == branch_name), None)
         if not br:
             raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(concerned_object)} not found")
@@ -137,7 +138,7 @@ class Branch(components.Component):
         :return: itself
         :rtype: Branch
         """
-        data = json.loads(self.get(Branch.API[c.LIST], params=self.api_params(c.LIST)).text)
+        data = json.loads(self.get(Branch.API[api_mgr.LIST], params=self.api_params(api_mgr.LIST)).text)
         br_data = next((br for br in data.get("branches", []) if br["name"] == self.name), None)
         if not br_data:
             Branch.CACHE.clear()
@@ -209,7 +210,7 @@ class Branch(components.Component):
         if self._new_code is None and self.endpoint.is_sonarcloud():
             self._new_code = settings.new_code_to_string({"inherited": True})
         elif self._new_code is None:
-            data = json.loads(self.get(api=Branch.API["get_new_code"], params=self.api_params(c.LIST)).text)
+            data = json.loads(self.get(api=Branch.API["get_new_code"], params=self.api_params(api_mgr.LIST)).text)
             for b in data["newCodePeriods"]:
                 new_code = settings.new_code_to_string(b)
                 if b["branchKey"] == self.name:
@@ -320,7 +321,7 @@ class Branch(components.Component):
             log.debug("Skipping rename %s with same new name", str(self))
             return False
         log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
-        self.post(Branch.API[c.RENAME], params={"project": self.concerned_object.key, "name": new_name})
+        self.post(Branch.API[api_mgr.RENAME], params={"project": self.concerned_object.key, "name": new_name})
         Branch.CACHE.pop(self)
         self.name = new_name
         Branch.CACHE.put(self)
@@ -411,8 +412,8 @@ class Branch(components.Component):
 
     def api_params(self, op: Optional[str] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.READ: {"project": self.concerned_object.key, "branch": self.name}, c.LIST: {"project": self.concerned_object.key}}
-        return ops[op] if op and op in ops else ops[c.READ]
+        ops = {api_mgr.READ: {"project": self.concerned_object.key, "branch": self.name}, api_mgr.LIST: {"project": self.concerned_object.key}}
+        return ops[op] if op and op in ops else ops[api_mgr.READ]
 
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
@@ -434,7 +435,7 @@ def get_list(project: proj.Project) -> dict[str, Branch]:
         raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 
     log.debug("Reading all branches of %s", str(project))
-    data = json.loads(project.endpoint.get(Branch.API[c.LIST], params={"project": project.key}).text)
+    data = json.loads(project.endpoint.get(Branch.API[api_mgr.LIST], params={"project": project.key}).text)
     return {branch["name"]: Branch.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
 
 

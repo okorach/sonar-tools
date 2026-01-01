@@ -38,6 +38,7 @@ import sonar.util.constants as c
 from sonar import users, findings, changelog, projects, rules, config, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
+import sonar.api.manager as api_mgr
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -129,7 +130,7 @@ class Issue(findings.Finding):
     CACHE = cache.Cache()
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
-    API = {c.SEARCH: "issues/search", c.GET_TAGS: "issues/search", c.SET_TAGS: "issues/set_tags", c.ASSIGN: "issues/assign"}
+    API = {api_mgr.SEARCH: "issues/search", api_mgr.GET_TAGS: "issues/search", api_mgr.SET_TAGS: "issues/set_tags", api_mgr.ASSIGN: "issues/assign"}
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
@@ -147,10 +148,15 @@ class Issue(findings.Finding):
             f" - File/Line: {self.component}/{self.line} - Rule: {self.rule} - Project: {self.projectKey}"
         )
 
-    def api_params(self, op: str = c.GET) -> ApiParams:
+    def api_params(self, op: str = api_mgr.GET) -> ApiParams:
         """Returns the base API params to be used of an issue"""
-        ops = {c.GET: {"issue": self.key}, c.LIST: {"issues": self.key}, c.SET_TAGS: {"issue": self.key}, c.GET_TAGS: {"issues": self.key}}
-        return ops[op] if op in ops else ops[c.GET]
+        ops = {
+            api_mgr.GET: {"issue": self.key},
+            api_mgr.LIST: {"issues": self.key},
+            api_mgr.SET_TAGS: {"issue": self.key},
+            api_mgr.GET_TAGS: {"issues": self.key},
+        }
+        return ops[op] if op in ops else ops[api_mgr.GET]
 
     def url(self) -> str:
         """Returns a permalink URL to the issue in the SonarQube platform"""
@@ -196,7 +202,7 @@ class Issue(findings.Finding):
 
         :return: whether the refresh was successful
         """
-        resp = self.get(Issue.API[c.SEARCH], params={"issues": self.key, "additionalFields": "_all"})
+        resp = self.get(Issue.API[api_mgr.SEARCH], params={"issues": self.key, "additionalFields": "_all"})
         if resp.ok:
             self._load(json.loads(resp.text)["issues"][0])
         return resp.ok
@@ -322,11 +328,11 @@ class Issue(findings.Finding):
 
     def get_tags(self, **kwargs) -> list[str]:
         """Returns the tags of an issue"""
-        api = self.__class__.API[c.GET_TAGS]
+        api = self.__class__.API[api_mgr.GET_TAGS]
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
         if not kwargs.get(c.USE_CACHE, True) or self._tags is None:
-            data = json.loads(self.get(api, params=self.api_params(c.GET_TAGS)).text)
+            data = json.loads(self.get(api, params=self.api_params(api_mgr.GET_TAGS)).text)
             self.sq_json.update(data["issues"][0])
             self._tags = self.sq_json["tags"]
         return self._tags
@@ -793,7 +799,7 @@ def __search_page(endpoint: Platform, params: ApiParams, page: int) -> dict[str,
     page_params = params.copy()
     page_params["p"] = page
     log.debug("Issue search params = %s", str(page_params))
-    issue_list = __get_issue_list(endpoint, json.loads(endpoint.get(Issue.API[c.SEARCH], params=page_params).text), params=page_params)
+    issue_list = __get_issue_list(endpoint, json.loads(endpoint.get(Issue.API[api_mgr.SEARCH], params=page_params).text), params=page_params)
     log.debug("Added %d issues in search page %d", len(issue_list), page)
     return issue_list
 
@@ -805,7 +811,7 @@ def search_first(endpoint: Platform, **params) -> Union[Issue, None]:
     """
     filters = pre_search_filters(endpoint=endpoint, params=params)
     filters["ps"] = 1
-    data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text)["issues"]
+    data = json.loads(endpoint.get(Issue.API[api_mgr.SEARCH], params=filters).text)["issues"]
     if len(data) == 0:
         return None
     return get_object(endpoint=endpoint, key=data[0]["key"], data=data[0])
@@ -828,7 +834,7 @@ def search(endpoint: Platform, params: ApiParams = None, raise_error: bool = Tru
 
     log.debug("Search filters = %s", str(filters))
     issue_list = {}
-    data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text)
+    data = json.loads(endpoint.get(Issue.API[api_mgr.SEARCH], params=filters).text)
     nbr_issues = sutil.nbr_total_elements(data)
     nbr_pages = sutil.nbr_pages(data)
     log.debug("Number of issues: %d - Nbr pages: %d", nbr_issues, nbr_pages)
@@ -836,7 +842,7 @@ def search(endpoint: Platform, params: ApiParams = None, raise_error: bool = Tru
     if nbr_pages > 20 and raise_error:
         raise TooManyIssuesError(
             nbr_issues,
-            f"{nbr_issues} issues returned by api/{Issue.API[c.SEARCH]}, this is more than the max {Issue.MAX_SEARCH} possible",
+            f"{nbr_issues} issues returned by api/{Issue.API[api_mgr.SEARCH]}, this is more than the max {Issue.MAX_SEARCH} possible",
         )
 
     issue_list = __get_issue_list(endpoint, data, filters)
@@ -862,7 +868,7 @@ def _get_facets(endpoint: Platform, project_key: str, facets: str = "directories
         params = {}
     params.update({component_search_field(endpoint): project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
     filters = pre_search_filters(endpoint=endpoint, params=params)
-    data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text)
+    data = json.loads(endpoint.get(Issue.API[api_mgr.SEARCH], params=filters).text)
     return {f["property"]: f["values"] for f in data["facets"] if f["property"] in util.csv_to_list(facets)}
 
 
@@ -888,7 +894,7 @@ def count(endpoint: Platform, **kwargs: Any) -> int:
     """Returns number of issues of a search"""
     filters = pre_search_filters(endpoint=endpoint, params=kwargs)
     filters["ps"] = 1
-    nbr_issues = sutil.nbr_total_elements(json.loads(endpoint.get(Issue.API[c.SEARCH], params=filters).text))
+    nbr_issues = sutil.nbr_total_elements(json.loads(endpoint.get(Issue.API[api_mgr.SEARCH], params=filters).text))
     log.debug("Count issues with filters %s returned %d issues", str(kwargs), nbr_issues)
     return nbr_issues
 
@@ -906,7 +912,7 @@ def count_by_rule(endpoint: Platform, **kwargs) -> dict[str, int]:
     for i in range(nbr_slices):
         params["rules"] = ",".join(ruleset[i * SLICE_SIZE : min((i + 1) * SLICE_SIZE - 1, len(ruleset))])
         try:
-            data = json.loads(endpoint.get(Issue.API[c.SEARCH], params=params).text)["facets"][0]["values"]
+            data = json.loads(endpoint.get(Issue.API[api_mgr.SEARCH], params=params).text)["facets"][0]["values"]
             added_count = {d["val"]: d["count"] for d in data if d["val"] in ruleset}
             for k, v in added_count.items():
                 rulecount[k] = rulecount.get(k, 0) + v

@@ -39,6 +39,7 @@ import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
+import sonar.api.manager as api_mgr
 
 if TYPE_CHECKING:
     from sonar.util.types import ApiPayload, ApiParams, ConfigSettings
@@ -52,7 +53,7 @@ class PullRequest(components.Component):
     """
 
     CACHE = cache.Cache()
-    API = {c.DELETE: "project_pull_requests/delete", c.LIST: "project_pull_requests/list"}
+    API = {api_mgr.DELETE: "project_pull_requests/delete", api_mgr.LIST: "project_pull_requests/list"}
 
     def __init__(self, project: object, key: str, data: Optional[ApiPayload] = None) -> None:
         """Constructor"""
@@ -111,8 +112,8 @@ class PullRequest(components.Component):
 
     def api_params(self, op: Optional[str] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.READ: {"project": self.concerned_object.key, "pullRequest": self.key}}
-        return ops[op] if op and op in ops else ops[c.READ]
+        ops = {api_mgr.READ: {"project": self.concerned_object.key, "pullRequest": self.key}}
+        return ops[op] if op and op in ops else ops[api_mgr.READ]
 
     def get_findings(self, filters: Optional[ApiParams] = None) -> dict[str, object]:
         """Returns a PR list of findings
@@ -148,7 +149,7 @@ def get_list(project: object) -> dict[str, PullRequest]:
         log.debug(_UNSUPPORTED_IN_CE)
         raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 
-    data = json.loads(project.get(PullRequest.API[c.LIST], params={"project": project.key}).text)
+    data = json.loads(project.get(PullRequest.API[api_mgr.LIST], params={"project": project.key}).text)
     pr_list = {}
     for pr in data["pullRequests"]:
         pr_list[pr["key"]] = get_object(pr["key"], project, pr)

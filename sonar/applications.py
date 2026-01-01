@@ -60,13 +60,6 @@ class Application(aggr.Aggregation):
 
     CACHE = cache.Cache()
 
-    SEARCH_KEY_FIELD = "key"
-    SEARCH_RETURN_FIELD = "components"
-    API = {
-        c.SET_TAGS: "applications/set_tags",
-        c.GET_TAGS: "applications/show",
-    }
-
     def __init__(self, endpoint: Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=endpoint, key=key)
@@ -96,7 +89,7 @@ class Application(aggr.Aggregation):
         o: Application = cls.CACHE.get(key, endpoint.local_url)
         if o:
             return o
-        api_def = api_mgr.get_api_def(cls.__name__, c.READ, endpoint.version())
+        api_def = api_mgr.get_api_def(cls.__name__, api_mgr.READ, endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, application=key)
         ret = api_mgr.return_field(api_def)
         data = json.loads(endpoint.get(api, params=params).text)[ret]
@@ -131,7 +124,7 @@ class Application(aggr.Aggregation):
         :return: The created Application object
         """
         check_supported(endpoint)
-        api_def = api_mgr.get_api_def(cls.__name__, c.CREATE, endpoint.version())
+        api_def = api_mgr.get_api_def(cls.__name__, api_mgr.CREATE, endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, key=key, name=name)
         endpoint.post(api, params=params)
         return Application(endpoint=endpoint, key=key, name=name)
@@ -156,7 +149,7 @@ class Application(aggr.Aggregation):
         """
         try:
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
-            api_def = api_mgr.get_api_def(self.__class__.__name__, c.READ, self.endpoint.version())
+            api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.READ, self.endpoint.version())
             api, _, params = api_mgr.prep_params(api_def, application=self.key)
             self.reload(json.loads(self.endpoint.get(api, params=params).text)[api_mgr.return_field(api_def)])
             return self
@@ -374,7 +367,7 @@ class Application(aggr.Aggregation):
         """Add projects to an application"""
         current_projects = self.projects().keys()
         ok = True
-        api_def = api_mgr.get_api_def(self.__class__.__name__, c.ADD_PROJECT, self.endpoint.version())
+        api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.ADD_PROJECT, self.endpoint.version())
         for proj in [p for p in project_list if p not in current_projects]:
             log.debug("Adding project '%s' to %s", proj, str(self))
             try:
@@ -400,7 +393,7 @@ class Application(aggr.Aggregation):
     def recompute(self) -> bool:
         """Triggers application recomputation, return whether the operation succeeded"""
         log.debug("Recomputing %s", str(self))
-        api_def = api_mgr.get_api_def(self.__class__.__name__, c.RECOMPUTE, self.endpoint.version())
+        api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.RECOMPUTE, self.endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, application=self.key)
         return self.post(api, params=params).ok
 
@@ -433,8 +426,8 @@ class Application(aggr.Aggregation):
 
     def api_params(self, op: Optional[str] = None) -> ApiParams:
         """Returns the base params to be used for the object API"""
-        ops = {c.READ: {"application": self.key}, c.RECOMPUTE: {"key": self.key}}
-        return ops[op] if op and op in ops else ops[c.READ]
+        ops = {api_mgr.READ: {"application": self.key}, api_mgr.RECOMPUTE: {"key": self.key}}
+        return ops[op] if op and op in ops else ops[api_mgr.READ]
 
     def __get_project_branches(self, branch_definition: ObjectJsonRepr) -> list[Union[projects.Project, branches.Branch]]:
         project_branches = []
@@ -464,7 +457,7 @@ def count(endpoint: Platform) -> int:
     :return: Count of applications
     """
     check_supported(endpoint)
-    api_def = api_mgr.get_api_def(Application.__name__, c.LIST, endpoint.version())
+    api_def = api_mgr.get_api_def(Application.__name__, api_mgr.LIST, endpoint.version())
     api, _, params = api_mgr.prep_params(api_def, ps=1, filter="qualifier = APP")
     return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=params).text))
 
