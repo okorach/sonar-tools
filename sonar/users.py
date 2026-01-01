@@ -43,10 +43,7 @@ if TYPE_CHECKING:
     from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, ObjectJsonRepr, KeyList, AuditSettings
 
-_GROUPS_API_SC = "users/groups"
-
 SETTABLE_PROPERTIES = ("login", "name", "email", "groups", "scmAccounts", "local")
-USER_API = "v2/users-management/users"
 
 
 class User(SqObject):
@@ -56,9 +53,6 @@ class User(SqObject):
     """
 
     CACHE = cache.Cache()
-    API_SC = {
-        c.SEARCH: "organizations/search_members",
-    }
 
     def __init__(self, endpoint: Platform, login: str, data: ApiPayload) -> None:
         """Do not use to create users, use on of the constructor class methods"""
@@ -201,20 +195,20 @@ class User(SqObject):
         log.info("Getting %s groups = %s", str(self), str(self._groups))
         if self._groups is not None and kwargs.get(c.USE_CACHE, True):
             return self._groups
-        if self.endpoint.is_sonarcloud():
-            data = json.loads(self.get(_GROUPS_API_SC, self.api_params(c.GET)).text)["groups"]
-            self._groups = [g["name"] for g in data]
-        elif self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
+        if not self.endpoint.is_sonarcloud() and self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             self._groups = list(set(self.sq_json.get("groups", []) + [self.endpoint.default_user_group()]))
         else:
             api_def = api_mgr.get_api_def("User", c.LIST_GROUPS, self.endpoint.version())
             ret = api_mgr.return_field(api_def)
             max_ps = api_mgr.max_page_size(api_def)
             # TODO: handle pagination
-            api, _, params = api_mgr.prep_params(api_def, userId=self.id, ps=max_ps, pageSize=max_ps, name=self.name)
+            api, _, params = api_mgr.prep_params(api_def, login=self.login, userId=self.id, ps=max_ps, pageSize=max_ps, name=self.name)
             data = json.loads(self.endpoint.get(api, params=params).text)[ret]
             log.debug("USER GROUPS = %s", data)
-            self._groups = [groups.get_object_from_id(self.endpoint, g["groupId"]).name for g in data]
+            if self.endpoint.is_sonarcloud():
+                self._groups = [g["name"] for g in data]
+            else:
+                self._groups = [groups.get_object_from_id(self.endpoint, g["groupId"]).name for g in data]
         self._groups = sorted(self._groups)
         return self._groups
 
