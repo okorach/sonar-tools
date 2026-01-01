@@ -365,21 +365,23 @@ class User(SqObject):
         return self.delete()
 
     def delete(self) -> bool:
-        """Deactivates the user (true deleting is not possible)
+        """Deletes the user (true deleting is not possible with api v1)
 
         :return: Whether the deactivation succeeded
         """
         log.info("Deleting %s", str(self))
         try:
-            if self.endpoint.version() >= c.USER_API_V2_INTRO_VERSION:
-                ok = self.endpoint.delete(api=f"{User.API[c.DELETE]}/{self.id}").ok
+            api_def = api_mgr.get_api_def(self.__class__.__name__, c.DELETE, self.endpoint.version())
+            api, method, params = api_mgr.prep_params(api_def, login=self.login, id=self.id, name=self.name)
+            if method == "DELETE":
+                ok = self.endpoint.delete(api=api, params=params).ok
             else:
-                ok = self.post(api=User.API_V1[c.DELETE], params=self.api_params(c.DELETE)).ok
+                ok = self.endpoint.post(api=api, params=params).ok
             if ok:
-                log.info("Removing from %s cache", str(User.__name__))
-                User.CACHE.pop(self)
+                log.info("Removing from %s cache", str(self.__class__.__name__))
+                self.__class__.CACHE.pop(self)
         except exceptions.ObjectNotFound:
-            User.CACHE.pop(self)
+            self.__class__.CACHE.pop(self)
             raise
         return ok
 
