@@ -195,14 +195,6 @@ class Group(SqObject):
         """
         return self.update(name=name)
 
-    def api_params(self, op: str) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
-            ops = {c.GET: {}}
-        else:
-            ops = {c.GET: {"name": self.name}}
-        return ops[op] if op in ops else ops[c.GET]
-
     def is_default(self) -> bool:
         """
         :return: whether the group is a default group (sonar-users on SQS, Mambers on SQC) or not

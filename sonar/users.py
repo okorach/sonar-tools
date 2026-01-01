@@ -347,14 +347,6 @@ class User(SqObject):
         """
         return self.delete_object(login=self.login, id=self.id, name=self.name)
 
-    def api_params(self, op: str = c.GET) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        if self.endpoint.version() >= c.USER_API_V2_INTRO_VERSION:
-            ops = {c.GET: {}}
-        else:
-            ops = {c.GET: {"login": self.login}}
-        return ops[op] if op in ops else ops[c.GET]
-
     def set_groups(self, group_list: list[str]) -> bool:
         """Set the user group membership (replaces current groups)
 
