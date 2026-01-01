@@ -116,8 +116,10 @@ def redacted_token(token: str) -> str:
         return re.sub(r"(..).*(..)", r"\1***\2", token)
 
 
-def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, str, None]:
+def string_to_date(string: Optional[str]) -> Union[datetime.datetime, datetime.date, None]:
     """Converts a string date to a date"""
+    if string is None:
+        return None
     try:
         return util.to_datetime(string, SQ_DATETIME_FORMAT)
     except (ValueError, TypeError):
@@ -228,21 +230,21 @@ def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: Any
 
 def nbr_pages(sonar_api_json: dict[str, Any], api_version: int = 1) -> int:
     """Returns nbr of pages of a paginated Sonar API call"""
-    api_version = 1 if "ps" in sonar_api_json else 2
-    if not (total_elements := nbr_total_elements(sonar_api_json)):
+    if (total_elements := nbr_total_elements(sonar_api_json)) == 0:
         return 1
-    if api_version == 1:
-        return math.ceil(total_elements / sonar_api_json["ps"])
-    return math.ceil(total_elements / sonar_api_json["page"]["pageSize"])
+    # Some APIs return paging data in "paging" field, others in "page" field :-/
+    page_data = sonar_api_json["paging"] if "paging" in sonar_api_json else sonar_api_json.get("page")
+    if page_data and "pageSize" in page_data:
+        return math.ceil(total_elements / page_data["pageSize"])
+    return 1
 
 
 def nbr_total_elements(sonar_api_json: dict[str, Any], api_version: int = 1) -> int:
     """Returns nbr of elements of a paginated Sonar API call"""
-    api_version = 1 if "ps" in sonar_api_json else 2
-    if api_version == 1 and "total" in sonar_api_json:
-        return sonar_api_json["total"]
-    if api_version == 2 and "page" in sonar_api_json:
-        return sonar_api_json["page"]["total"]
+    # Some APIs return paging data in "paging" field, others in "page" field :-/
+    page_data = sonar_api_json["paging"] if "paging" in sonar_api_json else sonar_api_json.get("page")
+    if page_data and "total" in page_data:
+        return page_data["total"]
     return 0
 
 

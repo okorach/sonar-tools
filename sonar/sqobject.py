@@ -146,14 +146,7 @@ class SqObject(object):
         nb_pages = sutil.nbr_pages(data)
         nb_objects = max(len(data[returned_field]), sutil.nbr_total_elements(data))
         msg = "Searching %d %ss, %d pages of %d elements, %d pages in parallel..."
-        log.info(
-            "Searching %d %ss, %d pages of %d elements, %d pages in parallel...",
-            nb_objects,
-            cname,
-            nb_pages,
-            len(data[returned_field]),
-            threads,
-        )
+        log.info(msg, nb_objects, cname, nb_pages, len(data[returned_field]), threads)
         if sutil.nbr_total_elements(data) > 0 and len(data[returned_field]) == 0:
             log.fatal(msg := f"Index on {cname} is corrupted, please reindex before using API")
             raise exceptions.SonarException(msg, errcodes.SONAR_INTERNAL_ERROR)
@@ -161,7 +154,7 @@ class SqObject(object):
         objects_list |= _load(endpoint, cls, data[returned_field])
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f"{cname}Search") as executor:
-            futures = [executor.submit(__get, endpoint, api, {**new_params, p_field: page}) for page in range(2, nb_pages + 1)]
+            futures = [executor.submit(_get, endpoint, api, {**new_params, p_field: page}) for page in range(2, nb_pages + 1)]
             for future in concurrent.futures.as_completed(futures):
                 try:
                     data = future.result(timeout=60)
@@ -174,7 +167,7 @@ class SqObject(object):
     def get_paginated(cls, endpoint: Platform, params: Optional[ApiParams] = None, threads: int = 8) -> dict[str, SqObject]:
         """Returns all pages of a paginated API"""
         cname = cls.__name__.lower()
-        api_def = api_mgr.get_api_def(cls.__name__, c.READ, endpoint.version())
+        api_def = api_mgr.get_api_def(cls.__name__, c.LIST, endpoint.version())
         page_field = api_mgr.page_field(api_def)
         max_ps = api_mgr.max_page_size(api_def)
         new_params = {"ps": max_ps, "pageSize": max_ps} | (params or {})
@@ -194,7 +187,7 @@ class SqObject(object):
         objects_list |= _new_load(endpoint, cls, data[returned_field])
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f"{cname}Search") as executor:
-            futures = [executor.submit(__get, endpoint, api, {**new_params, page_field: page}) for page in range(2, nb_pages + 1)]
+            futures = [executor.submit(_get, endpoint, api, {**new_params, page_field: page}) for page in range(2, nb_pages + 1)]
             for future in concurrent.futures.as_completed(futures):
                 try:
                     data = future.result(timeout=60)
@@ -328,7 +321,7 @@ class SqObject(object):
         return self._tags
 
 
-def __get(endpoint: Platform, api: str, params: ApiParams) -> requests.Response:
+def _get(endpoint: Platform, api: str, params: ApiParams) -> requests.Response:
     """Returns a Sonar object from its key"""
     return json.loads(endpoint.get(api, params=params).text)
 

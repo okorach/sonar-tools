@@ -56,25 +56,6 @@ class Group(SqObject):
 
     CACHE = cache.Cache()
 
-    API = {
-        c.CREATE: GROUPS_API,
-        c.UPDATE: GROUPS_API,
-        c.DELETE: GROUPS_API,
-        c.SEARCH: GROUPS_API,
-        ADD_USER: MEMBERSHIP_API,
-        REMOVE_USER: MEMBERSHIP_API,
-    }
-    API_V1 = {
-        c.CREATE: "user_groups/create",
-        c.UPDATE: "user_groups/update",
-        c.DELETE: "user_groups/delete",
-        c.SEARCH: "user_groups/search",
-        ADD_USER: "user_groups/add_user",
-        REMOVE_USER: "user_groups/remove_user",
-    }
-    SEARCH_KEY_FIELD = "name"
-    SEARCH_RETURN_FIELD = "groups"
-
     def __init__(self, endpoint: Platform, name: str, data: ApiPayload) -> None:
         """Do not use, use class methods to create objects"""
         super().__init__(endpoint=endpoint, key=name)
@@ -100,7 +81,8 @@ class Group(SqObject):
             return o
         api_def = api_mgr.get_api_def("Group", c.LIST, endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, q=name)
-        data = json.loads(endpoint.get(api, params=params).text)[api_def["return_field"]]
+        ret = api_mgr.return_field(api_def)
+        data = json.loads(endpoint.get(api, params=params).text)[ret]
         if not data or data == []:
             raise exceptions.ObjectNotFound(name, f"Group '{name}' not found")
         data = next((d for d in data if d["name"] == name), None)
@@ -132,15 +114,6 @@ class Group(SqObject):
         return cls(endpoint=endpoint, name=data["name"], data=data)
 
     @classmethod
-    def api_for(cls, op: str, endpoint: object) -> Optional[str]:
-        """Returns the API for a given operation depending on the SonarQube version"""
-        if endpoint.is_sonarcloud() or endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
-            api_to_use = Group.API_V1
-        else:
-            api_to_use = Group.API
-        return api_to_use[op] if op in api_to_use else api_to_use[c.LIST]
-
-    @classmethod
     def get_object(cls, endpoint: Platform, name: str) -> Group:
         """Returns a group object
 
@@ -153,6 +126,16 @@ class Group(SqObject):
         if o := Group.CACHE.get(name, endpoint.local_url):
             return o
         raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
+
+    @classmethod
+    def search(cls, endpoint: Platform, params: Optional[ApiParams] = None) -> dict[str, Group]:
+        """Search groups
+
+        :params Platform endpoint: Reference to the SonarQube platform
+        :params ApiParams params: Parameters to narrow down the search
+        :return: dict of groups with group name as key
+        """
+        return cls.get_paginated(endpoint=endpoint, params=params)
 
     def __str__(self) -> str:
         """String representation of the object"""
@@ -195,7 +178,7 @@ class Group(SqObject):
         """Deletes an object, returns whether the operation succeeded"""
         log.info("Deleting %s", str(self))
         try:
-            api_def = api_mgr.get_api_def("Group", c.DELETE, self.endpoint.version())
+            api_def = api_mgr.get_api_def(self.__class__.__name__, c.DELETE, self.endpoint.version())
             api, method, params = api_mgr.prep_params(api_def, id=self.id, name=self.name)
             if method == "DELETE":
                 ok = self.endpoint.delete(api=api, params=params).ok
@@ -203,9 +186,9 @@ class Group(SqObject):
                 ok = self.endpoint.post(api=api, params=params).ok
             if ok:
                 log.info("Removing from %s cache", str(self.__class__.__name__))
-                Group.CACHE.pop(self)
+                self.__class__.CACHE.pop(self)
         except exceptions.ObjectNotFound:
-            Group.CACHE.pop(self)
+            self.__class__.CACHE.pop(self)
             raise
         return ok
 
@@ -243,7 +226,7 @@ class Group(SqObject):
         """Returns the group members"""
         if self.__members is None or not use_cache:
             api_def = api_mgr.get_api_def("Group", c.LIST_MEMBERS, self.endpoint.version())
-            ret = api_def["return_field"]
+            ret = api_mgr.return_field(api_def)
             # TODO: handle pagination
             api, _, params = api_mgr.prep_params(api_def, groupId=self.id, ps=500, pageSize=500, name=self.name)
             data = json.loads(self.endpoint.get(api, params=params).text)[ret]
@@ -269,8 +252,8 @@ class Group(SqObject):
             return None
         api_def = api_mgr.get_api_def("Group", c.LIST_MEMBERS, self.endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, groupId=self.id, userId=user.id)
-        data = json.loads(self.endpoint.get(api, params=params).text)[api_def["return_field"]]
-        log.info("Membership data = %s", data)
+        ret = api_mgr.return_field(api_def)
+        data = json.loads(self.endpoint.get(api, params=params).text)[ret]
         return next((m["id"] for m in data if m["groupId"] == self.id and m["userId"] == user.id), None)
 
     def add_user(self, user: users.User) -> bool:
@@ -295,6 +278,8 @@ class Group(SqObject):
         :return: Whether the operation succeeded
         """
         log.info("Removing %s from %s", user, self)
+        if user not in self.members(use_cache=False):
+            raise exceptions.ObjectNotFound(user.login or user.id, f"{user} not in {self}")
         api_def = api_mgr.get_api_def("Group", c.REMOVE_MEMBER, self.endpoint.version())
         mb_id = self.__get_membership_id(user)
         api, method, params = api_mgr.prep_params(api_def, id=mb_id, login=user.login, name=self.name)
@@ -338,16 +323,6 @@ class Group(SqObject):
         return util.remove_nones(json_data)
 
 
-def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Group]:
-    """Search groups
-
-    :params Platform endpoint: Reference to the SonarQube platform
-    :return: dict of groups with group name as key
-    """
-    api_version = 1 if endpoint.version() < c.GROUP_API_V2_INTRO_VERSION else 2
-    return Group.search_objects(endpoint=endpoint, params=params, api_version=api_version)
-
-
 def get_list(endpoint: Platform) -> dict[str, Group]:
     """Returns the list of groups
 
@@ -356,7 +331,7 @@ def get_list(endpoint: Platform) -> dict[str, Group]:
     :rtype: dict
     """
     log.info("Listing groups")
-    return dict(sorted(search(endpoint).items()))
+    return dict(sorted(Group.search(endpoint).items()))
 
 
 def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
@@ -393,7 +368,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[
         return []
     log.info("--- Auditing groups ---")
     problems = []
-    for g in search(endpoint=endpoint).values():
+    for g in Group.search(endpoint=endpoint).values():
         problems += g.audit(audit_settings)
     if "write_q" in kwargs:
         kwargs["write_q"].put(problems)
