@@ -336,6 +336,30 @@
             }
         }
     },
+    "Measure": {
+        "6.2.0": {
+            "READ": {
+                "method": "GET",
+                "api": "api/measures/component",
+                "params": ["component", "metricKeys"],
+                "return_field": "component"
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "api/measures/search",
+                "params": ["projectKeys", "metricKeys"],
+                "return_field": "measures"
+            },
+            "GET_HISTORY": {
+                "method": "GET",
+                "api": "api/measures/search_history",
+                "params": ["component", "metrics", "p", "ps", "branch", "pullRequest", "from", "to"],
+                "return_field": "measures",
+                "page_field": "p",
+                "max_page_size": 1000
+            }
+        }
+    },
     "QualityGate": {
         "create": "qualitygates/create",
         "get": "qualitygates/show",
