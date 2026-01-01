@@ -37,7 +37,7 @@
                 "method": "POST",
                 "api": "v2/users-management/users",
                 "content_type": "application/json",
-                "params": ["login", "name", "email", "password", "local"]
+                "params": ["login", "name", "email", "password", "local", "scmAccounts"]
             },
             "READ": {
                 "method": "GET",
@@ -60,41 +60,61 @@
                 "params": ["organization", "q"],
                 "return_field": "users",
                 "max_page_size": 500
+            },
+            "UPDATE_LOGIN": {
+                "method": "PATCH",
+                "api": "v2/users-management/users/{id}",
+                "content_type": "application/merge-patch+json",
+                "params": ["login", "name", "email", "scmAccounts"]
+            },
+            "LIST_GROUPS": {
+                "method": "GET",
+                "api": "v2/authorizations/group-memberships",
+                "params": ["userId", "groupId", "pageIndex", "pageSize"],
+                "return_field": "groupMemberships",
+                "max_page_size": 500
             }
         },
-        "0.0.1": {
+        "5.2.0": {
             "CREATE": {
                 "method": "POST",
-                "api": "users/create",
+                "api": "api/users/create",
                 "params": ["login", "name", "email", "password", "local"],
                 "return_field": "user"
             },
             "READ": {
                 "method": "GET",
-                "api": "users/search",
+                "api": "api/users/search",
                 "params": ["q"],
                 "return_field": "users"
             },
             "UPDATE": {
                 "method": "POST",
-                "api": "users/update",
+                "api": "api/users/update",
                 "params": ["login", "name", "email"]
             },
             "DELETE": {
                 "method": "POST",
-                "api": "users/deactivate",
+                "api": "api/users/deactivate",
                 "params": ["login"]
             },
             "LIST": {
                 "method": "GET",
-                "api": "users/search",
+                "api": "api/users/search",
                 "return_field": "users",
                 "max_page_size": 500
             },
             "UPDATE_LOGIN": {
                 "method": "POST",
-                "api": "users/update_login",
+                "api": "api/users/update_login",
                 "params": ["login", "new_login"]
+            },
+            "LIST_GROUPS": {
+                "method": "GET",
+                "api": "api/users/groups",
+                "params": ["p", "ps", "q", "selected"],
+                "return_field": "groups",
+                "max_page_size": 500
             }
         }
     },
@@ -130,9 +150,10 @@
             },
             "LIST_MEMBERS": {
                 "method": "GET",
-                "api": "v2/authorizations/group-memberships",
-                "params": ["groupId", "pageIndex", "pageSize"],
-                "return_field": "groupMemberships"
+                    "api": "v2/authorizations/group-memberships",
+                    "params": ["userId", "groupId", "pageIndex", "pageSize"],
+                "return_field": "groupMemberships",
+                "max_page_size": 500
             },
             "ADD_MEMBER": {
                 "method": "POST",
