@@ -296,6 +296,8 @@ class Group(SqObject):
         :return: Whether the operation succeeded
         """
         log.info("Removing %s from %s", user, self)
+        if user not in self.members(use_cache=False):
+            raise exceptions.ObjectNotFound(user.login or user.id, f"{user} not in {self}")
         api_def = api_mgr.get_api_def("Group", c.REMOVE_MEMBER, self.endpoint.version())
         mb_id = self.__get_membership_id(user)
         api, method, params = api_mgr.prep_params(api_def, id=mb_id, login=user.login, name=self.name)
