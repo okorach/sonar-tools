@@ -225,7 +225,7 @@ class User(SqObject):
         if vers < c.USER_API_V2_INTRO_VERSION:
             data = next((d for d in data[api_mgr.return_field(api_def)] if d["login"] == self.login), None)
             if not data:
-                raise exceptions.ObjectNotFound(f"{self} not found.")
+                raise exceptions.ObjectNotFound(self.login, f"{self} not found.")
         self.reload(data)
         self.groups(use_cache=False)
         return self
@@ -255,7 +255,7 @@ class User(SqObject):
         :return: self
         """
         if User.CACHE.get(new_login, self.base_url()):
-            raise exceptions.ObjectAlreadyExists(f"User '{new_login}' already exists")
+            raise exceptions.ObjectAlreadyExists(new_login, f"User '{new_login}' already exists")
         api_def = api_mgr.get_api_def("User", c.UPDATE, self.endpoint.version())
         api, method, params = api_mgr.prep_params(api_def, login=self.login, newLogin=new_login, id=self.id)
         if method == "PATCH":
