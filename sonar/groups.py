@@ -177,20 +177,7 @@ class Group(SqObject):
     def delete(self) -> bool:
         """Deletes an object, returns whether the operation succeeded"""
         log.info("Deleting %s", str(self))
-        try:
-            api_def = api_mgr.get_api_def(self.__class__.__name__, c.DELETE, self.endpoint.version())
-            api, method, params = api_mgr.prep_params(api_def, id=self.id, name=self.name)
-            if method == "DELETE":
-                ok = self.endpoint.delete(api=api, params=params).ok
-            else:
-                ok = self.endpoint.post(api=api, params=params).ok
-            if ok:
-                log.info("Removing from %s cache", str(self.__class__.__name__))
-                self.__class__.CACHE.pop(self)
-        except exceptions.ObjectNotFound:
-            self.__class__.CACHE.pop(self)
-            raise
-        return ok
+        return self.delete_object(id=self.id, name=self.name)
 
     def set_description(self, description: str) -> bool:
         """Set a group description
