@@ -146,14 +146,7 @@ class SqObject(object):
         nb_pages = sutil.nbr_pages(data)
         nb_objects = max(len(data[returned_field]), sutil.nbr_total_elements(data))
         msg = "Searching %d %ss, %d pages of %d elements, %d pages in parallel..."
-        log.info(
-            "Searching %d %ss, %d pages of %d elements, %d pages in parallel...",
-            nb_objects,
-            cname,
-            nb_pages,
-            len(data[returned_field]),
-            threads,
-        )
+        log.info(msg, nb_objects, cname, nb_pages, len(data[returned_field]), threads)
         if sutil.nbr_total_elements(data) > 0 and len(data[returned_field]) == 0:
             log.fatal(msg := f"Index on {cname} is corrupted, please reindex before using API")
             raise exceptions.SonarException(msg, errcodes.SONAR_INTERNAL_ERROR)
