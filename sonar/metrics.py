@@ -25,9 +25,7 @@ from typing import Optional, TYPE_CHECKING
 
 from threading import Lock
 
-import sonar.util.constants as c
 from sonar.sqobject import SqObject
-import sonar.api.manager as api_mgr
 from sonar.util import cache
 from sonar import exceptions
 import sonar.utilities as sutil
