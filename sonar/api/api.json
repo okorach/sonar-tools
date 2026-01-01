@@ -57,8 +57,9 @@
             "LIST": {
                 "method": "GET",
                 "api": "v2/users-management/users",
-                "params": ["organization", "q"],
+                "params": ["organization", "q", "active", "managed", "q", "groupId", "pageIndex", "pageSize", "sonarLintLastConnectionDateFrom", "sonarLintLastConnectionDateTo"],
                 "return_field": "users",
+                "page_field": "pageIndex",
                 "max_page_size": 500
             },
             "UPDATE_LOGIN": {
@@ -102,6 +103,7 @@
                 "method": "GET",
                 "api": "api/users/search",
                 "return_field": "users",
+                "page_field": "p",
                 "max_page_size": 500
             },
             "UPDATE_LOGIN": {
