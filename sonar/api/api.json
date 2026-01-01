@@ -57,7 +57,7 @@
             "LIST": {
                 "method": "GET",
                 "api": "v2/users-management/users",
-                "params": ["organization", "q", "active", "managed", "q", "groupId", "pageIndex", "pageSize", "sonarLintLastConnectionDateFrom", "sonarLintLastConnectionDateTo"],
+                "params": ["organization", "active", "managed", "q", "groupId", "pageIndex", "pageSize", "sonarLintLastConnectionDateFrom", "sonarLintLastConnectionDateTo"],
                 "return_field": "users",
                 "page_field": "pageIndex",
                 "max_page_size": 500
@@ -102,6 +102,7 @@
             "LIST": {
                 "method": "GET",
                 "api": "api/users/search",
+                "params": ["deactivated", "p", "ps", "q"],
                 "return_field": "users",
                 "page_field": "p",
                 "max_page_size": 500
