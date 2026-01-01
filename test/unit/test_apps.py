@@ -59,9 +59,9 @@ def test_count() -> None:
 
 def test_search() -> None:
     """Verify that search with criterias work"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.search, endpoint=tutil.SQ, params={"s": "analysisDate"}):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.Application.search, endpoint=tutil.SQ, params={"s": "analysisDate"}):
         return
-    res_list = apps.search(endpoint=tutil.SQ, params={"s": "analysisDate"})
+    res_list = apps.Application.search(endpoint=tutil.SQ, params={"s": "analysisDate"})
     oldest = datetime.datetime(1970, 1, 1).replace(tzinfo=datetime.timezone.utc)
     for obj in res_list.values():
         app_date = obj.last_analysis()
@@ -154,7 +154,7 @@ def test_no_audit(get_test_app: Generator[App]) -> None:
     """Check stop fast when audit params are disabled"""
     if not tutil.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=tutil.SQ, key=EXISTING_KEY):
         return
-    obj = get_test_app
+    obj: App = get_test_app
     assert len(obj.audit({"audit.applications": False})) == 0
     assert len(obj._audit_empty({"audit.applications.empty": True})) == 1
     assert len(obj._audit_empty({"audit.applications.empty": False})) == 0

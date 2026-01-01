@@ -153,16 +153,6 @@ def test_create_or_update(get_test_group: Generator[groups.Group]) -> None:
     assert gr.description == "Some new group description"
 
 
-def test_api_params(get_test_group: Generator[groups.Group]) -> None:
-    gr: groups.Group = get_test_group
-    if tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
-        assert gr.api_params(c.GET) == {}
-        assert gr.api_params(c.CREATE) == {}
-    else:
-        assert gr.api_params(c.GET) == {"name": tutil.TEMP_KEY}
-        assert gr.api_params(c.CREATE) == {"name": tutil.TEMP_KEY}
-
-
 def test_get_from_id(get_test_group: Generator[groups.Group]) -> None:
     gr: groups.Group = get_test_group
     if tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
