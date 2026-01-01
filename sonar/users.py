@@ -431,7 +431,7 @@ class User(SqObject):
             params = {"scmAccounts": accounts_list}
             ok = self.endpoint.patch(api, params=params).ok
         else:
-            params = (("scmAccount", v) for v in accounts_list)
+            params = tuple([("login", self.login)] + [("scmAccount", v) for v in accounts_list])
             ok = self.endpoint.post(api, params=params).ok
         if not ok:
             self.scm_accounts = []
