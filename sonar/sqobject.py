@@ -272,9 +272,27 @@ class SqObject(object):
             self.__class__.CACHE.clear()
             raise
 
-    def delete(self) -> bool:
+    def delete_object(self, **kwargs: Any) -> bool:
         """Deletes an object, returns whether the operation succeeded"""
         log.info("Deleting %s", str(self))
+        try:
+            api_def = api_mgr.get_api_def(self.__class__.__name__, c.DELETE, self.endpoint.version())
+            api, method, params = api_mgr.prep_params(api_def, **kwargs)
+            if method == "DELETE":
+                ok = self.endpoint.delete(api=api, params=params).ok
+            else:
+                ok = self.endpoint.post(api=api, params=params).ok
+            if ok:
+                log.info("Removing from %s cache", str(self.__class__.__name__))
+                self.__class__.CACHE.pop(self)
+        except exceptions.ObjectNotFound:
+            self.__class__.CACHE.clear()
+            raise
+        return ok
+
+    def delete(self) -> bool:
+        """Deletes an object, returns whether the operation succeeded"""
+        log.info("Deleting %s (old method)", str(self))
         try:
             ok = self.post(api=self.__class__.API[c.DELETE], params=self.api_params(c.DELETE)).ok
             if ok:
