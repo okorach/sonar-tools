@@ -56,9 +56,6 @@ class Group(SqObject):
 
     CACHE = cache.Cache()
 
-    SEARCH_KEY_FIELD = "name"
-    SEARCH_RETURN_FIELD = "groups"
-
     def __init__(self, endpoint: Platform, name: str, data: ApiPayload) -> None:
         """Do not use, use class methods to create objects"""
         super().__init__(endpoint=endpoint, key=name)

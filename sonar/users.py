@@ -56,24 +56,6 @@ class User(SqObject):
     """
 
     CACHE = cache.Cache()
-    SEARCH_KEY_FIELD = "login"
-    SEARCH_RETURN_FIELD = "users"
-
-    API = {
-        c.CREATE: USER_API,
-        c.UPDATE: USER_API,
-        c.DELETE: USER_API,
-        c.SEARCH: USER_API,
-        "GROUP_MEMBERSHIPS": "v2/authorizations/group-memberships",
-        "UPDATE_LOGIN": USER_API,
-    }
-    API_V1 = {
-        c.CREATE: "users/create",
-        c.UPDATE: "users/update",
-        c.DELETE: "users/deactivate",
-        c.SEARCH: "users/search",
-        "UPDATE_LOGIN": "users/update_login",
-    }
     API_SC = {
         c.SEARCH: "organizations/search_members",
     }
