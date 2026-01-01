@@ -100,7 +100,8 @@ class Group(SqObject):
             return o
         api_def = api_mgr.get_api_def("Group", c.LIST, endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, q=name)
-        data = json.loads(endpoint.get(api, params=params).text)[api_def["return_field"]]
+        ret = api_mgr.return_field(api_def)
+        data = json.loads(endpoint.get(api, params=params).text)[ret]
         if not data or data == []:
             raise exceptions.ObjectNotFound(name, f"Group '{name}' not found")
         data = next((d for d in data if d["name"] == name), None)
@@ -243,7 +244,7 @@ class Group(SqObject):
         """Returns the group members"""
         if self.__members is None or not use_cache:
             api_def = api_mgr.get_api_def("Group", c.LIST_MEMBERS, self.endpoint.version())
-            ret = api_def["return_field"]
+            ret = api_mgr.return_field(api_def)
             # TODO: handle pagination
             api, _, params = api_mgr.prep_params(api_def, groupId=self.id, ps=500, pageSize=500, name=self.name)
             data = json.loads(self.endpoint.get(api, params=params).text)[ret]
@@ -269,8 +270,8 @@ class Group(SqObject):
             return None
         api_def = api_mgr.get_api_def("Group", c.LIST_MEMBERS, self.endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, groupId=self.id, userId=user.id)
-        data = json.loads(self.endpoint.get(api, params=params).text)[api_def["return_field"]]
-        log.info("Membership data = %s", data)
+        ret = api_mgr.return_field(api_def)
+        data = json.loads(self.endpoint.get(api, params=params).text)[ret]
         return next((m["id"] for m in data if m["groupId"] == self.id and m["userId"] == user.id), None)
 
     def add_user(self, user: users.User) -> bool:
