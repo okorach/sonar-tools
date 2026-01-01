@@ -25,7 +25,8 @@
             "READ": {
                 "method": "GET",
                 "api": "api/applications/show",
-                "params": ["application", "branch"]
+                "params": ["application", "branch"],
+                "return_field": "application"
             },
             "UPDATE": {
                 "method": "POST",
@@ -33,17 +34,32 @@
                 "params": ["name", "description", "application"]
             },
             "DELETE": {
-                "method": "DELETE",
+                "method": "POST",
                 "api": "api/applications/delete",
                 "params": ["application"]
             },
             "LIST": {
                 "method": "GET",
                 "api": "api/components/search_projects",
-                "params": ["p", "ps", "component", "filter"],
+                "params": ["p", "ps", "component", "filter", "s"],
                 "return_field": "components",
                 "page_field": "p",
                 "max_page_size": 500
+            },
+            "ADD_PROJECT": {
+                "method": "POST",
+                "api": "api/applications/add_project",
+                "params": ["application", "project"]
+            },
+            "REMOVE_PROJECT": {
+                "method": "POST",
+                "api": "api/applications/remove_project",
+                "params": ["application", "project"]
+            },
+            "RECOMPUTE": {
+                "method": "POST",
+                "api": "api/applications/refresh",
+                "params": ["key"]
             }
         }
     },
