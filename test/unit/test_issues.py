@@ -32,6 +32,7 @@ from sonar.util import constants as c
 import sonar.util.issue_defs as idefs
 import credentials as tconf
 import sonar.util.misc as util
+import sonar.api.manager as api_mgr
 
 
 def test_issue() -> None:
@@ -51,9 +52,9 @@ def test_issue() -> None:
     assert not issue.is_wont_fix()
     assert issue.is_false_positive()
     assert issue.refresh()
-    assert issue.api_params(c.LIST) == {"issues": issue_key}
-    assert issue.api_params(c.SET_TAGS) == {"issue": issue_key}
-    assert issue.api_params(c.GET_TAGS) == {"issues": issue_key}
+    assert issue.api_params(api_mgr.LIST) == {"issues": issue_key}
+    assert issue.api_params(api_mgr.SET_TAGS) == {"issue": issue_key}
+    assert issue.api_params(api_mgr.GET_TAGS) == {"issues": issue_key}
 
     assert issue_key_accepted in issues_d
     issue2 = issues_d[issue_key_accepted]

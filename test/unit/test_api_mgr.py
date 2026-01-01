@@ -24,7 +24,7 @@ import utilities as tutil
 
 
 def test_api_mgr() -> None:
-    api_def = api_mgr.get_api_def("Group", c.REMOVE_MEMBER, tutil.SQ.version())
+    api_def = api_mgr.get_api_def("Group", api_mgr.REMOVE_USER, tutil.SQ.version())
     api, method, params = api_mgr.prep_params(api_def, id="membership_id", login="user.login", name="group.name")
     if tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
         assert api == "v2/authorizations/group-memberships/membership_id"

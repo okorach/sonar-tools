@@ -97,7 +97,7 @@ class User(SqObject):
         params = {"login": login, "local": str(is_local).lower(), "name": name}
         if is_local:
             params["password"] = password or login
-        api_def = api_mgr.get_api_def("User", c.CREATE, endpoint.version())
+        api_def = api_mgr.get_api_def("User", api_mgr.CREATE, endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, **params)
         try:
             ret = api_mgr.return_field(api_def)
@@ -152,7 +152,7 @@ class User(SqObject):
         if endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             raise exceptions.UnsupportedOperation("Get by ID is an APIv2 features, staring from SonarQube 10.4")
         log.debug("Getting user id '%s'", id)
-        api_def = api_mgr.get_api_def("User", c.READ, endpoint.version())
+        api_def = api_mgr.get_api_def("User", api_mgr.READ, endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, id=id)
         data = json.loads(endpoint.get(api, params=params, mute=()).text)
         return cls.load(endpoint, data)
@@ -198,7 +198,7 @@ class User(SqObject):
         if not self.endpoint.is_sonarcloud() and self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             self._groups = list(set(self.sq_json.get("groups", []) + [self.endpoint.default_user_group()]))
         else:
-            api_def = api_mgr.get_api_def("User", c.LIST_GROUPS, self.endpoint.version())
+            api_def = api_mgr.get_api_def("User", api_mgr.LIST_GROUPS, self.endpoint.version())
             ret = api_mgr.return_field(api_def)
             max_ps = api_mgr.max_page_size(api_def)
             # TODO: handle pagination
@@ -218,7 +218,7 @@ class User(SqObject):
         :return:  The user itself
         """
         vers = self.endpoint.version()
-        api_def = api_mgr.get_api_def("User", c.READ, vers)
+        api_def = api_mgr.get_api_def("User", api_mgr.READ, vers)
         max_ps = api_mgr.max_page_size(api_def)
         api, _, params = api_mgr.prep_params(api_def, userId=self.id, q=self.login, id=self.id, ps=max_ps)
         data = json.loads(self.endpoint.get(api, params=params).text)
@@ -256,7 +256,7 @@ class User(SqObject):
         """
         if User.CACHE.get(new_login, self.base_url()):
             raise exceptions.ObjectAlreadyExists(new_login, f"User '{new_login}' already exists")
-        api_def = api_mgr.get_api_def("User", c.UPDATE, self.endpoint.version())
+        api_def = api_mgr.get_api_def("User", api_mgr.UPDATE, self.endpoint.version())
         api, method, params = api_mgr.prep_params(api_def, login=self.login, newLogin=new_login, id=self.id)
         if method == "PATCH":
             ok = self.endpoint.patch(api, params=params).ok
@@ -286,7 +286,7 @@ class User(SqObject):
             return self
         if kwargs.get("login"):
             self.update_login(kwargs["login"])
-        api_def = api_mgr.get_api_def("User", c.UPDATE, self.endpoint.version())
+        api_def = api_mgr.get_api_def("User", api_mgr.UPDATE, self.endpoint.version())
         api, method, params = api_mgr.prep_params(api_def, id=self.id, login=self.login, email=kwargs.get("email"), name=kwargs.get("name"))
         if len(params) == 0:
             return self
@@ -381,7 +381,7 @@ class User(SqObject):
         log.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
         if not self.is_local:
             return self
-        api_def = api_mgr.get_api_def("User", c.UPDATE, self.endpoint.version())
+        api_def = api_mgr.get_api_def("User", api_mgr.UPDATE, self.endpoint.version())
         api, method, params = api_mgr.prep_params(api_def, id=self.id, scmAccount=accounts_list)
         if method == "PATCH":
             params = {"scmAccounts": accounts_list}

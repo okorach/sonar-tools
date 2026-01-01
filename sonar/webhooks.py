@@ -31,6 +31,7 @@ from sonar import exceptions
 from sonar.util import cache, constants as c
 import sonar.util.misc as util
 from sonar.audit import rules, problem
+import sonar.api.manager as api_mgr
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -46,11 +47,11 @@ class WebHook(SqObject):
 
     CACHE: ClassVar[cache.Cache] = cache.Cache()
     API: ClassVar[dict[str, str]] = {
-        c.CREATE: "webhooks/create",
-        c.READ: "webhooks/list",
-        c.UPDATE: "webhooks/update",
-        c.LIST: "webhooks/list",
-        c.DELETE: "webhooks/delete",
+        api_mgr.CREATE: "webhooks/create",
+        api_mgr.READ: "webhooks/list",
+        api_mgr.UPDATE: "webhooks/update",
+        api_mgr.LIST: "webhooks/list",
+        api_mgr.DELETE: "webhooks/delete",
     }
     SEARCH_KEY_FIELD: ClassVar[str] = "key"
     SEARCH_RETURN_FIELD: ClassVar[str] = "webhooks"
@@ -79,7 +80,7 @@ class WebHook(SqObject):
         """
         log.info("Creating webhook name %s, url %s project %s", name, url, str(project))
         params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
-        endpoint.post(WebHook.API[c.CREATE], params=params)
+        endpoint.post(WebHook.API[api_mgr.CREATE], params=params)
         o = cls(endpoint, name=name, url=url, secret=secret, project=project)
         o.refresh()
         return o
@@ -124,7 +125,7 @@ class WebHook(SqObject):
     def refresh(self) -> None:
         """Reads the Webhook data on the SonarQube platform and updates the local object"""
         log.debug("Refreshing %s with proj %s", str(self), str(self.project))
-        data = json.loads(self.get(WebHook.API[c.LIST], params=None if not self.project else {"project": self.project}).text)
+        data = json.loads(self.get(WebHook.API[api_mgr.LIST], params=None if not self.project else {"project": self.project}).text)
         log.debug("Refreshing %s with data %s", str(self), str(data))
         wh_data = next((wh for wh in data["webhooks"] if wh["name"] == self.name), None)
         if wh_data is None:
@@ -156,7 +157,7 @@ class WebHook(SqObject):
         """
         log.info("Updating %s with %s", str(self), str(self.project))
         params = {"webhook": self.key, "name": self.name, "url": self.webhook_url} | util.remove_nones(kwargs)
-        ok = self.post(WebHook.API[c.UPDATE], params=params).ok
+        ok = self.post(WebHook.API[api_mgr.UPDATE], params=params).ok
         self.refresh()
         return ok
 
@@ -180,8 +181,8 @@ class WebHook(SqObject):
 
     def api_params(self, op: str) -> ApiParams:
         """Returns the std api params to pass for a given webhook"""
-        ops = {c.READ: {"webhook": self.key}}
-        return ops[op] if op and op in ops else ops[c.READ]
+        ops = {api_mgr.READ: {"webhook": self.key}}
+        return ops[op] if op and op in ops else ops[api_mgr.READ]
 
 
 def search(endpoint: Platform, params: ApiParams = None) -> dict[str, WebHook]:

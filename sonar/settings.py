@@ -31,6 +31,7 @@ import sonar.logging as log
 from sonar.util import cache, constants as c
 from sonar import sqobject, exceptions
 import sonar.util.misc as util
+import sonar.api.manager as api_mgr
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -129,10 +130,10 @@ class Setting(sqobject.SqObject):
 
     CACHE = cache.Cache()
     API = {
-        c.CREATE: "settings/set",
-        c.READ: "settings/values",
-        c.UPDATE: "settings/set",
-        c.LIST: "settings/values",
+        api_mgr.CREATE: "settings/set",
+        api_mgr.READ: "settings/values",
+        api_mgr.UPDATE: "settings/set",
+        api_mgr.LIST: "settings/values",
         "LIST_DEFS": "settings/list_definitions",
         "NEW_CODE_GET": "new_code_periods/show",
         "NEW_CODE_SET": "new_code_periods/set",
@@ -166,7 +167,7 @@ class Setting(sqobject.SqObject):
     def create(cls, key: str, endpoint: Platform, value: Any = None, component: Optional[object] = None) -> Union[Setting, None]:
         """Creates a setting with a custom value"""
         log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
-        r = endpoint.post(Setting.API[c.CREATE], params={"key": key, "component": component})
+        r = endpoint.post(Setting.API[api_mgr.CREATE], params={"key": key, "component": component})
         if not r.ok:
             return None
         o = cls.read(key=key, endpoint=endpoint, component=component)
@@ -285,7 +286,7 @@ class Setting(sqobject.SqObject):
         log.debug("Setting %s to value '%s'", str(self), str(value))
         params = {"key": self.key, "component": self.component.key if self.component else None} | encode(self, value)
         try:
-            if ok := self.post(Setting.API[c.CREATE], params=params).ok:
+            if ok := self.post(Setting.API[api_mgr.CREATE], params=params).ok:
                 self.value = value
         except exceptions.SonarException:
             return False
@@ -443,7 +444,7 @@ def get_bulk(
     if settings_list is not None:
         params["keys"] = util.list_to_csv(settings_list)
 
-    data = json.loads(endpoint.get(Setting.API[c.LIST], params=params, with_organization=(component is None)).text)
+    data = json.loads(endpoint.get(Setting.API[api_mgr.LIST], params=params, with_organization=(component is None)).text)
     settings_dict |= __get_settings(endpoint, data, component)
 
     # Hack since projects.default.visibility is not returned by settings/list_definitions
@@ -493,8 +494,8 @@ def set_new_code_period(endpoint: Platform, nc_type: str, nc_value: str, project
     """Sets the new code period at global level or for a project"""
     log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
     if endpoint.is_sonarcloud():
-        ok = endpoint.post(Setting.API[c.CREATE], params={"key": "sonar.leak.period.type", "value": nc_type, "project": project_key}).ok
-        ok = ok and endpoint.post(Setting.API[c.CREATE], params={"key": "sonar.leak.period", "value": nc_value, "project": project_key}).ok
+        ok = endpoint.post(Setting.API[api_mgr.CREATE], params={"key": "sonar.leak.period.type", "value": nc_type, "project": project_key}).ok
+        ok = ok and endpoint.post(Setting.API[api_mgr.CREATE], params={"key": "sonar.leak.period", "value": nc_value, "project": project_key}).ok
     else:
         ok = endpoint.post(Setting.API["NEW_CODE_SET"], params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch}).ok
     return ok
@@ -512,7 +513,7 @@ def get_visibility(endpoint: Platform, component: object) -> Setting:
     else:
         if endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Project default visibility does not exist in SonarQube Cloud")
-        data = json.loads(endpoint.get(Setting.API[c.READ], params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
+        data = json.loads(endpoint.get(Setting.API[api_mgr.READ], params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
         return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 
 
@@ -602,7 +603,7 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[object])
             key = "sonar.leak.period.type"
         params = get_component_params(component)
         params.update({"keys": key})
-        data = json.loads(endpoint.get(Setting.API[c.READ], params=params, with_organization=(component is None)).text)["settings"]
+        data = json.loads(endpoint.get(Setting.API[api_mgr.READ], params=params, with_organization=(component is None)).text)["settings"]
         if not endpoint.is_sonarcloud() and len(data) > 0:
             data = data[0]
         else:

@@ -78,7 +78,7 @@ class SqObject(object):
         :param endpoint: The SQS or SQC to invoke the API
         :return: The API to use for the operation, or None if not defined
         """
-        return cls.API[op] if op in cls.API else cls.API[c.SEARCH]
+        return cls.API[op] if op in cls.API else cls.API[api_mgr.SEARCH]
 
     @classmethod
     def clear_cache(cls, endpoint: Optional[Platform] = None) -> None:
@@ -132,7 +132,7 @@ class SqObject(object):
     @classmethod
     def search_objects(cls, endpoint: Platform, params: ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
         """Runs a multi-threaded object search for searchable Sonar Objects"""
-        api = cls.api_for(c.SEARCH, endpoint)
+        api = cls.api_for(api_mgr.SEARCH, endpoint)
         returned_field = cls.SEARCH_RETURN_FIELD
         new_params: dict[str, Any] = (params or {}).copy()
         p_field = "pageIndex" if api_version == 2 else "p"
@@ -167,7 +167,7 @@ class SqObject(object):
     def get_paginated(cls, endpoint: Platform, params: Optional[ApiParams] = None, threads: int = 8) -> dict[str, SqObject]:
         """Returns all pages of a paginated API"""
         cname = cls.__name__.lower()
-        api_def = api_mgr.get_api_def(cls.__name__, c.LIST, endpoint.version())
+        api_def = api_mgr.get_api_def(cls.__name__, api_mgr.LIST, endpoint.version())
         page_field = api_mgr.page_field(api_def)
         max_ps = api_mgr.max_page_size(api_def)
         new_params = {"ps": max_ps, "pageSize": max_ps} | (params or {})
@@ -276,7 +276,7 @@ class SqObject(object):
         """Deletes an object, returns whether the operation succeeded"""
         log.info("Deleting %s", str(self))
         try:
-            api_def = api_mgr.get_api_def(self.__class__.__name__, c.DELETE, self.endpoint.version())
+            api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.DELETE, self.endpoint.version())
             api, method, params = api_mgr.prep_params(api_def, **kwargs)
             if method == "DELETE":
                 ok = self.endpoint.delete(api=api, params=params).ok
@@ -294,7 +294,7 @@ class SqObject(object):
         """Deletes an object, returns whether the operation succeeded"""
         log.info("Deleting %s (old method)", str(self))
         try:
-            ok = self.post(api=self.__class__.API[c.DELETE], params=self.api_params(c.DELETE)).ok
+            ok = self.post(api=self.__class__.API[api_mgr.DELETE], params=self.api_params(api_mgr.DELETE)).ok
             if ok:
                 log.info("Removing from %s cache", str(self.__class__.__name__))
                 self.__class__.CACHE.pop(self)
@@ -312,7 +312,7 @@ class SqObject(object):
         tags = list(set(util.csv_to_list(tags)))
         log.info("Settings tags %s to %s", tags, str(self))
         try:
-            if ok := self.post(self.__class__.API[c.SET_TAGS], params={**self.api_params(c.SET_TAGS), "tags": util.list_to_csv(tags)}).ok:
+            if ok := self.post(self.__class__.API[api_mgr.SET_TAGS], params={**self.api_params(api_mgr.SET_TAGS), "tags": util.list_to_csv(tags)}).ok:
                 self._tags = sorted(tags)
         except exceptions.SonarException:
             return False
@@ -324,7 +324,7 @@ class SqObject(object):
     def get_tags(self, **kwargs: Any) -> list[str]:
         """Returns object tags"""
         try:
-            api = self.__class__.API[c.GET_TAGS]
+            api = self.__class__.API[api_mgr.GET_TAGS]
         except (AttributeError, KeyError) as e:
             raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags") from e
         if self._tags is None:
