@@ -232,12 +232,15 @@ def nbr_pages(sonar_api_json: dict[str, Any], api_version: int = 1) -> int:
     """Returns nbr of pages of a paginated Sonar API call"""
     if (total_elements := nbr_total_elements(sonar_api_json)) == 0:
         return 1
-    return math.ceil(total_elements / sonar_api_json["paging"]["pageSize"])
+    # Some APIs return paging data in "paging" field, others in "page" field :-/
+    page_data = sonar_api_json["paging"] if "paging" in sonar_api_json else sonar_api_json["page"]
+    return math.ceil(total_elements / page_data["pageSize"])
 
 
 def nbr_total_elements(sonar_api_json: dict[str, Any], api_version: int = 1) -> int:
     """Returns nbr of elements of a paginated Sonar API call"""
-    page_data = sonar_api_json["paging"]
+    # Some APIs return paging data in "paging" field, others in "page" field :-/
+    page_data = sonar_api_json["paging"] if "paging" in sonar_api_json else sonar_api_json["page"]
     if "total" in page_data:
         return page_data["total"]
     return 0
