@@ -147,13 +147,15 @@
                 "method": "GET",
                 "api": "v2/authorizations/groups",
                 "params": ["managed", "userId", "organization", "q", "pageIndex", "pageSize"],
+                "page_field": "pageIndex",
                 "return_field": "groups",
                 "max_page_size": 500
             },
             "LIST_MEMBERS": {
                 "method": "GET",
-                    "api": "v2/authorizations/group-memberships",
-                    "params": ["userId", "groupId", "pageIndex", "pageSize"],
+                "api": "v2/authorizations/group-memberships",
+                "params": ["userId", "groupId", "pageIndex", "pageSize"],
+                "page_field": "pageIndex",
                 "return_field": "groupMemberships",
                 "max_page_size": 500
             },
@@ -195,6 +197,7 @@
                 "method": "GET",
                 "api": "api/user_groups/search",
                 "params": ["q", "p", "ps"],
+                "page_field": "p",
                 "return_field": "groups",
                 "max_page_size": 500
             },
@@ -202,6 +205,7 @@
                 "method": "GET",
                 "api": "api/user_groups/users",
                 "params": ["name", "p", "ps", "q", "selected"],
+                "page_field": "p",
                 "return_field": "users",
                 "max_page_size": 500
             },
