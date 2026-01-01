@@ -345,7 +345,7 @@ class User(SqObject):
 
         :return: Whether the deactivation succeeded
         """
-        return super().delete_object(login=self.login, id=self.id, name=self.name)
+        return self.delete_object(login=self.login, id=self.id, name=self.name)
 
     def api_params(self, op: str = c.GET) -> ApiParams:
         """Return params used to search/create/delete for that object"""
