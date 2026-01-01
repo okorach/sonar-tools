@@ -254,7 +254,7 @@ class Platform(object):
         if isinstance(params, dict):
             params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
         elif isinstance(params, (list, tuple)):
-            params = [(k, str(v).lower() if isinstance(v, bool) else v) for k, v in params]
+            params = [(v[0], str(v[1]).lower() if isinstance(v[1], bool) else v[1]) for v in params]
         with_org = kwargs.pop("with_organization", True)
         if self.is_sonarcloud():
             headers["Authorization"] = f"Bearer {self.__token}"
