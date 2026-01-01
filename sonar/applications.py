@@ -148,10 +148,8 @@ class Application(aggr.Aggregation):
         :return: dict of applications
         """
         check_supported(endpoint)
-        new_params = {"filter": "qualifier = APP"}
-        if params is not None:
-            new_params.update(params)
-        return Application.search_objects(endpoint=endpoint, params=new_params)
+        new_params = (params or {}) | {"filter": "qualifier = APP"}
+        return Application.get_paginated(endpoint=endpoint, params=new_params)
 
     def refresh(self) -> None:
         """Refreshes the application by re-reading SonarQube
