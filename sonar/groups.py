@@ -56,22 +56,6 @@ class Group(SqObject):
 
     CACHE = cache.Cache()
 
-    API = {
-        c.CREATE: GROUPS_API,
-        c.UPDATE: GROUPS_API,
-        c.DELETE: GROUPS_API,
-        c.SEARCH: GROUPS_API,
-        ADD_USER: MEMBERSHIP_API,
-        REMOVE_USER: MEMBERSHIP_API,
-    }
-    API_V1 = {
-        c.CREATE: "user_groups/create",
-        c.UPDATE: "user_groups/update",
-        c.DELETE: "user_groups/delete",
-        c.SEARCH: "user_groups/search",
-        ADD_USER: "user_groups/add_user",
-        REMOVE_USER: "user_groups/remove_user",
-    }
     SEARCH_KEY_FIELD = "name"
     SEARCH_RETURN_FIELD = "groups"
 
@@ -131,15 +115,6 @@ class Group(SqObject):
         :return: The group object
         """
         return cls(endpoint=endpoint, name=data["name"], data=data)
-
-    @classmethod
-    def api_for(cls, op: str, endpoint: object) -> Optional[str]:
-        """Returns the API for a given operation depending on the SonarQube version"""
-        if endpoint.is_sonarcloud() or endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
-            api_to_use = Group.API_V1
-        else:
-            api_to_use = Group.API
-        return api_to_use[op] if op in api_to_use else api_to_use[c.LIST]
 
     @classmethod
     def get_object(cls, endpoint: Platform, name: str) -> Group:
