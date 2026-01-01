@@ -341,7 +341,7 @@
             "READ": {
                 "method": "GET",
                 "api": "api/measures/component",
-                "params": ["component", "metricKeys"],
+                "params": ["component", "metricKeys", "branch", "pullRequest", "additionalFields"],
                 "return_field": "component"
             },
             "LIST": {
