@@ -311,7 +311,7 @@ class User(SqObject):
         if kwargs.get("login"):
             self.update_login(kwargs["login"])
         api_def = api_mgr.get_api_def("User", c.UPDATE, self.endpoint.version())
-        api, method, params = api_mgr.prep_params(api_def, id=self.id, email=kwargs.get("email"), name=kwargs.get("name"))
+        api, method, params = api_mgr.prep_params(api_def, id=self.id, login=self.login, email=kwargs.get("email"), name=kwargs.get("name"))
         if len(params) == 0:
             return self
         if method == "PATCH":
@@ -563,7 +563,7 @@ def get_login_from_name(endpoint: Platform, name: str) -> Union[str, None]:
     :returns: User login or None if name not found
     """
     u_list = User.search(endpoint=endpoint, params={"q": name})
-    if not u_list:
+    if not u_list or len(u_list) == 0:
         return None
     if len(u_list) > 1:
         log.warning("More than 1 user with name '%s', will return the 1st one", name)
