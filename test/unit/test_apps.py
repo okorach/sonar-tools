@@ -154,7 +154,7 @@ def test_no_audit(get_test_app: Generator[App]) -> None:
     """Check stop fast when audit params are disabled"""
     if not tutil.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=tutil.SQ, key=EXISTING_KEY):
         return
-    obj = get_test_app
+    obj: App = get_test_app
     assert len(obj.audit({"audit.applications": False})) == 0
     assert len(obj._audit_empty({"audit.applications.empty": True})) == 1
     assert len(obj._audit_empty({"audit.applications.empty": False})) == 0
