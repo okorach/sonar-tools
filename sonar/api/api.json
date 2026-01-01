@@ -16,12 +16,36 @@
         "search": "portfolios/search"
     },
     "Application": {
-        "create": "applications/create",
-        "get": "applications/show",
-        "update": "applications/update",
-        "delete": "applications/delete",
-        "list": "applications/search",
-        "search": "applications/search"
+        "7.3.0": {
+            "CREATE": {
+                "method": "POST",
+                "api": "api/applications/create",
+                "params": ["name", "description", "key", "visibility"]
+            },
+            "READ": {
+                "method": "GET",
+                "api": "api/applications/show",
+                "params": ["application", "branch"]
+            },
+            "UPDATE": {
+                "method": "POST",
+                "api": "api/applications/update",
+                "params": ["name", "description", "application"]
+            },
+            "DELETE": {
+                "method": "DELETE",
+                "api": "api/applications/delete",
+                "params": ["application"]
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "api/components/search_projects",
+                "params": ["p", "ps", "component", "filter"],
+                "return_field": "components",
+                "page_field": "p",
+                "max_page_size": 500
+            }
+        }
     },
     "Component": {
         "create": "components/create",
