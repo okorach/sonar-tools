@@ -28,7 +28,8 @@ import json
 from sonar.sqobject import SqObject
 import sonar.logging as log
 from sonar.util import cache
-from sonar import measures, exceptions, projects
+from sonar import measures, exceptions
+from sonar.projects import Project
 import sonar.permissions.qualitygate_permissions as permissions
 import sonar.util.misc as util
 import sonar.utilities as sutil
@@ -116,7 +117,7 @@ class QualityGate(SqObject):
         self.is_default = False  #: Whether the quality gate is the default
         self._conditions: Optional[dict[str, str]] = None  #: Quality gate conditions
         self._permissions: Optional[object] = None  #: Quality gate permissions
-        self._projects: Optional[dict[str, projects.Project]] = None  #: Projects using this quality profile
+        self._projects: Optional[dict[str, Project]] = None  #: Projects using this quality profile
         self.sq_json = data
         self.name = data.get("name")
         self.key = data.get("id", self.name)
@@ -161,7 +162,7 @@ class QualityGate(SqObject):
     @classmethod
     def create(cls, endpoint: Platform, name: str) -> QualityGate:
         """Creates an empty quality gate"""
-        api_def = api_mgr.get_api_def(QualityGate.__name__, api_mgr.CREATE, endpoint.version())
+        api_def = api_mgr.get_api_def(cls.__name__, api_mgr.CREATE, endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, name=name)
         endpoint.post(api, params=params)
         return cls.get_object(endpoint, name)
@@ -182,7 +183,7 @@ class QualityGate(SqObject):
         """Deletes a quality gate, returns whether the operation succeeded"""
         return self.delete_object(name=self.name)
 
-    def projects(self) -> dict[str, projects.Project]:
+    def projects(self) -> dict[str, Project]:
         """
         :raises ObjectNotFound: If Quality gate not found
         :return: The list of projects using this quality gate
@@ -191,7 +192,7 @@ class QualityGate(SqObject):
             return self._projects
         page, nb_pages = 1, 1
         self._projects = {}
-        api_def = api_mgr.get_api_def(QualityGate.__name__, api_mgr.GET_PROJECTS, self.endpoint.version())
+        api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.GET_PROJECTS, self.endpoint.version())
         max_ps = api_mgr.max_page_size(api_def)
         p_field = api_mgr.page_field(api_def)
         return_field = api_mgr.return_field(api_def)
@@ -207,7 +208,7 @@ class QualityGate(SqObject):
             data = json.loads(resp.text)
             for prj in data[return_field]:
                 key = prj["key"] if "key" in prj else prj["id"]
-                self._projects[key] = projects.Project.get_object(self.endpoint, key)
+                self._projects[key] = Project.get_object(self.endpoint, key)
             nb_pages = sutil.nbr_pages(data)
             page += 1
         return self._projects
@@ -218,7 +219,7 @@ class QualityGate(SqObject):
         :return: The quality gate conditions, encoded (for simplication) or not
         """
         if self._conditions is None:
-            api_def = api_mgr.get_api_def(QualityGate.__name__, api_mgr.READ, self.endpoint.version())
+            api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.READ, self.endpoint.version())
             api, _, params = api_mgr.prep_params(api_def, name=self.name)
             data = json.loads(self.get(api, params=params).text)
             log.debug("Loading %s with conditions %s", self, util.json_dump(data))
@@ -312,7 +313,7 @@ class QualityGate(SqObject):
             return True
         if "name" in data and data["name"] != self.name:
             log.info("Renaming %s with %s", self, data["name"])
-            api_def = api_mgr.get_api_def(QualityGate.__name__, api_mgr.RENAME, self.endpoint.version())
+            api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.RENAME, self.endpoint.version())
             api, _, params = api_mgr.prep_params(api_def, id=self.key, name=data["name"])
             self.post(api, params=params)
             QualityGate.CACHE.pop(self)
