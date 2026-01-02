@@ -60,6 +60,17 @@
                 "method": "POST",
                 "api": "api/applications/refresh",
                 "params": ["key"]
+            },
+            "SET_TAGS": {
+                "method": "POST",
+                "api": "api/applications/set_tags",
+                "params": ["application", "tags"]
+            },
+            "GET_TAGS": {
+                "method": "GET",
+                "api": "api/components/show",
+                "params": ["component", "branch", "pullRequest"],
+                "return_field": "component"
             }
         }
     },
