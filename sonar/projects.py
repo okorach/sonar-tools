@@ -552,7 +552,7 @@ class Project(Component):
         if "isAiCodeFixEnabled" not in self.sq_json:
             api, _, _, ret = Api(self, op.LIST, self.endpoint).get_all(filter=_PROJECT_QUALIFIER)
             data = self.endpoint.get_paginated(api=api, return_field=ret, filter=_PROJECT_QUALIFIER)
-            p_data = next((p for p in data["components"] if p["key"] == self.key), None)
+            p_data = next((p for p in data[ret] if p["key"] == self.key), None)
             if p_data:
                 self.sq_json.update(p_data)
         return self.sq_json.get("isAiCodeFixEnabled", None)
