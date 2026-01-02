@@ -33,7 +33,8 @@ from requests import RequestException
 import sonar.logging as log
 from sonar.util import cache
 
-import sonar.api.manager as api_mgr
+from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 from sonar import exceptions, projects, branches, app_branches
 from sonar.permissions import application_permissions
 import sonar.aggregations as aggr
@@ -89,9 +90,9 @@ class Application(aggr.Aggregation):
         o: Application = cls.CACHE.get(key, endpoint.local_url)
         if o:
             return o
-        api_def = api_mgr.get_api_def(cls.__name__, api_mgr.READ, endpoint.version())
-        api, _, params = api_mgr.prep_params(api_def, application=key)
-        ret = api_mgr.return_field(api_def)
+        api_def = Api(cls, op.READ, endpoint)
+        api, _, params = api_def.get_all(application=key)
+        ret = api_def.return_field()
         data = json.loads(endpoint.get(api, params=params).text)[ret]
         return cls.load(endpoint, data)
 
@@ -124,8 +125,8 @@ class Application(aggr.Aggregation):
         :return: The created Application object
         """
         check_supported(endpoint)
-        api_def = api_mgr.get_api_def(cls.__name__, api_mgr.CREATE, endpoint.version())
-        api, _, params = api_mgr.prep_params(api_def, key=key, name=name)
+        api_def = Api(cls, op.CREATE, endpoint)
+        api, _, params = api_def.get_all(key=key, name=name)
         endpoint.post(api, params=params)
         return Application(endpoint=endpoint, key=key, name=name)
 
@@ -149,9 +150,9 @@ class Application(aggr.Aggregation):
         """
         try:
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
-            api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.READ, self.endpoint.version())
-            api, _, params = api_mgr.prep_params(api_def, application=self.key)
-            self.reload(json.loads(self.endpoint.get(api, params=params).text)[api_mgr.return_field(api_def)])
+            api_def = Api(self, op.READ)
+            api, _, params = api_def.get_all(application=self.key)
+            self.reload(json.loads(self.endpoint.get(api, params=params).text)[api_def.return_field()])
             return self
         except exceptions.ObjectNotFound:
             self.__class__.CACHE.pop(self)
@@ -367,11 +368,11 @@ class Application(aggr.Aggregation):
         """Add projects to an application"""
         current_projects = self.projects().keys()
         ok = True
-        api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.ADD_PROJECT, self.endpoint.version())
+        api_def = Api(self, op.ADD_PROJECT)
         for proj in [p for p in project_list if p not in current_projects]:
             log.debug("Adding project '%s' to %s", proj, str(self))
             try:
-                api, _, params = api_mgr.prep_params(api_def, application=self.key, project=proj)
+                api, _, params = api_def.get_all(application=self.key, project=proj)
                 r = self.endpoint.post(api, params=params)
                 ok = ok and r.ok
             except (ConnectionError, RequestException) as e:
@@ -393,8 +394,8 @@ class Application(aggr.Aggregation):
     def recompute(self) -> bool:
         """Triggers application recomputation, return whether the operation succeeded"""
         log.debug("Recomputing %s", str(self))
-        api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.RECOMPUTE, self.endpoint.version())
-        api, _, params = api_mgr.prep_params(api_def, application=self.key)
+        api_def = Api(self, op.RECOMPUTE)
+        api, _, params = api_def.get_all(application=self.key)
         return self.post(api, params=params).ok
 
     def update(self, data: ObjectJsonRepr) -> None:
@@ -424,10 +425,10 @@ class Application(aggr.Aggregation):
         for branch_data in appl_branches:
             self.set_branches(branch_data["name"], branch_data.get("projects", []))
 
-    def api_params(self, op: Optional[str] = None) -> ApiParams:
+    def api_params(self, operation: Optional[str] = None) -> ApiParams:
         """Returns the base params to be used for the object API"""
-        ops = {api_mgr.READ: {"application": self.key}, api_mgr.RECOMPUTE: {"key": self.key}}
-        return ops[op] if op and op in ops else ops[api_mgr.READ]
+        ops = {op.READ: {"application": self.key}, op.RECOMPUTE: {"key": self.key}}
+        return ops[operation] if operation and operation in ops else ops[op.READ]
 
     def __get_project_branches(self, branch_definition: ObjectJsonRepr) -> list[Union[projects.Project, branches.Branch]]:
         project_branches = []
@@ -457,8 +458,8 @@ def count(endpoint: Platform) -> int:
     :return: Count of applications
     """
     check_supported(endpoint)
-    api_def = api_mgr.get_api_def(Application.__name__, api_mgr.LIST, endpoint.version())
-    api, _, params = api_mgr.prep_params(api_def, ps=1, filter="qualifier = APP")
+    api_def = Api(Application, op.LIST, endpoint)
+    api, _, params = api_def.get_all(ps=1, filter="qualifier = APP")
     return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=params).text))
 
 

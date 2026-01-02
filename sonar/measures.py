@@ -27,7 +27,7 @@ import json
 
 from sonar.sqobject import SqObject
 from sonar import metrics, exceptions
-import sonar.api.manager as api_mgr
+from sonar.api.manager import ApiManager as Api, ApiOperation as op
 from sonar.util.types import ApiPayload, ApiParams, KeyList
 from sonar.util import cache, constants as c
 import sonar.logging as log
@@ -81,10 +81,10 @@ class Measure(SqObject):
         :return: The new measure value
         :rtype: int or float or str
         """
-        params = {"metricKeys": self.metric} | util.replace_keys(ALT_COMPONENTS, "component", self.concerned_object.api_params(api_mgr.GET))
-        api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.READ, self.endpoint.version())
-        api, _, params = api_mgr.prep_params(api_def, **params)
-        data = json.loads(self.endpoint.get(api, params=params).text)[api_mgr.return_field(api_def)]["measures"]
+        params = {"metricKeys": self.metric} | util.replace_keys(ALT_COMPONENTS, "component", self.concerned_object.api_params(op.GET))
+        api_def = Api(self, op.READ)
+        api, _, params = api_def.get_all(**params)
+        data = json.loads(self.endpoint.get(api, params=params).text)[api_def.return_field()]["measures"]
         self.value = self.__converted_value(_search_value(data[0]))
         return self.value
 
@@ -92,8 +92,8 @@ class Measure(SqObject):
         """Returns the number of measures in history of the metric"""
         new_params = params or {}
         new_params |= {"component": self.concerned_object.key, "metrics": self.metric, "ps": 1}
-        api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.GET_HISTORY, self.endpoint.version())
-        api, _, new_params = api_mgr.prep_params(api_def, **new_params)
+        api_def = Api(self, op.GET_HISTORY)
+        api, _, new_params = api_def.get_all(**new_params)
         return sutil.nbr_total_elements(json.loads(self.endpoint.get(api, params=new_params).text))
 
     def search_history(self, params: Optional[ApiParams] = None) -> dict[str, Any]:
@@ -105,12 +105,12 @@ class Measure(SqObject):
         __MAX_PAGE_SIZE = 1000
         measures = {}
         page, nbr_pages = 1, 1
-        api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.GET_HISTORY, self.endpoint.version())
-        ret = api_mgr.return_field(api_def)
-        p_field = api_mgr.page_field(api_def)
+        api_def = Api(self, op.GET_HISTORY)
+        ret = api_def.return_field()
+        p_field = api_def.page_field()
         new_params = params or {}
         new_params |= {"component": self.concerned_object.key, "metrics": self.metric, "ps": __MAX_PAGE_SIZE}
-        api, _, new_params = api_mgr.prep_params(api_def, **new_params)
+        api, _, new_params = api_def.get_all(**new_params)
         while page <= nbr_pages:
             data = json.loads(self.endpoint.get(api, params=new_params | {p_field: page}).text)
             measures |= {m["date"]: m["value"] for m in data[ret][0]["history"]}
@@ -142,14 +142,12 @@ def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, 
     :rtype: dict{<metric>: <value>}
     """
     params = (
-        kwargs
-        | util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(api_mgr.GET))
-        | {"metricKeys": util.list_to_csv(metrics_list)}
+        kwargs | util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(op.GET)) | {"metricKeys": util.list_to_csv(metrics_list)}
     )
     log.debug("Getting measures with %s", params)
-    api_def = api_mgr.get_api_def("Measure", api_mgr.READ, concerned_object.endpoint.version())
-    api, _, params = api_mgr.prep_params(api_def, **params)
-    data = json.loads(concerned_object.endpoint.get(api, params=params).text)[api_mgr.return_field(api_def)]["measures"]
+    api_def = Api(Measure, op.READ, concerned_object.endpoint)
+    api, _, params = api_def.get_all(**params)
+    data = json.loads(concerned_object.endpoint.get(api, params=params).text)[api_def.return_field()]["measures"]
     m_dict = dict.fromkeys(metrics_list, None) | {m["metric"]: Measure.load(concerned_object=concerned_object, data=m) for m in data}
     log.debug("Returning measures %s", m_dict)
     return m_dict
@@ -169,14 +167,12 @@ def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> li
     # http://localhost:9999/api/measures/search_history?component=okorach_sonar-tools&metrics=ncloc&p=1&ps=1000
 
     params = (
-        kwargs
-        | util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(api_mgr.GET))
-        | {"metricKeys": util.list_to_csv(metrics_list)}
+        kwargs | util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(op.GET)) | {"metricKeys": util.list_to_csv(metrics_list)}
     )
     log.debug("Getting measures history with %s", str(params))
-    api_def = api_mgr.get_api_def("Measure", api_mgr.GET_HISTORY, concerned_object.endpoint.version())
-    api, _, params = api_mgr.prep_params(api_def, **params)
-    data = json.loads(concerned_object.endpoint.get(api, params=params).text)[api_mgr.return_field(api_def)]
+    api_def = Api(Measure, op.GET_HISTORY, concerned_object.endpoint)
+    api, _, params = api_def.get_all(**params)
+    data = json.loads(concerned_object.endpoint.get(api, params=params).text)[api_def.return_field()]
     res_list = []
     for m in reversed(data):
         res_list += [[dt["date"], m["metric"], dt["value"]] for dt in m["history"] if "value" in dt]

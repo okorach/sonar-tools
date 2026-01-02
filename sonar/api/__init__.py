@@ -19,6 +19,6 @@
 #
 """api module"""
 
-from sonar.api import manager
+from sonar.api.manager import ApiManager
 
-manager.load()
+ApiManager.load()

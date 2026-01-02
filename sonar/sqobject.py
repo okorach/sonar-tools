@@ -31,7 +31,7 @@ from http import HTTPStatus
 import concurrent.futures
 import requests
 
-import sonar.api.manager as api_mgr
+from sonar.api.manager import ApiManager as Api, ApiOperation as op
 import sonar.logging as log
 from sonar.util import cache
 from sonar.util import constants as c
@@ -69,7 +69,7 @@ class SqObject(object):
         return NotImplemented
 
     @classmethod
-    def api_for(cls, op: str, endpoint: Platform) -> str:
+    def api_for(cls, operation: op, endpoint: Platform) -> str:
         """Returns the API to use for a particular operation for a particular object class.
         This function must be overloaded for classes that need specific treatment. e.g. API V1 or V2
         depending on SonarQube version, different API for SonarQube Cloud
@@ -78,7 +78,7 @@ class SqObject(object):
         :param endpoint: The SQS or SQC to invoke the API
         :return: The API to use for the operation, or None if not defined
         """
-        return cls.API[op] if op in cls.API else cls.API[api_mgr.SEARCH]
+        return cls.API[operation] if operation in cls.API else cls.API[op.SEARCH]
 
     @classmethod
     def clear_cache(cls, endpoint: Optional[Platform] = None) -> None:
@@ -132,7 +132,7 @@ class SqObject(object):
     @classmethod
     def search_objects(cls, endpoint: Platform, params: ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
         """Runs a multi-threaded object search for searchable Sonar Objects"""
-        api = cls.api_for(api_mgr.SEARCH, endpoint)
+        api = cls.api_for(op.SEARCH, endpoint)
         returned_field = cls.SEARCH_RETURN_FIELD
         new_params: dict[str, Any] = (params or {}).copy()
         p_field = "pageIndex" if api_version == 2 else "p"
@@ -167,12 +167,12 @@ class SqObject(object):
     def get_paginated(cls, endpoint: Platform, params: Optional[ApiParams] = None, threads: int = 8) -> dict[str, SqObject]:
         """Returns all pages of a paginated API"""
         cname = cls.__name__.lower()
-        api_def = api_mgr.get_api_def(cls.__name__, api_mgr.LIST, endpoint.version())
-        page_field = api_mgr.page_field(api_def)
-        max_ps = api_mgr.max_page_size(api_def)
+        api_def = Api(cls, op.LIST, endpoint)
+        page_field = api_def.page_field()
+        max_ps = api_def.max_page_size()
         new_params = {"ps": max_ps, "pageSize": max_ps} | (params or {})
-        api, _, new_params = api_mgr.prep_params(api_def, **new_params)
-        returned_field = api_mgr.return_field(api_def)
+        api, _, new_params = api_def.get_all(**new_params)
+        returned_field = api_def.return_field()
 
         objects_list: dict[str, cls] = {}
         data = json.loads(endpoint.get(api, new_params).text)
@@ -276,8 +276,8 @@ class SqObject(object):
         """Deletes an object, returns whether the operation succeeded"""
         log.info("Deleting %s", str(self))
         try:
-            api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.DELETE, self.endpoint.version())
-            api, method, params = api_mgr.prep_params(api_def, **kwargs)
+            api_def = Api(self, op.DELETE)
+            api, method, params = api_def.get_all(**kwargs)
             if method == "DELETE":
                 ok = self.endpoint.delete(api=api, params=params).ok
             else:
@@ -294,7 +294,7 @@ class SqObject(object):
         """Deletes an object, returns whether the operation succeeded"""
         log.info("Deleting %s (old method)", str(self))
         try:
-            ok = self.post(api=self.__class__.API[api_mgr.DELETE], params=self.api_params(api_mgr.DELETE)).ok
+            ok = self.post(api=self.__class__.API[op.DELETE], params=self.api_params(op.DELETE)).ok
             if ok:
                 log.info("Removing from %s cache", str(self.__class__.__name__))
                 self.__class__.CACHE.pop(self)
@@ -310,8 +310,8 @@ class SqObject(object):
         if tags is None:
             return False
         log.info("Settings tags %s to %s", tags, str(self))
-        api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.SET_TAGS, self.endpoint.version())
-        api, _, params = api_mgr.prep_params(api_def, project=self.key, issue=self.key, application=self.key, tags=util.list_to_csv(tags))
+        api_def = Api(self, op.SET_TAGS)
+        api, _, params = api_def.get_all(project=self.key, issue=self.key, application=self.key, tags=util.list_to_csv(tags))
         try:
             if ok := self.post(api, params=params).ok:
                 self._tags = sorted(tags)
@@ -325,9 +325,9 @@ class SqObject(object):
     def get_tags(self, **kwargs: Any) -> list[str]:
         """Returns object tags"""
         try:
-            api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.GET_TAGS, self.endpoint.version())
-            api, _, params = api_mgr.prep_params(api_def, component=self.key)
-            ret = api_mgr.return_field(api_def)
+            api_def = Api(self, op.GET_TAGS)
+            api, _, params = api_def.get_all(component=self.key)
+            ret = api_def.return_field()
         except ValueError as e:
             raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags") from e
         if self._tags is None:

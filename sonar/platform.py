@@ -46,7 +46,7 @@ import sonar.audit.severities as sev
 import sonar.audit.types as typ
 from sonar.audit.problem import Problem
 from sonar import webhooks
-import sonar.api.manager as api_mgr
+from sonar.api.manager import ApiOperation as op
 
 if TYPE_CHECKING:
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
@@ -636,7 +636,7 @@ class Platform(object):
         """Audits whether project default visibility is public"""
         log.info("Auditing project default visibility")
         problems = []
-        resp = self.get(settings.Setting.API[api_mgr.READ], params={"keys": "projects.default.visibility"})
+        resp = self.get(settings.Setting.API[op.READ], params={"keys": "projects.default.visibility"})
         visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)
         if audit_settings.get("audit.globalSettings.defaultProjectVisibility", "private") != visi:
