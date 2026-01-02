@@ -40,6 +40,7 @@ from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
 from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.util.types import ApiPayload, ApiParams, ConfigSettings
@@ -53,7 +54,6 @@ class PullRequest(components.Component):
     """
 
     CACHE = cache.Cache()
-    API = {op.DELETE: "project_pull_requests/delete", op.LIST: "project_pull_requests/list"}
 
     def __init__(self, project: object, key: str, data: Optional[ApiPayload] = None) -> None:
         """Constructor"""
@@ -112,8 +112,15 @@ class PullRequest(components.Component):
 
     def api_params(self, operation: Optional[op] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {op.READ: {"project": self.concerned_object.key, "pullRequest": self.key}}
+        ops = {
+            op.READ: {"project": self.concerned_object.key, "pullRequest": self.key},
+            op.DELETE: {"project": self.concerned_object.key, "pullRequest": self.key},
+        }
         return ops[operation] if operation and operation in ops else ops[op.READ]
+
+    def delete(self) -> bool:
+        """Deletes a pull request"""
+        return super().delete_object(project=self.concerned_object.key, pullRequest=self.key)
 
     def get_findings(self, filters: Optional[ApiParams] = None) -> dict[str, object]:
         """Returns a PR list of findings
@@ -149,8 +156,9 @@ def get_list(project: object) -> dict[str, PullRequest]:
         log.debug(_UNSUPPORTED_IN_CE)
         raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 
-    data = json.loads(project.get(PullRequest.API[op.LIST], params={"project": project.key}).text)
+    api, _, params, ret = Api(PullRequest, op.LIST, project.endpoint).get_all(project=project.key)
+    data = json.loads(project.get(api, params=params).text)
     pr_list = {}
-    for pr in data["pullRequests"]:
+    for pr in data[ret]:
         pr_list[pr["key"]] = get_object(pr["key"], project, pr)
     return pr_list

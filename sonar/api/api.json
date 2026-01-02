@@ -1018,5 +1018,25 @@
                 "max_page_size": 500
             }
         }
+    },
+    "PullRequest": {
+        "5.2.0": {
+            "LIST": {
+                "method": "GET",
+                "api": "api/project_pull_requests/list",
+                "params": [
+                    "project"
+                ],
+                "return_field": "pullRequests"
+            },
+            "DELETE": {
+                "method": "POST",
+                "api": "api/project_pull_requests/delete",
+                "params": [
+                    "project",
+                    "pullRequest"
+                ]
+            }
+        }
     }
 }
