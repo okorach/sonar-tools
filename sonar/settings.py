@@ -32,6 +32,7 @@ from sonar.util import cache, constants as c
 from sonar import sqobject, exceptions
 import sonar.util.misc as util
 from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -129,16 +130,6 @@ class Setting(sqobject.SqObject):
     """Abstraction of the Sonar setting concept"""
 
     CACHE = cache.Cache()
-    API = {
-        op.CREATE: "settings/set",
-        op.READ: "settings/values",
-        op.UPDATE: "settings/set",
-        op.LIST: "settings/values",
-        "LIST_DEFS": "settings/list_definitions",
-        "NEW_CODE_GET": "new_code_periods/show",
-        "NEW_CODE_SET": "new_code_periods/set",
-        "MQR_MODE": "v2/clean-code-policy/mode",
-    }
 
     def __init__(self, endpoint: Platform, key: str, component: Optional[object] = None, data: Optional[ApiPayload] = None) -> None:
         """Constructor"""
@@ -167,7 +158,8 @@ class Setting(sqobject.SqObject):
     def create(cls, key: str, endpoint: Platform, value: Any = None, component: Optional[object] = None) -> Union[Setting, None]:
         """Creates a setting with a custom value"""
         log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
-        r = endpoint.post(Setting.API[op.CREATE], params={"key": key, "component": component})
+        api, _, params, _ = Api(Setting, op.CREATE, endpoint).get_all(key=key, component=component)
+        r = endpoint.post(api, params=params)
         if not r.ok:
             return None
         o = cls.read(key=key, endpoint=endpoint, component=component)
@@ -266,7 +258,8 @@ class Setting(sqobject.SqObject):
         if value is None or value == "" or (self.key == "sonar.autodetect.ai.code" and value is True and self.endpoint.version() < (2025, 2, 0)):
             return self.reset()
         if self.key == MQR_ENABLED:
-            if ok := self.patch(Setting.API["MQR_MODE"], params={"mode": "STANDARD_EXPERIENCE" if not value else "MQR"}).ok:
+            api, _, params, _ = Api(self, op.SET_MQR_MODE).get_all(mode="STANDARD_EXPERIENCE" if not value else "MQR")
+            if ok := self.patch(api, params=params).ok:
                 self.value = value
             return ok
         if self.key in (COMPONENT_VISIBILITY, PROJECT_DEFAULT_VISIBILITY):
@@ -286,7 +279,8 @@ class Setting(sqobject.SqObject):
         log.debug("Setting %s to value '%s'", str(self), str(value))
         params = {"key": self.key, "component": self.component.key if self.component else None} | encode(self, value)
         try:
-            if ok := self.post(Setting.API[op.CREATE], params=params).ok:
+            api, _, api_params, _ = Api(self, op.CREATE).get_all(**params)
+            if ok := self.post(api, params=api_params).ok:
                 self.value = value
         except exceptions.SonarException:
             return False
@@ -297,7 +291,8 @@ class Setting(sqobject.SqObject):
         log.info("Resetting %s", str(self))
         params = {"keys": self.key} | {} if not self.component else {"component": self.component.key}
         try:
-            ok = self.post("settings/reset", params=params).ok
+            api, _, api_params, _ = Api(self, op.RESET).get_all(**params)
+            ok = self.post(api, params=api_params).ok
             self.refresh()
         except exceptions.SonarException:
             return False
@@ -444,7 +439,8 @@ def get_bulk(
     if settings_list is not None:
         params["keys"] = util.list_to_csv(settings_list)
 
-    data = json.loads(endpoint.get(Setting.API[op.LIST], params=params, with_organization=(component is None)).text)
+    api, _, api_params, _ = Api(Setting, op.LIST, endpoint).get_all(**params)
+    data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)
     settings_dict |= __get_settings(endpoint, data, component)
 
     # Hack since projects.default.visibility is not returned by settings/list_definitions
@@ -494,10 +490,13 @@ def set_new_code_period(endpoint: Platform, nc_type: str, nc_value: str, project
     """Sets the new code period at global level or for a project"""
     log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
     if endpoint.is_sonarcloud():
-        ok = endpoint.post(Setting.API[op.CREATE], params={"key": "sonar.leak.period.type", "value": nc_type, "project": project_key}).ok
-        ok = ok and endpoint.post(Setting.API[op.CREATE], params={"key": "sonar.leak.period", "value": nc_value, "project": project_key}).ok
+        api, _, params1, _ = Api(Setting, op.CREATE, endpoint).get_all(key="sonar.leak.period.type", value=nc_type, project=project_key)
+        ok = endpoint.post(api, params=params1).ok
+        api, _, params2, _ = Api(Setting, op.CREATE, endpoint).get_all(key="sonar.leak.period", value=nc_value, project=project_key)
+        ok = ok and endpoint.post(api, params=params2).ok
     else:
-        ok = endpoint.post(Setting.API["NEW_CODE_SET"], params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch}).ok
+        api, _, params, _ = Api(Setting, op.SET_NEW_CODE_PERIOD, endpoint).get_all(type=nc_type, value=nc_value, project=project_key, branch=branch)
+        ok = endpoint.post(api, params=params).ok
     return ok
 
 
@@ -513,7 +512,8 @@ def get_visibility(endpoint: Platform, component: object) -> Setting:
     else:
         if endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Project default visibility does not exist in SonarQube Cloud")
-        data = json.loads(endpoint.get(Setting.API[op.READ], params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
+        api, _, params, _ = Api(Setting, op.READ, endpoint).get_all(keys=PROJECT_DEFAULT_VISIBILITY)
+        data = json.loads(endpoint.get(api, params=params).text)
         return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 
 
@@ -595,15 +595,18 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[object])
     """
     if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
         params = get_component_params(component, name="project")
-        data = json.loads(endpoint.get(Setting.API["NEW_CODE_GET"], params=params).text)
+        api, _, api_params, _ = Api(Setting, op.GET_NEW_CODE_PERIOD, endpoint).get_all(**params)
+        data = json.loads(endpoint.get(api, params=api_params).text)
     elif key == MQR_ENABLED:
-        data = json.loads(endpoint.get(Setting.API["MQR_MODE"]).text)
+        api, _, params, _ = Api(Setting, op.GET_MQR_MODE, endpoint).get_all()
+        data = json.loads(endpoint.get(api, params=params).text)
     else:
         if key == NEW_CODE_PERIOD:
             key = "sonar.leak.period.type"
         params = get_component_params(component)
         params.update({"keys": key})
-        data = json.loads(endpoint.get(Setting.API[op.READ], params=params, with_organization=(component is None)).text)["settings"]
+        api, _, api_params, _ = Api(Setting, op.READ, endpoint).get_all(**params)
+        data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)["settings"]
         if not endpoint.is_sonarcloud() and len(data) > 0:
             data = data[0]
         else:

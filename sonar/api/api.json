@@ -1222,5 +1222,93 @@
                 "max_page_size": 500
             }
         }
+    },
+    "Setting": {
+        "5.2.0": {
+            "CREATE": {
+                "method": "POST",
+                "api": "api/settings/set",
+                "params": [
+                    "key",
+                    "value",
+                    "values",
+                    "fieldValues",
+                    "component",
+                    "project"
+                ]
+            },
+            "READ": {
+                "method": "GET",
+                "api": "api/settings/values",
+                "params": [
+                    "keys",
+                    "component",
+                    "branch"
+                ]
+            },
+            "UPDATE": {
+                "method": "POST",
+                "api": "api/settings/set",
+                "params": [
+                    "key",
+                    "value",
+                    "values",
+                    "fieldValues",
+                    "component",
+                    "project"
+                ]
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "api/settings/values",
+                "params": [
+                    "keys",
+                    "component",
+                    "branch"
+                ]
+            },
+            "LIST_DEFINITIONS": {
+                "method": "GET",
+                "api": "api/settings/list_definitions",
+                "return_field": "definitions"
+            },
+            "GET_NEW_CODE_PERIOD": {
+                "method": "GET",
+                "api": "api/new_code_periods/show",
+                "params": [
+                    "project",
+                    "branch"
+                ]
+            },
+            "SET_NEW_CODE_PERIOD": {
+                "method": "POST",
+                "api": "api/new_code_periods/set",
+                "params": [
+                    "type",
+                    "value",
+                    "project",
+                    "branch"
+                ]
+            },
+            "GET_MQR_MODE": {
+                "method": "GET",
+                "api": "api/v2/clean-code-policy/mode"
+            },
+            "SET_MQR_MODE": {
+                "method": "PATCH",
+                "api": "api/v2/clean-code-policy/mode",
+                "params": [
+                    "mode"
+                ]
+            },
+            "RESET": {
+                "method": "POST",
+                "api": "api/settings/reset",
+                "params": [
+                    "keys",
+                    "component"
+                ]
+            }
+        }
     }
 }

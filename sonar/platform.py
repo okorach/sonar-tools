@@ -47,6 +47,7 @@ import sonar.audit.types as typ
 from sonar.audit.problem import Problem
 from sonar import webhooks
 from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
@@ -339,7 +340,9 @@ class Platform(object):
         """Returns the platform global settings definitions"""
         if not self._global_settings_definitions:
             try:
-                self._global_settings_definitions = {s["key"]: s for s in json.loads(self.get("settings/list_definitions").text)["definitions"]}
+                api, _, params, ret = Api(settings.Setting, op.LIST_DEFINITIONS, endpoint=self).get_all()
+                data = json.loads(self.get(api, params=params).text)
+                self._global_settings_definitions = {s["key"]: s for s in data[ret]}
             except (ConnectionError, RequestException):
                 return {}
         return self._global_settings_definitions
