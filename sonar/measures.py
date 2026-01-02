@@ -82,9 +82,8 @@ class Measure(SqObject):
         :rtype: int or float or str
         """
         params = {"metricKeys": self.metric} | util.replace_keys(ALT_COMPONENTS, "component", self.concerned_object.api_params(op.GET))
-        api_def = Api(self, op.READ)
-        api, _, params = api_def.get_all(**params)
-        data = json.loads(self.endpoint.get(api, params=params).text)[api_def.return_field()]["measures"]
+        api, _, params, ret = Api(self, op.READ).get_all(**params)
+        data = json.loads(self.endpoint.get(api, params=params).text)[ret]["measures"]
         self.value = self.__converted_value(_search_value(data[0]))
         return self.value
 
@@ -92,8 +91,7 @@ class Measure(SqObject):
         """Returns the number of measures in history of the metric"""
         new_params = params or {}
         new_params |= {"component": self.concerned_object.key, "metrics": self.metric, "ps": 1}
-        api_def = Api(self, op.GET_HISTORY)
-        api, _, new_params = api_def.get_all(**new_params)
+        api, _, new_params, _ = Api(self, op.GET_HISTORY).get_all(**new_params)
         return sutil.nbr_total_elements(json.loads(self.endpoint.get(api, params=new_params).text))
 
     def search_history(self, params: Optional[ApiParams] = None) -> dict[str, Any]:
@@ -106,11 +104,10 @@ class Measure(SqObject):
         measures = {}
         page, nbr_pages = 1, 1
         api_def = Api(self, op.GET_HISTORY)
-        ret = api_def.return_field()
         p_field = api_def.page_field()
         new_params = params or {}
         new_params |= {"component": self.concerned_object.key, "metrics": self.metric, "ps": __MAX_PAGE_SIZE}
-        api, _, new_params = api_def.get_all(**new_params)
+        api, _, new_params, ret = api_def.get_all(**new_params)
         while page <= nbr_pages:
             data = json.loads(self.endpoint.get(api, params=new_params | {p_field: page}).text)
             measures |= {m["date"]: m["value"] for m in data[ret][0]["history"]}
@@ -145,9 +142,8 @@ def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, 
         kwargs | util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(op.GET)) | {"metricKeys": util.list_to_csv(metrics_list)}
     )
     log.debug("Getting measures with %s", params)
-    api_def = Api(Measure, op.READ, concerned_object.endpoint)
-    api, _, params = api_def.get_all(**params)
-    data = json.loads(concerned_object.endpoint.get(api, params=params).text)[api_def.return_field()]["measures"]
+    api, _, params, ret = Api(Measure, op.READ, concerned_object.endpoint).get_all(**params)
+    data = json.loads(concerned_object.endpoint.get(api, params=params).text)[ret]["measures"]
     m_dict = dict.fromkeys(metrics_list, None) | {m["metric"]: Measure.load(concerned_object=concerned_object, data=m) for m in data}
     log.debug("Returning measures %s", m_dict)
     return m_dict
@@ -170,9 +166,8 @@ def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> li
         kwargs | util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(op.GET)) | {"metricKeys": util.list_to_csv(metrics_list)}
     )
     log.debug("Getting measures history with %s", str(params))
-    api_def = Api(Measure, op.GET_HISTORY, concerned_object.endpoint)
-    api, _, params = api_def.get_all(**params)
-    data = json.loads(concerned_object.endpoint.get(api, params=params).text)[api_def.return_field()]
+    api, _, params, ret = Api(Measure, op.GET_HISTORY, concerned_object.endpoint).get_all(**params)
+    data = json.loads(concerned_object.endpoint.get(api, params=params).text)[ret]
     res_list = []
     for m in reversed(data):
         res_list += [[dt["date"], m["metric"], dt["value"]] for dt in m["history"] if "value" in dt]

@@ -38,6 +38,7 @@ if TYPE_CHECKING:
 
 class ApiOperation(Enum):
     """List of possible API operations"""
+
     CREATE = "CREATE"
     READ = "READ"
     UPDATE = "UPDATE"
@@ -58,6 +59,11 @@ class ApiOperation(Enum):
     ASSIGN = "ASSIGN"
     SET_TAGS = "SET_TAGS"
     GET_TAGS = "GET_TAGS"
+    GET_CHANGELOG = "GET_CHANGELOG"
+    ADD_COMMENT = "ADD_COMMENT"
+    SET_SEVERITY = "SET_SEVERITY"
+    SET_TYPE = "SET_TYPE"
+    DO_TRANSITION = "DO_TRANSITION"
 
 
 class ApiManager:
@@ -87,30 +93,35 @@ class ApiManager:
         self.api_def = data[op.value]
 
     def api(self, **kwargs: Any) -> str:
+        """Returns the API string for the API call"""
         return self.api_def["api"].format(**kwargs)
 
     def method(self) -> str:
+        """Returns the method for the API call"""
         return self.api_def["method"]
 
-    def return_field(self) -> str:
-        if ApiManager.__RETURN_FIELD_KEY not in self.api_def:
-            raise ValueError(f"Return field not found in API definition for {self.api()}")
-        return self.api_def[ApiManager.__RETURN_FIELD_KEY]
+    def return_field(self) -> Optional[str]:
+        """Returns the return field for the API call"""
+        return self.api_def.get(ApiManager.__RETURN_FIELD_KEY)
 
     def max_page_size(self) -> int:
+        """Returns the maximum page size for the API call"""
         return self.api_def.get(ApiManager.__MAX_PAGE_SIZE_KEY, ApiManager.__DEFAULT_MAX_PAGE_SIZE)
 
     def page_field(self) -> str:
+        """Returns the page field for the API call"""
         return self.api_def.get(ApiManager.__PAGE_FIELD_KEY, "p")
 
     def params(self, **kwargs: Any) -> dict[str, Any]:
+        """Returns the parameters for the API call"""
         params = self.api_def.get("params", {})
         if isinstance(params, list):
             params = {p: "{" + p + "}" for p in self.api_def.get("params", [])}
         return {k: v.format_map(defaultdict(str, **kwargs)) for k, v in params.items() if kwargs.get(k) is not None}
 
-    def get_all(self, **kwargs: Any) -> tuple[str, str, dict[str, Any]]:
-        return self.api(**kwargs), self.method(), self.params(**kwargs)
+    def get_all(self, **kwargs: Any) -> tuple[str, str, dict[str, Any], Optional[str]]:
+        """Returns the API call, method, parameters and return field"""
+        return self.api(**kwargs), self.method(), self.params(**kwargs), self.return_field()
 
     @classmethod
     def load(cls) -> dict[str, Any]:
