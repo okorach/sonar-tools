@@ -1003,5 +1003,20 @@
                 ]
             }
         }
+    },
+    "Organization": {
+        "5.2.0": {
+            "LIST": {
+                "method": "GET",
+                "api": "api/organizations/search",
+                "params": [
+                    "member",
+                    "organizations"
+                ],
+                "return_field": "organizations",
+                "page_field": "p",
+                "max_page_size": 500
+            }
+        }
     }
 }
