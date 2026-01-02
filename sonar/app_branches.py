@@ -50,12 +50,6 @@ class ApplicationBranch(Component):
     """
 
     CACHE = cache.Cache()
-    API = {
-        api_mgr.CREATE: "applications/create_branch",
-        api_mgr.GET: "applications/show",
-        api_mgr.UPDATE: "applications/update_branch",
-        api_mgr.DELETE: "applications/delete_branch",
-    }
 
     def __init__(
         self,
@@ -117,9 +111,10 @@ class ApplicationBranch(Component):
         for branch in custom_branches:
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
+        api, _, _ = api_mgr.get_api_def(cls.__name__, api_mgr.CREATE, app.endpoint.version())
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
-        app.endpoint.post(ApplicationBranch.API[api_mgr.CREATE], params=string_params)
-        return ApplicationBranch(app=app, name=name, project_branches=projects_or_branches)
+        app.endpoint.post(api, params=string_params)
+        return cls(app=app, name=name, project_branches=projects_or_branches)
 
     @classmethod
     def load(cls, app: object, branch_data: ApiPayload) -> ApplicationBranch:
@@ -127,7 +122,7 @@ class ApplicationBranch(Component):
         for proj_data in branch_data["projects"]:
             proj = Project.get_object(app.endpoint, proj_data["key"])
             project_branches.append(Branch.get_object(concerned_object=proj, branch_name=proj_data["branch"]))
-        return ApplicationBranch(
+        return cls(
             app=app, name=branch_data["branch"], project_branches=project_branches, is_main=branch_data.get("isMain", False), branch_data=branch_data
         )
 
@@ -202,8 +197,10 @@ class ApplicationBranch(Component):
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
+        api_def = api_mgr.get_api_def(ApplicationBranch.__name__, api_mgr.UPDATE, self.endpoint.version())
+        api, _, _ = api_mgr.prep_params(api_def, application=self.concerned_object.key, branch=self.name)
         try:
-            ok = self.post(ApplicationBranch.API[api_mgr.UPDATE], params=string_params).ok
+            ok = self.post(api, params=string_params).ok
         except exceptions.ObjectNotFound:
             ApplicationBranch.CACHE.pop(self)
             raise
@@ -273,10 +270,11 @@ def list_from(app: object, data: ApiPayload) -> dict[str, ApplicationBranch]:
     if not data or "branches" not in data:
         return {}
     branch_list = {}
+    api_def = api_mgr.get_api_def(ApplicationBranch.__name__, api_mgr.LIST, app.endpoint.version())
     for br in data["branches"]:
-        branch_data = json.loads(app.get(ApplicationBranch.API[api_mgr.GET], params={"application": app.key, "branch": br["name"]}).text)[
-            "application"
-        ]
+        api, _, params = api_mgr.prep_params(api_def, application=app.key, branch=br["name"])
+        ret = api_mgr.return_field(api_def)
+        branch_data = json.loads(app.endpoint.get(api, params=params).text)[ret]
         branch_list[branch_data["branch"]] = ApplicationBranch.load(app, branch_data)
-    log.debug("Returning Application branch list %s", str(list(branch_list.keys())))
+    log.debug("Returning Application branch list %s", list(branch_list.keys()))
     return branch_list

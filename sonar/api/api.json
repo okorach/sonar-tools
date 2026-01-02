@@ -1,18 +1,18 @@
 {
     "Project": {
-        "create": "projects/create",
-        "get": "projects/show",
-        "update": "projects/update",
-        "delete": "projects/delete",
-        "list": "projects/search",
+        "CREATE": "projects/create",
+        "READ": "projects/show",
+        "UPDATE": "projects/update",
+        "DELETE": "projects/delete",
+        "LIST": "projects/search",
         "search": "projects/search"
     },
     "Portfolio": {
-        "create": "portfolios/create",
-        "get": "portfolios/show",
-        "update": "portfolios/update",
-        "delete": "portfolios/delete",
-        "list": "portfolios/search",
+        "CREATE": "portfolios/create",
+        "READ": "portfolios/show",
+        "UPDATE": "portfolios/update",
+        "DELETE": "portfolios/delete",
+        "LIST": "portfolios/search",
         "search": "portfolios/search"
     },
     "Application": {
@@ -63,12 +63,43 @@
             }
         }
     },
+    "ApplicationBranch": {
+        "7.3.0": {
+            "CREATE": {
+                "method": "POST",
+                "api": "api/applications/create_branch",
+                "params": ["application", "branch", "project", "projectBranch"]
+            },
+            "READ": {
+                "method": "GET",
+                "api": "api/applications/show",
+                "params": ["application", "branch"],
+                "return_field": "application"
+            },
+            "UPDATE": {
+                "method": "POST",
+                "api": "api/applications/update_branch",
+                "params": ["application", "branch", "project", "projectBranch"]
+            },
+            "DELETE": {
+                "method": "POST",
+                "api": "api/applications/delete_branch",
+                "params": ["application", "branch"]
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "api/applications/show",
+                "params": ["application", "branch"],
+                "return_field": "application"
+            }
+        }
+    },
     "Component": {
-        "create": "components/create",
-        "get": "components/show",
-        "update": "components/update",
-        "delete": "components/delete",
-        "list": "components/search",
+        "CREATE": "components/create",
+        "READ": "components/show",
+        "UPDATE": "components/update",
+        "DELETE": "components/delete",
+        "LIST": "components/search",
         "search": "components/search"
     },
     "User": {
@@ -361,20 +392,18 @@
         }
     },
     "QualityGate": {
-        "create": "qualitygates/create",
-        "get": "qualitygates/show",
-        "update": "qualitygates/update",
-        "delete": "qualitygates/delete",
-        "list": "qualitygates/search",
-        "search": "qualitygates/search"
+        "CREATE": "qualitygates/create",
+        "READ": "qualitygates/show",
+        "UPDATE": "qualitygates/update",
+        "DELETE": "qualitygates/delete",
+        "LIST": "qualitygates/search"
     },
     "QualityProfile": {
-        "create": "qualityprofiles/create",
-        "get": "qualityprofiles/show",
-        "update": "qualityprofiles/update",
-        "delete": "qualityprofiles/delete",
-        "list": "qualityprofiles/search",
-        "search": "qualityprofiles/search"
+        "CREATE": "qualityprofiles/create",
+        "READ": "qualityprofiles/show",
+        "UPDATE": "qualityprofiles/update",
+        "DELETE": "qualityprofiles/delete",
+        "LIST": "qualityprofiles/search"
     }
 
 }
