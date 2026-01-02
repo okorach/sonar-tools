@@ -789,13 +789,6 @@
             }
         }
     },
-    "QualityProfile": {
-        "CREATE": "qualityprofiles/create",
-        "READ": "qualityprofiles/show",
-        "UPDATE": "qualityprofiles/update",
-        "DELETE": "qualityprofiles/delete",
-        "LIST": "qualityprofiles/search"
-    },
     "DevopsPlatform": {
         "5.2.0": {
             "LIST": {
@@ -1075,6 +1068,34 @@
                 "params": [
                     "key"
                 ]
+            }
+        }
+    },
+    "UserToken": {
+        "5.2.0": {
+            "CREATE": {
+                "method": "POST",
+                "api": "api/user_tokens/generate",
+                "params": [
+                    "name",
+                    "login"
+                ]
+            },
+            "DELETE": {
+                "method": "POST",
+                "api": "api/user_tokens/revoke",
+                "params": [
+                    "name",
+                    "login"
+                ]
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "api/user_tokens/search",
+                "params": [
+                    "login"
+                ],
+                "return_field": "userTokens"
             }
         }
     },
