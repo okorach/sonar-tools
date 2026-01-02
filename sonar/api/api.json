@@ -1201,5 +1201,33 @@
                 "max_page_size": 500
             }
         }
+    },
+    "UserToken": {
+        "5.2.0": {
+            "CREATE": {
+                "method": "POST",
+                "api": "api/user_tokens/generate",
+                "params": [
+                    "name",
+                    "login"
+                ]
+            },
+            "DELETE": {
+                "method": "POST",
+                "api": "api/user_tokens/revoke",
+                "params": [
+                    "name",
+                    "login"
+                ]
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "api/user_tokens/search",
+                "params": [
+                    "login"
+                ],
+                "return_field": "userTokens"
+            }
+        }
     }
 }
