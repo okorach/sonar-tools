@@ -32,7 +32,6 @@ from http import HTTPStatus
 from threading import Lock
 
 import sonar.logging as log
-import sonar.platform as pf
 from sonar.util import cache
 import sonar.util.constants as c
 
@@ -40,7 +39,6 @@ from sonar import aggregations, exceptions, applications, app_branches
 from sonar.projects import Project
 
 import sonar.permissions.portfolio_permissions as pperms
-import sonar.sqobject as sq
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.audit import rules, problem
