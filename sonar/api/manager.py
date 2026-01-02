@@ -33,11 +33,11 @@ from sonar.util import misc
 import sonar.logging as log
 
 if TYPE_CHECKING:
-    from sonar.sqobject import SqObject
     from sonar.platform import Platform
 
 
 class ApiOperation(Enum):
+    """List of possible API operations"""
     CREATE = "CREATE"
     READ = "READ"
     UPDATE = "UPDATE"
