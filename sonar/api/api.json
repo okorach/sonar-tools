@@ -167,6 +167,139 @@
         "LIST": "components/search",
         "search": "components/search"
     },
+    "Issue": {
+        "5.2.0": {
+            "SEARCH": {
+                "method": "GET",
+                "api": "api/issues/search",
+                "params": [
+                    "additionalFields",
+                    "asc",
+                    "assigned",
+                    "assignees",
+                    "author",
+                    "branch",
+                    "componentKeys",
+                    "components",
+                    "createdAfter",
+                    "createdAt",
+                    "createdBefore",
+                    "createdInLast",
+                    "cwe",
+                    "directories",
+                    "facets",
+                    "files",
+                    "impactSeverities",
+                    "impactSoftwareQualities",
+                    "inNewCodePeriod",
+                    "issues",
+                    "languages",
+                    "onComponentOnly",
+                    "owaspTop10",
+                    "owaspTop10-21",
+                    "p",
+                    "page",
+                    "project",
+                    "ps",
+                    "pullRequest",
+                    "resolutions",
+                    "resolved",
+                    "rules",
+                    "s",
+                    "sansTop25",
+                    "scopes",
+                    "severities",
+                    "sinceLeakPeriod",
+                    "sonarsourceSecurity",
+                    "statuses",
+                    "issueStatuses",
+                    "tags",
+                    "timeZone",
+                    "types"
+                ],
+                "return_field": "issues",
+                "page_field": "p",
+                "max_page_size": 500
+            },
+            "READ": {
+                "method": "GET",
+                "api": "api/issues/search",
+                "params": [
+                    "issues",
+                    "additionalFields"
+                ],
+                "return_field": "issues"
+            },
+            "GET_CHANGELOG": {
+                "method": "GET",
+                "api": "api/issues/changelog",
+                "params": [
+                    "issue",
+                    "format"
+                ],
+                "return_field": "changelog"
+            },
+            "ADD_COMMENT": {
+                "method": "POST",
+                "api": "api/issues/add_comment",
+                "params": [
+                    "issue",
+                    "text"
+                ]
+            },
+            "SET_SEVERITY": {
+                "method": "POST",
+                "api": "api/issues/set_severity",
+                "params": [
+                    "issue",
+                    "severity",
+                    "impact"
+                ]
+            },
+            "SET_TYPE": {
+                "method": "POST",
+                "api": "api/issues/set_type",
+                "params": [
+                    "issue",
+                    "type"
+                ]
+            },
+            "SET_TAGS": {
+                "method": "POST",
+                "api": "api/issues/set_tags",
+                "params": [
+                    "issue",
+                    "tags"
+                ]
+            },
+            "GET_TAGS": {
+                "method": "GET",
+                "api": "api/issues/search",
+                "params": [
+                    "issues",
+                    "additionalFields"
+                ],
+                "return_field": "issues"
+            },
+            "ASSIGN": {
+                "method": "POST",
+                "api": "api/issues/assign",
+                "params": [
+                    "issue",
+                    "assignee",
+                    "comment"
+                ]
+            },
+            "DO_TRANSITION": {
+                "method": "POST",
+                "api": "api/issues/do_transition",
+                "params": [
+                    "issue",
+                    "transition"
+                ]
+            }
+        }
+    },
     "User": {
         "10.4.0": {
             "CREATE": {
