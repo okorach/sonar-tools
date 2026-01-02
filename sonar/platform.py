@@ -320,7 +320,7 @@ class Platform(object):
         """Returns all pages of a paginated API"""
         params = {"ps": 500} | kwargs
         data = json.loads(self.get(api, params=params | {"p": 1}).text)
-        if (nb_pages := sutil.nbr_pages(data, api_version=1)) == 1:
+        if (nb_pages := sutil.nbr_pages(data)) == 1:
             return data
         for page in range(2, nb_pages + 1):
             data[return_field].update(json.loads(self.get(api, params=params | {"p": page}).text)[return_field])

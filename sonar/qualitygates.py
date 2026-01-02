@@ -523,34 +523,34 @@ _PERCENTAGE_METRICS = ("density", "ratio", "percent", "security_hotspots_reviewe
 
 def _encode_condition(cond: dict[str, str]) -> str:
     """Encode one dict conditions in a string"""
-    metric, op, val = cond["metric"], cond["op"], cond["error"]
-    if op == "GT":
-        op = ">="
-    elif op == "LT":
-        op = "<="
+    metric, oper, val = cond["metric"], cond["op"], cond["error"]
+    if oper == "GT":
+        oper = ">="
+    elif oper == "LT":
+        oper = "<="
     if "rating" in metric:
         val = measures.get_rating_letter(val)
     elif metric.startswith("sca_severity") and f"{val}" == f"{SCA_HIGH}":
         val = "High"
     if any(d in metric for d in _PERCENTAGE_METRICS):
         val = f"{val}%"
-    return f"{metric} {op} {val}"
+    return f"{metric} {oper} {val}"
 
 
 def _decode_condition(cond: str) -> tuple[str, str, str]:
     """Decodes a string condition in a tuple metric, op, value"""
-    (metric, op, val) = cond.strip().split(" ")
-    if op in (">", ">="):
-        op = "GT"
-    elif op in ("<", "<="):
-        op = "LT"
+    (metric, oper, val) = cond.strip().split(" ")
+    if oper in (">", ">="):
+        oper = "GT"
+    elif oper in ("<", "<="):
+        oper = "LT"
     if "rating" in metric:
         val = measures.get_rating_number(val)
     elif metric.startswith("sca_severity") and val == "High":
         val = 19
     if any(d in metric for d in _PERCENTAGE_METRICS) and val.endswith("%"):
         val = val[:-1]
-    return (metric, op, val)
+    return (metric, oper, val)
 
 
 def search_by_name(endpoint: Platform, name: str) -> Optional[dict[str, Any]]:

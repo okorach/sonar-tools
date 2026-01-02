@@ -228,7 +228,7 @@ def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: Any
     return json_data
 
 
-def nbr_pages(sonar_api_json: dict[str, Any], api_version: int = 1) -> int:
+def nbr_pages(sonar_api_json: dict[str, Any]) -> int:
     """Returns nbr of pages of a paginated Sonar API call"""
     if (total_elements := nbr_total_elements(sonar_api_json)) == 0:
         return 1
@@ -239,7 +239,7 @@ def nbr_pages(sonar_api_json: dict[str, Any], api_version: int = 1) -> int:
     return 1
 
 
-def nbr_total_elements(sonar_api_json: dict[str, Any], api_version: int = 1) -> int:
+def nbr_total_elements(sonar_api_json: dict[str, Any]) -> int:
     """Returns nbr of elements of a paginated Sonar API call"""
     # Some APIs return paging data in "paging" field, others in "page" field :-/
     page_data = sonar_api_json["paging"] if "paging" in sonar_api_json else sonar_api_json.get("page")
