@@ -1,20 +1,4 @@
 {
-    "Project": {
-        "CREATE": "projects/create",
-        "READ": "projects/show",
-        "UPDATE": "projects/update",
-        "DELETE": "projects/delete",
-        "LIST": "projects/search",
-        "search": "projects/search"
-    },
-    "Portfolio": {
-        "CREATE": "portfolios/create",
-        "READ": "portfolios/show",
-        "UPDATE": "portfolios/update",
-        "DELETE": "portfolios/delete",
-        "LIST": "portfolios/search",
-        "search": "portfolios/search"
-    },
     "Application": {
         "7.3.0": {
             "CREATE": {
@@ -1035,6 +1019,61 @@
                 "params": [
                     "project",
                     "pullRequest"
+                ]
+            }
+        }
+    },
+    "Portfolio": {
+        "5.2.0": {
+            "CREATE": {
+                "method": "POST",
+                "api": "api/views/create",
+                "params": [
+                    "key",
+                    "name",
+                    "description",
+                    "visibility",
+                    "parent"
+                ]
+            },
+            "GET": {
+                "method": "GET",
+                "api": "api/views/show",
+                "params": [
+                    "key"
+                ]
+            },
+            "UPDATE": {
+                "method": "POST",
+                "api": "api/views/update",
+                "params": [
+                    "key",
+                    "name",
+                    "description"
+                ]
+            },
+            "DELETE": {
+                "method": "POST",
+                "api": "api/views/delete",
+                "params": [
+                    "key"
+                ]
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "api/views/search",
+                "params": [
+                    "q"
+                ],
+                "return_field": "components",
+                "page_field": "p",
+                "max_page_size": 500
+            },
+            "RECOMPUTE": {
+                "method": "POST",
+                "api": "api/views/refresh",
+                "params": [
+                    "key"
                 ]
             }
         }

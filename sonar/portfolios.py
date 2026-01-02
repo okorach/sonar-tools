@@ -45,6 +45,7 @@ from sonar.audit import rules, problem
 from sonar.portfolio_reference import PortfolioReference
 from sonar.util import portfolio_helper as phelp
 from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -65,9 +66,6 @@ _SELECTION_MODE_NONE = "NONE"
 SELECTION_MODES = (_SELECTION_MODE_MANUAL, _SELECTION_MODE_REGEXP, _SELECTION_MODE_TAGS, _SELECTION_MODE_REST, _SELECTION_MODE_NONE)
 
 _API_SELECTION_MODE_FIELD = "selectionMode"
-_API_SELECTION_BRANCH_FIELD = "projectSelectionBranch"
-_API_SELECTION_REGEXP_FIELD = "projectSelectionRegexp"
-_API_SELECTION_TAGS_FIELD = "projectSelectionTags"
 
 _IMPORTABLE_PROPERTIES = (
     "key",
@@ -89,18 +87,16 @@ class Portfolio(aggregations.Aggregation):
 
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
-    API = {
-        op.CREATE: "views/create",
-        op.GET: "views/show",
-        op.UPDATE: "views/update",
-        op.DELETE: "views/delete",
-        op.SEARCH: "views/search",
-        op.RECOMPUTE: "views/refresh",
-    }
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
     CACHE = cache.Cache()
+
+    @classmethod
+    def api_for(cls, operation: op, endpoint: Platform) -> str:
+        """Returns the API to use for a particular operation"""
+        api, _, _, _ = Api(cls, operation, endpoint).get_all()
+        return api
 
     def __init__(self, endpoint: Platform, key: str, name: Optional[str] = None) -> None:
         """Constructor, don't use - use class methods instead"""
@@ -149,7 +145,8 @@ class Portfolio(aggregations.Aggregation):
         params = {"name": name, "key": key, "parent": parent_key}
         for p in "description", "visibility":
             params[p] = kwargs.get(p, None)
-        endpoint.post(Portfolio.API[op.CREATE], params=params)
+        api, _, api_params, _ = Api(cls, op.CREATE, endpoint).get_all(**params)
+        endpoint.post(api, params=api_params)
         o = cls(endpoint=endpoint, name=name, key=key)
         if parent_key:
             parent_p = Portfolio.get_object(endpoint, parent_key)
@@ -224,7 +221,8 @@ class Portfolio(aggregations.Aggregation):
         if not self.is_toplevel():
             self.root_portfolio.refresh()
             return
-        data = json.loads(self.get(Portfolio.API[op.GET], params={"key": self.key}).text)
+        api, _, params, _ = Api(self, op.GET).get_all(key=self.key)
+        data = json.loads(self.get(api, params=params).text)
         if not self.is_sub_portfolio():
             self.reload(data)
         self.root_portfolio.reload_sub_portfolios()
@@ -407,7 +405,8 @@ class Portfolio(aggregations.Aggregation):
         """Returns a portfolio selection mode"""
         if self._selection_mode is None:
             # FIXME: If portfolio is a subportfolio you must reload with sub-JSON
-            self.reload(json.loads(self.get(Portfolio.API[op.GET], params={"key": self.root_portfolio.key}).text))
+            api, _, params, _ = Api(self, op.GET).get_all(key=self.root_portfolio.key)
+            self.reload(json.loads(self.get(api, params=params).text))
         return {k.lower(): v for k, v in self._selection_mode.items()}
 
     def has_project(self, key: str) -> bool:
@@ -503,13 +502,15 @@ class Portfolio(aggregations.Aggregation):
 
     def set_description(self, desc: str) -> Portfolio:
         if desc:
-            self.post(Portfolio.API[op.UPDATE], params={"key": self.key, "name": self.name, "description": desc})
+            api, _, params, _ = Api(self, op.UPDATE).get_all(key=self.key, name=self.name, description=desc)
+            self.post(api, params=params)
             self._description = desc
         return self
 
     def set_name(self, name: str) -> Portfolio:
         if name:
-            self.post(Portfolio.API[op.UPDATE], params={"key": self.key, "name": name})
+            api, _, params, _ = Api(self, op.UPDATE).get_all(key=self.key, name=name)
+            self.post(api, params=params)
             self.name = name
         return self
 
@@ -571,7 +572,8 @@ class Portfolio(aggregations.Aggregation):
         """Triggers portfolio recomputation, return whether operation REQUEST succeeded"""
         log.debug("Recomputing %s", str(self))
         params = self.root_portfolio.api_params() if self.root_portfolio else self.api_params()
-        return self.post(Portfolio.API[op.RECOMPUTE.value], params=params).ok
+        api, _, api_params, _ = Api(self, op.RECOMPUTE).get_all(**params)
+        return self.post(api, params=api_params).ok
 
     def get_project_list(self) -> list[str]:
         log.debug("Search %s projects list", str(self))
@@ -653,7 +655,8 @@ class Portfolio(aggregations.Aggregation):
 
 def count(endpoint: Platform) -> int:
     """Counts number of portfolios"""
-    return aggregations.count(api=Portfolio.API[op.SEARCH], endpoint=endpoint)
+    api, _, _, _ = Api(Portfolio, op.SEARCH, endpoint).get_all()
+    return aggregations.count(api=api, endpoint=endpoint)
 
 
 def get_list(endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Portfolio]:
@@ -751,12 +754,14 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
 
 def search_by_name(endpoint: Platform, name: str) -> ApiPayload:
     """Searches portfolio by name and, if found, returns data as JSON"""
-    return sutil.search_by_name(endpoint, name, Portfolio.API[op.SEARCH], "components")
+    api, _, _, _ = Api(Portfolio, op.SEARCH, endpoint).get_all()
+    return sutil.search_by_name(endpoint, name, api, "components")
 
 
 def search_by_key(endpoint: Platform, key: str) -> ApiPayload:
     """Searches portfolio by key and, if found, returns data as JSON"""
-    return sutil.search_by_key(endpoint, key, Portfolio.API[op.SEARCH], "components")
+    api, _, _, _ = Api(Portfolio, op.SEARCH, endpoint).get_all()
+    return sutil.search_by_key(endpoint, key, api, "components")
 
 
 def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
@@ -798,7 +803,8 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
 
 def recompute(endpoint: Platform) -> None:
     """Triggers recomputation of all portfolios"""
-    endpoint.post(Portfolio.API["REFRESH"])
+    api, _, params, _ = Api(Portfolio, op.RECOMPUTE, endpoint).get_all()
+    endpoint.post(api, params=params)
 
 
 def __create_portfolio_hierarchy(endpoint: Platform, data: ApiPayload, parent_key: str) -> int:
