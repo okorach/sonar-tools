@@ -20,8 +20,10 @@
 
 """SonarQube API manager"""
 
+from __future__ import annotations
 from typing import Any, Optional, TYPE_CHECKING
 
+from enum import Enum
 from pathlib import Path
 import json
 from collections import defaultdict
@@ -34,124 +36,87 @@ if TYPE_CHECKING:
     from sonar.sqobject import SqObject
     from sonar.platform import Platform
 
-CREATE = "CREATE"
-READ = "READ"
-UPDATE = "UPDATE"
-DELETE = "DELETE"
-LIST = "LIST"
-SEARCH = "LIST"
-GET = "GET"
-RENAME = "RENAME"
-RECOMPUTE = "RECOMPUTE"
 
-LIST_MEMBERS = "LIST_MEMBERS"
-LIST_GROUPS = "LIST_GROUPS"
-ADD_USER = "ADD_USER"
-REMOVE_USER = "REMOVE_USER"
-ADD_PROJECT = "ADD_PROJECT"
-REMOVE_PROJECT = "REMOVE_PROJECT"
+class ApiOperation(Enum):
+    CREATE = "CREATE"
+    READ = "READ"
+    UPDATE = "UPDATE"
+    DELETE = "DELETE"
+    LIST = "LIST"
+    SEARCH = "LIST"
+    GET = "GET"
+    RENAME = "RENAME"
+    RECOMPUTE = "RECOMPUTE"
+    LIST_MEMBERS = "LIST_MEMBERS"
+    LIST_GROUPS = "LIST_GROUPS"
+    ADD_USER = "ADD_USER"
+    REMOVE_USER = "REMOVE_USER"
+    ADD_PROJECT = "ADD_PROJECT"
+    REMOVE_PROJECT = "REMOVE_PROJECT"
+    GET_HISTORY = "GET_HISTORY"
+    GET_PROJECTS = "GET_PROJECTS"
+    ASSIGN = "ASSIGN"
+    SET_TAGS = "SET_TAGS"
+    GET_TAGS = "GET_TAGS"
 
-GET_HISTORY = "GET_HISTORY"
-
-GET_PROJECTS = "GET_PROJECTS"
-
-ASSIGN = "ASSIGN"
-
-SET_TAGS = "SET_TAGS"
-GET_TAGS = "GET_TAGS"
-
-API_DEF = {}
-
-__RETURN_FIELD_KEY = "return_field"
-__PAGE_FIELD_KEY = "page_field"
-__MAX_PAGE_SIZE_KEY = "max_page_size"
-__DEFAULT_MAX_PAGE_SIZE = 500
 
 class ApiManager:
-    def __init__(self, object_or_class: object, op: str, endpoint: Optional[Platform] = None) -> None:
+    """Abstraction of the SonarQube API"""
+
+    __RETURN_FIELD_KEY = "return_field"
+    __PAGE_FIELD_KEY = "page_field"
+    __MAX_PAGE_SIZE_KEY = "max_page_size"
+    __DEFAULT_MAX_PAGE_SIZE = 500
+
+    API_DEFINITION: dict[str, dict[str, Any]] = {}
+
+    def __init__(self, object_or_class: object, op: ApiOperation, endpoint: Optional[Platform] = None) -> None:
+        """Constructor"""
         self.endpoint: Platform = endpoint
         self.api_class: type[object] = object_or_class
-        if not inspect.isclass(object_or_class) and not issubclass(object_or_class, SqObject):
+        if not inspect.isclass(object_or_class):
             self.api_class = object_or_class.__class__
             self.endpoint = object_or_class.endpoint
         self.class_name = self.api_class.__name__
-        if self.class_name not in API_DEF:
+        if self.class_name not in self.__class__.API_DEFINITION:
             raise ValueError(f"API class {self.class_name} not found in API definitions")
         self.version = self.endpoint.version()
-        data = next(v for k, v in API_DEF[self.class_name].items() if self.version >= tuple(int(s) for s in k.split(".")))
-        if op not in data:
-            raise ValueError(f"Operation {op} not found in API definitions for {self.class_name}")
-        self.api_def = data[op]
+        data = next(v for k, v in self.__class__.API_DEFINITION[self.class_name].items() if self.version >= tuple(int(s) for s in k.split(".")))
+        if op.value not in data:
+            raise ValueError(f"Operation {op.value} not found in API definitions for {self.class_name}")
+        self.api_def = data[op.value]
 
-    def api(self) -> str:
-        return self.api_def["api"]
+    def api(self, **kwargs: Any) -> str:
+        return self.api_def["api"].format(**kwargs)
 
     def method(self) -> str:
         return self.api_def["method"]
 
-    def params(self) -> dict[str, Any]:
-        return self.api_def["params"]
-
     def return_field(self) -> str:
-        return self.api_def["return_field"]
+        if ApiManager.__RETURN_FIELD_KEY not in self.api_def:
+            raise ValueError(f"Return field not found in API definition for {self.api()}")
+        return self.api_def[ApiManager.__RETURN_FIELD_KEY]
 
     def max_page_size(self) -> int:
-        return self.api_def.get(__MAX_PAGE_SIZE_KEY, __DEFAULT_MAX_PAGE_SIZE)
+        return self.api_def.get(ApiManager.__MAX_PAGE_SIZE_KEY, ApiManager.__DEFAULT_MAX_PAGE_SIZE)
 
     def page_field(self) -> str:
-        return self.api_def.get(__PAGE_FIELD_KEY, "p")
+        return self.api_def.get(ApiManager.__PAGE_FIELD_KEY, "p")
 
-    def prep_params(self, **kwargs: Any) -> tuple[str, str, dict[str, Any]]:
-        api = self.api_def["api"].format(**kwargs)
+    def params(self, **kwargs: Any) -> dict[str, Any]:
         params = self.api_def.get("params", {})
         if isinstance(params, list):
             params = {p: "{" + p + "}" for p in self.api_def.get("params", [])}
-        params = {k: v.format_map(defaultdict(str, **kwargs)) for k, v in params.items() if kwargs.get(k) is not None}
-        return api, self.api_def["method"], params
+        return {k: v.format_map(defaultdict(str, **kwargs)) for k, v in params.items() if kwargs.get(k) is not None}
 
-def load() -> dict[str, Any]:
-    """Loads the API definitions"""
-    global API_DEF
-    with misc.open_file(Path(__file__).parent / "api.json", "r") as f:
-        api_data = json.load(f)
-    log.debug("API data: %s", misc.json_dump(api_data))
-    API_DEF = api_data
-    return api_data
+    def get_all(self, **kwargs: Any) -> tuple[str, str, dict[str, Any]]:
+        return self.api(**kwargs), self.method(), self.params(**kwargs)
 
-
-def get_api_def(obj_name: str, op: str, sonar_version: tuple[int, int, int]) -> dict[str, Any]:
-    """Gets the API definition for a given object and Sonar version"""
-    if obj_name not in API_DEF:
-        raise ValueError(f"Object {obj_name} not found in API definitions")
-    data = next(v for k, v in API_DEF[obj_name].items() if sonar_version >= tuple(int(s) for s in k.split(".")))
-    if op not in data:
-        raise ValueError(f"Operation {op} not found in API definitions for {obj_name}")
-    return data[op]
-
-
-def prep_params(api_def: dict[str, Any], **kwargs: Any) -> tuple[str, str, dict[str, Any]]:
-    """Prepares the parameters for the API call"""
-    api = api_def["api"].format(**kwargs)
-    params = api_def.get("params", {})
-    if isinstance(params, list):
-        params = {p: "{" + p + "}" for p in api_def.get("params", [])}
-    params = {k: v.format_map(defaultdict(str, **kwargs)) for k, v in params.items() if kwargs.get(k) is not None}
-    # params = {k: v for k, v in params.items() if v != ""}
-    return api, api_def["method"], params
-
-
-def max_page_size(api_def: dict[str, Any]) -> int:
-    """Returns the maximum page size for the API call"""
-    return api_def.get(__MAX_PAGE_SIZE_KEY, __DEFAULT_MAX_PAGE_SIZE)
-
-
-def return_field(api_def: dict[str, Any]) -> str:
-    """Returns the return field for the API call"""
-    if __RETURN_FIELD_KEY not in api_def:
-        raise ValueError(f"Return field not found in API definition for {api_def['api']}")
-    return api_def[__RETURN_FIELD_KEY]
-
-
-def page_field(api_def: dict[str, Any]) -> str:
-    """Returns the page field for the API call"""
-    return api_def.get(__PAGE_FIELD_KEY, "p")
+    @classmethod
+    def load(cls) -> dict[str, Any]:
+        """Loads the API definitions"""
+        with misc.open_file(Path(__file__).parent / "api.json", "r") as f:
+            api_data = json.load(f)
+        log.debug("API data: %s", misc.json_dump(api_data))
+        cls.API_DEFINITION = api_data
+        return api_data
