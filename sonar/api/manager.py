@@ -38,6 +38,7 @@ if TYPE_CHECKING:
 
 class ApiOperation(Enum):
     """List of possible API operations"""
+
     CREATE = "CREATE"
     READ = "READ"
     UPDATE = "UPDATE"
