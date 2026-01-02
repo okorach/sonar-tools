@@ -163,7 +163,7 @@ class QualityGate(SqObject):
     def create(cls, endpoint: Platform, name: str) -> QualityGate:
         """Creates an empty quality gate"""
         api_def = Api(cls, op.CREATE, endpoint)
-        api, _, params = api_def.get_all(name=name)
+        api, _, params, _ = api_def.get_all(name=name)
         endpoint.post(api, params=params)
         return cls.get_object(endpoint, name)
 
@@ -195,9 +195,8 @@ class QualityGate(SqObject):
         api_def = Api(self, op.GET_PROJECTS)
         max_ps = api_def.max_page_size()
         p_field = api_def.page_field()
-        return_field = api_def.return_field()
         params = {"ps": max_ps} | {"gateId": self.key} if self.endpoint.is_sonarcloud() else {"gateName": self.name}
-        api, _, params = api_def.get_all(**params)
+        api, _, params, return_field = api_def.get_all(**params)
         while page <= nb_pages:
             params[p_field] = page
             try:
@@ -220,7 +219,7 @@ class QualityGate(SqObject):
         """
         if self._conditions is None:
             api_def = Api(self, op.READ)
-            api, _, params = api_def.get_all(name=self.name)
+            api, _, params, _ = api_def.get_all(name=self.name)
             data = json.loads(self.get(api, params=params).text)
             log.debug("Loading %s with conditions %s", self, util.json_dump(data))
             self._conditions = list(data.get("conditions", []))
@@ -314,7 +313,7 @@ class QualityGate(SqObject):
         if "name" in data and data["name"] != self.name:
             log.info("Renaming %s with %s", self, data["name"])
             api_def = Api(self, op.RENAME)
-            api, _, params = api_def.get_all(id=self.key, name=data["name"])
+            api, _, params, _ = api_def.get_all(id=self.key, name=data["name"])
             self.post(api, params=params)
             QualityGate.CACHE.pop(self)
             self.key = self.name = data["name"]
@@ -398,8 +397,8 @@ class QualityGate(SqObject):
         """
         log.info("Getting quality gates")
         api_def = Api(cls, op.LIST, endpoint)
-        api, _, params = api_def.get_all()
-        dataset = json.loads(endpoint.get(api, params=params).text)[api_def.return_field()]
+        api, _, params, ret = api_def.get_all()
+        dataset = json.loads(endpoint.get(api, params=params).text)[ret]
         qg_list = {}
         for qg in dataset:
             if (qg_obj := QualityGate.CACHE.get(qg["name"], endpoint.local_url)) is None:
@@ -561,8 +560,8 @@ def _decode_condition(cond: str) -> tuple[str, str, str]:
 def search_by_name(endpoint: Platform, name: str) -> Optional[dict[str, Any]]:
     """Searches quality gates matching name"""
     api_def = Api(QualityGate, op.LIST, endpoint)
-    api, _, _ = api_def.get_all()
-    return sutil.search_by_name(endpoint, name, api, api_def.return_field())
+    api, _, _, ret = api_def.get_all()
+    return sutil.search_by_name(endpoint, name, api, ret)
 
 
 def convert_qgs_json(old_json: dict[str, Any]) -> list[dict[str, Any]]:

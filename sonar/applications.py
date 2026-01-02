@@ -91,8 +91,7 @@ class Application(aggr.Aggregation):
         if o:
             return o
         api_def = Api(cls, op.READ, endpoint)
-        api, _, params = api_def.get_all(application=key)
-        ret = api_def.return_field()
+        api, _, params, ret = api_def.get_all(application=key)
         data = json.loads(endpoint.get(api, params=params).text)[ret]
         return cls.load(endpoint, data)
 
@@ -126,7 +125,7 @@ class Application(aggr.Aggregation):
         """
         check_supported(endpoint)
         api_def = Api(cls, op.CREATE, endpoint)
-        api, _, params = api_def.get_all(key=key, name=name)
+        api, _, params, _ = api_def.get_all(key=key, name=name)
         endpoint.post(api, params=params)
         return Application(endpoint=endpoint, key=key, name=name)
 
@@ -151,8 +150,8 @@ class Application(aggr.Aggregation):
         try:
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
             api_def = Api(self, op.READ)
-            api, _, params = api_def.get_all(application=self.key)
-            self.reload(json.loads(self.endpoint.get(api, params=params).text)[api_def.return_field()])
+            api, _, params, ret = api_def.get_all(application=self.key)
+            self.reload(json.loads(self.endpoint.get(api, params=params).text)[ret])
             return self
         except exceptions.ObjectNotFound:
             self.__class__.CACHE.pop(self)
@@ -372,7 +371,7 @@ class Application(aggr.Aggregation):
         for proj in [p for p in project_list if p not in current_projects]:
             log.debug("Adding project '%s' to %s", proj, str(self))
             try:
-                api, _, params = api_def.get_all(application=self.key, project=proj)
+                api, _, params, _ = api_def.get_all(application=self.key, project=proj)
                 r = self.endpoint.post(api, params=params)
                 ok = ok and r.ok
             except (ConnectionError, RequestException) as e:
@@ -395,7 +394,7 @@ class Application(aggr.Aggregation):
         """Triggers application recomputation, return whether the operation succeeded"""
         log.debug("Recomputing %s", str(self))
         api_def = Api(self, op.RECOMPUTE)
-        api, _, params = api_def.get_all(application=self.key)
+        api, _, params, _ = api_def.get_all(application=self.key)
         return self.post(api, params=params).ok
 
     def update(self, data: ObjectJsonRepr) -> None:
@@ -459,7 +458,7 @@ def count(endpoint: Platform) -> int:
     """
     check_supported(endpoint)
     api_def = Api(Application, op.LIST, endpoint)
-    api, _, params = api_def.get_all(ps=1, filter="qualifier = APP")
+    api, _, params, _ = api_def.get_all(ps=1, filter="qualifier = APP")
     return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=params).text))
 
 

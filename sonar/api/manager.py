@@ -58,6 +58,11 @@ class ApiOperation(Enum):
     ASSIGN = "ASSIGN"
     SET_TAGS = "SET_TAGS"
     GET_TAGS = "GET_TAGS"
+    GET_CHANGELOG = "GET_CHANGELOG"
+    ADD_COMMENT = "ADD_COMMENT"
+    SET_SEVERITY = "SET_SEVERITY"
+    SET_TYPE = "SET_TYPE"
+    DO_TRANSITION = "DO_TRANSITION"
 
 
 class ApiManager:
@@ -109,8 +114,8 @@ class ApiManager:
             params = {p: "{" + p + "}" for p in self.api_def.get("params", [])}
         return {k: v.format_map(defaultdict(str, **kwargs)) for k, v in params.items() if kwargs.get(k) is not None}
 
-    def get_all(self, **kwargs: Any) -> tuple[str, str, dict[str, Any]]:
-        return self.api(**kwargs), self.method(), self.params(**kwargs)
+    def get_all(self, **kwargs: Any) -> tuple[str, str, dict[str, Any], str]:
+        return self.api(**kwargs), self.method(), self.params(**kwargs), self.return_field()
 
     @classmethod
     def load(cls) -> dict[str, Any]:

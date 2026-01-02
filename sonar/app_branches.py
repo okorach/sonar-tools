@@ -112,7 +112,7 @@ class ApplicationBranch(Component):
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
         api_def = Api(cls, op.CREATE, app.endpoint)
-        api, _, _ = api_def.get_all()
+        api, _, _, _ = api_def.get_all()
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
         app.endpoint.post(api, params=string_params)
         return cls(app=app, name=name, project_branches=projects_or_branches)
@@ -199,7 +199,7 @@ class ApplicationBranch(Component):
             params.append(("projectBranch", branch.name))
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
         api_def = Api(self, op.UPDATE)
-        api, _, _ = api_def.get_all(application=self.concerned_object.key, branch=self.name)
+        api, _, _, _ = api_def.get_all(application=self.concerned_object.key, branch=self.name)
         try:
             ok = self.post(api, params=string_params).ok
         except exceptions.ObjectNotFound:
@@ -273,8 +273,7 @@ def list_from(app: Application, data: ApiPayload) -> dict[str, ApplicationBranch
     branch_list = {}
     api_def = Api(ApplicationBranch, op.LIST, app.endpoint)
     for br in data["branches"]:
-        api, _, params = api_def.get_all(application=app.key, branch=br["name"])
-        ret = api_def.return_field()
+        api, _, params, ret = api_def.get_all(application=app.key, branch=br["name"])
         branch_data = json.loads(app.endpoint.get(api, params=params).text)[ret]
         branch_list[branch_data["branch"]] = ApplicationBranch.load(app, branch_data)
     log.debug("Returning Application branch list %s", list(branch_list.keys()))

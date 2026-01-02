@@ -80,8 +80,7 @@ class Group(SqObject):
         if o := Group.CACHE.get(name, endpoint.local_url):
             return o
         api_def = Api(cls, op.LIST, endpoint)
-        api, _, params = api_def.get_all(q=name)
-        ret = api_def.return_field()
+        api, _, params, ret = api_def.get_all(q=name)
         data = json.loads(endpoint.get(api, params=params).text)[ret]
         if not data or data == []:
             raise exceptions.ObjectNotFound(name, f"Group '{name}' not found")
@@ -162,7 +161,7 @@ class Group(SqObject):
         log.info("Updating %s with name = %s, description = %s", self, name, description)
         api_def = Api(self, op.UPDATE)
         params = util.remove_nones({"currentName": self.name, "id": self.id, "name": name, "description": description})
-        api, method, params = api_def.get_all(**params)
+        api, method, params, _ = api_def.get_all(**params)
         if method == "PATCH":
             ok = self.endpoint.patch(api, params=params).ok
         else:
@@ -205,9 +204,8 @@ class Group(SqObject):
         """Returns the group members"""
         if self.__members is None or not use_cache:
             api_def = Api(self, op.LIST_MEMBERS)
-            ret = api_def.return_field()
             # TODO: handle pagination
-            api, _, params = api_def.get_all(groupId=self.id, ps=500, pageSize=500, name=self.name)
+            api, _, params, ret = api_def.get_all(groupId=self.id, ps=500, pageSize=500, name=self.name)
             data = json.loads(self.endpoint.get(api, params=params).text)[ret]
             if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
                 pname = "id"
@@ -230,8 +228,7 @@ class Group(SqObject):
         if self.endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
             return None
         api_def = Api(self, op.LIST_MEMBERS)
-        api, _, params = api_def.get_all(groupId=self.id, userId=user.id)
-        ret = api_def.return_field()
+        api, _, params, ret = api_def.get_all(groupId=self.id, userId=user.id)
         data = json.loads(self.endpoint.get(api, params=params).text)[ret]
         return next((m["id"] for m in data if m["groupId"] == self.id and m["userId"] == user.id), None)
 
@@ -243,7 +240,7 @@ class Group(SqObject):
         """
         log.info("Adding %s to %s", str(user), str(self))
         api_def = Api(self, op.ADD_USER)
-        api, method, params = api_def.get_all(groupId=self.id, userId=user.id, login=user.login, name=self.name)
+        api, method, params, _ = api_def.get_all(groupId=self.id, userId=user.id, login=user.login, name=self.name)
         if method == "POST":
             return self.endpoint.post(api, params=params).ok
         else:
@@ -261,7 +258,7 @@ class Group(SqObject):
             raise exceptions.ObjectNotFound(user.login or user.id, f"{user} not in {self}")
         api_def = Api(self, op.REMOVE_USER)
         mb_id = self.__get_membership_id(user)
-        api, method, params = api_def.get_all(id=mb_id, login=user.login, name=self.name)
+        api, method, params, _ = api_def.get_all(id=mb_id, login=user.login, name=self.name)
         if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION and not mb_id:
             raise exceptions.ObjectNotFound(user.login, f"{self} or user id '{user.id}' not found")
         if method == "DELETE":
