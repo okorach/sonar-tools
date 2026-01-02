@@ -223,7 +223,7 @@ class QualityGate(SqObject):
             api, _, params = api_mgr.prep_params(api_def, name=self.name)
             data = json.loads(self.get(api, params=params).text)
             log.debug("Loading %s with conditions %s", self, util.json_dump(data))
-            self._conditions = [cond for cond in data.get("conditions", [])]
+            self._conditions = list(data.get("conditions", []))
         if encoded:
             return _encode_conditions(self._conditions)
         return self._conditions
