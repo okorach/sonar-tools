@@ -90,8 +90,7 @@ class Application(aggr.Aggregation):
         o: Application = cls.CACHE.get(key, endpoint.local_url)
         if o:
             return o
-        api_def = Api(cls, op.READ, endpoint)
-        api, _, params, ret = api_def.get_all(application=key)
+        api, _, params, ret = Api(cls, op.READ, endpoint).get_all(application=key)
         data = json.loads(endpoint.get(api, params=params).text)[ret]
         return cls.load(endpoint, data)
 
@@ -124,8 +123,7 @@ class Application(aggr.Aggregation):
         :return: The created Application object
         """
         check_supported(endpoint)
-        api_def = Api(cls, op.CREATE, endpoint)
-        api, _, params, _ = api_def.get_all(key=key, name=name)
+        api, _, params, _ = Api(cls, op.CREATE, endpoint).get_all(key=key, name=name)
         endpoint.post(api, params=params)
         return Application(endpoint=endpoint, key=key, name=name)
 
@@ -149,8 +147,7 @@ class Application(aggr.Aggregation):
         """
         try:
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
-            api_def = Api(self, op.READ)
-            api, _, params, ret = api_def.get_all(application=self.key)
+            api, _, params, ret = Api(self, op.READ).get_all(application=self.key)
             self.reload(json.loads(self.endpoint.get(api, params=params).text)[ret])
             return self
         except exceptions.ObjectNotFound:
@@ -393,8 +390,7 @@ class Application(aggr.Aggregation):
     def recompute(self) -> bool:
         """Triggers application recomputation, return whether the operation succeeded"""
         log.debug("Recomputing %s", str(self))
-        api_def = Api(self, op.RECOMPUTE)
-        api, _, params, _ = api_def.get_all(application=self.key)
+        api, _, params, _ = Api(self, op.RECOMPUTE).get_all(application=self.key)
         return self.post(api, params=params).ok
 
     def update(self, data: ObjectJsonRepr) -> None:
@@ -457,8 +453,7 @@ def count(endpoint: Platform) -> int:
     :return: Count of applications
     """
     check_supported(endpoint)
-    api_def = Api(Application, op.LIST, endpoint)
-    api, _, params, _ = api_def.get_all(ps=1, filter="qualifier = APP")
+    api, _, params, _ = Api(Application, op.LIST, endpoint).get_all(ps=1, filter="qualifier = APP")
     return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=params).text))
 
 

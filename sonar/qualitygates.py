@@ -162,8 +162,7 @@ class QualityGate(SqObject):
     @classmethod
     def create(cls, endpoint: Platform, name: str) -> QualityGate:
         """Creates an empty quality gate"""
-        api_def = Api(cls, op.CREATE, endpoint)
-        api, _, params, _ = api_def.get_all(name=name)
+        api, _, params, _ = Api(cls, op.CREATE, endpoint).get_all(name=name)
         endpoint.post(api, params=params)
         return cls.get_object(endpoint, name)
 
@@ -218,8 +217,7 @@ class QualityGate(SqObject):
         :return: The quality gate conditions, encoded (for simplication) or not
         """
         if self._conditions is None:
-            api_def = Api(self, op.READ)
-            api, _, params, _ = api_def.get_all(name=self.name)
+            api, _, params, _ = Api(self, op.READ).get_all(name=self.name)
             data = json.loads(self.get(api, params=params).text)
             log.debug("Loading %s with conditions %s", self, util.json_dump(data))
             self._conditions = list(data.get("conditions", []))
@@ -312,8 +310,7 @@ class QualityGate(SqObject):
             return True
         if "name" in data and data["name"] != self.name:
             log.info("Renaming %s with %s", self, data["name"])
-            api_def = Api(self, op.RENAME)
-            api, _, params, _ = api_def.get_all(id=self.key, name=data["name"])
+            api, _, params, _ = Api(self, op.RENAME).get_all(id=self.key, name=data["name"])
             self.post(api, params=params)
             QualityGate.CACHE.pop(self)
             self.key = self.name = data["name"]
@@ -396,8 +393,7 @@ class QualityGate(SqObject):
         :rtype: dict {<name>: <QualityGate>}
         """
         log.info("Getting quality gates")
-        api_def = Api(cls, op.LIST, endpoint)
-        api, _, params, ret = api_def.get_all()
+        api, _, params, ret = Api(cls, op.LIST, endpoint).get_all()
         dataset = json.loads(endpoint.get(api, params=params).text)[ret]
         qg_list = {}
         for qg in dataset:
@@ -559,8 +555,7 @@ def _decode_condition(cond: str) -> tuple[str, str, str]:
 
 def search_by_name(endpoint: Platform, name: str) -> Optional[dict[str, Any]]:
     """Searches quality gates matching name"""
-    api_def = Api(QualityGate, op.LIST, endpoint)
-    api, _, _, ret = api_def.get_all()
+    api, _, _, ret = Api(QualityGate, op.LIST, endpoint).get_all()
     return sutil.search_by_name(endpoint, name, api, ret)
 
 

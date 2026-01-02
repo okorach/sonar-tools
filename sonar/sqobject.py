@@ -275,8 +275,7 @@ class SqObject(object):
         """Deletes an object, returns whether the operation succeeded"""
         log.info("Deleting %s", str(self))
         try:
-            api_def = Api(self, op.DELETE)
-            api, method, params, _ = api_def.get_all(**kwargs)
+            api, method, params, _ = Api(self, op.DELETE).get_all(**kwargs)
             if method == "DELETE":
                 ok = self.endpoint.delete(api=api, params=params).ok
             else:
@@ -309,8 +308,7 @@ class SqObject(object):
         if tags is None:
             return False
         log.info("Settings tags %s to %s", tags, str(self))
-        api_def = Api(self, op.SET_TAGS)
-        api, _, params, _ = api_def.get_all(project=self.key, issue=self.key, application=self.key, tags=util.list_to_csv(tags))
+        api, _, params, _ = Api(self, op.SET_TAGS).get_all(project=self.key, issue=self.key, application=self.key, tags=util.list_to_csv(tags))
         try:
             if ok := self.post(api, params=params).ok:
                 self._tags = sorted(tags)
@@ -324,8 +322,7 @@ class SqObject(object):
     def get_tags(self, **kwargs: Any) -> list[str]:
         """Returns object tags"""
         try:
-            api_def = Api(self, op.GET_TAGS)
-            api, _, params, ret = api_def.get_all(component=self.key)
+            api, _, params, ret = Api(self, op.GET_TAGS).get_all(component=self.key)
         except ValueError as e:
             raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags") from e
         if self._tags is None:

@@ -111,8 +111,7 @@ class ApplicationBranch(Component):
         for branch in custom_branches:
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
-        api_def = Api(cls, op.CREATE, app.endpoint)
-        api, _, _, _ = api_def.get_all()
+        api, _, _, _ = Api(cls, op.CREATE, app.endpoint).get_all()
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
         app.endpoint.post(api, params=string_params)
         return cls(app=app, name=name, project_branches=projects_or_branches)
@@ -198,8 +197,7 @@ class ApplicationBranch(Component):
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
-        api_def = Api(self, op.UPDATE)
-        api, _, _, _ = api_def.get_all(application=self.concerned_object.key, branch=self.name)
+        api, _, _, _ = Api(self, op.UPDATE).get_all(application=self.concerned_object.key, branch=self.name)
         try:
             ok = self.post(api, params=string_params).ok
         except exceptions.ObjectNotFound:

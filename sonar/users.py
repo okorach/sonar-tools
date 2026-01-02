@@ -98,8 +98,7 @@ class User(SqObject):
         params = {"login": login, "local": str(is_local).lower(), "name": name}
         if is_local:
             params["password"] = password or login
-        api_def = Api(cls, op.CREATE, endpoint)
-        api, _, params, ret = api_def.get_all(**params)
+        api, _, params, ret = Api(cls, op.CREATE, endpoint).get_all(**params)
         try:
             data = json.loads(endpoint.post(api, params=params).text)[ret]
         except ValueError:
@@ -152,8 +151,7 @@ class User(SqObject):
         if endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             raise exceptions.UnsupportedOperation("Get by ID is an APIv2 features, staring from SonarQube 10.4")
         log.debug("Getting user id '%s'", id)
-        api_def = Api(cls, op.READ, endpoint)
-        api, _, params, ret = api_def.get_all(id=id)
+        api, _, params, ret = Api(cls, op.READ, endpoint).get_all(id=id)
         data = json.loads(endpoint.get(api, params=params, mute=()).text)
         return cls.load(endpoint, data)
 
@@ -254,8 +252,7 @@ class User(SqObject):
         """
         if User.CACHE.get(new_login, self.base_url()):
             raise exceptions.ObjectAlreadyExists(new_login, f"User '{new_login}' already exists")
-        api_def = Api(self, op.UPDATE)
-        api, method, params, _ = api_def.get_all(login=self.login, newLogin=new_login, id=self.id)
+        api, method, params, _ = Api(self, op.UPDATE).get_all(login=self.login, newLogin=new_login, id=self.id)
         if method == "PATCH":
             ok = self.endpoint.patch(api, params=params).ok
         else:
@@ -284,8 +281,7 @@ class User(SqObject):
             return self
         if kwargs.get("login"):
             self.update_login(kwargs["login"])
-        api_def = Api(self, op.UPDATE)
-        api, method, params, _ = api_def.get_all(id=self.id, login=self.login, email=kwargs.get("email"), name=kwargs.get("name"))
+        api, method, params, _ = Api(self, op.UPDATE).get_all(id=self.id, login=self.login, email=kwargs.get("email"), name=kwargs.get("name"))
         if len(params) == 0:
             return self
         if method == "PATCH":
@@ -379,8 +375,7 @@ class User(SqObject):
         log.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
         if not self.is_local:
             return self
-        api_def = Api(self, op.UPDATE)
-        api, method, params, _ = api_def.get_all(id=self.id, scmAccount=accounts_list)
+        api, method, params, _ = Api(self, op.UPDATE).get_all(id=self.id, scmAccount=accounts_list)
         if method == "PATCH":
             params = {"scmAccounts": accounts_list}
             ok = self.endpoint.patch(api, params=params).ok

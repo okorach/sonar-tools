@@ -328,8 +328,7 @@ class Finding(SqObject):
             else:
                 log.debug("Assigning %s to '%s'", self, assignee)
             params = util.remove_nones({**self.api_params(), "assignee": assignee, "comment": comment})
-            api_def = Api(self, op.ASSIGN)
-            api, _, api_params, _ = api_def.get_all(**params)
+            api, _, api_params, _ = Api(self, op.ASSIGN).get_all(**params)
             if ok := self.post(api, params=api_params).ok:
                 self.assignee = assignee
         except exceptions.SonarException:
@@ -489,8 +488,7 @@ class Finding(SqObject):
 
     def do_transition(self, transition: str) -> bool:
         try:
-            api_def = Api(self, op.DO_TRANSITION)
-            api, _, params, _ = api_def.get_all(issue=self.key, transition=transition)
+            api, _, params, _ = Api(self, op.DO_TRANSITION).get_all(issue=self.key, transition=transition)
             return self.post(api, params=params).ok
         except exceptions.SonarException as e:
             if re.match(r"Transition from state [A-Za-z]+ does not exist", e.message):

@@ -202,8 +202,7 @@ class Issue(findings.Finding):
 
         :return: whether the refresh was successful
         """
-        api_def = Api(self, op.READ)
-        api, _, params, ret = api_def.get_all(issues=self.key, additionalFields="_all")
+        api, _, params, ret = Api(self, op.READ).get_all(issues=self.key, additionalFields="_all")
         resp = self.get(api, params=params)
         if resp.ok:
             self._load(json.loads(resp.text)[ret][0])
@@ -234,8 +233,7 @@ class Issue(findings.Finding):
         :rtype: dict{"<date>_<sequence_nbr>": Changelog}
         """
         if self._changelog is None:
-            api_def = Api(self, op.GET_CHANGELOG)
-            api, _, params, ret = api_def.get_all(issue=self.key, format="json")
+            api, _, params, ret = Api(self, op.GET_CHANGELOG).get_all(issue=self.key, format="json")
             data = json.loads(self.get(api, params=params).text)
             # util.json_dump_debug(data[ret], f"{str(self)} Changelog = ")
             self._changelog = {}
@@ -290,8 +288,7 @@ class Issue(findings.Finding):
         """
         log.debug("Adding comment '%s' to %s", comment, str(self))
         try:
-            api_def = Api(self, op.ADD_COMMENT)
-            api, _, params, _ = api_def.get_all(issue=self.key, text=comment)
+            api, _, params, _ = Api(self, op.ADD_COMMENT).get_all(issue=self.key, text=comment)
             return self.post(api, params=params).ok
         except exceptions.SonarException:
             return False
@@ -299,7 +296,7 @@ class Issue(findings.Finding):
     def __set_severity(self, **params: Any) -> bool:
         """Changes the severity of an issue, in std experience or MQR depending on params"""
         log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, str(params))
-        api, _, api_params = Api(self, op.SET_SEVERITY).get_all(issue=self.key, **params)
+        api, _, api_params, _ = Api(self, op.SET_SEVERITY).get_all(issue=self.key, **params)
         r = self.post(api, params=api_params)
         return r.ok
 
@@ -338,8 +335,7 @@ class Issue(findings.Finding):
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
         if not kwargs.get(c.USE_CACHE, True) or self._tags is None:
-            api_def = Api(self, op.GET_TAGS)
-            api, _, params, ret = api_def.get_all(issues=self.key, additionalFields="")
+            api, _, params, ret = Api(self, op.GET_TAGS).get_all(issues=self.key, additionalFields="")
             data = json.loads(self.get(api, params=params).text)
             self.sq_json.update(data[ret][0])
             self._tags = self.sq_json["tags"]
@@ -377,7 +373,7 @@ class Issue(findings.Finding):
         if self.endpoint.is_mqr_mode():
             raise exceptions.UnsupportedOperation("Changing issue type is not supported in MQR mode")
         log.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
-        api, _, params = Api(self, op.SET_TYPE).get_all(issue=self.key, type=new_type)
+        api, _, params, _ = Api(self, op.SET_TYPE).get_all(issue=self.key, type=new_type)
         if ok := self.post(api, params=params).ok:
             self.type = new_type
         return ok
@@ -809,8 +805,7 @@ def __search_page(endpoint: Platform, params: ApiParams, page: int) -> dict[str,
     page_params = params.copy()
     page_params["p"] = page
     log.debug("Issue search params = %s", str(page_params))
-    api_def = Api(Issue, op.SEARCH, endpoint)
-    api, _, api_params, ret = api_def.get_all(**page_params)
+    api, _, api_params, ret = Api(Issue, op.SEARCH, endpoint).get_all(**page_params)
     data = json.loads(endpoint.get(api, params=api_params).text)
     issue_list = __get_issue_list(endpoint, data, params=page_params, return_field=ret)
     log.debug("Added %d issues in search page %d", len(issue_list), page)
@@ -824,8 +819,7 @@ def search_first(endpoint: Platform, **params) -> Union[Issue, None]:
     """
     filters = pre_search_filters(endpoint=endpoint, params=params)
     filters["ps"] = 1
-    api_def = Api(Issue, op.SEARCH, endpoint)
-    api, _, api_params, ret = api_def.get_all(**filters)
+    api, _, api_params, ret = Api(Issue, op.SEARCH, endpoint).get_all(**filters)
     data = json.loads(endpoint.get(api, params=api_params).text)[ret]
     if len(data) == 0:
         return None
@@ -849,8 +843,7 @@ def search(endpoint: Platform, params: ApiParams = None, raise_error: bool = Tru
 
     log.debug("Search filters = %s", str(filters))
     issue_list = {}
-    api_def = Api(Issue, op.SEARCH, endpoint)
-    api, _, api_params, ret = api_def.get_all(**filters)
+    api, _, api_params, ret = Api(Issue, op.SEARCH, endpoint).get_all(**filters)
     data = json.loads(endpoint.get(api, params=api_params).text)
     nbr_issues = sutil.nbr_total_elements(data)
     nbr_pages = sutil.nbr_pages(data)
@@ -885,8 +878,7 @@ def _get_facets(endpoint: Platform, project_key: str, facets: str = "directories
         params = {}
     params.update({component_search_field(endpoint): project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
     filters = pre_search_filters(endpoint=endpoint, params=params)
-    api_def = Api(Issue, op.SEARCH, endpoint)
-    api, _, api_params, _ = api_def.get_all(**filters)
+    api, _, api_params, _ = Api(Issue, op.SEARCH, endpoint).get_all(**filters)
     data = json.loads(endpoint.get(api, params=api_params).text)
     return {f["property"]: f["values"] for f in data["facets"] if f["property"] in util.csv_to_list(facets)}
 
@@ -913,8 +905,7 @@ def count(endpoint: Platform, **kwargs: Any) -> int:
     """Returns number of issues of a search"""
     filters = pre_search_filters(endpoint=endpoint, params=kwargs)
     filters["ps"] = 1
-    api_def = Api(Issue, op.SEARCH, endpoint)
-    api, _, api_params, _ = api_def.get_all(**filters)
+    api, _, api_params, _ = Api(Issue, op.SEARCH, endpoint).get_all(**filters)
     nbr_issues = sutil.nbr_total_elements(json.loads(endpoint.get(api, params=api_params).text))
     log.debug("Count issues with filters %s returned %d issues", str(kwargs), nbr_issues)
     return nbr_issues
