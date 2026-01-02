@@ -33,7 +33,8 @@ from requests import RequestException
 import sonar.logging as log
 from sonar.util import cache
 
-import sonar.api.manager as api_mgr
+from sonar.api import manager as api_mgr
+from sonar.api.manager import ApiManager as Api
 from sonar import exceptions, projects, branches, app_branches
 from sonar.permissions import application_permissions
 import sonar.aggregations as aggr
@@ -89,7 +90,7 @@ class Application(aggr.Aggregation):
         o: Application = cls.CACHE.get(key, endpoint.local_url)
         if o:
             return o
-        api_def = api_mgr.get_api_def(cls.__name__, api_mgr.READ, endpoint.version())
+        api_def = Api(cls.__name__, api_mgr.READ, endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, application=key)
         ret = api_mgr.return_field(api_def)
         data = json.loads(endpoint.get(api, params=params).text)[ret]
@@ -124,7 +125,7 @@ class Application(aggr.Aggregation):
         :return: The created Application object
         """
         check_supported(endpoint)
-        api_def = api_mgr.get_api_def(cls.__name__, api_mgr.CREATE, endpoint.version())
+        api_def = Api(cls.__name__, api_mgr.CREATE, endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, key=key, name=name)
         endpoint.post(api, params=params)
         return Application(endpoint=endpoint, key=key, name=name)
@@ -149,7 +150,7 @@ class Application(aggr.Aggregation):
         """
         try:
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
-            api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.READ, self.endpoint.version())
+            api_def = Api(self.__class__.__name__, api_mgr.READ, self.endpoint.version())
             api, _, params = api_mgr.prep_params(api_def, application=self.key)
             self.reload(json.loads(self.endpoint.get(api, params=params).text)[api_mgr.return_field(api_def)])
             return self
@@ -367,7 +368,7 @@ class Application(aggr.Aggregation):
         """Add projects to an application"""
         current_projects = self.projects().keys()
         ok = True
-        api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.ADD_PROJECT, self.endpoint.version())
+        api_def = Api(self.__class__.__name__, api_mgr.ADD_PROJECT, self.endpoint.version())
         for proj in [p for p in project_list if p not in current_projects]:
             log.debug("Adding project '%s' to %s", proj, str(self))
             try:
@@ -393,7 +394,7 @@ class Application(aggr.Aggregation):
     def recompute(self) -> bool:
         """Triggers application recomputation, return whether the operation succeeded"""
         log.debug("Recomputing %s", str(self))
-        api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.RECOMPUTE, self.endpoint.version())
+        api_def = Api(self.__class__.__name__, api_mgr.RECOMPUTE, self.endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, application=self.key)
         return self.post(api, params=params).ok
 
@@ -457,7 +458,7 @@ def count(endpoint: Platform) -> int:
     :return: Count of applications
     """
     check_supported(endpoint)
-    api_def = api_mgr.get_api_def(Application.__name__, api_mgr.LIST, endpoint.version())
+    api_def = Api(Application.__name__, api_mgr.LIST, endpoint.version())
     api, _, params = api_mgr.prep_params(api_def, ps=1, filter="qualifier = APP")
     return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=params).text))
 

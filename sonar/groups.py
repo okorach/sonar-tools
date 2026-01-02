@@ -37,6 +37,7 @@ from sonar.util import cache, constants as c
 from sonar.audit import rules
 from sonar.audit.problem import Problem
 import sonar.api.manager as api_mgr
+from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -79,7 +80,7 @@ class Group(SqObject):
         log.debug("Reading group '%s'", name)
         if o := Group.CACHE.get(name, endpoint.local_url):
             return o
-        api_def = api_mgr.get_api_def("Group", api_mgr.LIST, endpoint.version())
+        api_def = Api("Group", api_mgr.LIST, endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, q=name)
         ret = api_mgr.return_field(api_def)
         data = json.loads(endpoint.get(api, params=params).text)[ret]
@@ -98,7 +99,7 @@ class Group(SqObject):
         :return: The group object
         """
         log.debug("Creating group '%s'", name)
-        api_def = api_mgr.get_api_def("Group", api_mgr.CREATE, endpoint.version())
+        api_def = Api("Group", api_mgr.CREATE, endpoint.version())
         params = util.remove_nones({"name": name, "description": description})
         endpoint.post(api_def["api"], params=params)
         return cls.read(endpoint=endpoint, name=name)
@@ -160,7 +161,7 @@ class Group(SqObject):
             log.debug("No name or description to update for %s", self)
             return False
         log.info("Updating %s with name = %s, description = %s", self, name, description)
-        api_def = api_mgr.get_api_def("Group", api_mgr.UPDATE, self.endpoint.version())
+        api_def = Api("Group", api_mgr.UPDATE, self.endpoint.version())
         params = util.remove_nones({"currentName": self.name, "id": self.id, "name": name, "description": description})
         api, method, params = api_mgr.prep_params(api_def, **params)
         if method == "PATCH":
@@ -204,7 +205,7 @@ class Group(SqObject):
     def members(self, use_cache: bool = True) -> list[users.User]:
         """Returns the group members"""
         if self.__members is None or not use_cache:
-            api_def = api_mgr.get_api_def("Group", api_mgr.LIST_MEMBERS, self.endpoint.version())
+            api_def = Api("Group", api_mgr.LIST_MEMBERS, self.endpoint.version())
             ret = api_mgr.return_field(api_def)
             # TODO: handle pagination
             api, _, params = api_mgr.prep_params(api_def, groupId=self.id, ps=500, pageSize=500, name=self.name)
@@ -229,7 +230,7 @@ class Group(SqObject):
         """
         if self.endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
             return None
-        api_def = api_mgr.get_api_def("Group", api_mgr.LIST_MEMBERS, self.endpoint.version())
+        api_def = Api("Group", api_mgr.LIST_MEMBERS, self.endpoint.version())
         api, _, params = api_mgr.prep_params(api_def, groupId=self.id, userId=user.id)
         ret = api_mgr.return_field(api_def)
         data = json.loads(self.endpoint.get(api, params=params).text)[ret]
@@ -242,7 +243,7 @@ class Group(SqObject):
         :return: Whether the operation succeeded
         """
         log.info("Adding %s to %s", str(user), str(self))
-        api_def = api_mgr.get_api_def("Group", api_mgr.ADD_USER, self.endpoint.version())
+        api_def = Api("Group", api_mgr.ADD_USER, self.endpoint.version())
         api, method, params = api_mgr.prep_params(api_def, groupId=self.id, userId=user.id, login=user.login, name=self.name)
         if method == "POST":
             return self.endpoint.post(api, params=params).ok
@@ -259,7 +260,7 @@ class Group(SqObject):
         log.info("Removing %s from %s", user, self)
         if user not in self.members(use_cache=False):
             raise exceptions.ObjectNotFound(user.login or user.id, f"{user} not in {self}")
-        api_def = api_mgr.get_api_def("Group", api_mgr.REMOVE_USER, self.endpoint.version())
+        api_def = Api("Group", api_mgr.REMOVE_USER, self.endpoint.version())
         mb_id = self.__get_membership_id(user)
         api, method, params = api_mgr.prep_params(api_def, id=mb_id, login=user.login, name=self.name)
         if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION and not mb_id:
