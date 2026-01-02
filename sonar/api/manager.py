@@ -20,14 +20,19 @@
 
 """SonarQube API manager"""
 
-from typing import Any
+from typing import Any, Optional, TYPE_CHECKING
 
 from pathlib import Path
 import json
 from collections import defaultdict
+import inspect
 
 from sonar.util import misc
 import sonar.logging as log
+
+if TYPE_CHECKING:
+    from sonar.sqobject import SqObject
+    from sonar.platform import Platform
 
 CREATE = "CREATE"
 READ = "READ"
@@ -62,6 +67,47 @@ __PAGE_FIELD_KEY = "page_field"
 __MAX_PAGE_SIZE_KEY = "max_page_size"
 __DEFAULT_MAX_PAGE_SIZE = 500
 
+class ApiManager:
+    def __init__(self, object_or_class: object, op: str, endpoint: Optional[Platform] = None) -> None:
+        self.endpoint: Platform = endpoint
+        self.api_class: type[object] = object_or_class
+        if not inspect.isclass(object_or_class) and not issubclass(object_or_class, SqObject):
+            self.api_class = object_or_class.__class__
+            self.endpoint = object_or_class.endpoint
+        self.class_name = self.api_class.__name__
+        if self.class_name not in API_DEF:
+            raise ValueError(f"API class {self.class_name} not found in API definitions")
+        self.version = self.endpoint.version()
+        data = next(v for k, v in API_DEF[self.class_name].items() if self.version >= tuple(int(s) for s in k.split(".")))
+        if op not in data:
+            raise ValueError(f"Operation {op} not found in API definitions for {self.class_name}")
+        self.api_def = data[op]
+
+    def api(self) -> str:
+        return self.api_def["api"]
+
+    def method(self) -> str:
+        return self.api_def["method"]
+
+    def params(self) -> dict[str, Any]:
+        return self.api_def["params"]
+
+    def return_field(self) -> str:
+        return self.api_def["return_field"]
+
+    def max_page_size(self) -> int:
+        return self.api_def.get(__MAX_PAGE_SIZE_KEY, __DEFAULT_MAX_PAGE_SIZE)
+
+    def page_field(self) -> str:
+        return self.api_def.get(__PAGE_FIELD_KEY, "p")
+
+    def prep_params(self, **kwargs: Any) -> tuple[str, str, dict[str, Any]]:
+        api = self.api_def["api"].format(**kwargs)
+        params = self.api_def.get("params", {})
+        if isinstance(params, list):
+            params = {p: "{" + p + "}" for p in self.api_def.get("params", [])}
+        params = {k: v.format_map(defaultdict(str, **kwargs)) for k, v in params.items() if kwargs.get(k) is not None}
+        return api, self.api_def["method"], params
 
 def load() -> dict[str, Any]:
     """Loads the API definitions"""
