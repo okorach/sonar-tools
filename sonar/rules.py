@@ -34,7 +34,7 @@ from sonar import exceptions, languages
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.util import rule_helper as rhelp
-import sonar.api.manager as api_mgr
+from sonar.api.manager import ApiOperation as op
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -157,11 +157,11 @@ class Rule(SqObject):
     SEARCH_RETURN_FIELD = "rules"
 
     API: dict[str, str] = {
-        api_mgr.CREATE: "rules/create",
-        api_mgr.READ: "rules/show",
-        api_mgr.UPDATE: "rules/update",
-        api_mgr.DELETE: "rules/delete",
-        api_mgr.LIST: "rules/search",
+        op.CREATE: "rules/create",
+        op.READ: "rules/show",
+        op.UPDATE: "rules/update",
+        op.DELETE: "rules/delete",
+        op.LIST: "rules/search",
     }  # type: ignore
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload) -> None:
@@ -224,7 +224,7 @@ class Rule(SqObject):
         """
         if o := Rule.CACHE.get(key, endpoint.local_url):
             return o
-        rule_data = json.loads(endpoint.get(Rule.API[api_mgr.READ], params={"key": key, "actives": "true"}).text)["rule"]
+        rule_data = json.loads(endpoint.get(Rule.API[op.READ], params={"key": key, "actives": "true"}).text)["rule"]
         return Rule(endpoint=endpoint, key=key, data=rule_data)
 
     @classmethod
@@ -245,7 +245,7 @@ class Rule(SqObject):
         params["impacts"] = ";".join([f"{k}={v}" for k, v in params.get("impacts", {}).items()])
         log.debug("Creating rule key '%s'", key)
         params.pop("severity" if endpoint.is_mqr_mode() else "impacts", None)
-        endpoint.post(cls.API[api_mgr.CREATE], params=params)
+        endpoint.post(cls.API[op.CREATE], params=params)
         created_rule = cls.get_object(endpoint=endpoint, key=key)
         created_rule.custom_desc = kwargs.get("markdownDescription", "NO DESCRIPTION")
         return created_rule
@@ -297,7 +297,7 @@ class Rule(SqObject):
             return False
 
         try:
-            data = json.loads(self.get(Rule.API[api_mgr.READ], params=self.api_params() | {"actives": "true"}).text)
+            data = json.loads(self.get(Rule.API[op.READ], params=self.api_params() | {"actives": "true"}).text)
         except exceptions.ObjectNotFound:
             Rule.CACHE.pop(self)
             raise
@@ -353,7 +353,7 @@ class Rule(SqObject):
     def set_tags(self, tags: list[str]) -> bool:
         """Sets rule custom tags"""
         log.info("Setting %s custom tags to '%s' ", str(self), str(tags))
-        if ok := self.post(Rule.API[api_mgr.UPDATE], params=self.api_params() | {"tags": util.list_to_csv(tags)}).ok:
+        if ok := self.post(Rule.API[op.UPDATE], params=self.api_params() | {"tags": util.list_to_csv(tags)}).ok:
             self.tags = sorted(tags) if len(tags) > 0 else None
         return ok
 
@@ -367,7 +367,7 @@ class Rule(SqObject):
         if self.endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Can't extend rules description on SonarQube Cloud")
         log.info("Setting %s custom description to '%s'", str(self), description)
-        if ok := self.post(Rule.API[api_mgr.UPDATE], params=self.api_params() | {"markdown_note": description}).ok:
+        if ok := self.post(Rule.API[op.UPDATE], params=self.api_params() | {"markdown_note": description}).ok:
             self.custom_desc = description if description != "" else None
         return ok
 
@@ -428,15 +428,15 @@ class Rule(SqObject):
             return None
         return None if "params" not in found_qp or len(found_qp["params"]) == 0 else {p["key"]: p.get("value", "") for p in found_qp["params"]}
 
-    def api_params(self, op: Optional[str] = None) -> ApiParams:
+    def api_params(self, operation: Optional[op] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {api_mgr.READ: {"key": self.key}}
-        return ops[op] if op and op in ops else ops[api_mgr.READ]
+        ops = {op.READ: {"key": self.key}}
+        return ops[operation] if operation and operation in ops else ops[op.READ]
 
 
 def get_facet(facet: str, endpoint: Platform) -> dict[str, str]:
     """Returns a facet as a count per item in the facet"""
-    data = json.loads(endpoint.get(Rule.API[api_mgr.SEARCH], params={"ps": 1, "facets": facet}).text)
+    data = json.loads(endpoint.get(Rule.API[op.SEARCH], params={"ps": 1, "facets": facet}).text)
     return {f["val"]: f["count"] for f in data["facets"][0]["values"]}
 
 
@@ -454,7 +454,7 @@ def search_keys(endpoint: Platform, **params) -> list[str]:
     try:
         while new_params["p"] < nbr_pages:
             new_params["p"] += 1
-            data = json.loads(endpoint.get(Rule.API[api_mgr.SEARCH], params=new_params).text)
+            data = json.loads(endpoint.get(Rule.API[op.SEARCH], params=new_params).text)
             nbr_pages = sutil.nbr_pages(data)
             rule_list += [r[Rule.SEARCH_KEY_FIELD] for r in data[Rule.SEARCH_RETURN_FIELD]]
     except exceptions.SonarException:
@@ -464,7 +464,7 @@ def search_keys(endpoint: Platform, **params) -> list[str]:
 
 def count(endpoint: Platform, **params) -> int:
     """Count number of rules that correspond to certain filters"""
-    return json.loads(endpoint.get(Rule.API[api_mgr.SEARCH], params={**params, "ps": 1}).text)["total"]
+    return json.loads(endpoint.get(Rule.API[op.SEARCH], params={**params, "ps": 1}).text)["total"]
 
 
 def get_list(endpoint: Platform, use_cache: bool = True, **params) -> dict[str, Rule]:

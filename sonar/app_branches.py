@@ -34,7 +34,7 @@ from sonar.branches import Branch
 from sonar.projects import Project
 from sonar import exceptions
 import sonar.utilities as sutil
-import sonar.api.manager as api_mgr
+from sonar.api.manager import ApiOperation as op
 from sonar.api.manager import ApiManager as Api
 import sonar.util.constants as c
 
@@ -47,9 +47,7 @@ _NOT_SUPPORTED = "Applications not supported in community edition"
 
 
 class ApplicationBranch(Component):
-    """
-    Abstraction of the SonarQube "application branch" concept
-    """
+    """Abstraction of the SonarQube "application branch" concept"""
 
     CACHE = cache.Cache()
 
@@ -113,8 +111,8 @@ class ApplicationBranch(Component):
         for branch in custom_branches:
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
-        api_def = Api(cls, api_mgr.CREATE, app.endpoint)
-        api, _, _ = api_mgr.prep_params(api_def, **params)
+        api_def = Api(cls, op.CREATE, app.endpoint)
+        api, _, _ = api_def.get_all()
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
         app.endpoint.post(api, params=string_params)
         return cls(app=app, name=name, project_branches=projects_or_branches)
@@ -162,7 +160,7 @@ class ApplicationBranch(Component):
         if self.is_main():
             log.warning("Can't delete main %s, simply delete the application for that", str(self))
             return False
-        return super().delete()
+        return self.delete_object(application=self.concerned_object.key, branch=self.name)
 
     def reload(self, data: ApiPayload) -> None:
         """Reloads an App Branch from JSON data coming from Sonar"""
@@ -200,8 +198,8 @@ class ApplicationBranch(Component):
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
-        api_def = Api(self, api_mgr.UPDATE)
-        api, _, _ = api_mgr.prep_params(api_def, application=self.concerned_object.key, branch=self.name)
+        api_def = Api(self, op.UPDATE)
+        api, _, _ = api_def.get_all(application=self.concerned_object.key, branch=self.name)
         try:
             ok = self.post(api, params=string_params).ok
         except exceptions.ObjectNotFound:
@@ -239,10 +237,10 @@ class ApplicationBranch(Component):
             log.error("Error updating project branches %s: %s", self, e.message)
             return False
 
-    def api_params(self, op: Optional[str] = None) -> ApiParams:
+    def api_params(self, operation: Optional[str] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {api_mgr.READ: {"application": self.concerned_object.key, "branch": self.name}}
-        return ops[op] if op and op in ops else ops[api_mgr.READ]
+        ops = {op.READ: {"application": self.concerned_object.key, "branch": self.name}}
+        return ops[operation] if operation and operation in ops else ops[op.READ]
 
     def component_data(self) -> ObjectJsonRepr:
         """Returns key data"""
@@ -273,10 +271,10 @@ def list_from(app: Application, data: ApiPayload) -> dict[str, ApplicationBranch
     if not data or "branches" not in data:
         return {}
     branch_list = {}
-    api_def = Api(ApplicationBranch, api_mgr.LIST, app.endpoint)
+    api_def = Api(ApplicationBranch, op.LIST, app.endpoint)
     for br in data["branches"]:
-        api, _, params = api_mgr.prep_params(api_def, application=app.key, branch=br["name"])
-        ret = api_mgr.return_field(api_def)
+        api, _, params = api_def.get_all(application=app.key, branch=br["name"])
+        ret = api_def.return_field()
         branch_data = json.loads(app.endpoint.get(api, params=params).text)[ret]
         branch_list[branch_data["branch"]] = ApplicationBranch.load(app, branch_data)
     log.debug("Returning Application branch list %s", list(branch_list.keys()))

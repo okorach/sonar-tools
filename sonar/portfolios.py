@@ -46,7 +46,7 @@ import sonar.utilities as sutil
 from sonar.audit import rules, problem
 from sonar.portfolio_reference import PortfolioReference
 from sonar.util import portfolio_helper as phelp
-import sonar.api.manager as api_mgr
+from sonar.api.manager import ApiOperation as op
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -87,19 +87,17 @@ _IMPORTABLE_PROPERTIES = (
 
 
 class Portfolio(aggregations.Aggregation):
-    """
-    Abstraction of the Sonar portfolio concept
-    """
+    """Abstraction of the Sonar portfolio concept"""
 
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
     API = {
-        api_mgr.CREATE: "views/create",
-        api_mgr.GET: "views/show",
-        api_mgr.UPDATE: "views/update",
-        api_mgr.DELETE: "views/delete",
-        api_mgr.SEARCH: "views/search",
-        api_mgr.RECOMPUTE: "views/refresh",
+        op.CREATE: "views/create",
+        op.GET: "views/show",
+        op.UPDATE: "views/update",
+        op.DELETE: "views/delete",
+        op.SEARCH: "views/search",
+        op.RECOMPUTE: "views/refresh",
     }
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
@@ -153,7 +151,7 @@ class Portfolio(aggregations.Aggregation):
         params = {"name": name, "key": key, "parent": parent_key}
         for p in "description", "visibility":
             params[p] = kwargs.get(p, None)
-        endpoint.post(Portfolio.API[api_mgr.CREATE], params=params)
+        endpoint.post(Portfolio.API[op.CREATE], params=params)
         o = cls(endpoint=endpoint, name=name, key=key)
         if parent_key:
             parent_p = Portfolio.get_object(endpoint, parent_key)
@@ -228,7 +226,7 @@ class Portfolio(aggregations.Aggregation):
         if not self.is_toplevel():
             self.root_portfolio.refresh()
             return
-        data = json.loads(self.get(Portfolio.API[api_mgr.GET], params={"key": self.key}).text)
+        data = json.loads(self.get(Portfolio.API[op.GET], params={"key": self.key}).text)
         if not self.is_sub_portfolio():
             self.reload(data)
         self.root_portfolio.reload_sub_portfolios()
@@ -411,7 +409,7 @@ class Portfolio(aggregations.Aggregation):
         """Returns a portfolio selection mode"""
         if self._selection_mode is None:
             # FIXME: If portfolio is a subportfolio you must reload with sub-JSON
-            self.reload(json.loads(self.get(Portfolio.API[api_mgr.GET], params={"key": self.root_portfolio.key}).text))
+            self.reload(json.loads(self.get(Portfolio.API[op.GET], params={"key": self.root_portfolio.key}).text))
         return {k.lower(): v for k, v in self._selection_mode.items()}
 
     def has_project(self, key: str) -> bool:
@@ -507,13 +505,13 @@ class Portfolio(aggregations.Aggregation):
 
     def set_description(self, desc: str) -> Portfolio:
         if desc:
-            self.post(Portfolio.API[api_mgr.UPDATE], params={"key": self.key, "name": self.name, "description": desc})
+            self.post(Portfolio.API[op.UPDATE], params={"key": self.key, "name": self.name, "description": desc})
             self._description = desc
         return self
 
     def set_name(self, name: str) -> Portfolio:
         if name:
-            self.post(Portfolio.API[api_mgr.UPDATE], params={"key": self.key, "name": name})
+            self.post(Portfolio.API[op.UPDATE], params={"key": self.key, "name": name})
             self.name = name
         return self
 
@@ -649,15 +647,15 @@ class Portfolio(aggregations.Aggregation):
                     o_subp = self.add_subportfolio(key=key, name=subp_data["name"], by_ref=False)
                 o_subp.update(data=subp_data, recurse=True)
 
-    def api_params(self, op: Optional[str] = None) -> ApiParams:
+    def api_params(self, operation: Optional[op] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {api_mgr.READ: {"key": self.key}}
-        return ops[op] if op and op in ops else ops[api_mgr.READ]
+        ops = {op.READ: {"key": self.key}}
+        return ops[operation] if operation and operation in ops else ops[op.READ]
 
 
 def count(endpoint: Platform) -> int:
     """Counts number of portfolios"""
-    return aggregations.count(api=Portfolio.API[api_mgr.SEARCH], endpoint=endpoint)
+    return aggregations.count(api=Portfolio.API[op.SEARCH], endpoint=endpoint)
 
 
 def get_list(endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Portfolio]:
@@ -755,12 +753,12 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
 
 def search_by_name(endpoint: Platform, name: str) -> ApiPayload:
     """Searches portfolio by name and, if found, returns data as JSON"""
-    return sutil.search_by_name(endpoint, name, Portfolio.API[api_mgr.SEARCH], "components")
+    return sutil.search_by_name(endpoint, name, Portfolio.API[op.SEARCH], "components")
 
 
 def search_by_key(endpoint: Platform, key: str) -> ApiPayload:
     """Searches portfolio by key and, if found, returns data as JSON"""
-    return sutil.search_by_key(endpoint, key, Portfolio.API[api_mgr.SEARCH], "components")
+    return sutil.search_by_key(endpoint, key, Portfolio.API[op.SEARCH], "components")
 
 
 def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:

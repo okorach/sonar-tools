@@ -44,7 +44,7 @@ import sonar.utilities as sutil
 
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
-import sonar.api.manager as api_mgr
+from sonar.api.manager import ApiOperation as op
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -65,11 +65,11 @@ class QualityProfile(SqObject):
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "profiles"
     API = {
-        api_mgr.CREATE: "qualityprofiles/create",
-        api_mgr.GET: "qualityprofiles/search",
-        api_mgr.DELETE: "qualityprofiles/delete",
-        api_mgr.LIST: "qualityprofiles/search",
-        api_mgr.RENAME: "qualityprofiles/rename",
+        op.CREATE: "qualityprofiles/create",
+        op.GET: "qualityprofiles/search",
+        op.DELETE: "qualityprofiles/delete",
+        op.LIST: "qualityprofiles/search",
+        op.RENAME: "qualityprofiles/rename",
     }
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
@@ -118,7 +118,7 @@ class QualityProfile(SqObject):
         if o:
             return o
         data = sutil.search_by_name(
-            endpoint, name, QualityProfile.API[api_mgr.LIST], QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language}
+            endpoint, name, QualityProfile.API[op.LIST], QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language}
         )
         return cls(key=data["key"], endpoint=endpoint, data=data)
 
@@ -136,7 +136,7 @@ class QualityProfile(SqObject):
             log.error("Language '%s' does not exist, quality profile creation aborted")
             return None
         log.debug("Creating quality profile '%s' of language '%s'", name, language)
-        endpoint.post(QualityProfile.API[api_mgr.CREATE], params={"name": name, "language": language})
+        endpoint.post(QualityProfile.API[op.CREATE], params={"name": name, "language": language})
         return cls.read(endpoint=endpoint, name=name, language=language)
 
     @classmethod
@@ -216,7 +216,7 @@ class QualityProfile(SqObject):
             log.error("Can't set %s as parent of itself", str(self))
             return False
         elif self.parent_name is None or self.parent_name != parent_name:
-            r = self.post("qualityprofiles/change_parent", params={**self.api_params(api_mgr.GET), "parentQualityProfile": parent_name})
+            r = self.post("qualityprofiles/change_parent", params={**self.api_params(op.GET), "parentQualityProfile": parent_name})
             self.parent_name = parent_name
             self.rules(use_cache=False)
             return r.ok
@@ -229,7 +229,7 @@ class QualityProfile(SqObject):
         :return: Whether setting as default quality profile was successful
         :rtype: bool
         """
-        r = self.post("qualityprofiles/set_default", params=self.api_params(api_mgr.GET))
+        r = self.post("qualityprofiles/set_default", params=self.api_params(op.GET))
         if r.ok:
             self.is_default = True
             # Turn off default for all other profiles except the current profile
@@ -378,7 +378,7 @@ class QualityProfile(SqObject):
             log.debug("Updating %s with %s", self, data)
             if "name" in data and data["name"] != self.name:
                 log.info("Renaming %s with %s", self, data["name"])
-                self.post(QualityProfile.API[api_mgr.RENAME], params={"id": self.key, "name": data["name"]})
+                self.post(QualityProfile.API[op.RENAME], params={"id": self.key, "name": data["name"]})
                 QualityProfile.CACHE.pop(self)
                 self.name = data["name"]
                 QualityProfile.CACHE.put(self)
@@ -457,13 +457,13 @@ class QualityProfile(SqObject):
                 r.pop(k, None)
         return data
 
-    def api_params(self, op: str = api_mgr.GET) -> ApiParams:
+    def api_params(self, operation: Optional[op] = None) -> ApiParams:
         operations = {
-            api_mgr.GET: {"qualityProfile": self.name, "language": self.language},
-            api_mgr.LIST: {"q": self.name, "language": self.language},
-            api_mgr.DELETE: {"qualityProfile": self.name, "language": self.language},
+            op.GET: {"qualityProfile": self.name, "language": self.language},
+            op.LIST: {"q": self.name, "language": self.language},
+            op.DELETE: {"qualityProfile": self.name, "language": self.language},
         }
-        return operations[op] if op in operations else operations[api_mgr.GET]
+        return operations[operation] if operation and operation in operations else operations[op.GET]
 
     def rule_impacts(self, rule_key: str, substitute_with_default: bool = True) -> dict[str, str]:
         """Returns the impacts of a rule in the quality profile

@@ -39,7 +39,8 @@ from sonar.components import Component
 import sonar.util.issue_defs as idefs
 from sonar.util import cache
 from sonar import exceptions
-from sonar import sqobject, qualitygates, qualityprofiles, tasks, settings, webhooks, devops
+from sonar import qualityprofiles, tasks, settings, webhooks, devops
+from sonar.qualitygates import QualityGate
 from sonar import pull_requests, branches
 import sonar.util.misc as util
 import sonar.permissions.project_permissions as pperms
@@ -50,7 +51,7 @@ from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
 import sonar.util.project_helper as phelp
-import sonar.api.manager as api_mgr
+from sonar.api.manager import ApiOperation as op
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -113,12 +114,12 @@ class Project(Component):
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
     API = {
-        api_mgr.CREATE: "projects/create",
-        api_mgr.READ: "components/show",
-        api_mgr.DELETE: "projects/delete",
-        api_mgr.LIST: "components/search_projects",
-        api_mgr.SET_TAGS: "project_tags/set",
-        api_mgr.GET_TAGS: "components/show",
+        op.CREATE: "projects/create",
+        op.READ: "components/show",
+        op.DELETE: "projects/delete",
+        op.LIST: "components/search_projects",
+        op.SET_TAGS: "project_tags/set",
+        op.GET_TAGS: "components/show",
     }
 
     def __init__(self, endpoint: Platform, key: str) -> None:
@@ -151,7 +152,7 @@ class Project(Component):
         """
         if o := Project.CACHE.get(key, endpoint.local_url):
             return o
-        data = json.loads(endpoint.get(Project.API[api_mgr.READ], params={"component": key}).text)
+        data = json.loads(endpoint.get(Project.API[op.READ], params={"component": key}).text)
         return cls.load(endpoint, data["component"])
 
     @classmethod
@@ -180,7 +181,7 @@ class Project(Component):
         :return: The Project
         :rtype: Project
         """
-        endpoint.post(Project.API[api_mgr.CREATE], params={"project": key, "name": name})
+        endpoint.post(Project.API[op.CREATE], params={"project": key, "name": name})
         o = cls(endpoint, key)
         o.name = name
         o.refresh()
@@ -204,7 +205,7 @@ class Project(Component):
         :return: self
         """
         try:
-            data = json.loads(self.get(Project.api_for(api_mgr.READ, self.endpoint), params=self.api_params(api_mgr.READ)).text)
+            data = json.loads(self.get(Project.api_for(op.READ, self.endpoint), params=self.api_params(op.READ)).text)
         except exceptions.ObjectNotFound:
             Project.CACHE.pop(self)
             raise
@@ -553,7 +554,7 @@ class Project(Component):
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
-            data = self.endpoint.get_paginated(api=Project.API[api_mgr.LIST], return_field="components", filter=_PROJECT_QUALIFIER)
+            data = self.endpoint.get_paginated(api=Project.API[op.LIST], return_field="components", filter=_PROJECT_QUALIFIER)
             p_data = next((p for p in data["components"] if p["key"] == self.key), None)
             if p_data:
                 self.sq_json.update(p_data)
@@ -1077,7 +1078,7 @@ class Project(Component):
         """
         if quality_gate is None:
             return False
-        qualitygates.QualityGate.get_object(self.endpoint, quality_gate)
+        _ = QualityGate.get_object(self.endpoint, quality_gate)
         return self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate}).ok
 
     def set_contains_ai_code(self, contains_ai_code: bool) -> bool:
@@ -1305,10 +1306,10 @@ class Project(Component):
 
         # TODO: Set branch settings See https://github.com/okorach/sonar-tools/issues/1828
 
-    def api_params(self, op: Optional[str] = None) -> ApiParams:
+    def api_params(self, operation: Optional[op] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {api_mgr.READ: {"component": self.key}, api_mgr.DELETE: {"project": self.key}, api_mgr.SET_TAGS: {"project": self.key}}
-        return ops[op] if op and op in ops else {"project": self.key}
+        ops = {op.READ: {"component": self.key}, op.DELETE: {"project": self.key}, op.SET_TAGS: {"project": self.key}}
+        return ops[operation] if operation and operation in ops else {"project": self.key}
 
 
 def count(endpoint: Platform, params: ApiParams = None) -> int:
@@ -1320,7 +1321,7 @@ def count(endpoint: Platform, params: ApiParams = None) -> int:
     new_params.update({"ps": 1, "p": 1})
     if not endpoint.is_sonarcloud():
         new_params["filter"] = _PROJECT_QUALIFIER
-    return sutil.nbr_total_elements(json.loads(endpoint.get(Project.API[api_mgr.LIST], params=params).text))
+    return sutil.nbr_total_elements(json.loads(endpoint.get(Project.API[op.LIST], params=params).text))
 
 
 def search(endpoint: Platform, params: ApiParams = None, threads: int = 8) -> dict[str, Project]:
