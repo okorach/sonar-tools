@@ -402,7 +402,7 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     ratio = project_count / portfolio_count if portfolio_count > 0 else None
 
     log.info("Collecting quality gates maturity data")
-    qg_list = [q for q in qg.get_list(endpoint).values() if not q.is_built_in]
+    qg_list = [q for q in qg.QualityGate.get_list(endpoint).values() if not q.is_built_in]
 
     results = {
         "number_of_portfolios": portfolio_count,
