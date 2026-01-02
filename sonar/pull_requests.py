@@ -44,6 +44,7 @@ from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.util.types import ApiPayload, ApiParams, ConfigSettings
+    from sonar.projects import Project
 
 _UNSUPPORTED_IN_CE = "Pull requests not available in Community Edition"
 
@@ -55,10 +56,10 @@ class PullRequest(components.Component):
 
     CACHE = cache.Cache()
 
-    def __init__(self, project: object, key: str, data: Optional[ApiPayload] = None) -> None:
+    def __init__(self, project: Project, key: str, data: Optional[ApiPayload] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=project.endpoint, key=key)
-        self.concerned_object = project
+        self.concerned_object: Project = project
         self.json = data
         self._last_analysis: Optional[datetime] = None
         PullRequest.CACHE.put(self)
@@ -82,7 +83,7 @@ class PullRequest(components.Component):
         """
         return self.concerned_object.get_tags(**kwargs)
 
-    def project(self) -> object:
+    def project(self) -> Project:
         """Returns the project"""
         return self.concerned_object
 
@@ -133,7 +134,7 @@ class PullRequest(components.Component):
         return self.get_issues(filters) | self.get_hotspots(filters)
 
 
-def get_object(pull_request_key: str, project: object, data: Optional[ApiPayload] = None) -> Optional[PullRequest]:
+def get_object(pull_request_key: str, project: Project, data: Optional[ApiPayload] = None) -> Optional[PullRequest]:
     """Returns a PR object from a PR key and a project"""
     if project.endpoint.edition() == c.CE:
         log.debug("Pull requests not available in Community Edition")
@@ -144,7 +145,7 @@ def get_object(pull_request_key: str, project: object, data: Optional[ApiPayload
     return o
 
 
-def get_list(project: object) -> dict[str, PullRequest]:
+def get_list(project: Project) -> dict[str, PullRequest]:
     """Retrieves the list of pull requests of a project
 
     :param Project project: Project to get PRs from
