@@ -811,5 +811,128 @@
         "UPDATE": "qualityprofiles/update",
         "DELETE": "qualityprofiles/delete",
         "LIST": "qualityprofiles/search"
+    },
+    "DevopsPlatform": {
+        "5.2.0": {
+            "LIST": {
+                "method": "GET",
+                "api": "api/alm_settings/list_definitions",
+                "return_field": ""
+            },
+            "DELETE": {
+                "method": "POST",
+                "api": "api/alm_settings/delete",
+                "params": [
+                    "key"
+                ]
+            },
+            "CREATE_GITHUB": {
+                "method": "POST",
+                "api": "api/alm_settings/create_github",
+                "params": [
+                    "key",
+                    "url",
+                    "appId",
+                    "clientId",
+                    "clientSecret",
+                    "privateKey"
+                ]
+            },
+            "CREATE_GITLAB": {
+                "method": "POST",
+                "api": "api/alm_settings/create_gitlab",
+                "params": [
+                    "key",
+                    "url",
+                    "personalAccessToken"
+                ]
+            },
+            "CREATE_AZURE": {
+                "method": "POST",
+                "api": "api/alm_settings/create_azure",
+                "params": [
+                    "key",
+                    "url",
+                    "personalAccessToken"
+                ]
+            },
+            "CREATE_BITBUCKET": {
+                "method": "POST",
+                "api": "api/alm_settings/create_bitbucket",
+                "params": [
+                    "key",
+                    "url",
+                    "personalAccessToken"
+                ]
+            },
+            "CREATE_BITBUCKETCLOUD": {
+                "method": "POST",
+                "api": "api/alm_settings/create_bitbucketcloud",
+                "params": [
+                    "key",
+                    "workspace",
+                    "clientId",
+                    "clientSecret"
+                ]
+            },
+            "UPDATE_GITHUB": {
+                "method": "POST",
+                "api": "api/alm_settings/update_github",
+                "params": [
+                    "key",
+                    "url",
+                    "clientId",
+                    "appId",
+                    "privateKey",
+                    "clientSecret"
+                ]
+            },
+            "UPDATE_GITLAB": {
+                "method": "POST",
+                "api": "api/alm_settings/update_gitlab",
+                "params": [
+                    "key",
+                    "url",
+                    "personalAccessToken"
+                ]
+            },
+            "UPDATE_AZURE": {
+                "method": "POST",
+                "api": "api/alm_settings/update_azure",
+                "params": [
+                    "key",
+                    "url",
+                    "personalAccessToken"
+                ]
+            },
+            "UPDATE_BITBUCKET": {
+                "method": "POST",
+                "api": "api/alm_settings/update_bitbucket",
+                "params": [
+                    "key",
+                    "url",
+                    "personalAccessToken"
+                ]
+            },
+            "UPDATE_BITBUCKETCLOUD": {
+                "method": "POST",
+                "api": "api/alm_settings/update_bitbucketcloud",
+                "params": [
+                    "key",
+                    "workspace",
+                    "clientId",
+                    "clientSecret"
+                ]
+            },
+            "SET_PAT": {
+                "method": "POST",
+                "api": "api/alm_integrations/set_pat",
+                "params": [
+                    "almSettings",
+                    "pat",
+                    "username"
+                ]
+            }
+        }
     }
 }
