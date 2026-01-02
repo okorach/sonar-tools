@@ -88,7 +88,7 @@ def prep_params(api_def: dict[str, Any], **kwargs: Any) -> tuple[str, str, dict[
     if isinstance(params, list):
         params = {p: "{" + p + "}" for p in api_def.get("params", [])}
     params = {k: v.format_map(defaultdict(str, **kwargs)) for k, v in params.items() if kwargs.get(k) is not None}
-    params = {k: v for k, v in params.items() if v != ""}
+    # params = {k: v for k, v in params.items() if v != ""}
     return api, api_def["method"], params
 
 
