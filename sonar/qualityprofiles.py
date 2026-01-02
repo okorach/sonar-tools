@@ -45,6 +45,7 @@ import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -64,13 +65,12 @@ class QualityProfile(SqObject):
     CACHE = cache.Cache()
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "profiles"
-    API = {
-        op.CREATE: "qualityprofiles/create",
-        op.GET: "qualityprofiles/search",
-        op.DELETE: "qualityprofiles/delete",
-        op.LIST: "qualityprofiles/search",
-        op.RENAME: "qualityprofiles/rename",
-    }
+
+    @classmethod
+    def api_for(cls, operation: op, endpoint: Platform) -> str:
+        """Returns the API to use for a particular operation"""
+        api, _, _, _ = Api(cls, operation, endpoint).get_all()
+        return api
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
         """Do not use, use class methods to create objects"""
@@ -117,9 +117,8 @@ class QualityProfile(SqObject):
         o = QualityProfile.CACHE.get(name, language, endpoint.local_url)
         if o:
             return o
-        data = sutil.search_by_name(
-            endpoint, name, QualityProfile.API[op.LIST], QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language}
-        )
+        api, _, _, _ = Api(cls, op.LIST, endpoint).get_all()
+        data = sutil.search_by_name(endpoint, name, api, QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language})
         return cls(key=data["key"], endpoint=endpoint, data=data)
 
     @classmethod
@@ -136,7 +135,8 @@ class QualityProfile(SqObject):
             log.error("Language '%s' does not exist, quality profile creation aborted")
             return None
         log.debug("Creating quality profile '%s' of language '%s'", name, language)
-        endpoint.post(QualityProfile.API[op.CREATE], params={"name": name, "language": language})
+        api, _, params, _ = Api(cls, op.CREATE, endpoint).get_all(name=name, language=language)
+        endpoint.post(api, params=params)
         return cls.read(endpoint=endpoint, name=name, language=language)
 
     @classmethod
@@ -155,7 +155,8 @@ class QualityProfile(SqObject):
             raise exceptions.ObjectNotFound(f"{language}:{original_qp_name}", f"Quality profile {language}:{original_qp_name} not found")
         original_qp = l[0]
         log.debug("Found QP to clone: %s", str(original_qp))
-        endpoint.post("qualityprofiles/copy", params={"toName": name, "fromKey": original_qp.key})
+        api, _, params, _ = Api(cls, op.COPY, endpoint).get_all(toName=name, fromKey=original_qp.key)
+        endpoint.post(api, params=params)
         return cls.read(endpoint=endpoint, name=name, language=language)
 
     @classmethod
@@ -216,7 +217,10 @@ class QualityProfile(SqObject):
             log.error("Can't set %s as parent of itself", str(self))
             return False
         elif self.parent_name is None or self.parent_name != parent_name:
-            r = self.post("qualityprofiles/change_parent", params={**self.api_params(op.GET), "parentQualityProfile": parent_name})
+            api, _, params, _ = Api(self, op.CHANGE_PARENT).get_all(
+                qualityProfile=self.name, language=self.language, parentQualityProfile=parent_name
+            )
+            r = self.post(api, params=params)
             self.parent_name = parent_name
             self.rules(use_cache=False)
             return r.ok
@@ -229,7 +233,8 @@ class QualityProfile(SqObject):
         :return: Whether setting as default quality profile was successful
         :rtype: bool
         """
-        r = self.post("qualityprofiles/set_default", params=self.api_params(op.GET))
+        api, _, params, _ = Api(self, op.SET_DEFAULT).get_all(qualityProfile=self.name, language=self.language)
+        r = self.post(api, params=params)
         if r.ok:
             self.is_default = True
             # Turn off default for all other profiles except the current profile
@@ -299,7 +304,8 @@ class QualityProfile(SqObject):
             str_params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
             api_params["params"] = ";".join([f"{k}={v}" for k, v in str_params.items()])
         try:
-            ok = self.post("qualityprofiles/activate_rule", params=api_params).ok
+            api, _, _, _ = Api(self, op.ACTIVATE_RULE).get_all()
+            ok = self.post(api, params=api_params).ok
         except exceptions.SonarException:
             return False
         self._rules = self._rules or {}
@@ -315,7 +321,8 @@ class QualityProfile(SqObject):
         """
         log.debug("Deactivating rule %s in %s", rule_key, str(self))
         try:
-            return self.post("qualityprofiles/deactivate_rule", params={"key": self.key, "rule": rule_key}).ok
+            api, _, params, _ = Api(self, op.DEACTIVATE_RULE).get_all(key=self.key, rule=rule_key)
+            return self.post(api, params=params).ok
         except exceptions.SonarException:
             return False
 
@@ -378,7 +385,8 @@ class QualityProfile(SqObject):
             log.debug("Updating %s with %s", self, data)
             if "name" in data and data["name"] != self.name:
                 log.info("Renaming %s with %s", self, data["name"])
-                self.post(QualityProfile.API[op.RENAME], params={"id": self.key, "name": data["name"]})
+                api, _, params, _ = Api(self, op.RENAME).get_all(id=self.key, name=data["name"])
+                self.post(api, params=params)
                 QualityProfile.CACHE.pop(self)
                 self.name = data["name"]
                 QualityProfile.CACHE.put(self)
@@ -451,7 +459,8 @@ class QualityProfile(SqObject):
         :param QualityProfile another_qp: The second quality profile to compare with self
         :return: dict result of the compare ("inLeft", "inRight", "same", "modified")
         """
-        data = json.loads(self.get("qualityprofiles/compare", params={"leftKey": self.key, "rightKey": another_qp.key}).text)
+        api, _, params, _ = Api(self, op.COMPARE).get_all(leftKey=self.key, rightKey=another_qp.key)
+        data = json.loads(self.get(api, params=params).text)
         for r in data["inLeft"] + data["same"] + data["inRight"] + data["modified"]:
             for k in ("name", "pluginKey", "pluginName", "languageKey", "languageName"):
                 r.pop(k, None)
@@ -529,14 +538,13 @@ class QualityProfile(SqObject):
         with self._projects_lock:
             if self._projects is None:
                 self._projects = []
-                params = {"key": self.key, "ps": 500}
                 page = 1
                 more = True
                 while more:
-                    params["p"] = page
-                    data = json.loads(self.get("qualityprofiles/projects", params=params).text)
+                    api, _, params, ret = Api(self, op.GET_PROJECTS).get_all(key=self.key, ps=500, p=page)
+                    data = json.loads(self.get(api, params=params).text)
                     log.debug("Got QP %s data = %s", self.key, str(data))
-                    self._projects += [p["key"] for p in data["results"]]
+                    self._projects += [p["key"] for p in data[ret]]
                     page += 1
                     if self.endpoint.version() >= (10, 0, 0):
                         more = sutil.nbr_pages(data) >= page
