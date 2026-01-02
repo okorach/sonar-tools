@@ -118,9 +118,7 @@ class QualityProfile(SqObject):
         if o:
             return o
         api, _, _, _ = Api(cls, op.LIST, endpoint).get_all()
-        data = sutil.search_by_name(
-            endpoint, name, api, QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language}
-        )
+        data = sutil.search_by_name(endpoint, name, api, QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language})
         return cls(key=data["key"], endpoint=endpoint, data=data)
 
     @classmethod
@@ -219,7 +217,9 @@ class QualityProfile(SqObject):
             log.error("Can't set %s as parent of itself", str(self))
             return False
         elif self.parent_name is None or self.parent_name != parent_name:
-            api, _, params, _ = Api(self, op.CHANGE_PARENT).get_all(qualityProfile=self.name, language=self.language, parentQualityProfile=parent_name)
+            api, _, params, _ = Api(self, op.CHANGE_PARENT).get_all(
+                qualityProfile=self.name, language=self.language, parentQualityProfile=parent_name
+            )
             r = self.post(api, params=params)
             self.parent_name = parent_name
             self.rules(use_cache=False)
