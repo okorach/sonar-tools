@@ -51,11 +51,7 @@ KEY_SEPARATOR = " "
 
 
 class Component(SqObject):
-    """
-    Abstraction of the Sonar component concept
-    """
-
-    API = {api_mgr.READ: "components/show", api_mgr.LIST: "components/search"}
+    """Abstraction of the Sonar component concept"""
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
         """Constructor"""
