@@ -40,6 +40,7 @@ import sonar.util.constants as c
 if TYPE_CHECKING:
     from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr
     from datetime import datetime
+    from sonar.applications import Application
 
 _NOT_SUPPORTED = "Applications not supported in community edition"
 
@@ -53,7 +54,7 @@ class ApplicationBranch(Component):
 
     def __init__(
         self,
-        app: object,
+        app: Application,
         name: str,
         project_branches: list[Union[Project, Branch]],
         is_main: bool = False,
@@ -61,7 +62,7 @@ class ApplicationBranch(Component):
     ) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=app.endpoint, key=f"{app.key} BRANCH {name}")
-        self.concerned_object = app
+        self.concerned_object: Application = app
         self.name = name
         self.sq_json = branch_data
         self._is_main = is_main
@@ -71,7 +72,7 @@ class ApplicationBranch(Component):
         ApplicationBranch.CACHE.put(self)
 
     @classmethod
-    def get_object(cls, app: object, branch_name: str) -> ApplicationBranch:
+    def get_object(cls, app: Application, branch_name: str) -> ApplicationBranch:
         """Gets an Application object from SonarQube
 
         :param Application app: Reference to the Application holding that branch
@@ -92,7 +93,7 @@ class ApplicationBranch(Component):
         raise exceptions.ObjectNotFound(app.key, f"Application key '{app.key}' branch '{branch_name}' not found")
 
     @classmethod
-    def create(cls, app: object, name: str, projects_or_branches: list[Union[Project, Branch]]) -> ApplicationBranch:
+    def create(cls, app: Application, name: str, projects_or_branches: list[Union[Project, Branch]]) -> ApplicationBranch:
         """Creates an ApplicationBranch object in SonarQube
 
         :param Application app: Reference to the Application holding that branch
@@ -117,7 +118,7 @@ class ApplicationBranch(Component):
         return cls(app=app, name=name, project_branches=projects_or_branches)
 
     @classmethod
-    def load(cls, app: object, branch_data: ApiPayload) -> ApplicationBranch:
+    def load(cls, app: Application, branch_data: ApiPayload) -> ApplicationBranch:
         project_branches = []
         for proj_data in branch_data["projects"]:
             proj = Project.get_object(app.endpoint, proj_data["key"])
@@ -143,10 +144,10 @@ class ApplicationBranch(Component):
         """
         return self.concerned_object.get_tags(**kwargs)
 
-    def projects_branches(self) -> list[Branch]:
+    def projects_branches(self) -> list[Union[Project, Branch]]:
         """
         :return: The list of project branches included in the application branch
-        :rtype: list[Branch]
+        :rtype: list[Union[Project, Branch]]
         """
         return self._project_branches
 
@@ -265,7 +266,7 @@ def exists(app: object, branch: str) -> bool:
         return False
 
 
-def list_from(app: object, data: ApiPayload) -> dict[str, ApplicationBranch]:
+def list_from(app: Application, data: ApiPayload) -> dict[str, ApplicationBranch]:
     """Returns a dict of application branches form the pure App JSON"""
     if not data or "branches" not in data:
         return {}
