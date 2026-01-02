@@ -168,7 +168,7 @@ class SqObject(object):
     def get_paginated(cls, endpoint: Platform, params: Optional[ApiParams] = None, threads: int = 8) -> dict[str, SqObject]:
         """Returns all pages of a paginated API"""
         cname = cls.__name__.lower()
-        api_def = Api(cls.__name__, api_mgr.LIST, endpoint.version())
+        api_def = Api(cls, api_mgr.LIST, endpoint)
         page_field = api_mgr.page_field(api_def)
         max_ps = api_mgr.max_page_size(api_def)
         new_params = {"ps": max_ps, "pageSize": max_ps} | (params or {})
@@ -277,7 +277,7 @@ class SqObject(object):
         """Deletes an object, returns whether the operation succeeded"""
         log.info("Deleting %s", str(self))
         try:
-            api_def = Api(self.__class__.__name__, api_mgr.DELETE, self.endpoint.version())
+            api_def = Api(self, api_mgr.DELETE)
             api, method, params = api_mgr.prep_params(api_def, **kwargs)
             if method == "DELETE":
                 ok = self.endpoint.delete(api=api, params=params).ok
@@ -311,7 +311,7 @@ class SqObject(object):
         if tags is None:
             return False
         log.info("Settings tags %s to %s", tags, str(self))
-        api_def = Api(self.__class__.__name__, api_mgr.SET_TAGS, self.endpoint.version())
+        api_def = Api(self, api_mgr.SET_TAGS)
         api, _, params = api_mgr.prep_params(api_def, project=self.key, issue=self.key, application=self.key, tags=util.list_to_csv(tags))
         try:
             if ok := self.post(api, params=params).ok:
@@ -326,7 +326,7 @@ class SqObject(object):
     def get_tags(self, **kwargs: Any) -> list[str]:
         """Returns object tags"""
         try:
-            api_def = Api(self.__class__.__name__, api_mgr.GET_TAGS, self.endpoint.version())
+            api_def = Api(self, api_mgr.GET_TAGS)
             api, _, params = api_mgr.prep_params(api_def, component=self.key)
             ret = api_mgr.return_field(api_def)
         except ValueError as e:

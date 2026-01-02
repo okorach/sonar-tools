@@ -113,7 +113,8 @@ class ApplicationBranch(Component):
         for branch in custom_branches:
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
-        api, _, _ = Api(cls.__name__, api_mgr.CREATE, app.endpoint.version())
+        api_def = Api(cls, api_mgr.CREATE, app.endpoint)
+        api, _, _ = api_mgr.prep_params(api_def, **params)
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
         app.endpoint.post(api, params=string_params)
         return cls(app=app, name=name, project_branches=projects_or_branches)
@@ -199,7 +200,7 @@ class ApplicationBranch(Component):
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
-        api_def = Api(ApplicationBranch.__name__, api_mgr.UPDATE, self.endpoint.version())
+        api_def = Api(self, api_mgr.UPDATE)
         api, _, _ = api_mgr.prep_params(api_def, application=self.concerned_object.key, branch=self.name)
         try:
             ok = self.post(api, params=string_params).ok
@@ -272,7 +273,7 @@ def list_from(app: Application, data: ApiPayload) -> dict[str, ApplicationBranch
     if not data or "branches" not in data:
         return {}
     branch_list = {}
-    api_def = Api(ApplicationBranch.__name__, api_mgr.LIST, app.endpoint.version())
+    api_def = Api(ApplicationBranch, api_mgr.LIST, app.endpoint)
     for br in data["branches"]:
         api, _, params = api_mgr.prep_params(api_def, application=app.key, branch=br["name"])
         ret = api_mgr.return_field(api_def)

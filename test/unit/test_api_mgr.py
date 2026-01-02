@@ -21,12 +21,13 @@
 from sonar.api import manager as api_mgr
 from sonar.api.manager import ApiManager as Api
 
+from sonar.groups import Group
 import sonar.util.constants as c
 import utilities as tutil
 
 
 def test_api_mgr() -> None:
-    api_def = Api("Group", api_mgr.REMOVE_USER, tutil.SQ.version())
+    api_def = Api(Group, api_mgr.REMOVE_USER, tutil.SQ)
     api, method, params = api_mgr.prep_params(api_def, id="membership_id", login="user.login", name="group.name")
     if tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
         assert api == "v2/authorizations/group-memberships/membership_id"

@@ -90,7 +90,7 @@ class Application(aggr.Aggregation):
         o: Application = cls.CACHE.get(key, endpoint.local_url)
         if o:
             return o
-        api_def = Api(cls.__name__, api_mgr.READ, endpoint.version())
+        api_def = Api(cls, api_mgr.READ, endpoint)
         api, _, params = api_mgr.prep_params(api_def, application=key)
         ret = api_mgr.return_field(api_def)
         data = json.loads(endpoint.get(api, params=params).text)[ret]
@@ -125,7 +125,7 @@ class Application(aggr.Aggregation):
         :return: The created Application object
         """
         check_supported(endpoint)
-        api_def = Api(cls.__name__, api_mgr.CREATE, endpoint.version())
+        api_def = Api(cls, api_mgr.CREATE, endpoint)
         api, _, params = api_mgr.prep_params(api_def, key=key, name=name)
         endpoint.post(api, params=params)
         return Application(endpoint=endpoint, key=key, name=name)
@@ -150,7 +150,7 @@ class Application(aggr.Aggregation):
         """
         try:
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
-            api_def = Api(self.__class__.__name__, api_mgr.READ, self.endpoint.version())
+            api_def = Api(self, api_mgr.READ)
             api, _, params = api_mgr.prep_params(api_def, application=self.key)
             self.reload(json.loads(self.endpoint.get(api, params=params).text)[api_mgr.return_field(api_def)])
             return self
@@ -368,7 +368,7 @@ class Application(aggr.Aggregation):
         """Add projects to an application"""
         current_projects = self.projects().keys()
         ok = True
-        api_def = Api(self.__class__.__name__, api_mgr.ADD_PROJECT, self.endpoint.version())
+        api_def = Api(self, api_mgr.ADD_PROJECT)
         for proj in [p for p in project_list if p not in current_projects]:
             log.debug("Adding project '%s' to %s", proj, str(self))
             try:
@@ -394,7 +394,7 @@ class Application(aggr.Aggregation):
     def recompute(self) -> bool:
         """Triggers application recomputation, return whether the operation succeeded"""
         log.debug("Recomputing %s", str(self))
-        api_def = Api(self.__class__.__name__, api_mgr.RECOMPUTE, self.endpoint.version())
+        api_def = Api(self, api_mgr.RECOMPUTE)
         api, _, params = api_mgr.prep_params(api_def, application=self.key)
         return self.post(api, params=params).ok
 
@@ -458,7 +458,7 @@ def count(endpoint: Platform) -> int:
     :return: Count of applications
     """
     check_supported(endpoint)
-    api_def = Api(Application.__name__, api_mgr.LIST, endpoint.version())
+    api_def = Api(Application, api_mgr.LIST, endpoint)
     api, _, params = api_mgr.prep_params(api_def, ps=1, filter="qualifier = APP")
     return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=params).text))
 

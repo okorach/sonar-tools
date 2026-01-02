@@ -163,7 +163,7 @@ class QualityGate(SqObject):
     @classmethod
     def create(cls, endpoint: Platform, name: str) -> QualityGate:
         """Creates an empty quality gate"""
-        api_def = Api(cls.__name__, api_mgr.CREATE, endpoint.version())
+        api_def = Api(cls, api_mgr.CREATE, endpoint)
         api, _, params = api_mgr.prep_params(api_def, name=name)
         endpoint.post(api, params=params)
         return cls.get_object(endpoint, name)
@@ -193,7 +193,7 @@ class QualityGate(SqObject):
             return self._projects
         page, nb_pages = 1, 1
         self._projects = {}
-        api_def = Api(self.__class__.__name__, api_mgr.GET_PROJECTS, self.endpoint.version())
+        api_def = Api(self, api_mgr.GET_PROJECTS)
         max_ps = api_mgr.max_page_size(api_def)
         p_field = api_mgr.page_field(api_def)
         return_field = api_mgr.return_field(api_def)
@@ -220,7 +220,7 @@ class QualityGate(SqObject):
         :return: The quality gate conditions, encoded (for simplication) or not
         """
         if self._conditions is None:
-            api_def = Api(self.__class__.__name__, api_mgr.READ, self.endpoint.version())
+            api_def = Api(self, api_mgr.READ)
             api, _, params = api_mgr.prep_params(api_def, name=self.name)
             data = json.loads(self.get(api, params=params).text)
             log.debug("Loading %s with conditions %s", self, util.json_dump(data))
@@ -314,7 +314,7 @@ class QualityGate(SqObject):
             return True
         if "name" in data and data["name"] != self.name:
             log.info("Renaming %s with %s", self, data["name"])
-            api_def = Api(self.__class__.__name__, api_mgr.RENAME, self.endpoint.version())
+            api_def = Api(self, api_mgr.RENAME)
             api, _, params = api_mgr.prep_params(api_def, id=self.key, name=data["name"])
             self.post(api, params=params)
             QualityGate.CACHE.pop(self)
@@ -398,7 +398,7 @@ class QualityGate(SqObject):
         :rtype: dict {<name>: <QualityGate>}
         """
         log.info("Getting quality gates")
-        api_def = Api(cls.__name__, api_mgr.LIST, endpoint.version())
+        api_def = Api(cls, api_mgr.LIST, endpoint)
         api, _, params = api_mgr.prep_params(api_def)
         dataset = json.loads(endpoint.get(api, params=params).text)[api_mgr.return_field(api_def)]
         qg_list = {}
@@ -561,7 +561,7 @@ def _decode_condition(cond: str) -> tuple[str, str, str]:
 
 def search_by_name(endpoint: Platform, name: str) -> Optional[dict[str, Any]]:
     """Searches quality gates matching name"""
-    api_def = Api(QualityGate.__name__, api_mgr.LIST, endpoint.version())
+    api_def = Api(QualityGate, api_mgr.LIST, endpoint)
     api, _, _ = api_mgr.prep_params(api_def)
     return sutil.search_by_name(endpoint, name, api, api_mgr.return_field(api_def))
 
