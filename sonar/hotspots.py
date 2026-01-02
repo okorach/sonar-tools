@@ -38,6 +38,7 @@ from sonar import exceptions
 import sonar.util.issue_defs as idefs
 import sonar.utilities as sutil
 from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -94,7 +95,6 @@ class Hotspot(findings.Finding):
     """Abstraction of the Sonar hotspot concept"""
 
     CACHE = cache.Cache()
-    API = {op.GET: "hotspots/show", op.SEARCH: "hotspots/search", op.ASSIGN: "hotspots/assign"}
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
@@ -110,10 +110,10 @@ class Hotspot(findings.Finding):
         """Returns the string representation of the object"""
         return f"Hotspot key '{self.key}'"
 
-    def api_params(self, operation: str = op.GET) -> ApiParams:
+    def api_params(self, operation: op = op.READ) -> ApiParams:
         """Returns the base API params to be used of a hotspot"""
-        ops = {op.GET: {"hotspot": self.key}}
-        return ops[operation] if operation in ops else ops[op.LIST]
+        ops = {op.READ: {"hotspot": self.key}}
+        return ops[operation] if operation in ops else ops[op.READ]
 
     def url(self) -> str:
         """Returns the permalink URL to the hotspot in the SonarQube platform"""
@@ -145,7 +145,8 @@ class Hotspot(findings.Finding):
         :return: Whether there operation succeeded
         """
         try:
-            resp = self.get(Hotspot.API[op.GET], self.api_params())
+            api, _, params, _ = Api(self, op.READ).get_all(**self.api_params())
+            resp = self.get(api, params=params)
             if resp.ok:
                 d = json.loads(resp.text)
                 self.__details = d
@@ -168,7 +169,8 @@ class Hotspot(findings.Finding):
         """
         try:
             params = util.remove_nones({**self.api_params(), "status": status, "resolution": resolution, "commemt": comment})
-            ok = self.post("hotspots/change_status", params=params).ok
+            api, _, api_params, _ = Api(self, op.CHANGE_STATUS).get_all(**params)
+            ok = self.post(api, params=api_params).ok
             self.refresh()
         except exceptions.SonarException:
             return False
@@ -220,7 +222,8 @@ class Hotspot(findings.Finding):
         :return: Whether the operation succeeded
         """
         try:
-            return self.post("hotspots/add_comment", params={**self.api_params(), "comment": comment}).ok
+            api, _, params, _ = Api(self, op.ADD_COMMENT).get_all(**{**self.api_params(), "comment": comment})
+            return self.post(api, params=params).ok
         except exceptions.SonarException:
             return False
 
@@ -391,7 +394,8 @@ def search(endpoint: Platform, filters: ApiParams = None) -> dict[str, Hotspot]:
         while p <= nbr_pages:
             inline_filters["p"] = p
             try:
-                data = json.loads(endpoint.get(Hotspot.API[op.SEARCH], params=inline_filters, mute=(HTTPStatus.NOT_FOUND,)).text)
+                api, _, api_params, ret = Api(Hotspot, op.SEARCH, endpoint).get_all(**inline_filters)
+                data = json.loads(endpoint.get(api, params=api_params, mute=(HTTPStatus.NOT_FOUND,)).text)
                 nbr_hotspots = sutil.nbr_total_elements(data)
             except exceptions.SonarException:
                 nbr_hotspots = 0
@@ -399,14 +403,14 @@ def search(endpoint: Platform, filters: ApiParams = None) -> dict[str, Hotspot]:
             nbr_pages = sutil.nbr_pages(data)
             log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, p, nbr_pages)
             if nbr_hotspots > Hotspot.MAX_SEARCH:
-                errmsg = f"""{nbr_hotspots} hotpots returned by api/{Hotspot.API[op.SEARCH]}, """
+                errmsg = f"""{nbr_hotspots} hotpots returned by {api}, """
                 """this is more than the max {Hotspot.MAX_SEARCH} possible"""
                 raise TooManyHotspotsError(nbr_hotspots, errmsg)
 
             for enrichment in "branch", "pullRequest":
                 if enrichment in inline_filters:
-                    data["hotspots"] = [{**ele, enrichment: inline_filters[enrichment]} for _, ele in enumerate(data["hotspots"])]
-            hotspots_list |= {i["key"]: get_object(endpoint=endpoint, key=i["key"], data=i) for i in data["hotspots"]}
+                    data[ret] = [{**ele, enrichment: inline_filters[enrichment]} for _, ele in enumerate(data[ret])]
+            hotspots_list |= {i["key"]: get_object(endpoint=endpoint, key=i["key"], data=i) for i in data[ret]}
             p += 1
     return post_search_filter(hotspots_list, filters)
 
@@ -481,6 +485,7 @@ def count(endpoint: Platform, **kwargs: Any) -> int:
     params = {} if not kwargs else kwargs.copy()
     params["ps"] = 1
     params = sanitize_search_filters(endpoint, params)
-    nbr_hotspots = sutil.nbr_total_elements(json.loads(endpoint.get(Hotspot.API[op.SEARCH], params=params, mute=(HTTPStatus.NOT_FOUND,)).text))
+    api, _, api_params, _ = Api(Hotspot, op.SEARCH, endpoint).get_all(**params)
+    nbr_hotspots = sutil.nbr_total_elements(json.loads(endpoint.get(api, params=api_params, mute=(HTTPStatus.NOT_FOUND,)).text))
     log.debug("Hotspot counts with filters %s returned %d hotspots", str(kwargs), nbr_hotspots)
     return nbr_hotspots

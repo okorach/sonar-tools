@@ -934,5 +934,74 @@
                 ]
             }
         }
+    },
+    "Hotspot": {
+        "5.2.0": {
+            "LIST": {
+                "method": "GET",
+                "api": "api/hotspots/search",
+                "params": [
+                    "branch",
+                    "cwe",
+                    "files",
+                    "hotspots",
+                    "inNewCodePeriod",
+                    "onlyMine",
+                    "owaspAsvs-4.0",
+                    "owaspAsvsLevel",
+                    "owaspTop10",
+                    "owaspTop10-2021",
+                    "p",
+                    "pciDss-3.2",
+                    "pciDss-4.0",
+                    "project",
+                    "projectKey",
+                    "ps",
+                    "pullRequest",
+                    "resolution",
+                    "sinceLeakPeriod",
+                    "sonarsourceSecurity",
+                    "status"
+                ],
+                "return_field": "hotspots",
+                "page_field": "p",
+                "max_page_size": 500
+            },
+            "READ": {
+                "method": "GET",
+                "api": "api/hotspots/show",
+                "params": [
+                    "hotspot"
+                ],
+                "return_field": ""
+            },
+            "ASSIGN": {
+                "method": "POST",
+                "api": "api/hotspots/assign",
+                "params": [
+                    "hotspot",
+                    "assignee",
+                    "comment"
+                ]
+            },
+            "CHANGE_STATUS": {
+                "method": "POST",
+                "api": "api/hotspots/change_status",
+                "params": [
+                    "hotspot",
+                    "status",
+                    "resolution",
+                    "commemt"
+                ]
+            },
+            "ADD_COMMENT": {
+                "method": "POST",
+                "api": "api/hotspots/add_comment",
+                "params": [
+                    "hotspot",
+                    "comment"
+                ]
+            }
+        }
     }
 }
