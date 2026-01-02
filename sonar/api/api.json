@@ -1310,5 +1310,58 @@
                 ]
             }
         }
+    },
+    "Branch": {
+        "5.2.0": {
+            "LIST": {
+                "method": "GET",
+                "api": "api/project_branches/list",
+                "params": [
+                    "project"
+                ],
+                "return_field": "branches"
+            },
+            "DELETE": {
+                "method": "POST",
+                "api": "api/project_branches/delete",
+                "params": [
+                    "project",
+                    "branch"
+                ]
+            },
+            "RENAME": {
+                "method": "POST",
+                "api": "api/project_branches/rename",
+                "params": [
+                    "project",
+                    "name"
+                ]
+            },
+            "LIST_NEW_CODE_PERIODS": {
+                "method": "GET",
+                "api": "api/new_code_periods/list",
+                "params": [
+                    "project"
+                ],
+                "return_field": "newCodePeriods"
+            },
+            "SET_AUTOMATIC_DELETION_PROTECTION": {
+                "method": "POST",
+                "api": "api/project_branches/set_automatic_deletion_protection",
+                "params": [
+                    "project",
+                    "branch",
+                    "value"
+                ]
+            },
+            "SET_MAIN": {
+                "method": "POST",
+                "api": "api/project_branches/set_main",
+                "params": [
+                    "project",
+                    "branch"
+                ]
+            }
+        }
     }
 }
