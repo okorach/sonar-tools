@@ -36,6 +36,7 @@ import sonar.utilities as sutil
 from sonar import projects, rules
 import sonar.util.issue_defs as idefs
 from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -327,7 +328,9 @@ class Finding(SqObject):
             else:
                 log.debug("Assigning %s to '%s'", self, assignee)
             params = util.remove_nones({**self.api_params(), "assignee": assignee, "comment": comment})
-            if ok := self.post(self.__class__.API[op.ASSIGN], params=params).ok:
+            api_def = Api(self, op.ASSIGN)
+            api, _, api_params, _ = api_def.get_all(**params)
+            if ok := self.post(api, params=api_params).ok:
                 self.assignee = assignee
         except exceptions.SonarException:
             return False
@@ -486,7 +489,9 @@ class Finding(SqObject):
 
     def do_transition(self, transition: str) -> bool:
         try:
-            return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
+            api_def = Api(self, op.DO_TRANSITION)
+            api, _, params, _ = api_def.get_all(issue=self.key, transition=transition)
+            return self.post(api, params=params).ok
         except exceptions.SonarException as e:
             if re.match(r"Transition from state [A-Za-z]+ does not exist", e.message):
                 raise exceptions.UnsupportedOperation(e.message) from e
