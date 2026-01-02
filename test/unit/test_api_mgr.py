@@ -28,12 +28,14 @@ import utilities as tutil
 
 def test_api_mgr() -> None:
     api_def = Api(Group, op.REMOVE_USER, tutil.SQ)
-    api, method, params = api_def.get_all(id="membership_id", login="user.login", name="group.name")
+    api, method, params, ret = api_def.get_all(id="membership_id", login="user.login", name="group.name")
     if tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
         assert api == "v2/authorizations/group-memberships/membership_id"
         assert method == "DELETE"
         assert params == {}
+        assert ret is None
     else:
         assert api == "api/user_groups/remove_user"
         assert method == "POST"
         assert params == {"login": "user.login", "name": "group.name"}
+        assert ret is None
