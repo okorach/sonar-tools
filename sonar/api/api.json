@@ -789,13 +789,6 @@
             }
         }
     },
-    "QualityProfile": {
-        "CREATE": "qualityprofiles/create",
-        "READ": "qualityprofiles/show",
-        "UPDATE": "qualityprofiles/update",
-        "DELETE": "qualityprofiles/delete",
-        "LIST": "qualityprofiles/search"
-    },
     "DevopsPlatform": {
         "5.2.0": {
             "LIST": {
