@@ -309,10 +309,11 @@ class SqObject(object):
         """
         if tags is None:
             return False
-        tags = list(set(util.csv_to_list(tags)))
         log.info("Settings tags %s to %s", tags, str(self))
+        api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.SET_TAGS, self.endpoint.version())
+        api, _, params = api_mgr.prep_params(api_def, project=self.key, issue=self.key, application=self.key, tags=util.list_to_csv(tags))
         try:
-            if ok := self.post(self.__class__.API[api_mgr.SET_TAGS], params={**self.api_params(api_mgr.SET_TAGS), "tags": util.list_to_csv(tags)}).ok:
+            if ok := self.post(api, params=params).ok:
                 self._tags = sorted(tags)
         except exceptions.SonarException:
             return False
@@ -324,15 +325,16 @@ class SqObject(object):
     def get_tags(self, **kwargs: Any) -> list[str]:
         """Returns object tags"""
         try:
-            api = self.__class__.API[api_mgr.GET_TAGS]
-        except (AttributeError, KeyError) as e:
+            api_def = api_mgr.get_api_def(self.__class__.__name__, api_mgr.GET_TAGS, self.endpoint.version())
+            api, _, params = api_mgr.prep_params(api_def, component=self.key)
+            ret = api_mgr.return_field(api_def)
+        except ValueError as e:
             raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags") from e
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
         if not kwargs.get(c.USE_CACHE, True) or self._tags is None:
             try:
-                data = json.loads(self.get(api, params=self.get_tags_params()).text)
-                self.reload(data["component"])
+                self.reload(json.loads(self.get(api, params=params).text)[ret])
                 self._tags = self.sq_json["tags"]
             except exceptions.SonarException:
                 self._tags = []
