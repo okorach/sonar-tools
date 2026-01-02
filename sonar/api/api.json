@@ -169,7 +169,7 @@
     },
     "Issue": {
         "5.2.0": {
-            "SEARCH": {
+            "LIST": {
                 "method": "GET",
                 "api": "api/issues/search",
                 "params": [
