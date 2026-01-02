@@ -73,7 +73,7 @@ class ApiManager:
     def __init__(self, object_or_class: object, op: ApiOperation, endpoint: Optional[Platform] = None) -> None:
         """Constructor"""
         self.endpoint: Platform = endpoint
-        self.api_class: type[object] = object_or_class
+        self.api_class: object = object_or_class
         if not inspect.isclass(object_or_class):
             self.api_class = object_or_class.__class__
             self.endpoint = object_or_class.endpoint
