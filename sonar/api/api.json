@@ -1363,5 +1363,56 @@
                 ]
             }
         }
+    },
+    "Project": {
+        "5.2.0": {
+            "CREATE": {
+                "method": "POST",
+                "api": "api/projects/create",
+                "params": [
+                    "project",
+                    "name"
+                ]
+            },
+            "READ": {
+                "method": "GET",
+                "api": "api/components/show",
+                "params": [
+                    "component"
+                ]
+            },
+            "DELETE": {
+                "method": "POST",
+                "api": "api/projects/delete",
+                "params": [
+                    "project"
+                ]
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "api/components/search_projects",
+                "params": [
+                    "filter",
+                    "q",
+                    "qualifiers"
+                ],
+                "return_field": "components"
+            },
+            "SET_TAGS": {
+                "method": "POST",
+                "api": "api/project_tags/set",
+                "params": [
+                    "project",
+                    "tags"
+                ]
+            },
+            "GET_TAGS": {
+                "method": "GET",
+                "api": "api/components/show",
+                "params": [
+                    "component"
+                ]
+            }
+        }
     }
 }
