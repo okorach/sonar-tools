@@ -35,6 +35,7 @@ from sonar.util import cache
 from sonar import exceptions
 import sonar.util.misc as util
 from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -47,14 +48,11 @@ _NOT_SUPPORTED = "Organizations do not exist in SonarQube"
 
 
 class Organization(SqObject):
-    """
-    Abstraction of the SonarQube Cloud "organization" concept
-    """
+    """Abstraction of the SonarQube Cloud "organization" concept"""
 
     CACHE = cache.Cache()
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "organizations"
-    API = {op.SEARCH: "organizations/search"}
 
     def __init__(self, endpoint: Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
@@ -79,10 +77,11 @@ class Organization(SqObject):
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         if o := Organization.CACHE.get(key, endpoint.local_url):
             return o
-        data = json.loads(endpoint.get(Organization.API[op.SEARCH], params={"organizations": key}).text)
-        if len(data["organizations"]) == 0:
+        api, _, params, ret = Api(cls, op.SEARCH, endpoint).get_all(organizations=key)
+        data = json.loads(endpoint.get(api, params=params).text)
+        if len(data[ret]) == 0:
             raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")
-        return cls.load(endpoint, data["organizations"][0])
+        return cls.load(endpoint, data[ret][0])
 
     @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> Organization:
