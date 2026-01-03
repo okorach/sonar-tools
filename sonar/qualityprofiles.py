@@ -66,12 +66,6 @@ class QualityProfile(SqObject):
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "profiles"
 
-    @classmethod
-    def api_for(cls, operation: op, endpoint: Platform) -> str:
-        """Returns the API to use for a particular operation"""
-        api, _, _, _ = Api(cls, operation, endpoint).get_all()
-        return api
-
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
         """Do not use, use class methods to create objects"""
         super().__init__(endpoint=endpoint, key=key)
@@ -99,6 +93,13 @@ class QualityProfile(SqObject):
 
         log.debug("Created %s", str(self))
         QualityProfile.CACHE.put(self)
+
+    def __str__(self) -> str:
+        """String formatting of the object"""
+        return f"quality profile '{self.name}' of language '{self.language}'"
+
+    def __hash__(self) -> int:
+        return hash((self.name, self.language, self.base_url()))
 
     @classmethod
     def read(cls, endpoint: Platform, name: str, language: str) -> Optional[QualityProfile]:
@@ -172,12 +173,12 @@ class QualityProfile(SqObject):
         log.debug("Loading quality profile '%s' of language '%s'", data["name"], data["language"])
         return cls(endpoint=endpoint, key=data["key"], data=data)
 
-    def __str__(self) -> str:
-        """String formatting of the object"""
-        return f"quality profile '{self.name}' of language '{self.language}'"
+    @classmethod
+    def api_for(cls, operation: op, endpoint: Platform) -> str:
+        """Returns the API to use for a particular operation"""
+        api, _, _, _ = Api(cls, operation, endpoint).get_all()
+        return api
 
-    def __hash__(self) -> int:
-        return hash((self.name, self.language, self.base_url()))
 
     def url(self) -> str:
         """
