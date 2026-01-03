@@ -209,7 +209,7 @@ class Rule(SqObject):
         """
         if o := Rule.CACHE.get(key, endpoint.local_url):
             return o
-        Rule.search_objects(endpoint=endpoint, params={"q": key})
+        Rule.get_paginated(endpoint=endpoint, params={"q": key})
         if o := Rule.CACHE.get(key, endpoint.local_url):
             return o
         raise exceptions.ObjectNotFound(key, f"Rule key '{key}' not found")
@@ -449,7 +449,7 @@ def get_facet(facet: str, endpoint: Platform) -> dict[str, str]:
 
 def search(endpoint: Platform, params: dict[str, str]) -> dict[str, Rule]:
     """Searches rules with optional filters"""
-    return Rule.search_objects(endpoint=endpoint, params=params, threads=4)
+    return Rule.get_paginated(endpoint=endpoint, params=params, threads=4)
 
 
 def search_keys(endpoint: Platform, **params) -> list[str]:
