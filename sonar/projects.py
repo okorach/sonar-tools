@@ -309,7 +309,7 @@ class Project(Component):
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         log.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-        return super().delete()
+        return self.delete_object(**self.api_params(op.DELETE))
 
     def has_binding(self) -> bool:
         """Whether the project has a DevOps platform binding"""
