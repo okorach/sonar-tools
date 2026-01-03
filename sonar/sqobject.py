@@ -104,8 +104,8 @@ class SqObject(object):
             return cls.get_object(endpoint, **kwargs) is not None
         except exceptions.NoPermissions:
             return True
-        except AttributeError:
-            raise exceptions.UnsupportedOperation(f"Can't check existence of {cls.__name__.lower()}s")
+        except AttributeError as e:
+            raise exceptions.UnsupportedOperation(f"Can't check existence of {cls.__name__.lower()}s") from e
         except exceptions.ObjectNotFound:
             return False
 
@@ -116,10 +116,10 @@ class SqObject(object):
             raise exceptions.UnsupportedOperation(f"Can't check access on {cls.__name__.lower()}s")
         try:
             cls.get_object(endpoint, obj_key)
+        except AttributeError as e:
+            raise exceptions.UnsupportedOperation(f"Can't check access on {cls.__name__.lower()}s") from e
         except (exceptions.NoPermissions, exceptions.ObjectNotFound):
             return False
-        except AttributeError:
-            raise exceptions.UnsupportedOperation(f"Can't check access on {cls.__name__.lower()}s")
         return True
 
     @classmethod
