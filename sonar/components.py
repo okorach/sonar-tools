@@ -90,7 +90,8 @@ class Component(SqObject):
             "ps": 1,
             "metricKeys": "bugs,vulnerabilities,code_smells,security_hotspots",
         }
-        data = json.loads(self.get("measures/component_tree", params=parms).text)
+        api, _, api_params, ret = Api(self, op.GET_SUBCOMPONENTS).get_all(**parms)
+        data = json.loads(self.get(api, params=api_params).text)
         nb_comp = sutil.nbr_total_elements(data)
         log.debug("Found %d subcomponents to %s", nb_comp, str(self))
         nb_pages = math.ceil(nb_comp / 500)
@@ -98,8 +99,9 @@ class Component(SqObject):
         parms["ps"] = 500
         for page in range(nb_pages):
             parms["p"] = page + 1
-            data = json.loads(self.get("measures/component_tree", params=parms).text)
-            for d in data["components"]:
+            api, _, api_params, ret = Api(self, op.GET_SUBCOMPONENTS).get_all(**parms)
+            data = json.loads(self.get(api, params=api_params).text)
+            for d in data[ret]:
                 nbr_issues = 0
                 for m in d["measures"]:
                     nbr_issues += int(m["value"])
