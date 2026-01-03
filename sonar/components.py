@@ -38,6 +38,7 @@ from sonar import settings, tasks, measures, rules, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
@@ -66,6 +67,10 @@ class Component(SqObject):
         if data is not None:
             self.reload(data)
 
+    def __str__(self) -> str:
+        """String representation of object"""
+        return self.key
+
     def reload(self, data: ApiPayload) -> Component:
         """Loads a SonarQube API JSON payload in a Component"""
         super().reload(data)
@@ -77,13 +82,6 @@ class Component(SqObject):
             self._last_analysis = sutil.string_to_date(data["analysisDate"])
         return self
 
-    def __str__(self) -> str:
-        """String representation of object"""
-        return self.key
-
-    def get_tags_params(self) -> dict[str, str]:
-        return {"component": self.key}
-
     def get_subcomponents(self, strategy: str = "children", with_issues: bool = False) -> dict[str, Component]:
         """Returns component subcomponents"""
         parms = {
@@ -92,7 +90,8 @@ class Component(SqObject):
             "ps": 1,
             "metricKeys": "bugs,vulnerabilities,code_smells,security_hotspots",
         }
-        data = json.loads(self.get("measures/component_tree", params=parms).text)
+        api, _, api_params, ret = Api(self, op.GET_SUBCOMPONENTS).get_all(**parms)
+        data = json.loads(self.get(api, params=api_params).text)
         nb_comp = sutil.nbr_total_elements(data)
         log.debug("Found %d subcomponents to %s", nb_comp, str(self))
         nb_pages = math.ceil(nb_comp / 500)
@@ -100,8 +99,9 @@ class Component(SqObject):
         parms["ps"] = 500
         for page in range(nb_pages):
             parms["p"] = page + 1
-            data = json.loads(self.get("measures/component_tree", params=parms).text)
-            for d in data["components"]:
+            api, _, api_params, ret = Api(self, op.GET_SUBCOMPONENTS).get_all(**parms)
+            data = json.loads(self.get(api, params=api_params).text)
+            for d in data[ret]:
                 nbr_issues = 0
                 for m in d["measures"]:
                     nbr_issues += int(m["value"])
@@ -232,7 +232,8 @@ class Component(SqObject):
         """Returns the new code period start date of a component or None if this component has no new code start date"""
         if self._new_code_start_date is None:
             params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(op.GET))
-            data = json.loads(self.get(Component.API[op.READ], params=params).text)["component"]
+            api, _, api_params, ret = Api(self, op.READ).get_all(**params)
+            data = json.loads(self.get(api, params=api_params).text)[ret]
             self.sq_json |= data
             if "leakPeriodDate" in data:
                 self._new_code_start_date = sutil.string_to_date(data["leakPeriodDate"])

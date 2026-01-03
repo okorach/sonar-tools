@@ -144,12 +144,50 @@
         }
     },
     "Component": {
-        "CREATE": "components/create",
-        "READ": "components/show",
-        "UPDATE": "components/update",
-        "DELETE": "components/delete",
-        "LIST": "components/search",
-        "search": "components/search"
+        "5.2.0": {
+            "READ": {
+                "method": "GET",
+                "api": "api/components/show",
+                "params": [
+                    "component",
+                    "branch",
+                    "pullRequest"
+                ],
+                "return_field": "component"
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "api/components/search",
+                "params": [
+                    "p",
+                    "ps",
+                    "q",
+                    "qualifiers"
+                ],
+                "return_field": "components",
+                "page_field": "p",
+                "max_page_size": 500
+            },
+            "GET_SUBCOMPONENTS": {
+                "method": "GET",
+                "api": "api/measures/component_tree",
+                "params": [
+                    "component",
+                    "p",
+                    "ps",
+                    "branch",
+                    "pullRequest",
+                    "q",
+                    "qualifiers",
+                    "s",
+                    "strategy",
+                    "asc"
+                ],
+                "return_field": "components",
+                "page_field": "p",
+                "max_page_size": 500
+            }
+        }
     },
     "Issue": {
         "5.2.0": {
@@ -1099,6 +1137,53 @@
             }
         }
     },
+    "WebHook": {
+        "5.2.0": {
+            "CREATE": {
+                "method": "POST",
+                "api": "api/webhooks/create",
+                "params": [
+                    "name",
+                    "url",
+                    "secret",
+                    "project"
+                ]
+            },
+            "READ": {
+                "method": "GET",
+                "api": "api/webhooks/list",
+                "params": [
+                    "webhook"
+                ],
+                "return_field": "webhooks"  
+            },
+            "UPDATE": {
+                "method": "POST",
+                "api": "api/webhooks/update",
+                "params": [
+                    "webhook",
+                    "name",
+                    "url",
+                    "secret"
+                ]
+            },
+            "DELETE": {
+                "method": "POST",
+                "api": "api/webhooks/delete",
+                "params": [
+                    "webhook"
+                ]
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "api/webhooks/list",
+                "params": [
+                    "project"
+                ],
+                "return_field": "webhooks"
+            }
+        }
+    },
     "QualityProfile": {
         "5.2.0": {
             "CREATE": {
@@ -1218,6 +1303,112 @@
                     "ps"
                 ],
                 "return_field": "results",
+                "page_field": "p",
+                "max_page_size": 500
+            }
+        }
+    },
+    "Rule": {
+        "5.2.0": {
+            "CREATE": {
+                "method": "POST",
+                "api": "api/rules/create",
+                "params": [
+                    "customKey",
+                    "templateKey",
+                    "name",
+                    "severity",
+                    "impacts",
+                    "params",
+                    "markdownDescription",
+                    "cleanCodeAttribute",
+                    "status",
+                    "type"
+                ]
+            },
+            "READ": {
+                "method": "GET",
+                "api": "api/rules/show",
+                "params": [
+                    "key",
+                    "actives"
+                ],
+                "return_field": "rule"
+            },
+            "UPDATE": {
+                "method": "POST",
+                "api": "api/rules/update",
+                "params": [
+                    "key",
+                    "impacts",
+                    "markdownDescription",
+                    "markdown_note",
+                    "name",
+                    "params",
+                    "remediation_fn_base_effort",
+                    "remediation_fn_type",
+                    "remediation_fn_gap_multiplier",
+                    "severity",
+                    "status",
+                    "tags"
+                ]
+            },
+            "DELETE": {
+                "method": "POST",
+                "api": "api/rules/delete",
+                "params": [
+                    "key"
+                ]
+            },
+            "GET_TAGS": {
+                "method": "GET",
+                "api": "api/rules/tags",
+                "params": [
+                    "ps",
+                    "q"
+                ],
+                "page_field": "p",
+                "max_page_size": 500
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "api/rules/search",
+                "params": [
+                    "activation",
+                    "active_impactSeverities",
+                    "active_severities",
+                    "asc",
+                    "available_since",
+                    "cleanCodeAttributeCategories",
+                    "complianceStandards",
+                    "cwe",
+                    "f",
+                    "facets",
+                    "impactSeverities",
+                    "impactSoftwareQualities",
+                    "include_external",
+                    "inheritance",
+                    "is_template",
+                    "languages",
+                    "owaspMobileTop10-2024",
+                    "owaspTop10",
+                    "owaspTop10-2021",
+                    "p",
+                    "prioritizedRule",
+                    "ps",
+                    "q",
+                    "qprofile",
+                    "repositories",
+                    "rule_key",
+                    "s",
+                    "severities",
+                    "sonarsourceSecurity",
+                    "statuses",
+                    "tags",
+                    "template_key",
+                    "types"
+                ],
+                "return_field": "rules",
                 "page_field": "p",
                 "max_page_size": 500
             }
@@ -1345,7 +1536,7 @@
                 ],
                 "return_field": "newCodePeriods"
             },
-            "SET_AUTOMATIC_DELETION_PROTECTION": {
+            "KEEP_WHEN_INACTIVE": {
                 "method": "POST",
                 "api": "api/project_branches/set_automatic_deletion_protection",
                 "params": [

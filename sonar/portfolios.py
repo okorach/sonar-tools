@@ -136,7 +136,7 @@ class Portfolio(aggregations.Aggregation):
     def create(cls, endpoint: Platform, key: str, name: Optional[str] = None, **kwargs) -> Portfolio:
         """Creates a portfolio object"""
         check_supported(endpoint)
-        if Portfolio.exists(endpoint=endpoint, key=key):
+        if cls.exists(endpoint=endpoint, key=key):
             raise exceptions.ObjectAlreadyExists(key=key, message=f"Portfolio '{key}' already exists")
         parent_key = kwargs["parent"].key if "parent" in kwargs else None
         if not name:
@@ -575,6 +575,14 @@ class Portfolio(aggregations.Aggregation):
         api, _, api_params, _ = Api(self, op.RECOMPUTE).get_all(**params)
         return self.post(api, params=api_params).ok
 
+    def delete(self) -> bool:
+        """Deletes the portfolio
+
+        :return: Whether the deletion was successful
+        :rtype: bool
+        """
+        return self.delete_object(**self.api_params(op.DELETE))
+
     def get_project_list(self) -> list[str]:
         log.debug("Search %s projects list", str(self))
         proj_key_list = []
@@ -649,7 +657,7 @@ class Portfolio(aggregations.Aggregation):
 
     def api_params(self, operation: Optional[op] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {op.READ: {"key": self.key}}
+        ops = {op.READ: {"key": self.key}, op.DELETE: {"key": self.key}}
         return ops[operation] if operation and operation in ops else ops[op.READ]
 
 
@@ -676,7 +684,7 @@ def get_list(endpoint: Platform, key_list: KeyList = None, use_cache: bool = Tru
 def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Portfolio]:
     """Search all portfolios of a platform and returns as dict"""
     check_supported(endpoint)
-    return Portfolio.search_objects(endpoint=endpoint, params=params)
+    return Portfolio.get_paginated(endpoint=endpoint, params=params)
 
 
 def check_supported(endpoint: Platform) -> None:
@@ -723,7 +731,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
             continue
         log.info("Importing portfolio key '%s'", key)
         try:
-            if Portfolio.exists(endpoint, key):
+            if Portfolio.exists(endpoint=endpoint, key=key):
                 if not Portfolio.has_access(endpoint, key):
                     Portfolio.restore_access(endpoint, key)
                 o = Portfolio.get_object(endpoint, key)

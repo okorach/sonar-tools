@@ -243,6 +243,14 @@ class QualityProfile(SqObject):
                     qp.is_default = False
         return r.ok
 
+    def delete(self) -> bool:
+        """Deletes the quality profile
+
+        :return: Whether the deletion was successful
+        :rtype: bool
+        """
+        return self.delete_object(**self.api_params(op.DELETE))
+
     def is_child(self) -> bool:
         """
         :return: Whether the quality profile has a parent
@@ -708,7 +716,7 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, QualityPro
     :return: list of quality profiles
     :rtype: dict{key: QualityProfile}
     """
-    return QualityProfile.search_objects(endpoint=endpoint, params=params)
+    return QualityProfile.get_paginated(endpoint=endpoint, params=params)
 
 
 def get_list(endpoint: Platform, use_cache: bool = True) -> dict[str, QualityProfile]:

@@ -162,10 +162,7 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Organizati
     """
     if not endpoint.is_sonarcloud():
         raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-    new_params = {"member": "true"}
-    if params is not None:
-        new_params.update(params)
-    return Organization.search_objects(endpoint=endpoint, params=new_params)
+    return Organization.get_paginated(endpoint=endpoint, params={"member": "true"} | (params or {}))
 
 
 def export(endpoint: Platform, key_list: KeyList = None) -> ObjectJsonRepr:

@@ -260,7 +260,7 @@ class Project(Component):
         """
         if not self._branches or not use_cache:
             try:
-                self._branches = branches.get_list(self)
+                self._branches = branches.Branch.get_list(self)
             except exceptions.UnsupportedOperation:
                 self._branches = {}
         return self._branches
@@ -309,7 +309,7 @@ class Project(Component):
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         log.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-        return super().delete()
+        return self.delete_object(**self.api_params(op.DELETE))
 
     def has_binding(self) -> bool:
         """Whether the project has a DevOps platform binding"""
@@ -699,7 +699,7 @@ class Project(Component):
                 objects = self.branches()
             else:
                 try:
-                    objects = {b: branches.Branch.get_object(concerned_object=self, branch_name=b) for b in br}
+                    objects = {b: branches.Branch.get_object(project=self, branch_name=b) for b in br}
                 except exceptions.SonarException as e:
                     log.error(e.message)
         if pr:
@@ -1338,7 +1338,7 @@ def search(endpoint: Platform, params: ApiParams = None, threads: int = 8) -> di
     new_params = {} if params is None else params.copy()
     if not endpoint.is_sonarcloud():
         new_params["filter"] = _PROJECT_QUALIFIER
-    return Project.search_objects(endpoint=endpoint, params=new_params, threads=threads)
+    return Project.get_paginated(endpoint=endpoint, params=new_params, threads=threads)
 
 
 def get_list(endpoint: Platform, key_list: KeyList = None, threads: int = 8, use_cache: bool = True) -> dict[str, Project]:
@@ -1506,7 +1506,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
             continue
         log.info("Importing project key '%s'", key)
         try:
-            if Project.exists(endpoint, key):
+            if Project.exists(endpoint, key=key):
                 if not Project.has_access(endpoint, key):
                     Project.restore_access(endpoint, key)
                 o = Project.get_object(endpoint, key)
