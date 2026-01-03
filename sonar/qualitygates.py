@@ -128,6 +128,14 @@ class QualityGate(SqObject):
         log.debug("Created %s with uuid %d id %x", str(self), hash(self), id(self))
         QualityGate.CACHE.put(self)
 
+    def __str__(self) -> str:
+        """Returns the string formatting of the object"""
+        return f"quality gate '{self.name}'"
+
+    def __hash__(self) -> int:
+        """Default UUID for SQ objects"""
+        return hash((self.name, self.base_url()))
+
     @classmethod
     def get_object(cls, endpoint: Platform, name: str) -> QualityGate:
         """Reads a quality gate from SonarQube
@@ -165,14 +173,6 @@ class QualityGate(SqObject):
         api, _, params, _ = Api(cls, op.CREATE, endpoint).get_all(name=name)
         endpoint.post(api, params=params)
         return cls.get_object(endpoint, name)
-
-    def __str__(self) -> str:
-        """Returns the string formatting of the object"""
-        return f"quality gate '{self.name}'"
-
-    def __hash__(self) -> int:
-        """Default UUID for SQ objects"""
-        return hash((self.name, self.base_url()))
 
     def url(self) -> str:
         """Returns the object permalink"""
