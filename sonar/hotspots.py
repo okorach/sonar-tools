@@ -168,7 +168,7 @@ class Hotspot(findings.Finding):
         :return: Whether the operation succeeded
         """
         try:
-            params = util.remove_nones({**self.api_params(), "status": status, "resolution": resolution, "commemt": comment})
+            params = util.remove_nones({**self.api_params(), "status": status, "resolution": resolution, "comment": comment})
             api, _, api_params, _ = Api(self, op.CHANGE_STATUS).get_all(**params)
             ok = self.post(api, params=api_params).ok
             self.refresh()
