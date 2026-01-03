@@ -835,8 +835,8 @@ def hierarchize_language(qp_list: dict[str, str], endpoint: Platform, language: 
             parent_qp = hierarchy[parent_qp_name]
             if qphelp.KEY_CHILDREN not in parent_qp:
                 parent_qp[qphelp.KEY_CHILDREN] = {}
-            this_qp = get_object(endpoint=endpoint, name=qp_name, language=language)
-            qp_json_data |= this_qp.diff(get_object(endpoint=endpoint, name=parent_qp_name, language=language))
+            this_qp = QualityProfile.get_object(endpoint=endpoint, name=qp_name, language=language)
+            qp_json_data |= this_qp.diff(QualityProfile.get_object(endpoint=endpoint, name=parent_qp_name, language=language))
             qp_json_data.pop("rules", None)
             parent_qp[qphelp.KEY_CHILDREN][qp_name] = qp_json_data
             to_remove.append(qp_name)
