@@ -92,12 +92,6 @@ class Portfolio(aggregations.Aggregation):
 
     CACHE = cache.Cache()
 
-    @classmethod
-    def api_for(cls, operation: op, endpoint: Platform) -> str:
-        """Returns the API to use for a particular operation"""
-        api, _, _, _ = Api(cls, operation, endpoint).get_all()
-        return api
-
     def __init__(self, endpoint: Platform, key: str, name: Optional[str] = None) -> None:
         """Constructor, don't use - use class methods instead"""
         super().__init__(endpoint=endpoint, key=key)
@@ -174,7 +168,7 @@ class Portfolio(aggregations.Aggregation):
             else f"portfolio '{self.key}'"
         )
 
-    def reload(self, data: ApiPayload) -> None:
+    def reload(self, data: ApiPayload) -> Portfolio:
         """Reloads a portfolio with returned API data"""
         super().reload(data)
         if "originalKey" not in data and data["qualifier"] == _PORTFOLIO_QUALIFIER:
@@ -182,6 +176,7 @@ class Portfolio(aggregations.Aggregation):
             self.root_portfolio = self
         self.load_selection_mode()
         self.reload_sub_portfolios()
+        return self
 
     def reload_sub_portfolios(self) -> None:
         if "subViews" not in self.sq_json:
