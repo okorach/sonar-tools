@@ -639,7 +639,8 @@ class Platform(object):
         """Audits whether project default visibility is public"""
         log.info("Auditing project default visibility")
         problems = []
-        resp = self.get(settings.Setting.API[op.READ], params={"keys": "projects.default.visibility"})
+        api, _, params, _ = Api(settings.Setting, op.READ, self).get_all(keys="projects.default.visibility")
+        resp = self.get(api, params=params)
         visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)
         if audit_settings.get("audit.globalSettings.defaultProjectVisibility", "private") != visi:
