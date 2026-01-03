@@ -310,7 +310,7 @@ class Project(Component):
         """
         if self._pull_requests is None or not use_cache:
             try:
-                self._pull_requests = pull_requests.get_list(self)
+                self._pull_requests = pull_requests.PullRequest.get_list(self)
             except exceptions.UnsupportedOperation:
                 self._pull_requests = {}
         return self._pull_requests
@@ -888,7 +888,7 @@ class Project(Component):
         :rtype: dict{key: WebHook}
         """
         log.debug("Getting %s webhooks", str(self))
-        return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
+        return webhooks.WebHook.get_list(endpoint=self.endpoint, project_key=self.key)
 
     def links(self, custom_only: bool = True, with_id: bool = False) -> list[dict[str, str]]:
         """Returns the list of project links

@@ -298,7 +298,7 @@ class Rule(SqObject):
         rule_list = {}
         lang_list = params.pop("languages", None)
         if not lang_list:
-            lang_list = languages.get_list(endpoint).keys()
+            lang_list = languages.Language.get_list(endpoint).keys()
         if "include_external" in params:
             incl_ext = [str(params["include_external"]).lower()]
         else:
