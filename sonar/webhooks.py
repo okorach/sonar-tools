@@ -106,10 +106,19 @@ class WebHook(SqObject):
         if kwargs.get("use_cache", True) and (o := WebHook.CACHE.get(name, project_key, endpoint.local_url)):
             return o
         try:
-            whs = list(get_list(endpoint, project_key).values())
+            whs = list(cls.get_list(endpoint, project_key).values())
             return next(wh for wh in whs if wh.name == name)
         except StopIteration as e:
             raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found") from e
+
+    @classmethod
+    def get_list(cls, endpoint: Platform, project_key: Optional[str] = None) -> dict[str, WebHook]:
+        """Returns the list of web hooks, global ones or for a project if project key is given"""
+        log.debug("Getting webhooks for project key %s", str(project_key))
+        wh_list = search(endpoint, {"project": project_key})
+        for wh in wh_list.values():
+            wh.project = project_key
+        return wh_list
 
     def reload(self, data: ApiPayload) -> None:
         """Reloads a WebHook from the payload gotten from SonarQube"""
@@ -181,19 +190,10 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, WebHook]:
     return WebHook.get_paginated(endpoint=endpoint, params=params)
 
 
-def get_list(endpoint: Platform, project_key: Optional[str] = None) -> dict[str, WebHook]:
-    """Returns the list of web hooks, global ones or for a project if project key is given"""
-    log.debug("Getting webhooks for project key %s", str(project_key))
-    wh_list = search(endpoint, {"project": project_key})
-    for wh in wh_list.values():
-        wh.project = project_key
-    return wh_list
-
-
 def export(endpoint: Platform, project_key: Optional[str] = None, full: bool = False) -> ObjectJsonRepr:
     """Export webhooks of a project as JSON"""
     json_data = {}
-    for wb in get_list(endpoint, project_key).values():
+    for wb in WebHook.get_list(endpoint, project_key).values():
         j = wb.to_json(full)
         j.pop("name", None)
         json_data[wb.name] = util.remove_nones(j)
@@ -203,7 +203,7 @@ def export(endpoint: Platform, project_key: Optional[str] = None, full: bool = F
 def import_config(endpoint: Platform, data: list[dict[str, str]], project_key: Optional[str] = None) -> None:
     """Imports a set of webhooks defined from a JSON description"""
     log.info("Importing webhooks %s for %s", str(data), str(project_key))
-    current_wh = get_list(endpoint, project_key=project_key)
+    current_wh = WebHook.get_list(endpoint, project_key=project_key)
     existing_webhooks = {wh.name: k for k, wh in current_wh.items()}
 
     # FIXME: Handle several webhooks with same name
