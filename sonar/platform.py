@@ -127,9 +127,9 @@ class Platform(object):
         return self.external_url
 
     def version(self) -> tuple[int, int, int]:
-        """Returns the SonarQube platform version or 0.0.0 for SonarQube Cloud"""
+        """Returns the SonarQube platform version or None for SonarQube Cloud"""
         if self.is_sonarcloud():
-            return 0, 0, 0
+            return None
         if self._version is None:
             self._version = tuple(int(n) for n in self.get("/api/server/version").text.split("."))
             log.debug("Version = %s", str(self._version))
