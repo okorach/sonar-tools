@@ -1536,7 +1536,7 @@
                 ],
                 "return_field": "newCodePeriods"
             },
-            "SET_AUTOMATIC_DELETION_PROTECTION": {
+            "KEEP_WHEN_INACTIVE": {
                 "method": "POST",
                 "api": "api/project_branches/set_automatic_deletion_protection",
                 "params": [
