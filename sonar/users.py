@@ -99,9 +99,9 @@ class User(SqObject):
         if is_local:
             params["password"] = password or login
         api, _, params, ret = Api(cls, op.CREATE, endpoint).get_all(**params)
-        try:
+        if ret:
             data = json.loads(endpoint.post(api, params=params).text)[ret]
-        except ValueError:
+        else:
             data = json.loads(endpoint.post(api, params=params).text)
         return cls.load(endpoint=endpoint, data=data)
 
