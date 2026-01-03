@@ -110,7 +110,7 @@ class Platform(object):
             log.info("Connecting to %s", self.local_url)
             self.get("server/version")
             if self.is_sonarcloud():
-                if not organizations.Organization.exists(self, self.organization):
+                if not organizations.Organization.exists(self, key=self.organization):
                     raise exceptions.ObjectNotFound(
                         self.organization, f"Organization '{self.organization}' does not exist or user is not member of it"
                     )
