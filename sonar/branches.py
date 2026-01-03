@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube project branch concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, Union, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 from http import HTTPStatus
 import json
@@ -51,9 +51,7 @@ _UNSUPPORTED_IN_CE = "Branches not available in Community Edition"
 
 
 class Branch(components.Component):
-    """
-    Abstraction of the SonarQube "project branch" concept
-    """
+    """Abstraction of the SonarQube "project branch" concept"""
 
     CACHE = cache.Cache()
 
@@ -67,7 +65,7 @@ class Branch(components.Component):
         name = unquote(name)
         super().__init__(endpoint=project.endpoint, key=name)
         self.name = name
-        self.concerned_object = project
+        self.concerned_object: proj.Project = project
         self._is_main: Optional[bool] = None
         self._new_code: Optional[str] = None
         self._last_analysis: Optional[datetime] = None
@@ -87,8 +85,7 @@ class Branch(components.Component):
         :rtype: Branch
         """
         branch_name = unquote(branch_name)
-        o = Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())
-        if o:
+        if o := Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url()):
             return o
         api, _, params, _ = Api(Branch, op.LIST, concerned_object.endpoint).get_all(project=concerned_object.key)
         data = json.loads(concerned_object.get(api, params=params).text)
@@ -108,9 +105,8 @@ class Branch(components.Component):
         :rtype: Branch
         """
         branch_name = unquote(branch_name)
-        o = Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())
         br_data = next((br for br in data.get("branches", []) if br["name"] == branch_name), None)
-        if not o:
+        if not (o := Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())):
             o = cls(concerned_object, branch_name)
         if br_data:
             o._load(br_data)
@@ -218,6 +214,72 @@ class Branch(components.Component):
                     Branch.get_object(self.concerned_object, b["branchKey"])._new_code = new_code
         return self._new_code
 
+    def set_keep_when_inactive(self, keep: bool) -> bool:
+        """Sets whether the branch is kept when inactive
+
+        :param bool keep: Whether to keep the branch when inactive
+        :raises UnsupportedOperation: If trying to keep the main branch when inactive
+        :raises ObjectNotFound: If the branch is not found
+        :return: Whether the operation was successful
+        """
+        log.info("Setting %s keep when inactive to %s", self, keep)
+        if self.is_main():
+            if not keep:
+                log.warning("%s is main branch, can't be purgeable, skipping...", str(self))
+                raise exceptions.UnsupportedOperation(f"{str(self)} is the main branch, can't be purgeable")
+            return True
+        api, _, params, _ = Api(self, op.KEEP_WHEN_INACTIVE).get_all(**self.api_params(), value=str(keep).lower())
+        self.post(api, params=params)
+        self._keep_when_inactive = keep
+        return True
+
+    def url(self) -> str:
+        """returns the branch URL in SonarQube as permalink"""
+        return f"{self.concerned_object.url()}&branch={requests.utils.quote(self.name)}"
+
+    def rename(self, new_name: str) -> bool:
+        """Renames a branch
+
+        :param str new_name: New branch name
+        :raises UnsupportedOperation: If trying to rename anything than the main branch
+        :raises ObjectNotFound: Concerned object (project) not found
+        :return: Whether the operation was successful
+        """
+        if not self.is_main():
+            raise exceptions.UnsupportedOperation(f"{str(self)} can't be renamed since it's not the main branch")
+
+        log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
+        api, _, params, _ = Api(self, op.RENAME).get_all(project=self.concerned_object.key, name=new_name)
+        self.post(api, params=params)
+        Branch.CACHE.pop(self)
+        self.name = new_name
+        Branch.CACHE.put(self)
+        return True
+
+    def set_as_main(self) -> bool:
+        """Sets the branch as the main branch of the project
+
+        :raises ObjectNotFound: If the branch is not found
+        :return: Whether the operation was successful
+        """
+        api, _, params, _ = Api(self, op.SET_MAIN).get_all(**self.api_params())
+        self.post(api, params=params)
+        for b in self.concerned_object.branches().values():
+            b._is_main = b.name == self.name
+        return True
+
+    def set_new_code(self, new_code_type: str, additional_data: Optional[Any]) -> bool:
+        """Sets the branch new code period
+
+        :param str new_code_type: PREVIOUS_VERSION, NUMBER_OF_DAYS, REFERENCE_BRANCH, SPECIFIC_ANALYSIS
+        :param additional_data: Additional data depending on the new code type
+        :return: Whether the operation was successful
+        """
+        log.info("Setting %s new code to %s / %s", self, new_code_type, additional_data)
+        return settings.set_new_code_period(
+            endpoint=self.endpoint, nc_type=new_code_type, nc_value=additional_data, project_key=self.concerned_object.key, branch=self.name
+        )
+
     def export(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
         """Exports a branch configuration (is main, keep when inactive, optionally name, project)
 
@@ -241,47 +303,6 @@ class Branch(components.Component):
         data = util.remove_nones(data)
         return None if len(data) == 0 else data
 
-    def set_keep_when_inactive(self, keep: bool) -> bool:
-        """Sets whether the branch is kept when inactive
-
-        :param bool keep: Whether to keep the branch when inactive
-        :return: Whether the operation was successful
-        """
-        log.info("Setting %s keep when inactive to %s", self, keep)
-        if self.is_main():
-            if not keep:
-                log.warning("%s is main branch, can't be purgeable, skipping...", str(self))
-                raise exceptions.UnsupportedOperation(f"{str(self)} is the main branch, can't be purgeable")
-            return True
-        api, _, params, _ = Api(self, op.KEEP_WHEN_INACTIVE).get_all(**self.api_params(), value=str(keep).lower())
-        ok = self.post(api, params=params).ok
-        if ok:
-            self._keep_when_inactive = keep
-        return True
-
-    def set_as_main(self) -> bool:
-        """Sets the branch as the main branch of the project
-
-        :return: Whether the operation was successful
-        """
-        api, _, params, _ = Api(self, op.SET_MAIN).get_all(**self.api_params())
-        self.post(api, params=params)
-        for b in self.concerned_object.branches().values():
-            b._is_main = b.name == self.name
-        return True
-
-    def set_new_code(self, new_code_type: str, additional_data: Optional[Any]) -> bool:
-        """Sets the branch new code period
-
-        :param str new_code_type: PREVIOUS_VERSION, NUMBER_OF_DAYS, REFERENCE_BRANCH, SPECIFIC_ANALYSIS
-        :param additional_data: Additional data depending on the new code type
-        :return: Whether the operation was successful
-        """
-        log.info("Setting %s new code to %s / %s", self, new_code_type, additional_data)
-        return settings.set_new_code_period(
-            endpoint=self.endpoint, nc_type=new_code_type, nc_value=additional_data, project_key=self.concerned_object.key, branch=self.name
-        )
-
     def import_config(self, config_data: ObjectJsonRepr) -> None:
         """Imports a branch configuration
 
@@ -300,33 +321,6 @@ class Branch(components.Component):
             if len(new_code) > 1:
                 (new_code, param) = new_code
             self.set_new_code(new_code, param)
-
-    def url(self) -> str:
-        """returns the branch URL in SonarQube as permalink"""
-        return f"{self.concerned_object.url()}&branch={requests.utils.quote(self.name)}"
-
-    def rename(self, new_name: str) -> bool:
-        """Renames a branch
-
-        :param str new_name: New branch name
-        :raises UnsupportedOperation: If trying to rename anything than the main branch
-        :raises ObjectNotFound: Concerned object (project) not found
-        :return: Whether the branch was renamed
-        :rtype: bool
-        """
-        if not self.is_main():
-            raise exceptions.UnsupportedOperation(f"{str(self)} can't be renamed since it's not the main branch")
-
-        if self.name == new_name:
-            log.debug("Skipping rename %s with same new name", str(self))
-            return False
-        log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
-        api, _, params, _ = Api(self, op.RENAME).get_all(project=self.concerned_object.key, name=new_name)
-        self.post(api, params=params)
-        Branch.CACHE.pop(self)
-        self.name = new_name
-        Branch.CACHE.put(self)
-        return True
 
     def get_findings(self, filters: Optional[ApiParams] = None) -> dict[str, object]:
         """Returns a branch list of findings
