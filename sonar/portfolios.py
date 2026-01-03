@@ -261,7 +261,7 @@ class Portfolio(aggregations.Aggregation):
         for app_data in apps:
             app_o = applications.Application.get_object(self.endpoint, app_data["originalKey"])
             for branch in app_data["selectedBranches"]:
-                if app_branches.ApplicationBranch.get_object(app=app_o, branch_name=branch).is_main():
+                if app_branches.ApplicationBranch.get_object(self.endpoint, app=app_o, branch_name=branch).is_main():
                     app_data["selectedBranches"].remove(branch)
                     app_data["selectedBranches"].insert(0, c.DEFAULT_BRANCH)
             self._applications[app_data["originalKey"]] = app_data["selectedBranches"]
@@ -523,7 +523,7 @@ class Portfolio(aggregations.Aggregation):
             log.info("%s: Adding %s default branch", str(self), str(app))
             self.post("views/add_application", params={"portfolio": self.key, "application": app_key}, mute=(HTTPStatus.BAD_REQUEST,))
         else:
-            app_branch = app_branches.ApplicationBranch.get_object(app=app, branch_name=branch)
+            app_branch = app_branches.ApplicationBranch.get_object(self.endpoint, app=app, branch_name=branch)
             log.info("%s: Adding %s", str(self), str(app_branch))
             params = {"key": self.key, "application": app_key, "branch": branch}
             self.post("views/add_application_branch", params=params, mute=(HTTPStatus.BAD_REQUEST,))

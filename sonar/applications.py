@@ -190,7 +190,7 @@ class Application(aggr.Aggregation):
         :return: Whether the Application branch is the main branch
         :rtype: bool
         """
-        return app_branches.ApplicationBranch.get_object(self, branch).is_main()
+        return app_branches.ApplicationBranch.get_object(self.endpoint, self, branch).is_main()
 
     def main_branch(self) -> object:
         """Returns the application main branch"""
@@ -218,11 +218,11 @@ class Application(aggr.Aggregation):
         :param branch_name: The Application branch to set
         :raises ObjectNotFound: if the branch name does not exist
         """
-        return app_branches.ApplicationBranch.get_object(self, branch_name).delete()
+        return app_branches.ApplicationBranch.get_object(self.endpoint, self, branch_name).delete()
 
     def update_branch(self, branch_name: str, branch_definition: ObjectJsonRepr) -> object:
         """Updates an Application branch with a branch definition"""
-        o_app_branch = app_branches.ApplicationBranch.get_object(self, branch_name)
+        o_app_branch = app_branches.ApplicationBranch.get_object(self.endpoint, self, branch_name)
         try:
             o_app_branch.update_project_branches(new_project_branches=self.__get_project_branches(branch_definition))
         except exceptions.UnsupportedOperation as e:
@@ -241,7 +241,7 @@ class Application(aggr.Aggregation):
         log.debug("%s: APPL Updating application branch '%s' with %s", self, branch_name, util.json_dump(projects_data))
         branch_definition = {p["key"]: p.get("branch", c.DEFAULT_BRANCH) for p in projects_data}
         try:
-            o = app_branches.ApplicationBranch.get_object(self, branch_name)
+            o = app_branches.ApplicationBranch.get_object(self.endpoint, self, branch_name)
             o.update_project_branches(new_project_branches=self.__get_project_branches(branch_definition))
         except exceptions.ObjectNotFound:
             self.create_branch(branch_name=branch_name, branch_definition=branch_definition)
