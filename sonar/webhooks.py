@@ -155,6 +155,14 @@ class WebHook(SqObject):
         self.refresh()
         return ok
 
+    def delete(self) -> bool:
+        """Deletes the webhook
+
+        :return: Whether the deletion was successful
+        :rtype: bool
+        """
+        return self.delete_object(**self.api_params(op.DELETE))
+
     def audit(self) -> list[problem.Problem]:
         """
         :meta private:
@@ -175,7 +183,7 @@ class WebHook(SqObject):
 
     def api_params(self, operation: Optional[op] = None) -> ApiParams:
         """Returns the std api params to pass for a given webhook"""
-        ops = {op.READ: {"webhook": self.key}}
+        ops = {op.READ: {"webhook": self.key}, op.DELETE: {"webhook": self.key}}
         return ops[operation] if operation and operation in ops else ops[op.READ]
 
 
