@@ -144,28 +144,25 @@ class QualityGate(SqObject):
         :param name: Quality gate
         :return: the QualityGate object or None if not found
         """
-        o = QualityGate.CACHE.get(name, endpoint.local_url)
+        o: Optional[QualityGate] = QualityGate.CACHE.get(name, endpoint.local_url)
         if o:
             return o
-        data = search_by_name(endpoint, name)
-        if not data:
-            raise exceptions.ObjectNotFound(name, f"Quality gate '{name}' not found")
-        return cls.load(endpoint, data)
+        if data := search_by_name(endpoint, name):
+            return cls.load(endpoint, data)
+        raise exceptions.ObjectNotFound(name, f"Quality gate '{name}' not found")
 
     @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> QualityGate:
         """Creates a quality gate from returned API data
+
         :return: the QualityGate object
         """
         # SonarQube 10 compatibility: "id" field dropped, replaced by "name"
-        o = QualityGate.CACHE.get(data["name"], endpoint.local_url)
+        o: Optional[QualityGate] = QualityGate.CACHE.get(data["name"], endpoint.local_url)
         if not o:
             o = cls(endpoint, data["name"], data=data)
         log.debug("Loading 2 %s QG from %s", o.name, util.json_dump(data))
-        o.sq_json = data
-        o.is_default = data.get("isDefault", False)
-        o.is_built_in = data.get("isBuiltIn", False)
-        return o
+        return o.reload(data)
 
     @classmethod
     def create(cls, endpoint: Platform, name: str) -> QualityGate:
@@ -173,6 +170,13 @@ class QualityGate(SqObject):
         api, _, params, _ = Api(cls, op.CREATE, endpoint).get_all(name=name)
         endpoint.post(api, params=params)
         return cls.get_object(endpoint, name)
+
+    def reload(self, data: ApiPayload) -> QualityGate:
+        """Reloads the quality gate from the given data"""
+        super().reload(data)
+        self.is_default = data.get("isDefault", False)
+        self.is_built_in = data.get("isBuiltIn", False)
+        return self
 
     def url(self) -> str:
         """Returns the object permalink"""
