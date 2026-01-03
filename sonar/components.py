@@ -67,6 +67,10 @@ class Component(SqObject):
         if data is not None:
             self.reload(data)
 
+    def __str__(self) -> str:
+        """String representation of object"""
+        return self.key
+
     def reload(self, data: ApiPayload) -> Component:
         """Loads a SonarQube API JSON payload in a Component"""
         super().reload(data)
@@ -77,13 +81,6 @@ class Component(SqObject):
         if "analysisDate" in data:
             self._last_analysis = sutil.string_to_date(data["analysisDate"])
         return self
-
-    def __str__(self) -> str:
-        """String representation of object"""
-        return self.key
-
-    def get_tags_params(self) -> dict[str, str]:
-        return {"component": self.key}
 
     def get_subcomponents(self, strategy: str = "children", with_issues: bool = False) -> dict[str, Component]:
         """Returns component subcomponents"""
