@@ -31,6 +31,7 @@ from sonar.util import misc
 
 
 def get_install_root() -> Path:
+    """Returns the root install dir of the package"""
     return Path(site.getsitepackages()[0]) / "sonar"
 
 
