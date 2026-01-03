@@ -1223,6 +1223,112 @@
             }
         }
     },
+    "Rule": {
+        "5.2.0": {
+            "CREATE": {
+                "method": "POST",
+                "api": "api/rules/create",
+                "params": [
+                    "customKey",
+                    "templateKey",
+                    "name",
+                    "severity",
+                    "impacts",
+                    "params",
+                    "markdownDescription",
+                    "cleanCodeAttribute",
+                    "status",
+                    "type"
+                ]
+            },
+            "READ": {
+                "method": "GET",
+                "api": "api/rules/show",
+                "params": [
+                    "key",
+                    "actives"
+                ],
+                "return_field": "rule"
+            },
+            "UPDATE": {
+                "method": "POST",
+                "api": "api/rules/update",
+                "params": [
+                    "key",
+                    "impacts",
+                    "markdownDescription",
+                    "markdown_note",
+                    "name",
+                    "params",
+                    "remediation_fn_base_effort",
+                    "remediation_fn_type",
+                    "remediation_fn_gap_multiplier",
+                    "severity",
+                    "status",
+                    "tags"
+                ]
+            },
+            "DELETE": {
+                "method": "POST",
+                "api": "api/rules/delete",
+                "params": [
+                    "key"
+                ]
+            },
+            "GET_TAGS": {
+                "method": "GET",
+                "api": "api/rules/tags",
+                "params": [
+                    "ps",
+                    "q"
+                ],
+                "page_field": "p",
+                "max_page_size": 500
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "api/rules/search",
+                "params": [
+                    "activation",
+                    "active_impactSeverities",
+                    "active_severities",
+                    "asc",
+                    "available_since",
+                    "cleanCodeAttributeCategories",
+                    "complianceStandards",
+                    "cwe",
+                    "f",
+                    "facets",
+                    "impactSeverities",
+                    "impactSoftwareQualities",
+                    "include_external",
+                    "inheritance",
+                    "is_template",
+                    "languages",
+                    "owaspMobileTop10-2024",
+                    "owaspTop10",
+                    "owaspTop10-2021",
+                    "p",
+                    "prioritizedRule",
+                    "ps",
+                    "q",
+                    "qprofile",
+                    "repositories",
+                    "rule_key",
+                    "s",
+                    "severities",
+                    "sonarsourceSecurity",
+                    "statuses",
+                    "tags",
+                    "template_key",
+                    "types"
+                ],
+                "return_field": "rules",
+                "page_field": "p",
+                "max_page_size": 500
+            }
+        }
+    },
     "Setting": {
         "5.2.0": {
             "CREATE": {
