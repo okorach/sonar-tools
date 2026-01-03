@@ -153,7 +153,7 @@ def test_more_than_50_users(get_60_users: Generator[list[users.User]]) -> None:
     # Count groups first
     user_list = get_60_users
     users.User.clear_cache()
-    new_user_list = users.get_list(tutil.SQ)
+    new_user_list = users.User.get_list(tutil.SQ)
     assert len(new_user_list) > 60
     assert set(new_user_list.keys()) > {u.name for u in user_list}
 
