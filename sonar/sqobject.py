@@ -101,6 +101,7 @@ class SqObject(object):
     def exists(cls, endpoint: Platform, **kwargs: Any) -> bool:
         """Tells whether an object with a given key exists"""
         try:
+            log.debug("Checking if %s exists with kwargs %s", cls.__name__, kwargs)
             return cls.get_object(endpoint, **kwargs) is not None
         except exceptions.NoPermissions:
             return True
