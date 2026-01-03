@@ -23,10 +23,15 @@ import os
 from pathlib import Path
 import json
 import jprops
+import site
 
 from typing import Any, Union
 import sonar.logging as log
 from sonar.util import misc
+
+
+def get_install_root() -> Path:
+    return Path(site.getsitepackages()[0]) / "sonar"
 
 
 def _load_properties_file(file: Union[str, Path]) -> dict[str, Any]:
@@ -49,9 +54,14 @@ def load(filename: str, package_location: str) -> dict[str, Any]:
     if config_type not in ("properties", "json"):
         raise ValueError(f"Invalid config type: {config_type}")
 
-    files = (Path(package_location).parent / filename, f"{os.path.expanduser('~')}{os.sep}.{filename}", f"{os.getcwd()}{os.sep}.{filename}")
+    files = (
+        get_install_root() / package_location / filename,
+        f"{os.path.expanduser('~')}{os.sep}.{filename}",
+        f"{os.getcwd()}{os.sep}.{filename}",
+    )
     settings = {}
     for file in files:
+        log.debug(f"Loading config from {file}")
         try:
             if config_type == "properties":
                 settings |= _load_properties_file(file)
@@ -66,7 +76,7 @@ def load(filename: str, package_location: str) -> dict[str, Any]:
 
 def configure(config_file: str, package_location: str) -> None:
     """Configures a default config file"""
-    template_file = Path(package_location).parent / config_file
+    template_file = get_install_root() / package_location / config_file
     with open(template_file, "r", encoding="utf-8") as fh:
         text = fh.read()
 

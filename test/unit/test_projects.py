@@ -78,7 +78,7 @@ def test_audit() -> None:
     """test_audit"""
     import json
 
-    settings = {k: False for k, v in conf_mgr.load("sonar-audit").items() if isinstance(v, bool)}
+    settings = {k: False for k, v in conf_mgr.load("sonar-audit", "cli").items() if isinstance(v, bool)}
     settings["audit.projects"] = True
     for p in (
         "minLocPerAcceptedIssue",

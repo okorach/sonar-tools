@@ -508,13 +508,13 @@ def main() -> None:
     try:
         kwargs: dict[str, Any] = sutil.convert_args(__parse_args("Extracts a maturity score for a platform, a project or a portfolio"))
         if kwargs.get("config", False):
-            conf.configure(CONFIG_FILE, __file__)
+            conf.configure(CONFIG_FILE, "cli")
             chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
         sutil.check_token(kwargs[options.TOKEN], sutil.is_sonarcloud_url(kwargs[options.URL]))
         sq = platform.Platform(**kwargs)
         sq.verify_connection()
         sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-        config = conf.load(CONFIG_FILE, __file__) | conf.get_cli_settings(**kwargs) | kwargs
+        config = conf.load(CONFIG_FILE, "cli") | conf.get_cli_settings(**kwargs) | kwargs
         project_list = component_helper.get_components(
             endpoint=sq,
             component_type="projects",
