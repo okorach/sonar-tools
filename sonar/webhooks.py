@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube webhook concept"""
 
 from __future__ import annotations
-from typing import Optional, ClassVar, TYPE_CHECKING
+from typing import Optional, ClassVar, Any, TYPE_CHECKING
 
 import json
 
@@ -56,6 +56,16 @@ class WebHook(SqObject):
         self.last_delivery: Optional[str] = None  #: Webhook last delivery timestamp
         self.project = project  #: Webhook project if project specific webhook
         WebHook.CACHE.put(self)
+
+    def __str__(self) -> str:
+        """Returns a string representation of the webhook"""
+        if self.project:
+            return f"webhook '{self.name}' of {self.project}"
+        return f"webhook '{self.name}'"
+
+    def __hash__(self) -> int:
+        """Returns an object unique Id"""
+        return hash((self.name, self.project, self.endpoint.local_url))
 
     @classmethod
     def create(cls, endpoint: Platform, name: str, url: str, secret: Optional[str] = None, project: Optional[str] = None) -> WebHook:
@@ -103,21 +113,10 @@ class WebHook(SqObject):
         except StopIteration as e:
             raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found") from e
 
-    def __str__(self) -> str:
-        return f"webhook '{self.name}'"
-
-    def __hash__(self) -> int:
-        """
-        Returns an object unique Id
-        :meta private:
-        """
-        return hash((self.name, self.project, self.endpoint.local_url))
-
     def refresh(self) -> None:
         """Reads the Webhook data on the SonarQube platform and updates the local object"""
-        log.debug("Refreshing %s with proj %s", str(self), str(self.project))
-        params = None if not self.project else {"project": self.project}
-        api, _, api_params, ret = Api(self, op.LIST).get_all(**(params or {}))
+        log.debug("Refreshing %s", self)
+        api, _, api_params, ret = Api(self, op.LIST).get_all(project=self.project))
         dataset = json.loads(self.get(api, params=api_params).text)[ret]
         log.debug("Refreshing %s with data %s", str(self), str(dataset))
         wh_data = next((wh for wh in dataset if wh["name"] == self.name), None)
