@@ -72,6 +72,10 @@ class User(SqObject):
         log.debug("Constructed object %s id '%s'", str(self), str(self.id))
         User.CACHE.put(self)
 
+    def __str__(self) -> str:
+        """Returns the string representation of the object"""
+        return f"user '{self.login}'"
+
     @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> User:
         """Creates a user object from the result of a SonarQube API user search data
@@ -155,9 +159,15 @@ class User(SqObject):
         data = json.loads(endpoint.get(api, params=params, mute=()).text)
         return cls.load(endpoint, data)
 
-    def __str__(self) -> str:
-        """Returns the string representation of the object"""
-        return f"user '{self.login}'"
+    @classmethod
+    def get_list(cls, endpoint: Platform) -> dict[str, User]:
+        """Returns the list of users
+
+        :params Platform endpoint: Reference to the SonarQube platform
+        :return: The list of users
+        """
+        log.info("Listing users")
+        return cls.search(endpoint)
 
     def reload(self, data: ApiPayload) -> User:
         """Reloads a User object from SonarQube API payload
@@ -444,16 +454,6 @@ class User(SqObject):
             json_data.pop(key, None)
         json_data = util.filter_export(json_data, SETTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
         return convert_user_json(json_data)
-
-
-def get_list(endpoint: Platform) -> dict[str, User]:
-    """Returns the list of users
-
-    :params Platform endpoint: Reference to the SonarQube platform
-    :return: The list of users
-    """
-    log.info("Listing users")
-    return User.search(endpoint)
 
 
 def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
