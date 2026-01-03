@@ -18,7 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""applications tests"""
+"""branches tests"""
 
 import pytest
 
@@ -146,7 +146,7 @@ def test_rename():
 
     new_name = "gold"
     assert main_br.rename(new_name)
-    assert not main_br.rename(new_name)
+    assert main_br.rename(new_name)
 
     new_br = branches.Branch.get_object(concerned_object=project, branch_name=new_name)
     assert new_br is main_br
