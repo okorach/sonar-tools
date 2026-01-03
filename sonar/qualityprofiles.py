@@ -243,6 +243,14 @@ class QualityProfile(SqObject):
                     qp.is_default = False
         return r.ok
 
+    def delete(self) -> bool:
+        """Deletes the quality profile
+
+        :return: Whether the deletion was successful
+        :rtype: bool
+        """
+        return self.delete_object(**self.api_params(op.DELETE))
+
     def is_child(self) -> bool:
         """
         :return: Whether the quality profile has a parent
