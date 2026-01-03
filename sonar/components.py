@@ -233,8 +233,8 @@ class Component(SqObject):
         """Returns the new code period start date of a component or None if this component has no new code start date"""
         if self._new_code_start_date is None:
             params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(op.GET))
-            api, _, api_params, _ = Api(self, op.READ).get_all(**params)
-            data = json.loads(self.get(api, params=api_params).text)["component"]
+            api, _, api_params, ret = Api(self, op.READ).get_all(**params)
+            data = json.loads(self.get(api, params=api_params).text)[ret]
             self.sq_json |= data
             if "leakPeriodDate" in data:
                 self._new_code_start_date = sutil.string_to_date(data["leakPeriodDate"])
