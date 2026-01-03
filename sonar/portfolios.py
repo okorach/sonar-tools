@@ -109,6 +109,14 @@ class Portfolio(aggregations.Aggregation):
         Portfolio.CACHE.put(self)
         log.debug("Created portfolio object name '%s'", name)
 
+    def __str__(self) -> str:
+        """Returns string representation of object"""
+        return (
+            f"subportfolio '{self.key}'"
+            if self.sq_json and self.sq_json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
+            else f"portfolio '{self.key}'"
+        )
+
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Portfolio:
         """Gets a portfolio object from its key"""
@@ -160,13 +168,19 @@ class Portfolio(aggregations.Aggregation):
         o.reload(data)
         return o
 
-    def __str__(self) -> str:
-        """Returns string representation of object"""
-        return (
-            f"subportfolio '{self.key}'"
-            if self.sq_json and self.sq_json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
-            else f"portfolio '{self.key}'"
-        )
+    @classmethod
+    def get_list(cls, endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Portfolio]:
+        """
+        :return: List of Portfolios (all of them if key_list is None or empty)
+        :param KeyList key_list: List of portfolios keys to get, if None or empty all portfolios are returned
+        :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        :rtype: dict{<branchName>: <Branch>}
+        """
+        with _CLASS_LOCK:
+            if key_list is None or len(key_list) == 0 or not use_cache:
+                log.debug("Listing portfolios")
+                return dict(sorted(search(endpoint=endpoint).items()))
+            return {key: cls.get_object(endpoint, key) for key in sorted(key_list)}
 
     def reload(self, data: ApiPayload) -> Portfolio:
         """Reloads a portfolio with returned API data"""
@@ -626,7 +640,7 @@ class Portfolio(aggregations.Aggregation):
 
         log.info("Updating %s subportfolios", str(self))
         subps = self.sub_portfolios(full=True)
-        get_list(endpoint=self.endpoint)
+        Portfolio.get_list(endpoint=self.endpoint)
         key_list = []
         if subps:
             key_list = list(subps.keys())
@@ -663,20 +677,6 @@ def count(endpoint: Platform) -> int:
     return aggregations.count(api=api, endpoint=endpoint)
 
 
-def get_list(endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Portfolio]:
-    """
-    :return: List of Portfolios (all of them if key_list is None or empty)
-    :param KeyList key_list: List of portfolios keys to get, if None or empty all portfolios are returned
-    :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-    :rtype: dict{<branchName>: <Branch>}
-    """
-    with _CLASS_LOCK:
-        if key_list is None or len(key_list) == 0 or not use_cache:
-            log.debug("Listing portfolios")
-            return dict(sorted(search(endpoint=endpoint).items()))
-        return {key: Portfolio.get_object(endpoint, key) for key in sorted(key_list)}
-
-
 def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Portfolio]:
     """Search all portfolios of a platform and returns as dict"""
     check_supported(endpoint)
@@ -700,7 +700,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[
     log.info("--- Auditing portfolios ---")
     problems = []
     key_regexp = kwargs.get("key_list", None) or ".*"
-    for p in [o for o in get_list(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
+    for p in [o for o in Portfolio.get_list(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
         problems += p.audit(audit_settings, **kwargs)
     return problems
 
@@ -781,7 +781,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     check_supported(endpoint)
 
     log.info("Exporting portfolios")
-    portfolio_list = {k: v for k, v in get_list(endpoint=endpoint).items() if not key_regexp or re.match(key_regexp, k)}
+    portfolio_list = {k: v for k, v in Portfolio.get_list(endpoint=endpoint).items() if not key_regexp or re.match(key_regexp, k)}
     nb_portfolios = len(portfolio_list)
     i = 0
     exported_portfolios = {}
