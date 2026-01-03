@@ -1137,6 +1137,53 @@
             }
         }
     },
+    "WebHook": {
+        "5.2.0": {
+            "CREATE": {
+                "method": "POST",
+                "api": "api/webhooks/create",
+                "params": [
+                    "name",
+                    "url",
+                    "secret",
+                    "project"
+                ]
+            },
+            "READ": {
+                "method": "GET",
+                "api": "api/webhooks/list",
+                "params": [
+                    "webhook"
+                ],
+                "return_field": "webhooks"  
+            },
+            "UPDATE": {
+                "method": "POST",
+                "api": "api/webhooks/update",
+                "params": [
+                    "webhook",
+                    "name",
+                    "url",
+                    "secret"
+                ]
+            },
+            "DELETE": {
+                "method": "POST",
+                "api": "api/webhooks/delete",
+                "params": [
+                    "webhook"
+                ]
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "api/webhooks/list",
+                "params": [
+                    "project"
+                ],
+                "return_field": "webhooks"
+            }
+        }
+    },
     "QualityProfile": {
         "5.2.0": {
             "CREATE": {

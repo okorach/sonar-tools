@@ -42,20 +42,9 @@ _IMPORTABLE_PROPERTIES = ("name", "url", "secret")
 
 
 class WebHook(SqObject):
-    """
-    Abstraction of the SonarQube "webhook" concept
-    """
+    """Abstraction of the SonarQube "webhook" concept"""
 
     CACHE: ClassVar[cache.Cache] = cache.Cache()
-    API: ClassVar[dict[str, str]] = {
-        op.CREATE: "webhooks/create",
-        op.READ: "webhooks/list",
-        op.UPDATE: "webhooks/update",
-        op.LIST: "webhooks/list",
-        op.DELETE: "webhooks/delete",
-    }
-    SEARCH_KEY_FIELD: ClassVar[str] = "key"
-    SEARCH_RETURN_FIELD: ClassVar[str] = "webhooks"
 
     def __init__(self, endpoint: Platform, name: str, url: str, secret: Optional[str] = None, project: Optional[str] = None) -> None:
         """Constructor"""
@@ -80,7 +69,7 @@ class WebHook(SqObject):
         :return: The created WebHook
         """
         log.info("Creating webhook name %s, url %s project %s", name, url, str(project))
-        params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
+        params = {"name": name, "url": url, "secret": secret, "project": project}
         api, _, api_params, _ = Api(cls, op.CREATE, endpoint).get_all(**params)
         endpoint.post(api, params=api_params)
         o = cls(endpoint, name=name, url=url, secret=secret, project=project)
@@ -128,10 +117,10 @@ class WebHook(SqObject):
         """Reads the Webhook data on the SonarQube platform and updates the local object"""
         log.debug("Refreshing %s with proj %s", str(self), str(self.project))
         params = None if not self.project else {"project": self.project}
-        api, _, api_params, _ = Api(self, op.LIST).get_all(**(params or {}))
-        data = json.loads(self.get(api, params=api_params).text)
-        log.debug("Refreshing %s with data %s", str(self), str(data))
-        wh_data = next((wh for wh in data["webhooks"] if wh["name"] == self.name), None)
+        api, _, api_params, ret = Api(self, op.LIST).get_all(**(params or {}))
+        dataset = json.loads(self.get(api, params=api_params).text)[ret]
+        log.debug("Refreshing %s with data %s", str(self), str(dataset))
+        wh_data = next((wh for wh in dataset if wh["name"] == self.name), None)
         if wh_data is None:
             wh_name = str(self)
             name = self.name
@@ -160,7 +149,7 @@ class WebHook(SqObject):
         :return: Whether the operation succeeded
         """
         log.info("Updating %s with %s", str(self), str(self.project))
-        params = {"webhook": self.key, "name": self.name, "url": self.webhook_url} | util.remove_nones(kwargs)
+        params = {"webhook": self.key, "name": self.name, "url": self.webhook_url} | kwargs
         api, _, api_params, _ = Api(self, op.UPDATE).get_all(**params)
         ok = self.post(api, params=api_params).ok
         self.refresh()
@@ -196,13 +185,13 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, WebHook]:
     :param ApiParams params: Filters to narrow down the search, can only be "project"
     :return: List of webhooks
     """
-    return WebHook.search_objects(endpoint=endpoint, params=params)
+    return WebHook.get_paginated(endpoint=endpoint, params=params)
 
 
 def get_list(endpoint: Platform, project_key: Optional[str] = None) -> dict[str, WebHook]:
     """Returns the list of web hooks, global ones or for a project if project key is given"""
     log.debug("Getting webhooks for project key %s", str(project_key))
-    wh_list = search(endpoint, {"project": project_key} if project_key else None)
+    wh_list = search(endpoint, {"project": project_key})
     for wh in wh_list.values():
         wh.project = project_key
     return wh_list
