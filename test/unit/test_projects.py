@@ -39,6 +39,13 @@ def test_get_object(get_test_project: Generator[projects.Project]) -> None:
         projects.Project.get_object(endpoint=tutil.SQ, key=tutil.NON_EXISTING_KEY)
 
 
+def test_get_list() -> None:
+    """test_get_list"""
+    proj_list = projects.get_list(endpoint=tutil.SQ)
+    assert len(proj_list) > 70
+    assert tutil.LIVE_PROJECT in proj_list
+
+
 def test_refresh(get_test_project: Generator[projects.Project]) -> None:
     """test_refresh"""
     proj = get_test_project
