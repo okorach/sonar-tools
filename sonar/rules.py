@@ -489,7 +489,7 @@ def get_list(endpoint: Platform, use_cache: bool = True, **params) -> dict[str, 
     else:
         incl_ext = ["false", "true"]
     for lang_key in lang_list:
-        if not languages.exists(endpoint, lang_key):
+        if not languages.Language.exists(endpoint, language=lang_key):
             raise exceptions.ObjectNotFound(key=lang_key, message=f"Language '{lang_key}' does not exist")
     log.info("Getting rules for %d languages", len(lang_list))
     futures = []

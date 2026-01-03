@@ -47,7 +47,7 @@ def test_get_list() -> None:
 
 def test_get_object_gh() -> None:
     """test_get_object_gh"""
-    plt = devops.get_object(endpoint=tutil.SQ, key=GH_KEY)
+    plt = devops.DevopsPlatform.get_object(endpoint=tutil.SQ, key=GH_KEY)
     assert plt.url == "https://api.github.com"
     if tutil.SQ.version() >= (10, 0, 0):
         assert plt._specific["appId"] == "946159"
@@ -58,20 +58,20 @@ def test_get_object_gh() -> None:
 
 def test_get_object_gh_refresh() -> None:
     """test_get_object_gh"""
-    plt = devops.get_object(endpoint=tutil.SQ, key=GH_KEY)
+    plt = devops.DevopsPlatform.get_object(endpoint=tutil.SQ, key=GH_KEY)
     assert plt.refresh()
 
 
 def test_get_object_ado() -> None:
     """test_get_object_ado"""
-    plt = devops.get_object(endpoint=tutil.SQ, key=ADO_KEY)
+    plt = devops.DevopsPlatform.get_object(endpoint=tutil.SQ, key=ADO_KEY)
     assert plt.url == "https://dev.azure.com/olivierkorach"
     assert str(plt) == f"devops platform '{ADO_KEY}'"
 
 
 def test_get_object_gl() -> None:
     """test_get_object_gl"""
-    plt = devops.get_object(endpoint=tutil.SQ, key=GL_KEY)
+    plt = devops.DevopsPlatform.get_object(endpoint=tutil.SQ, key=GL_KEY)
     assert plt.url == "https://gitlab.com/api/v4"
     assert str(plt) == f"devops platform '{GL_KEY}'"
 
@@ -92,9 +92,9 @@ def test_count() -> None:
 def test_exists() -> None:
     """test_exists"""
     for k in GH_KEY, GL_KEY, ADO_KEY:
-        assert devops.exists(endpoint=tutil.SQ, key=k)
+        assert devops.DevopsPlatform.exists(endpoint=tutil.SQ, key=k)
     for k in "foo", "bar":
-        assert not devops.exists(endpoint=tutil.SQ, key=k)
+        assert not devops.DevopsPlatform.exists(endpoint=tutil.SQ, key=k)
 
 
 def test_devops_type() -> None:
@@ -131,17 +131,17 @@ def test_import_config_2() -> None:
     deduction = min(1, counts["azure"]) + min(1, counts["gitlab"]) + min(1, counts["github"])
     assert devops.import_config(endpoint=tutil.SQ, config_data=dop) == 3 - deduction
     if counts["azure"] == 0:
-        assert devops.exists(endpoint=tutil.SQ, key="ADO2")
-        obj = devops.get_object(endpoint=tutil.SQ, key="ADO2")
+        assert devops.DevopsPlatform.exists(endpoint=tutil.SQ, key="ADO2")
+        obj = devops.DevopsPlatform.get_object(endpoint=tutil.SQ, key="ADO2")
         obj.delete()
-        assert not devops.exists(endpoint=tutil.SQ, key="ADO2")
+        assert not devops.DevopsPlatform.exists(endpoint=tutil.SQ, key="ADO2")
     if counts["github"] == 0:
-        assert devops.exists(endpoint=tutil.SQ, key="GH2")
-        obj = devops.get_object(endpoint=tutil.SQ, key="GH2")
+        assert devops.DevopsPlatform.exists(endpoint=tutil.SQ, key="GH2")
+        obj = devops.DevopsPlatform.get_object(endpoint=tutil.SQ, key="GH2")
         obj.delete()
-        assert not devops.exists(endpoint=tutil.SQ, key="GH2")
+        assert not devops.DevopsPlatform.exists(endpoint=tutil.SQ, key="GH2")
     if counts["azure"] == 0:
-        assert devops.exists(endpoint=tutil.SQ, key="GL2")
-        obj = devops.get_object(endpoint=tutil.SQ, key="GL2")
+        assert devops.DevopsPlatform.exists(endpoint=tutil.SQ, key="GL2")
+        obj = devops.DevopsPlatform.get_object(endpoint=tutil.SQ, key="GL2")
         obj.delete()
-        assert not devops.exists(endpoint=tutil.SQ, key="GL2")
+        assert not devops.DevopsPlatform.exists(endpoint=tutil.SQ, key="GL2")

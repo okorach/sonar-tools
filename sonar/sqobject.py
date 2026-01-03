@@ -101,6 +101,7 @@ class SqObject(object):
     def exists(cls, endpoint: Platform, **kwargs: Any) -> bool:
         """Tells whether an object with a given key exists"""
         try:
+            log.debug("Checking if %s exists with kwargs %s", cls.__name__, kwargs)
             return cls.get_object(endpoint, **kwargs) is not None
         except exceptions.NoPermissions:
             return True
@@ -110,12 +111,12 @@ class SqObject(object):
             return False
 
     @classmethod
-    def has_access(cls, endpoint: Platform, obj_key: str) -> bool:
+    def has_access(cls, endpoint: Platform, key: str) -> bool:
         """Returns whether the current user has access to a project"""
         if cls.__name__ not in ("Project", "Portfolio", "Application"):
             raise exceptions.UnsupportedOperation(f"Can't check access on {cls.__name__.lower()}s")
         try:
-            cls.get_object(endpoint, obj_key)
+            cls.get_object(endpoint, key=key)
         except AttributeError as e:
             raise exceptions.UnsupportedOperation(f"Can't check access on {cls.__name__.lower()}s") from e
         except (exceptions.NoPermissions, exceptions.ObjectNotFound):
@@ -123,12 +124,12 @@ class SqObject(object):
         return True
 
     @classmethod
-    def restore_access(cls, endpoint: Platform, obj_key: str, user: Optional[str] = None) -> bool:
+    def restore_access(cls, endpoint: Platform, key: str, user: Optional[str] = None) -> bool:
         """Restores access to a project, portfolio or application for the given user"""
         if cls.__name__ not in ("Project", "Portfolio", "Application"):
             raise exceptions.UnsupportedOperation(f"Can't restore access of {cls.__name__.lower()}s")
-        log.info("Restoring access to %s '%s' for user '%s'", cls.__name__, obj_key, user or endpoint.user())
-        obj = cls(endpoint, obj_key)
+        log.info("Restoring access to %s '%s' for user '%s'", cls.__name__, key, user or endpoint.user())
+        obj = cls.get_object(endpoint, key=key)
         return obj.set_permissions([{"user": user or endpoint.user(), "permissions": ["admin", "user"]}])
 
     @classmethod

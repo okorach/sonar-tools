@@ -62,6 +62,9 @@ class Organization(SqObject):
         log.debug("Created object %s", str(self))
         Organization.CACHE.put(self)
 
+    def __str__(self) -> str:
+        return f"organization key '{self.key}'"
+
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Organization:
         """Gets an Organization object from SonarQube Cloud
@@ -88,23 +91,24 @@ class Organization(SqObject):
         """Loads an Organization object with data retrieved from SonarQube Cloud
 
         :param endpoint: Reference to the SonarQube Cloud platform
-        :param data: Data coming from api/organizations/search
+        :param data: Search payload of an organization
         :raises UnsupportedOperation: If not running against SonarQube Cloud
         :raises ObjectNotFound: If Organization key not found
         :return: The found Organization object
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        o = Organization.CACHE.get(data["key"], endpoint.local_url)
+        o: Optional[Organization] = Organization.CACHE.get(data["key"], endpoint.local_url)
         if not o:
             o = cls(endpoint, data["key"], data["name"])
-        o.sq_json = data
-        o.name = data["name"]
-        o.description = data["description"]
-        return o
+        return o.reload(data)
 
-    def __str__(self) -> str:
-        return f"organization key '{self.key}'"
+    def reload(self, data: ApiPayload) -> Organization:
+        """Reloads an Organization object with data retrieved from SonarQube Cloud, returns self"""
+        super().reload(data)
+        self.name = data["name"]
+        self.description = data["description"]
+        return self
 
     def export(self) -> ObjectJsonRepr:
         """Exports an organization"""
@@ -178,15 +182,3 @@ def export(endpoint: Platform, key_list: KeyList = None) -> ObjectJsonRepr:
         # remove key from JSON value, it's already the dict key
         org_settings[k].pop("key")
     return org_settings
-
-
-def exists(endpoint: Platform, org_key: str) -> bool:
-    """Tells whether an organization exists with that user as member"""
-    log.info("Verifying that organization '%s' exists", org_key)
-    try:
-        _ = Organization.get_object(endpoint=endpoint, key=org_key)
-    except exceptions.ObjectNotFound:
-        log.warning("Organization '%s' does not exist or user is not a member", org_key)
-        return False
-    log.debug("Organization '%s' exists and user is a member", org_key)
-    return True

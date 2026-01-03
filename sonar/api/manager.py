@@ -115,7 +115,11 @@ class ApiManager:
         if self.class_name not in self.__class__.API_DEFINITION:
             raise ValueError(f"API class {self.class_name} not found in API definitions")
         self.version = self.endpoint.version()
-        data = next(v for k, v in self.__class__.API_DEFINITION[self.class_name].items() if self.version >= tuple(int(s) for s in k.split(".")))
+        data = next(
+            v
+            for k, v in self.__class__.API_DEFINITION[self.class_name].items()
+            if self.version is None or self.version >= tuple(int(s) for s in k.split("."))
+        )
         if op.value not in data:
             raise ValueError(f"Operation {op.value} not found in API definitions for {self.class_name}")
         self.api_def = data[op.value]

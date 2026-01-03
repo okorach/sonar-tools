@@ -145,9 +145,8 @@ class Project(Component):
         """
         if o := Project.CACHE.get(key, endpoint.local_url):
             return o
-        api, _, params, _ = Api(Project, op.READ, endpoint).get_all(component=key)
-        data = json.loads(endpoint.get(api, params=params).text)
-        return cls.load(endpoint, data["component"])
+        api, _, params, ret = Api(Project, op.READ, endpoint).get_all(component=key)
+        return cls.load(endpoint, json.loads(endpoint.get(api, params=params).text)[ret])
 
     @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> Project:
@@ -699,7 +698,7 @@ class Project(Component):
                 objects = self.branches()
             else:
                 try:
-                    objects = {b: branches.Branch.get_object(project=self, branch_name=b) for b in br}
+                    objects = {b: branches.Branch.get_object(self.endpoint, project=self, branch_name=b) for b in br}
                 except exceptions.SonarException as e:
                     log.error(e.message)
         if pr:
@@ -707,7 +706,7 @@ class Project(Component):
                 objects.update(self.pull_requests())
             else:
                 try:
-                    objects.update({p: pull_requests.get_object(project=self, pull_request_key=p) for p in pr})
+                    objects.update({p: pull_requests.PullRequest.get_object(self.endpoint, project=self, pull_request_key=p) for p in pr})
                 except exceptions.SonarException as e:
                     log.error(e.message)
         return objects
@@ -1098,7 +1097,7 @@ class Project(Component):
         :param quality_profile: Name of the quality profile in the language
         :return: Whether the operation was successful
         """
-        if not qualityprofiles.exists(endpoint=self.endpoint, language=language, name=quality_profile):
+        if not qualityprofiles.QualityProfile.exists(endpoint=self.endpoint, language=language, name=quality_profile):
             log.warning("Quality profile '%s' in language '%s' does not exist, can't set it for %s", quality_profile, language, str(self))
             return False
         log.debug("Setting quality profile '%s' of language '%s' for %s", quality_profile, language, str(self))
@@ -1145,7 +1144,7 @@ class Project(Component):
         """
         log.debug("Setting devops binding of %s to %s", str(self), util.json_dump(binding_data))
         alm_key = binding_data["key"]
-        if not devops.exists(endpoint=self.endpoint, key=alm_key):
+        if not devops.DevopsPlatform.exists(endpoint=self.endpoint, key=alm_key):
             log.warning("DevOps platform '%s' does not exists, can't set it for %s", alm_key, str(self))
             return False
         alm_type = devops.devops_type(endpoint=self.endpoint, key=alm_key)
@@ -1287,7 +1286,7 @@ class Project(Component):
         if "branches" in config:
             for branch_data in config["branches"]:
                 try:
-                    branch = branches.Branch.get_object(self, branch_data["name"])
+                    branch = branches.Branch.get_object(self.endpoint, project=self, branch_name=branch_data["name"])
                     branch.import_config(branch_data)
                 except exceptions.ObjectNotFound:
                     log.warning("Branch '%s' of %s does not exists, can't update its configuration", branch_data["name"], str(self))

@@ -92,12 +92,6 @@ class Portfolio(aggregations.Aggregation):
 
     CACHE = cache.Cache()
 
-    @classmethod
-    def api_for(cls, operation: op, endpoint: Platform) -> str:
-        """Returns the API to use for a particular operation"""
-        api, _, _, _ = Api(cls, operation, endpoint).get_all()
-        return api
-
     def __init__(self, endpoint: Platform, key: str, name: Optional[str] = None) -> None:
         """Constructor, don't use - use class methods instead"""
         super().__init__(endpoint=endpoint, key=key)
@@ -174,7 +168,7 @@ class Portfolio(aggregations.Aggregation):
             else f"portfolio '{self.key}'"
         )
 
-    def reload(self, data: ApiPayload) -> None:
+    def reload(self, data: ApiPayload) -> Portfolio:
         """Reloads a portfolio with returned API data"""
         super().reload(data)
         if "originalKey" not in data and data["qualifier"] == _PORTFOLIO_QUALIFIER:
@@ -182,6 +176,7 @@ class Portfolio(aggregations.Aggregation):
             self.root_portfolio = self
         self.load_selection_mode()
         self.reload_sub_portfolios()
+        return self
 
     def reload_sub_portfolios(self) -> None:
         if "subViews" not in self.sq_json:
@@ -215,18 +210,19 @@ class Portfolio(aggregations.Aggregation):
         else:
             self._selection_mode = {mode: True}
 
-    def refresh(self) -> None:
+    def refresh(self) -> Portfolio:
         """Refreshes a portfolio data from the Sonar instance"""
         log.debug("Updating details for %s root key %s", str(self), self.root_portfolio)
         if not self.is_toplevel():
             self.root_portfolio.refresh()
-            return
+            return self
         api, _, params, _ = Api(self, op.GET).get_all(key=self.key)
         data = json.loads(self.get(api, params=params).text)
         if not self.is_sub_portfolio():
             self.reload(data)
         self.root_portfolio.reload_sub_portfolios()
         self.applications()
+        return self
 
     def url(self) -> str:
         """Returns the object permalink"""
@@ -261,7 +257,7 @@ class Portfolio(aggregations.Aggregation):
         for app_data in apps:
             app_o = applications.Application.get_object(self.endpoint, app_data["originalKey"])
             for branch in app_data["selectedBranches"]:
-                if app_branches.ApplicationBranch.get_object(app=app_o, branch_name=branch).is_main():
+                if app_branches.ApplicationBranch.get_object(self.endpoint, app=app_o, branch_name=branch).is_main():
                     app_data["selectedBranches"].remove(branch)
                     app_data["selectedBranches"].insert(0, c.DEFAULT_BRANCH)
             self._applications[app_data["originalKey"]] = app_data["selectedBranches"]
@@ -523,7 +519,7 @@ class Portfolio(aggregations.Aggregation):
             log.info("%s: Adding %s default branch", str(self), str(app))
             self.post("views/add_application", params={"portfolio": self.key, "application": app_key}, mute=(HTTPStatus.BAD_REQUEST,))
         else:
-            app_branch = app_branches.ApplicationBranch.get_object(app=app, branch_name=branch)
+            app_branch = app_branches.ApplicationBranch.get_object(self.endpoint, app=app, branch_name=branch)
             log.info("%s: Adding %s", str(self), str(app_branch))
             params = {"key": self.key, "application": app_key, "branch": branch}
             self.post("views/add_application_branch", params=params, mute=(HTTPStatus.BAD_REQUEST,))

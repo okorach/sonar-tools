@@ -214,6 +214,18 @@ class DevopsPlatform(SqObject):
             ok = False
         return ok
 
+    @classmethod
+    def get_object(cls, endpoint: platform.Platform, key: str) -> DevopsPlatform:
+        """Returns a DevOps platform from its key
+
+        :param endpoint: Reference to the SonarQube platform
+        :param key: Key of the devops platform (its name)
+        :return: The DevOps platforms corresponding to key, or None if not found
+        """
+        if len(cls.CACHE) == 0:
+            get_list(endpoint)
+        return cls.read(endpoint, key)
+
 
 def count(endpoint: platform.Platform, platf_type: Optional[str] = None) -> int:
     """
@@ -238,30 +250,6 @@ def get_list(endpoint: platform.Platform) -> dict[str, DevopsPlatform]:
         for alm_data in data.get(alm_type, {}):
             DevopsPlatform.load(endpoint, alm_type, alm_data)
     return {o.key: o for o in DevopsPlatform.CACHE.values()}
-
-
-def get_object(endpoint: platform.Platform, key: str) -> DevopsPlatform:
-    """
-    :param endpoint: Reference to the SonarQube platform
-    :param key: Key of the devops platform (its name)
-    :return: The DevOps platforms corresponding to key, or None if not found
-    """
-    if len(DevopsPlatform.CACHE) == 0:
-        get_list(endpoint)
-    return DevopsPlatform.read(endpoint, key)
-
-
-def exists(endpoint: platform.Platform, key: str) -> bool:
-    """
-    :param endpoint: Reference to the SonarQube platform
-    :param key: Key of the devops platform (its name)
-    :return: Whether the platform exists
-    """
-    try:
-        get_object(endpoint=endpoint, key=key)
-    except exceptions.ObjectNotFound:
-        return False
-    return True
 
 
 def export(endpoint: platform.Platform, export_settings: ConfigSettings) -> ObjectJsonRepr:
@@ -319,4 +307,4 @@ def devops_type(endpoint: platform.Platform, key: str) -> str:
     :raises: ObjectNotFound if the devops key is not found
     :return: The type of a DevOps platform (see DEVOPS_PLATFORM_TYPES)
     """
-    return get_object(endpoint=endpoint, key=key).type
+    return DevopsPlatform.get_object(endpoint=endpoint, key=key).type

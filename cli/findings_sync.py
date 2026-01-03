@@ -130,9 +130,9 @@ def __get_objects_pairs_to_sync(
         src_obj = list(source_projects.values())[0]
         tgt_obj = list(target_projects.values())[0]
         if source_branch := kwargs.get("sourceBranch", None):
-            src_obj = branches.Branch.get_object(src_obj, source_branch)
+            src_obj = branches.Branch.get_object(src_obj.endpoint, project=src_obj, branch_name=source_branch)
         if target_branch := kwargs.get("targetBranch", None):
-            tgt_obj = branches.Branch.get_object(tgt_obj, target_branch)
+            tgt_obj = branches.Branch.get_object(tgt_obj.endpoint, project=tgt_obj, branch_name=target_branch)
         return ((src_obj, tgt_obj),)
     return ((None, None),)
 

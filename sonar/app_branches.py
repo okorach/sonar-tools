@@ -39,6 +39,7 @@ from sonar.api.manager import ApiManager as Api
 import sonar.util.constants as c
 
 if TYPE_CHECKING:
+    from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr
     from datetime import datetime
     from sonar.applications import Application
@@ -71,18 +72,18 @@ class ApplicationBranch(Component):
         ApplicationBranch.CACHE.put(self)
 
     @classmethod
-    def get_object(cls, app: Application, branch_name: str) -> ApplicationBranch:
+    def get_object(cls, endpoint: Platform, app: Union[str, Application], branch_name: str) -> ApplicationBranch:
         """Gets an Application object from SonarQube
 
-        :param Application app: Reference to the Application holding that branch
+        :param str | Application app: Reference to the Application holding that branch
         :param branch_name: Name of the application branch
-        :raises UnsupportedOperation: If on a Community Edition
         :raises ObjectNotFound: If Application or Brnach not found
-        :return: The found ApplicationBranch
-        :rtype: ApplicationBranch
+        :return: The found ApplicationBranch object
         """
-        if app.endpoint.edition() == c.CE:
+        if endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
+        if isinstance(app, str):
+            app = Application.get_object(endpoint, app)
         if o := ApplicationBranch.CACHE.get(app.key, branch_name, app.base_url()):
             return o
         app.refresh()
@@ -121,7 +122,7 @@ class ApplicationBranch(Component):
         project_branches = []
         for proj_data in branch_data["projects"]:
             proj = Project.get_object(app.endpoint, proj_data["key"])
-            project_branches.append(Branch.get_object(project=proj, branch_name=proj_data["branch"]))
+            project_branches.append(Branch.get_object(proj.endpoint, project=proj, branch_name=proj_data["branch"]))
         return cls(
             app=app, name=branch_data["branch"], project_branches=project_branches, is_main=branch_data.get("isMain", False), branch_data=branch_data
         )
@@ -253,15 +254,6 @@ class ApplicationBranch(Component):
     def url(self) -> str:
         """Returns the URL of the Application Branch"""
         return f"{self.base_url(local=False)}/dashboard?id={self.concerned_object.key}&branch={quote(self.name)}"
-
-
-def exists(app: object, branch: str) -> bool:
-    """Returns whether an application branch exists"""
-    try:
-        ApplicationBranch.get_object(app, branch)
-        return True
-    except exceptions.ObjectNotFound:
-        return False
 
 
 def list_from(app: Application, data: ApiPayload) -> dict[str, ApplicationBranch]:

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # sonar-tools tests
 # Copyright (C) 2025 Olivier Korach
@@ -22,7 +21,6 @@
 """quality gates tests"""
 
 from collections.abc import Generator
-import json
 import pytest
 
 import utilities as tutil
@@ -55,8 +53,8 @@ def test_get_object_non_existing() -> None:
 def test_exists(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """Test exist"""
     _ = get_loaded_qg
-    assert qualitygates.exists(endpoint=tutil.SQ, gate_name=tutil.TEMP_KEY)
-    assert not qualitygates.exists(endpoint=tutil.SQ, gate_name=tutil.NON_EXISTING_KEY)
+    assert qualitygates.QualityGate.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
+    assert not qualitygates.QualityGate.exists(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY)
 
 
 def test_get_list() -> None:
@@ -73,7 +71,7 @@ def test_create_delete(get_loaded_qg: Generator[qualitygates.QualityGate]) -> No
     with pytest.raises(exceptions.ObjectAlreadyExists):
         qualitygates.QualityGate.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
     qp.delete()
-    assert not qualitygates.exists(endpoint=tutil.SQ, gate_name=tutil.TEMP_KEY)
+    assert not qualitygates.QualityGate.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
 
 
 def test_set_conditions(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:

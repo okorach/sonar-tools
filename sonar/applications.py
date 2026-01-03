@@ -183,14 +183,14 @@ class Application(aggr.Aggregation):
         :return: Whether the Application branch exists
         :rtype: bool
         """
-        return app_branches.exists(self, branch)
+        return app_branches.ApplicationBranch.exists(self.endpoint, app=self, branch_name=branch)
 
     def branch_is_main(self, branch: str) -> bool:
         """
         :return: Whether the Application branch is the main branch
         :rtype: bool
         """
-        return app_branches.ApplicationBranch.get_object(self, branch).is_main()
+        return app_branches.ApplicationBranch.get_object(self.endpoint, self, branch).is_main()
 
     def main_branch(self) -> object:
         """Returns the application main branch"""
@@ -218,11 +218,11 @@ class Application(aggr.Aggregation):
         :param branch_name: The Application branch to set
         :raises ObjectNotFound: if the branch name does not exist
         """
-        return app_branches.ApplicationBranch.get_object(self, branch_name).delete()
+        return app_branches.ApplicationBranch.get_object(self.endpoint, self, branch_name).delete()
 
     def update_branch(self, branch_name: str, branch_definition: ObjectJsonRepr) -> object:
         """Updates an Application branch with a branch definition"""
-        o_app_branch = app_branches.ApplicationBranch.get_object(self, branch_name)
+        o_app_branch = app_branches.ApplicationBranch.get_object(self.endpoint, self, branch_name)
         try:
             o_app_branch.update_project_branches(new_project_branches=self.__get_project_branches(branch_definition))
         except exceptions.UnsupportedOperation as e:
@@ -241,7 +241,7 @@ class Application(aggr.Aggregation):
         log.debug("%s: APPL Updating application branch '%s' with %s", self, branch_name, util.json_dump(projects_data))
         branch_definition = {p["key"]: p.get("branch", c.DEFAULT_BRANCH) for p in projects_data}
         try:
-            o = app_branches.ApplicationBranch.get_object(self, branch_name)
+            o = app_branches.ApplicationBranch.get_object(self.endpoint, self, branch_name)
             o.update_project_branches(new_project_branches=self.__get_project_branches(branch_definition))
         except exceptions.ObjectNotFound:
             self.create_branch(branch_name=branch_name, branch_definition=branch_definition)
@@ -434,7 +434,9 @@ class Application(aggr.Aggregation):
                 proj_br = o_proj.main_branch().name
             else:
                 proj_br = branch_definition[proj]
-            project_branches.append(o_proj if proj_br == c.DEFAULT_BRANCH else branches.Branch.get_object(o_proj, proj_br))
+            project_branches.append(
+                o_proj if proj_br == c.DEFAULT_BRANCH else branches.Branch.get_object(self.endpoint, project=o_proj, branch_name=proj_br)
+            )
         return project_branches
 
 
@@ -548,9 +550,9 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Opt
             continue
         log.info("Importing application key '%s'", key)
         try:
-            if Application.exists(endpoint, key):
-                if not Application.has_access(endpoint, key):
-                    Application.restore_access(endpoint, key)
+            if Application.exists(endpoint, key=key):
+                if not Application.has_access(endpoint, key=key):
+                    Application.restore_access(endpoint, key=key)
                 o = Application.get_object(endpoint, key)
             else:
                 o = Application.create(endpoint, key, data["name"])

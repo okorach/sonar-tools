@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube project branch concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Optional, Any, Union, TYPE_CHECKING
 
 from http import HTTPStatus
 import json
@@ -82,10 +82,10 @@ class Branch(components.Component):
         return hash((self.concerned_object.key, self.name, self.base_url()))
 
     @classmethod
-    def get_object(cls, project: proj.Project, branch_name: str) -> Branch:
+    def get_object(cls, endpoint: Platform, project: Union[str, proj.Project], branch_name: str) -> Branch:
         """Gets a SonarQube Branch object
 
-        :param Project project: Project concerned by the branch
+        :param str | Project project: Project concerned by the branch
         :param str branch_name: The branch name
         :raises UnsupportedOperation: If trying to manipulate branches on a community edition
         :raises ObjectNotFound: If project key or branch name not found in SonarQube
@@ -93,6 +93,8 @@ class Branch(components.Component):
         :rtype: Branch
         """
         branch_name = unquote(branch_name)
+        if isinstance(project, str):
+            project = proj.Project.get_object(endpoint, project)
         if o := Branch.CACHE.get(project.key, branch_name, project.base_url()):
             return o
         api, _, params, _ = Api(Branch, op.LIST, project.endpoint).get_all(project=project.key)
@@ -137,23 +139,6 @@ class Branch(components.Component):
         api, _, params, _ = Api(cls, op.LIST, project.endpoint).get_all(project=project.key)
         data = json.loads(project.endpoint.get(api, params=params).text)
         return {branch["name"]: cls.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
-
-    @classmethod
-    def exists(cls, endpoint: Platform, **kwargs: Any) -> bool:
-        """Checks if a branch exists
-
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param str branch_name: Branch name
-        :param str project_key: Project key
-        :raises UnsupportedOperation: Branches not supported in Community Edition
-        :return: Whether the branch exists
-        :rtype: bool
-        """
-        try:
-            project = proj.Project.get_object(endpoint, kwargs.get("project"))
-        except exceptions.ObjectNotFound:
-            return False
-        return super().exists(endpoint, **kwargs | {"concerned_object": project})
 
     def reload(self, data: ApiPayload) -> Branch:
         log.debug("Loading %s with data %s", self, data)
@@ -240,7 +225,7 @@ class Branch(components.Component):
                     self._new_code = new_code
                 else:
                     # While we're there let's store the new code of other branches
-                    Branch.get_object(self.concerned_object, b["branchKey"])._new_code = new_code
+                    Branch.get_object(endpoint=self.endpoint, project=self.concerned_object, branch_name=b["branchKey"])._new_code = new_code
         return self._new_code
 
     def set_keep_when_inactive(self, keep: bool) -> bool:
