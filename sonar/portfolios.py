@@ -210,18 +210,19 @@ class Portfolio(aggregations.Aggregation):
         else:
             self._selection_mode = {mode: True}
 
-    def refresh(self) -> None:
+    def refresh(self) -> Portfolio:
         """Refreshes a portfolio data from the Sonar instance"""
         log.debug("Updating details for %s root key %s", str(self), self.root_portfolio)
         if not self.is_toplevel():
             self.root_portfolio.refresh()
-            return
+            return self
         api, _, params, _ = Api(self, op.GET).get_all(key=self.key)
         data = json.loads(self.get(api, params=params).text)
         if not self.is_sub_portfolio():
             self.reload(data)
         self.root_portfolio.reload_sub_portfolios()
         self.applications()
+        return self
 
     def url(self) -> str:
         """Returns the object permalink"""
