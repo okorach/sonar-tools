@@ -131,5 +131,3 @@ def read_list(endpoint: Platform) -> dict[str, Language]:
     for lang in data["languages"]:
         _ = Language(endpoint=endpoint, key=lang["key"], name=lang["name"])
     return {o.key: o for o in Language.CACHE.objects.values()}
-
-

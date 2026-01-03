@@ -1459,7 +1459,9 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     nb_threads = export_settings.get("threads", 8)
     for qp in qualityprofiles.get_list(endpoint).values():
         qp.projects()
-    proj_list = {k: v for k, v in Project.get_list(endpoint=endpoint, threads=nb_threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)}
+    proj_list = {
+        k: v for k, v in Project.get_list(endpoint=endpoint, threads=nb_threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)
+    }
     total, current = len(proj_list), 0
     log.info("Exporting %d projects", total)
     results = {}
