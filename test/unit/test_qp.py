@@ -36,7 +36,7 @@ def test_get_object(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> N
     qp = get_test_qp
     assert qp.name == tutil.TEMP_KEY
     assert qp.language == "py"
-    qp2 = qualityprofiles.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+    qp2 = qualityprofiles.QualityProfile.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
     assert qp2 is qp
 
 
@@ -44,7 +44,7 @@ def test_get_object_non_existing() -> None:
     """Test exception raised when providing non existing portfolio key"""
 
     with pytest.raises(exceptions.ObjectNotFound) as e:
-        _ = qualityprofiles.get_object(endpoint=tutil.SQ, name="NON-EXISTING", language="py")
+        _ = qualityprofiles.QualityProfile.get_object(endpoint=tutil.SQ, name="NON-EXISTING", language="py")
     assert str(e.value).endswith("Quality Profile 'py:NON-EXISTING' not found")
 
 
@@ -77,7 +77,7 @@ def test_create_delete(get_test_qp: Generator[qualityprofiles.QualityProfile]) -
 def test_inheritance(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """Test addition of a project in manual mode"""
     qp = get_test_qp
-    sonar_way_qp = qualityprofiles.get_object(tutil.SQ, tutil.SONAR_WAY, "py")
+    sonar_way_qp = qualityprofiles.QualityProfile.get_object(tutil.SQ, tutil.SONAR_WAY, "py")
     assert not qp.is_child()
 
     assert qp.set_parent(tutil.SONAR_WAY)
@@ -107,11 +107,11 @@ def test_read(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
 
 def test_set_default(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """test_set_default"""
-    qp = get_test_qp
+    qp: qualityprofiles.QualityProfile = get_test_qp
     assert not qp.is_default
     assert qp.set_as_default()
     assert qp.is_default
-    sonar_way_qp = qualityprofiles.get_object(tutil.SQ, tutil.SONAR_WAY, "py")
+    sonar_way_qp = qualityprofiles.QualityProfile.get_object(tutil.SQ, tutil.SONAR_WAY, "py")
     assert sonar_way_qp.set_as_default()
     assert sonar_way_qp.is_default
     assert not qp.is_default

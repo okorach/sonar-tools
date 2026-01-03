@@ -102,6 +102,21 @@ class QualityProfile(SqObject):
         return hash((self.name, self.language, self.base_url()))
 
     @classmethod
+    def get_object(cls, endpoint: Platform, name: str, language: str) -> QualityProfile:
+        """Returns a quality profile from its name and language
+
+        :param endpoint: Reference to the SonarQube platform
+        :param name: Quality profile name
+        :param language: Quality profile language
+
+        :return: The quality profile object, of None if not found
+        """
+        get_list(endpoint)
+        if o := cls.CACHE.get(name, language, endpoint.local_url):
+            return o
+        raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
+
+    @classmethod
     def read(cls, endpoint: Platform, name: str, language: str) -> Optional[QualityProfile]:
         """Creates a QualityProfile object corresponding to quality profile with same name and language in SonarQube
 
@@ -178,7 +193,6 @@ class QualityProfile(SqObject):
         """Returns the API to use for a particular operation"""
         api, _, _, _ = Api(cls, operation, endpoint).get_all()
         return api
-
 
     def url(self) -> str:
         """
@@ -867,21 +881,6 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
         write_q.put(sutil.WRITE_END)
     # return dict(sorted(qp_list.items()))
     return qp_list
-
-
-def get_object(endpoint: Platform, name: str, language: str) -> Optional[QualityProfile]:
-    """Returns a quality profile Object from its name and language
-
-    :param endpoint: Reference to the SonarQube platform
-    :param name: Quality profile name
-    :param language: Quality profile language
-
-    :return: The quality profile object, of None if not found
-    """
-    get_list(endpoint)
-    if not (o := QualityProfile.CACHE.get(name, language, endpoint.local_url)):
-        raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
-    return o
 
 
 def import_qp(endpoint: Platform, name: str, lang: str, qp_data: ObjectJsonRepr) -> bool:
