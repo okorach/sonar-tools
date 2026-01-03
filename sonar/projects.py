@@ -145,9 +145,8 @@ class Project(Component):
         """
         if o := Project.CACHE.get(key, endpoint.local_url):
             return o
-        api, _, params, _ = Api(Project, op.READ, endpoint).get_all(component=key)
-        data = json.loads(endpoint.get(api, params=params).text)
-        return cls.load(endpoint, data["component"])
+        api, _, params, ret = Api(Project, op.READ, endpoint).get_all(component=key)
+        return cls.load(endpoint, json.loads(endpoint.get(api, params=params).text)[ret])
 
     @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> Project:
