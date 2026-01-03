@@ -33,7 +33,7 @@ import sonar.util.qualityprofile_helper as qhelp
 
 def test_get_object(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
-    qp = get_test_qp
+    qp: qualityprofiles.QualityProfile = get_test_qp
     assert qp.name == tutil.TEMP_KEY
     assert qp.language == "py"
     qp2 = qualityprofiles.QualityProfile.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
@@ -63,7 +63,7 @@ def test_get_list() -> None:
 
 def test_create_delete(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """Test QP create delete"""
-    qp = get_test_qp
+    qp: qualityprofiles.QualityProfile = get_test_qp
     assert qp is not None
 
     assert qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="non-existing") is None
@@ -76,7 +76,7 @@ def test_create_delete(get_test_qp: Generator[qualityprofiles.QualityProfile]) -
 
 def test_inheritance(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """Test addition of a project in manual mode"""
-    qp = get_test_qp
+    qp: qualityprofiles.QualityProfile = get_test_qp
     sonar_way_qp = qualityprofiles.QualityProfile.get_object(tutil.SQ, tutil.SONAR_WAY, "py")
     assert not qp.is_child()
 
@@ -97,7 +97,7 @@ def test_inheritance(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> 
 
 def test_read(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """test_read"""
-    qp = get_test_qp
+    qp: qualityprofiles.QualityProfile = get_test_qp
     assert qp.url() == f"{tutil.SQ.external_url}/profiles/show?language=py&name={tutil.TEMP_KEY}"
     new_qp = qualityprofiles.QualityProfile.read(tutil.SQ, tutil.TEMP_KEY, "py")
     assert qp is new_qp
