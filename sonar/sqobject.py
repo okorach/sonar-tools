@@ -310,14 +310,14 @@ class SqObject(object):
         if tags is None:
             return False
         log.info("Settings tags %s to %s", tags, str(self))
-        api, _, params, _ = Api(self, op.SET_TAGS).get_all(project=self.key, issue=self.key, application=self.key, tags=util.list_to_csv(tags))
         try:
+            api, _, params, _ = Api(self, op.SET_TAGS).get_all(project=self.key, issue=self.key, application=self.key, tags=util.list_to_csv(tags))
             if ok := self.post(api, params=params).ok:
                 self._tags = sorted(tags)
+        except (ValueError, AttributeError, KeyError) as e:
+            raise exceptions.UnsupportedOperation(f"Can't set tags on {self.__class__.__name__.lower()}s") from e
         except exceptions.SonarException:
             return False
-        except (AttributeError, KeyError):
-            raise exceptions.UnsupportedOperation(f"Can't set tags on {self.__class__.__name__.lower()}s")
         else:
             return ok
 
