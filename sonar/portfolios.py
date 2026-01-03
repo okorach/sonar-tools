@@ -575,6 +575,14 @@ class Portfolio(aggregations.Aggregation):
         api, _, api_params, _ = Api(self, op.RECOMPUTE).get_all(**params)
         return self.post(api, params=api_params).ok
 
+    def delete(self) -> bool:
+        """Deletes the portfolio
+
+        :return: Whether the deletion was successful
+        :rtype: bool
+        """
+        return self.delete_object(**self.api_params(op.DELETE))
+
     def get_project_list(self) -> list[str]:
         log.debug("Search %s projects list", str(self))
         proj_key_list = []
@@ -649,7 +657,7 @@ class Portfolio(aggregations.Aggregation):
 
     def api_params(self, operation: Optional[op] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {op.READ: {"key": self.key}}
+        ops = {op.READ: {"key": self.key}, op.DELETE: {"key": self.key}}
         return ops[operation] if operation and operation in ops else ops[op.READ]
 
 
