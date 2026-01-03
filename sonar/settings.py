@@ -603,8 +603,7 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[object])
     else:
         if key == NEW_CODE_PERIOD:
             key = "sonar.leak.period.type"
-        params = get_component_params(component)
-        params.update({"keys": key})
+        params = get_component_params(component) | {"keys": key}
         api, _, api_params, _ = Api(Setting, op.READ, endpoint).get_all(**params)
         data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)["settings"]
         if not endpoint.is_sonarcloud() and len(data) > 0:
