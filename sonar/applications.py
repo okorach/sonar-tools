@@ -550,9 +550,9 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Opt
             continue
         log.info("Importing application key '%s'", key)
         try:
-            if Application.exists(endpoint, key):
-                if not Application.has_access(endpoint, key):
-                    Application.restore_access(endpoint, key)
+            if Application.exists(endpoint, key=key):
+                if not Application.has_access(endpoint, key=key):
+                    Application.restore_access(endpoint, key=key)
                 o = Application.get_object(endpoint, key)
             else:
                 o = Application.create(endpoint, key, data["name"])
