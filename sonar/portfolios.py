@@ -731,7 +731,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
             continue
         log.info("Importing portfolio key '%s'", key)
         try:
-            if Portfolio.exists(endpoint, key):
+            if Portfolio.exists(endpoint=endpoint, key=key):
                 if not Portfolio.has_access(endpoint, key):
                     Portfolio.restore_access(endpoint, key)
                 o = Portfolio.get_object(endpoint, key)
