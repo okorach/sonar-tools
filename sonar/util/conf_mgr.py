@@ -48,16 +48,17 @@ def _load_json_file(file: Union[str, Path]) -> dict[str, Any]:
         return json.loads(fp.read()) or {}
 
 
-def load(filename: str, package_location: str) -> dict[str, Any]:
+def load(filename: str) -> dict[str, Any]:
     """Loads a particular configuration file"""
+    base_name = filename.split("/")[-1]
     config_type = filename.split(".")[-1].lower()
     if config_type not in ("properties", "json"):
         raise ValueError(f"Invalid config type: {config_type}")
 
     files = (
-        get_install_root() / package_location / filename,
-        f"{os.path.expanduser('~')}{os.sep}.{filename}",
-        f"{os.getcwd()}{os.sep}.{filename}",
+        get_install_root() / filename,
+        f"{os.path.expanduser('~')}{os.sep}.{base_name}",
+        f"{os.getcwd()}{os.sep}.{base_name}",
     )
     settings = {}
     for file in files:

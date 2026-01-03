@@ -20,9 +20,10 @@
 """Computes SonarQube maturity metrics"""
 
 from typing import Any
+
+import os
 import traceback
 import concurrent.futures
-
 from termgraph import Data, Args, BarChart
 
 from sonar import version
@@ -514,7 +515,7 @@ def main() -> None:
         sq = platform.Platform(**kwargs)
         sq.verify_connection()
         sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-        config = conf.load(CONFIG_FILE, "cli") | conf.get_cli_settings(**kwargs) | kwargs
+        config = conf.load(f"cli{os.sep}{CONFIG_FILE}") | conf.get_cli_settings(**kwargs) | kwargs
         project_list = component_helper.get_components(
             endpoint=sq,
             component_type="projects",

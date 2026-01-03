@@ -23,15 +23,15 @@
 from __future__ import annotations
 from typing import TextIO, Optional, TYPE_CHECKING
 
+import os
 import json
 import csv
 import re
 from threading import Thread
 from queue import Queue
-from requests import RequestException
 
 from cli import options
-from sonar import errcodes, exceptions, version
+from sonar import errcodes, exceptions
 from sonar.util import component_helper
 import sonar.logging as log
 from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, portfolios, applications, projects
@@ -39,7 +39,6 @@ import sonar.utilities as sutil
 import sonar.util.misc as util
 from sonar.audit import problem
 from sonar.util import conf_mgr
-import sonar.util.common_helper as chelp
 
 if TYPE_CHECKING:
     from sonar.util.types import ConfigSettings, KeyList
@@ -207,7 +206,7 @@ def main() -> None:
     errcode = errcodes.OS_ERROR
     try:
         kwargs = sutil.convert_args(__parser_args("Audits a SonarQube Server or Cloud platform or a SIF (Support Info File or System Info File)"))
-        settings = conf_mgr.load(CONFIG_FILE, "cli") | conf_mgr.get_cli_settings(**kwargs) | kwargs
+        settings = conf_mgr.load(f"cli{os.sep}{CONFIG_FILE}") | conf_mgr.get_cli_settings(**kwargs) | kwargs
         log.info("Audit settings: %s", util.json_dump(settings))
         file = ofile = kwargs.pop(options.REPORT_FILE)
         fmt = util.deduct_format(kwargs[options.FORMAT], ofile)
