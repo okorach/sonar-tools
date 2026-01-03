@@ -105,6 +105,26 @@ class PullRequest(components.Component):
         o.reload(data)
         return o
 
+    @classmethod
+    def get_list(cls, project: proj.Project) -> dict[str, PullRequest]:
+        """Retrieves the list of pull requests of a project
+
+        :param proj.Project project: proj.Project to get PRs from
+        :raises UnsupportedOperation: PRs not supported in Community Edition
+        :return: List of project PRs
+        :rtype: dict{PR_ID: PullRequest}
+        """
+        if project.endpoint.edition() == c.CE:
+            log.debug(_UNSUPPORTED_IN_CE)
+            raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
+
+        api, _, params, ret = Api(cls, op.LIST, project.endpoint).get_all(project=project.key)
+        data = json.loads(project.get(api, params=params).text)
+        pr_list = {}
+        for pr in data[ret]:
+            pr_list[pr["key"]] = cls.load(project.endpoint, project, pr)
+        return pr_list
+
     def reload(self, data: ApiPayload) -> PullRequest:
         """Reloads a PR object from API data"""
         super().reload(data)
@@ -175,23 +195,3 @@ class PullRequest(components.Component):
         if not filters:
             return self.concerned_object.get_findings(pr=self.key)
         return self.get_issues(filters) | self.get_hotspots(filters)
-
-
-def get_list(project: proj.Project) -> dict[str, PullRequest]:
-    """Retrieves the list of pull requests of a project
-
-    :param proj.Project project: proj.Project to get PRs from
-    :raises UnsupportedOperation: PRs not supported in Community Edition
-    :return: List of project PRs
-    :rtype: dict{PR_ID: PullRequest}
-    """
-    if project.endpoint.edition() == c.CE:
-        log.debug(_UNSUPPORTED_IN_CE)
-        raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
-
-    api, _, params, ret = Api(PullRequest, op.LIST, project.endpoint).get_all(project=project.key)
-    data = json.loads(project.get(api, params=params).text)
-    pr_list = {}
-    for pr in data[ret]:
-        pr_list[pr["key"]] = PullRequest.load(project.endpoint, project, pr)
-    return pr_list
