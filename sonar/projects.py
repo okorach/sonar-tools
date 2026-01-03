@@ -870,7 +870,7 @@ class Project(Component):
         :rtype: dict{language: QualityProfile}
         """
         log.debug("Getting %s quality profiles", str(self))
-        qp_list = qualityprofiles.get_list(self.endpoint)
+        qp_list = qualityprofiles.QualityProfile.get_list(self.endpoint)
         return {qp.language: qp for qp in qp_list.values() if qp.used_by_project(self)}
 
     def quality_gate(self) -> Optional[tuple[str, bool]]:
@@ -1457,7 +1457,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     write_q = kwargs.get("write_q", None)
     key_regexp = kwargs.get("key_list", ".+")
     nb_threads = export_settings.get("threads", 8)
-    for qp in qualityprofiles.get_list(endpoint).values():
+    for qp in qualityprofiles.QualityProfile.get_list(endpoint).values():
         qp.projects()
     proj_list = {
         k: v for k, v in Project.get_list(endpoint=endpoint, threads=nb_threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)

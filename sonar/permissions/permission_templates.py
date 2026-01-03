@@ -308,6 +308,6 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings) -> list[pb.Problem
     """Audits permission templates and returns list of detected problems"""
     log.info("--- Auditing permission templates ---")
     problems = []
-    for pt in get_list(endpoint=endpoint).values():
+    for pt in PermissionTemplate.get_list(endpoint=endpoint).values():
         problems += pt.audit(audit_settings)
     return problems

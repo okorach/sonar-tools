@@ -249,7 +249,7 @@ def count(endpoint: platform.Platform, platf_type: Optional[str] = None) -> int:
     :param platf_type: Filter for a specific type, defaults to None (see DEVOPS_PLATFORM_TYPES set)
     :return: Count of DevOps platforms
     """
-    return len([o for o in get_list(endpoint=endpoint).values() if not platf_type or o.type == platf_type])
+    return len([o for o in DevopsPlatform.get_list(endpoint=endpoint).values() if not platf_type or o.type == platf_type])
 
 
 def export(endpoint: platform.Platform, export_settings: ConfigSettings) -> ObjectJsonRepr:
@@ -258,7 +258,7 @@ def export(endpoint: platform.Platform, export_settings: ConfigSettings) -> Obje
     """
     log.info("Exporting DevOps integration settings")
     json_data = {}
-    for s in get_list(endpoint).values():
+    for s in DevopsPlatform.get_list(endpoint).values():
         export_data = s.to_json(export_settings)
         json_data[export_data.pop("key")] = export_data
         log.debug("Export devops: %s", util.json_dump(export_data))
