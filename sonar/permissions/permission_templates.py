@@ -95,6 +95,11 @@ class PermissionTemplate(sqobject.SqObject):
         """Returns object unique id"""
         return hash((self.name.lower(), self.base_url()))
 
+    @classmethod
+    def get_list(cls, endpoint: Platform) -> dict[str, PermissionTemplate]:
+        """Gets the list of all permissions templates"""
+        return search(endpoint=endpoint)
+
     def is_default_for(self, qualifier: str) -> bool:
         """Returns whether a template is the default for a type of qualifier"""
         return qualifier in _DEFAULT_TEMPLATES and _DEFAULT_TEMPLATES[qualifier] == self.key
@@ -215,7 +220,7 @@ class PermissionTemplate(sqobject.SqObject):
 def get_object(endpoint: Platform, name: str) -> PermissionTemplate:
     """Returns Perm Template object corresponding to name"""
     if len(PermissionTemplate.CACHE) == 0:
-        get_list(endpoint)
+        PermissionTemplate.get_list(endpoint)
     return PermissionTemplate.CACHE.get(name.lower(), endpoint.local_url)
 
 
@@ -257,11 +262,6 @@ def search_by_name(endpoint: Platform, name: str) -> ApiPayload:
     return sutil.search_by_name(endpoint=endpoint, name=name, api=_SEARCH_API, returned_field="permissionTemplates")
 
 
-def get_list(endpoint: Platform) -> dict[str, PermissionTemplate]:
-    """Gets the list of all permissions templates"""
-    return search(endpoint=endpoint)
-
-
 def _load_default_templates(endpoint: Platform, data: ApiPayload = None) -> None:
     """Loads default templates"""
     if data is None:
@@ -291,7 +291,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr) -> int:
         log.info("No permissions templates in config, skipping import...")
         return 0
     log.info("Importing permission templates")
-    get_list(endpoint)
+    PermissionTemplate.get_list(endpoint)
     count = 0
     config_data = util.list_to_dict(config_data, "key")
     for name, data in config_data.items():
