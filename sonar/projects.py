@@ -1506,7 +1506,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
             continue
         log.info("Importing project key '%s'", key)
         try:
-            if Project.exists(endpoint, key):
+            if Project.exists(endpoint, key=key):
                 if not Project.has_access(endpoint, key):
                     Project.restore_access(endpoint, key)
                 o = Project.get_object(endpoint, key)
