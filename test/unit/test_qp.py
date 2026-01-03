@@ -27,7 +27,6 @@ import pytest
 
 import utilities as tutil
 from sonar import qualityprofiles, languages, rules, exceptions, logging
-import sonar.util.issue_defs as idefs
 import sonar.util.qualityprofile_helper as qhelp
 
 
