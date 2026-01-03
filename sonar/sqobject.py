@@ -98,14 +98,14 @@ class SqObject(object):
             pass
 
     @classmethod
-    def exists(cls, endpoint: Platform, key: str) -> bool:
+    def exists(cls, endpoint: Platform, **kwargs: Any) -> bool:
         """Tells whether an object with a given key exists"""
-        if cls.__name__ not in ("Project", "Portfolio", "Application", "Rule"):
-            raise exceptions.UnsupportedOperation(f"Can't check existence of {cls.__name__.lower()}s")
         try:
-            return cls.get_object(endpoint, key) is not None
+            return cls.get_object(endpoint, **kwargs) is not None
         except exceptions.NoPermissions:
             return True
+        except AttributeError:
+            raise exceptions.UnsupportedOperation(f"Can't check existence of {cls.__name__.lower()}s")
         except exceptions.ObjectNotFound:
             return False
 
@@ -118,6 +118,8 @@ class SqObject(object):
             cls.get_object(endpoint, obj_key)
         except (exceptions.NoPermissions, exceptions.ObjectNotFound):
             return False
+        except AttributeError:
+            raise exceptions.UnsupportedOperation(f"Can't check access on {cls.__name__.lower()}s")
         return True
 
     @classmethod

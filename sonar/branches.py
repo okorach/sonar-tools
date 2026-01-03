@@ -82,10 +82,10 @@ class Branch(components.Component):
         return hash((self.concerned_object.key, self.name, self.base_url()))
 
     @classmethod
-    def get_object(cls, concerned_object: proj.Project, branch_name: str) -> Branch:
+    def get_object(cls, project: proj.Project, branch_name: str) -> Branch:
         """Gets a SonarQube Branch object
 
-        :param proj.Project concerned_object: Project concerned by the branch
+        :param Project project: Project concerned by the branch
         :param str branch_name: The branch name
         :raises UnsupportedOperation: If trying to manipulate branches on a community edition
         :raises ObjectNotFound: If project key or branch name not found in SonarQube
@@ -93,14 +93,14 @@ class Branch(components.Component):
         :rtype: Branch
         """
         branch_name = unquote(branch_name)
-        if o := Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url()):
+        if o := Branch.CACHE.get(project.key, branch_name, project.base_url()):
             return o
-        api, _, params, _ = Api(Branch, op.LIST, concerned_object.endpoint).get_all(project=concerned_object.key)
-        data = json.loads(concerned_object.get(api, params=params).text)
+        api, _, params, _ = Api(Branch, op.LIST, project.endpoint).get_all(project=project.key)
+        data = json.loads(project.get(api, params=params).text)
         br = next((b for b in data.get("branches", []) if b["name"] == branch_name), None)
         if not br:
-            raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(concerned_object)} not found")
-        return cls.load(concerned_object, branch_name, br)
+            raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(project)} not found")
+        return cls.load(project, branch_name, br)
 
     @classmethod
     def load(cls, concerned_object: proj.Project, branch_name: str, data: ApiPayload) -> Branch:
@@ -139,19 +139,21 @@ class Branch(components.Component):
         return {branch["name"]: cls.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
 
     @classmethod
-    def exists(cls, endpoint: Platform, branch_name: str, project_key: str) -> bool:
+    def exists(cls, endpoint: Platform, **kwargs: Any) -> bool:
         """Checks if a branch exists
 
         :param Platform endpoint: Reference to the SonarQube platform
         :param str branch_name: Branch name
         :param str project_key: Project key
         :raises UnsupportedOperation: Branches not supported in Community Edition
+        :return: Whether the branch exists
+        :rtype: bool
         """
         try:
-            cls.get_object(concerned_object=proj.Project.get_object(endpoint, project_key), branch_name=branch_name)
+            project = proj.Project.get_object(endpoint, kwargs.get("project"))
         except exceptions.ObjectNotFound:
             return False
-        return True
+        return super().exists(endpoint, **kwargs | {"concerned_object": project})
 
     def reload(self, data: ApiPayload) -> Branch:
         log.debug("Loading %s with data %s", self, data)

@@ -136,7 +136,7 @@ class Portfolio(aggregations.Aggregation):
     def create(cls, endpoint: Platform, key: str, name: Optional[str] = None, **kwargs) -> Portfolio:
         """Creates a portfolio object"""
         check_supported(endpoint)
-        if Portfolio.exists(endpoint=endpoint, key=key):
+        if cls.exists(endpoint=endpoint, key=key):
             raise exceptions.ObjectAlreadyExists(key=key, message=f"Portfolio '{key}' already exists")
         parent_key = kwargs["parent"].key if "parent" in kwargs else None
         if not name:

@@ -699,7 +699,7 @@ class Project(Component):
                 objects = self.branches()
             else:
                 try:
-                    objects = {b: branches.Branch.get_object(concerned_object=self, branch_name=b) for b in br}
+                    objects = {b: branches.Branch.get_object(project=self, branch_name=b) for b in br}
                 except exceptions.SonarException as e:
                     log.error(e.message)
         if pr:
