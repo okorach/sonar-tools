@@ -1020,7 +1020,7 @@
         }
     },
     "Organization": {
-        "5.2.0": {
+        "10000.0.0": {
             "LIST": {
                 "method": "GET",
                 "api": "api/organizations/search",
