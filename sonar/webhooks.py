@@ -23,8 +23,6 @@
 from __future__ import annotations
 from typing import Optional, ClassVar, Any, TYPE_CHECKING
 
-import json
-
 from sonar.sqobject import SqObject
 import sonar.logging as log
 from sonar import exceptions
@@ -94,18 +92,18 @@ class WebHook(SqObject):
         :param ApiPayload data: The webhook data received from the API
         :return: The created WebHook
         """
-        log.debug("Loading Webhook with %s", data)
-        name, project = data["name"], data.get("project", None)
+        name, project = data["name"], data.get("project")
+        log.debug("Loading Webhook '%s' of project '%s'", name, project)
         if (o := WebHook.CACHE.get(name, project, endpoint.local_url)) is None:
-            o = WebHook(endpoint, name, data["url"], data.get("secret", None), project)
+            o = WebHook(endpoint, name, data["url"], data.get("secret"), project)
         o.reload(data)
         return o
 
     @classmethod
-    def get_object(cls, endpoint: Platform, name: str, project_key: Optional[str] = None) -> WebHook:
+    def get_object(cls, endpoint: Platform, name: str, project_key: Optional[str] = None, **kwargs: Any) -> WebHook:
         """Gets a WebHook object from its name and an eventual project key"""
         log.debug("Getting webhook name %s project key %s", name, str(project_key))
-        if o := WebHook.CACHE.get(name, project_key, endpoint.local_url):
+        if kwargs.get("use_cache", True) and (o := WebHook.CACHE.get(name, project_key, endpoint.local_url)):
             return o
         try:
             whs = list(get_list(endpoint, project_key).values())
@@ -113,29 +111,21 @@ class WebHook(SqObject):
         except StopIteration as e:
             raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found") from e
 
-    def refresh(self) -> None:
-        """Reads the Webhook data on the SonarQube platform and updates the local object"""
-        log.debug("Refreshing %s", self)
-        api, _, api_params, ret = Api(self, op.LIST).get_all(project=self.project))
-        dataset = json.loads(self.get(api, params=api_params).text)[ret]
-        log.debug("Refreshing %s with data %s", str(self), str(dataset))
-        wh_data = next((wh for wh in dataset if wh["name"] == self.name), None)
-        if wh_data is None:
-            wh_name = str(self)
-            name = self.name
-            WebHook.CACHE.pop(self)
-            raise exceptions.ObjectNotFound(name, f"{wh_name} not found")
-        self.reload(wh_data)
-
     def reload(self, data: ApiPayload) -> None:
         """Reloads a WebHook from the payload gotten from SonarQube"""
-        log.debug("Loading %s with %s", str(self), str(data))
+        log.debug("Reloading %s with %s", self, data)
         self.sq_json = self.sq_json or {} | data
         self.name = data["name"]
         self.key = data["key"]
         self.webhook_url = data["url"]
-        self.secret = data.get("secret", None) or self.secret
-        self.last_delivery = data.get("latestDelivery", None)
+        self.secret = data.get("secret") or self.secret
+        self.last_delivery = data.get("latestDelivery")
+
+    def refresh(self) -> None:
+        """Reads the Webhook data on the SonarQube platform and updates the local object"""
+        log.debug("Refreshing %s", self)
+        tmp_wh = self.__class__.get_object(self.endpoint, self.name, self.project, use_cache=False)
+        self.reload(tmp_wh.sq_json)
 
     def url(self) -> str:
         """Returns the object permalink"""
@@ -155,11 +145,7 @@ class WebHook(SqObject):
         return ok
 
     def delete(self) -> bool:
-        """Deletes the webhook
-
-        :return: Whether the deletion was successful
-        :rtype: bool
-        """
+        """Deletes the webhook and return whether the deletion was successful"""
         return self.delete_object(**self.api_params(op.DELETE))
 
     def audit(self) -> list[problem.Problem]:
@@ -182,7 +168,7 @@ class WebHook(SqObject):
 
     def api_params(self, operation: Optional[op] = None) -> ApiParams:
         """Returns the std api params to pass for a given webhook"""
-        ops = {op.READ: {"webhook": self.key}, op.DELETE: {"webhook": self.key}}
+        ops = {op.READ: {"webhook": self.key}}
         return ops[operation] if operation and operation in ops else ops[op.READ]
 
 
