@@ -91,21 +91,24 @@ class Organization(SqObject):
         """Loads an Organization object with data retrieved from SonarQube Cloud
 
         :param endpoint: Reference to the SonarQube Cloud platform
-        :param data: Data coming from api/organizations/search
+        :param data: Search payload of an organization
         :raises UnsupportedOperation: If not running against SonarQube Cloud
         :raises ObjectNotFound: If Organization key not found
         :return: The found Organization object
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        o = Organization.CACHE.get(data["key"], endpoint.local_url)
+        o: Optional[Organization] = Organization.CACHE.get(data["key"], endpoint.local_url)
         if not o:
             o = cls(endpoint, data["key"], data["name"])
-        o.sq_json = data
-        o.name = data["name"]
-        o.description = data["description"]
-        return o
+        return o.reload(data)
 
+    def reload(self, data: ApiPayload) -> Organization:
+        """Reloads an Organization object with data retrieved from SonarQube Cloud, returns self"""
+        super().reload(data)
+        self.name = data["name"]
+        self.description = data["description"]
+        return self
 
     def export(self) -> ObjectJsonRepr:
         """Exports an organization"""
