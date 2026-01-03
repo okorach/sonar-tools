@@ -707,7 +707,7 @@ class Project(Component):
                 objects.update(self.pull_requests())
             else:
                 try:
-                    objects.update({p: pull_requests.get_object(self.endpoint, project=self, pull_request_key=p) for p in pr})
+                    objects.update({p: pull_requests.PullRequest.get_object(self.endpoint, project=self, pull_request_key=p) for p in pr})
                 except exceptions.SonarException as e:
                     log.error(e.message)
         return objects
