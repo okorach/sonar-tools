@@ -29,7 +29,6 @@ import re
 from urllib.parse import unquote
 import requests.utils
 
-from sonar import platform
 from sonar.util import cache
 import sonar.logging as log
 from sonar import components, settings, exceptions, tasks
@@ -45,6 +44,7 @@ from sonar.api.manager import ApiOperation as op
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
+    from sonar.platform import Platform
     from sonar.util.types import ApiPayload, ApiParams, ConfigSettings, ObjectJsonRepr
     from datetime import datetime
 
@@ -139,7 +139,7 @@ class Branch(components.Component):
         return {branch["name"]: cls.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
 
     @classmethod
-    def exists(cls, endpoint: platform.Platform, branch_name: str, project_key: str) -> bool:
+    def exists(cls, endpoint: Platform, branch_name: str, project_key: str) -> bool:
         """Checks if a branch exists
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -148,7 +148,7 @@ class Branch(components.Component):
         :raises UnsupportedOperation: Branches not supported in Community Edition
         """
         try:
-            cls.get_object(endpoint=endpoint, concerned_object=proj.Project.get_object(endpoint, project_key), branch_name=branch_name)
+            cls.get_object(concerned_object=proj.Project.get_object(endpoint, project_key), branch_name=branch_name)
         except exceptions.ObjectNotFound:
             return False
         return True
