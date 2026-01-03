@@ -121,7 +121,7 @@ class ApplicationBranch(Component):
         project_branches = []
         for proj_data in branch_data["projects"]:
             proj = Project.get_object(app.endpoint, proj_data["key"])
-            project_branches.append(Branch.get_object(endpoint=proj.endpoint, project_key=proj.key, branch_name=proj_data["branch"]))
+            project_branches.append(Branch.get_object(proj.endpoint, project=proj, branch_name=proj_data["branch"]))
         return cls(
             app=app, name=branch_data["branch"], project_branches=project_branches, is_main=branch_data.get("isMain", False), branch_data=branch_data
         )

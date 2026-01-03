@@ -699,7 +699,7 @@ class Project(Component):
                 objects = self.branches()
             else:
                 try:
-                    objects = {b: branches.Branch.get_object(endpoint=self.endpoint, project_key=self.key, branch_name=b) for b in br}
+                    objects = {b: branches.Branch.get_object(self.endpoint, project=self, branch_name=b) for b in br}
                 except exceptions.SonarException as e:
                     log.error(e.message)
         if pr:
@@ -707,7 +707,7 @@ class Project(Component):
                 objects.update(self.pull_requests())
             else:
                 try:
-                    objects.update({p: pull_requests.get_object(endpoint=self.endpoint, project_key=self.key, pull_request_key=p) for p in pr})
+                    objects.update({p: pull_requests.get_object(self.endpoint, project=self, pull_request_key=p) for p in pr})
                 except exceptions.SonarException as e:
                     log.error(e.message)
         return objects
@@ -1287,7 +1287,7 @@ class Project(Component):
         if "branches" in config:
             for branch_data in config["branches"]:
                 try:
-                    branch = branches.Branch.get_object(endpoint=self.endpoint, project_key=self.key, branch_name=branch_data["name"])
+                    branch = branches.Branch.get_object(self.endpoint, project=self, branch_name=branch_data["name"])
                     branch.import_config(branch_data)
                 except exceptions.ObjectNotFound:
                     log.warning("Branch '%s' of %s does not exists, can't update its configuration", branch_data["name"], str(self))

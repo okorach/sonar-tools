@@ -435,9 +435,7 @@ class Application(aggr.Aggregation):
             else:
                 proj_br = branch_definition[proj]
             project_branches.append(
-                o_proj
-                if proj_br == c.DEFAULT_BRANCH
-                else branches.Branch.get_object(endpoint=self.endpoint, project_key=o_proj.key, branch_name=proj_br)
+                o_proj if proj_br == c.DEFAULT_BRANCH else branches.Branch.get_object(self.endpoint, project=o_proj, branch_name=proj_br)
             )
         return project_branches
 
