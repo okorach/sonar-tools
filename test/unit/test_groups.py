@@ -130,7 +130,7 @@ def test_import() -> None:
     }
     groups.import_config(tutil.SQ, data)
     for g in "Group1", "Group2", "Group3":
-        assert groups.exists(endpoint=tutil.SQ, name=g)
+        assert groups.Group.exists(endpoint=tutil.SQ, name=g)
         o_g = groups.Group.get_object(endpoint=tutil.SQ, name=g)
         assert o_g.description == f"This is {g}"
         o_g.delete()

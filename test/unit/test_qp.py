@@ -51,8 +51,8 @@ def test_get_object_non_existing() -> None:
 def test_exists(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """Test exist"""
     _ = get_test_qp
-    assert qualityprofiles.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
-    assert not qualityprofiles.exists(endpoint=tutil.SQ, name="NON_EXISTING", language="py")
+    assert qualityprofiles.QualityProfile.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+    assert not qualityprofiles.QualityProfile.exists(endpoint=tutil.SQ, name="NON_EXISTING", language="py")
 
 
 def test_get_list() -> None:
@@ -71,7 +71,7 @@ def test_create_delete(get_test_qp: Generator[qualityprofiles.QualityProfile]) -
     with pytest.raises(exceptions.ObjectAlreadyExists):
         qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
     qp.delete()
-    assert not qualityprofiles.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+    assert not qualityprofiles.QualityProfile.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
 
 
 def test_inheritance(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:

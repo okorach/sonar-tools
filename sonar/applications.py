@@ -183,7 +183,7 @@ class Application(aggr.Aggregation):
         :return: Whether the Application branch exists
         :rtype: bool
         """
-        return app_branches.exists(self, branch)
+        return app_branches.ApplicationBranch.exists(self, branch)
 
     def branch_is_main(self, branch: str) -> bool:
         """

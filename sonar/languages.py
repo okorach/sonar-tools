@@ -22,7 +22,7 @@
 """Abstraction of the SonarQube language concept"""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 import json
 from threading import Lock
@@ -95,6 +95,15 @@ class Language(SqObject):
             )
         return self._nb_rules[rule_type or "_ALL"]
 
+    @classmethod
+    def exists(cls, endpoint: Platform, **kwargs: Any) -> bool:
+        """Returns whether a language exists
+
+        :param endpoint: Reference of the SonarQube platform
+        :param language: The language key
+        """
+        return kwargs.get("language") in get_list(endpoint)
+
 
 def read_list(endpoint: Platform) -> dict[str, Language]:
     """Reads the list of languages existing on the SonarQube platform
@@ -122,12 +131,3 @@ def get_list(endpoint: Platform, use_cache: bool = True) -> dict[str, Language]:
         if len(Language.CACHE) == 0 or not use_cache:
             read_list(endpoint)
     return {o.key: o for o in Language.CACHE.objects.values()}
-
-
-def exists(endpoint: Platform, language: str) -> bool:
-    """Returns whether a language exists
-
-    :param endpoint: Reference of the SonarQube platform
-    :param language: The language key
-    """
-    return language in get_list(endpoint)

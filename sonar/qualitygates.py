@@ -495,21 +495,6 @@ def count(endpoint: Platform) -> int:
     return len(QualityGate.get_list(endpoint))
 
 
-def exists(endpoint: Platform, gate_name: str) -> bool:
-    """Returns whether a quality gate exists
-
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param str gate_name: Quality gate name
-    :return: Whether the quality gate exists
-    :rtype: bool
-    """
-    try:
-        _ = QualityGate.get_object(endpoint, gate_name)
-        return True
-    except exceptions.ObjectNotFound:
-        return False
-
-
 def _encode_conditions(conds: list[dict[str, str]]) -> list[str]:
     """Encode dict conditions in strings"""
     simple_conds = []

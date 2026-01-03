@@ -1098,7 +1098,7 @@ class Project(Component):
         :param quality_profile: Name of the quality profile in the language
         :return: Whether the operation was successful
         """
-        if not qualityprofiles.exists(endpoint=self.endpoint, language=language, name=quality_profile):
+        if not qualityprofiles.QualityProfile.exists(endpoint=self.endpoint, language=language, name=quality_profile):
             log.warning("Quality profile '%s' in language '%s' does not exist, can't set it for %s", quality_profile, language, str(self))
             return False
         log.debug("Setting quality profile '%s' of language '%s' for %s", quality_profile, language, str(self))
@@ -1145,7 +1145,7 @@ class Project(Component):
         """
         log.debug("Setting devops binding of %s to %s", str(self), util.json_dump(binding_data))
         alm_key = binding_data["key"]
-        if not devops.exists(endpoint=self.endpoint, key=alm_key):
+        if not devops.DevopsPlatform.exists(endpoint=self.endpoint, key=alm_key):
             log.warning("DevOps platform '%s' does not exists, can't set it for %s", alm_key, str(self))
             return False
         alm_type = devops.devops_type(endpoint=self.endpoint, key=alm_key)

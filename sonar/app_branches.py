@@ -254,14 +254,14 @@ class ApplicationBranch(Component):
         """Returns the URL of the Application Branch"""
         return f"{self.base_url(local=False)}/dashboard?id={self.concerned_object.key}&branch={quote(self.name)}"
 
-
-def exists(app: object, branch: str) -> bool:
-    """Returns whether an application branch exists"""
-    try:
-        ApplicationBranch.get_object(app, branch)
-        return True
-    except exceptions.ObjectNotFound:
-        return False
+    @classmethod
+    def exists(cls, app: object, branch: str) -> bool:
+        """Returns whether an application branch exists"""
+        try:
+            cls.get_object(app, branch)
+            return True
+        except exceptions.ObjectNotFound:
+            return False
 
 
 def list_from(app: Application, data: ApiPayload) -> dict[str, ApplicationBranch]:

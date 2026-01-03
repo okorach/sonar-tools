@@ -92,9 +92,9 @@ def test_count() -> None:
 def test_exists() -> None:
     """test_exists"""
     for k in GH_KEY, GL_KEY, ADO_KEY:
-        assert devops.exists(endpoint=tutil.SQ, key=k)
+        assert devops.DevopsPlatform.exists(endpoint=tutil.SQ, key=k)
     for k in "foo", "bar":
-        assert not devops.exists(endpoint=tutil.SQ, key=k)
+        assert not devops.DevopsPlatform.exists(endpoint=tutil.SQ, key=k)
 
 
 def test_devops_type() -> None:
@@ -131,17 +131,17 @@ def test_import_config_2() -> None:
     deduction = min(1, counts["azure"]) + min(1, counts["gitlab"]) + min(1, counts["github"])
     assert devops.import_config(endpoint=tutil.SQ, config_data=dop) == 3 - deduction
     if counts["azure"] == 0:
-        assert devops.exists(endpoint=tutil.SQ, key="ADO2")
+        assert devops.DevopsPlatform.exists(endpoint=tutil.SQ, key="ADO2")
         obj = devops.get_object(endpoint=tutil.SQ, key="ADO2")
         obj.delete()
-        assert not devops.exists(endpoint=tutil.SQ, key="ADO2")
+        assert not devops.DevopsPlatform.exists(endpoint=tutil.SQ, key="ADO2")
     if counts["github"] == 0:
-        assert devops.exists(endpoint=tutil.SQ, key="GH2")
+        assert devops.DevopsPlatform.exists(endpoint=tutil.SQ, key="GH2")
         obj = devops.get_object(endpoint=tutil.SQ, key="GH2")
         obj.delete()
-        assert not devops.exists(endpoint=tutil.SQ, key="GH2")
+        assert not devops.DevopsPlatform.exists(endpoint=tutil.SQ, key="GH2")
     if counts["azure"] == 0:
-        assert devops.exists(endpoint=tutil.SQ, key="GL2")
+        assert devops.DevopsPlatform.exists(endpoint=tutil.SQ, key="GL2")
         obj = devops.get_object(endpoint=tutil.SQ, key="GL2")
         obj.delete()
-        assert not devops.exists(endpoint=tutil.SQ, key="GL2")
+        assert not devops.DevopsPlatform.exists(endpoint=tutil.SQ, key="GL2")

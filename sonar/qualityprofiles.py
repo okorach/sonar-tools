@@ -110,7 +110,7 @@ class QualityProfile(SqObject):
         :return: The quality profile object
         :rtype: QualityProfile or None if not found
         """
-        if not languages.exists(endpoint=endpoint, language=language):
+        if not languages.Language.exists(endpoint=endpoint, language=language):
             log.error("Language '%s' does not exist, quality profile creation aborted", language)
             return None
         log.debug("Reading quality profile '%s' of language '%s'", name, language)
@@ -131,7 +131,7 @@ class QualityProfile(SqObject):
         :return: The quality profile object
         :rtype: QualityProfile or None if creation failed
         """
-        if not languages.exists(endpoint=endpoint, language=language):
+        if not languages.Language.exists(endpoint=endpoint, language=language):
             log.error("Language '%s' does not exist, quality profile creation aborted")
             return None
         log.debug("Creating quality profile '%s' of language '%s'", name, language)
@@ -915,7 +915,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
         futures, futures_map = [], {}
         for lang, lang_data in qps_data.items():
             lang_data = util.list_to_dict(lang_data["profiles"], "name", keep_in_values=True)
-            if not languages.exists(endpoint=endpoint, language=lang):
+            if not languages.Language.exists(endpoint=endpoint, language=lang):
                 log.warning("Language '%s' does not exist, quality profiles import skipped for this language", lang)
                 continue
             for name, qps_data in lang_data.items():
@@ -930,18 +930,3 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
             except Exception as e:
                 log.error(f"Exception {str(e)} when importing {qp} or its chilren.")
     return True
-
-
-def exists(endpoint: Platform, name: str, language: str) -> bool:
-    """
-    :param Platform endpoint: reference to the SonarQube platform
-    :param str name: Quality profile name
-    :param str language: Quality profile language
-    :return: whether the project exists
-    :rtype: bool
-    """
-    try:
-        get_object(endpoint=endpoint, name=name, language=language)
-        return True
-    except exceptions.ObjectNotFound:
-        return False

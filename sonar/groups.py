@@ -390,15 +390,6 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
         create_or_update(endpoint, name, data["description"])
 
 
-def exists(endpoint: Platform, name: str) -> bool:
-    """
-    :param endpoint: reference to the SonarQube platform
-    :param name: group name to check
-    :return: whether the group exists
-    """
-    return Group.get_object(endpoint=endpoint, name=name) is not None
-
-
 def convert_groups_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts sonar-config old groups JSON report format to new format"""
     return util.dict_to_list(old_json, "name", "description")

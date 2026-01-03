@@ -251,19 +251,6 @@ def get_object(endpoint: platform.Platform, key: str) -> DevopsPlatform:
     return DevopsPlatform.read(endpoint, key)
 
 
-def exists(endpoint: platform.Platform, key: str) -> bool:
-    """
-    :param endpoint: Reference to the SonarQube platform
-    :param key: Key of the devops platform (its name)
-    :return: Whether the platform exists
-    """
-    try:
-        get_object(endpoint=endpoint, key=key)
-    except exceptions.ObjectNotFound:
-        return False
-    return True
-
-
 def export(endpoint: platform.Platform, export_settings: ConfigSettings) -> ObjectJsonRepr:
     """
     :meta private:

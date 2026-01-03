@@ -541,15 +541,6 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
         o.update(**data)
 
 
-def exists(endpoint: Platform, login: str) -> bool:
-    """
-    :param endpoint: reference to the SonarQube platform
-    :param login: user login to check
-    :return: whether the group exists
-    """
-    return User.get_object(endpoint=endpoint, login=login) is not None
-
-
 def convert_user_json(old_json: dict[str, Any]) -> dict[str, Any]:
     """Converts a user JSON from old to new format"""
     for k in "groups", "scmAccounts":
