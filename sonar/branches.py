@@ -73,6 +73,13 @@ class Branch(components.Component):
         Branch.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
+    def __str__(self) -> str:
+        return f"branch '{self.name}' of {str(self.project())}"
+
+    def __hash__(self) -> int:
+        """Computes a uuid for the branch that can serve as index"""
+        return hash((self.concerned_object.key, self.name, self.base_url()))
+
     @classmethod
     def get_object(cls, concerned_object: proj.Project, branch_name: str) -> Branch:
         """Gets a SonarQube Branch object
@@ -109,15 +116,20 @@ class Branch(components.Component):
         if not (o := Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())):
             o = cls(concerned_object, branch_name)
         if br_data:
-            o._load(br_data)
+            o.reload(br_data)
         return o
 
-    def __str__(self) -> str:
-        return f"branch '{self.name}' of {str(self.project())}"
+    def reload(self, data: ApiPayload) -> None:
+        log.debug("Loading %s with data %s", self, data)
+        self.sq_json = (self.sq_json or {}) | data
+        self._is_main = self.sq_json["isMain"]
+        self._last_analysis = sutil.string_to_date(self.sq_json.get("analysisDate", None))
+        self._keep_when_inactive = self.sq_json.get("excludedFromPurge", False)
+        self._is_main = self.sq_json.get("isMain", False)
 
-    def __hash__(self) -> int:
-        """Computes a uuid for the branch that can serve as index"""
-        return hash((self.concerned_object.key, self.name, self.base_url()))
+    def url(self) -> str:
+        """returns the branch URL in SonarQube as permalink"""
+        return f"{self.concerned_object.url()}&branch={requests.utils.quote(self.name)}"
 
     def project(self) -> proj.Project:
         """Returns the project key"""
@@ -136,19 +148,11 @@ class Branch(components.Component):
         if not br_data:
             Branch.CACHE.clear()
             raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
-        self._load(br_data)
+        self.reload(br_data)
         # While we're there let's load other branches with up to date branch data
         for br in [b for b in data.get("branches", []) if b["name"] != self.name]:
             Branch.load(self.concerned_object, br["name"], data)
         return self
-
-    def _load(self, data: ApiPayload) -> None:
-        log.debug("Loading %s with data %s", self, data)
-        self.sq_json = (self.sq_json or {}) | data
-        self._is_main = self.sq_json["isMain"]
-        self._last_analysis = sutil.string_to_date(self.sq_json.get("analysisDate", None))
-        self._keep_when_inactive = self.sq_json.get("excludedFromPurge", False)
-        self._is_main = self.sq_json.get("isMain", False)
 
     def is_kept_when_inactive(self) -> bool:
         """Returns whether the branch is kept when inactive"""
@@ -163,17 +167,8 @@ class Branch(components.Component):
         return self._is_main
 
     def delete(self) -> bool:
-        """Deletes a branch
-
-        :raises ObjectNotFound: Branch not found for deletion
-        :return: Whether the deletion was successful
-        :rtype: bool
-        """
-        try:
-            return super().delete_object(**self.api_params(op.DELETE))
-        except exceptions.SonarException as e:
-            log.warning(e.message)
-            return False
+        """Deletes a branch, return whether the deletion was successful"""
+        return super().delete_object(**self.api_params(op.DELETE))
 
     def get(self, api: str, params: ApiParams = None, data: Optional[str] = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
         """Performs an HTTP GET request for the object"""
@@ -196,10 +191,7 @@ class Branch(components.Component):
             raise
 
     def new_code(self) -> str:
-        """
-        :return: The branch new code period definition
-        :rtype: str
-        """
+        """returns the branch new code period definition"""
         if self._new_code is None and self.endpoint.is_sonarcloud():
             self._new_code = settings.new_code_to_string({"inherited": True})
         elif self._new_code is None:
@@ -233,16 +225,11 @@ class Branch(components.Component):
         self._keep_when_inactive = keep
         return True
 
-    def url(self) -> str:
-        """returns the branch URL in SonarQube as permalink"""
-        return f"{self.concerned_object.url()}&branch={requests.utils.quote(self.name)}"
-
     def rename(self, new_name: str) -> bool:
         """Renames a branch
 
         :param str new_name: New branch name
         :raises UnsupportedOperation: If trying to rename anything than the main branch
-        :raises ObjectNotFound: Concerned object (project) not found
         :return: Whether the operation was successful
         """
         if not self.is_main():
@@ -283,10 +270,8 @@ class Branch(components.Component):
     def export(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
         """Exports a branch configuration (is main, keep when inactive, optionally name, project)
 
-        :param full_export: Also export branches attributes that are not needed for import, defaults to True
-        :type include_branches: bool, optional
-        :return: The branch new code period definition
-        :rtype: str
+        :param bool full_export: Also export branches attributes that are not needed for import, optional, defaults to True
+        :return: The branch configuration as JSON
         """
         log.debug("Exporting %s", str(self))
         data = {settings.NEW_CODE_PERIOD: self.new_code()}
@@ -297,9 +282,9 @@ class Branch(components.Component):
         if self.new_code():
             data[settings.NEW_CODE_PERIOD] = self.new_code()
         if export_settings.get("FULL_EXPORT", True):
-            data.update({"name": self.name, "project": self.concerned_object.key})
+            data |= {"name": self.name, "project": self.concerned_object.key}
         if export_settings.get("MODE", "") == "MIGRATION":
-            data.update(self.migration_export(export_settings))
+            data |= self.migration_export(export_settings)
         data = util.remove_nones(data)
         return None if len(data) == 0 else data
 
