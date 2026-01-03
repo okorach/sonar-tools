@@ -29,9 +29,10 @@ import csv
 import re
 from threading import Thread
 from queue import Queue
+from requests import RequestException
 
 from cli import options
-from sonar import errcodes, exceptions
+from sonar import errcodes, exceptions, version
 from sonar.util import component_helper
 import sonar.logging as log
 from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, portfolios, applications, projects
@@ -39,6 +40,7 @@ import sonar.utilities as sutil
 import sonar.util.misc as util
 from sonar.audit import problem
 from sonar.util import conf_mgr
+import sonar.util.common_helper as chelp
 
 if TYPE_CHECKING:
     from sonar.util.types import ConfigSettings, KeyList
