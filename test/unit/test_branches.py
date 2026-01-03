@@ -187,7 +187,7 @@ def test_exists():
     """test_exists"""
     if tutil.SQ.edition() == c.CE:
         with pytest.raises(exceptions.UnsupportedOperation):
-            branches.exists(tutil.SQ, branch_name="develop", project_key=tutil.LIVE_PROJECT)
+            branches.Branch.exists(tutil.SQ, branch_name="develop", project_key=tutil.LIVE_PROJECT)
     else:
-        assert branches.exists(tutil.SQ, branch_name="develop", project_key=tutil.LIVE_PROJECT)
-        assert not branches.exists(tutil.SQ, branch_name="foobar", project_key=tutil.LIVE_PROJECT)
+        assert branches.Branch.exists(tutil.SQ, branch_name="develop", project_key=tutil.LIVE_PROJECT)
+        assert not branches.Branch.exists(tutil.SQ, branch_name="foobar", project_key=tutil.LIVE_PROJECT)

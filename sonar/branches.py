@@ -119,13 +119,47 @@ class Branch(components.Component):
             o.reload(br_data)
         return o
 
-    def reload(self, data: ApiPayload) -> None:
+    @classmethod
+    def get_list(cls, project: proj.Project) -> dict[str, Branch]:
+        """Retrieves the list of branches of a project
+
+        :param Project project: Project the branch belongs to
+        :raises UnsupportedOperation: Branches not supported in Community Edition
+        :return: List of project branches
+        :rtype: dict{branch_name: Branch}
+        """
+        if project.endpoint.edition() == c.CE:
+            log.debug(_UNSUPPORTED_IN_CE)
+            raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
+
+        log.debug("Reading all branches of %s", str(project))
+        api, _, params, _ = Api(cls, op.LIST, project.endpoint).get_all(project=project.key)
+        data = json.loads(project.endpoint.get(api, params=params).text)
+        return {branch["name"]: cls.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
+
+    @classmethod
+    def exists(cls, endpoint: platform.Platform, branch_name: str, project_key: str) -> bool:
+        """Checks if a branch exists
+
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param str branch_name: Branch name
+        :param str project_key: Project key
+        :raises UnsupportedOperation: Branches not supported in Community Edition
+        """
+        try:
+            cls.get_object(endpoint=endpoint, concerned_object=proj.Project.get_object(endpoint, project_key), branch_name=branch_name)
+        except exceptions.ObjectNotFound:
+            return False
+        return True
+
+    def reload(self, data: ApiPayload) -> Branch:
         log.debug("Loading %s with data %s", self, data)
         self.sq_json = (self.sq_json or {}) | data
         self._is_main = self.sq_json["isMain"]
         self._last_analysis = sutil.string_to_date(self.sq_json.get("analysisDate", None))
         self._keep_when_inactive = self.sq_json.get("excludedFromPurge", False)
         self._is_main = self.sq_json.get("isMain", False)
+        return self
 
     def url(self) -> str:
         """returns the branch URL in SonarQube as permalink"""
@@ -405,37 +439,3 @@ class Branch(components.Component):
             task.concerned_object = self
         return task
 
-
-def get_list(project: proj.Project) -> dict[str, Branch]:
-    """Retrieves the list of branches of a project
-
-    :param Project project: Project the branch belongs to
-    :raises UnsupportedOperation: Branches not supported in Community Edition
-    :return: List of project branches
-    :rtype: dict{branch_name: Branch}
-    """
-    if project.endpoint.edition() == c.CE:
-        log.debug(_UNSUPPORTED_IN_CE)
-        raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
-
-    log.debug("Reading all branches of %s", str(project))
-    api, _, params, _ = Api(Branch, op.LIST, project.endpoint).get_all(project=project.key)
-    data = json.loads(project.endpoint.get(api, params=params).text)
-    return {branch["name"]: Branch.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
-
-
-def exists(endpoint: platform.Platform, branch_name: str, project_key: str) -> bool:
-    """Checks if a branch exists
-
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param str branch_name: Branch name
-    :param str project_key: Project key
-    :raises UnsupportedOperation: Branches not supported in Community Edition
-    :return: Whether the branch exists in SonarQube
-    :rtype: bool
-    """
-    try:
-        project = proj.Project.get_object(endpoint, project_key)
-    except exceptions.ObjectNotFound:
-        return False
-    return branch_name in get_list(project)

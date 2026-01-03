@@ -260,7 +260,7 @@ class Project(Component):
         """
         if not self._branches or not use_cache:
             try:
-                self._branches = branches.get_list(self)
+                self._branches = branches.Branch.get_list(self)
             except exceptions.UnsupportedOperation:
                 self._branches = {}
         return self._branches
