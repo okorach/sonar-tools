@@ -62,6 +62,9 @@ class Organization(SqObject):
         log.debug("Created object %s", str(self))
         Organization.CACHE.put(self)
 
+    def __str__(self) -> str:
+        return f"organization key '{self.key}'"
+
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Organization:
         """Gets an Organization object from SonarQube Cloud
@@ -103,8 +106,6 @@ class Organization(SqObject):
         o.description = data["description"]
         return o
 
-    def __str__(self) -> str:
-        return f"organization key '{self.key}'"
 
     def export(self) -> ObjectJsonRepr:
         """Exports an organization"""
