@@ -38,6 +38,7 @@ from sonar import settings, tasks, measures, rules, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
@@ -232,7 +233,8 @@ class Component(SqObject):
         """Returns the new code period start date of a component or None if this component has no new code start date"""
         if self._new_code_start_date is None:
             params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(op.GET))
-            data = json.loads(self.get(Component.API[op.READ], params=params).text)["component"]
+            api, _, api_params, _ = Api(self, op.READ).get_all(**params)
+            data = json.loads(self.get(api, params=api_params).text)["component"]
             self.sq_json |= data
             if "leakPeriodDate" in data:
                 self._new_code_start_date = sutil.string_to_date(data["leakPeriodDate"])
