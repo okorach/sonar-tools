@@ -144,12 +144,50 @@
         }
     },
     "Component": {
-        "CREATE": "components/create",
-        "READ": "components/show",
-        "UPDATE": "components/update",
-        "DELETE": "components/delete",
-        "LIST": "components/search",
-        "search": "components/search"
+        "5.2.0": {
+            "READ": {
+                "method": "GET",
+                "api": "api/components/show",
+                "params": [
+                    "component",
+                    "branch",
+                    "pullRequest"
+                ],
+                "return_field": "component"
+            },
+            "LIST": {
+                "method": "GET",
+                "api": "api/components/search",
+                "params": [
+                    "p",
+                    "ps",
+                    "q",
+                    "qualifiers"
+                ],
+                "return_field": "components",
+                "page_field": "p",
+                "max_page_size": 500
+            },
+            "GET_SUBCOMPONENTS": {
+                "method": "GET",
+                "api": "api/measures/component_tree",
+                "params": [
+                    "component",
+                    "p",
+                    "ps",
+                    "branch",
+                    "pullRequest",
+                    "q",
+                    "qualifiers",
+                    "s",
+                    "strategy",
+                    "asc"
+                ],
+                "return_field": "components",
+                "page_field": "p",
+                "max_page_size": 500
+            }
+        }
     },
     "Issue": {
         "5.2.0": {
