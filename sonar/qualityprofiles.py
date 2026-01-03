@@ -225,7 +225,7 @@ class QualityProfile(SqObject):
         log.info("Setting parent %s to %s", str(parent_name), self.parent_name)
         if parent_name is None:
             return False
-        if get_object(endpoint=self.endpoint, name=parent_name, language=self.language) is None:
+        if QualityProfile.get_object(endpoint=self.endpoint, name=parent_name, language=self.language) is None:
             log.warning("Can't set parent name '%s' to %s, parent not found", str(parent_name), str(self))
             return False
         if parent_name == self.name:
@@ -290,7 +290,7 @@ class QualityProfile(SqObject):
             return self
         if self.parent_name is None:
             return None
-        return get_object(endpoint=self.endpoint, name=self.parent_name, language=self.language).built_in_parent()
+        return QualityProfile.get_object(endpoint=self.endpoint, name=self.parent_name, language=self.language).built_in_parent()
 
     def rules(self, use_cache: bool = False) -> dict[str, rules.Rule]:
         """
@@ -416,7 +416,7 @@ class QualityProfile(SqObject):
             log.debug("Updating %s setting parent to %s", self, data.get(qphelp.KEY_PARENT))
             if parent_key := data.pop(qphelp.KEY_PARENT, None):
                 self.set_parent(parent_key)
-                parent_qp = get_object(self.endpoint, parent_key, self.language)
+                parent_qp = QualityProfile.get_object(self.endpoint, parent_key, self.language)
                 log.info("%s activating parent rules %s", self, list(parent_qp.rules().keys()))
                 self.activate_rules([{"key": k} for k in parent_qp.rules()])
             self.activate_rules(data.get("rules", []) + data.get("addedRules", []) + data.get("modifiedRules", []))
@@ -432,7 +432,7 @@ class QualityProfile(SqObject):
         children_data = util.list_to_dict(data[qphelp.KEY_CHILDREN], "name", keep_in_values=True)
         for child_name, child_data in children_data.items():
             try:
-                child_qp = get_object(self.endpoint, child_name, self.language)
+                child_qp = QualityProfile.get_object(self.endpoint, child_name, self.language)
             except exceptions.ObjectNotFound:
                 child_qp = QualityProfile.create(self.endpoint, child_name, self.language)
             try:
@@ -886,10 +886,10 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
 def import_qp(endpoint: Platform, name: str, lang: str, qp_data: ObjectJsonRepr) -> bool:
     """Function for multithreaded QP import"""
     try:
-        o = get_object(endpoint=endpoint, name=name, language=lang)
+        o: QualityProfile = QualityProfile.get_object(endpoint=endpoint, name=name, language=lang)
     except exceptions.ObjectNotFound:
         log.info("Quality profile '%s' of language '%s' does not exist, creating it", name, lang)
-        o = QualityProfile.create(endpoint=endpoint, name=name, language=lang)
+        o: QualityProfile = QualityProfile.create(endpoint=endpoint, name=name, language=lang)
     log.info("Importing %s", o)
     o.update(qp_data)
     log.info("Imported %s", o)
