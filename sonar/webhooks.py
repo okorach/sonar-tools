@@ -32,6 +32,7 @@ from sonar.util import cache
 import sonar.util.misc as util
 from sonar.audit import rules, problem
 from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -80,7 +81,8 @@ class WebHook(SqObject):
         """
         log.info("Creating webhook name %s, url %s project %s", name, url, str(project))
         params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
-        endpoint.post(WebHook.API[op.CREATE], params=params)
+        api, _, api_params, _ = Api(cls, op.CREATE, endpoint).get_all(**params)
+        endpoint.post(api, params=api_params)
         o = cls(endpoint, name=name, url=url, secret=secret, project=project)
         o.refresh()
         return o
@@ -125,7 +127,9 @@ class WebHook(SqObject):
     def refresh(self) -> None:
         """Reads the Webhook data on the SonarQube platform and updates the local object"""
         log.debug("Refreshing %s with proj %s", str(self), str(self.project))
-        data = json.loads(self.get(WebHook.API[op.LIST], params=None if not self.project else {"project": self.project}).text)
+        params = None if not self.project else {"project": self.project}
+        api, _, api_params, _ = Api(self, op.LIST).get_all(**(params or {}))
+        data = json.loads(self.get(api, params=api_params).text)
         log.debug("Refreshing %s with data %s", str(self), str(data))
         wh_data = next((wh for wh in data["webhooks"] if wh["name"] == self.name), None)
         if wh_data is None:
@@ -157,7 +161,8 @@ class WebHook(SqObject):
         """
         log.info("Updating %s with %s", str(self), str(self.project))
         params = {"webhook": self.key, "name": self.name, "url": self.webhook_url} | util.remove_nones(kwargs)
-        ok = self.post(WebHook.API[op.UPDATE], params=params).ok
+        api, _, api_params, _ = Api(self, op.UPDATE).get_all(**params)
+        ok = self.post(api, params=api_params).ok
         self.refresh()
         return ok
 
