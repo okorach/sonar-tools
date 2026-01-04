@@ -40,7 +40,7 @@ class ApiOperation(Enum):
     """List of possible API operations"""
 
     CREATE = "CREATE"
-    READ = "READ"
+    GET = "READ"
     UPDATE = "UPDATE"
     DELETE = "DELETE"
     LIST = "LIST"

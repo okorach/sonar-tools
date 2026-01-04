@@ -159,7 +159,7 @@ class Rule(SqObject):
 
     API: dict[str, str] = {
         op.CREATE: "rules/create",
-        op.READ: "rules/show",
+        op.GET: "rules/show",
         op.UPDATE: "rules/update",
         op.DELETE: "rules/delete",
         op.LIST: "rules/search",
@@ -228,7 +228,7 @@ class Rule(SqObject):
         """
         if o := Rule.CACHE.get(key, endpoint.local_url):
             return o
-        api, _, api_params, _ = Api(Rule, op.READ, endpoint).get_all(key=key, actives="true")
+        api, _, api_params, _ = Api(Rule, op.GET, endpoint).get_all(key=key, actives="true")
         rule_data = json.loads(endpoint.get(api, params=api_params).text)["rule"]
         return Rule(endpoint=endpoint, key=key, data=rule_data)
 
@@ -329,7 +329,7 @@ class Rule(SqObject):
             return False
 
         try:
-            api, _, api_params, _ = Api(self, op.READ).get_all(**self.api_params() | {"actives": "true"})
+            api, _, api_params, _ = Api(self, op.GET).get_all(**self.api_params() | {"actives": "true"})
             data = json.loads(self.get(api, params=api_params).text)
         except exceptions.ObjectNotFound:
             Rule.CACHE.pop(self)
@@ -465,8 +465,8 @@ class Rule(SqObject):
 
     def api_params(self, operation: Optional[op] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {op.READ: {"key": self.key}}
-        return ops[operation] if operation and operation in ops else ops[op.READ]
+        ops = {op.GET: {"key": self.key}}
+        return ops[operation] if operation and operation in ops else ops[op.GET]
 
 
 def get_facet(facet: str, endpoint: Platform) -> dict[str, str]:

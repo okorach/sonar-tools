@@ -232,7 +232,7 @@ class Component(SqObject):
         """Returns the new code period start date of a component or None if this component has no new code start date"""
         if self._new_code_start_date is None:
             params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(op.GET))
-            api, _, api_params, ret = Api(self, op.READ).get_all(**params)
+            api, _, api_params, ret = Api(self, op.GET).get_all(**params)
             data = json.loads(self.get(api, params=api_params).text)[ret]
             self.sq_json |= data
             if "leakPeriodDate" in data:
@@ -258,7 +258,7 @@ class Component(SqObject):
     def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None) -> ApiPayload:
         """Returns a component analyses"""
         log.debug("%s: Getting history of analyses", self)
-        params = util.dict_remap(self.api_params(op.READ), {"component": "project"})
+        params = util.dict_remap(self.api_params(op.GET), {"component": "project"})
         data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", **params)["analyses"]
         if filter_in and len(filter_in) > 0:
             data = [d for d in data if any(e["category"] in filter_in for e in d["events"])]
@@ -285,7 +285,7 @@ class Component(SqObject):
         if version >= (2025, 1, 0):
             api = "project_branches/get_ai_code_assurance"
         try:
-            params = util.dict_remap(self.api_params(op.READ), {"component": "project"})
+            params = util.dict_remap(self.api_params(op.GET), {"component": "project"})
             return str(json.loads(self.get(api, params=params).text)["aiCodeAssurance"]).upper()
         except (ConnectionError, RequestException) as e:
             sutil.handle_error(e, f"getting AI code assurance of {self}", catch_all=True)
@@ -426,7 +426,7 @@ class Component(SqObject):
         from sonar.issues import component_search_field
 
         ops = {
-            op.READ: {"component": self.key},
+            op.GET: {"component": self.key},
             op.LIST: {component_search_field(self.endpoint): self.key},
         }
         return ops[operation] if operation and operation in ops else ops[op.LIST]

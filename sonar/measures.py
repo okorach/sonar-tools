@@ -82,7 +82,7 @@ class Measure(SqObject):
         :rtype: int or float or str
         """
         params = {"metricKeys": self.metric} | util.replace_keys(ALT_COMPONENTS, "component", self.concerned_object.api_params(op.GET))
-        api, _, params, ret = Api(self, op.READ).get_all(**params)
+        api, _, params, ret = Api(self, op.GET).get_all(**params)
         data = json.loads(self.endpoint.get(api, params=params).text)[ret]["measures"]
         self.value = self.__converted_value(_search_value(data[0]))
         return self.value
@@ -142,7 +142,7 @@ def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, 
         kwargs | util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(op.GET)) | {"metricKeys": util.list_to_csv(metrics_list)}
     )
     log.debug("Getting measures with %s", params)
-    api, _, params, ret = Api(Measure, op.READ, concerned_object.endpoint).get_all(**params)
+    api, _, params, ret = Api(Measure, op.GET, concerned_object.endpoint).get_all(**params)
     data = json.loads(concerned_object.endpoint.get(api, params=params).text)[ret]["measures"]
     m_dict = dict.fromkeys(metrics_list, None) | {m["metric"]: Measure.load(concerned_object=concerned_object, data=m) for m in data}
     log.debug("Returning measures %s", m_dict)

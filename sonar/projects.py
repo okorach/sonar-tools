@@ -152,7 +152,7 @@ class Project(Component):
         """
         if o := Project.CACHE.get(key, endpoint.local_url):
             return o
-        api, _, params, ret = Api(Project, op.READ, endpoint).get_all(component=key)
+        api, _, params, ret = Api(Project, op.GET, endpoint).get_all(component=key)
         return cls.load(endpoint, json.loads(endpoint.get(api, params=params).text)[ret])
 
     @classmethod
@@ -215,7 +215,7 @@ class Project(Component):
         :return: self
         """
         try:
-            api, _, params, _ = Api(self, op.READ).get_all(**self.api_params(op.READ))
+            api, _, params, _ = Api(self, op.GET).get_all(**self.api_params(op.GET))
             data = json.loads(self.get(api, params=params).text)
         except exceptions.ObjectNotFound:
             Project.CACHE.pop(self)
@@ -1326,7 +1326,7 @@ class Project(Component):
 
     def api_params(self, operation: Optional[op] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {op.READ: {"component": self.key}, op.DELETE: {"project": self.key}, op.SET_TAGS: {"project": self.key}}
+        ops = {op.GET: {"component": self.key}, op.DELETE: {"project": self.key}, op.SET_TAGS: {"project": self.key}}
         return ops[operation] if operation and operation in ops else {"project": self.key}
 
 

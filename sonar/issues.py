@@ -202,7 +202,7 @@ class Issue(findings.Finding):
 
         :return: whether the refresh was successful
         """
-        api, _, params, ret = Api(self, op.READ).get_all(issues=self.key, additionalFields="_all")
+        api, _, params, ret = Api(self, op.GET).get_all(issues=self.key, additionalFields="_all")
         resp = self.get(api, params=params)
         if resp.ok:
             self._load(json.loads(resp.text)[ret][0])

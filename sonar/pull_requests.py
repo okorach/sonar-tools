@@ -177,10 +177,10 @@ class PullRequest(components.Component):
     def api_params(self, operation: Optional[op] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {
-            op.READ: {"project": self.concerned_object.key, "pullRequest": self.key},
+            op.GET: {"project": self.concerned_object.key, "pullRequest": self.key},
             op.DELETE: {"project": self.concerned_object.key, "pullRequest": self.key},
         }
-        return ops[operation] if operation and operation in ops else ops[op.READ]
+        return ops[operation] if operation and operation in ops else ops[op.GET]
 
     def delete(self) -> bool:
         """Deletes a pull request"""

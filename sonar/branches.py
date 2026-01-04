@@ -415,11 +415,11 @@ class Branch(components.Component):
     def api_params(self, operation: Optional[Any] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {
-            op.READ: {"project": self.concerned_object.key, "branch": self.name},
+            op.GET: {"project": self.concerned_object.key, "branch": self.name},
             op.LIST: {"project": self.concerned_object.key},
             op.DELETE: {"project": self.concerned_object.key, "branch": self.name},
         }
-        return ops[operation] if operation and operation in ops else ops[op.READ]
+        return ops[operation] if operation and operation in ops else ops[op.GET]
 
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""

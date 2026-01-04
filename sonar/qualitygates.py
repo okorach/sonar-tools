@@ -221,7 +221,7 @@ class QualityGate(SqObject):
         :return: The quality gate conditions, encoded (for simplication) or not
         """
         if self._conditions is None:
-            api, _, params, _ = Api(self, op.READ).get_all(name=self.name)
+            api, _, params, _ = Api(self, op.GET).get_all(name=self.name)
             data = json.loads(self.get(api, params=params).text)
             log.debug("Loading %s with conditions %s", self, util.json_dump(data))
             self._conditions = list(data.get("conditions", []))
