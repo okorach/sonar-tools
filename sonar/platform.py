@@ -46,6 +46,8 @@ import sonar.audit.severities as sev
 import sonar.audit.types as typ
 from sonar.audit.problem import Problem
 from sonar import webhooks
+from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
@@ -108,7 +110,7 @@ class Platform(object):
             log.info("Connecting to %s", self.local_url)
             self.get("server/version")
             if self.is_sonarcloud():
-                if not organizations.exists(self, self.organization):
+                if not organizations.Organization.exists(self, key=self.organization):
                     raise exceptions.ObjectNotFound(
                         self.organization, f"Organization '{self.organization}' does not exist or user is not member of it"
                     )
@@ -125,9 +127,9 @@ class Platform(object):
         return self.external_url
 
     def version(self) -> tuple[int, int, int]:
-        """Returns the SonarQube platform version or 0.0.0 for SonarQube Cloud"""
+        """Returns the SonarQube platform version or None for SonarQube Cloud"""
         if self.is_sonarcloud():
-            return 0, 0, 0
+            return None
         if self._version is None:
             self._version = tuple(int(n) for n in self.get("/api/server/version").text.split("."))
             log.debug("Version = %s", str(self._version))
@@ -254,7 +256,7 @@ class Platform(object):
         if isinstance(params, dict):
             params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
         elif isinstance(params, (list, tuple)):
-            params = [(k, str(v).lower() if isinstance(v, bool) else v) for k, v in params]
+            params = [(v[0], str(v[1]).lower() if isinstance(v[1], bool) else v[1]) for v in params]
         with_org = kwargs.pop("with_organization", True)
         if self.is_sonarcloud():
             headers["Authorization"] = f"Bearer {self.__token}"
@@ -319,7 +321,7 @@ class Platform(object):
         """Returns all pages of a paginated API"""
         params = {"ps": 500} | kwargs
         data = json.loads(self.get(api, params=params | {"p": 1}).text)
-        if (nb_pages := sutil.nbr_pages(data, api_version=1)) == 1:
+        if (nb_pages := sutil.nbr_pages(data)) == 1:
             return data
         for page in range(2, nb_pages + 1):
             data[return_field].update(json.loads(self.get(api, params=params | {"p": page}).text)[return_field])
@@ -338,7 +340,9 @@ class Platform(object):
         """Returns the platform global settings definitions"""
         if not self._global_settings_definitions:
             try:
-                self._global_settings_definitions = {s["key"]: s for s in json.loads(self.get("settings/list_definitions").text)["definitions"]}
+                api, _, params, ret = Api(settings.Setting, op.LIST_DEFINITIONS, endpoint=self).get_all()
+                data = json.loads(self.get(api, params=params).text)
+                self._global_settings_definitions = {s["key"]: s for s in data[ret]}
             except (ConnectionError, RequestException):
                 return {}
         return self._global_settings_definitions
@@ -459,7 +463,7 @@ class Platform(object):
 
     def webhooks(self) -> dict[str, webhooks.WebHook]:
         """Returns the list of global webhooks"""
-        return webhooks.get_list(self)
+        return webhooks.WebHook.get_list(self)
 
     def export(self, export_settings: ConfigSettings, full: bool = False) -> ObjectJsonRepr:
         """Exports the global platform properties as JSON
@@ -635,7 +639,8 @@ class Platform(object):
         """Audits whether project default visibility is public"""
         log.info("Auditing project default visibility")
         problems = []
-        resp = self.get(settings.Setting.API[c.READ], params={"keys": "projects.default.visibility"})
+        api, _, params, _ = Api(settings.Setting, op.GET, self).get_all(keys="projects.default.visibility")
+        resp = self.get(api, params=params)
         visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)
         if audit_settings.get("audit.globalSettings.defaultProjectVisibility", "private") != visi:

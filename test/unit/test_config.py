@@ -161,10 +161,10 @@ def test_config_import_portfolios() -> None:
         json_config = json.loads(f.read())["portfolios"]
 
     # delete all portfolios in test
-    p_list = portfolios.get_list(tutil.TEST_SQ, use_cache=False)
+    p_list = portfolios.Portfolio.get_list(tutil.TEST_SQ, use_cache=False)
     logging.info("PORTFOLIOS = %s", str(list(p_list.keys())))
     logging.info("Deleting all portfolios")
-    for p in portfolios.get_list(tutil.TEST_SQ, use_cache=False).values():
+    for p in portfolios.Portfolio.get_list(tutil.TEST_SQ, use_cache=False).values():
         if p.is_toplevel():
             p.delete()
     # Import config
@@ -172,7 +172,7 @@ def test_config_import_portfolios() -> None:
     assert tutil.run_cmd(config.main, cmd) == e.OK
 
     # Compare portfolios
-    portfolio_list = portfolios.get_list(tutil.TEST_SQ)
+    portfolio_list = portfolios.Portfolio.get_list(tutil.TEST_SQ)
     assert len(portfolio_list) == len(json_config)
     assert sorted(portfolio_list.keys()) == sorted([o["key"] for o in json_config])
 
@@ -184,14 +184,14 @@ def test_config_import_apps() -> None:
         json_config = json.loads(f.read())["applications"]
 
     # delete all apps in test
-    for p in applications.get_list(tutil.TEST_SQ, use_cache=False).values():
+    for p in applications.Application.get_list(tutil.TEST_SQ, use_cache=False).values():
         p.delete()
     # Import config
     cmd = f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} {config_file} --{opt.WHAT} {opt.WHAT_APPS}"
     assert tutil.run_cmd(config.main, cmd) == e.OK
 
     # Compare apps
-    app_list = applications.get_list(tutil.TEST_SQ)
+    app_list = applications.Application.get_list(tutil.TEST_SQ)
     assert len(app_list) == len(json_config)
     assert sorted(app_list.keys()) == sorted([a["key"] for a in json_config])
 
@@ -202,7 +202,7 @@ def test_config_import_projects() -> None:
     json_config = tutil.read_json(config_file)["projects"]
 
     # delete all projects in test except the testsync one
-    for p in projects.get_list(tutil.TEST_SQ).values():
+    for p in projects.Project.get_list(tutil.TEST_SQ).values():
         if p.key != "TESTSYNC":
             p.delete()
     # Import config
@@ -210,7 +210,7 @@ def test_config_import_projects() -> None:
     assert tutil.run_cmd(config.main, cmd) == e.OK
 
     # Compare projects
-    project_list = projects.get_list(tutil.TEST_SQ)
+    project_list = projects.Project.get_list(tutil.TEST_SQ)
     assert len(project_list) == len(json_config)
     assert sorted(project_list.keys()) == sorted([p["key"] for p in json_config])
 

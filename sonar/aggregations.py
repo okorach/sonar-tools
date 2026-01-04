@@ -48,7 +48,7 @@ class Aggregation(comp.Component):
         self._permissions: Optional[object] = None
         super().__init__(endpoint=endpoint, key=key)
 
-    def reload(self, data: dict[str, Any]) -> None:
+    def reload(self, data: ApiPayload) -> Aggregation:
         """Reloads an Aggregation (Application or Portfolio) from the result of a search or get
 
         :param data: Payload from SonarQube API
@@ -57,6 +57,7 @@ class Aggregation(comp.Component):
         for d in ("description", "desc"):
             if d in data:
                 self._description = self.sq_json[d]
+        return self
 
     def nbr_projects(self, use_cache: bool = False) -> int:
         """Returns the number of projects of an Aggregation (Application or Portfolio)

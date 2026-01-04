@@ -44,6 +44,8 @@ import sonar.utilities as sutil
 
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
+from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -63,13 +65,6 @@ class QualityProfile(SqObject):
     CACHE = cache.Cache()
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "profiles"
-    API = {
-        c.CREATE: "qualityprofiles/create",
-        c.GET: "qualityprofiles/search",
-        c.DELETE: "qualityprofiles/delete",
-        c.LIST: "qualityprofiles/search",
-        c.RENAME: "qualityprofiles/rename",
-    }
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
         """Do not use, use class methods to create objects"""
@@ -99,6 +94,28 @@ class QualityProfile(SqObject):
         log.debug("Created %s", str(self))
         QualityProfile.CACHE.put(self)
 
+    def __str__(self) -> str:
+        """String formatting of the object"""
+        return f"quality profile '{self.name}' of language '{self.language}'"
+
+    def __hash__(self) -> int:
+        return hash((self.name, self.language, self.base_url()))
+
+    @classmethod
+    def get_object(cls, endpoint: Platform, name: str, language: str) -> QualityProfile:
+        """Returns a quality profile from its name and language
+
+        :param endpoint: Reference to the SonarQube platform
+        :param name: Quality profile name
+        :param language: Quality profile language
+
+        :return: The quality profile object, of None if not found
+        """
+        cls.get_list(endpoint)
+        if o := cls.CACHE.get(name, language, endpoint.local_url):
+            return o
+        raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
+
     @classmethod
     def read(cls, endpoint: Platform, name: str, language: str) -> Optional[QualityProfile]:
         """Creates a QualityProfile object corresponding to quality profile with same name and language in SonarQube
@@ -109,16 +126,15 @@ class QualityProfile(SqObject):
         :return: The quality profile object
         :rtype: QualityProfile or None if not found
         """
-        if not languages.exists(endpoint=endpoint, language=language):
+        if not languages.Language.exists(endpoint=endpoint, language=language):
             log.error("Language '%s' does not exist, quality profile creation aborted", language)
             return None
         log.debug("Reading quality profile '%s' of language '%s'", name, language)
         o = QualityProfile.CACHE.get(name, language, endpoint.local_url)
         if o:
             return o
-        data = sutil.search_by_name(
-            endpoint, name, QualityProfile.API[c.LIST], QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language}
-        )
+        api, _, _, _ = Api(cls, op.SEARCH, endpoint).get_all()
+        data = sutil.search_by_name(endpoint, name, api, QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language})
         return cls(key=data["key"], endpoint=endpoint, data=data)
 
     @classmethod
@@ -131,11 +147,12 @@ class QualityProfile(SqObject):
         :return: The quality profile object
         :rtype: QualityProfile or None if creation failed
         """
-        if not languages.exists(endpoint=endpoint, language=language):
+        if not languages.Language.exists(endpoint=endpoint, language=language):
             log.error("Language '%s' does not exist, quality profile creation aborted")
             return None
         log.debug("Creating quality profile '%s' of language '%s'", name, language)
-        endpoint.post(QualityProfile.API[c.CREATE], params={"name": name, "language": language})
+        api, _, params, _ = Api(cls, op.CREATE, endpoint).get_all(name=name, language=language)
+        endpoint.post(api, params=params)
         return cls.read(endpoint=endpoint, name=name, language=language)
 
     @classmethod
@@ -149,12 +166,13 @@ class QualityProfile(SqObject):
         :return: The cloned quality profile object
         """
         log.info("Cloning quality profile name '%s' into quality profile name '%s'", original_qp_name, name)
-        l = [qp for qp in get_list(endpoint, use_cache=False).values() if qp.name == original_qp_name and qp.language == language]
+        l = [qp for qp in cls.get_list(endpoint, use_cache=False).values() if qp.name == original_qp_name and qp.language == language]
         if len(l) != 1:
             raise exceptions.ObjectNotFound(f"{language}:{original_qp_name}", f"Quality profile {language}:{original_qp_name} not found")
         original_qp = l[0]
         log.debug("Found QP to clone: %s", str(original_qp))
-        endpoint.post("qualityprofiles/copy", params={"toName": name, "fromKey": original_qp.key})
+        api, _, params, _ = Api(cls, op.COPY, endpoint).get_all(toName=name, fromKey=original_qp.key)
+        endpoint.post(api, params=params)
         return cls.read(endpoint=endpoint, name=name, language=language)
 
     @classmethod
@@ -170,12 +188,26 @@ class QualityProfile(SqObject):
         log.debug("Loading quality profile '%s' of language '%s'", data["name"], data["language"])
         return cls(endpoint=endpoint, key=data["key"], data=data)
 
-    def __str__(self) -> str:
-        """String formatting of the object"""
-        return f"quality profile '{self.name}' of language '{self.language}'"
+    @classmethod
+    def api_for(cls, operation: op, endpoint: Platform) -> str:
+        """Returns the API to use for a particular operation"""
+        api, _, _, _ = Api(cls, operation, endpoint).get_all()
+        return api
 
-    def __hash__(self) -> int:
-        return hash((self.name, self.language, self.base_url()))
+    @classmethod
+    def get_list(cls, endpoint: Platform, use_cache: bool = True) -> dict[str, QualityProfile]:
+        """
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        :return: the list of all quality profiles
+        :rtype: dict{key: QualityProfile}
+        """
+
+        with _CLASS_LOCK:
+            if len(cls.CACHE) == 0 or not use_cache:
+                cls.CACHE.clear()
+                search(endpoint=endpoint)
+        return cls.CACHE.objects
 
     def url(self) -> str:
         """
@@ -208,14 +240,17 @@ class QualityProfile(SqObject):
         log.info("Setting parent %s to %s", str(parent_name), self.parent_name)
         if parent_name is None:
             return False
-        if get_object(endpoint=self.endpoint, name=parent_name, language=self.language) is None:
+        if QualityProfile.get_object(endpoint=self.endpoint, name=parent_name, language=self.language) is None:
             log.warning("Can't set parent name '%s' to %s, parent not found", str(parent_name), str(self))
             return False
         if parent_name == self.name:
             log.error("Can't set %s as parent of itself", str(self))
             return False
         elif self.parent_name is None or self.parent_name != parent_name:
-            r = self.post("qualityprofiles/change_parent", params={**self.api_params(c.GET), "parentQualityProfile": parent_name})
+            api, _, params, _ = Api(self, op.CHANGE_PARENT).get_all(
+                qualityProfile=self.name, language=self.language, parentQualityProfile=parent_name
+            )
+            r = self.post(api, params=params)
             self.parent_name = parent_name
             self.rules(use_cache=False)
             return r.ok
@@ -228,14 +263,23 @@ class QualityProfile(SqObject):
         :return: Whether setting as default quality profile was successful
         :rtype: bool
         """
-        r = self.post("qualityprofiles/set_default", params=self.api_params(c.GET))
+        api, _, params, _ = Api(self, op.SET_DEFAULT).get_all(qualityProfile=self.name, language=self.language)
+        r = self.post(api, params=params)
         if r.ok:
             self.is_default = True
             # Turn off default for all other profiles except the current profile
-            for qp in get_list(self.endpoint).values():
+            for qp in QualityProfile.get_list(self.endpoint).values():
                 if qp.language == self.language and qp.key != self.key:
                     qp.is_default = False
         return r.ok
+
+    def delete(self) -> bool:
+        """Deletes the quality profile
+
+        :return: Whether the deletion was successful
+        :rtype: bool
+        """
+        return self.delete_object(**self.api_params(op.DELETE))
 
     def is_child(self) -> bool:
         """
@@ -261,7 +305,7 @@ class QualityProfile(SqObject):
             return self
         if self.parent_name is None:
             return None
-        return get_object(endpoint=self.endpoint, name=self.parent_name, language=self.language).built_in_parent()
+        return QualityProfile.get_object(endpoint=self.endpoint, name=self.parent_name, language=self.language).built_in_parent()
 
     def rules(self, use_cache: bool = False) -> dict[str, rules.Rule]:
         """
@@ -298,7 +342,8 @@ class QualityProfile(SqObject):
             str_params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
             api_params["params"] = ";".join([f"{k}={v}" for k, v in str_params.items()])
         try:
-            ok = self.post("qualityprofiles/activate_rule", params=api_params).ok
+            api, _, _, _ = Api(self, op.ACTIVATE_RULE).get_all()
+            ok = self.post(api, params=api_params).ok
         except exceptions.SonarException:
             return False
         self._rules = self._rules or {}
@@ -314,7 +359,8 @@ class QualityProfile(SqObject):
         """
         log.debug("Deactivating rule %s in %s", rule_key, str(self))
         try:
-            return self.post("qualityprofiles/deactivate_rule", params={"key": self.key, "rule": rule_key}).ok
+            api, _, params, _ = Api(self, op.DEACTIVATE_RULE).get_all(key=self.key, rule=rule_key)
+            return self.post(api, params=params).ok
         except exceptions.SonarException:
             return False
 
@@ -377,14 +423,15 @@ class QualityProfile(SqObject):
             log.debug("Updating %s with %s", self, data)
             if "name" in data and data["name"] != self.name:
                 log.info("Renaming %s with %s", self, data["name"])
-                self.post(QualityProfile.API[c.RENAME], params={"id": self.key, "name": data["name"]})
+                api, _, params, _ = Api(self, op.RENAME).get_all(id=self.key, name=data["name"])
+                self.post(api, params=params)
                 QualityProfile.CACHE.pop(self)
                 self.name = data["name"]
                 QualityProfile.CACHE.put(self)
             log.debug("Updating %s setting parent to %s", self, data.get(qphelp.KEY_PARENT))
             if parent_key := data.pop(qphelp.KEY_PARENT, None):
                 self.set_parent(parent_key)
-                parent_qp = get_object(self.endpoint, parent_key, self.language)
+                parent_qp = QualityProfile.get_object(self.endpoint, parent_key, self.language)
                 log.info("%s activating parent rules %s", self, list(parent_qp.rules().keys()))
                 self.activate_rules([{"key": k} for k in parent_qp.rules()])
             self.activate_rules(data.get("rules", []) + data.get("addedRules", []) + data.get("modifiedRules", []))
@@ -400,7 +447,7 @@ class QualityProfile(SqObject):
         children_data = util.list_to_dict(data[qphelp.KEY_CHILDREN], "name", keep_in_values=True)
         for child_name, child_data in children_data.items():
             try:
-                child_qp = get_object(self.endpoint, child_name, self.language)
+                child_qp = QualityProfile.get_object(self.endpoint, child_name, self.language)
             except exceptions.ObjectNotFound:
                 child_qp = QualityProfile.create(self.endpoint, child_name, self.language)
             try:
@@ -450,19 +497,20 @@ class QualityProfile(SqObject):
         :param QualityProfile another_qp: The second quality profile to compare with self
         :return: dict result of the compare ("inLeft", "inRight", "same", "modified")
         """
-        data = json.loads(self.get("qualityprofiles/compare", params={"leftKey": self.key, "rightKey": another_qp.key}).text)
+        api, _, params, _ = Api(self, op.COMPARE).get_all(leftKey=self.key, rightKey=another_qp.key)
+        data = json.loads(self.get(api, params=params).text)
         for r in data["inLeft"] + data["same"] + data["inRight"] + data["modified"]:
             for k in ("name", "pluginKey", "pluginName", "languageKey", "languageName"):
                 r.pop(k, None)
         return data
 
-    def api_params(self, op: str = c.GET) -> ApiParams:
+    def api_params(self, operation: Optional[op] = None) -> ApiParams:
         operations = {
-            c.GET: {"qualityProfile": self.name, "language": self.language},
-            c.LIST: {"q": self.name, "language": self.language},
-            c.DELETE: {"qualityProfile": self.name, "language": self.language},
+            op.GET: {"qualityProfile": self.name, "language": self.language},
+            op.SEARCH: {"q": self.name, "language": self.language},
+            op.DELETE: {"qualityProfile": self.name, "language": self.language},
         }
-        return operations[op] if op in operations else operations[c.GET]
+        return operations[operation] if operation and operation in operations else operations[op.GET]
 
     def rule_impacts(self, rule_key: str, substitute_with_default: bool = True) -> dict[str, str]:
         """Returns the impacts of a rule in the quality profile
@@ -528,14 +576,13 @@ class QualityProfile(SqObject):
         with self._projects_lock:
             if self._projects is None:
                 self._projects = []
-                params = {"key": self.key, "ps": 500}
                 page = 1
                 more = True
                 while more:
-                    params["p"] = page
-                    data = json.loads(self.get("qualityprofiles/projects", params=params).text)
+                    api, _, params, ret = Api(self, op.GET_PROJECTS).get_all(key=self.key, ps=500, p=page)
+                    data = json.loads(self.get(api, params=params).text)
                     log.debug("Got QP %s data = %s", self.key, str(data))
-                    self._projects += [p["key"] for p in data["results"]]
+                    self._projects += [p["key"] for p in data[ret]]
                     page += 1
                     if self.endpoint.version() >= (10, 0, 0):
                         more = sutil.nbr_pages(data) >= page
@@ -699,22 +746,7 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, QualityPro
     :return: list of quality profiles
     :rtype: dict{key: QualityProfile}
     """
-    return QualityProfile.search_objects(endpoint=endpoint, params=params)
-
-
-def get_list(endpoint: Platform, use_cache: bool = True) -> dict[str, QualityProfile]:
-    """
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-    :return: the list of all quality profiles
-    :rtype: dict{key: QualityProfile}
-    """
-
-    with _CLASS_LOCK:
-        if len(QualityProfile.CACHE) == 0 or not use_cache:
-            QualityProfile.CACHE.clear()
-            search(endpoint=endpoint)
-    return QualityProfile.CACHE.objects
+    return QualityProfile.get_paginated(endpoint=endpoint, params=params)
 
 
 def __audit_duplicate(qp1: QualityProfile, qp2: QualityProfile) -> list[Problem]:
@@ -778,7 +810,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings = None, **kwargs) -
         log.info("Auditing quality profiles is disabled, audit skipped...")
         return []
     log.info("--- Auditing quality profiles ---")
-    rules.get_list(endpoint=endpoint)
+    rules.Rule.get_list(endpoint=endpoint)
     problems = []
     qp_list = search(endpoint=endpoint)
     for qp in qp_list.values():
@@ -803,8 +835,8 @@ def hierarchize_language(qp_list: dict[str, str], endpoint: Platform, language: 
             parent_qp = hierarchy[parent_qp_name]
             if qphelp.KEY_CHILDREN not in parent_qp:
                 parent_qp[qphelp.KEY_CHILDREN] = {}
-            this_qp = get_object(endpoint=endpoint, name=qp_name, language=language)
-            qp_json_data |= this_qp.diff(get_object(endpoint=endpoint, name=parent_qp_name, language=language))
+            this_qp = QualityProfile.get_object(endpoint=endpoint, name=qp_name, language=language)
+            qp_json_data |= this_qp.diff(QualityProfile.get_object(endpoint=endpoint, name=parent_qp_name, language=language))
             qp_json_data.pop("rules", None)
             parent_qp[qphelp.KEY_CHILDREN][qp_name] = qp_json_data
             to_remove.append(qp_name)
@@ -834,7 +866,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     log.info("Exporting quality profiles")
     rules.get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", 8))
     qp_list = {}
-    for qp in get_list(endpoint=endpoint).values():
+    for qp in QualityProfile.get_list(endpoint=endpoint).values():
         log.debug("Exporting %s", str(qp))
         json_data = qp.to_json(export_settings=export_settings)
         lang = json_data.pop("language")
@@ -851,28 +883,13 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     return qp_list
 
 
-def get_object(endpoint: Platform, name: str, language: str) -> Optional[QualityProfile]:
-    """Returns a quality profile Object from its name and language
-
-    :param endpoint: Reference to the SonarQube platform
-    :param name: Quality profile name
-    :param language: Quality profile language
-
-    :return: The quality profile object, of None if not found
-    """
-    get_list(endpoint)
-    if not (o := QualityProfile.CACHE.get(name, language, endpoint.local_url)):
-        raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
-    return o
-
-
 def import_qp(endpoint: Platform, name: str, lang: str, qp_data: ObjectJsonRepr) -> bool:
     """Function for multithreaded QP import"""
     try:
-        o = get_object(endpoint=endpoint, name=name, language=lang)
+        o: QualityProfile = QualityProfile.get_object(endpoint=endpoint, name=name, language=lang)
     except exceptions.ObjectNotFound:
         log.info("Quality profile '%s' of language '%s' does not exist, creating it", name, lang)
-        o = QualityProfile.create(endpoint=endpoint, name=name, language=lang)
+        o: QualityProfile = QualityProfile.create(endpoint=endpoint, name=name, language=lang)
     log.info("Importing %s", o)
     o.update(qp_data)
     log.info("Imported %s", o)
@@ -891,14 +908,14 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
         log.info("No quality profiles to import")
         return False
     log.info("Importing quality profiles")
-    get_list(endpoint=endpoint)
+    QualityProfile.get_list(endpoint=endpoint)
 
     qps_data = util.list_to_dict(qps_data, "language", keep_in_values=True)
     with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="QPImport") as executor:
         futures, futures_map = [], {}
         for lang, lang_data in qps_data.items():
             lang_data = util.list_to_dict(lang_data["profiles"], "name", keep_in_values=True)
-            if not languages.exists(endpoint=endpoint, language=lang):
+            if not languages.Language.exists(endpoint=endpoint, language=lang):
                 log.warning("Language '%s' does not exist, quality profiles import skipped for this language", lang)
                 continue
             for name, qps_data in lang_data.items():
@@ -913,18 +930,3 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
             except Exception as e:
                 log.error(f"Exception {str(e)} when importing {qp} or its chilren.")
     return True
-
-
-def exists(endpoint: Platform, name: str, language: str) -> bool:
-    """
-    :param Platform endpoint: reference to the SonarQube platform
-    :param str name: Quality profile name
-    :param str language: Quality profile language
-    :return: whether the project exists
-    :rtype: bool
-    """
-    try:
-        get_object(endpoint=endpoint, name=name, language=language)
-        return True
-    except exceptions.ObjectNotFound:
-        return False

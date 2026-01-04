@@ -31,6 +31,7 @@ from http import HTTPStatus
 import concurrent.futures
 import requests
 
+from sonar.api.manager import ApiManager as Api, ApiOperation as op
 import sonar.logging as log
 from sonar.util import cache
 from sonar.util import constants as c
@@ -68,7 +69,7 @@ class SqObject(object):
         return NotImplemented
 
     @classmethod
-    def api_for(cls, op: str, endpoint: Platform) -> str:
+    def api_for(cls, operation: op, endpoint: Platform) -> str:
         """Returns the API to use for a particular operation for a particular object class.
         This function must be overloaded for classes that need specific treatment. e.g. API V1 or V2
         depending on SonarQube version, different API for SonarQube Cloud
@@ -77,7 +78,7 @@ class SqObject(object):
         :param endpoint: The SQS or SQC to invoke the API
         :return: The API to use for the operation, or None if not defined
         """
-        return cls.API[op] if op in cls.API else cls.API[c.SEARCH]
+        return cls.API[operation] if operation in cls.API else cls.API[op.SEARCH]
 
     @classmethod
     def clear_cache(cls, endpoint: Optional[Platform] = None) -> None:
@@ -97,73 +98,102 @@ class SqObject(object):
             pass
 
     @classmethod
-    def exists(cls, endpoint: Platform, key: str) -> bool:
+    def exists(cls, endpoint: Platform, **kwargs: Any) -> bool:
         """Tells whether an object with a given key exists"""
-        if cls.__name__ not in ("Project", "Portfolio", "Application", "Rule"):
-            raise exceptions.UnsupportedOperation(f"Can't check existence of {cls.__name__.lower()}s")
         try:
-            return cls.get_object(endpoint, key) is not None
+            log.debug("Checking if %s exists with kwargs %s", cls.__name__, kwargs)
+            return cls.get_object(endpoint, **kwargs) is not None
         except exceptions.NoPermissions:
             return True
+        except AttributeError as e:
+            raise exceptions.UnsupportedOperation(f"Can't check existence of {cls.__name__.lower()}s") from e
         except exceptions.ObjectNotFound:
             return False
 
     @classmethod
-    def has_access(cls, endpoint: Platform, obj_key: str) -> bool:
+    def has_access(cls, endpoint: Platform, key: str) -> bool:
         """Returns whether the current user has access to a project"""
         if cls.__name__ not in ("Project", "Portfolio", "Application"):
             raise exceptions.UnsupportedOperation(f"Can't check access on {cls.__name__.lower()}s")
         try:
-            cls.get_object(endpoint, obj_key)
+            cls.get_object(endpoint, key=key)
+        except AttributeError as e:
+            raise exceptions.UnsupportedOperation(f"Can't check access on {cls.__name__.lower()}s") from e
         except (exceptions.NoPermissions, exceptions.ObjectNotFound):
             return False
         return True
 
     @classmethod
-    def restore_access(cls, endpoint: Platform, obj_key: str, user: Optional[str] = None) -> bool:
+    def restore_access(cls, endpoint: Platform, key: str, user: Optional[str] = None) -> bool:
         """Restores access to a project, portfolio or application for the given user"""
         if cls.__name__ not in ("Project", "Portfolio", "Application"):
             raise exceptions.UnsupportedOperation(f"Can't restore access of {cls.__name__.lower()}s")
-        log.info("Restoring access to %s '%s' for user '%s'", cls.__name__, obj_key, user or endpoint.user())
-        obj = cls(endpoint, obj_key)
+        log.info("Restoring access to %s '%s' for user '%s'", cls.__name__, key, user or endpoint.user())
+        obj = cls.get_object(endpoint, key=key)
         return obj.set_permissions([{"user": user or endpoint.user(), "permissions": ["admin", "user"]}])
 
     @classmethod
     def search_objects(cls, endpoint: Platform, params: ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
         """Runs a multi-threaded object search for searchable Sonar Objects"""
-        api = cls.api_for(c.SEARCH, endpoint)
+        api = cls.api_for(op.SEARCH, endpoint)
         returned_field = cls.SEARCH_RETURN_FIELD
-        new_params = {} if params is None else params.copy()
+        new_params: dict[str, Any] = (params or {}).copy()
         p_field = "pageIndex" if api_version == 2 else "p"
         ps_field = "pageSize" if api_version == 2 else "ps"
         if ps_field not in new_params:
             new_params[ps_field] = 500
 
-        objects_list = {}
+        objects_list: dict[str, Any] = {}
         cname = cls.__name__.lower()
         data = json.loads(endpoint.get(api, {**new_params, p_field: 1}).text)
-        nb_pages = sutil.nbr_pages(data, api_version)
-        nb_objects = max(len(data[returned_field]), sutil.nbr_total_elements(data, api_version))
-        log.info(
-            "Searching %d %ss, %d pages of %d elements, %d pages in parallel...",
-            nb_objects,
-            cname,
-            nb_pages,
-            len(data[returned_field]),
-            threads,
-        )
-        if sutil.nbr_total_elements(data, api_version) > 0 and len(data[returned_field]) == 0:
+        nb_pages = sutil.nbr_pages(data)
+        nb_objects = max(len(data[returned_field]), sutil.nbr_total_elements(data))
+        msg = "Searching %d %ss, %d pages of %d elements, %d pages in parallel..."
+        log.info(msg, nb_objects, cname, nb_pages, len(data[returned_field]), threads)
+        if sutil.nbr_total_elements(data) > 0 and len(data[returned_field]) == 0:
             log.fatal(msg := f"Index on {cname} is corrupted, please reindex before using API")
             raise exceptions.SonarException(msg, errcodes.SONAR_INTERNAL_ERROR)
 
         objects_list |= _load(endpoint, cls, data[returned_field])
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f"{cname}Search") as executor:
-            futures = [executor.submit(__get, endpoint, api, {**new_params, p_field: page}) for page in range(2, nb_pages + 1)]
+            futures = [executor.submit(_get, endpoint, api, {**new_params, p_field: page}) for page in range(2, nb_pages + 1)]
             for future in concurrent.futures.as_completed(futures):
                 try:
                     data = future.result(timeout=60)
                     objects_list |= _load(endpoint, cls, data[returned_field])
+                except Exception as e:
+                    log.error(f"Error {e} while searching {cname}.")
+        return objects_list
+
+    @classmethod
+    def get_paginated(cls, endpoint: Platform, params: Optional[ApiParams] = None, threads: int = 8) -> dict[str, SqObject]:
+        """Returns all pages of a paginated API"""
+        cname = cls.__name__.lower()
+        api_def = Api(cls, op.SEARCH, endpoint)
+        page_field = api_def.page_field()
+        max_ps = api_def.max_page_size()
+        new_params = {"ps": max_ps, "pageSize": max_ps} | (params or {})
+        api, _, new_params, returned_field = api_def.get_all(**new_params)
+
+        objects_list: dict[str, cls] = {}
+        data = json.loads(endpoint.get(api, new_params).text)
+        nb_pages = sutil.nbr_pages(data)
+        nb_objects = max(len(data[returned_field]), sutil.nbr_total_elements(data))
+        msg = "Searching %d %ss, %d pages of %d elements, %d pages in parallel..."
+        log.info(msg, nb_objects, cname, nb_pages, len(data[returned_field]), threads)
+        if sutil.nbr_total_elements(data) > 0 and len(data[returned_field]) == 0:
+            log.fatal(msg := f"Index on {cname} is corrupted, please reindex before using API")
+            raise exceptions.SonarException(msg, errcodes.SONAR_INTERNAL_ERROR)
+
+        objects_list |= _new_load(endpoint, cls, data[returned_field])
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f"{cname}Search") as executor:
+            futures = [executor.submit(_get, endpoint, api, {**new_params, page_field: page}) for page in range(2, nb_pages + 1)]
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    data = future.result(timeout=60)
+                    objects_list |= _new_load(endpoint, cls, data[returned_field])
                 except Exception as e:
                     log.error(f"Error {e} while searching {cname}.")
         return objects_list
@@ -244,11 +274,28 @@ class SqObject(object):
             self.__class__.CACHE.clear()
             raise
 
-    def delete(self) -> bool:
+    def delete_object(self, **kwargs: Any) -> bool:
         """Deletes an object, returns whether the operation succeeded"""
         log.info("Deleting %s", str(self))
         try:
-            ok = self.post(api=self.__class__.API[c.DELETE], params=self.api_params(c.DELETE)).ok
+            api, method, params, _ = Api(self, op.DELETE).get_all(**kwargs)
+            if method == "DELETE":
+                ok = self.endpoint.delete(api=api, params=params).ok
+            else:
+                ok = self.endpoint.post(api=api, params=params).ok
+            if ok:
+                log.info("Removing from %s cache", str(self.__class__.__name__))
+                self.__class__.CACHE.pop(self)
+        except exceptions.ObjectNotFound:
+            self.__class__.CACHE.clear()
+            raise
+        return ok
+
+    def delete(self) -> bool:
+        """Deletes an object, returns whether the operation succeeded"""
+        log.info("Deleting %s (old method)", str(self))
+        try:
+            ok = self.post(api=self.__class__.API[op.DELETE], params=self.api_params(op.DELETE)).ok
             if ok:
                 log.info("Removing from %s cache", str(self.__class__.__name__))
                 self.__class__.CACHE.pop(self)
@@ -263,37 +310,36 @@ class SqObject(object):
         """
         if tags is None:
             return False
-        tags = list(set(util.csv_to_list(tags)))
         log.info("Settings tags %s to %s", tags, str(self))
         try:
-            if ok := self.post(self.__class__.API[c.SET_TAGS], params={**self.api_params(c.SET_TAGS), "tags": util.list_to_csv(tags)}).ok:
+            api, _, params, _ = Api(self, op.SET_TAGS).get_all(project=self.key, issue=self.key, application=self.key, tags=util.list_to_csv(tags))
+            if ok := self.post(api, params=params).ok:
                 self._tags = sorted(tags)
+        except (ValueError, AttributeError, KeyError) as e:
+            raise exceptions.UnsupportedOperation(f"Can't set tags on {self.__class__.__name__.lower()}s") from e
         except exceptions.SonarException:
             return False
-        except (AttributeError, KeyError):
-            raise exceptions.UnsupportedOperation(f"Can't set tags on {self.__class__.__name__.lower()}s")
         else:
             return ok
 
     def get_tags(self, **kwargs: Any) -> list[str]:
         """Returns object tags"""
         try:
-            api = self.__class__.API[c.GET_TAGS]
-        except (AttributeError, KeyError) as e:
+            api, _, params, ret = Api(self, op.GET_TAGS).get_all(component=self.key)
+        except ValueError as e:
             raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags") from e
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
         if not kwargs.get(c.USE_CACHE, True) or self._tags is None:
             try:
-                data = json.loads(self.get(api, params=self.get_tags_params()).text)
-                self.reload(data["component"])
+                self.reload(json.loads(self.get(api, params=params).text)[ret])
                 self._tags = self.sq_json["tags"]
             except exceptions.SonarException:
                 self._tags = []
         return self._tags
 
 
-def __get(endpoint: Platform, api: str, params: ApiParams) -> requests.Response:
+def _get(endpoint: Platform, api: str, params: ApiParams) -> requests.Response:
     """Returns a Sonar object from its key"""
     return json.loads(endpoint.get(api, params=params).text)
 
@@ -301,8 +347,16 @@ def __get(endpoint: Platform, api: str, params: ApiParams) -> requests.Response:
 def _load(endpoint: Platform, object_class: Any, data: ObjectJsonRepr) -> dict[str, object]:
     """Loads any SonarQube object with the contents of an API payload"""
     key_field = object_class.SEARCH_KEY_FIELD
-    if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook"):
+    if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook", "Rule"):
         return {obj[key_field]: object_class.load(endpoint=endpoint, data=obj) for obj in data}
-    if object_class.__name__ in ("Rule"):
-        return {obj[key_field]: object_class.load(endpoint=endpoint, key=obj[key_field], data=obj) for obj in data}
     return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}
+
+
+def _new_load(endpoint: Platform, object_class: Any, dataset: ObjectJsonRepr) -> dict[str, object]:
+    """Loads any SonarQube object with the contents of an API payload"""
+    try:
+        load_method = object_class.load
+    except AttributeError as e:
+        raise exceptions.UnsupportedOperation(f"Can't load {object_class.__name__.lower()}s") from e
+    obj_list = [load_method(endpoint=endpoint, data=data) for data in dataset]
+    return {obj.key: obj for obj in obj_list}

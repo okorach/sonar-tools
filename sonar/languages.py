@@ -22,7 +22,7 @@
 """Abstraction of the SonarQube language concept"""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 import json
 from threading import Lock
@@ -79,8 +79,23 @@ class Language(SqObject):
 
         :param endpoint: Reference of the SonarQube platform
         :param key: The language key"""
-        get_list(endpoint)
+        cls.get_list(endpoint)
         return Language.CACHE.get(key, endpoint.local_url)
+
+    @classmethod
+    def get_list(cls, endpoint: Platform, use_cache: bool = True) -> dict[str, Language]:
+        """Gets the list of languages existing on the SonarQube platform
+        Unlike read_list, get_list() is using a local cache if available (so no API call)
+
+        :param endpoint: Reference of the SonarQube platform
+        :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        :return: List of languages
+        :rtype: dict{<language_key>: <language_name>}
+        """
+        with _CLASS_LOCK:
+            if len(cls.CACHE) == 0 or not use_cache:
+                read_list(endpoint)
+        return {o.key: o for o in cls.CACHE.objects.values()}
 
     def number_of_rules(self, rule_type: Optional[str] = None) -> int:
         """Count rules in the language, optionally filtering on rule type
@@ -95,6 +110,15 @@ class Language(SqObject):
             )
         return self._nb_rules[rule_type or "_ALL"]
 
+    @classmethod
+    def exists(cls, endpoint: Platform, **kwargs: Any) -> bool:
+        """Returns whether a language exists
+
+        :param endpoint: Reference of the SonarQube platform
+        :param language: The language key
+        """
+        return kwargs.get("language") in cls.get_list(endpoint)
+
 
 def read_list(endpoint: Platform) -> dict[str, Language]:
     """Reads the list of languages existing on the SonarQube platform
@@ -107,27 +131,3 @@ def read_list(endpoint: Platform) -> dict[str, Language]:
     for lang in data["languages"]:
         _ = Language(endpoint=endpoint, key=lang["key"], name=lang["name"])
     return {o.key: o for o in Language.CACHE.objects.values()}
-
-
-def get_list(endpoint: Platform, use_cache: bool = True) -> dict[str, Language]:
-    """Gets the list of languages existing on the SonarQube platform
-    Unlike read_list, get_list() is using a local cache if available (so no API call)
-
-    :param endpoint: Reference of the SonarQube platform
-    :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-    :return: List of languages
-    :rtype: dict{<language_key>: <language_name>}
-    """
-    with _CLASS_LOCK:
-        if len(Language.CACHE) == 0 or not use_cache:
-            read_list(endpoint)
-    return {o.key: o for o in Language.CACHE.objects.values()}
-
-
-def exists(endpoint: Platform, language: str) -> bool:
-    """Returns whether a language exists
-
-    :param endpoint: Reference of the SonarQube platform
-    :param language: The language key
-    """
-    return language in get_list(endpoint)

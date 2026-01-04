@@ -40,6 +40,9 @@ def test_get_object() -> None:
     webhook2 = wh.WebHook.get_object(endpoint=tutil.SQ, name=WEBHOOK)
     assert webhook2 is webhook
 
+
+def test_get_object_not_found() -> None:
+    """Test get_object_not_found"""
     with pytest.raises(exceptions.ObjectNotFound) as e:
         _ = wh.WebHook.get_object(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY)
     assert str(e.value).endswith(f"Webhook '{tutil.NON_EXISTING_KEY}' of project 'None' not found")

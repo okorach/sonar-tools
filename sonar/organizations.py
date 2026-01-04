@@ -31,9 +31,11 @@ from threading import Lock
 
 from sonar.sqobject import SqObject
 import sonar.logging as log
-from sonar.util import cache, constants as c
+from sonar.util import cache
 from sonar import exceptions
 import sonar.util.misc as util
+from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -46,14 +48,11 @@ _NOT_SUPPORTED = "Organizations do not exist in SonarQube"
 
 
 class Organization(SqObject):
-    """
-    Abstraction of the SonarQube Cloud "organization" concept
-    """
+    """Abstraction of the SonarQube Cloud "organization" concept"""
 
     CACHE = cache.Cache()
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "organizations"
-    API = {c.SEARCH: "organizations/search"}
 
     def __init__(self, endpoint: Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
@@ -62,6 +61,9 @@ class Organization(SqObject):
         self.name = name
         log.debug("Created object %s", str(self))
         Organization.CACHE.put(self)
+
+    def __str__(self) -> str:
+        return f"organization key '{self.key}'"
 
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Organization:
@@ -78,33 +80,52 @@ class Organization(SqObject):
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         if o := Organization.CACHE.get(key, endpoint.local_url):
             return o
-        data = json.loads(endpoint.get(Organization.API[c.SEARCH], params={"organizations": key}).text)
-        if len(data["organizations"]) == 0:
+        api, _, params, ret = Api(cls, op.SEARCH, endpoint).get_all(organizations=key)
+        data = json.loads(endpoint.get(api, params=params).text)
+        if len(data[ret]) == 0:
             raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")
-        return cls.load(endpoint, data["organizations"][0])
+        return cls.load(endpoint, data[ret][0])
 
     @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> Organization:
         """Loads an Organization object with data retrieved from SonarQube Cloud
 
         :param endpoint: Reference to the SonarQube Cloud platform
-        :param data: Data coming from api/organizations/search
+        :param data: Search payload of an organization
         :raises UnsupportedOperation: If not running against SonarQube Cloud
         :raises ObjectNotFound: If Organization key not found
         :return: The found Organization object
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        o = Organization.CACHE.get(data["key"], endpoint.local_url)
+        o: Optional[Organization] = Organization.CACHE.get(data["key"], endpoint.local_url)
         if not o:
             o = cls(endpoint, data["key"], data["name"])
-        o.sq_json = data
-        o.name = data["name"]
-        o.description = data["description"]
-        return o
+        return o.reload(data)
 
-    def __str__(self) -> str:
-        return f"organization key '{self.key}'"
+    @classmethod
+    def get_list(cls, endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Organization]:
+        """
+        :return: List of Organizations (all of them if key_list is None or empty)
+        :param KeyList key_list: List of org keys to get, if None or empty all orgs are returned
+        :param bool use_cache: Whether to use local cache or query SonarQube Cloud, default True (use cache)
+        :rtype: dict{<orgName>: <Organization>}
+        """
+        with _CLASS_LOCK:
+            if key_list is None or len(key_list) == 0 or not use_cache:
+                log.info("Listing organizations")
+                return search(endpoint=endpoint)
+            object_list = {}
+            for key in util.csv_to_list(key_list):
+                object_list[key] = cls.get_object(endpoint, key)
+        return object_list
+
+    def reload(self, data: ApiPayload) -> Organization:
+        """Reloads an Organization object with data retrieved from SonarQube Cloud, returns self"""
+        super().reload(data)
+        self.name = data["name"]
+        self.description = data["description"]
+        return self
 
     def export(self) -> ObjectJsonRepr:
         """Exports an organization"""
@@ -134,23 +155,6 @@ class Organization(SqObject):
         return self.sq_json.get("alm", None)
 
 
-def get_list(endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Organization]:
-    """
-    :return: List of Organizations (all of them if key_list is None or empty)
-    :param KeyList key_list: List of org keys to get, if None or empty all orgs are returned
-    :param bool use_cache: Whether to use local cache or query SonarQube Cloud, default True (use cache)
-    :rtype: dict{<orgName>: <Organization>}
-    """
-    with _CLASS_LOCK:
-        if key_list is None or len(key_list) == 0 or not use_cache:
-            log.info("Listing organizations")
-            return search(endpoint=endpoint)
-        object_list = {}
-        for key in util.csv_to_list(key_list):
-            object_list[key] = Organization.get_object(endpoint, key)
-    return object_list
-
-
 def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Organization]:
     """Searches organizations
 
@@ -162,10 +166,7 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Organizati
     """
     if not endpoint.is_sonarcloud():
         raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-    new_params = {"member": "true"}
-    if params is not None:
-        new_params.update(params)
-    return Organization.search_objects(endpoint=endpoint, params=new_params)
+    return Organization.get_paginated(endpoint=endpoint, params={"member": "true"} | (params or {}))
 
 
 def export(endpoint: Platform, key_list: KeyList = None) -> ObjectJsonRepr:
@@ -176,20 +177,8 @@ def export(endpoint: Platform, key_list: KeyList = None) -> ObjectJsonRepr:
     :return: Dict of organization settings
     :rtype: dict
     """
-    org_settings = {k: org.export() for k, org in get_list(endpoint, key_list).items()}
+    org_settings = {k: org.export() for k, org in Organization.get_list(endpoint, key_list).items()}
     for k in org_settings:
         # remove key from JSON value, it's already the dict key
         org_settings[k].pop("key")
     return org_settings
-
-
-def exists(endpoint: Platform, org_key: str) -> bool:
-    """Tells whether an organization exists with that user as member"""
-    log.info("Verifying that organization '%s' exists", org_key)
-    try:
-        _ = Organization.get_object(endpoint=endpoint, key=org_key)
-    except exceptions.ObjectNotFound:
-        log.warning("Organization '%s' does not exist or user is not a member", org_key)
-        return False
-    log.debug("Organization '%s' exists and user is a member", org_key)
-    return True

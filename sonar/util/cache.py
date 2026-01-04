@@ -20,7 +20,7 @@
 
 """Cache manager"""
 
-from typing import Optional
+from typing import Optional, Any
 from sonar import logging as log
 
 
@@ -29,8 +29,8 @@ class Cache(object):
 
     def __init__(self) -> None:
         """Constructor"""
-        self.objects = {}
-        self.object_class: Optional[type] = None
+        self.objects: dict[int, Any] = {}
+        self.object_class: Optional[Any] = None
 
     def __len__(self) -> int:
         """Returns size of cache"""
@@ -72,7 +72,7 @@ class Cache(object):
     def keys(self) -> list[int]:
         return list(self.objects.keys())
 
-    def items(self) -> dict[int, object]:
+    def items(self) -> dict[int, Any]:
         return self.objects.items()
 
     def clear(self) -> None:

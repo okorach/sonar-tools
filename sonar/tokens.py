@@ -33,6 +33,8 @@ import sonar.util.misc as util
 from sonar.util import cache, constants as c
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
+from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -43,7 +45,6 @@ class UserToken(SqObject):
     """Abstraction of the SonarQube "user token" concept"""
 
     CACHE = cache.Cache()
-    API = {c.CREATE: "user_tokens/generate", c.DELETE: "user_tokens/revoke", c.LIST: "user_tokens/search"}
 
     def __init__(self, endpoint: Platform, login: str, json_data: ApiPayload, name: Optional[str] = None) -> None:
         """Constructor"""
@@ -67,7 +68,8 @@ class UserToken(SqObject):
         :param login: User for which the token must be created
         :param name: Token name
         """
-        data = json.loads(endpoint.post(UserToken.API[c.CREATE], {"name": name, "login": login}).text)
+        api, _, params, _ = Api(cls, op.CREATE, endpoint).get_all(name=name, login=login)
+        data = json.loads(endpoint.post(api, params).text)
         return UserToken(endpoint=endpoint, login=data["login"], json_data=data, name=name)
 
     def __str__(self) -> str:
@@ -80,12 +82,12 @@ class UserToken(SqObject):
         """Revokes the token
         :return: Whether the revocation succeeded
         """
-        return self.delete()
+        return self.delete_object(name=self.name, login=self.login)
 
-    def api_params(self, op: str = c.GET) -> ApiParams:
+    def api_params(self, operation: op = op.GET) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.GET: {"name": self.name, "login": self.login}}
-        return ops[op] if op in ops else ops[c.GET]
+        ops = {op.GET: {"name": self.name, "login": self.login}}
+        return ops[operation] if operation in ops else ops[op.GET]
 
     def is_expired(self) -> bool:
         """Returns True if the token is expired, False otherwise"""
@@ -127,5 +129,6 @@ def search(endpoint: Platform, login: str) -> list[UserToken]:
     :param login: login of the user
     :return: list of tokens
     """
-    data = json.loads(endpoint.get(UserToken.API[c.LIST], {"login": login}).text)
-    return [UserToken(endpoint=endpoint, login=data["login"], json_data=tk) for tk in data["userTokens"]]
+    api, _, params, ret = Api(UserToken, op.SEARCH, endpoint).get_all(login=login)
+    data = json.loads(endpoint.get(api, params).text)
+    return [UserToken(endpoint=endpoint, login=data["login"], json_data=tk) for tk in data[ret]]

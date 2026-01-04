@@ -176,9 +176,9 @@ def get_test_subportfolio() -> Generator[portfolios.Portfolio]:
 def get_test_qp() -> Generator[qualityprofiles.QualityProfile]:
     """setup of tests"""
     try:
-        o = qualityprofiles.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+        o = qualityprofiles.QualityProfile.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
         if o.is_default:
-            sw = qualityprofiles.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY, language="py")
+            sw = qualityprofiles.QualityProfile.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY, language="py")
             sw.set_as_default()
     except exceptions.ObjectNotFound:
         o = qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")

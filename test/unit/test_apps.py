@@ -59,9 +59,9 @@ def test_count() -> None:
 
 def test_search() -> None:
     """Verify that search with criterias work"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.search, endpoint=tutil.SQ, params={"s": "analysisDate"}):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.Application.search, endpoint=tutil.SQ, params={"s": "analysisDate"}):
         return
-    res_list = apps.search(endpoint=tutil.SQ, params={"s": "analysisDate"})
+    res_list = apps.Application.search(endpoint=tutil.SQ, params={"s": "analysisDate"})
     oldest = datetime.datetime(1970, 1, 1).replace(tzinfo=datetime.timezone.utc)
     for obj in res_list.values():
         app_date = obj.last_analysis()
@@ -91,11 +91,11 @@ def test_exists(get_test_app: Generator[App]) -> None:
 
 
 def test_get_list() -> None:
-    """Test portfolio get_list"""
+    """Test apps get_list"""
     k_list = [EXISTING_KEY, EXISTING_KEY_2]
-    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.get_list, endpoint=tutil.SQ, key_list=k_list):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.Application.get_list, endpoint=tutil.SQ, key_list=k_list):
         return
-    p_dict = apps.get_list(endpoint=tutil.SQ, key_list=k_list)
+    p_dict = apps.Application.get_list(endpoint=tutil.SQ, key_list=k_list)
     assert sorted(k_list) == sorted(p_dict.keys())
 
 
@@ -103,7 +103,7 @@ def test_create_delete(get_test_app: Generator[App]) -> None:
     """Test portfolio create delete"""
     if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name=tutil.TEMP_NAME, key=tutil.TEMP_KEY):
         return
-    obj = get_test_app
+    obj: App = get_test_app
     assert obj is not None
     assert obj.key == tutil.TEMP_KEY
     assert obj.name == tutil.TEMP_KEY
@@ -121,7 +121,7 @@ def test_permissions_1(get_test_app: Generator[App]) -> None:
     """Test permissions"""
     if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name="An app", key=TEST_KEY):
         return
-    obj = get_test_app
+    obj: App = get_test_app
     obj.set_permissions(
         [
             {"group": tutil.SQ.default_user_group(), "permissions": ["user", "admin"]},
@@ -154,7 +154,7 @@ def test_no_audit(get_test_app: Generator[App]) -> None:
     """Check stop fast when audit params are disabled"""
     if not tutil.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=tutil.SQ, key=EXISTING_KEY):
         return
-    obj = get_test_app
+    obj: App = get_test_app
     assert len(obj.audit({"audit.applications": False})) == 0
     assert len(obj._audit_empty({"audit.applications.empty": True})) == 1
     assert len(obj._audit_empty({"audit.applications.empty": False})) == 0
@@ -179,7 +179,7 @@ def test_set_tags(get_test_app: Generator[App]) -> None:
     """test_set_tags"""
     if tutil.SQ.edition() not in (c.DE, c.EE, c.DCE):
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
-    obj = get_test_app
+    obj: App = get_test_app
 
     assert obj.set_tags(tutil.TAGS)
     assert obj.get_tags() == sorted(tutil.TAGS)
@@ -194,7 +194,7 @@ def test_not_found(get_test_app: Generator[App]) -> None:
     """test_not_found"""
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
-    obj = get_test_app
+    obj: App = get_test_app
     obj.key = "mess-me-up"
     with pytest.raises(exceptions.ObjectNotFound):
         obj.refresh()
@@ -211,7 +211,7 @@ def test_already_exists(get_test_app: Generator[App]) -> None:
 def test_branch_exists(get_test_app: Generator[App]) -> None:
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
-    obj = get_test_app
+    obj: App = get_test_app
     assert obj.branch_exists("main")
     assert not obj.branch_exists("non-existing")
 
@@ -219,7 +219,7 @@ def test_branch_exists(get_test_app: Generator[App]) -> None:
 def test_branch_is_main(get_test_app: Generator[App]) -> None:
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
-    obj = get_test_app
+    obj: App = get_test_app
     assert obj.branch_is_main("main")
     with pytest.raises(exceptions.ObjectNotFound):
         obj.branch_is_main("non-existing")
@@ -250,7 +250,7 @@ def test_audit_disabled() -> None:
 def test_app_branches(get_test_app: Generator[App]) -> None:
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
-    obj = get_test_app
+    obj: App = get_test_app
     APP_BRANCH_MAIN, APP_BRANCH_2 = "BRANCH foo", "Other Branch"
     definition = {
         "branches": [

@@ -116,8 +116,10 @@ def redacted_token(token: str) -> str:
         return re.sub(r"(..).*(..)", r"\1***\2", token)
 
 
-def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, str, None]:
+def string_to_date(string: Optional[str]) -> Union[datetime.datetime, datetime.date, None]:
     """Converts a string date to a date"""
+    if string is None:
+        return None
     try:
         return util.to_datetime(string, SQ_DATETIME_FORMAT)
     except (ValueError, TypeError):
@@ -226,23 +228,23 @@ def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: Any
     return json_data
 
 
-def nbr_pages(sonar_api_json: dict[str, str], api_version: int = 1) -> int:
+def nbr_pages(sonar_api_json: dict[str, Any]) -> int:
     """Returns nbr of pages of a paginated Sonar API call"""
-    paging = "page" if api_version == 2 else "paging"
-    if paging in sonar_api_json:
-        return math.ceil(sonar_api_json[paging]["total"] / sonar_api_json[paging]["pageSize"])
-    if "total" in sonar_api_json:
-        return math.ceil(sonar_api_json["total"] / sonar_api_json["ps"])
+    if (total_elements := nbr_total_elements(sonar_api_json)) == 0:
+        return 1
+    # Some APIs return paging data in "paging" field, others in "page" field :-/
+    page_data = sonar_api_json["paging"] if "paging" in sonar_api_json else sonar_api_json.get("page")
+    if page_data and "pageSize" in page_data:
+        return math.ceil(total_elements / page_data["pageSize"])
     return 1
 
 
-def nbr_total_elements(sonar_api_json: dict[str, str], api_version: int = 1) -> int:
+def nbr_total_elements(sonar_api_json: dict[str, Any]) -> int:
     """Returns nbr of elements of a paginated Sonar API call"""
-    paging = "page" if api_version == 2 else "paging"
-    if "total" in sonar_api_json:
-        return sonar_api_json["total"]
-    if paging in sonar_api_json:
-        return sonar_api_json[paging]["total"]
+    # Some APIs return paging data in "paging" field, others in "page" field :-/
+    page_data = sonar_api_json["paging"] if "paging" in sonar_api_json else sonar_api_json.get("page")
+    if page_data and "total" in page_data:
+        return page_data["total"]
     return 0
 
 

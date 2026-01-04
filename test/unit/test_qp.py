@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # sonar-tools tests
 # Copyright (C) 2024-2025 Olivier Korach
@@ -27,16 +26,15 @@ import pytest
 
 import utilities as tutil
 from sonar import qualityprofiles, languages, rules, exceptions, logging
-import sonar.util.issue_defs as idefs
 import sonar.util.qualityprofile_helper as qhelp
 
 
 def test_get_object(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
-    qp = get_test_qp
+    qp: qualityprofiles.QualityProfile = get_test_qp
     assert qp.name == tutil.TEMP_KEY
     assert qp.language == "py"
-    qp2 = qualityprofiles.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+    qp2 = qualityprofiles.QualityProfile.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
     assert qp2 is qp
 
 
@@ -44,26 +42,26 @@ def test_get_object_non_existing() -> None:
     """Test exception raised when providing non existing portfolio key"""
 
     with pytest.raises(exceptions.ObjectNotFound) as e:
-        _ = qualityprofiles.get_object(endpoint=tutil.SQ, name="NON-EXISTING", language="py")
+        _ = qualityprofiles.QualityProfile.get_object(endpoint=tutil.SQ, name="NON-EXISTING", language="py")
     assert str(e.value).endswith("Quality Profile 'py:NON-EXISTING' not found")
 
 
 def test_exists(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """Test exist"""
     _ = get_test_qp
-    assert qualityprofiles.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
-    assert not qualityprofiles.exists(endpoint=tutil.SQ, name="NON_EXISTING", language="py")
+    assert qualityprofiles.QualityProfile.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+    assert not qualityprofiles.QualityProfile.exists(endpoint=tutil.SQ, name="NON_EXISTING", language="py")
 
 
 def test_get_list() -> None:
     """Test QP get_list"""
-    qps = qualityprofiles.get_list(endpoint=tutil.SQ)
+    qps = qualityprofiles.QualityProfile.get_list(endpoint=tutil.SQ)
     assert len(qps) > 25
 
 
 def test_create_delete(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """Test QP create delete"""
-    qp = get_test_qp
+    qp: qualityprofiles.QualityProfile = get_test_qp
     assert qp is not None
 
     assert qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="non-existing") is None
@@ -71,13 +69,13 @@ def test_create_delete(get_test_qp: Generator[qualityprofiles.QualityProfile]) -
     with pytest.raises(exceptions.ObjectAlreadyExists):
         qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
     qp.delete()
-    assert not qualityprofiles.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+    assert not qualityprofiles.QualityProfile.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
 
 
 def test_inheritance(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """Test addition of a project in manual mode"""
-    qp = get_test_qp
-    sonar_way_qp = qualityprofiles.get_object(tutil.SQ, tutil.SONAR_WAY, "py")
+    qp: qualityprofiles.QualityProfile = get_test_qp
+    sonar_way_qp = qualityprofiles.QualityProfile.get_object(tutil.SQ, tutil.SONAR_WAY, "py")
     assert not qp.is_child()
 
     assert qp.set_parent(tutil.SONAR_WAY)
@@ -97,7 +95,7 @@ def test_inheritance(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> 
 
 def test_read(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """test_read"""
-    qp = get_test_qp
+    qp: qualityprofiles.QualityProfile = get_test_qp
     assert qp.url() == f"{tutil.SQ.external_url}/profiles/show?language=py&name={tutil.TEMP_KEY}"
     new_qp = qualityprofiles.QualityProfile.read(tutil.SQ, tutil.TEMP_KEY, "py")
     assert qp is new_qp
@@ -107,11 +105,11 @@ def test_read(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
 
 def test_set_default(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """test_set_default"""
-    qp = get_test_qp
+    qp: qualityprofiles.QualityProfile = get_test_qp
     assert not qp.is_default
     assert qp.set_as_default()
     assert qp.is_default
-    sonar_way_qp = qualityprofiles.get_object(tutil.SQ, tutil.SONAR_WAY, "py")
+    sonar_way_qp = qualityprofiles.QualityProfile.get_object(tutil.SQ, tutil.SONAR_WAY, "py")
     assert sonar_way_qp.set_as_default()
     assert sonar_way_qp.is_default
     assert not qp.is_default
@@ -157,14 +155,14 @@ def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]
 
 def test_import() -> None:
     """test_import"""
-    rules.get_list(tutil.TEST_SQ)
+    rules.Rule.get_list(tutil.TEST_SQ)
     languages.Language.CACHE.clear()
     qualityprofiles.QualityProfile.CACHE.clear()
     # delete all quality profiles in test
-    for qp in qualityprofiles.get_list(tutil.TEST_SQ, use_cache=False).values():
+    for qp in qualityprofiles.QualityProfile.get_list(tutil.TEST_SQ, use_cache=False).values():
         if qp.name == tutil.SONAR_WAY:
             qp.set_as_default()
-    qp_list = {o for o in qualityprofiles.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in and not o.is_default}
+    qp_list = {o for o in qualityprofiles.QualityProfile.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in and not o.is_default}
     for o in qp_list:
         o.delete()
     with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
@@ -173,7 +171,9 @@ def test_import() -> None:
 
     # Compare QP list
     json_name_list = sorted([qp["name"] for qp in qhelp.flatten(json_exp) if not qp.get("isBuiltIn", False)])
-    qp_name_list = sorted([f"{o.language}:{o.name}" for o in qualityprofiles.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in])
+    qp_name_list = sorted(
+        [f"{o.language}:{o.name}" for o in qualityprofiles.QualityProfile.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in]
+    )
     logging.debug("Imported  list = %s", str(json_name_list))
     logging.debug("SonarQube list = %s", str(qp_name_list))
     assert json_name_list == qp_name_list

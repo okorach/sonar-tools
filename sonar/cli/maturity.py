@@ -20,9 +20,10 @@
 """Computes SonarQube maturity metrics"""
 
 from typing import Any
+
+import os
 import traceback
 import concurrent.futures
-
 from termgraph import Data, Args, BarChart
 
 from sonar import version
@@ -402,7 +403,7 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     ratio = project_count / portfolio_count if portfolio_count > 0 else None
 
     log.info("Collecting quality gates maturity data")
-    qg_list = [q for q in qg.get_list(endpoint).values() if not q.is_built_in]
+    qg_list = [q for q in qg.QualityGate.get_list(endpoint).values() if not q.is_built_in]
 
     results = {
         "number_of_portfolios": portfolio_count,
@@ -413,11 +414,11 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     results["ratio_of_incorrect_quality_gates"] = __rounded(results["number_of_incorrect_quality_gates"] / len(qg_list)) if len(qg_list) > 0 else 0.0
 
     log.info("Collecting quality profiles maturity data")
-    qp_list = [p for p in qp.get_list(endpoint).values() if not p.is_built_in]
+    qp_list = [p for p in qp.QualityProfile.get_list(endpoint).values() if not p.is_built_in]
     # We should count the nbr of custom profiles per language
     results["number_of_custom_quality_profiles"] = {}
     errcount = 0
-    for lang in languages.get_list(endpoint):
+    for lang in languages.Language.get_list(endpoint):
         if (count := sum(1 for p in qp_list if p.language == lang)) == 0:
             continue
         results["number_of_custom_quality_profiles"][lang] = count
@@ -508,13 +509,13 @@ def main() -> None:
     try:
         kwargs: dict[str, Any] = sutil.convert_args(__parse_args("Extracts a maturity score for a platform, a project or a portfolio"))
         if kwargs.get("config", False):
-            conf.configure(CONFIG_FILE, __file__)
+            conf.configure(CONFIG_FILE, "cli")
             chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
         sutil.check_token(kwargs[options.TOKEN], sutil.is_sonarcloud_url(kwargs[options.URL]))
         sq = platform.Platform(**kwargs)
         sq.verify_connection()
         sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-        config = conf.load(CONFIG_FILE, __file__) | conf.get_cli_settings(**kwargs) | kwargs
+        config = conf.load(f"cli{os.sep}{CONFIG_FILE}") | conf.get_cli_settings(**kwargs) | kwargs
         project_list = component_helper.get_components(
             endpoint=sq,
             component_type="projects",

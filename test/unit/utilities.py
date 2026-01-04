@@ -23,6 +23,9 @@
 test utilities
 """
 
+from __future__ import annotations
+from typing import Callable
+
 import os
 import sys
 import datetime
@@ -234,7 +237,7 @@ def __get_redacted_cmd(string_arguments: str) -> str:
     return " ".join(args)
 
 
-def run_cmd(func: callable, arguments: str, delete_file: bool = False) -> int:
+def run_cmd(func: Callable, arguments: str, delete_file: bool = False) -> int:
     """Runs a sonar-tools command, and returns the expected code"""
     logging.info("RUNNING: %s", __get_redacted_cmd(arguments))
     file, args, import_cmd = __get_args_and_file(arguments)
@@ -255,7 +258,7 @@ def start_logging(level: str = "DEBUG") -> None:
         LOGGER_COUNT = 1
 
 
-def verify_support(editions: tuple[str, ...], func: callable, **kwargs) -> bool:
+def verify_support(editions: tuple[str, ...], func: Callable, **kwargs) -> bool:
     if kwargs["endpoint"].edition() not in editions:
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = func(**kwargs)
@@ -341,7 +344,7 @@ def csv_col_match(csv_file: str, col_name: str, regexp: str) -> bool:
         return all(re.match(rf"{regexp}", row[col]) for row in reader)
 
 
-def csv_col_condition(csv_file: str, col_name: str, func: callable, allow_empty: bool = False) -> bool:
+def csv_col_condition(csv_file: str, col_name: str, func: Callable, allow_empty: bool = False) -> bool:
     """Return whether all lines of the CSV meet a condition on a column"""
     with open(csv_file, encoding="utf-8") as fd:
         (col,) = get_cols(next(reader := csv.reader(fd)), col_name)
@@ -437,7 +440,7 @@ def json_field_in_values(json_file: str, field: str, *values) -> bool:
     return all(p[field] in values for p in data)
 
 
-def json_field_condition(json_file: str, field: str, func: callable, allow_null: bool = False) -> bool:
+def json_field_condition(json_file: str, field: str, func: Callable, allow_null: bool = False) -> bool:
     """return whether a JSON field matches a regexp"""
     data = read_json(json_file)
     if allow_null:

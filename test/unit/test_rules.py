@@ -74,7 +74,7 @@ def test_get_rule() -> None:
     """test_get_rule"""
     myrule = rules.Rule.get_object(endpoint=tutil.SQ, key="java:S127")
     assert str(myrule) == "rule key 'java:S127'"
-    myrule = rules.Rule.load(endpoint=tutil.SQ, key="java:S127", data={})
+    myrule = rules.Rule.load(endpoint=tutil.SQ, data={"key": "java:S127"})
     assert str(myrule) == "rule key 'java:S127'"
 
 

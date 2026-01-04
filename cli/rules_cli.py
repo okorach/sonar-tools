@@ -91,12 +91,12 @@ def main() -> int:
                 raise exceptions.SonarException(f"Option --{options.QP} requires --{options.LANGUAGES}", errcodes.ARGS_ERROR)
             if len(kwargs[options.LANGUAGES]) > 1:
                 raise exceptions.SonarException(f"Option --{options.QP} requires a single --{options.LANGUAGES} value", errcodes.ARGS_ERROR)
-            qp = qualityprofiles.get_object(endpoint=endpoint, name=kwargs[options.QP], language=kwargs[options.LANGUAGES][0])
+            qp = qualityprofiles.QualityProfile.get_object(endpoint=endpoint, name=kwargs[options.QP], language=kwargs[options.LANGUAGES][0])
             rule_list = qp.rules()
         else:
             if options.LANGUAGES in kwargs:
                 params["languages"] = kwargs[options.LANGUAGES]
-            rule_list = rules.get_list(endpoint=endpoint, use_cache=False, **params)
+            rule_list = rules.Rule.get_list(endpoint=endpoint, use_cache=False, **params)
 
         if fmt == "csv":
             __write_rules_csv(file=file, rule_list=rule_list, separator=kwargs[options.CSV_SEPARATOR])
