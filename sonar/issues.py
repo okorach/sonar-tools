@@ -191,6 +191,171 @@ class Issue(findings.Finding):
                     log.error(f"{str(e)} for {str(future)}.")
         return issue_list
 
+    @classmethod
+    def __search_all_by_project(cls, endpoint: Platform, project_key: str, params: ApiParams = None) -> dict[str, Issue]:
+        """Search issues by project"""
+        log.debug("Searching by project with params %s", params)
+        new_params = pre_search_filters(endpoint, params) | {"project": project_key}
+        issue_list = {}
+        log.debug("Searching for issues of project '%s'", project_key)
+        try:
+            issue_list.update(cls.search(endpoint=endpoint, params=new_params))
+        except TooManyIssuesError:
+            log.info(_TOO_MANY_ISSUES_MSG)
+            issue_list.update(cls.search_by_date(endpoint=endpoint, params=new_params))
+        return issue_list
+
+    @classmethod
+    def search_by_project(cls, endpoint: Platform, project_key: str, params: ApiParams = None, search_findings: bool = False) -> dict[str, Issue]:
+        """Search all issues of a given project
+
+        :param Platform endpoint: Reference to the Sonar platform
+        :param str project_key: The project key
+        :param dict params: List of search filters to narrow down the search, defaults to None
+        :param search_findings: Whether to use the api/project_search/findings API or not, defaults to False
+        :type search_findings: bool, optional
+        :return: list of Issues
+        :rtype: dict{<key>: <Issue>}
+        """
+        params = params or {}
+        if project_key is None:
+            key_list = projects.Project.search(endpoint).keys()
+        else:
+            key_list = util.csv_to_list(project_key)
+        issue_list = {}
+        for k in key_list:
+            log.info("Project '%s' issue search with filters %s", k, str(params))
+            if endpoint.edition() in (c.EE, c.DCE) and search_findings:
+                log.info("Using new export findings to speed up issue export")
+                issue_list.update(findings.export_findings(endpoint, k, params.get("branch", None), params.get("pullRequest", None)))
+            else:
+                issue_list.update(cls.__search_all_by_project(endpoint=endpoint, project_key=k, params=params))
+            log.info("Project '%s' has %d issues", k, len(issue_list))
+        return issue_list
+
+    @classmethod
+    def search_by_type(cls, endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
+        """Searches issues splitting by type to avoid exceeding the 10K limit"""
+        issue_list = {}
+        new_params = pre_search_filters(endpoint, params)
+        log.info("Splitting search by issue types")
+        types = idefs.MQR_QUALITIES if endpoint.is_mqr_mode() else idefs.STD_TYPES
+        for issue_type in types:
+            try:
+                new_params[type_search_field(endpoint)] = [issue_type]
+                issue_list.update(cls.search(endpoint=endpoint, params=new_params))
+            except TooManyIssuesError:
+                log.info(_TOO_MANY_ISSUES_MSG)
+                issue_list.update(cls.search_by_directory(endpoint=endpoint, params=new_params))
+        log.debug("Search by type ALL: %d issues found", len(issue_list))
+        return issue_list
+
+    @classmethod
+    def search_by_directory(cls, endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
+        """Searches issues splitting by directory to avoid exceeding the 10K limit"""
+        new_params = pre_search_filters(endpoint, params)
+        proj_key = new_params.get("project", new_params.get(component_search_field(endpoint), None))
+        log.info("Splitting search by directories with %s", str(new_params))
+        facets = _get_facets(endpoint=endpoint, project_key=proj_key, facets="directories", params=new_params)
+        log.debug("Facets %s", util.json_dump(facets))
+        issue_list = {}
+        for d in facets["directories"]:
+            try:
+                new_params["directories"] = d["val"]
+                issue_list.update(cls.search(endpoint=endpoint, params=new_params, raise_error=True))
+            except TooManyIssuesError:
+                log.info(_TOO_MANY_ISSUES_MSG)
+                new_params[component_search_field(endpoint)] = proj_key
+                issue_list.update(cls.search_by_file(endpoint=endpoint, params=new_params))
+        log.debug("Search by directory ALL: %d issues found", len(issue_list))
+        return issue_list
+
+    @classmethod
+    def search_by_file(cls, endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
+        """Searches issues splitting by directory to avoid exceeding the 10K limit"""
+        new_params = pre_search_filters(endpoint, params)
+        proj_key = new_params.get("project", new_params.get(component_search_field(endpoint), None))
+        log.info("Splitting search by files with %s", str(new_params))
+        facets = _get_facets(endpoint=endpoint, project_key=proj_key, facets="files", params=new_params)
+        log.debug("Facets %s", util.json_dump(facets))
+        issue_list = {}
+        for d in facets["files"]:
+            try:
+                new_params["files"] = d["val"]
+                issue_list.update(cls.search(endpoint=endpoint, params=new_params, raise_error=True))
+            except TooManyIssuesError:
+                log.error("Too many issues (>%d) in file %s, aborting search issue for this file", cls.MAX_SEARCH, f'{proj_key}:{d["val"]}')
+                continue
+            except exceptions.SonarException as e:
+                log.error("Error while searching issues in file %s: %s", f'{proj_key}:{d["val"]}', str(e))
+                continue
+        log.debug("Search by files ALL: %d issues found", len(issue_list))
+        return issue_list
+
+    @classmethod
+    def search_by_severity(cls, endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
+        """Searches issues splitting by severity to avoid exceeding the 10K limit"""
+        issue_list = {}
+        new_params = pre_search_filters(endpoint, params)
+        log.info("Splitting search by severities")
+        severities = idefs.MQR_SEVERITIES if endpoint.is_mqr_mode() else idefs.STD_SEVERITIES
+        for sev in severities:
+            try:
+                new_params[severity_search_field(endpoint)] = [sev]
+                issue_list.update(cls.search(endpoint=endpoint, params=new_params))
+            except TooManyIssuesError:
+                log.info(_TOO_MANY_ISSUES_MSG)
+                issue_list.update(cls.search_by_type(endpoint=endpoint, params=new_params))
+        log.debug("Search by severity ALL: %d issues found", len(issue_list))
+        return issue_list
+
+    @classmethod
+    def search_by_date(cls, endpoint: Platform, params: ApiParams, date_start: Optional[date] = None, date_stop: Optional[date] = None) -> dict[str, Issue]:
+        """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
+        new_params = pre_search_filters(endpoint, params)
+        if date_start is None:
+            date_start = get_oldest_issue(endpoint=endpoint, params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
+            if isinstance(date_start, datetime):
+                date_start = date_start.date()
+        if date_stop is None:
+            date_stop = get_newest_issue(endpoint=endpoint, params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
+            if isinstance(date_stop, datetime):
+                date_stop = date_stop.date()
+        log.info(
+            "Project '%s' Splitting search by date between [%s - %s]",
+            new_params.get(component_search_field(endpoint), "None"),
+            sutil.date_to_string(date_start, False),
+            sutil.date_to_string(date_stop, False),
+        )
+        issue_list = {}
+        new_params["createdAfter"] = sutil.date_to_string(date_start, with_time=False)
+        new_params["createdBefore"] = sutil.date_to_string(date_stop, with_time=False)
+        try:
+            issue_list = cls.search(endpoint=endpoint, params=new_params)
+        except TooManyIssuesError as e:
+            log.debug("Too many issues (%d), splitting time window", e.nbr_issues)
+            diff = (date_stop - date_start).days
+            if diff == 0:
+                log.info(_TOO_MANY_ISSUES_MSG)
+                issue_list = cls.search_by_severity(endpoint, new_params)
+            elif diff == 1:
+                issue_list.update(cls.search_by_date(endpoint=endpoint, params=new_params, date_start=date_start, date_stop=date_start))
+                issue_list.update(cls.search_by_date(endpoint=endpoint, params=new_params, date_start=date_stop, date_stop=date_stop))
+            else:
+                date_middle = date_start + timedelta(days=diff // 2)
+                issue_list.update(cls.search_by_date(endpoint=endpoint, params=new_params, date_start=date_start, date_stop=date_middle))
+                date_middle = date_middle + timedelta(days=1)
+                issue_list.update(cls.search_by_date(endpoint=endpoint, params=new_params, date_start=date_middle, date_stop=date_stop))
+        if date_start is not None and date_stop is not None:
+            log.debug(
+                "Project '%s' has %d issues between %s and %s",
+                new_params.get(component_search_field(endpoint), "None"),
+                len(issue_list),
+                sutil.date_to_string(date_start, False),
+                sutil.date_to_string(date_stop, False),
+            )
+        return issue_list
+
     def api_params(self, operation: op = op.GET) -> ApiParams:
         """Returns the base API params to be used of an issue"""
         ops = {
@@ -639,172 +804,6 @@ def status_search_field(endpoint: Platform) -> str:
     return _OLD_SEARCH_STATUS_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_STATUS_FIELD
 
 
-def search_by_directory(endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
-    """Searches issues splitting by directory to avoid exceeding the 10K limit"""
-    new_params = pre_search_filters(endpoint, params)
-    proj_key = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-    log.info("Splitting search by directories with %s", str(new_params))
-    facets = _get_facets(endpoint=endpoint, project_key=proj_key, facets="directories", params=new_params)
-    log.debug("Facets %s", util.json_dump(facets))
-    issue_list = {}
-    for d in facets["directories"]:
-        try:
-            new_params["directories"] = d["val"]
-            issue_list.update(Issue.search(endpoint=endpoint, params=new_params, raise_error=True))
-        except TooManyIssuesError:
-            log.info(_TOO_MANY_ISSUES_MSG)
-            new_params[component_search_field(endpoint)] = proj_key
-            issue_list.update(search_by_file(endpoint=endpoint, params=new_params))
-    log.debug("Search by directory ALL: %d issues found", len(issue_list))
-    return issue_list
-
-
-def search_by_file(endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
-    """Searches issues splitting by directory to avoid exceeding the 10K limit"""
-    new_params = pre_search_filters(endpoint, params)
-    proj_key = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-    log.info("Splitting search by files with %s", str(new_params))
-    facets = _get_facets(endpoint=endpoint, project_key=proj_key, facets="files", params=new_params)
-    log.debug("Facets %s", util.json_dump(facets))
-    issue_list = {}
-    for d in facets["files"]:
-        try:
-            new_params["files"] = d["val"]
-            issue_list.update(Issue.search(endpoint=endpoint, params=new_params, raise_error=True))
-        except TooManyIssuesError:
-            log.error("Too many issues (>%d) in file %s, aborting search issue for this file", Issue.MAX_SEARCH, f'{proj_key}:{d["val"]}')
-            continue
-        except exceptions.SonarException as e:
-            log.error("Error while searching issues in file %s: %s", f'{proj_key}:{d["val"]}', str(e))
-            continue
-    log.debug("Search by files ALL: %d issues found", len(issue_list))
-    return issue_list
-
-
-def search_by_type(endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
-    """Searches issues splitting by type to avoid exceeding the 10K limit"""
-    issue_list = {}
-    new_params = pre_search_filters(endpoint, params)
-    log.info("Splitting search by issue types")
-    types = idefs.MQR_QUALITIES if endpoint.is_mqr_mode() else idefs.STD_TYPES
-    for issue_type in types:
-        try:
-            new_params[type_search_field(endpoint)] = [issue_type]
-            issue_list.update(Issue.search(endpoint=endpoint, params=new_params))
-        except TooManyIssuesError:
-            log.info(_TOO_MANY_ISSUES_MSG)
-            issue_list.update(search_by_directory(endpoint=endpoint, params=new_params))
-    log.debug("Search by type ALL: %d issues found", len(issue_list))
-    return issue_list
-
-
-def search_by_severity(endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
-    """Searches issues splitting by severity to avoid exceeding the 10K limit"""
-    issue_list = {}
-    new_params = pre_search_filters(endpoint, params)
-    log.info("Splitting search by severities")
-    severities = idefs.MQR_SEVERITIES if endpoint.is_mqr_mode() else idefs.STD_SEVERITIES
-    for sev in severities:
-        try:
-            new_params[severity_search_field(endpoint)] = [sev]
-            issue_list.update(Issue.search(endpoint=endpoint, params=new_params))
-        except TooManyIssuesError:
-            log.info(_TOO_MANY_ISSUES_MSG)
-            issue_list.update(search_by_type(endpoint=endpoint, params=new_params))
-    log.debug("Search by severity ALL: %d issues found", len(issue_list))
-    return issue_list
-
-
-def search_by_date(endpoint: Platform, params: ApiParams, date_start: Optional[date] = None, date_stop: Optional[date] = None) -> dict[str, Issue]:
-    """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
-    new_params = pre_search_filters(endpoint, params)
-    if date_start is None:
-        date_start = get_oldest_issue(endpoint=endpoint, params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
-        if isinstance(date_start, datetime):
-            date_start = date_start.date()
-    if date_stop is None:
-        date_stop = get_newest_issue(endpoint=endpoint, params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
-        if isinstance(date_stop, datetime):
-            date_stop = date_stop.date()
-    log.info(
-        "Project '%s' Splitting search by date between [%s - %s]",
-        new_params.get(component_search_field(endpoint), "None"),
-        sutil.date_to_string(date_start, False),
-        sutil.date_to_string(date_stop, False),
-    )
-    issue_list = {}
-    new_params["createdAfter"] = sutil.date_to_string(date_start, with_time=False)
-    new_params["createdBefore"] = sutil.date_to_string(date_stop, with_time=False)
-    try:
-        issue_list = Issue.search(endpoint=endpoint, params=new_params)
-    except TooManyIssuesError as e:
-        log.debug("Too many issues (%d), splitting time window", e.nbr_issues)
-        diff = (date_stop - date_start).days
-        if diff == 0:
-            log.info(_TOO_MANY_ISSUES_MSG)
-            issue_list = search_by_severity(endpoint, new_params)
-        elif diff == 1:
-            issue_list.update(search_by_date(endpoint=endpoint, params=new_params, date_start=date_start, date_stop=date_start))
-            issue_list.update(search_by_date(endpoint=endpoint, params=new_params, date_start=date_stop, date_stop=date_stop))
-        else:
-            date_middle = date_start + timedelta(days=diff // 2)
-            issue_list.update(search_by_date(endpoint=endpoint, params=new_params, date_start=date_start, date_stop=date_middle))
-            date_middle = date_middle + timedelta(days=1)
-            issue_list.update(search_by_date(endpoint=endpoint, params=new_params, date_start=date_middle, date_stop=date_stop))
-    if date_start is not None and date_stop is not None:
-        log.debug(
-            "Project '%s' has %d issues between %s and %s",
-            new_params.get(component_search_field(endpoint), "None"),
-            len(issue_list),
-            sutil.date_to_string(date_start, False),
-            sutil.date_to_string(date_stop, False),
-        )
-    return issue_list
-
-
-def __search_all_by_project(endpoint: Platform, project_key: str, params: ApiParams = None) -> dict[str, Issue]:
-    """Search issues by project"""
-    log.debug("Searching by project with params %s", params)
-    new_params = pre_search_filters(endpoint, params)
-    new_params["project"] = project_key
-    issue_list = {}
-    log.debug("Searching for issues of project '%s'", project_key)
-    try:
-        issue_list.update(search(endpoint=endpoint, params=new_params))
-    except TooManyIssuesError:
-        log.info(_TOO_MANY_ISSUES_MSG)
-        issue_list.update(search_by_date(endpoint=endpoint, params=new_params))
-    return issue_list
-
-
-def search_by_project(endpoint: Platform, project_key: str, params: ApiParams = None, search_findings: bool = False) -> dict[str, Issue]:
-    """Search all issues of a given project
-
-    :param Platform endpoint: Reference to the Sonar platform
-    :param str project_key: The project key
-    :param dict params: List of search filters to narrow down the search, defaults to None
-    :param search_findings: Whether to use the api/project_search/findings API or not, defaults to False
-    :type search_findings: bool, optional
-    :return: list of Issues
-    :rtype: dict{<key>: <Issue>}
-    """
-    params = params or {}
-    if project_key is None:
-        key_list = projects.Project.search(endpoint).keys()
-    else:
-        key_list = util.csv_to_list(project_key)
-    issue_list = {}
-    for k in key_list:
-        log.info("Project '%s' issue search with filters %s", k, str(params))
-        if endpoint.edition() in (c.EE, c.DCE) and search_findings:
-            log.info("Using new export findings to speed up issue export")
-            issue_list.update(findings.export_findings(endpoint, k, params.get("branch", None), params.get("pullRequest", None)))
-        else:
-            issue_list.update(__search_all_by_project(endpoint=endpoint, project_key=k, params=params))
-        log.info("Project '%s' has %d issues", k, len(issue_list))
-    return issue_list
-
-
 def search_all(endpoint: Platform, params: ApiParams = None) -> dict[str, Issue]:
     """Returns all issues of the platforms with chosen filtering parameters
 
@@ -829,7 +828,7 @@ def search_all(endpoint: Platform, params: ApiParams = None) -> dict[str, Issue]
         else:
             key_list = projects.Project.search(endpoint).keys()
         for k in key_list:
-            issue_list.update(__search_all_by_project(endpoint=endpoint, project_key=k, params=new_params))
+            issue_list.update(Issue.__search_all_by_project(endpoint=endpoint, project_key=k, params=new_params))
     log.debug("SEARCH ALL %s returns %d issues", str(params), len(issue_list))
     return issue_list
 
