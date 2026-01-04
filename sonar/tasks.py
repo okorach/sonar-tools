@@ -92,6 +92,29 @@ class Task(SqObject):
         """
         return f"background task '{self.key}'"
 
+    @classmethod
+    def search(cls, endpoint: Platform, only_current: bool = False, component_key: Optional[str] = None, **kwargs: Any) -> list[Task]:
+        """Searches background tasks
+
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param only_current: only the most recent background task of each object, defaults to False
+        :param component_key: filter for a given component key only, defaults to None
+        :param component_key: str, optional
+        :return: The list of found background tasks
+        :rtype: list[Task]
+        """
+        params = {"status": ",".join(STATUSES), "additionalFields": "warnings"}
+        params.update(**kwargs)
+        if only_current:
+            params["onlyCurrents"] = "true"
+        if component_key is not None:
+            params["component"] = component_key
+        try:
+            data = json.loads(endpoint.get("ce/activity", params=params).text)
+            return [cls(endpoint=endpoint, task_id=t["id"], data=t) for t in data["tasks"]]
+        except exceptions.SonarException:
+            return []
+
     def url(self) -> str:
         """
         :return: the SonarQube permalink URL to the background task
@@ -438,29 +461,6 @@ class Task(SqObject):
         problems += self.__audit_scanner_version(audit_settings)
 
         return problems
-
-
-def search(endpoint: Platform, only_current: bool = False, component_key: Optional[str] = None, **kwargs: Any) -> list[Task]:
-    """Searches background tasks
-
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param only_current: only the most recent background task of each object, defaults to False
-    :param component_key: filter for a given component key only, defaults to None
-    :param component_key: str, optional
-    :return: The list of found background tasks
-    :rtype: list[Task]
-    """
-    params = {"status": ",".join(STATUSES), "additionalFields": "warnings"}
-    params.update(**kwargs)
-    if only_current:
-        params["onlyCurrents"] = "true"
-    if component_key is not None:
-        params["component"] = component_key
-    try:
-        data = json.loads(endpoint.get("ce/activity", params=params).text)
-        return [Task(endpoint=endpoint, task_id=t["id"], data=t) for t in data["tasks"]]
-    except exceptions.SonarException:
-        return []
 
 
 def search_all_last(endpoint: Platform) -> list[Task]:

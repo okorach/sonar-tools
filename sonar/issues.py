@@ -148,6 +148,49 @@ class Issue(findings.Finding):
             f" - File/Line: {self.component}/{self.line} - Rule: {self.rule} - Project: {self.projectKey}"
         )
 
+    @classmethod
+    def search(cls, endpoint: Platform, params: ApiParams = None, raise_error: bool = True, threads: int = 8) -> dict[str, Issue]:
+        """Multi-threaded search of issues
+
+        :param dict params: Search filter criteria to narrow down the search
+        :param bool raise_error: Whether to raise exception if more than 10'000 issues returned, defaults to True
+        :param int threads: Nbr of parallel threads for search, defaults to 8
+        :return: List of issues found
+        :rtype: dict{<key>: <Issue>}
+        :raises: TooManyIssuesError if more than 10'000 issues found
+        """
+        log.debug("Searching with %s", params)
+        filters = pre_search_filters(endpoint=endpoint, params=params.copy() if params else {})
+        if "ps" not in filters:
+            filters["ps"] = cls.MAX_PAGE_SIZE
+
+        log.debug("Search filters = %s", str(filters))
+        issue_list = {}
+        api, _, api_params, ret = Api(cls, op.SEARCH, endpoint).get_all(**filters)
+        data = json.loads(endpoint.get(api, params=api_params).text)
+        nbr_issues = sutil.nbr_total_elements(data)
+        nbr_pages = sutil.nbr_pages(data)
+        log.debug("Number of issues: %d - Nbr pages: %d", nbr_issues, nbr_pages)
+
+        if nbr_pages > 20 and raise_error:
+            raise TooManyIssuesError(
+                nbr_issues,
+                f"{nbr_issues} issues returned by {api}, this is more than the max {cls.MAX_SEARCH} possible",
+            )
+
+        issue_list = __get_issue_list(endpoint, data, filters, return_field=ret)
+        if nbr_pages == 1:
+            return issue_list
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="IssueSearch") as executor:
+            futures = [executor.submit(__search_page, endpoint, filters, page) for page in range(2, nbr_pages + 1)]
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    issue_list.update(future.result(timeout=30))
+                except Exception as e:
+                    log.error(f"{str(e)} for {str(future)}.")
+        return issue_list
+
     def api_params(self, operation: op = op.GET) -> ApiParams:
         """Returns the base API params to be used of an issue"""
         ops = {
@@ -607,7 +650,7 @@ def search_by_directory(endpoint: Platform, params: ApiParams) -> dict[str, Issu
     for d in facets["directories"]:
         try:
             new_params["directories"] = d["val"]
-            issue_list.update(search(endpoint=endpoint, params=new_params, raise_error=True))
+            issue_list.update(Issue.search(endpoint=endpoint, params=new_params, raise_error=True))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
             new_params[component_search_field(endpoint)] = proj_key
@@ -627,7 +670,7 @@ def search_by_file(endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
     for d in facets["files"]:
         try:
             new_params["files"] = d["val"]
-            issue_list.update(search(endpoint=endpoint, params=new_params, raise_error=True))
+            issue_list.update(Issue.search(endpoint=endpoint, params=new_params, raise_error=True))
         except TooManyIssuesError:
             log.error("Too many issues (>%d) in file %s, aborting search issue for this file", Issue.MAX_SEARCH, f'{proj_key}:{d["val"]}')
             continue
@@ -647,7 +690,7 @@ def search_by_type(endpoint: Platform, params: ApiParams) -> dict[str, Issue]:
     for issue_type in types:
         try:
             new_params[type_search_field(endpoint)] = [issue_type]
-            issue_list.update(search(endpoint=endpoint, params=new_params))
+            issue_list.update(Issue.search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
             issue_list.update(search_by_directory(endpoint=endpoint, params=new_params))
@@ -664,7 +707,7 @@ def search_by_severity(endpoint: Platform, params: ApiParams) -> dict[str, Issue
     for sev in severities:
         try:
             new_params[severity_search_field(endpoint)] = [sev]
-            issue_list.update(search(endpoint=endpoint, params=new_params))
+            issue_list.update(Issue.search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
             issue_list.update(search_by_type(endpoint=endpoint, params=new_params))
@@ -693,7 +736,7 @@ def search_by_date(endpoint: Platform, params: ApiParams, date_start: Optional[d
     new_params["createdAfter"] = sutil.date_to_string(date_start, with_time=False)
     new_params["createdBefore"] = sutil.date_to_string(date_stop, with_time=False)
     try:
-        issue_list = search(endpoint=endpoint, params=new_params)
+        issue_list = Issue.search(endpoint=endpoint, params=new_params)
     except TooManyIssuesError as e:
         log.debug("Too many issues (%d), splitting time window", e.nbr_issues)
         diff = (date_stop - date_start).days
@@ -747,7 +790,7 @@ def search_by_project(endpoint: Platform, project_key: str, params: ApiParams = 
     """
     params = params or {}
     if project_key is None:
-        key_list = projects.search(endpoint).keys()
+        key_list = projects.Project.search(endpoint).keys()
     else:
         key_list = util.csv_to_list(project_key)
     issue_list = {}
@@ -775,7 +818,7 @@ def search_all(endpoint: Platform, params: ApiParams = None) -> dict[str, Issue]
     new_params = pre_search_filters(endpoint, params)
     new_params["ps"] = Issue.MAX_PAGE_SIZE
     try:
-        issue_list = search(endpoint=endpoint, params=new_params.copy())
+        issue_list = Issue.search(endpoint=endpoint, params=new_params.copy())
     except TooManyIssuesError:
         log.info(_TOO_MANY_ISSUES_MSG)
         comp_filter = component_search_field(endpoint)
@@ -784,7 +827,7 @@ def search_all(endpoint: Platform, params: ApiParams = None) -> dict[str, Issue]
         elif params and comp_filter in params:
             key_list = util.csv_to_list(params[comp_filter])
         else:
-            key_list = projects.search(endpoint).keys()
+            key_list = projects.Project.search(endpoint).keys()
         for k in key_list:
             issue_list.update(__search_all_by_project(endpoint=endpoint, project_key=k, params=new_params))
     log.debug("SEARCH ALL %s returns %d issues", str(params), len(issue_list))
@@ -824,52 +867,6 @@ def search_first(endpoint: Platform, **params) -> Union[Issue, None]:
     if len(data) == 0:
         return None
     return get_object(endpoint=endpoint, key=data[0]["key"], data=data[0])
-
-
-def search(endpoint: Platform, params: ApiParams = None, raise_error: bool = True, threads: int = 8) -> dict[str, Issue]:
-    """Multi-threaded search of issues
-
-    :param dict params: Search filter criteria to narrow down the search
-    :param bool raise_error: Whether to raise exception if more than 10'000 issues returned, defaults to True
-    :param int threads: Nbr of parallel threads for search, defaults to 8
-    :return: List of issues found
-    :rtype: dict{<key>: <Issue>}
-    :raises: TooManyIssuesError if more than 10'000 issues found
-    """
-    log.debug("Searching with %s", params)
-    filters = pre_search_filters(endpoint=endpoint, params=params.copy())
-    if "ps" not in filters:
-        filters["ps"] = Issue.MAX_PAGE_SIZE
-
-    log.debug("Search filters = %s", str(filters))
-    issue_list = {}
-    api, _, api_params, ret = Api(Issue, op.SEARCH, endpoint).get_all(**filters)
-    data = json.loads(endpoint.get(api, params=api_params).text)
-    nbr_issues = sutil.nbr_total_elements(data)
-    nbr_pages = sutil.nbr_pages(data)
-    log.debug("Number of issues: %d - Nbr pages: %d", nbr_issues, nbr_pages)
-
-    if nbr_pages > 20 and raise_error:
-        raise TooManyIssuesError(
-            nbr_issues,
-            f"{nbr_issues} issues returned by {api}, this is more than the max {Issue.MAX_SEARCH} possible",
-        )
-
-    issue_list = __get_issue_list(endpoint, data, filters, return_field=ret)
-    if nbr_pages == 1:
-        return issue_list
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="IssueSearch") as executor:
-        futures = [executor.submit(__search_page, endpoint, filters, page) for page in range(2, nbr_pages + 1)]
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                issue_list |= future.result(timeout=60)
-            except TimeoutError:
-                log.error("Timeout exporting issue page after 60 seconds - export may be incomplete.")
-            except Exception as e:
-                log.error(f"Exception while exporting issue page: str{e} - export may be incomplete.")
-    log.debug("Issue search for %s completed with %d issues", str(params), len(issue_list))
-    return issue_list
 
 
 def _get_facets(endpoint: Platform, project_key: str, facets: str = "directories", params: ApiParams = None) -> dict[str, str]:

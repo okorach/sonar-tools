@@ -189,6 +189,20 @@ class Project(Component):
         return o
 
     @classmethod
+    def search(cls, endpoint: Platform, params: ApiParams = None, threads: int = 8) -> dict[str, Project]:
+        """Searches projects in SonarQube
+
+        :param endpoint: Reference to the SonarQube platform
+        :param params: list of parameters to narrow down the search
+        :param threads: number of parallel threads to use for search
+        :returns: list of projects
+        """
+        new_params = {} if params is None else params.copy()
+        if not endpoint.is_sonarcloud():
+            new_params["filter"] = _PROJECT_QUALIFIER
+        return cls.get_paginated(endpoint=endpoint, params=new_params, threads=threads)
+
+    @classmethod
     def get_list(cls, endpoint: Platform, key_list: KeyList = None, threads: int = 8, use_cache: bool = True) -> dict[str, Project]:
         """
         :param Platform endpoint: Reference to the SonarQube platform
@@ -200,7 +214,7 @@ class Project(Component):
         with _CLASS_LOCK:
             if key_list is None or len(key_list) == 0 or not use_cache:
                 log.info("Listing projects")
-                p_list = dict(sorted(search(endpoint=endpoint, threads=threads).items()))
+                p_list = dict(sorted(cls.search(endpoint=endpoint, threads=threads).items()))
                 return p_list
         return {key: cls.get_object(endpoint, key) for key in sorted(key_list)}
 
@@ -1341,19 +1355,6 @@ def count(endpoint: Platform, params: ApiParams = None) -> int:
         new_params["filter"] = _PROJECT_QUALIFIER
     api, _, api_params, _ = Api(Project, op.SEARCH, endpoint).get_all(**new_params)
     return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=api_params).text))
-
-
-def search(endpoint: Platform, params: ApiParams = None, threads: int = 8) -> dict[str, Project]:
-    """Searches projects in SonarQube
-
-    :param endpoint: Reference to the SonarQube platform
-    :param params: list of parameters to narrow down the search
-    :returns: list of projects
-    """
-    new_params = {} if params is None else params.copy()
-    if not endpoint.is_sonarcloud():
-        new_params["filter"] = _PROJECT_QUALIFIER
-    return Project.get_paginated(endpoint=endpoint, params=new_params, threads=threads)
 
 
 def get_matching_list(endpoint: Platform, pattern: str, threads: int = 8) -> dict[str, Project]:

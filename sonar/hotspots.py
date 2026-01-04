@@ -110,6 +110,44 @@ class Hotspot(findings.Finding):
         """Returns the string representation of the object"""
         return f"Hotspot key '{self.key}'"
 
+    @classmethod
+    def search(cls, endpoint: Platform, filters: ApiParams = None) -> dict[str, Hotspot]:
+        """Searches hotspots
+
+        :param endpoint: Reference to the SonarQube platform
+        :param filters: Search filters to narrow down the search, defaults to None
+        :return: Dict of found hotspots
+        """
+        hotspots_list = {}
+        new_params = {"ps": cls.MAX_PAGE_SIZE} | sanitize_search_filters(endpoint=endpoint, params=filters)
+        log.debug("Search hotspots with params %s", str(new_params))
+        split_filters = split_search_filters(new_params)
+        log.debug("Split search filters = %s", split_filters)
+        for inline_filters in split_filters:
+            p, nbr_pages = 1, 1
+            log.debug("Searching hotspots with sanitized filters %s", str(inline_filters))
+            while p <= nbr_pages:
+                try:
+                    api, _, api_params, ret = Api(cls, op.SEARCH, endpoint).get_all(**inline_filters, p=p)
+                    dataset = json.loads(endpoint.get(api, params=api_params, mute=(HTTPStatus.NOT_FOUND,)).text)
+                    nbr_hotspots = sutil.nbr_total_elements(dataset)
+                except exceptions.SonarException:
+                    nbr_hotspots = 0
+                    return {}
+                nbr_pages = sutil.nbr_pages(dataset)
+                log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, p, nbr_pages)
+                if nbr_hotspots > Hotspot.MAX_SEARCH:
+                    errmsg = f"""{nbr_hotspots} hotpots returned by {api}, """
+                    """this is more than the max {Hotspot.MAX_SEARCH} possible"""
+                    raise TooManyHotspotsError(nbr_hotspots, errmsg)
+
+                for enrichment in "branch", "pullRequest":
+                    if enrichment in inline_filters:
+                        dataset[ret] = [{**ele, enrichment: inline_filters[enrichment]} for _, ele in enumerate(dataset[ret])]
+                hotspots_list |= {i["key"]: get_object(endpoint=endpoint, key=i["key"], data=i) for i in dataset[ret]}
+                p += 1
+        return post_search_filter(hotspots_list, filters)
+
     def api_params(self, operation: op = op.GET) -> ApiParams:
         """Returns the base API params to be used of a hotspot"""
         ops = {op.GET: {"hotspot": self.key}}
@@ -363,7 +401,7 @@ def search_by_project(endpoint: Platform, project_key: str, filters: ApiParams =
     filters = {} if not filters else filters.copy()
     for k in key_list:
         filters[component_filter(endpoint)] = k
-        project_hotspots = search(endpoint=endpoint, filters=filters)
+        project_hotspots = Hotspot.search(endpoint=endpoint, filters=filters)
         log.info("Project '%s' has %d hotspots corresponding to filters", k, len(project_hotspots))
         hotspots.update(project_hotspots)
     return post_search_filter(hotspots, filters=filters)
@@ -372,47 +410,6 @@ def search_by_project(endpoint: Platform, project_key: str, filters: ApiParams =
 def component_filter(endpoint: Platform) -> str:
     """Returns the string to filter by porject in api/hotspots/search"""
     return PROJECT_FILTER if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else PROJECT_FILTER_OLD
-
-
-def search(endpoint: Platform, filters: ApiParams = None) -> dict[str, Hotspot]:
-    """Searches hotspots
-
-    :param endpoint: Reference to the SonarQube platform
-    :param filters: Search filters to narrow down the search, defaults to None
-    :return: Dict of found hotspots
-    """
-    hotspots_list = {}
-    new_params = sanitize_search_filters(endpoint=endpoint, params=filters)
-    log.debug("Search hotspots with params %s", str(new_params))
-    ps = Hotspot.MAX_PAGE_SIZE if "ps" not in new_params else new_params["ps"]
-    split_filters = split_search_filters(new_params)
-    log.debug("Split search filters = %s", split_filters)
-    for inline_filters in split_filters:
-        p, nbr_pages = 1, 1
-        inline_filters["ps"] = ps
-        log.debug("Searching hotspots with sanitized filters %s", str(inline_filters))
-        while p <= nbr_pages:
-            inline_filters["p"] = p
-            try:
-                api, _, api_params, ret = Api(Hotspot, op.SEARCH, endpoint).get_all(**inline_filters)
-                data = json.loads(endpoint.get(api, params=api_params, mute=(HTTPStatus.NOT_FOUND,)).text)
-                nbr_hotspots = sutil.nbr_total_elements(data)
-            except exceptions.SonarException:
-                nbr_hotspots = 0
-                return {}
-            nbr_pages = sutil.nbr_pages(data)
-            log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, p, nbr_pages)
-            if nbr_hotspots > Hotspot.MAX_SEARCH:
-                errmsg = f"""{nbr_hotspots} hotpots returned by {api}, """
-                """this is more than the max {Hotspot.MAX_SEARCH} possible"""
-                raise TooManyHotspotsError(nbr_hotspots, errmsg)
-
-            for enrichment in "branch", "pullRequest":
-                if enrichment in inline_filters:
-                    data[ret] = [{**ele, enrichment: inline_filters[enrichment]} for _, ele in enumerate(data[ret])]
-            hotspots_list |= {i["key"]: get_object(endpoint=endpoint, key=i["key"], data=i) for i in data[ret]}
-            p += 1
-    return post_search_filter(hotspots_list, filters)
 
 
 def get_object(endpoint: Platform, key: str, data: Optional[dict[str]] = None, from_export: bool = False) -> Hotspot:

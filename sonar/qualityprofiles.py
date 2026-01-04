@@ -102,6 +102,17 @@ class QualityProfile(SqObject):
         return hash((self.name, self.language, self.base_url()))
 
     @classmethod
+    def search(cls, endpoint: Platform, params: ApiParams = None) -> dict[str, QualityProfile]:
+        """Searches projects in SonarQube
+
+        param Platform endpoint: Reference to the SonarQube platform
+        :param dict params: list of parameters to filter quality profiles to search
+        :return: list of quality profiles
+        :rtype: dict{key: QualityProfile}
+        """
+        return cls.get_paginated(endpoint=endpoint, params=params)
+
+    @classmethod
     def get_object(cls, endpoint: Platform, name: str, language: str) -> QualityProfile:
         """Returns a quality profile from its name and language
 
@@ -206,7 +217,7 @@ class QualityProfile(SqObject):
         with _CLASS_LOCK:
             if len(cls.CACHE) == 0 or not use_cache:
                 cls.CACHE.clear()
-                search(endpoint=endpoint)
+                cls.search(endpoint=endpoint)
         return cls.CACHE.objects
 
     def url(self) -> str:
@@ -738,17 +749,6 @@ class QualityProfile(SqObject):
         return all(data.get(k, []) == [] for k in ("inLeft", "inRight", "modified"))
 
 
-def search(endpoint: Platform, params: ApiParams = None) -> dict[str, QualityProfile]:
-    """Searches projects in SonarQube
-
-    param Platform endpoint: Reference to the SonarQube platform
-    :param dict params: list of parameters to filter quality profiles to search
-    :return: list of quality profiles
-    :rtype: dict{key: QualityProfile}
-    """
-    return QualityProfile.get_paginated(endpoint=endpoint, params=params)
-
-
 def __audit_duplicate(qp1: QualityProfile, qp2: QualityProfile) -> list[Problem]:
     if qp2.is_identical_to(qp1):
         return [Problem(get_rule(RuleId.QP_DUPLICATES), qp1, qp1.name, qp2.name, qp1.language)]
@@ -812,7 +812,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings = None, **kwargs) -
     log.info("--- Auditing quality profiles ---")
     rules.Rule.get_list(endpoint=endpoint)
     problems = []
-    qp_list = search(endpoint=endpoint)
+    qp_list = QualityProfile.search(endpoint=endpoint)
     for qp in qp_list.values():
         problems += qp.audit(audit_settings)
     problems += __audit_nbr_of_qp(qp_list=qp_list, audit_settings=audit_settings)

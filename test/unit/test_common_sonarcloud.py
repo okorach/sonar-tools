@@ -51,7 +51,7 @@ def test_sc_config_export_no_org() -> None:
 
 def test_org_search() -> None:
     """test_org_search"""
-    org_list = organizations.search(endpoint=tutil.SC)
+    org_list = organizations.Organization.search(endpoint=tutil.SC)
     assert MY_ORG_1 in org_list
     assert MY_ORG_2 in org_list
 
@@ -95,7 +95,7 @@ def test_org_attr() -> None:
     assert org.key == MY_ORG_1
     assert org.name == "Olivier Korach"
     assert org.sq_json["url"] == "https://github.com/okorach"
-    (nc_type, nc_val) = org.new_code_period()
+    (nc_type, _) = org.new_code_period()
     assert nc_type == "PREVIOUS_VERSION"
     assert org.subscription() == "FREE"
     assert org.alm()["key"] == "github"
@@ -104,7 +104,7 @@ def test_org_attr() -> None:
 def test_org_search_sq() -> None:
     """test_org_search_sq"""
     with pytest.raises(exceptions.UnsupportedOperation):
-        _ = organizations.search(endpoint=tutil.SQ)
+        _ = organizations.Organization.search(endpoint=tutil.SQ)
 
     with pytest.raises(exceptions.UnsupportedOperation):
         _ = organizations.Organization.get_list(endpoint=tutil.SQ)

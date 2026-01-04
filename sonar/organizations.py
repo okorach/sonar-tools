@@ -66,6 +66,20 @@ class Organization(SqObject):
         return f"organization key '{self.key}'"
 
     @classmethod
+    def search(cls, endpoint: Platform, params: ApiParams = None) -> dict[str, Organization]:
+        """Searches organizations
+
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param params: Search filters (see api/organizations/search parameters)
+        :raises UnsupportedOperation: If not on a SonarQube Cloud platform
+        :return: dict of organizations
+        :rtype: dict {<orgKey>: Organization, ...}
+        """
+        if not endpoint.is_sonarcloud():
+            raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
+        return cls.get_paginated(endpoint=endpoint, params={"member": "true"} | (params or {}))
+
+    @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Organization:
         """Gets an Organization object from SonarQube Cloud
 
@@ -153,20 +167,6 @@ class Organization(SqObject):
 
     def alm(self) -> ApiPayload:
         return self.sq_json.get("alm", None)
-
-
-def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Organization]:
-    """Searches organizations
-
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param params: Search filters (see api/organizations/search parameters)
-    :raises UnsupportedOperation: If not on a SonarQube Cloud platform
-    :return: dict of organizations
-    :rtype: dict {<orgKey>: Organization, ...}
-    """
-    if not endpoint.is_sonarcloud():
-        raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-    return Organization.get_paginated(endpoint=endpoint, params={"member": "true"} | (params or {}))
 
 
 def export(endpoint: Platform, key_list: KeyList = None) -> ObjectJsonRepr:
