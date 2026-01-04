@@ -465,13 +465,13 @@ class Task(SqObject):
 
 def search_all_last(endpoint: Platform) -> list[Task]:
     """Searches for last background task of all found components"""
-    return search(endpoint=endpoint, only_current=True)
+    return Task.search(endpoint=endpoint, only_current=True)
 
 
 def search_last(endpoint: Platform, component_key: str, **params) -> Optional[Task]:
     """Searches for last background task of a component"""
     branch = params.pop("branch", None)
-    bg_tasks = search(endpoint=endpoint, only_current=branch is None, component_key=component_key, **params)
+    bg_tasks = Task.search(endpoint=endpoint, only_current=branch is None, component_key=component_key, **params)
     if branch:
         bg_tasks = [t for t in bg_tasks if t.sq_json.get("branch", "") == branch]
     if len(bg_tasks) == 0:
@@ -483,4 +483,4 @@ def search_last(endpoint: Platform, component_key: str, **params) -> Optional[Ta
 
 def search_all(endpoint: Platform, component_key: str, **params) -> list[Task]:
     """Search all background tasks of a given component"""
-    return search(endpoint=endpoint, component_key=component_key, **params)
+    return Task.search(endpoint=endpoint, component_key=component_key, **params)
