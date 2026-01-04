@@ -111,7 +111,7 @@ class QualityProfile(SqObject):
 
         :return: The quality profile object, of None if not found
         """
-        get_list(endpoint)
+        cls.get_list(endpoint)
         if o := cls.CACHE.get(name, language, endpoint.local_url):
             return o
         raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
@@ -166,7 +166,7 @@ class QualityProfile(SqObject):
         :return: The cloned quality profile object
         """
         log.info("Cloning quality profile name '%s' into quality profile name '%s'", original_qp_name, name)
-        l = [qp for qp in get_list(endpoint, use_cache=False).values() if qp.name == original_qp_name and qp.language == language]
+        l = [qp for qp in cls.get_list(endpoint, use_cache=False).values() if qp.name == original_qp_name and qp.language == language]
         if len(l) != 1:
             raise exceptions.ObjectNotFound(f"{language}:{original_qp_name}", f"Quality profile {language}:{original_qp_name} not found")
         original_qp = l[0]
@@ -193,6 +193,21 @@ class QualityProfile(SqObject):
         """Returns the API to use for a particular operation"""
         api, _, _, _ = Api(cls, operation, endpoint).get_all()
         return api
+
+    @classmethod
+    def get_list(cls, endpoint: Platform, use_cache: bool = True) -> dict[str, QualityProfile]:
+        """
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        :return: the list of all quality profiles
+        :rtype: dict{key: QualityProfile}
+        """
+
+        with _CLASS_LOCK:
+            if len(cls.CACHE) == 0 or not use_cache:
+                cls.CACHE.clear()
+                search(endpoint=endpoint)
+        return cls.CACHE.objects
 
     def url(self) -> str:
         """
@@ -253,7 +268,7 @@ class QualityProfile(SqObject):
         if r.ok:
             self.is_default = True
             # Turn off default for all other profiles except the current profile
-            for qp in get_list(self.endpoint).values():
+            for qp in QualityProfile.get_list(self.endpoint).values():
                 if qp.language == self.language and qp.key != self.key:
                     qp.is_default = False
         return r.ok
@@ -734,21 +749,6 @@ def search(endpoint: Platform, params: ApiParams = None) -> dict[str, QualityPro
     return QualityProfile.get_paginated(endpoint=endpoint, params=params)
 
 
-def get_list(endpoint: Platform, use_cache: bool = True) -> dict[str, QualityProfile]:
-    """
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-    :return: the list of all quality profiles
-    :rtype: dict{key: QualityProfile}
-    """
-
-    with _CLASS_LOCK:
-        if len(QualityProfile.CACHE) == 0 or not use_cache:
-            QualityProfile.CACHE.clear()
-            search(endpoint=endpoint)
-    return QualityProfile.CACHE.objects
-
-
 def __audit_duplicate(qp1: QualityProfile, qp2: QualityProfile) -> list[Problem]:
     if qp2.is_identical_to(qp1):
         return [Problem(get_rule(RuleId.QP_DUPLICATES), qp1, qp1.name, qp2.name, qp1.language)]
@@ -810,7 +810,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings = None, **kwargs) -
         log.info("Auditing quality profiles is disabled, audit skipped...")
         return []
     log.info("--- Auditing quality profiles ---")
-    rules.get_list(endpoint=endpoint)
+    rules.Rule.get_list(endpoint=endpoint)
     problems = []
     qp_list = search(endpoint=endpoint)
     for qp in qp_list.values():
@@ -866,7 +866,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     log.info("Exporting quality profiles")
     rules.get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", 8))
     qp_list = {}
-    for qp in get_list(endpoint=endpoint).values():
+    for qp in QualityProfile.get_list(endpoint=endpoint).values():
         log.debug("Exporting %s", str(qp))
         json_data = qp.to_json(export_settings=export_settings)
         lang = json_data.pop("language")
@@ -908,7 +908,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
         log.info("No quality profiles to import")
         return False
     log.info("Importing quality profiles")
-    get_list(endpoint=endpoint)
+    QualityProfile.get_list(endpoint=endpoint)
 
     qps_data = util.list_to_dict(qps_data, "language", keep_in_values=True)
     with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="QPImport") as executor:

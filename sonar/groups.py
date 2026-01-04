@@ -68,6 +68,10 @@ class Group(SqObject):
         Group.CACHE.put(self)
         log.debug("Created %s object, id '%s'", str(self), str(self.id))
 
+    def __str__(self) -> str:
+        """String representation of the object"""
+        return f"group '{self.name}'"
+
     @classmethod
     def read(cls, endpoint: Platform, name: str) -> Group:
         """Creates a Group object corresponding to the group with same name in SonarQube
@@ -120,7 +124,7 @@ class Group(SqObject):
         :return: The group
         """
         if not Group.CACHE.get(name, endpoint.local_url):
-            get_list(endpoint)
+            cls.get_list(endpoint)
         if o := Group.CACHE.get(name, endpoint.local_url):
             return o
         raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
@@ -135,9 +139,16 @@ class Group(SqObject):
         """
         return cls.get_paginated(endpoint=endpoint, params=params)
 
-    def __str__(self) -> str:
-        """String representation of the object"""
-        return f"group '{self.name}'"
+    @classmethod
+    def get_list(cls, endpoint: Platform) -> dict[str, Group]:
+        """Returns the list of groups
+
+        :params Platform endpoint: Reference to the SonarQube platform
+        :return: The list of groups
+        :rtype: dict
+        """
+        log.info("Listing groups")
+        return dict(sorted(cls.search(endpoint).items()))
 
     def url(self) -> str:
         """Return the SonarQube permalink URL to the group, actually the global groups page only
@@ -293,17 +304,6 @@ class Group(SqObject):
         return util.remove_nones(json_data)
 
 
-def get_list(endpoint: Platform) -> dict[str, Group]:
-    """Returns the list of groups
-
-    :params Platform endpoint: Reference to the SonarQube platform
-    :return: The list of groups
-    :rtype: dict
-    """
-    log.info("Listing groups")
-    return dict(sorted(Group.search(endpoint).items()))
-
-
 def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
     """Exports groups representation in JSON
 
@@ -314,7 +314,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
 
     log.info("Exporting groups")
     g_list = []
-    for g_name, g_obj in get_list(endpoint=endpoint).items():
+    for g_name, g_obj in Group.get_list(endpoint=endpoint).items():
         if not export_settings.get("FULL_EXPORT", False) and g_obj.is_default():
             continue
         g_list.append({"name": g_name, "description": g_obj.description or ""})
@@ -350,7 +350,7 @@ def get_object_from_id(endpoint: Platform, id: str) -> Group:
     if endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
         raise exceptions.UnsupportedOperation("Operation unsupported before SonarQube 10.4")
     if len(Group.CACHE) == 0:
-        get_list(endpoint)
+        Group.get_list(endpoint)
     if gr := next((o for o in Group.CACHE.values() if o.id == id), None):
         return gr
     raise exceptions.ObjectNotFound(id, message=f"Group '{id}' not found")

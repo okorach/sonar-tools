@@ -414,11 +414,11 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     results["ratio_of_incorrect_quality_gates"] = __rounded(results["number_of_incorrect_quality_gates"] / len(qg_list)) if len(qg_list) > 0 else 0.0
 
     log.info("Collecting quality profiles maturity data")
-    qp_list = [p for p in qp.get_list(endpoint).values() if not p.is_built_in]
+    qp_list = [p for p in qp.QualityProfile.get_list(endpoint).values() if not p.is_built_in]
     # We should count the nbr of custom profiles per language
     results["number_of_custom_quality_profiles"] = {}
     errcount = 0
-    for lang in languages.get_list(endpoint):
+    for lang in languages.Language.get_list(endpoint):
         if (count := sum(1 for p in qp_list if p.language == lang)) == 0:
             continue
         results["number_of_custom_quality_profiles"][lang] = count

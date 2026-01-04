@@ -96,7 +96,7 @@ def main() -> int:
         else:
             if options.LANGUAGES in kwargs:
                 params["languages"] = kwargs[options.LANGUAGES]
-            rule_list = rules.get_list(endpoint=endpoint, use_cache=False, **params)
+            rule_list = rules.Rule.get_list(endpoint=endpoint, use_cache=False, **params)
 
         if fmt == "csv":
             __write_rules_csv(file=file, rule_list=rule_list, separator=kwargs[options.CSV_SEPARATOR])

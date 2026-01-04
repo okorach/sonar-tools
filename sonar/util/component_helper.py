@@ -36,13 +36,13 @@ def get_components(
     key_regexp = key_regexp or ".+"
     pr_components = []
     if component_type in ("apps", "applications"):
-        components = [p for p in applications.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
+        components = [p for p in applications.Application.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
     elif component_type == "portfolios":
-        components = [p for p in portfolios.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
+        components = [p for p in portfolios.Portfolio.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
         if kwargs.get("topLevelOnly", False):
             components = [p for p in components if p.is_toplevel()]
     else:
-        components = [p for p in projects.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
+        components = [p for p in projects.Project.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
         if pull_requests:
             for p in components:
                 pr_components += list(p.pull_requests().values())

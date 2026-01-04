@@ -140,6 +140,22 @@ class Application(aggr.Aggregation):
         new_params = (params or {}) | {"filter": "qualifier = APP"}
         return cls.get_paginated(endpoint=endpoint, params=new_params)
 
+    @classmethod
+    def get_list(cls, endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Application]:
+        """
+        :return: List of Applications (all of them if key_list is None or empty)
+        :param endpoint: Reference to the Sonar platform
+        :param key_list: List of app keys to get, if None or empty all applications are returned
+        :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        """
+        check_supported(endpoint)
+        with _CLASS_LOCK:
+            if key_list is None or len(key_list) == 0 or not use_cache:
+                log.info("Listing applications")
+                return dict(sorted(cls.search(endpoint=endpoint).items()))
+            object_list = {key: cls.get_object(endpoint, key) for key in sorted(key_list)}
+        return object_list
+
     def refresh(self) -> Application:
         """Refreshes the application by re-reading SonarQube
 
@@ -467,22 +483,6 @@ def check_supported(endpoint: Platform) -> None:
         raise exceptions.UnsupportedOperation("No applications in SonarQube Cloud")
 
 
-def get_list(endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Application]:
-    """
-    :return: List of Applications (all of them if key_list is None or empty)
-    :param endpoint: Reference to the Sonar platform
-    :param key_list: List of app keys to get, if None or empty all applications are returned
-    :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-    """
-    check_supported(endpoint)
-    with _CLASS_LOCK:
-        if key_list is None or len(key_list) == 0 or not use_cache:
-            log.info("Listing applications")
-            return dict(sorted(Application.search(endpoint=endpoint).items()))
-        object_list = {key: Application.get_object(endpoint, key) for key in sorted(key_list)}
-    return object_list
-
-
 def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -> list[dict[str, Any]]:
     """Exports applications as JSON
 
@@ -495,7 +495,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -
     write_q = kwargs.get("write_q", None)
     key_regexp = kwargs.get("key_list", ".+")
 
-    app_list = {k: v for k, v in get_list(endpoint).items() if not key_regexp or re.match(key_regexp, k)}
+    app_list = {k: v for k, v in Application.get_list(endpoint).items() if not key_regexp or re.match(key_regexp, k)}
     apps_settings = []
     for k, app in app_list.items():
         app_json = app.export(export_settings)
@@ -523,7 +523,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs: Any) -> 
     log.info("--- Auditing applications ---")
     problems = []
     key_regexp = kwargs.get("key_list", ".+")
-    for obj in [o for o in get_list(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
+    for obj in [o for o in Application.get_list(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
         problems += obj.audit(audit_settings, **kwargs)
     return problems
 
@@ -565,7 +565,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Opt
 
 def search_by_name(endpoint: Platform, name: str) -> dict[str, Application]:
     """Searches applications by name. Several apps may match as name does not have to be unique"""
-    get_list(endpoint=endpoint, use_cache=False)
+    Application.get_list(endpoint=endpoint, use_cache=False)
     data = {}
     for app in Application.CACHE.values():
         if app.name == name:

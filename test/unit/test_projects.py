@@ -43,7 +43,7 @@ def test_get_object(get_test_project: Generator[Project]) -> None:
 
 def test_get_list() -> None:
     """test_get_list"""
-    proj_list = projects.get_list(endpoint=tutil.SQ)
+    proj_list = projects.Project.get_list(endpoint=tutil.SQ)
     assert len(proj_list) > 70
     assert tutil.LIVE_PROJECT in proj_list
 

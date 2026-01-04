@@ -55,7 +55,7 @@ def test_exists(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
 
 def test_get_list() -> None:
     """Test QP get_list"""
-    qps = qualityprofiles.get_list(endpoint=tutil.SQ)
+    qps = qualityprofiles.QualityProfile.get_list(endpoint=tutil.SQ)
     assert len(qps) > 25
 
 
@@ -155,14 +155,14 @@ def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]
 
 def test_import() -> None:
     """test_import"""
-    rules.get_list(tutil.TEST_SQ)
+    rules.Rule.get_list(tutil.TEST_SQ)
     languages.Language.CACHE.clear()
     qualityprofiles.QualityProfile.CACHE.clear()
     # delete all quality profiles in test
-    for qp in qualityprofiles.get_list(tutil.TEST_SQ, use_cache=False).values():
+    for qp in qualityprofiles.QualityProfile.get_list(tutil.TEST_SQ, use_cache=False).values():
         if qp.name == tutil.SONAR_WAY:
             qp.set_as_default()
-    qp_list = {o for o in qualityprofiles.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in and not o.is_default}
+    qp_list = {o for o in qualityprofiles.QualityProfile.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in and not o.is_default}
     for o in qp_list:
         o.delete()
     with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
@@ -171,7 +171,9 @@ def test_import() -> None:
 
     # Compare QP list
     json_name_list = sorted([qp["name"] for qp in qhelp.flatten(json_exp) if not qp.get("isBuiltIn", False)])
-    qp_name_list = sorted([f"{o.language}:{o.name}" for o in qualityprofiles.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in])
+    qp_name_list = sorted(
+        [f"{o.language}:{o.name}" for o in qualityprofiles.QualityProfile.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in]
+    )
     logging.debug("Imported  list = %s", str(json_name_list))
     logging.debug("SonarQube list = %s", str(qp_name_list))
     assert json_name_list == qp_name_list

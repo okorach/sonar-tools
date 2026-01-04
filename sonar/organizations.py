@@ -103,6 +103,23 @@ class Organization(SqObject):
             o = cls(endpoint, data["key"], data["name"])
         return o.reload(data)
 
+    @classmethod
+    def get_list(cls, endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Organization]:
+        """
+        :return: List of Organizations (all of them if key_list is None or empty)
+        :param KeyList key_list: List of org keys to get, if None or empty all orgs are returned
+        :param bool use_cache: Whether to use local cache or query SonarQube Cloud, default True (use cache)
+        :rtype: dict{<orgName>: <Organization>}
+        """
+        with _CLASS_LOCK:
+            if key_list is None or len(key_list) == 0 or not use_cache:
+                log.info("Listing organizations")
+                return search(endpoint=endpoint)
+            object_list = {}
+            for key in util.csv_to_list(key_list):
+                object_list[key] = cls.get_object(endpoint, key)
+        return object_list
+
     def reload(self, data: ApiPayload) -> Organization:
         """Reloads an Organization object with data retrieved from SonarQube Cloud, returns self"""
         super().reload(data)
@@ -138,23 +155,6 @@ class Organization(SqObject):
         return self.sq_json.get("alm", None)
 
 
-def get_list(endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Organization]:
-    """
-    :return: List of Organizations (all of them if key_list is None or empty)
-    :param KeyList key_list: List of org keys to get, if None or empty all orgs are returned
-    :param bool use_cache: Whether to use local cache or query SonarQube Cloud, default True (use cache)
-    :rtype: dict{<orgName>: <Organization>}
-    """
-    with _CLASS_LOCK:
-        if key_list is None or len(key_list) == 0 or not use_cache:
-            log.info("Listing organizations")
-            return search(endpoint=endpoint)
-        object_list = {}
-        for key in util.csv_to_list(key_list):
-            object_list[key] = Organization.get_object(endpoint, key)
-    return object_list
-
-
 def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Organization]:
     """Searches organizations
 
@@ -177,7 +177,7 @@ def export(endpoint: Platform, key_list: KeyList = None) -> ObjectJsonRepr:
     :return: Dict of organization settings
     :rtype: dict
     """
-    org_settings = {k: org.export() for k, org in get_list(endpoint, key_list).items()}
+    org_settings = {k: org.export() for k, org in Organization.get_list(endpoint, key_list).items()}
     for k in org_settings:
         # remove key from JSON value, it's already the dict key
         org_settings[k].pop("key")

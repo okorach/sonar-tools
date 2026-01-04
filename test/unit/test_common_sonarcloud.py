@@ -58,11 +58,11 @@ def test_org_search() -> None:
 
 def test_org_get_list() -> None:
     """test_org_search"""
-    org_list = organizations.get_list(endpoint=tutil.SC)
+    org_list = organizations.Organization.get_list(endpoint=tutil.SC)
     assert MY_ORG_1 in org_list
     assert MY_ORG_2 in org_list
 
-    org_list = organizations.get_list(endpoint=tutil.SC, key_list=[MY_ORG_1])
+    org_list = organizations.Organization.get_list(endpoint=tutil.SC, key_list=[MY_ORG_1])
     assert MY_ORG_1 in org_list
     assert MY_ORG_2 not in org_list
 
@@ -73,7 +73,7 @@ def test_org_get_non_existing() -> None:
         _ = organizations.Organization.get_object(endpoint=tutil.SC, key="oko_foo_bar")
 
     with pytest.raises(exceptions.ObjectNotFound):
-        _ = organizations.get_list(endpoint=tutil.SC, key_list=["oko_foo_bar"])
+        _ = organizations.Organization.get_list(endpoint=tutil.SC, key_list=["oko_foo_bar"])
 
 
 def test_org_str() -> None:
@@ -107,7 +107,7 @@ def test_org_search_sq() -> None:
         _ = organizations.search(endpoint=tutil.SQ)
 
     with pytest.raises(exceptions.UnsupportedOperation):
-        _ = organizations.get_list(endpoint=tutil.SQ)
+        _ = organizations.Organization.get_list(endpoint=tutil.SQ)
 
 
 def test_audit() -> None:
