@@ -257,11 +257,6 @@ class Rule(SqObject):
         return created_rule
 
     @classmethod
-    def search(cls, endpoint: Platform, params: dict[str, str]) -> dict[str, Rule]:
-        """Searches rules with optional filters"""
-        return cls.get_paginated(endpoint=endpoint, params=params, threads=4)
-
-    @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> Rule:
         """Loads a rule object with a SonarQube API payload"""
         key = data["key"]

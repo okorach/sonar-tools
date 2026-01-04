@@ -321,8 +321,8 @@ class Issue(findings.Finding):
         return issue_list
 
     @staticmethod
-    def get_search_date_range(date_start: Union[datetime, date, None], date_stop: Union[datetime, date, None]) -> tuple[datetime, datetime]:
-        date_range = {}
+    def get_search_date_range(date_start: Union[datetime, date, None], date_stop: Union[datetime, date, None]) -> dict[str, datetime]:
+        date_range: dict[str, datetime] = {}
         if date_start:
             if isinstance(date_start, datetime):
                 date_start = date_start.date()
