@@ -155,7 +155,7 @@ class User(SqObject):
         if endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             raise exceptions.UnsupportedOperation("Get by ID is an APIv2 features, staring from SonarQube 10.4")
         log.debug("Getting user id '%s'", id)
-        api, _, params, _ = Api(cls, op.READ, endpoint).get_all(id=id)
+        api, _, params, _ = Api(cls, op.GET, endpoint).get_all(id=id)
         data = json.loads(endpoint.get(api, params=params, mute=()).text)
         return cls.load(endpoint, data)
 
@@ -224,7 +224,7 @@ class User(SqObject):
 
         :return:  The user itself
         """
-        api_def = Api(self, op.READ)
+        api_def = Api(self, op.GET)
         max_ps = api_def.max_page_size()
         api, _, params, ret = api_def.get_all(userId=self.id, q=self.login, id=self.id, ps=max_ps)
         data = json.loads(self.endpoint.get(api, params=params).text)

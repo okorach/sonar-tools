@@ -110,10 +110,10 @@ class Hotspot(findings.Finding):
         """Returns the string representation of the object"""
         return f"Hotspot key '{self.key}'"
 
-    def api_params(self, operation: op = op.READ) -> ApiParams:
+    def api_params(self, operation: op = op.GET) -> ApiParams:
         """Returns the base API params to be used of a hotspot"""
-        ops = {op.READ: {"hotspot": self.key}}
-        return ops[operation] if operation in ops else ops[op.READ]
+        ops = {op.GET: {"hotspot": self.key}}
+        return ops[operation] if operation in ops else ops[op.GET]
 
     def url(self) -> str:
         """Returns the permalink URL to the hotspot in the SonarQube platform"""
@@ -145,7 +145,7 @@ class Hotspot(findings.Finding):
         :return: Whether there operation succeeded
         """
         try:
-            api, _, params, _ = Api(self, op.READ).get_all(**self.api_params())
+            api, _, params, _ = Api(self, op.GET).get_all(**self.api_params())
             resp = self.get(api, params=params)
             if resp.ok:
                 d = json.loads(resp.text)

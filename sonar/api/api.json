@@ -11,7 +11,7 @@
                     "visibility"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/applications/show",
                 "params": [
@@ -36,7 +36,7 @@
                     "application"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/components/search_projects",
                 "params": [
@@ -105,7 +105,7 @@
                     "projectBranch"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/applications/show",
                 "params": [
@@ -132,7 +132,7 @@
                     "branch"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/applications/show",
                 "params": [
@@ -145,7 +145,7 @@
     },
     "Component": {
         "5.2.0": {
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/components/show",
                 "params": [
@@ -155,7 +155,7 @@
                 ],
                 "return_field": "component"
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/components/search",
                 "params": [
@@ -191,7 +191,7 @@
     },
     "Issue": {
         "5.2.0": {
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/issues/search",
                 "params": [
@@ -243,7 +243,7 @@
                 "page_field": "p",
                 "max_page_size": 500
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/issues/search",
                 "params": [
@@ -337,7 +337,7 @@
                     "scmAccounts"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "v2/users-management/users/{id}",
                 "return_field": "user"
@@ -357,7 +357,7 @@
                 "method": "DELETE",
                 "api": "v2/users-management/users/{id}"
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "v2/users-management/users",
                 "params": [
@@ -412,7 +412,7 @@
                 ],
                 "return_field": "user"
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/users/search",
                 "params": [
@@ -436,7 +436,7 @@
                     "login"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/users/search",
                 "params": [
@@ -484,7 +484,7 @@
                     "scmAccounts"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "v2/users-management/users/{id}",
                 "return_field": "user"
@@ -504,7 +504,7 @@
                 "method": "DELETE",
                 "api": "v2/users-management/users/{id}"
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "v2/users-management/users",
                 "params": [
@@ -560,7 +560,7 @@
                     "description"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "v2/authorizations/groups/{id}",
                 "return_field": ""
@@ -578,7 +578,7 @@
                 "method": "DELETE",
                 "api": "v2/authorizations/groups/{id}"
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "v2/authorizations/groups",
                 "params": [
@@ -630,7 +630,7 @@
                     "description"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/user_groups/search",
                 "params": [
@@ -656,7 +656,7 @@
                     "name"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/user_groups/search",
                 "params": [
@@ -703,7 +703,7 @@
     "Metric": {
         "5.2.0": {
             "CREATE": {},
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/metrics/search",
                 "params": [
@@ -715,7 +715,7 @@
             },
             "UPDATE": {},
             "DELETE": {},
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "metrics/search",
                 "params": [
@@ -735,7 +735,7 @@
     },
     "Measure": {
         "6.2.0": {
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/measures/component",
                 "params": [
@@ -747,7 +747,7 @@
                 ],
                 "return_field": "component"
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/measures/search",
                 "params": [
@@ -784,7 +784,7 @@
                     "name"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/qualitygates/show",
                 "params": [
@@ -799,7 +799,7 @@
                     "name"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/qualitygates/list",
                 "return_field": "qualitygates"
@@ -829,7 +829,7 @@
     },
     "DevopsPlatform": {
         "5.2.0": {
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/alm_settings/list_definitions",
                 "return_field": ""
@@ -952,7 +952,7 @@
     },
     "Hotspot": {
         "5.2.0": {
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/hotspots/search",
                 "params": [
@@ -982,7 +982,7 @@
                 "page_field": "p",
                 "max_page_size": 500
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/hotspots/show",
                 "params": [
@@ -1021,7 +1021,7 @@
     },
     "Organization": {
         "10000.0.0": {
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/organizations/search",
                 "params": [
@@ -1036,7 +1036,7 @@
     },
     "PullRequest": {
         "5.2.0": {
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/project_pull_requests/list",
                 "params": [
@@ -1090,7 +1090,7 @@
                     "key"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/views/search",
                 "params": [
@@ -1127,7 +1127,7 @@
                     "login"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/user_tokens/search",
                 "params": [
@@ -1149,7 +1149,7 @@
                     "project"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/webhooks/list",
                 "params": [
@@ -1174,7 +1174,7 @@
                     "webhook"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/webhooks/list",
                 "params": [
@@ -1211,7 +1211,7 @@
                     "language"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/qualityprofiles/search",
                 "params": [
@@ -1326,7 +1326,7 @@
                     "type"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/rules/show",
                 "params": [
@@ -1370,7 +1370,7 @@
                 "page_field": "p",
                 "max_page_size": 500
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/rules/search",
                 "params": [
@@ -1428,7 +1428,7 @@
                     "project"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/settings/values",
                 "params": [
@@ -1449,7 +1449,7 @@
                     "project"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/settings/values",
                 "params": [
@@ -1504,7 +1504,7 @@
     },
     "Branch": {
         "5.2.0": {
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/project_branches/list",
                 "params": [
@@ -1565,7 +1565,7 @@
                     "name"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/components/show",
                 "params": [
@@ -1580,7 +1580,7 @@
                     "project"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/components/search_projects",
                 "params": [

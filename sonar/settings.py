@@ -439,7 +439,7 @@ def get_bulk(
     if settings_list is not None:
         params["keys"] = util.list_to_csv(settings_list)
 
-    api, _, api_params, _ = Api(Setting, op.LIST, endpoint).get_all(**params)
+    api, _, api_params, _ = Api(Setting, op.SEARCH, endpoint).get_all(**params)
     data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)
     settings_dict |= __get_settings(endpoint, data, component)
 
@@ -512,7 +512,7 @@ def get_visibility(endpoint: Platform, component: object) -> Setting:
     else:
         if endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Project default visibility does not exist in SonarQube Cloud")
-        api, _, params, _ = Api(Setting, op.READ, endpoint).get_all(keys=PROJECT_DEFAULT_VISIBILITY)
+        api, _, params, _ = Api(Setting, op.GET, endpoint).get_all(keys=PROJECT_DEFAULT_VISIBILITY)
         data = json.loads(endpoint.get(api, params=params).text)
         return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 
@@ -604,7 +604,7 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[object])
         if key == NEW_CODE_PERIOD:
             key = "sonar.leak.period.type"
         params = get_component_params(component) | {"keys": key}
-        api, _, api_params, _ = Api(Setting, op.READ, endpoint).get_all(**params)
+        api, _, api_params, _ = Api(Setting, op.GET, endpoint).get_all(**params)
         data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)["settings"]
         if not endpoint.is_sonarcloud() and len(data) > 0:
             data = data[0]

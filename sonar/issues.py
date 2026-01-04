@@ -152,7 +152,7 @@ class Issue(findings.Finding):
         """Returns the base API params to be used of an issue"""
         ops = {
             op.GET: {"issue": self.key},
-            op.LIST: {"issues": self.key},
+            op.SEARCH: {"issues": self.key},
             op.SET_TAGS: {"issue": self.key},
             op.GET_TAGS: {"issues": self.key},
         }
@@ -202,7 +202,7 @@ class Issue(findings.Finding):
 
         :return: whether the refresh was successful
         """
-        api, _, params, ret = Api(self, op.READ).get_all(issues=self.key, additionalFields="_all")
+        api, _, params, ret = Api(self, op.GET).get_all(issues=self.key, additionalFields="_all")
         resp = self.get(api, params=params)
         if resp.ok:
             self._load(json.loads(resp.text)[ret][0])

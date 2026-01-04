@@ -667,8 +667,8 @@ class Portfolio(aggregations.Aggregation):
 
     def api_params(self, operation: Optional[op] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {op.READ: {"key": self.key}, op.DELETE: {"key": self.key}}
-        return ops[operation] if operation and operation in ops else ops[op.READ]
+        ops = {op.GET: {"key": self.key}, op.DELETE: {"key": self.key}}
+        return ops[operation] if operation and operation in ops else ops[op.GET]
 
 
 def count(endpoint: Platform) -> int:

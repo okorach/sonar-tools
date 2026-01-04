@@ -238,8 +238,8 @@ class ApplicationBranch(Component):
 
     def api_params(self, operation: Optional[str] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {op.READ: {"application": self.concerned_object.key, "branch": self.name}}
-        return ops[operation] if operation and operation in ops else ops[op.READ]
+        ops = {op.GET: {"application": self.concerned_object.key, "branch": self.name}}
+        return ops[operation] if operation and operation in ops else ops[op.GET]
 
     def component_data(self) -> ObjectJsonRepr:
         """Returns key data"""
@@ -261,7 +261,7 @@ def list_from(app: Application, data: ApiPayload) -> dict[str, ApplicationBranch
     if not data or "branches" not in data:
         return {}
     branch_list = {}
-    api_def = Api(ApplicationBranch, op.LIST, app.endpoint)
+    api_def = Api(ApplicationBranch, op.SEARCH, app.endpoint)
     for br in data["branches"]:
         api, _, params, ret = api_def.get_all(application=app.key, branch=br["name"])
         branch_data = json.loads(app.endpoint.get(api, params=params).text)[ret]

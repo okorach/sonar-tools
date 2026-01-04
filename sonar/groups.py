@@ -83,7 +83,7 @@ class Group(SqObject):
         log.debug("Reading group '%s'", name)
         if o := Group.CACHE.get(name, endpoint.local_url):
             return o
-        api, _, params, ret = Api(cls, op.LIST, endpoint).get_all(q=name)
+        api, _, params, ret = Api(cls, op.SEARCH, endpoint).get_all(q=name)
         data = json.loads(endpoint.get(api, params=params).text)[ret]
         if not data or data == []:
             raise exceptions.ObjectNotFound(name, f"Group '{name}' not found")

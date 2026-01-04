@@ -118,7 +118,7 @@ class PullRequest(components.Component):
             log.debug(_UNSUPPORTED_IN_CE)
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 
-        api, _, params, ret = Api(cls, op.LIST, project.endpoint).get_all(project=project.key)
+        api, _, params, ret = Api(cls, op.SEARCH, project.endpoint).get_all(project=project.key)
         data = json.loads(project.get(api, params=params).text)
         pr_list = {}
         for pr in data[ret]:
@@ -177,10 +177,10 @@ class PullRequest(components.Component):
     def api_params(self, operation: Optional[op] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {
-            op.READ: {"project": self.concerned_object.key, "pullRequest": self.key},
+            op.GET: {"project": self.concerned_object.key, "pullRequest": self.key},
             op.DELETE: {"project": self.concerned_object.key, "pullRequest": self.key},
         }
-        return ops[operation] if operation and operation in ops else ops[op.READ]
+        return ops[operation] if operation and operation in ops else ops[op.GET]
 
     def delete(self) -> bool:
         """Deletes a pull request"""

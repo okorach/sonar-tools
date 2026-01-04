@@ -639,7 +639,7 @@ class Platform(object):
         """Audits whether project default visibility is public"""
         log.info("Auditing project default visibility")
         problems = []
-        api, _, params, _ = Api(settings.Setting, op.READ, self).get_all(keys="projects.default.visibility")
+        api, _, params, _ = Api(settings.Setting, op.GET, self).get_all(keys="projects.default.visibility")
         resp = self.get(api, params=params)
         visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)

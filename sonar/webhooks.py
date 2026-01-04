@@ -177,8 +177,8 @@ class WebHook(SqObject):
 
     def api_params(self, operation: Optional[op] = None) -> ApiParams:
         """Returns the std api params to pass for a given webhook"""
-        ops = {op.READ: {"webhook": self.key}}
-        return ops[operation] if operation and operation in ops else ops[op.READ]
+        ops = {op.GET: {"webhook": self.key}}
+        return ops[operation] if operation and operation in ops else ops[op.GET]
 
 
 def search(endpoint: Platform, params: ApiParams = None) -> dict[str, WebHook]:

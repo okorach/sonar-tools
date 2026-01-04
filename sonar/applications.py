@@ -90,7 +90,7 @@ class Application(aggr.Aggregation):
         o: Application = cls.CACHE.get(key, endpoint.local_url)
         if o:
             return o
-        api, _, params, ret = Api(cls, op.READ, endpoint).get_all(application=key)
+        api, _, params, ret = Api(cls, op.GET, endpoint).get_all(application=key)
         data = json.loads(endpoint.get(api, params=params).text)[ret]
         return cls.load(endpoint, data)
 
@@ -163,7 +163,7 @@ class Application(aggr.Aggregation):
         """
         try:
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
-            api, _, params, ret = Api(self, op.READ).get_all(application=self.key)
+            api, _, params, ret = Api(self, op.GET).get_all(application=self.key)
             self.reload(json.loads(self.endpoint.get(api, params=params).text)[ret])
             return self
         except exceptions.ObjectNotFound:
@@ -438,8 +438,8 @@ class Application(aggr.Aggregation):
 
     def api_params(self, operation: Optional[str] = None) -> ApiParams:
         """Returns the base params to be used for the object API"""
-        ops = {op.READ: {"application": self.key}, op.RECOMPUTE: {"key": self.key}}
-        return ops[operation] if operation and operation in ops else ops[op.READ]
+        ops = {op.GET: {"application": self.key}, op.RECOMPUTE: {"key": self.key}}
+        return ops[operation] if operation and operation in ops else ops[op.GET]
 
     def __get_project_branches(self, branch_definition: ObjectJsonRepr) -> list[Union[projects.Project, branches.Branch]]:
         project_branches = []
@@ -471,7 +471,7 @@ def count(endpoint: Platform) -> int:
     :return: Count of applications
     """
     check_supported(endpoint)
-    api, _, params, _ = Api(Application, op.LIST, endpoint).get_all(ps=1, filter="qualifier = APP")
+    api, _, params, _ = Api(Application, op.SEARCH, endpoint).get_all(ps=1, filter="qualifier = APP")
     return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=params).text))
 
 

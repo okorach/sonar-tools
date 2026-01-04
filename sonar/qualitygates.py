@@ -221,7 +221,7 @@ class QualityGate(SqObject):
         :return: The quality gate conditions, encoded (for simplication) or not
         """
         if self._conditions is None:
-            api, _, params, _ = Api(self, op.READ).get_all(name=self.name)
+            api, _, params, _ = Api(self, op.GET).get_all(name=self.name)
             data = json.loads(self.get(api, params=params).text)
             log.debug("Loading %s with conditions %s", self, util.json_dump(data))
             self._conditions = list(data.get("conditions", []))
@@ -397,7 +397,7 @@ class QualityGate(SqObject):
         :rtype: dict {<name>: <QualityGate>}
         """
         log.info("Getting quality gates")
-        api, _, params, ret = Api(cls, op.LIST, endpoint).get_all()
+        api, _, params, ret = Api(cls, op.SEARCH, endpoint).get_all()
         dataset = json.loads(endpoint.get(api, params=params).text)[ret]
         qg_list = {}
         for qg in dataset:
@@ -544,7 +544,7 @@ def _decode_condition(cond: str) -> tuple[str, str, str]:
 
 def search_by_name(endpoint: Platform, name: str) -> Optional[dict[str, Any]]:
     """Searches quality gates matching name"""
-    api, _, _, ret = Api(QualityGate, op.LIST, endpoint).get_all()
+    api, _, _, ret = Api(QualityGate, op.SEARCH, endpoint).get_all()
     return sutil.search_by_name(endpoint, name, api, ret)
 
 
