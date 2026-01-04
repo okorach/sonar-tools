@@ -149,6 +149,14 @@ class Issue(findings.Finding):
         )
 
     @classmethod
+    def search_one_page(cls, endpoint: Platform, **search_params: Any) -> dict[str, Issue]:
+        """Search one page of issues"""
+        filters = pre_search_filters(endpoint=endpoint, params=search_params.copy())
+        api, _, api_params, ret = Api(cls, op.SEARCH, endpoint).get_all(**filters)
+        dataset = json.loads(endpoint.get(api, params=api_params).text)
+        return _get_issue_list(endpoint, dataset, filters, return_field=ret)
+
+    @classmethod
     def search(cls, endpoint: Platform, params: ApiParams = None, raise_error: bool = True, threads: int = 8) -> dict[str, Issue]:
         """Multi-threaded search of issues
 
@@ -160,9 +168,7 @@ class Issue(findings.Finding):
         :raises: TooManyIssuesError if more than 10'000 issues found
         """
         log.debug("Searching with %s", params)
-        filters = pre_search_filters(endpoint=endpoint, params=params.copy() if params else {})
-        if "ps" not in filters:
-            filters["ps"] = cls.MAX_PAGE_SIZE
+        filters = {"ps": cls.MAX_PAGE_SIZE} | pre_search_filters(endpoint=endpoint, params=(params or {}).copy())
 
         log.debug("Search filters = %s", str(filters))
         issue_list = {}
@@ -173,10 +179,8 @@ class Issue(findings.Finding):
         log.debug("Number of issues: %d - Nbr pages: %d", nbr_issues, nbr_pages)
 
         if nbr_pages > 20 and raise_error:
-            raise TooManyIssuesError(
-                nbr_issues,
-                f"{nbr_issues} issues returned by {api}, this is more than the max {cls.MAX_SEARCH} possible",
-            )
+            msg = f"{nbr_issues} issues returned by {api}, this is more than the max {cls.MAX_SEARCH} possible"
+            raise TooManyIssuesError(nbr_issues, msg)
 
         issue_list = _get_issue_list(endpoint, data, filters, return_field=ret)
         if nbr_pages == 1:
@@ -816,8 +820,7 @@ def search_all(endpoint: Platform, params: ApiParams = None) -> dict[str, Issue]
     :rtype: dict{<key>: <Issue>}
     """
     issue_list = {}
-    new_params = pre_search_filters(endpoint, params)
-    new_params["ps"] = Issue.MAX_PAGE_SIZE
+    new_params = pre_search_filters(endpoint, params) | {"ps": Issue.MAX_PAGE_SIZE}
     try:
         issue_list = Issue.search(endpoint=endpoint, params=new_params.copy())
     except TooManyIssuesError:
@@ -835,10 +838,10 @@ def search_all(endpoint: Platform, params: ApiParams = None) -> dict[str, Issue]
     return issue_list
 
 
-def _get_issue_list(endpoint: Platform, data: ApiPayload, params: ApiParams, return_field: str = "issues") -> dict[str, Issue]:
+def _get_issue_list(endpoint: Platform, dataset: ApiPayload, params: ApiParams, return_field: str = "issues") -> dict[str, Issue]:
     """Returns a list of issues from the API payload"""
-    br, pr = params.get("branch", None), params.get("pullRequest", None)
-    issues = data.get(return_field, data.get("issues", []))
+    br, pr = params.get("branch"), params.get("pullRequest")
+    issues = dataset.get(return_field, [])
     for i in issues:
         i["branch"], i["pullRequest"] = br, pr
     return {i["key"]: get_object(endpoint=endpoint, key=i["key"], data=i) for i in issues}
@@ -846,28 +849,18 @@ def _get_issue_list(endpoint: Platform, data: ApiPayload, params: ApiParams, ret
 
 def _search_page(endpoint: Platform, params: ApiParams, page: int) -> dict[str, Issue]:
     """Searches a page of issues"""
-    page_params = params.copy()
-    page_params["p"] = page
-    log.debug("Issue search params = %s", str(page_params))
-    api, _, api_params, ret = Api(Issue, op.SEARCH, endpoint).get_all(**page_params)
-    data = json.loads(endpoint.get(api, params=api_params).text)
-    issue_list = _get_issue_list(endpoint, data, params=page_params, return_field=ret)
-    log.debug("Added %d issues in search page %d", len(issue_list), page)
-    return issue_list
+    return Issue.search_one_page(endpoint, **params | {"ps": Issue.MAX_PAGE_SIZE, "p": page})
 
 
-def search_first(endpoint: Platform, **params) -> Union[Issue, None]:
+def search_first(endpoint: Platform, **search_params) -> Optional[Issue]:
     """
     :return: The first issue of a search, for instance the oldest, if params = s="CREATION_DATE", asc=asc_sort
     :rtype: Issue or None if not issue found
     """
-    filters = pre_search_filters(endpoint=endpoint, params=params)
-    filters["ps"] = 1
-    api, _, api_params, ret = Api(Issue, op.SEARCH, endpoint).get_all(**filters)
-    data = json.loads(endpoint.get(api, params=api_params).text)[ret]
-    if len(data) == 0:
+    issue_list = Issue.search_one_page(endpoint, **search_params | {"ps": 1})
+    if len(issue_list) == 0:
         return None
-    return get_object(endpoint=endpoint, key=data[0]["key"], data=data[0])
+    return next(iter(issue_list.values()))
 
 
 def _get_facets(endpoint: Platform, project_key: str, facets: str = "directories", params: ApiParams = None) -> dict[str, str]:
@@ -881,22 +874,22 @@ def _get_facets(endpoint: Platform, project_key: str, facets: str = "directories
     return {f["property"]: f["values"] for f in data["facets"] if f["property"] in util.csv_to_list(facets)}
 
 
-def __get_one_issue_date(endpoint: Platform, asc_sort: str = "false", params: ApiParams = None) -> Optional[datetime]:
+def __get_one_issue_date(endpoint: Platform, asc_sort: str = "false", **search_params: Any) -> Optional[datetime]:
     """Returns the date of one issue found"""
-    issue = search_first(endpoint=endpoint, s="CREATION_DATE", asc=asc_sort, **params)
+    issue = search_first(endpoint=endpoint, s="CREATION_DATE", **search_params, asc=asc_sort)
     if not issue:
         return None
     return issue.creation_date
 
 
-def get_oldest_issue(endpoint: Platform, params: ApiParams = None) -> Union[datetime, None]:
+def get_oldest_issue(endpoint: Platform, **search_params: Any) -> Optional[datetime]:
     """Returns the oldest date of all issues found"""
-    return __get_one_issue_date(endpoint=endpoint, asc_sort="true", params=params)
+    return __get_one_issue_date(endpoint=endpoint, asc_sort="true", **search_params)
 
 
-def get_newest_issue(endpoint: Platform, params: ApiParams = None) -> Union[datetime, None]:
+def get_newest_issue(endpoint: Platform, **search_params: Any) -> Optional[datetime]:
     """Returns the newest date of all issues found"""
-    return __get_one_issue_date(endpoint=endpoint, asc_sort="false", params=params)
+    return __get_one_issue_date(endpoint=endpoint, asc_sort="false", **search_params)
 
 
 def count(endpoint: Platform, **kwargs: Any) -> int:
