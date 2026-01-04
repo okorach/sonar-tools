@@ -118,6 +118,12 @@ class Portfolio(aggregations.Aggregation):
         )
 
     @classmethod
+    def search(cls, endpoint: Platform, params: ApiParams = None) -> dict[str, Portfolio]:
+        """Search all portfolios of a platform and returns as dict"""
+        check_supported(endpoint)
+        return cls.get_paginated(endpoint=endpoint, params=params)
+
+    @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Portfolio:
         """Gets a portfolio object from its key"""
         check_supported(endpoint)
@@ -179,7 +185,7 @@ class Portfolio(aggregations.Aggregation):
         with _CLASS_LOCK:
             if key_list is None or len(key_list) == 0 or not use_cache:
                 log.debug("Listing portfolios")
-                return dict(sorted(search(endpoint=endpoint).items()))
+                return dict(sorted(cls.search(endpoint=endpoint).items()))
             return {key: cls.get_object(endpoint, key) for key in sorted(key_list)}
 
     def reload(self, data: ApiPayload) -> Portfolio:
@@ -677,12 +683,6 @@ def count(endpoint: Platform) -> int:
     return aggregations.count(api=api, endpoint=endpoint)
 
 
-def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Portfolio]:
-    """Search all portfolios of a platform and returns as dict"""
-    check_supported(endpoint)
-    return Portfolio.get_paginated(endpoint=endpoint, params=params)
-
-
 def check_supported(endpoint: Platform) -> None:
     """Verifies the edition and raise exception if not supported"""
     if endpoint.is_sonarcloud():
@@ -718,7 +718,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
     check_supported(endpoint)
 
     log.info("Importing portfolios - pass 1: Create all toplevel portfolios")
-    search(endpoint=endpoint)
+    Portfolio.search(endpoint=endpoint)
     # First pass to create all top level porfolios that may be referenced
     new_key_list = util.csv_to_list(key_list)
     for data in config_data["portfolios"]:

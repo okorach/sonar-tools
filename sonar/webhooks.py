@@ -112,10 +112,19 @@ class WebHook(SqObject):
             raise exceptions.ObjectNotFound(project_key, f"Webhook '{name}' of project '{project_key}' not found") from e
 
     @classmethod
+    def search(cls, endpoint: Platform, params: ApiParams = None) -> dict[str, WebHook]:
+        """Searches webhooks
+
+        :param ApiParams params: Filters to narrow down the search, can only be "project"
+        :return: List of webhooks
+        """
+        return cls.get_paginated(endpoint=endpoint, params=params)
+
+    @classmethod
     def get_list(cls, endpoint: Platform, project_key: Optional[str] = None) -> dict[str, WebHook]:
         """Returns the list of web hooks, global ones or for a project if project key is given"""
         log.debug("Getting webhooks for project key %s", str(project_key))
-        wh_list = search(endpoint, {"project": project_key})
+        wh_list = cls.search(endpoint, {"project": project_key})
         for wh in wh_list.values():
             wh.project = project_key
         return wh_list
@@ -181,15 +190,6 @@ class WebHook(SqObject):
         return ops[operation] if operation and operation in ops else ops[op.GET]
 
 
-def search(endpoint: Platform, params: ApiParams = None) -> dict[str, WebHook]:
-    """Searches webhooks
-
-    :param ApiParams params: Filters to narrow down the search, can only be "project"
-    :return: List of webhooks
-    """
-    return WebHook.get_paginated(endpoint=endpoint, params=params)
-
-
 def export(endpoint: Platform, project_key: Optional[str] = None, full: bool = False) -> ObjectJsonRepr:
     """Export webhooks of a project as JSON"""
     json_data = {}
@@ -220,6 +220,6 @@ def audit(endpoint: Platform) -> list[problem.Problem]:
     """Audits web hooks and returns list of found problems"""
     log.info("Auditing webhooks")
     problems = []
-    for wh in search(endpoint=endpoint).values():
+    for wh in WebHook.search(endpoint=endpoint).values():
         problems += wh.audit()
     return problems

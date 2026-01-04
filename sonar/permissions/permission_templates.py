@@ -96,9 +96,21 @@ class PermissionTemplate(sqobject.SqObject):
         return hash((self.name.lower(), self.base_url()))
 
     @classmethod
+    def search(cls, endpoint: Platform, params: ApiParams = None) -> dict[str, PermissionTemplate]:
+        """Searches permissions templates"""
+        log.debug("Searching all permission templates")
+        objects_list = {}
+        data = json.loads(endpoint.get(_SEARCH_API, params=params).text)
+        for obj in data["permissionTemplates"]:
+            o = cls(name=obj["name"], endpoint=endpoint, data=obj)
+            objects_list[o.key] = o
+        _load_default_templates(endpoint=endpoint, data=data)
+        return objects_list
+
+    @classmethod
     def get_list(cls, endpoint: Platform) -> dict[str, PermissionTemplate]:
         """Gets the list of all permissions templates"""
-        return search(endpoint=endpoint)
+        return cls.search(endpoint=endpoint)
 
     def is_default_for(self, qualifier: str) -> bool:
         """Returns whether a template is the default for a type of qualifier"""
@@ -243,18 +255,6 @@ def create(endpoint: Platform, name: str, create_data: ObjectJsonRepr = None) ->
     else:
         log.info("%s already exists, skipping creation...", str(o))
     return o
-
-
-def search(endpoint: Platform, params: ApiParams = None) -> dict[str, PermissionTemplate]:
-    """Searches permissions templates"""
-    log.debug("Searching all permission templates")
-    objects_list = {}
-    data = json.loads(endpoint.get(_SEARCH_API, params=params).text)
-    for obj in data["permissionTemplates"]:
-        o = PermissionTemplate(name=obj["name"], endpoint=endpoint, data=obj)
-        objects_list[o.key] = o
-    _load_default_templates(endpoint=endpoint, data=data)
-    return objects_list
 
 
 def search_by_name(endpoint: Platform, name: str) -> ApiPayload:

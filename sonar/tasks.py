@@ -92,6 +92,29 @@ class Task(SqObject):
         """
         return f"background task '{self.key}'"
 
+    @classmethod
+    def search(cls, endpoint: Platform, only_current: bool = False, component_key: Optional[str] = None, **kwargs: Any) -> list[Task]:
+        """Searches background tasks
+
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param only_current: only the most recent background task of each object, defaults to False
+        :param component_key: filter for a given component key only, defaults to None
+        :param component_key: str, optional
+        :return: The list of found background tasks
+        :rtype: list[Task]
+        """
+        params = {"status": ",".join(STATUSES), "additionalFields": "warnings"}
+        params.update(**kwargs)
+        if only_current:
+            params["onlyCurrents"] = "true"
+        if component_key is not None:
+            params["component"] = component_key
+        try:
+            data = json.loads(endpoint.get("ce/activity", params=params).text)
+            return [cls(endpoint=endpoint, task_id=t["id"], data=t) for t in data["tasks"]]
+        except exceptions.SonarException:
+            return []
+
     def url(self) -> str:
         """
         :return: the SonarQube permalink URL to the background task
@@ -440,38 +463,15 @@ class Task(SqObject):
         return problems
 
 
-def search(endpoint: Platform, only_current: bool = False, component_key: Optional[str] = None, **kwargs: Any) -> list[Task]:
-    """Searches background tasks
-
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param only_current: only the most recent background task of each object, defaults to False
-    :param component_key: filter for a given component key only, defaults to None
-    :param component_key: str, optional
-    :return: The list of found background tasks
-    :rtype: list[Task]
-    """
-    params = {"status": ",".join(STATUSES), "additionalFields": "warnings"}
-    params.update(**kwargs)
-    if only_current:
-        params["onlyCurrents"] = "true"
-    if component_key is not None:
-        params["component"] = component_key
-    try:
-        data = json.loads(endpoint.get("ce/activity", params=params).text)
-        return [Task(endpoint=endpoint, task_id=t["id"], data=t) for t in data["tasks"]]
-    except exceptions.SonarException:
-        return []
-
-
 def search_all_last(endpoint: Platform) -> list[Task]:
     """Searches for last background task of all found components"""
-    return search(endpoint=endpoint, only_current=True)
+    return Task.search(endpoint=endpoint, only_current=True)
 
 
 def search_last(endpoint: Platform, component_key: str, **params) -> Optional[Task]:
     """Searches for last background task of a component"""
     branch = params.pop("branch", None)
-    bg_tasks = search(endpoint=endpoint, only_current=branch is None, component_key=component_key, **params)
+    bg_tasks = Task.search(endpoint=endpoint, only_current=branch is None, component_key=component_key, **params)
     if branch:
         bg_tasks = [t for t in bg_tasks if t.sq_json.get("branch", "") == branch]
     if len(bg_tasks) == 0:
@@ -483,4 +483,4 @@ def search_last(endpoint: Platform, component_key: str, **params) -> Optional[Ta
 
 def search_all(endpoint: Platform, component_key: str, **params) -> list[Task]:
     """Search all background tasks of a given component"""
-    return search(endpoint=endpoint, component_key=component_key, **params)
+    return Task.search(endpoint=endpoint, component_key=component_key, **params)

@@ -78,6 +78,17 @@ class UserToken(SqObject):
         """
         return f"token '{self.name}' of user '{self.login}'"
 
+    @classmethod
+    def search(cls, endpoint: Platform, login: str) -> list[UserToken]:
+        """Searches tokens of a given user
+
+        :param login: login of the user
+        :return: list of tokens
+        """
+        api, _, params, ret = Api(cls, op.SEARCH, endpoint).get_all(login=login)
+        data = json.loads(endpoint.get(api, params).text)
+        return [cls(endpoint=endpoint, login=data["login"], json_data=tk) for tk in data[ret]]
+
     def revoke(self) -> bool:
         """Revokes the token
         :return: Whether the revocation succeeded
@@ -121,14 +132,3 @@ class UserToken(SqObject):
         elif mode != "housekeeper":
             problems.append(Problem(get_rule(RuleId.TOKEN_NEVER_USED), self, str(self), age))
         return problems
-
-
-def search(endpoint: Platform, login: str) -> list[UserToken]:
-    """Searches tokens of a given user
-
-    :param login: login of the user
-    :return: list of tokens
-    """
-    api, _, params, ret = Api(UserToken, op.SEARCH, endpoint).get_all(login=login)
-    data = json.loads(endpoint.get(api, params).text)
-    return [UserToken(endpoint=endpoint, login=data["login"], json_data=tk) for tk in data[ret]]

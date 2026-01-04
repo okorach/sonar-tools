@@ -139,9 +139,9 @@ class Finding(SqObject):
         self.hash: Optional[str] = None  #: Hash (str)
         self.branch: Optional[str] = None  #: Branch (str)
         self.pull_request: Optional[str] = None  #: Pull request (str)
-        self._load(data, from_export)
+        self.reload(data, from_export)
 
-    def _load(self, data: ApiPayload, from_export: bool = False) -> None:
+    def reload(self, data: ApiPayload, from_export: bool = False) -> None:
         if data is not None:
             if from_export:
                 self._load_from_export(data)

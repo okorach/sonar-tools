@@ -250,7 +250,7 @@ class User(SqObject):
         :rtype: list[Token]
         """
         if self.__tokens is None or not kwargs.get(c.USE_CACHE, True):
-            self.__tokens = tokens.search(self.endpoint, self.login)
+            self.__tokens = tokens.UserToken.search(self.endpoint, self.login)
         return self.__tokens
 
     def update_login(self, new_login: str) -> User:

@@ -257,6 +257,11 @@ class Rule(SqObject):
         return created_rule
 
     @classmethod
+    def search(cls, endpoint: Platform, params: dict[str, str]) -> dict[str, Rule]:
+        """Searches rules with optional filters"""
+        return cls.get_paginated(endpoint=endpoint, params=params, threads=4)
+
+    @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> Rule:
         """Loads a rule object with a SonarQube API payload"""
         key = data["key"]
@@ -291,6 +296,11 @@ class Rule(SqObject):
         )
 
     @classmethod
+    def search(cls, endpoint: Platform, params: dict[str, str]) -> dict[str, Rule]:
+        """Searches rules with optional filters"""
+        return cls.get_paginated(endpoint=endpoint, params=params, threads=4)
+
+    @classmethod
     def get_list(cls, endpoint: Platform, use_cache: bool = True, **params) -> dict[str, Rule]:
         """Returns a list of rules corresponding to certain search filters"""
         if use_cache and not params and len(cls.CACHE.objects) > 1000:
@@ -310,7 +320,7 @@ class Rule(SqObject):
         futures = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="RulesList") as executor:
             for lang_key in lang_list:
-                futures += [executor.submit(search, endpoint, params | {"languages": lang_key, "include_external": inc}) for inc in incl_ext]
+                futures += [executor.submit(cls.search, endpoint, params | {"languages": lang_key, "include_external": inc}) for inc in incl_ext]
             for future in concurrent.futures.as_completed(futures):
                 try:
                     rule_list.update(future.result(timeout=30))
@@ -474,11 +484,6 @@ def get_facet(facet: str, endpoint: Platform) -> dict[str, str]:
     api, _, api_params, _ = Api(Rule, op.SEARCH, endpoint).get_all(ps=1, facets=facet)
     data = json.loads(endpoint.get(api, params=api_params).text)
     return {f["val"]: f["count"] for f in data["facets"][0]["values"]}
-
-
-def search(endpoint: Platform, params: dict[str, str]) -> dict[str, Rule]:
-    """Searches rules with optional filters"""
-    return Rule.get_paginated(endpoint=endpoint, params=params, threads=4)
 
 
 def search_keys(endpoint: Platform, **params) -> list[str]:

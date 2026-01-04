@@ -31,6 +31,7 @@ ObjectFilter = dict[str, str]
 ObjectJsonRepr = dict[str, Any]
 
 ApiParams = Union[dict[str, Any], list[tuple[str, Any]]]
+SearchParams = dict[str, Any]
 
 ApiPayload = dict[str, Any]
 
