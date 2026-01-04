@@ -52,6 +52,23 @@ class CustomMeasure(SqObject):
         self.value = value
         self.description = description
 
+    @classmethod
+    def search(cls, endpoint: Platform, project_key: str) -> list[CustomMeasure]:
+        """Searches custom measures of a project"""
+        data = json.loads(endpoint.get(cls.API_ROOT + "search", params={"projectKey": project_key, "ps": 500}).text)
+        # nbr_measures = data['total'] if > 500, we're screwed...
+        return [
+            cls(
+                uuid=m["id"],
+                key=m["metric"]["key"],
+                project_key=m["projectKey"],
+                value=m["value"],
+                description=m["description"],
+                endpoint=endpoint,
+            )
+            for m in data["customMeasures"]
+        ]
+
     def create(self, project_key: str, metric_key: str, value: Any, description: Optional[str] = None) -> bool:
         return self.post(
             CustomMeasure.API_ROOT + "create",
@@ -75,26 +92,9 @@ class CustomMeasure(SqObject):
         return self.post(CustomMeasure.API_ROOT + "delete", {"id": self.uuid}).ok
 
 
-def search(endpoint: Platform, project_key: str) -> list[CustomMeasure]:
-    """Searches custom measures of a project"""
-    data = json.loads(endpoint.get(CustomMeasure.API_ROOT + "search", params={"projectKey": project_key, "ps": 500}).text)
-    # nbr_measures = data['total'] if > 500, we're screwed...
-    return [
-        CustomMeasure(
-            uuid=m["id"],
-            key=m["metric"]["key"],
-            project_key=m["projectKey"],
-            value=m["value"],
-            description=m["description"],
-            endpoint=endpoint,
-        )
-        for m in data["customMeasures"]
-    ]
-
-
 def update(project_key: str, metric_key: str, value: Any, description: Optional[str] = None, endpoint: Optional[Platform] = None) -> None:
     """Update custom measure of a project"""
-    c_meas = next(m for m in search(endpoint, project_key) if m.key == metric_key)
+    c_meas = next(m for m in CustomMeasure.search(endpoint, project_key) if m.key == metric_key)
     c_meas.update(value, description)
 
 

@@ -129,7 +129,7 @@ def string_to_date(string: Optional[str]) -> Union[datetime.datetime, datetime.d
             return None
 
 
-def date_to_string(date: Optional[datetime.datetime], with_time: bool = True) -> str:
+def date_to_string(date: Optional[datetime.datetime], with_time: bool = True) -> Union[str, datetime.datetime]:
     """Converts a date to a string"""
     if not date:
         return ""

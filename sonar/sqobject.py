@@ -133,40 +133,6 @@ class SqObject(object):
         return obj.set_permissions([{"user": user or endpoint.user(), "permissions": ["admin", "user"]}])
 
     @classmethod
-    def search_objects(cls, endpoint: Platform, params: ApiParams, threads: int = 8, api_version: int = 1) -> dict[str, SqObject]:
-        """Runs a multi-threaded object search for searchable Sonar Objects"""
-        api = cls.api_for(op.SEARCH, endpoint)
-        returned_field = cls.SEARCH_RETURN_FIELD
-        new_params: dict[str, Any] = (params or {}).copy()
-        p_field = "pageIndex" if api_version == 2 else "p"
-        ps_field = "pageSize" if api_version == 2 else "ps"
-        if ps_field not in new_params:
-            new_params[ps_field] = 500
-
-        objects_list: dict[str, Any] = {}
-        cname = cls.__name__.lower()
-        data = json.loads(endpoint.get(api, {**new_params, p_field: 1}).text)
-        nb_pages = sutil.nbr_pages(data)
-        nb_objects = max(len(data[returned_field]), sutil.nbr_total_elements(data))
-        msg = "Searching %d %ss, %d pages of %d elements, %d pages in parallel..."
-        log.info(msg, nb_objects, cname, nb_pages, len(data[returned_field]), threads)
-        if sutil.nbr_total_elements(data) > 0 and len(data[returned_field]) == 0:
-            log.fatal(msg := f"Index on {cname} is corrupted, please reindex before using API")
-            raise exceptions.SonarException(msg, errcodes.SONAR_INTERNAL_ERROR)
-
-        objects_list |= _load(endpoint, cls, data[returned_field])
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f"{cname}Search") as executor:
-            futures = [executor.submit(_get, endpoint, api, {**new_params, p_field: page}) for page in range(2, nb_pages + 1)]
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    data = future.result(timeout=60)
-                    objects_list |= _load(endpoint, cls, data[returned_field])
-                except Exception as e:
-                    log.error(f"Error {e} while searching {cname}.")
-        return objects_list
-
-    @classmethod
     def get_paginated(cls, endpoint: Platform, params: Optional[ApiParams] = None, threads: int = 8) -> dict[str, SqObject]:
         """Returns all pages of a paginated API"""
         cname = cls.__name__.lower()
