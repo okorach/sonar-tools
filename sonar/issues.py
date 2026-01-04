@@ -178,12 +178,12 @@ class Issue(findings.Finding):
                 f"{nbr_issues} issues returned by {api}, this is more than the max {cls.MAX_SEARCH} possible",
             )
 
-        issue_list = __get_issue_list(endpoint, data, filters, return_field=ret)
+        issue_list = _get_issue_list(endpoint, data, filters, return_field=ret)
         if nbr_pages == 1:
             return issue_list
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="IssueSearch") as executor:
-            futures = [executor.submit(__search_page, endpoint, filters, page) for page in range(2, nbr_pages + 1)]
+            futures = [executor.submit(_search_page, endpoint, filters, page) for page in range(2, nbr_pages + 1)]
             for future in concurrent.futures.as_completed(futures):
                 try:
                     issue_list.update(future.result(timeout=30))
@@ -310,7 +310,9 @@ class Issue(findings.Finding):
         return issue_list
 
     @classmethod
-    def search_by_date(cls, endpoint: Platform, params: ApiParams, date_start: Optional[date] = None, date_stop: Optional[date] = None) -> dict[str, Issue]:
+    def search_by_date(
+        cls, endpoint: Platform, params: ApiParams, date_start: Optional[date] = None, date_stop: Optional[date] = None
+    ) -> dict[str, Issue]:
         """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
         new_params = pre_search_filters(endpoint, params)
         if date_start is None:
@@ -833,7 +835,7 @@ def search_all(endpoint: Platform, params: ApiParams = None) -> dict[str, Issue]
     return issue_list
 
 
-def __get_issue_list(endpoint: Platform, data: ApiPayload, params: ApiParams, return_field: str = "issues") -> dict[str, Issue]:
+def _get_issue_list(endpoint: Platform, data: ApiPayload, params: ApiParams, return_field: str = "issues") -> dict[str, Issue]:
     """Returns a list of issues from the API payload"""
     br, pr = params.get("branch", None), params.get("pullRequest", None)
     issues = data.get(return_field, data.get("issues", []))
@@ -842,14 +844,14 @@ def __get_issue_list(endpoint: Platform, data: ApiPayload, params: ApiParams, re
     return {i["key"]: get_object(endpoint=endpoint, key=i["key"], data=i) for i in issues}
 
 
-def __search_page(endpoint: Platform, params: ApiParams, page: int) -> dict[str, Issue]:
+def _search_page(endpoint: Platform, params: ApiParams, page: int) -> dict[str, Issue]:
     """Searches a page of issues"""
     page_params = params.copy()
     page_params["p"] = page
     log.debug("Issue search params = %s", str(page_params))
     api, _, api_params, ret = Api(Issue, op.SEARCH, endpoint).get_all(**page_params)
     data = json.loads(endpoint.get(api, params=api_params).text)
-    issue_list = __get_issue_list(endpoint, data, params=page_params, return_field=ret)
+    issue_list = _get_issue_list(endpoint, data, params=page_params, return_field=ret)
     log.debug("Added %d issues in search page %d", len(issue_list), page)
     return issue_list
 
