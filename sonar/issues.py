@@ -279,6 +279,7 @@ class Issue(findings.Finding):
             project = project.key
         log.debug("Searching issues by project '%s' and directory '%s' from %s", project, directory, search_params)
         new_params = pre_search_filters(endpoint, search_params) | {component_search_field(endpoint): project, "directories": directory}
+        issue_list: dict[str, Issue] = {}
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
