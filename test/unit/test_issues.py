@@ -39,7 +39,7 @@ def test_issue() -> None:
     """Test issues"""
     issue_key = tconf.ISSUE_FP
     issue_key_accepted = tconf.ISSUE_ACCEPTED
-    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
+    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1)
 
     issue = issues_d[issue_key]
     assert not issue.is_security_issue()
@@ -65,7 +65,7 @@ def test_issue() -> None:
 
 def test_add_comments() -> None:
     """Test issue comments manipulations"""
-    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1, params={"statuses": "OPEN"})
+    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
     issue = list(issues_d.values())[0]
     comment = f"NOW is {str(datetime.now())}"
     assert issue.add_comment(comment)
@@ -78,7 +78,7 @@ def test_add_comments() -> None:
 
 def test_set_severity() -> None:
     """Test issue severity"""
-    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1, params={"statuses": "OPEN"})
+    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
     issue = list(issues_d.values())[0]
     is_mqr = tutil.SQ.is_mqr_mode()
     old_sev = issue.severity
@@ -123,7 +123,7 @@ def test_set_severity() -> None:
 
 def test_add_remove_tag() -> None:
     """test_add_remove_tag"""
-    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1, params={"statuses": "OPEN"})
+    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
     issue = list(issues_d.values())[0]
     tag = "test-tag"
     issue.remove_tag(tag)
@@ -135,7 +135,7 @@ def test_add_remove_tag() -> None:
 
 def test_set_type() -> None:
     """test_set_type"""
-    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1, params={"statuses": "OPEN"})
+    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
     issue = list(issues_d.values())[0]
     old_type = issue.type
     new_type = c.VULN if old_type == c.BUG else c.BUG
@@ -153,7 +153,7 @@ def test_set_type() -> None:
 
 def test_assign() -> None:
     """test_assign"""
-    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1, params={"statuses": "OPEN"})
+    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
     issue = list(issues_d.values())[0]
     old_assignee = issue.assignee
     new_assignee = "olivier" if old_assignee is None or old_assignee != "olivier" else "michal"
@@ -165,7 +165,7 @@ def test_assign() -> None:
 
 def test_changelog() -> None:
     """Test changelog"""
-    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
+    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1)
     issue_key = tconf.ISSUE_FP
     assert issue_key in issues_d
     issue = issues_d[issue_key]
@@ -202,7 +202,7 @@ def test_changelog() -> None:
 def test_multiple_changelogs():
     """test_multiple_changelogs"""
     issue_key = tconf.ISSUE_FP
-    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
+    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1)
     assert issue_key in issues_d
     issue = issues_d[issue_key]
     state_list = ("ACCEPT", "CONFIRM", "UNCONFIRM", "FP", "REOPEN", "SEVERITY", "ASSIGN", "UNASSIGN", "SEVERITY")
@@ -230,7 +230,7 @@ def test_multiple_changelogs():
 
 def test_request_error() -> None:
     """test_request_error"""
-    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1)
+    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1)
     issue = list(issues_d.values())[0]
     url = tutil.SQ.local_url
     tutil.SQ.local_url = "http://localhost:3337"
@@ -243,7 +243,7 @@ def test_request_error() -> None:
 
 def test_transitions() -> None:
     """test_transitions"""
-    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project_key=tutil.PROJECT_1, params={"statuses": "OPEN"})
+    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
     issue = list(issues_d.values())[0]
 
     assert issue.confirm()
@@ -289,6 +289,8 @@ def test_get_facets() -> None:
     """test_get_facets"""
     facets = issues._get_facets(tutil.SQ, project_key=tutil.LIVE_PROJECT)
     assert len(facets["directories"]) > 1
+    facets = issues._get_facets(tutil.SQ, facets="files", project_key=tutil.LIVE_PROJECT)
+    assert len(facets["files"]) > 1
 
 
 def test_search_by_small() -> None:
