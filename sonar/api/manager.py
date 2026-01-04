@@ -44,7 +44,7 @@ class ApiOperation(Enum):
     UPDATE = "UPDATE"
     DELETE = "DELETE"
     SEARCH = "SEARCH"
-    GET = "GET"
+
     RENAME = "RENAME"
     RECOMPUTE = "RECOMPUTE"
     LIST_MEMBERS = "LIST_MEMBERS"
