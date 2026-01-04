@@ -288,19 +288,30 @@ def test_search_first() -> None:
 def test_get_facets() -> None:
     """test_get_facets"""
     facets = issues._get_facets(tutil.SQ, project_key=tutil.LIVE_PROJECT)
-    assert len(facets["directories"]) > 1
-    facets = issues._get_facets(tutil.SQ, facets="files", project_key=tutil.LIVE_PROJECT)
-    assert len(facets["files"]) > 1
+    assert len(facets) > 1
+    assert not any(f.endswith(".py") for f in facets)
+    facets = issues._get_facets(tutil.SQ, facet="files", project_key=tutil.LIVE_PROJECT)
+    assert len(facets) > 1
+    assert any(f.endswith(".py") for f in facets)
 
 
 def test_search_by_small() -> None:
     """Test search_by on small project (less than 10000 issues)"""
     list1 = issues.Issue.search_by_project(tutil.SQ, tutil.LIVE_PROJECT)
     params = {"components": tutil.LIVE_PROJECT, "project": tutil.LIVE_PROJECT}
-    assert list1 == issues.Issue.search_by_type(tutil.SQ, params)
-    assert list1 == issues.Issue.search_by_severity(tutil.SQ, params)
-    assert list1 == issues.Issue.search_by_date(tutil.SQ, params)
-    assert list1 == issues.Issue.search_by_directory(tutil.SQ, params)
+
+    type_list = idefs.STD_TYPES if tutil.SQ.version() < c.MQR_INTRO_VERSION else idefs.MQR_QUALITIES
+    assert len(list1) == sum(len(issues.Issue.search_by_type(tutil.SQ, issue_type=i_type, **params)) for i_type in type_list)
+
+    sev_list = idefs.STD_SEVERITIES if tutil.SQ.version() < c.MQR_INTRO_VERSION else idefs.MQR_SEVERITIES
+    assert len(list1) == sum(len(issues.Issue.search_by_severity(tutil.SQ, severity=i_severity, **params)) for i_severity in sev_list)
+    assert len(list1) == len(issues.Issue.search_by_date(tutil.SQ, date_start=datetime(2000, 1, 1), date_stop=datetime(2030, 1, 1), **params))
+
+    params.pop("project")
+    params.pop("components")
+    dirs = ("cli", "conf", "migration", "sonar")
+    assert len(list1) == sum([len(issues.Issue.search_by_directory(tutil.SQ, project=tutil.LIVE_PROJECT, directory=dir, **params)) for dir in dirs])
+    assert len(list1) > len(issues.Issue.search_by_file(tutil.SQ, project=tutil.LIVE_PROJECT, file="sonar/issues.py", **params))
 
 
 def test_changelog_after() -> None:

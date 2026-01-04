@@ -151,23 +151,23 @@ class Issue(findings.Finding):
         )
 
     @staticmethod
-    def __get_issue_list(endpoint: Platform, dataset: ApiPayload, params: ApiParams) -> dict[str, Issue]:
+    def __get_issue_list(endpoint: Platform, dataset: ApiPayload, **search_params: Any) -> dict[str, Issue]:
         """Returns a list of issues from the API payload"""
-        br, pr = params.get("branch"), params.get("pullRequest")
-        for i in dataset:
-            i["branch"], i["pullRequest"] = br, pr
-        return {i["key"]: get_object(endpoint=endpoint, key=i["key"], data=i) for i in dataset}
+        br, pr = search_params.get("branch"), search_params.get("pullRequest")
+        for issue_data in dataset:
+            issue_data["branch"], issue_data["pullRequest"] = br, pr
+        return {issue_data["key"]: get_object(endpoint=endpoint, key=issue_data["key"], data=issue_data) for issue_data in dataset}
 
     @staticmethod
-    def search_one_page(endpoint: Platform, search_params: ApiParams) -> dict[str, Issue]:
+    def search_one_page(endpoint: Platform, **search_params: Any) -> dict[str, Issue]:
         """Search one page of issues"""
-        filters = pre_search_filters(endpoint=endpoint, params=search_params)
-        api, _, api_params, ret = Api(Issue, op.SEARCH, endpoint).get_all(**filters)
+        search_params = pre_search_filters(endpoint=endpoint, params=search_params)
+        api, _, api_params, ret = Api(Issue, op.SEARCH, endpoint).get_all(**search_params)
         dataset = json.loads(endpoint.get(api, params=api_params).text)
-        return Issue.__get_issue_list(endpoint, dataset[ret], filters)
+        return Issue.__get_issue_list(endpoint, dataset[ret], **search_params)
 
     @classmethod
-    def search_unsafe(cls, endpoint: Platform, threads: int = 8, **params: Any) -> dict[str, Issue]:
+    def search_unsafe(cls, endpoint: Platform, threads: int = 8, **search_params: Any) -> dict[str, Issue]:
         """Multi-threaded search of issues
 
         :param params: Search criteria to narrow down the search or control ordering
@@ -175,11 +175,11 @@ class Issue(findings.Finding):
         :return: Dictionary of issues found indexed by issue key
         :raises: TooManyIssuesError if more than 10'000 issues found
         """
-        log.debug("Searching issues with %s", params)
-        filters = {"ps": cls.MAX_PAGE_SIZE} | pre_search_filters(endpoint=endpoint, params=params)
-        log.debug("Filtered search params = %s", filters)
+        log.debug("Searching issues with %s", search_params)
+        new_params = {"ps": cls.MAX_PAGE_SIZE} | pre_search_filters(endpoint=endpoint, params=search_params)
+        log.debug("Filtered search params = %s", new_params)
 
-        api, _, api_params, ret = Api(cls, op.SEARCH, endpoint).get_all(**filters)
+        api, _, api_params, ret = Api(cls, op.SEARCH, endpoint).get_all(**new_params)
         # Get first page
         dataset = json.loads(endpoint.get(api, params=api_params).text)
         nbr_issues = sutil.nbr_total_elements(dataset)
@@ -190,13 +190,13 @@ class Issue(findings.Finding):
             msg = f"{nbr_issues} issues returned by {api}, this is more than the max {cls.MAX_SEARCH} possible"
             raise TooManyIssuesError(nbr_issues, msg)
 
-        issue_list = Issue.__get_issue_list(endpoint, dataset[ret], filters)
+        issue_list = Issue.__get_issue_list(endpoint, dataset[ret], **new_params)
         if nbr_pages == 1:
             return issue_list
 
         # Get remaining pages
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="IssueSearch") as executor:
-            futures = [executor.submit(Issue.search_one_page, endpoint, filters | {"p": page}) for page in range(2, nbr_pages + 1)]
+            futures = [executor.submit(Issue.search_one_page, endpoint, **(new_params | {"p": page})) for page in range(2, nbr_pages + 1)]
             for future in concurrent.futures.as_completed(futures):
                 try:
                     issue_list.update(future.result(timeout=30))
@@ -230,7 +230,7 @@ class Issue(findings.Finding):
         """Search issues by project"""
         if isinstance(project, Project):
             project = project.key
-        log.debug("Searching issues by project %s from %s", project, search_params)
+        log.debug("Searching issues by project '%s' from %s", project, search_params)
         new_params = pre_search_filters(endpoint, search_params) | {"project": project}
         if endpoint.edition() in (c.EE, c.DCE) and search_findings:
             log.debug("Using export_findings() to speed up issue export")
@@ -243,7 +243,7 @@ class Issue(findings.Finding):
                 date_start = get_oldest_issue(endpoint, params=new_params)
                 date_stop = get_newest_issue(endpoint, params=new_params)
                 issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_stop, **new_params)
-        log.debug("Searching issues by project %s: %d issues found", project, len(issue_list))
+        log.debug("Searching issues by project '%s': %d issues found", project, len(issue_list))
         return issue_list
 
     @classmethod
@@ -251,16 +251,15 @@ class Issue(findings.Finding):
         """Searches issues splitting by directory to avoid exceeding the 10K limit"""
         if isinstance(project, Project):
             project = project.key
-        facets = _get_facets(endpoint, project, facets=facet, **search_params)
         issue_list: dict[str, Issue] = {}
-        for f in [elem["val"] for elem in facets[facet]]:
+        for f in _get_facets(endpoint, project, facet=facet, **search_params):
             issue_list |= cls.search_unsafe(endpoint, components=f, **search_params)
         return issue_list
 
     @classmethod
     def search_by_type(cls, endpoint: Platform, issue_type: str, **search_params: Any) -> dict[str, Issue]:
         """Searches issues splitting by type to avoid exceeding the 10K limit"""
-        log.debug("Searching issues by issue type %s from %s", issue_type, search_params)
+        log.debug("Searching issues by issue type '%s' from %s", issue_type, search_params)
         new_params = pre_search_filters(endpoint, search_params) | {type_search_field(endpoint): [issue_type]}
         issue_list = {}
         try:
@@ -268,43 +267,47 @@ class Issue(findings.Finding):
         except TooManyIssuesError as e:
             log.info(e.message)
             project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            issue_list = cls.search_by_facet(endpoint, project, "directories", **new_params)
-        log.debug("Searching by issue type %s: %d issues found", issue_type, len(issue_list))
+            for f in _get_facets(endpoint, project, facet="directories", **search_params):
+                issue_list |= cls.search_by_directory(endpoint, project=project, directory=f, **new_params)
+        log.debug("Searching by issue type '%s': %d issues found", issue_type, len(issue_list))
         return issue_list
 
     @classmethod
-    def search_by_directory(cls, endpoint: Platform, directory: str, **search_params: Any) -> dict[str, Issue]:
+    def search_by_directory(cls, endpoint: Platform, project: Union[str, Project], directory: str, **search_params: Any) -> dict[str, Issue]:
         """Searches issues splitting by directory to avoid exceeding the 10K limit"""
-        log.debug("Searching issues by directory %s from %s", directory, search_params)
-        new_params = pre_search_filters(endpoint, search_params) | {"directory": directory}
+        if isinstance(project, Project):
+            project = project.key
+        log.debug("Searching issues by project '%s' and directory '%s' from %s", project, directory, search_params)
+        new_params = pre_search_filters(endpoint, search_params) | {component_search_field(endpoint): project, "directories": directory}
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
             log.info(e.message)
-            project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            issue_list = cls.search_by_facet(endpoint, project, "files", **new_params)
-        log.debug("Searching issues by directory %s: %d issues found", directory, len(issue_list))
+            for f in _get_facets(endpoint, project, facet="files", **new_params):
+                issue_list |= cls.search_by_file(endpoint, project=project, file=f, **new_params)
+        log.debug("Searching issues by project '%s' and directory '%s': %d issues found", project, directory, len(issue_list))
         return issue_list
 
     @classmethod
-    def search_by_file(cls, endpoint: Platform, file: str, **search_params: Any) -> dict[str, Issue]:
+    def search_by_file(cls, endpoint: Platform, project: Union[str, Project], file: str, **search_params: Any) -> dict[str, Issue]:
         """Searches issues splitting by directory to avoid exceeding the 10K limit"""
-        log.debug("Searching issues by file %s from %s", file, search_params)
-        new_params = pre_search_filters(endpoint, search_params) | {"files": file}
-        proj_key = new_params.get("project", new_params.get(component_search_field(endpoint), None))
+        if isinstance(project, Project):
+            project = project.key
+        log.debug("Searching issues by file '%s' from %s", file, search_params)
+        new_params = pre_search_filters(endpoint, search_params) | {component_search_field(endpoint): project, "files": file}
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError:
-            log.error("Too many issues (>%d) in file %s, aborting search issue for this file", cls.MAX_SEARCH, f'{proj_key}:{d["val"]}')
+            log.error("Too many issues (>%d) in file '%s', aborting search issue for this file", cls.MAX_SEARCH, f"{project}:{file}")
         except exceptions.SonarException as e:
-            log.error("Error while searching issues in file %s: %s", f'{proj_key}:{d["val"]}', str(e))
-        log.debug("Searching issues by file %s: %d issues found", file, len(issue_list))
+            log.error("Error while searching issues in file '%s': %s", f"{project}:{file}", str(e))
+        log.debug("Searching issues by file '%s': %d issues found", file, len(issue_list))
         return issue_list
 
     @classmethod
     def search_by_severity(cls, endpoint: Platform, severity: str, **search_params: Any) -> dict[str, Issue]:
         """Searches issues splitting by severity to avoid exceeding the 10K limit"""
-        log.debug("Searching issues by severity %s from %s", severity, search_params)
+        log.debug("Searching issues by severity '%s' from %s", severity, search_params)
         issue_list = {}
         new_params = pre_search_filters(endpoint, search_params)
         try:
@@ -314,7 +317,7 @@ class Issue(findings.Finding):
             types = idefs.MQR_QUALITIES if endpoint.is_mqr_mode() else idefs.STD_TYPES
             for issue_type in types:
                 issue_list |= cls.search_by_type(endpoint, issue_type=issue_type, **new_params)
-        log.debug("Searching by severity %s: %d issues found", severity, len(issue_list))
+        log.debug("Searching by severity '%s': %d issues found", severity, len(issue_list))
         return issue_list
 
     @staticmethod
@@ -365,10 +368,8 @@ class Issue(findings.Finding):
         :return: The first issue of a search, for instance the oldest, if params = s="CREATION_DATE", asc=asc_sort
         :rtype: Issue or None if not issue found
         """
-        issue_list = Issue.search_one_page(endpoint, search_params | {"ps": 1})
-        if len(issue_list) == 0:
-            return None
-        return next(iter(issue_list.values()))
+        issue_list = Issue.search_one_page(endpoint, **(search_params | {"ps": 1}))
+        return None if len(issue_list) == 0 else next(iter(issue_list.values()))
 
     def api_params(self, operation: op = op.GET) -> ApiParams:
         """Returns the base API params to be used of an issue"""
@@ -818,14 +819,17 @@ def status_search_field(endpoint: Platform) -> str:
     return _OLD_SEARCH_STATUS_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_STATUS_FIELD
 
 
-def _get_facets(endpoint: Platform, project_key: str, facets: str = "directories", **search_params) -> dict[str, str]:
+def _get_facets(endpoint: Platform, project_key: str, facet: str = "directories", **search_params) -> list[str]:
     """Returns the facets of a search"""
     search_params = search_params.copy()
-    search_params.update({component_search_field(endpoint): project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
+    search_params.update({component_search_field(endpoint): project_key, "facets": facet, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
+    log.debug("Getting facets for %s with params %s", facet, search_params)
     search_params = pre_search_filters(endpoint=endpoint, params=search_params)
+    log.debug("Filtered search params = %s", search_params)
     api, _, search_params, _ = Api(Issue, op.SEARCH, endpoint).get_all(**search_params)
     data = json.loads(endpoint.get(api, params=search_params).text)
-    return {f["property"]: f["values"] for f in data["facets"] if f["property"] in util.csv_to_list(facets)}
+    facets_d = {f["property"]: f["values"] for f in data["facets"] if f["property"] in util.csv_to_list(facet)}
+    return [elem["val"] for elem in facets_d[facet]]
 
 
 def __get_one_issue_date(endpoint: Platform, asc_sort: str = "false", **search_params: Any) -> Optional[datetime]:
