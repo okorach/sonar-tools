@@ -97,7 +97,7 @@ class Branch(components.Component):
             project = proj.Project.get_object(endpoint, project)
         if o := Branch.CACHE.get(project.key, branch_name, project.base_url()):
             return o
-        api, _, params, _ = Api(Branch, op.LIST, project.endpoint).get_all(project=project.key)
+        api, _, params, _ = Api(Branch, op.SEARCH, project.endpoint).get_all(project=project.key)
         data = json.loads(project.get(api, params=params).text)
         br = next((b for b in data.get("branches", []) if b["name"] == branch_name), None)
         if not br:
@@ -136,7 +136,7 @@ class Branch(components.Component):
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 
         log.debug("Reading all branches of %s", str(project))
-        api, _, params, _ = Api(cls, op.LIST, project.endpoint).get_all(project=project.key)
+        api, _, params, _ = Api(cls, op.SEARCH, project.endpoint).get_all(project=project.key)
         data = json.loads(project.endpoint.get(api, params=params).text)
         return {branch["name"]: cls.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
 
@@ -164,7 +164,7 @@ class Branch(components.Component):
         :return: itself
         :rtype: Branch
         """
-        api, _, params, _ = Api(self, op.LIST).get_all(**self.api_params(op.LIST))
+        api, _, params, _ = Api(self, op.SEARCH).get_all(**self.api_params(op.SEARCH))
         data = json.loads(self.get(api, params=params).text)
         br_data = next((br for br in data.get("branches", []) if br["name"] == self.name), None)
         if not br_data:
@@ -217,7 +217,7 @@ class Branch(components.Component):
         if self._new_code is None and self.endpoint.is_sonarcloud():
             self._new_code = settings.new_code_to_string({"inherited": True})
         elif self._new_code is None:
-            api, _, params, _ = Api(self, op.LIST_NEW_CODE_PERIODS).get_all(**self.api_params(op.LIST))
+            api, _, params, _ = Api(self, op.LIST_NEW_CODE_PERIODS).get_all(**self.api_params(op.SEARCH))
             data = json.loads(self.get(api, params=params).text)
             for b in data["newCodePeriods"]:
                 new_code = settings.new_code_to_string(b)
@@ -416,7 +416,7 @@ class Branch(components.Component):
         """Return params used to search/create/delete for that object"""
         ops = {
             op.GET: {"project": self.concerned_object.key, "branch": self.name},
-            op.LIST: {"project": self.concerned_object.key},
+            op.SEARCH: {"project": self.concerned_object.key},
             op.DELETE: {"project": self.concerned_object.key, "branch": self.name},
         }
         return ops[operation] if operation and operation in ops else ops[op.GET]

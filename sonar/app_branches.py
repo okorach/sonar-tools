@@ -261,7 +261,7 @@ def list_from(app: Application, data: ApiPayload) -> dict[str, ApplicationBranch
     if not data or "branches" not in data:
         return {}
     branch_list = {}
-    api_def = Api(ApplicationBranch, op.LIST, app.endpoint)
+    api_def = Api(ApplicationBranch, op.SEARCH, app.endpoint)
     for br in data["branches"]:
         api, _, params, ret = api_def.get_all(application=app.key, branch=br["name"])
         branch_data = json.loads(app.endpoint.get(api, params=params).text)[ret]

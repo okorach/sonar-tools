@@ -170,7 +170,7 @@ class SqObject(object):
     def get_paginated(cls, endpoint: Platform, params: Optional[ApiParams] = None, threads: int = 8) -> dict[str, SqObject]:
         """Returns all pages of a paginated API"""
         cname = cls.__name__.lower()
-        api_def = Api(cls, op.LIST, endpoint)
+        api_def = Api(cls, op.SEARCH, endpoint)
         page_field = api_def.page_field()
         max_ps = api_def.max_page_size()
         new_params = {"ps": max_ps, "pageSize": max_ps} | (params or {})

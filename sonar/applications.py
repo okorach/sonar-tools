@@ -471,7 +471,7 @@ def count(endpoint: Platform) -> int:
     :return: Count of applications
     """
     check_supported(endpoint)
-    api, _, params, _ = Api(Application, op.LIST, endpoint).get_all(ps=1, filter="qualifier = APP")
+    api, _, params, _ = Api(Application, op.SEARCH, endpoint).get_all(ps=1, filter="qualifier = APP")
     return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=params).text))
 
 

@@ -78,7 +78,7 @@ class DevopsPlatform(SqObject):
         """Reads a devops platform object in Sonar instance"""
         if o := DevopsPlatform.CACHE.get(key, endpoint.local_url):
             return o
-        api, _, _, _ = Api(DevopsPlatform, op.LIST, endpoint).get_all()
+        api, _, _, _ = Api(DevopsPlatform, op.SEARCH, endpoint).get_all()
         data = json.loads(endpoint.get(api).text)
         for plt_type, platforms in data.items():
             for p in platforms:
@@ -140,7 +140,7 @@ class DevopsPlatform(SqObject):
         """
         if endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Can't get list of DevOps platforms on SonarQube Cloud")
-        api, _, _, _ = Api(cls, op.LIST, endpoint).get_all()
+        api, _, _, _ = Api(cls, op.SEARCH, endpoint).get_all()
         data = json.loads(endpoint.get(api).text)
         for alm_type in DEVOPS_PLATFORM_TYPES:
             for alm_data in data.get(alm_type, {}):
@@ -156,8 +156,8 @@ class DevopsPlatform(SqObject):
 
     def api_params(self, operation: Optional[op] = None) -> ApiParams:
         """Returns the API parameters for the operation"""
-        ops = {op.LIST: {"key": self.key}}
-        return ops[operation] if operation and operation in ops else ops[op.LIST]
+        ops = {op.SEARCH: {"key": self.key}}
+        return ops[operation] if operation and operation in ops else ops[op.SEARCH]
 
     def delete(self) -> bool:
         """Deletes a DevOps platform"""
@@ -168,7 +168,7 @@ class DevopsPlatform(SqObject):
 
         :return: Whether the operation succeeded
         """
-        api, _, _, _ = Api(self, op.LIST).get_all()
+        api, _, _, _ = Api(self, op.SEARCH).get_all()
         data = json.loads(self.get(api).text)
         for alm_data in data.get(self.type, {}):
             if alm_data["key"] == self.key:

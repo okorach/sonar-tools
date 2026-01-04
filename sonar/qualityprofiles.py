@@ -133,7 +133,7 @@ class QualityProfile(SqObject):
         o = QualityProfile.CACHE.get(name, language, endpoint.local_url)
         if o:
             return o
-        api, _, _, _ = Api(cls, op.LIST, endpoint).get_all()
+        api, _, _, _ = Api(cls, op.SEARCH, endpoint).get_all()
         data = sutil.search_by_name(endpoint, name, api, QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language})
         return cls(key=data["key"], endpoint=endpoint, data=data)
 
@@ -507,7 +507,7 @@ class QualityProfile(SqObject):
     def api_params(self, operation: Optional[op] = None) -> ApiParams:
         operations = {
             op.GET: {"qualityProfile": self.name, "language": self.language},
-            op.LIST: {"q": self.name, "language": self.language},
+            op.SEARCH: {"q": self.name, "language": self.language},
             op.DELETE: {"qualityProfile": self.name, "language": self.language},
         }
         return operations[operation] if operation and operation in operations else operations[op.GET]

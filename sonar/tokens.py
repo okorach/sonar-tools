@@ -129,6 +129,6 @@ def search(endpoint: Platform, login: str) -> list[UserToken]:
     :param login: login of the user
     :return: list of tokens
     """
-    api, _, params, ret = Api(UserToken, op.LIST, endpoint).get_all(login=login)
+    api, _, params, ret = Api(UserToken, op.SEARCH, endpoint).get_all(login=login)
     data = json.loads(endpoint.get(api, params).text)
     return [UserToken(endpoint=endpoint, login=data["login"], json_data=tk) for tk in data[ret]]

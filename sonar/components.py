@@ -427,9 +427,9 @@ class Component(SqObject):
 
         ops = {
             op.GET: {"component": self.key},
-            op.LIST: {component_search_field(self.endpoint): self.key},
+            op.SEARCH: {component_search_field(self.endpoint): self.key},
         }
-        return ops[operation] if operation and operation in ops else ops[op.LIST]
+        return ops[operation] if operation and operation in ops else ops[op.SEARCH]
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""

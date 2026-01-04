@@ -52,7 +52,7 @@ def test_issue() -> None:
     assert not issue.is_wont_fix()
     assert issue.is_false_positive()
     assert issue.refresh()
-    assert issue.api_params(op.LIST) == {"issues": issue_key}
+    assert issue.api_params(op.SEARCH) == {"issues": issue_key}
     assert issue.api_params(op.SET_TAGS) == {"issue": issue_key}
     assert issue.api_params(op.GET_TAGS) == {"issues": issue_key}
 

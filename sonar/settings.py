@@ -439,7 +439,7 @@ def get_bulk(
     if settings_list is not None:
         params["keys"] = util.list_to_csv(settings_list)
 
-    api, _, api_params, _ = Api(Setting, op.LIST, endpoint).get_all(**params)
+    api, _, api_params, _ = Api(Setting, op.SEARCH, endpoint).get_all(**params)
     data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)
     settings_dict |= __get_settings(endpoint, data, component)
 

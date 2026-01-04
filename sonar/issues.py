@@ -152,7 +152,7 @@ class Issue(findings.Finding):
         """Returns the base API params to be used of an issue"""
         ops = {
             op.GET: {"issue": self.key},
-            op.LIST: {"issues": self.key},
+            op.SEARCH: {"issues": self.key},
             op.SET_TAGS: {"issue": self.key},
             op.GET_TAGS: {"issues": self.key},
         }

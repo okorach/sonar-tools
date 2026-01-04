@@ -565,7 +565,7 @@ class Project(Component):
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
-            api, _, _, ret = Api(self, op.LIST, self.endpoint).get_all(filter=_PROJECT_QUALIFIER)
+            api, _, _, ret = Api(self, op.SEARCH, self.endpoint).get_all(filter=_PROJECT_QUALIFIER)
             data = self.endpoint.get_paginated(api=api, return_field=ret, filter=_PROJECT_QUALIFIER)
             p_data = next((p for p in data[ret] if p["key"] == self.key), None)
             if p_data:
@@ -1339,7 +1339,7 @@ def count(endpoint: Platform, params: ApiParams = None) -> int:
     new_params.update({"ps": 1, "p": 1})
     if not endpoint.is_sonarcloud():
         new_params["filter"] = _PROJECT_QUALIFIER
-    api, _, api_params, _ = Api(Project, op.LIST, endpoint).get_all(**new_params)
+    api, _, api_params, _ = Api(Project, op.SEARCH, endpoint).get_all(**new_params)
     return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=api_params).text))
 
 

@@ -162,7 +162,7 @@ class Rule(SqObject):
         op.GET: "rules/show",
         op.UPDATE: "rules/update",
         op.DELETE: "rules/delete",
-        op.LIST: "rules/search",
+        op.SEARCH: "rules/search",
     }  # type: ignore
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload) -> None:

@@ -36,7 +36,7 @@
                     "application"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/components/search_projects",
                 "params": [
@@ -132,7 +132,7 @@
                     "branch"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/applications/show",
                 "params": [
@@ -155,7 +155,7 @@
                 ],
                 "return_field": "component"
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/components/search",
                 "params": [
@@ -191,7 +191,7 @@
     },
     "Issue": {
         "5.2.0": {
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/issues/search",
                 "params": [
@@ -357,7 +357,7 @@
                 "method": "DELETE",
                 "api": "v2/users-management/users/{id}"
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "v2/users-management/users",
                 "params": [
@@ -436,7 +436,7 @@
                     "login"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/users/search",
                 "params": [
@@ -504,7 +504,7 @@
                 "method": "DELETE",
                 "api": "v2/users-management/users/{id}"
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "v2/users-management/users",
                 "params": [
@@ -578,7 +578,7 @@
                 "method": "DELETE",
                 "api": "v2/authorizations/groups/{id}"
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "v2/authorizations/groups",
                 "params": [
@@ -656,7 +656,7 @@
                     "name"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/user_groups/search",
                 "params": [
@@ -715,7 +715,7 @@
             },
             "UPDATE": {},
             "DELETE": {},
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "metrics/search",
                 "params": [
@@ -747,7 +747,7 @@
                 ],
                 "return_field": "component"
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/measures/search",
                 "params": [
@@ -799,7 +799,7 @@
                     "name"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/qualitygates/list",
                 "return_field": "qualitygates"
@@ -829,7 +829,7 @@
     },
     "DevopsPlatform": {
         "5.2.0": {
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/alm_settings/list_definitions",
                 "return_field": ""
@@ -952,7 +952,7 @@
     },
     "Hotspot": {
         "5.2.0": {
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/hotspots/search",
                 "params": [
@@ -1021,7 +1021,7 @@
     },
     "Organization": {
         "10000.0.0": {
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/organizations/search",
                 "params": [
@@ -1036,7 +1036,7 @@
     },
     "PullRequest": {
         "5.2.0": {
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/project_pull_requests/list",
                 "params": [
@@ -1090,7 +1090,7 @@
                     "key"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/views/search",
                 "params": [
@@ -1127,7 +1127,7 @@
                     "login"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/user_tokens/search",
                 "params": [
@@ -1174,7 +1174,7 @@
                     "webhook"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/webhooks/list",
                 "params": [
@@ -1211,7 +1211,7 @@
                     "language"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/qualityprofiles/search",
                 "params": [
@@ -1370,7 +1370,7 @@
                 "page_field": "p",
                 "max_page_size": 500
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/rules/search",
                 "params": [
@@ -1449,7 +1449,7 @@
                     "project"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/settings/values",
                 "params": [
@@ -1504,7 +1504,7 @@
     },
     "Branch": {
         "5.2.0": {
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/project_branches/list",
                 "params": [
@@ -1580,7 +1580,7 @@
                     "project"
                 ]
             },
-            "LIST": {
+            "SEARCH": {
                 "method": "GET",
                 "api": "api/components/search_projects",
                 "params": [
