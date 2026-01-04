@@ -553,8 +553,9 @@ class Issue(findings.Finding):
         else:
             return self.__set_severity(impact=f"{software_quality}={severity}")
 
-    def get_tags(self, use_cache: bool = True) -> list[str]:
+    def get_tags(self, **kwargs: Any) -> list[str]:
         """Returns the tags of an issue"""
+        use_cache = kwargs.get(c.USE_CACHE, True)
         if self._tags is None:
             self._tags = self.sq_json.get("tags")
         if not use_cache or self._tags is None:
