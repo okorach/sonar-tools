@@ -158,11 +158,11 @@ class Issue(findings.Finding):
             i["branch"], i["pullRequest"] = br, pr
         return {i["key"]: get_object(endpoint=endpoint, key=i["key"], data=i) for i in dataset}
 
-    @classmethod
-    def search_one_page(cls, endpoint: Platform, search_params: ApiParams) -> dict[str, Issue]:
+    @staticmethod
+    def search_one_page(endpoint: Platform, search_params: ApiParams) -> dict[str, Issue]:
         """Search one page of issues"""
         filters = pre_search_filters(endpoint=endpoint, params=search_params)
-        api, _, api_params, ret = Api(cls, op.SEARCH, endpoint).get_all(**filters)
+        api, _, api_params, ret = Api(Issue, op.SEARCH, endpoint).get_all(**filters)
         dataset = json.loads(endpoint.get(api, params=api_params).text)
         return Issue.__get_issue_list(endpoint, dataset[ret], filters)
 
@@ -196,7 +196,7 @@ class Issue(findings.Finding):
 
         # Get remaining pages
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="IssueSearch") as executor:
-            futures = [executor.submit(Issue.search_one_page, cls, endpoint, filters | {"p": page}) for page in range(2, nbr_pages + 1)]
+            futures = [executor.submit(Issue.search_one_page, endpoint, filters | {"p": page}) for page in range(2, nbr_pages + 1)]
             for future in concurrent.futures.as_completed(futures):
                 try:
                     issue_list.update(future.result(timeout=30))
@@ -365,7 +365,7 @@ class Issue(findings.Finding):
         :return: The first issue of a search, for instance the oldest, if params = s="CREATION_DATE", asc=asc_sort
         :rtype: Issue or None if not issue found
         """
-        issue_list = cls.search_one_page(endpoint, search_params | {"ps": 1})
+        issue_list = Issue.search_one_page(endpoint, search_params | {"ps": 1})
         if len(issue_list) == 0:
             return None
         return next(iter(issue_list.values()))
