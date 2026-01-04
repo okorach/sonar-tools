@@ -11,7 +11,7 @@
                     "visibility"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/applications/show",
                 "params": [
@@ -105,7 +105,7 @@
                     "projectBranch"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/applications/show",
                 "params": [
@@ -145,7 +145,7 @@
     },
     "Component": {
         "5.2.0": {
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/components/show",
                 "params": [
@@ -243,7 +243,7 @@
                 "page_field": "p",
                 "max_page_size": 500
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/issues/search",
                 "params": [
@@ -337,7 +337,7 @@
                     "scmAccounts"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "v2/users-management/users/{id}",
                 "return_field": "user"
@@ -412,7 +412,7 @@
                 ],
                 "return_field": "user"
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/users/search",
                 "params": [
@@ -484,7 +484,7 @@
                     "scmAccounts"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "v2/users-management/users/{id}",
                 "return_field": "user"
@@ -560,7 +560,7 @@
                     "description"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "v2/authorizations/groups/{id}",
                 "return_field": ""
@@ -630,7 +630,7 @@
                     "description"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/user_groups/search",
                 "params": [
@@ -703,7 +703,7 @@
     "Metric": {
         "5.2.0": {
             "CREATE": {},
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/metrics/search",
                 "params": [
@@ -735,7 +735,7 @@
     },
     "Measure": {
         "6.2.0": {
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/measures/component",
                 "params": [
@@ -784,7 +784,7 @@
                     "name"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/qualitygates/show",
                 "params": [
@@ -982,7 +982,7 @@
                 "page_field": "p",
                 "max_page_size": 500
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/hotspots/show",
                 "params": [
@@ -1149,7 +1149,7 @@
                     "project"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/webhooks/list",
                 "params": [
@@ -1326,7 +1326,7 @@
                     "type"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/rules/show",
                 "params": [
@@ -1428,7 +1428,7 @@
                     "project"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/settings/values",
                 "params": [
@@ -1565,7 +1565,7 @@
                     "name"
                 ]
             },
-            "READ": {
+            "GET": {
                 "method": "GET",
                 "api": "api/components/show",
                 "params": [
