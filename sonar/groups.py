@@ -314,7 +314,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
 
     log.info("Exporting groups")
     g_list = []
-    for g_name, g_obj in get_list(endpoint=endpoint).items():
+    for g_name, g_obj in Group.get_list(endpoint=endpoint).items():
         if not export_settings.get("FULL_EXPORT", False) and g_obj.is_default():
             continue
         g_list.append({"name": g_name, "description": g_obj.description or ""})

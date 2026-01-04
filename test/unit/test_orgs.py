@@ -97,13 +97,13 @@ def test_get_list() -> None:
     """Test Org get_list"""
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Organizations not supported")
-    org_list = orgs.get_list(endpoint=tutil.SQ)
+    org_list = orgs.Organization.get_list(endpoint=tutil.SQ)
     assert len(org_list) >= 2
     assert MY_ORG in org_list
     org = org_list[MY_ORG]
     assert isinstance(org, orgs.Organization)
     assert org.key == MY_ORG
-    org_list = orgs.get_list(endpoint=tutil.SQ, key_list=[MY_ORG, "okorach-github"])
+    org_list = orgs.Organization.get_list(endpoint=tutil.SQ, key_list=[MY_ORG, "okorach-github"])
     assert len(org_list) == 2
     assert MY_ORG in org_list
     assert "okorach-github" in org_list

@@ -495,7 +495,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -
     write_q = kwargs.get("write_q", None)
     key_regexp = kwargs.get("key_list", ".+")
 
-    app_list = {k: v for k, v in get_list(endpoint).items() if not key_regexp or re.match(key_regexp, k)}
+    app_list = {k: v for k, v in Application.get_list(endpoint).items() if not key_regexp or re.match(key_regexp, k)}
     apps_settings = []
     for k, app in app_list.items():
         app_json = app.export(export_settings)

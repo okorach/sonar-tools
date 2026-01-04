@@ -171,7 +171,9 @@ def test_import() -> None:
 
     # Compare QP list
     json_name_list = sorted([qp["name"] for qp in qhelp.flatten(json_exp) if not qp.get("isBuiltIn", False)])
-    qp_name_list = sorted([f"{o.language}:{o.name}" for o in qualityprofiles.QualityProfile.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in])
+    qp_name_list = sorted(
+        [f"{o.language}:{o.name}" for o in qualityprofiles.QualityProfile.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in]
+    )
     logging.debug("Imported  list = %s", str(json_name_list))
     logging.debug("SonarQube list = %s", str(qp_name_list))
     assert json_name_list == qp_name_list

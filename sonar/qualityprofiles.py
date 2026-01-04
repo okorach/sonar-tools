@@ -268,7 +268,7 @@ class QualityProfile(SqObject):
         if r.ok:
             self.is_default = True
             # Turn off default for all other profiles except the current profile
-            for qp in get_list(self.endpoint).values():
+            for qp in QualityProfile.get_list(self.endpoint).values():
                 if qp.language == self.language and qp.key != self.key:
                     qp.is_default = False
         return r.ok

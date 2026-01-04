@@ -37,9 +37,9 @@ def test_get_list() -> None:
     """test_get_list"""
     if tutil.SQ.is_sonarcloud():
         with pytest.raises(exceptions.UnsupportedOperation):
-            devops.get_list(endpoint=tutil.SQ)
+            devops.DevopsPlatform.get_list(endpoint=tutil.SQ)
         return
-    plt_list = devops.get_list(endpoint=tutil.SQ)
+    plt_list = devops.DevopsPlatform.get_list(endpoint=tutil.SQ)
     assert len(plt_list) >= 3
     for k in GH_KEY, ADO_KEY, GL_KEY:
         assert k in plt_list

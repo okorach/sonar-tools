@@ -54,7 +54,7 @@ def test_more_than_50_groups(get_60_groups: Generator[list[groups.Group]]) -> No
     # Count groups first
     group_list = get_60_groups
     groups.Group.clear_cache()
-    new_group_list = groups.get_list(tutil.SQ)
+    new_group_list = groups.Group.get_list(tutil.SQ)
     assert len(new_group_list) > 60
     assert set(new_group_list.keys()) > {g.name for g in group_list}
 
