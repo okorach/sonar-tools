@@ -88,7 +88,7 @@ class PullRequest(components.Component):
         :return: The PullRequest object
         """
         if endpoint.edition() == c.CE:
-            raise exceptions.UnsupportedOperation("Pull requests not available in Community Edition")
+            raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
         if isinstance(project, str):
             project = proj.Project.get_object(endpoint, project)
         if o := cls.CACHE.get(project.key, pull_request_key, project.base_url()):
