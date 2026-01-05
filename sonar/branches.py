@@ -337,7 +337,7 @@ class Branch(components.Component):
         """
         if not filters:
             return self.concerned_object.get_findings(branch=self.name)
-        return self.get_issues(filters) | self.get_hotspots(filters)
+        return self.get_issues(filters) | self.get_hotspots(**filters)
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""

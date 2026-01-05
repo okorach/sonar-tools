@@ -289,11 +289,11 @@ class Application(aggr.Aggregation):
         new_filters = filters.copy() if filters else {}
         pattern = new_filters.pop("branch", None) if new_filters else None
         if not pattern:
-            return super().get_hotspots(new_filters)
+            return super().get_hotspots(**new_filters)
         matching_branches = [b for b in self.branches().values() if re.match(rf"^{pattern}$", b.name)]
         findings_list = {}
         for comp in matching_branches:
-            findings_list |= comp.get_hotspots(new_filters)
+            findings_list |= comp.get_hotspots(**new_filters)
         return findings_list
 
     def get_issues(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:

@@ -126,8 +126,10 @@ class Hotspot(findings.Finding):
         """Searches hotspots
 
         :param endpoint: Reference to the SonarQube platform
-        :return: Dict of found hotspots
+        :param search_params: Search filters to narrow down the search
+        :return: Dict of found hotspots indexed by hotspot key
         """
+
         # Backup original params to allow for severities, createdAfter, createdBefore, languages filters post search
         original_params = deepcopy(search_params)
 
@@ -150,7 +152,7 @@ class Hotspot(findings.Finding):
 
         :param endpoint: Reference to the SonarQube platform
         :param project: Project key or Project object
-        :param filters: Search filters to narrow down the search, defaults to None
+        :param search_params: Search filters to narrow down the search
         :return: Dict of found hotspots
         """
         if not isinstance(project, str):
@@ -168,6 +170,8 @@ class Hotspot(findings.Finding):
                 hotspot.sq_json[e_key] = e_val
                 if e_key == "branch":
                     hotspot.branch = e_val
+                else:
+                    hotspot.pull_request = e_val
         return hotspots_list
 
     def reload(self, data: ApiPayload, from_export: bool = False) -> None:
@@ -179,11 +183,8 @@ class Hotspot(findings.Finding):
         self.impacts = {idefs.QUALITY_SECURITY: self.severity}
 
     def refresh(self) -> Hotspot:
-        """Refreshes and reads hotspots details in SonarQube
-
-        :return: Whether there operation succeeded
-        """
-        api, _, params, _ = Api(self, Oper.GET).get_all(**self.api_params())
+        """Refreshes and reads hotspots details in SonarQube, returns self"""
+        api, _, params, _ = Api(self, Oper.GET).get_all(hotspots=self.key)
         d = json.loads(self.get(api, params=params).text)
         self.__details = d
         if self.file is None and "path" in d["component"]:
@@ -195,11 +196,6 @@ class Hotspot(findings.Finding):
             self.rule = d["rule"]["key"]
         self.assignee = d.get("assignee", None)
         return self
-
-    def api_params(self, operation: Oper = Oper.GET) -> ApiParams:
-        """Returns the base API params to be used of a hotspot"""
-        ops = {Oper.GET: {"hotspot": self.key}}
-        return ops[operation] if operation in ops else ops[Oper.GET]
 
     def url(self) -> str:
         """Returns the permalink URL to the hotspot in the SonarQube platform"""
@@ -223,7 +219,7 @@ class Hotspot(findings.Finding):
         :return: Whether the operation succeeded
         """
         try:
-            params = self.api_params() | {"status": status, "resolution": resolution, "comment": comment}
+            params = {"hotspot": self.key, "status": status, "resolution": resolution, "comment": comment}
             api, _, api_params, _ = Api(self, Oper.CHANGE_STATUS).get_all(**params)
             ok = self.post(api, params=api_params).ok
             self.refresh()
@@ -277,7 +273,7 @@ class Hotspot(findings.Finding):
         :return: Whether the operation succeeded
         """
         try:
-            api, _, params, _ = Api(self, Oper.ADD_COMMENT).get_all(**{**self.api_params(), "comment": comment})
+            api, _, params, _ = Api(self, Oper.ADD_COMMENT).get_all(hotspot=self.key, comment=comment)
             return self.post(api, params=params).ok
         except exceptions.SonarException:
             return False
@@ -422,7 +418,13 @@ def sanitize_search_filters(endpoint: Platform, params: ApiParams) -> ApiParams:
     log.debug("Sanitizing hotspot search criteria %s", str(params))
     if params is None:
         return {}
-    criterias = util.remove_nones(params.copy())
+    params = params.copy()
+    comp_filter = PROJECT_FILTER if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else PROJECT_FILTER_OLD
+    if params.get(PROJECT_FILTER_OLD) and not params.get(comp_filter):
+        params[comp_filter] = params.pop(PROJECT_FILTER_OLD)
+    elif params.get(PROJECT_FILTER) and not params.get(comp_filter):
+        params[comp_filter] = params.pop(PROJECT_FILTER)
+    criterias = util.remove_nones(params)
     criterias = util.dict_remap(criterias, _FILTERS_HOTSPOTS_REMAPPING)
     if "status" in criterias:
         criterias["status"] = util.allowed_values_string(criterias["status"], STATUSES)

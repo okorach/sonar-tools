@@ -287,7 +287,7 @@ def get_component_findings(component: object, search_findings: bool, params: Con
     if needs_issue_search(params):
         findings_list = component.get_issues(filters=new_params)
     if needs_hotspot_search(params):
-        findings_list |= component.get_hotspots(filters=new_params)
+        findings_list |= component.get_hotspots(**new_params)
     return findings_list
 
 

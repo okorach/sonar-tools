@@ -782,10 +782,10 @@ class Project(Component):
 
         return findings_list
 
-    def get_hotspots(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:
+    def get_hotspots(self, **filters: Any) -> dict[str, object]:
         branches_or_prs = self.get_branches_and_prs(filters)
         if branches_or_prs is None:
-            return super().get_hotspots(filters)
+            return super().get_hotspots(**filters)
         findings_list = {}
         for component in [comp for comp in branches_or_prs.values() if comp]:
             findings_list |= component.get_hotspots()

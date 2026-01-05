@@ -142,14 +142,12 @@ class Component(SqObject):
         """Returns the count of issues of a component corresponding to instantiated rules"""
         return self.count_specific_rules_issues(ruleset=rules.instantiated(self.endpoint), filters=filters)
 
-    def get_hotspots(self, filters: ApiParams = None) -> dict[str, object]:
+    def get_hotspots(self, **filters: Any) -> dict[str, object]:
         """Returns list of hotspots for a component, optionally on branches or/and PRs"""
-        from sonar.hotspots import component_filter, Hotspot
+        from sonar.hotspots import Hotspot
 
-        log.info("Searching hotspots for %s with filters %s", str(self), str(filters))
-        search_params = util.replace_keys(measures.ALT_COMPONENTS, component_filter(self.endpoint), self.api_params(Oper.GET))
-        search_params.update(filters or {})
-        return Hotspot.search(endpoint=self.endpoint, **search_params)
+        log.info("Searching hotspots for %s with filters %s", self, filters)
+        return Hotspot.search_by_project(endpoint=self.endpoint, project=self.key, **filters)
 
     def migration_export(self, export_settings: ConfigSettings) -> dict[str, Any]:
         """Prepares all data for a sonar-migration export"""

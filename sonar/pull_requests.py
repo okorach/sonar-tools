@@ -194,4 +194,4 @@ class PullRequest(components.Component):
         """
         if not filters:
             return self.concerned_object.get_findings(pr=self.key)
-        return self.get_issues(filters) | self.get_hotspots(filters)
+        return self.get_issues(filters) | self.get_hotspots(**filters)
