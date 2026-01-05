@@ -41,6 +41,7 @@ from sonar import logging as log
 from sonar.util import conf_mgr as conf
 import sonar.utilities as sutil
 import sonar.util.misc as util
+from sonar.util import constants as c
 
 TOOL_NAME = "sonar-maturity"
 CONFIG_FILE = f"{TOOL_NAME}.properties"
@@ -68,6 +69,8 @@ NEW_CODE_LINES_METRIC = "new_lines"
 
 NEW_CODE_RATIO_KEY = "new_code_lines_ratio"
 NEW_CODE_DAYS_KEY = "new_code_in_days"
+
+PORTFOLIO_RATIO_KEY = "ratio_of_projects_per_portfolio"
 
 
 def __parse_args(desc: str) -> object:
@@ -104,6 +107,8 @@ def get_project_maturity_data(project: projects.Project, settings: dict[str, Any
             qg_status += "/NEVER_ANALYZED"
     else:
         qg_status = proj_measures[QG_METRIC].value
+
+    main_branch_last_analysis = project.main_branch().last_analysis() if project.endpoint.edition() != c.CE else project.last_analysis()
     data = {
         "key": project.key,
         QG: qg_status,
@@ -112,7 +117,7 @@ def get_project_maturity_data(project: projects.Project, settings: dict[str, Any
         NEW_CODE_LINES_KEY: None if not proj_measures[NEW_CODE_LINES_METRIC] else proj_measures[NEW_CODE_LINES_METRIC].value,
         NEW_CODE_DAYS_KEY: util.age(project.new_code_start_date()),
         AGE_KEY: util.age(project.last_analysis(include_branches=True)),
-        f"main_branch_{AGE_KEY}": util.age(project.main_branch().last_analysis()),
+        f"main_branch_{AGE_KEY}": util.age(main_branch_last_analysis),
         NBR_OF_BRANCHES_KEY: len(project.branches()),
     }
     data[NEW_CODE_RATIO_KEY] = None if data[NEW_CODE_LINES_KEY] is None else __rounded(min(1.0, data[NEW_CODE_LINES_KEY] / data["lines"]))
@@ -398,7 +403,10 @@ def get_maturity_data(project_list: list[projects.Project], threads: int, settin
 def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     """Gets governance maturity data"""
     log.info("Collecting governance maturity data")
-    portfolio_count = pf.count(endpoint)
+    try:
+        portfolio_count = pf.count(endpoint)
+    except exceptions.UnsupportedOperation:
+        portfolio_count = 0
     project_count = projects.count(endpoint)
     ratio = project_count / portfolio_count if portfolio_count > 0 else None
 
@@ -407,7 +415,7 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
 
     results = {
         "number_of_portfolios": portfolio_count,
-        "ratio_of_projects_per_portfolio": __rounded(ratio),
+        PORTFOLIO_RATIO_KEY: __rounded(ratio) if ratio is not None else None,
         "number_of_custom_quality_gates": len(qg_list),
         "number_of_incorrect_quality_gates": sum(1 for q in qg_list if len(q.audit_conditions()) > 0),
     }
@@ -437,7 +445,7 @@ def compute_global_maturity_level_statistics(data: dict[str, Any], gov_data: dic
     nbr_projects = len(data)
     gov_mat = 0
     # If enough portfolios and good ratio of portfolios to projects, then 1 point of governance maturity
-    if gov_data["number_of_portfolios"] > 5 and gov_data["ratio_of_projects_per_portfolio"] < 20:
+    if gov_data["number_of_portfolios"] > 5 and gov_data[PORTFOLIO_RATIO_KEY] is not None and gov_data[PORTFOLIO_RATIO_KEY] < 20:
         gov_mat += 1
     # If no more than 9 custom quality gates, then 1 point of governance maturity
     if gov_data["number_of_custom_quality_gates"] < 10:
@@ -526,7 +534,7 @@ def main() -> None:
             raise exceptions.SonarException(f"No project matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
 
         maturity_data = get_maturity_data(project_list, threads=kwargs[options.NBR_THREADS], settings=config)
-
+        log.info("MATURITY data: %s", util.json_dump(maturity_data))
         summary_data: dict[str, Any] = {"total_projects": len(maturity_data)}
         summary_data["quality_gate_enforcement_statistics"] = compute_pr_statistics(maturity_data, config)
         compute_project_analysis_maturity(maturity_data, config)

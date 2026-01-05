@@ -33,7 +33,7 @@ from requests import RequestException
 import sonar.logging as log
 from sonar.util import cache
 
-from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 from sonar import exceptions, projects, branches, app_branches
 from sonar.permissions import application_permissions
@@ -90,7 +90,7 @@ class Application(aggr.Aggregation):
         o: Application = cls.CACHE.get(key, endpoint.local_url)
         if o:
             return o
-        api, _, params, ret = Api(cls, op.GET, endpoint).get_all(application=key)
+        api, _, params, ret = Api(cls, Oper.GET, endpoint).get_all(application=key)
         data = json.loads(endpoint.get(api, params=params).text)[ret]
         return cls.load(endpoint, data)
 
@@ -123,7 +123,7 @@ class Application(aggr.Aggregation):
         :return: The created Application object
         """
         check_supported(endpoint)
-        api, _, params, _ = Api(cls, op.CREATE, endpoint).get_all(key=key, name=name)
+        api, _, params, _ = Api(cls, Oper.CREATE, endpoint).get_all(key=key, name=name)
         endpoint.post(api, params=params)
         return Application(endpoint=endpoint, key=key, name=name)
 
@@ -163,7 +163,7 @@ class Application(aggr.Aggregation):
         """
         try:
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
-            api, _, params, ret = Api(self, op.GET).get_all(application=self.key)
+            api, _, params, ret = Api(self, Oper.GET).get_all(application=self.key)
             self.reload(json.loads(self.endpoint.get(api, params=params).text)[ret])
             return self
         except exceptions.ObjectNotFound:
@@ -380,7 +380,7 @@ class Application(aggr.Aggregation):
         """Add projects to an application"""
         current_projects = self.projects().keys()
         ok = True
-        api_def = Api(self, op.ADD_PROJECT)
+        api_def = Api(self, Oper.ADD_PROJECT)
         for proj in [p for p in project_list if p not in current_projects]:
             log.debug("Adding project '%s' to %s", proj, str(self))
             try:
@@ -406,7 +406,7 @@ class Application(aggr.Aggregation):
     def recompute(self) -> bool:
         """Triggers application recomputation, return whether the operation succeeded"""
         log.debug("Recomputing %s", str(self))
-        api, _, params, _ = Api(self, op.RECOMPUTE).get_all(application=self.key)
+        api, _, params, _ = Api(self, Oper.RECOMPUTE).get_all(application=self.key)
         return self.post(api, params=params).ok
 
     def update(self, data: ObjectJsonRepr) -> None:
@@ -438,8 +438,8 @@ class Application(aggr.Aggregation):
 
     def api_params(self, operation: Optional[str] = None) -> ApiParams:
         """Returns the base params to be used for the object API"""
-        ops = {op.GET: {"application": self.key}, op.RECOMPUTE: {"key": self.key}}
-        return ops[operation] if operation and operation in ops else ops[op.GET]
+        ops = {Oper.GET: {"application": self.key}, Oper.RECOMPUTE: {"key": self.key}}
+        return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
     def __get_project_branches(self, branch_definition: ObjectJsonRepr) -> list[Union[projects.Project, branches.Branch]]:
         project_branches = []
@@ -471,7 +471,7 @@ def count(endpoint: Platform) -> int:
     :return: Count of applications
     """
     check_supported(endpoint)
-    api, _, params, _ = Api(Application, op.SEARCH, endpoint).get_all(ps=1, filter="qualifier = APP")
+    api, _, params, _ = Api(Application, Oper.SEARCH, endpoint).get_all(ps=1, filter="qualifier = APP")
     return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=params).text))
 
 
@@ -544,6 +544,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Opt
         log.warning("Can't import applications in %s edition", ed)
         return False
     Application.search(endpoint=endpoint)
+    to_recompute = []
     for key, data in util.list_to_dict(apps_data, "key").items():
         if key_list and key not in key_list:
             log.debug("App key '%s' not in selected apps", key)
@@ -557,9 +558,12 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Opt
             else:
                 o = Application.create(endpoint, key, data["name"])
             o.update(data)
-            o.recompute()
+            to_recompute.append(o)
         except (exceptions.ObjectNotFound, exceptions.UnsupportedOperation) as e:
             log.error("%s configuration incomplete: %s", str(o), e.message)
+    # Recompute apps after import to avoid race conditions
+    for o in to_recompute:
+        o.recompute()
     return True
 
 

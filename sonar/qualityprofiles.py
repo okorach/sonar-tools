@@ -44,7 +44,7 @@ import sonar.utilities as sutil
 
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
-from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
@@ -144,7 +144,7 @@ class QualityProfile(SqObject):
         o = QualityProfile.CACHE.get(name, language, endpoint.local_url)
         if o:
             return o
-        api, _, _, _ = Api(cls, op.SEARCH, endpoint).get_all()
+        api, _, _, _ = Api(cls, Oper.SEARCH, endpoint).get_all()
         data = sutil.search_by_name(endpoint, name, api, QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language})
         return cls(key=data["key"], endpoint=endpoint, data=data)
 
@@ -162,7 +162,7 @@ class QualityProfile(SqObject):
             log.error("Language '%s' does not exist, quality profile creation aborted")
             return None
         log.debug("Creating quality profile '%s' of language '%s'", name, language)
-        api, _, params, _ = Api(cls, op.CREATE, endpoint).get_all(name=name, language=language)
+        api, _, params, _ = Api(cls, Oper.CREATE, endpoint).get_all(name=name, language=language)
         endpoint.post(api, params=params)
         return cls.read(endpoint=endpoint, name=name, language=language)
 
@@ -182,7 +182,7 @@ class QualityProfile(SqObject):
             raise exceptions.ObjectNotFound(f"{language}:{original_qp_name}", f"Quality profile {language}:{original_qp_name} not found")
         original_qp = l[0]
         log.debug("Found QP to clone: %s", str(original_qp))
-        api, _, params, _ = Api(cls, op.COPY, endpoint).get_all(toName=name, fromKey=original_qp.key)
+        api, _, params, _ = Api(cls, Oper.COPY, endpoint).get_all(toName=name, fromKey=original_qp.key)
         endpoint.post(api, params=params)
         return cls.read(endpoint=endpoint, name=name, language=language)
 
@@ -200,7 +200,7 @@ class QualityProfile(SqObject):
         return cls(endpoint=endpoint, key=data["key"], data=data)
 
     @classmethod
-    def api_for(cls, operation: op, endpoint: Platform) -> str:
+    def api_for(cls, operation: Oper, endpoint: Platform) -> str:
         """Returns the API to use for a particular operation"""
         api, _, _, _ = Api(cls, operation, endpoint).get_all()
         return api
@@ -258,7 +258,7 @@ class QualityProfile(SqObject):
             log.error("Can't set %s as parent of itself", str(self))
             return False
         elif self.parent_name is None or self.parent_name != parent_name:
-            api, _, params, _ = Api(self, op.CHANGE_PARENT).get_all(
+            api, _, params, _ = Api(self, Oper.CHANGE_PARENT).get_all(
                 qualityProfile=self.name, language=self.language, parentQualityProfile=parent_name
             )
             r = self.post(api, params=params)
@@ -274,7 +274,7 @@ class QualityProfile(SqObject):
         :return: Whether setting as default quality profile was successful
         :rtype: bool
         """
-        api, _, params, _ = Api(self, op.SET_DEFAULT).get_all(qualityProfile=self.name, language=self.language)
+        api, _, params, _ = Api(self, Oper.SET_DEFAULT).get_all(qualityProfile=self.name, language=self.language)
         r = self.post(api, params=params)
         if r.ok:
             self.is_default = True
@@ -290,7 +290,7 @@ class QualityProfile(SqObject):
         :return: Whether the deletion was successful
         :rtype: bool
         """
-        return self.delete_object(**self.api_params(op.DELETE))
+        return self.delete_object(**self.api_params(Oper.DELETE))
 
     def is_child(self) -> bool:
         """
@@ -353,7 +353,7 @@ class QualityProfile(SqObject):
             str_params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
             api_params["params"] = ";".join([f"{k}={v}" for k, v in str_params.items()])
         try:
-            api, _, _, _ = Api(self, op.ACTIVATE_RULE).get_all()
+            api, _, _, _ = Api(self, Oper.ACTIVATE_RULE).get_all()
             ok = self.post(api, params=api_params).ok
         except exceptions.SonarException:
             return False
@@ -370,7 +370,7 @@ class QualityProfile(SqObject):
         """
         log.debug("Deactivating rule %s in %s", rule_key, str(self))
         try:
-            api, _, params, _ = Api(self, op.DEACTIVATE_RULE).get_all(key=self.key, rule=rule_key)
+            api, _, params, _ = Api(self, Oper.DEACTIVATE_RULE).get_all(key=self.key, rule=rule_key)
             return self.post(api, params=params).ok
         except exceptions.SonarException:
             return False
@@ -434,7 +434,7 @@ class QualityProfile(SqObject):
             log.debug("Updating %s with %s", self, data)
             if "name" in data and data["name"] != self.name:
                 log.info("Renaming %s with %s", self, data["name"])
-                api, _, params, _ = Api(self, op.RENAME).get_all(id=self.key, name=data["name"])
+                api, _, params, _ = Api(self, Oper.RENAME).get_all(id=self.key, name=data["name"])
                 self.post(api, params=params)
                 QualityProfile.CACHE.pop(self)
                 self.name = data["name"]
@@ -508,20 +508,20 @@ class QualityProfile(SqObject):
         :param QualityProfile another_qp: The second quality profile to compare with self
         :return: dict result of the compare ("inLeft", "inRight", "same", "modified")
         """
-        api, _, params, _ = Api(self, op.COMPARE).get_all(leftKey=self.key, rightKey=another_qp.key)
+        api, _, params, _ = Api(self, Oper.COMPARE).get_all(leftKey=self.key, rightKey=another_qp.key)
         data = json.loads(self.get(api, params=params).text)
         for r in data["inLeft"] + data["same"] + data["inRight"] + data["modified"]:
             for k in ("name", "pluginKey", "pluginName", "languageKey", "languageName"):
                 r.pop(k, None)
         return data
 
-    def api_params(self, operation: Optional[op] = None) -> ApiParams:
+    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
         operations = {
-            op.GET: {"qualityProfile": self.name, "language": self.language},
-            op.SEARCH: {"q": self.name, "language": self.language},
-            op.DELETE: {"qualityProfile": self.name, "language": self.language},
+            Oper.GET: {"qualityProfile": self.name, "language": self.language},
+            Oper.SEARCH: {"q": self.name, "language": self.language},
+            Oper.DELETE: {"qualityProfile": self.name, "language": self.language},
         }
-        return operations[operation] if operation and operation in operations else operations[op.GET]
+        return operations[operation] if operation and operation in operations else operations[Oper.GET]
 
     def rule_impacts(self, rule_key: str, substitute_with_default: bool = True) -> dict[str, str]:
         """Returns the impacts of a rule in the quality profile
@@ -590,7 +590,7 @@ class QualityProfile(SqObject):
                 page = 1
                 more = True
                 while more:
-                    api, _, params, ret = Api(self, op.GET_PROJECTS).get_all(key=self.key, ps=500, p=page)
+                    api, _, params, ret = Api(self, Oper.GET_PROJECTS).get_all(key=self.key, ps=500, p=page)
                     data = json.loads(self.get(api, params=params).text)
                     log.debug("Got QP %s data = %s", self.key, str(data))
                     self._projects += [p["key"] for p in data[ret]]

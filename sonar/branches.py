@@ -40,7 +40,7 @@ import sonar.utilities as sutil
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 import sonar.util.constants as c
-from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
@@ -97,7 +97,7 @@ class Branch(components.Component):
             project = proj.Project.get_object(endpoint, project)
         if o := Branch.CACHE.get(project.key, branch_name, project.base_url()):
             return o
-        api, _, params, _ = Api(Branch, op.SEARCH, project.endpoint).get_all(project=project.key)
+        api, _, params, _ = Api(Branch, Oper.SEARCH, project.endpoint).get_all(project=project.key)
         data = json.loads(project.get(api, params=params).text)
         br = next((b for b in data.get("branches", []) if b["name"] == branch_name), None)
         if not br:
@@ -136,7 +136,7 @@ class Branch(components.Component):
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 
         log.debug("Reading all branches of %s", str(project))
-        api, _, params, _ = Api(cls, op.SEARCH, project.endpoint).get_all(project=project.key)
+        api, _, params, _ = Api(cls, Oper.SEARCH, project.endpoint).get_all(project=project.key)
         data = json.loads(project.endpoint.get(api, params=params).text)
         return {branch["name"]: cls.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
 
@@ -164,7 +164,7 @@ class Branch(components.Component):
         :return: itself
         :rtype: Branch
         """
-        api, _, params, _ = Api(self, op.SEARCH).get_all(**self.api_params(op.SEARCH))
+        api, _, params, _ = Api(self, Oper.SEARCH).get_all(**self.api_params(Oper.SEARCH))
         data = json.loads(self.get(api, params=params).text)
         br_data = next((br for br in data.get("branches", []) if br["name"] == self.name), None)
         if not br_data:
@@ -190,7 +190,7 @@ class Branch(components.Component):
 
     def delete(self) -> bool:
         """Deletes a branch, return whether the deletion was successful"""
-        return super().delete_object(**self.api_params(op.DELETE))
+        return super().delete_object(**self.api_params(Oper.DELETE))
 
     def get(self, api: str, params: ApiParams = None, data: Optional[str] = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
         """Performs an HTTP GET request for the object"""
@@ -217,7 +217,7 @@ class Branch(components.Component):
         if self._new_code is None and self.endpoint.is_sonarcloud():
             self._new_code = settings.new_code_to_string({"inherited": True})
         elif self._new_code is None:
-            api, _, params, _ = Api(self, op.LIST_NEW_CODE_PERIODS).get_all(**self.api_params(op.SEARCH))
+            api, _, params, _ = Api(self, Oper.LIST_NEW_CODE_PERIODS).get_all(**self.api_params(Oper.SEARCH))
             data = json.loads(self.get(api, params=params).text)
             for b in data["newCodePeriods"]:
                 new_code = settings.new_code_to_string(b)
@@ -242,7 +242,7 @@ class Branch(components.Component):
                 log.warning("%s is main branch, can't be purgeable, skipping...", str(self))
                 raise exceptions.UnsupportedOperation(f"{str(self)} is the main branch, can't be purgeable")
             return True
-        api, _, params, _ = Api(self, op.KEEP_WHEN_INACTIVE).get_all(**self.api_params(), value=str(keep).lower())
+        api, _, params, _ = Api(self, Oper.KEEP_WHEN_INACTIVE).get_all(**self.api_params(), value=str(keep).lower())
         self.post(api, params=params)
         self._keep_when_inactive = keep
         return True
@@ -258,7 +258,7 @@ class Branch(components.Component):
             raise exceptions.UnsupportedOperation(f"{str(self)} can't be renamed since it's not the main branch")
 
         log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
-        api, _, params, _ = Api(self, op.RENAME).get_all(project=self.concerned_object.key, name=new_name)
+        api, _, params, _ = Api(self, Oper.RENAME).get_all(project=self.concerned_object.key, name=new_name)
         self.post(api, params=params)
         Branch.CACHE.pop(self)
         self.name = new_name
@@ -271,7 +271,7 @@ class Branch(components.Component):
         :raises ObjectNotFound: If the branch is not found
         :return: Whether the operation was successful
         """
-        api, _, params, _ = Api(self, op.SET_MAIN).get_all(**self.api_params())
+        api, _, params, _ = Api(self, Oper.SET_MAIN).get_all(**self.api_params())
         self.post(api, params=params)
         for b in self.concerned_object.branches().values():
             b._is_main = b.name == self.name
@@ -415,11 +415,11 @@ class Branch(components.Component):
     def api_params(self, operation: Optional[Any] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {
-            op.GET: {"project": self.concerned_object.key, "branch": self.name},
-            op.SEARCH: {"project": self.concerned_object.key},
-            op.DELETE: {"project": self.concerned_object.key, "branch": self.name},
+            Oper.GET: {"project": self.concerned_object.key, "branch": self.name},
+            Oper.SEARCH: {"project": self.concerned_object.key},
+            Oper.DELETE: {"project": self.concerned_object.key, "branch": self.name},
         }
-        return ops[operation] if operation and operation in ops else ops[op.GET]
+        return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""

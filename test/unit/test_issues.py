@@ -32,7 +32,7 @@ from sonar.util import constants as c
 import sonar.util.issue_defs as idefs
 import credentials as tconf
 import sonar.util.misc as util
-from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiOperation as Oper
 
 
 def test_issue() -> None:
@@ -52,9 +52,9 @@ def test_issue() -> None:
     assert not issue.is_wont_fix()
     assert issue.is_false_positive()
     assert issue.refresh()
-    assert issue.api_params(op.SEARCH) == {"issues": issue_key}
-    assert issue.api_params(op.SET_TAGS) == {"issue": issue_key}
-    assert issue.api_params(op.GET_TAGS) == {"issues": issue_key}
+    assert issue.api_params(Oper.SEARCH) == {"issues": issue_key}
+    assert issue.api_params(Oper.SET_TAGS) == {"issue": issue_key}
+    assert issue.api_params(Oper.GET_TAGS) == {"issues": issue_key}
 
     assert issue_key_accepted in issues_d
     issue2 = issues_d[issue_key_accepted]
@@ -309,7 +309,7 @@ def test_search_by_small() -> None:
 
     params.pop("project")
     params.pop("components")
-    dirs = ("cli", "conf", "migration", "sonar")
+    dirs = ("cli", "conf", "migration", "sonar", "test/gen")
     assert len(list1) == sum([len(issues.Issue.search_by_directory(tutil.SQ, project=tutil.LIVE_PROJECT, directory=dir, **params)) for dir in dirs])
     assert len(list1) > len(issues.Issue.search_by_file(tutil.SQ, project=tutil.LIVE_PROJECT, file="sonar/issues.py", **params))
 

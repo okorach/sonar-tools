@@ -52,6 +52,11 @@ cmd="sonar-scanner -Dsonar.projectVersion=${VERSION} \
   -Dsonar.token=${SONAR_TOKEN} ${auth}\
   "${scanOpts[*]}""
 
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [[ "${branch}" != "master" ]]; then
+  cmd="${cmd} -Dsonar.branch.name=${branch}"
+fi
+
 relativeDir=$(basename "${BUILD_DIR}")
   if ls "${BUILD_DIR}"/coverage*.xml >/dev/null 2>&1; then
   cmd="${cmd} -Dsonar.python.coverage.reportPaths=${relativeDir}/coverage*.xml"

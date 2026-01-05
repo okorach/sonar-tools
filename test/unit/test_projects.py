@@ -162,8 +162,10 @@ def test_get_findings() -> None:
     """test_get_findings"""
     proj = Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
     if tutil.SQ.edition() in (c.CE, c.DE, c.SC):
-        assert proj.get_findings(branch="non-existing-branch") == {}
+        with pytest.raises(exceptions.UnsupportedOperation):
+            proj.get_findings(branch="non-existing-branch")
         return
+
     with pytest.raises(exceptions.ObjectNotFound):
         proj.get_findings(branch="non-existing-branch")
     assert len(proj.get_findings(branch="develop")) > 0

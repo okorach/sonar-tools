@@ -45,7 +45,7 @@ def test_get_object() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
 
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project_key=project.key, branch_name="develop"):
+    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project=project.key, branch_name="develop"):
         return
     obj = Branch.get_object(tutil.SQ, project=project, branch_name="develop")
     assert str(obj) == f"branch 'develop' of project '{project.key}'"
@@ -54,7 +54,7 @@ def test_get_object() -> None:
 
 def test_not_found() -> None:
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project_key=project.key, branch_name="develop"):
+    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project=project.key, branch_name="develop"):
         return
     with pytest.raises(exceptions.ObjectNotFound):
         obj = Branch.get_object(tutil.SQ, project=project, branch_name="non-existing")
@@ -75,7 +75,7 @@ def test_not_found() -> None:
 
 def test_is_main_is_kept():
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project_key=project.key, branch_name="develop"):
+    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project=project.key, branch_name="develop"):
         return
     obj = Branch.get_object(tutil.SQ, project=project, branch_name="develop")
     obj._keep_when_inactive = None
@@ -88,7 +88,7 @@ def test_is_main_is_kept():
 def test_set_as_main():
     """test_set_as_main"""
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project_key=project.key, branch_name="develop"):
+    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project=project.key, branch_name="develop"):
         return
     dev_br = Branch.get_object(tutil.SQ, project=project, branch_name="develop")
     main_br_name = project.main_branch_name()
@@ -117,7 +117,7 @@ def test_set_as_main():
 def test_set_keep_as_inactive():
     """test_set_keep_as_inactive"""
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project_key=project.key, branch_name="develop"):
+    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project=project.key, branch_name="develop"):
         return
     dev_br = Branch.get_object(tutil.SQ, project=project, branch_name="develop")
     master_br = Branch.get_object(tutil.SQ, project=project, branch_name="master")
@@ -140,7 +140,7 @@ def test_set_keep_as_inactive():
 def test_rename():
     """test_rename"""
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project_key=project.key, branch_name="develop"):
+    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project=project.key, branch_name="develop"):
         return
     dev_br = Branch.get_object(tutil.SQ, project=project, branch_name="develop")
     main_br_name = project.main_branch_name()
@@ -161,7 +161,7 @@ def test_rename():
 def test_get_findings():
     """test_get_findings"""
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project_key=project.key, branch_name="develop"):
+    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project=project.key, branch_name="develop"):
         return
     dev_br = Branch.get_object(tutil.SQ, project=project, branch_name="develop")
     assert len(dev_br.get_findings()) > 0
@@ -176,7 +176,7 @@ def test_get_findings():
 def test_audit():
     """test_audit_off"""
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project_key=project.key, branch_name="develop"):
+    if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project=project.key, branch_name="develop"):
         return
     dev_br = Branch.get_object(tutil.SQ, project=project, branch_name="develop")
     assert len(dev_br.audit({"audit.project.branches": False})) == 0

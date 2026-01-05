@@ -31,7 +31,7 @@ from sonar import platform
 from sonar import exceptions
 import sonar.util.misc as util
 import sonar.util.constants as c
-from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
@@ -78,7 +78,7 @@ class DevopsPlatform(SqObject):
         """Reads a devops platform object in Sonar instance"""
         if o := DevopsPlatform.CACHE.get(key, endpoint.local_url):
             return o
-        api, _, _, _ = Api(DevopsPlatform, op.SEARCH, endpoint).get_all()
+        api, _, _, _ = Api(DevopsPlatform, Oper.SEARCH, endpoint).get_all()
         data = json.loads(endpoint.get(api).text)
         for plt_type, platforms in data.items():
             for p in platforms:
@@ -103,24 +103,24 @@ class DevopsPlatform(SqObject):
             if plt_type == DEVOPS_GITHUB:
                 params.update(dict.fromkeys(("appId", "clientId", "clientSecret", "privateKey"), _TO_BE_SET))
                 params["url"] = url_or_workspace
-                api, _, api_params, _ = Api(DevopsPlatform, op.CREATE_GITHUB, endpoint).get_all(**params)
+                api, _, api_params, _ = Api(DevopsPlatform, Oper.CREATE_GITHUB, endpoint).get_all(**params)
                 endpoint.post(api, params=api_params)
             elif plt_type == DEVOPS_AZURE:
                 # TODO: pass secrets on the cmd line
                 params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
-                api, _, api_params, _ = Api(DevopsPlatform, op.CREATE_AZURE, endpoint).get_all(**params)
+                api, _, api_params, _ = Api(DevopsPlatform, Oper.CREATE_AZURE, endpoint).get_all(**params)
                 endpoint.post(api, params=api_params)
             elif plt_type == DEVOPS_GITLAB:
                 params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
-                api, _, api_params, _ = Api(DevopsPlatform, op.CREATE_GITLAB, endpoint).get_all(**params)
+                api, _, api_params, _ = Api(DevopsPlatform, Oper.CREATE_GITLAB, endpoint).get_all(**params)
                 endpoint.post(api, params=api_params)
             elif plt_type == DEVOPS_BITBUCKET:
                 params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
-                api, _, api_params, _ = Api(DevopsPlatform, op.CREATE_BITBUCKET, endpoint).get_all(**params)
+                api, _, api_params, _ = Api(DevopsPlatform, Oper.CREATE_BITBUCKET, endpoint).get_all(**params)
                 endpoint.post(api, params=api_params)
             elif plt_type == DEVOPS_BITBUCKET_CLOUD:
                 params.update({"clientSecret": _TO_BE_SET, "clientId": _TO_BE_SET, "workspace": url_or_workspace})
-                api, _, api_params, _ = Api(DevopsPlatform, op.CREATE_BITBUCKETCLOUD, endpoint).get_all(**params)
+                api, _, api_params, _ = Api(DevopsPlatform, Oper.CREATE_BITBUCKETCLOUD, endpoint).get_all(**params)
                 endpoint.post(api, params=api_params)
         except exceptions.SonarException as e:
             if endpoint.edition() in (c.CE, c.DE):
@@ -140,7 +140,7 @@ class DevopsPlatform(SqObject):
         """
         if endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Can't get list of DevOps platforms on SonarQube Cloud")
-        api, _, _, _ = Api(cls, op.SEARCH, endpoint).get_all()
+        api, _, _, _ = Api(cls, Oper.SEARCH, endpoint).get_all()
         data = json.loads(endpoint.get(api).text)
         for alm_type in DEVOPS_PLATFORM_TYPES:
             for alm_data in data.get(alm_type, {}):
@@ -154,10 +154,10 @@ class DevopsPlatform(SqObject):
         self._specific = {k: v for k, v in data.items() if k not in ("key", "url")}
         return self
 
-    def api_params(self, operation: Optional[op] = None) -> ApiParams:
+    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
         """Returns the API parameters for the operation"""
-        ops = {op.SEARCH: {"key": self.key}}
-        return ops[operation] if operation and operation in ops else ops[op.SEARCH]
+        ops = {Oper.SEARCH: {"key": self.key}}
+        return ops[operation] if operation and operation in ops else ops[Oper.SEARCH]
 
     def delete(self) -> bool:
         """Deletes a DevOps platform"""
@@ -168,7 +168,7 @@ class DevopsPlatform(SqObject):
 
         :return: Whether the operation succeeded
         """
-        api, _, _, _ = Api(self, op.SEARCH).get_all()
+        api, _, _, _ = Api(self, Oper.SEARCH).get_all()
         data = json.loads(self.get(api).text)
         for alm_data in data.get(self.type, {}):
             if alm_data["key"] == self.key:
@@ -192,7 +192,7 @@ class DevopsPlatform(SqObject):
         if self.type == DEVOPS_GITHUB:
             log.warning("Can't set PAT for GitHub devops platform")
             return False
-        api, _, params, _ = Api(self, op.SET_PAT).get_all(almSettings=self.key, pat=pat, username=user_name)
+        api, _, params, _ = Api(self, Oper.SET_PAT).get_all(almSettings=self.key, pat=pat, username=user_name)
         return self.post(api, params=params).ok
 
     def update(self, **kwargs) -> bool:
@@ -217,11 +217,11 @@ class DevopsPlatform(SqObject):
             params[k] = kwargs.get(k, _TO_BE_SET)
         try:
             update_op = {
-                DEVOPS_GITHUB: op.UPDATE_GITHUB,
-                DEVOPS_GITLAB: op.UPDATE_GITLAB,
-                DEVOPS_AZURE: op.UPDATE_AZURE,
-                DEVOPS_BITBUCKET: op.UPDATE_BITBUCKET,
-                DEVOPS_BITBUCKET_CLOUD: op.UPDATE_BITBUCKETCLOUD,
+                DEVOPS_GITHUB: Oper.UPDATE_GITHUB,
+                DEVOPS_GITLAB: Oper.UPDATE_GITLAB,
+                DEVOPS_AZURE: Oper.UPDATE_AZURE,
+                DEVOPS_BITBUCKET: Oper.UPDATE_BITBUCKET,
+                DEVOPS_BITBUCKET_CLOUD: Oper.UPDATE_BITBUCKETCLOUD,
             }[alm_type]
             api, _, api_params, _ = Api(self, update_op).get_all(**params)
             ok = self.post(api, params=api_params).ok

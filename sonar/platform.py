@@ -46,7 +46,7 @@ import sonar.audit.severities as sev
 import sonar.audit.types as typ
 from sonar.audit.problem import Problem
 from sonar import webhooks
-from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
@@ -340,7 +340,7 @@ class Platform(object):
         """Returns the platform global settings definitions"""
         if not self._global_settings_definitions:
             try:
-                api, _, params, ret = Api(settings.Setting, op.LIST_DEFINITIONS, endpoint=self).get_all()
+                api, _, params, ret = Api(settings.Setting, Oper.LIST_DEFINITIONS, endpoint=self).get_all()
                 data = json.loads(self.get(api, params=params).text)
                 self._global_settings_definitions = {s["key"]: s for s in data[ret]}
             except (ConnectionError, RequestException):
@@ -639,7 +639,7 @@ class Platform(object):
         """Audits whether project default visibility is public"""
         log.info("Auditing project default visibility")
         problems = []
-        api, _, params, _ = Api(settings.Setting, op.GET, self).get_all(keys="projects.default.visibility")
+        api, _, params, _ = Api(settings.Setting, Oper.GET, self).get_all(keys="projects.default.visibility")
         resp = self.get(api, params=params)
         visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)

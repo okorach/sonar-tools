@@ -42,12 +42,11 @@ do
     if [[ "${target}" != "common" ]]; then
         sonar start -i "${target}" && sleep 30
     fi
-    if [[ -d "${ROOT_DIR}/${GEN_LOC}/${target}/" ]]; then
-        # Recreate a fresh TESTSYNC project for sync tests
-        curl -X POST -u "${SONAR_TOKEN_TEST_ADMIN_USER}:" "${SONAR_HOST_URL_TEST}/api/projects/delete?project=${SYNC_PROJECT_KEY}"
-        conf/run_scanner.sh -Dsonar.host.url="${SONAR_HOST_URL_TEST}" -Dsonar.projectKey="${SYNC_PROJECT_KEY}" -Dsonar.projectName="${SYNC_PROJECT_KEY}" -Dsonar.token="${SONAR_TOKEN_TEST_ADMIN_ANALYSIS}"
-        # Run tests
-        poetry run coverage run --branch --source="${ROOT_DIR}" -m pytest "${ROOT_DIR}/${GEN_LOC}/${target}/" --junit-xml="${BUILD_DIR}/xunit-results-${target}.xml"
-        poetry run coverage xml -o "${BUILD_DIR}/coverage-${target}.xml"
-    fi
+    test_dirs="${test_dirs} ${ROOT_DIR}/${GEN_LOC}/${target}/"
 done
+
+# curl -X POST -u "${SONAR_TOKEN_TEST_ADMIN_USER}:" "${SONAR_HOST_URL_TEST}/api/projects/delete?project=${SYNC_PROJECT_KEY}"
+# conf/run_scanner.sh -Dsonar.host.url="${SONAR_HOST_URL_TEST}" -Dsonar.projectKey="${SYNC_PROJECT_KEY}" -Dsonar.projectName="${SYNC_PROJECT_KEY}" -Dsonar.token="${SONAR_TOKEN_TEST_ADMIN_ANALYSIS}"
+# Run tests
+poetry run coverage run --branch --source="${ROOT_DIR}" -m pytest ${test_dirs} --junit-xml="${BUILD_DIR}/xunit-results-${target}.xml"
+poetry run coverage xml -o "${BUILD_DIR}/coverage-${target}.xml"

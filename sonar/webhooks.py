@@ -29,7 +29,7 @@ from sonar import exceptions
 from sonar.util import cache
 import sonar.util.misc as util
 from sonar.audit import rules, problem
-from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
@@ -78,7 +78,7 @@ class WebHook(SqObject):
         """
         log.info("Creating webhook name %s, url %s project %s", name, url, str(project))
         params = {"name": name, "url": url, "secret": secret, "project": project}
-        api, _, api_params, _ = Api(cls, op.CREATE, endpoint).get_all(**params)
+        api, _, api_params, _ = Api(cls, Oper.CREATE, endpoint).get_all(**params)
         endpoint.post(api, params=api_params)
         o = cls(endpoint, name=name, url=url, secret=secret, project=project)
         o.refresh()
@@ -157,14 +157,14 @@ class WebHook(SqObject):
         """
         log.info("Updating %s with %s", str(self), str(self.project))
         params = {"webhook": self.key, "name": self.name, "url": self.webhook_url} | kwargs
-        api, _, api_params, _ = Api(self, op.UPDATE).get_all(**params)
+        api, _, api_params, _ = Api(self, Oper.UPDATE).get_all(**params)
         ok = self.post(api, params=api_params).ok
         self.refresh()
         return ok
 
     def delete(self) -> bool:
         """Deletes the webhook and return whether the deletion was successful"""
-        return self.delete_object(**self.api_params(op.DELETE))
+        return self.delete_object(**self.api_params(Oper.DELETE))
 
     def audit(self) -> list[problem.Problem]:
         """
@@ -184,10 +184,10 @@ class WebHook(SqObject):
         """
         return util.filter_export(self.sq_json, _IMPORTABLE_PROPERTIES, full)
 
-    def api_params(self, operation: Optional[op] = None) -> ApiParams:
+    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
         """Returns the std api params to pass for a given webhook"""
-        ops = {op.GET: {"webhook": self.key}}
-        return ops[operation] if operation and operation in ops else ops[op.GET]
+        ops = {Oper.GET: {"webhook": self.key}}
+        return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
 
 def export(endpoint: Platform, project_key: Optional[str] = None, full: bool = False) -> ObjectJsonRepr:

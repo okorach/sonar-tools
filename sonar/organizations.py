@@ -34,7 +34,7 @@ import sonar.logging as log
 from sonar.util import cache
 from sonar import exceptions
 import sonar.util.misc as util
-from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
@@ -94,7 +94,7 @@ class Organization(SqObject):
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         if o := Organization.CACHE.get(key, endpoint.local_url):
             return o
-        api, _, params, ret = Api(cls, op.SEARCH, endpoint).get_all(organizations=key)
+        api, _, params, ret = Api(cls, Oper.SEARCH, endpoint).get_all(organizations=key)
         data = json.loads(endpoint.get(api, params=params).text)
         if len(data[ret]) == 0:
             raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")

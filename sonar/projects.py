@@ -40,7 +40,7 @@ import sonar.util.issue_defs as idefs
 from sonar.util import cache
 from sonar import exceptions
 from sonar import qualityprofiles, tasks, settings, webhooks, devops
-from sonar.qualitygates import QualityGate
+from sonar import qualitygates as qg
 from sonar import pull_requests, branches
 import sonar.util.misc as util
 import sonar.permissions.project_permissions as pperms
@@ -51,7 +51,7 @@ from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
 import sonar.util.project_helper as phelp
-from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
@@ -152,7 +152,7 @@ class Project(Component):
         """
         if o := Project.CACHE.get(key, endpoint.local_url):
             return o
-        api, _, params, ret = Api(Project, op.GET, endpoint).get_all(component=key)
+        api, _, params, ret = Api(Project, Oper.GET, endpoint).get_all(component=key)
         return cls.load(endpoint, json.loads(endpoint.get(api, params=params).text)[ret])
 
     @classmethod
@@ -181,7 +181,7 @@ class Project(Component):
         :return: The Project
         :rtype: Project
         """
-        api, _, params, _ = Api(Project, op.CREATE, endpoint).get_all(project=key, name=name)
+        api, _, params, _ = Api(Project, Oper.CREATE, endpoint).get_all(project=key, name=name)
         endpoint.post(api, params=params)
         o = cls(endpoint, key)
         o.name = name
@@ -229,7 +229,7 @@ class Project(Component):
         :return: self
         """
         try:
-            api, _, params, _ = Api(self, op.GET).get_all(**self.api_params(op.GET))
+            api, _, params, _ = Api(self, Oper.GET).get_all(**self.api_params(Oper.GET))
             data = json.loads(self.get(api, params=params).text)
         except exceptions.ObjectNotFound:
             Project.CACHE.pop(self)
@@ -323,10 +323,7 @@ class Project(Component):
         :rtype: dict{PR_ID: PullRequest}
         """
         if self._pull_requests is None or not use_cache:
-            try:
-                self._pull_requests = pull_requests.PullRequest.get_list(self)
-            except exceptions.UnsupportedOperation:
-                self._pull_requests = {}
+            self._pull_requests = pull_requests.PullRequest.get_list(self)
         return self._pull_requests
 
     def delete(self) -> bool:
@@ -338,7 +335,7 @@ class Project(Component):
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         log.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-        return self.delete_object(**self.api_params(op.DELETE))
+        return self.delete_object(**self.api_params(Oper.DELETE))
 
     def has_binding(self) -> bool:
         """Whether the project has a DevOps platform binding"""
@@ -579,7 +576,7 @@ class Project(Component):
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
-            api, _, _, ret = Api(self, op.SEARCH, self.endpoint).get_all(filter=_PROJECT_QUALIFIER)
+            api, _, _, ret = Api(self, Oper.SEARCH, self.endpoint).get_all(filter=_PROJECT_QUALIFIER)
             data = self.endpoint.get_paginated(api=api, return_field=ret, filter=_PROJECT_QUALIFIER)
             p_data = next((p for p in data[ret] if p["key"] == self.key), None)
             if p_data:
@@ -751,6 +748,8 @@ class Project(Component):
         """
         from sonar import issues, hotspots
 
+        if self.endpoint.edition() == c.CE:
+            raise exceptions.UnsupportedOperation("Findings export is not supported in Community Edition")
         log.info("Exporting findings for %s", str(self))
         findings_list = {}
         params = util.remove_nones({"project": self.key, "branch": branch, "pullRequest": pr})
@@ -1104,7 +1103,7 @@ class Project(Component):
         """
         if quality_gate is None:
             return False
-        _ = QualityGate.get_object(self.endpoint, quality_gate)
+        _ = qg.QualityGate.get_object(self.endpoint, quality_gate)
         return self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate}).ok
 
     def set_contains_ai_code(self, contains_ai_code: bool) -> bool:
@@ -1333,14 +1332,14 @@ class Project(Component):
         # TODO: Set branch settings See https://github.com/okorach/sonar-tools/issues/1828
 
     @classmethod
-    def api_for(cls, operation: op, endpoint: Platform) -> str:
+    def api_for(cls, operation: Oper, endpoint: Platform) -> str:
         """Returns the API to use for a particular operation"""
         api, _, _, _ = Api(cls, operation, endpoint).get_all()
         return api
 
-    def api_params(self, operation: Optional[op] = None) -> ApiParams:
+    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {op.GET: {"component": self.key}, op.DELETE: {"project": self.key}, op.SET_TAGS: {"project": self.key}}
+        ops = {Oper.GET: {"component": self.key}, Oper.DELETE: {"project": self.key}, Oper.SET_TAGS: {"project": self.key}}
         return ops[operation] if operation and operation in ops else {"project": self.key}
 
 
@@ -1353,7 +1352,7 @@ def count(endpoint: Platform, params: ApiParams = None) -> int:
     new_params.update({"ps": 1, "p": 1})
     if not endpoint.is_sonarcloud():
         new_params["filter"] = _PROJECT_QUALIFIER
-    api, _, api_params, _ = Api(Project, op.SEARCH, endpoint).get_all(**new_params)
+    api, _, api_params, _ = Api(Project, Oper.SEARCH, endpoint).get_all(**new_params)
     return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=api_params).text))
 
 
