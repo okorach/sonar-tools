@@ -142,6 +142,8 @@ class Finding(SqObject):
         self.reload(data, from_export)
 
     def reload(self, data: ApiPayload, from_export: bool = False) -> None:
+        """Reloads a finding with JSON data"""
+        super().reload(data)
         if data is not None:
             if from_export:
                 self._load_from_export(data)
@@ -149,10 +151,6 @@ class Finding(SqObject):
                 self._load_from_search(data)
 
     def _load_common(self, jsondata: ApiPayload) -> None:
-        if self.sq_json is None:
-            self.sq_json = jsondata
-        else:
-            self.sq_json.update(jsondata)
         self.author = jsondata.get("author", None)
         self.message = jsondata.get("message", None)
         self.status = jsondata["status"]
