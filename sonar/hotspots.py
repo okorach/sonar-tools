@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Optional, Any, Union, TYPE_CHECKING
 from http import HTTPStatus
 import requests.utils
 from copy import deepcopy
@@ -44,6 +44,7 @@ from sonar.api.manager import ApiManager as Api
 if TYPE_CHECKING:
     from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
+    from sonar.projects import Project
 
 PROJECT_FILTER = "project"
 PROJECT_FILTER_OLD = "projectKey"
@@ -130,23 +131,44 @@ class Hotspot(findings.Finding):
         # Backup original params to allow for severities, createdAfter, createdBefore, languages filters post search
         original_params = deepcopy(search_params)
 
-        log.debug("Searching hotspots with params %s", str(search_params))
+        log.debug("Searching hotspots with params %s", search_params)
         split_filters = split_search_filters(sanitize_search_filters(endpoint=endpoint, params=search_params))
         log.debug("Split search filters = %s", split_filters)
         hotspots_list: dict[str, Hotspot] = {}
         for inline_filters in split_filters:
             hotspots_list |= cls.get_paginated(endpoint=endpoint, params=inline_filters)
-        # Add Branch and Pull Request info to hotspots (which is not return in the API payload)
-        for enrichment in [elem for elem in ["branch", "pullRequest"] if elem in inline_filters]:
-            e_val = search_params[enrichment]
-            for hotspot in hotspots_list.values():
-                hotspot.sq_json[enrichment] = e_val
-                if enrichment == "branch":
-                    hotspot.branch = e_val
-                elif enrichment == "pullRequest":
-                    hotspot.pull_request = e_val
+        # Add Branch and Pull Request info to hotspots (which is not returned in the API payload)
+        hotspots_list = cls.__adorn(hotspots_list, original_params)
         # Filter results based on creation date, severities, languages
-        return post_search_filter(hotspots_list, original_params)
+        hotspots_list = post_search_filter(hotspots_list, original_params)
+        log.debug("Searching hotspots with params = %s returned %d hotspots", search_params, len(hotspots_list))
+        return hotspots_list
+
+    @classmethod
+    def search_by_project(cls, endpoint: Platform, project: Union[str, Project], **search_params: Any) -> dict[str, Hotspot]:
+        """Searches hotspots of a project
+
+        :param endpoint: Reference to the SonarQube platform
+        :param project: Project key or Project object
+        :param filters: Search filters to narrow down the search, defaults to None
+        :return: Dict of found hotspots
+        """
+        if not isinstance(project, str):
+            project = project.key
+        hotspots = cls.search(endpoint=endpoint, **(search_params | {component_filter(endpoint): project}))
+        log.info("Project '%s' has %d hotspots corresponding to filters", project, len(hotspots))
+        return hotspots
+
+    @staticmethod
+    def __adorn(hotspots_list: dict[str, Hotspot], search_params: ApiParams) -> dict[str, Hotspot]:
+        """Enriches hotspots with branch and pull request info"""
+        for e_key in [elem for elem in ["branch", "pullRequest"] if elem in search_params]:
+            e_val = search_params[e_key]
+            for hotspot in hotspots_list.values():
+                hotspot.sq_json[e_key] = e_val
+                if e_key == "branch":
+                    hotspot.branch = e_val
+        return hotspots_list
 
     def reload(self, data: ApiPayload, from_export: bool = False) -> None:
         """Loads the hotspot details from the provided data (coming from api/hotspots/search)"""
@@ -381,24 +403,6 @@ class Hotspot(findings.Finding):
         if after is not None:
             return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > util.add_tz(after)}
         return self._comments
-
-
-def search_by_project(endpoint: Platform, project_key: str, filters: ApiParams = None) -> dict[str, Hotspot]:
-    """Searches hotspots of a project
-
-    :param endpoint: Reference to the SonarQube platform
-    :param project_key: Project key
-    :param filters: Search filters to narrow down the search, defaults to None
-    :return: Dict of found hotspots
-    """
-    key_list = util.csv_to_list(project_key)
-    hotspots = {}
-    filters = filters or {}
-    for k in key_list:
-        project_hotspots = Hotspot.search(endpoint=endpoint, **(filters | {component_filter(endpoint): k}))
-        log.info("Project '%s' has %d hotspots corresponding to filters", k, len(project_hotspots))
-        hotspots |= project_hotspots
-    return hotspots
 
 
 def component_filter(endpoint: Platform) -> str:

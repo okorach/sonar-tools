@@ -54,8 +54,10 @@ def test_transitions() -> None:
 
 def test_search_by_project() -> None:
     """test_search_by_project"""
-    hotspot_d = hotspots.search_by_project(tutil.SQ, project_key=tutil.LIVE_PROJECT)
-    assert len(hotspot_d) > 0
+    nbr_hotspots = len(hotspots.Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT))
+    assert nbr_hotspots > 0
+    assert len(hotspots.Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, statuses=["TO_REVIEW"])) < nbr_hotspots
+    assert len(hotspots.Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, severities=["BLOCKER", "CRITICAL"])) < nbr_hotspots
 
 
 def test_sanitize_filter() -> None:
