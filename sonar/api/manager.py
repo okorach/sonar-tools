@@ -21,7 +21,7 @@
 """SonarQube API manager"""
 
 from __future__ import annotations
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Optional, ClassVar, TYPE_CHECKING
 
 from enum import Enum
 from pathlib import Path
@@ -101,7 +101,7 @@ class ApiManager:
     __MAX_PAGE_SIZE_KEY = "max_page_size"
     __DEFAULT_MAX_PAGE_SIZE = 500
 
-    API_DEFINITION: dict[str, dict[str, Any]] = {}
+    API_DEFINITION: ClassVar[dict[str, dict[str, Any]]] = {}
 
     def __init__(self, object_or_class: object, op: ApiOperation, endpoint: Optional[Platform] = None) -> None:
         """Constructor"""
