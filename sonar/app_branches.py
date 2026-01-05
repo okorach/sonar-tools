@@ -34,15 +34,16 @@ from sonar.branches import Branch
 from sonar.projects import Project
 from sonar import exceptions
 import sonar.utilities as sutil
-from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 import sonar.util.constants as c
+from sonar import applications as apps
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr
     from datetime import datetime
-    from sonar.applications import Application
+
 
 _NOT_SUPPORTED = "Applications not supported in community edition"
 
@@ -54,7 +55,7 @@ class ApplicationBranch(Component):
 
     def __init__(
         self,
-        app: Application,
+        app: apps.Application,
         name: str,
         project_branches: list[Union[Project, Branch]],
         is_main: bool = False,
@@ -62,7 +63,7 @@ class ApplicationBranch(Component):
     ) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=app.endpoint, key=f"{app.key} BRANCH {name}")
-        self.concerned_object: Application = app
+        self.concerned_object: apps.Application = app
         self.name = name
         self.sq_json = branch_data
         self._is_main = is_main
@@ -72,7 +73,7 @@ class ApplicationBranch(Component):
         ApplicationBranch.CACHE.put(self)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, app: Union[str, Application], branch_name: str) -> ApplicationBranch:
+    def get_object(cls, endpoint: Platform, app: Union[str, apps.Application], branch_name: str) -> ApplicationBranch:
         """Gets an Application object from SonarQube
 
         :param str | Application app: Reference to the Application holding that branch
@@ -83,7 +84,7 @@ class ApplicationBranch(Component):
         if endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         if isinstance(app, str):
-            app = Application.get_object(endpoint, app)
+            app = apps.Application.get_object(endpoint, app)
         if o := ApplicationBranch.CACHE.get(app.key, branch_name, app.base_url()):
             return o
         app.refresh()
@@ -93,7 +94,7 @@ class ApplicationBranch(Component):
         raise exceptions.ObjectNotFound(app.key, f"Application key '{app.key}' branch '{branch_name}' not found")
 
     @classmethod
-    def create(cls, app: Application, name: str, projects_or_branches: list[Union[Project, Branch]]) -> ApplicationBranch:
+    def create(cls, app: apps.Application, name: str, projects_or_branches: list[Union[Project, Branch]]) -> ApplicationBranch:
         """Creates an ApplicationBranch object in SonarQube
 
         :param Application app: Reference to the Application holding that branch
@@ -112,13 +113,20 @@ class ApplicationBranch(Component):
         for branch in custom_branches:
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
-        api, _, _, _ = Api(cls, op.CREATE, app.endpoint).get_all()
+        api, _, _, _ = Api(cls, Oper.CREATE, app.endpoint).get_all()
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
         app.endpoint.post(api, params=string_params)
         return cls(app=app, name=name, project_branches=projects_or_branches)
 
     @classmethod
-    def load(cls, app: Application, branch_data: ApiPayload) -> ApplicationBranch:
+    def load(cls, app: apps.Application, branch_data: ApiPayload) -> ApplicationBranch:
+        """Loads an ApplicationBranch object from JSON data
+
+        :param Application app: Reference to the Application holding that branch
+        :param ApiPayload branch_data: Data coming from api/applications/show
+        :return: The found ApplicationBranch object
+        :rtype: ApplicationBranch
+        """
         project_branches = []
         for proj_data in branch_data["projects"]:
             proj = Project.get_object(app.endpoint, proj_data["key"])
@@ -145,10 +153,7 @@ class ApplicationBranch(Component):
         return self.concerned_object.get_tags(**kwargs)
 
     def projects_branches(self) -> list[Union[Project, Branch]]:
-        """
-        :return: The list of project branches included in the application branch
-        :rtype: list[Union[Project, Branch]]
-        """
+        """The list of project or project branches included in the application branch"""
         return self._project_branches
 
     def delete(self) -> bool:
@@ -198,7 +203,7 @@ class ApplicationBranch(Component):
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
-        api, _, _, _ = Api(self, op.UPDATE).get_all(application=self.concerned_object.key, branch=self.name)
+        api, _, _, _ = Api(self, Oper.UPDATE).get_all(application=self.concerned_object.key, branch=self.name)
         try:
             ok = self.post(api, params=string_params).ok
         except exceptions.ObjectNotFound:
@@ -238,8 +243,8 @@ class ApplicationBranch(Component):
 
     def api_params(self, operation: Optional[str] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {op.GET: {"application": self.concerned_object.key, "branch": self.name}}
-        return ops[operation] if operation and operation in ops else ops[op.GET]
+        ops = {Oper.GET: {"application": self.concerned_object.key, "branch": self.name}}
+        return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
     def component_data(self) -> ObjectJsonRepr:
         """Returns key data"""
@@ -256,12 +261,12 @@ class ApplicationBranch(Component):
         return f"{self.base_url(local=False)}/dashboard?id={self.concerned_object.key}&branch={quote(self.name)}"
 
 
-def list_from(app: Application, data: ApiPayload) -> dict[str, ApplicationBranch]:
+def list_from(app: apps.Application, data: ApiPayload) -> dict[str, ApplicationBranch]:
     """Returns a dict of application branches form the pure App JSON"""
     if not data or "branches" not in data:
         return {}
     branch_list = {}
-    api_def = Api(ApplicationBranch, op.SEARCH, app.endpoint)
+    api_def = Api(ApplicationBranch, Oper.SEARCH, app.endpoint)
     for br in data["branches"]:
         api, _, params, ret = api_def.get_all(application=app.key, branch=br["name"])
         branch_data = json.loads(app.endpoint.get(api, params=params).text)[ret]

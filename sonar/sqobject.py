@@ -31,7 +31,7 @@ from http import HTTPStatus
 import concurrent.futures
 import requests
 
-from sonar.api.manager import ApiManager as Api, ApiOperation as op
+from sonar.api.manager import ApiManager as Api, ApiOperation as Oper
 import sonar.logging as log
 from sonar.util import cache
 from sonar.util import constants as c
@@ -69,7 +69,7 @@ class SqObject(object):
         return NotImplemented
 
     @classmethod
-    def api_for(cls, operation: op, endpoint: Platform) -> str:
+    def api_for(cls, operation: Oper, endpoint: Platform) -> str:
         """Returns the API to use for a particular operation for a particular object class.
         This function must be overloaded for classes that need specific treatment. e.g. API V1 or V2
         depending on SonarQube version, different API for SonarQube Cloud
@@ -78,7 +78,7 @@ class SqObject(object):
         :param endpoint: The SQS or SQC to invoke the API
         :return: The API to use for the operation, or None if not defined
         """
-        return cls.API[operation] if operation in cls.API else cls.API[op.SEARCH]
+        return cls.API[operation] if operation in cls.API else cls.API[Oper.SEARCH]
 
     @classmethod
     def clear_cache(cls, endpoint: Optional[Platform] = None) -> None:
@@ -136,7 +136,7 @@ class SqObject(object):
     def get_paginated(cls, endpoint: Platform, params: Optional[ApiParams] = None, threads: int = 8) -> dict[str, SqObject]:
         """Returns all pages of a paginated API"""
         cname = cls.__name__.lower()
-        api_def = Api(cls, op.SEARCH, endpoint)
+        api_def = Api(cls, Oper.SEARCH, endpoint)
         page_field = api_def.page_field()
         max_ps = api_def.max_page_size()
         new_params = {"ps": max_ps, "pageSize": max_ps} | (params or {})
@@ -244,7 +244,7 @@ class SqObject(object):
         """Deletes an object, returns whether the operation succeeded"""
         log.info("Deleting %s", str(self))
         try:
-            api, method, params, _ = Api(self, op.DELETE).get_all(**kwargs)
+            api, method, params, _ = Api(self, Oper.DELETE).get_all(**kwargs)
             if method == "DELETE":
                 ok = self.endpoint.delete(api=api, params=params).ok
             else:
@@ -261,7 +261,7 @@ class SqObject(object):
         """Deletes an object, returns whether the operation succeeded"""
         log.info("Deleting %s (old method)", str(self))
         try:
-            ok = self.post(api=self.__class__.API[op.DELETE], params=self.api_params(op.DELETE)).ok
+            ok = self.post(api=self.__class__.API[Oper.DELETE], params=self.api_params(Oper.DELETE)).ok
             if ok:
                 log.info("Removing from %s cache", str(self.__class__.__name__))
                 self.__class__.CACHE.pop(self)
@@ -278,7 +278,7 @@ class SqObject(object):
             return False
         log.info("Settings tags %s to %s", tags, str(self))
         try:
-            api, _, params, _ = Api(self, op.SET_TAGS).get_all(project=self.key, issue=self.key, application=self.key, tags=util.list_to_csv(tags))
+            api, _, params, _ = Api(self, Oper.SET_TAGS).get_all(project=self.key, issue=self.key, application=self.key, tags=util.list_to_csv(tags))
             if ok := self.post(api, params=params).ok:
                 self._tags = sorted(tags)
         except (ValueError, AttributeError, KeyError) as e:
@@ -291,7 +291,7 @@ class SqObject(object):
     def get_tags(self, **kwargs: Any) -> list[str]:
         """Returns object tags"""
         try:
-            api, _, params, ret = Api(self, op.GET_TAGS).get_all(component=self.key)
+            api, _, params, ret = Api(self, Oper.GET_TAGS).get_all(component=self.key)
         except ValueError as e:
             raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags") from e
         if self._tags is None:

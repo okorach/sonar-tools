@@ -37,7 +37,7 @@ import sonar.logging as log
 from sonar import settings, tasks, measures, rules, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 from sonar.audit.problem import Problem
@@ -90,7 +90,7 @@ class Component(SqObject):
             "ps": 1,
             "metricKeys": "bugs,vulnerabilities,code_smells,security_hotspots",
         }
-        api, _, api_params, ret = Api(self, op.GET_SUBCOMPONENTS).get_all(**parms)
+        api, _, api_params, ret = Api(self, Oper.GET_SUBCOMPONENTS).get_all(**parms)
         data = json.loads(self.get(api, params=api_params).text)
         nb_comp = sutil.nbr_total_elements(data)
         log.debug("Found %d subcomponents to %s", nb_comp, str(self))
@@ -99,7 +99,7 @@ class Component(SqObject):
         parms["ps"] = 500
         for page in range(nb_pages):
             parms["p"] = page + 1
-            api, _, api_params, ret = Api(self, op.GET_SUBCOMPONENTS).get_all(**parms)
+            api, _, api_params, ret = Api(self, Oper.GET_SUBCOMPONENTS).get_all(**parms)
             data = json.loads(self.get(api, params=api_params).text)
             for d in data[ret]:
                 nbr_issues = 0
@@ -147,7 +147,7 @@ class Component(SqObject):
         from sonar.hotspots import component_filter, Hotspot
 
         log.info("Searching hotspots for %s with filters %s", str(self), str(filters))
-        params = util.replace_keys(measures.ALT_COMPONENTS, component_filter(self.endpoint), self.api_params(op.GET))
+        params = util.replace_keys(measures.ALT_COMPONENTS, component_filter(self.endpoint), self.api_params(Oper.GET))
         if filters is not None:
             params.update(filters)
         return Hotspot.search(endpoint=self.endpoint, filters=params)
@@ -171,7 +171,7 @@ class Component(SqObject):
 
         tpissues = self.count_third_party_issues()
         inst_issues = self.count_instantiated_rules_issues()
-        params = self.api_params(op.GET)
+        params = self.api_params(Oper.GET)
         json_data["issues"] = {
             "thirdParty": tpissues if len(tpissues) > 0 else 0,
             "instantiatedRules": inst_issues if len(inst_issues) > 0 else 0,
@@ -211,7 +211,7 @@ class Component(SqObject):
 
     def get_navigation_data(self) -> ApiPayload:
         """Returns a component navigation data"""
-        params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(op.GET))
+        params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(Oper.GET))
         data = json.loads(self.get("navigation/component", params=params).text)
         super().reload(data)
         return data
@@ -231,8 +231,8 @@ class Component(SqObject):
     def new_code_start_date(self) -> Optional[datetime]:
         """Returns the new code period start date of a component or None if this component has no new code start date"""
         if self._new_code_start_date is None:
-            params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(op.GET))
-            api, _, api_params, ret = Api(self, op.GET).get_all(**params)
+            params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(Oper.GET))
+            api, _, api_params, ret = Api(self, Oper.GET).get_all(**params)
             data = json.loads(self.get(api, params=api_params).text)[ret]
             self.sq_json |= data
             if "leakPeriodDate" in data:
@@ -258,7 +258,7 @@ class Component(SqObject):
     def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None) -> ApiPayload:
         """Returns a component analyses"""
         log.debug("%s: Getting history of analyses", self)
-        params = util.dict_remap(self.api_params(op.GET), {"component": "project"})
+        params = util.dict_remap(self.api_params(Oper.GET), {"component": "project"})
         data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", **params)["analyses"]
         if filter_in and len(filter_in) > 0:
             data = [d for d in data if any(e["category"] in filter_in for e in d["events"])]
@@ -285,7 +285,7 @@ class Component(SqObject):
         if version >= (2025, 1, 0):
             api = "project_branches/get_ai_code_assurance"
         try:
-            params = util.dict_remap(self.api_params(op.GET), {"component": "project"})
+            params = util.dict_remap(self.api_params(Oper.GET), {"component": "project"})
             return str(json.loads(self.get(api, params=params).text)["aiCodeAssurance"]).upper()
         except (ConnectionError, RequestException) as e:
             sutil.handle_error(e, f"getting AI code assurance of {self}", catch_all=True)
@@ -426,10 +426,10 @@ class Component(SqObject):
         from sonar.issues import component_search_field
 
         ops = {
-            op.GET: {"component": self.key},
-            op.SEARCH: {component_search_field(self.endpoint): self.key},
+            Oper.GET: {"component": self.key},
+            Oper.SEARCH: {component_search_field(self.endpoint): self.key},
         }
-        return ops[operation] if operation and operation in ops else ops[op.SEARCH]
+        return ops[operation] if operation and operation in ops else ops[Oper.SEARCH]
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""

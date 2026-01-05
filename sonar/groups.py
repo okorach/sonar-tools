@@ -36,7 +36,7 @@ from sonar.util import cache, constants as c
 
 from sonar.audit import rules
 from sonar.audit.problem import Problem
-from sonar.api.manager import ApiManager as Api, ApiOperation as op
+from sonar.api.manager import ApiManager as Api, ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -83,7 +83,7 @@ class Group(SqObject):
         log.debug("Reading group '%s'", name)
         if o := Group.CACHE.get(name, endpoint.local_url):
             return o
-        api, _, params, ret = Api(cls, op.SEARCH, endpoint).get_all(q=name)
+        api, _, params, ret = Api(cls, Oper.SEARCH, endpoint).get_all(q=name)
         data = json.loads(endpoint.get(api, params=params).text)[ret]
         if not data or data == []:
             raise exceptions.ObjectNotFound(name, f"Group '{name}' not found")
@@ -100,7 +100,7 @@ class Group(SqObject):
         :return: The group object
         """
         log.debug("Creating group '%s'", name)
-        api_def = Api(cls, op.CREATE, endpoint)
+        api_def = Api(cls, Oper.CREATE, endpoint)
         params = util.remove_nones({"name": name, "description": description})
         endpoint.post(api_def.api(), params=params)
         return cls.read(endpoint=endpoint, name=name)
@@ -170,7 +170,7 @@ class Group(SqObject):
             return False
         log.info("Updating %s with name = %s, description = %s", self, name, description)
         params = util.remove_nones({"currentName": self.name, "id": self.id, "name": name, "description": description})
-        api, method, params, _ = Api(self, op.UPDATE).get_all(**params)
+        api, method, params, _ = Api(self, Oper.UPDATE).get_all(**params)
         if method == "PATCH":
             ok = self.endpoint.patch(api, params=params).ok
         else:
@@ -213,7 +213,7 @@ class Group(SqObject):
         """Returns the group members"""
         if self.__members is None or not use_cache:
             # TODO: handle pagination
-            api, _, params, ret = Api(self, op.LIST_MEMBERS).get_all(groupId=self.id, ps=500, pageSize=500, name=self.name)
+            api, _, params, ret = Api(self, Oper.LIST_MEMBERS).get_all(groupId=self.id, ps=500, pageSize=500, name=self.name)
             data = json.loads(self.endpoint.get(api, params=params).text)[ret]
             if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
                 pname = "id"
@@ -235,7 +235,7 @@ class Group(SqObject):
         """
         if self.endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
             return None
-        api, _, params, ret = Api(self, op.LIST_MEMBERS).get_all(groupId=self.id, userId=user.id)
+        api, _, params, ret = Api(self, Oper.LIST_MEMBERS).get_all(groupId=self.id, userId=user.id)
         data = json.loads(self.endpoint.get(api, params=params).text)[ret]
         return next((m["id"] for m in data if m["groupId"] == self.id and m["userId"] == user.id), None)
 
@@ -246,7 +246,7 @@ class Group(SqObject):
         :return: Whether the operation succeeded
         """
         log.info("Adding %s to %s", str(user), str(self))
-        api, method, params, _ = Api(self, op.ADD_USER).get_all(groupId=self.id, userId=user.id, login=user.login, name=self.name)
+        api, method, params, _ = Api(self, Oper.ADD_USER).get_all(groupId=self.id, userId=user.id, login=user.login, name=self.name)
         if method == "POST":
             return self.endpoint.post(api, params=params).ok
         else:
@@ -263,7 +263,7 @@ class Group(SqObject):
         if user not in self.members(use_cache=False):
             raise exceptions.ObjectNotFound(user.login or user.id, f"{user} not in {self}")
         mb_id = self.__get_membership_id(user)
-        api, method, params, _ = Api(self, op.REMOVE_USER).get_all(id=mb_id, login=user.login, name=self.name)
+        api, method, params, _ = Api(self, Oper.REMOVE_USER).get_all(id=mb_id, login=user.login, name=self.name)
         if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION and not mb_id:
             raise exceptions.ObjectNotFound(user.login, f"{self} or user id '{user.id}' not found")
         if method == "DELETE":

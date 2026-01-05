@@ -37,7 +37,7 @@ from sonar import findings, rules, changelog
 from sonar import exceptions
 import sonar.util.issue_defs as idefs
 import sonar.utilities as sutil
-from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
@@ -128,7 +128,7 @@ class Hotspot(findings.Finding):
             log.debug("Searching hotspots with sanitized filters %s", str(inline_filters))
             while p <= nbr_pages:
                 try:
-                    api, _, api_params, ret = Api(cls, op.SEARCH, endpoint).get_all(**inline_filters, p=p)
+                    api, _, api_params, ret = Api(cls, Oper.SEARCH, endpoint).get_all(**inline_filters, p=p)
                     dataset = json.loads(endpoint.get(api, params=api_params, mute=(HTTPStatus.NOT_FOUND,)).text)
                     nbr_hotspots = sutil.nbr_total_elements(dataset)
                 except exceptions.SonarException:
@@ -148,10 +148,10 @@ class Hotspot(findings.Finding):
                 p += 1
         return post_search_filter(hotspots_list, filters)
 
-    def api_params(self, operation: op = op.GET) -> ApiParams:
+    def api_params(self, operation: Oper = Oper.GET) -> ApiParams:
         """Returns the base API params to be used of a hotspot"""
-        ops = {op.GET: {"hotspot": self.key}}
-        return ops[operation] if operation in ops else ops[op.GET]
+        ops = {Oper.GET: {"hotspot": self.key}}
+        return ops[operation] if operation in ops else ops[Oper.GET]
 
     def url(self) -> str:
         """Returns the permalink URL to the hotspot in the SonarQube platform"""
@@ -183,7 +183,7 @@ class Hotspot(findings.Finding):
         :return: Whether there operation succeeded
         """
         try:
-            api, _, params, _ = Api(self, op.GET).get_all(**self.api_params())
+            api, _, params, _ = Api(self, Oper.GET).get_all(**self.api_params())
             resp = self.get(api, params=params)
             if resp.ok:
                 d = json.loads(resp.text)
@@ -207,7 +207,7 @@ class Hotspot(findings.Finding):
         """
         try:
             params = util.remove_nones({**self.api_params(), "status": status, "resolution": resolution, "comment": comment})
-            api, _, api_params, _ = Api(self, op.CHANGE_STATUS).get_all(**params)
+            api, _, api_params, _ = Api(self, Oper.CHANGE_STATUS).get_all(**params)
             ok = self.post(api, params=api_params).ok
             self.refresh()
         except exceptions.SonarException:
@@ -260,7 +260,7 @@ class Hotspot(findings.Finding):
         :return: Whether the operation succeeded
         """
         try:
-            api, _, params, _ = Api(self, op.ADD_COMMENT).get_all(**{**self.api_params(), "comment": comment})
+            api, _, params, _ = Api(self, Oper.ADD_COMMENT).get_all(**{**self.api_params(), "comment": comment})
             return self.post(api, params=params).ok
         except exceptions.SonarException:
             return False
@@ -482,7 +482,7 @@ def count(endpoint: Platform, **kwargs: Any) -> int:
     params = {} if not kwargs else kwargs.copy()
     params["ps"] = 1
     params = sanitize_search_filters(endpoint, params)
-    api, _, api_params, _ = Api(Hotspot, op.SEARCH, endpoint).get_all(**params)
+    api, _, api_params, _ = Api(Hotspot, Oper.SEARCH, endpoint).get_all(**params)
     nbr_hotspots = sutil.nbr_total_elements(json.loads(endpoint.get(api, params=api_params, mute=(HTTPStatus.NOT_FOUND,)).text))
     log.debug("Hotspot counts with filters %s returned %d hotspots", str(kwargs), nbr_hotspots)
     return nbr_hotspots

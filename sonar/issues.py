@@ -40,7 +40,7 @@ from sonar.projects import Project
 
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
@@ -162,7 +162,7 @@ class Issue(findings.Finding):
     def search_one_page(endpoint: Platform, **search_params: Any) -> dict[str, Issue]:
         """Search one page of issues"""
         search_params = pre_search_filters(endpoint=endpoint, params=search_params)
-        api, _, api_params, ret = Api(Issue, op.SEARCH, endpoint).get_all(**search_params)
+        api, _, api_params, ret = Api(Issue, Oper.SEARCH, endpoint).get_all(**search_params)
         dataset = json.loads(endpoint.get(api, params=api_params).text)
         return Issue.__get_issue_list(endpoint, dataset[ret], **search_params)
 
@@ -179,7 +179,7 @@ class Issue(findings.Finding):
         new_params = {"ps": cls.MAX_PAGE_SIZE} | pre_search_filters(endpoint=endpoint, params=search_params)
         log.debug("Filtered search params = %s", new_params)
 
-        api, _, api_params, ret = Api(cls, op.SEARCH, endpoint).get_all(**new_params)
+        api, _, api_params, ret = Api(cls, Oper.SEARCH, endpoint).get_all(**new_params)
         # Get first page
         dataset = json.loads(endpoint.get(api, params=api_params).text)
         nbr_issues = sutil.nbr_total_elements(dataset)
@@ -372,15 +372,15 @@ class Issue(findings.Finding):
         issue_list = Issue.search_one_page(endpoint, **(search_params | {"ps": 1}))
         return None if len(issue_list) == 0 else next(iter(issue_list.values()))
 
-    def api_params(self, operation: op = op.GET) -> ApiParams:
+    def api_params(self, operation: Oper = Oper.GET) -> ApiParams:
         """Returns the base API params to be used of an issue"""
         ops = {
-            op.GET: {"issue": self.key},
-            op.SEARCH: {"issues": self.key},
-            op.SET_TAGS: {"issue": self.key},
-            op.GET_TAGS: {"issues": self.key},
+            Oper.GET: {"issue": self.key},
+            Oper.SEARCH: {"issues": self.key},
+            Oper.SET_TAGS: {"issue": self.key},
+            Oper.GET_TAGS: {"issues": self.key},
         }
-        return ops[operation] if operation in ops else ops[op.GET]
+        return ops[operation] if operation in ops else ops[Oper.GET]
 
     def url(self) -> str:
         """Returns a permalink URL to the issue in the SonarQube platform"""
@@ -426,7 +426,7 @@ class Issue(findings.Finding):
 
         :return: whether the refresh was successful
         """
-        api, _, params, ret = Api(self, op.GET).get_all(issues=self.key, additionalFields="_all")
+        api, _, params, ret = Api(self, Oper.GET).get_all(issues=self.key, additionalFields="_all")
         resp = self.get(api, params=params)
         if resp.ok:
             self.reload(json.loads(resp.text)[ret][0])
@@ -457,7 +457,7 @@ class Issue(findings.Finding):
         :rtype: dict{"<date>_<sequence_nbr>": Changelog}
         """
         if self._changelog is None:
-            api, _, params, ret = Api(self, op.GET_CHANGELOG).get_all(issue=self.key, format="json")
+            api, _, params, ret = Api(self, Oper.GET_CHANGELOG).get_all(issue=self.key, format="json")
             data = json.loads(self.get(api, params=params).text)
             # util.json_dump_debug(data[ret], f"{str(self)} Changelog = ")
             self._changelog = {}
@@ -512,7 +512,7 @@ class Issue(findings.Finding):
         """
         log.debug("Adding comment '%s' to %s", comment, str(self))
         try:
-            api, _, params, _ = Api(self, op.ADD_COMMENT).get_all(issue=self.key, text=comment)
+            api, _, params, _ = Api(self, Oper.ADD_COMMENT).get_all(issue=self.key, text=comment)
             return self.post(api, params=params).ok
         except exceptions.SonarException:
             return False
@@ -520,7 +520,7 @@ class Issue(findings.Finding):
     def __set_severity(self, **params: Any) -> bool:
         """Changes the severity of an issue, in std experience or MQR depending on params"""
         log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, str(params))
-        api, _, api_params, _ = Api(self, op.SET_SEVERITY).get_all(issue=self.key, **params)
+        api, _, api_params, _ = Api(self, Oper.SET_SEVERITY).get_all(issue=self.key, **params)
         r = self.post(api, params=api_params)
         return r.ok
 
@@ -560,7 +560,7 @@ class Issue(findings.Finding):
         if self._tags is None:
             self._tags = self.sq_json.get("tags")
         if not use_cache or self._tags is None:
-            api, _, params, ret = Api(self, op.GET_TAGS).get_all(issues=self.key, additionalFields="")
+            api, _, params, ret = Api(self, Oper.GET_TAGS).get_all(issues=self.key, additionalFields="")
             data = json.loads(self.get(api, params=params).text)
             self.sq_json.update(data[ret][0])
             self._tags = self.sq_json["tags"]
@@ -598,7 +598,7 @@ class Issue(findings.Finding):
         if self.endpoint.is_mqr_mode():
             raise exceptions.UnsupportedOperation("Changing issue type is not supported in MQR mode")
         log.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
-        api, _, params, _ = Api(self, op.SET_TYPE).get_all(issue=self.key, type=new_type)
+        api, _, params, _ = Api(self, Oper.SET_TYPE).get_all(issue=self.key, type=new_type)
         if ok := self.post(api, params=params).ok:
             self.type = new_type
         return ok
@@ -828,7 +828,7 @@ def _get_facets(endpoint: Platform, project_key: str, facet: str = "directories"
     log.debug("Getting facets for %s with params %s", facet, search_params)
     search_params = pre_search_filters(endpoint=endpoint, params=search_params)
     log.debug("Filtered search params = %s", search_params)
-    api, _, search_params, _ = Api(Issue, op.SEARCH, endpoint).get_all(**search_params)
+    api, _, search_params, _ = Api(Issue, Oper.SEARCH, endpoint).get_all(**search_params)
     data = json.loads(endpoint.get(api, params=search_params).text)
     facets_d = {f["property"]: f["values"] for f in data["facets"] if f["property"] in util.csv_to_list(facet)}
     return [elem["val"] for elem in facets_d[facet]]
@@ -856,7 +856,7 @@ def count(endpoint: Platform, **kwargs: Any) -> int:
     """Returns number of issues of a search"""
     filters = pre_search_filters(endpoint=endpoint, params=kwargs)
     filters["ps"] = 1
-    api, _, api_params, _ = Api(Issue, op.SEARCH, endpoint).get_all(**filters)
+    api, _, api_params, _ = Api(Issue, Oper.SEARCH, endpoint).get_all(**filters)
     nbr_issues = sutil.nbr_total_elements(json.loads(endpoint.get(api, params=api_params).text))
     log.debug("Count issues with filters %s returned %d issues", str(kwargs), nbr_issues)
     return nbr_issues
@@ -871,7 +871,7 @@ def count_by_rule(endpoint: Platform, **kwargs) -> dict[str, int]:
         nbr_slices = math.ceil(len(ruleset) / SLICE_SIZE)
     params = pre_search_filters(endpoint=endpoint, params=kwargs) | {"ps": 1, "facets": "rules"}
     rulecount = {}
-    api_def = Api(Issue, op.SEARCH, endpoint)
+    api_def = Api(Issue, Oper.SEARCH, endpoint)
     for i in range(nbr_slices):
         params["rules"] = ",".join(ruleset[i * SLICE_SIZE : min((i + 1) * SLICE_SIZE - 1, len(ruleset))])
         try:

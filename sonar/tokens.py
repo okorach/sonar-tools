@@ -33,7 +33,7 @@ import sonar.util.misc as util
 from sonar.util import cache, constants as c
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
-from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
@@ -68,7 +68,7 @@ class UserToken(SqObject):
         :param login: User for which the token must be created
         :param name: Token name
         """
-        api, _, params, _ = Api(cls, op.CREATE, endpoint).get_all(name=name, login=login)
+        api, _, params, _ = Api(cls, Oper.CREATE, endpoint).get_all(name=name, login=login)
         data = json.loads(endpoint.post(api, params).text)
         return UserToken(endpoint=endpoint, login=data["login"], json_data=data, name=name)
 
@@ -85,7 +85,7 @@ class UserToken(SqObject):
         :param login: login of the user
         :return: list of tokens
         """
-        api, _, params, ret = Api(cls, op.SEARCH, endpoint).get_all(login=login)
+        api, _, params, ret = Api(cls, Oper.SEARCH, endpoint).get_all(login=login)
         data = json.loads(endpoint.get(api, params).text)
         return [cls(endpoint=endpoint, login=data["login"], json_data=tk) for tk in data[ret]]
 
@@ -95,10 +95,10 @@ class UserToken(SqObject):
         """
         return self.delete_object(name=self.name, login=self.login)
 
-    def api_params(self, operation: op = op.GET) -> ApiParams:
+    def api_params(self, operation: Oper = Oper.GET) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {op.GET: {"name": self.name, "login": self.login}}
-        return ops[operation] if operation in ops else ops[op.GET]
+        ops = {Oper.GET: {"name": self.name, "login": self.login}}
+        return ops[operation] if operation in ops else ops[Oper.GET]
 
     def is_expired(self) -> bool:
         """Returns True if the token is expired, False otherwise"""

@@ -37,7 +37,7 @@ import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 from sonar.util import common_json_helper
-from sonar.api.manager import ApiManager as Api, ApiOperation as op
+from sonar.api.manager import ApiManager as Api, ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -167,7 +167,7 @@ class QualityGate(SqObject):
     @classmethod
     def create(cls, endpoint: Platform, name: str) -> QualityGate:
         """Creates an empty quality gate"""
-        api, _, params, _ = Api(cls, op.CREATE, endpoint).get_all(name=name)
+        api, _, params, _ = Api(cls, Oper.CREATE, endpoint).get_all(name=name)
         endpoint.post(api, params=params)
         return cls.get_object(endpoint, name)
 
@@ -195,7 +195,7 @@ class QualityGate(SqObject):
             return self._projects
         page, nb_pages = 1, 1
         self._projects = {}
-        api_def = Api(self, op.GET_PROJECTS)
+        api_def = Api(self, Oper.GET_PROJECTS)
         max_ps = api_def.max_page_size()
         p_field = api_def.page_field()
         params = {"ps": max_ps} | {"gateId": self.key} if self.endpoint.is_sonarcloud() else {"gateName": self.name}
@@ -221,7 +221,7 @@ class QualityGate(SqObject):
         :return: The quality gate conditions, encoded (for simplication) or not
         """
         if self._conditions is None:
-            api, _, params, _ = Api(self, op.GET).get_all(name=self.name)
+            api, _, params, _ = Api(self, Oper.GET).get_all(name=self.name)
             data = json.loads(self.get(api, params=params).text)
             log.debug("Loading %s with conditions %s", self, util.json_dump(data))
             self._conditions = list(data.get("conditions", []))
@@ -314,7 +314,7 @@ class QualityGate(SqObject):
             return True
         if "name" in data and data["name"] != self.name:
             log.info("Renaming %s with %s", self, data["name"])
-            api, _, params, _ = Api(self, op.RENAME).get_all(id=self.key, name=data["name"])
+            api, _, params, _ = Api(self, Oper.RENAME).get_all(id=self.key, name=data["name"])
             self.post(api, params=params)
             QualityGate.CACHE.pop(self)
             self.key = self.name = data["name"]
@@ -332,10 +332,10 @@ class QualityGate(SqObject):
         """
         return sorted(self.conditions(encoded=True)) == sorted(other_qg.conditions(encoded=True))
 
-    def api_params(self, operation: op = op.GET) -> ApiParams:
+    def api_params(self, operation: Oper = Oper.GET) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {op.GET: {"name": self.name}}
-        return ops[operation] if operation in ops else ops[op.GET]
+        ops = {Oper.GET: {"name": self.name}}
+        return ops[operation] if operation in ops else ops[Oper.GET]
 
     def audit_conditions(self) -> list[Problem]:
         problems = []
@@ -397,7 +397,7 @@ class QualityGate(SqObject):
         :rtype: dict {<name>: <QualityGate>}
         """
         log.info("Getting quality gates")
-        api, _, params, ret = Api(cls, op.SEARCH, endpoint).get_all()
+        api, _, params, ret = Api(cls, Oper.SEARCH, endpoint).get_all()
         dataset = json.loads(endpoint.get(api, params=params).text)[ret]
         qg_list = {}
         for qg in dataset:
@@ -544,7 +544,7 @@ def _decode_condition(cond: str) -> tuple[str, str, str]:
 
 def search_by_name(endpoint: Platform, name: str) -> Optional[dict[str, Any]]:
     """Searches quality gates matching name"""
-    api, _, _, ret = Api(QualityGate, op.SEARCH, endpoint).get_all()
+    api, _, _, ret = Api(QualityGate, Oper.SEARCH, endpoint).get_all()
     return sutil.search_by_name(endpoint, name, api, ret)
 
 

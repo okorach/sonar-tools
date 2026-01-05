@@ -39,7 +39,7 @@ import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
-from sonar.api.manager import ApiOperation as op
+from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 from sonar import projects as proj
 
@@ -118,7 +118,7 @@ class PullRequest(components.Component):
             log.debug(_UNSUPPORTED_IN_CE)
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 
-        api, _, params, ret = Api(cls, op.SEARCH, project.endpoint).get_all(project=project.key)
+        api, _, params, ret = Api(cls, Oper.SEARCH, project.endpoint).get_all(project=project.key)
         data = json.loads(project.get(api, params=params).text)
         pr_list = {}
         for pr in data[ret]:
@@ -174,13 +174,13 @@ class PullRequest(components.Component):
         """Returns the project key"""
         return self.concerned_object.key
 
-    def api_params(self, operation: Optional[op] = None) -> ApiParams:
+    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {
-            op.GET: {"project": self.concerned_object.key, "pullRequest": self.key},
-            op.DELETE: {"project": self.concerned_object.key, "pullRequest": self.key},
+            Oper.GET: {"project": self.concerned_object.key, "pullRequest": self.key},
+            Oper.DELETE: {"project": self.concerned_object.key, "pullRequest": self.key},
         }
-        return ops[operation] if operation and operation in ops else ops[op.GET]
+        return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
     def delete(self) -> bool:
         """Deletes a pull request"""
