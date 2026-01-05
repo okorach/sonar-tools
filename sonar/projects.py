@@ -40,7 +40,7 @@ import sonar.util.issue_defs as idefs
 from sonar.util import cache
 from sonar import exceptions
 from sonar import qualityprofiles, tasks, settings, webhooks, devops
-from sonar.qualitygates import QualityGate
+from sonar import qualitygates as qg
 from sonar import pull_requests, branches
 import sonar.util.misc as util
 import sonar.permissions.project_permissions as pperms
@@ -323,10 +323,7 @@ class Project(Component):
         :rtype: dict{PR_ID: PullRequest}
         """
         if self._pull_requests is None or not use_cache:
-            try:
-                self._pull_requests = pull_requests.PullRequest.get_list(self)
-            except exceptions.UnsupportedOperation:
-                self._pull_requests = {}
+            self._pull_requests = pull_requests.PullRequest.get_list(self)
         return self._pull_requests
 
     def delete(self) -> bool:
@@ -1106,7 +1103,7 @@ class Project(Component):
         """
         if quality_gate is None:
             return False
-        _ = QualityGate.get_object(self.endpoint, quality_gate)
+        _ = qg.QualityGate.get_object(self.endpoint, quality_gate)
         return self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate}).ok
 
     def set_contains_ai_code(self, contains_ai_code: bool) -> bool:
