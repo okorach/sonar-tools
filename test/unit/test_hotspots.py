@@ -29,14 +29,14 @@ import sonar.util.misc as util
 
 def test_transitions() -> None:
     """test_transitions"""
-    hotspot_d = hotspots.Hotspot.search(endpoint=tutil.SQ, filters={"project": "test:juice-shop"})
+    hotspot_d = hotspots.Hotspot.search(tutil.SQ, project="test:juice-shop")
     hotspot = list(hotspot_d.values())[0]
 
     assert hotspot.mark_as_safe()
     assert hotspot.reopen()
 
     if tutil.SQ.is_sonarcloud():
-        hotspot = hotspots.Hotspot.search(endpoint=tutil.SQ, filters={"project": "okorach_sonar-tools"})[0]
+        hotspot = list(hotspots.Hotspot.search(tutil.SQ, project=tutil.LIVE_PROJECT).values())[0]
         assert not hotspot.mark_as_acknowledged()
     else:
         assert hotspot.mark_as_acknowledged()
@@ -54,7 +54,7 @@ def test_transitions() -> None:
 
 def test_search_by_project() -> None:
     """test_search_by_project"""
-    hotspot_d = hotspots.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
+    hotspot_d = hotspots.search_by_project(tutil.SQ, project_key=tutil.LIVE_PROJECT)
     assert len(hotspot_d) > 0
 
 
@@ -69,7 +69,7 @@ def test_sanitize_filter() -> None:
 
 def test_comments_after() -> None:
     """test_comments_after"""
-    hotspot = list(hotspots.Hotspot.search(endpoint=tutil.SQ, filters={"project": "test:juice-shop"}).values())[0]
+    hotspot = list(hotspots.Hotspot.search(endpoint=tutil.SQ, project="test:juice-shop").values())[0]
     after = util.add_tz(datetime(2024, 1, 1))
     comments = hotspot.comments(after=after)
     assert all(c["date"] >= after for c in comments.values())

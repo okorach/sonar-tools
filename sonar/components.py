@@ -147,10 +147,9 @@ class Component(SqObject):
         from sonar.hotspots import component_filter, Hotspot
 
         log.info("Searching hotspots for %s with filters %s", str(self), str(filters))
-        params = util.replace_keys(measures.ALT_COMPONENTS, component_filter(self.endpoint), self.api_params(Oper.GET))
-        if filters is not None:
-            params.update(filters)
-        return Hotspot.search(endpoint=self.endpoint, filters=params)
+        search_params = util.replace_keys(measures.ALT_COMPONENTS, component_filter(self.endpoint), self.api_params(Oper.GET))
+        search_params.update(filters or {})
+        return Hotspot.search(endpoint=self.endpoint, **search_params)
 
     def migration_export(self, export_settings: ConfigSettings) -> dict[str, Any]:
         """Prepares all data for a sonar-migration export"""

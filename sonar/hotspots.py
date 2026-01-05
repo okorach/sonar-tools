@@ -26,6 +26,7 @@ from datetime import datetime
 from typing import Optional, Any, TYPE_CHECKING
 from http import HTTPStatus
 import requests.utils
+from copy import deepcopy
 
 import sonar.logging as log
 
@@ -111,42 +112,67 @@ class Hotspot(findings.Finding):
         return f"Hotspot key '{self.key}'"
 
     @classmethod
-    def search(cls, endpoint: Platform, filters: ApiParams = None) -> dict[str, Hotspot]:
+    def load(cls, endpoint: Platform, data: ApiPayload) -> Hotspot:
+        """Loads a hotspot from the API payload"""
+        o: Optional[Hotspot] = Hotspot.CACHE.get(data["key"], endpoint.local_url)
+        if not o:
+            o = Hotspot(endpoint=endpoint, key=data["key"], data=data)
+        o.reload(data)
+        return o
+
+    @classmethod
+    def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, Hotspot]:
         """Searches hotspots
 
         :param endpoint: Reference to the SonarQube platform
-        :param filters: Search filters to narrow down the search, defaults to None
         :return: Dict of found hotspots
         """
-        hotspots_list = {}
-        new_params = {"ps": cls.MAX_PAGE_SIZE} | sanitize_search_filters(endpoint=endpoint, params=filters)
-        log.debug("Search hotspots with params %s", str(new_params))
-        split_filters = split_search_filters(new_params)
-        log.debug("Split search filters = %s", split_filters)
-        for inline_filters in split_filters:
-            p, nbr_pages = 1, 1
-            log.debug("Searching hotspots with sanitized filters %s", str(inline_filters))
-            while p <= nbr_pages:
-                try:
-                    api, _, api_params, ret = Api(cls, Oper.SEARCH, endpoint).get_all(**inline_filters, p=p)
-                    dataset = json.loads(endpoint.get(api, params=api_params, mute=(HTTPStatus.NOT_FOUND,)).text)
-                    nbr_hotspots = sutil.nbr_total_elements(dataset)
-                except exceptions.SonarException:
-                    nbr_hotspots = 0
-                    return {}
-                nbr_pages = sutil.nbr_pages(dataset)
-                log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, p, nbr_pages)
-                if nbr_hotspots > Hotspot.MAX_SEARCH:
-                    errmsg = f"""{nbr_hotspots} hotpots returned by {api}, """
-                    """this is more than the max {Hotspot.MAX_SEARCH} possible"""
-                    raise TooManyHotspotsError(nbr_hotspots, errmsg)
+        # Backup original params to allow for severities, createdAfter, createdBefore, languages filters post search
+        original_params = deepcopy(search_params)
 
-                for enrichment in "branch", "pullRequest":
-                    if enrichment in inline_filters:
-                        dataset[ret] = [{**ele, enrichment: inline_filters[enrichment]} for _, ele in enumerate(dataset[ret])]
-                hotspots_list |= {i["key"]: get_object(endpoint=endpoint, key=i["key"], data=i) for i in dataset[ret]}
-                p += 1
-        return post_search_filter(hotspots_list, filters)
+        log.debug("Searching hotspots with params %s", str(search_params))
+        split_filters = split_search_filters(sanitize_search_filters(endpoint=endpoint, params=search_params))
+        log.debug("Split search filters = %s", split_filters)
+        hotspots_list: dict[str, Hotspot] = {}
+        for inline_filters in split_filters:
+            hotspots_list |= cls.get_paginated(endpoint=endpoint, params=inline_filters)
+        # Add Branch and Pull Request info to hotspots (which is not return in the API payload)
+        for enrichment in [elem for elem in ["branch", "pullRequest"] if elem in inline_filters]:
+            e_val = search_params[enrichment]
+            for hotspot in hotspots_list.values():
+                hotspot.sq_json[enrichment] = e_val
+                if enrichment == "branch":
+                    hotspot.branch = e_val
+                elif enrichment == "pullRequest":
+                    hotspot.pull_request = e_val
+        # Filter results based on creation date, severities, languages
+        return post_search_filter(hotspots_list, original_params)
+
+    def reload(self, data: ApiPayload, from_export: bool = False) -> None:
+        """Loads the hotspot details from the provided data (coming from api/hotspots/search)"""
+        super().reload(data, from_export)
+        if not self.rule:
+            self.rule = data.get("ruleKey", None)
+        self.severity = data.get("vulnerabilityProbability", "UNDEFINED")
+        self.impacts = {idefs.QUALITY_SECURITY: self.severity}
+
+    def refresh(self) -> Hotspot:
+        """Refreshes and reads hotspots details in SonarQube
+
+        :return: Whether there operation succeeded
+        """
+        api, _, params, _ = Api(self, Oper.GET).get_all(**self.api_params())
+        d = json.loads(self.get(api, params=params).text)
+        self.__details = d
+        if self.file is None and "path" in d["component"]:
+            self.file = d["component"]["path"]
+        self.branch, self.pull_request = self.get_branch_and_pr(d["project"])
+        self.severity = d["rule"].get("vulnerabilityProbability", "UNDEFINED")
+        self.impacts = {idefs.QUALITY_SECURITY: self.severity}
+        if not self.rule:
+            self.rule = d["rule"]["key"]
+        self.assignee = d.get("assignee", None)
+        return self
 
     def api_params(self, operation: Oper = Oper.GET) -> ApiParams:
         """Returns the base API params to be used of a hotspot"""
@@ -169,44 +195,13 @@ class Hotspot(findings.Finding):
             data["impacts"][idefs.QUALITY_SECURITY] += f"({idefs.TYPE_HOTSPOT})"
         return data
 
-    def _load(self, data: ApiPayload, from_export: bool = False) -> None:
-        """Loads the hotspot details from the provided data (coming from api/hotspots/search)"""
-        super().reload(data, from_export)
-        if not self.rule:
-            self.rule = data.get("ruleKey", None)
-        self.severity = data.get("vulnerabilityProbability", "UNDEFINED")
-        self.impacts = {idefs.QUALITY_SECURITY: self.severity}
-
-    def refresh(self) -> bool:
-        """Refreshes and reads hotspots details in SonarQube
-
-        :return: Whether there operation succeeded
-        """
-        try:
-            api, _, params, _ = Api(self, Oper.GET).get_all(**self.api_params())
-            resp = self.get(api, params=params)
-            if resp.ok:
-                d = json.loads(resp.text)
-                self.__details = d
-                if self.file is None and "path" in d["component"]:
-                    self.file = d["component"]["path"]
-                self.branch, self.pull_request = self.get_branch_and_pr(d["project"])
-                self.severity = d["rule"].get("vulnerabilityProbability", "UNDEFINED")
-                self.impacts = {idefs.QUALITY_SECURITY: self.severity}
-                if not self.rule:
-                    self.rule = d["rule"]["key"]
-                self.assignee = d.get("assignee", None)
-            return resp.ok
-        except exceptions.SonarException:
-            return False
-
     def __mark_as(self, resolution: Optional[str], comment: Optional[str] = None, status: str = "REVIEWED") -> bool:
         """Marks a hotspot with a particular resolution and status
 
         :return: Whether the operation succeeded
         """
         try:
-            params = util.remove_nones({**self.api_params(), "status": status, "resolution": resolution, "comment": comment})
+            params = self.api_params() | {"status": status, "resolution": resolution, "comment": comment}
             api, _, api_params, _ = Api(self, Oper.CHANGE_STATUS).get_all(**params)
             ok = self.post(api, params=api_params).ok
             self.refresh()
@@ -398,13 +393,12 @@ def search_by_project(endpoint: Platform, project_key: str, filters: ApiParams =
     """
     key_list = util.csv_to_list(project_key)
     hotspots = {}
-    filters = {} if not filters else filters.copy()
+    filters = filters or {}
     for k in key_list:
-        filters[component_filter(endpoint)] = k
-        project_hotspots = Hotspot.search(endpoint=endpoint, filters=filters)
+        project_hotspots = Hotspot.search(endpoint=endpoint, **(filters | {component_filter(endpoint): k}))
         log.info("Project '%s' has %d hotspots corresponding to filters", k, len(project_hotspots))
-        hotspots.update(project_hotspots)
-    return post_search_filter(hotspots, filters=filters)
+        hotspots |= project_hotspots
+    return hotspots
 
 
 def component_filter(endpoint: Platform) -> str:
