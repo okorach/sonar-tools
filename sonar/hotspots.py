@@ -100,17 +100,24 @@ class Hotspot(findings.Finding):
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
-    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
+    def __init__(self, endpoint: Platform, key: str, data: ApiPayload, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self.type = idefs.TYPE_HOTSPOT
-        self.__details: ApiPayload = None
+        self.__details: ApiPayload = data
         Hotspot.CACHE.put(self)
         self.refresh()
 
     def __str__(self) -> str:
         """Returns the string representation of the object"""
         return f"Hotspot key '{self.key}'"
+
+    @classmethod
+    def get_object(cls, endpoint: Platform, key: str, data: ApiPayload, from_export: bool = False) -> Hotspot:
+        """Returns a hotspot from its key"""
+        if not (o := cls.CACHE.get(key, endpoint.local_url)):
+            o = cls(endpoint=endpoint, key=key, data=data, from_export=from_export)
+        return o
 
     @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> Hotspot:
@@ -157,7 +164,7 @@ class Hotspot(findings.Finding):
         """
         if not isinstance(project, str):
             project = project.key
-        hotspots = cls.search(endpoint=endpoint, **(search_params | {component_filter(endpoint): project}))
+        hotspots = cls.search(endpoint=endpoint, **(search_params | {"project": project}))
         log.info("Project '%s' has %d hotspots corresponding to filters", project, len(hotspots))
         return hotspots
 
@@ -399,18 +406,6 @@ class Hotspot(findings.Finding):
         if after is not None:
             return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > util.add_tz(after)}
         return self._comments
-
-
-def component_filter(endpoint: Platform) -> str:
-    """Returns the string to filter by porject in api/hotspots/search"""
-    return PROJECT_FILTER if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else PROJECT_FILTER_OLD
-
-
-def get_object(endpoint: Platform, key: str, data: Optional[dict[str]] = None, from_export: bool = False) -> Hotspot:
-    """Returns a hotspot from its key"""
-    if not (o := Hotspot.CACHE.get(key, endpoint.local_url)):
-        o = Hotspot(key=key, data=data, endpoint=endpoint, from_export=from_export)
-    return o
 
 
 def sanitize_search_filters(endpoint: Platform, params: ApiParams) -> ApiParams:

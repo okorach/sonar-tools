@@ -770,7 +770,7 @@ class Project(Component):
             nbr_findings[i["type"]] += 1
             if i["type"] == idefs.TYPE_HOTSPOT:
                 if i.get("status", "") != "CLOSED":
-                    findings_list[key] = hotspots.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
+                    findings_list[key] = hotspots.Hotspot.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
             else:
                 findings_list[key] = issues.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
         for t in idefs.ALL_TYPES:
