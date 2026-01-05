@@ -544,6 +544,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Opt
         log.warning("Can't import applications in %s edition", ed)
         return False
     Application.search(endpoint=endpoint)
+    to_recompute = []
     for key, data in util.list_to_dict(apps_data, "key").items():
         if key_list and key not in key_list:
             log.debug("App key '%s' not in selected apps", key)
@@ -557,9 +558,12 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Opt
             else:
                 o = Application.create(endpoint, key, data["name"])
             o.update(data)
-            o.recompute()
+            to_recompute.append(o)
         except (exceptions.ObjectNotFound, exceptions.UnsupportedOperation) as e:
             log.error("%s configuration incomplete: %s", str(o), e.message)
+    # Recompute apps after import to avoid race conditions
+    for o in to_recompute:
+        o.recompute()
     return True
 
 
