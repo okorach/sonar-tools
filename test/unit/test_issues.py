@@ -309,7 +309,7 @@ def test_search_by_small() -> None:
 
     params.pop("project")
     params.pop("components")
-    dirs = ("cli", "conf", "migration", "sonar")
+    dirs = ("cli", "conf", "migration", "sonar", "test/gen")
     assert len(list1) == sum([len(issues.Issue.search_by_directory(tutil.SQ, project=tutil.LIVE_PROJECT, directory=dir, **params)) for dir in dirs])
     assert len(list1) > len(issues.Issue.search_by_file(tutil.SQ, project=tutil.LIVE_PROJECT, file="sonar/issues.py", **params))
 
