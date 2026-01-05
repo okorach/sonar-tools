@@ -751,6 +751,8 @@ class Project(Component):
         """
         from sonar import issues, hotspots
 
+        if self.endpoint.edition() == c.CE:
+            raise exceptions.UnsupportedOperation("Findings export is not supported in Community Edition")
         log.info("Exporting findings for %s", str(self))
         findings_list = {}
         params = util.remove_nones({"project": self.key, "branch": branch, "pullRequest": pr})
