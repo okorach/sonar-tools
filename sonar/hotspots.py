@@ -128,6 +128,22 @@ class Hotspot(findings.Finding):
         o.reload(data)
         return o
 
+    @staticmethod
+    def __get_hotspot_list(endpoint: Platform, dataset: ApiPayload, **search_params: Any) -> dict[str, Hotspot]:
+        """Returns a list of hotspots from the API payload"""
+        br, pr = search_params.get("branch"), search_params.get("pullRequest")
+        for hotspot_data in dataset:
+            hotspot_data["branch"], hotspot_data["pullRequest"] = br, pr
+        return {hotspot_data["key"]: Hotspot.get_object(endpoint=endpoint, key=hotspot_data["key"], data=hotspot_data) for hotspot_data in dataset}
+
+    @staticmethod
+    def search_one_page(endpoint: Platform, **search_params: Any) -> tuple[dict[str, Hotspot], dict[str, Any]]:
+        """Search one page of hotspots"""
+        search_params = sanitize_search_filters(endpoint=endpoint, params=search_params)
+        api, _, api_params, ret = Api(Hotspot, Oper.SEARCH, endpoint).get_all(**search_params)
+        dataset = json.loads(endpoint.get(api, params=api_params).text)
+        return Hotspot.__get_hotspot_list(endpoint, dataset[ret], **search_params), dataset
+
     @classmethod
     def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, Hotspot]:
         """Searches hotspots
@@ -408,6 +424,7 @@ class Hotspot(findings.Finding):
         return self._comments
 
 
+
 def sanitize_search_filters(endpoint: Platform, params: ApiParams) -> ApiParams:
     """Returns the filtered list of params that are allowed for api/hotspots/search"""
     log.debug("Sanitizing hotspot search criteria %s", str(params))
@@ -470,14 +487,3 @@ def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: ApiParams) ->
         log.debug("%d hotspots remaining after filtering by languages %s", len(filtered_findings), str(filters["languages"]))
     log.debug("%d hotspots remaining after post search filtering", len(filtered_findings))
     return filtered_findings
-
-
-def count(endpoint: Platform, **kwargs: Any) -> int:
-    """Returns number of hotspots of a search"""
-    params = {} if not kwargs else kwargs.copy()
-    params["ps"] = 1
-    params = sanitize_search_filters(endpoint, params)
-    api, _, api_params, _ = Api(Hotspot, Oper.SEARCH, endpoint).get_all(**params)
-    nbr_hotspots = sutil.nbr_total_elements(json.loads(endpoint.get(api, params=api_params, mute=(HTTPStatus.NOT_FOUND,)).text))
-    log.debug("Hotspot counts with filters %s returned %d hotspots", str(kwargs), nbr_hotspots)
-    return nbr_hotspots

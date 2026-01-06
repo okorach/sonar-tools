@@ -152,7 +152,7 @@ class Component(SqObject):
     def migration_export(self, export_settings: ConfigSettings) -> dict[str, Any]:
         """Prepares all data for a sonar-migration export"""
         from sonar.issues import count as issue_count
-        from sonar.hotspots import count as hotspot_count
+        from sonar.hotspots import Hotspot
 
         json_data = {"lastAnalysis": sutil.date_to_string(self.last_analysis())}
         lang_distrib = self.get_measure("ncloc_language_distribution")
@@ -177,9 +177,9 @@ class Component(SqObject):
         status = "accepted" if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION else "wontFix"
         json_data["issues"][status] = issue_count(self.endpoint, issueStatuses=[status.upper()], **params)
         json_data["hotspots"] = {
-            "acknowledged": hotspot_count(self.endpoint, resolution=["ACKNOWLEDGED"], **params),
-            "safe": hotspot_count(self.endpoint, resolution=["SAFE"], **params),
-            "fixed": hotspot_count(self.endpoint, resolution=["FIXED"], **params),
+            "acknowledged": Hotspot.count(self.endpoint, resolution=["ACKNOWLEDGED"], **params),
+            "safe": Hotspot.count(self.endpoint, resolution=["SAFE"], **params),
+            "fixed": Hotspot.count(self.endpoint, resolution=["FIXED"], **params),
         }
         log.debug("%s has these notable issues %s", str(self), str(json_data["issues"]))
 
