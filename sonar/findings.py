@@ -141,6 +141,19 @@ class Finding(SqObject):
         self.pull_request: Optional[str] = None  #: Pull request (str)
         self.reload(data, from_export)
 
+    @staticmethod
+    def add_branch_and_pr(findings_list: dict[str, Finding], **search_params: Any) -> dict[str, Finding]:
+        """Enriches findings with branch and pull request info"""
+        for e_key in [elem for elem in ["branch", "pullRequest"] if elem in search_params]:
+            e_val = search_params[e_key]
+            for finding in findings_list.values():
+                finding.sq_json[e_key] = e_val
+                if e_key == "branch":
+                    finding.branch = e_val
+                else:
+                    finding.pull_request = e_val
+        return findings_list
+
     def reload(self, data: ApiPayload, from_export: bool = False) -> None:
         """Reloads a finding with JSON data"""
         super().reload(data)
