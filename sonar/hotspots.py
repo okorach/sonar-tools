@@ -166,7 +166,7 @@ class Hotspot(findings.Finding):
         # Add Branch and Pull Request info to hotspots (which is not returned in the API payload)
         hotspots_list = cls.__adorn(hotspots_list, original_params)
         # Filter results based on creation date, severities, languages
-        hotspots_list = cls.post_search_filter(hotspots_list, original_params)
+        hotspots_list = cls.post_search_filters(hotspots_list, original_params)
         log.debug("Searching hotspots with params = %s returned %d hotspots", search_params, len(hotspots_list))
         return hotspots_list
 
@@ -451,7 +451,7 @@ class Hotspot(findings.Finding):
         return criterias
 
     @classmethod
-    def post_search_filter(cls, hotspots_dict: dict[str, Hotspot], filters: ApiParams) -> dict[str, Hotspot]:
+    def post_search_filters(cls, hotspots_dict: dict[str, Hotspot], filters: ApiParams) -> dict[str, Hotspot]:
         """Filters a dict of hotspots with provided filters"""
         log.debug("Post filtering findings with %s - Starting with %d hotspots", str(filters), len(hotspots_dict))
         filtered_findings = hotspots_dict.copy()
