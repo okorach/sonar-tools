@@ -129,20 +129,20 @@ class Hotspot(findings.Finding):
         return o
 
     @staticmethod
-    def __get_hotspot_list(endpoint: Platform, dataset: ApiPayload, **search_params: Any) -> dict[str, Hotspot]:
+    def __json_to_objects(endpoint: Platform, dataset: ApiPayload, **search_params: Any) -> dict[str, Hotspot]:
         """Returns a list of hotspots from the API payload"""
         br, pr = search_params.get("branch"), search_params.get("pullRequest")
         for hotspot_data in dataset:
             hotspot_data["branch"], hotspot_data["pullRequest"] = br, pr
         return {hotspot_data["key"]: Hotspot.get_object(endpoint=endpoint, key=hotspot_data["key"], data=hotspot_data) for hotspot_data in dataset}
 
-    @staticmethod
-    def search_one_page(endpoint: Platform, **search_params: Any) -> tuple[dict[str, Hotspot], dict[str, Any]]:
+    @classmethod
+    def search_one_page(cls, endpoint: Platform, **search_params: Any) -> tuple[dict[str, Hotspot], dict[str, Any]]:
         """Search one page of hotspots"""
-        search_params = sanitize_search_filters(endpoint=endpoint, params=search_params)
-        api, _, api_params, ret = Api(Hotspot, Oper.SEARCH, endpoint).get_all(**search_params)
+        search_params = cls.pre_search_filters(endpoint=endpoint, params=search_params)
+        api, _, api_params, ret = Api(cls, Oper.SEARCH, endpoint).get_all(**search_params)
         dataset = json.loads(endpoint.get(api, params=api_params).text)
-        return Hotspot.__get_hotspot_list(endpoint, dataset[ret], **search_params), dataset
+        return Hotspot.__json_to_objects(endpoint, dataset[ret], **search_params), dataset
 
     @classmethod
     def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, Hotspot]:
@@ -157,7 +157,7 @@ class Hotspot(findings.Finding):
         original_params = deepcopy(search_params)
 
         log.debug("Searching hotspots with params %s", search_params)
-        split_filters = split_search_filters(sanitize_search_filters(endpoint=endpoint, params=search_params))
+        split_filters = split_search_filters(cls.pre_search_filters(endpoint=endpoint, params=search_params))
         log.debug("Split search filters = %s", split_filters)
         hotspots_list: dict[str, Hotspot] = {}
         for inline_filters in split_filters:
@@ -208,8 +208,7 @@ class Hotspot(findings.Finding):
     def refresh(self) -> Hotspot:
         """Refreshes and reads hotspots details in SonarQube, returns self"""
         api, _, params, _ = Api(self, Oper.GET).get_all(hotspots=self.key)
-        d = json.loads(self.get(api, params=params).text)
-        self.__details = d
+        self.__details = d = json.loads(self.get(api, params=params).text)
         if self.file is None and "path" in d["component"]:
             self.file = d["component"]["path"]
         self.branch, self.pull_request = self.get_branch_and_pr(d["project"])
@@ -423,33 +422,32 @@ class Hotspot(findings.Finding):
             return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > util.add_tz(after)}
         return self._comments
 
-
-
-def sanitize_search_filters(endpoint: Platform, params: ApiParams) -> ApiParams:
-    """Returns the filtered list of params that are allowed for api/hotspots/search"""
-    log.debug("Sanitizing hotspot search criteria %s", str(params))
-    if params is None:
-        return {}
-    params = params.copy()
-    comp_filter = PROJECT_FILTER if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else PROJECT_FILTER_OLD
-    if params.get(PROJECT_FILTER_OLD) and not params.get(comp_filter):
-        params[comp_filter] = params.pop(PROJECT_FILTER_OLD)
-    elif params.get(PROJECT_FILTER) and not params.get(comp_filter):
-        params[comp_filter] = params.pop(PROJECT_FILTER)
-    criterias = util.remove_nones(params)
-    criterias = util.dict_remap(criterias, _FILTERS_HOTSPOTS_REMAPPING)
-    if "status" in criterias:
-        criterias["status"] = util.allowed_values_string(criterias["status"], STATUSES)
-    if "resolution" in criterias:
-        criterias["resolution"] = util.allowed_values_string(criterias["resolution"], RESOLUTIONS)
-        criterias["status"] = "REVIEWED"
-    if endpoint.version() <= c.NEW_ISSUE_SEARCH_INTRO_VERSION:
-        criterias = util.dict_remap(original_dict=criterias, remapping={PROJECT_FILTER: PROJECT_FILTER_OLD})
-    else:
-        criterias = util.dict_remap(original_dict=criterias, remapping={PROJECT_FILTER_OLD: PROJECT_FILTER})
-    criterias = util.dict_subset(criterias, SEARCH_CRITERIAS)
-    log.debug("Sanitized hotspot search criteria %s", str(criterias))
-    return criterias
+    @classmethod
+    def pre_search_filters(cls, endpoint: Platform, params: ApiParams) -> ApiParams:
+        """Returns the filtered list of params that are allowed for api/hotspots/search"""
+        log.debug("Sanitizing hotspot search criteria %s", str(params))
+        if params is None:
+            return {}
+        params = params.copy()
+        comp_filter = PROJECT_FILTER if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else PROJECT_FILTER_OLD
+        if params.get(PROJECT_FILTER_OLD) and not params.get(comp_filter):
+            params[comp_filter] = params.pop(PROJECT_FILTER_OLD)
+        elif params.get(PROJECT_FILTER) and not params.get(comp_filter):
+            params[comp_filter] = params.pop(PROJECT_FILTER)
+        criterias = util.remove_nones(params)
+        criterias = util.dict_remap(criterias, _FILTERS_HOTSPOTS_REMAPPING)
+        if "status" in criterias:
+            criterias["status"] = util.allowed_values_string(criterias["status"], STATUSES)
+        if "resolution" in criterias:
+            criterias["resolution"] = util.allowed_values_string(criterias["resolution"], RESOLUTIONS)
+            criterias["status"] = "REVIEWED"
+        if endpoint.version() <= c.NEW_ISSUE_SEARCH_INTRO_VERSION:
+            criterias = util.dict_remap(original_dict=criterias, remapping={PROJECT_FILTER: PROJECT_FILTER_OLD})
+        else:
+            criterias = util.dict_remap(original_dict=criterias, remapping={PROJECT_FILTER_OLD: PROJECT_FILTER})
+        criterias = util.dict_subset(criterias, SEARCH_CRITERIAS)
+        log.debug("Sanitized hotspot search criteria %s", str(criterias))
+        return criterias
 
 
 def __split_filter(params: ApiParams, criteria: str) -> list[ApiParams]:
