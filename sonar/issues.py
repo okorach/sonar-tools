@@ -159,12 +159,12 @@ class Issue(findings.Finding):
         return {issue_data["key"]: get_object(endpoint=endpoint, key=issue_data["key"], data=issue_data) for issue_data in dataset}
 
     @staticmethod
-    def search_one_page(endpoint: Platform, **search_params: Any) -> dict[str, Issue]:
+    def search_one_page(endpoint: Platform, **search_params: Any) -> tuple[dict[str, Issue], dict[str, Any]]:
         """Search one page of issues"""
         search_params = pre_search_filters(endpoint=endpoint, params=search_params)
         api, _, api_params, ret = Api(Issue, Oper.SEARCH, endpoint).get_all(**search_params)
         dataset = json.loads(endpoint.get(api, params=api_params).text)
-        return Issue.__get_issue_list(endpoint, dataset[ret], **search_params)
+        return Issue.__get_issue_list(endpoint, dataset[ret], **search_params), dataset
 
     @classmethod
     def search_unsafe(cls, endpoint: Platform, threads: int = 8, **search_params: Any) -> dict[str, Issue]:
