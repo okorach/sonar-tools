@@ -133,9 +133,9 @@ class SqObject(object):
         return obj.set_permissions([{"user": user or endpoint.user(), "permissions": ["admin", "user"]}])
 
     @classmethod
-    def count(cls, endpoint: Platform, **params: Any) -> int:
+    def count(cls, endpoint: Platform, **search_params: Any) -> int:
         """Returns number of objects of a search"""
-        _, dataset = cls.search_one_page(endpoint, **{params | {"ps": 1}})
+        _, dataset = cls.search_one_page(endpoint, **{search_params | {"ps": 1}})
         return sutil.nbr_total_elements(dataset)
 
     @classmethod
