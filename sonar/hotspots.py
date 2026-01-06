@@ -142,7 +142,8 @@ class Hotspot(findings.Finding):
         search_params = cls.pre_search_filters(endpoint=endpoint, params=search_params)
         api, _, api_params, ret = Api(cls, Oper.SEARCH, endpoint).get_all(**search_params)
         dataset = json.loads(endpoint.get(api, params=api_params).text)
-        return Hotspot.__json_to_objects(endpoint, dataset[ret], **search_params), dataset
+        hotspots_d = Hotspot.__json_to_objects(endpoint, dataset[ret], **search_params)
+        return hotspots_d, dataset
 
     @classmethod
     def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, Hotspot]:
@@ -165,7 +166,7 @@ class Hotspot(findings.Finding):
         # Add Branch and Pull Request info to hotspots (which is not returned in the API payload)
         hotspots_list = cls.__adorn(hotspots_list, original_params)
         # Filter results based on creation date, severities, languages
-        hotspots_list = post_search_filter(hotspots_list, original_params)
+        hotspots_list = cls.post_search_filter(hotspots_list, original_params)
         log.debug("Searching hotspots with params = %s returned %d hotspots", search_params, len(hotspots_list))
         return hotspots_list
 
@@ -449,6 +450,30 @@ class Hotspot(findings.Finding):
         log.debug("Sanitized hotspot search criteria %s", str(criterias))
         return criterias
 
+    @classmethod
+    def post_search_filter(cls, hotspots_dict: dict[str, Hotspot], filters: ApiParams) -> dict[str, Hotspot]:
+        """Filters a dict of hotspots with provided filters"""
+        log.debug("Post filtering findings with %s - Starting with %d hotspots", str(filters), len(hotspots_dict))
+        filtered_findings = hotspots_dict.copy()
+        if "severities" in filters:
+            filtered_findings = {k: v for k, v in filtered_findings.items() if v.severity in filters["severities"]}
+            log.debug("%d hotspots remaining after filtering by severities %s", len(filtered_findings), str(filters["severities"]))
+        if "createdAfter" in filters:
+            min_date = sutil.string_to_date(filters["createdAfter"])
+            filtered_findings = {k: v for k, v in filtered_findings.items() if v.creation_date >= min_date}
+            log.debug("%d hotspots remaining after filtering by createdAfter %s", len(filtered_findings), str(filters["createdAfter"]))
+        if "createdBefore" in filters:
+            max_date = sutil.string_to_date(filters["createdBefore"])
+            filtered_findings = {k: v for k, v in filtered_findings.items() if v.creation_date <= max_date}
+            log.debug("%d hotspots remaining after filtering by createdBefore %s", len(filtered_findings), str(filters["createdBefore"]))
+        if "languages" in filters:
+            filtered_findings = {
+                k: v for k, v in filtered_findings.items() if rules.Rule.get_object(endpoint=v.endpoint, key=v.rule).language in filters["languages"]
+            }
+            log.debug("%d hotspots remaining after filtering by languages %s", len(filtered_findings), str(filters["languages"]))
+        log.debug("%d hotspots remaining after post search filtering", len(filtered_findings))
+        return filtered_findings
+
 
 def __split_filter(params: ApiParams, criteria: str) -> list[ApiParams]:
     """Creates a list of filters from a single one that has values that requires multiple hotspot searches"""
@@ -461,27 +486,3 @@ def split_search_filters(params: ApiParams) -> list[ApiParams]:
     """Split search filters for which you can only pass 1 value at a time in api/hotspots/search"""
     list_2d = [__split_filter(f, "status") for f in __split_filter(params, "resolution")]
     return [crit2 for crit1 in list_2d for crit2 in crit1]
-
-
-def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: ApiParams) -> dict[str, Hotspot]:
-    """Filters a dict of hotspots with provided filters"""
-    log.debug("Post filtering findings with %s - Starting with %d hotspots", str(filters), len(hotspots_dict))
-    filtered_findings = hotspots_dict.copy()
-    if "severities" in filters:
-        filtered_findings = {k: v for k, v in filtered_findings.items() if v.severity in filters["severities"]}
-        log.debug("%d hotspots remaining after filtering by severities %s", len(filtered_findings), str(filters["severities"]))
-    if "createdAfter" in filters:
-        min_date = sutil.string_to_date(filters["createdAfter"])
-        filtered_findings = {k: v for k, v in filtered_findings.items() if v.creation_date >= min_date}
-        log.debug("%d hotspots remaining after filtering by createdAfter %s", len(filtered_findings), str(filters["createdAfter"]))
-    if "createdBefore" in filters:
-        max_date = sutil.string_to_date(filters["createdBefore"])
-        filtered_findings = {k: v for k, v in filtered_findings.items() if v.creation_date <= max_date}
-        log.debug("%d hotspots remaining after filtering by createdBefore %s", len(filtered_findings), str(filters["createdBefore"]))
-    if "languages" in filters:
-        filtered_findings = {
-            k: v for k, v in filtered_findings.items() if rules.Rule.get_object(endpoint=v.endpoint, key=v.rule).language in filters["languages"]
-        }
-        log.debug("%d hotspots remaining after filtering by languages %s", len(filtered_findings), str(filters["languages"]))
-    log.debug("%d hotspots remaining after post search filtering", len(filtered_findings))
-    return filtered_findings
