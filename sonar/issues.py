@@ -150,21 +150,21 @@ class Issue(findings.Finding):
             f" - File/Line: {self.component}/{self.line} - Rule: {self.rule} - Project: {self.projectKey}"
         )
 
-    @staticmethod
-    def __get_issue_list(endpoint: Platform, dataset: ApiPayload, **search_params: Any) -> dict[str, Issue]:
+    @classmethod
+    def __json_to_objects(cls, endpoint: Platform, dataset: ApiPayload, **search_params: Any) -> dict[str, Issue]:
         """Returns a list of issues from the API payload"""
         br, pr = search_params.get("branch"), search_params.get("pullRequest")
         for issue_data in dataset:
             issue_data["branch"], issue_data["pullRequest"] = br, pr
         return {issue_data["key"]: get_object(endpoint=endpoint, key=issue_data["key"], data=issue_data) for issue_data in dataset}
 
-    @staticmethod
-    def search_one_page(endpoint: Platform, **search_params: Any) -> tuple[dict[str, Issue], dict[str, Any]]:
+    @classmethod
+    def search_one_page(cls, endpoint: Platform, **search_params: Any) -> tuple[dict[str, Issue], dict[str, Any]]:
         """Search one page of issues"""
-        search_params = pre_search_filters(endpoint=endpoint, params=search_params)
-        api, _, api_params, ret = Api(Issue, Oper.SEARCH, endpoint).get_all(**search_params)
+        search_params = cls.pre_search_filters(endpoint=endpoint, params=search_params)
+        api, _, api_params, ret = Api(cls, Oper.SEARCH, endpoint).get_all(**search_params)
         dataset = json.loads(endpoint.get(api, params=api_params).text)
-        return Issue.__get_issue_list(endpoint, dataset[ret], **search_params), dataset
+        return cls.__json_to_objects(endpoint, dataset[ret], **search_params), dataset
 
     @classmethod
     def search_unsafe(cls, endpoint: Platform, threads: int = 8, **search_params: Any) -> dict[str, Issue]:
@@ -176,7 +176,7 @@ class Issue(findings.Finding):
         :raises: TooManyIssuesError if more than 10'000 issues found
         """
         log.debug("Searching issues with %s", search_params)
-        new_params = {"ps": cls.MAX_PAGE_SIZE} | pre_search_filters(endpoint=endpoint, params=search_params)
+        new_params = {"ps": cls.MAX_PAGE_SIZE} | cls.pre_search_filters(endpoint=endpoint, params=search_params)
         log.debug("Filtered search params = %s", new_params)
 
         api, _, api_params, ret = Api(cls, Oper.SEARCH, endpoint).get_all(**new_params)
@@ -190,7 +190,7 @@ class Issue(findings.Finding):
             msg = f"{nbr_issues} issues returned by {api}, this is more than the max {cls.MAX_SEARCH} possible"
             raise TooManyIssuesError(nbr_issues, msg)
 
-        issue_list = Issue.__get_issue_list(endpoint, dataset[ret], **new_params)
+        issue_list = Issue.__json_to_objects(endpoint, dataset[ret], **new_params)
         if nbr_pages == 1:
             return issue_list
 
@@ -231,7 +231,7 @@ class Issue(findings.Finding):
         if isinstance(project, Project):
             project = project.key
         log.debug("Searching issues by project '%s' from %s", project, search_params)
-        new_params = pre_search_filters(endpoint, search_params) | {"project": project}
+        new_params = cls.pre_search_filters(endpoint, search_params) | {"project": project}
         if endpoint.edition() in (c.EE, c.DCE) and search_findings:
             log.debug("Using export_findings() to speed up issue export")
             issue_list: dict[str, Issue] = findings.export_findings(endpoint, project, new_params.get("branch"), new_params.get("pullRequest"))
@@ -260,7 +260,7 @@ class Issue(findings.Finding):
     def search_by_type(cls, endpoint: Platform, issue_type: str, **search_params: Any) -> dict[str, Issue]:
         """Searches issues splitting by type to avoid exceeding the 10K limit"""
         log.debug("Searching issues by issue type '%s' from %s", issue_type, search_params)
-        new_params = pre_search_filters(endpoint, search_params) | {type_search_field(endpoint): [issue_type]}
+        new_params = cls.pre_search_filters(endpoint, search_params) | {type_search_field(endpoint): [issue_type]}
         issue_list = {}
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
@@ -278,7 +278,7 @@ class Issue(findings.Finding):
         if isinstance(project, Project):
             project = project.key
         log.debug("Searching issues by project '%s' and directory '%s' from %s", project, directory, search_params)
-        new_params = pre_search_filters(endpoint, search_params) | {component_search_field(endpoint): project, "directories": directory}
+        new_params = cls.pre_search_filters(endpoint, search_params) | {component_search_field(endpoint): project, "directories": directory}
         issue_list: dict[str, Issue] = {}
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
@@ -295,7 +295,7 @@ class Issue(findings.Finding):
         if isinstance(project, Project):
             project = project.key
         log.debug("Searching issues by file '%s' from %s", file, search_params)
-        new_params = pre_search_filters(endpoint, search_params) | {component_search_field(endpoint): project, "files": file}
+        new_params = cls.pre_search_filters(endpoint, search_params) | {component_search_field(endpoint): project, "files": file}
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError:
@@ -310,7 +310,7 @@ class Issue(findings.Finding):
         """Searches issues splitting by severity to avoid exceeding the 10K limit"""
         log.debug("Searching issues by severity '%s' from %s", severity, search_params)
         issue_list = {}
-        new_params = pre_search_filters(endpoint, search_params)
+        new_params = cls.pre_search_filters(endpoint, search_params)
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params | {severity_search_field(endpoint): [severity]})
         except TooManyIssuesError as e:
@@ -339,7 +339,7 @@ class Issue(findings.Finding):
         cls, endpoint: Platform, date_start: Union[datetime, date, None], date_stop: Union[datetime, date, None], **search_params: Any
     ) -> dict[str, Issue]:
         """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
-        new_params = pre_search_filters(endpoint, search_params) | Issue.get_search_date_range(date_start, date_stop)
+        new_params = cls.pre_search_filters(endpoint, search_params) | cls.get_search_date_range(date_start, date_stop)
         tstart, tstop = new_params.get("createdAfter"), new_params.get("createdBefore")
         log.debug("Searching issues by date between [%s - %s] from %s", tstart, tstop, search_params)
         issue_list = {}
@@ -800,6 +800,45 @@ class Issue(findings.Finding):
                 counter += 1
         return counter
 
+    @classmethod
+    def pre_search_filters(cls, endpoint: Platform, params: Optional[SearchParams]) -> SearchParams:
+        """Returns the filtered list of params that are allowed for api/issues/search"""
+        if not params:
+            return {}
+        log.debug("Sanitizing issue search filters %s", str(params))
+        comp_filter = component_search_field(endpoint)
+        filters = util.dict_remap(original_dict=params, remapping={"project": comp_filter, "application": comp_filter, "portfolio": comp_filter})
+        filters = util.dict_subset(util.remove_nones(filters), _SEARCH_CRITERIAS)
+        filters = {k: v if k not in _COMMA_CRITERIAS else util.csv_to_list(v) for k, v in filters.items()}
+        val_equiv = config.get_issues_search_values_equivalences()
+        key_equiv = config.get_issues_search_fields_equivalences()
+        filters_to_patch = {k: v for k, v in filters.items() if isinstance(v, (list, set, str, tuple))}
+        for k, v in filters_to_patch.items():
+            for value_list in val_equiv:
+                if any(value in value_list for value in v):
+                    filters[k] += value_list
+            # for k in filters.copy().keys():
+            for key_list in [kl for kl in key_equiv if k in kl]:
+                for key in key_list:
+                    filters[key] = filters[k]
+
+        filters = {k: v for k, v in filters.items() if v is not None and (not isinstance(v, (list, set, str, tuple)) or len(v) > 0)}
+
+        old_or_new = "new" if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else "old"
+        for field in filters:
+            allowed = config.get_issue_search_allowed_values(field, old_or_new)
+            if allowed is not None and filters[field] is not None:
+                filters[field] = list(set(filters[field]) & set(allowed))
+
+        disallowed = _STD_SEARCH_FIELDS if endpoint.is_mqr_mode() else _MQR_SEARCH_FIELDS
+        filters = {k: v for k, v in filters.items() if k not in disallowed}
+        # Convert boolean parameter values to strings
+        filters = {k: str(v).lower() if isinstance(v, bool) else v for k, v in filters.items()}
+        # Convert list parameter values to CSV
+        filters = {k: util.list_to_csv(v) for k, v in filters.items() if v}
+        log.debug("Sanitized issue search filters %s", str(filters))
+        return filters
+
 
 # ------------------------------- Static methods --------------------------------------
 
@@ -826,7 +865,7 @@ def _get_facets(endpoint: Platform, project_key: str, facet: str = "directories"
     search_params = search_params.copy()
     search_params.update({component_search_field(endpoint): project_key, "facets": facet, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
     log.debug("Getting facets for %s with params %s", facet, search_params)
-    search_params = pre_search_filters(endpoint=endpoint, params=search_params)
+    search_params = Issue.pre_search_filters(endpoint=endpoint, params=search_params)
     log.debug("Filtered search params = %s", search_params)
     api, _, search_params, _ = Api(Issue, Oper.SEARCH, endpoint).get_all(**search_params)
     data = json.loads(endpoint.get(api, params=search_params).text)
@@ -854,7 +893,7 @@ def get_newest_issue(endpoint: Platform, **search_params: Any) -> Optional[datet
 
 def count(endpoint: Platform, **kwargs: Any) -> int:
     """Returns number of issues of a search"""
-    filters = pre_search_filters(endpoint=endpoint, params=kwargs)
+    filters = Issue.pre_search_filters(endpoint=endpoint, params=kwargs)
     filters["ps"] = 1
     api, _, api_params, _ = Api(Issue, Oper.SEARCH, endpoint).get_all(**filters)
     nbr_issues = sutil.nbr_total_elements(json.loads(endpoint.get(api, params=api_params).text))
@@ -869,7 +908,7 @@ def count_by_rule(endpoint: Platform, **kwargs) -> dict[str, int]:
     if "rules" in kwargs:
         ruleset = kwargs.pop("rules")
         nbr_slices = math.ceil(len(ruleset) / SLICE_SIZE)
-    params = pre_search_filters(endpoint=endpoint, params=kwargs) | {"ps": 1, "facets": "rules"}
+    params = Issue.pre_search_filters(endpoint=endpoint, params=kwargs) | {"ps": 1, "facets": "rules"}
     rulecount = {}
     api_def = Api(Issue, Oper.SEARCH, endpoint)
     for i in range(nbr_slices):
@@ -891,42 +930,3 @@ def get_object(endpoint: Platform, key: str, data: ApiPayload = None, from_expor
     if not o:
         o = Issue(endpoint=endpoint, key=key, data=data, from_export=from_export)
     return o
-
-
-def pre_search_filters(endpoint: Platform, params: Optional[SearchParams]) -> SearchParams:
-    """Returns the filtered list of params that are allowed for api/issues/search"""
-    if not params:
-        return {}
-    log.debug("Sanitizing issue search filters %s", str(params))
-    comp_filter = component_search_field(endpoint)
-    filters = util.dict_remap(original_dict=params, remapping={"project": comp_filter, "application": comp_filter, "portfolio": comp_filter})
-    filters = util.dict_subset(util.remove_nones(filters), _SEARCH_CRITERIAS)
-    filters = {k: v if k not in _COMMA_CRITERIAS else util.csv_to_list(v) for k, v in filters.items()}
-    val_equiv = config.get_issues_search_values_equivalences()
-    key_equiv = config.get_issues_search_fields_equivalences()
-    filters_to_patch = {k: v for k, v in filters.items() if isinstance(v, (list, set, str, tuple))}
-    for k, v in filters_to_patch.items():
-        for value_list in val_equiv:
-            if any(value in value_list for value in v):
-                filters[k] += value_list
-        # for k in filters.copy().keys():
-        for key_list in [kl for kl in key_equiv if k in kl]:
-            for key in key_list:
-                filters[key] = filters[k]
-
-    filters = {k: v for k, v in filters.items() if v is not None and (not isinstance(v, (list, set, str, tuple)) or len(v) > 0)}
-
-    old_or_new = "new" if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else "old"
-    for field in filters:
-        allowed = config.get_issue_search_allowed_values(field, old_or_new)
-        if allowed is not None and filters[field] is not None:
-            filters[field] = list(set(filters[field]) & set(allowed))
-
-    disallowed = _STD_SEARCH_FIELDS if endpoint.is_mqr_mode() else _MQR_SEARCH_FIELDS
-    filters = {k: v for k, v in filters.items() if k not in disallowed}
-    # Convert boolean parameter values to strings
-    filters = {k: str(v).lower() if isinstance(v, bool) else v for k, v in filters.items()}
-    # Convert list parameter values to CSV
-    filters = {k: util.list_to_csv(v) for k, v in filters.items() if v}
-    log.debug("Sanitized issue search filters %s", str(filters))
-    return filters
