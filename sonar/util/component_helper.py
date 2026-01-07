@@ -45,16 +45,11 @@ def get_components(
             components = [p for p in components if p.is_toplevel()]
     else:
         components = list(projects.Project.get_list(endpoint).values())
-    if key_regexp:
-        components = [comp for comp in components if re.match(rf"^{key_regexp}$", comp.key)]
+    if component_type in ("projects", "applications") and branch_regexp:
+        log.info("Searching for %s branches matching '%s'", component_type, branch_regexp)
+        components = [br for comp in components for br in comp.branches().values() if re.match(rf"^{branch_regexp}$", br.name)]
     # If pull_requests flag is set, include PRs for each project
-    log.info("PR regexp: %s", pr_regexp)
-    if component_type == "projects" and pr_regexp:
-        log.info("Projects list: %s", [str(proj) for proj in components])
-        for proj in components:
-            log.info("Project: %s", str(proj))
-            components += [pr for pr in proj.pull_requests().values() if re.match(rf"^{pr_regexp}$", pr.key)]
-            log.info("Components list: %s", [str(comp) for comp in components])
-    if component_type != "portfolios" and branch_regexp:
-        components = [b for comp in components for b in comp.branches().values() if re.match(rf"^{branch_regexp}$", b.name)]
+    elif component_type == "projects" and pr_regexp:
+        log.info("Searching for %s PRs matching '%s'", component_type, pr_regexp)
+        components = [pr for proj in components for pr in proj.pull_requests().values() if re.match(rf"^{pr_regexp}$", pr.key)]
     return components

@@ -379,7 +379,7 @@ def main() -> None:
             component_type=params[options.COMPONENT_TYPE],
             key_regexp=params.get(options.KEY_REGEXP),
             branch_regexp=branch_regexp,
-            pull_requests=pr_regexp,
+            pr_regexp=pr_regexp,
         )
         log.info("Components list: %s", [str(comp) for comp in components_list])
         # params.pop(options.BRANCH_REGEXP, None)
