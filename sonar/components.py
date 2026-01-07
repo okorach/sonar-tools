@@ -139,24 +139,20 @@ class Component(SqObject):
         new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio")}
         return Hotspot.search_by_project(endpoint=self.endpoint, **(new_params | {"project": self.key}))
 
-    def count_specific_rules_issues(self, ruleset: list[str], filters: ApiParams = None) -> dict[str, int]:
+    def count_specific_rules_issues(self, ruleset: list[str], **search_params) -> dict[str, int]:
         """Returns the count of issues of a component for a given ruleset"""
         from sonar.issues import count_by_rule
 
-        params = self.api_params()
-        if filters is not None:
-            params.update(filters)
-        params["facets"] = "rules"
-        params["rules"] = [r.key for r in ruleset]
-        return {k: v for k, v in count_by_rule(endpoint=self.endpoint, **params).items() if v > 0}
+        search_params = search_params | self.api_params() | {"facets": "rules", "rules": [r.key for r in ruleset]}
+        return {k: v for k, v in count_by_rule(endpoint=self.endpoint, **search_params).items() if v > 0}
 
     def count_third_party_issues(self, **search_params: Any) -> dict[str, int]:
         """Returns the count of issues of a component  corresponding to 3rd party rules"""
-        return self.count_specific_rules_issues(ruleset=rules.third_party(self.endpoint), filters=search_params)
+        return self.count_specific_rules_issues(ruleset=rules.third_party(self.endpoint), **search_params)
 
     def count_instantiated_rules_issues(self, **search_params: Any) -> dict[str, int]:
         """Returns the count of issues of a component corresponding to instantiated rules"""
-        return self.count_specific_rules_issues(ruleset=rules.instantiated(self.endpoint), filters=search_params)
+        return self.count_specific_rules_issues(ruleset=rules.instantiated(self.endpoint), **search_params)
 
     def migration_export(self, export_settings: ConfigSettings) -> dict[str, Any]:
         """Prepares all data for a sonar-migration export"""
