@@ -817,17 +817,16 @@ class Project(Component):
         """Returns the list of pull requests matching the pattern"""
         return [p for p in self.pull_requests().values() if re.match(rf"^{pattern}$", p.key)]
 
-    def count_third_party_issues(self, filters: Optional[dict[str, str]] = None) -> dict[str, int]:
-        if filters:
-            filters = {k: [v] for k, v in filters.items() if k in ("branch", "pullRequest")}
-        branches_or_prs = self.get_branches_and_prs(filters)
+    def count_third_party_issues(self, **search_params: Any) -> dict[str, int]:
+        search_params = {k: [v] for k, v in search_params.items() if k in ("branch", "pullRequest")}
+        branches_or_prs = self.get_branches_and_prs(search_params)
         if branches_or_prs is None:
-            return super().count_third_party_issues(filters)
+            return super().count_third_party_issues(**search_params)
         log.debug("Getting 3rd party issues on branches/PR")
         issue_counts = {}
         for comp in [co for co in branches_or_prs.values() if co]:
             log.debug("Getting 3rd party issues for %s", str(comp))
-            for k, total in comp.count_third_party_issues(filters).items():
+            for k, total in comp.count_third_party_issues(**search_params).items():
                 if k not in issue_counts:
                     issue_counts[k] = 0
                 issue_counts[k] += total
