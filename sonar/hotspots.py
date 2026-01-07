@@ -20,15 +20,15 @@
 """Abstraction of the SonarQube "hotspot" concept"""
 
 from __future__ import annotations
+from typing import Optional, Any, Union, TYPE_CHECKING
 
 import json
 from datetime import datetime
-from typing import Optional, Any, Union, TYPE_CHECKING
-import requests.utils
 from copy import deepcopy
 
-import sonar.logging as log
+import requests.utils
 
+import sonar.logging as log
 import sonar.util.misc as util
 from sonar.util import cache, constants as c
 
@@ -41,6 +41,7 @@ from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
+    from sonar.issues import Issue
     from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
     from sonar.projects import Project
@@ -409,10 +410,10 @@ class Hotspot(findings.Finding):
         return criterias
 
     @staticmethod
-    def post_search_filters(hotspots_dict: dict[str, Hotspot], **filters: Any) -> dict[str, Hotspot]:
+    def post_search_filters(findings: dict[str, Union[Issue, Hotspot]], **filters: Any) -> dict[str, Union[Issue, Hotspot]]:
         """Filters a dict of hotspots with provided filters"""
-        log.debug("Post filtering findings with %s - Starting with %d hotspots", str(filters), len(hotspots_dict))
-        filtered_findings = hotspots_dict.copy()
+        log.debug("Post filtering findings with %s - Starting with %d hotspots", str(filters), len(findings))
+        filtered_findings = findings.copy()
         if "severities" in filters:
             filtered_findings = {k: v for k, v in filtered_findings.items() if v.severity in filters["severities"]}
             log.debug("%d hotspots remaining after filtering by severities %s", len(filtered_findings), filters["severities"])
