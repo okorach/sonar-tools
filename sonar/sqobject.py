@@ -135,7 +135,7 @@ class SqObject(object):
     @classmethod
     def count(cls, endpoint: Platform, **search_params: Any) -> int:
         """Returns number of objects of a search"""
-        _, dataset = cls.search_one_page(endpoint, **{search_params | {"ps": 1}})
+        _, dataset = cls.search_one_page(endpoint, **(search_params | {"ps": 1}))
         return sutil.nbr_total_elements(dataset)
 
     @classmethod
