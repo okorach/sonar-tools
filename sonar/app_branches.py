@@ -261,11 +261,6 @@ class ApplicationBranch(Component):
             log.error("Error updating project branches %s: %s", self, e.message)
             return False
 
-    def api_params(self, operation: Optional[str] = None) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        ops = {Oper.GET: {"application": self.concerned_object.key, "branch": self.name}}
-        return ops[operation] if operation and operation in ops else ops[Oper.GET]
-
     def component_data(self) -> ObjectJsonRepr:
         """Returns key data"""
         return {
