@@ -176,7 +176,7 @@ class Issue(findings.Finding):
         except TooManyIssuesError as e:
             log.info(e.message)
             for key in Project.get_list(endpoint):
-                issue_list |= cls.search_by_project(endpoint, key, search_findings=True, **search_params)
+                issue_list |= cls.search_by_project(endpoint, search_findings=True, **(search_params | {"project": key}))
         return issue_list
 
     @classmethod
