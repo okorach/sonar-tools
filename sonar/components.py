@@ -137,7 +137,7 @@ class Component(SqObject):
         log.info("Searching hotspots for %s with filters %s", self, search_params)
         # Strip off project, application and portfolio search params
         new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio")}
-        return Hotspot.search_by_project(endpoint=self.endpoint, **(new_params | {"project": self.key}))
+        return Hotspot.search(endpoint=self.endpoint, **(new_params | {"project": self.key}))
 
     def count_specific_rules_issues(self, ruleset: list[str], **search_params) -> dict[str, int]:
         """Returns the count of issues of a component for a given ruleset"""
