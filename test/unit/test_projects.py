@@ -178,13 +178,13 @@ def test_get_findings() -> None:
 def test_count_third_party_issues() -> None:
     """test_count_third_party_issues"""
     proj = Project.get_object(endpoint=tutil.SQ, key="creedengo-issues")
-    filters = None
+    filters = {}
     if tutil.SQ.edition() != c.CE:
         filters = {"branch": "develop"}
     if tutil.SQ.version() >= (10, 0, 0):
-        assert len(proj.count_third_party_issues(filters=filters)) > 0
+        assert len(proj.count_third_party_issues(**filters)) > 0
     if tutil.SQ.edition() != c.CE:
-        assert len(proj.count_third_party_issues(filters={"branch": "non-existing-branch"})) == 0
+        assert len(proj.count_third_party_issues(branch="non-existing-branch")) == 0
 
 
 def test_webhooks() -> None:
