@@ -29,14 +29,14 @@ import sonar.util.misc as util
 
 def test_transitions() -> None:
     """test_transitions"""
-    hotspot_d = hotspots.Hotspot.search(endpoint=tutil.SQ, filters={"project": "test:juice-shop"})
+    hotspot_d = hotspots.Hotspot.search(tutil.SQ, project="test:juice-shop")
     hotspot = list(hotspot_d.values())[0]
 
     assert hotspot.mark_as_safe()
     assert hotspot.reopen()
 
     if tutil.SQ.is_sonarcloud():
-        hotspot = hotspots.Hotspot.search(endpoint=tutil.SQ, filters={"project": "okorach_sonar-tools"})[0]
+        hotspot = list(hotspots.Hotspot.search(tutil.SQ, project=tutil.LIVE_PROJECT).values())[0]
         assert not hotspot.mark_as_acknowledged()
     else:
         assert hotspot.mark_as_acknowledged()
@@ -48,28 +48,29 @@ def test_transitions() -> None:
     assert hotspot.mark_as_fixed()
     assert hotspot.reopen()
 
-    assert hotspot.assign("admin", "Assigning to admin")
-    assert hotspot.unassign("Unassigning")
+    assert hotspot.assign("admin")
+    assert hotspot.unassign()
 
 
 def test_search_by_project() -> None:
     """test_search_by_project"""
-    hotspot_d = hotspots.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
-    assert len(hotspot_d) > 0
+    nbr_hotspots = len(hotspots.Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT))
+    assert nbr_hotspots > 0
+    assert len(hotspots.Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, statuses=["TO_REVIEW"])) < nbr_hotspots
+    assert len(hotspots.Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, severities=["BLOCKER", "CRITICAL"])) < nbr_hotspots
 
 
 def test_sanitize_filter() -> None:
     """test_sanitize_filter"""
-    assert hotspots.sanitize_search_filters(endpoint=tutil.SQ, params={}) == {}
-    assert hotspots.sanitize_search_filters(endpoint=tutil.SQ, params=None) == {}
+    assert hotspots.Hotspot.sanitize_search_params(endpoint=tutil.SQ) == {}
     good = ["TO_REVIEW", "REVIEWED"]
-    assert hotspots.sanitize_search_filters(endpoint=tutil.SQ, params={"statuses": ["DEAD"] + good}) == {"status": ",".join(good)}
-    assert hotspots.sanitize_search_filters(endpoint=tutil.SQ, params={"statuses": good + ["DEAD"]}) == {"status": ",".join(good)}
+    assert hotspots.Hotspot.sanitize_search_params(endpoint=tutil.SQ, statuses=["DEAD"] + good) == {"status": ",".join(good)}
+    assert hotspots.Hotspot.sanitize_search_params(endpoint=tutil.SQ, statuses=good + ["DEAD"]) == {"status": ",".join(good)}
 
 
 def test_comments_after() -> None:
     """test_comments_after"""
-    hotspot = list(hotspots.Hotspot.search(endpoint=tutil.SQ, filters={"project": "test:juice-shop"}).values())[0]
+    hotspot = list(hotspots.Hotspot.search(endpoint=tutil.SQ, project="test:juice-shop").values())[0]
     after = util.add_tz(datetime(2024, 1, 1))
     comments = hotspot.comments(after=after)
     assert all(c["date"] >= after for c in comments.values())

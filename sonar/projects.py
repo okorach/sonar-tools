@@ -55,6 +55,8 @@ from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
+    from sonar.issues import Issue
+    from sonar.hotspots import Hotspot
     from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, PermissionDef
 
@@ -738,26 +740,22 @@ class Project(Component):
                     log.error(e.message)
         return objects
 
-    def get_findings(self, branch: Optional[str] = None, pr: Optional[str] = None) -> dict[str, object]:
+    def get_findings(self, **search_params: Any) -> dict[str, Union[Issue, Hotspot]]:
         """Returns a project list of findings (issues and hotspots)
 
-        :param branch: optional branch name to consider, if any
-        :param pr: optional PR key to consider, if any
-        :return: JSON of all findings, with finding key as key
-        :rtype: dict{key: Finding}
+        :param search_params: Any search parameter
+        :return: List of all findings, with finding key as key
         """
-        from sonar import issues, hotspots
+        from sonar import issues, hotspots, findings
 
         if self.endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation("Findings export is not supported in Community Edition")
         log.info("Exporting findings for %s", str(self))
-        findings_list = {}
-        params = util.remove_nones({"project": self.key, "branch": branch, "pullRequest": pr})
-
-        data = json.loads(self.get("projects/export_findings", params=params).text)["export_findings"]
+        findings_list: dict[str, Union[Issue, Hotspot]] = {}
         findings_conflicts = dict.fromkeys(idefs.ALL_TYPES, 0)
         nbr_findings = dict.fromkeys(idefs.ALL_TYPES, 0)
-        for i in data:
+        data = json.loads(self.get("projects/export_findings", params=search_params | {"project": self.key}).text)
+        for i in data["export_findings"]:
             key = i["key"]
             if key in findings_list:
                 log.warning("Finding %s (%s) already in past findings", i["key"], i["type"])
@@ -765,52 +763,39 @@ class Project(Component):
             # FIXME(okorach) - Hack for wrong projectKey returned in PR
             # m = re.search(r"(\w+):PULL_REQUEST:(\w+)", i['projectKey'])
             i["projectKey"] = self.key
-            i["branch"] = branch
-            i["pullRequest"] = pr
             nbr_findings[i["type"]] += 1
             if i["type"] == idefs.TYPE_HOTSPOT:
                 if i.get("status", "") != "CLOSED":
-                    findings_list[key] = hotspots.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
+                    findings_list[key] = hotspots.Hotspot.get_object(self.endpoint, key=key, data=i, from_export=True)
             else:
-                findings_list[key] = issues.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
+                findings_list[key] = issues.Issue.get_object(self.endpoint, key=key, data=i, from_export=True)
         for t in idefs.ALL_TYPES:
             if findings_conflicts[t] > 0:
                 log.warning("%d %s findings missed because of JSON conflict", findings_conflicts[t], t)
-        log.info("%d findings exported for %s branch %s PR %s", len(findings_list), str(self), branch, pr)
+        log.info("%d findings exported for %s with params %s", len(findings_list), self, search_params)
         for t in idefs.ALL_TYPES:
             log.info("%d %s exported", nbr_findings[t], t)
-
+        findings.Finding.add_branch_and_pr(findings_list, **search_params)
         return findings_list
 
-    def get_hotspots(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:
-        branches_or_prs = self.get_branches_and_prs(filters)
-        if branches_or_prs is None:
-            return super().get_hotspots(filters)
-        findings_list = {}
-        for component in [comp for comp in branches_or_prs.values() if comp]:
-            findings_list |= component.get_hotspots()
-        return findings_list
+    def get_matching_branches(self, pattern: str) -> list[branches.Branch]:
+        """Returns the list of branches matching the pattern"""
+        return [b for b in self.branches().values() if re.match(rf"^{pattern}$", b.name)]
 
-    def get_issues(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:
-        branches_or_prs = self.get_branches_and_prs(filters)
-        if branches_or_prs is None:
-            return super().get_issues(filters)
-        findings_list = {}
-        for component in [comp for comp in branches_or_prs.values() if comp]:
-            findings_list |= component.get_issues()
-        return findings_list
+    def get_matching_pull_requests(self, pattern: str) -> list[pull_requests.PullRequest]:
+        """Returns the list of pull requests matching the pattern"""
+        return [p for p in self.pull_requests().values() if re.match(rf"^{pattern}$", p.key)]
 
-    def count_third_party_issues(self, filters: Optional[dict[str, str]] = None) -> dict[str, int]:
-        if filters:
-            filters = {k: [v] for k, v in filters.items() if k in ("branch", "pullRequest")}
-        branches_or_prs = self.get_branches_and_prs(filters)
+    def count_third_party_issues(self, **search_params: Any) -> dict[str, int]:
+        search_params = {k: [v] for k, v in search_params.items() if k in ("branch", "pullRequest")}
+        branches_or_prs = self.get_branches_and_prs(search_params)
         if branches_or_prs is None:
-            return super().count_third_party_issues(filters)
+            return super().count_third_party_issues(**search_params)
         log.debug("Getting 3rd party issues on branches/PR")
         issue_counts = {}
         for comp in [co for co in branches_or_prs.values() if co]:
             log.debug("Getting 3rd party issues for %s", str(comp))
-            for k, total in comp.count_third_party_issues(filters).items():
+            for k, total in comp.count_third_party_issues(**search_params).items():
                 if k not in issue_counts:
                     issue_counts[k] = 0
                 issue_counts[k] += total

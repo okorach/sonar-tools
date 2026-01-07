@@ -44,6 +44,8 @@ from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
+    from sonar.issues import Issue
+    from sonar.hotspots import Hotspot
     from sonar.platform import Platform
     from sonar.util.types import ApiPayload, ApiParams, ConfigSettings, ObjectJsonRepr
     from datetime import datetime
@@ -329,15 +331,21 @@ class Branch(components.Component):
                 (new_code, param) = new_code
             self.set_new_code(new_code, param)
 
-    def get_findings(self, filters: Optional[ApiParams] = None) -> dict[str, object]:
-        """Returns a branch list of findings
+    def get_issues(self, **search_params: Any) -> dict[str, Issue]:
+        """Returns a list of issues on a branch"""
+        from sonar.issues import Issue
 
-        :return: dict of Findings, with finding key as key
-        :rtype: dict{key: Finding}
-        """
-        if not filters:
-            return self.concerned_object.get_findings(branch=self.name)
-        return self.get_issues(filters) | self.get_hotspots(filters)
+        return Issue.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "branch": self.name}))
+
+    def get_hotspots(self, **search_params: Any) -> dict[str, Hotspot]:
+        """Returns a list of hotspots on a branch"""
+        from sonar.hotspots import Hotspot
+
+        return Hotspot.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "branch": self.name}))
+
+    def get_findings(self, **search_params: Any) -> dict[str, Union[Issue, Hotspot]]:
+        """Returns a list of findings, issues and hotspots together on a branch"""
+        return self.concerned_object.get_findings(**(search_params | {"branch": self.name}))
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""

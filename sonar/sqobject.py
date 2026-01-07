@@ -133,6 +133,12 @@ class SqObject(object):
         return obj.set_permissions([{"user": user or endpoint.user(), "permissions": ["admin", "user"]}])
 
     @classmethod
+    def count(cls, endpoint: Platform, **search_params: Any) -> int:
+        """Returns number of objects of a search"""
+        _, dataset = cls.search_one_page(endpoint, **(search_params | {"ps": 1}))
+        return sutil.nbr_total_elements(dataset)
+
+    @classmethod
     def get_paginated(cls, endpoint: Platform, params: Optional[ApiParams] = None, threads: int = 8) -> dict[str, SqObject]:
         """Returns all pages of a paginated API"""
         cname = cls.__name__.lower()

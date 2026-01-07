@@ -46,6 +46,8 @@ from sonar.util import common_json_helper
 
 
 if TYPE_CHECKING:
+    from sonar.hotspots import Hotspot
+    from sonar.issues import Issue
     from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, AppBranchDef, PermissionDef, AppBranchProjectDef
 
@@ -195,11 +197,14 @@ class Application(aggr.Aggregation):
         return self._projects
 
     def branch_exists(self, branch: str) -> bool:
-        """
-        :return: Whether the Application branch exists
-        :rtype: bool
-        """
+        """Returns whether the Application branch exists"""
         return app_branches.ApplicationBranch.exists(self.endpoint, app=self, branch_name=branch)
+
+    def get_issues(self, **search_params: Any) -> dict[str, Issue]:
+        """Returns list of issues for a project"""
+        if branch := search_params.get("branch"):
+            return app_branches.ApplicationBranch.get_object(self.endpoint, self, branch).get_issues(**search_params)
+        return super().get_issues(**search_params)
 
     def branch_is_main(self, branch: str) -> bool:
         """
@@ -280,33 +285,9 @@ class Application(aggr.Aggregation):
         :return: Whether the delete succeeded
         """
         if self.branches() is not None:
-            for branch in self.branches().values():
+            for branch in [b for b in self.branches().values() if not b.is_main()]:
                 branch.delete()
         return super().delete_object(application=self.key)
-
-    def get_hotspots(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:
-        """Returns the security hotspots of the application (ie of its projects or branches)"""
-        new_filters = filters.copy() if filters else {}
-        pattern = new_filters.pop("branch", None) if new_filters else None
-        if not pattern:
-            return super().get_hotspots(new_filters)
-        matching_branches = [b for b in self.branches().values() if re.match(rf"^{pattern}$", b.name)]
-        findings_list = {}
-        for comp in matching_branches:
-            findings_list |= comp.get_hotspots(new_filters)
-        return findings_list
-
-    def get_issues(self, filters: Optional[dict[str, str]] = None) -> dict[str, object]:
-        """Returns the issues of the application (ie of its projects or branches)"""
-        new_filters = filters.copy() if filters else {}
-        pattern = new_filters.pop("branch", None) if new_filters else None
-        if not pattern:
-            return super().get_issues(new_filters)
-        matching_branches = [b for b in self.branches().values() if re.match(rf"^{pattern}$", b.name)]
-        findings_list = {}
-        for comp in matching_branches:
-            findings_list |= comp.get_issues(new_filters)
-        return findings_list
 
     def nbr_projects(self, use_cache: bool = False) -> int:
         """Returns the nbr of projects of an application"""

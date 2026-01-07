@@ -228,18 +228,20 @@ def test_branch_is_main(get_test_app: Generator[App]) -> None:
 def test_get_issues(get_test_app: Generator[App]) -> None:
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
-    assert len(get_test_app.get_issues()) == 0
+    app: App = get_test_app
+    assert len(app.get_issues()) == 0
     app = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
     main_br_count = len(app.get_issues())
     assert main_br_count > 0
-    assert len(app.get_issues(filters={"branch": "main"})) == main_br_count
-    assert len(app.get_issues(filters={"branch": "non-existing"})) == 0
-    assert len(app.get_issues(filters={"branch": ".+"})) >= main_br_count
+    assert len(app.get_issues(branch="main")) == main_br_count
+    with pytest.raises(exceptions.ObjectNotFound):
+        app.get_issues(branch="non-existing")
+
     main_br_count = len(app.get_hotspots())
     assert main_br_count > 0
-    assert len(app.get_hotspots(filters={"branch": "main"})) == main_br_count
-    assert len(app.get_hotspots(filters={"branch": "non-existing"})) == 0
-    assert len(app.get_hotspots(filters={"branch": ".+"})) >= main_br_count
+    assert len(app.get_hotspots(branch="main")) == main_br_count
+    with pytest.raises(exceptions.ObjectNotFound):
+        app.get_hotspots(branch="non-existing")
 
 
 def test_audit_disabled() -> None:

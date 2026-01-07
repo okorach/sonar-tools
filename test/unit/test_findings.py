@@ -400,7 +400,7 @@ def test_output_format_branch(csv_file: Generator[str]) -> None:
 
 def test_all_prs(csv_file: Generator[str]) -> None:
     """Tests that findings extport for all PRs of a project works"""
-    cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} --{opt.PULL_REQUESTS} "*"'
+    cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} --{opt.PULL_REQUESTS} ".+"'
     if tutil.SQ.edition() == c.CE:
         assert tutil.run_cmd(findings_export.main, cmd) == e.UNSUPPORTED_OPERATION
         return

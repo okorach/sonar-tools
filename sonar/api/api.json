@@ -990,6 +990,14 @@
                 ],
                 "return_field": ""
             },
+            "ADD_COMMENT": {
+                "method": "POST",
+                "api": "api/hotspots/add_comment",
+                "params": [
+                    "hotspot",
+                    "comment"
+                ]
+            },
             "ASSIGN": {
                 "method": "POST",
                 "api": "api/hotspots/assign",
@@ -1006,14 +1014,6 @@
                     "hotspot",
                     "status",
                     "resolution",
-                    "comment"
-                ]
-            },
-            "ADD_COMMENT": {
-                "method": "POST",
-                "api": "api/hotspots/add_comment",
-                "params": [
-                    "hotspot",
                     "comment"
                 ]
             }
