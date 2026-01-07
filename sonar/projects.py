@@ -615,22 +615,6 @@ class Project(Component):
             log.debug("%s: matches the desired project key pattern '%s'", str(self), f"^{audit_settings['audit.projects.keyPattern']}$")
             return []
 
-    def get_issues(self, **search_params: Any) -> dict[str, Issue]:
-        """Returns list of issues for a project"""
-        if branch := search_params.get("branch"):
-            return branches.Branch.get_object(self.endpoint, self, branch).get_issues(**search_params)
-        elif pull_request := search_params.get("pullRequest"):
-            return pull_requests.PullRequest.get_object(self.endpoint, self, pull_request).get_issues(**search_params)
-        return super().get_issues(**search_params)
-
-    def get_hotspots(self, **search_params: Any) -> dict[str, Hotspot]:
-        """Returns list of hotspots for a project"""
-        if branch := search_params.get("branch"):
-            return branches.Branch.get_object(self.endpoint, self, branch).get_hotspots(**search_params)
-        elif pull_request := search_params.get("pullRequest"):
-            return pull_requests.PullRequest.get_object(self.endpoint, self, pull_request).get_hotspots(**search_params)
-        return super().get_hotspots(**search_params)
-
     def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits a project and returns the list of problems found
 
@@ -756,26 +740,11 @@ class Project(Component):
                     log.error(e.message)
         return objects
 
-    def get_hotspots(self, **search_params: Any) -> dict[str, Hotspot]:
-        """Returns list of ishotspotssues for a component (project, application, portfolio)"""
-        from sonar.hotspots import Hotspot
-
-        return Hotspot.search(endpoint=self.endpoint, **(search_params | {"project": self.key}))
-
-    def get_issues(self, **search_params: Any) -> dict[str, Issue]:
-        """Returns list of issues for a component (project, application, portfolio)"""
-        from sonar.issues import Issue
-
-        issue_list = Issue.search(endpoint=self.endpoint, **(search_params | {"project": self.key}))
-        self.nbr_issues = len(issue_list)
-        return issue_list
-
     def get_findings(self, **search_params: Any) -> dict[str, Union[Issue, Hotspot]]:
         """Returns a project list of findings (issues and hotspots)
 
         :param search_params: Any search parameter
         :return: List of all findings, with finding key as key
-        :rtype: dict{key: Finding}
         """
         from sonar import issues, hotspots, findings
 
