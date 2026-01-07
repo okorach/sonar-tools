@@ -170,9 +170,9 @@ def csv_normalize(string: str, separator: str = ",") -> str:
     return list_to_csv(csv_to_list(string, separator))
 
 
-def dict_subset(d: dict[str, str], key_subset: list[str]) -> dict[str, str]:
+def dict_subset(d: dict[str, str], *key_subset: str) -> dict[str, str]:
     """Returns the subset of dict only with subset_list keys"""
-    return {key: d[key] for key in key_subset if key in d}
+    return {k: v for k, v in d.items() if k in key_subset}
 
 
 def allowed_values_string(original_str: str, allowed_values: list[str]) -> str:

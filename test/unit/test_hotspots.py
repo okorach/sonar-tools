@@ -48,8 +48,8 @@ def test_transitions() -> None:
     assert hotspot.mark_as_fixed()
     assert hotspot.reopen()
 
-    assert hotspot.assign("admin", "Assigning to admin")
-    assert hotspot.unassign("Unassigning")
+    assert hotspot.assign("admin")
+    assert hotspot.unassign()
 
 
 def test_search_by_project() -> None:
@@ -62,11 +62,10 @@ def test_search_by_project() -> None:
 
 def test_sanitize_filter() -> None:
     """test_sanitize_filter"""
-    assert hotspots.Hotspot.pre_search_filters(endpoint=tutil.SQ, params={}) == {}
-    assert hotspots.Hotspot.pre_search_filters(endpoint=tutil.SQ, params=None) == {}
+    assert hotspots.Hotspot.sanitize_search_params(endpoint=tutil.SQ) == {}
     good = ["TO_REVIEW", "REVIEWED"]
-    assert hotspots.Hotspot.pre_search_filters(endpoint=tutil.SQ, params={"statuses": ["DEAD"] + good}) == {"status": ",".join(good)}
-    assert hotspots.Hotspot.pre_search_filters(endpoint=tutil.SQ, params={"statuses": good + ["DEAD"]}) == {"status": ",".join(good)}
+    assert hotspots.Hotspot.sanitize_search_params(endpoint=tutil.SQ, statuses=["DEAD"] + good) == {"status": ",".join(good)}
+    assert hotspots.Hotspot.sanitize_search_params(endpoint=tutil.SQ, statuses=good + ["DEAD"]) == {"status": ",".join(good)}
 
 
 def test_comments_after() -> None:

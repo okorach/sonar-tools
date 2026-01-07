@@ -24,7 +24,7 @@ Abstraction of the SonarQube "pull request" concept
 """
 
 from __future__ import annotations
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Optional, Union, Any, TYPE_CHECKING
 
 import json
 from datetime import datetime
@@ -44,6 +44,8 @@ from sonar.api.manager import ApiManager as Api
 from sonar import projects as proj
 
 if TYPE_CHECKING:
+    from sonar.issues import Issue
+    from sonar.hotspots import Hotspot
     from sonar.util.types import ApiPayload, ApiParams, ConfigSettings
     from sonar.platform import Platform
 
@@ -186,12 +188,18 @@ class PullRequest(components.Component):
         """Deletes a pull request"""
         return super().delete_object(project=self.concerned_object.key, pullRequest=self.key)
 
-    def get_findings(self, filters: Optional[ApiParams] = None) -> dict[str, object]:
-        """Returns a PR list of findings
+    def get_issues(self, **search_params: Any) -> dict[str, Issue]:
+        """Returns a list of issues on a PR"""
+        from sonar.issues import Issue
 
-        :return: dict of Findings, with finding key as key
-        :rtype: dict{key: Finding}
-        """
-        if not filters:
-            return self.concerned_object.get_findings(pr=self.key)
-        return self.get_issues(filters) | self.get_hotspots(**filters)
+        return Issue.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "pullRequest": self.key}))
+
+    def get_hotspots(self, **search_params: Any) -> dict[str, Hotspot]:
+        """Returns a list of hotspots on a PR"""
+        from sonar.hotspots import Hotspot
+
+        return Hotspot.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "pullRequest": self.key}))
+
+    def get_findings(self, **search_params: Any) -> dict[str, Union[Issue, Hotspot]]:
+        """Returns a list of findings, issues and hotspots together on a PR"""
+        return self.concerned_object.get_findings(**(search_params | {"pullRequest": self.key}))

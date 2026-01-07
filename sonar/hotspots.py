@@ -24,7 +24,6 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from typing import Optional, Any, Union, TYPE_CHECKING
-from http import HTTPStatus
 import requests.utils
 from copy import deepcopy
 
@@ -113,13 +112,6 @@ class Hotspot(findings.Finding):
         return f"Hotspot key '{self.key}'"
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str, data: ApiPayload, from_export: bool = False) -> Hotspot:
-        """Returns a hotspot from its key"""
-        if not (o := cls.CACHE.get(key, endpoint.local_url)):
-            o = cls(endpoint=endpoint, key=key, data=data, from_export=from_export)
-        return o
-
-    @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> Hotspot:
         """Loads a hotspot from the API payload"""
         o: Optional[Hotspot] = Hotspot.CACHE.get(data["key"], endpoint.local_url)
@@ -127,23 +119,6 @@ class Hotspot(findings.Finding):
             o = Hotspot(endpoint=endpoint, key=data["key"], data=data)
         o.reload(data)
         return o
-
-    @staticmethod
-    def __json_to_objects(endpoint: Platform, dataset: ApiPayload, **search_params: Any) -> dict[str, Hotspot]:
-        """Returns a list of hotspots from the API payload"""
-        br, pr = search_params.get("branch"), search_params.get("pullRequest")
-        for hotspot_data in dataset:
-            hotspot_data["branch"], hotspot_data["pullRequest"] = br, pr
-        return {hotspot_data["key"]: Hotspot.get_object(endpoint=endpoint, key=hotspot_data["key"], data=hotspot_data) for hotspot_data in dataset}
-
-    @classmethod
-    def search_one_page(cls, endpoint: Platform, **search_params: Any) -> tuple[dict[str, Hotspot], dict[str, Any]]:
-        """Search one page of hotspots"""
-        search_params = cls.pre_search_filters(endpoint=endpoint, params=search_params)
-        api, _, api_params, ret = Api(cls, Oper.SEARCH, endpoint).get_all(**search_params)
-        dataset = json.loads(endpoint.get(api, params=api_params).text)
-        hotspots_d = Hotspot.__json_to_objects(endpoint, dataset[ret], **search_params)
-        return hotspots_d, dataset
 
     @classmethod
     def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, Hotspot]:
@@ -153,20 +128,16 @@ class Hotspot(findings.Finding):
         :param search_params: Search filters to narrow down the search
         :return: Dict of found hotspots indexed by hotspot key
         """
-
-        # Backup original params to allow for severities, createdAfter, createdBefore, languages filters post search
-        original_params = deepcopy(search_params)
-
         log.debug("Searching hotspots with params %s", search_params)
-        split_filters = split_search_filters(cls.pre_search_filters(endpoint=endpoint, params=search_params))
+        split_filters = split_search_filters(cls.sanitize_search_params(endpoint=endpoint, **search_params))
         log.debug("Split search filters = %s", split_filters)
         hotspots_list: dict[str, Hotspot] = {}
         for inline_filters in split_filters:
             hotspots_list |= cls.get_paginated(endpoint=endpoint, params=inline_filters)
         # Add Branch and Pull Request info to hotspots (which is not returned in the API payload)
-        hotspots_list = cls.__adorn(hotspots_list, original_params)
+        hotspots_list = cls.add_branch_and_pr(hotspots_list, **search_params)
         # Filter results based on creation date, severities, languages
-        hotspots_list = cls.post_search_filters(hotspots_list, original_params)
+        hotspots_list = cls.post_search_filters(hotspots_list, **search_params)
         log.debug("Searching hotspots with params = %s returned %d hotspots", search_params, len(hotspots_list))
         return hotspots_list
 
@@ -185,19 +156,6 @@ class Hotspot(findings.Finding):
         log.info("Project '%s' has %d hotspots corresponding to filters", project, len(hotspots))
         return hotspots
 
-    @staticmethod
-    def __adorn(hotspots_list: dict[str, Hotspot], search_params: ApiParams) -> dict[str, Hotspot]:
-        """Enriches hotspots with branch and pull request info"""
-        for e_key in [elem for elem in ["branch", "pullRequest"] if elem in search_params]:
-            e_val = search_params[e_key]
-            for hotspot in hotspots_list.values():
-                hotspot.sq_json[e_key] = e_val
-                if e_key == "branch":
-                    hotspot.branch = e_val
-                else:
-                    hotspot.pull_request = e_val
-        return hotspots_list
-
     def reload(self, data: ApiPayload, from_export: bool = False) -> None:
         """Loads the hotspot details from the provided data (coming from api/hotspots/search)"""
         super().reload(data, from_export)
@@ -208,7 +166,7 @@ class Hotspot(findings.Finding):
 
     def refresh(self) -> Hotspot:
         """Refreshes and reads hotspots details in SonarQube, returns self"""
-        api, _, params, _ = Api(self, Oper.GET).get_all(hotspots=self.key)
+        api, _, params, _ = Api(self, Oper.GET).get_all(hotspot=self.key)
         self.__details = d = json.loads(self.get(api, params=params).text)
         if self.file is None and "path" in d["component"]:
             self.file = d["component"]["path"]
@@ -424,12 +382,12 @@ class Hotspot(findings.Finding):
         return self._comments
 
     @classmethod
-    def pre_search_filters(cls, endpoint: Platform, params: ApiParams) -> ApiParams:
-        """Returns the filtered list of params that are allowed for api/hotspots/search"""
-        log.debug("Sanitizing hotspot search criteria %s", str(params))
-        if params is None:
-            return {}
-        params = params.copy()
+    def sanitize_search_params(cls, endpoint: Platform, **search_params: Any) -> ApiParams:
+        """Returns the sanitized list of params that are allowed for api/hotspots/search"""
+        log.debug("Sanitizing hotspot search criteria %s", search_params)
+        params = deepcopy(search_params)
+        if params == {}:
+            return params
         comp_filter = PROJECT_FILTER if endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else PROJECT_FILTER_OLD
         if params.get(PROJECT_FILTER_OLD) and not params.get(comp_filter):
             params[comp_filter] = params.pop(PROJECT_FILTER_OLD)
@@ -446,31 +404,31 @@ class Hotspot(findings.Finding):
             criterias = util.dict_remap(original_dict=criterias, remapping={PROJECT_FILTER: PROJECT_FILTER_OLD})
         else:
             criterias = util.dict_remap(original_dict=criterias, remapping={PROJECT_FILTER_OLD: PROJECT_FILTER})
-        criterias = util.dict_subset(criterias, SEARCH_CRITERIAS)
+        criterias = util.dict_subset(criterias, *SEARCH_CRITERIAS)
         log.debug("Sanitized hotspot search criteria %s", str(criterias))
         return criterias
 
-    @classmethod
-    def post_search_filters(cls, hotspots_dict: dict[str, Hotspot], filters: ApiParams) -> dict[str, Hotspot]:
+    @staticmethod
+    def post_search_filters(hotspots_dict: dict[str, Hotspot], **filters: Any) -> dict[str, Hotspot]:
         """Filters a dict of hotspots with provided filters"""
         log.debug("Post filtering findings with %s - Starting with %d hotspots", str(filters), len(hotspots_dict))
         filtered_findings = hotspots_dict.copy()
         if "severities" in filters:
             filtered_findings = {k: v for k, v in filtered_findings.items() if v.severity in filters["severities"]}
-            log.debug("%d hotspots remaining after filtering by severities %s", len(filtered_findings), str(filters["severities"]))
+            log.debug("%d hotspots remaining after filtering by severities %s", len(filtered_findings), filters["severities"])
         if "createdAfter" in filters:
             min_date = sutil.string_to_date(filters["createdAfter"])
             filtered_findings = {k: v for k, v in filtered_findings.items() if v.creation_date >= min_date}
-            log.debug("%d hotspots remaining after filtering by createdAfter %s", len(filtered_findings), str(filters["createdAfter"]))
+            log.debug("%d hotspots remaining after filtering by createdAfter %s", len(filtered_findings), filters["createdAfter"])
         if "createdBefore" in filters:
             max_date = sutil.string_to_date(filters["createdBefore"])
             filtered_findings = {k: v for k, v in filtered_findings.items() if v.creation_date <= max_date}
-            log.debug("%d hotspots remaining after filtering by createdBefore %s", len(filtered_findings), str(filters["createdBefore"]))
+            log.debug("%d hotspots remaining after filtering by createdBefore %s", len(filtered_findings), filters["createdBefore"])
         if "languages" in filters:
             filtered_findings = {
                 k: v for k, v in filtered_findings.items() if rules.Rule.get_object(endpoint=v.endpoint, key=v.rule).language in filters["languages"]
             }
-            log.debug("%d hotspots remaining after filtering by languages %s", len(filtered_findings), str(filters["languages"]))
+            log.debug("%d hotspots remaining after filtering by languages %s", len(filtered_findings), filters["languages"])
         log.debug("%d hotspots remaining after post search filtering", len(filtered_findings))
         return filtered_findings
 

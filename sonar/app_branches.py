@@ -21,7 +21,7 @@
 """Abstraction of Sonar Application Branch"""
 
 from __future__ import annotations
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Optional, Union, Any, TYPE_CHECKING
 import json
 from requests.utils import quote
 
@@ -40,6 +40,8 @@ import sonar.util.constants as c
 from sonar import applications as apps
 
 if TYPE_CHECKING:
+    from sonar.issues import Issue
+    from sonar.hotspots import Hotspot
     from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr
     from datetime import datetime
@@ -142,6 +144,23 @@ class ApplicationBranch(Component):
         """Returns the object UUID"""
         return hash((self.concerned_object.key, self.name, self.base_url()))
 
+    def get_issues(self, **search_params: Any) -> dict[str, Issue]:
+        """Returns a branch list of issues"""
+        from sonar.issues import Issue
+
+        return Issue.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "branch": self.name}))
+
+    def get_hotspots(self, **search_params: Any) -> dict[str, Hotspot]:
+        """Returns a branch list of hotspots"""
+        from sonar.hotspots import Hotspot
+
+        return Hotspot.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "branch": self.name}))
+
+    def api_params(self, operation: Optional[str] = None) -> ApiParams:
+        """Return params used to search/create/delete for that object"""
+        ops = {Oper.GET: {"application": self.concerned_object.key, "branch": self.name}}
+        return ops[operation] if operation and operation in ops else ops[Oper.GET]
+
     def is_main(self) -> bool:
         """Returns whether app branch is main"""
         return self._is_main
@@ -167,10 +186,11 @@ class ApplicationBranch(Component):
             return False
         return self.delete_object(application=self.concerned_object.key, branch=self.name)
 
-    def reload(self, data: ApiPayload) -> None:
+    def reload(self, data: ApiPayload) -> ApplicationBranch:
         """Reloads an App Branch from JSON data coming from Sonar"""
         super().reload(data)
         self.name = data.get("branch", "")
+        return self
 
     def export(self) -> ObjectJsonRepr:
         """Exports an application branch

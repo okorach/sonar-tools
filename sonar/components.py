@@ -45,6 +45,8 @@ from sonar.audit.rules import get_rule, RuleId
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
+    from sonar.hotspots import Hotspot
+    from sonar.issues import Issue
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList
 
 # Character forbidden in keys that can be used to separate a key from a post fix
@@ -71,6 +73,11 @@ class Component(SqObject):
         """String representation of object"""
         return self.key
 
+    def api_params(self, operation: Optional[str] = None) -> ApiParams:
+        """Return params used to search/create/delete for that object"""
+        ops = {Oper.GET: {"project": self.key}}
+        return ops[operation] if operation and operation in ops else ops[Oper.GET]
+
     def reload(self, data: ApiPayload) -> Component:
         """Loads a SonarQube API JSON payload in a Component"""
         super().reload(data)
@@ -91,15 +98,14 @@ class Component(SqObject):
             "metricKeys": "bugs,vulnerabilities,code_smells,security_hotspots",
         }
         api, _, api_params, ret = Api(self, Oper.GET_SUBCOMPONENTS).get_all(**parms)
+        max_ps = Api(self, Oper.GET_SUBCOMPONENTS).max_page_size()
         data = json.loads(self.get(api, params=api_params).text)
         nb_comp = sutil.nbr_total_elements(data)
         log.debug("Found %d subcomponents to %s", nb_comp, str(self))
-        nb_pages = math.ceil(nb_comp / 500)
+        nb_pages = math.ceil(nb_comp / max_ps)
         comp_list = {}
-        parms["ps"] = 500
         for page in range(nb_pages):
-            parms["p"] = page + 1
-            api, _, api_params, ret = Api(self, Oper.GET_SUBCOMPONENTS).get_all(**parms)
+            api, _, api_params, ret = Api(self, Oper.GET_SUBCOMPONENTS).get_all(**(parms | {"p": page + 1, "ps": max_ps}))
             data = json.loads(self.get(api, params=api_params).text)
             for d in data[ret]:
                 nbr_issues = 0
@@ -113,15 +119,25 @@ class Component(SqObject):
                 log.debug("Component %s has %d issues", d["key"], nbr_issues)
         return comp_list
 
-    def get_issues(self, filters: ApiParams = None) -> dict[str, object]:
-        """Returns list of issues for a component, optionally on branches or/and PRs"""
+    def get_issues(self, **search_params: Any) -> dict[str, Issue]:
+        """Returns list of issues for a portfolios"""
         from sonar.issues import Issue
 
-        filters = {k: list(set(v)) if isinstance(v, (list, set, tuple)) else v for k, v in (filters or {}).items() if v is not None}
-        log.info("Searching issues for %s with filters %s", str(self), str(filters))
-        issue_list = Issue.search(endpoint=self.endpoint, **(self.api_params() | {"additionalFields": "comments"} | filters))
+        log.info("Searching issues for %s with filters %s", self, search_params)
+        # Strip off project, application and portfolio search params
+        new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio")}
+        issue_list = Issue.search(endpoint=self.endpoint, **(new_params | {"project": self.key}))
         self.nbr_issues = len(issue_list)
         return issue_list
+
+    def get_hotspots(self, **search_params: Any) -> dict[str, Hotspot]:
+        """Returns list of hotspots for a component, optionally on branches or/and PRs"""
+        from sonar.hotspots import Hotspot
+
+        log.info("Searching hotspots for %s with filters %s", self, search_params)
+        # Strip off project, application and portfolio search params
+        new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio")}
+        return Hotspot.search_by_project(endpoint=self.endpoint, **(new_params | {"project": self.key}))
 
     def count_specific_rules_issues(self, ruleset: list[str], filters: ApiParams = None) -> dict[str, int]:
         """Returns the count of issues of a component for a given ruleset"""
@@ -134,20 +150,13 @@ class Component(SqObject):
         params["rules"] = [r.key for r in ruleset]
         return {k: v for k, v in count_by_rule(endpoint=self.endpoint, **params).items() if v > 0}
 
-    def count_third_party_issues(self, filters: ApiParams = None) -> dict[str, int]:
+    def count_third_party_issues(self, **search_params: Any) -> dict[str, int]:
         """Returns the count of issues of a component  corresponding to 3rd party rules"""
-        return self.count_specific_rules_issues(ruleset=rules.third_party(self.endpoint), filters=filters)
+        return self.count_specific_rules_issues(ruleset=rules.third_party(self.endpoint), filters=search_params)
 
-    def count_instantiated_rules_issues(self, filters: ApiParams = None) -> dict[str, int]:
+    def count_instantiated_rules_issues(self, **search_params: Any) -> dict[str, int]:
         """Returns the count of issues of a component corresponding to instantiated rules"""
-        return self.count_specific_rules_issues(ruleset=rules.instantiated(self.endpoint), filters=filters)
-
-    def get_hotspots(self, **filters: Any) -> dict[str, object]:
-        """Returns list of hotspots for a component, optionally on branches or/and PRs"""
-        from sonar.hotspots import Hotspot
-
-        log.info("Searching hotspots for %s with filters %s", self, filters)
-        return Hotspot.search_by_project(endpoint=self.endpoint, project=self.key, **filters)
+        return self.count_specific_rules_issues(ruleset=rules.instantiated(self.endpoint), filters=search_params)
 
     def migration_export(self, export_settings: ConfigSettings) -> dict[str, Any]:
         """Prepares all data for a sonar-migration export"""

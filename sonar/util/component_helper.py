@@ -21,7 +21,9 @@
 import re
 from typing import Optional, Any
 
-from sonar import platform, components, projects, applications, portfolios
+import sonar.logging as log
+from sonar import platform, projects, applications, portfolios
+from sonar.components import Component
 
 
 def get_components(
@@ -29,24 +31,30 @@ def get_components(
     component_type: str,
     key_regexp: Optional[str] = None,
     branch_regexp: Optional[str] = None,
-    pull_requests: bool = False,
+    pr_regexp: Optional[str] = None,
     **kwargs: Any,
-) -> list[components.Component]:
+) -> list[Component]:
     """Returns list of components that match the filters"""
     key_regexp = key_regexp or ".+"
-    pr_components = []
+    components: list[Component]
     if component_type in ("apps", "applications"):
-        components = [p for p in applications.Application.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
+        components = list(applications.Application.get_list(endpoint).values())
     elif component_type == "portfolios":
-        components = [p for p in portfolios.Portfolio.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
+        components = list(portfolios.Portfolio.get_list(endpoint).values())
         if kwargs.get("topLevelOnly", False):
             components = [p for p in components if p.is_toplevel()]
     else:
-        components = [p for p in projects.Project.get_list(endpoint).values() if re.match(rf"^{key_regexp}$", p.key)]
-        if pull_requests:
-            for p in components:
-                pr_components += list(p.pull_requests().values())
+        components = list(projects.Project.get_list(endpoint).values())
+    if key_regexp:
+        components = [comp for comp in components if re.match(rf"^{key_regexp}$", comp.key)]
+    # If pull_requests flag is set, include PRs for each project
+    log.info("PR regexp: %s", pr_regexp)
+    if component_type == "projects" and pr_regexp:
+        log.info("Projects list: %s", [str(proj) for proj in components])
+        for proj in components:
+            log.info("Project: %s", str(proj))
+            components += [pr for pr in proj.pull_requests().values() if re.match(rf"^{pr_regexp}$", pr.key)]
+            log.info("Components list: %s", [str(comp) for comp in components])
     if component_type != "portfolios" and branch_regexp:
         components = [b for comp in components for b in comp.branches().values() if re.match(rf"^{branch_regexp}$", b.name)]
-    # If pull_requests flag is set, include PRs for each project
-    return components + pr_components
+    return components

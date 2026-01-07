@@ -144,7 +144,7 @@ class ApiManager:
         return self.api_def.get(ApiManager.__PAGE_FIELD_KEY, "p")
 
     def params(self, **kwargs: Any) -> dict[str, Any]:
-        """Returns the parameters for the API call"""
+        """Returns the parameters for the API call, removes any params not part of the API endpoint"""
         params = self.api_def.get("params", {})
         if isinstance(params, list):
             params = {p: "{" + p + "}" for p in self.api_def.get("params", [])}
