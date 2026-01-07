@@ -45,6 +45,9 @@ def get_components(
             components = [p for p in components if p.is_toplevel()]
     else:
         components = list(projects.Project.get_list(endpoint).values())
+    if key_regexp:
+        log.info("Searching for %s matching '%s'", component_type, key_regexp)
+        components = [comp for comp in components if re.match(rf"^{key_regexp}$", comp.key)]
     if component_type in ("projects", "applications") and branch_regexp:
         log.info("Searching for %s branches matching '%s'", component_type, branch_regexp)
         components = [br for comp in components for br in comp.branches().values() if re.match(rf"^{branch_regexp}$", br.name)]
