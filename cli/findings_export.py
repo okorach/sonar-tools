@@ -388,10 +388,10 @@ def main() -> None:
 
         if len(components_list) == 0:
             msg = f"No {params[options.COMPONENT_TYPE]} found with key matching regexp '{params.get(options.KEY_REGEXP, None)}'"
-            if options.BRANCH_REGEXP:
-                msg += f" and branch matching given branch regexp '{params[options.BRANCH_REGEXP]}'"
-            elif options.PULL_REQUESTS:
-                msg = f"and PR matching given PR regexp '{params[options.PULL_REQUESTS]}'"
+            if branch_regexp:
+                msg += f" and branch matching given branch regexp '{branch_regexp}'"
+            elif pr_regexp:
+                msg = f"and PR matching given PR regexp '{pr_regexp}'"
             raise exceptions.SonarException(msg, errcodes.WRONG_SEARCH_CRITERIA)
 
         fmt, fname = params.get(options.FORMAT, None), params.get(options.REPORT_FILE, None)
