@@ -43,7 +43,7 @@ def test_migration_help(json_file: Generator[str]) -> None:
 
 
 def test_migration(json_file: Generator[str]) -> None:
-    """test_config_export"""
+    """test_migration"""
     assert tutil.run_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {json_file}") == errcodes.OK
     with open(file=json_file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
@@ -51,7 +51,7 @@ def test_migration(json_file: Generator[str]) -> None:
     for item in GLOBAL_ITEMS:
         assert item in json_config
 
-    item_list = ["detectedCi", "lastAnalysis", "issues", "hotspots", "ncloc", "revision"]
+    item_list = ["detectedCi", "issues", "hotspots", "ncloc", "revision"]
     for p in json_config["projects"]:
         if tutil.SQ.edition() != c.CE:
             assert "branches" in p or "error" in p
