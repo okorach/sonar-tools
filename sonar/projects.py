@@ -318,7 +318,7 @@ class Project(Component):
             log.warning("Could not find main branch for %s", str(self))
         return None
 
-    def pull_requests(self, use_cache: bool = True) -> dict[str, pull_requests.PullRequest]:
+    def pull_requests(self, use_cache: bool = True) -> dict[str, PullRequest]:
         """
         :return: List of pull requests of the project
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
@@ -749,7 +749,7 @@ class Project(Component):
         """
         from sonar import issues, hotspots, findings
 
-        log.info("Exporting findings for %s", str(self))
+        log.info("Exporting findings for %s with params %s", str(self), search_params)
         findings_list: dict[str, Union[Issue, Hotspot]] = {}
         api, _, params, ret = Api(self, Oper.EXPORT_FINDINGS).get_all(**search_params | {"project": self.key})
         data = json.loads(self.get(api, params=params).text)
@@ -762,14 +762,6 @@ class Project(Component):
         for t in idefs.ALL_TYPES:
             log.debug("%d %s exported", sum(1 for i in findings_list.values() if i.type == t), t)
         return findings_list
-
-    def get_matching_branches(self, pattern: str) -> list[Branch]:
-        """Returns the list of branches matching the pattern"""
-        return [b for b in self.branches().values() if re.match(rf"^{pattern}$", b.name)]
-
-    def get_matching_pull_requests(self, pattern: str) -> list[PullRequest]:
-        """Returns the list of pull requests matching the pattern"""
-        return [p for p in self.pull_requests().values() if re.match(rf"^{pattern}$", p.key)]
 
     def count_third_party_issues(self, **search_params: Any) -> dict[str, int]:
         search_params = {k: [v] for k, v in search_params.items() if k in ("branch", "pullRequest")}
