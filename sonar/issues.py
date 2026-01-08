@@ -866,14 +866,14 @@ def count(endpoint: Platform, **search_params: Any) -> int:
     return nbr_issues
 
 
-def count_by_rule(endpoint: Platform, **kwargs) -> dict[str, int]:
+def count_by_rule(endpoint: Platform, **search_params) -> dict[str, int]:
     """Returns number of issues of a search"""
     nbr_slices = 1
     SLICE_SIZE = 50  # Search rules facets by bulks of 50
-    if "rules" in kwargs:
-        ruleset = kwargs.pop("rules")
+    if "rules" in search_params:
+        ruleset = search_params.pop("rules")
         nbr_slices = math.ceil(len(ruleset) / SLICE_SIZE)
-    params = Issue.sanitize_search_params(endpoint=endpoint, params=kwargs) | {"ps": 1, "facets": "rules"}
+    params = Issue.sanitize_search_params(endpoint=endpoint, **search_params) | {"ps": 1, "facets": "rules"}
     rulecount = {}
     api_def = Api(Issue, Oper.SEARCH, endpoint)
     for i in range(nbr_slices):
