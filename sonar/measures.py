@@ -165,9 +165,7 @@ def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> li
     # http://localhost:9999/api/measures/search_history?component=okorach_sonar-tools&metrics=ncloc&p=1&ps=1000
 
     params = (
-        kwargs
-        | util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(Oper.GET))
-        | {"metricKeys": util.list_to_csv(metrics_list)}
+        kwargs | util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(Oper.GET)) | {"metrics": util.list_to_csv(metrics_list)}
     )
     log.debug("Getting measures history with %s", str(params))
     api, _, params, ret = Api(Measure, Oper.GET_HISTORY, concerned_object.endpoint).get_all(**params)

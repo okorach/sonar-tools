@@ -31,6 +31,7 @@ import traceback
 
 from http import HTTPStatus
 from threading import Lock
+from requests import HTTPError, RequestException
 
 import sonar.logging as log
 from sonar.components import Component
@@ -51,10 +52,9 @@ import sonar.util.constants as c
 import sonar.util.project_helper as phelp
 from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
+from sonar.branches import Branch
 
 if TYPE_CHECKING:
-    from requests import HTTPError, RequestException
-    from sonar.branches import Branch
     from sonar.pull_requests import PullRequest
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
@@ -123,7 +123,7 @@ class Project(Component):
 
     def __str__(self) -> str:
         """Returns the string representation of the project"""
-        return f"project '{self.key}' of {str(self.endpoint)}"
+        return f"project '{self.key}'"
 
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Optional[Project]:
@@ -887,9 +887,9 @@ class Project(Component):
         main_br = {k: v for k, v in branch_data.items() if v and v.get("isMain")}
         return main_br | branch_data
 
-    def migration_export(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
+    def migration_export(self, export_settings: ConfigSettings, **search_params: Any) -> ObjectJsonRepr:
         """Produces the data that is exported for SQ to SC migration"""
-        json_data = super().migration_export(export_settings)
+        json_data = super().migration_export(export_settings, project=self.key, **search_params)
         json_data["detectedCi"] = self.ci()
         json_data["revision"] = self.revision()
         last_task = self.last_task()
