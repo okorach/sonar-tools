@@ -754,8 +754,9 @@ class Project(Component):
         findings_list: dict[str, Union[Issue, Hotspot]] = {}
         findings_conflicts = dict.fromkeys(idefs.ALL_TYPES, 0)
         nbr_findings = dict.fromkeys(idefs.ALL_TYPES, 0)
-        data = json.loads(self.get("projects/export_findings", params=search_params | {"project": self.key}).text)
-        for i in data["export_findings"]:
+        api, _, params, ret = Api(self, Oper.EXPORT_FINDINGS).get_all(**search_params | {"project": self.key})
+        data = json.loads(self.get(api, params=params).text)
+        for i in data[ret]:
             key = i["key"]
             if key in findings_list:
                 log.warning("Finding %s (%s) already in past findings", i["key"], i["type"])

@@ -1604,6 +1604,16 @@
                 "params": [
                     "component"
                 ]
+            },
+            "EXPORT_FINDINGS": {
+                "method": "GET",
+                "api": "api/projects/export_findings",
+                "params": [
+                    "project",
+                    "branch",
+                    "pullRequest"
+                ],
+                "return_field": "export_findings"
             }
         }
     }
