@@ -29,10 +29,8 @@ import concurrent.futures
 from datetime import datetime
 import traceback
 
-
 from http import HTTPStatus
 from threading import Lock
-from requests import HTTPError, RequestException
 
 import sonar.logging as log
 from sonar.components import Component
@@ -55,6 +53,7 @@ from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
+    from requests import HTTPError, RequestException
     from sonar.branches import Branch
     from sonar.pull_requests import PullRequest
     from sonar.issues import Issue
@@ -1197,8 +1196,7 @@ class Project(Component):
         :return: Whether the operation succeeded
         """
         self._check_binding_supported()
-        params = self.__std_binding_params(devops_platform_key, repository, monorepo)
-        params["summaryCommentEnabled"] = str(summary_comment).lower()
+        params = self.__std_binding_params(devops_platform_key, repository, monorepo) | {"summaryCommentEnabled": str(summary_comment).lower()}
         return self.post("alm_settings/set_github_binding", params=params).ok
 
     def set_binding_gitlab(self, devops_platform_key: str, repository: str, monorepo: bool = False) -> bool:
@@ -1223,8 +1221,7 @@ class Project(Component):
         :return: Whether the operation succeeded
         """
         self._check_binding_supported()
-        params = self.__std_binding_params(devops_platform_key, repository, monorepo)
-        params["slug"] = slug
+        params = self.__std_binding_params(devops_platform_key, repository, monorepo) | {"slug": slug}
         return self.post("alm_settings/set_bitbucket_binding", params=params).ok
 
     def set_binding_bitbucket_cloud(self, devops_platform_key: str, repository: str, monorepo: bool = False) -> bool:
