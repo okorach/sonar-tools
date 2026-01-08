@@ -29,10 +29,8 @@ import concurrent.futures
 from datetime import datetime
 import traceback
 
-
 from http import HTTPStatus
 from threading import Lock
-from requests import HTTPError, RequestException
 
 import sonar.logging as log
 from sonar.components import Component
@@ -55,6 +53,9 @@ from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
+    from requests import HTTPError, RequestException
+    from sonar.branches import Branch
+    from sonar.pull_requests import PullRequest
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
     from sonar.platform import Platform
@@ -93,20 +94,6 @@ _IMPORTABLE_PROPERTIES = (
 )
 
 _PROJECT_QUALIFIER = "qualifier=TRK"
-
-
-# Keys to exclude when applying settings in update()
-_SETTINGS_WITH_SPECIFIC_IMPORT = (
-    "permissions",
-    "tags",
-    "links",
-    "qualityGate",
-    "qualityProfiles",
-    "binding",
-    "name",
-    "visibility",
-)
-
 _PREDEFINED_LINKS = ("homepage", "scm", "issue")
 
 
@@ -114,8 +101,6 @@ class Project(Component):
     """Abstraction of the SonarQube project concept"""
 
     CACHE = cache.Cache()
-    SEARCH_KEY_FIELD = "key"
-    SEARCH_RETURN_FIELD = "components"
 
     def __init__(self, endpoint: Platform, key: str) -> None:
         """
@@ -126,8 +111,8 @@ class Project(Component):
         self._last_analysis: Optional[datetime] = None
         self._branches_last_analysis: Optional[datetime] = None
         self._permissions: Optional[object] = None
-        self._branches: Optional[dict[str, branches.Branch]] = None
-        self._pull_requests: Optional[dict[str, pull_requests.PullRequest]] = None
+        self._branches: Optional[dict[str, Branch]] = None
+        self._pull_requests: Optional[dict[str, PullRequest]] = None
         self._ncloc_with_branches: Optional[int] = None
         self._binding: Optional[dict[str, str]] = None
         self._new_code: Optional[str] = None
@@ -137,21 +122,12 @@ class Project(Component):
         log.debug("Created object %s", str(self))
 
     def __str__(self) -> str:
-        """
-        :return: String formatting of the object
-        :rtype: str
-        """
-        return f"project '{self.key}'"
+        """Returns the string representation of the project"""
+        return f"project '{self.key}' of {str(self.endpoint)}"
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str) -> Project:
-        """Creates a project from a search in SonarQube
-
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param str key: Project key to search
-        :raises ObjectNotFound: if project key not found
-        :return: The Project
-        """
+    def get_object(cls, endpoint: Platform, key: str) -> Optional[Project]:
+        """Returns the project object from its project key"""
         if o := Project.CACHE.get(key, endpoint.local_url):
             return o
         api, _, params, ret = Api(Project, Oper.GET, endpoint).get_all(component=key)
@@ -162,16 +138,12 @@ class Project(Component):
         """Creates a project loaded with JSON data coming from api/components/search request
 
         :param Platform endpoint: Reference to the SonarQube platform
-        :param str key: Project key to search
-        :param dict data: Project data entry in the search results
-        :return: The Project
-        :rtype: Project
+        :param ApiPayload data: Project data entry in the search results
+        :return: The created project object
         """
-        key = data["key"]
-        if not (o := Project.CACHE.get(key, endpoint.local_url)):
-            o = cls(endpoint, key)
-        o.reload(data)
-        return o
+        if not (o := Project.CACHE.get(data["key"], endpoint.local_url)):
+            o = cls(endpoint, data["key"])
+        return o.reload(data)
 
     @classmethod
     def create(cls, endpoint: Platform, key: str, name: str) -> Project:
@@ -187,11 +159,10 @@ class Project(Component):
         endpoint.post(api, params=params)
         o = cls(endpoint, key)
         o.name = name
-        o.refresh()
-        return o
+        return o.refresh()
 
     @classmethod
-    def search(cls, endpoint: Platform, params: ApiParams = None, threads: int = 8) -> dict[str, Project]:
+    def search(cls, endpoint: Platform, threads: int = 8, **search_params: Any) -> dict[str, Project]:
         """Searches projects in SonarQube
 
         :param endpoint: Reference to the SonarQube platform
@@ -199,7 +170,7 @@ class Project(Component):
         :param threads: number of parallel threads to use for search
         :returns: list of projects
         """
-        new_params = {} if params is None else params.copy()
+        new_params = search_params.copy()
         if not endpoint.is_sonarcloud():
             new_params["filter"] = _PROJECT_QUALIFIER
         return cls.get_paginated(endpoint=endpoint, params=new_params, threads=threads)
@@ -231,12 +202,12 @@ class Project(Component):
         :return: self
         """
         try:
-            api, _, params, _ = Api(self, Oper.GET).get_all(**self.api_params(Oper.GET))
+            api, _, params, ret = Api(self, Oper.GET).get_all(**self.api_params(Oper.GET))
             data = json.loads(self.get(api, params=params).text)
         except exceptions.ObjectNotFound:
             Project.CACHE.pop(self)
             raise
-        return self.reload(data["component"])
+        return self.reload(data[ret])
 
     def reload(self, data: ApiPayload) -> Project:
         """Reloads a project with JSON data coming from api/components/search request
@@ -282,7 +253,7 @@ class Project(Component):
             self._ncloc_with_branches = max(b.loc() for b in list(self.branches().values()) + list(self.pull_requests().values()))
         return self._ncloc_with_branches
 
-    def branches(self, use_cache: bool = True) -> dict[str, branches.Branch]:
+    def branches(self, use_cache: bool = True) -> dict[str, Branch]:
         """
         :return: Dict of branches of the project
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
@@ -305,7 +276,7 @@ class Project(Component):
         b = self.main_branch()
         return b.name if b else ""
 
-    def main_branch(self) -> Optional[branches.Branch]:
+    def main_branch(self) -> Optional[Branch]:
         """
         :return: Main branch of the project
         """
@@ -317,7 +288,7 @@ class Project(Component):
             log.warning("Could not find main branch for %s", str(self))
         return None
 
-    def pull_requests(self, use_cache: bool = True) -> dict[str, pull_requests.PullRequest]:
+    def pull_requests(self, use_cache: bool = True) -> dict[str, PullRequest]:
         """
         :return: List of pull requests of the project
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
@@ -748,43 +719,19 @@ class Project(Component):
         """
         from sonar import issues, hotspots, findings
 
-        if self.endpoint.edition() == c.CE:
-            raise exceptions.UnsupportedOperation("Findings export is not supported in Community Edition")
-        log.info("Exporting findings for %s", str(self))
+        log.info("Exporting findings for %s with params %s", str(self), search_params)
         findings_list: dict[str, Union[Issue, Hotspot]] = {}
-        findings_conflicts = dict.fromkeys(idefs.ALL_TYPES, 0)
-        nbr_findings = dict.fromkeys(idefs.ALL_TYPES, 0)
-        data = json.loads(self.get("projects/export_findings", params=search_params | {"project": self.key}).text)
-        for i in data["export_findings"]:
-            key = i["key"]
-            if key in findings_list:
-                log.warning("Finding %s (%s) already in past findings", i["key"], i["type"])
-                findings_conflicts[i["type"]] += 1
-            # FIXME(okorach) - Hack for wrong projectKey returned in PR
-            # m = re.search(r"(\w+):PULL_REQUEST:(\w+)", i['projectKey'])
-            i["projectKey"] = self.key
-            nbr_findings[i["type"]] += 1
-            if i["type"] == idefs.TYPE_HOTSPOT:
-                if i.get("status", "") != "CLOSED":
-                    findings_list[key] = hotspots.Hotspot.get_object(self.endpoint, key=key, data=i, from_export=True)
-            else:
-                findings_list[key] = issues.Issue.get_object(self.endpoint, key=key, data=i, from_export=True)
-        for t in idefs.ALL_TYPES:
-            if findings_conflicts[t] > 0:
-                log.warning("%d %s findings missed because of JSON conflict", findings_conflicts[t], t)
-        log.info("%d findings exported for %s with params %s", len(findings_list), self, search_params)
-        for t in idefs.ALL_TYPES:
-            log.info("%d %s exported", nbr_findings[t], t)
+        api, _, params, ret = Api(self, Oper.EXPORT_FINDINGS).get_all(**search_params | {"project": self.key})
+        data = json.loads(self.get(api, params=params).text)
+        for i in data[ret]:
+            if i["type"] != idefs.TYPE_HOTSPOT:
+                findings_list[i["key"]] = issues.Issue.get_object(self.endpoint, key=i["key"], data=i, from_export=True)
+            elif i.get("status", "") != "CLOSED":
+                findings_list[i["key"]] = hotspots.Hotspot.get_object(self.endpoint, key=i["key"], data=i, from_export=True)
         findings.Finding.add_branch_and_pr(findings_list, **search_params)
+        for t in idefs.ALL_TYPES:
+            log.debug("%d %s exported", sum(1 for i in findings_list.values() if i.type == t), t)
         return findings_list
-
-    def get_matching_branches(self, pattern: str) -> list[branches.Branch]:
-        """Returns the list of branches matching the pattern"""
-        return [b for b in self.branches().values() if re.match(rf"^{pattern}$", b.name)]
-
-    def get_matching_pull_requests(self, pattern: str) -> list[pull_requests.PullRequest]:
-        """Returns the list of pull requests matching the pattern"""
-        return [p for p in self.pull_requests().values() if re.match(rf"^{pattern}$", p.key)]
 
     def count_third_party_issues(self, **search_params: Any) -> dict[str, int]:
         search_params = {k: [v] for k, v in search_params.items() if k in ("branch", "pullRequest")}
@@ -802,7 +749,7 @@ class Project(Component):
         log.debug("Issues count = %s", str(issue_counts))
         return issue_counts
 
-    def sync(self, another_project: Union[Project, branches.Branch], sync_settings: ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
+    def sync(self, another_project: Union[Project, Branch], sync_settings: ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs project findings with another project
 
         :param Project|Branch another_project: other project to sync findings into
@@ -813,7 +760,7 @@ class Project(Component):
         from sonar import syncer
 
         log.info("Syncing %s with %s", str(self), str(another_project))
-        if self.endpoint.edition() == c.CE or another_project.endpoint.edition() == c.CE or isinstance(another_project, branches.Branch):
+        if self.endpoint.edition() == c.CE or another_project.endpoint.edition() == c.CE or isinstance(another_project, Branch):
             # Sync the project main branch only
             return syncer.sync_objects(self, another_project, sync_settings=sync_settings)
 
@@ -1209,8 +1156,7 @@ class Project(Component):
         :return: Whether the operation succeeded
         """
         self._check_binding_supported()
-        params = self.__std_binding_params(devops_platform_key, repository, monorepo)
-        params["summaryCommentEnabled"] = str(summary_comment).lower()
+        params = self.__std_binding_params(devops_platform_key, repository, monorepo) | {"summaryCommentEnabled": str(summary_comment).lower()}
         return self.post("alm_settings/set_github_binding", params=params).ok
 
     def set_binding_gitlab(self, devops_platform_key: str, repository: str, monorepo: bool = False) -> bool:
@@ -1235,8 +1181,7 @@ class Project(Component):
         :return: Whether the operation succeeded
         """
         self._check_binding_supported()
-        params = self.__std_binding_params(devops_platform_key, repository, monorepo)
-        params["slug"] = slug
+        params = self.__std_binding_params(devops_platform_key, repository, monorepo) | {"slug": slug}
         return self.post("alm_settings/set_bitbucket_binding", params=params).ok
 
     def set_binding_bitbucket_cloud(self, devops_platform_key: str, repository: str, monorepo: bool = False) -> bool:
