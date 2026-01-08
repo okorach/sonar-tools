@@ -52,9 +52,9 @@ import sonar.util.constants as c
 import sonar.util.project_helper as phelp
 from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
+from sonar.branches import Branch
 
 if TYPE_CHECKING:
-    from sonar.branches import Branch
     from sonar.pull_requests import PullRequest
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
