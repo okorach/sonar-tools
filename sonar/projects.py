@@ -176,7 +176,7 @@ class Project(Component):
         return o.refresh()
 
     @classmethod
-    def search(cls, endpoint: Platform, params: ApiParams = None, threads: int = 8) -> dict[str, Project]:
+    def search(cls, endpoint: Platform, threads: int = 8, **search_params: Any) -> dict[str, Project]:
         """Searches projects in SonarQube
 
         :param endpoint: Reference to the SonarQube platform
@@ -184,7 +184,7 @@ class Project(Component):
         :param threads: number of parallel threads to use for search
         :returns: list of projects
         """
-        new_params = {} if params is None else params.copy()
+        new_params = search_params.copy()
         if not endpoint.is_sonarcloud():
             new_params["filter"] = _PROJECT_QUALIFIER
         return cls.get_paginated(endpoint=endpoint, params=new_params, threads=threads)
