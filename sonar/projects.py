@@ -55,6 +55,8 @@ from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
+    from sonar.branches import Branch
+    from sonar.pull_requests import PullRequest
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
     from sonar.platform import Platform
@@ -126,8 +128,8 @@ class Project(Component):
         self._last_analysis: Optional[datetime] = None
         self._branches_last_analysis: Optional[datetime] = None
         self._permissions: Optional[object] = None
-        self._branches: Optional[dict[str, branches.Branch]] = None
-        self._pull_requests: Optional[dict[str, pull_requests.PullRequest]] = None
+        self._branches: Optional[dict[str, Branch]] = None
+        self._pull_requests: Optional[dict[str, PullRequest]] = None
         self._ncloc_with_branches: Optional[int] = None
         self._binding: Optional[dict[str, str]] = None
         self._new_code: Optional[str] = None
@@ -282,7 +284,7 @@ class Project(Component):
             self._ncloc_with_branches = max(b.loc() for b in list(self.branches().values()) + list(self.pull_requests().values()))
         return self._ncloc_with_branches
 
-    def branches(self, use_cache: bool = True) -> dict[str, branches.Branch]:
+    def branches(self, use_cache: bool = True) -> dict[str, Branch]:
         """
         :return: Dict of branches of the project
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
@@ -305,7 +307,7 @@ class Project(Component):
         b = self.main_branch()
         return b.name if b else ""
 
-    def main_branch(self) -> Optional[branches.Branch]:
+    def main_branch(self) -> Optional[Branch]:
         """
         :return: Main branch of the project
         """
@@ -752,38 +754,23 @@ class Project(Component):
             raise exceptions.UnsupportedOperation("Findings export is not supported in Community Edition")
         log.info("Exporting findings for %s", str(self))
         findings_list: dict[str, Union[Issue, Hotspot]] = {}
-        findings_conflicts = dict.fromkeys(idefs.ALL_TYPES, 0)
-        nbr_findings = dict.fromkeys(idefs.ALL_TYPES, 0)
         api, _, params, ret = Api(self, Oper.EXPORT_FINDINGS).get_all(**search_params | {"project": self.key})
         data = json.loads(self.get(api, params=params).text)
         for i in data[ret]:
-            key = i["key"]
-            if key in findings_list:
-                log.warning("Finding %s (%s) already in past findings", i["key"], i["type"])
-                findings_conflicts[i["type"]] += 1
-            # FIXME(okorach) - Hack for wrong projectKey returned in PR
-            # m = re.search(r"(\w+):PULL_REQUEST:(\w+)", i['projectKey'])
-            i["projectKey"] = self.key
-            nbr_findings[i["type"]] += 1
-            if i["type"] == idefs.TYPE_HOTSPOT:
-                if i.get("status", "") != "CLOSED":
-                    findings_list[key] = hotspots.Hotspot.get_object(self.endpoint, key=key, data=i, from_export=True)
-            else:
-                findings_list[key] = issues.Issue.get_object(self.endpoint, key=key, data=i, from_export=True)
+            if i["type"] != idefs.TYPE_HOTSPOT:
+                findings_list[i["key"]] = issues.Issue.get_object(self.endpoint, key=i["key"], data=i, from_export=True)
+            elif i.get("status", "") != "CLOSED":
+                findings_list[i["key"]] = hotspots.Hotspot.get_object(self.endpoint, key=i["key"], data=i, from_export=True)
         for t in idefs.ALL_TYPES:
-            if findings_conflicts[t] > 0:
-                log.warning("%d %s findings missed because of JSON conflict", findings_conflicts[t], t)
-        log.info("%d findings exported for %s with params %s", len(findings_list), self, search_params)
-        for t in idefs.ALL_TYPES:
-            log.info("%d %s exported", nbr_findings[t], t)
+            log.debug("%d %s exported", sum(1 for i in findings_list.values() if i.type == t), t)
         findings.Finding.add_branch_and_pr(findings_list, **search_params)
         return findings_list
 
-    def get_matching_branches(self, pattern: str) -> list[branches.Branch]:
+    def get_matching_branches(self, pattern: str) -> list[Branch]:
         """Returns the list of branches matching the pattern"""
         return [b for b in self.branches().values() if re.match(rf"^{pattern}$", b.name)]
 
-    def get_matching_pull_requests(self, pattern: str) -> list[pull_requests.PullRequest]:
+    def get_matching_pull_requests(self, pattern: str) -> list[PullRequest]:
         """Returns the list of pull requests matching the pattern"""
         return [p for p in self.pull_requests().values() if re.match(rf"^{pattern}$", p.key)]
 
@@ -803,7 +790,7 @@ class Project(Component):
         log.debug("Issues count = %s", str(issue_counts))
         return issue_counts
 
-    def sync(self, another_project: Union[Project, branches.Branch], sync_settings: ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
+    def sync(self, another_project: Union[Project, Branch], sync_settings: ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs project findings with another project
 
         :param Project|Branch another_project: other project to sync findings into
@@ -814,7 +801,7 @@ class Project(Component):
         from sonar import syncer
 
         log.info("Syncing %s with %s", str(self), str(another_project))
-        if self.endpoint.edition() == c.CE or another_project.endpoint.edition() == c.CE or isinstance(another_project, branches.Branch):
+        if self.endpoint.edition() == c.CE or another_project.endpoint.edition() == c.CE or isinstance(another_project, Branch):
             # Sync the project main branch only
             return syncer.sync_objects(self, another_project, sync_settings=sync_settings)
 
