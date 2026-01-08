@@ -115,8 +115,6 @@ class Project(Component):
     """Abstraction of the SonarQube project concept"""
 
     CACHE = cache.Cache()
-    SEARCH_KEY_FIELD = "key"
-    SEARCH_RETURN_FIELD = "components"
 
     def __init__(self, endpoint: Platform, key: str) -> None:
         """
@@ -138,21 +136,12 @@ class Project(Component):
         log.debug("Created object %s", str(self))
 
     def __str__(self) -> str:
-        """
-        :return: String formatting of the object
-        :rtype: str
-        """
-        return f"project '{self.key}'"
+        """Returns the string representation of the project"""
+        return f"project '{self.key}' of {str(self.endpoint)}"
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str) -> Project:
-        """Creates a project from a search in SonarQube
-
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param str key: Project key to search
-        :raises ObjectNotFound: if project key not found
-        :return: The Project
-        """
+    def get_object(cls, endpoint: Platform, key: str) -> Optional[Project]:
+        """Returns the project object from its project key"""
         if o := Project.CACHE.get(key, endpoint.local_url):
             return o
         api, _, params, ret = Api(Project, Oper.GET, endpoint).get_all(component=key)
@@ -163,16 +152,12 @@ class Project(Component):
         """Creates a project loaded with JSON data coming from api/components/search request
 
         :param Platform endpoint: Reference to the SonarQube platform
-        :param str key: Project key to search
-        :param dict data: Project data entry in the search results
-        :return: The Project
-        :rtype: Project
+        :param ApiPayload data: Project data entry in the search results
+        :return: The created project object
         """
-        key = data["key"]
-        if not (o := Project.CACHE.get(key, endpoint.local_url)):
-            o = cls(endpoint, key)
-        o.reload(data)
-        return o
+        if not (o := Project.CACHE.get(data["key"], endpoint.local_url)):
+            o = cls(endpoint, data["key"])
+        return o.reload(data)
 
     @classmethod
     def create(cls, endpoint: Platform, key: str, name: str) -> Project:
@@ -188,8 +173,7 @@ class Project(Component):
         endpoint.post(api, params=params)
         o = cls(endpoint, key)
         o.name = name
-        o.refresh()
-        return o
+        return o.refresh()
 
     @classmethod
     def search(cls, endpoint: Platform, params: ApiParams = None, threads: int = 8) -> dict[str, Project]:
