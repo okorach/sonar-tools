@@ -308,6 +308,9 @@ class Platform(object):
                 raise exceptions.ObjectAlreadyExists(key, err_msg) from e
             if re.match(r"(Value of parameter .+ must be one of|No enum constant)", err_msg):
                 raise exceptions.UnsupportedOperation(err_msg) from e
+            if re.match(r"Unknown url", err_msg):
+                err_msg = err_msg.replace("Unknown url : /", "") + " API not available in this SonarQube version/edition"
+                raise exceptions.UnsupportedOperation(err_msg) from e
             if any(msg in err_msg_lower for msg in ("insufficient privileges", "insufficient permissions")):
                 raise exceptions.SonarException(err_msg, errcodes.SONAR_API_AUTHORIZATION) from e
             if "unknown url" in err_msg_lower:

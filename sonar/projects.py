@@ -749,8 +749,6 @@ class Project(Component):
         """
         from sonar import issues, hotspots, findings
 
-        if self.endpoint.edition() == c.CE:
-            raise exceptions.UnsupportedOperation("Findings export is not supported in Community Edition")
         log.info("Exporting findings for %s", str(self))
         findings_list: dict[str, Union[Issue, Hotspot]] = {}
         api, _, params, ret = Api(self, Oper.EXPORT_FINDINGS).get_all(**search_params | {"project": self.key})
@@ -760,9 +758,9 @@ class Project(Component):
                 findings_list[i["key"]] = issues.Issue.get_object(self.endpoint, key=i["key"], data=i, from_export=True)
             elif i.get("status", "") != "CLOSED":
                 findings_list[i["key"]] = hotspots.Hotspot.get_object(self.endpoint, key=i["key"], data=i, from_export=True)
+        findings.Finding.add_branch_and_pr(findings_list, **search_params)
         for t in idefs.ALL_TYPES:
             log.debug("%d %s exported", sum(1 for i in findings_list.values() if i.type == t), t)
-        findings.Finding.add_branch_and_pr(findings_list, **search_params)
         return findings_list
 
     def get_matching_branches(self, pattern: str) -> list[Branch]:
