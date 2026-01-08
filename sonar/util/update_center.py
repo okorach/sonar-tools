@@ -31,8 +31,8 @@ import sonar.util.misc as util
 from sonar import version
 
 _UPDATE_CENTER_URL = "https://downloads.sonarsource.com/sonarqube/update/update-center-all-versions.properties"
-_HARDCODED_LTA = (2025, 1, 1)
-_HARDCODED_LATEST = (2025, 2, 0)
+_HARDCODED_LTA = (2025, 1, 5)
+_HARDCODED_LATEST = (2025, 6, 1)
 
 _HARDCODED_LTA_STR = ".".join([str(i) for i in _HARDCODED_LTA])
 _HARDCODED_LATEST_STR = ".".join([str(i) for i in _HARDCODED_LATEST])
