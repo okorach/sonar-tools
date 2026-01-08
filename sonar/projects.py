@@ -31,6 +31,7 @@ import traceback
 
 from http import HTTPStatus
 from threading import Lock
+from requests import HTTPError, RequestException
 
 import sonar.logging as log
 from sonar.components import Component
@@ -53,7 +54,6 @@ from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
-    from requests import HTTPError, RequestException
     from sonar.branches import Branch
     from sonar.pull_requests import PullRequest
     from sonar.issues import Issue
