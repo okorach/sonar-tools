@@ -73,10 +73,9 @@ class Component(SqObject):
         """String representation of object"""
         return self.key
 
-    def api_params(self, operation: Optional[str] = None) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        ops = {Oper.GET: {"project": self.key}}
-        return ops[operation] if operation and operation in ops else ops[Oper.GET]
+    def component_key(self, **search_params: Any) -> str:
+        """Returns the key of the component from the search params"""
+        return next(iter(v for k, v in search_params.items() if k in ("project", "application", "portfolio")), self.key)
 
     def reload(self, data: ApiPayload) -> Component:
         """Loads a SonarQube API JSON payload in a Component"""
@@ -139,27 +138,33 @@ class Component(SqObject):
         new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio")}
         return Hotspot.search(endpoint=self.endpoint, **(new_params | {"project": self.key}))
 
-    def count_specific_rules_issues(self, ruleset: list[str], **search_params) -> dict[str, int]:
+    def count_specific_rules_issues(self, ruleset: list[str], **search_params: Any) -> dict[str, int]:
         """Returns the count of issues of a component for a given ruleset"""
         from sonar.issues import count_by_rule
 
-        search_params = search_params | self.api_params() | {"facets": "rules", "rules": [r.key for r in ruleset]}
-        return {k: v for k, v in count_by_rule(endpoint=self.endpoint, **search_params).items() if v > 0}
+        key = self.project().key
+        params = {"components": key} if self.endpoint.version() >= (10, 0, 0) else {"componentKeys": key}
+        params = search_params | params | {"facets": "rules", "rules": [r.key for r in ruleset]}
+        return {k: v for k, v in count_by_rule(endpoint=self.endpoint, **params).items() if v > 0}
 
     def count_third_party_issues(self, **search_params: Any) -> dict[str, int]:
         """Returns the count of issues of a component  corresponding to 3rd party rules"""
-        return self.count_specific_rules_issues(ruleset=rules.third_party(self.endpoint), **search_params)
+        key = self.component_key(**search_params)
+        params = {"components": key} if self.endpoint.version() >= (10, 0, 0) else {"componentKeys": key}
+        return self.count_specific_rules_issues(ruleset=rules.third_party(self.endpoint), **(search_params | params))
 
     def count_instantiated_rules_issues(self, **search_params: Any) -> dict[str, int]:
         """Returns the count of issues of a component corresponding to instantiated rules"""
-        return self.count_specific_rules_issues(ruleset=rules.instantiated(self.endpoint), **search_params)
+        key = self.component_key(**search_params)
+        params = {"components": key} if self.endpoint.version() >= (10, 0, 0) else {"componentKeys": key}
+        return self.count_specific_rules_issues(ruleset=rules.instantiated(self.endpoint), **(search_params | params))
 
-    def migration_export(self, export_settings: ConfigSettings) -> dict[str, Any]:
+    def migration_export(self, export_settings: ConfigSettings, **search_params: Any) -> dict[str, Any]:
         """Prepares all data for a sonar-migration export"""
         from sonar.issues import count as issue_count
         from sonar.hotspots import Hotspot
 
-        json_data = {"lastAnalysis": sutil.date_to_string(self.last_analysis())}
+        json_data: dict[str, Any] = {"lastAnalysis": sutil.date_to_string(self.last_analysis())}
         lang_distrib = self.get_measure("ncloc_language_distribution")
         loc_distrib = {}
         if lang_distrib:
@@ -171,20 +176,24 @@ class Component(SqObject):
             log.debug("Issues count extract skipped for %s`", str(self))
             return json_data
 
-        tpissues = self.count_third_party_issues()
-        inst_issues = self.count_instantiated_rules_issues()
-        params = self.api_params(Oper.GET)
+        tpissues = self.count_third_party_issues(**search_params)
+        inst_issues = self.count_instantiated_rules_issues(**search_params)
+        key = self.component_key(**search_params)
+        params = {"components": key} if self.endpoint.version() >= (10, 0, 0) else {"componentKeys": key}
+        params = search_params | params
+        log.info("Counting issues for %s with params %s", str(self), str(params))
         json_data["issues"] = {
             "thirdParty": tpissues if len(tpissues) > 0 else 0,
             "instantiatedRules": inst_issues if len(inst_issues) > 0 else 0,
-            "falsePositives": issue_count(self.endpoint, issueStatuses=["FALSE_POSITIVE"], **params),
+            "falsePositives": issue_count(self.endpoint, **(params | {"issueStatuses": ["FALSE_POSITIVE"]})),
         }
         status = "accepted" if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION else "wontFix"
         json_data["issues"][status] = issue_count(self.endpoint, issueStatuses=[status.upper()], **params)
+        params = search_params | {"project": key}
         json_data["hotspots"] = {
-            "acknowledged": Hotspot.count(self.endpoint, resolution=["ACKNOWLEDGED"], **params),
-            "safe": Hotspot.count(self.endpoint, resolution=["SAFE"], **params),
-            "fixed": Hotspot.count(self.endpoint, resolution=["FIXED"], **params),
+            "acknowledged": Hotspot.count(self.endpoint, **(params | {"resolution": ["ACKNOWLEDGED"]})),
+            "safe": Hotspot.count(self.endpoint, **(params | {"resolution": ["SAFE"]})),
+            "fixed": Hotspot.count(self.endpoint, **(params | {"resolution": ["FIXED"]})),
         }
         log.debug("%s has these notable issues %s", str(self), str(json_data["issues"]))
 
