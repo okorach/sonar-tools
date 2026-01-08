@@ -402,7 +402,10 @@ class Portfolio(aggregations.Aggregation):
     def export(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
         """Exports a portfolio (for sonar-config)"""
         log.info("Exporting %s", str(self))
-        return util.remove_nones(util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
+        data = self.to_json(export_settings)
+        if export_settings.get("MODE", "") == "MIGRATION":
+            return util.remove_nones(data)
+        return util.remove_nones(util.filter_export(data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
 
     def permissions(self) -> pperms.PortfolioPermissions:
         """Returns a portfolio permissions (if toplevel) or None if sub-portfolio"""
@@ -785,17 +788,17 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     nb_portfolios = len(portfolio_list)
     i = 0
     exported_portfolios = {}
-    for k, p in portfolio_list.items():
+    for k, p in {k: p for k, p in portfolio_list.items() if not p.is_sub_portfolio()}.items():
         try:
-            if not p.is_sub_portfolio():
-                exp = util.clean_data(p.export(export_settings), True, True)
-                if write_q:
-                    write_q.put(phelp.convert_portfolio_json(exp))
+            exp = util.clean_data(p.export(export_settings), True, True)
+            if write_q:
+                if export_settings.get("MODE", "") == "MIGRATION":
+                    write_q.put(exp)
                 else:
-                    exp.pop("key")
-                    exported_portfolios[k] = exp
+                    write_q.put(phelp.convert_portfolio_json(exp))
             else:
-                log.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
+                exp.pop("key")
+                exported_portfolios[k] = exp
         except exceptions.SonarException:
             exported_portfolios[k] = {}
         i += 1
