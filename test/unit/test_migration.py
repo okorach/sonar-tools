@@ -119,7 +119,6 @@ def test_migration(json_file: Generator[str]) -> None:
             assert "keys" in p["projects"]
 
 
-
 def test_migration_skip_issues(json_file: Generator[str]) -> None:
     """test_migration_skip_issues"""
     assert tutil.run_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {json_file} --skipIssues") == errcodes.OK
