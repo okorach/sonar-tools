@@ -170,8 +170,8 @@ def test_get_findings() -> None:
         proj.get_findings(branch="non-existing-branch")
     assert len(proj.get_findings(branch="develop")) > 0
     with pytest.raises(exceptions.ObjectNotFound):
-        proj.get_findings(pr="1")
-    findings = [f for f in proj.get_findings(pr="5").values() if f.status != "CLOSED"]
+        proj.get_findings(pullRequest=1)
+    findings = [f for f in proj.get_findings(pullRequest=5).values() if f.status != "CLOSED"]
     assert len(findings) == 0
 
 
