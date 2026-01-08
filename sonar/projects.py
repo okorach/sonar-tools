@@ -123,7 +123,7 @@ class Project(Component):
 
     def __str__(self) -> str:
         """Returns the string representation of the project"""
-        return f"project '{self.key}' of {str(self.endpoint)}"
+        return f"project '{self.key}'"
 
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Optional[Project]:
