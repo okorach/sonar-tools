@@ -94,20 +94,6 @@ _IMPORTABLE_PROPERTIES = (
 )
 
 _PROJECT_QUALIFIER = "qualifier=TRK"
-
-
-# Keys to exclude when applying settings in update()
-_SETTINGS_WITH_SPECIFIC_IMPORT = (
-    "permissions",
-    "tags",
-    "links",
-    "qualityGate",
-    "qualityProfiles",
-    "binding",
-    "name",
-    "visibility",
-)
-
 _PREDEFINED_LINKS = ("homepage", "scm", "issue")
 
 
@@ -216,12 +202,12 @@ class Project(Component):
         :return: self
         """
         try:
-            api, _, params, _ = Api(self, Oper.GET).get_all(**self.api_params(Oper.GET))
+            api, _, params, ret = Api(self, Oper.GET).get_all(**self.api_params(Oper.GET))
             data = json.loads(self.get(api, params=params).text)
         except exceptions.ObjectNotFound:
             Project.CACHE.pop(self)
             raise
-        return self.reload(data["component"])
+        return self.reload(data[ret])
 
     def reload(self, data: ApiPayload) -> Project:
         """Reloads a project with JSON data coming from api/components/search request
