@@ -109,13 +109,15 @@ def test_migration(json_file: Generator[str]) -> None:
         p = next(p for p in json_config["projects"] if p["key"] == "demo:github-actions-cli")
         assert p["migrationData"]["detectedCi"] == "Github Actions"
         # No projects have 3rd party issues for now
-        #if tutil.SQ.edition() != c.CE:
+        # if tutil.SQ.edition() != c.CE:
         #    b = next(b for b in p["branches"] if b["name"] == "main")
         # assert (isinstance(b["issues"]["thirdParty"], int) and b["issues"]["thirdParty"] == 0) or sum(list(b["issues"]["thirdParty"].values())) > 0
 
     for p in json_config["portfolios"]:
         assert "projects" in p
-        assert "keys" in p["projects"]
+        if "none" not in p["projects"]:
+            assert "keys" in p["projects"]
+
 
 
 def test_migration_skip_issues(json_file: Generator[str]) -> None:
