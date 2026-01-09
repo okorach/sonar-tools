@@ -116,26 +116,12 @@ class Permissions(ABC):
         :param JsonPermissions new_perms: The permissions to set
         """
 
-    def set_user_permissions(self, user_perms: dict[str, list[str]]) -> Permissions:
-        """Sets user permissions of an object
-
-        :param dict[str, list[str]] user_perms: The user permissions to apply
-        """
-        return self.set({"users": user_perms})
-
-    def set_group_permissions(self, group_perms: dict[str, list[str]]) -> Permissions:
-        """Sets user permissions of an object
-
-        :param dict[str, list[str]] group_perms: The group permissions to apply
-        """
-        return self.set({"groups": group_perms})
-
     def clear(self) -> Permissions:
         """Clears all permissions of an object
         :return: self
         :rtype: Permissions
         """
-        return self.set({"users": {}, "groups": {}})
+        return self.set([])
 
     def users(self) -> dict[str, list[str]]:
         """
