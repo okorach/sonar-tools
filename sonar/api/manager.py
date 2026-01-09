@@ -155,7 +155,14 @@ class ApiManager:
         params = self.get_api_entry(object_or_class, operation).get("params", {})
         if isinstance(params, list):
             params = {p: "{" + p + "}" for p in params}
-        return {k: v.format_map(defaultdict(str, **kwargs)) for k, v in params.items() if kwargs.get(k) is not None}
+        # Remove any parameter set to None
+        normalized = {k: v for k, v in kwargs.items() if v is not None or not (isinstance(v, str) and v.strip() == "")}
+        # Convert boolean values to strings
+        normalized = {k: str(v).lower() if isinstance(v, bool) else v for k, v in normalized.items()}
+        # Change list, set, tuple values to CSV strings
+        normalized = {k: misc.list_to_csv(v) if isinstance(v, (list, set, tuple)) else v for k, v in normalized.items()}
+        # Format the parameters using the API endpoint parameters, exclude anything not in the API endpoint parameters
+        return {k: v.format_map(defaultdict(str, **normalized)) for k, v in params.items() if k in normalized}
 
     def get_all(self, **kwargs: Any) -> tuple[str, str, dict[str, Any], Optional[str]]:
         """Returns the API call, method, parameters and return field"""
