@@ -2,7 +2,7 @@
    "platform": {
       "edition": "enterprise",
       "url": "https://latest.olivierk.ngrok.io",
-      "version": "2025.5.0",
+      "version": "2026.5.0",
       "serverId": "243B8A4D-AY5SFSbmgIK8PCmM81th",
       "plugins": {
          "ecocodephp": {
@@ -3196,7 +3196,7 @@
                      {
                         "key": "python:S1451",
                         "params": {
-                           "headerFormat": "(\\#!.+\\n)?(\\#.*\\n)?\\#\\ Copyright\\ \\(C\\)\\ ([12][0-9]{3}-)?2025\\ Olivier\\ Korach\\n\\#\\ mailto:olivier\\.korach\\ AT\\ gmail\\ DOT\\ com\\n\\#\\n\\#\\ This\\ program\\ is\\ free\\ software",
+                           "headerFormat": "(\\#!.+\\n)?(\\#.*\\n)?\\#\\ Copyright\\ \\(C\\)\\ ([12][0-9]{3}-)?2026\\ Olivier\\ Korach\\n\\#\\ mailto:olivier\\.korach\\ AT\\ gmail\\ DOT\\ com\\n\\#\\n\\#\\ This\\ program\\ is\\ free\\ software",
                            "isRegularExpression": "true"
                         }
                      },
