@@ -90,6 +90,7 @@ def test_exists(get_test_app: Generator[App]) -> None:
     assert apps.Application.exists(endpoint=tutil.SQ, key=obj.key)
     assert not apps.Application.exists(endpoint=tutil.SQ, key=NON_EXISTING_KEY)
 
+
 def test_create_delete(get_test_app: Generator[App]) -> None:
     """Test portfolio create delete"""
     if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name=tutil.TEMP_NAME, key=tutil.TEMP_KEY):
