@@ -102,15 +102,14 @@ class QualityProfile(SqObject):
         return hash((self.name, self.language, self.base_url()))
 
     @classmethod
-    def search(cls, endpoint: Platform, params: ApiParams = None) -> dict[str, QualityProfile]:
+    def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, QualityProfile]:
         """Searches projects in SonarQube
 
         param Platform endpoint: Reference to the SonarQube platform
-        :param dict params: list of parameters to filter quality profiles to search
+        :param search_params: Search filters (see api/qualityprofiles/search parameters)
         :return: list of quality profiles
-        :rtype: dict{key: QualityProfile}
         """
-        return cls.get_paginated(endpoint=endpoint, params=params)
+        return cls.get_paginated(endpoint=endpoint, params=search_params)
 
     @classmethod
     def get_object(cls, endpoint: Platform, name: str, language: str) -> QualityProfile:
