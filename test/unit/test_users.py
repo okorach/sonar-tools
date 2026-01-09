@@ -24,6 +24,7 @@
 from collections.abc import Generator
 from datetime import datetime
 import pytest
+import os
 
 import sonar.util.constants as c
 import utilities as tutil
@@ -48,16 +49,17 @@ def test_get_object() -> None:
 
 def test_create_delete(get_test_user: Generator[users.User]) -> None:
     """test_create_delete"""
-    user = get_test_user
-    assert user.login == tutil.TEMP_KEY
+    user: users.User = get_test_user
+    assert user.login.startswith(f"{tutil.TEMP_KEY}-user")
+    assert user.name.startswith(f"{tutil.TEMP_KEY}-user")
     assert tutil.SQ.default_user_group() in user.groups()
 
-    u = users.User.get_object(tutil.SQ, login=tutil.TEMP_KEY)
+    u = users.User.get_object(tutil.SQ, login=user.login)
     assert u is user
 
-    user.name = "TEMP_USER"
+    user.name = f"User name {user.login}-{os.getpid()}"
     user.refresh()
-    assert user.name == f"User name {tutil.TEMP_KEY}"
+    assert user.name == f"User name {user.login}-{os.getpid()}"
     assert user.url() == f"{tutil.SQ.external_url}/admin/users"
 
 
@@ -142,11 +144,12 @@ def test_login_from_name(get_test_user: Generator[users.User]) -> None:
     name = "Non existing name"
     assert users.get_login_from_name(tutil.SQ, name) is None
 
+    key = f"{tutil.TEMP_KEY}-user-{os.getpid()}"
     try:
-        user2 = users.User.create(endpoint=tutil.SQ, login=f"bb{tutil.TEMP_KEY}aa", name=f"User name bb{tutil.TEMP_KEY}aa")
+        user2 = users.User.create(endpoint=tutil.SQ, login=key, name=f"User name {key}")
     except exceptions.ObjectAlreadyExists:
-        user2 = users.User.get_object(tutil.SQ, login=f"bb{tutil.TEMP_KEY}aa")
-    assert users.get_login_from_name(tutil.SQ, f"User name bb{tutil.TEMP_KEY}aa") == user2.login
+        user2 = users.User.get_object(tutil.SQ, login=key)
+    assert users.get_login_from_name(tutil.SQ, f"User name {key}") == user2.login
 
 
 def test_more_than_50_users(get_60_users: Generator[list[users.User]]) -> None:
