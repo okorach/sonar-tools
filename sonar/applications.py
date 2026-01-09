@@ -130,7 +130,7 @@ class Application(aggr.Aggregation):
         return Application(endpoint=endpoint, key=key, name=name)
 
     @classmethod
-    def search(cls, endpoint: Platform, params: Optional[ApiParams] = None) -> dict[str, Application]:
+    def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, Application]:
         """Searches applications
 
         :param endpoint: Reference to the SonarQube platform
@@ -139,8 +139,7 @@ class Application(aggr.Aggregation):
         :return: dict of applications
         """
         check_supported(endpoint)
-        new_params = (params or {}) | {"filter": "qualifier = APP"}
-        return cls.get_paginated(endpoint=endpoint, params=new_params)
+        return cls.get_paginated(endpoint=endpoint, params=search_params | {"filter": "qualifier = APP"})
 
     @classmethod
     def get_list(cls, endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Application]:
