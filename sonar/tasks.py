@@ -475,6 +475,6 @@ def search_last(endpoint: Platform, component: str, **search_params: Any) -> Opt
     return bg
 
 
-def search_all(endpoint: Platform, component_key: str, **params) -> list[Task]:
+def search_all(endpoint: Platform, component: str, **params) -> list[Task]:
     """Search all background tasks of a given component"""
-    return Task.search(endpoint=endpoint, **(params | {"component": component_key}))
+    return Task.search(endpoint=endpoint, **(params | {"component": component}))

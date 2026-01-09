@@ -428,7 +428,7 @@ class Component(SqObject):
 
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
-        return tasks.search_last(component_key=self.key, endpoint=self.endpoint)
+        return tasks.search_last(self.endpoint, component=self.key)
 
     def get_measures_history(self, metrics_list: KeyList) -> dict[str, str]:
         """Returns the history of a project metrics"""
