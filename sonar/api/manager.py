@@ -156,7 +156,7 @@ class ApiManager:
         if isinstance(params, list):
             params = {p: "{" + p + "}" for p in params}
         # Remove any parameter set to None
-        normalized = {k: v for k, v in kwargs.items() if v is not None or not (isinstance(v, str) and v.strip() == "")}
+        normalized = {k: v for k, v in kwargs.items() if v is not None}
         # Convert boolean values to strings
         normalized = {k: str(v).lower() if isinstance(v, bool) else v for k, v in normalized.items()}
         # Change list, set, tuple values to CSV strings
