@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2019-2025 Olivier Korach
+# Copyright (C) 2019-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -44,13 +44,11 @@ from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 
 if TYPE_CHECKING:
+    from sonar.projects import Project
     from sonar.platform import Platform
     from sonar.hotspots import Hotspot
     from sonar.issues import Issue
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList
-
-# Character forbidden in keys that can be used to separate a key from a post fix
-KEY_SEPARATOR = " "
 
 
 class Component(SqObject):
@@ -87,6 +85,10 @@ class Component(SqObject):
         if "analysisDate" in data:
             self._last_analysis = sutil.string_to_date(data["analysisDate"])
         return self
+
+    def project(self) -> Project:
+        """Implemented in relevant subclasses (Project, Branch, PullRequest)"""
+        raise NotImplementedError
 
     def get_subcomponents(self, strategy: str = "children", with_issues: bool = False) -> dict[str, Component]:
         """Returns component subcomponents"""

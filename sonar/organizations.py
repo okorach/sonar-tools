@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2024-2025 Olivier Korach
+# Copyright (C) 2024-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -128,7 +128,7 @@ class Organization(SqObject):
         with _CLASS_LOCK:
             if key_list is None or len(key_list) == 0 or not use_cache:
                 log.info("Listing organizations")
-                return search(endpoint=endpoint)
+                return cls.search(endpoint=endpoint)
             object_list = {}
             for key in util.csv_to_list(key_list):
                 object_list[key] = cls.get_object(endpoint, key)

@@ -165,7 +165,7 @@ When tools complete successfully they return exit code 0. En case of fatal error
 
 # License
 
-Copyright (C) 2019-2025 Olivier Korach
+Copyright (C) 2019-2026 Olivier Korach
 mailto:olivier.korach AT gmail DOT com
 
 This program is free software; you can redistribute it and/or

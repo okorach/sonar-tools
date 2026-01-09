@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2022-2025 Olivier Korach
+# Copyright (C) 2022-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -99,7 +99,7 @@ class ProjectPermissions(permissions.Permissions):
     def set(self, new_perms: list[PermissionDef]) -> ProjectPermissions:
         """Sets permissions of a project
 
-        :param JsonPermissions new_perms: New permissions to apply
+        :param new_perms: New permissions to apply
         :return: Permissions associated to the project
         :rtype: ProjectPermissions
         """

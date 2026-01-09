@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2025 Olivier Korach
+# Copyright (C) 2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -59,12 +59,29 @@ def flatten(qp_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return flat_list
 
 
+def __convert_rule_json(rule_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts a rule JSON from old to new export format"""
+    if "severities" in rule_json:
+        rule_json["impacts"] = rule_json.pop("severities")
+    if "severity" in rule_json:
+        rule_json["severity"] = rule_json["severity"].lower()
+    if "impacts" in rule_json:
+        rule_json["impacts"] = {
+            k.lower(): rule_json["impacts"][k].lower()
+            for k in idefs.MQR_QUALITIES
+            if k in rule_json["impacts"] and rule_json["impacts"][k] != c.DEFAULT
+        }
+    if "params" in rule_json:
+        rule_json["params"] = util.dict_to_list(dict(sorted(rule_json["params"].items())), "key")
+    return rule_json
+
+
 def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
     """Converts a profile's children profiles to list"""
+    for qp in [q for q in qp_json.values() if "permissions" in q]:
+        for ptype in [p for p in ("users", "groups") if p in qp["permissions"]]:
+            qp["permissions"][ptype] = util.csv_to_list(qp["permissions"][ptype])
     for k, v in sorted(qp_json.items()):
-        for qp in [q for q in qp_json.values() if "permissions" in q]:
-            for ptype in [p for p in ("users", "groups") if p in qp["permissions"]]:
-                qp["permissions"][ptype] = util.csv_to_list(qp["permissions"][ptype])
         for r in v.get("rules", {}):
             r.pop("severities", None)
             r.pop("severity", None)
@@ -72,21 +89,11 @@ def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
             r.pop("params", None)
         for rtype in "addedRules", "modifiedRules", "rules":
             for r in v.get(rtype, {}):
-                if "severities" in r:
-                    r["impacts"] = r.pop("severities")
-                if "severity" in r:
-                    r["severity"] = r["severity"].lower()
-                if "impacts" in r:
-                    r["impacts"] = {
-                        k.lower(): r["impacts"][k].lower() for k in idefs.MQR_QUALITIES if k in r["impacts"] and r["impacts"][k] != c.DEFAULT
-                    }
-                if "params" in r:
-                    r["params"] = util.dict_to_list(dict(sorted(r["params"].items())), "key")
+                r = __convert_rule_json(r)
         if "removedRules" in v:
             v["removedRules"] = list(v["removedRules"])
-        for rule in v.get("rules", []):
-            if "params" in rule:
-                rule["params"] = util.dict_to_list(rule["params"], "key")
+        for rule in [r for r in v.get("rules", []) if "params" in r]:
+            rule["params"] = util.dict_to_list(rule["params"], "key")
         if "children" in v:
             v["children"] = __convert_qp_json(v["children"])
         qp_json[k] = util.order_keys(common_json_helper.convert_common_fields(v, with_permissions=False), *KEY_ORDER)

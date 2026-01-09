@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2019-2025 Olivier Korach
+# Copyright (C) 2019-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -646,27 +646,33 @@ class Portfolio(aggregations.Aggregation):
                     self.add_application_branch(app_key=app_key, branch=branch)
         if not recurse:
             return
+        if data.get("portfolios"):
+            self.update_subportfolios(data["portfolios"])
 
+    def update_subportfolios(self, subp_dataset: list[dict[str, Any]]) -> None:
+        """Updates subportfolios of a portfolio with sonar-config JSON data
+
+        :param subp_dataset: List of subportfolio data
+        """
         log.info("Updating %s subportfolios", str(self))
         subps = self.sub_portfolios(full=True)
         Portfolio.get_list(endpoint=self.endpoint)
         key_list = []
         if subps:
             key_list = list(subps.keys())
-        if not data.get("portfolios"):
-            return
-        subportfolios_json = util.list_to_dict(data["portfolios"], "key")
+        subportfolios_json = util.list_to_dict(subp_dataset, "key")
         for key, subp_data in subportfolios_json.items():
             log.info("Processing subportfolio %s", key)
             if subp_data.get("byReference", False):
                 o_subp = Portfolio.get_object(self.endpoint, key)
-                if o_subp.key not in key_list:
-                    try:
-                        self.add_subportfolio(o_subp.key, name=o_subp.name, by_ref=True)
-                    except exceptions.SonarException as e:
-                        # If the exception is that the portfolio already references, just pass
-                        if "already references" not in e.message:
-                            raise
+                if o_subp.key in key_list:
+                    continue
+                try:
+                    self.add_subportfolio(o_subp.key, name=o_subp.name, by_ref=True)
+                except exceptions.SonarException as e:
+                    # If the exception is that the portfolio already references, just pass
+                    if "already references" not in e.message:
+                        raise
             else:
                 try:
                     o_subp = Portfolio.get_object(self.endpoint, key)
@@ -706,11 +712,6 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[
     for p in [o for o in Portfolio.get_list(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
         problems += p.audit(audit_settings, **kwargs)
     return problems
-
-
-def delete(endpoint: Platform, key: str) -> bool:
-    """Deletes a portfolio by its key"""
-    return Portfolio.get_object(endpoint, key).delete()
 
 
 def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: KeyList = None) -> bool:
