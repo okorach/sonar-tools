@@ -99,7 +99,7 @@ class ProjectPermissions(permissions.Permissions):
     def set(self, new_perms: list[PermissionDef]) -> ProjectPermissions:
         """Sets permissions of a project
 
-        :param JsonPermissions new_perms: New permissions to apply
+        :param new_perms: New permissions to apply
         :return: Permissions associated to the project
         :rtype: ProjectPermissions
         """
