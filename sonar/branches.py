@@ -125,7 +125,7 @@ class Branch(components.Component):
         return o
 
     @classmethod
-    def get_list(cls, project: proj.Project) -> dict[str, Branch]:
+    def search(cls, project: proj.Project) -> dict[str, Branch]:
         """Retrieves the list of branches of a project
 
         :param proj.Project project: Project the branch belongs to
