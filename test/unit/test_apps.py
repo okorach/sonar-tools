@@ -24,6 +24,7 @@
 import datetime
 from collections.abc import Generator
 import pytest
+import os
 
 import utilities as tutil
 from sonar import applications as apps, exceptions
@@ -59,9 +60,9 @@ def test_count() -> None:
 
 def test_search() -> None:
     """Verify that search with criterias work"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.Application.search, endpoint=tutil.SQ, params={"s": "analysisDate"}):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.Application.search, endpoint=tutil.SQ, s="analysisDate"):
         return
-    res_list = apps.Application.search(endpoint=tutil.SQ, params={"s": "analysisDate"})
+    res_list = apps.Application.search(endpoint=tutil.SQ, s="analysisDate")
     oldest = datetime.datetime(1970, 1, 1).replace(tzinfo=datetime.timezone.utc)
     for obj in res_list.values():
         app_date = obj.last_analysis()
@@ -105,21 +106,22 @@ def test_create_delete(get_test_app: Generator[App]) -> None:
         return
     obj: App = get_test_app
     assert obj is not None
-    assert obj.key == tutil.TEMP_KEY
-    assert obj.name == tutil.TEMP_KEY
+    assert obj.key.startswith(f"{tutil.TEMP_KEY}-application")
+    assert obj.name.startswith(f"{tutil.TEMP_KEY}-application")
     obj.delete()
     assert not apps.Application.exists(endpoint=tutil.SQ, key=tutil.TEMP_KEY)
 
     # Test delete with 1 project in the app
-    obj = App.create(endpoint=tutil.SQ, name=tutil.TEMP_NAME, key=tutil.TEMP_KEY)
+    obj = App.create(endpoint=tutil.SQ, name=tutil.TEMP_NAME, key=f"{tutil.TEMP_KEY}-application-{os.getpid()}")
     obj.add_projects([tutil.LIVE_PROJECT])
+    key = obj.key
     obj.delete()
-    assert not apps.Application.exists(endpoint=tutil.SQ, key=tutil.TEMP_KEY)
+    assert not apps.Application.exists(endpoint=tutil.SQ, key=key)
 
 
 def test_permissions_1(get_test_app: Generator[App]) -> None:
     """Test permissions"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name="An app", key=TEST_KEY):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name="An app", key=f"{TEST_KEY}-application-{os.getpid()}"):
         return
     obj: App = get_test_app
     obj.set_permissions(

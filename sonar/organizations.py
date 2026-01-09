@@ -24,7 +24,7 @@ Abstraction of the SonarQube Cloud organization concept
 """
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 import json
 from threading import Lock
@@ -35,7 +35,6 @@ from sonar.util import cache
 from sonar import exceptions
 import sonar.util.misc as util
 from sonar.api.manager import ApiOperation as Oper
-from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -66,18 +65,18 @@ class Organization(SqObject):
         return f"organization key '{self.key}'"
 
     @classmethod
-    def search(cls, endpoint: Platform, params: ApiParams = None) -> dict[str, Organization]:
+    def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, Organization]:
         """Searches organizations
 
         :param Platform endpoint: Reference to the SonarQube platform
-        :param params: Search filters (see api/organizations/search parameters)
+        :param search_params: Search filters (see api/organizations/search parameters)
         :raises UnsupportedOperation: If not on a SonarQube Cloud platform
         :return: dict of organizations
         :rtype: dict {<orgKey>: Organization, ...}
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        return cls.get_paginated(endpoint=endpoint, params={"member": "true"} | (params or {}))
+        return cls.get_paginated(endpoint=endpoint, params=search_params | {"member": "true"})
 
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Organization:

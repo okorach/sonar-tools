@@ -36,7 +36,7 @@ import utilities as tutil
 def test_get_object(get_test_project: Generator[Project]) -> None:
     """test_get_object"""
     proj = get_test_project
-    assert str(proj) == f"project '{tutil.TEMP_KEY}'"
+    assert str(proj).startswith(f"project '{tutil.TEMP_KEY}-project")
     with pytest.raises(exceptions.ObjectNotFound):
         Project.get_object(endpoint=tutil.SQ, key=tutil.NON_EXISTING_KEY)
 
@@ -60,7 +60,7 @@ def test_refresh(get_test_project: Generator[Project]) -> None:
 def test_create_delete() -> None:
     """test_create_delete"""
     proj = Project.create(endpoint=tutil.SQ, key=tutil.TEMP_KEY, name="temp")
-    assert proj.key == tutil.TEMP_KEY
+    assert proj.key.startswith(f"{tutil.TEMP_KEY}-project")
     assert proj.main_branch_name() == "main"
     if tutil.SQ.edition() != c.CE:
         assert proj.main_branch().name == "main"
@@ -391,7 +391,7 @@ def test_set_permissions(get_test_project: Generator[Project]) -> None:
 
 def test_project_key(get_test_project: Generator[Project]) -> None:
     """test_project_key"""
-    assert get_test_project.project_key() == tutil.TEMP_KEY
+    assert get_test_project.project_key().startswith(f"{tutil.TEMP_KEY}-project")
 
 
 def test_import_zips() -> None:

@@ -101,7 +101,7 @@ def test_org_attr() -> None:
     assert org.alm()["key"] == "github"
 
 
-def test_org_search_sq() -> None:
+def test_org_search_sqs() -> None:
     """test_org_search_sq"""
     with pytest.raises(exceptions.UnsupportedOperation):
         _ = organizations.Organization.search(endpoint=tutil.SQ)

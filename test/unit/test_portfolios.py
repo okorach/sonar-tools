@@ -81,14 +81,15 @@ def test_create_delete(get_test_portfolio: Generator[pf.Portfolio]) -> None:
         return
     portfolio: pf.Portfolio = get_test_portfolio
     assert portfolio is not None
-    assert portfolio.key == tutil.TEMP_KEY
+    assert portfolio.key.startswith(f"{tutil.TEMP_KEY}-portfolio")
     assert "none" in portfolio.selection_mode()
-    assert portfolio.name == tutil.TEMP_KEY
+    assert portfolio.name.startswith(f"{tutil.TEMP_KEY}-portfolio")
+    key = portfolio.key
     assert portfolio.is_toplevel()
     with pytest.raises(exceptions.ObjectAlreadyExists):
-        pf.Portfolio.create(endpoint=tutil.SQ, key=tutil.TEMP_KEY)
+        pf.Portfolio.create(endpoint=tutil.SQ, key=key)
     portfolio.delete()
-    assert not pf.Portfolio.exists(endpoint=tutil.SQ, key=tutil.TEMP_KEY)
+    assert not pf.Portfolio.exists(endpoint=tutil.SQ, key=key)
 
 
 def test_add_project(get_test_portfolio: Generator[pf.Portfolio]) -> None:
@@ -229,11 +230,11 @@ def test_add_standard_subp(get_test_subportfolio: Generator[pf.Portfolio]) -> No
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
     subp = get_test_subportfolio
-    assert subp.parent_portfolio.key == tutil.TEMP_KEY
-    parent = pf.Portfolio.get_object(tutil.SQ, key=tutil.TEMP_KEY)
+    assert subp.parent_portfolio.key.startswith(f"{tutil.TEMP_KEY}-portfolio")
+    parent = pf.Portfolio.get_object(tutil.SQ, key=subp.parent_portfolio.key)
     subp_d = parent.sub_portfolios()
     assert len(subp_d) == 1
-    assert list(subp_d.keys()) == [tutil.TEMP_KEY_3]
+    assert list(subp_d.keys()) == [subp.key]
     assert list(subp_d.values())[0] == subp
 
 
@@ -243,10 +244,10 @@ def test_add_standard_subp_2(get_test_portfolio: Generator[pf.Portfolio]) -> Non
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
     parent = get_test_portfolio
-    subp = parent.add_subportfolio(key=tutil.TEMP_KEY_3)
+    subp = parent.add_subportfolio(key=f"{tutil.TEMP_KEY_3}-subportfolio")
     subp_d = parent.sub_portfolios()
     assert len(subp_d) == 1
-    assert list(subp_d.keys()) == [tutil.TEMP_KEY_3]
+    assert list(subp_d.keys()) == [subp.key]
     assert list(subp_d.values())[0] == subp
     # subp.refresh()
     logging.debug("%s is toplevel = %s", str(subp), str(subp.is_toplevel()))

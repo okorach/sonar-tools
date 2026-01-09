@@ -118,10 +118,10 @@ class Portfolio(aggregations.Aggregation):
         )
 
     @classmethod
-    def search(cls, endpoint: Platform, params: ApiParams = None) -> dict[str, Portfolio]:
+    def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, Portfolio]:
         """Search all portfolios of a platform and returns as dict"""
         check_supported(endpoint)
-        return cls.get_paginated(endpoint=endpoint, params=params)
+        return cls.get_paginated(endpoint=endpoint, params=search_params)
 
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Portfolio:

@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube "rule" concept"""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 import json
 import concurrent.futures
@@ -301,9 +301,9 @@ class Rule(SqObject):
         )
 
     @classmethod
-    def search(cls, endpoint: Platform, params: dict[str, str]) -> dict[str, Rule]:
+    def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, Rule]:
         """Searches rules with optional filters"""
-        return cls.get_paginated(endpoint=endpoint, params=params, threads=4)
+        return cls.get_paginated(endpoint=endpoint, threads=4, params=search_params)
 
     @classmethod
     def get_list(cls, endpoint: Platform, use_cache: bool = True, **params) -> dict[str, Rule]:
@@ -314,10 +314,7 @@ class Rule(SqObject):
         lang_list = params.pop("languages", None)
         if not lang_list:
             lang_list = languages.Language.get_list(endpoint).keys()
-        if "include_external" in params:
-            incl_ext = [str(params["include_external"]).lower()]
-        else:
-            incl_ext = ["false", "true"]
+        incl_ext = [str(params["include_external"]).lower()] if params.get("include_external") else ["false", "true"]
         for lang_key in lang_list:
             if not languages.Language.exists(endpoint, language=lang_key):
                 raise exceptions.ObjectNotFound(key=lang_key, message=f"Language '{lang_key}' does not exist")
@@ -325,7 +322,7 @@ class Rule(SqObject):
         futures = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="RulesList") as executor:
             for lang_key in lang_list:
-                futures += [executor.submit(cls.search, endpoint, params | {"languages": lang_key, "include_external": inc}) for inc in incl_ext]
+                futures += [executor.submit(cls.search, endpoint, **(params | {"include_external": inc, "languages": lang_key})) for inc in incl_ext]
             for future in concurrent.futures.as_completed(futures):
                 try:
                     rule_list.update(future.result(timeout=30))

@@ -110,7 +110,7 @@ class User(SqObject):
         return cls.load(endpoint=endpoint, data=data)
 
     @classmethod
-    def search(cls, endpoint: Platform, params: Optional[ApiParams] = None) -> dict[str, User]:
+    def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, User]:
         """Searches users in SonarQube Server or Cloud
 
         :param endpoint: Reference to the SonarQube platform
@@ -118,8 +118,8 @@ class User(SqObject):
         :return: dictionary of users with login as key
         :rtype: dict{login: User}
         """
-        log.debug("Searching users with params %s", str(params))
-        return cls.get_paginated(endpoint=endpoint, params=params)
+        log.debug("Searching users with params %s", str(search_params))
+        return cls.get_paginated(endpoint=endpoint, params=search_params)
 
     @classmethod
     def get_object(cls, endpoint: Platform, login: Optional[str] = None, id: Optional[str] = None) -> User:
@@ -137,7 +137,7 @@ class User(SqObject):
         if id is not None:
             return cls.__get_object_by_id(endpoint, id)
         log.debug("Getting user '%s'", login)
-        if user := next((o for k, o in cls.search(endpoint, params={"q": login}).items() if k == login), None):
+        if user := next((o for k, o in cls.search(endpoint, q=login).items() if k == login), None):
             return user
         raise exceptions.ObjectNotFound(login or id, f"User '{login or id}' not found")
 
@@ -198,7 +198,7 @@ class User(SqObject):
         self.__tokens = None
         return self
 
-    def groups(self, **kwargs) -> KeyList:
+    def groups(self, **kwargs) -> list[str]:
         """Returns the list of groups of a user"""
         log.info("Getting %s groups = %s", str(self), str(self._groups))
         if self._groups is not None and kwargs.get(c.USE_CACHE, True):
@@ -250,7 +250,7 @@ class User(SqObject):
         :rtype: list[Token]
         """
         if self.__tokens is None or not kwargs.get(c.USE_CACHE, True):
-            self.__tokens = tokens.UserToken.search(self.endpoint, self.login)
+            self.__tokens = tokens.UserToken.search(self.endpoint, login=self.login)
         return self.__tokens
 
     def update_login(self, new_login: str) -> User:
@@ -504,7 +504,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[
     return problems
 
 
-def get_login_from_name(endpoint: Platform, name: str) -> Union[str, None]:
+def get_login_from_name(endpoint: Platform, name: str) -> Optional[str]:
     """Returns the login corresponding to name
     If more than one login matches the name, the first occurence is returned
 
@@ -512,12 +512,12 @@ def get_login_from_name(endpoint: Platform, name: str) -> Union[str, None]:
     :param str name: User name
     :returns: User login or None if name not found
     """
-    u_list = User.search(endpoint=endpoint, params={"q": name})
+    u_list = User.search(endpoint=endpoint, q=name)
     if not u_list or len(u_list) == 0:
         return None
     if len(u_list) > 1:
         log.warning("More than 1 user with name '%s', will return the 1st one", name)
-    return list(u_list.keys()).pop(0)
+    return next(iter(u_list.keys()))
 
 
 def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: KeyList = None) -> None:

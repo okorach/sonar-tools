@@ -1334,5 +1334,43 @@
             ],
             "return_field": "export_findings"
         }
+    },
+    "Task": {
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/ce/activity",
+            "params": [
+                "component",
+                "maxExecutedAt",
+                "minSubmittedAt",
+                "onlyCurrents",
+                "p",
+                "ps",
+                "q",
+                "status",
+                "type",
+                "additionalFields"
+            ],
+            "return_field": "tasks",
+            "page_field": "p",
+            "max_page_size": 1000
+        },
+        "GET": {
+            "method": "GET",
+            "api": "ce/task",
+            "params": [
+                "id",
+                "additionalFields"
+            ],
+            "return_field": "task"
+        }
+    },
+    "PermissionTemplate": {
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/permissions/search_templates",
+            "params": ["q"],
+            "return_field": "permissionTemplates"
+        }
     }
 }
