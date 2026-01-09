@@ -74,10 +74,10 @@ def __convert_rule_json(rule_json: dict[str, Any]) -> dict[str, Any]:
 
 def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
     """Converts a profile's children profiles to list"""
+    for qp in [q for q in qp_json.values() if "permissions" in q]:
+        for ptype in [p for p in ("users", "groups") if p in qp["permissions"]]:
+            qp["permissions"][ptype] = util.csv_to_list(qp["permissions"][ptype])
     for k, v in sorted(qp_json.items()):
-        for qp in [q for q in qp_json.values() if "permissions" in q]:
-            for ptype in [p for p in ("users", "groups") if p in qp["permissions"]]:
-                qp["permissions"][ptype] = util.csv_to_list(qp["permissions"][ptype])
         for r in v.get("rules", {}):
             r.pop("severities", None)
             r.pop("severity", None)
