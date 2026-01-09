@@ -115,7 +115,7 @@ class ApplicationBranch(Component):
         for branch in custom_branches:
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
-        api, _, _, _ = Api(cls, Oper.CREATE, app.endpoint).get_all()
+        api, _, _, _ = app.endpoint.api.get_details(cls, Oper.CREATE)
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
         app.endpoint.post(api, params=string_params)
         return cls(app=app, name=name, project_branches=projects_or_branches)
@@ -223,7 +223,7 @@ class ApplicationBranch(Component):
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
-        api, _, _, _ = Api(self, Oper.UPDATE).get_all(application=self.concerned_object.key, branch=self.name)
+        api, _, _, _ = self.endpoint.api.get_details(self, Oper.UPDATE, application=self.concerned_object.key, branch=self.name)
         try:
             ok = self.post(api, params=string_params).ok
         except exceptions.ObjectNotFound:
@@ -281,9 +281,8 @@ def list_from(app: apps.Application, data: ApiPayload) -> dict[str, ApplicationB
     if not data or "branches" not in data:
         return {}
     branch_list = {}
-    api_def = Api(ApplicationBranch, Oper.SEARCH, app.endpoint)
     for br in data["branches"]:
-        api, _, params, ret = api_def.get_all(application=app.key, branch=br["name"])
+        api, _, params, ret = app.endpoint.api.get_details(ApplicationBranch, Oper.SEARCH, application=app.key, branch=br["name"])
         branch_data = json.loads(app.endpoint.get(api, params=params).text)[ret]
         branch_list[branch_data["branch"]] = ApplicationBranch.load(app, branch_data)
     log.debug("Returning Application branch list %s", list(branch_list.keys()))

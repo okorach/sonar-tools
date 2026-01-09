@@ -98,15 +98,15 @@ class Component(SqObject):
             "ps": 1,
             "metricKeys": "bugs,vulnerabilities,code_smells,security_hotspots",
         }
-        api, _, api_params, ret = Api(self, Oper.GET_SUBCOMPONENTS).get_all(**parms)
-        max_ps = Api(self, Oper.GET_SUBCOMPONENTS).max_page_size()
+        api, _, api_params, ret = self.endpoint.api.get_details(self, Oper.GET_SUBCOMPONENTS, **parms)
+        max_ps = self.endpoint.api.max_page_size(self, Oper.GET_SUBCOMPONENTS)
         data = json.loads(self.get(api, params=api_params).text)
         nb_comp = sutil.nbr_total_elements(data)
         log.debug("Found %d subcomponents to %s", nb_comp, str(self))
         nb_pages = math.ceil(nb_comp / max_ps)
         comp_list = {}
         for page in range(nb_pages):
-            api, _, api_params, ret = Api(self, Oper.GET_SUBCOMPONENTS).get_all(**(parms | {"p": page + 1, "ps": max_ps}))
+            api, _, api_params, ret = self.endpoint.api.get_details(self, Oper.GET_SUBCOMPONENTS, **(parms | {"p": page + 1, "ps": max_ps}))
             data = json.loads(self.get(api, params=api_params).text)
             for d in data[ret]:
                 nbr_issues = 0
@@ -245,7 +245,7 @@ class Component(SqObject):
         """Returns the new code period start date of a component or None if this component has no new code start date"""
         if self._new_code_start_date is None:
             params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(Oper.GET))
-            api, _, api_params, ret = Api(self, Oper.GET).get_all(**params)
+            api, _, api_params, ret = self.endpoint.api.get_details(self, Oper.GET, **params)
             data = json.loads(self.get(api, params=api_params).text)[ret]
             self.sq_json |= data
             if "leakPeriodDate" in data:

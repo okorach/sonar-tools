@@ -130,7 +130,7 @@ class Project(Component):
         """Returns the project object from its project key"""
         if o := Project.CACHE.get(key, endpoint.local_url):
             return o
-        api, _, params, ret = Api(Project, Oper.GET, endpoint).get_all(component=key)
+        api, _, params, ret = endpoint.api.get_details(Project, Oper.GET, component=key)
         return cls.load(endpoint, json.loads(endpoint.get(api, params=params).text)[ret])
 
     @classmethod
@@ -155,7 +155,7 @@ class Project(Component):
         :return: The Project
         :rtype: Project
         """
-        api, _, params, _ = Api(Project, Oper.CREATE, endpoint).get_all(project=key, name=name)
+        api, _, params, _ = endpoint.api.get_details(Project, Oper.CREATE, project=key, name=name)
         endpoint.post(api, params=params)
         o = cls(endpoint, key)
         o.name = name
@@ -202,7 +202,7 @@ class Project(Component):
         :return: self
         """
         try:
-            api, _, params, ret = Api(self, Oper.GET).get_all(**self.api_params(Oper.GET))
+            api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET, **self.api_params(Oper.GET))
             data = json.loads(self.get(api, params=params).text)
         except exceptions.ObjectNotFound:
             Project.CACHE.pop(self)
@@ -549,7 +549,7 @@ class Project(Component):
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
-            api, _, _, ret = Api(self, Oper.SEARCH, self.endpoint).get_all(filter=_PROJECT_QUALIFIER)
+            api, _, _, ret = self.endpoint.api.get_details(self, Oper.SEARCH, filter=_PROJECT_QUALIFIER)
             data = self.endpoint.get_paginated(api=api, return_field=ret, filter=_PROJECT_QUALIFIER)
             p_data = next((p for p in data[ret] if p["key"] == self.key), None)
             if p_data:
@@ -721,7 +721,7 @@ class Project(Component):
 
         log.info("Exporting findings for %s with params %s", str(self), search_params)
         findings_list: dict[str, Union[Issue, Hotspot]] = {}
-        api, _, params, ret = Api(self, Oper.EXPORT_FINDINGS).get_all(**search_params | {"project": self.key})
+        api, _, params, ret = self.endpoint.api.get_details(self, Oper.EXPORT_FINDINGS, **search_params | {"project": self.key})
         data = json.loads(self.get(api, params=params).text)
         for i in data[ret]:
             if i["type"] != idefs.TYPE_HOTSPOT:
@@ -1264,7 +1264,7 @@ class Project(Component):
     @classmethod
     def api_for(cls, operation: Oper, endpoint: Platform) -> str:
         """Returns the API to use for a particular operation"""
-        api, _, _, _ = Api(cls, operation, endpoint).get_all()
+        api, _, _, _ = endpoint.api.get_details(cls, operation)
         return api
 
     def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
@@ -1282,7 +1282,7 @@ def count(endpoint: Platform, params: ApiParams = None) -> int:
     new_params.update({"ps": 1, "p": 1})
     if not endpoint.is_sonarcloud():
         new_params["filter"] = _PROJECT_QUALIFIER
-    api, _, api_params, _ = Api(Project, Oper.SEARCH, endpoint).get_all(**new_params)
+    api, _, api_params, _ = endpoint.api.get_details(Project, Oper.SEARCH, **new_params)
     return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=api_params).text))
 
 

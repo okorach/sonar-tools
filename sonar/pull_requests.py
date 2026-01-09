@@ -120,7 +120,7 @@ class PullRequest(components.Component):
             log.debug(_UNSUPPORTED_IN_CE)
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 
-        api, _, params, ret = Api(cls, Oper.SEARCH, project.endpoint).get_all(project=project.key)
+        api, _, params, ret = project.endpoint.api.get_details(cls, Oper.SEARCH, project=project.key)
         data = json.loads(project.get(api, params=params).text)
         pr_list = {}
         for pr in data[ret]:

@@ -89,10 +89,10 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         check_supported(endpoint)
-        o: Application = cls.CACHE.get(key, endpoint.local_url)
+        o: Optional[Application] = cls.CACHE.get(key, endpoint.local_url)
         if o:
             return o
-        api, _, params, ret = Api(cls, Oper.GET, endpoint).get_all(application=key)
+        api, _, params, ret = endpoint.api.get_details(cls, Oper.GET, application=key)
         data = json.loads(endpoint.get(api, params=params).text)[ret]
         return cls.load(endpoint, data)
 
@@ -125,7 +125,7 @@ class Application(aggr.Aggregation):
         :return: The created Application object
         """
         check_supported(endpoint)
-        api, _, params, _ = Api(cls, Oper.CREATE, endpoint).get_all(key=key, name=name)
+        api, _, params, _ = endpoint.api.get_details(cls, Oper.CREATE, key=key, name=name)
         endpoint.post(api, params=params)
         return Application(endpoint=endpoint, key=key, name=name)
 
@@ -165,7 +165,7 @@ class Application(aggr.Aggregation):
         """
         try:
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
-            api, _, params, ret = Api(self, Oper.GET).get_all(application=self.key)
+            api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET, application=self.key)
             self.reload(json.loads(self.endpoint.get(api, params=params).text)[ret])
             return self
         except exceptions.ObjectNotFound:
@@ -361,11 +361,10 @@ class Application(aggr.Aggregation):
         """Add projects to an application"""
         current_projects = self.projects().keys()
         ok = True
-        api_def = Api(self, Oper.ADD_PROJECT)
         for proj in [p for p in project_list if p not in current_projects]:
             log.debug("Adding project '%s' to %s", proj, str(self))
             try:
-                api, _, params, _ = api_def.get_all(application=self.key, project=proj)
+                api, _, params, _ = self.endpoint.api.get_details(self, Oper.ADD_PROJECT, application=self.key, project=proj)
                 r = self.endpoint.post(api, params=params)
                 ok = ok and r.ok
             except (ConnectionError, RequestException) as e:
@@ -387,7 +386,7 @@ class Application(aggr.Aggregation):
     def recompute(self) -> bool:
         """Triggers application recomputation, return whether the operation succeeded"""
         log.debug("Recomputing %s", str(self))
-        api, _, params, _ = Api(self, Oper.RECOMPUTE).get_all(application=self.key)
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.RECOMPUTE, application=self.key)
         return self.post(api, params=params).ok
 
     def update(self, data: ObjectJsonRepr) -> None:
@@ -452,7 +451,7 @@ def count(endpoint: Platform) -> int:
     :return: Count of applications
     """
     check_supported(endpoint)
-    api, _, params, _ = Api(Application, Oper.SEARCH, endpoint).get_all(ps=1, filter="qualifier = APP")
+    api, _, params, _ = endpoint.api.get_details(Application, Oper.SEARCH, ps=1, filter="qualifier = APP")
     return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=params).text))
 
 

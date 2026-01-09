@@ -102,7 +102,7 @@ class User(SqObject):
         params = {"login": login, "local": str(is_local).lower(), "name": name}
         if is_local:
             params["password"] = password or login
-        api, _, params, ret = Api(cls, Oper.CREATE, endpoint).get_all(**params)
+        api, _, params, ret = endpoint.api.get_details(cls, Oper.CREATE, **params)
         if ret:
             data = json.loads(endpoint.post(api, params=params).text)[ret]
         else:
@@ -155,7 +155,7 @@ class User(SqObject):
         if endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             raise exceptions.UnsupportedOperation("Get by ID is an APIv2 features, staring from SonarQube 10.4")
         log.debug("Getting user id '%s'", id)
-        api, _, params, _ = Api(cls, Oper.GET, endpoint).get_all(id=id)
+        api, _, params, _ = endpoint.api.get_details(cls, Oper.GET, id=id)
         data = json.loads(endpoint.get(api, params=params, mute=()).text)
         return cls.load(endpoint, data)
 
@@ -206,10 +206,11 @@ class User(SqObject):
         if not self.endpoint.is_sonarcloud() and self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             self._groups = list(set(self.sq_json.get("groups", []) + [self.endpoint.default_user_group()]))
         else:
-            api_def = Api(self, Oper.LIST_GROUPS)
-            max_ps = api_def.max_page_size()
+            max_ps = self.endpoint.api.max_page_size(self, Oper.LIST_GROUPS)
             # TODO: handle pagination
-            api, _, params, ret = api_def.get_all(login=self.login, userId=self.id, ps=max_ps, pageSize=max_ps, name=self.name)
+            api, _, params, ret = self.endpoint.api.get_details(
+                self, Oper.LIST_GROUPS, login=self.login, userId=self.id, ps=max_ps, pageSize=max_ps, name=self.name
+            )
             data = json.loads(self.endpoint.get(api, params=params).text)[ret]
             log.debug("USER GROUPS = %s", data)
             if self.endpoint.is_sonarcloud():
@@ -224,9 +225,8 @@ class User(SqObject):
 
         :return:  The user itself
         """
-        api_def = Api(self, Oper.GET)
-        max_ps = api_def.max_page_size()
-        api, _, params, ret = api_def.get_all(userId=self.id, q=self.login, id=self.id, ps=max_ps)
+        max_ps = self.endpoint.api.max_page_size(self, Oper.GET)
+        api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET, userId=self.id, q=self.login, id=self.id, ps=max_ps)
         data = json.loads(self.endpoint.get(api, params=params).text)
         if self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             data = next((d for d in data[ret] if d["login"] == self.login), None)
@@ -262,7 +262,7 @@ class User(SqObject):
         """
         if User.CACHE.get(new_login, self.base_url()):
             raise exceptions.ObjectAlreadyExists(new_login, f"User '{new_login}' already exists")
-        api, method, params, _ = Api(self, Oper.UPDATE).get_all(login=self.login, newLogin=new_login, id=self.id)
+        api, method, params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, login=self.login, newLogin=new_login, id=self.id)
         if method == "PATCH":
             ok = self.endpoint.patch(api, params=params).ok
         else:
@@ -291,7 +291,9 @@ class User(SqObject):
             return self
         if kwargs.get("login"):
             self.update_login(kwargs["login"])
-        api, method, params, _ = Api(self, Oper.UPDATE).get_all(id=self.id, login=self.login, email=kwargs.get("email"), name=kwargs.get("name"))
+        api, method, params, _ = self.endpoint.api.get_details(
+            self, Oper.UPDATE, id=self.id, login=self.login, email=kwargs.get("email"), name=kwargs.get("name")
+        )
         if len(params) == 0:
             return self
         if method == "PATCH":
@@ -385,7 +387,7 @@ class User(SqObject):
         log.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
         if not self.is_local:
             return self
-        api, method, params, _ = Api(self, Oper.UPDATE).get_all(id=self.id, scmAccount=accounts_list)
+        api, method, params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, id=self.id, scmAccount=accounts_list)
         if method == "PATCH":
             params = {"scmAccounts": accounts_list}
             ok = self.endpoint.patch(api, params=params).ok

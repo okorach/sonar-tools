@@ -78,7 +78,7 @@ class DevopsPlatform(SqObject):
         """Reads a devops platform object in Sonar instance"""
         if o := DevopsPlatform.CACHE.get(key, endpoint.local_url):
             return o
-        api, _, _, _ = Api(DevopsPlatform, Oper.SEARCH, endpoint).get_all()
+        api, _, _, _ = endpoint.api.get_details(DevopsPlatform, Oper.SEARCH)
         data = json.loads(endpoint.get(api).text)
         for plt_type, platforms in data.items():
             for p in platforms:
@@ -103,24 +103,24 @@ class DevopsPlatform(SqObject):
             if plt_type == DEVOPS_GITHUB:
                 params.update(dict.fromkeys(("appId", "clientId", "clientSecret", "privateKey"), _TO_BE_SET))
                 params["url"] = url_or_workspace
-                api, _, api_params, _ = Api(DevopsPlatform, Oper.CREATE_GITHUB, endpoint).get_all(**params)
+                api, _, api_params, _ = endpoint.api.get_details(DevopsPlatform, Oper.CREATE_GITHUB, **params)
                 endpoint.post(api, params=api_params)
             elif plt_type == DEVOPS_AZURE:
                 # TODO: pass secrets on the cmd line
                 params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
-                api, _, api_params, _ = Api(DevopsPlatform, Oper.CREATE_AZURE, endpoint).get_all(**params)
+                api, _, api_params, _ = endpoint.api.get_details(DevopsPlatform, Oper.CREATE_AZURE, **params)
                 endpoint.post(api, params=api_params)
             elif plt_type == DEVOPS_GITLAB:
                 params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
-                api, _, api_params, _ = Api(DevopsPlatform, Oper.CREATE_GITLAB, endpoint).get_all(**params)
+                api, _, api_params, _ = endpoint.api.get_details(DevopsPlatform, Oper.CREATE_GITLAB, **params)
                 endpoint.post(api, params=api_params)
             elif plt_type == DEVOPS_BITBUCKET:
                 params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
-                api, _, api_params, _ = Api(DevopsPlatform, Oper.CREATE_BITBUCKET, endpoint).get_all(**params)
+                api, _, api_params, _ = endpoint.api.get_details(DevopsPlatform, Oper.CREATE_BITBUCKET, **params)
                 endpoint.post(api, params=api_params)
             elif plt_type == DEVOPS_BITBUCKET_CLOUD:
                 params.update({"clientSecret": _TO_BE_SET, "clientId": _TO_BE_SET, "workspace": url_or_workspace})
-                api, _, api_params, _ = Api(DevopsPlatform, Oper.CREATE_BITBUCKETCLOUD, endpoint).get_all(**params)
+                api, _, api_params, _ = endpoint.api.get_details(DevopsPlatform, Oper.CREATE_BITBUCKETCLOUD, **params)
                 endpoint.post(api, params=api_params)
         except exceptions.SonarException as e:
             if endpoint.edition() in (c.CE, c.DE):
@@ -140,7 +140,7 @@ class DevopsPlatform(SqObject):
         """
         if endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Can't get list of DevOps platforms on SonarQube Cloud")
-        api, _, _, _ = Api(cls, Oper.SEARCH, endpoint).get_all()
+        api, _, _, _ = endpoint.api.get_details(cls, Oper.SEARCH)
         data = json.loads(endpoint.get(api).text)
         for alm_type in DEVOPS_PLATFORM_TYPES:
             for alm_data in data.get(alm_type, {}):
@@ -168,7 +168,7 @@ class DevopsPlatform(SqObject):
 
         :return: Whether the operation succeeded
         """
-        api, _, _, _ = Api(self, Oper.SEARCH).get_all()
+        api, _, _, _ = self.endpoint.api.get_details(self, Oper.SEARCH)
         data = json.loads(self.get(api).text)
         for alm_data in data.get(self.type, {}):
             if alm_data["key"] == self.key:
@@ -192,7 +192,7 @@ class DevopsPlatform(SqObject):
         if self.type == DEVOPS_GITHUB:
             log.warning("Can't set PAT for GitHub devops platform")
             return False
-        api, _, params, _ = Api(self, Oper.SET_PAT).get_all(almSettings=self.key, pat=pat, username=user_name)
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.SET_PAT, almSettings=self.key, pat=pat, username=user_name)
         return self.post(api, params=params).ok
 
     def update(self, **kwargs) -> bool:
@@ -223,7 +223,7 @@ class DevopsPlatform(SqObject):
                 DEVOPS_BITBUCKET: Oper.UPDATE_BITBUCKET,
                 DEVOPS_BITBUCKET_CLOUD: Oper.UPDATE_BITBUCKETCLOUD,
             }[alm_type]
-            api, _, api_params, _ = Api(self, update_op).get_all(**params)
+            api, _, api_params, _ = self.endpoint.api.get_details(self, update_op, **params)
             ok = self.post(api, params=api_params).ok
             self.url = kwargs.get("url")
             self._specific = {k: v for k, v in params.items() if k not in ("key", "url")}

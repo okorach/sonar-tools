@@ -91,6 +91,7 @@ class Platform(object):
         self.organization: str = org or ""
         self._user_agent = _SONAR_TOOLS_AGENT
         self._global_settings_definitions: dict[str, dict[str, str]] = None
+        self.api: Api = Api(self)
 
     def __str__(self) -> str:
         """
@@ -284,7 +285,7 @@ class Platform(object):
                     timeout=self.http_timeout,
                     **kwargs,
                 )
-                (retry, new_url) = _check_for_retry(r)
+                (retry, new_url) = Platform.__check_for_retry(r)
                 log.debug("%s: %s took %d ms", req_type, url, (time.perf_counter_ns() - start) // 1000000)
                 if retry:
                     self.local_url = new_url
@@ -343,7 +344,7 @@ class Platform(object):
         """Returns the platform global settings definitions"""
         if not self._global_settings_definitions:
             try:
-                api, _, params, ret = Api(settings.Setting, Oper.LIST_DEFINITIONS, endpoint=self).get_all()
+                api, _, params, ret = self.api.get_details(settings.Setting, Oper.LIST_DEFINITIONS)
                 data = json.loads(self.get(api, params=params).text)
                 self._global_settings_definitions = {s["key"]: s for s in data[ret]}
             except (ConnectionError, RequestException):
@@ -652,7 +653,7 @@ class Platform(object):
         """Audits whether project default visibility is public"""
         log.info("Auditing project default visibility")
         problems = []
-        api, _, params, _ = Api(settings.Setting, Oper.GET, self).get_all(keys="projects.default.visibility")
+        api, _, params, _ = self.api.get_details(settings.Setting, Oper.GET, keys="projects.default.visibility")
         resp = self.get(api, params=params)
         visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)
@@ -777,6 +778,15 @@ class Platform(object):
         """Sets the platform to standard experience mode (disables MQR if available)"""
         return self.set_mqr_mode(False)
 
+    @staticmethod
+    def __check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
+        """Verifies if a response had a 301 Moved permanently and if so provide the new location"""
+        if len(response.history) > 0 and response.history[0].status_code == HTTPStatus.MOVED_PERMANENTLY:
+            new_url = "/".join(response.history[0].headers["Location"].split("/")[0:3])
+            log.debug("Moved permanently to URL %s", new_url)
+            return True, new_url
+        return False, None
+
 
 # --------------------- Static methods -----------------
 # this is a pointer to the module object instance itself.
@@ -899,15 +909,6 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
     :param KeyList key_list: Unused
     """
     return endpoint.import_config(config_data)
-
-
-def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
-    """Verifies if a response had a 301 Moved permanently and if so provide the new location"""
-    if len(response.history) > 0 and response.history[0].status_code == HTTPStatus.MOVED_PERMANENTLY:
-        new_url = "/".join(response.history[0].headers["Location"].split("/")[0:3])
-        log.debug("Moved permanently to URL %s", new_url)
-        return True, new_url
-    return False, None
 
 
 def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -> ObjectJsonRepr:

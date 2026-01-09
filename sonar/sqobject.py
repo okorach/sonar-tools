@@ -142,11 +142,10 @@ class SqObject(object):
     def get_paginated(cls, endpoint: Platform, params: Optional[ApiParams] = None, threads: int = 8) -> dict[str, SqObject]:
         """Returns all pages of a paginated API"""
         cname = cls.__name__.lower()
-        api_def = Api(cls, Oper.SEARCH, endpoint)
-        page_field = api_def.page_field()
-        max_ps = api_def.max_page_size()
+        page_field = endpoint.api.page_field(cls, Oper.SEARCH)
+        max_ps = endpoint.api.max_page_size(cls, Oper.SEARCH)
         new_params = {"ps": max_ps, "pageSize": max_ps} | (params or {})
-        api, _, new_params, returned_field = api_def.get_all(**new_params)
+        api, _, new_params, returned_field = endpoint.api.get_details(cls, Oper.SEARCH, **new_params)
 
         objects_list: dict[str, cls] = {}
         data = json.loads(endpoint.get(api, new_params).text)
@@ -250,7 +249,7 @@ class SqObject(object):
         """Deletes an object, returns whether the operation succeeded"""
         log.info("Deleting %s", str(self))
         try:
-            api, method, params, _ = Api(self, Oper.DELETE).get_all(**kwargs)
+            api, method, params, _ = self.endpoint.api.get_details(self, Oper.DELETE, **kwargs)
             if method == "DELETE":
                 ok = self.endpoint.delete(api=api, params=params).ok
             else:
@@ -284,7 +283,9 @@ class SqObject(object):
             return False
         log.info("Settings tags %s to %s", tags, str(self))
         try:
-            api, _, params, _ = Api(self, Oper.SET_TAGS).get_all(project=self.key, issue=self.key, application=self.key, tags=util.list_to_csv(tags))
+            api, _, params, _ = self.endpoint.api.get_details(
+                self, Oper.SET_TAGS, project=self.key, issue=self.key, application=self.key, tags=util.list_to_csv(tags)
+            )
             if ok := self.post(api, params=params).ok:
                 self._tags = sorted(tags)
         except (ValueError, AttributeError, KeyError) as e:
@@ -297,7 +298,7 @@ class SqObject(object):
     def get_tags(self, **kwargs: Any) -> list[str]:
         """Returns object tags"""
         try:
-            api, _, params, ret = Api(self, Oper.GET_TAGS).get_all(component=self.key)
+            api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET_TAGS, component=self.key)
         except ValueError as e:
             raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags") from e
         if self._tags is None:
