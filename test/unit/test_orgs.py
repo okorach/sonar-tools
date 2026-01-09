@@ -93,8 +93,8 @@ def test_export() -> None:
     assert "alm" in exp
 
 
-def test_get_list() -> None:
-    """Test Org get_list"""
+def test_search() -> None:
+    """Test search"""
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Organizations not supported")
     org_list = orgs.Organization.search(tutil.SQ)
