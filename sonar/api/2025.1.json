@@ -1364,5 +1364,13 @@
             ],
             "return_field": "task"
         }
+    },
+    "PermissionTemplate": {
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/permissions/search_templates",
+            "params": ["q"],
+            "return_field": "permissionTemplates"
+        }
     }
 }
