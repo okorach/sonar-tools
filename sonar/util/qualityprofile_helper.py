@@ -58,6 +58,7 @@ def flatten(qp_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
         flat_list += flatten_language(lang_data["language"], lang_data["profiles"])
     return flat_list
 
+
 def __convert_rule_json(rule_json: dict[str, Any]) -> dict[str, Any]:
     """Converts a rule JSON from old to new export format"""
     if "severities" in rule_json:
@@ -66,11 +67,14 @@ def __convert_rule_json(rule_json: dict[str, Any]) -> dict[str, Any]:
         rule_json["severity"] = rule_json["severity"].lower()
     if "impacts" in rule_json:
         rule_json["impacts"] = {
-            k.lower(): rule_json["impacts"][k].lower() for k in idefs.MQR_QUALITIES if k in rule_json["impacts"] and rule_json["impacts"][k] != c.DEFAULT
+            k.lower(): rule_json["impacts"][k].lower()
+            for k in idefs.MQR_QUALITIES
+            if k in rule_json["impacts"] and rule_json["impacts"][k] != c.DEFAULT
         }
     if "params" in rule_json:
         rule_json["params"] = util.dict_to_list(dict(sorted(rule_json["params"].items())), "key")
     return rule_json
+
 
 def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
     """Converts a profile's children profiles to list"""

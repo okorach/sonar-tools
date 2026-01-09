@@ -651,7 +651,7 @@ class Portfolio(aggregations.Aggregation):
 
     def update_subportfolios(self, subp_dataset: list[dict[str, Any]]) -> None:
         """Updates subportfolios of a portfolio with sonar-config JSON data
-        
+
         :param subp_dataset: List of subportfolio data
         """
         log.info("Updating %s subportfolios", str(self))

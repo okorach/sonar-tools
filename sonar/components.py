@@ -89,7 +89,7 @@ class Component(SqObject):
     def project(self) -> Project:
         """Implemented in relevant subclasses (Project, Branch, PullRequest)"""
         raise NotImplementedError
-    
+
     def get_subcomponents(self, strategy: str = "children", with_issues: bool = False) -> dict[str, Component]:
         """Returns component subcomponents"""
         parms = {

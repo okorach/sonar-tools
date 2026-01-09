@@ -630,7 +630,7 @@ class Platform(object):
             rule = get_rule(RuleId.DEPRECATION_WARNINGS)
             return [Problem(rule, f"{self.local_url}/admin/system", nb_deprecation)]
         return []
-    
+
     def audit_logs(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits that there are no anomalies in logs (errors, warnings, deprecation warnings)"""
         if not audit_settings.get("audit.logs", True):
