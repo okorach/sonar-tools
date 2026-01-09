@@ -90,16 +90,6 @@ def test_exists(get_test_app: Generator[App]) -> None:
     assert apps.Application.exists(endpoint=tutil.SQ, key=obj.key)
     assert not apps.Application.exists(endpoint=tutil.SQ, key=NON_EXISTING_KEY)
 
-
-def test_get_list() -> None:
-    """Test apps get_list"""
-    k_list = [EXISTING_KEY, EXISTING_KEY_2]
-    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.Application.get_list, endpoint=tutil.SQ, key_list=k_list):
-        return
-    p_dict = apps.Application.get_list(endpoint=tutil.SQ, key_list=k_list)
-    assert sorted(k_list) == sorted(p_dict.keys())
-
-
 def test_create_delete(get_test_app: Generator[App]) -> None:
     """Test portfolio create delete"""
     if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name=tutil.TEMP_NAME, key=tutil.TEMP_KEY):

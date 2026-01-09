@@ -38,7 +38,7 @@ def get_components(
     key_regexp = key_regexp or ".+"
     components: list[Component]
     if component_type in ("apps", "applications"):
-        components = list(applications.Application.get_list(endpoint).values())
+        components = list(applications.Application.search(endpoint).values())
     elif component_type == "portfolios":
         components = list(portfolios.Portfolio.get_list(endpoint).values())
         if kwargs.get("topLevelOnly", False):

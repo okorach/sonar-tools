@@ -474,7 +474,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -
     write_q = kwargs.get("write_q", None)
     key_regexp = kwargs.get("key_list", ".+")
 
-    app_list = {k: v for k, v in Application.get_list(endpoint).items() if not key_regexp or re.match(key_regexp, k)}
+    app_list = {k: v for k, v in Application.search(endpoint).items() if not key_regexp or re.match(key_regexp, k)}
     apps_settings = []
     for k, app in app_list.items():
         app_json = app.export(export_settings)
@@ -502,7 +502,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs: Any) -> 
     log.info("--- Auditing applications ---")
     problems = []
     key_regexp = kwargs.get("key_list", ".+")
-    for obj in [o for o in Application.get_list(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
+    for obj in [o for o in Application.search(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
         problems += obj.audit(audit_settings, **kwargs)
     return problems
 
@@ -548,14 +548,8 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Opt
 
 def search_by_name(endpoint: Platform, name: str) -> dict[str, Application]:
     """Searches applications by name. Several apps may match as name does not have to be unique"""
-    Application.get_list(endpoint=endpoint, use_cache=False)
-    data = {}
-    for app in Application.CACHE.values():
-        if app.name == name:
-            log.debug("Found APP %s id %x", app.key, id(app))
-            data[app.key] = app
-    # return {app.key: app for app in Application.CACHE.values() if app.name == name}
-    return data
+    Application.search(endpoint=endpoint)
+    return {app.key: app for app in Application.CACHE.values() if app.name == name}
 
 
 def convert_app_json(old_app_json: dict[str, Any]) -> dict[str, Any]:
