@@ -92,9 +92,9 @@ class Language(SqObject):
         :return: List of languages
         :rtype: dict{<language_key>: <language_name>}
         """
-        with _CLASS_LOCK:
-            if len(cls.CACHE) == 0 or not use_cache:
-                read_list(endpoint)
+        data = json.loads(endpoint.get(APIS["list"]).text)
+        for lang in data["languages"]:
+            _ = Language(endpoint=endpoint, key=lang["key"], name=lang["name"])
         return {o.key: o for o in cls.CACHE.objects.values()}
 
     def number_of_rules(self, rule_type: Optional[str] = None) -> int:
@@ -116,16 +116,3 @@ class Language(SqObject):
         :param language: The language key
         """
         return kwargs.get("language") in cls.get_list(endpoint)
-
-
-def read_list(endpoint: Platform) -> dict[str, Language]:
-    """Reads the list of languages existing on the SonarQube platform
-
-    :param endpoint: Reference of the SonarQube platform
-    :return: List of languages
-    :rtype: dict{<language_key>: <language_name>}
-    """
-    data = json.loads(endpoint.get(APIS["list"]).text)
-    for lang in data["languages"]:
-        _ = Language(endpoint=endpoint, key=lang["key"], name=lang["name"])
-    return {o.key: o for o in Language.CACHE.objects.values()}
