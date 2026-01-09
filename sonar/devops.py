@@ -27,14 +27,13 @@ import json
 from sonar.sqobject import SqObject
 import sonar.logging as log
 from sonar.util import cache
-from sonar import platform
 from sonar import exceptions
 import sonar.util.misc as util
 import sonar.util.constants as c
 from sonar.api.manager import ApiOperation as Oper
-from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
+    from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
 
 #: DevOps platform types in SonarQube
@@ -57,7 +56,7 @@ class DevopsPlatform(SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: platform.Platform, key: str, platform_type: str) -> None:
+    def __init__(self, endpoint: Platform, key: str, platform_type: str) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.type: str = platform_type  #: DevOps platform type
@@ -74,7 +73,7 @@ class DevopsPlatform(SqObject):
         return string
 
     @classmethod
-    def read(cls, endpoint: platform.Platform, key: str) -> DevopsPlatform:
+    def read(cls, endpoint: Platform, key: str) -> DevopsPlatform:
         """Reads a devops platform object in Sonar instance"""
         if o := DevopsPlatform.CACHE.get(key, endpoint.local_url):
             return o
@@ -87,7 +86,7 @@ class DevopsPlatform(SqObject):
         raise exceptions.ObjectNotFound(key, f"DevOps platform key '{key}' not found")
 
     @classmethod
-    def load(cls, endpoint: platform.Platform, plt_type: str, data: ApiPayload) -> DevopsPlatform:
+    def load(cls, endpoint: Platform, plt_type: str, data: ApiPayload) -> DevopsPlatform:
         """Finds a devops platform object and loads it with data"""
         key = data["key"]
         o = DevopsPlatform.CACHE.get(key, endpoint.local_url)
@@ -96,7 +95,7 @@ class DevopsPlatform(SqObject):
         return o._load(data)
 
     @classmethod
-    def create(cls, endpoint: platform.Platform, key: str, plt_type: str, url_or_workspace: str) -> DevopsPlatform:
+    def create(cls, endpoint: Platform, key: str, plt_type: str, url_or_workspace: str) -> DevopsPlatform:
         """Creates a devops platform"""
         params = {"key": key}
         try:
@@ -131,7 +130,7 @@ class DevopsPlatform(SqObject):
         return o
 
     @classmethod
-    def get_list(cls, endpoint: platform.Platform) -> dict[str, DevopsPlatform]:
+    def search(cls, endpoint: Platform) -> dict[str, DevopsPlatform]:
         """Reads all DevOps platforms from SonarQube
 
         :param endpoint: Reference to the SonarQube platform
@@ -232,7 +231,7 @@ class DevopsPlatform(SqObject):
         return ok
 
     @classmethod
-    def get_object(cls, endpoint: platform.Platform, key: str) -> DevopsPlatform:
+    def get_object(cls, endpoint: Platform, key: str) -> DevopsPlatform:
         """Returns a DevOps platform from its key
 
         :param endpoint: Reference to the SonarQube platform
@@ -240,32 +239,32 @@ class DevopsPlatform(SqObject):
         :return: The DevOps platforms corresponding to key, or None if not found
         """
         if len(cls.CACHE) == 0:
-            cls.get_list(endpoint)
+            cls.search(endpoint)
         return cls.read(endpoint, key)
 
 
-def count(endpoint: platform.Platform, platf_type: Optional[str] = None) -> int:
+def count(endpoint: Platform, platf_type: Optional[str] = None) -> int:
     """
     :param platf_type: Filter for a specific type, defaults to None (see DEVOPS_PLATFORM_TYPES set)
     :return: Count of DevOps platforms
     """
-    return len([o for o in DevopsPlatform.get_list(endpoint=endpoint).values() if not platf_type or o.type == platf_type])
+    return len([o for o in DevopsPlatform.search(endpoint=endpoint).values() if not platf_type or o.type == platf_type])
 
 
-def export(endpoint: platform.Platform, export_settings: ConfigSettings) -> ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: ConfigSettings) -> ObjectJsonRepr:
     """
     :meta private:
     """
     log.info("Exporting DevOps integration settings")
     json_data = {}
-    for s in DevopsPlatform.get_list(endpoint).values():
+    for s in DevopsPlatform.search(endpoint).values():
         export_data = s.to_json(export_settings)
         json_data[export_data.pop("key")] = export_data
         log.debug("Export devops: %s", util.json_dump(export_data))
     return json_data
 
 
-def import_config(endpoint: platform.Platform, config_data: ObjectJsonRepr, key_list: KeyList = None) -> int:
+def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: KeyList = None) -> int:
     """Imports DevOps platform configuration in SonarQube/Cloud
 
     :param endpoint: Reference to the SonarQube platform
@@ -281,7 +280,7 @@ def import_config(endpoint: platform.Platform, config_data: ObjectJsonRepr, key_
         raise exceptions.UnsupportedOperation("Can't import DevOps platforms in SonarQube Cloud")
     log.info("Importing DevOps config %s", util.json_dump(devops_settings))
     if len(DevopsPlatform.CACHE) == 0:
-        DevopsPlatform.get_list(endpoint)
+        DevopsPlatform.search(endpoint)
     counter = 0
     devops_settings = util.list_to_dict(devops_settings, "key")
     for name, data in devops_settings.items():
@@ -299,7 +298,7 @@ def import_config(endpoint: platform.Platform, config_data: ObjectJsonRepr, key_
     return counter
 
 
-def devops_type(endpoint: platform.Platform, key: str) -> str:
+def devops_type(endpoint: Platform, key: str) -> str:
     """Returns the type of a DevOps platform (see DEVOPS_PLATFORM_TYPES)
 
     :param endpoint: Reference to the SonarQube platform
