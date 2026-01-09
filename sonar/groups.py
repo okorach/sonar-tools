@@ -124,7 +124,7 @@ class Group(SqObject):
         :return: The group
         """
         if not Group.CACHE.get(name, endpoint.local_url):
-            cls.get_list(endpoint)
+            cls.search(endpoint)
         if o := Group.CACHE.get(name, endpoint.local_url):
             return o
         raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
@@ -138,17 +138,6 @@ class Group(SqObject):
         :return: dict of groups with group name as key
         """
         return cls.get_paginated(endpoint=endpoint, params=search_params)
-
-    @classmethod
-    def get_list(cls, endpoint: Platform) -> dict[str, Group]:
-        """Returns the list of groups
-
-        :params Platform endpoint: Reference to the SonarQube platform
-        :return: The list of groups
-        :rtype: dict
-        """
-        log.info("Listing groups")
-        return dict(sorted(cls.search(endpoint).items()))
 
     def url(self) -> str:
         """Return the SonarQube permalink URL to the group, actually the global groups page only
@@ -314,7 +303,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
 
     log.info("Exporting groups")
     g_list = []
-    for g_name, g_obj in Group.get_list(endpoint=endpoint).items():
+    for g_name, g_obj in Group.search(endpoint).items():
         if not export_settings.get("FULL_EXPORT", False) and g_obj.is_default():
             continue
         g_list.append({"name": g_name, "description": g_obj.description or ""})
@@ -350,7 +339,7 @@ def get_object_from_id(endpoint: Platform, id: str) -> Group:
     if endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
         raise exceptions.UnsupportedOperation("Operation unsupported before SonarQube 10.4")
     if len(Group.CACHE) == 0:
-        Group.get_list(endpoint)
+        Group.search(endpoint)
     if gr := next((o for o in Group.CACHE.values() if o.id == id), None):
         return gr
     raise exceptions.ObjectNotFound(id, message=f"Group '{id}' not found")
