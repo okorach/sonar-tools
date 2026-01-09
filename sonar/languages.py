@@ -29,16 +29,13 @@ from threading import Lock
 
 from sonar.sqobject import SqObject
 from sonar import rules
-from sonar.util import misc
 from sonar.util import cache
 import sonar.util.issue_defs as idefs
+from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
     from sonar.util.types import ApiPayload
-
-#: List of language APIs
-APIS = {"list": "languages/list"}
 
 
 _CLASS_LOCK = Lock()
@@ -68,8 +65,7 @@ class Language(SqObject):
         :param endpoint: Reference of the SonarQube platform
         :param data: API payload from api/languages/list
         """
-        o = Language.CACHE.get(data["key"], endpoint.local_url)
-        if not o:
+        if not (o := Language.CACHE.get(data["key"], endpoint.local_url)):
             o = cls(endpoint=endpoint, key=data["key"], name=data["name"])
         return o
 
@@ -79,21 +75,24 @@ class Language(SqObject):
 
         :param endpoint: Reference of the SonarQube platform
         :param key: The language key"""
-        cls.get_list(endpoint)
+        cls.search(endpoint, use_cache=True)
         return Language.CACHE.get(key, endpoint.local_url)
 
     @classmethod
-    def get_list(cls, endpoint: Platform, use_cache: bool = True) -> dict[str, Language]:
+    def search(cls, endpoint: Platform, use_cache: bool = True, **search_params: Any) -> dict[str, Language]:
         """Gets the list of languages existing on the SonarQube platform
-        Unlike read_list, get_list() is using a local cache if available (so no API call)
 
         :param endpoint: Reference of the SonarQube platform
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        :param search_params: Search filters (see api/languages/list parameters)
         :return: List of languages
         :rtype: dict{<language_key>: <language_name>}
         """
-        data = json.loads(endpoint.get(APIS["list"]).text)
-        for lang in data["languages"]:
+        if use_cache and len(cls.CACHE.objects) > 1000:
+            return cls.CACHE.objects
+        api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
+        data = json.loads(endpoint.get(api, params=params).text)
+        for lang in data[ret]:
             _ = Language(endpoint=endpoint, key=lang["key"], name=lang["name"])
         return {o.key: o for o in cls.CACHE.objects.values()}
 
@@ -115,4 +114,4 @@ class Language(SqObject):
         :param endpoint: Reference of the SonarQube platform
         :param language: The language key
         """
-        return kwargs.get("language") in cls.get_list(endpoint)
+        return kwargs.get("language") in cls.search(endpoint, use_cache=True)
