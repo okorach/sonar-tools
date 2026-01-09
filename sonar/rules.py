@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube "rule" concept"""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 import json
 import concurrent.futures
@@ -301,9 +301,9 @@ class Rule(SqObject):
         )
 
     @classmethod
-    def search(cls, endpoint: Platform, params: dict[str, str]) -> dict[str, Rule]:
+    def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, Rule]:
         """Searches rules with optional filters"""
-        return cls.get_paginated(endpoint=endpoint, params=params, threads=4)
+        return cls.get_paginated(endpoint=endpoint, threads=4, params=search_params)
 
     @classmethod
     def get_list(cls, endpoint: Platform, use_cache: bool = True, **params) -> dict[str, Rule]:
@@ -325,7 +325,7 @@ class Rule(SqObject):
         futures = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="RulesList") as executor:
             for lang_key in lang_list:
-                futures += [executor.submit(cls.search, endpoint, params | {"languages": lang_key, "include_external": inc}) for inc in incl_ext]
+                futures += [executor.submit(cls.search, endpoint, include_external=inc, **params, languages=lang_key) for inc in incl_ext]
             for future in concurrent.futures.as_completed(futures):
                 try:
                     rule_list.update(future.result(timeout=30))

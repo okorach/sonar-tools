@@ -105,9 +105,7 @@ class Language(SqObject):
         if rule_type not in (idefs.TYPE_VULN, idefs.TYPE_HOTSPOT, idefs.TYPE_BUG, idefs.TYPE_CODE_SMELL):
             rule_type = None
         if self._nb_rules[rule_type or "_ALL"] is None:
-            self._nb_rules[rule_type or "_ALL"] = len(
-                rules.Rule.search(self.endpoint, params=misc.remove_nones({"languages": self.key, "types": rule_type}))
-            )
+            self._nb_rules[rule_type or "_ALL"] = len(rules.Rule.search(self.endpoint, languages=self.key, types=rule_type))
         return self._nb_rules[rule_type or "_ALL"]
 
     @classmethod
