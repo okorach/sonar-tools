@@ -128,7 +128,7 @@ class Organization(SqObject):
         with _CLASS_LOCK:
             if key_list is None or len(key_list) == 0 or not use_cache:
                 log.info("Listing organizations")
-                return search(endpoint=endpoint)
+                return cls.search(endpoint=endpoint)
             object_list = {}
             for key in util.csv_to_list(key_list):
                 object_list[key] = cls.get_object(endpoint, key)
