@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube User Token concept"""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 import json
 import datetime as dt
@@ -79,14 +79,14 @@ class UserToken(SqObject):
         return f"token '{self.name}' of user '{self.login}'"
 
     @classmethod
-    def search(cls, endpoint: Platform, login: str) -> list[UserToken]:
+    def search(cls, endpoint: Platform, **search_params: Any) -> list[UserToken]:
         """Searches tokens of a given user
 
-        :param login: login of the user
+        :param search_params: Search filters (see api/user_tokens/search parameters)
         :return: list of tokens
         """
-        api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, login=login)
-        data = json.loads(endpoint.get(api, params).text)
+        api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
+        data = json.loads(endpoint.get(api, params=params).text)
         return [cls(endpoint=endpoint, login=data["login"], json_data=tk) for tk in data[ret]]
 
     def revoke(self) -> bool:
