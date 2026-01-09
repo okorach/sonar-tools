@@ -99,7 +99,7 @@ class Branch(components.Component):
             project = proj.Project.get_object(endpoint, project)
         if o := Branch.CACHE.get(project.key, branch_name, project.base_url()):
             return o
-        api, _, params, _ = Api(Branch, Oper.SEARCH, project.endpoint).get_all(project=project.key)
+        api, _, params, _ = project.endpoint.api.get_details(Branch, Oper.SEARCH, project=project.key)
         data = json.loads(project.get(api, params=params).text)
         br = next((b for b in data.get("branches", []) if b["name"] == branch_name), None)
         if not br:
@@ -138,7 +138,7 @@ class Branch(components.Component):
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 
         log.debug("Reading all branches of %s", str(project))
-        api, _, params, _ = Api(cls, Oper.SEARCH, project.endpoint).get_all(project=project.key)
+        api, _, params, _ = project.endpoint.api.get_details(cls, Oper.SEARCH, project=project.key)
         data = json.loads(project.endpoint.get(api, params=params).text)
         return {branch["name"]: cls.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
 
@@ -166,7 +166,7 @@ class Branch(components.Component):
         :return: itself
         :rtype: Branch
         """
-        api, _, params, _ = Api(self, Oper.SEARCH).get_all(**self.api_params(Oper.SEARCH))
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.SEARCH, **self.api_params(Oper.SEARCH))
         data = json.loads(self.get(api, params=params).text)
         br_data = next((br for br in data.get("branches", []) if br["name"] == self.name), None)
         if not br_data:
@@ -219,7 +219,7 @@ class Branch(components.Component):
         if self._new_code is None and self.endpoint.is_sonarcloud():
             self._new_code = settings.new_code_to_string({"inherited": True})
         elif self._new_code is None:
-            api, _, params, _ = Api(self, Oper.LIST_NEW_CODE_PERIODS).get_all(**self.api_params(Oper.SEARCH))
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.LIST_NEW_CODE_PERIODS, **self.api_params(Oper.SEARCH))
             data = json.loads(self.get(api, params=params).text)
             for b in data["newCodePeriods"]:
                 new_code = settings.new_code_to_string(b)
@@ -244,7 +244,7 @@ class Branch(components.Component):
                 log.warning("%s is main branch, can't be purgeable, skipping...", str(self))
                 raise exceptions.UnsupportedOperation(f"{str(self)} is the main branch, can't be purgeable")
             return True
-        api, _, params, _ = Api(self, Oper.KEEP_WHEN_INACTIVE).get_all(**self.api_params(), value=str(keep).lower())
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.KEEP_WHEN_INACTIVE, **self.api_params(), value=str(keep).lower())
         self.post(api, params=params)
         self._keep_when_inactive = keep
         return True
@@ -260,7 +260,7 @@ class Branch(components.Component):
             raise exceptions.UnsupportedOperation(f"{str(self)} can't be renamed since it's not the main branch")
 
         log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
-        api, _, params, _ = Api(self, Oper.RENAME).get_all(project=self.concerned_object.key, name=new_name)
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.RENAME, project=self.concerned_object.key, name=new_name)
         self.post(api, params=params)
         Branch.CACHE.pop(self)
         self.name = new_name
@@ -273,7 +273,7 @@ class Branch(components.Component):
         :raises ObjectNotFound: If the branch is not found
         :return: Whether the operation was successful
         """
-        api, _, params, _ = Api(self, Oper.SET_MAIN).get_all(**self.api_params())
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.SET_MAIN, **self.api_params())
         self.post(api, params=params)
         for b in self.concerned_object.branches().values():
             b._is_main = b.name == self.name

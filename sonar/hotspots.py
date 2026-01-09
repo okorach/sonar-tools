@@ -167,7 +167,7 @@ class Hotspot(findings.Finding):
 
     def refresh(self) -> Hotspot:
         """Refreshes and reads hotspots details in SonarQube, returns self"""
-        api, _, params, _ = Api(self, Oper.GET).get_all(hotspot=self.key)
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.GET, hotspot=self.key)
         self.__details = d = json.loads(self.get(api, params=params).text)
         if self.file is None and "path" in d["component"]:
             self.file = d["component"]["path"]
@@ -202,7 +202,7 @@ class Hotspot(findings.Finding):
         """
         try:
             params = {"hotspot": self.key, "status": status, "resolution": resolution, "comment": comment}
-            api, _, api_params, _ = Api(self, Oper.CHANGE_STATUS).get_all(**params)
+            api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.CHANGE_STATUS, **params)
             ok = self.post(api, params=api_params).ok
             self.refresh()
         except exceptions.SonarException:
@@ -255,7 +255,7 @@ class Hotspot(findings.Finding):
         :return: Whether the operation succeeded
         """
         try:
-            api, _, params, _ = Api(self, Oper.ADD_COMMENT).get_all(hotspot=self.key, comment=comment)
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.ADD_COMMENT, hotspot=self.key, comment=comment)
             return self.post(api, params=params).ok
         except exceptions.SonarException:
             return False

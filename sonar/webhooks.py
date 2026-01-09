@@ -78,7 +78,7 @@ class WebHook(SqObject):
         """
         log.info("Creating webhook name %s, url %s project %s", name, url, str(project))
         params = {"name": name, "url": url, "secret": secret, "project": project}
-        api, _, api_params, _ = Api(cls, Oper.CREATE, endpoint).get_all(**params)
+        api, _, api_params, _ = endpoint.api.get_details(cls, Oper.CREATE, **params)
         endpoint.post(api, params=api_params)
         o = cls(endpoint, name=name, url=url, secret=secret, project=project)
         o.refresh()
@@ -157,7 +157,7 @@ class WebHook(SqObject):
         """
         log.info("Updating %s with %s", str(self), str(self.project))
         params = {"webhook": self.key, "name": self.name, "url": self.webhook_url} | kwargs
-        api, _, api_params, _ = Api(self, Oper.UPDATE).get_all(**params)
+        api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, **params)
         ok = self.post(api, params=api_params).ok
         self.refresh()
         return ok

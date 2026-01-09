@@ -68,7 +68,7 @@ class UserToken(SqObject):
         :param login: User for which the token must be created
         :param name: Token name
         """
-        api, _, params, _ = Api(cls, Oper.CREATE, endpoint).get_all(name=name, login=login)
+        api, _, params, _ = endpoint.api.get_details(cls, Oper.CREATE, name=name, login=login)
         data = json.loads(endpoint.post(api, params).text)
         return UserToken(endpoint=endpoint, login=data["login"], json_data=data, name=name)
 
@@ -85,7 +85,7 @@ class UserToken(SqObject):
         :param login: login of the user
         :return: list of tokens
         """
-        api, _, params, ret = Api(cls, Oper.SEARCH, endpoint).get_all(login=login)
+        api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, login=login)
         data = json.loads(endpoint.get(api, params).text)
         return [cls(endpoint=endpoint, login=data["login"], json_data=tk) for tk in data[ret]]
 

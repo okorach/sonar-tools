@@ -158,7 +158,7 @@ class Setting(sqobject.SqObject):
     def create(cls, key: str, endpoint: Platform, value: Any = None, component: Optional[object] = None) -> Union[Setting, None]:
         """Creates a setting with a custom value"""
         log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
-        api, _, params, _ = Api(Setting, Oper.CREATE, endpoint).get_all(key=key, component=component)
+        api, _, params, _ = endpoint.api.get_details(Setting, Oper.CREATE, key=key, component=component)
         r = endpoint.post(api, params=params)
         if not r.ok:
             return None
@@ -258,7 +258,7 @@ class Setting(sqobject.SqObject):
         if value is None or value == "" or (self.key == "sonar.autodetect.ai.code" and value is True and self.endpoint.version() < (2025, 2, 0)):
             return self.reset()
         if self.key == MQR_ENABLED:
-            api, _, params, _ = Api(self, Oper.SET_MQR_MODE).get_all(mode="STANDARD_EXPERIENCE" if not value else "MQR")
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.SET_MQR_MODE, mode="STANDARD_EXPERIENCE" if not value else "MQR")
             if ok := self.patch(api, params=params).ok:
                 self.value = value
             return ok
@@ -279,7 +279,7 @@ class Setting(sqobject.SqObject):
         log.debug("Setting %s to value '%s'", str(self), str(value))
         params = {"key": self.key, "component": self.component.key if self.component else None} | encode(self, value)
         try:
-            api, _, api_params, _ = Api(self, Oper.CREATE).get_all(**params)
+            api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.CREATE, **params)
             if ok := self.post(api, params=api_params).ok:
                 self.value = value
         except exceptions.SonarException:
@@ -291,7 +291,7 @@ class Setting(sqobject.SqObject):
         log.info("Resetting %s", str(self))
         params = {"keys": self.key} | {} if not self.component else {"component": self.component.key}
         try:
-            api, _, api_params, _ = Api(self, Oper.RESET).get_all(**params)
+            api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.RESET, **params)
             ok = self.post(api, params=api_params).ok
             self.refresh()
         except exceptions.SonarException:
@@ -439,7 +439,7 @@ def get_bulk(
     if settings_list is not None:
         params["keys"] = util.list_to_csv(settings_list)
 
-    api, _, api_params, _ = Api(Setting, Oper.SEARCH, endpoint).get_all(**params)
+    api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.SEARCH, **params)
     data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)
     settings_dict |= __get_settings(endpoint, data, component)
 
@@ -490,12 +490,14 @@ def set_new_code_period(endpoint: Platform, nc_type: str, nc_value: str, project
     """Sets the new code period at global level or for a project"""
     log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
     if endpoint.is_sonarcloud():
-        api, _, params1, _ = Api(Setting, Oper.CREATE, endpoint).get_all(key="sonar.leak.period.type", value=nc_type, project=project_key)
+        api, _, params1, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period.type", value=nc_type, project=project_key)
         ok = endpoint.post(api, params=params1).ok
-        api, _, params2, _ = Api(Setting, Oper.CREATE, endpoint).get_all(key="sonar.leak.period", value=nc_value, project=project_key)
+        api, _, params2, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period", value=nc_value, project=project_key)
         ok = ok and endpoint.post(api, params=params2).ok
     else:
-        api, _, params, _ = Api(Setting, Oper.SET_NEW_CODE_PERIOD, endpoint).get_all(type=nc_type, value=nc_value, project=project_key, branch=branch)
+        api, _, params, _ = endpoint.api.get_details(
+            Setting, Oper.SET_NEW_CODE_PERIOD, type=nc_type, value=nc_value, project=project_key, branch=branch
+        )
         ok = endpoint.post(api, params=params).ok
     return ok
 
@@ -512,7 +514,7 @@ def get_visibility(endpoint: Platform, component: object) -> Setting:
     else:
         if endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Project default visibility does not exist in SonarQube Cloud")
-        api, _, params, _ = Api(Setting, Oper.GET, endpoint).get_all(keys=PROJECT_DEFAULT_VISIBILITY)
+        api, _, params, _ = endpoint.api.get_details(Setting, Oper.GET, keys=PROJECT_DEFAULT_VISIBILITY)
         data = json.loads(endpoint.get(api, params=params).text)
         return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 
@@ -595,16 +597,16 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[object])
     """
     if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
         params = get_component_params(component, name="project")
-        api, _, api_params, _ = Api(Setting, Oper.GET_NEW_CODE_PERIOD, endpoint).get_all(**params)
+        api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.GET_NEW_CODE_PERIOD, **params)
         data = json.loads(endpoint.get(api, params=api_params).text)
     elif key == MQR_ENABLED:
-        api, _, params, _ = Api(Setting, Oper.GET_MQR_MODE, endpoint).get_all()
+        api, _, params, _ = endpoint.api.get_details(Setting, Oper.GET_MQR_MODE)
         data = json.loads(endpoint.get(api, params=params).text)
     else:
         if key == NEW_CODE_PERIOD:
             key = "sonar.leak.period.type"
         params = get_component_params(component) | {"keys": key}
-        api, _, api_params, _ = Api(Setting, Oper.GET, endpoint).get_all(**params)
+        api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.GET, **params)
         data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)["settings"]
         if not endpoint.is_sonarcloud() and len(data) > 0:
             data = data[0]

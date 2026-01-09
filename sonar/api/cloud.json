@@ -1,0 +1,1351 @@
+{
+    "Application": {
+        "CREATE": {
+            "method": "POST",
+            "api": "api/applications/create",
+            "params": [
+                "name",
+                "description",
+                "key",
+                "visibility"
+            ]
+        },
+        "GET": {
+            "method": "GET",
+            "api": "api/applications/show",
+            "params": [
+                "application",
+                "branch"
+            ],
+            "return_field": "application"
+        },
+        "UPDATE": {
+            "method": "POST",
+            "api": "api/applications/update",
+            "params": [
+                "name",
+                "description",
+                "application"
+            ]
+        },
+        "DELETE": {
+            "method": "POST",
+            "api": "api/applications/delete",
+            "params": [
+                "application"
+            ]
+        },
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/components/search_projects",
+            "params": [
+                "p",
+                "ps",
+                "component",
+                "filter",
+                "s"
+            ],
+            "return_field": "components",
+            "page_field": "p",
+            "max_page_size": 500
+        },
+        "ADD_PROJECT": {
+            "method": "POST",
+            "api": "api/applications/add_project",
+            "params": [
+                "application",
+                "project"
+            ]
+        },
+        "REMOVE_PROJECT": {
+            "method": "POST",
+            "api": "api/applications/remove_project",
+            "params": [
+                "application",
+                "project"
+            ]
+        },
+        "RECOMPUTE": {
+            "method": "POST",
+            "api": "api/applications/refresh",
+            "params": [
+                "key"
+            ]
+        },
+        "SET_TAGS": {
+            "method": "POST",
+            "api": "api/applications/set_tags",
+            "params": [
+                "application",
+                "tags"
+            ]
+        },
+        "GET_TAGS": {
+            "method": "GET",
+            "api": "api/components/show",
+            "params": [
+                "component",
+                "branch",
+                "pullRequest"
+            ],
+            "return_field": "component"
+        }
+    },
+    "ApplicationBranch": {
+        "CREATE": {
+            "method": "POST",
+            "api": "api/applications/create_branch",
+            "params": [
+                "application",
+                "branch",
+                "project",
+                "projectBranch"
+            ]
+        },
+        "GET": {
+            "method": "GET",
+            "api": "api/applications/show",
+            "params": [
+                "application",
+                "branch"
+            ],
+            "return_field": "application"
+        },
+        "UPDATE": {
+            "method": "POST",
+            "api": "api/applications/update_branch",
+            "params": [
+                "application",
+                "branch",
+                "project",
+                "projectBranch"
+            ]
+        },
+        "DELETE": {
+            "method": "POST",
+            "api": "api/applications/delete_branch",
+            "params": [
+                "application",
+                "branch"
+            ]
+        },
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/applications/show",
+            "params": [
+                "application",
+                "branch"
+            ],
+            "return_field": "application"
+        }
+    },
+    "Component": {
+        "GET": {
+            "method": "GET",
+            "api": "api/components/show",
+            "params": [
+                "component",
+                "branch",
+                "pullRequest"
+            ],
+            "return_field": "component"
+        },
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/components/search",
+            "params": [
+                "p",
+                "ps",
+                "q",
+                "qualifiers"
+            ],
+            "return_field": "components",
+            "page_field": "p",
+            "max_page_size": 500
+        },
+        "GET_SUBCOMPONENTS": {
+            "method": "GET",
+            "api": "api/measures/component_tree",
+            "params": [
+                "component",
+                "p",
+                "ps",
+                "branch",
+                "pullRequest",
+                "q",
+                "qualifiers",
+                "s",
+                "strategy",
+                "asc"
+            ],
+            "return_field": "components",
+            "page_field": "p",
+            "max_page_size": 500
+        }
+    },
+    "Issue": {
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/issues/search",
+            "params": [
+                "additionalFields",
+                "asc",
+                "assigned",
+                "assignees",
+                "author",
+                "branch",
+                "componentKeys",
+                "components",
+                "createdAfter",
+                "createdAt",
+                "createdBefore",
+                "createdInLast",
+                "cwe",
+                "directories",
+                "facets",
+                "files",
+                "impactSeverities",
+                "impactSoftwareQualities",
+                "inNewCodePeriod",
+                "issues",
+                "languages",
+                "onComponentOnly",
+                "owaspTop10",
+                "owaspTop10-21",
+                "p",
+                "page",
+                "project",
+                "ps",
+                "pullRequest",
+                "resolutions",
+                "resolved",
+                "rules",
+                "s",
+                "sansTop25",
+                "scopes",
+                "severities",
+                "sinceLeakPeriod",
+                "sonarsourceSecurity",
+                "statuses",
+                "issueStatuses",
+                "tags",
+                "timeZone",
+                "types"
+            ],
+            "return_field": "issues",
+            "page_field": "p",
+            "max_page_size": 500
+        },
+        "GET": {
+            "method": "GET",
+            "api": "api/issues/search",
+            "params": [
+                "issues",
+                "additionalFields"
+            ],
+            "return_field": "issues"
+        },
+        "GET_CHANGELOG": {
+            "method": "GET",
+            "api": "api/issues/changelog",
+            "params": [
+                "issue",
+                "format"
+            ],
+            "return_field": "changelog"
+        },
+        "ADD_COMMENT": {
+            "method": "POST",
+            "api": "api/issues/add_comment",
+            "params": [
+                "issue",
+                "text"
+            ]
+        },
+        "SET_SEVERITY": {
+            "method": "POST",
+            "api": "api/issues/set_severity",
+            "params": [
+                "issue",
+                "severity",
+                "impact"
+            ]
+        },
+        "SET_TYPE": {
+            "method": "POST",
+            "api": "api/issues/set_type",
+            "params": [
+                "issue",
+                "type"
+            ]
+        },
+        "SET_TAGS": {
+            "method": "POST",
+            "api": "api/issues/set_tags",
+            "params": [
+                "issue",
+                "tags"
+            ]
+        },
+        "GET_TAGS": {
+            "method": "GET",
+            "api": "api/issues/search",
+            "params": [
+                "issues",
+                "additionalFields"
+            ],
+            "return_field": "issues"
+        },
+        "ASSIGN": {
+            "method": "POST",
+            "api": "api/issues/assign",
+            "params": [
+                "issue",
+                "assignee",
+                "comment"
+            ]
+        },
+        "DO_TRANSITION": {
+            "method": "POST",
+            "api": "api/issues/do_transition",
+            "params": [
+                "issue",
+                "transition"
+            ]
+        }
+    },
+    "User": {
+        "CREATE": {
+            "method": "POST",
+            "api": "v2/users-management/users",
+            "content_type": "application/json",
+            "params": [
+                "login",
+                "name",
+                "email",
+                "password",
+                "local",
+                "scmAccounts"
+            ]
+        },
+        "GET": {
+            "method": "GET",
+            "api": "v2/users-management/users/{id}",
+            "return_field": "user"
+        },
+        "UPDATE": {
+            "method": "PATCH",
+            "api": "v2/users-management/users/{id}",
+            "content_type": "application/merge-patch+json",
+            "params": [
+                "login",
+                "name",
+                "email",
+                "scmAccounts"
+            ]
+        },
+        "DELETE": {
+            "method": "DELETE",
+            "api": "v2/users-management/users/{id}"
+        },
+        "SEARCH": {
+            "method": "GET",
+            "api": "v2/users-management/users",
+            "params": [
+                "organization",
+                "active",
+                "managed",
+                "q",
+                "groupId",
+                "pageIndex",
+                "pageSize",
+                "sonarLintLastConnectionDateFrom",
+                "sonarLintLastConnectionDateTo"
+            ],
+            "return_field": "users",
+            "page_field": "pageIndex",
+            "max_page_size": 500
+        },
+        "UPDATE_LOGIN": {
+            "method": "PATCH",
+            "api": "v2/users-management/users/{id}",
+            "content_type": "application/merge-patch+json",
+            "params": [
+                "login",
+                "name",
+                "email",
+                "scmAccounts"
+            ]
+        },
+        "LIST_GROUPS": {
+            "method": "GET",
+            "api": "v2/authorizations/group-memberships",
+            "params": [
+                "userId",
+                "groupId",
+                "pageIndex",
+                "pageSize"
+            ],
+            "return_field": "groupMemberships",
+            "max_page_size": 500
+        }
+    },
+    "Group": {
+        "CREATE": {
+            "method": "POST",
+            "api": "v2/authorizations/groups",
+            "content_type": "application/json",
+            "params": [
+                "name",
+                "description"
+            ]
+        },
+        "GET": {
+            "method": "GET",
+            "api": "v2/authorizations/groups/{id}",
+            "return_field": ""
+        },
+        "UPDATE": {
+            "method": "PATCH",
+            "api": "v2/authorizations/groups/{id}",
+            "content_type": "application/merge-patch+json",
+            "params": [
+                "name",
+                "description"
+            ]
+        },
+        "DELETE": {
+            "method": "DELETE",
+            "api": "v2/authorizations/groups/{id}"
+        },
+        "SEARCH": {
+            "method": "GET",
+            "api": "v2/authorizations/groups",
+            "params": [
+                "managed",
+                "userId",
+                "organization",
+                "q",
+                "pageIndex",
+                "pageSize"
+            ],
+            "page_field": "pageIndex",
+            "return_field": "groups",
+            "max_page_size": 500
+        },
+        "LIST_MEMBERS": {
+            "method": "GET",
+            "api": "v2/authorizations/group-memberships",
+            "params": [
+                "userId",
+                "groupId",
+                "pageIndex",
+                "pageSize"
+            ],
+            "page_field": "pageIndex",
+            "return_field": "groupMemberships",
+            "max_page_size": 500
+        },
+        "ADD_USER": {
+            "method": "POST",
+            "api": "v2/authorizations/group-memberships",
+            "content_type": "application/json",
+            "params": [
+                "groupId",
+                "userId"
+            ],
+            "return_field": "groupMemberships"
+        },
+        "REMOVE_USER": {
+            "method": "DELETE",
+            "api": "v2/authorizations/group-memberships/{id}"
+        }
+    },
+    "Metric": {
+        "CREATE": {},
+        "GET": {
+            "method": "GET",
+            "api": "api/metrics/search",
+            "params": [
+                "p",
+                "ps"
+            ],
+            "return_field": "metrics",
+            "max_page_size": 500
+        },
+        "UPDATE": {},
+        "DELETE": {},
+        "SEARCH": {
+            "method": "GET",
+            "api": "metrics/search",
+            "params": [
+                "p",
+                "ps"
+            ],
+            "return_field": "metrics",
+            "page_field": "p",
+            "max_page_size": 500
+        },
+        "METRIC_TYPES": {
+            "method": "GET",
+            "api": "api/metrics/types",
+            "return_field": "types"
+        }
+    },
+    "Measure": {
+        "GET": {
+            "method": "GET",
+            "api": "api/measures/component",
+            "params": [
+                "component",
+                "metricKeys",
+                "branch",
+                "pullRequest",
+                "additionalFields"
+            ],
+            "return_field": "component"
+        },
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/measures/search",
+            "params": [
+                "projectKeys",
+                "metricKeys"
+            ],
+            "return_field": "measures"
+        },
+        "GET_HISTORY": {
+            "method": "GET",
+            "api": "api/measures/search_history",
+            "params": [
+                "component",
+                "metrics",
+                "p",
+                "ps",
+                "branch",
+                "pullRequest",
+                "from",
+                "to"
+            ],
+            "return_field": "measures",
+            "page_field": "p",
+            "max_page_size": 1000
+        }
+    },
+    "QualityGate": {
+        "CREATE": {
+            "method": "POST",
+            "api": "api/qualitygates/create",
+            "params": [
+                "name"
+            ]
+        },
+        "GET": {
+            "method": "GET",
+            "api": "api/qualitygates/show",
+            "params": [
+                "name"
+            ]
+        },
+        "UPDATE": {},
+        "DELETE": {
+            "method": "POST",
+            "api": "api/qualitygates/destroy",
+            "params": [
+                "name"
+            ]
+        },
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/qualitygates/list",
+            "return_field": "qualitygates"
+        },
+        "RENAME": {
+            "method": "POST",
+            "api": "api/qualitygates/rename",
+            "params": [
+                "id",
+                "name"
+            ]
+        },
+        "GET_PROJECTS": {
+            "method": "GET",
+            "api": "api/qualitygates/search",
+            "params": [
+                "gateName",
+                "gateId",
+                "p",
+                "ps"
+            ],
+            "return_field": "results",
+            "page_field": "p",
+            "max_page_size": 500
+        }
+    },
+    "DevopsPlatform": {
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/alm_settings/list_definitions",
+            "return_field": ""
+        },
+        "DELETE": {
+            "method": "POST",
+            "api": "api/alm_settings/delete",
+            "params": [
+                "key"
+            ]
+        },
+        "CREATE_GITHUB": {
+            "method": "POST",
+            "api": "api/alm_settings/create_github",
+            "params": [
+                "key",
+                "url",
+                "appId",
+                "clientId",
+                "clientSecret",
+                "privateKey"
+            ]
+        },
+        "CREATE_GITLAB": {
+            "method": "POST",
+            "api": "api/alm_settings/create_gitlab",
+            "params": [
+                "key",
+                "url",
+                "personalAccessToken"
+            ]
+        },
+        "CREATE_AZURE": {
+            "method": "POST",
+            "api": "api/alm_settings/create_azure",
+            "params": [
+                "key",
+                "url",
+                "personalAccessToken"
+            ]
+        },
+        "CREATE_BITBUCKET": {
+            "method": "POST",
+            "api": "api/alm_settings/create_bitbucket",
+            "params": [
+                "key",
+                "url",
+                "personalAccessToken"
+            ]
+        },
+        "CREATE_BITBUCKETCLOUD": {
+            "method": "POST",
+            "api": "api/alm_settings/create_bitbucketcloud",
+            "params": [
+                "key",
+                "workspace",
+                "clientId",
+                "clientSecret"
+            ]
+        },
+        "UPDATE_GITHUB": {
+            "method": "POST",
+            "api": "api/alm_settings/update_github",
+            "params": [
+                "key",
+                "url",
+                "clientId",
+                "appId",
+                "privateKey",
+                "clientSecret"
+            ]
+        },
+        "UPDATE_GITLAB": {
+            "method": "POST",
+            "api": "api/alm_settings/update_gitlab",
+            "params": [
+                "key",
+                "url",
+                "personalAccessToken"
+            ]
+        },
+        "UPDATE_AZURE": {
+            "method": "POST",
+            "api": "api/alm_settings/update_azure",
+            "params": [
+                "key",
+                "url",
+                "personalAccessToken"
+            ]
+        },
+        "UPDATE_BITBUCKET": {
+            "method": "POST",
+            "api": "api/alm_settings/update_bitbucket",
+            "params": [
+                "key",
+                "url",
+                "personalAccessToken"
+            ]
+        },
+        "UPDATE_BITBUCKETCLOUD": {
+            "method": "POST",
+            "api": "api/alm_settings/update_bitbucketcloud",
+            "params": [
+                "key",
+                "workspace",
+                "clientId",
+                "clientSecret"
+            ]
+        },
+        "SET_PAT": {
+            "method": "POST",
+            "api": "api/alm_integrations/set_pat",
+            "params": [
+                "almSettings",
+                "pat",
+                "username"
+            ]
+        }
+    },
+    "Hotspot": {
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/hotspots/search",
+            "params": [
+                "branch",
+                "cwe",
+                "files",
+                "hotspots",
+                "inNewCodePeriod",
+                "onlyMine",
+                "owaspAsvs-4.0",
+                "owaspAsvsLevel",
+                "owaspTop10",
+                "owaspTop10-2021",
+                "p",
+                "pciDss-3.2",
+                "pciDss-4.0",
+                "project",
+                "projectKey",
+                "ps",
+                "pullRequest",
+                "resolution",
+                "sinceLeakPeriod",
+                "sonarsourceSecurity",
+                "status"
+            ],
+            "return_field": "hotspots",
+            "page_field": "p",
+            "max_page_size": 500
+        },
+        "GET": {
+            "method": "GET",
+            "api": "api/hotspots/show",
+            "params": [
+                "hotspot"
+            ],
+            "return_field": ""
+        },
+        "ADD_COMMENT": {
+            "method": "POST",
+            "api": "api/hotspots/add_comment",
+            "params": [
+                "hotspot",
+                "comment"
+            ]
+        },
+        "ASSIGN": {
+            "method": "POST",
+            "api": "api/hotspots/assign",
+            "params": [
+                "hotspot",
+                "assignee",
+                "comment"
+            ]
+        },
+        "CHANGE_STATUS": {
+            "method": "POST",
+            "api": "api/hotspots/change_status",
+            "params": [
+                "hotspot",
+                "status",
+                "resolution",
+                "comment"
+            ]
+        }
+    },
+    "PullRequest": {
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/project_pull_requests/list",
+            "params": [
+                "project"
+            ],
+            "return_field": "pullRequests"
+        },
+        "DELETE": {
+            "method": "POST",
+            "api": "api/project_pull_requests/delete",
+            "params": [
+                "project",
+                "pullRequest"
+            ]
+        }
+    },
+    "Portfolio": {
+        "CREATE": {
+            "method": "POST",
+            "api": "api/views/create",
+            "params": [
+                "key",
+                "name",
+                "description",
+                "visibility",
+                "parent"
+            ]
+        },
+        "GET": {
+            "method": "GET",
+            "api": "api/views/show",
+            "params": [
+                "key"
+            ]
+        },
+        "UPDATE": {
+            "method": "POST",
+            "api": "api/views/update",
+            "params": [
+                "key",
+                "name",
+                "description"
+            ]
+        },
+        "DELETE": {
+            "method": "POST",
+            "api": "api/views/delete",
+            "params": [
+                "key"
+            ]
+        },
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/views/search",
+            "params": [
+                "q"
+            ],
+            "return_field": "components",
+            "page_field": "p",
+            "max_page_size": 500
+        },
+        "RECOMPUTE": {
+            "method": "POST",
+            "api": "api/views/refresh",
+            "params": [
+                "key"
+            ]
+        }
+    },
+    "UserToken": {
+        "CREATE": {
+            "method": "POST",
+            "api": "api/user_tokens/generate",
+            "params": [
+                "name",
+                "login"
+            ]
+        },
+        "DELETE": {
+            "method": "POST",
+            "api": "api/user_tokens/revoke",
+            "params": [
+                "name",
+                "login"
+            ]
+        },
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/user_tokens/search",
+            "params": [
+                "login"
+            ],
+            "return_field": "userTokens"
+        }
+    },
+    "WebHook": {
+        "CREATE": {
+            "method": "POST",
+            "api": "api/webhooks/create",
+            "params": [
+                "name",
+                "url",
+                "secret",
+                "project"
+            ]
+        },
+        "GET": {
+            "method": "GET",
+            "api": "api/webhooks/list",
+            "params": [
+                "webhook"
+            ],
+            "return_field": "webhooks"
+        },
+        "UPDATE": {
+            "method": "POST",
+            "api": "api/webhooks/update",
+            "params": [
+                "webhook",
+                "name",
+                "url",
+                "secret"
+            ]
+        },
+        "DELETE": {
+            "method": "POST",
+            "api": "api/webhooks/delete",
+            "params": [
+                "webhook"
+            ]
+        },
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/webhooks/list",
+            "params": [
+                "project"
+            ],
+            "return_field": "webhooks"
+        }
+    },
+    "QualityProfile": {
+        "CREATE": {
+            "method": "POST",
+            "api": "api/qualityprofiles/create",
+            "params": [
+                "name",
+                "language"
+            ]
+        },
+        "GET": {
+            "method": "GET",
+            "api": "api/qualityprofiles/search",
+            "params": [
+                "q",
+                "language"
+            ],
+            "return_field": "profiles"
+        },
+        "DELETE": {
+            "method": "POST",
+            "api": "api/qualityprofiles/delete",
+            "params": [
+                "qualityProfile",
+                "language"
+            ]
+        },
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/qualityprofiles/search",
+            "params": [
+                "q",
+                "language"
+            ],
+            "return_field": "profiles",
+            "page_field": "p",
+            "max_page_size": 500
+        },
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/qualityprofiles/search",
+            "params": [
+                "q",
+                "language"
+            ],
+            "return_field": "profiles",
+            "page_field": "p",
+            "max_page_size": 500
+        },
+        "RENAME": {
+            "method": "POST",
+            "api": "api/qualityprofiles/rename",
+            "params": [
+                "id",
+                "name"
+            ]
+        },
+        "COPY": {
+            "method": "POST",
+            "api": "api/qualityprofiles/copy",
+            "params": [
+                "toName",
+                "fromKey"
+            ]
+        },
+        "CHANGE_PARENT": {
+            "method": "POST",
+            "api": "api/qualityprofiles/change_parent",
+            "params": [
+                "qualityProfile",
+                "language",
+                "parentQualityProfile"
+            ]
+        },
+        "SET_DEFAULT": {
+            "method": "POST",
+            "api": "api/qualityprofiles/set_default",
+            "params": [
+                "qualityProfile",
+                "language"
+            ]
+        },
+        "ACTIVATE_RULE": {
+            "method": "POST",
+            "api": "api/qualityprofiles/activate_rule",
+            "params": [
+                "key",
+                "rule",
+                "prioritizedRule",
+                "severity",
+                "impacts",
+                "params"
+            ]
+        },
+        "DEACTIVATE_RULE": {
+            "method": "POST",
+            "api": "api/qualityprofiles/deactivate_rule",
+            "params": [
+                "key",
+                "rule"
+            ]
+        },
+        "COMPARE": {
+            "method": "GET",
+            "api": "api/qualityprofiles/compare",
+            "params": [
+                "leftKey",
+                "rightKey"
+            ]
+        },
+        "GET_PROJECTS": {
+            "method": "GET",
+            "api": "api/qualityprofiles/projects",
+            "params": [
+                "key",
+                "p",
+                "ps"
+            ],
+            "return_field": "results",
+            "page_field": "p",
+            "max_page_size": 500
+        }
+    },
+    "Rule": {
+        "CREATE": {
+            "method": "POST",
+            "api": "api/rules/create",
+            "params": [
+                "customKey",
+                "templateKey",
+                "name",
+                "severity",
+                "impacts",
+                "params",
+                "markdownDescription",
+                "cleanCodeAttribute",
+                "status",
+                "type"
+            ]
+        },
+        "GET": {
+            "method": "GET",
+            "api": "api/rules/show",
+            "params": [
+                "key",
+                "actives"
+            ],
+            "return_field": "rule"
+        },
+        "UPDATE": {
+            "method": "POST",
+            "api": "api/rules/update",
+            "params": [
+                "key",
+                "impacts",
+                "markdownDescription",
+                "markdown_note",
+                "name",
+                "params",
+                "remediation_fn_base_effort",
+                "remediation_fn_type",
+                "remediation_fn_gap_multiplier",
+                "severity",
+                "status",
+                "tags"
+            ]
+        },
+        "DELETE": {
+            "method": "POST",
+            "api": "api/rules/delete",
+            "params": [
+                "key"
+            ]
+        },
+        "GET_TAGS": {
+            "method": "GET",
+            "api": "api/rules/tags",
+            "params": [
+                "ps",
+                "q"
+            ],
+            "page_field": "p",
+            "max_page_size": 500
+        },
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/rules/search",
+            "params": [
+                "activation",
+                "active_impactSeverities",
+                "active_severities",
+                "asc",
+                "available_since",
+                "cleanCodeAttributeCategories",
+                "complianceStandards",
+                "cwe",
+                "f",
+                "facets",
+                "impactSeverities",
+                "impactSoftwareQualities",
+                "include_external",
+                "inheritance",
+                "is_template",
+                "languages",
+                "owaspMobileTop10-2024",
+                "owaspTop10",
+                "owaspTop10-2021",
+                "p",
+                "prioritizedRule",
+                "ps",
+                "q",
+                "qprofile",
+                "repositories",
+                "rule_key",
+                "s",
+                "severities",
+                "sonarsourceSecurity",
+                "statuses",
+                "tags",
+                "template_key",
+                "types"
+            ],
+            "return_field": "rules",
+            "page_field": "p",
+            "max_page_size": 500
+        }
+    },
+    "Setting": {
+        "CREATE": {
+            "method": "POST",
+            "api": "api/settings/set",
+            "params": [
+                "key",
+                "value",
+                "values",
+                "fieldValues",
+                "component",
+                "project"
+            ]
+        },
+        "GET": {
+            "method": "GET",
+            "api": "api/settings/values",
+            "params": [
+                "keys",
+                "component",
+                "branch"
+            ]
+        },
+        "UPDATE": {
+            "method": "POST",
+            "api": "api/settings/set",
+            "params": [
+                "key",
+                "value",
+                "values",
+                "fieldValues",
+                "component",
+                "project"
+            ]
+        },
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/settings/values",
+            "params": [
+                "keys",
+                "component",
+                "branch"
+            ]
+        },
+        "LIST_DEFINITIONS": {
+            "method": "GET",
+            "api": "api/settings/list_definitions",
+            "return_field": "definitions"
+        },
+        "GET_NEW_CODE_PERIOD": {
+            "method": "GET",
+            "api": "api/new_code_periods/show",
+            "params": [
+                "project",
+                "branch"
+            ]
+        },
+        "SET_NEW_CODE_PERIOD": {
+            "method": "POST",
+            "api": "api/new_code_periods/set",
+            "params": [
+                "type",
+                "value",
+                "project",
+                "branch"
+            ]
+        },
+        "GET_MQR_MODE": {
+            "method": "GET",
+            "api": "api/v2/clean-code-policy/mode"
+        },
+        "SET_MQR_MODE": {
+            "method": "PATCH",
+            "api": "api/v2/clean-code-policy/mode",
+            "params": [
+                "mode"
+            ]
+        },
+        "RESET": {
+            "method": "POST",
+            "api": "api/settings/reset",
+            "params": [
+                "keys",
+                "component"
+            ]
+        }
+    },
+    "Branch": {
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/project_branches/list",
+            "params": [
+                "project"
+            ],
+            "return_field": "branches"
+        },
+        "DELETE": {
+            "method": "POST",
+            "api": "api/project_branches/delete",
+            "params": [
+                "project",
+                "branch"
+            ]
+        },
+        "RENAME": {
+            "method": "POST",
+            "api": "api/project_branches/rename",
+            "params": [
+                "project",
+                "name"
+            ]
+        },
+        "LIST_NEW_CODE_PERIODS": {
+            "method": "GET",
+            "api": "api/new_code_periods/list",
+            "params": [
+                "project"
+            ],
+            "return_field": "newCodePeriods"
+        },
+        "KEEP_WHEN_INACTIVE": {
+            "method": "POST",
+            "api": "api/project_branches/set_automatic_deletion_protection",
+            "params": [
+                "project",
+                "branch",
+                "value"
+            ]
+        },
+        "SET_MAIN": {
+            "method": "POST",
+            "api": "api/project_branches/set_main",
+            "params": [
+                "project",
+                "branch"
+            ]
+        }
+    },
+    "Project": {
+        "CREATE": {
+            "method": "POST",
+            "api": "api/projects/create",
+            "params": [
+                "project",
+                "name"
+            ]
+        },
+        "GET": {
+            "method": "GET",
+            "api": "api/components/show",
+            "params": [
+                "component"
+            ],
+            "return_field": "component"
+        },
+        "DELETE": {
+            "method": "POST",
+            "api": "api/projects/delete",
+            "params": [
+                "project"
+            ]
+        },
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/components/search_projects",
+            "params": [
+                "filter",
+                "q",
+                "qualifiers"
+            ],
+            "return_field": "components"
+        },
+        "SET_TAGS": {
+            "method": "POST",
+            "api": "api/project_tags/set",
+            "params": [
+                "project",
+                "tags"
+            ]
+        },
+        "GET_TAGS": {
+            "method": "GET",
+            "api": "api/components/show",
+            "params": [
+                "component"
+            ]
+        },
+        "EXPORT_FINDINGS": {
+            "method": "GET",
+            "api": "api/projects/export_findings",
+            "params": [
+                "project",
+                "branch",
+                "pullRequest"
+            ],
+            "return_field": "export_findings"
+        }
+    },
+    "Organization": {
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/organizations/search",
+            "params": [
+                "member",
+                "organizations"
+            ],
+            "return_field": "organizations",
+            "page_field": "p",
+            "max_page_size": 500
+        }
+    }
+}

@@ -153,7 +153,7 @@ class Portfolio(aggregations.Aggregation):
         params = {"name": name, "key": key, "parent": parent_key}
         for p in "description", "visibility":
             params[p] = kwargs.get(p, None)
-        api, _, api_params, _ = Api(cls, Oper.CREATE, endpoint).get_all(**params)
+        api, _, api_params, _ = endpoint.api.get_details(cls, Oper.CREATE, **params)
         endpoint.post(api, params=api_params)
         o = cls(endpoint=endpoint, name=name, key=key)
         if parent_key:
@@ -236,7 +236,7 @@ class Portfolio(aggregations.Aggregation):
         if not self.is_toplevel():
             self.root_portfolio.refresh()
             return self
-        api, _, params, _ = Api(self, Oper.GET).get_all(key=self.key)
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.GET, key=self.key)
         data = json.loads(self.get(api, params=params).text)
         if not self.is_sub_portfolio():
             self.reload(data)
@@ -424,7 +424,7 @@ class Portfolio(aggregations.Aggregation):
         """Returns a portfolio selection mode"""
         if self._selection_mode is None:
             # FIXME: If portfolio is a subportfolio you must reload with sub-JSON
-            api, _, params, _ = Api(self, Oper.GET).get_all(key=self.root_portfolio.key)
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.GET, key=self.root_portfolio.key)
             self.reload(json.loads(self.get(api, params=params).text))
         return {k.lower(): v for k, v in self._selection_mode.items()}
 
@@ -521,14 +521,14 @@ class Portfolio(aggregations.Aggregation):
 
     def set_description(self, desc: str) -> Portfolio:
         if desc:
-            api, _, params, _ = Api(self, Oper.UPDATE).get_all(key=self.key, name=self.name, description=desc)
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, key=self.key, name=self.name, description=desc)
             self.post(api, params=params)
             self._description = desc
         return self
 
     def set_name(self, name: str) -> Portfolio:
         if name:
-            api, _, params, _ = Api(self, Oper.UPDATE).get_all(key=self.key, name=name)
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, key=self.key, name=name)
             self.post(api, params=params)
             self.name = name
         return self
@@ -591,7 +591,7 @@ class Portfolio(aggregations.Aggregation):
         """Triggers portfolio recomputation, return whether operation REQUEST succeeded"""
         log.debug("Recomputing %s", str(self))
         params = self.root_portfolio.api_params() if self.root_portfolio else self.api_params()
-        api, _, api_params, _ = Api(self, Oper.RECOMPUTE).get_all(**params)
+        api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.RECOMPUTE, **params)
         return self.post(api, params=api_params).ok
 
     def delete(self) -> bool:
@@ -688,7 +688,7 @@ class Portfolio(aggregations.Aggregation):
 
 def count(endpoint: Platform) -> int:
     """Counts number of portfolios"""
-    api, _, _, _ = Api(Portfolio, Oper.SEARCH, endpoint).get_all()
+    api, _, _, _ = endpoint.api.get_details(Portfolio, Oper.SEARCH)
     return aggregations.count(api=api, endpoint=endpoint)
 
 
@@ -762,13 +762,13 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
 
 def search_by_name(endpoint: Platform, name: str) -> ApiPayload:
     """Searches portfolio by name and, if found, returns data as JSON"""
-    api, _, _, _ = Api(Portfolio, Oper.SEARCH, endpoint).get_all()
+    api, _, _, _ = endpoint.api.get_details(Portfolio, Oper.SEARCH)
     return sutil.search_by_name(endpoint, name, api, "components")
 
 
 def search_by_key(endpoint: Platform, key: str) -> ApiPayload:
     """Searches portfolio by key and, if found, returns data as JSON"""
-    api, _, _, _ = Api(Portfolio, Oper.SEARCH, endpoint).get_all()
+    api, _, _, _ = endpoint.api.get_details(Portfolio, Oper.SEARCH)
     return sutil.search_by_key(endpoint, key, api, "components")
 
 
@@ -811,7 +811,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
 
 def recompute(endpoint: Platform) -> None:
     """Triggers recomputation of all portfolios"""
-    api, _, params, _ = Api(Portfolio, Oper.RECOMPUTE, endpoint).get_all()
+    api, _, params, _ = endpoint.api.get_details(Portfolio, Oper.RECOMPUTE)
     endpoint.post(api, params=params)
 
 

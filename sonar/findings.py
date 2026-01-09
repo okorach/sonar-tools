@@ -175,7 +175,7 @@ class Finding(SqObject):
     def search_one_page(cls, endpoint: Platform, **search_params: Any) -> tuple[dict[str, Union[Issue, Hotspot]], dict[str, Any]]:
         """Search one page of hotspots findings"""
         search_params = cls.sanitize_search_params(endpoint, **search_params)
-        api, _, api_params, ret = Api(cls, Oper.SEARCH, endpoint).get_all(**search_params)
+        api, _, api_params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
         dataset = json.loads(endpoint.get(api, params=api_params).text)
         findings_d = cls.post_search_filters(cls.json_to_objects(endpoint, dataset[ret], **search_params), **search_params)
         return findings_d, dataset
@@ -368,7 +368,7 @@ class Finding(SqObject):
             else:
                 log.debug("Assigning %s to '%s'", self, assignee)
             params = {"hotspot": self.key, "issue": self.key, "assignee": assignee}
-            api, _, api_params, _ = Api(self, Oper.ASSIGN).get_all(**params)
+            api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.ASSIGN, **params)
             if ok := self.post(api, params=api_params).ok:
                 self.assignee = assignee
         except exceptions.SonarException:
@@ -524,7 +524,7 @@ class Finding(SqObject):
 
     def do_transition(self, transition: str) -> bool:
         try:
-            api, _, params, _ = Api(self, Oper.DO_TRANSITION).get_all(issue=self.key, transition=transition)
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.DO_TRANSITION, issue=self.key, transition=transition)
             return self.post(api, params=params).ok
         except exceptions.SonarException as e:
             if re.match(r"Transition from state [A-Za-z]+ does not exist", e.message):

@@ -23,14 +23,16 @@
 from __future__ import annotations
 from typing import Any, Optional, ClassVar, TYPE_CHECKING
 
+import os
 from enum import Enum
 from pathlib import Path
 import json
 from collections import defaultdict
 import inspect
 
-from sonar.util import misc
+import sonar.utilities as sutil
 import sonar.logging as log
+from sonar.util import misc
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -102,64 +104,84 @@ class ApiManager:
     __MAX_PAGE_SIZE_KEY = "max_page_size"
     __DEFAULT_MAX_PAGE_SIZE = 500
 
-    API_DEFINITION: ClassVar[dict[str, dict[str, Any]]] = {}
+    SQS_API: ClassVar[dict[str, Any]] = {}
+    SQC_API: ClassVar[dict[str, Any]] = {}
 
-    def __init__(self, object_or_class: object, op: ApiOperation, endpoint: Optional[Platform] = None) -> None:
+    def __init__(self, endpoint: Platform) -> None:
         """Constructor"""
         self.endpoint: Platform = endpoint
-        self.api_class: object = object_or_class
+        if self.endpoint.is_sonarcloud():
+            data = self.__class__.SQC_API
+        else:
+            api_versions = sorted([tuple(int(s) for s in v.split(".")) for v in self.__class__.SQS_API.keys()], reverse=True)
+            api_version_to_use = sutil.version_to_string(next(v for v in api_versions if self.endpoint.version() >= v))
+            data = self.__class__.SQS_API[api_version_to_use]
+        self.api_def = data
+        log.debug("%s API definition: %s", endpoint, misc.json_dump(data))
+
+    def get_api_entry(self, object_or_class: object, operation: ApiOperation) -> dict[str, Any]:
+        """Returns the specific API entry details for the API call"""
         if not inspect.isclass(object_or_class):
-            self.api_class = object_or_class.__class__
-            self.endpoint = object_or_class.endpoint
-        self.class_name = self.api_class.__name__
-        if self.class_name not in self.__class__.API_DEFINITION:
-            raise ValueError(f"API class {self.class_name} not found in API definitions")
-        self.version = self.endpoint.version()
-        data = next(
-            v
-            for k, v in self.__class__.API_DEFINITION[self.class_name].items()
-            if self.version is None or self.version >= tuple(int(s) for s in k.split("."))
-        )
-        if op.value not in data:
-            raise ValueError(f"Operation {op.value} not found in API definitions for {self.class_name}")
-        self.api_def = data[op.value]
+            object_or_class = object_or_class.__class__
+        class_name = object_or_class.__name__
+        if class_name not in self.api_def:
+            raise ValueError(f"API for {class_name} in version {self.endpoint.version()} not found in API definition")
+        if operation.value not in self.api_def[class_name]:
+            raise ValueError(f"Operation {operation.value} not found in API definition for {class_name}")
+        return self.api_def[class_name][operation.value]
 
-    def api(self, **kwargs: Any) -> str:
+    def api(self, object_or_class: object, operation: ApiOperation, **kwargs: Any) -> str:
         """Returns the API string for the API call"""
-        return self.api_def["api"].format(**kwargs)
+        return self.get_api_entry(object_or_class, operation)["api"].format(**kwargs)
 
-    def method(self) -> str:
+    def method(self, object_or_class: object, operation: ApiOperation) -> str:
         """Returns the method for the API call"""
-        return self.api_def["method"]
+        return self.get_api_entry(object_or_class, operation)["method"]
 
-    def return_field(self) -> Optional[str]:
+    def return_field(self, object_or_class: object, operation: ApiOperation) -> Optional[str]:
         """Returns the return field for the API call"""
-        return self.api_def.get(ApiManager.__RETURN_FIELD_KEY)
+        return self.get_api_entry(object_or_class, operation).get(ApiManager.__RETURN_FIELD_KEY)
 
-    def max_page_size(self) -> int:
+    def max_page_size(self, object_or_class: object, operation: ApiOperation) -> int:
         """Returns the maximum page size for the API call"""
-        return self.api_def.get(ApiManager.__MAX_PAGE_SIZE_KEY, ApiManager.__DEFAULT_MAX_PAGE_SIZE)
+        return self.get_api_entry(object_or_class, operation).get(ApiManager.__MAX_PAGE_SIZE_KEY, ApiManager.__DEFAULT_MAX_PAGE_SIZE)
 
-    def page_field(self) -> str:
+    def page_field(self, object_or_class: object, operation: ApiOperation) -> str:
         """Returns the page field for the API call"""
-        return self.api_def.get(ApiManager.__PAGE_FIELD_KEY, "p")
+        return self.get_api_entry(object_or_class, operation).get(ApiManager.__PAGE_FIELD_KEY, "p")
 
-    def params(self, **kwargs: Any) -> dict[str, Any]:
+    def params(self, object_or_class: object, operation: ApiOperation, **kwargs: Any) -> dict[str, Any]:
         """Returns the parameters for the API call, removes any params not part of the API endpoint"""
-        params = self.api_def.get("params", {})
+        params = self.get_api_entry(object_or_class, operation).get("params", {})
         if isinstance(params, list):
-            params = {p: "{" + p + "}" for p in self.api_def.get("params", [])}
+            params = {p: "{" + p + "}" for p in params}
         return {k: v.format_map(defaultdict(str, **kwargs)) for k, v in params.items() if kwargs.get(k) is not None}
 
     def get_all(self, **kwargs: Any) -> tuple[str, str, dict[str, Any], Optional[str]]:
         """Returns the API call, method, parameters and return field"""
         return self.api(**kwargs), self.method(), self.params(**kwargs), self.return_field()
 
+    def get_details(self, object_or_class: object, operation: ApiOperation, **kwargs: Any) -> tuple[str, str, dict[str, Any], Optional[str]]:
+        """Returns the details for the API call"""
+        return (
+            self.api(object_or_class, operation, **kwargs),
+            self.method(object_or_class, operation),
+            self.params(object_or_class, operation, **kwargs),
+            self.return_field(object_or_class, operation),
+        )
+
     @classmethod
-    def load(cls) -> dict[str, Any]:
+    def load(cls) -> None:
         """Loads the API definitions"""
-        with misc.open_file(Path(__file__).parent / "api.json", "r") as f:
-            api_data = json.load(f)
-        log.debug("API data: %s", misc.json_dump(api_data))
-        cls.API_DEFINITION = api_data
-        return api_data
+        # Get the list of all files and directories
+        api_files = [f for f in os.listdir(Path(__file__).parent) if f.endswith(".json")]
+        for api_file in api_files:
+            with open(Path(__file__).parent / api_file, "r") as f:
+                api_data = json.load(f)
+            basename = api_file.split(os.sep)[-1]
+            if "cloud" in basename:
+                cls.SQC_API = api_data
+            else:
+                version = ".".join(basename.split(".")[:-1])
+                cls.SQS_API[version] = api_data
+        log.debug("API definitions: SQS %s, SQC %s", misc.json_dump(cls.SQS_API), misc.json_dump(cls.SQC_API))

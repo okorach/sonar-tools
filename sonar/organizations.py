@@ -94,7 +94,7 @@ class Organization(SqObject):
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         if o := Organization.CACHE.get(key, endpoint.local_url):
             return o
-        api, _, params, ret = Api(cls, Oper.SEARCH, endpoint).get_all(organizations=key)
+        api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, organizations=key)
         data = json.loads(endpoint.get(api, params=params).text)
         if len(data[ret]) == 0:
             raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")

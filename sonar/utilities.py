@@ -372,7 +372,7 @@ def string_to_version(sif_v: Optional[str], digits: int = 3) -> Optional[tuple[i
         return None
 
 
-def version_to_string(vers: tuple[int, int, int]) -> str:
+def version_to_string(vers: tuple[int, ...]) -> str:
     """Converts a version tuple to string"""
     return ".".join([str(n) for n in vers])
 
