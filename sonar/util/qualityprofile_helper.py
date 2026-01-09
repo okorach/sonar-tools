@@ -58,6 +58,19 @@ def flatten(qp_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
         flat_list += flatten_language(lang_data["language"], lang_data["profiles"])
     return flat_list
 
+def __convert_rule_json(rule_json: dict[str, Any]) -> dict[str, Any]:
+    """Converts a rule JSON from old to new export format"""
+    if "severities" in rule_json:
+        rule_json["impacts"] = rule_json.pop("severities")
+    if "severity" in rule_json:
+        rule_json["severity"] = rule_json["severity"].lower()
+    if "impacts" in rule_json:
+        rule_json["impacts"] = {
+            k.lower(): rule_json["impacts"][k].lower() for k in idefs.MQR_QUALITIES if k in rule_json["impacts"] and rule_json["impacts"][k] != c.DEFAULT
+        }
+    if "params" in rule_json:
+        rule_json["params"] = util.dict_to_list(dict(sorted(rule_json["params"].items())), "key")
+    return rule_json
 
 def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
     """Converts a profile's children profiles to list"""
@@ -72,21 +85,11 @@ def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
             r.pop("params", None)
         for rtype in "addedRules", "modifiedRules", "rules":
             for r in v.get(rtype, {}):
-                if "severities" in r:
-                    r["impacts"] = r.pop("severities")
-                if "severity" in r:
-                    r["severity"] = r["severity"].lower()
-                if "impacts" in r:
-                    r["impacts"] = {
-                        k.lower(): r["impacts"][k].lower() for k in idefs.MQR_QUALITIES if k in r["impacts"] and r["impacts"][k] != c.DEFAULT
-                    }
-                if "params" in r:
-                    r["params"] = util.dict_to_list(dict(sorted(r["params"].items())), "key")
+                r = __convert_rule_json(r)
         if "removedRules" in v:
             v["removedRules"] = list(v["removedRules"])
-        for rule in v.get("rules", []):
-            if "params" in rule:
-                rule["params"] = util.dict_to_list(rule["params"], "key")
+        for rule in [r for r in v.get("rules", []) if "params" in r]:
+            rule["params"] = util.dict_to_list(rule["params"], "key")
         if "children" in v:
             v["children"] = __convert_qp_json(v["children"])
         qp_json[k] = util.order_keys(common_json_helper.convert_common_fields(v, with_permissions=False), *KEY_ORDER)
