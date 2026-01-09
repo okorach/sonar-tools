@@ -34,7 +34,6 @@ import sonar.logging as log
 from sonar.util import cache
 
 from sonar.api.manager import ApiOperation as Oper
-from sonar.api.manager import ApiManager as Api
 from sonar import exceptions, projects, branches, app_branches
 from sonar.permissions import application_permissions
 import sonar.aggregations as aggr
@@ -46,7 +45,6 @@ from sonar.util import common_json_helper
 
 
 if TYPE_CHECKING:
-    from sonar.hotspots import Hotspot
     from sonar.issues import Issue
     from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, AppBranchDef, PermissionDef, AppBranchProjectDef
@@ -71,7 +69,8 @@ class Application(aggr.Aggregation):
         self._description: Optional[str] = None
         self.name = name
         log.debug("Constructed object %s with uuid %d id %x", str(self), hash(self), id(self))
-        Application.CACHE.put(self)
+        with _CLASS_LOCK:
+            Application.CACHE.put(self)
 
     def __str__(self) -> str:
         """String name of object"""
@@ -140,22 +139,6 @@ class Application(aggr.Aggregation):
         """
         check_supported(endpoint)
         return cls.get_paginated(endpoint=endpoint, params=search_params | {"filter": "qualifier = APP"})
-
-    @classmethod
-    def get_list(cls, endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Application]:
-        """
-        :return: List of Applications (all of them if key_list is None or empty)
-        :param endpoint: Reference to the Sonar platform
-        :param key_list: List of app keys to get, if None or empty all applications are returned
-        :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-        """
-        check_supported(endpoint)
-        with _CLASS_LOCK:
-            if key_list is None or len(key_list) == 0 or not use_cache:
-                log.info("Listing applications")
-                return dict(sorted(cls.search(endpoint=endpoint).items()))
-            object_list = {key: cls.get_object(endpoint, key) for key in sorted(key_list)}
-        return object_list
 
     def refresh(self) -> Application:
         """Refreshes the application by re-reading SonarQube
