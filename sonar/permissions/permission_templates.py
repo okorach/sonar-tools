@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube permission template concept"""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 import json
 import re
@@ -36,15 +36,15 @@ import sonar.audit.problem as pb
 import sonar.util.constants as c
 import sonar.util.misc as util
 import sonar.utilities as sutil
+from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, ObjectJsonRepr, PermissionDef
+    from sonar.util.types import ApiPayload, ConfigSettings, ObjectJsonRepr, PermissionDef
 
 _MAP = {}
 _DEFAULT_TEMPLATES = {}
 _QUALIFIER_REVERSE_MAP = {"projects": "TRK", "applications": "APP", "portfolios": "VW"}
-_SEARCH_API = "permissions/search_templates"
 _CREATE_API = "permissions/create_template"
 _UPDATE_API = "permissions/update_template"
 
@@ -96,12 +96,13 @@ class PermissionTemplate(sqobject.SqObject):
         return hash((self.name.lower(), self.base_url()))
 
     @classmethod
-    def search(cls, endpoint: Platform, params: ApiParams = None) -> dict[str, PermissionTemplate]:
+    def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, PermissionTemplate]:
         """Searches permissions templates"""
-        log.debug("Searching all permission templates")
+        log.info("Searching all permission templates")
         objects_list = {}
-        data = json.loads(endpoint.get(_SEARCH_API, params=params).text)
-        for obj in data["permissionTemplates"]:
+        api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
+        data = json.loads(endpoint.get(api, params=params).text)
+        for obj in data[ret]:
             o = cls(name=obj["name"], endpoint=endpoint, data=obj)
             objects_list[o.key] = o
         _load_default_templates(endpoint=endpoint, data=data)
@@ -259,13 +260,15 @@ def create(endpoint: Platform, name: str, create_data: ObjectJsonRepr = None) ->
 
 def search_by_name(endpoint: Platform, name: str) -> ApiPayload:
     """Searches permissions templates by name"""
-    return sutil.search_by_name(endpoint=endpoint, name=name, api=_SEARCH_API, returned_field="permissionTemplates")
+    api, _, _, ret = endpoint.api.get_details(PermissionTemplate, Oper.SEARCH)
+    return sutil.search_by_name(endpoint=endpoint, name=name, api=api, returned_field=ret)
 
 
 def _load_default_templates(endpoint: Platform, data: ApiPayload = None) -> None:
     """Loads default templates"""
     if data is None:
-        data = json.loads(endpoint.get(_SEARCH_API).text)
+        api, _, params, _ = endpoint.api.get_details(PermissionTemplate, Oper.SEARCH)
+        data = json.loads(endpoint.get(api, params=params).text)
     for d in data["defaultTemplates"]:
         _DEFAULT_TEMPLATES[d["qualifier"]] = d["templateId"]
 
