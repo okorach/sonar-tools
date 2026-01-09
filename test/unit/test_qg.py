@@ -31,13 +31,10 @@ from sonar.util import constants as c
 def test_get_object(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
     qg = get_loaded_qg
-    assert qg.name == tutil.TEMP_KEY
-    assert str(qg) == f"quality gate '{tutil.TEMP_KEY}'"
-    if tutil.SQ.version() < (10, 0, 0):
-        assert qg.url() == f"{tutil.SQ.external_url}/quality_gates/show/{qg.key}"
-    else:
-        assert qg.url() == f"{tutil.SQ.external_url}/quality_gates/show/{tutil.TEMP_KEY}"
-    qg2 = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
+    assert qg.name.startswith(f"{tutil.TEMP_KEY}-qualitygate")
+    assert str(qg) == f"quality gate '{qg.name}'"
+    assert qg.url() == f"{tutil.SQ.external_url}/quality_gates/show/{qg.key}"
+    qg2 = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=qg.name)
     assert qg.projects() == {}
     assert qg2 is qg
 
@@ -52,8 +49,8 @@ def test_get_object_non_existing() -> None:
 
 def test_exists(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """Test exist"""
-    _ = get_loaded_qg
-    assert qualitygates.QualityGate.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
+    qg = get_loaded_qg
+    assert qualitygates.QualityGate.exists(endpoint=tutil.SQ, name=qg.name)
     assert not qualitygates.QualityGate.exists(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY)
 
 
@@ -69,9 +66,9 @@ def test_create_delete(get_loaded_qg: Generator[qualitygates.QualityGate]) -> No
     assert qp is not None
 
     with pytest.raises(exceptions.ObjectAlreadyExists):
-        qualitygates.QualityGate.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
+        qualitygates.QualityGate.create(endpoint=tutil.SQ, name=qp.name)
     qp.delete()
-    assert not qualitygates.QualityGate.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
+    assert not qualitygates.QualityGate.exists(endpoint=tutil.SQ, name=qp.name)
 
 
 def test_set_conditions(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:

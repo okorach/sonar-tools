@@ -128,7 +128,7 @@ def get_test_app() -> Generator[applications.Application]:
 @pytest.fixture
 def get_test_portfolio() -> Generator[Union[portfolios.Portfolio, None]]:
     """setup of tests"""
-    key = f"portfolio-{tutil.TEMP_KEY}-portfolio-{os.getpid()}"
+    key = f"{tutil.TEMP_KEY}-portfolio-{os.getpid()}"
     o = None
     if tutil.SQ.edition() in (c.EE, c.DCE):
         o = create_test_object(portfolios.Portfolio, key=key)

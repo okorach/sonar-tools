@@ -32,9 +32,9 @@ import sonar.util.qualityprofile_helper as qhelp
 def test_get_object(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
     qp: qualityprofiles.QualityProfile = get_test_qp
-    assert qp.name == tutil.TEMP_KEY
+    assert qp.name.startswith(f"{tutil.TEMP_KEY}-qualityprofile")
     assert qp.language == "py"
-    qp2 = qualityprofiles.QualityProfile.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+    qp2 = qualityprofiles.QualityProfile.get_object(endpoint=tutil.SQ, name=qp.name, language="py")
     assert qp2 is qp
 
 
@@ -48,8 +48,8 @@ def test_get_object_non_existing() -> None:
 
 def test_exists(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """Test exist"""
-    _ = get_test_qp
-    assert qualityprofiles.QualityProfile.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+    qp = get_test_qp
+    assert qualityprofiles.QualityProfile.exists(endpoint=tutil.SQ, name=qp.name, language="py")
     assert not qualityprofiles.QualityProfile.exists(endpoint=tutil.SQ, name="NON_EXISTING", language="py")
 
 
@@ -64,12 +64,12 @@ def test_create_delete(get_test_qp: Generator[qualityprofiles.QualityProfile]) -
     qp: qualityprofiles.QualityProfile = get_test_qp
     assert qp is not None
 
-    assert qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="non-existing") is None
+    assert qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=qp.name, language="non-existing") is None
 
     with pytest.raises(exceptions.ObjectAlreadyExists):
-        qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+        qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=qp.name, language="py")
     qp.delete()
-    assert not qualityprofiles.QualityProfile.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+    assert not qualityprofiles.QualityProfile.exists(endpoint=tutil.SQ, name=qp.name, language="py")
 
 
 def test_inheritance(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
@@ -96,11 +96,11 @@ def test_inheritance(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> 
 def test_read(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """test_read"""
     qp: qualityprofiles.QualityProfile = get_test_qp
-    assert qp.url() == f"{tutil.SQ.external_url}/profiles/show?language=py&name={tutil.TEMP_KEY}"
-    new_qp = qualityprofiles.QualityProfile.read(tutil.SQ, tutil.TEMP_KEY, "py")
+    assert qp.url() == f"{tutil.SQ.external_url}/profiles/show?language=py&name={qp.name}"
+    new_qp = qualityprofiles.QualityProfile.read(tutil.SQ, qp.name, "py")
     assert qp is new_qp
 
-    assert qualityprofiles.QualityProfile.read(tutil.SQ, tutil.TEMP_KEY, "non-existing") is None
+    assert qualityprofiles.QualityProfile.read(tutil.SQ, qp.name, "non-existing") is None
 
 
 def test_set_default(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
