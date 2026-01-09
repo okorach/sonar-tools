@@ -44,13 +44,11 @@ from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 
 if TYPE_CHECKING:
+    from sonar.projects import Project
     from sonar.platform import Platform
     from sonar.hotspots import Hotspot
     from sonar.issues import Issue
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList
-
-# Character forbidden in keys that can be used to separate a key from a post fix
-KEY_SEPARATOR = " "
 
 
 class Component(SqObject):
@@ -88,6 +86,10 @@ class Component(SqObject):
             self._last_analysis = sutil.string_to_date(data["analysisDate"])
         return self
 
+    def project(self) -> Project:
+        """Implemented in relevant subclasses (Project, Branch, PullRequest)"""
+        raise NotImplementedError
+    
     def get_subcomponents(self, strategy: str = "children", with_issues: bool = False) -> dict[str, Component]:
         """Returns component subcomponents"""
         parms = {
