@@ -943,18 +943,10 @@
             "api": "api/qualityprofiles/search",
             "params": [
                 "q",
-                "language"
-            ],
-            "return_field": "profiles",
-            "page_field": "p",
-            "max_page_size": 500
-        },
-        "SEARCH": {
-            "method": "GET",
-            "api": "api/qualityprofiles/search",
-            "params": [
-                "q",
-                "language"
+                "language",
+                "defaults",
+                "project",
+                "qualityProfile"
             ],
             "return_field": "profiles",
             "page_field": "p",
