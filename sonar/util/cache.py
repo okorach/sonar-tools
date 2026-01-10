@@ -22,7 +22,6 @@
 
 from __future__ import annotations
 from typing import Optional, Any, TYPE_CHECKING
-from sonar import logging as log
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -57,9 +56,6 @@ class Cache(object):
         h = hash(obj)
         if h not in self.objects:
             self.objects[h] = obj
-        else:
-            log.debug("%s already in cache, can't be added again", obj)
-        # log.debug("PUT %s: %s", self, self.contents())
         return self.objects[h]
 
     def get(self, *args) -> Optional[object]:
