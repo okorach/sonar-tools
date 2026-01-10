@@ -27,6 +27,7 @@ from threading import Lock
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
+    from sonar.sqobject import SqObject
 
 
 class Cache(object):
@@ -34,7 +35,7 @@ class Cache(object):
 
     def __init__(self) -> None:
         """Constructor"""
-        self.objects: dict[int, Any] = {}
+        self.objects: dict[int, SqObject] = {}
         self.object_class: Optional[Any] = None
         self.lock = Lock()
 
@@ -54,7 +55,7 @@ class Cache(object):
         """Returns the cache contents as a string"""
         return ", ".join([str(o) for o in self.objects.values()])
 
-    def put(self, obj: object) -> object:
+    def put(self, obj: SqObject) -> SqObject:
         """Add an object in cache if not already present"""
         with self.lock:
             h = hash(obj)
@@ -62,29 +63,34 @@ class Cache(object):
                 self.objects[h] = obj
         return self.objects[h]
 
-    def get(self, *args) -> Optional[object]:
+    def get(self, *args) -> Optional[SqObject]:
         # log.debug("GET %s: %s", self, self.contents())
         return self.objects.get(hash(args), None)
 
-    def pop(self, obj: object) -> Optional[object]:
+    def pop(self, obj: object) -> Optional[SqObject]:
         with self.lock:
             o = self.objects.pop(hash(obj), None)
         return o
 
-    def values(self) -> list[object]:
+    def values(self) -> list[SqObject]:
         return list(self.objects.values())
 
-    def keys(self) -> list[int]:
+    def keys(self) -> list[str]:
         return list(self.objects.keys())
 
-    def items(self) -> dict[int, Any]:
+    def items(self) -> dict[int, SqObject]:
         return self.objects.items()
 
-    def clear(self) -> None:
+    def clear(self, endpoint: Optional[Platform]) -> None:
         """Clears a cache"""
         # log.info("Clearing %s", self)
         with self.lock:
-            self.objects = {}
+            if endpoint:
+                for hash, object in self.objects.copy().items():
+                    if object.endpoint is endpoint:
+                        self.objects.pop(hash)
+            else:
+                self.objects = {}
 
-    def from_platform(self, endpoint: Platform) -> dict[str, Any]:
+    def from_platform(self, endpoint: Platform) -> dict[str, SqObject]:
         return {o.key: o for o in self.objects.values() if o.endpoint is endpoint}
