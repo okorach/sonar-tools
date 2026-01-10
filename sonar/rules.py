@@ -313,7 +313,8 @@ class Rule(SqObject):
         if use_cache and len(search_params) == 0 and len(cls.CACHE.objects) > 1000:
             return cls.CACHE.from_platform(endpoint)
         rule_list = {}
-        lang_list = util.csv_to_list(search_params.pop("languages", None)) or languages.Language.search(endpoint).keys()
+        langs = search_params.pop("languages", None)
+        lang_list = util.csv_to_list(langs) if langs else languages.Language.search(endpoint).keys()
         inc = search_params.pop("include_external", False)
         include_external_list = [str(inc).lower()] if inc else ["false", "true"]
         for lang_key in lang_list:
