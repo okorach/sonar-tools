@@ -159,16 +159,6 @@ class User(SqObject):
         data = json.loads(endpoint.get(api, params=params, mute=()).text)
         return cls.load(endpoint, data)
 
-    @classmethod
-    def get_list(cls, endpoint: Platform) -> dict[str, User]:
-        """Returns the list of users
-
-        :params Platform endpoint: Reference to the SonarQube platform
-        :return: The list of users
-        """
-        log.info("Listing users")
-        return cls.search(endpoint)
-
     def reload(self, data: ApiPayload) -> User:
         """Reloads a User object from SonarQube API payload
 
