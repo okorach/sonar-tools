@@ -23,6 +23,8 @@
 from __future__ import annotations
 from typing import Optional, Any, TYPE_CHECKING
 
+from threading import Lock
+
 if TYPE_CHECKING:
     from sonar.platform import Platform
 
@@ -34,6 +36,7 @@ class Cache(object):
         """Constructor"""
         self.objects: dict[int, Any] = {}
         self.object_class: Optional[Any] = None
+        self.lock = Lock()
 
     def __len__(self) -> int:
         """Returns size of cache"""
@@ -53,9 +56,10 @@ class Cache(object):
 
     def put(self, obj: object) -> object:
         """Add an object in cache if not already present"""
-        h = hash(obj)
-        if h not in self.objects:
-            self.objects[h] = obj
+        with self.lock:
+            h = hash(obj)
+            if h not in self.objects:
+                self.objects[h] = obj
         return self.objects[h]
 
     def get(self, *args) -> Optional[object]:
@@ -63,7 +67,8 @@ class Cache(object):
         return self.objects.get(hash(args), None)
 
     def pop(self, obj: object) -> Optional[object]:
-        o = self.objects.pop(hash(obj), None)
+        with self.lock:
+            o = self.objects.pop(hash(obj), None)
         return o
 
     def values(self) -> list[object]:
@@ -78,7 +83,8 @@ class Cache(object):
     def clear(self) -> None:
         """Clears a cache"""
         # log.info("Clearing %s", self)
-        self.objects = {}
+        with self.lock:
+            self.objects = {}
 
     def from_platform(self, endpoint: Platform) -> dict[str, Any]:
         return {o.key: o for o in self.objects.values() if o.endpoint is endpoint}
