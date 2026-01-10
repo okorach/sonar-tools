@@ -296,7 +296,7 @@ class QualityGate(SqObject):
         try:
             ok = self.post("qualitygates/set_as_default", params=params).ok
             # Turn off default for all other quality gates except the current one
-            for qg in QualityGate.get_list(self.endpoint).values():
+            for qg in QualityGate.search(self.endpoint).values():
                 qg.is_default = qg.name == self.name
         except exceptions.SonarException:
             return False
@@ -389,7 +389,7 @@ class QualityGate(SqObject):
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
     @classmethod
-    def get_list(cls, endpoint: Platform) -> dict[str, QualityGate]:
+    def search(cls, endpoint: Platform, use_cache: bool = True, **search_params: Any) -> dict[str, QualityGate]:
         """Returns the whole list of quality gates
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -433,7 +433,7 @@ def audit(endpoint: Platform, audit_settings: Optional[ConfigSettings] = None, *
         return []
     log.info("--- Auditing quality gates ---")
     problems = []
-    all_qg = QualityGate.get_list(endpoint)
+    all_qg = QualityGate.search(endpoint)
     custom_qg = {k: qg for k, qg in all_qg.items() if not qg.is_built_in}
     max_qg = sutil.get_setting(audit_settings, "audit.qualitygates.maxNumber", 5)
     log.debug("Auditing that there are no more than %d quality gates", max_qg)
@@ -454,7 +454,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -
     :return: Quality gates representations as JSON
     """
     log.info("Exporting quality gates")
-    qg_list = [util.clean_data(qg.to_json(export_settings), remove_none=True, remove_empty=True) for qg in QualityGate.get_list(endpoint).values()]
+    qg_list = [util.clean_data(qg.to_json(export_settings), remove_none=True, remove_empty=True) for qg in QualityGate.search(endpoint).values()]
     write_q = kwargs.get("write_q", None)
     if write_q:
         write_q.put(qg_list)
@@ -495,7 +495,7 @@ def count(endpoint: Platform) -> int:
     :return: Number of quality gates
     :rtype: int
     """
-    return len(QualityGate.get_list(endpoint))
+    return len(QualityGate.search(endpoint))
 
 
 def _encode_conditions(conds: list[dict[str, str]]) -> list[str]:

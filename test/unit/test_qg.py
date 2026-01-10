@@ -56,7 +56,7 @@ def test_exists(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
 
 def test_get_list() -> None:
     """Test QP get_list"""
-    qgs = qualitygates.QualityGate.get_list(endpoint=tutil.SQ)
+    qgs = qualitygates.QualityGate.search(endpoint=tutil.SQ)
     assert len(qgs) >= 5
 
 
