@@ -485,7 +485,7 @@ class Project(Component):
 
     def task_history(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
-        return tasks.search_all(self.endpoint, component=self.key, type="REPORT")
+        return tasks.Task.search(self.endpoint, component=self.key, type="REPORT")
 
     def scanner(self) -> str:
         """Returns the project type (MAVEN, GRADLE, DOTNET, OTHER, UNKNOWN)"""

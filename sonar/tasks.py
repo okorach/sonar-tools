@@ -473,8 +473,3 @@ def search_last(endpoint: Platform, component: str, **search_params: Any) -> Opt
     if bg is None:
         log.debug("No background task found for component key '%s'%s", component, f" branch '{branch}'" if branch else "")
     return bg
-
-
-def search_all(endpoint: Platform, component: str, **params) -> list[Task]:
-    """Search all background tasks of a given component"""
-    return Task.search(endpoint=endpoint, **(params | {"component": component}))
