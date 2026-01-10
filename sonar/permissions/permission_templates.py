@@ -98,7 +98,7 @@ class PermissionTemplate(sqobject.SqObject):
     @classmethod
     def search(cls, endpoint: Platform, use_cache: bool = False) -> dict[str, PermissionTemplate]:
         """Searches permissions templates"""
-        if use_cache and len(cls.CACHE) > 0:
+        if use_cache and len(cls.CACHE.from_platform(endpoint)) > 0:
             log.debug("Searching permission templates from cache")
             return cls.CACHE.from_platform(endpoint)
         log.info("Searching permission templates")

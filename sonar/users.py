@@ -118,7 +118,7 @@ class User(SqObject):
         :return: dictionary of users with login as key
         :rtype: dict{login: User}
         """
-        if use_cache and len(search_params) == 0 and len(cls.CACHE) > 0:
+        if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
             log.debug("Searching users from cache")
             return cls.CACHE.from_platform(endpoint)
         log.info("Searching users with params %s", str(search_params))

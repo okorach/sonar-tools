@@ -110,7 +110,7 @@ class QualityProfile(SqObject):
         :param search_params: Search filters (see api/qualityprofiles/search parameters)
         :return: list of quality profiles
         """
-        if use_cache and len(search_params) == 0 and len(cls.CACHE) > 0:
+        if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
             return cls.CACHE.from_platform(endpoint)
         return cls.get_paginated(endpoint=endpoint, params=search_params)
 
@@ -894,7 +894,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
     if not (qps_data := config_data.get("qualityProfiles", None)):
         log.info("No quality profiles to import")
         return False
-    log.info("Importing quality profiles")
+    log.info("Importing quality profiles with")
     QualityProfile.search(endpoint, use_cache=False)
 
     qps_data = util.list_to_dict(qps_data, "language", keep_in_values=True)
@@ -902,7 +902,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
         futures, futures_map = [], {}
         for lang, lang_data in qps_data.items():
             lang_data = util.list_to_dict(lang_data["profiles"], "name", keep_in_values=True)
-            if not languages.Language.exists(endpoint=endpoint, language=lang):
+            if not languages.Language.exists(endpoint, language=lang):
                 log.warning("Language '%s' does not exist, quality profiles import skipped for this language", lang)
                 continue
             for name, qps_data in lang_data.items():

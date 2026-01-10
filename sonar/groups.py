@@ -24,6 +24,7 @@
 from __future__ import annotations
 import json
 
+from math import e
 from typing import Optional, Any, TYPE_CHECKING
 
 from sonar.sqobject import SqObject
@@ -137,8 +138,8 @@ class Group(SqObject):
         :params search_params: Parameters to narrow down the search
         :return: dict of groups with group name as key
         """
-        if use_cache and len(search_params) == 0 and len(cls.CACHE) > 0:
-            return cls.CACHE.from_platform(endpoint)
+        if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
+            return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
         return cls.get_paginated(endpoint=endpoint, params=search_params)
 
     def url(self) -> str:

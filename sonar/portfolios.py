@@ -122,7 +122,7 @@ class Portfolio(aggregations.Aggregation):
     def search(cls, endpoint: Platform, use_cache: bool = False, **search_params: Any) -> dict[str, Portfolio]:
         """Search all portfolios of a platform and returns as dict"""
         check_supported(endpoint)
-        if use_cache and len(search_params) == 0 and len(cls.CACHE) > 0:
+        if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
             return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
         return dict(sorted(cls.get_paginated(endpoint=endpoint, params=search_params).items()))
 

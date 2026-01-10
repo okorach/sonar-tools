@@ -310,7 +310,7 @@ class Rule(SqObject):
         :param search_params: Search filters (see api/rules/search parameters)
         :return: Dict of rules indexed by rule key
         """
-        if use_cache and len(search_params) == 0 and len(cls.CACHE.objects) > 1000:
+        if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 1000:
             return cls.CACHE.from_platform(endpoint)
         rule_list = {}
         langs = search_params.pop("languages", None)

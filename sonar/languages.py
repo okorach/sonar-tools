@@ -26,6 +26,7 @@ from typing import Optional, Any, TYPE_CHECKING
 
 import json
 from threading import Lock
+from urllib.parse import SplitResult
 
 from sonar.sqobject import SqObject
 from sonar import rules
@@ -92,9 +93,9 @@ class Language(SqObject):
         :return: List of languages
         :rtype: dict{<language_key>: <language_name>}
         """
-        if use_cache and len(search_params) == 0:
+        if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
             log.debug("Searching languages from cache")
-            return cls.CACHE.from_platform(endpoint)
+            return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
         log.debug("Searching languages from SonarQube")
         api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
         data = json.loads(endpoint.get(api, params=params).text)
