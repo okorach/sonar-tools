@@ -820,7 +820,7 @@ class Project(Component):
         :rtype: dict{key: WebHook}
         """
         log.debug("Getting %s webhooks", str(self))
-        return webhooks.WebHook.get_list(endpoint=self.endpoint, project_key=self.key)
+        return webhooks.WebHook.search(endpoint=self.endpoint, project=self.key)
 
     def links(self, custom_only: bool = True, with_id: bool = False) -> list[dict[str, str]]:
         """Returns the list of project links

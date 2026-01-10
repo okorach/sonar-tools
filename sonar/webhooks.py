@@ -120,12 +120,7 @@ class WebHook(SqObject):
         :param search_params: Filters to narrow down the search, can only be "project"
         :return: Dict of webhooks with webhook name as key
         """
-        return cls.get_paginated(endpoint=endpoint, params=search_params)
-
-    @classmethod
-    def get_list(cls, endpoint: Platform, **search_params: Any) -> dict[str, WebHook]:
-        """Returns the list of web hooks, global ones or for a project if project key is given"""
-        wh_list = cls.search(endpoint, **search_params)
+        wh_list = cls.get_paginated(endpoint=endpoint, params=search_params)
         for wh in wh_list.values():
             wh.project = search_params.get("project")
         return wh_list
