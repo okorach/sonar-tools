@@ -161,7 +161,6 @@ class QualityGate(SqObject):
         o: Optional[QualityGate] = QualityGate.CACHE.get(data["name"], endpoint.local_url)
         if not o:
             o = cls(endpoint, data["name"], data=data)
-        log.debug("Loading 2 %s QG from %s", o.name, util.json_dump(data))
         return o.reload(data)
 
     @classmethod
@@ -170,6 +169,22 @@ class QualityGate(SqObject):
         api, _, params, _ = endpoint.api.get_details(cls, Oper.CREATE, name=name)
         endpoint.post(api, params=params)
         return cls.get_object(endpoint, name)
+
+    @classmethod
+    def search(cls, endpoint: Platform, use_cache: bool = True, **search_params: Any) -> dict[str, QualityGate]:
+        """Returns the whole list of quality gates
+
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        :param search_params: Search parameters (None, see api/qualitygates/search parameters)
+        :return: Dict of quality gates indexed by name
+        """
+        log.info("Getting quality gates, use cache: %s", use_cache)
+        if not use_cache or len(search_params) > 0 or len(cls.CACHE) = 0:
+            api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
+            for qg_data in json.loads(endpoint.get(api, params=params).text)[ret]:
+                cls.load(endpoint, qg_data)
+        return dict(sorted(cls.CACHE.items()))
 
     def reload(self, data: ApiPayload) -> QualityGate:
         """Reloads the quality gate from the given data"""
@@ -387,25 +402,6 @@ class QualityGate(SqObject):
             json_data["conditions"] = self.conditions(encoded=True)
             json_data["permissions"] = self.permissions().export(export_settings=export_settings)
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
-
-    @classmethod
-    def search(cls, endpoint: Platform, use_cache: bool = True, **search_params: Any) -> dict[str, QualityGate]:
-        """Returns the whole list of quality gates
-
-        :param Platform endpoint: Reference to the SonarQube platform
-        :rtype: dict {<name>: <QualityGate>}
-        """
-        log.info("Getting quality gates")
-        api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH)
-        dataset = json.loads(endpoint.get(api, params=params).text)[ret]
-        qg_list = {}
-        for qg in dataset:
-            if (qg_obj := QualityGate.CACHE.get(qg["name"], endpoint.local_url)) is None:
-                qg_obj = QualityGate(endpoint=endpoint, name=qg["name"], data=qg.copy())
-            qg_obj.is_default = qg.get("isDefault", False)
-            qg_obj.is_built_in = qg.get("isBuiltIn", False)
-            qg_list[qg_obj.name] = qg_obj
-        return dict(sorted(qg_list.items()))
 
 
 def __audit_duplicates(qg_list: dict[str, QualityGate], audit_settings: ConfigSettings = None) -> list[Problem]:
