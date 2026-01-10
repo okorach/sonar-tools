@@ -40,7 +40,6 @@ from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
 from sonar.api.manager import ApiOperation as Oper
-from sonar.api.manager import ApiManager as Api
 from sonar import projects as proj
 
 if TYPE_CHECKING:
@@ -108,24 +107,22 @@ class PullRequest(components.Component):
         return o
 
     @classmethod
-    def get_list(cls, project: proj.Project) -> dict[str, PullRequest]:
+    def search(cls, endpoint: Platform, project: Union[proj.Project, str], **search_params: Any) -> dict[str, PullRequest]:
         """Retrieves the list of pull requests of a project
 
-        :param proj.Project project: proj.Project to get PRs from
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param str | Project project: project to get PRs from
         :raises UnsupportedOperation: PRs not supported in Community Edition
-        :return: List of project PRs
-        :rtype: dict{PR_ID: PullRequest}
+        :return: Dict of project PRs indexed by PR key
         """
         if project.endpoint.edition() == c.CE:
             log.debug(_UNSUPPORTED_IN_CE)
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
-
+        if isinstance(project, str):
+            project = proj.Project.get_object(endpoint, project)
         api, _, params, ret = project.endpoint.api.get_details(cls, Oper.SEARCH, project=project.key)
-        data = json.loads(project.get(api, params=params).text)
-        pr_list = {}
-        for pr in data[ret]:
-            pr_list[pr["key"]] = cls.load(project.endpoint, project, pr)
-        return pr_list
+        dataset = json.loads(project.get(api, params=params).text)[ret]
+        return {pr["key"]: cls.load(project.endpoint, project, pr) for pr in dataset}
 
     def reload(self, data: ApiPayload) -> PullRequest:
         """Reloads a PR object from API data"""

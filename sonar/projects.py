@@ -283,7 +283,7 @@ class Project(Component):
         :rtype: dict{PR_ID: PullRequest}
         """
         if self._pull_requests is None or not use_cache:
-            self._pull_requests = pull_requests.PullRequest.get_list(self)
+            self._pull_requests = pull_requests.PullRequest(self.endpoint, project=self)
         return self._pull_requests
 
     def delete(self) -> bool:
