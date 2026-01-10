@@ -51,7 +51,6 @@ from sonar.audit.problem import Problem
 import sonar.util.constants as c
 import sonar.util.project_helper as phelp
 from sonar.api.manager import ApiOperation as Oper
-from sonar.api.manager import ApiManager as Api
 from sonar.branches import Branch
 
 if TYPE_CHECKING:
@@ -108,7 +107,6 @@ class Project(Component):
         :param str key: The project key
         """
         super().__init__(endpoint=endpoint, key=key)
-        self._last_analysis: Optional[datetime] = None
         self._branches_last_analysis: Optional[datetime] = None
         self._permissions: Optional[object] = None
         self._branches: Optional[dict[str, Branch]] = None
@@ -206,8 +204,6 @@ class Project(Component):
         super().reload(data)
         self.name = data["name"]
         self._visibility = data["visibility"]
-        key = next((k for k in ("lastAnalysisDate", "analysisDate") if k in data), None)
-        self._last_analysis = sutil.string_to_date(data[key]) if key else None
         self._revision = data.get("revision", self._revision)
         return self
 
