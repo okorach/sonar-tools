@@ -155,7 +155,7 @@ def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]
 
 def test_import() -> None:
     """test_import"""
-    rules.Rule.get_list(tutil.TEST_SQ)
+    rules.Rule.search(tutil.TEST_SQ)
     languages.Language.CACHE.clear()
     qualityprofiles.QualityProfile.CACHE.clear()
     # delete all quality profiles in test

@@ -798,7 +798,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings = None, **kwargs) -
         log.info("Auditing quality profiles is disabled, audit skipped...")
         return []
     log.info("--- Auditing quality profiles ---")
-    rules.Rule.get_list(endpoint=endpoint)
+    rules.Rule.search(endpoint=endpoint)
     problems = []
     qp_list = QualityProfile.search(endpoint=endpoint)
     for qp in qp_list.values():
