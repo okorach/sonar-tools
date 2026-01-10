@@ -36,13 +36,18 @@ EXISTING_KEY_2 = "FE-BE"
 NON_EXISTING_KEY = "NON_EXISTING"
 TEST_KEY = "MY_APPPP"
 
-SUPPORTED_EDITIONS = (c.DE, c.EE, c.DCE)
+__UNSUPPORTED_MESSAGE = "Apps unsupported in SonarQube Community Build and SonarQube Cloud"
+__SUPPORTED_EDITIONS = (c.DE, c.EE, c.DCE)
+
+
+def __verify_support() -> bool:
+    return tutil.verify_support(__SUPPORTED_EDITIONS, App.get_object, endpoint=tutil.SQ, key=NON_EXISTING_KEY)
 
 
 def test_get_object() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=tutil.SQ, key=EXISTING_KEY):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     obj = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
     assert obj.key == EXISTING_KEY
     obj2 = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
@@ -53,15 +58,15 @@ def test_get_object() -> None:
 
 def test_count() -> None:
     """Verify count works"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.count, endpoint=tutil.SQ):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     assert apps.count(tutil.SQ) > 0
 
 
 def test_search() -> None:
     """Verify that search with criterias work"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.Application.search, endpoint=tutil.SQ, s="analysisDate"):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     res_list = apps.Application.search(endpoint=tutil.SQ, s="analysisDate")
     oldest = datetime.datetime(1970, 1, 1).replace(tzinfo=datetime.timezone.utc)
     for obj in res_list.values():
@@ -73,8 +78,8 @@ def test_search() -> None:
 
 def test_get_object_non_existing() -> None:
     """Test exception raised when providing non existing portfolio key"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=tutil.SQ, key=NON_EXISTING_KEY):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     with pytest.raises(exceptions.ObjectNotFound) as e:
         _ = App.get_object(endpoint=tutil.SQ, key=NON_EXISTING_KEY)
     assert str(e.value).endswith(f"Application '{NON_EXISTING_KEY}' not found")
@@ -82,10 +87,8 @@ def test_get_object_non_existing() -> None:
 
 def test_exists(get_test_app: Generator[App]) -> None:
     """Test exist"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.Application.exists, endpoint=tutil.SQ, key=EXISTING_KEY) and not tutil.verify_support(
-        SUPPORTED_EDITIONS, apps.Application.exists, endpoint=tutil.SQ, key=NON_EXISTING_KEY
-    ):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     obj = get_test_app
     assert apps.Application.exists(endpoint=tutil.SQ, key=obj.key)
     assert not apps.Application.exists(endpoint=tutil.SQ, key=NON_EXISTING_KEY)
@@ -93,8 +96,8 @@ def test_exists(get_test_app: Generator[App]) -> None:
 
 def test_create_delete(get_test_app: Generator[App]) -> None:
     """Test portfolio create delete"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name=tutil.TEMP_NAME, key=tutil.TEMP_KEY):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     obj: App = get_test_app
     assert obj is not None
     assert obj.key.startswith(f"{tutil.TEMP_KEY}-application")
@@ -112,8 +115,8 @@ def test_create_delete(get_test_app: Generator[App]) -> None:
 
 def test_permissions_1(get_test_app: Generator[App]) -> None:
     """Test permissions"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, App.create, endpoint=tutil.SQ, name="An app", key=f"{TEST_KEY}-application-{os.getpid()}"):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     obj: App = get_test_app
     obj.set_permissions(
         [
@@ -125,8 +128,8 @@ def test_permissions_1(get_test_app: Generator[App]) -> None:
 
 def test_get_projects() -> None:
     """test_get_projects"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=tutil.SQ, key=EXISTING_KEY):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     obj = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
     count = len(obj.projects())
     assert count > 0
@@ -135,8 +138,8 @@ def test_get_projects() -> None:
 
 def test_get_branches() -> None:
     """test_get_projects"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=tutil.SQ, key=EXISTING_KEY):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     obj = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
     count = len(obj.branches())
     assert count > 0
@@ -145,8 +148,8 @@ def test_get_branches() -> None:
 
 def test_no_audit(get_test_app: Generator[App]) -> None:
     """Check stop fast when audit params are disabled"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, App.get_object, endpoint=tutil.SQ, key=EXISTING_KEY):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     obj: App = get_test_app
     assert len(obj.audit({"audit.applications": False})) == 0
     assert len(obj._audit_empty({"audit.applications.empty": True})) == 1
@@ -158,8 +161,8 @@ def test_no_audit(get_test_app: Generator[App]) -> None:
 
 def test_search_by_name() -> None:
     """test_search_by_name"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, apps.search_by_name, endpoint=tutil.SQ, name="TEST_APP"):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     obj = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
     other_apps = apps.search_by_name(endpoint=tutil.SQ, name=obj.name)
 
@@ -170,8 +173,8 @@ def test_search_by_name() -> None:
 
 def test_set_tags(get_test_app: Generator[App]) -> None:
     """test_set_tags"""
-    if tutil.SQ.edition() not in (c.DE, c.EE, c.DCE):
-        pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     obj: App = get_test_app
 
     assert obj.set_tags(tutil.TAGS)
@@ -185,8 +188,8 @@ def test_set_tags(get_test_app: Generator[App]) -> None:
 
 def test_not_found(get_test_app: Generator[App]) -> None:
     """test_not_found"""
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     obj: App = get_test_app
     obj.key = "mess-me-up"
     with pytest.raises(exceptions.ObjectNotFound):
@@ -194,24 +197,24 @@ def test_not_found(get_test_app: Generator[App]) -> None:
 
 
 def test_already_exists(get_test_app: Generator[App]) -> None:
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     obj = get_test_app
     with pytest.raises(exceptions.ObjectAlreadyExists):
         _ = App.create(endpoint=tutil.SQ, key=obj.key, name="Foo Bar")
 
 
 def test_branch_exists(get_test_app: Generator[App]) -> None:
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     obj: App = get_test_app
     assert obj.branch_exists("main")
     assert not obj.branch_exists("non-existing")
 
 
 def test_branch_is_main(get_test_app: Generator[App]) -> None:
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     obj: App = get_test_app
     assert obj.branch_is_main("main")
     with pytest.raises(exceptions.ObjectNotFound):
@@ -219,8 +222,8 @@ def test_branch_is_main(get_test_app: Generator[App]) -> None:
 
 
 def test_get_issues(get_test_app: Generator[App]) -> None:
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     app: App = get_test_app
     assert len(app.get_issues()) == 0
     app = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
@@ -243,8 +246,8 @@ def test_audit_disabled() -> None:
 
 
 def test_app_branches(get_test_app: Generator[App]) -> None:
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Apps unsupported in SonarQube Community Build and SonarQube Cloud")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     obj: App = get_test_app
     APP_BRANCH_MAIN, APP_BRANCH_2 = "BRANCH foo", "Other Branch"
     definition = {
@@ -310,6 +313,8 @@ def test_app_branches(get_test_app: Generator[App]) -> None:
 
 def test_sorted_search() -> None:
     """test_sorted_search"""
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     apps_list = apps.Application.search(tutil.SQ)
     assert sorted(apps_list.keys()) == list(apps_list.keys())
 
