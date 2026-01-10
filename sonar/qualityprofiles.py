@@ -175,10 +175,10 @@ class QualityProfile(SqObject):
         :return: The cloned quality profile object
         """
         log.info("Cloning quality profile name '%s' into quality profile name '%s'", original_qp_name, name)
-        l = [qp for qp in cls.search(endpoint, use_cache=False).values() if qp.name == original_qp_name and qp.language == language]
-        if len(l) != 1:
+        qps = [qp for qp in cls.search(endpoint, use_cache=False).values() if qp.name == original_qp_name and qp.language == language]
+        if len(qps) != 1:
             raise exceptions.ObjectNotFound(f"{language}:{original_qp_name}", f"Quality profile {language}:{original_qp_name} not found")
-        original_qp = l[0]
+        original_qp = qps[0]
         log.debug("Found QP to clone: %s", str(original_qp))
         api, _, params, _ = endpoint.api.get_details(cls, Oper.COPY, toName=name, fromKey=original_qp.key)
         endpoint.post(api, params=params)

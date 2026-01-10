@@ -190,10 +190,10 @@ class User(SqObject):
         self.__tokens = None
         return self
 
-    def groups(self, **kwargs) -> list[str]:
+    def groups(self, use_cache: bool = True, **kwargs: Any) -> list[str]:
         """Returns the list of groups of a user"""
         log.info("Getting %s groups = %s", str(self), str(self._groups))
-        if self._groups is not None and kwargs.get(c.USE_CACHE, True):
+        if self._groups is not None and use_cache:
             return self._groups
         if not self.endpoint.is_sonarcloud() and self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             self._groups = list(set(self.sq_json.get("groups", []) + [self.endpoint.default_user_group()]))
@@ -204,7 +204,6 @@ class User(SqObject):
                 self, Oper.LIST_GROUPS, login=self.login, userId=self.id, ps=max_ps, pageSize=max_ps, name=self.name
             )
             data = json.loads(self.endpoint.get(api, params=params).text)[ret]
-            log.debug("USER GROUPS = %s", data)
             if self.endpoint.is_sonarcloud():
                 self._groups = [g["name"] for g in data]
             else:

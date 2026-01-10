@@ -27,10 +27,10 @@ from __future__ import annotations
 from typing import Any, Optional, TYPE_CHECKING
 
 import json
+import abc
 from http import HTTPStatus
 import concurrent.futures
 import requests
-import abc
 
 from sonar.api.manager import ApiOperation as Oper
 import sonar.logging as log
@@ -128,6 +128,7 @@ class SqObject(object):
         obj = cls.get_object(endpoint, key=key)
         return obj.set_permissions([{"user": user or endpoint.user(), "permissions": ["admin", "user"]}])
 
+    @classmethod
     @abc.abstractmethod
     def search_one_page(cls, endpoint: Platform, **search_params: Any) -> tuple[str, ObjectJsonRepr]:
         """Returns one page of a search"""

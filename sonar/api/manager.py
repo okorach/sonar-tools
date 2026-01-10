@@ -179,7 +179,7 @@ class ApiManager:
         # Get the list of all files and directories
         api_files = [f for f in os.listdir(Path(__file__).parent) if f.endswith(".json")]
         for api_file in api_files:
-            with open(Path(__file__).parent / api_file, "r") as f:
+            with open(Path(__file__).parent / api_file) as f:
                 api_data = json.load(f)
             basename = api_file.split(os.sep)[-1]
             if "cloud" in basename:
