@@ -309,8 +309,7 @@ class QualityProfile(SqObject):
         if self._rules is not None and use_cache:
             # Assume nobody changed QP during execution
             return self._rules
-        rule_key_list = rules.search_keys(self.endpoint, activation="true", qprofile=self.key, s="key", languages=self.language)
-        self._rules = {k: rules.Rule.get_object(self.endpoint, k) for k in rule_key_list}
+        self._rules = rules.Rule.search(self.endpoint, activation="true", qprofile=self.key, s="key", languages=self.language)
         return self._rules
 
     def activate_rule(
@@ -795,7 +794,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings = None, **kwargs) -
     log.info("--- Auditing quality profiles ---")
     rules.Rule.search(endpoint)
     problems = []
-    qp_list = QualityProfile.search(endpoint)
+    qp_list = QualityProfile.search(endpoint, use_cache=False)
     for qp in qp_list.values():
         problems += qp.audit(audit_settings)
     problems += __audit_nbr_of_qp(qp_list=qp_list, audit_settings=audit_settings)

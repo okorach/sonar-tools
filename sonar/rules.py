@@ -201,6 +201,7 @@ class Rule(SqObject):
             "attribute": data.get("cleanCodeAttribute", None),
             "attribute_category": data.get("cleanCodeAttributeCategory", None),
         }
+        log.debug("Loaded rule %s", self.key)
         self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:
@@ -296,7 +297,9 @@ class Rule(SqObject):
         )
 
     @classmethod
-    def search(cls, endpoint: Platform, use_cache: bool = False, threads: int = 4, **search_params: Any) -> dict[str, Rule]:
+    def search(
+        cls, endpoint: Platform, use_cache: bool = False, threads: int = 4, include_external: bool = False, **search_params: Any
+    ) -> dict[str, Rule]:
         """Searches rules with optional filters
 
         :param endpoint: The SonarQube reference
@@ -305,23 +308,21 @@ class Rule(SqObject):
         :param search_params: Search filters (see api/rules/search parameters)
         :return: Dict of rules indexed by rule key
         """
+        log.debug("Searching rules with params %s", search_params)
         if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 1000:
+            log.debug("Searching rules from cache")
             return cls.CACHE.from_platform(endpoint)
-        rule_list = {}
         langs = search_params.pop("languages", None)
         lang_list = util.csv_to_list(langs) if langs else languages.Language.search(endpoint).keys()
-        inc = search_params.pop("include_external", False)
-        include_external_list = [str(inc).lower()] if inc else ["false", "true"]
+        include_external_list = ["false"] if not include_external else ["false", "true"]
         for lang_key in lang_list:
             if not languages.Language.exists(endpoint, language=lang_key):
                 raise exceptions.ObjectNotFound(key=lang_key, message=f"Language '{lang_key}' does not exist")
         log.info("Getting rules for %d languages", len(lang_list))
-        rule_list = {}
+        rule_list: dict[str, Rule] = {}
         for lang_key in lang_list:
             for inc in include_external_list:
-                rule_list |= cls.get_paginated(
-                    endpoint=endpoint, threads=threads, params=search_params | {"languages": lang_key, "include_external": inc}
-                )
+                rule_list |= cls.get_paginated(endpoint, threads=threads, params=search_params | {"languages": lang_key, "include_external": inc})
         log.info("Rule search returning a list of %d rules", len(rule_list))
         return rule_list
 
@@ -511,9 +512,9 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     log.info("Exporting rules")
     full = export_settings.get("FULL_EXPORT", False)
     threads = 16 if endpoint.is_sonarcloud() else 8
+    all_rules = Rule.search(endpoint=endpoint, use_cache=False, include_external=False).items()
     get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", threads))
 
-    all_rules = Rule.search(endpoint=endpoint, use_cache=False, include_external=False).items()
     rule_list = {}
     rule_list["instantiated"] = {k: rule.export(full) for k, rule in all_rules if rule.is_instantiated()}
     rule_list["extended"] = {k: rule.export(full) for k, rule in all_rules if rule.is_extended()}
@@ -591,7 +592,7 @@ def get_all_rules_details(endpoint: Platform, threads: int = 8) -> bool:
     :param int threads: Number of threads to parallelize the process
     :return: Whether all rules collection succeeded
     """
-    rule_list = Rule.search(endpoint=endpoint, use_cache=False, threads=threads, include_external=False).values()
+    rule_list = Rule.search(endpoint=endpoint, use_cache=True, threads=threads, include_external=False).values()
     ok = True
     if endpoint.is_sonarcloud():
         threads = max(threads, 20)
