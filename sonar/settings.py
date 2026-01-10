@@ -569,6 +569,7 @@ def encode(setting: Setting, setting_value: Any) -> dict[str, Any]:
         return {"value": str(setting_value).lower()}
     return {"values" if setting.multi_valued else "value": setting_value}
 
+
 def get_component_params(component: object, name: str = "component") -> ApiParams:
     """Gets the parameters to read or write settings"""
     if not component:
