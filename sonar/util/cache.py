@@ -20,9 +20,12 @@
 
 """Cache manager"""
 
-from typing import Optional, Any
+from __future__ import annotations
+from typing import Optional, Any, TYPE_CHECKING
 from sonar import logging as log
 
+if TYPE_CHECKING:
+    from sonar.platform import Platform
 
 class Cache(object):
     """Abstract cache implementation"""
@@ -79,3 +82,7 @@ class Cache(object):
         """Clears a cache"""
         # log.info("Clearing %s", self)
         self.objects = {}
+
+    def from_platform(self, endpoint: Platform) -> dict[str, Any]:
+        return {o.key: o for o in self.objects.values() if o.endpoint is endpoint}
+    
