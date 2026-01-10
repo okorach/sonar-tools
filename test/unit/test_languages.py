@@ -49,4 +49,5 @@ def test_number_of_rules() -> None:
     nbr_total_rules = lang.number_of_rules()
     counts = {t: lang.number_of_rules(t) for t in ("VULNERABILITY", "BUG", "CODE_SMELL", "SECURITY_HOTSPOT")}
     assert sum(counts.values()) >= nbr_total_rules
+
     assert lang.number_of_rules("FOO") == 0
