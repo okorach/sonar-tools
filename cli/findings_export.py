@@ -24,11 +24,10 @@ Usage: sonar-findings-export.py -t <SQ_TOKEN> -u <SQ_URL> [<filters>]
 """
 
 from __future__ import annotations
-from typing import Union, TYPE_CHECKING
+from typing import Union, TextIO, TYPE_CHECKING
 
 import os
 import csv
-from typing import TextIO
 import concurrent.futures
 from argparse import Namespace
 import traceback
