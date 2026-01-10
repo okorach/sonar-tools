@@ -160,13 +160,12 @@ def test_import() -> None:
     rules.Rule.search(tutil.TEST_SQ)
     languages.Language.CACHE.clear()
     QualityProfile.CACHE.clear()
-    # delete all quality profiles in test
-    for qp in QualityProfile.search(tutil.TEST_SQ, use_cache=False).values():
-        if qp.name == tutil.SONAR_WAY:
-            qp.set_as_default()
-    qp_list = {o for o in QualityProfile.search(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in and not o.is_default}
-    for o in qp_list:
-        o.delete()
+    # Make Sonar Way the default quality profile and delete all quality profiles in test
+    for qp in [qp for qp in QualityProfile.search(tutil.TEST_SQ, use_cache=False).values() if qp.name == tutil.SONAR_WAY]:
+        qp.set_as_default()
+    for qp in [qp for qp in QualityProfile.search(tutil.TEST_SQ, use_cache=False).values() if not qp.is_built_in and not qp.is_default]:
+        qp.delete()
+    # Import quality profiles from config.json
     with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
         json_exp = json.loads(f.read())["qualityProfiles"]
     assert qualityprofiles.import_config(tutil.TEST_SQ, {"qualityProfiles": json_exp})
