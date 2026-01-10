@@ -164,10 +164,6 @@ class ApiManager:
         # Format the parameters using the API endpoint parameters, exclude anything not in the API endpoint parameters
         return {k: v.format_map(defaultdict(str, **normalized)) for k, v in params.items() if k in normalized}
 
-    def get_all(self, **kwargs: Any) -> tuple[str, str, dict[str, Any], Optional[str]]:
-        """Returns the API call, method, parameters and return field"""
-        return self.api(**kwargs), self.method(), self.params(**kwargs), self.return_field()
-
     def get_details(self, object_or_class: object, operation: ApiOperation, **kwargs: Any) -> tuple[str, str, dict[str, Any], Optional[str]]:
         """Returns the details for the API call"""
         return (
