@@ -68,12 +68,12 @@ def test_exists() -> None:
 def test_get_list() -> None:
     """Test portfolio get_list"""
     k_list = ["PORT_FAV_PROJECTS", "PORTFOLIO_ALL"]
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.get_list, endpoint=tutil.SQ, key_list=k_list):
+    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.search, endpoint=tutil.SQ):
         return
 
-    p_dict = pf.Portfolio.get_list(endpoint=tutil.SQ, key_list=k_list)
-    assert sorted(k_list) == sorted(p_dict.keys())
-
+    p_dict = pf.Portfolio.search(endpoint=tutil.SQ, key_list=k_list)
+    for k in k_list:
+        assert k in p_dict
 
 def test_create_delete(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test portfolio create delete"""
@@ -290,13 +290,13 @@ def test_import() -> None:
     # delete all portfolios in test
     logging.info("Deleting all portfolios")
     pf.Portfolio.clear_cache()
-    for o in pf.Portfolio.get_list(tutil.TEST_SQ, use_cache=False).values():
+    for o in pf.Portfolio.search(tutil.TEST_SQ).values():
         if o.is_toplevel():
             o.delete()
     assert pf.import_config(tutil.TEST_SQ, {"portfolios": json_exp})
 
     # Compare portfolios
-    o_list = pf.Portfolio.get_list(tutil.TEST_SQ)
+    o_list = pf.Portfolio.search(tutil.TEST_SQ)
     assert len(o_list) == len(json_exp)
     assert sorted(o_list.keys()) == sorted([o["key"] for o in json_exp])
 

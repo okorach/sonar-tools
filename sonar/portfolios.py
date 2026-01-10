@@ -106,7 +106,8 @@ class Portfolio(aggregations.Aggregation):
         self.parent_portfolio: Optional[Portfolio] = None  #: Ref to parent portfolio object, if any
         self.root_portfolio: Optional[Portfolio] = None  #: Ref to root portfolio, if any
         self._sub_portfolios: dict[str, Portfolio] = {}  #: Subportfolios
-        Portfolio.CACHE.put(self)
+        with _CLASS_LOCK:
+            Portfolio.CACHE.put(self)
         log.debug("Created portfolio object name '%s'", name)
 
     def __str__(self) -> str:
@@ -173,20 +174,6 @@ class Portfolio(aggregations.Aggregation):
         o = cls(endpoint=endpoint, name=data["name"], key=data["key"])
         o.reload(data)
         return o
-
-    @classmethod
-    def get_list(cls, endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Portfolio]:
-        """
-        :return: List of Portfolios (all of them if key_list is None or empty)
-        :param KeyList key_list: List of portfolios keys to get, if None or empty all portfolios are returned
-        :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-        :rtype: dict{<branchName>: <Branch>}
-        """
-        with _CLASS_LOCK:
-            if key_list is None or len(key_list) == 0 or not use_cache:
-                log.debug("Listing portfolios")
-                return dict(sorted(cls.search(endpoint=endpoint).items()))
-            return {key: cls.get_object(endpoint, key) for key in sorted(key_list)}
 
     def reload(self, data: ApiPayload) -> Portfolio:
         """Reloads a portfolio with returned API data"""
@@ -656,7 +643,7 @@ class Portfolio(aggregations.Aggregation):
         """
         log.info("Updating %s subportfolios", str(self))
         subps = self.sub_portfolios(full=True)
-        Portfolio.get_list(endpoint=self.endpoint)
+        Portfolio.search(self.endpoint)
         key_list = []
         if subps:
             key_list = list(subps.keys())
@@ -709,7 +696,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[
     log.info("--- Auditing portfolios ---")
     problems = []
     key_regexp = kwargs.get("key_list", None) or ".*"
-    for p in [o for o in Portfolio.get_list(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
+    for p in [o for o in Portfolio.search(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
         problems += p.audit(audit_settings, **kwargs)
     return problems
 
@@ -785,7 +772,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     check_supported(endpoint)
 
     log.info("Exporting portfolios")
-    portfolio_list = {k: v for k, v in Portfolio.get_list(endpoint=endpoint).items() if not key_regexp or re.match(key_regexp, k)}
+    portfolio_list = {k: v for k, v in Portfolio.search(endpoint).items() if not key_regexp or re.match(key_regexp, k)}
     nb_portfolios = len(portfolio_list)
     i = 0
     exported_portfolios = {}

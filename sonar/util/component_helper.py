@@ -40,7 +40,7 @@ def get_components(
     if component_type in ("apps", "applications"):
         components = list(applications.Application.search(endpoint).values())
     elif component_type == "portfolios":
-        components = list(portfolios.Portfolio.get_list(endpoint).values())
+        components = list(portfolios.Portfolio.search(endpoint).values())
         if kwargs.get("topLevelOnly", False):
             components = [p for p in components if p.is_toplevel()]
     else:

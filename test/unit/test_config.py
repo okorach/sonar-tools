@@ -161,18 +161,15 @@ def test_config_import_portfolios() -> None:
         json_config = json.loads(f.read())["portfolios"]
 
     # delete all portfolios in test
-    p_list = portfolios.Portfolio.get_list(tutil.TEST_SQ, use_cache=False)
-    logging.info("PORTFOLIOS = %s", str(list(p_list.keys())))
-    logging.info("Deleting all portfolios")
-    for p in portfolios.Portfolio.get_list(tutil.TEST_SQ, use_cache=False).values():
-        if p.is_toplevel():
-            p.delete()
+    p_list = portfolios.Portfolio.search(tutil.TEST_SQ, use_cache=False)
+    for p in [p for p in p_list.values() if p.is_toplevel()]:
+        p.delete()
     # Import config
     cmd = f"{CMD} {tutil.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} {config_file} --{opt.WHAT} {opt.WHAT_PORTFOLIOS}"
     assert tutil.run_cmd(config.main, cmd) == e.OK
 
     # Compare portfolios
-    portfolio_list = portfolios.Portfolio.get_list(tutil.TEST_SQ)
+    portfolio_list = portfolios.Portfolio.search(tutil.TEST_SQ)
     assert len(portfolio_list) == len(json_config)
     assert sorted(portfolio_list.keys()) == sorted([o["key"] for o in json_config])
 
