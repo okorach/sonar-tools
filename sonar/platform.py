@@ -404,7 +404,7 @@ class Platform(object):
         if settings_list is None:
             settings_dict = settings.get_bulk(endpoint=self)
         else:
-            settings_dict = {k: settings.get_object(endpoint=self, key=k) for k in settings_list}
+            settings_dict = {k: settings.Setting.get_object(endpoint=self, key=k) for k in settings_list}
         platform_settings = {}
         for v in settings_dict.values():
             platform_settings |= v.to_json()
@@ -423,7 +423,7 @@ class Platform(object):
         :param key: Setting key
         :return: the setting value
         """
-        return settings.get_object(endpoint=self, key=key).to_json()[key].get("value")
+        return settings.Setting.get_object(endpoint=self, key=key).to_json()[key].get("value")
 
     def reset_setting(self, key: str) -> bool:
         """Resets a platform global setting to the SonarQube internal default value
@@ -431,7 +431,7 @@ class Platform(object):
         :param key: Setting key
         :return: Whether the reset was successful or not
         """
-        return settings.reset_setting(self, key)
+        return settings.Setting.get_object(self, key=key).reset()
 
     def set_setting(self, key: str, value: Any) -> bool:
         """Sets a platform global setting
@@ -743,7 +743,7 @@ class Platform(object):
     def _audit_token_max_lifetime(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits the maximum lifetime of a token"""
         log.info("Auditing maximum token lifetime global setting")
-        lifetime_setting = settings.get_object(self, settings.TOKEN_MAX_LIFETIME)
+        lifetime_setting = settings.Setting.get_object(self, settings.TOKEN_MAX_LIFETIME)
         if lifetime_setting is None:
             log.info("Token maximum lifetime setting not found, skipping audit")
             return []

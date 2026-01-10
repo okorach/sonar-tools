@@ -387,13 +387,13 @@ class Setting(sqobject.SqObject):
             return (GENERAL_SETTINGS, None)
         return ("thirdParty", None)
 
-
-def get_object(endpoint: Platform, key: str, component: Optional[object] = None) -> Setting:
-    """Returns a Setting object from its key and, optionally, component"""
-    o = Setting.CACHE.get(key, component.key if component else None, endpoint.local_url)
-    if not o:
-        get_all(endpoint, component)
-    return Setting.CACHE.get(key, component.key if component else None, endpoint.local_url)
+    @classmethod
+    def get_object(cls, endpoint: Platform, key: str, component: Optional[object] = None) -> Setting:
+        """Returns a Setting object from its key and, optionally, component"""
+        o = cls.CACHE.get(key, component.key if component else None, endpoint.local_url)
+        if not o:
+            get_all(endpoint, component)
+        return cls.CACHE.get(key, component.key if component else None, endpoint.local_url)
 
 
 def __get_settings(endpoint: Platform, data: ApiPayload, component: Optional[sqobject.SqObject] = None) -> dict[str, Setting]:
@@ -531,7 +531,7 @@ def set_setting(endpoint: Platform, key: str, value: Any, component: Optional[ob
     """Sets a setting to a particular value"""
     try:
         log.debug("Setting %s with value %s (for component %s)", key, value, component)
-        s = get_object(endpoint=endpoint, key=key, component=component)
+        s = Setting.get_object(endpoint=endpoint, key=key, component=component)
         if not s:
             log.warning("Setting '%s' does not exist on target platform, it cannot be set", key)
             return False
@@ -568,12 +568,6 @@ def encode(setting: Setting, setting_value: Any) -> dict[str, Any]:
     if isinstance(setting_value, bool):
         return {"value": str(setting_value).lower()}
     return {"values" if setting.multi_valued else "value": setting_value}
-
-
-def reset_setting(endpoint: Platform, setting_key: str, project: Optional[object] = None) -> bool:
-    """Resets a setting to its default"""
-    return get_object(endpoint=endpoint, key=setting_key, component=project).reset()
-
 
 def get_component_params(component: object, name: str = "component") -> ApiParams:
     """Gets the parameters to read or write settings"""
