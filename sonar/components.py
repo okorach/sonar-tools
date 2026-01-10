@@ -82,43 +82,14 @@ class Component(SqObject):
             self.name = data["name"]
         if "visibility" in data:
             self._visibility = data["visibility"]
-        if "analysisDate" in data:
-            self._last_analysis = sutil.string_to_date(data["analysisDate"])
+        key = next((k for k in ("lastAnalysisDate", "analysisDate") if k in data), None)
+        if key in data:
+            self._last_analysis = sutil.string_to_date(data[key])
         return self
 
     def project(self) -> Project:
         """Implemented in relevant subclasses (Project, Branch, PullRequest)"""
         raise NotImplementedError
-
-    def get_subcomponents(self, strategy: str = "children", with_issues: bool = False) -> dict[str, Component]:
-        """Returns component subcomponents"""
-        parms = {
-            "component": self.key,
-            "strategy": strategy,
-            "ps": 1,
-            "metricKeys": "bugs,vulnerabilities,code_smells,security_hotspots",
-        }
-        api, _, api_params, ret = self.endpoint.api.get_details(self, Oper.GET_SUBCOMPONENTS, **parms)
-        max_ps = self.endpoint.api.max_page_size(self, Oper.GET_SUBCOMPONENTS)
-        data = json.loads(self.get(api, params=api_params).text)
-        nb_comp = sutil.nbr_total_elements(data)
-        log.debug("Found %d subcomponents to %s", nb_comp, str(self))
-        nb_pages = math.ceil(nb_comp / max_ps)
-        comp_list = {}
-        for page in range(nb_pages):
-            api, _, api_params, ret = self.endpoint.api.get_details(self, Oper.GET_SUBCOMPONENTS, **(parms | {"p": page + 1, "ps": max_ps}))
-            data = json.loads(self.get(api, params=api_params).text)
-            for d in data[ret]:
-                nbr_issues = 0
-                for m in d["measures"]:
-                    nbr_issues += int(m["value"])
-                if with_issues and nbr_issues == 0:
-                    log.debug("Subcomponent %s has 0 issues, skipping", d["key"])
-                    continue
-                comp_list[d["key"]] = Component(self.endpoint, d["key"], data=d)
-                comp_list[d["key"]].nbr_issues = nbr_issues
-                log.debug("Component %s has %d issues", d["key"], nbr_issues)
-        return comp_list
 
     def get_issues(self, **search_params: Any) -> dict[str, Issue]:
         """Returns list of issues for a portfolios"""
@@ -233,12 +204,15 @@ class Component(SqObject):
         """Refreshes a component data"""
         return self.reload(self.get_navigation_data)
 
-    def last_analysis(self) -> datetime:
+    def last_analysis(self) -> Optional[datetime]:
         """Returns a component last analysis"""
         if not self._last_analysis:
-            self.get_navigation_data()
-            if "analysisDate" in self.sq_json:
-                self._last_analysis = sutil.string_to_date(self.sq_json["analysisDate"])
+            key = next((k for k in ("lastAnalysisDate", "analysisDate") if self.sq_json and k in self.sq_json), None)
+            if not key:
+                self.get_navigation_data()
+            key = next((k for k in ("lastAnalysisDate", "analysisDate") if self.sq_json and k in self.sq_json), None)
+            if key:
+                self._last_analysis = sutil.string_to_date(self.sq_json[key])
         return self._last_analysis
 
     def new_code_start_date(self) -> Optional[datetime]:
