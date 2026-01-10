@@ -26,7 +26,6 @@ from typing import Optional, Any, TYPE_CHECKING
 import concurrent.futures
 from datetime import datetime, timezone, MINYEAR
 import json
-from threading import Lock
 from requests import RequestException
 
 from sonar.sqobject import SqObject
@@ -54,7 +53,6 @@ class User(SqObject):
     """
 
     CACHE = cache.Cache()
-    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, login: str, data: ApiPayload) -> None:
         """Do not use to create users, use on of the constructor class methods"""
@@ -71,8 +69,7 @@ class User(SqObject):
         self.__tokens: Optional[list[tokens.UserToken]] = None
         self.reload(data)
         log.debug("Constructed object %s id '%s'", str(self), str(self.id))
-        with self.__class__._CLASS_LOCK:
-            self.__class__.CACHE.put(self)
+        self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:
         """Returns the string representation of the object"""
@@ -263,10 +260,9 @@ class User(SqObject):
         else:
             ok = self.endpoint.post(api, params=params).ok
         if ok:
-            with self.__class__._CLASS_LOCK:
-                self.__class__.CACHE.pop(self)
-                self.login = new_login
-                self.__class__.CACHE.put(self)
+            self.__class__.CACHE.pop(self)
+            self.login = new_login
+            self.__class__.CACHE.put(self)
         return ok
 
     def update(self, **kwargs: Any) -> User:

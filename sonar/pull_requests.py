@@ -28,7 +28,6 @@ from typing import Optional, Union, Any, TYPE_CHECKING
 
 import json
 from datetime import datetime
-from threading import Lock
 import requests.utils
 
 import sonar.logging as log
@@ -55,7 +54,6 @@ class PullRequest(components.Component):
     """Abstraction of the Sonar pull request concept"""
 
     CACHE = cache.Cache()
-    _CLASS_LOCK = Lock()
 
     def __init__(self, project: proj.Project, key: str, data: Optional[ApiPayload] = None) -> None:
         """Constructor"""
@@ -63,8 +61,7 @@ class PullRequest(components.Component):
         self.concerned_object: proj.Project = project
         if data is not None:
             self.reload(data)
-        with self.__class__._CLASS_LOCK:
-            PullRequest.CACHE.put(self)
+        self.__class__.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
     def __str__(self) -> str:

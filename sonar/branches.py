@@ -27,7 +27,6 @@ from http import HTTPStatus
 import json
 import re
 from urllib.parse import unquote
-from threading import Lock
 import requests.utils
 
 from sonar.util import cache
@@ -56,7 +55,6 @@ class Branch(components.Component):
     """Abstraction of the SonarQube "project branch" concept"""
 
     CACHE = cache.Cache()
-    _CLASS_LOCK = Lock()
 
     def __init__(self, project: proj.Project, name: str) -> None:
         """Don't use this, use class methods to create Branch objects
@@ -72,8 +70,7 @@ class Branch(components.Component):
         self._is_main: Optional[bool] = None
         self._new_code: Optional[str] = None
         self._keep_when_inactive: Optional[bool] = None
-        with self.__class__._CLASS_LOCK:
-            self.__class__.CACHE.put(self)
+        self.__class__.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
     def __str__(self) -> str:
@@ -261,10 +258,9 @@ class Branch(components.Component):
         log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
         api, _, params, _ = self.endpoint.api.get_details(self, Oper.RENAME, project=self.concerned_object.key, name=new_name)
         self.post(api, params=params)
-        with self.__class__._CLASS_LOCK:
-            self.__class__.CACHE.pop(self)
-            self.name = new_name
-            self.__class__.CACHE.put(self)
+        self.__class__.CACHE.pop(self)
+        self.name = new_name
+        self.__class__.CACHE.put(self)
         return True
 
     def set_as_main(self) -> bool:

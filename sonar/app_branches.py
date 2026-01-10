@@ -23,7 +23,6 @@
 from __future__ import annotations
 from typing import Optional, Union, Any, TYPE_CHECKING
 import json
-from threading import Lock
 from requests.utils import quote
 
 import sonar.logging as log
@@ -54,7 +53,6 @@ class ApplicationBranch(Component):
     """Abstraction of the SonarQube "application branch" concept"""
 
     CACHE = cache.Cache()
-    _CLASS_LOCK = Lock()
 
     def __init__(
         self,
@@ -72,8 +70,7 @@ class ApplicationBranch(Component):
         self._is_main = is_main
         self._project_branches = project_branches
         log.debug("Constructed object %s with uuid %d id %x", str(self), hash(self), id(self))
-        with self.__class__._CLASS_LOCK:
-            self.__class__.CACHE.put(self)
+        self.__class__.CACHE.put(self)
 
     @classmethod
     def get_object(cls, endpoint: Platform, app: Union[str, apps.Application], branch_name: str) -> ApplicationBranch:
@@ -228,8 +225,7 @@ class ApplicationBranch(Component):
         try:
             ok = self.post(api, params=string_params).ok
         except exceptions.ObjectNotFound:
-            with self.__class__._CLASS_LOCK:
-                self.__class__.CACHE.pop(self)
+            self.__class__.CACHE.pop(self)
             raise
 
         self.name = name

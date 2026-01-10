@@ -43,7 +43,6 @@ class WebHook(SqObject):
     """Abstraction of the SonarQube "webhook" concept"""
 
     CACHE: ClassVar[cache.Cache] = cache.Cache()
-    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, name: str, url: str, secret: Optional[str] = None, project: Optional[str] = None) -> None:
         """Constructor"""
@@ -54,8 +53,7 @@ class WebHook(SqObject):
         self.project = project  #: Webhook project, optional
         self.last_delivery: Optional[str] = None  #: Webhook last delivery timestamp
         self.project = project  #: Webhook project if project specific webhook
-        with self.__class__._CLASS_LOCK:
-            self.__class__.CACHE.put(self)
+        self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:
         """Returns a string representation of the webhook"""

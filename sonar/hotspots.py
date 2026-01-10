@@ -25,7 +25,6 @@ from typing import Optional, Any, Union, TYPE_CHECKING
 import json
 from datetime import datetime
 from copy import deepcopy
-from threading import Lock
 import requests.utils
 
 import sonar.logging as log
@@ -98,15 +97,13 @@ class Hotspot(findings.Finding):
     CACHE = cache.Cache()
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
-    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self.type = idefs.TYPE_HOTSPOT
         self.__details: ApiPayload = data
-        with self.__class__._CLASS_LOCK:
-            self.__class__.CACHE.put(self)
+        self.__class__.CACHE.put(self)
         self.refresh()
 
     def __str__(self) -> str:

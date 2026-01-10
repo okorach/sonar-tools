@@ -30,7 +30,6 @@ from datetime import datetime
 import traceback
 
 from http import HTTPStatus
-from threading import Lock
 from requests import HTTPError, RequestException
 
 import sonar.logging as log
@@ -98,7 +97,6 @@ class Project(Component):
     """Abstraction of the SonarQube project concept"""
 
     CACHE = cache.Cache()
-    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, key: str) -> None:
         """
@@ -115,8 +113,7 @@ class Project(Component):
         self._new_code: Optional[str] = None
         self._ci: Optional[str] = None
         self._revision: Optional[str] = None
-        with self.__class__._CLASS_LOCK:
-            self.__class__.CACHE.put(self)
+        self.__class__.CACHE.put(self)
         log.debug("Loaded object %s", str(self))
 
     def __str__(self) -> str:
@@ -189,8 +186,7 @@ class Project(Component):
             api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET, **self.api_params(Oper.GET))
             data = json.loads(self.get(api, params=params).text)
         except exceptions.ObjectNotFound:
-            with self.__class__._CLASS_LOCK:
-                self.__class__.CACHE.pop(self)
+            self.__class__.CACHE.pop(self)
             raise
         return self.reload(data[ret])
 
@@ -594,8 +590,7 @@ class Project(Component):
                 problems += self.__audit_pull_requests(audit_settings)
 
         except exceptions.ObjectNotFound:
-            with self.__class__._CLASS_LOCK:
-                self.__class__.CACHE.pop(self)
+            self.__class__.CACHE.pop(self)
             raise
 
         return problems
@@ -611,8 +606,7 @@ class Project(Component):
         try:
             resp = self.post("project_dump/export", params={"key": self.key})
         except exceptions.ObjectNotFound:
-            with self.__class__._CLASS_LOCK:
-                self.__class__.CACHE.pop(self)
+            self.__class__.CACHE.pop(self)
             raise
         except exceptions.SonarException as e:
             return f"FAILED/{e.message}", None
@@ -650,8 +644,7 @@ class Project(Component):
         except exceptions.ObjectNotFound as e:
             if "Dump file does not exist" in e.message:
                 return f"FAILED/{tasks.ZIP_MISSING}"
-            with self.__class__._CLASS_LOCK:
-                self.__class__.CACHE.pop(self)
+            self.__class__.CACHE.pop(self)
             raise
         except exceptions.SonarException as e:
             if "Dump file does not exist" in e.message:

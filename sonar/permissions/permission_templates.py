@@ -85,8 +85,7 @@ class PermissionTemplate(sqobject.SqObject):
         self.last_update = data.get("lastUpdate", None)
         self.project_key_pattern = data.pop("projectKeyPattern", "")
         self.creation_date = sutil.string_to_date(data.pop("createdAt", None))
-        with self.__class__._CLASS_LOCK:
-            self.__class__.CACHE.put(self)
+        self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:
         """Returns the string representation of the object"""

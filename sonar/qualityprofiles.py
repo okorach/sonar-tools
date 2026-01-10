@@ -62,7 +62,6 @@ class QualityProfile(SqObject):
     CACHE = cache.Cache()
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "profiles"
-    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
         """Do not use, use class methods to create objects"""
@@ -90,8 +89,7 @@ class QualityProfile(SqObject):
         self.__last_update = sutil.string_to_date(data.get("rulesUpdatedAt", None))
 
         log.debug("Loaded %s", str(self))
-        with self.__class__._CLASS_LOCK:
-            self.__class__.CACHE.put(self)
+        self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:
         """String formatting of the object"""
@@ -421,10 +419,9 @@ class QualityProfile(SqObject):
                 log.info("Renaming %s with %s", self, data["name"])
                 api, _, params, _ = self.endpoint.api.get_details(self, Oper.RENAME, id=self.key, name=data["name"])
                 self.post(api, params=params)
-                with self.__class__._CLASS_LOCK:
-                    self.__class__.CACHE.pop(self)
-                    self.name = data["name"]
-                    self.__class__.CACHE.put(self)
+                self.__class__.CACHE.pop(self)
+                self.name = data["name"]
+                self.__class__.CACHE.put(self)
             log.debug("Updating %s setting parent to %s", self, data.get(qphelp.KEY_PARENT))
             if parent_key := data.pop(qphelp.KEY_PARENT, None):
                 self.set_parent(parent_key)

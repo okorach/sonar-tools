@@ -23,8 +23,6 @@
 from __future__ import annotations
 from typing import Optional, Any, TYPE_CHECKING
 
-from threading import Lock
-
 from sonar.sqobject import SqObject
 from sonar.util import cache
 from sonar import exceptions
@@ -83,7 +81,6 @@ class Metric(SqObject):
     """Abstraction of the SonarQube "metric" concept"""
 
     CACHE = cache.Cache()
-    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
         """Constructor"""
@@ -97,8 +94,7 @@ class Metric(SqObject):
         self.hidden: Optional[bool] = None  #: Hidden
         self.custom: Optional[bool] = None  #: Custom
         self.reload(data)
-        with self.__class__._CLASS_LOCK:
-            self.__class__.CACHE.put(self)
+        self.__class__.CACHE.put(self)
 
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Metric:

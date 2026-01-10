@@ -25,7 +25,6 @@ Abstraction of the Sonar sub-portfolio by reference concept
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from threading import Lock
 from sonar.sqobject import SqObject
 import sonar.logging as log
 from sonar.util import cache
@@ -44,7 +43,6 @@ class PortfolioReference(SqObject):
     """
 
     CACHE = cache.Cache()
-    _CLASS_LOCK = Lock()
 
     def __init__(self, reference: object, parent: object) -> None:
         """Constructor, don't use - use class methods instead"""
@@ -52,8 +50,7 @@ class PortfolioReference(SqObject):
         super().__init__(endpoint=parent.endpoint, key=self.key)
         self.reference = reference
         self.parent = parent
-        with self.__class__._CLASS_LOCK:
-            self.__class__.CACHE.put(self)
+        self.__class__.CACHE.put(self)
         log.debug("Created subportfolio by reference key '%s'", self.key)
 
     @classmethod

@@ -24,7 +24,6 @@ from __future__ import annotations
 from typing import Optional, Any, TYPE_CHECKING
 
 import json
-from threading import Lock
 
 from sonar.sqobject import SqObject
 import sonar.logging as log
@@ -108,7 +107,6 @@ class QualityGate(SqObject):
     """Abstraction of the SonarQube Quality Gate concept"""
 
     CACHE = cache.Cache()
-    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, name: str, data: ApiPayload) -> None:
         """Constructor, don't use directly, use class methods instead"""
@@ -128,7 +126,7 @@ class QualityGate(SqObject):
         self.conditions()
         self.permissions()
         log.debug("Created %s with uuid %d id %x", str(self), hash(self), id(self))
-        QualityGate.CACHE.put(self)
+        self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:
         """Returns the string formatting of the object"""
@@ -221,8 +219,7 @@ class QualityGate(SqObject):
             try:
                 resp = self.get(api, params=params)
             except exceptions.ObjectNotFound:
-                with self.__class__._CLASS_LOCK:
-                    self.__class__.CACHE.pop(self)
+                self.__class__.CACHE.pop(self)
                 raise
             data = json.loads(resp.text)
             for prj in data[return_field]:
@@ -333,10 +330,9 @@ class QualityGate(SqObject):
             log.info("Renaming %s with %s", self, data["name"])
             api, _, params, _ = self.endpoint.api.get_details(self, Oper.RENAME, id=self.key, name=data["name"])
             self.post(api, params=params)
-            with self.__class__._CLASS_LOCK:
-                self.__class__.CACHE.pop(self)
-                self.key = self.name = data["name"]
-                self.__class__.CACHE.put(self)
+            self.__class__.CACHE.pop(self)
+            self.key = self.name = data["name"]
+            self.__class__.CACHE.put(self)
         ok = self.set_conditions(data.get("conditions", []))
         ok = self.set_permissions(data.get("permissions", [])) and ok
         if data.get("isDefault", False):

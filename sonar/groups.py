@@ -25,7 +25,6 @@ from __future__ import annotations
 import json
 
 from typing import Optional, Any, TYPE_CHECKING
-from threading import Lock
 from sonar.sqobject import SqObject
 import sonar.logging as log
 import sonar.util.misc as util
@@ -55,7 +54,6 @@ class Group(SqObject):
     """
 
     CACHE = cache.Cache()
-    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, name: str, data: ApiPayload) -> None:
         """Do not use, use class methods to create objects"""
@@ -66,8 +64,7 @@ class Group(SqObject):
         self.__is_default = data.get("default", None)
         self.id = data.get("id", None)  #: SonarQube 10.4+ Group id
         self.sq_json = data
-        with self.__class__._CLASS_LOCK:
-            self.__class__.CACHE.put(self)
+        self.__class__.CACHE.put(self)
         log.debug("Created %s object, id '%s'", str(self), str(self.id))
 
     def __str__(self) -> str:
