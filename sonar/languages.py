@@ -70,12 +70,14 @@ class Language(SqObject):
         return o
 
     @classmethod
-    def read(cls, endpoint: Platform, key: str) -> Optional[Language]:
-        """Reads a language and return the corresponding object
+    def read(cls, endpoint: Platform, key: str, use_cache: bool = True) -> Optional[Language]:
+        """Reads a language and return the corresponding object if it exists, else none
 
         :param endpoint: Reference of the SonarQube platform
-        :param key: The language key"""
-        cls.search(endpoint, use_cache=True)
+        :param key: The language key
+        :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        """
+        cls.search(endpoint, use_cache=use_cache)
         return Language.CACHE.get(key, endpoint.local_url)
 
     @classmethod
@@ -97,10 +99,10 @@ class Language(SqObject):
     def number_of_rules(self, rule_type: Optional[str] = None) -> int:
         """Count rules in the language, optionally filtering on rule type
 
-        :param rule_type: Rule type to filter on, defaults to None
+        :param rule_type: Rule type to filter on, defaults to None for all types
         """
-        if rule_type not in (idefs.TYPE_VULN, idefs.TYPE_HOTSPOT, idefs.TYPE_BUG, idefs.TYPE_CODE_SMELL):
-            rule_type = None
+        if rule_type is not None and rule_type not in idefs.ALL_TYPES:
+            return 0
         if self._nb_rules[rule_type or "_ALL"] is None:
             self._nb_rules[rule_type or "_ALL"] = len(rules.Rule.search(self.endpoint, use_cache=True, languages=self.key, types=rule_type))
         return self._nb_rules[rule_type or "_ALL"]
