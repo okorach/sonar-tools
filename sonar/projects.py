@@ -118,8 +118,9 @@ class Project(Component):
         self._new_code: Optional[str] = None
         self._ci: Optional[str] = None
         self._revision: Optional[str] = None
-        Project.CACHE.put(self)
-        log.debug("Created object %s", str(self))
+        with _CLASS_LOCK:
+            Project.CACHE.put(self)
+        log.debug("Loaded object %s", str(self))
 
     def __str__(self) -> str:
         """Returns the string representation of the project"""
@@ -162,34 +163,20 @@ class Project(Component):
         return o.refresh()
 
     @classmethod
-    def search(cls, endpoint: Platform, threads: int = 8, **search_params: Any) -> dict[str, Project]:
+    def search(cls, endpoint: Platform, threads: int = 8, use_cache: bool = True, **search_params: Any) -> dict[str, Project]:
         """Searches projects in SonarQube
 
         :param endpoint: Reference to the SonarQube platform
         :param params: list of parameters to narrow down the search
         :param threads: number of parallel threads to use for search
+        :param use_cache: whether to use local cache or query SonarQube, default True (use cache)
         :returns: list of projects
         """
-        new_params = search_params.copy()
+        if use_cache and len(search_params) == 0 and len(cls.CACHE) > 0:
+            return dict(cls.CACHE.items())
         if not endpoint.is_sonarcloud():
-            new_params["filter"] = _PROJECT_QUALIFIER
-        return cls.get_paginated(endpoint=endpoint, params=new_params, threads=threads)
-
-    @classmethod
-    def get_list(cls, endpoint: Platform, key_list: KeyList = None, threads: int = 8, use_cache: bool = True) -> dict[str, Project]:
-        """
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param KeyList key_list: List of portfolios keys to get, if None or empty all portfolios are returned
-        :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-        :return: the list of all projects
-        :rtype: dict{key: Project}
-        """
-        with _CLASS_LOCK:
-            if key_list is None or len(key_list) == 0 or not use_cache:
-                log.info("Listing projects")
-                p_list = dict(sorted(cls.search(endpoint=endpoint, threads=threads).items()))
-                return p_list
-        return {key: cls.get_object(endpoint, key) for key in sorted(key_list)}
+            search_params |= {"filter": _PROJECT_QUALIFIER}
+        return cls.get_paginated(endpoint=endpoint, params=search_params, threads=threads)
 
     def project(self) -> Project:
         """Returns the project"""
@@ -1295,7 +1282,7 @@ def get_matching_list(endpoint: Platform, pattern: str, threads: int = 8) -> dic
     """
     pattern = pattern or ".+"
     log.info("Listing projects matching regexp '%s'", pattern)
-    matches = {k: v for k, v in Project.get_list(endpoint, threads=threads).items() if re.match(rf"^{pattern}$", k)}
+    matches = {k: v for k, v in Project.search(endpoint, threads=threads).items() if re.match(rf"^{pattern}$", k)}
     log.info("%d project key matching regexp '%s'", len(matches), pattern)
     return matches
 
@@ -1350,7 +1337,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[
     log.info("--- Auditing projects: START ---")
     key_regexp = kwargs.get("key_list", ".+")
     threads = audit_settings.get("threads", 4)
-    plist = {k: v for k, v in Project.get_list(endpoint, threads=threads).items() if not key_regexp or re.match(key_regexp, v.key)}
+    plist = {k: v for k, v in Project.search(endpoint, threads=threads, use_cache=False).items() if not key_regexp or re.match(key_regexp, v.key)}
     write_q = kwargs.get("write_q", None)
     total, current = len(plist), 0
     problems = []
@@ -1390,7 +1377,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     for qp in qualityprofiles.QualityProfile.get_list(endpoint).values():
         qp.projects()
     proj_list = {
-        k: v for k, v in Project.get_list(endpoint=endpoint, threads=nb_threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)
+        k: v for k, v in Project.search(endpoint, threads=nb_threads, use_cache=False).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)
     }
     total, current = len(proj_list), 0
     log.info("Exporting %d projects", total)
@@ -1427,7 +1414,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
         log.info("No projects to import")
         return
     log.info("Importing projects")
-    Project.get_list(endpoint=endpoint)
+    Project.search(endpoint, use_cache=False)
     project_data = util.list_to_dict(project_data, "key")
     nb_projects = len(project_data)
     i = 0
@@ -1485,7 +1472,7 @@ def export_zips(
     :return: list of exported projects with export result
     """
     statuses, results = {"SUCCESS": 0}, []
-    projects_list = {k: p for k, p in Project.get_list(endpoint, threads=threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", p.key)}
+    projects_list = {k: p for k, p in Project.search(endpoint, threads=threads, use_cache=False).items() if not key_regexp or re.match(rf"^{key_regexp}$", p.key)}
     nbr_projects = len(projects_list)
     if skip_zero_loc:
         results = [

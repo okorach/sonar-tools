@@ -175,7 +175,7 @@ class Issue(findings.Finding):
             issue_list = cls.search_unsafe(endpoint, threads=threads, **search_params)
         except TooManyIssuesError as e:
             log.info(e.message)
-            for key in Project.get_list(endpoint):
+            for key in Project.search(endpoint):
                 issue_list |= cls.search_by_project(endpoint, search_findings=True, **(search_params | {"project": key}))
         return issue_list
 

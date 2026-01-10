@@ -44,7 +44,7 @@ def get_components(
         if kwargs.get("topLevelOnly", False):
             components = [p for p in components if p.is_toplevel()]
     else:
-        components = list(projects.Project.get_list(endpoint).values())
+        components = list(projects.Project.search(endpoint, use_cache=False).values())
     if key_regexp:
         log.info("Searching for %s matching '%s'", component_type, key_regexp)
         components = [comp for comp in components if re.match(rf"^{key_regexp}$", comp.key)]
