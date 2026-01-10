@@ -137,9 +137,9 @@ def test_audit_disabled() -> None:
 
 def test_login_from_name(get_test_user: Generator[users.User]) -> None:
     """test_login_from_name"""
-    _ = get_test_user
-    name = f"User name {tutil.TEMP_KEY}"
-    assert users.get_login_from_name(tutil.SQ, name) == tutil.TEMP_KEY
+    user = get_test_user
+    name = f"User name {user.login}"
+    assert users.get_login_from_name(tutil.SQ, name) == user.login
 
     name = "Non existing name"
     assert users.get_login_from_name(tutil.SQ, name) is None
@@ -165,8 +165,8 @@ def test_update(get_test_user: Generator[users.User]) -> None:
     # test_update
     user = get_test_user
     assert user.groups() == [tutil.SQ.default_user_group()]
-    assert user.login == tutil.TEMP_KEY
-    assert user.name == f"User name {tutil.TEMP_KEY}"
+    assert user.login.startswith(f"{tutil.TEMP_KEY}-user")
+    assert user.name.startswith(f"User name {tutil.TEMP_KEY}-user")
 
     user.update(groups=["sonar-administrators"])
     assert sorted(user.groups()) == ["sonar-administrators", tutil.SQ.default_user_group()]
