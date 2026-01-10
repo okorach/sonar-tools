@@ -25,6 +25,7 @@ from collections.abc import Generator
 import time
 import json
 import pytest
+import os
 
 import utilities as tutil
 from sonar import portfolios as pf, projects, exceptions, logging
@@ -39,8 +40,10 @@ SUPPORTED_EDITIONS = (c.EE, c.DCE)
 
 def test_get_object() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.create, endpoint=tutil.SQ, key=tutil.TEMP_KEY, name=tutil.TEMP_KEY):
+    key = f"{tutil.TEMP_KEY}-portfolios-tmp-{os.getpid()}"
+    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.create, endpoint=tutil.SQ, key=key, name=key):
         return
+    pf.Portfolio.get_object(endpoint=tutil.SQ, key=key).delete()
     portf = pf.Portfolio.get_object(endpoint=tutil.SQ, key=EXISTING_PORTFOLIO)
     assert portf.key == EXISTING_PORTFOLIO
     portf2 = pf.Portfolio.get_object(endpoint=tutil.SQ, key=EXISTING_PORTFOLIO)
@@ -78,8 +81,10 @@ def test_get_list() -> None:
 
 def test_create_delete(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test portfolio create delete"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.create, endpoint=tutil.SQ, key=tutil.TEMP_KEY):
+    key = f"{tutil.TEMP_KEY}-portfolios-tmp-{os.getpid()}"
+    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.create, endpoint=tutil.SQ, key=key, name=key):
         return
+    pf.Portfolio.get_object(endpoint=tutil.SQ, key=key).delete()
     portfolio: pf.Portfolio = get_test_portfolio
     assert portfolio is not None
     assert portfolio.key.startswith(f"{tutil.TEMP_KEY}-portfolio")
