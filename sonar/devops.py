@@ -239,7 +239,7 @@ class DevopsPlatform(SqObject):
         :param key: Key of the devops platform (its name)
         :return: The DevOps platforms corresponding to key, or None if not found
         """
-        if len(cls.CACHE) == 0:
+        if len(cls.CACHE.from_platform(endpoint)) == 0:
             cls.search(endpoint)
         return cls.read(endpoint, key)
 
