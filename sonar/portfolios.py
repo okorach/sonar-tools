@@ -645,7 +645,7 @@ class Portfolio(aggregations.Aggregation):
         """
         log.info("Updating %s subportfolios", str(self))
         subps = self.sub_portfolios(full=True)
-        Portfolio.search(self.endpoint)
+        Portfolio.search(self.endpoint, use_cache=True)
         key_list = []
         if subps:
             key_list = list(subps.keys())

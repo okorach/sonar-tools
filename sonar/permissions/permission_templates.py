@@ -274,9 +274,8 @@ def _load_default_templates(endpoint: Platform, data: ApiPayload = None) -> None
 def export(endpoint: Platform, export_settings: ConfigSettings) -> ObjectJsonRepr:
     """Exports permission templates as JSON"""
     log.info("Exporting permission templates")
-    pt_list = PermissionTemplate.search(endpoint)
     json_data = {}
-    for pt in pt_list.values():
+    for pt in PermissionTemplate.search(endpoint).values():
         json_data[pt.name] = pt.to_json(export_settings)
         if not export_settings.get("FULL_EXPORT"):
             for k in ("name", "id", "key"):

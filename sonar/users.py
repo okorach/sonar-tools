@@ -461,7 +461,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     log.info("Exporting users")
     write_q = kwargs.get("write_q", None)
     u_list = []
-    for _, u_obj in sorted(User.search(endpoint=endpoint).items()):
+    for _, u_obj in sorted(User.search(endpoint).items()):
         u_data = util.clean_data(u_obj.to_json(export_settings), True, True)
         u_list.append(u_data)
         if write_q:
@@ -505,7 +505,7 @@ def get_login_from_name(endpoint: Platform, name: str) -> Optional[str]:
     :param str name: User name
     :returns: User login or None if name not found
     """
-    u_list = User.search(endpoint=endpoint, q=name)
+    u_list = User.search(endpoint, q=name)
     if not u_list or len(u_list) == 0:
         return None
     if len(u_list) > 1:

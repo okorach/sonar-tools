@@ -426,7 +426,7 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     # We should count the nbr of custom profiles per language
     results["number_of_custom_quality_profiles"] = {}
     errcount = 0
-    for lang in languages.Language.search(endpoint, use_cache=True):
+    for lang in languages.Language.search(endpoint, use_cache=False):
         if (count := sum(1 for p in qp_list if p.language == lang)) == 0:
             continue
         results["number_of_custom_quality_profiles"][lang] = count

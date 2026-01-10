@@ -163,7 +163,7 @@ class Project(Component):
         return o.refresh()
 
     @classmethod
-    def search(cls, endpoint: Platform, threads: int = 8, use_cache: bool = True, **search_params: Any) -> dict[str, Project]:
+    def search(cls, endpoint: Platform, threads: int = 8, use_cache: bool = False, **search_params: Any) -> dict[str, Project]:
         """Searches projects in SonarQube
 
         :param endpoint: Reference to the SonarQube platform
@@ -802,7 +802,7 @@ class Project(Component):
         :rtype: dict{language: QualityProfile}
         """
         log.debug("Getting %s quality profiles", str(self))
-        qp_list = qualityprofiles.QualityProfile.search(self.endpoint)
+        qp_list = qualityprofiles.QualityProfile.search(self.endpoint, use_cache=True)
         return {qp.language: qp for qp in qp_list.values() if qp.used_by_project(self)}
 
     def quality_gate(self) -> Optional[tuple[str, bool]]:
@@ -1282,7 +1282,7 @@ def get_matching_list(endpoint: Platform, pattern: str, threads: int = 8) -> dic
     """
     pattern = pattern or ".+"
     log.info("Listing projects matching regexp '%s'", pattern)
-    matches = {k: v for k, v in Project.search(endpoint, threads=threads).items() if re.match(rf"^{pattern}$", k)}
+    matches = {k: v for k, v in Project.search(endpoint, use_cache=True, threads=threads).items() if re.match(rf"^{pattern}$", k)}
     log.info("%d project key matching regexp '%s'", len(matches), pattern)
     return matches
 
@@ -1337,7 +1337,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[
     log.info("--- Auditing projects: START ---")
     key_regexp = kwargs.get("key_list", ".+")
     threads = audit_settings.get("threads", 4)
-    plist = {k: v for k, v in Project.search(endpoint, threads=threads, use_cache=False).items() if not key_regexp or re.match(key_regexp, v.key)}
+    plist = {k: v for k, v in Project.search(endpoint, threads=threads).items() if not key_regexp or re.match(key_regexp, v.key)}
     write_q = kwargs.get("write_q", None)
     total, current = len(plist), 0
     problems = []
@@ -1377,7 +1377,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     for qp in qualityprofiles.QualityProfile.search(endpoint).values():
         qp.projects()
     proj_list = {
-        k: v for k, v in Project.search(endpoint, threads=nb_threads, use_cache=False).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)
+        k: v for k, v in Project.search(endpoint, threads=nb_threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)
     }
     total, current = len(proj_list), 0
     log.info("Exporting %d projects", total)
@@ -1414,7 +1414,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
         log.info("No projects to import")
         return
     log.info("Importing projects")
-    Project.search(endpoint, use_cache=False)
+    Project.search(endpoint)
     project_data = util.list_to_dict(project_data, "key")
     nb_projects = len(project_data)
     i = 0
@@ -1473,7 +1473,7 @@ def export_zips(
     """
     statuses, results = {"SUCCESS": 0}, []
     projects_list = {
-        k: p for k, p in Project.search(endpoint, threads=threads, use_cache=False).items() if not key_regexp or re.match(rf"^{key_regexp}$", p.key)
+        k: p for k, p in Project.search(endpoint, threads=threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", p.key)
     }
     nbr_projects = len(projects_list)
     if skip_zero_loc:

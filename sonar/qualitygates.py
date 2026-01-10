@@ -311,7 +311,7 @@ class QualityGate(SqObject):
         try:
             ok = self.post("qualitygates/set_as_default", params=params).ok
             # Turn off default for all other quality gates except the current one
-            for qg in QualityGate.search(self.endpoint).values():
+            for qg in QualityGate.search(self.endpoint, use_cache=True).values():
                 qg.is_default = qg.name == self.name
         except exceptions.SonarException:
             return False
@@ -491,7 +491,7 @@ def count(endpoint: Platform) -> int:
     :return: Number of quality gates
     :rtype: int
     """
-    return len(QualityGate.search(endpoint))
+    return len(QualityGate.search(endpoint, use_cache=True))
 
 
 def _encode_conditions(conds: list[dict[str, str]]) -> list[str]:

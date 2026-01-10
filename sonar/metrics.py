@@ -104,13 +104,13 @@ class Metric(SqObject):
 
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Metric:
-        cls.search(endpoint=endpoint)
+        cls.search(endpoint=endpoint, use_cache=True)
         if not (o := cls.CACHE.get(key, endpoint.local_url)):
             raise exceptions.ObjectNotFound(key, f"Metric key '{key}' not found")
         return o
 
     @classmethod
-    def search(cls, endpoint: Platform, include_hidden_metrics: bool = False, use_cache: bool = True, **search_params: Any) -> dict[str, Metric]:
+    def search(cls, endpoint: Platform, include_hidden_metrics: bool = False, use_cache: bool = False, **search_params: Any) -> dict[str, Metric]:
         """
         :param endpoint: Reference to the SonarQube platform object
         :param include_hidden_metrics: Whether to also include hidden (private) metrics

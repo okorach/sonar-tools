@@ -161,7 +161,7 @@ def test_config_import_portfolios() -> None:
         json_config = json.loads(f.read())["portfolios"]
 
     # delete all portfolios in test
-    p_list = portfolios.Portfolio.search(tutil.TEST_SQ, use_cache=False)
+    p_list = portfolios.Portfolio.search(tutil.TEST_SQ)
     for p in [p for p in p_list.values() if p.is_toplevel()]:
         p.delete()
     # Import config

@@ -79,7 +79,7 @@ class Language(SqObject):
         return Language.CACHE.get(key, endpoint.local_url)
 
     @classmethod
-    def search(cls, endpoint: Platform, use_cache: bool = True, **search_params: Any) -> dict[str, Language]:
+    def search(cls, endpoint: Platform, use_cache: bool = False, **search_params: Any) -> dict[str, Language]:
         """Gets the list of languages existing on the SonarQube platform
 
         :param endpoint: Reference of the SonarQube platform
@@ -102,7 +102,7 @@ class Language(SqObject):
         if rule_type not in (idefs.TYPE_VULN, idefs.TYPE_HOTSPOT, idefs.TYPE_BUG, idefs.TYPE_CODE_SMELL):
             rule_type = None
         if self._nb_rules[rule_type or "_ALL"] is None:
-            self._nb_rules[rule_type or "_ALL"] = len(rules.Rule.search(self.endpoint, languages=self.key, types=rule_type))
+            self._nb_rules[rule_type or "_ALL"] = len(rules.Rule.search(self.endpoint, use_cache=True, languages=self.key, types=rule_type))
         return self._nb_rules[rule_type or "_ALL"]
 
     @classmethod

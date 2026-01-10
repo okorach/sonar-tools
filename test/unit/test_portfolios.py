@@ -71,7 +71,7 @@ def test_get_list() -> None:
     if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.search, endpoint=tutil.SQ):
         return
 
-    p_dict = pf.Portfolio.search(endpoint=tutil.SQ, key_list=k_list)
+    p_dict = pf.Portfolio.search(endpoint=tutil.SQ)
     for k in k_list:
         assert k in p_dict
 

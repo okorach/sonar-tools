@@ -103,7 +103,7 @@ class QualityProfile(SqObject):
         return hash((self.name, self.language, self.base_url()))
 
     @classmethod
-    def search(cls, endpoint: Platform, use_cache: bool = True, **search_params: Any) -> dict[str, QualityProfile]:
+    def search(cls, endpoint: Platform, use_cache: bool = False, **search_params: Any) -> dict[str, QualityProfile]:
         """Searches projects in SonarQube
 
         param Platform endpoint: Reference to the SonarQube platform
@@ -124,7 +124,7 @@ class QualityProfile(SqObject):
 
         :return: The quality profile object, of None if not found
         """
-        cls.search(endpoint)
+        cls.search(endpoint, use_cache=True)
         if o := cls.CACHE.get(name, language, endpoint.local_url):
             return o
         raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
@@ -266,7 +266,7 @@ class QualityProfile(SqObject):
         if r.ok:
             self.is_default = True
             # Turn off default for all other profiles except the current profile
-            for qp in QualityProfile.search(self.endpoint).values():
+            for qp in QualityProfile.search(self.endpoint, use_cache=True).values():
                 if qp.language == self.language and qp.key != self.key:
                     qp.is_default = False
         return r.ok
@@ -797,9 +797,9 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings = None, **kwargs) -
         log.info("Auditing quality profiles is disabled, audit skipped...")
         return []
     log.info("--- Auditing quality profiles ---")
-    rules.Rule.search(endpoint=endpoint)
+    rules.Rule.search(endpoint)
     problems = []
-    qp_list = QualityProfile.search(endpoint=endpoint)
+    qp_list = QualityProfile.search(endpoint)
     for qp in qp_list.values():
         problems += qp.audit(audit_settings)
     problems += __audit_nbr_of_qp(qp_list=qp_list, audit_settings=audit_settings)
