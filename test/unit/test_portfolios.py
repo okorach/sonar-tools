@@ -75,6 +75,7 @@ def test_get_list() -> None:
     for k in k_list:
         assert k in p_dict
 
+
 def test_create_delete(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test portfolio create delete"""
     if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.create, endpoint=tutil.SQ, key=tutil.TEMP_KEY):

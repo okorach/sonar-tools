@@ -180,7 +180,7 @@ class QualityGate(SqObject):
         :return: Dict of quality gates indexed by name
         """
         log.info("Getting quality gates, use cache: %s", use_cache)
-        if not use_cache or len(search_params) > 0 or len(cls.CACHE) = 0:
+        if not use_cache or len(search_params) > 0 or len(cls.CACHE) == 0:
             api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
             for qg_data in json.loads(endpoint.get(api, params=params).text)[ret]:
                 cls.load(endpoint, qg_data)

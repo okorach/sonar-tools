@@ -1472,7 +1472,9 @@ def export_zips(
     :return: list of exported projects with export result
     """
     statuses, results = {"SUCCESS": 0}, []
-    projects_list = {k: p for k, p in Project.search(endpoint, threads=threads, use_cache=False).items() if not key_regexp or re.match(rf"^{key_regexp}$", p.key)}
+    projects_list = {
+        k: p for k, p in Project.search(endpoint, threads=threads, use_cache=False).items() if not key_regexp or re.match(rf"^{key_regexp}$", p.key)
+    }
     nbr_projects = len(projects_list)
     if skip_zero_loc:
         results = [

@@ -322,7 +322,9 @@ class Rule(SqObject):
         rule_list = {}
         for lang_key in lang_list:
             for include_external in [str(include_external).lower()] if include_external else ["false", "true"]:
-                rule_list |= cls.get_paginated(endpoint=endpoint, threads=threads, params=search_params | {"languages": lang_key, "include_external": include_external})
+                rule_list |= cls.get_paginated(
+                    endpoint=endpoint, threads=threads, params=search_params | {"languages": lang_key, "include_external": include_external}
+                )
         log.info("Rule search returning a list of %d rules", len(rule_list))
         return rule_list
 

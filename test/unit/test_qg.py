@@ -58,11 +58,13 @@ def test_search() -> None:
     """Test QP search"""
     assert len(qualitygates.QualityGate.search(tutil.SQ)) >= 5
 
+
 def test_search_with_cache() -> None:
     """Test QP search with cache"""
     qp1 = qualitygates.QualityGate.search(tutil.SQ, use_cache=False)
     qp2 = qualitygates.QualityGate.search(tutil.SQ, use_cache=True)
     assert sorted(qp1.keys()) == sorted(qp2.keys())
+
 
 def test_create_delete(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
     """Test QG create delete"""

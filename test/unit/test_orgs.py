@@ -103,4 +103,3 @@ def test_search() -> None:
     org = org_list[MY_ORG]
     assert isinstance(org, orgs.Organization)
     assert org.key == MY_ORG
-
