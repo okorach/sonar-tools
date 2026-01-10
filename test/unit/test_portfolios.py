@@ -37,13 +37,13 @@ EXISTING_PORTFOLIO = "PORT_FAV_PROJECTS"
 
 SUPPORTED_EDITIONS = (c.EE, c.DCE)
 
+def verify_support() -> bool:
+    return tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.get_object, endpoint=tutil.SQ, key=tutil.TEMP_KEY)
 
 def test_get_object() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
-    key = f"{tutil.TEMP_KEY}-portfolios-tmp-{os.getpid()}"
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.create, endpoint=tutil.SQ, key=key, name=key):
+    if not verify_support():
         return
-    pf.Portfolio.get_object(endpoint=tutil.SQ, key=key).delete()
     portf = pf.Portfolio.get_object(endpoint=tutil.SQ, key=EXISTING_PORTFOLIO)
     assert portf.key == EXISTING_PORTFOLIO
     portf2 = pf.Portfolio.get_object(endpoint=tutil.SQ, key=EXISTING_PORTFOLIO)
@@ -53,7 +53,7 @@ def test_get_object() -> None:
 
 def test_get_object_non_existing() -> None:
     """Test exception raised when providing non existing portfolio key"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.get_object, endpoint=tutil.SQ, key="NON_EXISTING"):
+    if not verify_support():
         return
     with pytest.raises(exceptions.ObjectNotFound) as e:
         _ = pf.Portfolio.get_object(endpoint=tutil.SQ, key="NON_EXISTING")
@@ -62,7 +62,7 @@ def test_get_object_non_existing() -> None:
 
 def test_exists() -> None:
     """Test exist"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.exists, endpoint=tutil.SQ, key="PORT_FAV_PROJECTS"):
+    if not verify_support():
         return
     assert pf.Portfolio.exists(endpoint=tutil.SQ, key="PORT_FAV_PROJECTS")
     assert not pf.Portfolio.exists(endpoint=tutil.SQ, key="NON_EXISTING")
@@ -71,7 +71,7 @@ def test_exists() -> None:
 def test_get_list() -> None:
     """Test portfolio get_list"""
     k_list = ["PORT_FAV_PROJECTS", "PORTFOLIO_ALL"]
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.search, endpoint=tutil.SQ):
+    if not verify_support():
         return
 
     p_dict = pf.Portfolio.search(endpoint=tutil.SQ)
@@ -81,10 +81,8 @@ def test_get_list() -> None:
 
 def test_create_delete(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test portfolio create delete"""
-    key = f"{tutil.TEMP_KEY}-portfolios-tmp-{os.getpid()}"
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.create, endpoint=tutil.SQ, key=key, name=key):
+    if not verify_support():
         return
-    pf.Portfolio.get_object(endpoint=tutil.SQ, key=key).delete()
     portfolio: pf.Portfolio = get_test_portfolio
     assert portfolio is not None
     assert portfolio.key.startswith(f"{tutil.TEMP_KEY}-portfolio")
@@ -309,7 +307,7 @@ def test_import() -> None:
 
 def test_audit_disabled() -> None:
     """test_audit_disabled"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.audit, endpoint=tutil.SQ, audit_settings={"audit.portfolios": False}):
+    if not verify_support():
         return
     assert len(pf.audit(tutil.SQ, {"audit.portfolios": False})) == 0
 
