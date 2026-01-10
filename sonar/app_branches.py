@@ -35,7 +35,6 @@ from sonar.projects import Project
 from sonar import exceptions
 import sonar.utilities as sutil
 from sonar.api.manager import ApiOperation as Oper
-from sonar.api.manager import ApiManager as Api
 import sonar.util.constants as c
 from sonar import applications as apps
 

@@ -26,7 +26,6 @@ from typing import Optional, Any, TYPE_CHECKING
 
 import json
 from threading import Lock
-from urllib.parse import SplitResult
 
 from sonar.sqobject import SqObject
 from sonar import rules

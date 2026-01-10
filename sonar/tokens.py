@@ -34,7 +34,6 @@ from sonar.util import cache, constants as c
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 from sonar.api.manager import ApiOperation as Oper
-from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

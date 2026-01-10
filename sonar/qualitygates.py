@@ -37,7 +37,7 @@ import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 from sonar.util import common_json_helper
-from sonar.api.manager import ApiManager as Api, ApiOperation as Oper
+from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

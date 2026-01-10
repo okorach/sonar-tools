@@ -35,7 +35,6 @@ import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.util import rule_helper as rhelp
 from sonar.api.manager import ApiOperation as Oper
-from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

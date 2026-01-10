@@ -27,14 +27,14 @@ import json
 
 from sonar.sqobject import SqObject
 from sonar import metrics, exceptions
-from sonar.api.manager import ApiManager as Api, ApiOperation as Oper
-from sonar.util.types import ApiPayload, ApiParams, KeyList
+from sonar.api.manager import ApiOperation as Oper
 from sonar.util import cache, constants as c
 import sonar.logging as log
 import sonar.util.misc as util
 import sonar.utilities as sutil
 
 if TYPE_CHECKING:
+    from sonar.util.types import ApiPayload, ApiParams, KeyList
     from sonar.platform import Platform
 
 ALT_COMPONENTS = ("project", "application", "portfolio", "key")

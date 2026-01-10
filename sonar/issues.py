@@ -42,7 +42,6 @@ from sonar.projects import Project
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.api.manager import ApiOperation as Oper
-from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -866,7 +865,7 @@ def count(endpoint: Platform, **search_params: Any) -> int:
     return nbr_issues
 
 
-def count_by_rule(endpoint: Platform, **search_params) -> dict[str, int]:
+def count_by_rule(endpoint: Platform, **search_params: Any) -> dict[str, int]:
     """Returns number of issues of a search"""
     nbr_slices = 1
     SLICE_SIZE = 50  # Search rules facets by bulks of 50

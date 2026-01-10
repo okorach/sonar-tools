@@ -37,7 +37,6 @@ import sonar.utilities as sutil
 from sonar import projects, rules
 import sonar.util.issue_defs as idefs
 from sonar.api.manager import ApiOperation as Oper
-from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.issues import Issue

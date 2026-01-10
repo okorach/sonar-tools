@@ -45,7 +45,6 @@ from sonar.audit import rules, problem
 from sonar.portfolio_reference import PortfolioReference
 from sonar.util import portfolio_helper as phelp
 from sonar.api.manager import ApiOperation as Oper
-from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

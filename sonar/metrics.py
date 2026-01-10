@@ -115,6 +115,7 @@ class Metric(SqObject):
         :param endpoint: Reference to the SonarQube platform object
         :param include_hidden_metrics: Whether to also include hidden (private) metrics
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        :param search_params: Search filters (see api/metrics/search parameters)
         :return: Dict of metrics indexed by metric key
         """
         if not use_cache or len(search_params) > 0 or len(cls.CACHE.from_platform(endpoint)) == 0:
@@ -122,7 +123,7 @@ class Metric(SqObject):
         return {v.key: v for v in cls.CACHE.from_platform(endpoint).values() if not v.hidden or include_hidden_metrics}
 
     @classmethod
-    def count(cls, endpoint: Platform, include_hidden_metrics: bool = False, use_cache: bool = True) -> int:
+    def count(cls, endpoint: Platform, **search_params: Any) -> int:
         """Returns the number of public metrics
 
         :param endpoint: Reference to the SonarQube platform object
@@ -130,7 +131,7 @@ class Metric(SqObject):
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
         :return: Number of public metrics
         """
-        return len(cls.search(endpoint, include_hidden_metrics=include_hidden_metrics, use_cache=use_cache))
+        return len(cls.search(endpoint, include_hidden_metrics=search_params.pop("include_hidden_metrics", False), **search_params))
 
     @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> Metric:

@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube User concept"""
 
 from __future__ import annotations
-from typing import Optional, Union, Any, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 import concurrent.futures
 from datetime import datetime, timezone, MINYEAR
@@ -29,7 +29,6 @@ import json
 from requests import RequestException
 
 from sonar.sqobject import SqObject
-from sonar.api.manager import ApiManager as Api
 import sonar.logging as log
 from sonar.util import cache
 import sonar.util.constants as c
@@ -42,7 +41,7 @@ from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, ObjectJsonRepr, KeyList, AuditSettings
+    from sonar.util.types import ApiPayload, ConfigSettings, ObjectJsonRepr, KeyList, AuditSettings
 
 SETTABLE_PROPERTIES = ("login", "name", "email", "groups", "scmAccounts", "local")
 

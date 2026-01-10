@@ -38,7 +38,6 @@ from sonar import settings, tasks, measures, rules, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.api.manager import ApiOperation as Oper
-from sonar.api.manager import ApiManager as Api
 
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId

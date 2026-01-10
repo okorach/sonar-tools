@@ -32,7 +32,6 @@ from sonar.util import cache, constants as c
 from sonar import sqobject, exceptions
 import sonar.util.misc as util
 from sonar.api.manager import ApiOperation as Oper
-from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

@@ -24,7 +24,6 @@
 from __future__ import annotations
 import json
 
-from math import e
 from typing import Optional, Any, TYPE_CHECKING
 
 from sonar.sqobject import SqObject
@@ -37,11 +36,11 @@ from sonar.util import cache, constants as c
 
 from sonar.audit import rules
 from sonar.audit.problem import Problem
-from sonar.api.manager import ApiManager as Api, ApiOperation as Oper
+from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings, KeyList
+    from sonar.util.types import ApiPayload, ObjectJsonRepr, ConfigSettings, KeyList
 
 ADD_USER = "ADD_USER"
 REMOVE_USER = "REMOVE_USER"

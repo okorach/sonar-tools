@@ -113,7 +113,7 @@ class ApiManager:
         if self.endpoint.is_sonarcloud():
             data = self.__class__.SQC_API
         else:
-            api_versions = sorted([tuple(int(s) for s in v.split(".")) for v in self.__class__.SQS_API.keys()], reverse=True)
+            api_versions = sorted([tuple(int(s) for s in v.split(".")) for v in self.__class__.SQS_API], reverse=True)
             api_version_to_use = sutil.version_to_string(next(v for v in api_versions if self.endpoint.version() >= v))
             data = self.__class__.SQS_API[api_version_to_use]
         self.api_def = data

@@ -41,14 +41,12 @@ from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 import sonar.util.constants as c
 from sonar.api.manager import ApiOperation as Oper
-from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
     from sonar.platform import Platform
     from sonar.util.types import ApiPayload, ApiParams, ConfigSettings, ObjectJsonRepr
-    from datetime import datetime
 
 _UNSUPPORTED_IN_CE = "Branches not available in Community Edition"
 
