@@ -30,8 +30,9 @@ import json
 from http import HTTPStatus
 import concurrent.futures
 import requests
+import abc
 
-from sonar.api.manager import ApiManager as Api, ApiOperation as Oper
+from sonar.api.manager import ApiOperation as Oper
 import sonar.logging as log
 from sonar.util import cache
 from sonar.util import constants as c
@@ -131,6 +132,11 @@ class SqObject(object):
         log.info("Restoring access to %s '%s' for user '%s'", cls.__name__, key, user or endpoint.user())
         obj = cls.get_object(endpoint, key=key)
         return obj.set_permissions([{"user": user or endpoint.user(), "permissions": ["admin", "user"]}])
+
+    @abc.abstractmethod
+    def search_one_page(cls, endpoint: Platform, **search_params: Any) -> tuple[str, ObjectJsonRepr]:
+        """Returns one page of a search"""
+        raise NotImplementedError
 
     @classmethod
     def count(cls, endpoint: Platform, **search_params: Any) -> int:
