@@ -94,7 +94,7 @@ class Branch(components.Component):
         branch_name = unquote(branch_name)
         if isinstance(project, str):
             project = proj.Project.get_object(endpoint, project)
-        if o := Branch.CACHE.get(project.key, branch_name, project.base_url()):
+        if o := cls.CACHE.get(project.key, branch_name, project.base_url()):
             return o
         api, _, params, _ = project.endpoint.api.get_details(Branch, Oper.SEARCH, project=project.key)
         data = json.loads(project.get(api, params=params).text)
@@ -115,7 +115,7 @@ class Branch(components.Component):
         """
         branch_name = unquote(branch_name)
         br_data = next((br for br in data.get("branches", []) if br["name"] == branch_name), None)
-        if not (o := Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())):
+        if not (o := cls.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())):
             o = cls(concerned_object, branch_name)
         if br_data:
             o.reload(br_data)

@@ -94,7 +94,7 @@ class WebHook(SqObject):
         """
         name, project = data["name"], data.get("project")
         log.debug("Loading Webhook '%s' of project '%s'", name, project)
-        if (o := WebHook.CACHE.get(name, project, endpoint.local_url)) is None:
+        if (o := cls.CACHE.get(name, project, endpoint.local_url)) is None:
             o = WebHook(endpoint, name, data["url"], data.get("secret"), project)
         o.reload(data)
         return o
@@ -105,7 +105,7 @@ class WebHook(SqObject):
         if project and not isinstance(project, str):
             project = project.key
         log.debug("Getting webhook name %s project key %s", name, project)
-        if kwargs.get("use_cache", True) and (o := WebHook.CACHE.get(name, project, endpoint.local_url)):
+        if kwargs.get("use_cache", True) and (o := cls.CACHE.get(name, project, endpoint.local_url)):
             return o
         try:
             whs = list(cls.search(endpoint, project=project).values())

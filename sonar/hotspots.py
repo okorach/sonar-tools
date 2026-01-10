@@ -113,7 +113,7 @@ class Hotspot(findings.Finding):
     @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> Hotspot:
         """Loads a hotspot from the API payload"""
-        o: Optional[Hotspot] = Hotspot.CACHE.get(data["key"], endpoint.local_url)
+        o: Optional[Hotspot] = cls.CACHE.get(data["key"], endpoint.local_url)
         if not o:
             o = Hotspot(endpoint=endpoint, key=data["key"], data=data)
         o.reload(data)

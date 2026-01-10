@@ -123,7 +123,7 @@ class Project(Component):
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Optional[Project]:
         """Returns the project object from its project key"""
-        if o := Project.CACHE.get(key, endpoint.local_url):
+        if o := cls.CACHE.get(key, endpoint.local_url):
             return o
         api, _, params, ret = endpoint.api.get_details(Project, Oper.GET, component=key)
         return cls.load(endpoint, json.loads(endpoint.get(api, params=params).text)[ret])
@@ -136,7 +136,7 @@ class Project(Component):
         :param ApiPayload data: Project data entry in the search results
         :return: The created project object
         """
-        if not (o := Project.CACHE.get(data["key"], endpoint.local_url)):
+        if not (o := cls.CACHE.get(data["key"], endpoint.local_url)):
             o = cls(endpoint, data["key"])
         return o.reload(data)
 

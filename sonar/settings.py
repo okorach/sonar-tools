@@ -147,7 +147,7 @@ class Setting(sqobject.SqObject):
     def read(cls, key: str, endpoint: Platform, component: Optional[object] = None) -> Setting:
         """Reads a setting from the platform"""
         log.debug("Reading setting '%s' for %s", key, str(component))
-        if o := Setting.CACHE.get(key, component, endpoint.local_url):
+        if o := cls.CACHE.get(key, component, endpoint.local_url):
             return o
         data = get_settings_data(endpoint, key, component)
         return Setting.load(key=key, endpoint=endpoint, data=data, component=component)
@@ -167,7 +167,7 @@ class Setting(sqobject.SqObject):
     def load(cls, key: str, endpoint: Platform, data: ApiPayload, component: Optional[object] = None) -> Setting:
         """Loads a setting with  JSON data"""
         log.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
-        o = Setting.CACHE.get(key, component, endpoint.local_url)
+        o = cls.CACHE.get(key, component, endpoint.local_url)
         if not o:
             o = cls(key=key, endpoint=endpoint, data=data, component=component)
         o.reload(data)
@@ -177,7 +177,7 @@ class Setting(sqobject.SqObject):
     def load_from_definition(cls, key: str, endpoint: Platform, def_data: ApiPayload) -> Setting:
         """Loads a setting with  JSON data"""
         log.debug("Loading setting '%s' from definition %s", key, def_data)
-        if not (o := Setting.CACHE.get(key, None, endpoint.local_url)):
+        if not (o := cls.CACHE.get(key, None, endpoint.local_url)):
             o = cls(key=key, endpoint=endpoint, data=None, component=None)
         o._definition = def_data
         o.multi_valued = def_data.get("multiValues")

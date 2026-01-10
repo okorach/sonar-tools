@@ -252,7 +252,7 @@ class User(SqObject):
         :raises ObjectAlreadyExists: if new login already exists
         :return: self
         """
-        if User.CACHE.get(new_login, self.base_url()):
+        if self.__class__.CACHE.get(new_login, self.base_url()):
             raise exceptions.ObjectAlreadyExists(new_login, f"User '{new_login}' already exists")
         api, method, params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, login=self.login, newLogin=new_login, id=self.id)
         if method == "PATCH":

@@ -139,7 +139,7 @@ class QualityProfile(SqObject):
             log.error("Language '%s' does not exist, quality profile creation aborted", language)
             return None
         log.debug("Reading quality profile '%s' of language '%s'", name, language)
-        o = QualityProfile.CACHE.get(name, language, endpoint.local_url)
+        o = cls.CACHE.get(name, language, endpoint.local_url)
         if o:
             return o
         api, _, _, _ = endpoint.api.get_details(cls, Oper.SEARCH)

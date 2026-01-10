@@ -80,7 +80,7 @@ class Group(SqObject):
         :return: The group object
         """
         log.debug("Reading group '%s'", name)
-        if o := Group.CACHE.get(name, endpoint.local_url):
+        if o := cls.CACHE.get(name, endpoint.local_url):
             return o
         api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, q=name)
         data = json.loads(endpoint.get(api, params=params).text)[ret]
@@ -122,9 +122,9 @@ class Group(SqObject):
         :param name: group name
         :return: The group
         """
-        if not Group.CACHE.get(name, endpoint.local_url):
+        if not cls.CACHE.get(name, endpoint.local_url):
             cls.search(endpoint)
-        if o := Group.CACHE.get(name, endpoint.local_url):
+        if o := cls.CACHE.get(name, endpoint.local_url):
             return o
         raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
 

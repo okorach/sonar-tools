@@ -61,7 +61,7 @@ class Language(SqObject):
         :param endpoint: Reference of the SonarQube platform
         :param data: API payload from api/languages/list
         """
-        if not (o := Language.CACHE.get(data["key"], endpoint.local_url)):
+        if not (o := cls.CACHE.get(data["key"], endpoint.local_url)):
             o = cls(endpoint=endpoint, key=data["key"], name=data["name"])
         return o
 
@@ -74,7 +74,7 @@ class Language(SqObject):
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
         """
         cls.search(endpoint, use_cache=use_cache)
-        return Language.CACHE.get(key, endpoint.local_url)
+        return cls.CACHE.get(key, endpoint.local_url)
 
     @classmethod
     def search(cls, endpoint: Platform, use_cache: bool = False, **search_params: Any) -> dict[str, Language]:

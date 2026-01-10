@@ -126,7 +126,7 @@ class Portfolio(aggregations.Aggregation):
         """Gets a portfolio object from its key"""
         check_supported(endpoint)
         log.debug("Getting portfolio object key '%s'", key)
-        o = Portfolio.CACHE.get(key, endpoint.local_url)
+        o = cls.CACHE.get(key, endpoint.local_url)
         if o:
             log.debug("%s is in cache", str(o))
             return o

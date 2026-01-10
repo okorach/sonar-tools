@@ -144,7 +144,7 @@ class QualityGate(SqObject):
         :param name: Quality gate
         :return: the QualityGate object or None if not found
         """
-        o: Optional[QualityGate] = QualityGate.CACHE.get(name, endpoint.local_url)
+        o: Optional[QualityGate] = cls.CACHE.get(name, endpoint.local_url)
         if o:
             return o
         if data := search_by_name(endpoint, name):
@@ -158,7 +158,7 @@ class QualityGate(SqObject):
         :return: the QualityGate object
         """
         # SonarQube 10 compatibility: "id" field dropped, replaced by "name"
-        o: Optional[QualityGate] = QualityGate.CACHE.get(data["name"], endpoint.local_url)
+        o: Optional[QualityGate] = cls.CACHE.get(data["name"], endpoint.local_url)
         if not o:
             o = cls(endpoint, data["name"], data=data)
         return o.reload(data)

@@ -58,7 +58,7 @@ class PortfolioReference(SqObject):
         """Gets a subportfolio by reference object from its key and parent"""
         check_supported(endpoint)
         log.info("Getting subportfolio by ref key '%s:%s'", parent_key, key)
-        o = PortfolioReference.CACHE.get(f"{parent_key}:{key}", endpoint.local_url)
+        o = cls.CACHE.get(f"{parent_key}:{key}", endpoint.local_url)
         if not o:
             raise exceptions.ObjectNotFound(f"{parent_key}:{key}", f"Portfolio reference key '{parent_key}:{key}' not found")
         return o
