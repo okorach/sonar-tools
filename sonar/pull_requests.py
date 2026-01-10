@@ -122,7 +122,7 @@ class PullRequest(components.Component):
             project = proj.Project.get_object(endpoint, project)
         api, _, params, ret = project.endpoint.api.get_details(cls, Oper.SEARCH, project=project.key)
         dataset = json.loads(project.get(api, params=params).text)[ret]
-        return {pr["key"]: cls.load(project.endpoint, project, pr) for pr in dataset}
+        return dict(sorted({pr["key"]: cls.load(project.endpoint, project, pr) for pr in dataset}.items()))
 
     def reload(self, data: ApiPayload) -> PullRequest:
         """Reloads a PR object from API data"""

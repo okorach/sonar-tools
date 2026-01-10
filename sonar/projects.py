@@ -173,10 +173,10 @@ class Project(Component):
         :returns: list of projects
         """
         if use_cache and len(search_params) == 0 and len(cls.CACHE) > 0:
-            return cls.CACHE.from_platform(endpoint)
+            return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
         if not endpoint.is_sonarcloud():
             search_params |= {"filter": _PROJECT_QUALIFIER}
-        return cls.get_paginated(endpoint=endpoint, params=search_params, threads=threads)
+        return dict(sorted(cls.get_paginated(endpoint=endpoint, params=search_params, threads=threads).items()))
 
     def project(self) -> Project:
         """Returns the project"""

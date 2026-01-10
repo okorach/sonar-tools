@@ -140,7 +140,7 @@ class Branch(components.Component):
         log.debug("Reading all branches of %s", str(project))
         api, _, params, _ = project.endpoint.api.get_details(cls, Oper.SEARCH, project=project.key)
         data = json.loads(project.endpoint.get(api, params=params).text)
-        return {branch["name"]: cls.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
+        return dict(sorted({branch["name"]: cls.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}.items()))
 
     def reload(self, data: ApiPayload) -> Branch:
         log.debug("Loading %s with data %s", self, data)

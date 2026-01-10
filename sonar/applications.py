@@ -139,8 +139,8 @@ class Application(aggr.Aggregation):
         """
         check_supported(endpoint)
         if use_cache and len(search_params) == 0 and len(cls.CACHE) > 0:
-            return cls.CACHE.from_platform(endpoint)
-        return cls.get_paginated(endpoint=endpoint, params=search_params | {"filter": "qualifier = APP"})
+            return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
+        return dict(sorted(cls.get_paginated(endpoint=endpoint, params=search_params | {"filter": "qualifier = APP"}).items()))
 
     def refresh(self) -> Application:
         """Refreshes the application by re-reading SonarQube
