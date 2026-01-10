@@ -21,22 +21,23 @@
 
 """Test of the hotspots module and class, as well as changelog"""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import utilities as tutil
-from sonar import hotspots
+from sonar.hotspots import Hotspot
 import sonar.util.misc as util
+from sonar import projects
 
 
 def test_transitions() -> None:
     """test_transitions"""
-    hotspot_d = hotspots.Hotspot.search(tutil.SQ, project="test:juice-shop")
+    hotspot_d = Hotspot.search(tutil.SQ, project="test:juice-shop")
     hotspot = list(hotspot_d.values())[0]
 
     assert hotspot.mark_as_safe()
     assert hotspot.reopen()
 
     if tutil.SQ.is_sonarcloud():
-        hotspot = list(hotspots.Hotspot.search(tutil.SQ, project=tutil.LIVE_PROJECT).values())[0]
+        hotspot = list(Hotspot.search(tutil.SQ, project=tutil.LIVE_PROJECT).values())[0]
         assert not hotspot.mark_as_acknowledged()
     else:
         assert hotspot.mark_as_acknowledged()
@@ -52,25 +53,72 @@ def test_transitions() -> None:
     assert hotspot.unassign()
 
 
+def test_add_comment() -> None:
+    """test_add_comment"""
+    hotspot_d = Hotspot.search(tutil.SQ, project="test:juice-shop")
+    hotspot = list(hotspot_d.values())[0]
+    nb_comments = len(hotspot.comments())
+    txt = f"test comment on {datetime.now()}"
+    assert hotspot.add_comment(f"test comment on {datetime.now()}")
+    comments = hotspot.comments()
+    assert list(comments.values())[0]["value"] == txt
+    assert len(comments) == nb_comments + 1
+
+    cached_comments = hotspot.comments()
+    assert len(cached_comments) == nb_comments
+
+    just_before = datetime.now() - timedelta(seconds=10)
+    comments = hotspot.comments(after=just_before)
+    assert len(comments) == 1
+    assert comments.values()[0]["value"] == txt
+
+
 def test_search_by_project() -> None:
     """test_search_by_project"""
-    nbr_hotspots = len(hotspots.Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT))
+    nbr_hotspots = len(Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT))
     assert nbr_hotspots > 0
-    assert len(hotspots.Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, statuses=["TO_REVIEW"])) < nbr_hotspots
-    assert len(hotspots.Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, severities=["BLOCKER", "CRITICAL"])) < nbr_hotspots
+    assert len(Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, statuses=["TO_REVIEW"])) < nbr_hotspots
+    assert len(Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, severities=["BLOCKER", "CRITICAL"])) < nbr_hotspots
 
 
 def test_sanitize_filter() -> None:
     """test_sanitize_filter"""
-    assert hotspots.Hotspot.sanitize_search_params(endpoint=tutil.SQ) == {}
+    assert Hotspot.sanitize_search_params(endpoint=tutil.SQ) == {}
     good = ["TO_REVIEW", "REVIEWED"]
-    assert hotspots.Hotspot.sanitize_search_params(endpoint=tutil.SQ, statuses=["DEAD"] + good) == {"status": ",".join(good)}
-    assert hotspots.Hotspot.sanitize_search_params(endpoint=tutil.SQ, statuses=good + ["DEAD"]) == {"status": ",".join(good)}
+    assert Hotspot.sanitize_search_params(endpoint=tutil.SQ, statuses=["DEAD"] + good) == {"status": ",".join(good)}
+    assert Hotspot.sanitize_search_params(endpoint=tutil.SQ, statuses=good + ["DEAD"]) == {"status": ",".join(good)}
 
 
 def test_comments_after() -> None:
     """test_comments_after"""
-    hotspot = list(hotspots.Hotspot.search(endpoint=tutil.SQ, project="test:juice-shop").values())[0]
+    hotspot = list(Hotspot.search(endpoint=tutil.SQ, project="test:juice-shop").values())[0]
     after = util.add_tz(datetime(2024, 1, 1))
     comments = hotspot.comments(after=after)
     assert all(c["date"] >= after for c in comments.values())
+
+
+def test_search_by_project() -> None:
+    """test_search_by_project"""
+    proj: projects.Project = projects.Project.get_object(tutil.SQ, key=tutil.LIVE_PROJECT)
+    hotspot_list = Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT)
+    assert len(hotspot_list) > 0
+    assert len(Hotspot.search_by_project(tutil.SQ, project=proj)) == len(hotspot_list)
+    assert len(Hotspot.search_by_project(tutil.SQ, project=proj, severities=["BLOCKER", "CRITICAL"])) < len(hotspot_list)
+    assert len(Hotspot.search_by_project(tutil.SQ, project=proj, statuses=["TO_REVIEW"])) < len(hotspot_list)
+
+
+def test_search_on_branches() -> None:
+    """test_search_on_branches"""
+    proj_hotspots = Hotspot.search(tutil.SQ, project=tutil.LIVE_PROJECT)
+    branch_hotspots = Hotspot.search(tutil.SQ, project=tutil.LIVE_PROJECT, branch="develop")
+    assert len(proj_hotspots) != len(branch_hotspots)
+    for hotspot in branch_hotspots.values():
+        assert hotspot.branch == "develop"
+    for hotspot in proj_hotspots.values():
+        assert hotspot.branch is None or hotspot.branch == "master"
+
+
+def test_search_on_pr() -> None:
+    """test_search_on_pr"""
+    pr_hotspots = Hotspot.search(tutil.SQ, project=tutil.LIVE_PROJECT, pull_request="5")
+    assert len(pr_hotspots) == 0
