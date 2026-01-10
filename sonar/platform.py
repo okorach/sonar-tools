@@ -467,7 +467,7 @@ class Platform(object):
 
     def webhooks(self) -> dict[str, webhooks.WebHook]:
         """Returns the list of global webhooks"""
-        return webhooks.WebHook.get_list(self)
+        return webhooks.WebHook.search(self)
 
     def export(self, export_settings: ConfigSettings, full: bool = False) -> ObjectJsonRepr:
         """Exports the global platform properties as JSON
