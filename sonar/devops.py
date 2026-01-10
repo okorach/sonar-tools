@@ -141,10 +141,11 @@ class DevopsPlatform(SqObject):
             raise exceptions.UnsupportedOperation("Can't get list of DevOps platforms on SonarQube Cloud")
         api, _, _, _ = endpoint.api.get_details(cls, Oper.SEARCH)
         data = json.loads(endpoint.get(api).text)
+        devops_platforms = {}
         for alm_type in DEVOPS_PLATFORM_TYPES:
             for alm_data in data.get(alm_type, {}):
-                cls.load(endpoint, alm_type, alm_data)
-        return {o.key: o for o in cls.CACHE.values()}
+                devops_platforms[alm_data["key"]] = cls.load(endpoint, alm_type, alm_data)
+        return devops_platforms
 
     def _load(self, data: ApiPayload) -> DevopsPlatform:
         """Loads a devops platform object with data"""
