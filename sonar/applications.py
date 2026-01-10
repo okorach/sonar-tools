@@ -363,8 +363,6 @@ class Application(aggr.Aggregation):
         """Returns the last analysis date of an app"""
         if self._last_analysis is None:
             self.refresh()
-        if "analysisDate" in self.sq_json:
-            self._last_analysis = sutil.string_to_date(self.sq_json["analysisDate"])
         return self._last_analysis
 
     def recompute(self) -> bool:

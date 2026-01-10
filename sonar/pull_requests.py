@@ -28,7 +28,7 @@ from typing import Optional, Union, Any, TYPE_CHECKING
 
 import json
 from datetime import datetime
-
+from threading import Lock
 import requests.utils
 
 import sonar.logging as log
@@ -55,18 +55,16 @@ class PullRequest(components.Component):
     """Abstraction of the Sonar pull request concept"""
 
     CACHE = cache.Cache()
+    _CLASS_LOCK = Lock()
 
     def __init__(self, project: proj.Project, key: str, data: Optional[ApiPayload] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=project.endpoint, key=key)
         self.concerned_object: proj.Project = project
-        self.status: Optional[str] = None
-        self.base: Optional[str] = None
-        self.target: Optional[str] = None
-        self.branch: Optional[str] = None
         if data is not None:
             self.reload(data)
-        PullRequest.CACHE.put(self)
+        with self.__class__._CLASS_LOCK:
+            PullRequest.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
     def __str__(self) -> str:
@@ -127,12 +125,7 @@ class PullRequest(components.Component):
     def reload(self, data: ApiPayload) -> PullRequest:
         """Reloads a PR object from API data"""
         super().reload(data)
-        self._last_analysis = sutil.string_to_date(data["analysisDate"])
         self.name = self._description = data["title"]
-        self.status = data["status"]["qualityGateStatus"]
-        self.base = data["base"]
-        self.target = data["target"]
-        self.branch = data["branch"]
         return self
 
     def url(self) -> str:
@@ -148,11 +141,6 @@ class PullRequest(components.Component):
     def project(self) -> proj.Project:
         """Returns the project"""
         return self.concerned_object
-
-    def last_analysis(self) -> datetime:
-        if self._last_analysis is None and "analysisDate" in self.json:
-            self._last_analysis = sutil.string_to_date(self.json["analysisDate"])
-        return self._last_analysis
 
     def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits the pull request according to the audit settings"""

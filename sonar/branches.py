@@ -71,7 +71,6 @@ class Branch(components.Component):
         self.concerned_object: proj.Project = project
         self._is_main: Optional[bool] = None
         self._new_code: Optional[str] = None
-        self._last_analysis: Optional[datetime] = None
         self._keep_when_inactive: Optional[bool] = None
         Branch.CACHE.put(self)
         log.debug("Created object %s", str(self))
@@ -144,9 +143,8 @@ class Branch(components.Component):
 
     def reload(self, data: ApiPayload) -> Branch:
         log.debug("Loading %s with data %s", self, data)
-        self.sq_json = (self.sq_json or {}) | data
+        super().reload(data)
         self._is_main = self.sq_json["isMain"]
-        self._last_analysis = sutil.string_to_date(self.sq_json.get("analysisDate", None))
         self._keep_when_inactive = self.sq_json.get("excludedFromPurge", False)
         self._is_main = self.sq_json.get("isMain", False)
         return self

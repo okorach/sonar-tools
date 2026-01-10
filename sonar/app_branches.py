@@ -70,7 +70,6 @@ class ApplicationBranch(Component):
         self.sq_json = branch_data
         self._is_main = is_main
         self._project_branches = project_branches
-        self._last_analysis: Optional[datetime] = None
         log.debug("Constructed object %s with uuid %d id %x", str(self), hash(self), id(self))
         ApplicationBranch.CACHE.put(self)
 
