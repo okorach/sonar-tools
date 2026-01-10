@@ -172,7 +172,7 @@ class Project(Component):
         :param use_cache: whether to use local cache or query SonarQube, default True (use cache)
         :returns: list of projects
         """
-        if use_cache and len(search_params) == 0 and len(cls.CACHE) > 0:
+        if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
             return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
         if not endpoint.is_sonarcloud():
             search_params |= {"filter": _PROJECT_QUALIFIER}
@@ -1281,9 +1281,9 @@ def get_matching_list(endpoint: Platform, pattern: str, threads: int = 8) -> dic
     :return: the list of all projects matching the pattern
     """
     pattern = pattern or ".+"
-    log.info("Listing projects matching regexp '%s'", pattern)
+    log.info("Listing projects matching regexp '%s' on %s", pattern, endpoint)
     matches = {k: v for k, v in Project.search(endpoint, use_cache=True, threads=threads).items() if re.match(rf"^{pattern}$", k)}
-    log.info("%d project key matching regexp '%s'", len(matches), pattern)
+    log.info("%d project key matching regexp '%s' on %s", len(matches), pattern, endpoint)
     return matches
 
 
