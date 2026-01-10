@@ -88,13 +88,11 @@ class Language(SqObject):
         :return: List of languages
         :rtype: dict{<language_key>: <language_name>}
         """
-        if use_cache and len(cls.CACHE.objects) > 1000:
-            return cls.CACHE.objects
+        if not use_cache or len(search_params) > 0:
+            return cls.CACHE.from_platform(endpoint)
         api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
         data = json.loads(endpoint.get(api, params=params).text)
-        for lang in data[ret]:
-            _ = Language(endpoint=endpoint, key=lang["key"], name=lang["name"])
-        return {o.key: o for o in cls.CACHE.objects.values()}
+        return {lang["key"]: Language(endpoint=endpoint, key=lang["key"], name=lang["name"]) for lang in data[ret]}
 
     def number_of_rules(self, rule_type: Optional[str] = None) -> int:
         """Count rules in the language, optionally filtering on rule type

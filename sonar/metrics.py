@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube metric concept"""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 from threading import Lock
 
@@ -99,7 +99,8 @@ class Metric(SqObject):
         self.hidden: Optional[bool] = None  #: Hidden
         self.custom: Optional[bool] = None  #: Custom
         self.reload(data)
-        Metric.CACHE.put(self)
+        with _CLASS_LOCK:
+            Metric.CACHE.put(self)
 
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Metric:
@@ -109,17 +110,16 @@ class Metric(SqObject):
         return o
 
     @classmethod
-    def search(cls, endpoint: Platform, include_hidden_metrics: bool = False, use_cache: bool = True) -> dict[str, Metric]:
+    def search(cls, endpoint: Platform, include_hidden_metrics: bool = False, use_cache: bool = True, **search_params: Any) -> dict[str, Metric]:
         """
         :param endpoint: Reference to the SonarQube platform object
         :param include_hidden_metrics: Whether to also include hidden (private) metrics
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
         :return: Dict of metrics indexed by metric key
         """
-        with _CLASS_LOCK:
-            if len(cls.CACHE) == 0 or not use_cache:
-                _ = cls.get_paginated(endpoint, threads=1)
-        return {v.key: v for v in cls.CACHE.values() if not v.hidden or include_hidden_metrics}
+        if not use_cache or len(search_params) > 0:
+            cls.get_paginated(endpoint, threads=1)
+        return {v.key: v for v in cls.CACHE.from_platform(endpoint).values() if not v.hidden or include_hidden_metrics}
 
     @classmethod
     def count(cls, endpoint: Platform, include_hidden_metrics: bool = False, use_cache: bool = True) -> int:

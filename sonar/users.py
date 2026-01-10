@@ -110,7 +110,7 @@ class User(SqObject):
         return cls.load(endpoint=endpoint, data=data)
 
     @classmethod
-    def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, User]:
+    def search(cls, endpoint: Platform, use_cache: bool = False, **search_params: Any) -> dict[str, User]:
         """Searches users in SonarQube Server or Cloud
 
         :param endpoint: Reference to the SonarQube platform
@@ -118,7 +118,10 @@ class User(SqObject):
         :return: dictionary of users with login as key
         :rtype: dict{login: User}
         """
-        log.debug("Searching users with params %s", str(search_params))
+        if use_cache and len(search_params) == 0 and len(cls.CACHE) > 0:
+            log.debug("Searching users from cache")
+            return cls.CACHE.from_platform(endpoint)
+        log.info("Searching users with params %s", str(search_params))
         return cls.get_paginated(endpoint=endpoint, params=search_params)
 
     @classmethod

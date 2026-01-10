@@ -96,16 +96,19 @@ class PermissionTemplate(sqobject.SqObject):
         return hash((self.name.lower(), self.base_url()))
 
     @classmethod
-    def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, PermissionTemplate]:
+    def search(cls, endpoint: Platform, use_cache: bool = False) -> dict[str, PermissionTemplate]:
         """Searches permissions templates"""
-        log.info("Searching all permission templates")
+        if use_cache and len(cls.CACHE) > 0:
+            log.debug("Searching permission templates from cache")
+            return cls.CACHE.from_platform(endpoint)
+        log.info("Searching permission templates")
+        api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH)
+        dataset = json.loads(endpoint.get(api, params=params).text)[ret]
         objects_list = {}
-        api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
-        data = json.loads(endpoint.get(api, params=params).text)
-        for obj in data[ret]:
+        for obj in dataset:
             o = cls(name=obj["name"], endpoint=endpoint, data=obj)
             objects_list[o.key] = o
-        _load_default_templates(endpoint=endpoint, data=data)
+        _load_default_templates(endpoint=endpoint, data=dataset)
         return objects_list
 
     def is_default_for(self, qualifier: str) -> bool:

@@ -130,13 +130,15 @@ class Group(SqObject):
         raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
 
     @classmethod
-    def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, Group]:
+    def search(cls, endpoint: Platform, use_cache: bool = True, **search_params: Any) -> dict[str, Group]:
         """Search groups
 
         :params endpoint: Reference to the SonarQube platform
         :params search_params: Parameters to narrow down the search
         :return: dict of groups with group name as key
         """
+        if use_cache and len(search_params) == 0 and len(cls.CACHE) > 0:
+            return cls.CACHE.from_platform(endpoint)
         return cls.get_paginated(endpoint=endpoint, params=search_params)
 
     def url(self) -> str:

@@ -311,19 +311,20 @@ class Rule(SqObject):
         :return: Dict of rules indexed by rule key
         """
         if use_cache and len(search_params) == 0 and len(cls.CACHE.objects) > 1000:
-            return cls.CACHE.objects
+            return cls.CACHE.from_platform(endpoint)
         rule_list = {}
         lang_list = search_params.pop("languages", None) or languages.Language.search(endpoint).keys()
-        include_external = search_params.pop("include_external", False)
+        inc = search_params.pop("include_external", False)
+        include_external_list = [str(inc).lower()] if inc else ["false", "true"]
         for lang_key in lang_list:
             if not languages.Language.exists(endpoint, language=lang_key):
                 raise exceptions.ObjectNotFound(key=lang_key, message=f"Language '{lang_key}' does not exist")
         log.info("Getting rules for %d languages", len(lang_list))
         rule_list = {}
         for lang_key in lang_list:
-            for include_external in [str(include_external).lower()] if include_external else ["false", "true"]:
+            for inc in include_external_list:
                 rule_list |= cls.get_paginated(
-                    endpoint=endpoint, threads=threads, params=search_params | {"languages": lang_key, "include_external": include_external}
+                    endpoint=endpoint, threads=threads, params=search_params | {"languages": lang_key, "include_external": inc}
                 )
         log.info("Rule search returning a list of %d rules", len(rule_list))
         return rule_list

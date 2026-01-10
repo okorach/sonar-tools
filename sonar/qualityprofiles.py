@@ -110,10 +110,9 @@ class QualityProfile(SqObject):
         :param search_params: Search filters (see api/qualityprofiles/search parameters)
         :return: list of quality profiles
         """
-        if len(cls.CACHE) == 0 or not use_cache:
-            cls.CACHE.clear()
-            cls.get_paginated(endpoint=endpoint, params=search_params)
-        return dict(cls.CACHE.items())
+        if use_cache and len(search_params) == 0 and len(cls.CACHE) > 0:
+            return cls.CACHE.from_platform(endpoint)
+        return cls.get_paginated(endpoint=endpoint, params=search_params)
 
     @classmethod
     def get_object(cls, endpoint: Platform, name: str, language: str) -> QualityProfile:
