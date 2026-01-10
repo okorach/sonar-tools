@@ -63,22 +63,27 @@ class Cache(object):
                 self.objects[h] = obj
         return self.objects[h]
 
-    def get(self, *args) -> Optional[SqObject]:
+    def get(self, *args: Any) -> Optional[SqObject]:
+        """Gets an object from the cache"""
         # log.debug("GET %s: %s", self, self.contents())
         return self.objects.get(hash(args), None)
 
     def pop(self, obj: object) -> Optional[SqObject]:
+        """Pops an object from the cache"""
         with self.lock:
             o = self.objects.pop(hash(obj), None)
         return o
 
     def values(self) -> list[SqObject]:
+        """Returns the values of the cache"""
         return list(self.objects.values())
 
     def keys(self) -> list[str]:
+        """Returns the keys of the cache"""
         return list(self.objects.keys())
 
     def items(self) -> dict[int, SqObject]:
+        """Returns the items of the cache"""
         return self.objects.items()
 
     def clear(self, endpoint: Optional[Platform] = None) -> None:
@@ -93,4 +98,5 @@ class Cache(object):
                 self.objects = {}
 
     def from_platform(self, endpoint: Platform) -> dict[str, SqObject]:
+        """Returns the objects from the cache for a given platform"""
         return {o.key: o for o in self.objects.values() if o.endpoint is endpoint}
