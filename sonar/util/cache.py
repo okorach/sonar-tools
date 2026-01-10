@@ -81,7 +81,7 @@ class Cache(object):
     def items(self) -> dict[int, SqObject]:
         return self.objects.items()
 
-    def clear(self, endpoint: Optional[Platform]) -> None:
+    def clear(self, endpoint: Optional[Platform] = None) -> None:
         """Clears a cache"""
         # log.info("Clearing %s", self)
         with self.lock:
