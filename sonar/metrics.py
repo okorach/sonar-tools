@@ -117,7 +117,7 @@ class Metric(SqObject):
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
         :return: Dict of metrics indexed by metric key
         """
-        if not use_cache or len(search_params) > 0:
+        if not use_cache or len(search_params) > 0 or len(cls.CACHE.from_platform(endpoint)) == 0:
             cls.get_paginated(endpoint, threads=1)
         return {v.key: v for v in cls.CACHE.from_platform(endpoint).values() if not v.hidden or include_hidden_metrics}
 

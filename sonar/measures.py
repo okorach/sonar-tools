@@ -66,7 +66,7 @@ class Measure(SqObject):
         :return: The created measure
         :rtype: Measure
         """
-        metrics.Metric.search(concerned_object.endpoint)
+        metrics.Metric.search(concerned_object.endpoint, use_cache=True)
         return cls(concerned_object=concerned_object, key=data["metric"], value=_search_value(data))
 
     def __converted_value(self, value: Any) -> Any:
