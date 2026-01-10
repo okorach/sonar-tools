@@ -32,6 +32,7 @@ from sonar import rules
 from sonar.util import cache
 import sonar.util.issue_defs as idefs
 from sonar.api.manager import ApiOperation as Oper
+import sonar.logging as log
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -56,7 +57,8 @@ class Language(SqObject):
         super().__init__(endpoint=endpoint, key=key)
         self.name = name  #: Language name
         self._nb_rules = {"_ALL": None, idefs.TYPE_BUG: None, idefs.TYPE_VULN: None, idefs.TYPE_CODE_SMELL: None, idefs.TYPE_HOTSPOT: None}
-        Language.CACHE.put(self)
+        with _CLASS_LOCK:
+            Language.CACHE.put(self)
 
     @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> Language:
@@ -90,8 +92,10 @@ class Language(SqObject):
         :return: List of languages
         :rtype: dict{<language_key>: <language_name>}
         """
-        if not use_cache or len(search_params) > 0:
+        if use_cache and len(search_params) == 0:
+            log.debug("Searching languages from cache")
             return cls.CACHE.from_platform(endpoint)
+        log.debug("Searching languages from SonarQube")
         api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
         data = json.loads(endpoint.get(api, params=params).text)
         return {lang["key"]: Language(endpoint=endpoint, key=lang["key"], name=lang["name"]) for lang in data[ret]}
