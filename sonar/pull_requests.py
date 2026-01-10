@@ -27,7 +27,6 @@ from __future__ import annotations
 from typing import Optional, Union, Any, TYPE_CHECKING
 
 import json
-from datetime import datetime
 import requests.utils
 
 import sonar.logging as log

@@ -43,7 +43,6 @@ if TYPE_CHECKING:
     from sonar.hotspots import Hotspot
     from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr
-    from datetime import datetime
 
 
 _NOT_SUPPORTED = "Applications not supported in community edition"
