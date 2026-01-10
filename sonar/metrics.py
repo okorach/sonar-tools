@@ -77,15 +77,13 @@ MAIN_METRICS_ENTERPRISE_2025_3 = ("contains_ai_code", "sca_count_any_issue", "ne
 METRICS_BY_TYPE = {}
 
 MAX_PAGE_SIZE = 500
-_CLASS_LOCK = Lock()
 
 
 class Metric(SqObject):
-    """
-    Abstraction of the SonarQube "metric" concept
-    """
+    """Abstraction of the SonarQube "metric" concept"""
 
     CACHE = cache.Cache()
+    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
         """Constructor"""
@@ -99,8 +97,8 @@ class Metric(SqObject):
         self.hidden: Optional[bool] = None  #: Hidden
         self.custom: Optional[bool] = None  #: Custom
         self.reload(data)
-        with _CLASS_LOCK:
-            Metric.CACHE.put(self)
+        with self.__class__._CLASS_LOCK:
+            self.__class__.CACHE.put(self)
 
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Metric:

@@ -39,13 +39,11 @@ if TYPE_CHECKING:
     from sonar.util.types import ApiPayload
 
 
-_CLASS_LOCK = Lock()
-
-
 class Language(SqObject):
     """Abstraction of the Sonar language concept"""
 
     CACHE = cache.Cache()
+    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, key: str, name: str) -> None:
         """Constructor
@@ -57,8 +55,8 @@ class Language(SqObject):
         super().__init__(endpoint=endpoint, key=key)
         self.name = name  #: Language name
         self._nb_rules = {"_ALL": None, idefs.TYPE_BUG: None, idefs.TYPE_VULN: None, idefs.TYPE_CODE_SMELL: None, idefs.TYPE_HOTSPOT: None}
-        with _CLASS_LOCK:
-            Language.CACHE.put(self)
+        with self.__class__._CLASS_LOCK:
+            self.__class__.CACHE.put(self)
 
     @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> Language:

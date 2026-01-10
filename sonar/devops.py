@@ -23,7 +23,7 @@
 from __future__ import annotations
 from typing import Optional, Union, TYPE_CHECKING
 import json
-
+from threading import Lock
 from sonar.sqobject import SqObject
 import sonar.logging as log
 from sonar.util import cache
@@ -55,6 +55,7 @@ class DevopsPlatform(SqObject):
     """
 
     CACHE = cache.Cache()
+    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, key: str, platform_type: str) -> None:
         """Constructor"""
@@ -62,7 +63,8 @@ class DevopsPlatform(SqObject):
         self.type: str = platform_type  #: DevOps platform type
         self.url: Union[str, None] = None  #: DevOps platform URL
         self._specific: Union[dict[str, str], None] = None  #: DevOps platform specific settings
-        DevopsPlatform.CACHE.put(self)
+        with self.__class__._CLASS_LOCK:
+            self.__class__.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
     def __str__(self) -> str:

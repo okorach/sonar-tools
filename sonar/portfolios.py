@@ -51,8 +51,6 @@ if TYPE_CHECKING:
     from sonar.util.types import ApiPayload, ApiParams, ConfigSettings, KeyList, ObjectJsonRepr, PermissionDef
     from sonar.branches import Branch
 
-_CLASS_LOCK = Lock()
-
 _PORTFOLIO_QUALIFIER = "VW"
 _SUBPORTFOLIO_QUALIFIER = "SVW"
 
@@ -90,6 +88,7 @@ class Portfolio(aggregations.Aggregation):
     MAX_SEARCH = 10000
 
     CACHE = cache.Cache()
+    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, key: str, name: Optional[str] = None) -> None:
         """Constructor, don't use - use class methods instead"""
@@ -105,8 +104,8 @@ class Portfolio(aggregations.Aggregation):
         self.parent_portfolio: Optional[Portfolio] = None  #: Ref to parent portfolio object, if any
         self.root_portfolio: Optional[Portfolio] = None  #: Ref to root portfolio, if any
         self._sub_portfolios: dict[str, Portfolio] = {}  #: Subportfolios
-        with _CLASS_LOCK:
-            Portfolio.CACHE.put(self)
+        with self.__class__._CLASS_LOCK:
+            self.__class__.CACHE.put(self)
         log.debug("Created portfolio object name '%s'", name)
 
     def __str__(self) -> str:
@@ -430,7 +429,8 @@ class Portfolio(aggregations.Aggregation):
                 self.post("views/add_project", params={"key": self.key, "project": key}, mute=(HTTPStatus.BAD_REQUEST,))
                 self._selection_mode[_SELECTION_MODE_MANUAL][key] = {c.DEFAULT_BRANCH}
             except exceptions.ObjectNotFound:
-                Portfolio.CACHE.pop(self)
+                with self.__class__._CLASS_LOCK:
+                    self.__class__.CACHE.pop(self)
                 raise
         return self
 

@@ -154,8 +154,6 @@ CSV_EXPORT_FIELDS = [
 
 LEGACY_CSV_EXPORT_FIELDS = ["key", "language", "repo", "type", "severity", "name", "ruleType", "tags"]
 
-_CLASS_LOCK = Lock()
-
 
 class Rule(SqObject):
     """
@@ -165,6 +163,7 @@ class Rule(SqObject):
     CACHE = cache.Cache()
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "rules"
+    _CLASS_LOCK = Lock()
 
     API: dict[str, str] = {
         Oper.CREATE: "rules/create",
@@ -204,8 +203,8 @@ class Rule(SqObject):
             "attribute": data.get("cleanCodeAttribute", None),
             "attribute_category": data.get("cleanCodeAttributeCategory", None),
         }
-        with _CLASS_LOCK:
-            Rule.CACHE.put(self)
+        with self.__class__._CLASS_LOCK:
+            self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:
         return f"rule key '{self.key}'"
@@ -342,7 +341,8 @@ class Rule(SqObject):
             api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.GET, **self.api_params() | {"actives": "true"})
             data = json.loads(self.get(api, params=api_params).text)
         except exceptions.ObjectNotFound:
-            Rule.CACHE.pop(self)
+            with self.__class__._CLASS_LOCK:
+                self.__class__.CACHE.pop(self)
             raise
         self.sq_json.update(data["rule"])
         self.sq_json["actives"] = data["actives"].copy()

@@ -50,7 +50,6 @@ if TYPE_CHECKING:
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, AppBranchDef, PermissionDef, AppBranchProjectDef
 
 
-_CLASS_LOCK = Lock()
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")
 
 
@@ -60,6 +59,7 @@ class Application(aggr.Aggregation):
     """
 
     CACHE = cache.Cache()
+    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
@@ -69,8 +69,8 @@ class Application(aggr.Aggregation):
         self._description: Optional[str] = None
         self.name = name
         log.debug("Constructed object %s with uuid %d id %x", str(self), hash(self), id(self))
-        with _CLASS_LOCK:
-            Application.CACHE.put(self)
+        with self.__class__._CLASS_LOCK:
+            self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:
         """String name of object"""
@@ -153,7 +153,8 @@ class Application(aggr.Aggregation):
             self.reload(json.loads(self.endpoint.get(api, params=params).text)[ret])
             return self
         except exceptions.ObjectNotFound:
-            self.__class__.CACHE.pop(self)
+            with self.__class__._CLASS_LOCK:
+                self.__class__.CACHE.pop(self)
             raise
 
     def permissions(self) -> application_permissions.ApplicationPermissions:
@@ -353,7 +354,8 @@ class Application(aggr.Aggregation):
                 ok = ok and r.ok
             except (ConnectionError, RequestException) as e:
                 sutil.handle_error(e, f"adding project '{proj}' to {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
-                self.__class__.CACHE.pop(self)
+                with self.__class__._CLASS_LOCK:
+                    self.__class__.CACHE.pop(self)
                 ok = False
         self._projects = None
         self.projects()

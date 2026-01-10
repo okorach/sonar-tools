@@ -28,7 +28,7 @@ from datetime import date, datetime, timedelta
 import json
 import re
 from copy import deepcopy
-
+from threading import Lock
 import concurrent.futures
 import requests.utils
 
@@ -104,12 +104,14 @@ class Issue(findings.Finding):
     CACHE = cache.Cache()
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
+    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self._debt: Optional[int] = None
-        Issue.CACHE.put(self)
+        with self.__class__._CLASS_LOCK:
+            self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:
         """Returns a string representation of the issue"""

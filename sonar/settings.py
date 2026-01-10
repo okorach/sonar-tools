@@ -26,7 +26,7 @@ from typing import Any, Union, Optional, TYPE_CHECKING
 
 import re
 import json
-
+from threading import Lock
 import sonar.logging as log
 from sonar.util import cache, constants as c
 from sonar import sqobject, exceptions
@@ -129,6 +129,7 @@ class Setting(sqobject.SqObject):
     """Abstraction of the Sonar setting concept"""
 
     CACHE = cache.Cache()
+    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, key: str, component: Optional[object] = None, data: Optional[ApiPayload] = None) -> None:
         """Constructor"""
@@ -142,7 +143,8 @@ class Setting(sqobject.SqObject):
         self._is_global: Optional[bool] = None
         self.reload(data)
         log.debug("Constructed %s uuid %d value %s", str(self), hash(self), str(self.value))
-        Setting.CACHE.put(self)
+        with self.__class__._CLASS_LOCK:
+            self.__class__.CACHE.put(self)
 
     @classmethod
     def read(cls, key: str, endpoint: Platform, component: Optional[object] = None) -> Setting:

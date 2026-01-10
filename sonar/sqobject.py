@@ -29,6 +29,7 @@ from typing import Any, Optional, TYPE_CHECKING
 import json
 from http import HTTPStatus
 import concurrent.futures
+from threading import Lock
 import requests
 import abc
 
@@ -50,6 +51,7 @@ class SqObject(object):
 
     CACHE = cache.Cache()
     API: dict[str, str] = {}  # Will be defined in the subclass
+    _CLASS_LOCK = Lock()
 
     def __init__(self, endpoint: Platform, key: str) -> None:
         if not self.__class__.CACHE:
@@ -92,9 +94,10 @@ class SqObject(object):
             if not endpoint:
                 cls.CACHE.clear()
             else:
-                for o in cls.CACHE.values().copy():
-                    if o.base_url() != endpoint.local_url:
-                        cls.CACHE.pop(o)
+                with cls._CLASS_LOCK:
+                    for o in cls.CACHE.values().copy():
+                        if o.base_url() != endpoint.local_url:
+                            cls.CACHE.pop(o)
         except AttributeError:
             pass
 
@@ -262,9 +265,11 @@ class SqObject(object):
                 ok = self.endpoint.post(api=api, params=params).ok
             if ok:
                 log.info("Removing from %s cache", str(self.__class__.__name__))
-                self.__class__.CACHE.pop(self)
+                with self.__class__._CLASS_LOCK:
+                    self.__class__.CACHE.pop(self)
         except exceptions.ObjectNotFound:
-            self.__class__.CACHE.clear()
+            with self.__class__._CLASS_LOCK:
+                self.__class__.CACHE.clear()
             raise
         return ok
 
@@ -275,7 +280,8 @@ class SqObject(object):
             ok = self.post(api=self.__class__.API[Oper.DELETE], params=self.api_params(Oper.DELETE)).ok
             if ok:
                 log.info("Removing from %s cache", str(self.__class__.__name__))
-                self.__class__.CACHE.pop(self)
+                with self.__class__._CLASS_LOCK:
+                    self.__class__.CACHE.pop(self)
         except (AttributeError, KeyError) as e:
             raise exceptions.UnsupportedOperation(f"Can't delete {self.__class__.__name__.lower()}s") from e
         return ok

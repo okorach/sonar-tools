@@ -58,7 +58,7 @@ class Organization(SqObject):
         self.name = name
         log.debug("Created object %s", str(self))
         with self.__class__.CLASS_LOCK:
-            Organization.CACHE.put(self)
+            self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:
         return f"organization key '{self.key}'"
