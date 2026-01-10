@@ -89,12 +89,7 @@ class SqObject(object):
         """
         log.info("Emptying cache of %s", str(cls))
         try:
-            if not endpoint:
-                cls.CACHE.clear()
-            else:
-                for o in cls.CACHE.values().copy():
-                    if o.base_url() != endpoint.local_url:
-                        cls.CACHE.pop(o)
+            cls.CACHE.clear(endpoint)
         except AttributeError:
             pass
 
