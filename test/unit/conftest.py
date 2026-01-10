@@ -22,6 +22,8 @@
 """Test fixtures"""
 
 from __future__ import annotations
+from typing import Optional
+
 import os
 from typing import Union
 
@@ -160,19 +162,20 @@ def get_test_portfolio_2() -> Generator[portfolios.Portfolio]:
 @pytest.fixture
 def get_test_subportfolio() -> Generator[portfolios.Portfolio]:
     """setup of tests"""
-    key = f"{tutil.TEMP_KEY}-portfolio-{os.getpid()}"
-    subp = None
+    parent_key = f"{tutil.TEMP_KEY}-portfolio-{os.getpid()}"
+    subp_key = f"{tutil.TEMP_KEY_2}-portfolio-{os.getpid()}"
+    subp: Optional[portfolios.Portfolio] = None
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        parent = create_test_object(portfolios.Portfolio, key=key)
-        subp = parent.add_standard_subportfolio(key=key, name=key)
+        parent = create_test_object(portfolios.Portfolio, key=parent_key)
+        subp = parent.add_standard_subportfolio(key=subp_key, name=subp_key)
     yield subp
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        subp.key = f"{tutil.TEMP_KEY}-subportfolio-{os.getpid()}"
+        subp.key = subp_key
         try:
             subp.delete()
         except exceptions.ObjectNotFound:
             pass
-        parent.key = key
+        parent.key = parent_key
         try:
             parent.delete()
         except exceptions.ObjectNotFound:
