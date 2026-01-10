@@ -307,3 +307,12 @@ def test_audit_disabled() -> None:
     if not tutil.verify_support(SUPPORTED_EDITIONS, pf.audit, endpoint=tutil.SQ, audit_settings={"audit.portfolios": False}):
         return
     assert len(pf.audit(tutil.SQ, {"audit.portfolios": False})) == 0
+
+
+def test_sorted_search() -> None:
+    """test_sorted_search"""
+    p_dict = pf.Portfolio.search(tutil.SQ)
+    assert sorted(p_dict.keys()) == list(p_dict.keys())
+
+    p_dict = pf.Portfolio.search(tutil.SQ, use_cache=True)
+    assert sorted(p_dict.keys()) == list(p_dict.keys())

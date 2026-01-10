@@ -306,3 +306,12 @@ def test_app_branches(get_test_app: Generator[App]) -> None:
     br = obj.branches()
     assert set(br.keys()) >= {APP_BRANCH_MAIN, APP_BRANCH_2, APP_BRANCH_3}
     assert obj.main_branch().name == APP_BRANCH_MAIN
+
+
+def test_sorted_search() -> None:
+    """test_sorted_search"""
+    apps_list = apps.Application.search(tutil.SQ)
+    assert sorted(apps_list.keys()) == list(apps_list.keys())
+
+    apps_list = apps.Application.search(tutil.SQ, use_cache=True)
+    assert sorted(apps_list.keys()) == list(apps_list.keys())

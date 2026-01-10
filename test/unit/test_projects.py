@@ -419,3 +419,12 @@ def test_export_zips() -> None:
     assert res[PROJ_WITH_NO_LOC]["exportStatus"] == "SKIPPED/ZERO_LOC"
     res = {r["key"]: r for r in projects.export_zips(tutil.SQ, key_regexp=regexp, skip_zero_loc=False)}
     assert res[PROJ_WITH_NO_LOC]["exportStatus"] == "SUCCESS/ZERO_LOC"
+
+
+def test_sorted_search() -> None:
+    """test_sorted_search"""
+    proj_list = projects.Project.search(tutil.SQ)
+    assert sorted(proj_list.keys()) == list(proj_list.keys())
+
+    proj_list = projects.Project.search(tutil.SQ, use_cache=True)
+    assert sorted(proj_list.keys()) == list(proj_list.keys())
