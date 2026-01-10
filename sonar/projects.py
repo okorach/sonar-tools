@@ -1376,9 +1376,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     nb_threads = export_settings.get("threads", 8)
     for qp in qualityprofiles.QualityProfile.search(endpoint).values():
         qp.projects()
-    proj_list = {
-        k: v for k, v in Project.search(endpoint, threads=nb_threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)
-    }
+    proj_list = {k: v for k, v in Project.search(endpoint, threads=nb_threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", k)}
     total, current = len(proj_list), 0
     log.info("Exporting %d projects", total)
     results = {}
@@ -1472,9 +1470,7 @@ def export_zips(
     :return: list of exported projects with export result
     """
     statuses, results = {"SUCCESS": 0}, []
-    projects_list = {
-        k: p for k, p in Project.search(endpoint, threads=threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", p.key)
-    }
+    projects_list = {k: p for k, p in Project.search(endpoint, threads=threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", p.key)}
     nbr_projects = len(projects_list)
     if skip_zero_loc:
         results = [

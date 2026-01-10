@@ -27,6 +27,7 @@ from sonar import logging as log
 if TYPE_CHECKING:
     from sonar.platform import Platform
 
+
 class Cache(object):
     """Abstract cache implementation"""
 
@@ -85,4 +86,3 @@ class Cache(object):
 
     def from_platform(self, endpoint: Platform) -> dict[str, Any]:
         return {o.key: o for o in self.objects.values() if o.endpoint is endpoint}
-    
