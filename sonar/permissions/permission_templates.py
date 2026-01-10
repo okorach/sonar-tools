@@ -103,9 +103,9 @@ class PermissionTemplate(sqobject.SqObject):
             return cls.CACHE.from_platform(endpoint)
         log.info("Searching permission templates")
         api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH)
-        dataset = json.loads(endpoint.get(api, params=params).text)[ret]
+        dataset = json.loads(endpoint.get(api, params=params).text)
         objects_list = {}
-        for obj in dataset:
+        for obj in dataset[ret]:
             o = cls(name=obj["name"], endpoint=endpoint, data=obj)
             objects_list[o.key] = o
         _load_default_templates(endpoint=endpoint, data=dataset)
