@@ -600,9 +600,10 @@ class Platform(object):
 
     def _audit_logfile(self, logtype: str, logfile: str) -> list[Problem]:
         """Audits a log file for errors and warnings"""
+        log.info("Auditing %s log file for errors and warnings", logfile)
         problems = []
         try:
-            logs = self.get("system/logs", params={"name": logtype}).text
+            logs = self.get("system/logs", params={"name": logtype} if self.version() >= (10, 0, 0) else {"process": logtype}).text
         except (ConnectionError, RequestException) as e:
             sutil.handle_error(e, f"retrieving {logtype} logs", catch_all=True)
             return []
@@ -637,6 +638,7 @@ class Platform(object):
         if not audit_settings.get("audit.logs", True):
             log.info("Logs audit is disabled, skipping logs audit...")
             return []
+        log.info("Auditing SonarQube logs for errors, warnings and deprecation warnings")
         if self.is_sonarcloud():
             log.info("Logs audit not available with SonarQube Cloud, skipping logs audit...")
             return []
