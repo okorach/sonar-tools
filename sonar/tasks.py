@@ -134,10 +134,11 @@ class Task(SqObject):
         if use_cache and self.sq_json is not None and ("scannerContext" in self.sq_json or not self.has_scanner_context()):
             # Context already retrieved or not available
             return
-        params = {"id": self.key, "additionalFields": "scannerContext,stacktrace"}
-        if self.sq_json is None:
-            self.sq_json = {}
-        self.sq_json.update(json.loads(self.get("ce/task", params=params).text)["task"])
+        additional_fields = "scannerContext,warnings"
+        if not self.endpoint.is_sonarcloud():
+            additional_fields += "stacktrace"
+        self.sq_json = self.sq_json or {}
+        self.sq_json.update(json.loads(self.get("ce/task", params={"id": self.key, "additionalFields": additional_fields}).text)["task"])
 
     def id(self) -> str:
         """
