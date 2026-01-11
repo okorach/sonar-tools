@@ -315,78 +315,45 @@
         }
     },
     "User": {
-        "CREATE": {
-            "method": "POST",
-            "api": "v2/users-management/users",
-            "content_type": "application/json",
-            "params": [
-                "login",
-                "name",
-                "email",
-                "password",
-                "local",
-                "scmAccounts"
-            ]
-        },
         "GET": {
             "method": "GET",
-            "api": "v2/users-management/users/{id}",
-            "return_field": "user"
-        },
-        "UPDATE": {
-            "method": "PATCH",
-            "api": "v2/users-management/users/{id}",
-            "content_type": "application/merge-patch+json",
+            "api": "api/users/search",
             "params": [
-                "login",
-                "name",
-                "email",
-                "scmAccounts"
-            ]
-        },
-        "DELETE": {
-            "method": "DELETE",
-            "api": "v2/users-management/users/{id}"
-        },
-        "SEARCH": {
-            "method": "GET",
-            "api": "v2/users-management/users",
-            "params": [
-                "organization",
-                "active",
-                "managed",
-                "q",
-                "groupId",
-                "pageIndex",
-                "pageSize",
-                "sonarLintLastConnectionDateFrom",
-                "sonarLintLastConnectionDateTo"
+                "ids",
+                "p",
+                "ps",
+                "q"
             ],
             "return_field": "users",
             "page_field": "pageIndex",
             "max_page_size": 500
         },
-        "UPDATE_LOGIN": {
-            "method": "PATCH",
-            "api": "v2/users-management/users/{id}",
-            "content_type": "application/merge-patch+json",
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/users/search",
             "params": [
-                "login",
-                "name",
-                "email",
-                "scmAccounts"
-            ]
+                "ids",
+                "p",
+                "ps",
+                "q"
+            ],
+            "return_field": "users",
+            "page_field": "pageIndex",
+            "max_page_size": 500
         },
         "LIST_GROUPS": {
             "method": "GET",
-            "api": "v2/authorizations/group-memberships",
+            "api": "api/users/groups",
             "params": [
-                "userId",
-                "groupId",
-                "pageIndex",
-                "pageSize"
+                "p",
+                "ps",
+                "q",
+                "selected",
+                "organization",
+                "login"
             ],
-            "return_field": "groupMemberships",
+            "return_field": "groups",
+            "page_field": "pageIndex",
             "max_page_size": 500
         }
     },
