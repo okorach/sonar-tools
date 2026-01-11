@@ -123,16 +123,21 @@ class Task(SqObject):
         """Returns the project of the background task"""
         return self.concerned_object
 
-    def reload_details(self, use_cache: bool = True) -> None:
+    def reload_cache(self, use_cache: bool = True) -> Task:
         """Loads a task context"""
         if use_cache and self.sq_json is not None and ("scannerContext" in self.sq_json or not self.has_scanner_context()):
             # Context already retrieved or not available
-            return
+            return self
+        return self.reload_details()
+
+    def reload_details(self) -> Task:
+        """Loads a task details"""
         additional_fields = "scannerContext,warnings"
         if not self.endpoint.is_sonarcloud():
             additional_fields += "stacktrace"
         self.sq_json = self.sq_json or {}
         self.sq_json.update(json.loads(self.get("ce/task", params={"id": self.key, "additionalFields": additional_fields}).text)["task"])
+        return self
 
     def id(self) -> str:
         """
@@ -143,7 +148,7 @@ class Task(SqObject):
 
     def __json_field(self, field: str) -> str:
         """Returns a background task scanner context field"""
-        self.reload_details()
+        self.reload_cache()
         if field not in self.sq_json:
             self.reload_details(use_cache=False)
         return self.sq_json[field]
@@ -181,7 +186,7 @@ class Task(SqObject):
         :return: the background task submitter
         :rtype: str
         """
-        self.reload_details()
+        self.reload_cache()
         return self.sq_json.get("submitterLogin", "anonymous")
 
     def has_scanner_context(self) -> bool:
@@ -241,9 +246,9 @@ class Task(SqObject):
         :return: the background task scanner context
         :rtype: dict
         """
+        self.reload_cache()
         if not self.has_scanner_context():
             return None
-        self.reload_details()
         context_line = self.sq_json.get("scannerContext", None)
         if context_line is None:
             return None
@@ -267,7 +272,7 @@ class Task(SqObject):
         :return: The background task error details
         :rtype: tuple (errorMsg (str), stackTrace (str)
         """
-        self.reload_details(use_cache=use_cache)
+        self.reload_cache(use_cache=use_cache)
         log.debug("Background task error details: %s", str(self.sq_json))
         return (self.sq_json.get("errorMessage", None), self.sq_json.get("errorStacktrace", None))
 
@@ -276,7 +281,7 @@ class Task(SqObject):
         :return: The background task error message
         :rtype: str
         """
-        self.reload_details(use_cache=use_cache)
+        self.reload_cache(use_cache=use_cache)
         return self.sq_json.get("errorMessage", None)
 
     def short_error(self) -> str:
