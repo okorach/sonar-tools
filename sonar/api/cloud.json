@@ -519,7 +519,7 @@
             "method": "POST",
             "api": "api/qualitygates/destroy",
             "params": [
-                "name"
+                "id"
             ]
         },
         "SEARCH": {
@@ -539,7 +539,6 @@
             "method": "GET",
             "api": "api/qualitygates/search",
             "params": [
-                "gateName",
                 "gateId",
                 "p",
                 "ps"
