@@ -28,9 +28,10 @@ import utilities as tutil
 from sonar import exceptions
 from sonar import groups, users
 from sonar.util import constants as c
+import credentials
 
 GROUP1 = tutil.SQ.default_user_group()
-GROUP2 = "sonar-administrators"
+GROUP2 = credentials.ADMIN_GROUP
 
 
 def test_get_object() -> None:
