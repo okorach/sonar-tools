@@ -357,8 +357,9 @@ class Hotspot(findings.Finding):
             return {k: v for k, v in self._changelog.items() if v.date_time() > after}
         return self._changelog
 
-    def comments(self, after: Optional[datetime] = None) -> dict[str, str]:
-        """
+    def comments(self, after: Optional[datetime] = None) -> dict[str, dict[str, Any]]:
+        """Returns the comments of a hotspot
+
         :param after: If set will only return comments after this date, else all
         :return: The hotspot comments
         :rtype: dict{"<date>_<sequence_nbr>": <comment>}
