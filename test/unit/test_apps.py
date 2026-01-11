@@ -61,7 +61,7 @@ def test_count() -> None:
     """Verify count works"""
     if not __verify_support():
         pytest.skip(__UNSUPPORTED_MESSAGE)
-    assert apps.count(tutil.SQ) > 0
+    assert App.count(tutil.SQ) > 0
 
 
 def test_search() -> None:
