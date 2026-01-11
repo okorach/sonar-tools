@@ -34,6 +34,7 @@ from sonar.util import common_helper as chelp
 from sonar.util import component_helper
 from sonar import errcodes
 from sonar import projects, portfolios as pf
+from sonar.portfolios import Portfolio
 from sonar.projects import Project
 from sonar import qualitygates as qg
 from sonar import qualityprofiles as qp
@@ -405,7 +406,7 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     """Gets governance maturity data"""
     log.info("Collecting governance maturity data")
     try:
-        portfolio_count = pf.count(endpoint)
+        portfolio_count = Portfolio.count(endpoint)
     except exceptions.UnsupportedOperation:
         portfolio_count = 0
     project_count = Project.count(endpoint)
