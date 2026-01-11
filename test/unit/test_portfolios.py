@@ -31,6 +31,7 @@ import utilities as tutil
 from sonar import portfolios as pf, projects, exceptions, logging
 import sonar.util.constants as c
 from sonar.util import portfolio_helper as phelp
+import credentials
 
 EXISTING_PORTFOLIO = "PORT_FAV_PROJECTS"
 
@@ -212,10 +213,10 @@ def test_permissions_1(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     p.set_permissions(
         [
             {"group": tutil.SQ.default_user_group(), "permissions": ["user", "admin"]},
-            {"group": "sonar-administrators", "permissions": ["user", "admin"]},
+            {"group": credentials.ADMIN_GROUP, "permissions": ["user", "admin"]},
         ]
     )
-    # assert p.permissions().to_json()["groups"] == {tutil.SQ.default_user_group(): ["user", "admin"], "sonar-administrators": ["user", "admin"]}
+    # assert p.permissions().to_json()["groups"] == {tutil.SQ.default_user_group(): ["user", "admin"], credentials.ADMIN_GROUP: ["user", "admin"]}
 
 
 def test_audit(get_test_portfolio: Generator[pf.Portfolio]) -> None:

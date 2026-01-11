@@ -209,7 +209,7 @@ def test_versions() -> None:
 
 def test_count() -> None:
     """test_count"""
-    assert projects.count(tutil.SQ) > 30
+    assert Project.count(tutil.SQ) > 30
 
 
 def test_export() -> None:

@@ -28,10 +28,9 @@ import json, yaml
 import utilities as tutil
 from sonar import errcodes as e
 from sonar import portfolios, applications, projects
-from sonar import logging
 import sonar.util.constants as c
 import sonar.util.misc as util
-
+import credentials
 import cli.options as opt
 from sonar.cli import config
 
@@ -137,7 +136,7 @@ def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
     assert isinstance(o["permissions"], list)
     if tutil.SQ.edition() not in (c.CE, c.DE):
         o = util.search_list(json_config["portfolios"], "key", "PORTFOLIO_ALL")
-        o = util.search_list(o["permissions"], "group", "sonar-administrators")
+        o = util.search_list(o["permissions"], "group", credentials.ADMIN_GROUP)
         assert isinstance(o["permissions"], list)
         o = util.search_list(json_config["portfolios"], "key", "PORTFOLIO-PYTHON")
         assert isinstance(o["projectSelection"]["tags"], list)

@@ -30,8 +30,9 @@ import sonar.util.constants as c
 import utilities as tutil
 from sonar import exceptions, logging
 from sonar import users
+import credentials
 
-USER = "admin"
+USER = credentials.ADMIN_USER
 
 
 def test_get_object() -> None:
@@ -40,7 +41,7 @@ def test_get_object() -> None:
     for _ in range(2):
         user = users.User.get_object(endpoint=tutil.SQ, login=USER)
         assert str(user) == f"user '{USER}'"
-        assert "sonar-administrators" in user.groups()
+        assert credentials.ADMIN_GROUP in user.groups()
         assert tutil.SQ.default_user_group() in user.groups()
 
     with pytest.raises(exceptions.ObjectNotFound):
@@ -73,12 +74,12 @@ def test_add_to_group(get_test_user: Generator[users.User]) -> None:
     with pytest.raises(exceptions.UnsupportedOperation):
         user.add_to_group(tutil.SQ.default_user_group())
 
-    assert user.add_to_group("sonar-administrators")
+    assert user.add_to_group(credentials.ADMIN_GROUP)
     user.refresh()
-    assert "sonar-administrators" in user.groups()
-    assert user.remove_from_group("sonar-administrators")
+    assert credentials.ADMIN_GROUP in user.groups()
+    assert user.remove_from_group(credentials.ADMIN_GROUP)
     user.refresh()
-    assert "sonar-administrators" not in user.groups()
+    assert credentials.ADMIN_GROUP not in user.groups()
 
 
 def test_remove_from_group(get_test_user: Generator[users.User]) -> None:
@@ -125,8 +126,8 @@ def test_audit_user() -> None:
     """audit_user"""
     logging.set_logger(tutil.TEST_LOGFILE)
     logging.set_debug_level("DEBUG")
-    user = users.User.get_object(tutil.SQ, "admin")
-    assert user.audit({"audit.tokens.neverExpire": "admin"}) == []
+    user = users.User.get_object(tutil.SQ, credentials.ADMIN_USER)
+    assert user.audit({"audit.tokens.neverExpire": credentials.ADMIN_USER}) == []
     assert len(user.audit({})) > 0
 
 
@@ -168,8 +169,8 @@ def test_update(get_test_user: Generator[users.User]) -> None:
     assert user.login.startswith(f"{tutil.TEMP_KEY}-user")
     assert user.name.startswith(f"User name {tutil.TEMP_KEY}-user")
 
-    user.update(groups=["sonar-administrators"])
-    assert sorted(user.groups()) == ["sonar-administrators", tutil.SQ.default_user_group()]
+    user.update(groups=[credentials.ADMIN_GROUP])
+    assert sorted(user.groups()) == [credentials.ADMIN_GROUP, tutil.SQ.default_user_group()]
 
     assert user.scm_accounts == []
 
@@ -194,8 +195,8 @@ def test_update(get_test_user: Generator[users.User]) -> None:
 def test_set_groups(get_test_user: Generator[users.User]) -> None:
     """test_set_groups"""
     user = get_test_user
-    user.set_groups(["sonar-administrators", "language-experts"])
-    assert sorted(user.groups()) == sorted([tutil.SQ.default_user_group(), "sonar-administrators", "language-experts"])
+    user.set_groups([credentials.ADMIN_GROUP, "language-experts"])
+    assert sorted(user.groups()) == sorted([tutil.SQ.default_user_group(), credentials.ADMIN_GROUP, "language-experts"])
 
     user.set_groups(["language-experts", "security-auditors", "developers"])
     assert sorted(user.groups()) == sorted([tutil.SQ.default_user_group(), "language-experts", "security-auditors", "developers"])
@@ -211,7 +212,7 @@ def test_import() -> None:
             {
                 "login": "TEMP_ADMIN",
                 "email": "admin@acme.com",
-                "groups": ["sonar-administrators"],
+                "groups": [credentials.ADMIN_GROUP],
                 "local": True,
                 "name": "User name TEMP_ADMIN",
                 "scmAccounts": [f"admin-acme{now_str}, administrator-acme{now_str}"],

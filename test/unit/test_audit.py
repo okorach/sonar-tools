@@ -21,32 +21,46 @@
 
 """Project audit tests"""
 
+import pytest
+
 import utilities as tutil
 from sonar import projects
 from sonar.audit import rules
 
 
-def test_audit_proj_key_pattern() -> None:
+def test_audit_proj_good_key_pattern() -> None:
     """test_audit_cmd_line_settings"""
-    settings = {"audit.projects": True, "audit.projects.keyPattern": None}
-    pbs = projects.audit(tutil.SQ, settings, key_list="BANKING.*")
-    assert all(pb.rule_id != rules.RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN for pb in pbs)
+    if tutil.SQ.is_sonarcloud():
+        map_patterns = {"": None, "okorach_.+": None}
+    else:
+        map_patterns = {"": "BANKING.+", ".+": "BANKING.+", "(BANK|INSU|demo:).+": "(BANKING|INSURANCE|demo:).+"}
 
-    settings = {"audit.projects": True, "audit.projects.keyPattern": ".+"}
-    pbs = projects.audit(tutil.SQ, settings, key_list="BANKING.*")
-    assert all(pb.rule_id != rules.RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN for pb in pbs)
+    for pattern, key_list in map_patterns.items():
+        if pattern == "":
+            pattern = None
+        settings = {"audit.projects": True, "audit.projects.keyPattern": pattern}
+        pbs = projects.audit(tutil.SQ, settings, key_list=key_list)
+        assert all(pb.rule_id != rules.RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN for pb in pbs)
 
-    settings = {"audit.projects": True, "audit.projects.keyPattern": "BANKING.+"}
-    pbs = projects.audit(tutil.SQ, settings, key_list="(BANKING|INSURANCE).+")
+
+def test_audit_proj_bad_key_pattern() -> None:
+    """test_audit_proj_bad_key_pattern"""
+    if tutil.SQ.is_sonarcloud():
+        pattern = "okorach_BANKING.+"
+        key_list = ".+"
+    else:
+        pattern = "BANKING.+"
+        key_list = "(BANK|INSU|demo:).+"
+
+    settings = {"audit.projects": True, "audit.projects.keyPattern": pattern}
+    pbs = projects.audit(tutil.SQ, settings, key_list=key_list)
     assert any(pb.rule_id == rules.RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN for pb in pbs)
-
-    settings = {"audit.projects": True, "audit.projects.keyPattern": "(BANK|INSU|demo:).+"}
-    pbs = projects.audit(tutil.SQ, settings, key_list="(BANKING|INSURANCE|demo:).+")
-    assert all(pb.rule_id != rules.RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN for pb in pbs)
 
 
 def test_audit_platform_logs() -> None:
     """test_audit_platform_logs"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("Logs audit not available with SonarQube Cloud, skipping logs audit...")
     assert len(tutil.SQ.audit_logs({"audit.logs": False})) == 0
     if tutil.SQ.is_sonarcloud():
         assert len(tutil.SQ.audit_logs({"audit.logs": True})) == 0

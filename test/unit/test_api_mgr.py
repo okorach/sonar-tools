@@ -31,7 +31,7 @@ def test_api_mgr() -> None:
     print(entry)
     api, method, params, ret = tutil.SQ.api.get_details(Group, Oper.REMOVE_USER, id="membership_id", login="user.login", name="group.name")
     print(api, method, params, ret)
-    if tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
+    if tutil.SQ.is_sonarcloud() or tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
         assert api == "v2/authorizations/group-memberships/membership_id"
         assert method == "DELETE"
         assert params == {}

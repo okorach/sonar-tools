@@ -89,7 +89,6 @@ _IMPORTABLE_PROPERTIES = (
     phelp.AI_CODE_FIX,
 )
 
-_PROJECT_QUALIFIER = "qualifier=TRK"
 _PREDEFINED_LINKS = ("homepage", "scm", "issue")
 
 
@@ -97,6 +96,7 @@ class Project(Component):
     """Abstraction of the SonarQube project concept"""
 
     CACHE = cache.Cache()
+    PROJECT_FILTER = {"filter": "qualifier=TRK"}
 
     def __init__(self, endpoint: Platform, key: str) -> None:
         """
@@ -169,8 +169,14 @@ class Project(Component):
         if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
             return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
         if not endpoint.is_sonarcloud():
-            search_params |= {"filter": _PROJECT_QUALIFIER}
+            search_params |= cls.PROJECT_FILTER
         return dict(sorted(cls.get_paginated(endpoint=endpoint, params=search_params, threads=threads).items()))
+
+    @classmethod
+    def count(cls, endpoint: Platform, **search_params: Any) -> int:
+        """Counts projects"""
+        proj_filter = {} if endpoint.is_sonarcloud() else cls.PROJECT_FILTER
+        return super().count(endpoint, **(search_params | proj_filter))
 
     def project(self) -> Project:
         """Returns the project"""
@@ -528,8 +534,8 @@ class Project(Component):
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
-            api, _, _, ret = self.endpoint.api.get_details(self, Oper.SEARCH, filter=_PROJECT_QUALIFIER)
-            data = self.endpoint.get_paginated(api=api, return_field=ret, filter=_PROJECT_QUALIFIER)
+            api, _, params, ret = self.endpoint.api.get_details(self, Oper.SEARCH, **self.__class__.PROJECT_FILTER)
+            data = self.endpoint.get_paginated(api=api, return_field=ret, **params)
             p_data = next((p for p in data[ret] if p["key"] == self.key), None)
             if p_data:
                 self.sq_json.update(p_data)
@@ -556,14 +562,15 @@ class Project(Component):
 
     def __audit_key_pattern(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits whether the project key matches the desired pattern"""
-        if audit_settings.get("audit.projects.keyPattern", None) is None:
-            log.debug("%s: audit project key pattern is disabled, audit skipped", str(self))
+        pattern = audit_settings.get("audit.projects.keyPattern")
+        log.debug("Auditing %s project key pattern matches with '%s'", self, pattern)
+        if pattern is None:
+            log.debug("%s: audit project key pattern is disabled, audit skipped", self)
             return []
-        if not re.match(rf"^{audit_settings['audit.projects.keyPattern']}$", self.key):
-            return [Problem(get_rule(RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN), self, str(self), audit_settings["audit.projects.keyPattern"])]
-        else:
-            log.debug("%s: matches the desired project key pattern '%s'", str(self), f"^{audit_settings['audit.projects.keyPattern']}$")
-            return []
+        if not re.match(rf"^{pattern}$", self.key):
+            return [Problem(get_rule(RuleId.PROJ_NON_COMPLIANT_KEY_PATTERN), self, str(self), pattern)]
+        log.debug("%s: matches the desired project key pattern '%s'", str(self), f"^{pattern}$")
+        return []
 
     def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits a project and returns the list of problems found
@@ -1240,29 +1247,10 @@ class Project(Component):
 
         # TODO: Set branch settings See https://github.com/okorach/sonar-tools/issues/1828
 
-    @classmethod
-    def api_for(cls, operation: Oper, endpoint: Platform) -> str:
-        """Returns the API to use for a particular operation"""
-        api, _, _, _ = endpoint.api.get_details(cls, operation)
-        return api
-
     def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {Oper.GET: {"component": self.key}, Oper.DELETE: {"project": self.key}, Oper.SET_TAGS: {"project": self.key}}
         return ops[operation] if operation and operation in ops else {"project": self.key}
-
-
-def count(endpoint: Platform, params: ApiParams = None) -> int:
-    """Counts projects
-
-    :param params: list of parameters to filter projects to search
-    """
-    new_params = {} if params is None else params.copy()
-    new_params.update({"ps": 1, "p": 1})
-    if not endpoint.is_sonarcloud():
-        new_params["filter"] = _PROJECT_QUALIFIER
-    api, _, api_params, _ = endpoint.api.get_details(Project, Oper.SEARCH, **new_params)
-    return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=api_params).text))
 
 
 def get_matching_list(endpoint: Platform, pattern: str, threads: int = 8) -> dict[str, Project]:

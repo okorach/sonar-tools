@@ -133,7 +133,7 @@ class Component(SqObject):
 
     def migration_export(self, export_settings: ConfigSettings, **search_params: Any) -> dict[str, Any]:
         """Prepares all data for a sonar-migration export"""
-        from sonar.issues import count as issue_count
+        from sonar.issues import Issue
         from sonar.hotspots import Hotspot
 
         json_data: dict[str, Any] = {"lastAnalysis": sutil.date_to_string(self.last_analysis())}
@@ -157,10 +157,10 @@ class Component(SqObject):
         json_data["issues"] = {
             "thirdParty": tpissues if len(tpissues) > 0 else 0,
             "instantiatedRules": inst_issues if len(inst_issues) > 0 else 0,
-            "falsePositives": issue_count(self.endpoint, **(params | {"issueStatuses": ["FALSE_POSITIVE"]})),
+            "falsePositives": Issue.count(self.endpoint, **(params | {"issueStatuses": ["FALSE_POSITIVE"]})),
         }
         status = "accepted" if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION else "wontFix"
-        json_data["issues"][status] = issue_count(self.endpoint, issueStatuses=[status.upper()], **params)
+        json_data["issues"][status] = Issue.count(self.endpoint, issueStatuses=[status.upper()], **params)
         params = search_params | {"project": key}
         json_data["hotspots"] = {
             "acknowledged": Hotspot.count(self.endpoint, **(params | {"resolution": ["ACKNOWLEDGED"]})),

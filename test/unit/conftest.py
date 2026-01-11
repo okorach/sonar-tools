@@ -215,20 +215,27 @@ def get_test_user() -> Generator[users.User]:
     try:
         o = users.User.get_object(endpoint=tutil.SQ, login=key)
     except exceptions.ObjectNotFound:
-        o = users.User.create(endpoint=tutil.SQ, login=key, name=f"User name {key}")
-    (uid, uname, ulogin) = (o.name, o.id, o.login)
-    for g in o.groups():
-        if g != tutil.SQ.default_user_group():
-            o.remove_from_group(g)
-    yield o
-    try:
-        (o.name, o.id, o.login) = (uid, uname, ulogin)
+        try:
+            o = users.User.create(endpoint=tutil.SQ, login=key, name=f"User name {key}")
+        except exceptions.UnsupportedOperation:
+            if not tutil.SQ.is_sonarcloud():
+                raise
+            o = None
+    if o:
+        (uid, uname, ulogin) = (o.name, o.id, o.login)
         for g in o.groups():
             if g != tutil.SQ.default_user_group():
                 o.remove_from_group(g)
-        o.delete()
-    except exceptions.ObjectNotFound:
-        pass
+    yield o
+    if o:
+        try:
+            (o.name, o.id, o.login) = (uid, uname, ulogin)
+            for g in o.groups():
+                if g != tutil.SQ.default_user_group():
+                    o.remove_from_group(g)
+            o.delete()
+        except exceptions.ObjectNotFound:
+            pass
 
 
 def rm(file: str) -> None:
@@ -311,24 +318,31 @@ def get_test_group() -> Generator[groups.Group]:
     try:
         o = groups.Group.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
     except exceptions.ObjectNotFound:
-        o = groups.Group.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
+        try:
+            o = groups.Group.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
+        except exceptions.UnsupportedOperation:
+            if not tutil.SQ.is_sonarcloud():
+                raise
+            o = None
     yield o
-    try:
-        o.delete()
-    except exceptions.ObjectNotFound:
-        pass
+    if o:
+        try:
+            o.delete()
+        except exceptions.ObjectNotFound:
+            pass
 
 
 @pytest.fixture
 def get_60_groups() -> Generator[list[groups.Group]]:
     group_list = []
-    for i in range(60):
-        gr_name = f"Group-{tutil.TEMP_KEY}{i}"
-        try:
-            o_gr = groups.Group.get_object(endpoint=tutil.SQ, name=gr_name)
-        except exceptions.ObjectNotFound:
-            o_gr = groups.Group.create(endpoint=tutil.SQ, name=gr_name, description=gr_name)
-        group_list.append(o_gr)
+    if not tutil.SQ.is_sonarcloud():
+        for i in range(60):
+            gr_name = f"Group-{tutil.TEMP_KEY}{i}"
+            try:
+                o_gr = groups.Group.get_object(endpoint=tutil.SQ, name=gr_name)
+            except exceptions.ObjectNotFound:
+                o_gr = groups.Group.create(endpoint=tutil.SQ, name=gr_name, description=gr_name)
+            group_list.append(o_gr)
     yield group_list
     for g in group_list:
         g.delete()

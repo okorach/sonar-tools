@@ -204,7 +204,7 @@ def test_changelog() -> None:
     delta = timedelta(days=1)
     date_change = tconf.ISSUE_FP_CHANGELOG_DATE
     assert date_change <= changelog.date_time().replace(tzinfo=None) < date_change + delta
-    assert changelog.author() == "admin"
+    assert changelog.author() == tconf.ADMIN_USER
 
 
 def test_multiple_changelogs():
@@ -245,7 +245,7 @@ def test_request_error() -> None:
     with pytest.raises(ConnectionError):
         issue.add_comment("Won't work")
     with pytest.raises(ConnectionError):
-        issue.assign("admin")
+        issue.assign(tconf.ADMIN_USER)
     tutil.SQ.local_url = url
 
 

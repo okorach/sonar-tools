@@ -30,6 +30,7 @@ import utilities as tutil
 from sonar import applications as apps, exceptions
 from sonar.applications import Application as App
 import sonar.util.constants as c
+import credentials
 
 EXISTING_KEY = "APP_TEST"
 EXISTING_KEY_2 = "FE-BE"
@@ -60,7 +61,7 @@ def test_count() -> None:
     """Verify count works"""
     if not __verify_support():
         pytest.skip(__UNSUPPORTED_MESSAGE)
-    assert apps.count(tutil.SQ) > 0
+    assert App.count(tutil.SQ) > 0
 
 
 def test_search() -> None:
@@ -121,7 +122,7 @@ def test_permissions_1(get_test_app: Generator[App]) -> None:
     obj.set_permissions(
         [
             {"group": tutil.SQ.default_user_group(), "permissions": ["user", "admin"]},
-            {"group": "sonar-administrators", "permissions": ["user", "admin"]},
+            {"group": credentials.ADMIN_GROUP, "permissions": ["user", "admin"]},
         ]
     )
 

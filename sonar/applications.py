@@ -58,6 +58,7 @@ class Application(aggr.Aggregation):
     """
 
     CACHE = cache.Cache()
+    APP_FILTER = {"filter": "qualifier = APP"}
 
     def __init__(self, endpoint: Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
@@ -137,7 +138,13 @@ class Application(aggr.Aggregation):
         check_supported(endpoint)
         if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
             return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
-        return dict(sorted(cls.get_paginated(endpoint=endpoint, params=search_params | {"filter": "qualifier = APP"}).items()))
+        return dict(sorted(cls.get_paginated(endpoint=endpoint, params=search_params | cls.APP_FILTER).items()))
+
+    @classmethod
+    def count(cls, endpoint: Platform, **search_params: Any) -> int:
+        """returns count of applications"""
+        check_supported(endpoint)
+        return super().count(endpoint, **(search_params | cls.APP_FILTER))
 
     def refresh(self) -> Application:
         """Refreshes the application by re-reading SonarQube
@@ -421,17 +428,6 @@ def _project_list(data: ObjectJsonRepr) -> KeyList:
     for b in [b for b in data.get("branches", []) if "projects" in b]:
         plist += [p["key"] for p in b["projects"]]
     return sorted(set(plist))
-
-
-def count(endpoint: Platform) -> int:
-    """returns count of applications
-
-    :param endpoint: Reference to the SonarQube platform
-    :return: Count of applications
-    """
-    check_supported(endpoint)
-    api, _, params, _ = endpoint.api.get_details(Application, Oper.SEARCH, ps=1, filter="qualifier = APP")
-    return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=params).text))
 
 
 def check_supported(endpoint: Platform) -> None:

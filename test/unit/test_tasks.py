@@ -23,6 +23,7 @@
 
 import utilities as tutil
 from sonar import tasks
+import credentials
 
 
 def test_task() -> None:
@@ -31,7 +32,7 @@ def test_task() -> None:
     assert task is not None
     assert task.url() == f"{tutil.SQ.external_url}/project/background_tasks?id={tutil.LIVE_PROJECT}"
     task.sq_json = None
-    task._load()
+    task.reload_cache()
     assert task.sq_json is not None
     if tutil.SQ.version() >= (10, 0, 0):
         assert len(task.id()) == 36
@@ -39,7 +40,7 @@ def test_task() -> None:
         assert len(task.id()) == 20
     assert task.status() == tasks.SUCCESS
     assert 100 <= task.execution_time() <= 100000
-    assert task.submitter() == "admin"
+    assert task.submitter() == credentials.ADMIN_USER
     assert task.warning_count() > 0
     assert task.error_message() is None
 

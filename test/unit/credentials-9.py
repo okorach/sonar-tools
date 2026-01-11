@@ -24,6 +24,7 @@ from datetime import datetime
 
 TARGET_PLATFORM = "http://localhost:9000"
 TARGET_TOKEN = getenv("SONAR_TOKEN_9_ADMIN_USER")
+ORGANIZATION = None
 
 ISSUE_FP = "AZrWSZgXG2ojjjMGNBfu"
 ISSUE_FP_NBR_CHANGELOGS = 20
@@ -32,3 +33,7 @@ ISSUE_FP_CHANGELOG_DATE = datetime(2025, 12, 1)
 ISSUE_ACCEPTED = "AZrWSZgXG2ojjjMGNBfw"
 
 NBR_PROJECTS = 60
+
+ADMIN_USER = "admin"
+ADMIN_GROUP = "sonar-administrators"
+DEFAULT_USER_GROUP = "sonar-users"

@@ -33,6 +33,7 @@ import inspect
 import sonar.utilities as sutil
 import sonar.logging as log
 from sonar.util import misc
+from sonar.exceptions import UnsupportedOperation
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -95,6 +96,8 @@ class ApiOperation(Enum):
     GET_SUBCOMPONENTS = "GET_SUBCOMPONENTS"
     EXPORT_FINDINGS = "EXPORT_FINDINGS"
     GET_LOGS = "GET_LOGS"
+    CREATE_CONDITION = "CREATE_CONDITION"
+    DELETE_CONDITION = "DELETE_CONDITION"
 
 
 class ApiManager:
@@ -126,9 +129,9 @@ class ApiManager:
             object_or_class = object_or_class.__class__
         class_name = object_or_class.__name__
         if class_name not in self.api_def:
-            raise ValueError(f"API for {class_name} in version {self.endpoint.version()} not found in API definition")
+            raise UnsupportedOperation(f"API for {class_name} in version {self.endpoint.version()} not found in API definition")
         if operation.value not in self.api_def[class_name]:
-            raise ValueError(f"Operation {operation.value} not found in API definition for {class_name}")
+            raise UnsupportedOperation(f"Operation {operation.value} not found in API definition for {class_name}")
         return self.api_def[class_name][operation.value]
 
     def api(self, object_or_class: object, operation: ApiOperation, **kwargs: Any) -> str:
@@ -156,8 +159,10 @@ class ApiManager:
         params = self.get_api_entry(object_or_class, operation).get("params", {})
         if isinstance(params, list):
             params = {p: "{" + p + "}" for p in params}
+        # Add organization for SQC
+        normalized = {"organization": self.endpoint.organization} | kwargs
         # Remove any parameter set to None
-        normalized = {k: v for k, v in kwargs.items() if v is not None}
+        normalized = {k: v for k, v in normalized.items() if v is not None}
         # Convert boolean values to strings
         normalized = {k: str(v).lower() if isinstance(v, bool) else v for k, v in normalized.items()}
         # Change list, set, tuple values to CSV strings

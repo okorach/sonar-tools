@@ -225,11 +225,12 @@ class Hotspot(findings.Finding):
     def mark_as_acknowledged(self) -> bool:
         """Marks a hotspot as acknowledged
 
+        :raises: UnsupportedOperation if the operation is not supported by the SonarQube edition
         :return: Whether the operation succeeded
         """
         if self.endpoint.is_sonarcloud():
             log.warning("Can't acknowledge %s, this is not supported by SonarQube Cloud", str(self))
-            return False
+            raise exceptions.UnsupportedOperation("Can't acknowledge hotspot, this is not supported by SonarQube Cloud")
         return self.__mark_as(resolution="ACKNOWLEDGED")
 
     def mark_as_to_review(self) -> bool:

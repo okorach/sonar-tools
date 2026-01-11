@@ -24,6 +24,7 @@ from datetime import datetime
 
 TARGET_PLATFORM = "https://sonarcloud.io"
 TARGET_TOKEN = getenv("SONAR_TOKEN_SONARCLOUD")
+ORGANIZATION = "okorach"
 
 ISSUE_FP = "6e7537bf-fccc-4aab-962e-e2f924d44728"
 ISSUE_FP_NBR_CHANGELOGS = 16
@@ -36,3 +37,7 @@ ISSUE_W_MULTIPLE_CHANGELOGS = "6ae41c3b-c3d2-422f-a505-d355e7b0a268"
 ISSUE_W_MULTIPLE_CHANGELOGS_DATE = "2019-09-21"
 
 NBR_PROJECTS = 8
+
+ADMIN_USER = "okorach@github"
+ADMIN_GROUP = "Owners"
+DEFAULT_USER_GROUP = "Members"

@@ -580,6 +580,23 @@
             "return_field": "results",
             "page_field": "p",
             "max_page_size": 500
+        },
+        "CREATE_CONDITION": {
+            "method": "POST",
+            "api": "api/qualitygates/create_condition",
+            "params": [
+                "gateName",
+                "metric",
+                "op",
+                "error"
+            ]
+        },
+        "DELETE_CONDITION": {
+            "method": "POST",
+            "api": "api/qualitygates/delete_condition",
+            "params": [
+                "id"
+            ]
         }
     },
     "DevopsPlatform": {
