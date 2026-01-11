@@ -670,12 +670,6 @@ class Portfolio(aggregations.Aggregation):
         return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
 
-def count(endpoint: Platform) -> int:
-    """Counts number of portfolios"""
-    api, _, _, _ = endpoint.api.get_details(Portfolio, Oper.SEARCH)
-    return aggregations.count(api=api, endpoint=endpoint)
-
-
 def check_supported(endpoint: Platform) -> None:
     """Verifies the edition and raise exception if not supported"""
     if endpoint.is_sonarcloud():

@@ -98,13 +98,3 @@ class Aggregation(comp.Component):
             return []
         return self.permissions().audit(audit_settings)
 
-
-def count(api: str, endpoint: Platform, params: ApiParams = None) -> int:
-    """Returns number of aggregations of a given type (Application OR Portfolio)
-    :return: number of Apps or Portfolios
-    :rtype: int
-    """
-    if params is None:
-        params = {}
-    params["ps"] = 1
-    return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=params).text))
