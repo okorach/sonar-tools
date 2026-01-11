@@ -215,7 +215,7 @@ def get_test_user() -> Generator[users.User]:
     try:
         o = users.User.get_object(endpoint=tutil.SQ, login=key)
     except exceptions.ObjectNotFound:
-        o = users.User.create(endpoint=tutil.SQ, login=key, name=f"User name {tutil.TEMP_KEY}")
+        o = users.User.create(endpoint=tutil.SQ, login=key, name=f"User name {key}")
     (uid, uname, ulogin) = (o.name, o.id, o.login)
     for g in o.groups():
         if g != tutil.SQ.default_user_group():
