@@ -309,7 +309,10 @@ def test_search_by_small() -> None:
 
     params.pop("project")
     params.pop("components")
-    dirs = ("cli", "conf", "migration", "sonar", "test/gen")
+    dirs = ["cli", "conf", "migration", "sonar", "test/gen"]
+    if tutil.SQ.version() <= c.NEW_ISSUE_SEARCH_INTRO_VERSION:
+        # Search does not aggregate subdirs in 9.9
+        dirs += ["sonar/permissions", "sonar/util", "sonar/dce", "sonar/cli"]
     assert len(list1) == sum([len(issues.Issue.search_by_directory(tutil.SQ, project=tutil.LIVE_PROJECT, directory=dir, **params)) for dir in dirs])
     assert len(list1) > len(issues.Issue.search_by_file(tutil.SQ, project=tutil.LIVE_PROJECT, file="sonar/issues.py", **params))
 
