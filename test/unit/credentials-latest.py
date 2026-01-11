@@ -35,3 +35,5 @@ ISSUE_ACCEPTED = "b6637cb9-3be1-4160-9d08-84622a818ff6"
 NBR_PROJECTS = 70
 
 ADMIN_USER = "admin"
+ADMIN_GROUP = "sonar-administrators"
+DEFAULT_USER_GROUP = "sonar-users"
