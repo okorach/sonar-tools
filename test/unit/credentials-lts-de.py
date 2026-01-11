@@ -24,6 +24,7 @@ from datetime import datetime
 
 TARGET_PLATFORM = "http://localhost:8001"
 TARGET_TOKEN = getenv("SONAR_TOKEN_LTS_ADMIN_USER")
+ORGANIZATION = None
 
 ISSUE_FP = "1a5e12a2-3db8-41b3-9414-d7275371b6d3"
 ISSUE_FP_NBR_CHANGELOGS = 31

@@ -96,7 +96,7 @@ SC_ORG = "okorach"
 SC_OPTS_NO_ORG = f"--{opt.URL} {SC_URL} --{opt.TOKEN} {SC_TOKEN}"
 SC_OPTS = f"{SC_OPTS_NO_ORG} --{opt.ORG} {SC_ORG}"
 
-SQ = platform.Platform(url=creds.TARGET_PLATFORM, token=creds.TARGET_TOKEN)
+SQ = platform.Platform(url=creds.TARGET_PLATFORM, token=creds.TARGET_TOKEN, org=creds.ORGANIZATION)
 SC = platform.Platform(url=SC_URL, token=SC_TOKEN, org="okorach")
 TEST_SQ = platform.Platform(url=LATEST_TEST, token=os.getenv("SONAR_TOKEN_TEST_ADMIN_USER"))
 
