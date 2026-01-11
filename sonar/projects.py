@@ -89,7 +89,6 @@ _IMPORTABLE_PROPERTIES = (
     phelp.AI_CODE_FIX,
 )
 
-_PROJECT_QUALIFIER = "qualifier=TRK"
 _PREDEFINED_LINKS = ("homepage", "scm", "issue")
 
 
@@ -97,6 +96,7 @@ class Project(Component):
     """Abstraction of the SonarQube project concept"""
 
     CACHE = cache.Cache()
+    PROJECT_FILTER = {"filter": "qualifier=TRK"}
 
     def __init__(self, endpoint: Platform, key: str) -> None:
         """
@@ -169,14 +169,14 @@ class Project(Component):
         if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
             return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
         if not endpoint.is_sonarcloud():
-            search_params |= {"filter": _PROJECT_QUALIFIER}
+            search_params |= cls.PROJECT_FILTER
         return dict(sorted(cls.get_paginated(endpoint=endpoint, params=search_params, threads=threads).items()))
 
     @classmethod
     def count(cls, endpoint: Platform, **search_params: Any) -> int:
         """Counts projects"""
-        proj_only = {} if endpoint.is_sonarcloud() else {"filter": _PROJECT_QUALIFIER}
-        return super().count(endpoint, **(search_params | proj_only))
+        proj_filter = {} if endpoint.is_sonarcloud() else cls.PROJECT_FILTER
+        return super().count(endpoint, **(search_params | proj_filter))
 
     def project(self) -> Project:
         """Returns the project"""
@@ -534,8 +534,8 @@ class Project(Component):
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
-            api, _, _, ret = self.endpoint.api.get_details(self, Oper.SEARCH, filter=_PROJECT_QUALIFIER)
-            data = self.endpoint.get_paginated(api=api, return_field=ret, filter=_PROJECT_QUALIFIER)
+            api, _, params, ret = self.endpoint.api.get_details(self, Oper.SEARCH, **self.__class__.PROJECT_FILTER)
+            data = self.endpoint.get_paginated(api=api, return_field=ret, **params)
             p_data = next((p for p in data[ret] if p["key"] == self.key), None)
             if p_data:
                 self.sq_json.update(p_data)
