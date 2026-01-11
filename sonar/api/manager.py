@@ -156,8 +156,10 @@ class ApiManager:
         params = self.get_api_entry(object_or_class, operation).get("params", {})
         if isinstance(params, list):
             params = {p: "{" + p + "}" for p in params}
+        # Add organization for SQC
+        normalized = {"organization": self.endpoint.organization} | kwargs
         # Remove any parameter set to None
-        normalized = {k: v for k, v in kwargs.items() if v is not None}
+        normalized = {k: v for k, v in normalized.items() if v is not None}
         # Convert boolean values to strings
         normalized = {k: str(v).lower() if isinstance(v, bool) else v for k, v in normalized.items()}
         # Change list, set, tuple values to CSV strings
