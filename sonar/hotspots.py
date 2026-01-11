@@ -254,7 +254,10 @@ class Hotspot(findings.Finding):
         """
         try:
             api, _, params, _ = self.endpoint.api.get_details(self, Oper.ADD_COMMENT, hotspot=self.key, comment=comment)
-            return self.post(api, params=params).ok
+            self.post(api, params=params)
+            self._comments = self.__details = None
+            self.comments()
+            return True
         except exceptions.SonarException:
             return False
 
@@ -360,24 +363,25 @@ class Hotspot(findings.Finding):
         :return: The hotspot comments
         :rtype: dict{"<date>_<sequence_nbr>": <comment>}
         """
-        if self._comments is not None:
-            return self._comments
-        if not self.__details:
-            self.refresh()
-        self._comments = {}
-        seq = 0
-        for cmt in self.__details["comment"]:
-            seq += 1
-            self._comments[f"{cmt['createdAt']}_{seq:03d}"] = {
-                "date": util.to_datetime(cmt["createdAt"]),
-                "event": "comment",
-                "value": cmt["markdown"],
-                "user": cmt["login"],
-                "userName": cmt["login"],
-                "commentKey": cmt["key"],
-            }
+        log.debug("Getting comments for %s after %s", self, after)
+        if self._comments is None:
+            if not self.__details:
+                self.refresh()
+            self._comments = {}
+            seq = 0
+            for cmt in self.__details["comment"]:
+                seq += 1
+                self._comments[f"{cmt['createdAt']}_{seq:03d}"] = {
+                    "date": util.to_datetime(cmt["createdAt"]),
+                    "event": "comment",
+                    "value": cmt["markdown"],
+                    "user": cmt["login"],
+                    "userName": cmt["login"],
+                    "commentKey": cmt["key"],
+                }
         if after is not None:
-            return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > util.add_tz(after)}
+            log.debug("Returning comments after %s", after)
+            return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > after}
         return self._comments
 
     @classmethod
