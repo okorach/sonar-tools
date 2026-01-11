@@ -21,24 +21,28 @@
 
 """Test of the hotspots module and class, as well as changelog"""
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+
+import pytest
 import utilities as tutil
 from sonar.hotspots import Hotspot
+from sonar import exceptions
 import sonar.util.misc as util
 from sonar import projects
 
 
 def test_transitions() -> None:
     """test_transitions"""
-    hotspot_d = Hotspot.search(tutil.SQ, project="test:juice-shop")
+    pkey = "okorach_sonar-tools-test" if tutil.SQ.is_sonarcloud() else "test:juice-shop"
+    hotspot_d = Hotspot.search(tutil.SQ, project=pkey)
     hotspot = list(hotspot_d.values())[0]
 
     assert hotspot.mark_as_safe()
     assert hotspot.reopen()
 
     if tutil.SQ.is_sonarcloud():
-        hotspot = list(Hotspot.search(tutil.SQ, project=tutil.LIVE_PROJECT).values())[0]
-        assert not hotspot.mark_as_acknowledged()
+        with pytest.raises(exceptions.UnsupportedOperation):
+            hotspot.mark_as_acknowledged()
     else:
         assert hotspot.mark_as_acknowledged()
         assert hotspot.reopen()
