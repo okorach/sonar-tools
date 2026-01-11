@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2019-2025 Olivier Korach
+# Copyright (C) 2019-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube User Token concept"""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 import json
 import datetime as dt
@@ -33,6 +33,7 @@ import sonar.util.misc as util
 from sonar.util import cache, constants as c
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
+from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -43,7 +44,6 @@ class UserToken(SqObject):
     """Abstraction of the SonarQube "user token" concept"""
 
     CACHE = cache.Cache()
-    API = {c.CREATE: "user_tokens/generate", c.DELETE: "user_tokens/revoke", c.LIST: "user_tokens/search"}
 
     def __init__(self, endpoint: Platform, login: str, json_data: ApiPayload, name: Optional[str] = None) -> None:
         """Constructor"""
@@ -67,7 +67,8 @@ class UserToken(SqObject):
         :param login: User for which the token must be created
         :param name: Token name
         """
-        data = json.loads(endpoint.post(UserToken.API[c.CREATE], {"name": name, "login": login}).text)
+        api, _, params, _ = endpoint.api.get_details(cls, Oper.CREATE, name=name, login=login)
+        data = json.loads(endpoint.post(api, params).text)
         return UserToken(endpoint=endpoint, login=data["login"], json_data=data, name=name)
 
     def __str__(self) -> str:
@@ -76,16 +77,27 @@ class UserToken(SqObject):
         """
         return f"token '{self.name}' of user '{self.login}'"
 
+    @classmethod
+    def search(cls, endpoint: Platform, **search_params: Any) -> list[UserToken]:
+        """Searches tokens of a given user
+
+        :param search_params: Search filters (see api/user_tokens/search parameters)
+        :return: list of tokens
+        """
+        api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
+        data = json.loads(endpoint.get(api, params=params).text)
+        return [cls(endpoint=endpoint, login=data["login"], json_data=tk) for tk in data[ret]]
+
     def revoke(self) -> bool:
         """Revokes the token
         :return: Whether the revocation succeeded
         """
-        return self.delete()
+        return self.delete_object(name=self.name, login=self.login)
 
-    def api_params(self, op: str = c.GET) -> ApiParams:
+    def api_params(self, operation: Oper = Oper.GET) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.GET: {"name": self.name, "login": self.login}}
-        return ops[op] if op in ops else ops[c.GET]
+        ops = {Oper.GET: {"name": self.name, "login": self.login}}
+        return ops[operation] if operation in ops else ops[Oper.GET]
 
     def is_expired(self) -> bool:
         """Returns True if the token is expired, False otherwise"""
@@ -119,13 +131,3 @@ class UserToken(SqObject):
         elif mode != "housekeeper":
             problems.append(Problem(get_rule(RuleId.TOKEN_NEVER_USED), self, str(self), age))
         return problems
-
-
-def search(endpoint: Platform, login: str) -> list[UserToken]:
-    """Searches tokens of a given user
-
-    :param login: login of the user
-    :return: list of tokens
-    """
-    data = json.loads(endpoint.get(UserToken.API[c.LIST], {"login": login}).text)
-    return [UserToken(endpoint=endpoint, login=data["login"], json_data=tk) for tk in data["userTokens"]]

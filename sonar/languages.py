@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 #
 # sonar-tools
-# Copyright (C) 2022-2025 Olivier Korach
+# Copyright (C) 2022-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -22,26 +22,19 @@
 """Abstraction of the SonarQube language concept"""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 import json
-from threading import Lock
-
 from sonar.sqobject import SqObject
 from sonar import rules
-from sonar.util import misc
 from sonar.util import cache
 import sonar.util.issue_defs as idefs
+from sonar.api.manager import ApiOperation as Oper
+import sonar.logging as log
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
     from sonar.util.types import ApiPayload
-
-#: List of language APIs
-APIS = {"list": "languages/list"}
-
-
-_CLASS_LOCK = Lock()
 
 
 class Language(SqObject):
@@ -59,7 +52,7 @@ class Language(SqObject):
         super().__init__(endpoint=endpoint, key=key)
         self.name = name  #: Language name
         self._nb_rules = {"_ALL": None, idefs.TYPE_BUG: None, idefs.TYPE_VULN: None, idefs.TYPE_CODE_SMELL: None, idefs.TYPE_HOTSPOT: None}
-        Language.CACHE.put(self)
+        self.__class__.CACHE.put(self)
 
     @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> Language:
@@ -68,66 +61,55 @@ class Language(SqObject):
         :param endpoint: Reference of the SonarQube platform
         :param data: API payload from api/languages/list
         """
-        o = Language.CACHE.get(data["key"], endpoint.local_url)
-        if not o:
+        if not (o := cls.CACHE.get(data["key"], endpoint.local_url)):
             o = cls(endpoint=endpoint, key=data["key"], name=data["name"])
         return o
 
     @classmethod
-    def read(cls, endpoint: Platform, key: str) -> Optional[Language]:
-        """Reads a language and return the corresponding object
+    def read(cls, endpoint: Platform, key: str, use_cache: bool = True) -> Optional[Language]:
+        """Reads a language and return the corresponding object if it exists, else none
 
         :param endpoint: Reference of the SonarQube platform
-        :param key: The language key"""
-        get_list(endpoint)
-        return Language.CACHE.get(key, endpoint.local_url)
+        :param key: The language key
+        :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        """
+        cls.search(endpoint, use_cache=use_cache)
+        return cls.CACHE.get(key, endpoint.local_url)
+
+    @classmethod
+    def search(cls, endpoint: Platform, use_cache: bool = False, **search_params: Any) -> dict[str, Language]:
+        """Gets the list of languages existing on the SonarQube platform
+
+        :param endpoint: Reference of the SonarQube platform
+        :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        :param search_params: Search filters (see api/languages/list parameters)
+        :return: List of languages
+        :rtype: dict{<language_key>: <language_name>}
+        """
+        if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
+            log.debug("Searching languages from cache")
+            return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
+        log.debug("Searching languages from SonarQube")
+        api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
+        data = json.loads(endpoint.get(api, params=params).text)
+        return {lang["key"]: Language(endpoint=endpoint, key=lang["key"], name=lang["name"]) for lang in data[ret]}
 
     def number_of_rules(self, rule_type: Optional[str] = None) -> int:
         """Count rules in the language, optionally filtering on rule type
 
-        :param rule_type: Rule type to filter on, defaults to None
+        :param rule_type: Rule type to filter on, defaults to None for all types
         """
-        if rule_type not in (idefs.TYPE_VULN, idefs.TYPE_HOTSPOT, idefs.TYPE_BUG, idefs.TYPE_CODE_SMELL):
-            rule_type = None
+        if rule_type is not None and rule_type not in idefs.ALL_TYPES:
+            return 0
         if self._nb_rules[rule_type or "_ALL"] is None:
-            self._nb_rules[rule_type or "_ALL"] = len(
-                rules.search(self.endpoint, params=misc.remove_nones({"languages": self.key, "types": rule_type}))
-            )
+            self._nb_rules[rule_type or "_ALL"] = len(rules.Rule.search(self.endpoint, use_cache=True, languages=self.key, types=rule_type))
         return self._nb_rules[rule_type or "_ALL"]
 
+    @classmethod
+    def exists(cls, endpoint: Platform, **kwargs: Any) -> bool:
+        """Returns whether a language exists
 
-def read_list(endpoint: Platform) -> dict[str, Language]:
-    """Reads the list of languages existing on the SonarQube platform
-
-    :param endpoint: Reference of the SonarQube platform
-    :return: List of languages
-    :rtype: dict{<language_key>: <language_name>}
-    """
-    data = json.loads(endpoint.get(APIS["list"]).text)
-    for lang in data["languages"]:
-        _ = Language(endpoint=endpoint, key=lang["key"], name=lang["name"])
-    return {o.key: o for o in Language.CACHE.objects.values()}
-
-
-def get_list(endpoint: Platform, use_cache: bool = True) -> dict[str, Language]:
-    """Gets the list of languages existing on the SonarQube platform
-    Unlike read_list, get_list() is using a local cache if available (so no API call)
-
-    :param endpoint: Reference of the SonarQube platform
-    :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-    :return: List of languages
-    :rtype: dict{<language_key>: <language_name>}
-    """
-    with _CLASS_LOCK:
-        if len(Language.CACHE) == 0 or not use_cache:
-            read_list(endpoint)
-    return {o.key: o for o in Language.CACHE.objects.values()}
-
-
-def exists(endpoint: Platform, language: str) -> bool:
-    """Returns whether a language exists
-
-    :param endpoint: Reference of the SonarQube platform
-    :param language: The language key
-    """
-    return language in get_list(endpoint)
+        :param endpoint: Reference of the SonarQube platform
+        :param language: The language key
+        """
+        return kwargs.get("language") in cls.search(endpoint, use_cache=True)

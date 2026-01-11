@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2022-2025 Olivier Korach
+# Copyright (C) 2022-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -26,11 +26,11 @@ from typing import Any, Union, Optional, TYPE_CHECKING
 
 import re
 import json
-
 import sonar.logging as log
 from sonar.util import cache, constants as c
 from sonar import sqobject, exceptions
 import sonar.util.misc as util
+from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -128,16 +128,6 @@ class Setting(sqobject.SqObject):
     """Abstraction of the Sonar setting concept"""
 
     CACHE = cache.Cache()
-    API = {
-        c.CREATE: "settings/set",
-        c.READ: "settings/values",
-        c.UPDATE: "settings/set",
-        c.LIST: "settings/values",
-        "LIST_DEFS": "settings/list_definitions",
-        "NEW_CODE_GET": "new_code_periods/show",
-        "NEW_CODE_SET": "new_code_periods/set",
-        "MQR_MODE": "v2/clean-code-policy/mode",
-    }
 
     def __init__(self, endpoint: Platform, key: str, component: Optional[object] = None, data: Optional[ApiPayload] = None) -> None:
         """Constructor"""
@@ -151,13 +141,13 @@ class Setting(sqobject.SqObject):
         self._is_global: Optional[bool] = None
         self.reload(data)
         log.debug("Constructed %s uuid %d value %s", str(self), hash(self), str(self.value))
-        Setting.CACHE.put(self)
+        self.__class__.CACHE.put(self)
 
     @classmethod
     def read(cls, key: str, endpoint: Platform, component: Optional[object] = None) -> Setting:
         """Reads a setting from the platform"""
         log.debug("Reading setting '%s' for %s", key, str(component))
-        if o := Setting.CACHE.get(key, component, endpoint.local_url):
+        if o := cls.CACHE.get(key, component, endpoint.local_url):
             return o
         data = get_settings_data(endpoint, key, component)
         return Setting.load(key=key, endpoint=endpoint, data=data, component=component)
@@ -166,7 +156,8 @@ class Setting(sqobject.SqObject):
     def create(cls, key: str, endpoint: Platform, value: Any = None, component: Optional[object] = None) -> Union[Setting, None]:
         """Creates a setting with a custom value"""
         log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
-        r = endpoint.post(Setting.API[c.CREATE], params={"key": key, "component": component})
+        api, _, params, _ = endpoint.api.get_details(Setting, Oper.CREATE, key=key, component=component)
+        r = endpoint.post(api, params=params)
         if not r.ok:
             return None
         o = cls.read(key=key, endpoint=endpoint, component=component)
@@ -176,7 +167,7 @@ class Setting(sqobject.SqObject):
     def load(cls, key: str, endpoint: Platform, data: ApiPayload, component: Optional[object] = None) -> Setting:
         """Loads a setting with  JSON data"""
         log.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
-        o = Setting.CACHE.get(key, component, endpoint.local_url)
+        o = cls.CACHE.get(key, component, endpoint.local_url)
         if not o:
             o = cls(key=key, endpoint=endpoint, data=data, component=component)
         o.reload(data)
@@ -186,7 +177,7 @@ class Setting(sqobject.SqObject):
     def load_from_definition(cls, key: str, endpoint: Platform, def_data: ApiPayload) -> Setting:
         """Loads a setting with  JSON data"""
         log.debug("Loading setting '%s' from definition %s", key, def_data)
-        if not (o := Setting.CACHE.get(key, None, endpoint.local_url)):
+        if not (o := cls.CACHE.get(key, None, endpoint.local_url)):
             o = cls(key=key, endpoint=endpoint, data=None, component=None)
         o._definition = def_data
         o.multi_valued = def_data.get("multiValues")
@@ -265,7 +256,8 @@ class Setting(sqobject.SqObject):
         if value is None or value == "" or (self.key == "sonar.autodetect.ai.code" and value is True and self.endpoint.version() < (2025, 2, 0)):
             return self.reset()
         if self.key == MQR_ENABLED:
-            if ok := self.patch(Setting.API["MQR_MODE"], params={"mode": "STANDARD_EXPERIENCE" if not value else "MQR"}).ok:
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.SET_MQR_MODE, mode="STANDARD_EXPERIENCE" if not value else "MQR")
+            if ok := self.patch(api, params=params).ok:
                 self.value = value
             return ok
         if self.key in (COMPONENT_VISIBILITY, PROJECT_DEFAULT_VISIBILITY):
@@ -285,7 +277,8 @@ class Setting(sqobject.SqObject):
         log.debug("Setting %s to value '%s'", str(self), str(value))
         params = {"key": self.key, "component": self.component.key if self.component else None} | encode(self, value)
         try:
-            if ok := self.post(Setting.API[c.CREATE], params=params).ok:
+            api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.CREATE, **params)
+            if ok := self.post(api, params=api_params).ok:
                 self.value = value
         except exceptions.SonarException:
             return False
@@ -296,7 +289,8 @@ class Setting(sqobject.SqObject):
         log.info("Resetting %s", str(self))
         params = {"keys": self.key} | {} if not self.component else {"component": self.component.key}
         try:
-            ok = self.post("settings/reset", params=params).ok
+            api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.RESET, **params)
+            ok = self.post(api, params=api_params).ok
             self.refresh()
         except exceptions.SonarException:
             return False
@@ -393,13 +387,13 @@ class Setting(sqobject.SqObject):
             return (GENERAL_SETTINGS, None)
         return ("thirdParty", None)
 
-
-def get_object(endpoint: Platform, key: str, component: Optional[object] = None) -> Setting:
-    """Returns a Setting object from its key and, optionally, component"""
-    o = Setting.CACHE.get(key, component.key if component else None, endpoint.local_url)
-    if not o:
-        get_all(endpoint, component)
-    return Setting.CACHE.get(key, component.key if component else None, endpoint.local_url)
+    @classmethod
+    def get_object(cls, endpoint: Platform, key: str, component: Optional[object] = None) -> Setting:
+        """Returns a Setting object from its key and, optionally, component"""
+        o = cls.CACHE.get(key, component.key if component else None, endpoint.local_url)
+        if not o:
+            get_all(endpoint, component)
+        return cls.CACHE.get(key, component.key if component else None, endpoint.local_url)
 
 
 def __get_settings(endpoint: Platform, data: ApiPayload, component: Optional[sqobject.SqObject] = None) -> dict[str, Setting]:
@@ -443,7 +437,8 @@ def get_bulk(
     if settings_list is not None:
         params["keys"] = util.list_to_csv(settings_list)
 
-    data = json.loads(endpoint.get(Setting.API[c.LIST], params=params, with_organization=(component is None)).text)
+    api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.SEARCH, **params)
+    data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)
     settings_dict |= __get_settings(endpoint, data, component)
 
     # Hack since projects.default.visibility is not returned by settings/list_definitions
@@ -493,10 +488,15 @@ def set_new_code_period(endpoint: Platform, nc_type: str, nc_value: str, project
     """Sets the new code period at global level or for a project"""
     log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
     if endpoint.is_sonarcloud():
-        ok = endpoint.post(Setting.API[c.CREATE], params={"key": "sonar.leak.period.type", "value": nc_type, "project": project_key}).ok
-        ok = ok and endpoint.post(Setting.API[c.CREATE], params={"key": "sonar.leak.period", "value": nc_value, "project": project_key}).ok
+        api, _, params1, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period.type", value=nc_type, project=project_key)
+        ok = endpoint.post(api, params=params1).ok
+        api, _, params2, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period", value=nc_value, project=project_key)
+        ok = ok and endpoint.post(api, params=params2).ok
     else:
-        ok = endpoint.post(Setting.API["NEW_CODE_SET"], params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch}).ok
+        api, _, params, _ = endpoint.api.get_details(
+            Setting, Oper.SET_NEW_CODE_PERIOD, type=nc_type, value=nc_value, project=project_key, branch=branch
+        )
+        ok = endpoint.post(api, params=params).ok
     return ok
 
 
@@ -512,7 +512,8 @@ def get_visibility(endpoint: Platform, component: object) -> Setting:
     else:
         if endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Project default visibility does not exist in SonarQube Cloud")
-        data = json.loads(endpoint.get(Setting.API[c.READ], params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
+        api, _, params, _ = endpoint.api.get_details(Setting, Oper.GET, keys=PROJECT_DEFAULT_VISIBILITY)
+        data = json.loads(endpoint.get(api, params=params).text)
         return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 
 
@@ -530,7 +531,7 @@ def set_setting(endpoint: Platform, key: str, value: Any, component: Optional[ob
     """Sets a setting to a particular value"""
     try:
         log.debug("Setting %s with value %s (for component %s)", key, value, component)
-        s = get_object(endpoint=endpoint, key=key, component=component)
+        s = Setting.get_object(endpoint=endpoint, key=key, component=component)
         if not s:
             log.warning("Setting '%s' does not exist on target platform, it cannot be set", key)
             return False
@@ -569,11 +570,6 @@ def encode(setting: Setting, setting_value: Any) -> dict[str, Any]:
     return {"values" if setting.multi_valued else "value": setting_value}
 
 
-def reset_setting(endpoint: Platform, setting_key: str, project: Optional[object] = None) -> bool:
-    """Resets a setting to its default"""
-    return get_object(endpoint=endpoint, key=setting_key, component=project).reset()
-
-
 def get_component_params(component: object, name: str = "component") -> ApiParams:
     """Gets the parameters to read or write settings"""
     if not component:
@@ -594,15 +590,17 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[object])
     """
     if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
         params = get_component_params(component, name="project")
-        data = json.loads(endpoint.get(Setting.API["NEW_CODE_GET"], params=params).text)
+        api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.GET_NEW_CODE_PERIOD, **params)
+        data = json.loads(endpoint.get(api, params=api_params).text)
     elif key == MQR_ENABLED:
-        data = json.loads(endpoint.get(Setting.API["MQR_MODE"]).text)
+        api, _, params, _ = endpoint.api.get_details(Setting, Oper.GET_MQR_MODE)
+        data = json.loads(endpoint.get(api, params=params).text)
     else:
         if key == NEW_CODE_PERIOD:
             key = "sonar.leak.period.type"
-        params = get_component_params(component)
-        params.update({"keys": key})
-        data = json.loads(endpoint.get(Setting.API[c.READ], params=params, with_organization=(component is None)).text)["settings"]
+        params = get_component_params(component) | {"keys": key}
+        api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.GET, **params)
+        data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)["settings"]
         if not endpoint.is_sonarcloud() and len(data) > 0:
             data = data[0]
         else:

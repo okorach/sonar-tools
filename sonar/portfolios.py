@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2019-2025 Olivier Korach
+# Copyright (C) 2019-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -29,10 +29,8 @@ from typing import Optional, Union, Any, TYPE_CHECKING
 import re
 import json
 from http import HTTPStatus
-from threading import Lock
 
 import sonar.logging as log
-import sonar.platform as pf
 from sonar.util import cache
 import sonar.util.constants as c
 
@@ -40,19 +38,17 @@ from sonar import aggregations, exceptions, applications, app_branches
 from sonar.projects import Project
 
 import sonar.permissions.portfolio_permissions as pperms
-import sonar.sqobject as sq
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.audit import rules, problem
 from sonar.portfolio_reference import PortfolioReference
 from sonar.util import portfolio_helper as phelp
+from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
     from sonar.util.types import ApiPayload, ApiParams, ConfigSettings, KeyList, ObjectJsonRepr, PermissionDef
     from sonar.branches import Branch
-
-_CLASS_LOCK = Lock()
 
 _PORTFOLIO_QUALIFIER = "VW"
 _SUBPORTFOLIO_QUALIFIER = "SVW"
@@ -66,9 +62,6 @@ _SELECTION_MODE_NONE = "NONE"
 SELECTION_MODES = (_SELECTION_MODE_MANUAL, _SELECTION_MODE_REGEXP, _SELECTION_MODE_TAGS, _SELECTION_MODE_REST, _SELECTION_MODE_NONE)
 
 _API_SELECTION_MODE_FIELD = "selectionMode"
-_API_SELECTION_BRANCH_FIELD = "projectSelectionBranch"
-_API_SELECTION_REGEXP_FIELD = "projectSelectionRegexp"
-_API_SELECTION_TAGS_FIELD = "projectSelectionTags"
 
 _IMPORTABLE_PROPERTIES = (
     "key",
@@ -86,20 +79,10 @@ _IMPORTABLE_PROPERTIES = (
 
 
 class Portfolio(aggregations.Aggregation):
-    """
-    Abstraction of the Sonar portfolio concept
-    """
+    """Abstraction of the Sonar portfolio concept"""
 
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
-    API = {
-        c.CREATE: "views/create",
-        c.GET: "views/show",
-        c.UPDATE: "views/update",
-        c.DELETE: "views/delete",
-        c.SEARCH: "views/search",
-        c.RECOMPUTE: "views/refresh",
-    }
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
@@ -119,15 +102,31 @@ class Portfolio(aggregations.Aggregation):
         self.parent_portfolio: Optional[Portfolio] = None  #: Ref to parent portfolio object, if any
         self.root_portfolio: Optional[Portfolio] = None  #: Ref to root portfolio, if any
         self._sub_portfolios: dict[str, Portfolio] = {}  #: Subportfolios
-        Portfolio.CACHE.put(self)
+        self.__class__.CACHE.put(self)
         log.debug("Created portfolio object name '%s'", name)
+
+    def __str__(self) -> str:
+        """Returns string representation of object"""
+        return (
+            f"subportfolio '{self.key}'"
+            if self.sq_json and self.sq_json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
+            else f"portfolio '{self.key}'"
+        )
+
+    @classmethod
+    def search(cls, endpoint: Platform, use_cache: bool = False, **search_params: Any) -> dict[str, Portfolio]:
+        """Search all portfolios of a platform and returns as dict"""
+        check_supported(endpoint)
+        if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
+            return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
+        return dict(sorted(cls.get_paginated(endpoint=endpoint, params=search_params).items()))
 
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Portfolio:
         """Gets a portfolio object from its key"""
         check_supported(endpoint)
         log.debug("Getting portfolio object key '%s'", key)
-        o = Portfolio.CACHE.get(key, endpoint.local_url)
+        o = cls.CACHE.get(key, endpoint.local_url)
         if o:
             log.debug("%s is in cache", str(o))
             return o
@@ -143,7 +142,7 @@ class Portfolio(aggregations.Aggregation):
     def create(cls, endpoint: Platform, key: str, name: Optional[str] = None, **kwargs) -> Portfolio:
         """Creates a portfolio object"""
         check_supported(endpoint)
-        if Portfolio.exists(endpoint=endpoint, key=key):
+        if cls.exists(endpoint=endpoint, key=key):
             raise exceptions.ObjectAlreadyExists(key=key, message=f"Portfolio '{key}' already exists")
         parent_key = kwargs["parent"].key if "parent" in kwargs else None
         if not name:
@@ -152,7 +151,8 @@ class Portfolio(aggregations.Aggregation):
         params = {"name": name, "key": key, "parent": parent_key}
         for p in "description", "visibility":
             params[p] = kwargs.get(p, None)
-        endpoint.post(Portfolio.API[c.CREATE], params=params)
+        api, _, api_params, _ = endpoint.api.get_details(cls, Oper.CREATE, **params)
+        endpoint.post(api, params=api_params)
         o = cls(endpoint=endpoint, name=name, key=key)
         if parent_key:
             parent_p = Portfolio.get_object(endpoint, parent_key)
@@ -172,15 +172,7 @@ class Portfolio(aggregations.Aggregation):
         o.reload(data)
         return o
 
-    def __str__(self) -> str:
-        """Returns string representation of object"""
-        return (
-            f"subportfolio '{self.key}'"
-            if self.sq_json and self.sq_json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
-            else f"portfolio '{self.key}'"
-        )
-
-    def reload(self, data: ApiPayload) -> None:
+    def reload(self, data: ApiPayload) -> Portfolio:
         """Reloads a portfolio with returned API data"""
         super().reload(data)
         if "originalKey" not in data and data["qualifier"] == _PORTFOLIO_QUALIFIER:
@@ -188,6 +180,7 @@ class Portfolio(aggregations.Aggregation):
             self.root_portfolio = self
         self.load_selection_mode()
         self.reload_sub_portfolios()
+        return self
 
     def reload_sub_portfolios(self) -> None:
         if "subViews" not in self.sq_json:
@@ -221,17 +214,19 @@ class Portfolio(aggregations.Aggregation):
         else:
             self._selection_mode = {mode: True}
 
-    def refresh(self) -> None:
+    def refresh(self) -> Portfolio:
         """Refreshes a portfolio data from the Sonar instance"""
         log.debug("Updating details for %s root key %s", str(self), self.root_portfolio)
         if not self.is_toplevel():
             self.root_portfolio.refresh()
-            return
-        data = json.loads(self.get(Portfolio.API[c.GET], params={"key": self.key}).text)
+            return self
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.GET, key=self.key)
+        data = json.loads(self.get(api, params=params).text)
         if not self.is_sub_portfolio():
             self.reload(data)
         self.root_portfolio.reload_sub_portfolios()
         self.applications()
+        return self
 
     def url(self) -> str:
         """Returns the object permalink"""
@@ -266,7 +261,7 @@ class Portfolio(aggregations.Aggregation):
         for app_data in apps:
             app_o = applications.Application.get_object(self.endpoint, app_data["originalKey"])
             for branch in app_data["selectedBranches"]:
-                if app_branches.ApplicationBranch.get_object(app=app_o, branch_name=branch).is_main():
+                if app_branches.ApplicationBranch.get_object(self.endpoint, app=app_o, branch_name=branch).is_main():
                     app_data["selectedBranches"].remove(branch)
                     app_data["selectedBranches"].insert(0, c.DEFAULT_BRANCH)
             self._applications[app_data["originalKey"]] = app_data["selectedBranches"]
@@ -391,7 +386,10 @@ class Portfolio(aggregations.Aggregation):
     def export(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
         """Exports a portfolio (for sonar-config)"""
         log.info("Exporting %s", str(self))
-        return util.remove_nones(util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
+        data = self.to_json(export_settings)
+        if export_settings.get("MODE", "") == "MIGRATION":
+            return util.remove_nones(data)
+        return util.remove_nones(util.filter_export(data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
 
     def permissions(self) -> pperms.PortfolioPermissions:
         """Returns a portfolio permissions (if toplevel) or None if sub-portfolio"""
@@ -410,7 +408,8 @@ class Portfolio(aggregations.Aggregation):
         """Returns a portfolio selection mode"""
         if self._selection_mode is None:
             # FIXME: If portfolio is a subportfolio you must reload with sub-JSON
-            self.reload(json.loads(self.get(Portfolio.API[c.GET], params={"key": self.root_portfolio.key}).text))
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.GET, key=self.root_portfolio.key)
+            self.reload(json.loads(self.get(api, params=params).text))
         return {k.lower(): v for k, v in self._selection_mode.items()}
 
     def has_project(self, key: str) -> bool:
@@ -427,7 +426,7 @@ class Portfolio(aggregations.Aggregation):
                 self.post("views/add_project", params={"key": self.key, "project": key}, mute=(HTTPStatus.BAD_REQUEST,))
                 self._selection_mode[_SELECTION_MODE_MANUAL][key] = {c.DEFAULT_BRANCH}
             except exceptions.ObjectNotFound:
-                Portfolio.CACHE.pop(self)
+                self.__class__.CACHE.pop(self)
                 raise
         return self
 
@@ -506,13 +505,15 @@ class Portfolio(aggregations.Aggregation):
 
     def set_description(self, desc: str) -> Portfolio:
         if desc:
-            self.post(Portfolio.API[c.UPDATE], params={"key": self.key, "name": self.name, "description": desc})
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, key=self.key, name=self.name, description=desc)
+            self.post(api, params=params)
             self._description = desc
         return self
 
     def set_name(self, name: str) -> Portfolio:
         if name:
-            self.post(Portfolio.API[c.UPDATE], params={"key": self.key, "name": name})
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, key=self.key, name=name)
+            self.post(api, params=params)
             self.name = name
         return self
 
@@ -525,7 +526,7 @@ class Portfolio(aggregations.Aggregation):
             log.info("%s: Adding %s default branch", str(self), str(app))
             self.post("views/add_application", params={"portfolio": self.key, "application": app_key}, mute=(HTTPStatus.BAD_REQUEST,))
         else:
-            app_branch = app_branches.ApplicationBranch.get_object(app=app, branch_name=branch)
+            app_branch = app_branches.ApplicationBranch.get_object(self.endpoint, app=app, branch_name=branch)
             log.info("%s: Adding %s", str(self), str(app_branch))
             params = {"key": self.key, "application": app_key, "branch": branch}
             self.post("views/add_application_branch", params=params, mute=(HTTPStatus.BAD_REQUEST,))
@@ -574,7 +575,16 @@ class Portfolio(aggregations.Aggregation):
         """Triggers portfolio recomputation, return whether operation REQUEST succeeded"""
         log.debug("Recomputing %s", str(self))
         params = self.root_portfolio.api_params() if self.root_portfolio else self.api_params()
-        return self.post(Portfolio.API[c.RECOMPUTE], params=params).ok
+        api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.RECOMPUTE, **params)
+        return self.post(api, params=api_params).ok
+
+    def delete(self) -> bool:
+        """Deletes the portfolio
+
+        :return: Whether the deletion was successful
+        :rtype: bool
+        """
+        return self.delete_object(**self.api_params(Oper.DELETE))
 
     def get_project_list(self) -> list[str]:
         log.debug("Search %s projects list", str(self))
@@ -620,27 +630,33 @@ class Portfolio(aggregations.Aggregation):
                     self.add_application_branch(app_key=app_key, branch=branch)
         if not recurse:
             return
+        if data.get("portfolios"):
+            self.update_subportfolios(data["portfolios"])
 
+    def update_subportfolios(self, subp_dataset: list[dict[str, Any]]) -> None:
+        """Updates subportfolios of a portfolio with sonar-config JSON data
+
+        :param subp_dataset: List of subportfolio data
+        """
         log.info("Updating %s subportfolios", str(self))
         subps = self.sub_portfolios(full=True)
-        get_list(endpoint=self.endpoint)
+        Portfolio.search(self.endpoint, use_cache=True)
         key_list = []
         if subps:
             key_list = list(subps.keys())
-        if not data.get("portfolios"):
-            return
-        subportfolios_json = util.list_to_dict(data["portfolios"], "key")
+        subportfolios_json = util.list_to_dict(subp_dataset, "key")
         for key, subp_data in subportfolios_json.items():
             log.info("Processing subportfolio %s", key)
             if subp_data.get("byReference", False):
                 o_subp = Portfolio.get_object(self.endpoint, key)
-                if o_subp.key not in key_list:
-                    try:
-                        self.add_subportfolio(o_subp.key, name=o_subp.name, by_ref=True)
-                    except exceptions.SonarException as e:
-                        # If the exception is that the portfolio already references, just pass
-                        if "already references" not in e.message:
-                            raise
+                if o_subp.key in key_list:
+                    continue
+                try:
+                    self.add_subportfolio(o_subp.key, name=o_subp.name, by_ref=True)
+                except exceptions.SonarException as e:
+                    # If the exception is that the portfolio already references, just pass
+                    if "already references" not in e.message:
+                        raise
             else:
                 try:
                     o_subp = Portfolio.get_object(self.endpoint, key)
@@ -648,35 +664,16 @@ class Portfolio(aggregations.Aggregation):
                     o_subp = self.add_subportfolio(key=key, name=subp_data["name"], by_ref=False)
                 o_subp.update(data=subp_data, recurse=True)
 
-    def api_params(self, op: Optional[str] = None) -> ApiParams:
+    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.READ: {"key": self.key}}
-        return ops[op] if op and op in ops else ops[c.READ]
+        ops = {Oper.GET: {"key": self.key}, Oper.DELETE: {"key": self.key}}
+        return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
 
 def count(endpoint: Platform) -> int:
     """Counts number of portfolios"""
-    return aggregations.count(api=Portfolio.API[c.SEARCH], endpoint=endpoint)
-
-
-def get_list(endpoint: Platform, key_list: KeyList = None, use_cache: bool = True) -> dict[str, Portfolio]:
-    """
-    :return: List of Portfolios (all of them if key_list is None or empty)
-    :param KeyList key_list: List of portfolios keys to get, if None or empty all portfolios are returned
-    :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-    :rtype: dict{<branchName>: <Branch>}
-    """
-    with _CLASS_LOCK:
-        if key_list is None or len(key_list) == 0 or not use_cache:
-            log.debug("Listing portfolios")
-            return dict(sorted(search(endpoint=endpoint).items()))
-        return {key: Portfolio.get_object(endpoint, key) for key in sorted(key_list)}
-
-
-def search(endpoint: Platform, params: ApiParams = None) -> dict[str, Portfolio]:
-    """Search all portfolios of a platform and returns as dict"""
-    check_supported(endpoint)
-    return Portfolio.search_objects(endpoint=endpoint, params=params)
+    api, _, _, _ = endpoint.api.get_details(Portfolio, Oper.SEARCH)
+    return aggregations.count(api=api, endpoint=endpoint)
 
 
 def check_supported(endpoint: Platform) -> None:
@@ -696,14 +693,9 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[
     log.info("--- Auditing portfolios ---")
     problems = []
     key_regexp = kwargs.get("key_list", None) or ".*"
-    for p in [o for o in get_list(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
+    for p in [o for o in Portfolio.search(endpoint).values() if not key_regexp or re.match(key_regexp, o.key)]:
         problems += p.audit(audit_settings, **kwargs)
     return problems
-
-
-def delete(endpoint: Platform, key: str) -> bool:
-    """Deletes a portfolio by its key"""
-    return Portfolio.get_object(endpoint, key).delete()
 
 
 def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: KeyList = None) -> bool:
@@ -714,7 +706,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
     check_supported(endpoint)
 
     log.info("Importing portfolios - pass 1: Create all toplevel portfolios")
-    search(endpoint=endpoint)
+    Portfolio.search(endpoint=endpoint)
     # First pass to create all top level porfolios that may be referenced
     new_key_list = util.csv_to_list(key_list)
     for data in config_data["portfolios"]:
@@ -723,7 +715,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
             continue
         log.info("Importing portfolio key '%s'", key)
         try:
-            if Portfolio.exists(endpoint, key):
+            if Portfolio.exists(endpoint=endpoint, key=key):
                 if not Portfolio.has_access(endpoint, key):
                     Portfolio.restore_access(endpoint, key)
                 o = Portfolio.get_object(endpoint, key)
@@ -754,12 +746,14 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
 
 def search_by_name(endpoint: Platform, name: str) -> ApiPayload:
     """Searches portfolio by name and, if found, returns data as JSON"""
-    return sutil.search_by_name(endpoint, name, Portfolio.API[c.SEARCH], "components")
+    api, _, _, _ = endpoint.api.get_details(Portfolio, Oper.SEARCH)
+    return sutil.search_by_name(endpoint, name, api, "components")
 
 
 def search_by_key(endpoint: Platform, key: str) -> ApiPayload:
     """Searches portfolio by key and, if found, returns data as JSON"""
-    return sutil.search_by_key(endpoint, key, Portfolio.API[c.SEARCH], "components")
+    api, _, _, _ = endpoint.api.get_details(Portfolio, Oper.SEARCH)
+    return sutil.search_by_key(endpoint, key, api, "components")
 
 
 def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
@@ -775,21 +769,21 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     check_supported(endpoint)
 
     log.info("Exporting portfolios")
-    portfolio_list = {k: v for k, v in get_list(endpoint=endpoint).items() if not key_regexp or re.match(key_regexp, k)}
+    portfolio_list = {k: v for k, v in Portfolio.search(endpoint).items() if not key_regexp or re.match(key_regexp, k)}
     nb_portfolios = len(portfolio_list)
     i = 0
     exported_portfolios = {}
-    for k, p in portfolio_list.items():
+    for k, p in {k: p for k, p in portfolio_list.items() if not p.is_sub_portfolio()}.items():
         try:
-            if not p.is_sub_portfolio():
-                exp = util.clean_data(p.export(export_settings), True, True)
-                if write_q:
-                    write_q.put(phelp.convert_portfolio_json(exp))
+            exp = util.clean_data(p.export(export_settings), True, True)
+            if write_q:
+                if export_settings.get("MODE", "") == "MIGRATION":
+                    write_q.put(exp)
                 else:
-                    exp.pop("key")
-                    exported_portfolios[k] = exp
+                    write_q.put(phelp.convert_portfolio_json(exp))
             else:
-                log.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
+                exp.pop("key")
+                exported_portfolios[k] = exp
         except exceptions.SonarException:
             exported_portfolios[k] = {}
         i += 1
@@ -801,7 +795,8 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
 
 def recompute(endpoint: Platform) -> None:
     """Triggers recomputation of all portfolios"""
-    endpoint.post(Portfolio.API["REFRESH"])
+    api, _, params, _ = endpoint.api.get_details(Portfolio, Oper.RECOMPUTE)
+    endpoint.post(api, params=params)
 
 
 def __create_portfolio_hierarchy(endpoint: Platform, data: ApiPayload, parent_key: str) -> int:

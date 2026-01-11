@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2022-2025 Olivier Korach
+# Copyright (C) 2022-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -23,16 +23,16 @@
 from __future__ import annotations
 from typing import Optional, Union, TYPE_CHECKING
 import json
-
 from sonar.sqobject import SqObject
 import sonar.logging as log
 from sonar.util import cache
-from sonar import platform
 from sonar import exceptions
 import sonar.util.misc as util
 import sonar.util.constants as c
+from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
+    from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
 
 #: DevOps platform types in SonarQube
@@ -43,11 +43,6 @@ DEVOPS_GITHUB = "github"
 DEVOPS_GITLAB = "gitlab"
 DEVOPS_PLATFORM_TYPES = (DEVOPS_AZURE, DEVOPS_BITBUCKET, DEVOPS_BITBUCKET_CLOUD, DEVOPS_GITHUB, DEVOPS_GITLAB)
 
-_CREATE_API_GITHUB = "alm_settings/create_github"
-_CREATE_API_GITLAB = "alm_settings/create_gitlab"
-_CREATE_API_AZURE = "alm_settings/create_azure"
-_CREATE_API_BITBUCKET = "alm_settings/create_bitbucket"
-_CREATE_API_BBCLOUD = "alm_settings/create_bitbucketcloud"
 
 _TO_BE_SET = "TO_BE_SET"
 _IMPORTABLE_PROPERTIES = ("key", "type", "url", "workspace", "appId", "clientId")
@@ -59,74 +54,15 @@ class DevopsPlatform(SqObject):
     """
 
     CACHE = cache.Cache()
-    API = {c.LIST: "alm_settings/list_definitions", c.DELETE: "alm_settings/delete"}
 
-    def __init__(self, endpoint: platform.Platform, key: str, platform_type: str) -> None:
+    def __init__(self, endpoint: Platform, key: str, platform_type: str) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.type: str = platform_type  #: DevOps platform type
         self.url: Union[str, None] = None  #: DevOps platform URL
         self._specific: Union[dict[str, str], None] = None  #: DevOps platform specific settings
-        DevopsPlatform.CACHE.put(self)
+        self.__class__.CACHE.put(self)
         log.debug("Created object %s", str(self))
-
-    @classmethod
-    def read(cls, endpoint: platform.Platform, key: str) -> DevopsPlatform:
-        """Reads a devops platform object in Sonar instance"""
-        if o := DevopsPlatform.CACHE.get(key, endpoint.local_url):
-            return o
-        data = json.loads(endpoint.get(DevopsPlatform.API[c.LIST]).text)
-        for plt_type, platforms in data.items():
-            for p in platforms:
-                if p["key"] == key:
-                    return cls.load(endpoint, plt_type, p)
-        raise exceptions.ObjectNotFound(key, f"DevOps platform key '{key}' not found")
-
-    @classmethod
-    def load(cls, endpoint: platform.Platform, plt_type: str, data: ApiPayload) -> DevopsPlatform:
-        """Finds a devops platform object and loads it with data"""
-        key = data["key"]
-        o = DevopsPlatform.CACHE.get(key, endpoint.local_url)
-        if not o:
-            o = DevopsPlatform(endpoint=endpoint, key=key, platform_type=plt_type)
-        return o._load(data)
-
-    @classmethod
-    def create(cls, endpoint: platform.Platform, key: str, plt_type: str, url_or_workspace: str) -> DevopsPlatform:
-        """Creates a devops platform"""
-        params = {"key": key}
-        try:
-            if plt_type == DEVOPS_GITHUB:
-                params.update(dict.fromkeys(("appId", "clientId", "clientSecret", "privateKey"), _TO_BE_SET))
-                params["url"] = url_or_workspace
-                endpoint.post(_CREATE_API_GITHUB, params=params)
-            elif plt_type == DEVOPS_AZURE:
-                # TODO: pass secrets on the cmd line
-                params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
-                endpoint.post(_CREATE_API_AZURE, params=params)
-            elif plt_type == DEVOPS_GITLAB:
-                params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
-                endpoint.post(_CREATE_API_GITLAB, params=params)
-            elif plt_type == DEVOPS_BITBUCKET:
-                params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
-                endpoint.post(_CREATE_API_BITBUCKET, params=params)
-            elif plt_type == DEVOPS_BITBUCKET_CLOUD:
-                params.update({"clientSecret": _TO_BE_SET, "clientId": _TO_BE_SET, "workspace": url_or_workspace})
-                endpoint.post(_CREATE_API_BBCLOUD, params=params)
-        except exceptions.SonarException as e:
-            if endpoint.edition() in (c.CE, c.DE):
-                log.warning("Can't set DevOps platform '%s', don't you have more that 1 of that type?", key)
-            raise exceptions.UnsupportedOperation(e.message) from e
-        o = DevopsPlatform(endpoint=endpoint, key=key, platform_type=plt_type)
-        o.refresh()
-        return o
-
-    def _load(self, data: ApiPayload) -> DevopsPlatform:
-        """Loads a devops platform object with data"""
-        self.sq_json = data
-        self.url = "https://bitbucket.org" if self.type == "bitbucketcloud" else data["url"]
-        self._specific = {k: v for k, v in data.items() if k not in ("key", "url")}
-        return self
 
     def __str__(self) -> str:
         """str() implementation"""
@@ -135,18 +71,106 @@ class DevopsPlatform(SqObject):
             string += f" workspace '{self._specific['workspace']}'"
         return string
 
-    def api_params(self, op: Optional[str] = None) -> ApiParams:
+    @classmethod
+    def read(cls, endpoint: Platform, key: str) -> DevopsPlatform:
+        """Reads a devops platform object in Sonar instance"""
+        if o := cls.CACHE.get(key, endpoint.local_url):
+            return o
+        api, _, _, _ = endpoint.api.get_details(DevopsPlatform, Oper.SEARCH)
+        data = json.loads(endpoint.get(api).text)
+        for plt_type, platforms in data.items():
+            for p in platforms:
+                if p["key"] == key:
+                    return cls.load(endpoint, plt_type, p)
+        raise exceptions.ObjectNotFound(key, f"DevOps platform key '{key}' not found")
+
+    @classmethod
+    def load(cls, endpoint: Platform, plt_type: str, data: ApiPayload) -> DevopsPlatform:
+        """Finds a devops platform object and loads it with data"""
+        key = data["key"]
+        o = cls.CACHE.get(key, endpoint.local_url)
+        if not o:
+            o = DevopsPlatform(endpoint=endpoint, key=key, platform_type=plt_type)
+        return o._load(data)
+
+    @classmethod
+    def create(cls, endpoint: Platform, key: str, plt_type: str, url_or_workspace: str) -> DevopsPlatform:
+        """Creates a devops platform"""
+        params = {"key": key}
+        try:
+            if plt_type == DEVOPS_GITHUB:
+                params.update(dict.fromkeys(("appId", "clientId", "clientSecret", "privateKey"), _TO_BE_SET))
+                params["url"] = url_or_workspace
+                api, _, api_params, _ = endpoint.api.get_details(DevopsPlatform, Oper.CREATE_GITHUB, **params)
+                endpoint.post(api, params=api_params)
+            elif plt_type == DEVOPS_AZURE:
+                # TODO: pass secrets on the cmd line
+                params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
+                api, _, api_params, _ = endpoint.api.get_details(DevopsPlatform, Oper.CREATE_AZURE, **params)
+                endpoint.post(api, params=api_params)
+            elif plt_type == DEVOPS_GITLAB:
+                params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
+                api, _, api_params, _ = endpoint.api.get_details(DevopsPlatform, Oper.CREATE_GITLAB, **params)
+                endpoint.post(api, params=api_params)
+            elif plt_type == DEVOPS_BITBUCKET:
+                params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
+                api, _, api_params, _ = endpoint.api.get_details(DevopsPlatform, Oper.CREATE_BITBUCKET, **params)
+                endpoint.post(api, params=api_params)
+            elif plt_type == DEVOPS_BITBUCKET_CLOUD:
+                params.update({"clientSecret": _TO_BE_SET, "clientId": _TO_BE_SET, "workspace": url_or_workspace})
+                api, _, api_params, _ = endpoint.api.get_details(DevopsPlatform, Oper.CREATE_BITBUCKETCLOUD, **params)
+                endpoint.post(api, params=api_params)
+        except exceptions.SonarException as e:
+            if endpoint.edition() in (c.CE, c.DE):
+                log.warning("Can't set DevOps platform '%s', don't you have more that 1 of that type?", key)
+            raise exceptions.UnsupportedOperation(e.message) from e
+        o = DevopsPlatform(endpoint=endpoint, key=key, platform_type=plt_type)
+        o.refresh()
+        return o
+
+    @classmethod
+    def search(cls, endpoint: Platform) -> dict[str, DevopsPlatform]:
+        """Reads all DevOps platforms from SonarQube
+
+        :param endpoint: Reference to the SonarQube platform
+        :return: List of DevOps platforms
+        :rtype: dict{<platformKey>: <DevopsPlatform>}
+        """
+        if endpoint.is_sonarcloud():
+            raise exceptions.UnsupportedOperation("Can't get list of DevOps platforms on SonarQube Cloud")
+        api, _, _, _ = endpoint.api.get_details(cls, Oper.SEARCH)
+        data = json.loads(endpoint.get(api).text)
+        devops_platforms = {}
+        for alm_type in DEVOPS_PLATFORM_TYPES:
+            for alm_data in data.get(alm_type, {}):
+                devops_platforms[alm_data["key"]] = cls.load(endpoint, alm_type, alm_data)
+        return devops_platforms
+
+    def _load(self, data: ApiPayload) -> DevopsPlatform:
+        """Loads a devops platform object with data"""
+        self.sq_json = data
+        self.url = "https://bitbucket.org" if self.type == "bitbucketcloud" else data["url"]
+        self._specific = {k: v for k, v in data.items() if k not in ("key", "url")}
+        return self
+
+    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
         """Returns the API parameters for the operation"""
-        return {"key": self.key}
+        ops = {Oper.SEARCH: {"key": self.key}}
+        return ops[operation] if operation and operation in ops else ops[Oper.SEARCH]
+
+    def delete(self) -> bool:
+        """Deletes a DevOps platform"""
+        return super().delete_object(key=self.key)
 
     def refresh(self) -> bool:
         """Reads / Refresh a DevOps platform information
 
         :return: Whether the operation succeeded
         """
-        data = json.loads(self.get(DevopsPlatform.API[c.LIST]).text)
+        api, _, _, _ = self.endpoint.api.get_details(self, Oper.SEARCH)
+        data = json.loads(self.get(api).text)
         for alm_data in data.get(self.type, {}):
-            if alm_data["key"] != self.key:
+            if alm_data["key"] == self.key:
                 self.sq_json = alm_data
                 return True
         return False
@@ -167,7 +191,8 @@ class DevopsPlatform(SqObject):
         if self.type == DEVOPS_GITHUB:
             log.warning("Can't set PAT for GitHub devops platform")
             return False
-        return self.post("alm_integrations/set_pat", params={"almSettings": self.key, "pat": pat, "username": user_name}).ok
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.SET_PAT, almSettings=self.key, pat=pat, username=user_name)
+        return self.post(api, params=params).ok
 
     def update(self, **kwargs) -> bool:
         """Updates a DevOps platform with information from data
@@ -190,76 +215,56 @@ class DevopsPlatform(SqObject):
         for k in additional:
             params[k] = kwargs.get(k, _TO_BE_SET)
         try:
-            ok = self.post(f"alm_settings/update_{alm_type}", params=params).ok
+            update_op = {
+                DEVOPS_GITHUB: Oper.UPDATE_GITHUB,
+                DEVOPS_GITLAB: Oper.UPDATE_GITLAB,
+                DEVOPS_AZURE: Oper.UPDATE_AZURE,
+                DEVOPS_BITBUCKET: Oper.UPDATE_BITBUCKET,
+                DEVOPS_BITBUCKET_CLOUD: Oper.UPDATE_BITBUCKETCLOUD,
+            }[alm_type]
+            api, _, api_params, _ = self.endpoint.api.get_details(self, update_op, **params)
+            ok = self.post(api, params=api_params).ok
             self.url = kwargs.get("url")
             self._specific = {k: v for k, v in params.items() if k not in ("key", "url")}
         except exceptions.SonarException:
             ok = False
         return ok
 
+    @classmethod
+    def get_object(cls, endpoint: Platform, key: str) -> DevopsPlatform:
+        """Returns a DevOps platform from its key
 
-def count(endpoint: platform.Platform, platf_type: Optional[str] = None) -> int:
+        :param endpoint: Reference to the SonarQube platform
+        :param key: Key of the devops platform (its name)
+        :return: The DevOps platforms corresponding to key, or None if not found
+        """
+        if len(cls.CACHE.from_platform(endpoint)) == 0:
+            cls.search(endpoint)
+        return cls.read(endpoint, key)
+
+
+def count(endpoint: Platform, platf_type: Optional[str] = None) -> int:
     """
     :param platf_type: Filter for a specific type, defaults to None (see DEVOPS_PLATFORM_TYPES set)
     :return: Count of DevOps platforms
     """
-    return len([o for o in get_list(endpoint=endpoint).values() if not platf_type or o.type == platf_type])
+    return len([o for o in DevopsPlatform.search(endpoint=endpoint).values() if not platf_type or o.type == platf_type])
 
 
-def get_list(endpoint: platform.Platform) -> dict[str, DevopsPlatform]:
-    """Reads all DevOps platforms from SonarQube
-
-    :param endpoint: Reference to the SonarQube platform
-    :return: List of DevOps platforms
-    :rtype: dict{<platformKey>: <DevopsPlatform>}
-    """
-    if endpoint.is_sonarcloud():
-        raise exceptions.UnsupportedOperation("Can't get list of DevOps platforms on SonarQube Cloud")
-    data = json.loads(endpoint.get(DevopsPlatform.API[c.LIST]).text)
-    for alm_type in DEVOPS_PLATFORM_TYPES:
-        for alm_data in data.get(alm_type, {}):
-            DevopsPlatform.load(endpoint, alm_type, alm_data)
-    return {o.key: o for o in DevopsPlatform.CACHE.values()}
-
-
-def get_object(endpoint: platform.Platform, key: str) -> DevopsPlatform:
-    """
-    :param endpoint: Reference to the SonarQube platform
-    :param key: Key of the devops platform (its name)
-    :return: The DevOps platforms corresponding to key, or None if not found
-    """
-    if len(DevopsPlatform.CACHE) == 0:
-        get_list(endpoint)
-    return DevopsPlatform.read(endpoint, key)
-
-
-def exists(endpoint: platform.Platform, key: str) -> bool:
-    """
-    :param endpoint: Reference to the SonarQube platform
-    :param key: Key of the devops platform (its name)
-    :return: Whether the platform exists
-    """
-    try:
-        get_object(endpoint=endpoint, key=key)
-    except exceptions.ObjectNotFound:
-        return False
-    return True
-
-
-def export(endpoint: platform.Platform, export_settings: ConfigSettings) -> ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: ConfigSettings) -> ObjectJsonRepr:
     """
     :meta private:
     """
     log.info("Exporting DevOps integration settings")
     json_data = {}
-    for s in get_list(endpoint).values():
+    for s in DevopsPlatform.search(endpoint).values():
         export_data = s.to_json(export_settings)
         json_data[export_data.pop("key")] = export_data
         log.debug("Export devops: %s", util.json_dump(export_data))
     return json_data
 
 
-def import_config(endpoint: platform.Platform, config_data: ObjectJsonRepr, key_list: KeyList = None) -> int:
+def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: KeyList = None) -> int:
     """Imports DevOps platform configuration in SonarQube/Cloud
 
     :param endpoint: Reference to the SonarQube platform
@@ -275,7 +280,7 @@ def import_config(endpoint: platform.Platform, config_data: ObjectJsonRepr, key_
         raise exceptions.UnsupportedOperation("Can't import DevOps platforms in SonarQube Cloud")
     log.info("Importing DevOps config %s", util.json_dump(devops_settings))
     if len(DevopsPlatform.CACHE) == 0:
-        get_list(endpoint)
+        DevopsPlatform.search(endpoint)
     counter = 0
     devops_settings = util.list_to_dict(devops_settings, "key")
     for name, data in devops_settings.items():
@@ -293,7 +298,7 @@ def import_config(endpoint: platform.Platform, config_data: ObjectJsonRepr, key_
     return counter
 
 
-def devops_type(endpoint: platform.Platform, key: str) -> str:
+def devops_type(endpoint: Platform, key: str) -> str:
     """Returns the type of a DevOps platform (see DEVOPS_PLATFORM_TYPES)
 
     :param endpoint: Reference to the SonarQube platform
@@ -301,4 +306,4 @@ def devops_type(endpoint: platform.Platform, key: str) -> str:
     :raises: ObjectNotFound if the devops key is not found
     :return: The type of a DevOps platform (see DEVOPS_PLATFORM_TYPES)
     """
-    return get_object(endpoint=endpoint, key=key).type
+    return DevopsPlatform.get_object(endpoint=endpoint, key=key).type

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools
-# Copyright (C) 2019-2025 Olivier Korach
+# Copyright (C) 2019-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -23,6 +23,7 @@
 from __future__ import annotations
 from typing import TextIO, Optional, TYPE_CHECKING
 
+import os
 import json
 import csv
 import re
@@ -207,7 +208,7 @@ def main() -> None:
     errcode = errcodes.OS_ERROR
     try:
         kwargs = sutil.convert_args(__parser_args("Audits a SonarQube Server or Cloud platform or a SIF (Support Info File or System Info File)"))
-        settings = conf_mgr.load(CONFIG_FILE, __file__) | conf_mgr.get_cli_settings(**kwargs) | kwargs
+        settings = conf_mgr.load(f"cli{os.sep}{CONFIG_FILE}") | conf_mgr.get_cli_settings(**kwargs) | kwargs
         log.info("Audit settings: %s", util.json_dump(settings))
         file = ofile = kwargs.pop(options.REPORT_FILE)
         fmt = util.deduct_format(kwargs[options.FORMAT], ofile)
@@ -220,7 +221,7 @@ def main() -> None:
             }
         )
         if kwargs.get("config", False):
-            conf_mgr.configure(CONFIG_FILE, __file__)
+            conf_mgr.configure(CONFIG_FILE, "cli")
             chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
         if kwargs["sif"]:
             file = kwargs["sif"]

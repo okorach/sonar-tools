@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2019-2025 Olivier Korach
+# Copyright (C) 2019-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -27,13 +27,14 @@ import json
 
 from sonar.sqobject import SqObject
 from sonar import metrics, exceptions
-from sonar.util.types import ApiPayload, ApiParams, KeyList
+from sonar.api.manager import ApiOperation as Oper
 from sonar.util import cache, constants as c
 import sonar.logging as log
 import sonar.util.misc as util
 import sonar.utilities as sutil
 
 if TYPE_CHECKING:
+    from sonar.util.types import ApiPayload, ApiParams, KeyList
     from sonar.platform import Platform
 
 ALT_COMPONENTS = ("project", "application", "portfolio", "key")
@@ -47,8 +48,6 @@ class Measure(SqObject):
     """
 
     CACHE = cache.Cache()
-    API_READ = "measures/component"
-    API_HISTORY = "measures/search_history"
 
     def __init__(self, concerned_object: object, key: str, value: Any) -> None:
         """Constructor"""
@@ -63,13 +62,11 @@ class Measure(SqObject):
         """Loads a measure from data
 
         :param endpoint: Reference to SonarQube platform
-        :type endpoint: Platform
         :paramm data: Data retrieved from a measure search
-        :type data: dict
         :return: The created measure
         :rtype: Measure
         """
-        metrics.search(concerned_object.endpoint)
+        metrics.Metric.search(concerned_object.endpoint, use_cache=True)
         return cls(concerned_object=concerned_object, key=data["metric"], value=_search_value(data))
 
     def __converted_value(self, value: Any) -> Any:
@@ -84,19 +81,20 @@ class Measure(SqObject):
         :return: The new measure value
         :rtype: int or float or str
         """
-        params = util.replace_keys(ALT_COMPONENTS, "component", self.concerned_object.api_params(c.GET))
-        params["metricKeys"] = self.metric
-        data = json.loads(self.get(Measure.API_READ, params=params).text)["component"]["measures"]
+        params = {"metricKeys": self.metric} | util.replace_keys(ALT_COMPONENTS, "component", self.concerned_object.api_params(Oper.GET))
+        api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET, **params)
+        data = json.loads(self.endpoint.get(api, params=params).text)[ret]["measures"]
         self.value = self.__converted_value(_search_value(data[0]))
         return self.value
 
-    def count_history(self, params: ApiParams = None) -> int:
-        if params is None:
-            params = {}
-        params.update({"component": self.concerned_object.key, "metrics": self.metric, "ps": 1})
-        return sutil.nbr_total_elements(json.loads(self.get(Measure.API_HISTORY, params=params).text))
+    def count_history(self, params: Optional[ApiParams] = None) -> int:
+        """Returns the number of measures in history of the metric"""
+        new_params = params or {}
+        new_params |= {"component": self.concerned_object.key, "metrics": self.metric, "ps": 1}
+        api, _, new_params, _ = self.endpoint.api.get_details(self, Oper.GET_HISTORY, **new_params)
+        return sutil.nbr_total_elements(json.loads(self.endpoint.get(api, params=new_params).text))
 
-    def search_history(self, params: ApiParams = None) -> dict[str, Any]:
+    def search_history(self, params: Optional[ApiParams] = None) -> dict[str, Any]:
         """Searches the history of the measure
 
         :param params: List of search parameters to narrow down the search, defaults to None
@@ -104,27 +102,26 @@ class Measure(SqObject):
         """
         __MAX_PAGE_SIZE = 1000
         measures = {}
-        new_params = {} if params is None else params.copy()
-        new_params.update({"metrics": self.key, "component": self.concerned_object.key})
-        if "ps" not in new_params:
-            new_params["ps"] = __MAX_PAGE_SIZE
         page, nbr_pages = 1, 1
+        p_field = self.endpoint.api.page_field(self, Oper.GET_HISTORY)
+        new_params = params or {}
+        new_params |= {"component": self.concerned_object.key, "metrics": self.metric, "ps": __MAX_PAGE_SIZE}
+        api, _, new_params, ret = self.endpoint.api.get_details(self, Oper.GET_HISTORY, **new_params)
         while page <= nbr_pages:
-            data = json.loads(self.get(Measure.API_HISTORY, params=new_params).text)
-            for m in data["measures"][0]["history"]:
-                measures[m["date"]] = m["value"]
+            data = json.loads(self.endpoint.get(api, params=new_params | {p_field: page}).text)
+            measures |= {m["date"]: m["value"] for m in data[ret][0]["history"]}
             nbr_pages = sutil.nbr_pages(data)
             page += 1
         return measures
 
     def is_a_rating(self) -> bool:
-        return metrics.is_a_rating(self.endpoint, self.key)
+        return metrics.Metric.get_object(self.endpoint, self.key).is_a_rating()
 
     def is_a_percent(self) -> bool:
-        return metrics.is_a_percent(self.endpoint, self.key)
+        return metrics.Metric.get_object(self.endpoint, self.key).is_a_percent()
 
     def is_an_effort(self) -> bool:
-        return metrics.is_an_effort(self.endpoint, self.key)
+        return metrics.Metric.get_object(self.endpoint, self.key).is_an_effort()
 
     def format(self, ratings: str = "letters", percents: str = "float") -> Any:
         return format(self.endpoint, self.key, self.value, ratings=ratings, percents=percents)
@@ -140,15 +137,16 @@ def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, 
     :return: Dict of found measures
     :rtype: dict{<metric>: <value>}
     """
-    params = util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(c.GET))
-    params["metricKeys"] = util.list_to_csv(metrics_list)
-    log.debug("Getting measures with %s", str(params))
-
-    data = json.loads(concerned_object.endpoint.get(Measure.API_READ, params={**kwargs, **params}).text)
-    m_dict = dict.fromkeys(metrics_list, None)
-    for m in data["component"]["measures"]:
-        m_dict[m["metric"]] = Measure.load(data=m, concerned_object=concerned_object)
-    log.debug("Returning measures %s", str(m_dict))
+    params = (
+        kwargs
+        | util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(Oper.GET))
+        | {"metricKeys": util.list_to_csv(metrics_list)}
+    )
+    log.debug("Getting measures with %s", params)
+    api, _, params, ret = concerned_object.endpoint.api.get_details(Measure, Oper.GET, **params)
+    data = json.loads(concerned_object.endpoint.get(api, params=params).text)[ret]["measures"]
+    m_dict = dict.fromkeys(metrics_list, None) | {m["metric"]: Measure.load(concerned_object=concerned_object, data=m) for m in data}
+    log.debug("Returning measures %s", m_dict)
     return m_dict
 
 
@@ -165,13 +163,14 @@ def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> li
     """
     # http://localhost:9999/api/measures/search_history?component=okorach_sonar-tools&metrics=ncloc&p=1&ps=1000
 
-    params = util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(c.GET))
-    params["metrics"] = util.list_to_csv(metrics_list)
+    params = (
+        kwargs | util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(Oper.GET)) | {"metrics": util.list_to_csv(metrics_list)}
+    )
     log.debug("Getting measures history with %s", str(params))
-
-    data = json.loads(concerned_object.endpoint.get(Measure.API_HISTORY, params={**kwargs, **params}).text)
+    api, _, params, ret = concerned_object.endpoint.api.get_details(Measure, Oper.GET_HISTORY, **params)
+    data = json.loads(concerned_object.endpoint.get(api, params=params).text)[ret]
     res_list = []
-    for m in reversed(data["measures"]):
+    for m in reversed(data):
         res_list += [[dt["date"], m["metric"], dt["value"]] for dt in m["history"] if "value" in dt]
     return res_list
 
@@ -185,8 +184,8 @@ def get_rating_letter(rating: Union[float, str]) -> str:
     try:
         n_int = int(float(rating))
     except ValueError:
-        return rating
-    return chr(n_int + 64) if 1 <= n_int <= 5 else rating
+        return str(rating)
+    return chr(n_int + 64) if 1 <= n_int <= 5 else str(rating)
 
 
 def get_rating_number(rating_letter: str) -> int:

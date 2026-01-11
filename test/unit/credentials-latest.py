@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools tests
-# Copyright (C) 2025 Olivier Korach
+# Copyright (C) 2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -30,3 +30,5 @@ ISSUE_FP_NBR_CHANGELOGS = 15
 ISSUE_FP_CHANGELOG_DATE = datetime(2025, 11, 2)
 
 ISSUE_ACCEPTED = "b6637cb9-3be1-4160-9d08-84622a818ff6"
+
+NBR_PROJECTS = 70

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools tests
-# Copyright (C) 2024-2025 Olivier Korach
+# Copyright (C) 2024-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -74,7 +74,7 @@ def test_get_rule() -> None:
     """test_get_rule"""
     myrule = rules.Rule.get_object(endpoint=tutil.SQ, key="java:S127")
     assert str(myrule) == "rule key 'java:S127'"
-    myrule = rules.Rule.load(endpoint=tutil.SQ, key="java:S127", data={})
+    myrule = rules.Rule.load(endpoint=tutil.SQ, data={"key": "java:S127"})
     assert str(myrule) == "rule key 'java:S127'"
 
 

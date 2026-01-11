@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2022-2025 Olivier Korach
+# Copyright (C) 2022-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -21,8 +21,9 @@
 
 from __future__ import annotations
 import concurrent.futures
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Optional, Any, Union, TYPE_CHECKING
 
+import json
 import re
 import Levenshtein
 
@@ -35,8 +36,11 @@ import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar import projects, rules
 import sonar.util.issue_defs as idefs
+from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
+    from sonar.issues import Issue
+    from sonar.hotspots import Hotspot
     from sonar.platform import Platform
     from datetime import datetime
     from sonar.util.types import ApiPayload, ObjectJsonRepr
@@ -137,9 +141,51 @@ class Finding(SqObject):
         self.hash: Optional[str] = None  #: Hash (str)
         self.branch: Optional[str] = None  #: Branch (str)
         self.pull_request: Optional[str] = None  #: Pull request (str)
-        self._load(data, from_export)
+        self.reload(data, from_export)
 
-    def _load(self, data: ApiPayload, from_export: bool = False) -> None:
+    @classmethod
+    def get_object(cls, endpoint: Platform, key: str, data: ApiPayload, from_export: bool = False) -> Union[Issue, Hotspot]:
+        """Returns a finding from its key"""
+        o: Optional[Union[Issue, Hotspot]] = cls.CACHE.get(key, endpoint.local_url)
+        if not o:
+            o = cls(endpoint=endpoint, key=key, data=data, from_export=from_export)
+        return o
+
+    @staticmethod
+    def add_branch_and_pr(findings_list: dict[str, Union[Issue, Hotspot]], **search_params: Any) -> dict[str, Union[Issue, Hotspot]]:
+        """Enriches findings with branch and pull request info"""
+        for e_key in [elem for elem in ["branch", "pullRequest"] if elem in search_params]:
+            e_val = search_params[e_key]
+            for finding in findings_list.values():
+                finding.sq_json[e_key] = e_val
+                if e_key == "branch":
+                    finding.branch = e_val
+                else:
+                    finding.pull_request = e_val
+        return findings_list
+
+    @classmethod
+    def json_to_objects(cls, endpoint: Platform, dataset: ApiPayload, **search_params: Any) -> dict[str, Union[Issue, Hotspot]]:
+        """Returns a list of findings from the API payload"""
+        findings_d = {data["key"]: cls.get_object(endpoint=endpoint, key=data["key"], data=data) for data in dataset}
+        return cls.add_branch_and_pr(findings_d, **search_params)
+
+    @classmethod
+    def search_one_page(cls, endpoint: Platform, **search_params: Any) -> tuple[dict[str, Union[Issue, Hotspot]], dict[str, Any]]:
+        """Search one page of hotspots findings"""
+        search_params = cls.sanitize_search_params(endpoint, **search_params)
+        api, _, api_params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
+        dataset = json.loads(endpoint.get(api, params=api_params).text)
+        findings_d = cls.post_search_filters(cls.json_to_objects(endpoint, dataset[ret], **search_params), **search_params)
+        return findings_d, dataset
+
+    @staticmethod
+    def post_search_filters(findings: dict[str, Union[Issue, Hotspot]], **filters: Any) -> dict[str, Union[Issue, Hotspot]]:
+        return findings
+
+    def reload(self, data: ApiPayload, from_export: bool = False) -> None:
+        """Reloads a finding with JSON data"""
+        super().reload(data)
         if data is not None:
             if from_export:
                 self._load_from_export(data)
@@ -147,10 +193,6 @@ class Finding(SqObject):
                 self._load_from_search(data)
 
     def _load_common(self, jsondata: ApiPayload) -> None:
-        if self.sq_json is None:
-            self.sq_json = jsondata
-        else:
-            self.sq_json.update(jsondata)
         self.author = jsondata.get("author", None)
         self.message = jsondata.get("message", None)
         self.status = jsondata["status"]
@@ -313,11 +355,10 @@ class Finding(SqObject):
         ch = self.comments()
         return list(ch.values())[-1]["date"] if len(ch) > 0 else None
 
-    def assign(self, assignee: Optional[str], comment: Optional[str] = None) -> bool:
+    def assign(self, assignee: Optional[str]) -> bool:
         """Assigns a finding (and optionally comment)
 
         :param assignee: User login to assign the hotspot, None to unassign
-        :param comment: Optional comment to add
         :return: Whether the operation succeeded
         """
         try:
@@ -325,21 +366,18 @@ class Finding(SqObject):
                 log.debug("Unassigning %s", self)
             else:
                 log.debug("Assigning %s to '%s'", self, assignee)
-            params = util.remove_nones({**self.api_params(), "assignee": assignee, "comment": comment})
-            if ok := self.post(self.__class__.API[c.ASSIGN], params=params).ok:
+            params = {"hotspot": self.key, "issue": self.key, "assignee": assignee}
+            api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.ASSIGN, **params)
+            if ok := self.post(api, params=api_params).ok:
                 self.assignee = assignee
         except exceptions.SonarException:
             return False
         else:
             return ok
 
-    def unassign(self, comment: Optional[str] = None) -> bool:
-        """Unassigns a Finding (and optionally comment)
-
-        :param comment: Optional comment to add
-        :return: Whether the operation succeeded
-        """
-        return self.assign(assignee=None, comment=comment)
+    def unassign(self) -> bool:
+        """Unassigns a Finding and returns Whether the operation succeeded"""
+        return self.assign(assignee=None)
 
     def has_changelog(self, after: Optional[datetime] = None, manual_only: Optional[bool] = True) -> bool:
         """
@@ -485,7 +523,8 @@ class Finding(SqObject):
 
     def do_transition(self, transition: str) -> bool:
         try:
-            return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.DO_TRANSITION, issue=self.key, transition=transition)
+            return self.post(api, params=params).ok
         except exceptions.SonarException as e:
             if re.match(r"Transition from state [A-Za-z]+ does not exist", e.message):
                 raise exceptions.UnsupportedOperation(e.message) from e
@@ -513,7 +552,7 @@ def export_findings(endpoint: Platform, project_key: str, branch: Optional[str] 
     :rtype: dict{<key>: <Finding>}
     """
     log.info("Using new export findings to speed up issue export")
-    return projects.Project(key=project_key, endpoint=endpoint).get_findings(branch, pull_request)
+    return projects.Project(key=project_key, endpoint=endpoint).get_findings(branch=branch, pull_request=pull_request)
 
 
 def to_csv_header(endpoint: Platform) -> list[str]:

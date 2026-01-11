@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2024-2025 Olivier Korach
+# Copyright (C) 2024-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -25,7 +25,6 @@ Abstraction of the Sonar sub-portfolio by reference concept
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
-
 from sonar.sqobject import SqObject
 import sonar.logging as log
 from sonar.util import cache
@@ -51,7 +50,7 @@ class PortfolioReference(SqObject):
         super().__init__(endpoint=parent.endpoint, key=self.key)
         self.reference = reference
         self.parent = parent
-        PortfolioReference.CACHE.put(self)
+        self.__class__.CACHE.put(self)
         log.debug("Created subportfolio by reference key '%s'", self.key)
 
     @classmethod
@@ -59,7 +58,7 @@ class PortfolioReference(SqObject):
         """Gets a subportfolio by reference object from its key and parent"""
         check_supported(endpoint)
         log.info("Getting subportfolio by ref key '%s:%s'", parent_key, key)
-        o = PortfolioReference.CACHE.get(f"{parent_key}:{key}", endpoint.local_url)
+        o = cls.CACHE.get(f"{parent_key}:{key}", endpoint.local_url)
         if not o:
             raise exceptions.ObjectNotFound(f"{parent_key}:{key}", f"Portfolio reference key '{parent_key}:{key}' not found")
         return o

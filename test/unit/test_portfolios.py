@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools tests
-# Copyright (C) 2024-2025 Olivier Korach
+# Copyright (C) 2024-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -25,6 +25,7 @@ from collections.abc import Generator
 import time
 import json
 import pytest
+import os
 
 import utilities as tutil
 from sonar import portfolios as pf, projects, exceptions, logging
@@ -34,13 +35,18 @@ from sonar.util import portfolio_helper as phelp
 EXISTING_PORTFOLIO = "PORT_FAV_PROJECTS"
 
 
-SUPPORTED_EDITIONS = (c.EE, c.DCE)
+__SUPPORTED_EDITIONS = (c.EE, c.DCE)
+__UNSUPPORTED_MESSAGE = "Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions"
+
+
+def __verify_support() -> bool:
+    return tutil.verify_support(__SUPPORTED_EDITIONS, pf.Portfolio.get_object, endpoint=tutil.SQ, key=tutil.TEMP_KEY)
 
 
 def test_get_object() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.create, endpoint=tutil.SQ, key=tutil.TEMP_KEY, name=tutil.TEMP_KEY):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     portf = pf.Portfolio.get_object(endpoint=tutil.SQ, key=EXISTING_PORTFOLIO)
     assert portf.key == EXISTING_PORTFOLIO
     portf2 = pf.Portfolio.get_object(endpoint=tutil.SQ, key=EXISTING_PORTFOLIO)
@@ -50,8 +56,8 @@ def test_get_object() -> None:
 
 def test_get_object_non_existing() -> None:
     """Test exception raised when providing non existing portfolio key"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.get_object, endpoint=tutil.SQ, key="NON_EXISTING"):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     with pytest.raises(exceptions.ObjectNotFound) as e:
         _ = pf.Portfolio.get_object(endpoint=tutil.SQ, key="NON_EXISTING")
     assert str(e.value).endswith("Portfolio key 'NON_EXISTING' not found")
@@ -59,8 +65,8 @@ def test_get_object_non_existing() -> None:
 
 def test_exists() -> None:
     """Test exist"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.exists, endpoint=tutil.SQ, key="PORT_FAV_PROJECTS"):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     assert pf.Portfolio.exists(endpoint=tutil.SQ, key="PORT_FAV_PROJECTS")
     assert not pf.Portfolio.exists(endpoint=tutil.SQ, key="NON_EXISTING")
 
@@ -68,33 +74,35 @@ def test_exists() -> None:
 def test_get_list() -> None:
     """Test portfolio get_list"""
     k_list = ["PORT_FAV_PROJECTS", "PORTFOLIO_ALL"]
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.get_list, endpoint=tutil.SQ, key_list=k_list):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
 
-    p_dict = pf.get_list(endpoint=tutil.SQ, key_list=k_list)
-    assert sorted(k_list) == sorted(p_dict.keys())
+    p_dict = pf.Portfolio.search(endpoint=tutil.SQ)
+    for k in k_list:
+        assert k in p_dict
 
 
 def test_create_delete(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test portfolio create delete"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.Portfolio.create, endpoint=tutil.SQ, key=tutil.TEMP_KEY):
-        return
-    portfolio = get_test_portfolio
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
+    portfolio: pf.Portfolio = get_test_portfolio
     assert portfolio is not None
-    assert portfolio.key == tutil.TEMP_KEY
+    assert portfolio.key.startswith(f"{tutil.TEMP_KEY}-portfolio")
     assert "none" in portfolio.selection_mode()
-    assert portfolio.name == tutil.TEMP_KEY
+    assert portfolio.name.startswith(f"{tutil.TEMP_KEY}-portfolio")
+    key = portfolio.key
     assert portfolio.is_toplevel()
     with pytest.raises(exceptions.ObjectAlreadyExists):
-        pf.Portfolio.create(endpoint=tutil.SQ, key=tutil.TEMP_KEY)
+        pf.Portfolio.create(endpoint=tutil.SQ, key=key)
     portfolio.delete()
-    assert not pf.Portfolio.exists(endpoint=tutil.SQ, key=tutil.TEMP_KEY)
+    assert not pf.Portfolio.exists(endpoint=tutil.SQ, key=key)
 
 
 def test_add_project(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test addition of a project in manual mode"""
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     p = get_test_portfolio
     assert "none" in p.selection_mode()
 
@@ -120,8 +128,8 @@ def test_add_project(get_test_portfolio: Generator[pf.Portfolio]) -> None:
 
 def test_tags_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test tag mode"""
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     p = get_test_portfolio
     in_tags = ["foss", "favorites"]
     p.set_tags_mode(in_tags)
@@ -138,8 +146,8 @@ def test_tags_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
 
 def test_regexp_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test regexp mode"""
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     p = get_test_portfolio
     in_regexp = "^FAVORITES.*$"
     p.set_regexp_mode(in_regexp)
@@ -158,8 +166,8 @@ def test_regexp_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
 
 def test_remaining_projects_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test regexp mode"""
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     p = get_test_portfolio
     p.set_remaining_projects_mode()
     assert p._selection_mode == {"rest": True, "branch": c.DEFAULT_BRANCH}
@@ -169,8 +177,8 @@ def test_remaining_projects_mode(get_test_portfolio: Generator[pf.Portfolio]) ->
 
 def test_none_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test regexp mode"""
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     p = get_test_portfolio
     p.set_remaining_projects_mode()
     assert p._selection_mode == {"rest": True, "branch": c.DEFAULT_BRANCH}
@@ -180,8 +188,8 @@ def test_none_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
 
 def test_attributes(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test regexp mode"""
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     p = get_test_portfolio
     new_name = "foobar"
     p.set_name(new_name)
@@ -198,7 +206,7 @@ def test_attributes(get_test_portfolio: Generator[pf.Portfolio]) -> None:
 
 def test_permissions_1(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """Test permissions"""
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
+    if not __verify_support():
         pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
     p = get_test_portfolio
     p.set_permissions(
@@ -212,8 +220,8 @@ def test_permissions_1(get_test_portfolio: Generator[pf.Portfolio]) -> None:
 
 def test_audit(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """test_audit"""
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     p = get_test_portfolio
     audit_settings = {}
     assert len(p.audit(audit_settings)) > 0
@@ -226,27 +234,26 @@ def test_audit(get_test_portfolio: Generator[pf.Portfolio]) -> None:
 
 def test_add_standard_subp(get_test_subportfolio: Generator[pf.Portfolio]) -> None:
     """test_standard_subp"""
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     subp = get_test_subportfolio
-    assert subp.parent_portfolio.key == tutil.TEMP_KEY
-    parent = pf.Portfolio.get_object(tutil.SQ, key=tutil.TEMP_KEY)
+    assert subp.parent_portfolio.key.startswith(f"{tutil.TEMP_KEY}-portfolio")
+    parent = pf.Portfolio.get_object(tutil.SQ, key=subp.parent_portfolio.key)
     subp_d = parent.sub_portfolios()
     assert len(subp_d) == 1
-    assert list(subp_d.keys()) == [tutil.TEMP_KEY_3]
+    assert list(subp_d.keys()) == [subp.key]
     assert list(subp_d.values())[0] == subp
 
 
 def test_add_standard_subp_2(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     """test_add_standard_subp_2"""
-    tutil.start_logging()
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     parent = get_test_portfolio
-    subp = parent.add_subportfolio(key=tutil.TEMP_KEY_3)
+    subp = parent.add_subportfolio(key=f"{tutil.TEMP_KEY_3}-subportfolio")
     subp_d = parent.sub_portfolios()
     assert len(subp_d) == 1
-    assert list(subp_d.keys()) == [tutil.TEMP_KEY_3]
+    assert list(subp_d.keys()) == [subp.key]
     assert list(subp_d.values())[0] == subp
     # subp.refresh()
     logging.debug("%s is toplevel = %s", str(subp), str(subp.is_toplevel()))
@@ -257,8 +264,8 @@ def test_add_standard_subp_2(get_test_portfolio: Generator[pf.Portfolio]) -> Non
 
 def test_add_ref_subp(get_test_portfolio: Generator[pf.Portfolio], get_test_portfolio_2: Generator[pf.Portfolio]) -> None:
     """test_add_standard_subp_2"""
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     parent = get_test_portfolio
     ref = get_test_portfolio_2
     subp = parent.add_subportfolio(key=ref.key, by_ref=True)
@@ -270,8 +277,8 @@ def test_add_ref_subp(get_test_portfolio: Generator[pf.Portfolio], get_test_port
 
 def test_export() -> None:
     """test_export"""
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     json_exp = pf.export(tutil.SQ, {})
     list_exp = phelp.convert_portfolios_json(json_exp)
     assert len(json_exp) > 0
@@ -282,26 +289,37 @@ def test_export() -> None:
 def test_import() -> None:
     """test_import"""
 
-    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
-        pytest.skip("Portfolios unsupported in SonarQube Community Build and SonarQube Developer editions")
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
         json_exp = json.loads(f.read())["portfolios"]
     # delete all portfolios in test
     logging.info("Deleting all portfolios")
     pf.Portfolio.clear_cache()
-    for o in pf.get_list(tutil.TEST_SQ, use_cache=False).values():
+    for o in pf.Portfolio.search(tutil.TEST_SQ).values():
         if o.is_toplevel():
             o.delete()
     assert pf.import_config(tutil.TEST_SQ, {"portfolios": json_exp})
 
     # Compare portfolios
-    o_list = pf.get_list(tutil.TEST_SQ)
+    o_list = pf.Portfolio.search(tutil.TEST_SQ)
     assert len(o_list) == len(json_exp)
     assert sorted(o_list.keys()) == sorted([o["key"] for o in json_exp])
 
 
 def test_audit_disabled() -> None:
     """test_audit_disabled"""
-    if not tutil.verify_support(SUPPORTED_EDITIONS, pf.audit, endpoint=tutil.SQ, audit_settings={"audit.portfolios": False}):
-        return
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     assert len(pf.audit(tutil.SQ, {"audit.portfolios": False})) == 0
+
+
+def test_sorted_search() -> None:
+    """test_sorted_search"""
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
+    p_dict = pf.Portfolio.search(tutil.SQ)
+    assert sorted(p_dict.keys()) == list(p_dict.keys())
+
+    p_dict = pf.Portfolio.search(tutil.SQ, use_cache=True)
+    assert sorted(p_dict.keys()) == list(p_dict.keys())

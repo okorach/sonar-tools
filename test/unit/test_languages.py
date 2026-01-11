@@ -1,6 +1,6 @@
 #
 # sonar-tools tests
-# Copyright (C) 2024-2025 Olivier Korach
+# Copyright (C) 2024-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -18,17 +18,36 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""sonar.languages tests"""
+"""sonar Language class tests"""
 
-from sonar import languages
+from sonar.languages import Language
 import utilities as tutil
+
+
+def test_search() -> None:
+    """test_search"""
+    langs = Language.search(tutil.SQ)
+    langs_cached = Language.search(tutil.SQ, use_cache=True)
+    assert len(langs) == len(langs_cached)
+    assert sorted(langs.keys()) == sorted(langs_cached.keys())
+    assert len(langs) > 0
+    for lang in ("py", "java", "js", "ts", "go"):
+        assert lang in langs
 
 
 def test_read() -> None:
     """test_read"""
-    lang = languages.Language.read(tutil.SQ, "py")
+    lang = Language.read(tutil.SQ, "py", use_cache=False)
+    assert lang is not None
+    assert lang.key == "py"
+    assert lang.name == "Python"
+
+
+def test_number_of_rules() -> None:
+    """test_number_of_rules"""
+    lang: Language = Language.read(tutil.SQ, "java", use_cache=False)
     nbr_total_rules = lang.number_of_rules()
     counts = {t: lang.number_of_rules(t) for t in ("VULNERABILITY", "BUG", "CODE_SMELL", "SECURITY_HOTSPOT")}
-    print(f"COUNTS = {str(counts)}")
     assert sum(counts.values()) >= nbr_total_rules
-    assert lang.number_of_rules("FOO") == nbr_total_rules
+
+    assert lang.number_of_rules("FOO") == 0

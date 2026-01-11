@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools tests
-# Copyright (C) 2025 Olivier Korach
+# Copyright (C) 2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -34,3 +34,5 @@ CHLOG_DATE = datetime(2025, 10, 12)
 
 ISSUE_W_MULTIPLE_CHANGELOGS = "6ae41c3b-c3d2-422f-a505-d355e7b0a268"
 ISSUE_W_MULTIPLE_CHANGELOGS_DATE = "2019-09-21"
+
+NBR_PROJECTS = 8

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools
-# Copyright (C) 2019-2025 Olivier Korach
+# Copyright (C) 2019-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -23,9 +23,11 @@
 Usage: sonar-findings-export.py -t <SQ_TOKEN> -u <SQ_URL> [<filters>]
 """
 
+from __future__ import annotations
+from typing import Union, TextIO, TYPE_CHECKING
+
 import os
 import csv
-from typing import TextIO
 import concurrent.futures
 from argparse import Namespace
 import traceback
@@ -35,7 +37,6 @@ from sonar.util.types import ConfigSettings
 import sonar.logging as log
 from sonar import platform, exceptions, errcodes, version
 from sonar import hotspots, findings
-from sonar import applications, portfolios
 from sonar.util import issue_defs as idefs, types, component_helper
 import sonar.util.constants as c
 
@@ -44,12 +45,19 @@ import sonar.utilities as sutil
 
 import sonar.util.common_helper as chelp
 
+if TYPE_CHECKING:
+    from sonar.projects import Project
+    from sonar.branches import Branch
+    from sonar.pull_requests import PullRequest
+    from sonar.applications import Application
+    from sonar.portfolios import Portfolio
+    from sonar.issues import Issue
+    from sonar.hotspots import Hotspot
+
 TOOL_NAME = "sonar-findings"
 DATES_WITHOUT_TIME = False
 
 _SEARCH_CRITERIA = (
-    options.BRANCHES,
-    options.PULL_REQUESTS,
     options.STATUSES,
     options.DATE_AFTER,
     options.DATE_BEFORE,
@@ -175,7 +183,7 @@ def __write_footer(file: str, fmt: str) -> None:
         print(f"{closing_sequence}", file=fd)
 
 
-def __write_json_findings(findings_list: dict[str, findings.Finding], fd: TextIO, **kwargs: str) -> None:
+def __write_json_findings(findings_list: dict[str, Union[Issue, Hotspot]], fd: TextIO, **kwargs: str) -> None:
     """Appends a list of findings in JSON or SARIF format in a file"""
     log.debug("in write_json_findings")
     i = len(findings_list)
@@ -193,7 +201,7 @@ def __write_json_findings(findings_list: dict[str, findings.Finding], fd: TextIO
         print(f"{util.json_dump(json_data, indent=1)}{comma}", file=fd)
 
 
-def __write_csv_findings(findings_list: dict[str, findings.Finding], fd: TextIO, **kwargs: str) -> None:
+def __write_csv_findings(findings_list: dict[str, Union[Issue, Hotspot]], fd: TextIO, **kwargs: str) -> None:
     """Appends a list of findings in a CSV file"""
     csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
     for finding in findings_list.values():
@@ -203,7 +211,7 @@ def __write_csv_findings(findings_list: dict[str, findings.Finding], fd: TextIO,
         csvwriter.writerow(row)
 
 
-def __write_findings(findings_list: dict[str, findings.Finding], file: str, is_first: bool, **kwargs: str) -> None:
+def __write_findings(findings_list: dict[str, Union[Issue, Hotspot]], file: str, is_first: bool, **kwargs: str) -> None:
     """Writes a list of findings in a file"""
     log.info("Writing %d more findings in format %s", len(findings_list), kwargs[options.FORMAT])
     with util.open_file(file=file, mode="a") as fd:
@@ -239,7 +247,7 @@ def __verify_inputs(params: types.ApiParams) -> bool:
     return True
 
 
-def has_filter(params: types.ApiParams, type_of_filter: str, filter_values: list[str]) -> bool:
+def has_filter(params: types.ApiParams, type_of_filter: str, filter_values: Union[list[str], tuple[str, ...]]) -> bool:
     """Checks if the search parameters contain any of the specified filters"""
     log.debug("Checking if filter '%s' with allowed values %s is in params %s ", type_of_filter, str(filter_values), str(params))
     return type_of_filter in params and any(t in params[type_of_filter] for t in filter_values)
@@ -267,27 +275,21 @@ def needs_hotspot_search(params: types.ApiParams) -> bool:
     )
 
 
-def get_component_findings(component: object, search_findings: bool, params: ConfigSettings) -> dict[str, findings.Finding]:
+def get_component_findings(
+    component: Union[Project, Branch, PullRequest, Application, Portfolio], search_findings: bool, params: ConfigSettings
+) -> dict[str, Union[Issue, Hotspot]]:
     """Gets the findings of a component and puts them in a writing queue"""
-    try:
-        _ = next(v for k, v in params.items() if k in _SEARCH_CRITERIA and v is not None)
+    if any(k in params and params[k] is not None for k in _SEARCH_CRITERIA):
         search_findings = False
-    except StopIteration:
-        pass
 
-    if search_findings and not isinstance(component, (applications.Application, portfolios.Portfolio)):
-        return findings.export_findings(
-            component.endpoint, component.key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
-        )
+    if search_findings and not isinstance(component, (Application, Portfolio)):
+        return component.get_findings(**params)
 
-    new_params = params.copy()
-    if options.PULL_REQUESTS in new_params:
-        new_params["pullRequest"] = new_params.pop(options.PULL_REQUESTS)
     findings_list = {}
     if needs_issue_search(params):
-        findings_list = component.get_issues(filters=new_params)
+        findings_list = component.get_issues(**params)
     if needs_hotspot_search(params):
-        findings_list |= component.get_hotspots(filters=new_params)
+        findings_list |= component.get_hotspots(**params)
     return findings_list
 
 
@@ -363,8 +365,9 @@ def main() -> None:
         __verify_inputs(params)
 
         params = __turn_off_use_findings_if_needed(sqenv, params=params)
-        branch_regexp = params.get(options.BRANCH_REGEXP, None)
-        if sqenv.edition() == c.CE and (branch_regexp is not None or params.get(options.PULL_REQUESTS, None) is not None):
+        branch_regexp = params.get(options.BRANCH_REGEXP)
+        pr_regexp = params.get(options.PULL_REQUESTS)
+        if sqenv.edition() == c.CE and (branch_regexp is not None or pr_regexp):
             chelp.clear_cache_and_exit(
                 errcodes.UNSUPPORTED_OPERATION,
                 f"Options '--{options.BRANCH_REGEXP}' and '--{options.PULL_REQUESTS}' shall not be used with Community Edition/Community Build",
@@ -373,21 +376,22 @@ def main() -> None:
         components_list = component_helper.get_components(
             endpoint=sqenv,
             component_type=params[options.COMPONENT_TYPE],
-            key_regexp=params.get(options.KEY_REGEXP, None),
+            key_regexp=params.get(options.KEY_REGEXP),
             branch_regexp=branch_regexp,
+            pr_regexp=pr_regexp,
         )
+        log.info("Components list: %s", [str(comp) for comp in components_list])
+        # params.pop(options.BRANCH_REGEXP, None)
         if params[options.COMPONENT_TYPE] == "portfolios":
-            components = []
-            for comp in components_list:
-                components += comp.components()
-            components_list = components
+            components_list = [c for pf in components_list for c in pf.components()]
 
         if len(components_list) == 0:
-            br = f"and branch matching regexp '{params[options.BRANCH_REGEXP]}'" if options.BRANCH_REGEXP in params else ""
-            raise exceptions.SonarException(
-                f"No {params[options.COMPONENT_TYPE]} found with key matching regexp '{params.get(options.KEY_REGEXP, None)}' {br}",
-                errcodes.WRONG_SEARCH_CRITERIA,
-            )
+            msg = f"No {params[options.COMPONENT_TYPE]} found with key matching regexp '{params.get(options.KEY_REGEXP, None)}'"
+            if branch_regexp:
+                msg += f" and branch matching given branch regexp '{branch_regexp}'"
+            elif pr_regexp:
+                msg = f"and PR matching given PR regexp '{pr_regexp}'"
+            raise exceptions.SonarException(msg, errcodes.WRONG_SEARCH_CRITERIA)
 
         fmt, fname = params.get(options.FORMAT, None), params.get(options.REPORT_FILE, None)
         params[options.FORMAT] = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))

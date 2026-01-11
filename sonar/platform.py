@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2019-2025 Olivier Korach
+# Copyright (C) 2019-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -46,6 +46,8 @@ import sonar.audit.severities as sev
 import sonar.audit.types as typ
 from sonar.audit.problem import Problem
 from sonar import webhooks
+from sonar.api.manager import ApiOperation as Oper
+from sonar.api.manager import ApiManager as Api
 
 if TYPE_CHECKING:
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
@@ -89,6 +91,7 @@ class Platform(object):
         self.organization: str = org or ""
         self._user_agent = _SONAR_TOOLS_AGENT
         self._global_settings_definitions: dict[str, dict[str, str]] = None
+        self.api: Api = Api(self)
 
     def __str__(self) -> str:
         """
@@ -108,7 +111,7 @@ class Platform(object):
             log.info("Connecting to %s", self.local_url)
             self.get("server/version")
             if self.is_sonarcloud():
-                if not organizations.exists(self, self.organization):
+                if not organizations.Organization.exists(self, key=self.organization):
                     raise exceptions.ObjectNotFound(
                         self.organization, f"Organization '{self.organization}' does not exist or user is not member of it"
                     )
@@ -125,9 +128,9 @@ class Platform(object):
         return self.external_url
 
     def version(self) -> tuple[int, int, int]:
-        """Returns the SonarQube platform version or 0.0.0 for SonarQube Cloud"""
+        """Returns the SonarQube platform version or None for SonarQube Cloud"""
         if self.is_sonarcloud():
-            return 0, 0, 0
+            return None
         if self._version is None:
             self._version = tuple(int(n) for n in self.get("/api/server/version").text.split("."))
             log.debug("Version = %s", str(self._version))
@@ -254,7 +257,7 @@ class Platform(object):
         if isinstance(params, dict):
             params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
         elif isinstance(params, (list, tuple)):
-            params = [(k, str(v).lower() if isinstance(v, bool) else v) for k, v in params]
+            params = [(v[0], str(v[1]).lower() if isinstance(v[1], bool) else v[1]) for v in params]
         with_org = kwargs.pop("with_organization", True)
         if self.is_sonarcloud():
             headers["Authorization"] = f"Bearer {self.__token}"
@@ -282,7 +285,7 @@ class Platform(object):
                     timeout=self.http_timeout,
                     **kwargs,
                 )
-                (retry, new_url) = _check_for_retry(r)
+                (retry, new_url) = Platform.__check_for_retry(r)
                 log.debug("%s: %s took %d ms", req_type, url, (time.perf_counter_ns() - start) // 1000000)
                 if retry:
                     self.local_url = new_url
@@ -306,6 +309,9 @@ class Platform(object):
                 raise exceptions.ObjectAlreadyExists(key, err_msg) from e
             if re.match(r"(Value of parameter .+ must be one of|No enum constant)", err_msg):
                 raise exceptions.UnsupportedOperation(err_msg) from e
+            if re.match(r"Unknown url", err_msg):
+                err_msg = err_msg.replace("Unknown url : /", "") + " API not available in this SonarQube version/edition"
+                raise exceptions.UnsupportedOperation(err_msg) from e
             if any(msg in err_msg_lower for msg in ("insufficient privileges", "insufficient permissions")):
                 raise exceptions.SonarException(err_msg, errcodes.SONAR_API_AUTHORIZATION) from e
             if "unknown url" in err_msg_lower:
@@ -319,7 +325,7 @@ class Platform(object):
         """Returns all pages of a paginated API"""
         params = {"ps": 500} | kwargs
         data = json.loads(self.get(api, params=params | {"p": 1}).text)
-        if (nb_pages := sutil.nbr_pages(data, api_version=1)) == 1:
+        if (nb_pages := sutil.nbr_pages(data)) == 1:
             return data
         for page in range(2, nb_pages + 1):
             data[return_field].update(json.loads(self.get(api, params=params | {"p": page}).text)[return_field])
@@ -338,7 +344,9 @@ class Platform(object):
         """Returns the platform global settings definitions"""
         if not self._global_settings_definitions:
             try:
-                self._global_settings_definitions = {s["key"]: s for s in json.loads(self.get("settings/list_definitions").text)["definitions"]}
+                api, _, params, ret = self.api.get_details(settings.Setting, Oper.LIST_DEFINITIONS)
+                data = json.loads(self.get(api, params=params).text)
+                self._global_settings_definitions = {s["key"]: s for s in data[ret]}
             except (ConnectionError, RequestException):
                 return {}
         return self._global_settings_definitions
@@ -396,7 +404,7 @@ class Platform(object):
         if settings_list is None:
             settings_dict = settings.get_bulk(endpoint=self)
         else:
-            settings_dict = {k: settings.get_object(endpoint=self, key=k) for k in settings_list}
+            settings_dict = {k: settings.Setting.get_object(endpoint=self, key=k) for k in settings_list}
         platform_settings = {}
         for v in settings_dict.values():
             platform_settings |= v.to_json()
@@ -415,7 +423,7 @@ class Platform(object):
         :param key: Setting key
         :return: the setting value
         """
-        return settings.get_object(endpoint=self, key=key).to_json()[key].get("value")
+        return settings.Setting.get_object(endpoint=self, key=key).to_json()[key].get("value")
 
     def reset_setting(self, key: str) -> bool:
         """Resets a platform global setting to the SonarQube internal default value
@@ -423,7 +431,7 @@ class Platform(object):
         :param key: Setting key
         :return: Whether the reset was successful or not
         """
-        return settings.reset_setting(self, key)
+        return settings.Setting.get_object(self, key=key).reset()
 
     def set_setting(self, key: str, value: Any) -> bool:
         """Sets a platform global setting
@@ -459,7 +467,7 @@ class Platform(object):
 
     def webhooks(self) -> dict[str, webhooks.WebHook]:
         """Returns the list of global webhooks"""
-        return webhooks.get_list(self)
+        return webhooks.WebHook.search(self)
 
     def export(self, export_settings: ConfigSettings, full: bool = False) -> ObjectJsonRepr:
         """Exports the global platform properties as JSON
@@ -590,52 +598,68 @@ class Platform(object):
         )
         return problems
 
+    def _audit_logfile(self, logtype: str, logfile: str) -> list[Problem]:
+        """Audits a log file for errors and warnings"""
+        log.info("Auditing %s log file for errors and warnings", logfile)
+        problems = []
+        try:
+            # Pass name and process, since process was used in 9.9 and name in 10.0 and above
+            api, _, params, _ = self.api.get_details(self.__class__, Oper.GET_LOGS, name=logtype, process=logtype)
+            logs = self.get(api, params=params).text
+        except (ConnectionError, RequestException, ValueError) as e:
+            sutil.handle_error(e, f"retrieving {logtype} logs", catch_all=True)
+            return []
+        i = 0
+        error_rule, warn_rule = None, None
+        for line in logs.splitlines():
+            if i % 1000 == 0:
+                log.debug("Inspecting log line (%d) %s", i, line)
+            i += 1
+            if " ERROR " in line:
+                log.warning("Error found in %s: %s", logfile, line)
+                if error_rule is None:
+                    error_rule = get_rule(RuleId.ERROR_IN_LOGS)
+                    problems.append(Problem(error_rule, f"{self.local_url}/admin/system", logfile, line))
+            elif " WARN " in line:
+                log.warning("Warning found in %s: %s", logfile, line)
+                if warn_rule is None:
+                    warn_rule = get_rule(RuleId.WARNING_IN_LOGS)
+                    problems.append(Problem(warn_rule, f"{self.local_url}/admin/system", logfile, line))
+        return problems
+
+    def _audit_deprecation_logs(self) -> list[Problem]:
+        """Audits that there are no deprecation warnings in logs"""
+        api, _, params, _ = self.api.get_details(Platform, Oper.GET_LOGS, name="deprecation")
+        logs = self.get(api, params=params).text
+        if (nb_deprecation := len(logs.splitlines())) > 0:
+            rule = get_rule(RuleId.DEPRECATION_WARNINGS)
+            return [Problem(rule, f"{self.local_url}/admin/system", nb_deprecation)]
+        return []
+
     def audit_logs(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits that there are no anomalies in logs (errors, warnings, deprecation warnings)"""
-        if not audit_settings.get("audit.logs", True):
-            log.info("Logs audit is disabled, skipping logs audit...")
-            return []
         if self.is_sonarcloud():
             log.info("Logs audit not available with SonarQube Cloud, skipping logs audit...")
             return []
+        if not audit_settings.get("audit.logs", True):
+            log.info("Logs audit is disabled, skipping logs audit...")
+            return []
+        log.info("Auditing SonarQube logs for errors, warnings and deprecation warnings")
         log_map = {"app": "sonar.log", "ce": "ce.log", "web": "web.log", "es": "es.log"}
         if self.edition() == c.DCE:
             log_map.pop("es")
         problems = []
         for logtype, logfile in log_map.items():
-            try:
-                logs = self.get("system/logs", params={"name": logtype}).text
-            except (ConnectionError, RequestException) as e:
-                sutil.handle_error(e, f"retrieving {logtype} logs", catch_all=True)
-                continue
-            i = 0
-            error_rule, warn_rule = None, None
-            system_url = f"{self.local_url}/admin/system"
-            for line in logs.splitlines():
-                if i % 1000 == 0:
-                    log.debug("Inspecting log line (%d) %s", i, line)
-                i += 1
-                if " ERROR " in line:
-                    log.warning("Error found in %s: %s", logfile, line)
-                    if error_rule is None:
-                        error_rule = get_rule(RuleId.ERROR_IN_LOGS)
-                        problems.append(Problem(error_rule, system_url, logfile, line))
-                elif " WARN " in line:
-                    log.warning("Warning found in %s: %s", logfile, line)
-                    if warn_rule is None:
-                        warn_rule = get_rule(RuleId.WARNING_IN_LOGS)
-                        problems.append(Problem(warn_rule, system_url, logfile, line))
-        logs = self.get("system/logs", params={"name": "deprecation"}).text
-        if (nb_deprecation := len(logs.splitlines())) > 0:
-            rule = get_rule(RuleId.DEPRECATION_WARNINGS)
-            problems.append(Problem(rule, system_url, nb_deprecation))
+            problems += self._audit_logfile(logtype, logfile)
+        problems += self._audit_deprecation_logs()
         return problems
 
     def _audit_project_default_visibility(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits whether project default visibility is public"""
         log.info("Auditing project default visibility")
         problems = []
-        resp = self.get(settings.Setting.API[c.READ], params={"keys": "projects.default.visibility"})
+        api, _, params, _ = self.api.get_details(settings.Setting, Oper.GET, keys="projects.default.visibility")
+        resp = self.get(api, params=params)
         visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)
         if audit_settings.get("audit.globalSettings.defaultProjectVisibility", "private") != visi:
@@ -724,7 +748,7 @@ class Platform(object):
     def _audit_token_max_lifetime(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits the maximum lifetime of a token"""
         log.info("Auditing maximum token lifetime global setting")
-        lifetime_setting = settings.get_object(self, settings.TOKEN_MAX_LIFETIME)
+        lifetime_setting = settings.Setting.get_object(self, settings.TOKEN_MAX_LIFETIME)
         if lifetime_setting is None:
             log.info("Token maximum lifetime setting not found, skipping audit")
             return []
@@ -758,6 +782,15 @@ class Platform(object):
     def set_standard_experience(self) -> bool:
         """Sets the platform to standard experience mode (disables MQR if available)"""
         return self.set_mqr_mode(False)
+
+    @staticmethod
+    def __check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
+        """Verifies if a response had a 301 Moved permanently and if so provide the new location"""
+        if len(response.history) > 0 and response.history[0].status_code == HTTPStatus.MOVED_PERMANENTLY:
+            new_url = "/".join(response.history[0].headers["Location"].split("/")[0:3])
+            log.debug("Moved permanently to URL %s", new_url)
+            return True, new_url
+        return False, None
 
 
 # --------------------- Static methods -----------------
@@ -881,15 +914,6 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
     :param KeyList key_list: Unused
     """
     return endpoint.import_config(config_data)
-
-
-def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
-    """Verifies if a response had a 301 Moved permanently and if so provide the new location"""
-    if len(response.history) > 0 and response.history[0].status_code == HTTPStatus.MOVED_PERMANENTLY:
-        new_url = "/".join(response.history[0].headers["Location"].split("/")[0:3])
-        log.debug("Moved permanently to URL %s", new_url)
-        return True, new_url
-    return False, None
 
 
 def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -> ObjectJsonRepr:

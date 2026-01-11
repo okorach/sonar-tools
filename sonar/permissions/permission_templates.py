@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2022-2025 Olivier Korach
+# Copyright (C) 2022-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -36,15 +36,15 @@ import sonar.audit.problem as pb
 import sonar.util.constants as c
 import sonar.util.misc as util
 import sonar.utilities as sutil
+from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, ObjectJsonRepr, PermissionDef
+    from sonar.util.types import ApiPayload, ConfigSettings, ObjectJsonRepr, PermissionDef
 
 _MAP = {}
 _DEFAULT_TEMPLATES = {}
 _QUALIFIER_REVERSE_MAP = {"projects": "TRK", "applications": "APP", "portfolios": "VW"}
-_SEARCH_API = "permissions/search_templates"
 _CREATE_API = "permissions/create_template"
 _UPDATE_API = "permissions/update_template"
 
@@ -85,7 +85,7 @@ class PermissionTemplate(sqobject.SqObject):
         self.last_update = data.get("lastUpdate", None)
         self.project_key_pattern = data.pop("projectKeyPattern", "")
         self.creation_date = sutil.string_to_date(data.pop("createdAt", None))
-        PermissionTemplate.CACHE.put(self)
+        self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:
         """Returns the string representation of the object"""
@@ -94,6 +94,22 @@ class PermissionTemplate(sqobject.SqObject):
     def __hash__(self) -> int:
         """Returns object unique id"""
         return hash((self.name.lower(), self.base_url()))
+
+    @classmethod
+    def search(cls, endpoint: Platform, use_cache: bool = False) -> dict[str, PermissionTemplate]:
+        """Searches permissions templates"""
+        if use_cache and len(cls.CACHE.from_platform(endpoint)) > 0:
+            log.debug("Searching permission templates from cache")
+            return cls.CACHE.from_platform(endpoint)
+        log.info("Searching permission templates")
+        api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH)
+        dataset = json.loads(endpoint.get(api, params=params).text)
+        objects_list = {}
+        for obj in dataset[ret]:
+            o = cls(name=obj["name"], endpoint=endpoint, data=obj)
+            objects_list[o.key] = o
+        _load_default_templates(endpoint=endpoint, data=dataset)
+        return objects_list
 
     def is_default_for(self, qualifier: str) -> bool:
         """Returns whether a template is the default for a type of qualifier"""
@@ -215,7 +231,7 @@ class PermissionTemplate(sqobject.SqObject):
 def get_object(endpoint: Platform, name: str) -> PermissionTemplate:
     """Returns Perm Template object corresponding to name"""
     if len(PermissionTemplate.CACHE) == 0:
-        get_list(endpoint)
+        PermissionTemplate.search(endpoint)
     return PermissionTemplate.CACHE.get(name.lower(), endpoint.local_url)
 
 
@@ -240,32 +256,17 @@ def create(endpoint: Platform, name: str, create_data: ObjectJsonRepr = None) ->
     return o
 
 
-def search(endpoint: Platform, params: ApiParams = None) -> dict[str, PermissionTemplate]:
-    """Searches permissions templates"""
-    log.debug("Searching all permission templates")
-    objects_list = {}
-    data = json.loads(endpoint.get(_SEARCH_API, params=params).text)
-    for obj in data["permissionTemplates"]:
-        o = PermissionTemplate(name=obj["name"], endpoint=endpoint, data=obj)
-        objects_list[o.key] = o
-    _load_default_templates(endpoint=endpoint, data=data)
-    return objects_list
-
-
 def search_by_name(endpoint: Platform, name: str) -> ApiPayload:
     """Searches permissions templates by name"""
-    return sutil.search_by_name(endpoint=endpoint, name=name, api=_SEARCH_API, returned_field="permissionTemplates")
-
-
-def get_list(endpoint: Platform) -> dict[str, PermissionTemplate]:
-    """Gets the list of all permissions templates"""
-    return search(endpoint=endpoint)
+    api, _, _, ret = endpoint.api.get_details(PermissionTemplate, Oper.SEARCH)
+    return sutil.search_by_name(endpoint=endpoint, name=name, api=api, returned_field=ret)
 
 
 def _load_default_templates(endpoint: Platform, data: ApiPayload = None) -> None:
     """Loads default templates"""
     if data is None:
-        data = json.loads(endpoint.get(_SEARCH_API).text)
+        api, _, params, _ = endpoint.api.get_details(PermissionTemplate, Oper.SEARCH)
+        data = json.loads(endpoint.get(api, params=params).text)
     for d in data["defaultTemplates"]:
         _DEFAULT_TEMPLATES[d["qualifier"]] = d["templateId"]
 
@@ -273,9 +274,8 @@ def _load_default_templates(endpoint: Platform, data: ApiPayload = None) -> None
 def export(endpoint: Platform, export_settings: ConfigSettings) -> ObjectJsonRepr:
     """Exports permission templates as JSON"""
     log.info("Exporting permission templates")
-    pt_list = get_list(endpoint)
     json_data = {}
-    for pt in pt_list.values():
+    for pt in PermissionTemplate.search(endpoint).values():
         json_data[pt.name] = pt.to_json(export_settings)
         if not export_settings.get("FULL_EXPORT"):
             for k in ("name", "id", "key"):
@@ -291,7 +291,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr) -> int:
         log.info("No permissions templates in config, skipping import...")
         return 0
     log.info("Importing permission templates")
-    get_list(endpoint)
+    PermissionTemplate.search(endpoint)
     count = 0
     config_data = util.list_to_dict(config_data, "key")
     for name, data in config_data.items():
@@ -308,6 +308,6 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings) -> list[pb.Problem
     """Audits permission templates and returns list of detected problems"""
     log.info("--- Auditing permission templates ---")
     problems = []
-    for pt in get_list(endpoint=endpoint).values():
+    for pt in PermissionTemplate.search(endpoint).values():
         problems += pt.audit(audit_settings)
     return problems

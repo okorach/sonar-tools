@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2025 Olivier Korach
+# Copyright (C) 2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -20,9 +20,10 @@
 """Computes SonarQube maturity metrics"""
 
 from typing import Any
+
+import os
 import traceback
 import concurrent.futures
-
 from termgraph import Data, Args, BarChart
 
 from sonar import version
@@ -40,6 +41,7 @@ from sonar import logging as log
 from sonar.util import conf_mgr as conf
 import sonar.utilities as sutil
 import sonar.util.misc as util
+from sonar.util import constants as c
 
 TOOL_NAME = "sonar-maturity"
 CONFIG_FILE = f"{TOOL_NAME}.properties"
@@ -67,6 +69,8 @@ NEW_CODE_LINES_METRIC = "new_lines"
 
 NEW_CODE_RATIO_KEY = "new_code_lines_ratio"
 NEW_CODE_DAYS_KEY = "new_code_in_days"
+
+PORTFOLIO_RATIO_KEY = "ratio_of_projects_per_portfolio"
 
 
 def __parse_args(desc: str) -> object:
@@ -103,6 +107,8 @@ def get_project_maturity_data(project: projects.Project, settings: dict[str, Any
             qg_status += "/NEVER_ANALYZED"
     else:
         qg_status = proj_measures[QG_METRIC].value
+
+    main_branch_last_analysis = project.main_branch().last_analysis() if project.endpoint.edition() != c.CE else project.last_analysis()
     data = {
         "key": project.key,
         QG: qg_status,
@@ -111,7 +117,7 @@ def get_project_maturity_data(project: projects.Project, settings: dict[str, Any
         NEW_CODE_LINES_KEY: None if not proj_measures[NEW_CODE_LINES_METRIC] else proj_measures[NEW_CODE_LINES_METRIC].value,
         NEW_CODE_DAYS_KEY: util.age(project.new_code_start_date()),
         AGE_KEY: util.age(project.last_analysis(include_branches=True)),
-        f"main_branch_{AGE_KEY}": util.age(project.main_branch().last_analysis()),
+        f"main_branch_{AGE_KEY}": util.age(main_branch_last_analysis),
         NBR_OF_BRANCHES_KEY: len(project.branches()),
     }
     data[NEW_CODE_RATIO_KEY] = None if data[NEW_CODE_LINES_KEY] is None else __rounded(min(1.0, data[NEW_CODE_LINES_KEY] / data["lines"]))
@@ -397,27 +403,30 @@ def get_maturity_data(project_list: list[projects.Project], threads: int, settin
 def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
     """Gets governance maturity data"""
     log.info("Collecting governance maturity data")
-    portfolio_count = pf.count(endpoint)
+    try:
+        portfolio_count = pf.count(endpoint)
+    except exceptions.UnsupportedOperation:
+        portfolio_count = 0
     project_count = projects.count(endpoint)
     ratio = project_count / portfolio_count if portfolio_count > 0 else None
 
     log.info("Collecting quality gates maturity data")
-    qg_list = [q for q in qg.get_list(endpoint).values() if not q.is_built_in]
+    qg_list = [q for q in qg.QualityGate.search(endpoint).values() if not q.is_built_in]
 
     results = {
         "number_of_portfolios": portfolio_count,
-        "ratio_of_projects_per_portfolio": __rounded(ratio),
+        PORTFOLIO_RATIO_KEY: __rounded(ratio) if ratio is not None else None,
         "number_of_custom_quality_gates": len(qg_list),
         "number_of_incorrect_quality_gates": sum(1 for q in qg_list if len(q.audit_conditions()) > 0),
     }
     results["ratio_of_incorrect_quality_gates"] = __rounded(results["number_of_incorrect_quality_gates"] / len(qg_list)) if len(qg_list) > 0 else 0.0
 
     log.info("Collecting quality profiles maturity data")
-    qp_list = [p for p in qp.get_list(endpoint).values() if not p.is_built_in]
+    qp_list = [p for p in qp.QualityProfile.search(endpoint).values() if not p.is_built_in]
     # We should count the nbr of custom profiles per language
     results["number_of_custom_quality_profiles"] = {}
     errcount = 0
-    for lang in languages.get_list(endpoint):
+    for lang in languages.Language.search(endpoint, use_cache=False):
         if (count := sum(1 for p in qp_list if p.language == lang)) == 0:
             continue
         results["number_of_custom_quality_profiles"][lang] = count
@@ -436,7 +445,7 @@ def compute_global_maturity_level_statistics(data: dict[str, Any], gov_data: dic
     nbr_projects = len(data)
     gov_mat = 0
     # If enough portfolios and good ratio of portfolios to projects, then 1 point of governance maturity
-    if gov_data["number_of_portfolios"] > 5 and gov_data["ratio_of_projects_per_portfolio"] < 20:
+    if gov_data["number_of_portfolios"] > 5 and gov_data[PORTFOLIO_RATIO_KEY] is not None and gov_data[PORTFOLIO_RATIO_KEY] < 20:
         gov_mat += 1
     # If no more than 9 custom quality gates, then 1 point of governance maturity
     if gov_data["number_of_custom_quality_gates"] < 10:
@@ -508,13 +517,13 @@ def main() -> None:
     try:
         kwargs: dict[str, Any] = sutil.convert_args(__parse_args("Extracts a maturity score for a platform, a project or a portfolio"))
         if kwargs.get("config", False):
-            conf.configure(CONFIG_FILE, __file__)
+            conf.configure(CONFIG_FILE, "cli")
             chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
         sutil.check_token(kwargs[options.TOKEN], sutil.is_sonarcloud_url(kwargs[options.URL]))
         sq = platform.Platform(**kwargs)
         sq.verify_connection()
         sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-        config = conf.load(CONFIG_FILE, __file__) | conf.get_cli_settings(**kwargs) | kwargs
+        config = conf.load(f"cli{os.sep}{CONFIG_FILE}") | conf.get_cli_settings(**kwargs) | kwargs
         project_list = component_helper.get_components(
             endpoint=sq,
             component_type="projects",
@@ -525,7 +534,7 @@ def main() -> None:
             raise exceptions.SonarException(f"No project matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
 
         maturity_data = get_maturity_data(project_list, threads=kwargs[options.NBR_THREADS], settings=config)
-
+        log.info("MATURITY data: %s", util.json_dump(maturity_data))
         summary_data: dict[str, Any] = {"total_projects": len(maturity_data)}
         summary_data["quality_gate_enforcement_statistics"] = compute_pr_statistics(maturity_data, config)
         compute_project_analysis_maturity(maturity_data, config)

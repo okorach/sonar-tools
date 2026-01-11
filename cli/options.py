@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2022-2025 Olivier Korach
+# Copyright (C) 2022-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -152,7 +152,7 @@ WHAT_PROJECTS = "projects"
 WHAT_APPS = "applications"
 WHAT_PORTFOLIOS = "portfolios"
 
-MULTI_VALUED_OPTS = (METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES, TAGS, PULL_REQUESTS, WHAT)
+MULTI_VALUED_OPTS = (METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES, TAGS, WHAT)
 
 COMPONENT_TYPE = "compType"
 PROJECTS = "projects"

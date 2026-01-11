@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2019-2025 Olivier Korach
+# Copyright (C) 2019-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -37,24 +37,21 @@ import sonar.logging as log
 from sonar import settings, tasks, measures, rules, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
+from sonar.api.manager import ApiOperation as Oper
 
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 
 if TYPE_CHECKING:
+    from sonar.projects import Project
     from sonar.platform import Platform
+    from sonar.hotspots import Hotspot
+    from sonar.issues import Issue
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList
-
-# Character forbidden in keys that can be used to separate a key from a post fix
-KEY_SEPARATOR = " "
 
 
 class Component(SqObject):
-    """
-    Abstraction of the Sonar component concept
-    """
-
-    API = {c.READ: "components/show", c.LIST: "components/search"}
+    """Abstraction of the Sonar component concept"""
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
         """Constructor"""
@@ -69,6 +66,14 @@ class Component(SqObject):
         if data is not None:
             self.reload(data)
 
+    def __str__(self) -> str:
+        """String representation of object"""
+        return self.key
+
+    def component_key(self, **search_params: Any) -> str:
+        """Returns the key of the component from the search params"""
+        return next(iter(v for k, v in search_params.items() if k in ("project", "application", "portfolio")), self.key)
+
     def reload(self, data: ApiPayload) -> Component:
         """Loads a SonarQube API JSON payload in a Component"""
         super().reload(data)
@@ -76,91 +81,62 @@ class Component(SqObject):
             self.name = data["name"]
         if "visibility" in data:
             self._visibility = data["visibility"]
-        if "analysisDate" in data:
-            self._last_analysis = sutil.string_to_date(data["analysisDate"])
+        key = next((k for k in ("lastAnalysisDate", "analysisDate") if k in data), None)
+        if key in data:
+            self._last_analysis = sutil.string_to_date(data[key])
         return self
 
-    def __str__(self) -> str:
-        """String representation of object"""
-        return self.key
+    def project(self) -> Project:
+        """Implemented in relevant subclasses (Project, Branch, PullRequest)"""
+        raise NotImplementedError
 
-    def get_tags_params(self) -> dict[str, str]:
-        return {"component": self.key}
+    def get_issues(self, **search_params: Any) -> dict[str, Issue]:
+        """Returns list of issues for a portfolios"""
+        from sonar.issues import Issue
 
-    def get_subcomponents(self, strategy: str = "children", with_issues: bool = False) -> dict[str, Component]:
-        """Returns component subcomponents"""
-        parms = {
-            "component": self.key,
-            "strategy": strategy,
-            "ps": 1,
-            "metricKeys": "bugs,vulnerabilities,code_smells,security_hotspots",
-        }
-        data = json.loads(self.get("measures/component_tree", params=parms).text)
-        nb_comp = sutil.nbr_total_elements(data)
-        log.debug("Found %d subcomponents to %s", nb_comp, str(self))
-        nb_pages = math.ceil(nb_comp / 500)
-        comp_list = {}
-        parms["ps"] = 500
-        for page in range(nb_pages):
-            parms["p"] = page + 1
-            data = json.loads(self.get("measures/component_tree", params=parms).text)
-            for d in data["components"]:
-                nbr_issues = 0
-                for m in d["measures"]:
-                    nbr_issues += int(m["value"])
-                if with_issues and nbr_issues == 0:
-                    log.debug("Subcomponent %s has 0 issues, skipping", d["key"])
-                    continue
-                comp_list[d["key"]] = Component(self.endpoint, d["key"], data=d)
-                comp_list[d["key"]].nbr_issues = nbr_issues
-                log.debug("Component %s has %d issues", d["key"], nbr_issues)
-        return comp_list
-
-    def get_issues(self, filters: ApiParams = None) -> dict[str, object]:
-        """Returns list of issues for a component, optionally on branches or/and PRs"""
-        from sonar.issues import search_all
-
-        filters = {k: list(set(v)) if isinstance(v, (list, set, tuple)) else v for k, v in (filters or {}).items() if v is not None}
-        log.info("Searching issues for %s with filters %s", str(self), str(filters))
-        issue_list = search_all(endpoint=self.endpoint, params=self.api_params() | {"additionalFields": "comments"} | filters)
+        log.info("Searching issues for %s with filters %s", self, search_params)
+        # Strip off project, application and portfolio search params
+        new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio")}
+        issue_list = Issue.search(endpoint=self.endpoint, **(new_params | {"project": self.key}))
         self.nbr_issues = len(issue_list)
         return issue_list
 
-    def count_specific_rules_issues(self, ruleset: list[str], filters: ApiParams = None) -> dict[str, int]:
+    def get_hotspots(self, **search_params: Any) -> dict[str, Hotspot]:
+        """Returns list of hotspots for a component, optionally on branches or/and PRs"""
+        from sonar.hotspots import Hotspot
+
+        log.info("Searching hotspots for %s with filters %s", self, search_params)
+        # Strip off project, application and portfolio search params
+        new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio")}
+        return Hotspot.search(endpoint=self.endpoint, **(new_params | {"project": self.key}))
+
+    def count_specific_rules_issues(self, ruleset: list[str], **search_params: Any) -> dict[str, int]:
         """Returns the count of issues of a component for a given ruleset"""
         from sonar.issues import count_by_rule
 
-        params = self.api_params()
-        if filters is not None:
-            params.update(filters)
-        params["facets"] = "rules"
-        params["rules"] = [r.key for r in ruleset]
+        key = self.project().key
+        params = {"components": key} if self.endpoint.version() >= (10, 0, 0) else {"componentKeys": key}
+        params = search_params | params | {"facets": "rules", "rules": [r.key for r in ruleset]}
         return {k: v for k, v in count_by_rule(endpoint=self.endpoint, **params).items() if v > 0}
 
-    def count_third_party_issues(self, filters: ApiParams = None) -> dict[str, int]:
+    def count_third_party_issues(self, **search_params: Any) -> dict[str, int]:
         """Returns the count of issues of a component  corresponding to 3rd party rules"""
-        return self.count_specific_rules_issues(ruleset=rules.third_party(self.endpoint), filters=filters)
+        key = self.component_key(**search_params)
+        params = {"components": key} if self.endpoint.version() >= (10, 0, 0) else {"componentKeys": key}
+        return self.count_specific_rules_issues(ruleset=rules.third_party(self.endpoint), **(search_params | params))
 
-    def count_instantiated_rules_issues(self, filters: ApiParams = None) -> dict[str, int]:
+    def count_instantiated_rules_issues(self, **search_params: Any) -> dict[str, int]:
         """Returns the count of issues of a component corresponding to instantiated rules"""
-        return self.count_specific_rules_issues(ruleset=rules.instantiated(self.endpoint), filters=filters)
+        key = self.component_key(**search_params)
+        params = {"components": key} if self.endpoint.version() >= (10, 0, 0) else {"componentKeys": key}
+        return self.count_specific_rules_issues(ruleset=rules.instantiated(self.endpoint), **(search_params | params))
 
-    def get_hotspots(self, filters: ApiParams = None) -> dict[str, object]:
-        """Returns list of hotspots for a component, optionally on branches or/and PRs"""
-        from sonar.hotspots import component_filter, search
-
-        log.info("Searching hotspots for %s with filters %s", str(self), str(filters))
-        params = util.replace_keys(measures.ALT_COMPONENTS, component_filter(self.endpoint), self.api_params(c.GET))
-        if filters is not None:
-            params.update(filters)
-        return search(endpoint=self.endpoint, filters=params)
-
-    def migration_export(self, export_settings: ConfigSettings) -> dict[str, Any]:
+    def migration_export(self, export_settings: ConfigSettings, **search_params: Any) -> dict[str, Any]:
         """Prepares all data for a sonar-migration export"""
         from sonar.issues import count as issue_count
-        from sonar.hotspots import count as hotspot_count
+        from sonar.hotspots import Hotspot
 
-        json_data = {"lastAnalysis": sutil.date_to_string(self.last_analysis())}
+        json_data: dict[str, Any] = {"lastAnalysis": sutil.date_to_string(self.last_analysis())}
         lang_distrib = self.get_measure("ncloc_language_distribution")
         loc_distrib = {}
         if lang_distrib:
@@ -172,20 +148,24 @@ class Component(SqObject):
             log.debug("Issues count extract skipped for %s`", str(self))
             return json_data
 
-        tpissues = self.count_third_party_issues()
-        inst_issues = self.count_instantiated_rules_issues()
-        params = self.api_params(c.GET)
+        tpissues = self.count_third_party_issues(**search_params)
+        inst_issues = self.count_instantiated_rules_issues(**search_params)
+        key = self.component_key(**search_params)
+        params = {"components": key} if self.endpoint.version() >= (10, 0, 0) else {"componentKeys": key}
+        params = search_params | params
+        log.info("Counting issues for %s with params %s", str(self), str(params))
         json_data["issues"] = {
             "thirdParty": tpissues if len(tpissues) > 0 else 0,
             "instantiatedRules": inst_issues if len(inst_issues) > 0 else 0,
-            "falsePositives": issue_count(self.endpoint, issueStatuses=["FALSE_POSITIVE"], **params),
+            "falsePositives": issue_count(self.endpoint, **(params | {"issueStatuses": ["FALSE_POSITIVE"]})),
         }
         status = "accepted" if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION else "wontFix"
         json_data["issues"][status] = issue_count(self.endpoint, issueStatuses=[status.upper()], **params)
+        params = search_params | {"project": key}
         json_data["hotspots"] = {
-            "acknowledged": hotspot_count(self.endpoint, resolution=["ACKNOWLEDGED"], **params),
-            "safe": hotspot_count(self.endpoint, resolution=["SAFE"], **params),
-            "fixed": hotspot_count(self.endpoint, resolution=["FIXED"], **params),
+            "acknowledged": Hotspot.count(self.endpoint, **(params | {"resolution": ["ACKNOWLEDGED"]})),
+            "safe": Hotspot.count(self.endpoint, **(params | {"resolution": ["SAFE"]})),
+            "fixed": Hotspot.count(self.endpoint, **(params | {"resolution": ["FIXED"]})),
         }
         log.debug("%s has these notable issues %s", str(self), str(json_data["issues"]))
 
@@ -214,7 +194,7 @@ class Component(SqObject):
 
     def get_navigation_data(self) -> ApiPayload:
         """Returns a component navigation data"""
-        params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(c.GET))
+        params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(Oper.GET))
         data = json.loads(self.get("navigation/component", params=params).text)
         super().reload(data)
         return data
@@ -223,19 +203,23 @@ class Component(SqObject):
         """Refreshes a component data"""
         return self.reload(self.get_navigation_data)
 
-    def last_analysis(self) -> datetime:
+    def last_analysis(self) -> Optional[datetime]:
         """Returns a component last analysis"""
         if not self._last_analysis:
-            self.get_navigation_data()
-            if "analysisDate" in self.sq_json:
-                self._last_analysis = sutil.string_to_date(self.sq_json["analysisDate"])
+            key = next((k for k in ("lastAnalysisDate", "analysisDate") if self.sq_json and k in self.sq_json), None)
+            if not key:
+                self.get_navigation_data()
+            key = next((k for k in ("lastAnalysisDate", "analysisDate") if self.sq_json and k in self.sq_json), None)
+            if key:
+                self._last_analysis = sutil.string_to_date(self.sq_json[key])
         return self._last_analysis
 
     def new_code_start_date(self) -> Optional[datetime]:
         """Returns the new code period start date of a component or None if this component has no new code start date"""
         if self._new_code_start_date is None:
-            params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(c.GET))
-            data = json.loads(self.get(Component.API[c.READ], params=params).text)["component"]
+            params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(Oper.GET))
+            api, _, api_params, ret = self.endpoint.api.get_details(self, Oper.GET, **params)
+            data = json.loads(self.get(api, params=api_params).text)[ret]
             self.sq_json |= data
             if "leakPeriodDate" in data:
                 self._new_code_start_date = sutil.string_to_date(data["leakPeriodDate"])
@@ -260,7 +244,7 @@ class Component(SqObject):
     def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None) -> ApiPayload:
         """Returns a component analyses"""
         log.debug("%s: Getting history of analyses", self)
-        params = util.dict_remap(self.api_params(c.READ), {"component": "project"})
+        params = util.dict_remap(self.api_params(Oper.GET), {"component": "project"})
         data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", **params)["analyses"]
         if filter_in and len(filter_in) > 0:
             data = [d for d in data if any(e["category"] in filter_in for e in d["events"])]
@@ -287,7 +271,7 @@ class Component(SqObject):
         if version >= (2025, 1, 0):
             api = "project_branches/get_ai_code_assurance"
         try:
-            params = util.dict_remap(self.api_params(c.READ), {"component": "project"})
+            params = util.dict_remap(self.api_params(Oper.GET), {"component": "project"})
             return str(json.loads(self.get(api, params=params).text)["aiCodeAssurance"]).upper()
         except (ConnectionError, RequestException) as e:
             sutil.handle_error(e, f"getting AI code assurance of {self}", catch_all=True)
@@ -417,21 +401,21 @@ class Component(SqObject):
 
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
-        return tasks.search_last(component_key=self.key, endpoint=self.endpoint)
+        return tasks.search_last(self.endpoint, component=self.key)
 
     def get_measures_history(self, metrics_list: KeyList) -> dict[str, str]:
         """Returns the history of a project metrics"""
         return measures.get_history(self, metrics_list)
 
-    def api_params(self, op: Optional[str] = None) -> ApiParams:
+    def api_params(self, operation: Optional[str] = None) -> ApiParams:
         """Returns the base params for any API call for this object"""
         from sonar.issues import component_search_field
 
         ops = {
-            c.READ: {"component": self.key},
-            c.LIST: {component_search_field(self.endpoint): self.key},
+            Oper.GET: {"component": self.key},
+            Oper.SEARCH: {component_search_field(self.endpoint): self.key},
         }
-        return ops[op] if op and op in ops else ops[c.LIST]
+        return ops[operation] if operation and operation in ops else ops[Oper.SEARCH]
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""

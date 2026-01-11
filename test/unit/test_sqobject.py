@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools tests
-# Copyright (C) 2024-2025 Olivier Korach
+# Copyright (C) 2024-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -41,13 +41,13 @@ def test_tag_portfolios(get_test_portfolio: callable) -> None:
 
 def test_tag_project_branches() -> None:
     """test_tag_project_branches"""
-    proj = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
+    proj = projects.Project.get_object(tutil.SQ, key=tutil.LIVE_PROJECT)
     if tutil.SQ.edition() == c.CE:
         with pytest.raises(exceptions.UnsupportedOperation):
-            branches.Branch.get_object(proj, "master")
+            branches.Branch.get_object(endpoint=tutil.SQ, project=proj, branch_name="master")
         return
     proj = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
-    o = branches.Branch.get_object(proj, "master")
+    o = branches.Branch.get_object(endpoint=tutil.SQ, project=proj, branch_name="master")
     with pytest.raises(exceptions.UnsupportedOperation):
         o.get_tags()
     with pytest.raises(exceptions.UnsupportedOperation):

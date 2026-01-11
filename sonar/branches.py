@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2022-2025 Olivier Korach
+# Copyright (C) 2022-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube project branch concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Optional, Any, Union, TYPE_CHECKING
 
 from http import HTTPStatus
 import json
@@ -29,37 +29,32 @@ import re
 from urllib.parse import unquote
 import requests.utils
 
-from sonar import platform
 from sonar.util import cache
 import sonar.logging as log
 from sonar import components, settings, exceptions, tasks
-from sonar import projects as proj
+
+import sonar.projects as proj
 import sonar.util.misc as util
 import sonar.utilities as sutil
 
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 import sonar.util.constants as c
+from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
+    from sonar.issues import Issue
+    from sonar.hotspots import Hotspot
+    from sonar.platform import Platform
     from sonar.util.types import ApiPayload, ApiParams, ConfigSettings, ObjectJsonRepr
-    from datetime import datetime
 
 _UNSUPPORTED_IN_CE = "Branches not available in Community Edition"
 
 
 class Branch(components.Component):
-    """
-    Abstraction of the SonarQube "project branch" concept
-    """
+    """Abstraction of the SonarQube "project branch" concept"""
 
     CACHE = cache.Cache()
-    API = {
-        c.LIST: "project_branches/list",
-        c.DELETE: "project_branches/delete",
-        c.RENAME: "project_branches/rename",
-        "get_new_code": "new_code_periods/list",
-    }
 
     def __init__(self, project: proj.Project, name: str) -> None:
         """Don't use this, use class methods to create Branch objects
@@ -71,53 +66,12 @@ class Branch(components.Component):
         name = unquote(name)
         super().__init__(endpoint=project.endpoint, key=name)
         self.name = name
-        self.concerned_object = project
+        self.concerned_object: proj.Project = project
         self._is_main: Optional[bool] = None
         self._new_code: Optional[str] = None
-        self._last_analysis: Optional[datetime] = None
         self._keep_when_inactive: Optional[bool] = None
-        Branch.CACHE.put(self)
+        self.__class__.CACHE.put(self)
         log.debug("Created object %s", str(self))
-
-    @classmethod
-    def get_object(cls, concerned_object: proj.Project, branch_name: str) -> Branch:
-        """Gets a SonarQube Branch object
-
-        :param Project concerned_object: Project concerned by the branch
-        :param str branch_name: The branch name
-        :raises UnsupportedOperation: If trying to manipulate branches on a community edition
-        :raises ObjectNotFound: If project key or branch name not found in SonarQube
-        :return: The Branch object
-        :rtype: Branch
-        """
-        branch_name = unquote(branch_name)
-        o = Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())
-        if o:
-            return o
-        data = json.loads(concerned_object.get(Branch.API[c.LIST], params={"project": concerned_object.key}).text)
-        br = next((b for b in data.get("branches", []) if b["name"] == branch_name), None)
-        if not br:
-            raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(concerned_object)} not found")
-        return cls.load(concerned_object, branch_name, br)
-
-    @classmethod
-    def load(cls, concerned_object: proj.Project, branch_name: str, data: ApiPayload) -> Branch:
-        """Gets a Branch object from JSON data gotten from a list API call
-
-        :param Project concerned_object: the Project the branch belonsg to
-        :param str branch_name: Name of the branch
-        :param dict data: Data received from API call
-        :return: The Branch object
-        :rtype: Branch
-        """
-        branch_name = unquote(branch_name)
-        o = Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())
-        br_data = next((br for br in data.get("branches", []) if br["name"] == branch_name), None)
-        if not o:
-            o = cls(concerned_object, branch_name)
-        if br_data:
-            o._load(br_data)
-        return o
 
     def __str__(self) -> str:
         return f"branch '{self.name}' of {str(self.project())}"
@@ -125,6 +79,77 @@ class Branch(components.Component):
     def __hash__(self) -> int:
         """Computes a uuid for the branch that can serve as index"""
         return hash((self.concerned_object.key, self.name, self.base_url()))
+
+    @classmethod
+    def get_object(cls, endpoint: Platform, project: Union[str, proj.Project], branch_name: str) -> Branch:
+        """Gets a SonarQube Branch object
+
+        :param str | Project project: Project concerned by the branch
+        :param str branch_name: The branch name
+        :raises UnsupportedOperation: If trying to manipulate branches on a community edition
+        :raises ObjectNotFound: If project key or branch name not found in SonarQube
+        :return: The Branch object
+        :rtype: Branch
+        """
+        branch_name = unquote(branch_name)
+        if isinstance(project, str):
+            project = proj.Project.get_object(endpoint, project)
+        if o := cls.CACHE.get(project.key, branch_name, project.base_url()):
+            return o
+        api, _, params, _ = project.endpoint.api.get_details(Branch, Oper.SEARCH, project=project.key)
+        data = json.loads(project.get(api, params=params).text)
+        br = next((b for b in data.get("branches", []) if b["name"] == branch_name), None)
+        if not br:
+            raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(project)} not found")
+        return cls.load(project, branch_name, br)
+
+    @classmethod
+    def load(cls, concerned_object: proj.Project, branch_name: str, data: ApiPayload) -> Branch:
+        """Gets a Branch object from JSON data gotten from a list API call
+
+        :param proj.Project concerned_object: the Project the branch belonsg to
+        :param str branch_name: Name of the branch
+        :param dict data: Data received from API call
+        :return: The Branch object
+        :rtype: Branch
+        """
+        branch_name = unquote(branch_name)
+        br_data = next((br for br in data.get("branches", []) if br["name"] == branch_name), None)
+        if not (o := cls.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())):
+            o = cls(concerned_object, branch_name)
+        if br_data:
+            o.reload(br_data)
+        return o
+
+    @classmethod
+    def search(cls, project: proj.Project) -> dict[str, Branch]:
+        """Retrieves the list of branches of a project
+
+        :param proj.Project project: Project the branch belongs to
+        :raises UnsupportedOperation: Branches not supported in Community Edition
+        :return: List of project branches
+        :rtype: dict{branch_name: Branch}
+        """
+        if project.endpoint.edition() == c.CE:
+            log.debug(_UNSUPPORTED_IN_CE)
+            raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
+
+        log.debug("Reading all branches of %s", str(project))
+        api, _, params, _ = project.endpoint.api.get_details(cls, Oper.SEARCH, project=project.key)
+        data = json.loads(project.endpoint.get(api, params=params).text)
+        return dict(sorted({branch["name"]: cls.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}.items()))
+
+    def reload(self, data: ApiPayload) -> Branch:
+        log.debug("Loading %s with data %s", self, data)
+        super().reload(data)
+        self._is_main = self.sq_json["isMain"]
+        self._keep_when_inactive = self.sq_json.get("excludedFromPurge", False)
+        self._is_main = self.sq_json.get("isMain", False)
+        return self
+
+    def url(self) -> str:
+        """returns the branch URL in SonarQube as permalink"""
+        return f"{self.concerned_object.url()}&branch={requests.utils.quote(self.name)}"
 
     def project(self) -> proj.Project:
         """Returns the project key"""
@@ -137,24 +162,17 @@ class Branch(components.Component):
         :return: itself
         :rtype: Branch
         """
-        data = json.loads(self.get(Branch.API[c.LIST], params=self.api_params(c.LIST)).text)
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.SEARCH, **self.api_params(Oper.SEARCH))
+        data = json.loads(self.get(api, params=params).text)
         br_data = next((br for br in data.get("branches", []) if br["name"] == self.name), None)
         if not br_data:
             Branch.CACHE.clear()
             raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
-        self._load(br_data)
+        self.reload(br_data)
         # While we're there let's load other branches with up to date branch data
         for br in [b for b in data.get("branches", []) if b["name"] != self.name]:
             Branch.load(self.concerned_object, br["name"], data)
         return self
-
-    def _load(self, data: ApiPayload) -> None:
-        log.debug("Loading %s with data %s", self, data)
-        self.sq_json = (self.sq_json or {}) | data
-        self._is_main = self.sq_json["isMain"]
-        self._last_analysis = sutil.string_to_date(self.sq_json.get("analysisDate", None))
-        self._keep_when_inactive = self.sq_json.get("excludedFromPurge", False)
-        self._is_main = self.sq_json.get("isMain", False)
 
     def is_kept_when_inactive(self) -> bool:
         """Returns whether the branch is kept when inactive"""
@@ -169,17 +187,8 @@ class Branch(components.Component):
         return self._is_main
 
     def delete(self) -> bool:
-        """Deletes a branch
-
-        :raises ObjectNotFound: Branch not found for deletion
-        :return: Whether the deletion was successful
-        :rtype: bool
-        """
-        try:
-            return super().delete()
-        except exceptions.SonarException as e:
-            log.warning(e.message)
-            return False
+        """Deletes a branch, return whether the deletion was successful"""
+        return super().delete_object(**self.api_params(Oper.DELETE))
 
     def get(self, api: str, params: ApiParams = None, data: Optional[str] = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
         """Performs an HTTP GET request for the object"""
@@ -202,50 +211,27 @@ class Branch(components.Component):
             raise
 
     def new_code(self) -> str:
-        """
-        :return: The branch new code period definition
-        :rtype: str
-        """
+        """returns the branch new code period definition"""
         if self._new_code is None and self.endpoint.is_sonarcloud():
             self._new_code = settings.new_code_to_string({"inherited": True})
         elif self._new_code is None:
-            data = json.loads(self.get(api=Branch.API["get_new_code"], params=self.api_params(c.LIST)).text)
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.LIST_NEW_CODE_PERIODS, **self.api_params(Oper.SEARCH))
+            data = json.loads(self.get(api, params=params).text)
             for b in data["newCodePeriods"]:
                 new_code = settings.new_code_to_string(b)
                 if b["branchKey"] == self.name:
                     self._new_code = new_code
                 else:
                     # While we're there let's store the new code of other branches
-                    Branch.get_object(self.concerned_object, b["branchKey"])._new_code = new_code
+                    Branch.get_object(endpoint=self.endpoint, project=self.concerned_object, branch_name=b["branchKey"])._new_code = new_code
         return self._new_code
-
-    def export(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
-        """Exports a branch configuration (is main, keep when inactive, optionally name, project)
-
-        :param full_export: Also export branches attributes that are not needed for import, defaults to True
-        :type include_branches: bool, optional
-        :return: The branch new code period definition
-        :rtype: str
-        """
-        log.debug("Exporting %s", str(self))
-        data = {settings.NEW_CODE_PERIOD: self.new_code()}
-        if self.is_main():
-            data["isMain"] = True
-        if self.is_kept_when_inactive() and not self.is_main():
-            data["keepWhenInactive"] = True
-        if self.new_code():
-            data[settings.NEW_CODE_PERIOD] = self.new_code()
-        if export_settings.get("FULL_EXPORT", True):
-            data.update({"name": self.name, "project": self.concerned_object.key})
-        if export_settings.get("MODE", "") == "MIGRATION":
-            data.update(self.migration_export(export_settings))
-        data = util.remove_nones(data)
-        return None if len(data) == 0 else data
 
     def set_keep_when_inactive(self, keep: bool) -> bool:
         """Sets whether the branch is kept when inactive
 
         :param bool keep: Whether to keep the branch when inactive
+        :raises UnsupportedOperation: If trying to keep the main branch when inactive
+        :raises ObjectNotFound: If the branch is not found
         :return: Whether the operation was successful
         """
         log.info("Setting %s keep when inactive to %s", self, keep)
@@ -254,17 +240,37 @@ class Branch(components.Component):
                 log.warning("%s is main branch, can't be purgeable, skipping...", str(self))
                 raise exceptions.UnsupportedOperation(f"{str(self)} is the main branch, can't be purgeable")
             return True
-        ok = self.post("project_branches/set_automatic_deletion_protection", params=self.api_params() | {"value": str(keep).lower()}).ok
-        if ok:
-            self._keep_when_inactive = keep
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.KEEP_WHEN_INACTIVE, **self.api_params(), value=str(keep).lower())
+        self.post(api, params=params)
+        self._keep_when_inactive = keep
+        return True
+
+    def rename(self, new_name: str) -> bool:
+        """Renames a branch
+
+        :param str new_name: New branch name
+        :raises UnsupportedOperation: If trying to rename anything than the main branch
+        :return: Whether the operation was successful
+        """
+        if not self.is_main():
+            raise exceptions.UnsupportedOperation(f"{str(self)} can't be renamed since it's not the main branch")
+
+        log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.RENAME, project=self.concerned_object.key, name=new_name)
+        self.post(api, params=params)
+        self.__class__.CACHE.pop(self)
+        self.name = new_name
+        self.__class__.CACHE.put(self)
         return True
 
     def set_as_main(self) -> bool:
         """Sets the branch as the main branch of the project
 
+        :raises ObjectNotFound: If the branch is not found
         :return: Whether the operation was successful
         """
-        self.post("api/project_branches/set_main", params=self.api_params())
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.SET_MAIN, **self.api_params())
+        self.post(api, params=params)
         for b in self.concerned_object.branches().values():
             b._is_main = b.name == self.name
         return True
@@ -280,6 +286,27 @@ class Branch(components.Component):
         return settings.set_new_code_period(
             endpoint=self.endpoint, nc_type=new_code_type, nc_value=additional_data, project_key=self.concerned_object.key, branch=self.name
         )
+
+    def export(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
+        """Exports a branch configuration (is main, keep when inactive, optionally name, project)
+
+        :param bool full_export: Also export branches attributes that are not needed for import, optional, defaults to True
+        :return: The branch configuration as JSON
+        """
+        log.debug("Exporting %s", str(self))
+        data = {settings.NEW_CODE_PERIOD: self.new_code()}
+        if self.is_main():
+            data["isMain"] = True
+        if self.is_kept_when_inactive() and not self.is_main():
+            data["keepWhenInactive"] = True
+        if self.new_code():
+            data[settings.NEW_CODE_PERIOD] = self.new_code()
+        if export_settings.get("FULL_EXPORT", True):
+            data |= {"name": self.name, "project": self.concerned_object.key}
+        if export_settings.get("MODE", "") == "MIGRATION":
+            data |= self.migration_export(export_settings, project=self.concerned_object.key, branch=self.name)
+        data = util.remove_nones(data)
+        return None if len(data) == 0 else data
 
     def import_config(self, config_data: ObjectJsonRepr) -> None:
         """Imports a branch configuration
@@ -300,41 +327,21 @@ class Branch(components.Component):
                 (new_code, param) = new_code
             self.set_new_code(new_code, param)
 
-    def url(self) -> str:
-        """returns the branch URL in SonarQube as permalink"""
-        return f"{self.concerned_object.url()}&branch={requests.utils.quote(self.name)}"
+    def get_issues(self, **search_params: Any) -> dict[str, Issue]:
+        """Returns a list of issues on a branch"""
+        from sonar.issues import Issue
 
-    def rename(self, new_name: str) -> bool:
-        """Renames a branch
+        return Issue.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "branch": self.name}))
 
-        :param str new_name: New branch name
-        :raises UnsupportedOperation: If trying to rename anything than the main branch
-        :raises ObjectNotFound: Concerned object (project) not found
-        :return: Whether the branch was renamed
-        :rtype: bool
-        """
-        if not self.is_main():
-            raise exceptions.UnsupportedOperation(f"{str(self)} can't be renamed since it's not the main branch")
+    def get_hotspots(self, **search_params: Any) -> dict[str, Hotspot]:
+        """Returns a list of hotspots on a branch"""
+        from sonar.hotspots import Hotspot
 
-        if self.name == new_name:
-            log.debug("Skipping rename %s with same new name", str(self))
-            return False
-        log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
-        self.post(Branch.API[c.RENAME], params={"project": self.concerned_object.key, "name": new_name})
-        Branch.CACHE.pop(self)
-        self.name = new_name
-        Branch.CACHE.put(self)
-        return True
+        return Hotspot.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "branch": self.name}))
 
-    def get_findings(self, filters: Optional[ApiParams] = None) -> dict[str, object]:
-        """Returns a branch list of findings
-
-        :return: dict of Findings, with finding key as key
-        :rtype: dict{key: Finding}
-        """
-        if not filters:
-            return self.concerned_object.get_findings(branch=self.name)
-        return self.get_issues(filters) | self.get_hotspots(filters)
+    def get_findings(self, **search_params: Any) -> dict[str, Union[Issue, Hotspot]]:
+        """Returns a list of findings, issues and hotspots together on a branch"""
+        return self.concerned_object.get_findings(**(search_params | {"branch": self.name}))
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""
@@ -409,47 +416,17 @@ class Branch(components.Component):
             log.error("%s while auditing %s, audit skipped", sutil.error_msg(e), str(self))
         return []
 
-    def api_params(self, op: Optional[str] = None) -> ApiParams:
+    def api_params(self, operation: Optional[Any] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.READ: {"project": self.concerned_object.key, "branch": self.name}, c.LIST: {"project": self.concerned_object.key}}
-        return ops[op] if op and op in ops else ops[c.READ]
+        ops = {
+            Oper.GET: {"project": self.concerned_object.key, "branch": self.name},
+            Oper.SEARCH: {"project": self.concerned_object.key},
+            Oper.DELETE: {"project": self.concerned_object.key, "branch": self.name},
+        }
+        return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
-        if task := tasks.search_last(component_key=self.concerned_object.key, endpoint=self.endpoint, type="REPORT", branch=self.name):
+        if task := tasks.search_last(self.endpoint, component=self.concerned_object.key, type="REPORT", branch=self.name):
             task.concerned_object = self
         return task
-
-
-def get_list(project: proj.Project) -> dict[str, Branch]:
-    """Retrieves the list of branches of a project
-
-    :param Project project: Project the branch belongs to
-    :raises UnsupportedOperation: Branches not supported in Community Edition
-    :return: List of project branches
-    :rtype: dict{branch_name: Branch}
-    """
-    if project.endpoint.edition() == c.CE:
-        log.debug(_UNSUPPORTED_IN_CE)
-        raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
-
-    log.debug("Reading all branches of %s", str(project))
-    data = json.loads(project.endpoint.get(Branch.API[c.LIST], params={"project": project.key}).text)
-    return {branch["name"]: Branch.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
-
-
-def exists(endpoint: platform.Platform, branch_name: str, project_key: str) -> bool:
-    """Checks if a branch exists
-
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param str branch_name: Branch name
-    :param str project_key: Project key
-    :raises UnsupportedOperation: Branches not supported in Community Edition
-    :return: Whether the branch exists in SonarQube
-    :rtype: bool
-    """
-    try:
-        project = proj.Project.get_object(endpoint, project_key)
-    except exceptions.ObjectNotFound:
-        return False
-    return branch_name in get_list(project)

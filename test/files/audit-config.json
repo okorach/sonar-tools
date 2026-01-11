@@ -573,7 +573,7 @@
       "edition": "enterprise",
       "serverId": "243B8A4D-AY5SFSbmgIK8PCmM81th",
       "url": "https://latest.olivierk.ngrok.io",
-      "version": "2025.3.1"
+      "version": "2026.3.1"
    },
    "portfolios": {
       "All": {
@@ -7156,7 +7156,7 @@
          }
       },
       "scala": {
-         "FindBugs Security Scala (outdated copy since June 02 2025 at 07:35 AM)": {},
+         "FindBugs Security Scala (outdated copy since June 02 2026 at 07:35 AM)": {},
          "Sonar way": {
             "isBuiltIn": true,
             "isDefault": true

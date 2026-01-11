@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools tests
-# Copyright (C) 2024-2025 Olivier Korach
+# Copyright (C) 2024-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -40,14 +40,17 @@ def test_get_object() -> None:
     webhook2 = wh.WebHook.get_object(endpoint=tutil.SQ, name=WEBHOOK)
     assert webhook2 is webhook
 
+
+def test_get_object_not_found() -> None:
+    """Test get_object_not_found"""
     with pytest.raises(exceptions.ObjectNotFound) as e:
         _ = wh.WebHook.get_object(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY)
     assert str(e.value).endswith(f"Webhook '{tutil.NON_EXISTING_KEY}' of project 'None' not found")
     with pytest.raises(exceptions.ObjectNotFound) as e:
-        _ = wh.WebHook.get_object(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY, project_key=tutil.LIVE_PROJECT)
+        _ = wh.WebHook.get_object(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY, project=tutil.LIVE_PROJECT)
     assert str(e.value).endswith(f"Webhook '{tutil.NON_EXISTING_KEY}' of project '{tutil.LIVE_PROJECT}' not found")
     with pytest.raises(exceptions.ObjectNotFound) as e:
-        _ = wh.WebHook.get_object(endpoint=tutil.SQ, name=WEBHOOK, project_key=tutil.LIVE_PROJECT)
+        _ = wh.WebHook.get_object(endpoint=tutil.SQ, name=WEBHOOK, project=tutil.LIVE_PROJECT)
     assert str(e.value).endswith(f"Webhook '{WEBHOOK}' of project '{tutil.LIVE_PROJECT}' not found")
 
 

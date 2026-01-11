@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools tests
-# Copyright (C) 2025 Olivier Korach
+# Copyright (C) 2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -93,17 +93,13 @@ def test_export() -> None:
     assert "alm" in exp
 
 
-def test_get_list() -> None:
-    """Test Org get_list"""
+def test_search() -> None:
+    """Test search"""
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Organizations not supported")
-    org_list = orgs.get_list(endpoint=tutil.SQ)
+    org_list = orgs.Organization.search(tutil.SQ)
     assert len(org_list) >= 2
     assert MY_ORG in org_list
     org = org_list[MY_ORG]
     assert isinstance(org, orgs.Organization)
     assert org.key == MY_ORG
-    org_list = orgs.get_list(endpoint=tutil.SQ, key_list=[MY_ORG, "okorach-github"])
-    assert len(org_list) == 2
-    assert MY_ORG in org_list
-    assert "okorach-github" in org_list

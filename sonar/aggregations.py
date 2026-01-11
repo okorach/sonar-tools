@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2022-2025 Olivier Korach
+# Copyright (C) 2022-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -24,7 +24,7 @@ Parent module of applications and portfolios
 """
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 import json
 
 import sonar.logging as log
@@ -48,7 +48,7 @@ class Aggregation(comp.Component):
         self._permissions: Optional[object] = None
         super().__init__(endpoint=endpoint, key=key)
 
-    def reload(self, data: dict[str, Any]) -> None:
+    def reload(self, data: ApiPayload) -> Aggregation:
         """Reloads an Aggregation (Application or Portfolio) from the result of a search or get
 
         :param data: Payload from SonarQube API
@@ -57,6 +57,7 @@ class Aggregation(comp.Component):
         for d in ("description", "desc"):
             if d in data:
                 self._description = self.sq_json[d]
+        return self
 
     def nbr_projects(self, use_cache: bool = False) -> int:
         """Returns the number of projects of an Aggregation (Application or Portfolio)

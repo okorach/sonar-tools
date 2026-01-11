@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2022-2025 Olivier Korach
+# Copyright (C) 2022-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -24,11 +24,9 @@ Abstraction of the SonarQube "pull request" concept
 """
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Union, Any, TYPE_CHECKING
 
 import json
-from datetime import datetime
-
 import requests.utils
 
 import sonar.logging as log
@@ -39,28 +37,30 @@ import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
+from sonar.api.manager import ApiOperation as Oper
+from sonar import projects as proj
 
 if TYPE_CHECKING:
+    from sonar.issues import Issue
+    from sonar.hotspots import Hotspot
     from sonar.util.types import ApiPayload, ApiParams, ConfigSettings
+    from sonar.platform import Platform
 
 _UNSUPPORTED_IN_CE = "Pull requests not available in Community Edition"
 
 
 class PullRequest(components.Component):
-    """
-    Abstraction of the Sonar pull request concept
-    """
+    """Abstraction of the Sonar pull request concept"""
 
     CACHE = cache.Cache()
-    API = {c.DELETE: "project_pull_requests/delete", c.LIST: "project_pull_requests/list"}
 
-    def __init__(self, project: object, key: str, data: Optional[ApiPayload] = None) -> None:
+    def __init__(self, project: proj.Project, key: str, data: Optional[ApiPayload] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=project.endpoint, key=key)
-        self.concerned_object = project
-        self.json = data
-        self._last_analysis: Optional[datetime] = None
-        PullRequest.CACHE.put(self)
+        self.concerned_object: proj.Project = project
+        if data is not None:
+            self.reload(data)
+        self.__class__.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
     def __str__(self) -> str:
@@ -70,6 +70,59 @@ class PullRequest(components.Component):
     def __hash__(self) -> int:
         """Returns a PR unique ID"""
         return hash((self.project().key, self.key, self.base_url()))
+
+    @classmethod
+    def get_object(cls, endpoint: Platform, project: Union[proj.Project, str], pull_request_key: str) -> PullRequest:
+        """Returns a PR object from a PR key and a project
+
+        :param endpoint: Reference to the SonarQube platform
+        :param project: proj.Project object or project key
+        :param pull_request_key: Pull request key
+        :raises UnsupportedOperation: PRs not supported in Community Edition
+        :raises ObjectNotFound: PR not found
+        :return: The PullRequest object
+        """
+        if endpoint.edition() == c.CE:
+            raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
+        if isinstance(project, str):
+            project = proj.Project.get_object(endpoint, project)
+        if o := cls.CACHE.get(project.key, pull_request_key, project.base_url()):
+            return o
+        return cls(project, pull_request_key)
+
+    @classmethod
+    def load(cls, endpoint: Platform, project: Union[proj.Project, str], data: ApiPayload) -> PullRequest:
+        """Loads a PR object from API data"""
+        if isinstance(project, str):
+            project = proj.Project.get_object(endpoint, project)
+        if not (o := cls.CACHE.get(project.key, data["key"], project.base_url())):
+            o = cls(project, data["key"])
+        o.reload(data)
+        return o
+
+    @classmethod
+    def search(cls, endpoint: Platform, project: Union[proj.Project, str], **search_params: Any) -> dict[str, PullRequest]:
+        """Retrieves the list of pull requests of a project
+
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param str | Project project: project to get PRs from
+        :raises UnsupportedOperation: PRs not supported in Community Edition
+        :return: Dict of project PRs indexed by PR key
+        """
+        if project.endpoint.edition() == c.CE:
+            log.debug(_UNSUPPORTED_IN_CE)
+            raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
+        if isinstance(project, str):
+            project = proj.Project.get_object(endpoint, project)
+        api, _, params, ret = project.endpoint.api.get_details(cls, Oper.SEARCH, project=project.key)
+        dataset = json.loads(project.get(api, params=params).text)[ret]
+        return dict(sorted({pr["key"]: cls.load(project.endpoint, project, pr) for pr in dataset}.items()))
+
+    def reload(self, data: ApiPayload) -> PullRequest:
+        """Reloads a PR object from API data"""
+        super().reload(data)
+        self.name = self._description = data["title"]
+        return self
 
     def url(self) -> str:
         """Returns the PR permalink (until PR is purged)"""
@@ -81,14 +134,9 @@ class PullRequest(components.Component):
         """
         return self.concerned_object.get_tags(**kwargs)
 
-    def project(self) -> object:
+    def project(self) -> proj.Project:
         """Returns the project"""
         return self.concerned_object
-
-    def last_analysis(self) -> datetime:
-        if self._last_analysis is None and "analysisDate" in self.json:
-            self._last_analysis = sutil.string_to_date(self.json["analysisDate"])
-        return self._last_analysis
 
     def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits the pull request according to the audit settings"""
@@ -109,47 +157,30 @@ class PullRequest(components.Component):
         """Returns the project key"""
         return self.concerned_object.key
 
-    def api_params(self, op: Optional[str] = None) -> ApiParams:
+    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.READ: {"project": self.concerned_object.key, "pullRequest": self.key}}
-        return ops[op] if op and op in ops else ops[c.READ]
+        ops = {
+            Oper.GET: {"project": self.concerned_object.key, "pullRequest": self.key},
+            Oper.DELETE: {"project": self.concerned_object.key, "pullRequest": self.key},
+        }
+        return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
-    def get_findings(self, filters: Optional[ApiParams] = None) -> dict[str, object]:
-        """Returns a PR list of findings
+    def delete(self) -> bool:
+        """Deletes a pull request"""
+        return super().delete_object(project=self.concerned_object.key, pullRequest=self.key)
 
-        :return: dict of Findings, with finding key as key
-        :rtype: dict{key: Finding}
-        """
-        if not filters:
-            return self.concerned_object.get_findings(pr=self.key)
-        return self.get_issues(filters) | self.get_hotspots(filters)
+    def get_issues(self, **search_params: Any) -> dict[str, Issue]:
+        """Returns a list of issues on a PR"""
+        from sonar.issues import Issue
 
+        return Issue.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "pullRequest": self.key}))
 
-def get_object(pull_request_key: str, project: object, data: Optional[ApiPayload] = None) -> Optional[PullRequest]:
-    """Returns a PR object from a PR key and a project"""
-    if project.endpoint.edition() == c.CE:
-        log.debug("Pull requests not available in Community Edition")
-        return None
-    o = PullRequest.CACHE.get(project.key, pull_request_key, project.base_url())
-    if not o:
-        o = PullRequest(project, pull_request_key, data=data)
-    return o
+    def get_hotspots(self, **search_params: Any) -> dict[str, Hotspot]:
+        """Returns a list of hotspots on a PR"""
+        from sonar.hotspots import Hotspot
 
+        return Hotspot.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "pullRequest": self.key}))
 
-def get_list(project: object) -> dict[str, PullRequest]:
-    """Retrieves the list of pull requests of a project
-
-    :param Project project: Project to get PRs from
-    :raises UnsupportedOperation: PRs not supported in Community Edition
-    :return: List of project PRs
-    :rtype: dict{PR_ID: PullRequest}
-    """
-    if project.endpoint.edition() == c.CE:
-        log.debug(_UNSUPPORTED_IN_CE)
-        raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
-
-    data = json.loads(project.get(PullRequest.API[c.LIST], params={"project": project.key}).text)
-    pr_list = {}
-    for pr in data["pullRequests"]:
-        pr_list[pr["key"]] = get_object(pr["key"], project, pr)
-    return pr_list
+    def get_findings(self, **search_params: Any) -> dict[str, Union[Issue, Hotspot]]:
+        """Returns a list of findings, issues and hotspots together on a PR"""
+        return self.concerned_object.get_findings(**(search_params | {"pullRequest": self.key}))

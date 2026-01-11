@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools tests
-# Copyright (C) 2024-2025 Olivier Korach
+# Copyright (C) 2024-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -51,20 +51,9 @@ def test_sc_config_export_no_org() -> None:
 
 def test_org_search() -> None:
     """test_org_search"""
-    org_list = organizations.search(endpoint=tutil.SC)
+    org_list = organizations.Organization.search(tutil.SC)
     assert MY_ORG_1 in org_list
     assert MY_ORG_2 in org_list
-
-
-def test_org_get_list() -> None:
-    """test_org_search"""
-    org_list = organizations.get_list(endpoint=tutil.SC)
-    assert MY_ORG_1 in org_list
-    assert MY_ORG_2 in org_list
-
-    org_list = organizations.get_list(endpoint=tutil.SC, key_list=[MY_ORG_1])
-    assert MY_ORG_1 in org_list
-    assert MY_ORG_2 not in org_list
 
 
 def test_org_get_non_existing() -> None:
@@ -73,7 +62,7 @@ def test_org_get_non_existing() -> None:
         _ = organizations.Organization.get_object(endpoint=tutil.SC, key="oko_foo_bar")
 
     with pytest.raises(exceptions.ObjectNotFound):
-        _ = organizations.get_list(endpoint=tutil.SC, key_list=["oko_foo_bar"])
+        _ = organizations.Organization.search(endpoint=tutil.SC, key_list=["oko_foo_bar"])
 
 
 def test_org_str() -> None:
@@ -95,19 +84,19 @@ def test_org_attr() -> None:
     assert org.key == MY_ORG_1
     assert org.name == "Olivier Korach"
     assert org.sq_json["url"] == "https://github.com/okorach"
-    (nc_type, nc_val) = org.new_code_period()
+    (nc_type, _) = org.new_code_period()
     assert nc_type == "PREVIOUS_VERSION"
     assert org.subscription() == "FREE"
     assert org.alm()["key"] == "github"
 
 
-def test_org_search_sq() -> None:
+def test_org_search_sqs() -> None:
     """test_org_search_sq"""
     with pytest.raises(exceptions.UnsupportedOperation):
-        _ = organizations.search(endpoint=tutil.SQ)
+        _ = organizations.Organization.search(endpoint=tutil.SQ)
 
     with pytest.raises(exceptions.UnsupportedOperation):
-        _ = organizations.get_list(endpoint=tutil.SQ)
+        _ = organizations.Organization.get_list(endpoint=tutil.SQ)
 
 
 def test_audit() -> None:

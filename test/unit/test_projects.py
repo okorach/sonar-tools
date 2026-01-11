@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools tests
-# Copyright (C) 2024-2025 Olivier Korach
+# Copyright (C) 2024-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -21,27 +21,37 @@
 
 """projects tests"""
 
+import os
 from collections.abc import Generator
 import pytest
 
 from sonar import projects, exceptions, qualityprofiles, qualitygates
+from sonar.projects import Project
 from sonar.util import conf_mgr
 import sonar.util.constants as c
 from sonar.util import project_helper as phelp
 import utilities as tutil
+import credentials as creds
 
 
-def test_get_object(get_test_project: Generator[projects.Project]) -> None:
+def test_get_object(get_test_project: Generator[Project]) -> None:
     """test_get_object"""
     proj = get_test_project
-    assert str(proj) == f"project '{tutil.TEMP_KEY}'"
+    assert str(proj).startswith(f"project '{tutil.TEMP_KEY}-project")
     with pytest.raises(exceptions.ObjectNotFound):
-        projects.Project.get_object(endpoint=tutil.SQ, key=tutil.NON_EXISTING_KEY)
+        Project.get_object(endpoint=tutil.SQ, key=tutil.NON_EXISTING_KEY)
 
 
-def test_refresh(get_test_project: Generator[projects.Project]) -> None:
+def test_get_list() -> None:
+    """test_get_list"""
+    proj_list = projects.Project.search(tutil.SQ)
+    assert len(proj_list) > creds.NBR_PROJECTS
+    assert tutil.LIVE_PROJECT in proj_list
+
+
+def test_refresh(get_test_project: Generator[Project]) -> None:
     """test_refresh"""
-    proj = get_test_project
+    proj: Project = get_test_project
     proj.refresh()
     proj.delete()
     with pytest.raises(exceptions.ObjectNotFound):
@@ -50,8 +60,8 @@ def test_refresh(get_test_project: Generator[projects.Project]) -> None:
 
 def test_create_delete() -> None:
     """test_create_delete"""
-    proj = projects.Project.create(endpoint=tutil.SQ, key=tutil.TEMP_KEY, name="temp")
-    assert proj.key == tutil.TEMP_KEY
+    proj = Project.create(endpoint=tutil.SQ, key=f"{tutil.TEMP_KEY}-project-{os.getpid()}", name="temp-project")
+    assert proj.key == f"{tutil.TEMP_KEY}-project-{os.getpid()}"
     assert proj.main_branch_name() == "main"
     if tutil.SQ.edition() != c.CE:
         assert proj.main_branch().name == "main"
@@ -68,9 +78,7 @@ def test_create_delete() -> None:
 
 def test_audit() -> None:
     """test_audit"""
-    import json
-
-    settings = {k: False for k, v in conf_mgr.load("sonar-audit").items() if isinstance(v, bool)}
+    settings = {k: False for k, v in conf_mgr.load(f"cli{os.sep}sonar-audit.properties").items() if isinstance(v, bool)}
     settings["audit.projects"] = True
     for p in (
         "minLocPerAcceptedIssue",
@@ -82,7 +90,7 @@ def test_audit() -> None:
     ):
         settings[f"audit.projects.{p}"] = 0
     assert len(projects.audit(tutil.SQ, settings)) == 0
-    proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
+    proj: Project = Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
     settings["audit.projects.utilityLocs"] = True
     assert len(proj.audit_languages(audit_settings=settings)) == 0
     settings["audit.mode"] = "housekeeper"
@@ -96,26 +104,26 @@ def test_audit_disabled() -> None:
 
 def test_revision() -> None:
     """test_revision"""
-    proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
+    proj = Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
     assert len(proj.revision()) > 8
 
 
 def test_export_async() -> None:
     """test_export_async"""
-    proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
+    proj = Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
     assert proj.export_zip(asynchronous=True) == ("ASYNC_SUCCESS", None)
 
 
 def test_export_sync() -> None:
     """test_export_sync"""
-    proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
+    proj = Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
     (res, _) = proj.export_zip(asynchronous=False)
     assert res == "SUCCESS"
 
 
 def test_import_async() -> None:
     """test_import_async"""
-    proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.PROJECT_1)
+    proj = Project.get_object(endpoint=tutil.SQ, key=tutil.PROJECT_1)
     if tutil.SQ.edition() == c.CE:
         with pytest.raises(exceptions.UnsupportedOperation):
             proj.import_zip(asynchronous=True)
@@ -125,7 +133,7 @@ def test_import_async() -> None:
 
 def test_import_sync() -> None:
     """test_import_sync"""
-    proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.PROJECT_1)
+    proj = Project.get_object(endpoint=tutil.SQ, key=tutil.PROJECT_1)
     if tutil.SQ.edition() == c.CE:
         with pytest.raises(exceptions.UnsupportedOperation):
             proj.import_zip(asynchronous=False)
@@ -133,7 +141,7 @@ def test_import_sync() -> None:
         assert proj.import_zip(asynchronous=False).startswith("FAILED")
 
 
-def test_import_no_zip(get_test_project: Generator[projects.Project]) -> None:
+def test_import_no_zip(get_test_project: Generator[Project]) -> None:
     """test_import_no_zip"""
     if tutil.SQ.edition() == c.CE:
         pytest.skip("No zip import in Community Build")
@@ -145,48 +153,50 @@ def test_import_no_zip(get_test_project: Generator[projects.Project]) -> None:
 
 def test_monorepo() -> None:
     """test_monorepo"""
-    proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
+    proj = Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
     assert not proj.is_part_of_monorepo()
-    proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.PROJECT_1)
+    proj = Project.get_object(endpoint=tutil.SQ, key=tutil.PROJECT_1)
     assert not proj.is_part_of_monorepo()
 
 
 def test_get_findings() -> None:
     """test_get_findings"""
-    proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
+    proj = Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
     if tutil.SQ.edition() in (c.CE, c.DE, c.SC):
-        assert proj.get_findings(branch="non-existing-branch") == {}
+        with pytest.raises(exceptions.UnsupportedOperation):
+            proj.get_findings(branch="non-existing-branch")
         return
+
     with pytest.raises(exceptions.ObjectNotFound):
         proj.get_findings(branch="non-existing-branch")
     assert len(proj.get_findings(branch="develop")) > 0
     with pytest.raises(exceptions.ObjectNotFound):
-        proj.get_findings(pr="1")
-    findings = [f for f in proj.get_findings(pr="5").values() if f.status != "CLOSED"]
+        proj.get_findings(pullRequest=1)
+    findings = [f for f in proj.get_findings(pullRequest=5).values() if f.status != "CLOSED"]
     assert len(findings) == 0
 
 
 def test_count_third_party_issues() -> None:
     """test_count_third_party_issues"""
-    proj = projects.Project.get_object(endpoint=tutil.SQ, key="creedengo-issues")
-    filters = None
+    proj = Project.get_object(endpoint=tutil.SQ, key="creedengo-issues")
+    filters = {}
     if tutil.SQ.edition() != c.CE:
         filters = {"branch": "develop"}
     if tutil.SQ.version() >= (10, 0, 0):
-        assert len(proj.count_third_party_issues(filters=filters)) > 0
+        assert len(proj.count_third_party_issues(**filters)) > 0
     if tutil.SQ.edition() != c.CE:
-        assert len(proj.count_third_party_issues(filters={"branch": "non-existing-branch"})) == 0
+        assert len(proj.count_third_party_issues(branch="non-existing-branch")) == 0
 
 
 def test_webhooks() -> None:
     """test_webhooks"""
-    proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
+    proj = Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
     assert len(proj.webhooks()) == 0
 
 
 def test_versions() -> None:
     """test_versions"""
-    proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
+    proj = Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
     vers = proj.get_versions()
     v_list = list(vers.keys())
     assert len(v_list) > 10
@@ -215,28 +225,28 @@ def test_export() -> None:
 def test_already_exists() -> None:
     """test_already_exists"""
     with pytest.raises(exceptions.ObjectAlreadyExists):
-        projects.Project.create(endpoint=tutil.SQ, key=tutil.EXISTING_PROJECT, name="name")
+        Project.create(endpoint=tutil.SQ, key=tutil.EXISTING_PROJECT, name="name")
 
 
 def test_exists() -> None:
-    assert projects.Project.exists(tutil.SQ, tutil.LIVE_PROJECT)
-    assert not projects.Project.exists(tutil.SQ, "non-existing")
+    assert Project.exists(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
+    assert not Project.exists(endpoint=tutil.SQ, key="non-existing")
 
 
 def test_binding() -> None:
     """test_binding"""
     if tutil.SQ.edition() == c.CE:
         pytest.skip("Bindings unsupported in SonarQube Community Edition")
-    proj = projects.Project.get_object(tutil.SQ, "demo:github-actions-maven")
+    proj = Project.get_object(tutil.SQ, "demo:github-actions-maven")
     assert proj.has_binding()
     assert proj.binding() is not None
     assert proj.binding_key().startswith("github:::okorach/demo-actions-maven")
-    proj = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
+    proj = Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
     assert not proj.has_binding()
     assert proj.binding_key() is None
 
 
-def test_export_wrong_key(get_test_project: Generator[projects.Project]) -> None:
+def test_export_wrong_key(get_test_project: Generator[Project]) -> None:
     """test_export_wrong_key"""
     proj = get_test_project
     proj.key = tutil.NON_EXISTING_KEY
@@ -246,7 +256,7 @@ def test_export_wrong_key(get_test_project: Generator[projects.Project]) -> None
         proj.export_zip(asynchronous=False)
 
 
-def test_import_wrong_key(get_test_project: Generator[projects.Project]) -> None:
+def test_import_wrong_key(get_test_project: Generator[Project]) -> None:
     """test_import_wrong_key"""
     proj = get_test_project
     proj.key = tutil.NON_EXISTING_KEY
@@ -262,7 +272,7 @@ def test_import_wrong_key(get_test_project: Generator[projects.Project]) -> None
             proj.import_zip(asynchronous=False)
 
 
-def test_ci(get_test_project: Generator[projects.Project]) -> None:
+def test_ci(get_test_project: Generator[Project]) -> None:
     """test_ci"""
     proj = get_test_project
     assert proj.ci() == "unknown"
@@ -270,7 +280,7 @@ def test_ci(get_test_project: Generator[projects.Project]) -> None:
     assert proj.ci() == "unknown"
 
 
-def test_set_links(get_test_project: Generator[projects.Project]) -> None:
+def test_set_links(get_test_project: Generator[Project]) -> None:
     """test_set_links"""
     proj = get_test_project
     proj.set_links([{"name": "google", "url": "https://google.com"}])
@@ -279,7 +289,7 @@ def test_set_links(get_test_project: Generator[projects.Project]) -> None:
         proj.set_links([{"name": "yahoo", "url": "https://yahoo.com"}])
 
 
-def test_set_tags(get_test_project: Generator[projects.Project]) -> None:
+def test_set_tags(get_test_project: Generator[Project]) -> None:
     """test_set_tags"""
     proj = get_test_project
 
@@ -292,7 +302,7 @@ def test_set_tags(get_test_project: Generator[projects.Project]) -> None:
     assert not proj.set_tags(None)
 
 
-def test_set_quality_gate(get_test_project: Generator[projects.Project], get_test_quality_gate: Generator[qualitygates.QualityGate]) -> None:
+def test_set_quality_gate(get_test_project: Generator[Project], get_test_quality_gate: Generator[qualitygates.QualityGate]) -> None:
     """test_set_quality_gate"""
     proj = get_test_project
     qg = get_test_quality_gate
@@ -306,7 +316,7 @@ def test_set_quality_gate(get_test_project: Generator[projects.Project], get_tes
         proj.set_quality_gate(qg.name)
 
 
-def test_ai_code_assurance(get_test_project: Generator[projects.Project]) -> None:
+def test_ai_code_assurance(get_test_project: Generator[Project]) -> None:
     """test_ai_code_assurance"""
     proj = get_test_project
     if tutil.SQ.version() < (10, 7, 0) or tutil.SQ.edition() == c.CE:
@@ -337,7 +347,7 @@ def test_ai_code_assurance(get_test_project: Generator[projects.Project]) -> Non
         proj.get_ai_code_assurance()
 
 
-def test_set_quality_profile(get_test_project: Generator[projects.Project], get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
+def test_set_quality_profile(get_test_project: Generator[Project], get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """test_set_quality_profile"""
     proj = get_test_project
     new_qp = get_test_qp
@@ -353,22 +363,22 @@ def test_branch_and_pr() -> None:
     """test_branch_and_pr"""
     if tutil.SQ.edition() == c.CE:
         pytest.skip("Branches and PR unsupported in SonarQube Community Build")
-    proj = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
+    proj = Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
     assert len(proj.get_branches_and_prs(filters={"branch": "*"})) >= 2
     assert len(proj.get_branches_and_prs(filters={"branch": "foobar"})) == 0
     assert len(proj.get_branches_and_prs(filters={"pullRequest": "*"})) == 2
     assert len(proj.get_branches_and_prs(filters={"pullRequest": "5"})) == 1
 
 
-def test_audit_languages(get_test_project: Generator[projects.Project]) -> None:
+def test_audit_languages(get_test_project: Generator[Project]) -> None:
     """test_audit_languages"""
-    proj = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
+    proj = Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
     assert proj.audit_languages({"audit.projects.utilityLocs": False}) == []
     proj = get_test_project
     assert proj.audit_languages({"audit.projects.utilityLocs": True}) == []
 
 
-def test_set_permissions(get_test_project: Generator[projects.Project]) -> None:
+def test_set_permissions(get_test_project: Generator[Project]) -> None:
     """test_set_permissions"""
     proj = get_test_project
     perms = proj.permissions().to_json()
@@ -380,9 +390,9 @@ def test_set_permissions(get_test_project: Generator[projects.Project]) -> None:
     assert len(perms["users"]) == 2
 
 
-def test_project_key(get_test_project: Generator[projects.Project]) -> None:
+def test_project_key(get_test_project: Generator[Project]) -> None:
     """test_project_key"""
-    assert get_test_project.project_key() == tutil.TEMP_KEY
+    assert get_test_project.project_key().startswith(f"{tutil.TEMP_KEY}-project")
 
 
 def test_import_zips() -> None:
@@ -395,7 +405,7 @@ def test_import_zips() -> None:
     res = projects.import_zips(tutil.SQ, project_list=proj_list)
     assert len(res) == len(proj_list)
     assert sum(1 for r in res.values() if r["importStatus"] != "SUCCESS") == len(proj_list)
-    projects.Project.get_object(tutil.SQ, "non-existing").delete()
+    Project.get_object(tutil.SQ, "non-existing").delete()
 
 
 def test_export_zips() -> None:
@@ -410,3 +420,12 @@ def test_export_zips() -> None:
     assert res[PROJ_WITH_NO_LOC]["exportStatus"] == "SKIPPED/ZERO_LOC"
     res = {r["key"]: r for r in projects.export_zips(tutil.SQ, key_regexp=regexp, skip_zero_loc=False)}
     assert res[PROJ_WITH_NO_LOC]["exportStatus"] == "SUCCESS/ZERO_LOC"
+
+
+def test_sorted_search() -> None:
+    """test_sorted_search"""
+    proj_list = projects.Project.search(tutil.SQ)
+    assert sorted(proj_list.keys()) == list(proj_list.keys())
+
+    proj_list = projects.Project.search(tutil.SQ, use_cache=True)
+    assert sorted(proj_list.keys()) == list(proj_list.keys())

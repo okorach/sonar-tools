@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools tests
-# Copyright (C) 2024-2025 Olivier Korach
+# Copyright (C) 2024-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -22,6 +22,8 @@
 """Test fixtures"""
 
 from __future__ import annotations
+from typing import Optional
+
 import os
 from typing import Union
 
@@ -60,10 +62,11 @@ def run_around_tests():
 @pytest.fixture
 def get_test_project() -> Generator[projects.Project]:
     """setup of tests"""
-    o = create_test_object(projects.Project, key=tutil.TEMP_KEY)
+    key = f"{tutil.TEMP_KEY}-project-{os.getpid()}"
+    o = create_test_object(projects.Project, key=key)
     yield o
     # Teardown: Clean up resources (if any) after the test
-    o.key = tutil.TEMP_KEY
+    o.key = key
     try:
         o.delete()
     except exceptions.ObjectNotFound:
@@ -73,14 +76,15 @@ def get_test_project() -> Generator[projects.Project]:
 @pytest.fixture
 def get_empty_qg() -> Generator[qualitygates.QualityGate]:
     """setup of tests"""
+    key = f"{tutil.TEMP_KEY}-qualitygate-{os.getpid()}"
     try:
-        o = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
+        o = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=key)
     except exceptions.ObjectNotFound:
-        o = qualitygates.QualityGate.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
+        o = qualitygates.QualityGate.create(endpoint=tutil.SQ, name=key)
     o.clear_conditions()
     yield o
     # Teardown: Clean up resources (if any) after the test
-    o.key = tutil.TEMP_KEY
+    o.key = key
     try:
         sw = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY)
         sw.set_as_default()
@@ -92,12 +96,13 @@ def get_empty_qg() -> Generator[qualitygates.QualityGate]:
 @pytest.fixture
 def get_loaded_qg() -> Generator[qualitygates.QualityGate]:
     """setup of tests"""
+    key = f"{tutil.TEMP_KEY}-qualitygate-{os.getpid()}"
     try:
-        o = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
+        o = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=key)
     except exceptions.ObjectNotFound:
-        o = qualitygates.QualityGate.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
+        o = qualitygates.QualityGate.create(endpoint=tutil.SQ, name=key)
     yield o
-    o.key = tutil.TEMP_KEY
+    o.key = key
     try:
         sw = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY)
         sw.set_as_default()
@@ -109,12 +114,13 @@ def get_loaded_qg() -> Generator[qualitygates.QualityGate]:
 @pytest.fixture
 def get_test_app() -> Generator[applications.Application]:
     """setup of tests"""
+    key = f"{tutil.TEMP_KEY}-application-{os.getpid()}"
     o = None
     if tutil.SQ.edition() in (c.DE, c.EE, c.DCE):
-        o = create_test_object(applications.Application, key=tutil.TEMP_KEY)
+        o = create_test_object(applications.Application, key=key)
     yield o
     if tutil.SQ.edition() in (c.DE, c.EE, c.DCE):
-        o.key = tutil.TEMP_KEY
+        o.key = key
         try:
             o.delete()
         except exceptions.ObjectNotFound:
@@ -124,12 +130,13 @@ def get_test_app() -> Generator[applications.Application]:
 @pytest.fixture
 def get_test_portfolio() -> Generator[Union[portfolios.Portfolio, None]]:
     """setup of tests"""
+    key = f"{tutil.TEMP_KEY}-portfolio-{os.getpid()}"
     o = None
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        o = create_test_object(portfolios.Portfolio, key=tutil.TEMP_KEY)
+        o = create_test_object(portfolios.Portfolio, key=key)
     yield o
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        o.key = tutil.TEMP_KEY
+        o.key = key
         try:
             o.delete()
         except exceptions.ObjectNotFound:
@@ -139,12 +146,13 @@ def get_test_portfolio() -> Generator[Union[portfolios.Portfolio, None]]:
 @pytest.fixture
 def get_test_portfolio_2() -> Generator[portfolios.Portfolio]:
     """setup of tests"""
+    key = f"portfolio-{tutil.TEMP_KEY_2}-portfolio-{os.getpid()}"
     o = None
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        o = create_test_object(portfolios.Portfolio, key=tutil.TEMP_KEY_2)
+        o = create_test_object(portfolios.Portfolio, key=key)
     yield o
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        o.key = tutil.TEMP_KEY_2
+        o.key = key
         try:
             o.delete()
         except exceptions.ObjectNotFound:
@@ -154,18 +162,20 @@ def get_test_portfolio_2() -> Generator[portfolios.Portfolio]:
 @pytest.fixture
 def get_test_subportfolio() -> Generator[portfolios.Portfolio]:
     """setup of tests"""
-    subp = None
+    parent_key = f"{tutil.TEMP_KEY}-portfolio-{os.getpid()}"
+    subp_key = f"{tutil.TEMP_KEY_2}-portfolio-{os.getpid()}"
+    subp: Optional[portfolios.Portfolio] = None
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        parent = create_test_object(portfolios.Portfolio, key=tutil.TEMP_KEY)
-        subp = parent.add_standard_subportfolio(key=tutil.TEMP_KEY_3, name=tutil.TEMP_KEY_3)
+        parent = create_test_object(portfolios.Portfolio, key=parent_key)
+        subp = parent.add_standard_subportfolio(key=subp_key, name=subp_key)
     yield subp
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        subp.key = tutil.TEMP_KEY_3
+        subp.key = subp_key
         try:
             subp.delete()
         except exceptions.ObjectNotFound:
             pass
-        parent.key = tutil.TEMP_KEY
+        parent.key = parent_key
         try:
             parent.delete()
         except exceptions.ObjectNotFound:
@@ -175,13 +185,14 @@ def get_test_subportfolio() -> Generator[portfolios.Portfolio]:
 @pytest.fixture
 def get_test_qp() -> Generator[qualityprofiles.QualityProfile]:
     """setup of tests"""
+    key = f"{tutil.TEMP_KEY}-qualityprofile-{os.getpid()}"
     try:
-        o = qualityprofiles.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+        o = qualityprofiles.QualityProfile.get_object(endpoint=tutil.SQ, name=key, language="py")
         if o.is_default:
-            sw = qualityprofiles.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY, language="py")
+            sw = qualityprofiles.QualityProfile.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY, language="py")
             sw.set_as_default()
     except exceptions.ObjectNotFound:
-        o = qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+        o = qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=key, language="py")
     yield o
     try:
         o.delete()
@@ -192,7 +203,7 @@ def get_test_qp() -> Generator[qualityprofiles.QualityProfile]:
 @pytest.fixture
 def get_test_issue() -> Generator[issues.Issue]:
     """setup of tests"""
-    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
+    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
     yield issues_d[TEST_ISSUE]
     # Teardown: Clean up resources (if any) after the test - Nothing in that case
 
@@ -200,10 +211,11 @@ def get_test_issue() -> Generator[issues.Issue]:
 @pytest.fixture
 def get_test_user() -> Generator[users.User]:
     """setup of tests"""
+    key = f"{tutil.TEMP_KEY}-user-{os.getpid()}"
     try:
-        o = users.User.get_object(endpoint=tutil.SQ, login=tutil.TEMP_KEY)
+        o = users.User.get_object(endpoint=tutil.SQ, login=key)
     except exceptions.ObjectNotFound:
-        o = users.User.create(endpoint=tutil.SQ, login=tutil.TEMP_KEY, name=f"User name {tutil.TEMP_KEY}")
+        o = users.User.create(endpoint=tutil.SQ, login=key, name=f"User name {key}")
     (uid, uname, ulogin) = (o.name, o.id, o.login)
     for g in o.groups():
         if g != tutil.SQ.default_user_group():
@@ -229,8 +241,8 @@ def rm(file: str) -> None:
 
 def get_temp_filename(ext: str) -> str:
     """Returns a temp output file for tests"""
-    logging.set_logger("pytest.log")
-    logging.set_debug_level("DEBUG")
+    # logging.set_logger("pytest.log")
+    # logging.set_debug_level("DEBUG")
     file = f"{TEMP_FILE_ROOT}.{ext}"
     rm(file)
     return file

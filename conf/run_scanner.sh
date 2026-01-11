@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # sonar-tools
-# Copyright (C) 2019-2025 Olivier Korach
+# Copyright (C) 2019-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -51,6 +51,11 @@ cmd="sonar-scanner -Dsonar.projectVersion=${VERSION} \
   -Dsonar.python.pylint.reportPaths=${PYLINT_REPORT} \
   -Dsonar.token=${SONAR_TOKEN} ${auth}\
   "${scanOpts[*]}""
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [[ "${branch}" != "master" ]]; then
+  cmd="${cmd} -Dsonar.branch.name=${branch}"
+fi
 
 relativeDir=$(basename "${BUILD_DIR}")
   if ls "${BUILD_DIR}"/coverage*.xml >/dev/null 2>&1; then

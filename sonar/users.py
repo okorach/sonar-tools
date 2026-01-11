@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2019-2025 Olivier Korach
+# Copyright (C) 2019-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -21,10 +21,10 @@
 """Abstraction of the SonarQube User concept"""
 
 from __future__ import annotations
-from typing import Optional, Union, Any, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 import concurrent.futures
-from datetime import datetime, timezone
+from datetime import datetime, timezone, MINYEAR
 import json
 from requests import RequestException
 
@@ -37,15 +37,13 @@ import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
+from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, ObjectJsonRepr, KeyList, AuditSettings
-
-_GROUPS_API_SC = "users/groups"
+    from sonar.util.types import ApiPayload, ConfigSettings, ObjectJsonRepr, KeyList, AuditSettings
 
 SETTABLE_PROPERTIES = ("login", "name", "email", "groups", "scmAccounts", "local")
-USER_API = "v2/users-management/users"
 
 
 class User(SqObject):
@@ -55,27 +53,6 @@ class User(SqObject):
     """
 
     CACHE = cache.Cache()
-    SEARCH_KEY_FIELD = "login"
-    SEARCH_RETURN_FIELD = "users"
-
-    API = {
-        c.CREATE: USER_API,
-        c.UPDATE: USER_API,
-        c.DELETE: USER_API,
-        c.SEARCH: USER_API,
-        "GROUP_MEMBERSHIPS": "v2/authorizations/group-memberships",
-        "UPDATE_LOGIN": USER_API,
-    }
-    API_V1 = {
-        c.CREATE: "users/create",
-        c.UPDATE: "users/update",
-        c.DELETE: "users/deactivate",
-        c.SEARCH: "users/search",
-        "UPDATE_LOGIN": "users/update_login",
-    }
-    API_SC = {
-        c.SEARCH: "organizations/search_members",
-    }
 
     def __init__(self, endpoint: Platform, login: str, data: ApiPayload) -> None:
         """Do not use to create users, use on of the constructor class methods"""
@@ -90,9 +67,13 @@ class User(SqObject):
         self.last_login: Optional[datetime] = None  #: User last login (datetime) - read-only
         self.nb_tokens: Optional[int] = None  #: Nbr of tokens (int) - read-only
         self.__tokens: Optional[list[tokens.UserToken]] = None
-        self.__load(data)
+        self.reload(data)
         log.debug("Constructed object %s id '%s'", str(self), str(self.id))
-        User.CACHE.put(self)
+        self.__class__.CACHE.put(self)
+
+    def __str__(self) -> str:
+        """Returns the string representation of the object"""
+        return f"user '{self.login}'"
 
     @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload) -> User:
@@ -109,43 +90,61 @@ class User(SqObject):
     def create(cls, endpoint: Platform, login: str, name: str, is_local: bool = True, password: Optional[str] = None) -> User:
         """Creates a new user in SonarQube and returns the corresponding User object
 
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param str login: User login
-        :param name: User name, defaults to login
-        :type name: str, optional
-        :param is_local: Whether the user is local, defaults to True
-        :type is_local: bool, optional
-        :param password: The password if user is local, defaults to login
-        :type password: str, optional
-        :return: The user object
-        :rtype: User or None
+        :param endpoint: Reference to the SonarQube platform
+        :param login: User login
+        :param name: User name, defaults to login, optional
+        :param is_local: Whether the user is local, optional, defaults to True
+        :param password: The password if user is local, defaults to login, optional
+        :return: The user object or None if creation failed
         """
         log.debug("Creating user '%s' name '%s'", login, name)
         params = {"login": login, "local": str(is_local).lower(), "name": name}
         if is_local:
-            params["password"] = password if password else login
-        endpoint.post(User.api_for(c.CREATE, endpoint), params=params)
-        return cls.get_object(endpoint=endpoint, login=login)
+            params["password"] = password or login
+        api, _, params, ret = endpoint.api.get_details(cls, Oper.CREATE, **params)
+        if ret:
+            data = json.loads(endpoint.post(api, params=params).text)[ret]
+        else:
+            data = json.loads(endpoint.post(api, params=params).text)
+        return cls.load(endpoint=endpoint, data=data)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, login: str) -> User:
+    def search(cls, endpoint: Platform, use_cache: bool = False, **search_params: Any) -> dict[str, User]:
+        """Searches users in SonarQube Server or Cloud
+
+        :param endpoint: Reference to the SonarQube platform
+        :param params: list of parameters to narrow down the search
+        :return: dictionary of users with login as key
+        :rtype: dict{login: User}
+        """
+        if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
+            log.debug("Searching users from cache")
+            return cls.CACHE.from_platform(endpoint)
+        log.info("Searching users with params %s", str(search_params))
+        return cls.get_paginated(endpoint=endpoint, params=search_params)
+
+    @classmethod
+    def get_object(cls, endpoint: Platform, login: Optional[str] = None, id: Optional[str] = None) -> User:
         """Creates a User object corresponding to the user with same login in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
-        :param str login: User login
+        :param login: User login (SonarQube 10.3 and lower)
+        :param id: User id (SonarQube 10.4 and above)
         :raises ObjectNotFound: if login not found
         :return: The user object
         :rtype: User
         """
-        if o := User.CACHE.get(login, endpoint.local_url):
+        if o := cls.CACHE.get(login, endpoint.local_url):
             return o
+        if id is not None:
+            return cls.__get_object_by_id(endpoint, id)
         log.debug("Getting user '%s'", login)
-        if user := next((o for k, o in search(endpoint, params={"q": login}).items() if k == login), None):
+        if user := next((o for k, o in cls.search(endpoint, q=login).items() if k == login), None):
             return user
-        raise exceptions.ObjectNotFound(login, f"User '{login}' not found")
+        raise exceptions.ObjectNotFound(login or id, f"User '{login or id}' not found")
 
     @classmethod
-    def get_object_by_id(cls, endpoint: Platform, id: str) -> User:
+    def __get_object_by_id(cls, endpoint: Platform, id: str) -> User:
         """Searches a user by its (API v2) id in SonarQube
 
         :param endpoint: Reference to the SonarQube platform
@@ -158,32 +157,23 @@ class User(SqObject):
         if endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             raise exceptions.UnsupportedOperation("Get by ID is an APIv2 features, staring from SonarQube 10.4")
         log.debug("Getting user id '%s'", id)
-        data = json.loads(endpoint.get(f"/api/v2/users-management/users/{id}", mute=()).text)
+        api, _, params, _ = endpoint.api.get_details(cls, Oper.GET, id=id)
+        data = json.loads(endpoint.get(api, params=params, mute=()).text)
         return cls.load(endpoint, data)
 
-    @classmethod
-    def api_for(cls, op: str, endpoint: object) -> Optional[str]:
-        """Returns the API for a given operation depedning on the SonarQube version"""
-        if endpoint.is_sonarcloud():
-            api_to_use = User.API_SC
-        elif endpoint.version() < c.USER_API_V2_INTRO_VERSION:
-            api_to_use = User.API_V1
-        else:
-            api_to_use = User.API
-        return api_to_use[op] if op in api_to_use else api_to_use[c.LIST]
+    def reload(self, data: ApiPayload) -> User:
+        """Reloads a User object from SonarQube API payload
 
-    def __str__(self) -> str:
+        :param data: The JSON data corresponding to the user
+        :return: The user itself
         """
-        :return: String formatting of the object
-        :rtype: str
-        """
-        return f"user '{self.login}'"
-
-    def __load(self, data: ApiPayload) -> None:
         self.name = data["name"]  #: User name
-        self.scm_accounts = list(set(util.csv_to_list(data.pop("scmAccounts", None))))  #: User SCM accounts
-        self.email = data.get("email", None)  #: User email
-        self.is_local = data.get("local", False)  #: User is local - read-only
+        if "scmAccounts" in data:
+            self.scm_accounts = list(set(util.csv_to_list(data["scmAccounts"])))  #: User SCM accounts
+        if "email" in data:
+            self.email = data["email"]  #: User email
+        if "local" in data:
+            self.is_local = data["local"]
         self.last_login = None  #: User last login - read-only
         self.sq_json = (self.sq_json or {}) | data
         if self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
@@ -192,32 +182,32 @@ class User(SqObject):
         else:
             dt1 = sutil.string_to_date(data.get("sonarQubeLastConnectionDate"))
             dt2 = sutil.string_to_date(data.get("sonarLintLastConnectionDate"))
-            if not dt1:
-                self.last_login = dt2
-            elif not dt2:
-                self.last_login = dt1
-            else:
-                self.last_login = max(dt1, dt2)
+            oldest = datetime(MINYEAR, 1, 1).replace(tzinfo=timezone.utc)
+            self.last_login = max(dt1 or oldest, dt2 or oldest)
             if "id" not in self.sq_json:
                 log.warning("No 'id' in API payload for %s", self)
             self.id = self.sq_json.get("id")
         self.__tokens = None
+        return self
 
-    def groups(self, **kwargs) -> KeyList:
+    def groups(self, use_cache: bool = True, **kwargs: Any) -> list[str]:
         """Returns the list of groups of a user"""
         log.info("Getting %s groups = %s", str(self), str(self._groups))
-        if self._groups is not None and kwargs.get(c.USE_CACHE, True):
+        if self._groups is not None and use_cache:
             return self._groups
-        if self.endpoint.is_sonarcloud():
-            data = json.loads(self.get(_GROUPS_API_SC, self.api_params(c.GET)).text)["groups"]
-            self._groups = [g["name"] for g in data]
-        elif self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
+        if not self.endpoint.is_sonarcloud() and self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             self._groups = list(set(self.sq_json.get("groups", []) + [self.endpoint.default_user_group()]))
-            log.debug("Updated %s groups = %s", str(self), str(self._groups))
         else:
-            data = json.loads(self.get(User.API["GROUP_MEMBERSHIPS"], {"userId": self.id, "pageSize": 500}).text)["groupMemberships"]
-            log.debug("Groups = %s", str(data))
-            self._groups = [groups.get_object_from_id(self.endpoint, g["groupId"]).name for g in data]
+            max_ps = self.endpoint.api.max_page_size(self, Oper.LIST_GROUPS)
+            # TODO: handle pagination
+            api, _, params, ret = self.endpoint.api.get_details(
+                self, Oper.LIST_GROUPS, login=self.login, userId=self.id, ps=max_ps, pageSize=max_ps, name=self.name
+            )
+            data = json.loads(self.endpoint.get(api, params=params).text)[ret]
+            if self.endpoint.is_sonarcloud():
+                self._groups = [g["name"] for g in data]
+            else:
+                self._groups = [groups.get_object_from_id(self.endpoint, g["groupId"]).name for g in data]
         self._groups = sorted(self._groups)
         return self._groups
 
@@ -226,11 +216,14 @@ class User(SqObject):
 
         :return:  The user itself
         """
-        data = json.loads(self.get(User.api_for(c.SEARCH, self.endpoint), params={"q": self.login}).text)
-        for d in data["users"]:
-            if d["login"] == self.login:
-                self.__load(d)
-                break
+        max_ps = self.endpoint.api.max_page_size(self, Oper.GET)
+        api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET, userId=self.id, q=self.login, id=self.id, ps=max_ps)
+        data = json.loads(self.endpoint.get(api, params=params).text)
+        if self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
+            data = next((d for d in data[ret] if d["login"] == self.login), None)
+            if not data:
+                raise exceptions.ObjectNotFound(self.login, f"{self} not found.")
+        self.reload(data)
         self.groups(use_cache=False)
         return self
 
@@ -248,10 +241,30 @@ class User(SqObject):
         :rtype: list[Token]
         """
         if self.__tokens is None or not kwargs.get(c.USE_CACHE, True):
-            self.__tokens = tokens.search(self.endpoint, self.login)
+            self.__tokens = tokens.UserToken.search(self.endpoint, login=self.login)
         return self.__tokens
 
-    def update(self, **kwargs) -> User:
+    def update_login(self, new_login: str) -> User:
+        """Updates the login of the user
+
+        :param new_login: The new login
+        :raises ObjectAlreadyExists: if new login already exists
+        :return: self
+        """
+        if self.__class__.CACHE.get(new_login, self.base_url()):
+            raise exceptions.ObjectAlreadyExists(new_login, f"User '{new_login}' already exists")
+        api, method, params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, login=self.login, newLogin=new_login, id=self.id)
+        if method == "PATCH":
+            ok = self.endpoint.patch(api, params=params).ok
+        else:
+            ok = self.endpoint.post(api, params=params).ok
+        if ok:
+            self.__class__.CACHE.pop(self)
+            self.login = new_login
+            self.__class__.CACHE.put(self)
+        return ok
+
+    def update(self, **kwargs: Any) -> User:
         """Updates a user with name, email, login, SCM accounts, group memberships
 
         :param str name: Optional, New name of the user
@@ -261,37 +274,28 @@ class User(SqObject):
         :param list[str] scmAccounts: Optional, List of SCM accounts
         :return: self
         """
-        log.debug("Updating %s with %s", str(self), str(kwargs))
-        params = self.api_params(c.UPDATE)
-        my_data = vars(self)
+        log.debug("Updating %s with %s", self, kwargs)
         self.set_groups(util.csv_to_list(kwargs.get("groups", "")))
+        if kwargs.get("scmAccounts"):
+            self.set_scm_accounts(kwargs["scmAccounts"])
         if not self.is_local:
             return self
-        params.update({k: kwargs[k] for k in ("name", "email") if k in kwargs and kwargs[k] != my_data[k]})
-        if len(params) >= 1:
-            api = User.api_for(c.UPDATE, self.endpoint)
-            if self.endpoint.version() >= c.USER_API_V2_INTRO_VERSION:
-                self.patch(f"{api}/{self.id}", params=params)
-            else:
-                self.post(api, params=params)
-            if "name" in params:
+        if kwargs.get("login"):
+            self.update_login(kwargs["login"])
+        api, method, params, _ = self.endpoint.api.get_details(
+            self, Oper.UPDATE, id=self.id, login=self.login, email=kwargs.get("email"), name=kwargs.get("name")
+        )
+        if len(params) == 0:
+            return self
+        if method == "PATCH":
+            ok = self.endpoint.patch(api, params=params).ok
+        else:
+            ok = self.endpoint.post(api, params=params).ok
+        if ok:
+            if kwargs.get("name"):
                 self.name = kwargs["name"]
-            if "email" in params:
+            if kwargs.get("email"):
                 self.email = kwargs["email"]
-        if "scmAccounts" in kwargs:
-            self.set_scm_accounts(kwargs["scmAccounts"])
-        if "login" in kwargs:
-            new_login = kwargs["login"]
-            o = User.CACHE.get(new_login, self.base_url())
-            if not o:
-                api = User.api_for("UPDATE_LOGIN", self.endpoint)
-                if self.endpoint.version() >= c.USER_API_V2_INTRO_VERSION:
-                    self.patch(f"{api}/{self.id}", params={"login": new_login})
-                else:
-                    self.post(api, params={**self.api_params(User.API["UPDATE_LOGIN"]), "newLogin": new_login})
-                User.CACHE.pop(self)
-                self.login = new_login
-                User.CACHE.put(self)
         return self
 
     def add_to_group(self, group_name: str) -> bool:
@@ -304,7 +308,7 @@ class User(SqObject):
         """
         group = groups.Group.read(endpoint=self.endpoint, name=group_name)
         if group.is_default():
-            raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't remove membership for {str(self)}")
+            raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't add membership for {self}")
         if group.add_user(self):
             self._groups = sorted(set(self._groups + [group_name]))
             return True
@@ -334,31 +338,11 @@ class User(SqObject):
         return self.delete()
 
     def delete(self) -> bool:
-        """Deactivates the user (true deleting is not possible)
+        """Deletes the user (true deleting is not possible with api v1)
 
         :return: Whether the deactivation succeeded
         """
-        log.info("Deleting %s", str(self))
-        try:
-            if self.endpoint.version() >= c.USER_API_V2_INTRO_VERSION:
-                ok = self.endpoint.delete(api=f"{User.API[c.DELETE]}/{self.id}").ok
-            else:
-                ok = self.post(api=User.API_V1[c.DELETE], params=self.api_params(c.DELETE)).ok
-            if ok:
-                log.info("Removing from %s cache", str(User.__name__))
-                User.CACHE.pop(self)
-        except exceptions.ObjectNotFound:
-            User.CACHE.pop(self)
-            raise
-        return ok
-
-    def api_params(self, op: str = c.GET) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        if self.endpoint.version() >= c.USER_API_V2_INTRO_VERSION:
-            ops = {c.GET: {}}
-        else:
-            ops = {c.GET: {"login": self.login}}
-        return ops[op] if op in ops else ops[c.GET]
+        return self.delete_object(login=self.login, id=self.id, name=self.name)
 
     def set_groups(self, group_list: list[str]) -> bool:
         """Set the user group membership (replaces current groups)
@@ -378,11 +362,10 @@ class User(SqObject):
 
         :param list[str] accounts_list: List of SCM accounts to add
         :return: Whether SCM accounts were successfully set
-        :rtype: bool
         """
+        log.info("Adding SCM accounts '%s' to %s", str(accounts_list), str(self))
         if len(accounts_list) == 0:
             return False
-        log.info("Adding SCM accounts '%s' to %s", str(accounts_list), str(self))
         return self.set_scm_accounts(list(set(self.scm_accounts) | set(accounts_list)))
 
     def set_scm_accounts(self, accounts_list: list[str]) -> bool:
@@ -393,14 +376,16 @@ class User(SqObject):
         :rtype: bool
         """
         log.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
-        api = User.api_for(c.UPDATE, self.endpoint)
-        if self.endpoint.version() >= c.USER_API_V2_INTRO_VERSION:
-            r = self.patch(f"{api}/{self.id}", params={"scmAccounts": accounts_list})
+        if not self.is_local:
+            return self
+        api, method, params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, id=self.id, scmAccount=accounts_list)
+        if method == "PATCH":
+            params = {"scmAccounts": accounts_list}
+            ok = self.endpoint.patch(api, params=params).ok
         else:
-            params = self.api_params()
-            params["scmAccount"] = ",".join(set(accounts_list))
-            r = self.post(api, params=params)
-        if not r.ok:
+            params = tuple([("login", self.login)] + [("scmAccount", v) for v in accounts_list])
+            ok = self.endpoint.post(api, params=params).ok
+        if not ok:
             self.scm_accounts = []
             return False
         self.scm_accounts = list(set(accounts_list))
@@ -464,29 +449,6 @@ class User(SqObject):
         return convert_user_json(json_data)
 
 
-def search(endpoint: Platform, params: ApiParams = None) -> dict[str, User]:
-    """Searches users in SonarQube Server or Cloud
-
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param ApiParams params: list of parameters to narrow down the search
-    :return: list of users
-    :rtype: dict{login: User}
-    """
-    log.debug("Searching users with params %s", str(params))
-    api_version = 2 if endpoint.version() >= c.USER_API_V2_INTRO_VERSION else 1
-    return dict(sorted(User.search_objects(endpoint=endpoint, params=params, api_version=api_version).items()))
-
-
-def get_list(endpoint: Platform) -> dict[str, User]:
-    """Returns the list of users
-
-    :params Platform endpoint: Reference to the SonarQube platform
-    :return: The list of users
-    """
-    log.info("Listing users")
-    return search(endpoint)
-
-
 def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
     """Exports all users in JSON representation
 
@@ -497,7 +459,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     log.info("Exporting users")
     write_q = kwargs.get("write_q", None)
     u_list = []
-    for _, u_obj in sorted(search(endpoint=endpoint).items()):
+    for _, u_obj in sorted(User.search(endpoint).items()):
         u_data = util.clean_data(u_obj.to_json(export_settings), True, True)
         u_list.append(u_data)
         if write_q:
@@ -519,9 +481,8 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[
     log.info("--- Auditing users: START ---")
     problems = []
     futures, futures_map = [], {}
-    api_version = 2 if endpoint.version() >= c.USER_API_V2_INTRO_VERSION else 1
     with concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="UserAudit") as executor:
-        for user in User.search_objects(endpoint=endpoint, params={}, api_version=api_version).values():
+        for user in User.get_paginated(endpoint=endpoint, params={}).values():
             futures.append(future := executor.submit(User.audit, user, audit_settings))
             futures_map[future] = user
         for future in concurrent.futures.as_completed(futures):
@@ -534,7 +495,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[
     return problems
 
 
-def get_login_from_name(endpoint: Platform, name: str) -> Union[str, None]:
+def get_login_from_name(endpoint: Platform, name: str) -> Optional[str]:
     """Returns the login corresponding to name
     If more than one login matches the name, the first occurence is returned
 
@@ -542,12 +503,12 @@ def get_login_from_name(endpoint: Platform, name: str) -> Union[str, None]:
     :param str name: User name
     :returns: User login or None if name not found
     """
-    u_list = search(endpoint=endpoint, params={"q": name})
-    if not u_list:
+    u_list = User.search(endpoint, q=name)
+    if not u_list or len(u_list) == 0:
         return None
     if len(u_list) > 1:
         log.warning("More than 1 user with name '%s', will return the 1st one", name)
-    return list(u_list.keys()).pop(0)
+    return next(iter(u_list.keys()))
 
 
 def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: KeyList = None) -> None:
@@ -571,15 +532,6 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
         except exceptions.ObjectNotFound:
             o = User.create(endpoint, login, data.get("name", login), data.get("local", False))
         o.update(**data)
-
-
-def exists(endpoint: Platform, login: str) -> bool:
-    """
-    :param endpoint: reference to the SonarQube platform
-    :param login: user login to check
-    :return: whether the group exists
-    """
-    return User.get_object(endpoint=endpoint, login=login) is not None
 
 
 def convert_user_json(old_json: dict[str, Any]) -> dict[str, Any]:

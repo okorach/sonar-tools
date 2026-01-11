@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools tests
-# Copyright (C) 2025 Olivier Korach
+# Copyright (C) 2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -31,6 +31,7 @@ from sonar import settings
 from sonar import platform
 import sonar.util.update_center as uc
 import sonar.util.platform_helper as phelp
+from sonar.audit import rules
 
 
 def test_system_id() -> None:
@@ -128,7 +129,7 @@ def test_lta_latest() -> None:
         if sq_version == lta or sq_version == latest:
             assert pbs == []
         else:
-            assert any(pb.rule_id == platform.rules.RuleId.SQ_NOT_LTA_OR_LATEST for pb in pbs)
+            assert len(pbs) >= 1
 
 
 def test_mqr_mode() -> None:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools tests
-# Copyright (C) 2024-2025 Olivier Korach
+# Copyright (C) 2024-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -302,18 +302,30 @@ def test_issues_count_3() -> None:
 
 def test_search_issues_by_project() -> None:
     """test_search_issues_by_project"""
-    # nb_issues = len(issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT, search_findings=True))
+    # nb_issues = len(issues.Issue.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT, search_findings=True))
     # assert 100 <= nb_issues <= 3700
-    nb_issues = len(issues.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT, params={"resolved": "false"}))
+    nb_issues = len(issues.Issue.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, resolved="false"))
     assert nb_issues < 1800
-    nb_issues = len(issues.search_by_project(endpoint=tutil.SQ, project_key=None))
-    assert nb_issues > 3500
+    assert len(issues.Issue.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT)) > nb_issues
+    assert len(issues.Issue.search_by_project(tutil.SQ, project="25k-issues")) == 25000
 
 
-def test_search_too_many_issues() -> None:
+def test_search_many_issues_safe() -> None:
     """test_search_too_many_issues"""
-    issue_list = issues.search_all(endpoint=tutil.SQ)
-    assert len(issue_list) > 10000
+    assert len(issues.Issue.search(tutil.SQ)) > issues.Issue.MAX_SEARCH
+
+
+def test_search_many_issues_unsafe() -> None:
+    """test_search_many_issues_unsafe"""
+    with pytest.raises(issues.TooManyIssuesError):
+        issues.Issue.search_unsafe(tutil.SQ)
+
+
+def test_search_by_project() -> None:
+    """test_search_by_project"""
+    issue_list1 = issues.Issue.search_by_project(tutil.SQ, project="25k-issues")
+    issue_list2 = issues.Issue.search_by_project(tutil.SQ, project="25k-issues", search_findings=True)
+    assert sorted(issue_list1.keys()) == sorted(issue_list2.keys())
 
 
 def test_output_format_sarif(sarif_file: Generator[str]) -> None:
@@ -388,7 +400,7 @@ def test_output_format_branch(csv_file: Generator[str]) -> None:
 
 def test_all_prs(csv_file: Generator[str]) -> None:
     """Tests that findings extport for all PRs of a project works"""
-    cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} --{opt.PULL_REQUESTS} "*"'
+    cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} --{opt.PULL_REQUESTS} ".+"'
     if tutil.SQ.edition() == c.CE:
         assert tutil.run_cmd(findings_export.main, cmd) == e.UNSUPPORTED_OPERATION
         return

@@ -1,5 +1,5 @@
 # sonar-tools tests
-# Copyright (C) 2025 Olivier Korach
+# Copyright (C) 2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -26,7 +26,7 @@ from sonar import settings
 def test_set_standard() -> None:
     """test_set_standard"""
 
-    o = settings.get_object(tutil.SQ, "sonar.java.file.suffixes")
+    o = settings.Setting.get_object(tutil.SQ, "sonar.java.file.suffixes")
     val = o.value
     new_val = [".jav", ".java", ".javacard"]
     assert o.set(new_val)
@@ -45,7 +45,7 @@ def test_set_standard() -> None:
 def test_autodetect_ai() -> None:
     """test_autodetect_ai"""
 
-    o = settings.get_object(tutil.SQ, "sonar.autodetect.ai.code")
+    o = settings.Setting.get_object(tutil.SQ, "sonar.autodetect.ai.code")
     if tutil.SQ.version() < (2025, 1, 0):
         assert o is None
         return
@@ -60,7 +60,7 @@ def test_autodetect_ai() -> None:
 
 def test_mqr_mode() -> None:
     """test_mqr_mode"""
-    o = settings.get_object(tutil.SQ, "sonar.multi-quality-mode.enabled")
+    o = settings.Setting.get_object(tutil.SQ, "sonar.multi-quality-mode.enabled")
     if tutil.SQ.version() < (25, 0, 0):
         assert o is None
         return
@@ -74,10 +74,10 @@ def test_mqr_mode() -> None:
 
 def test_unsettable() -> None:
     """test_unsettable"""
-    o = settings.get_object(tutil.SQ, "sonar.core.startTime")
+    o = settings.Setting.get_object(tutil.SQ, "sonar.core.startTime")
     assert o is not None
     assert not o.set("2025-01-01")
-    o = settings.get_object(tutil.SQ, "sonar.auth.github.apiUrl")
+    o = settings.Setting.get_object(tutil.SQ, "sonar.auth.github.apiUrl")
     assert o is not None
     res = True if tutil.SQ.version() < (10, 0, 0) else False
     assert o.set("https://api.github.com/") == res

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools tests
-# Copyright (C) 2024-2025 Olivier Korach
+# Copyright (C) 2024-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -24,6 +24,7 @@
 from collections.abc import Generator
 from datetime import datetime
 import pytest
+import os
 
 import sonar.util.constants as c
 import utilities as tutil
@@ -48,16 +49,17 @@ def test_get_object() -> None:
 
 def test_create_delete(get_test_user: Generator[users.User]) -> None:
     """test_create_delete"""
-    user = get_test_user
-    assert user.login == tutil.TEMP_KEY
+    user: users.User = get_test_user
+    assert user.login.startswith(f"{tutil.TEMP_KEY}-user")
+    assert user.name.startswith(f"User name {tutil.TEMP_KEY}-user")
     assert tutil.SQ.default_user_group() in user.groups()
 
-    u = users.User.get_object(tutil.SQ, login=tutil.TEMP_KEY)
+    u = users.User.get_object(tutil.SQ, login=user.login)
     assert u is user
 
-    user.name = "TEMP_USER"
+    user.name = f"User name {user.login}-{os.getpid()}"
     user.refresh()
-    assert user.name == f"User name {tutil.TEMP_KEY}"
+    assert user.name == f"User name {user.login}"
     assert user.url() == f"{tutil.SQ.external_url}/admin/users"
 
 
@@ -135,25 +137,26 @@ def test_audit_disabled() -> None:
 
 def test_login_from_name(get_test_user: Generator[users.User]) -> None:
     """test_login_from_name"""
-    _ = get_test_user
-    name = f"User name {tutil.TEMP_KEY}"
-    assert users.get_login_from_name(tutil.SQ, name) == tutil.TEMP_KEY
+    user = get_test_user
+    name = f"User name {user.login}"
+    assert users.get_login_from_name(tutil.SQ, name) == user.login
 
     name = "Non existing name"
     assert users.get_login_from_name(tutil.SQ, name) is None
 
+    key = f"{tutil.TEMP_KEY}-user-{os.getpid()}"
     try:
-        user2 = users.User.create(endpoint=tutil.SQ, login=f"bb{tutil.TEMP_KEY}aa", name=f"User name bb{tutil.TEMP_KEY}aa")
+        user2 = users.User.create(endpoint=tutil.SQ, login=key, name=f"User name {key}")
     except exceptions.ObjectAlreadyExists:
-        user2 = users.User.get_object(tutil.SQ, login=f"bb{tutil.TEMP_KEY}aa")
-    assert users.get_login_from_name(tutil.SQ, f"User name bb{tutil.TEMP_KEY}aa") == user2.login
+        user2 = users.User.get_object(tutil.SQ, login=key)
+    assert users.get_login_from_name(tutil.SQ, f"User name {key}") == user2.login
 
 
 def test_more_than_50_users(get_60_users: Generator[list[users.User]]) -> None:
     # Count groups first
     user_list = get_60_users
     users.User.clear_cache()
-    new_user_list = users.get_list(tutil.SQ)
+    new_user_list = users.User.search(tutil.SQ)
     assert len(new_user_list) > 60
     assert set(new_user_list.keys()) > {u.name for u in user_list}
 
@@ -162,8 +165,8 @@ def test_update(get_test_user: Generator[users.User]) -> None:
     # test_update
     user = get_test_user
     assert user.groups() == [tutil.SQ.default_user_group()]
-    assert user.login == tutil.TEMP_KEY
-    assert user.name == f"User name {tutil.TEMP_KEY}"
+    assert user.login.startswith(f"{tutil.TEMP_KEY}-user")
+    assert user.name.startswith(f"User name {tutil.TEMP_KEY}-user")
 
     user.update(groups=["sonar-administrators"])
     assert sorted(user.groups()) == ["sonar-administrators", tutil.SQ.default_user_group()]
@@ -217,7 +220,7 @@ def test_import() -> None:
     }
     users.import_config(tutil.SQ, data)
     for uname in "TEMP", "TEMP_ADMIN":
-        assert users.exists(endpoint=tutil.SQ, login=uname)
+        assert users.User.exists(endpoint=tutil.SQ, login=uname)
         o_g = users.User.get_object(endpoint=tutil.SQ, login=uname)
         assert o_g.name == f"User name {uname}"
         o_g.delete()

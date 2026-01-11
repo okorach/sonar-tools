@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools
-# Copyright (C) 2019-2025 Olivier Korach
+# Copyright (C) 2019-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -21,11 +21,10 @@
 """Abstraction of the SonarQube "rule" concept"""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 import json
 import concurrent.futures
-from threading import Lock
 
 from sonar.sqobject import SqObject
 import sonar.logging as log
@@ -34,6 +33,7 @@ from sonar import exceptions, languages
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.util import rule_helper as rhelp
+from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -49,6 +49,7 @@ TYPE_TO_QUALITY = {
 SONAR_REPOS = {
     "abap",
     "apex",
+    "apexdre",
     "azureresourcemanager",
     "c",
     "cloudformation",
@@ -61,6 +62,9 @@ SONAR_REPOS = {
     "docker",
     "flex",
     "go",
+    "gosecurity",
+    "godre",
+    "githubactions",
     "java",
     "javabugs",
     "javasecurity",
@@ -68,6 +72,7 @@ SONAR_REPOS = {
     "jssecurity",
     "jcl",
     "kotlin",
+    "kotlinsecurity",
     "kubernetes",
     "objc",
     "php",
@@ -80,16 +85,21 @@ SONAR_REPOS = {
     "ipython",
     "rpg",
     "ruby",
+    "rubydre",
     "scala",
     "secrets",
+    "shell",
+    "shelldre",
     "swift",
     "terraform",
     "text",
     "tsql",
     "typescript",
+    "tsarchitecture",
     "tssecurity",
     "vb",
     "vbnet",
+    "vbnetsecurity",
     "Web",
     "xml",
 }
@@ -143,8 +153,6 @@ CSV_EXPORT_FIELDS = [
 
 LEGACY_CSV_EXPORT_FIELDS = ["key", "language", "repo", "type", "severity", "name", "ruleType", "tags"]
 
-_CLASS_LOCK = Lock()
-
 
 class Rule(SqObject):
     """
@@ -155,7 +163,13 @@ class Rule(SqObject):
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "rules"
 
-    API: dict[str, str] = {c.CREATE: "rules/create", c.READ: "rules/show", c.UPDATE: "rules/update", c.DELETE: "rules/delete", c.LIST: "rules/search"}  # type: ignore
+    API: dict[str, str] = {
+        Oper.CREATE: "rules/create",
+        Oper.GET: "rules/show",
+        Oper.UPDATE: "rules/update",
+        Oper.DELETE: "rules/delete",
+        Oper.SEARCH: "rules/search",
+    }  # type: ignore
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)
@@ -187,8 +201,11 @@ class Rule(SqObject):
             "attribute": data.get("cleanCodeAttribute", None),
             "attribute_category": data.get("cleanCodeAttributeCategory", None),
         }
-        with _CLASS_LOCK:
-            Rule.CACHE.put(self)
+        log.debug("Loaded rule %s", self.key)
+        self.__class__.CACHE.put(self)
+
+    def __str__(self) -> str:
+        return f"rule key '{self.key}'"
 
     @classmethod
     def get_object(cls, endpoint: Platform, key: str) -> Rule:
@@ -199,10 +216,10 @@ class Rule(SqObject):
         :return: The Rule object corresponding to the input rule key
         :raises: ObjectNotFound if rule does not exist
         """
-        if o := Rule.CACHE.get(key, endpoint.local_url):
+        if o := cls.CACHE.get(key, endpoint.local_url):
             return o
-        Rule.search_objects(endpoint=endpoint, params={"q": key})
-        if o := Rule.CACHE.get(key, endpoint.local_url):
+        Rule.get_paginated(endpoint=endpoint, params={"q": key})
+        if o := cls.CACHE.get(key, endpoint.local_url):
             return o
         raise exceptions.ObjectNotFound(key, f"Rule key '{key}' not found")
 
@@ -215,9 +232,10 @@ class Rule(SqObject):
         :return: The Rule object corresponding to the input rule key
         :raises: ObjectNotFound if rule does not exist
         """
-        if o := Rule.CACHE.get(key, endpoint.local_url):
+        if o := cls.CACHE.get(key, endpoint.local_url):
             return o
-        rule_data = json.loads(endpoint.get(Rule.API[c.READ], params={"key": key, "actives": "true"}).text)["rule"]
+        api, _, api_params, _ = endpoint.api.get_details(Rule, Oper.GET, key=key, actives="true")
+        rule_data = json.loads(endpoint.get(api, params=api_params).text)["rule"]
         return Rule(endpoint=endpoint, key=key, data=rule_data)
 
     @classmethod
@@ -238,15 +256,17 @@ class Rule(SqObject):
         params["impacts"] = ";".join([f"{k}={v}" for k, v in params.get("impacts", {}).items()])
         log.debug("Creating rule key '%s'", key)
         params.pop("severity" if endpoint.is_mqr_mode() else "impacts", None)
-        endpoint.post(cls.API[c.CREATE], params=params)
+        api, _, api_params, _ = endpoint.api.get_details(cls, Oper.CREATE, **params)
+        endpoint.post(api, params=api_params)
         created_rule = cls.get_object(endpoint=endpoint, key=key)
         created_rule.custom_desc = kwargs.get("markdownDescription", "NO DESCRIPTION")
         return created_rule
 
     @classmethod
-    def load(cls, endpoint: Platform, key: str, data: ApiPayload) -> Rule:
+    def load(cls, endpoint: Platform, data: ApiPayload) -> Rule:
         """Loads a rule object with a SonarQube API payload"""
-        if o := Rule.CACHE.get(key, endpoint.local_url):
+        key = data["key"]
+        if o := cls.CACHE.get(key, endpoint.local_url):
             o.reload(data)
             return o
         return cls(key=key, endpoint=endpoint, data=data)
@@ -276,8 +296,35 @@ class Rule(SqObject):
             markdownDescription=data.get("description", "NO DESCRIPTION"),
         )
 
-    def __str__(self) -> str:
-        return f"rule key '{self.key}'"
+    @classmethod
+    def search(
+        cls, endpoint: Platform, use_cache: bool = False, threads: int = 4, include_external: bool = False, **search_params: Any
+    ) -> dict[str, Rule]:
+        """Searches rules with optional filters
+
+        :param endpoint: The SonarQube reference
+        :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        :param threads: Number of threads to use for parallel search, default 4
+        :param search_params: Search filters (see api/rules/search parameters)
+        :return: Dict of rules indexed by rule key
+        """
+        log.debug("Searching rules with params %s", search_params)
+        if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 1000:
+            log.debug("Searching rules from cache")
+            return cls.CACHE.from_platform(endpoint)
+        langs = search_params.pop("languages", None)
+        lang_list = util.csv_to_list(langs) if langs else languages.Language.search(endpoint).keys()
+        include_external_list = ["false"] if not include_external else ["false", "true"]
+        for lang_key in lang_list:
+            if not languages.Language.exists(endpoint, language=lang_key):
+                raise exceptions.ObjectNotFound(key=lang_key, message=f"Language '{lang_key}' does not exist")
+        log.info("Getting rules for %d languages", len(lang_list))
+        rule_list: dict[str, Rule] = {}
+        for lang_key in lang_list:
+            for inc in include_external_list:
+                rule_list |= cls.get_paginated(endpoint, threads=threads, params=search_params | {"languages": lang_key, "include_external": inc})
+        log.info("Rule search returning a list of %d rules", len(rule_list))
+        return rule_list
 
     def refresh(self, use_cache: bool = True) -> bool:
         """Refreshes a rule object from the platform
@@ -289,9 +336,10 @@ class Rule(SqObject):
             return False
 
         try:
-            data = json.loads(self.get(Rule.API[c.READ], params=self.api_params() | {"actives": "true"}).text)
+            api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.GET, **self.api_params() | {"actives": "true"})
+            data = json.loads(self.get(api, params=api_params).text)
         except exceptions.ObjectNotFound:
-            Rule.CACHE.pop(self)
+            self.__class__.CACHE.pop(self)
             raise
         self.sq_json.update(data["rule"])
         self.sq_json["actives"] = data["actives"].copy()
@@ -345,7 +393,8 @@ class Rule(SqObject):
     def set_tags(self, tags: list[str]) -> bool:
         """Sets rule custom tags"""
         log.info("Setting %s custom tags to '%s' ", str(self), str(tags))
-        if ok := self.post(Rule.API[c.UPDATE], params=self.api_params() | {"tags": util.list_to_csv(tags)}).ok:
+        api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, **self.api_params() | {"tags": util.list_to_csv(tags)})
+        if ok := self.post(api, params=api_params).ok:
             self.tags = sorted(tags) if len(tags) > 0 else None
         return ok
 
@@ -359,7 +408,8 @@ class Rule(SqObject):
         if self.endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Can't extend rules description on SonarQube Cloud")
         log.info("Setting %s custom description to '%s'", str(self), description)
-        if ok := self.post(Rule.API[c.UPDATE], params=self.api_params() | {"markdown_note": description}).ok:
+        api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, **self.api_params() | {"markdown_note": description})
+        if ok := self.post(api, params=api_params).ok:
             self.custom_desc = description if description != "" else None
         return ok
 
@@ -420,21 +470,17 @@ class Rule(SqObject):
             return None
         return None if "params" not in found_qp or len(found_qp["params"]) == 0 else {p["key"]: p.get("value", "") for p in found_qp["params"]}
 
-    def api_params(self, op: Optional[str] = None) -> ApiParams:
+    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        ops = {c.READ: {"key": self.key}}
-        return ops[op] if op and op in ops else ops[c.READ]
+        ops = {Oper.GET: {"key": self.key}}
+        return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
 
 def get_facet(facet: str, endpoint: Platform) -> dict[str, str]:
     """Returns a facet as a count per item in the facet"""
-    data = json.loads(endpoint.get(Rule.API[c.SEARCH], params={"ps": 1, "facets": facet}).text)
+    api, _, api_params, _ = endpoint.api.get_details(Rule, Oper.SEARCH, ps=1, facets=facet)
+    data = json.loads(endpoint.get(api, params=api_params).text)
     return {f["val"]: f["count"] for f in data["facets"][0]["values"]}
-
-
-def search(endpoint: Platform, params: dict[str, str]) -> dict[str, Rule]:
-    """Searches rules with optional filters"""
-    return Rule.search_objects(endpoint=endpoint, params=params, threads=4)
 
 
 def search_keys(endpoint: Platform, **params) -> list[str]:
@@ -446,7 +492,8 @@ def search_keys(endpoint: Platform, **params) -> list[str]:
     try:
         while new_params["p"] < nbr_pages:
             new_params["p"] += 1
-            data = json.loads(endpoint.get(Rule.API[c.SEARCH], params=new_params).text)
+            api, _, api_params, _ = endpoint.api.get_details(Rule, Oper.SEARCH, **new_params)
+            data = json.loads(endpoint.get(api, params=api_params).text)
             nbr_pages = sutil.nbr_pages(data)
             rule_list += [r[Rule.SEARCH_KEY_FIELD] for r in data[Rule.SEARCH_RETURN_FIELD]]
     except exceptions.SonarException:
@@ -456,36 +503,8 @@ def search_keys(endpoint: Platform, **params) -> list[str]:
 
 def count(endpoint: Platform, **params) -> int:
     """Count number of rules that correspond to certain filters"""
-    return json.loads(endpoint.get(Rule.API[c.SEARCH], params={**params, "ps": 1}).text)["total"]
-
-
-def get_list(endpoint: Platform, use_cache: bool = True, **params) -> dict[str, Rule]:
-    """Returns a list of rules corresponding to certain search filters"""
-    if use_cache and not params and len(Rule.CACHE.objects) > 1000:
-        return Rule.CACHE.objects
-    rule_list = {}
-    lang_list = params.pop("languages", None)
-    if not lang_list:
-        lang_list = languages.get_list(endpoint).keys()
-    if "include_external" in params:
-        incl_ext = [str(params["include_external"]).lower()]
-    else:
-        incl_ext = ["false", "true"]
-    for lang_key in lang_list:
-        if not languages.exists(endpoint, lang_key):
-            raise exceptions.ObjectNotFound(key=lang_key, message=f"Language '{lang_key}' does not exist")
-    log.info("Getting rules for %d languages", len(lang_list))
-    futures = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="RulesList") as executor:
-        for lang_key in lang_list:
-            futures += [executor.submit(search, endpoint, params | {"languages": lang_key, "include_external": inc}) for inc in incl_ext]
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                rule_list.update(future.result(timeout=30))
-            except Exception as e:
-                log.error(f"{str(e)} for {str(future)}.")
-    log.info("Returning a list of %d rules", len(rule_list))
-    return rule_list
+    api, _, api_params, _ = endpoint.api.get_details(Rule, Oper.SEARCH, **{**params, "ps": 1})
+    return json.loads(endpoint.get(api, params=api_params).text)["total"]
 
 
 def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
@@ -493,9 +512,9 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     log.info("Exporting rules")
     full = export_settings.get("FULL_EXPORT", False)
     threads = 16 if endpoint.is_sonarcloud() else 8
+    all_rules = Rule.search(endpoint=endpoint, use_cache=False, include_external=False).items()
     get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", threads))
 
-    all_rules = get_list(endpoint=endpoint, use_cache=False, include_external=False).items()
     rule_list = {}
     rule_list["instantiated"] = {k: rule.export(full) for k, rule in all_rules if rule.is_instantiated()}
     rule_list["extended"] = {k: rule.export(full) for k, rule in all_rules if rule.is_extended()}
@@ -529,7 +548,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
         return True
     if endpoint.is_sonarcloud():
         raise exceptions.UnsupportedOperation("Can't import rules in SonarQube Cloud")
-    get_list(endpoint=endpoint, use_cache=False)
+    Rule.search(endpoint=endpoint, use_cache=False)
     log.info("Importing extended rules (custom tags, extended description)")
     converted_data = util.list_to_dict(rule_data.get("extended", []), "key")
     for key, custom in converted_data.items():
@@ -573,7 +592,7 @@ def get_all_rules_details(endpoint: Platform, threads: int = 8) -> bool:
     :param int threads: Number of threads to parallelize the process
     :return: Whether all rules collection succeeded
     """
-    rule_list = get_list(endpoint=endpoint, include_external=False).values()
+    rule_list = Rule.search(endpoint=endpoint, use_cache=True, threads=threads, include_external=False).values()
     ok = True
     if endpoint.is_sonarcloud():
         threads = max(threads, 20)
@@ -600,12 +619,12 @@ def convert_rule_list_for_yaml(rule_list: ObjectJsonRepr) -> list[ObjectJsonRepr
 
 def third_party(endpoint: Platform) -> list[Rule]:
     """Returns the list of rules coming from 3rd party plugins"""
-    return [r for r in get_list(endpoint=endpoint).values() if r.repo and r.repo not in SONAR_REPOS and not r.repo.startswith("external_")]
+    return [r for r in Rule.search(endpoint, use_cache=True).values() if r.repo and r.repo not in SONAR_REPOS and not r.repo.startswith("external_")]
 
 
 def instantiated(endpoint: Platform) -> list[Rule]:
     """Returns the list of rules that are instantiated"""
-    return [r for r in get_list(endpoint=endpoint).values() if r.template_key is not None]
+    return [r for r in Rule.search(endpoint, use_cache=True).values() if r.template_key is not None]
 
 
 def severities(endpoint: Platform, json_data: dict[str, any]) -> Optional[dict[str, str]]:

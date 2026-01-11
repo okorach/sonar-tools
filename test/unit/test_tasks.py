@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # sonar-tools tests
-# Copyright (C) 2024-2025 Olivier Korach
+# Copyright (C) 2024-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -27,7 +27,7 @@ from sonar import tasks
 
 def test_task() -> None:
     """test_task"""
-    task = tasks.search_last(component_key=tutil.LIVE_PROJECT, endpoint=tutil.SQ, type="REPORT")
+    task = tasks.search_last(tutil.SQ, component=tutil.LIVE_PROJECT, type="REPORT")
     assert task is not None
     assert task.url() == f"{tutil.SQ.external_url}/project/background_tasks?id={tutil.LIVE_PROJECT}"
     task.sq_json = None
@@ -40,13 +40,13 @@ def test_task() -> None:
     assert task.status() == tasks.SUCCESS
     assert 100 <= task.execution_time() <= 100000
     assert task.submitter() == "admin"
-    assert task.warning_count() == 0
+    assert task.warning_count() > 0
     assert task.error_message() is None
 
 
 def test_audit() -> None:
     """test_audit"""
-    task = tasks.search_last(component_key=tutil.LIVE_PROJECT, endpoint=tutil.SQ, type="REPORT")
+    task = tasks.search_last(tutil.SQ, component=tutil.LIVE_PROJECT, type="REPORT")
     settings = {
         "audit.projects.suspiciousExclusionsPatterns": "\\*\\*/[^\/]+/\\*\\*, \\*\\*/\\*[\.\w]*, \\*\\*/\\*, \\*\\*/\\*\\.(java|jav|cs|csx|py|php|js|ts|sql|html|css|cpp|c|h|hpp)\\*?",
         "audit.projects.suspiciousExclusionsExceptions": "\\*\\*/(__pycache__|libs|lib|vendor|node_modules)/\\*\\*",
@@ -63,7 +63,7 @@ def test_audit() -> None:
 def test_no_scanner_context() -> None:
     """test_no_scanner_context"""
     tutil.start_logging()
-    task = tasks.search_last(component_key="no-scm", endpoint=tutil.SQ, type="REPORT")
+    task = tasks.search_last(tutil.SQ, component="no-scm", type="REPORT")
     if not task:
         return
     if tutil.SQ.version() >= (10, 0, 0):

@@ -743,7 +743,7 @@
       "type": "PRODUCTION",
       "isSupported": true,
       "isValidServerId": true,
-      "expiresAt": "2025-03-07",
+      "expiresAt": "2026-03-07",
       "maxLoc": 250000000
    },
    "statistics": {

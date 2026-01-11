@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
 #
 # sonar-tools tests
-# Copyright (C) 2024-2025 Olivier Korach
+# Copyright (C) 2024-2026 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -26,17 +25,18 @@ import json
 import pytest
 
 import utilities as tutil
-from sonar import qualityprofiles, languages, rules, exceptions, logging
-import sonar.util.issue_defs as idefs
+from sonar import qualityprofiles, languages, rules, exceptions
+import sonar.logging as log
+from sonar.qualityprofiles import QualityProfile
 import sonar.util.qualityprofile_helper as qhelp
 
 
-def test_get_object(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
+def test_get_object(get_test_qp: Generator[QualityProfile]) -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
-    qp = get_test_qp
-    assert qp.name == tutil.TEMP_KEY
+    qp: QualityProfile = get_test_qp
+    assert qp.name.startswith(f"{tutil.TEMP_KEY}-qualityprofile")
     assert qp.language == "py"
-    qp2 = qualityprofiles.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+    qp2 = QualityProfile.get_object(endpoint=tutil.SQ, name=qp.name, language="py")
     assert qp2 is qp
 
 
@@ -44,40 +44,40 @@ def test_get_object_non_existing() -> None:
     """Test exception raised when providing non existing portfolio key"""
 
     with pytest.raises(exceptions.ObjectNotFound) as e:
-        _ = qualityprofiles.get_object(endpoint=tutil.SQ, name="NON-EXISTING", language="py")
+        _ = QualityProfile.get_object(endpoint=tutil.SQ, name="NON-EXISTING", language="py")
     assert str(e.value).endswith("Quality Profile 'py:NON-EXISTING' not found")
 
 
-def test_exists(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
+def test_exists(get_test_qp: Generator[QualityProfile]) -> None:
     """Test exist"""
-    _ = get_test_qp
-    assert qualityprofiles.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
-    assert not qualityprofiles.exists(endpoint=tutil.SQ, name="NON_EXISTING", language="py")
+    qp = get_test_qp
+    assert QualityProfile.exists(endpoint=tutil.SQ, name=qp.name, language="py")
+    assert not QualityProfile.exists(endpoint=tutil.SQ, name="NON_EXISTING", language="py")
 
 
 def test_get_list() -> None:
     """Test QP get_list"""
-    qps = qualityprofiles.get_list(endpoint=tutil.SQ)
+    qps = QualityProfile.search(tutil.SQ)
     assert len(qps) > 25
 
 
-def test_create_delete(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
+def test_create_delete(get_test_qp: Generator[QualityProfile]) -> None:
     """Test QP create delete"""
-    qp = get_test_qp
+    qp: QualityProfile = get_test_qp
     assert qp is not None
 
-    assert qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="non-existing") is None
+    assert QualityProfile.create(endpoint=tutil.SQ, name=qp.name, language="non-existing") is None
 
     with pytest.raises(exceptions.ObjectAlreadyExists):
-        qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+        QualityProfile.create(endpoint=tutil.SQ, name=qp.name, language="py")
     qp.delete()
-    assert not qualityprofiles.exists(endpoint=tutil.SQ, name=tutil.TEMP_KEY, language="py")
+    assert not QualityProfile.exists(endpoint=tutil.SQ, name=qp.name, language="py")
 
 
-def test_inheritance(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
+def test_inheritance(get_test_qp: Generator[QualityProfile]) -> None:
     """Test addition of a project in manual mode"""
-    qp = get_test_qp
-    sonar_way_qp = qualityprofiles.get_object(tutil.SQ, tutil.SONAR_WAY, "py")
+    qp: QualityProfile = get_test_qp
+    sonar_way_qp = QualityProfile.get_object(tutil.SQ, tutil.SONAR_WAY, "py")
     assert not qp.is_child()
 
     assert qp.set_parent(tutil.SONAR_WAY)
@@ -95,23 +95,23 @@ def test_inheritance(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> 
     assert sonar_way_qp.name == qp.parent_name
 
 
-def test_read(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
+def test_read(get_test_qp: Generator[QualityProfile]) -> None:
     """test_read"""
-    qp = get_test_qp
-    assert qp.url() == f"{tutil.SQ.external_url}/profiles/show?language=py&name={tutil.TEMP_KEY}"
-    new_qp = qualityprofiles.QualityProfile.read(tutil.SQ, tutil.TEMP_KEY, "py")
+    qp: QualityProfile = get_test_qp
+    assert qp.url() == f"{tutil.SQ.external_url}/profiles/show?language=py&name={qp.name}"
+    new_qp = QualityProfile.read(tutil.SQ, qp.name, "py")
     assert qp is new_qp
 
-    assert qualityprofiles.QualityProfile.read(tutil.SQ, tutil.TEMP_KEY, "non-existing") is None
+    assert QualityProfile.read(tutil.SQ, qp.name, "non-existing") is None
 
 
-def test_set_default(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
+def test_set_default(get_test_qp: Generator[QualityProfile]) -> None:
     """test_set_default"""
-    qp = get_test_qp
+    qp: QualityProfile = get_test_qp
     assert not qp.is_default
     assert qp.set_as_default()
     assert qp.is_default
-    sonar_way_qp = qualityprofiles.get_object(tutil.SQ, tutil.SONAR_WAY, "py")
+    sonar_way_qp = QualityProfile.get_object(tutil.SQ, tutil.SONAR_WAY, "py")
     assert sonar_way_qp.set_as_default()
     assert sonar_way_qp.is_default
     assert not qp.is_default
@@ -124,7 +124,7 @@ def test_export() -> None:
     assert isinstance(json_exp, list)
 
 
-def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
+def test_add_remove_rules(get_test_qp: Generator[QualityProfile]) -> None:
     """test_add_remove_rules"""
     qp = get_test_qp
     RULE1, RULE2, RULE3 = "python:S1142", "python:FunctionComplexity", "python:S139"
@@ -157,28 +157,29 @@ def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]
 
 def test_import() -> None:
     """test_import"""
-    rules.get_list(tutil.TEST_SQ)
+    rules.Rule.search(tutil.TEST_SQ)
     languages.Language.CACHE.clear()
-    qualityprofiles.QualityProfile.CACHE.clear()
-    # delete all quality profiles in test
-    for qp in qualityprofiles.get_list(tutil.TEST_SQ, use_cache=False).values():
-        if qp.name == tutil.SONAR_WAY:
-            qp.set_as_default()
-    qp_list = {o for o in qualityprofiles.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in and not o.is_default}
-    for o in qp_list:
-        o.delete()
+    QualityProfile.CACHE.clear()
+    # Make Sonar Way the default quality profile and delete all quality profiles in test
+    for qp in [qp for qp in QualityProfile.search(tutil.TEST_SQ, use_cache=False).values() if qp.name == tutil.SONAR_WAY]:
+        qp.set_as_default()
+    for qp in [qp for qp in QualityProfile.search(tutil.TEST_SQ, use_cache=False).values() if not qp.is_built_in and not qp.is_default]:
+        qp.delete()
+    # Import quality profiles from config.json
     with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
         json_exp = json.loads(f.read())["qualityProfiles"]
     assert qualityprofiles.import_config(tutil.TEST_SQ, {"qualityProfiles": json_exp})
 
     # Compare QP list
     json_name_list = sorted([qp["name"] for qp in qhelp.flatten(json_exp) if not qp.get("isBuiltIn", False)])
-    qp_name_list = sorted([f"{o.language}:{o.name}" for o in qualityprofiles.get_list(tutil.TEST_SQ, use_cache=False).values() if not o.is_built_in])
-    logging.debug("Imported  list = %s", str(json_name_list))
-    logging.debug("SonarQube list = %s", str(qp_name_list))
+    qp_list = QualityProfile.search(tutil.TEST_SQ, use_cache=False).values()
+    log.debug("QP list = %s", [o.name for o in qp_list])
+    qp_name_list = sorted([f"{o.language}:{o.name}" for o in qp_list if not o.is_built_in])
+    log.debug("Imported  list = %s", str(json_name_list))
+    log.debug("SonarQube list = %s", str(qp_name_list))
     assert json_name_list == qp_name_list
     languages.Language.CACHE.clear()
-    qualityprofiles.QualityProfile.CACHE.clear()
+    QualityProfile.CACHE.clear()
 
 
 def test_audit_disabled() -> None:
