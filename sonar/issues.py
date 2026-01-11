@@ -436,7 +436,7 @@ class Issue(findings.Finding):
     def comments(self, after: Optional[datetime] = None) -> dict[str, dict[str, Any]]:
         """Returns the comments of an issue
 
-        :param after: If set will only return comments after this date, else all
+        :param after: Timezone aware datetime, If set will only return comments after this datetime, else all
         :return: The issue comments
         :rtype: dict{"<date>_<sequence_nbr>": <comment>}
         """
@@ -455,7 +455,7 @@ class Issue(findings.Finding):
                     "userName": cmt["login"],
                 }
         if after is not None:
-            return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > util.add_tz(after)}
+            return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > after}
         return self._comments
 
     def add_comment(self, comment: str) -> bool:
@@ -467,7 +467,11 @@ class Issue(findings.Finding):
         log.debug("Adding comment '%s' to %s", comment, str(self))
         try:
             api, _, params, _ = self.endpoint.api.get_details(self, Oper.ADD_COMMENT, issue=self.key, text=comment)
-            return self.post(api, params=params).ok
+            self.post(api, params=params)
+            self.refresh()
+            self._comments = None
+            self.comments()
+            return True
         except exceptions.SonarException:
             return False
 
