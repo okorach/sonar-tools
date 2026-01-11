@@ -111,9 +111,9 @@ class QualityGate(SqObject):
     def __init__(self, endpoint: Platform, name: str, data: ApiPayload) -> None:
         """Constructor, don't use directly, use class methods instead"""
         super().__init__(endpoint=endpoint, key=name)
+        self.name = name  #: Object name
         # Override key with id if present
         self.key = data.get("id", self.name)
-        self.name = name  #: Object name
         log.debug("Loading %s with data %s", self, util.json_dump(data))
         self.is_built_in = False  #: Whether the quality gate is built in
         self.is_default = False  #: Whether the quality gate is the default
@@ -121,9 +121,10 @@ class QualityGate(SqObject):
         self._permissions: Optional[object] = None  #: Quality gate permissions
         self._projects: Optional[dict[str, projects.Project]] = None  #: projects.Projects using this quality profile
         self.sq_json = data
-        self.name = data.get("name")
+        self.name = data.get("name", self.name)
         self.is_default = data.get("isDefault", False)
         self.is_built_in = data.get("isBuiltIn", False)
+        self.qg_id = data.get("id")
         self.conditions()
         self.permissions()
         log.debug("Created %s with uuid %d id %x", str(self), hash(self), id(self))
@@ -333,7 +334,7 @@ class QualityGate(SqObject):
             return True
         if "name" in data and data["name"] != self.name:
             log.info("Renaming %s with %s", self, data["name"])
-            api, _, params, _ = self.endpoint.api.get_details(self, Oper.RENAME, id=self.key, name=data["name"])
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.RENAME, id=self.qg_id, name=data["name"])
             self.post(api, params=params)
             self.__class__.CACHE.pop(self)
             self.key = self.name = data["name"]
