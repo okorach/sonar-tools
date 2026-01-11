@@ -121,7 +121,7 @@ class Project(Component):
         return f"project '{self.key}'"
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str) -> Optional[Project]:
+    def get_object(cls, endpoint: Platform, key: str) -> Project:
         """Returns the project object from its project key"""
         if o := cls.CACHE.get(key, endpoint.local_url):
             return o
