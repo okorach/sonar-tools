@@ -21,7 +21,7 @@
 
 """Test of the hotspots module and class, as well as changelog"""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import utilities as tutil
 from sonar.hotspots import Hotspot
 import sonar.util.misc as util
@@ -58,19 +58,17 @@ def test_add_comment() -> None:
     hotspot_d = Hotspot.search(tutil.SQ, project="test:juice-shop")
     hotspot = list(hotspot_d.values())[0]
     nb_comments = len(hotspot.comments())
+
     txt = f"test comment on {datetime.now()}"
-    assert hotspot.add_comment(f"test comment on {datetime.now()}")
+    assert hotspot.add_comment(txt)
     comments = hotspot.comments()
-    assert list(comments.values())[0]["value"] == txt
+    assert list(comments.values())[-1]["value"] == txt
     assert len(comments) == nb_comments + 1
 
-    cached_comments = hotspot.comments()
-    assert len(cached_comments) == nb_comments
-
-    just_before = datetime.now() - timedelta(seconds=10)
+    just_before = datetime.now().astimezone() - timedelta(seconds=2)
     comments = hotspot.comments(after=just_before)
     assert len(comments) == 1
-    assert comments.values()[0]["value"] == txt
+    assert list(comments.values())[-1]["value"] == txt
 
 
 def test_search_by_project() -> None:

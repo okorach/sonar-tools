@@ -31,6 +31,7 @@ from sonar.util import conf_mgr
 import sonar.util.constants as c
 from sonar.util import project_helper as phelp
 import utilities as tutil
+import credentials as creds
 
 
 def test_get_object(get_test_project: Generator[Project]) -> None:
@@ -44,13 +45,13 @@ def test_get_object(get_test_project: Generator[Project]) -> None:
 def test_get_list() -> None:
     """test_get_list"""
     proj_list = projects.Project.search(tutil.SQ)
-    assert len(proj_list) > 70
+    assert len(proj_list) > creds.NBR_PROJECTS
     assert tutil.LIVE_PROJECT in proj_list
 
 
 def test_refresh(get_test_project: Generator[Project]) -> None:
     """test_refresh"""
-    proj = get_test_project
+    proj: Project = get_test_project
     proj.refresh()
     proj.delete()
     with pytest.raises(exceptions.ObjectNotFound):
@@ -59,8 +60,8 @@ def test_refresh(get_test_project: Generator[Project]) -> None:
 
 def test_create_delete() -> None:
     """test_create_delete"""
-    proj = Project.create(endpoint=tutil.SQ, key=tutil.TEMP_KEY, name="temp")
-    assert proj.key.startswith(f"{tutil.TEMP_KEY}-project")
+    proj = Project.create(endpoint=tutil.SQ, key=f"{tutil.TEMP_KEY}-project-{os.getpid()}", name="temp-project")
+    assert proj.key == f"{tutil.TEMP_KEY}-project-{os.getpid()}"
     assert proj.main_branch_name() == "main"
     if tutil.SQ.edition() != c.CE:
         assert proj.main_branch().name == "main"
@@ -89,7 +90,7 @@ def test_audit() -> None:
     ):
         settings[f"audit.projects.{p}"] = 0
     assert len(projects.audit(tutil.SQ, settings)) == 0
-    proj = Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
+    proj: Project = Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
     settings["audit.projects.utilityLocs"] = True
     assert len(proj.audit_languages(audit_settings=settings)) == 0
     settings["audit.mode"] = "housekeeper"

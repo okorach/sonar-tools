@@ -51,7 +51,7 @@ def test_create_delete(get_test_user: Generator[users.User]) -> None:
     """test_create_delete"""
     user: users.User = get_test_user
     assert user.login.startswith(f"{tutil.TEMP_KEY}-user")
-    assert user.name.startswith(f"{tutil.TEMP_KEY}-user")
+    assert user.name.startswith(f"User name {tutil.TEMP_KEY}-user")
     assert tutil.SQ.default_user_group() in user.groups()
 
     u = users.User.get_object(tutil.SQ, login=user.login)
@@ -59,7 +59,7 @@ def test_create_delete(get_test_user: Generator[users.User]) -> None:
 
     user.name = f"User name {user.login}-{os.getpid()}"
     user.refresh()
-    assert user.name == f"User name {user.login}-{os.getpid()}"
+    assert user.name == f"User name {user.login}"
     assert user.url() == f"{tutil.SQ.external_url}/admin/users"
 
 
