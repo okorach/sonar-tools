@@ -55,18 +55,18 @@ def test_transitions() -> None:
 
 def test_add_comment() -> None:
     """test_add_comment"""
-    hotspot_d = Hotspot.search(tutil.SQ, project="test:juice-shop")
-    hotspot = list(hotspot_d.values())[0]
-    nb_comments = len(hotspot.comments())
+    findings_d = Hotspot.search(tutil.SQ, project="test:juice-shop")
+    finding = list(findings_d.values())[0]
+    nb_comments = len(finding.comments())
 
     txt = f"test comment on {datetime.now()}"
-    assert hotspot.add_comment(txt)
-    comments = hotspot.comments()
+    assert finding.add_comment(txt)
+    comments = finding.comments()
     assert list(comments.values())[-1]["value"] == txt
     assert len(comments) == nb_comments + 1
 
     just_before = datetime.now().astimezone() - timedelta(seconds=2)
-    comments = hotspot.comments(after=just_before)
+    comments = finding.comments(after=just_before)
     assert len(comments) == 1
     assert list(comments.values())[-1]["value"] == txt
 
