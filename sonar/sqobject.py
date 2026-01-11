@@ -129,10 +129,12 @@ class SqObject(object):
         return obj.set_permissions([{"user": user or endpoint.user(), "permissions": ["admin", "user"]}])
 
     @classmethod
-    @abc.abstractmethod
-    def search_one_page(cls, endpoint: Platform, **search_params: Any) -> tuple[str, ObjectJsonRepr]:
+    def search_one_page(cls, endpoint: Platform, **search_params: Any) -> tuple[dict[str, SqObject], dict[str, Any]]:
         """Returns one page of a search"""
-        raise NotImplementedError
+        api, _, search_params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
+        dataset = json.loads(endpoint.get(api, search_params).text)
+        return _new_load(endpoint, cls, dataset[ret]), dataset
+
 
     @classmethod
     def count(cls, endpoint: Platform, **search_params: Any) -> int:
