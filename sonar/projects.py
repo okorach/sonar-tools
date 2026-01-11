@@ -739,7 +739,7 @@ class Project(Component):
         from sonar import syncer
 
         log.info("Syncing %s with %s", str(self), str(another_project))
-        if self.endpoint.edition() == c.CE or another_project.endpoint.edition() == c.CE or isinstance(another_project, Branch):
+        if self.endpoint.edition() == c.CE or another_project.endpoint.edition() == c.CE or isinstance(another_project, branches.Branch):
             # Sync the project main branch only
             return syncer.sync_objects(self, another_project, sync_settings=sync_settings)
 
