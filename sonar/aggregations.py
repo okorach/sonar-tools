@@ -97,4 +97,3 @@ class Aggregation(comp.Component):
         if self.permissions() is None:
             return []
         return self.permissions().audit(audit_settings)
-
