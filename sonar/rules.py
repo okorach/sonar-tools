@@ -285,9 +285,7 @@ class Rule(SqObject):
         )
 
     @classmethod
-    def search(
-        cls, endpoint: Platform, use_cache: bool = False, threads: int = 4, **search_params: Any
-    ) -> dict[str, Rule]:
+    def search(cls, endpoint: Platform, use_cache: bool = False, threads: int = 4, **search_params: Any) -> dict[str, Rule]:
         """Searches rules with optional filters
 
         :param endpoint: The SonarQube reference
@@ -587,7 +585,11 @@ def convert_rule_list_for_yaml(rule_list: ObjectJsonRepr) -> list[ObjectJsonRepr
 
 def third_party(endpoint: Platform) -> list[Rule]:
     """Returns the list of rules coming from 3rd party plugins"""
-    return [r for r in Rule.search(endpoint, use_cache=True, include_external=True).values() if r.repo and r.repo not in SONAR_REPOS and not r.repo.startswith("external_")]
+    return [
+        r
+        for r in Rule.search(endpoint, use_cache=True, include_external=True).values()
+        if r.repo and r.repo not in SONAR_REPOS and not r.repo.startswith("external_")
+    ]
 
 
 def instantiated(endpoint: Platform) -> list[Rule]:
