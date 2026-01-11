@@ -34,6 +34,7 @@ from sonar.util import common_helper as chelp
 from sonar.util import component_helper
 from sonar import errcodes
 from sonar import projects, portfolios as pf
+from sonar.projects import Project
 from sonar import qualitygates as qg
 from sonar import qualityprofiles as qp
 from sonar import languages
@@ -407,7 +408,7 @@ def get_governance_maturity_data(endpoint: platform.Platform) -> dict[str, Any]:
         portfolio_count = pf.count(endpoint)
     except exceptions.UnsupportedOperation:
         portfolio_count = 0
-    project_count = projects.count(endpoint)
+    project_count = Project.count(endpoint)
     ratio = project_count / portfolio_count if portfolio_count > 0 else None
 
     log.info("Collecting quality gates maturity data")

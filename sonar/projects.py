@@ -172,6 +172,12 @@ class Project(Component):
             search_params |= {"filter": _PROJECT_QUALIFIER}
         return dict(sorted(cls.get_paginated(endpoint=endpoint, params=search_params, threads=threads).items()))
 
+    @classmethod
+    def count(cls, endpoint: Platform, **search_params: Any) -> int:
+        """Counts projects"""
+        proj_only = {} if endpoint.is_sonarcloud() else {"filter": _PROJECT_QUALIFIER}
+        return super().count(endpoint, **(search_params | proj_only))
+
     def project(self) -> Project:
         """Returns the project"""
         return self
@@ -1241,29 +1247,10 @@ class Project(Component):
 
         # TODO: Set branch settings See https://github.com/okorach/sonar-tools/issues/1828
 
-    @classmethod
-    def api_for(cls, operation: Oper, endpoint: Platform) -> str:
-        """Returns the API to use for a particular operation"""
-        api, _, _, _ = endpoint.api.get_details(cls, operation)
-        return api
-
     def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
         """Return params used to search/create/delete for that object"""
         ops = {Oper.GET: {"component": self.key}, Oper.DELETE: {"project": self.key}, Oper.SET_TAGS: {"project": self.key}}
         return ops[operation] if operation and operation in ops else {"project": self.key}
-
-
-def count(endpoint: Platform, params: ApiParams = None) -> int:
-    """Counts projects
-
-    :param params: list of parameters to filter projects to search
-    """
-    new_params = {} if params is None else params.copy()
-    new_params.update({"ps": 1, "p": 1})
-    if not endpoint.is_sonarcloud():
-        new_params["filter"] = _PROJECT_QUALIFIER
-    api, _, api_params, _ = endpoint.api.get_details(Project, Oper.SEARCH, **new_params)
-    return sutil.nbr_total_elements(json.loads(endpoint.get(api, params=api_params).text))
 
 
 def get_matching_list(endpoint: Platform, pattern: str, threads: int = 8) -> dict[str, Project]:
