@@ -298,7 +298,7 @@ class Rule(SqObject):
 
     @classmethod
     def search(
-        cls, endpoint: Platform, use_cache: bool = False, threads: int = 4, include_external: bool = False, **search_params: Any
+        cls, endpoint: Platform, use_cache: bool = False, threads: int = 4, **search_params: Any
     ) -> dict[str, Rule]:
         """Searches rules with optional filters
 
@@ -314,15 +314,13 @@ class Rule(SqObject):
             return cls.CACHE.from_platform(endpoint)
         langs = search_params.pop("languages", None)
         lang_list = util.csv_to_list(langs) if langs else languages.Language.search(endpoint).keys()
-        include_external_list = ["false"] if not include_external else ["false", "true"]
         for lang_key in lang_list:
             if not languages.Language.exists(endpoint, language=lang_key):
                 raise exceptions.ObjectNotFound(key=lang_key, message=f"Language '{lang_key}' does not exist")
         log.info("Getting rules for %d languages", len(lang_list))
         rule_list: dict[str, Rule] = {}
         for lang_key in lang_list:
-            for inc in include_external_list:
-                rule_list |= cls.get_paginated(endpoint, threads=threads, params=search_params | {"languages": lang_key, "include_external": inc})
+            rule_list |= cls.get_paginated(endpoint, threads=threads, params=search_params | {"languages": lang_key})
         log.info("Rule search returning a list of %d rules", len(rule_list))
         return rule_list
 
@@ -512,7 +510,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     log.info("Exporting rules")
     full = export_settings.get("FULL_EXPORT", False)
     threads = 16 if endpoint.is_sonarcloud() else 8
-    all_rules = Rule.search(endpoint=endpoint, use_cache=False, include_external=False).items()
+    all_rules = Rule.search(endpoint=endpoint, use_cache=False).items()
     get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", threads))
 
     rule_list = {}
@@ -592,7 +590,7 @@ def get_all_rules_details(endpoint: Platform, threads: int = 8) -> bool:
     :param int threads: Number of threads to parallelize the process
     :return: Whether all rules collection succeeded
     """
-    rule_list = Rule.search(endpoint=endpoint, use_cache=True, threads=threads, include_external=False).values()
+    rule_list = Rule.search(endpoint=endpoint, use_cache=True, threads=threads).values()
     ok = True
     if endpoint.is_sonarcloud():
         threads = max(threads, 20)
@@ -619,7 +617,7 @@ def convert_rule_list_for_yaml(rule_list: ObjectJsonRepr) -> list[ObjectJsonRepr
 
 def third_party(endpoint: Platform) -> list[Rule]:
     """Returns the list of rules coming from 3rd party plugins"""
-    return [r for r in Rule.search(endpoint, use_cache=True).values() if r.repo and r.repo not in SONAR_REPOS and not r.repo.startswith("external_")]
+    return [r for r in Rule.search(endpoint, use_cache=True, include_external=True).values() if r.repo and r.repo not in SONAR_REPOS and not r.repo.startswith("external_")]
 
 
 def instantiated(endpoint: Platform) -> list[Rule]:
@@ -627,7 +625,7 @@ def instantiated(endpoint: Platform) -> list[Rule]:
     return [r for r in Rule.search(endpoint, use_cache=True).values() if r.template_key is not None]
 
 
-def severities(endpoint: Platform, json_data: dict[str, any]) -> Optional[dict[str, str]]:
+def severities(endpoint: Platform, json_data: dict[str, Any]) -> Optional[dict[str, str]]:
     """Returns the list of severities from a given rule JSON data"""
     if endpoint.is_mqr_mode():
         return {impact["softwareQuality"]: impact["severity"] for impact in json_data.get("impacts", [])}
