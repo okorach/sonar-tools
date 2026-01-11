@@ -133,14 +133,23 @@ class SqObject(object):
         """Returns one page of a search"""
         api, _, search_params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
         dataset = json.loads(endpoint.get(api, search_params).text)
-        return _new_load(endpoint, cls, dataset[ret]), dataset
-
+        return cls.load_objects(endpoint, dataset[ret]), dataset
 
     @classmethod
     def count(cls, endpoint: Platform, **search_params: Any) -> int:
         """Returns number of objects of a search"""
         _, dataset = cls.search_one_page(endpoint, **(search_params | {"ps": 1}))
         return sutil.nbr_total_elements(dataset)
+
+    @classmethod
+    def load_objects(cls, endpoint: Platform, dataset: ApiPayload) -> dict[str, object]:
+        """Loads any SonarQube object with the contents of an API payload"""
+        try:
+            load_method = cls.load
+        except AttributeError as e:
+            raise exceptions.UnsupportedOperation(f"Can't load {cls.__name__.lower()}s") from e
+        obj_list = [load_method(endpoint=endpoint, data=data) for data in dataset]
+        return {obj.key: obj for obj in obj_list}
 
     @classmethod
     def get_paginated(cls, endpoint: Platform, params: Optional[ApiParams] = None, threads: int = 8) -> dict[str, SqObject]:
@@ -162,14 +171,14 @@ class SqObject(object):
             log.fatal(msg := f"Index on {cname} is corrupted, please reindex before using API")
             raise exceptions.SonarException(msg, errcodes.SONAR_INTERNAL_ERROR)
 
-        objects_list |= _new_load(endpoint, cls, data[returned_field])
+        objects_list |= cls.load_objects(endpoint, data[returned_field])
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f"{cname}Search") as executor:
             futures = [executor.submit(_get, endpoint, api, {**new_params, page_field: page}) for page in range(2, nb_pages + 1)]
             for future in concurrent.futures.as_completed(futures):
                 try:
                     data = future.result(timeout=60)
-                    objects_list |= _new_load(endpoint, cls, data[returned_field])
+                    objects_list |= cls.load_objects(endpoint, data[returned_field])
                 except Exception as e:
                     log.error(f"Error {e} while searching {cname}.")
         return objects_list
@@ -330,11 +339,3 @@ def _load(endpoint: Platform, object_class: Any, data: ObjectJsonRepr) -> dict[s
     return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}
 
 
-def _new_load(endpoint: Platform, object_class: Any, dataset: ObjectJsonRepr) -> dict[str, object]:
-    """Loads any SonarQube object with the contents of an API payload"""
-    try:
-        load_method = object_class.load
-    except AttributeError as e:
-        raise exceptions.UnsupportedOperation(f"Can't load {object_class.__name__.lower()}s") from e
-    obj_list = [load_method(endpoint=endpoint, data=data) for data in dataset]
-    return {obj.key: obj for obj in obj_list}
