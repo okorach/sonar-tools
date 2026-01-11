@@ -32,7 +32,7 @@ def test_task() -> None:
     assert task is not None
     assert task.url() == f"{tutil.SQ.external_url}/project/background_tasks?id={tutil.LIVE_PROJECT}"
     task.sq_json = None
-    task.reload_details()
+    task.reload_cache()
     assert task.sq_json is not None
     if tutil.SQ.version() >= (10, 0, 0):
         assert len(task.id()) == 36
