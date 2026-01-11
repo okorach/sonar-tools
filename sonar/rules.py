@@ -155,21 +155,9 @@ LEGACY_CSV_EXPORT_FIELDS = ["key", "language", "repo", "type", "severity", "name
 
 
 class Rule(SqObject):
-    """
-    Abstraction of the Sonar Rule concept
-    """
+    """Abstraction of the Sonar Rule concept"""
 
     CACHE = cache.Cache()
-    SEARCH_KEY_FIELD = "key"
-    SEARCH_RETURN_FIELD = "rules"
-
-    API: dict[str, str] = {
-        Oper.CREATE: "rules/create",
-        Oper.GET: "rules/show",
-        Oper.UPDATE: "rules/update",
-        Oper.DELETE: "rules/delete",
-        Oper.SEARCH: "rules/search",
-    }  # type: ignore
 
     def __init__(self, endpoint: Platform, key: str, data: ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)
@@ -479,24 +467,6 @@ def get_facet(facet: str, endpoint: Platform) -> dict[str, str]:
     api, _, api_params, _ = endpoint.api.get_details(Rule, Oper.SEARCH, ps=1, facets=facet)
     data = json.loads(endpoint.get(api, params=api_params).text)
     return {f["val"]: f["count"] for f in data["facets"][0]["values"]}
-
-
-def search_keys(endpoint: Platform, **params) -> list[str]:
-    """Searches rules with optional filters"""
-    new_params = params.copy() if params else {}
-    new_params["ps"] = 500
-    new_params["p"], nbr_pages = 0, 1
-    rule_list = []
-    try:
-        while new_params["p"] < nbr_pages:
-            new_params["p"] += 1
-            api, _, api_params, _ = endpoint.api.get_details(Rule, Oper.SEARCH, **new_params)
-            data = json.loads(endpoint.get(api, params=api_params).text)
-            nbr_pages = sutil.nbr_pages(data)
-            rule_list += [r[Rule.SEARCH_KEY_FIELD] for r in data[Rule.SEARCH_RETURN_FIELD]]
-    except exceptions.SonarException:
-        pass
-    return rule_list
 
 
 def count(endpoint: Platform, **params) -> int:
