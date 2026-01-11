@@ -111,6 +111,8 @@ class QualityGate(SqObject):
     def __init__(self, endpoint: Platform, name: str, data: ApiPayload) -> None:
         """Constructor, don't use directly, use class methods instead"""
         super().__init__(endpoint=endpoint, key=name)
+        # Override key with id if present
+        self.key = data.get("id", self.name)
         self.name = name  #: Object name
         log.debug("Loading %s with data %s", self, util.json_dump(data))
         self.is_built_in = False  #: Whether the quality gate is built in
@@ -120,7 +122,6 @@ class QualityGate(SqObject):
         self._projects: Optional[dict[str, projects.Project]] = None  #: projects.Projects using this quality profile
         self.sq_json = data
         self.name = data.get("name")
-        self.key = data.get("id", self.name)
         self.is_default = data.get("isDefault", False)
         self.is_built_in = data.get("isBuiltIn", False)
         self.conditions()
@@ -200,7 +201,7 @@ class QualityGate(SqObject):
 
     def delete(self) -> bool:
         """Deletes a quality gate, returns whether the operation succeeded"""
-        return self.delete_object(name=self.name)
+        return self.delete_object(id=self.qg_id, name=self.name)
 
     def projects(self) -> dict[str, projects.Project]:
         """
@@ -253,7 +254,8 @@ class QualityGate(SqObject):
             return False
         log.debug("Clearing conditions of %s", str(self))
         for cond in self.conditions():
-            self.post("qualitygates/delete_condition", params={"id": cond["id"]})
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.DELETE_CONDITION, conditionId=cond["id"])
+            self.post(api, params=params)
         self._conditions = []
         return True
 
@@ -269,12 +271,14 @@ class QualityGate(SqObject):
             return False
         self.clear_conditions()
         log.debug("Setting conditions of %s", str(self))
-        params = {"gateId": self.key} if self.endpoint.is_sonarcloud() else {"gateName": self.name}
+        base_params = {"gateId": self.key, "gateName": self.name}
         ok = True
         for cond in conditions_list:
-            (params["metric"], params["op"], params["error"]) = _decode_condition(cond)
+            (metric, op, error) = _decode_condition(cond)
+            params = base_params | {"metric": metric, "op": op, "error": error}
             try:
-                ok = ok and self.post("qualitygates/create_condition", params=params).ok
+                api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.CREATE_CONDITION, **params)
+                ok = ok and self.post(api, params=api_params).ok
             except exceptions.SonarException:
                 ok = False
         self._conditions = None
