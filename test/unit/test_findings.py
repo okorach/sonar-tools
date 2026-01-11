@@ -33,6 +33,7 @@ import utilities as tutil
 from sonar import projects
 import sonar.util.misc as util
 from sonar import issues
+from sonar.issues import Issue
 from sonar import errcodes as e
 from sonar.util import constants as c, issue_defs as idefs
 
@@ -280,24 +281,24 @@ def test_findings_export_long(csv_file: Generator[str]) -> None:
 
 def test_issues_count_0() -> None:
     """test_issues_count_0"""
-    assert issues.count(tutil.SQ) > 10000
+    assert Issue.count(tutil.SQ) > 10000
 
 
 def test_issues_count_1() -> None:
     """test_issues_count_1"""
-    total = issues.count(tutil.SQ)
-    assert issues.count(tutil.SQ, severities=[idefs.MQR_SEVERITY_BLOCKER]) < int(total / 3)
+    total = Issue.count(tutil.SQ)
+    assert Issue.count(tutil.SQ, severities=[idefs.MQR_SEVERITY_BLOCKER]) < int(total / 3)
 
 
 def test_issues_count_2() -> None:
     """test_issues_count_2"""
-    total = issues.count(tutil.SQ)
-    assert issues.count(tutil.SQ, types=[idefs.TYPE_VULN]) < int(total / 10)
+    total = Issue.count(tutil.SQ)
+    assert Issue.count(tutil.SQ, types=[idefs.TYPE_VULN]) < int(total / 10)
 
 
 def test_issues_count_3() -> None:
     """test_issues_count"""
-    assert issues.count(tutil.SQ, createdBefore="1970-01-08") == 0
+    assert Issue.count(tutil.SQ, createdBefore="1970-01-08") == 0
 
 
 def test_search_issues_by_project() -> None:

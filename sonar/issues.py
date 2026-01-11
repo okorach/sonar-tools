@@ -858,16 +858,6 @@ def get_newest_issue(endpoint: Platform, **search_params: Any) -> Optional[datet
     return __get_one_issue_date(endpoint=endpoint, asc_sort="false", **search_params)
 
 
-def count(endpoint: Platform, **search_params: Any) -> int:
-    """Returns number of issues of a search"""
-    log.debug("Counting issues with search params %s", search_params)
-    params = Issue.sanitize_search_params(endpoint=endpoint, **search_params) | {"ps": 1}
-    api, _, api_params, _ = endpoint.api.get_details(Issue, Oper.SEARCH, **params)
-    nbr_issues = sutil.nbr_total_elements(json.loads(endpoint.get(api, params=api_params).text))
-    log.debug("Counting issues with search params %s returned %d issues", search_params, nbr_issues)
-    return nbr_issues
-
-
 def count_by_rule(endpoint: Platform, **search_params: Any) -> dict[str, int]:
     """Returns number of issues of a search"""
     nbr_slices = 1
