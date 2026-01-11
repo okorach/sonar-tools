@@ -33,6 +33,7 @@ import inspect
 import sonar.utilities as sutil
 import sonar.logging as log
 from sonar.util import misc
+from sonar.exceptions import UnsupportedOperation
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -126,9 +127,9 @@ class ApiManager:
             object_or_class = object_or_class.__class__
         class_name = object_or_class.__name__
         if class_name not in self.api_def:
-            raise ValueError(f"API for {class_name} in version {self.endpoint.version()} not found in API definition")
+            raise UnsupportedOperation(f"API for {class_name} in version {self.endpoint.version()} not found in API definition")
         if operation.value not in self.api_def[class_name]:
-            raise ValueError(f"Operation {operation.value} not found in API definition for {class_name}")
+            raise UnsupportedOperation(f"Operation {operation.value} not found in API definition for {class_name}")
         return self.api_def[class_name][operation.value]
 
     def api(self, object_or_class: object, operation: ApiOperation, **kwargs: Any) -> str:
