@@ -171,7 +171,7 @@ class QualityGate(SqObject):
         return cls.get_object(endpoint, name)
 
     @classmethod
-    def search(cls, endpoint: Platform, use_cache: bool = True, **search_params: Any) -> dict[str, QualityGate]:
+    def search(cls, endpoint: Platform, use_cache: bool = False, **search_params: Any) -> dict[str, QualityGate]:
         """Returns the whole list of quality gates
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -179,8 +179,9 @@ class QualityGate(SqObject):
         :param search_params: Search parameters (None, see api/qualitygates/search parameters)
         :return: Dict of quality gates indexed by name
         """
-        log.info("Getting quality gates, use cache: %s", use_cache)
+        log.info("Searching quality gates with params %s", search_params)
         if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
+            log.debug("Returning cached quality gates")
             return {qg.name: qg for qg in cls.CACHE.from_platform(endpoint).values()}
         api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
         dataset = json.loads(endpoint.get(api, params=params).text)[ret]
@@ -311,7 +312,7 @@ class QualityGate(SqObject):
         try:
             ok = self.post("qualitygates/set_as_default", params=params).ok
             # Turn off default for all other quality gates except the current one
-            for qg in QualityGate.search(self.endpoint, use_cache=True).values():
+            for qg in QualityGate.search(self.endpoint).values():
                 qg.is_default = qg.name == self.name
         except exceptions.SonarException:
             return False
@@ -491,7 +492,7 @@ def count(endpoint: Platform) -> int:
     :return: Number of quality gates
     :rtype: int
     """
-    return len(QualityGate.search(endpoint, use_cache=True))
+    return len(QualityGate.search(endpoint))
 
 
 def _encode_conditions(conds: list[dict[str, str]]) -> list[str]:
