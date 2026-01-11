@@ -48,6 +48,9 @@ do
         mv "${ROOT_DIR}/${GEN_LOC}/${target}/conftest_${target}.py" "${ROOT_DIR}/${GEN_LOC}/${target}/conftest.py"
         mv "${ROOT_DIR}/${GEN_LOC}/${target}/utilities_${target}.py" "${ROOT_DIR}/${GEN_LOC}/${target}/utilities.py"
         rm "${ROOT_DIR}/${GEN_LOC}/${target}/"test_common*.py
+        if [[ "${target}" = "cloud" ]]; then
+            rm "${ROOT_DIR}/${GEN_LOC}/${target}/"test_user*.py "${ROOT_DIR}/${GEN_LOC}/${target}/"test_group*.py "${ROOT_DIR}/${GEN_LOC}/${target}/"test_portfolios*.py "${ROOT_DIR}/${GEN_LOC}/${target}/"test_apps*.py
+        fi
     fi
 done
 
