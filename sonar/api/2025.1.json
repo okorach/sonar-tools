@@ -1375,5 +1375,14 @@
             ],
             "return_field": "languages"
         }
+    },
+    "Platform": {
+        "GET_LOGS": {
+            "method": "GET",
+            "api": "api/system/logs",
+            "params": [
+                "name"
+            ]
+        }
     }
 }

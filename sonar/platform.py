@@ -603,8 +603,10 @@ class Platform(object):
         log.info("Auditing %s log file for errors and warnings", logfile)
         problems = []
         try:
-            logs = self.get("system/logs", params={"name": logtype} if self.version() >= (10, 0, 0) else {"process": logtype}).text
-        except (ConnectionError, RequestException) as e:
+            # Pass name and process, since process was used in 9.9 and name in 10.0 and above
+            api, _, params, _ = self.api.get_details(self.__class__, Oper.GET_LOGS, name=logtype, process=logtype)
+            logs = self.get(api, params=params).text
+        except (ConnectionError, RequestException, ValueError) as e:
             sutil.handle_error(e, f"retrieving {logtype} logs", catch_all=True)
             return []
         i = 0
@@ -627,7 +629,8 @@ class Platform(object):
 
     def _audit_deprecation_logs(self) -> list[Problem]:
         """Audits that there are no deprecation warnings in logs"""
-        logs = self.get("system/logs", params={"name": "deprecation"}).text
+        api, _, params, _ = self.api.get_details(Platform, Oper.GET_LOGS, name="deprecation")
+        logs = self.get(api, params=params).text
         if (nb_deprecation := len(logs.splitlines())) > 0:
             rule = get_rule(RuleId.DEPRECATION_WARNINGS)
             return [Problem(rule, f"{self.local_url}/admin/system", nb_deprecation)]
@@ -635,13 +638,13 @@ class Platform(object):
 
     def audit_logs(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits that there are no anomalies in logs (errors, warnings, deprecation warnings)"""
+        if self.is_sonarcloud():
+            log.info("Logs audit not available with SonarQube Cloud, skipping logs audit...")
+            return []
         if not audit_settings.get("audit.logs", True):
             log.info("Logs audit is disabled, skipping logs audit...")
             return []
         log.info("Auditing SonarQube logs for errors, warnings and deprecation warnings")
-        if self.is_sonarcloud():
-            log.info("Logs audit not available with SonarQube Cloud, skipping logs audit...")
-            return []
         log_map = {"app": "sonar.log", "ce": "ce.log", "web": "web.log", "es": "es.log"}
         if self.edition() == c.DCE:
             log_map.pop("es")
