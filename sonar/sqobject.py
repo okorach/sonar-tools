@@ -142,7 +142,7 @@ class SqObject(object):
         return sutil.nbr_total_elements(dataset)
 
     @classmethod
-    def load_objects(cls, endpoint: Platform, dataset: ApiPayload) -> dict[str, object]:
+    def load_objects(cls, endpoint: Platform, dataset: ApiPayload) -> dict[str, SqObject]:
         """Loads any SonarQube object with the contents of an API payload"""
         try:
             load_method = cls.load
@@ -337,5 +337,3 @@ def _load(endpoint: Platform, object_class: Any, data: ObjectJsonRepr) -> dict[s
     if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook", "Rule"):
         return {obj[key_field]: object_class.load(endpoint=endpoint, data=obj) for obj in data}
     return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}
-
-
