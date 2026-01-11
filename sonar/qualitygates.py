@@ -255,7 +255,7 @@ class QualityGate(SqObject):
             return False
         log.debug("Clearing conditions of %s", str(self))
         for cond in self.conditions():
-            api, _, params, _ = self.endpoint.api.get_details(self, Oper.DELETE_CONDITION, conditionId=cond["id"])
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.DELETE_CONDITION, id=cond["id"])
             self.post(api, params=params)
         self._conditions = []
         return True
