@@ -31,6 +31,7 @@ import sonar.util.constants as c
 
 import cli.options as opt
 from migration import migration
+from credentials import ADMIN_USER
 
 CMD = f"migration.py {tutil.SQS_OPTS}"
 
@@ -58,7 +59,7 @@ def test_migration(json_file: Generator[str]) -> None:
         for item in item_list:
             assert item in p["migrationData"] or "error" in p
 
-    u = next(u for u in json_config["users"] if u["login"] == "admin")
+    u = next(u for u in json_config["users"] if u["login"] == ADMIN_USER)
     assert tutil.SQ.default_user_group() in u["groups"]
     assert u["local"] and u["active"]
     if tutil.SQ.version() >= (10, 0, 0):

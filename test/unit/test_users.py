@@ -30,8 +30,9 @@ import sonar.util.constants as c
 import utilities as tutil
 from sonar import exceptions, logging
 from sonar import users
+import credentials
 
-USER = "admin"
+USER = credentials.ADMIN_USER
 
 
 def test_get_object() -> None:
@@ -125,8 +126,8 @@ def test_audit_user() -> None:
     """audit_user"""
     logging.set_logger(tutil.TEST_LOGFILE)
     logging.set_debug_level("DEBUG")
-    user = users.User.get_object(tutil.SQ, "admin")
-    assert user.audit({"audit.tokens.neverExpire": "admin"}) == []
+    user = users.User.get_object(tutil.SQ, credentials.ADMIN_USER)
+    assert user.audit({"audit.tokens.neverExpire": credentials.ADMIN_USER}) == []
     assert len(user.audit({})) > 0
 
 

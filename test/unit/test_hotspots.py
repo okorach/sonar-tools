@@ -29,6 +29,7 @@ from sonar.hotspots import Hotspot
 from sonar import exceptions
 import sonar.util.misc as util
 from sonar import projects
+import credentials
 
 
 def test_transitions() -> None:
@@ -53,7 +54,7 @@ def test_transitions() -> None:
     assert hotspot.mark_as_fixed()
     assert hotspot.reopen()
 
-    assert hotspot.assign("admin")
+    assert hotspot.assign(credentials.ADMIN_USER)
     assert hotspot.unassign()
 
 
