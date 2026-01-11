@@ -360,7 +360,7 @@ class Hotspot(findings.Finding):
     def comments(self, after: Optional[datetime] = None) -> dict[str, dict[str, Any]]:
         """Returns the comments of a hotspot
 
-        :param after: If set will only return comments after this date, else all
+        :param after: Timezone aware datetime, If set will only return comments after this date, else all
         :return: The hotspot comments
         :rtype: dict{"<date>_<sequence_nbr>": <comment>}
         """
