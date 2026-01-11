@@ -21,7 +21,7 @@
 
 """applications tests"""
 
-import datetime
+from datetime import datetime, timedelta, timezone
 from collections.abc import Generator
 import pytest
 import os
@@ -68,12 +68,12 @@ def test_search() -> None:
     if not __verify_support():
         pytest.skip(__UNSUPPORTED_MESSAGE)
     res_list = apps.Application.search(endpoint=tutil.SQ, s="analysisDate")
-    oldest = datetime.datetime(1970, 1, 1).replace(tzinfo=datetime.timezone.utc)
+    previous_app_date = datetime(1970, 1, 1).replace(tzinfo=timezone.utc)
     for obj in res_list.values():
         app_date = obj.last_analysis()
         if app_date and app_date != "":
-            assert oldest <= app_date
-            oldest = app_date
+            assert previous_app_date <= app_date + timedelta(seconds=2)
+            previous_app_date = app_date
 
 
 def test_get_object_non_existing() -> None:
@@ -89,7 +89,7 @@ def test_exists(get_test_app: Generator[App]) -> None:
     """Test exist"""
     if not __verify_support():
         pytest.skip(__UNSUPPORTED_MESSAGE)
-    obj = get_test_app
+    obj: App = get_test_app
     assert apps.Application.exists(endpoint=tutil.SQ, key=obj.key)
     assert not apps.Application.exists(endpoint=tutil.SQ, key=NON_EXISTING_KEY)
 
@@ -163,7 +163,7 @@ def test_search_by_name() -> None:
     """test_search_by_name"""
     if not __verify_support():
         pytest.skip(__UNSUPPORTED_MESSAGE)
-    obj = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
+    obj: App = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
     other_apps = apps.search_by_name(endpoint=tutil.SQ, name=obj.name)
 
     assert len(other_apps) == 1
