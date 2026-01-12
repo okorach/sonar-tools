@@ -51,14 +51,14 @@ class SqObject(object):
     CACHE = cache.Cache()
     API: dict[str, str] = {}  # Will be defined in the subclass
 
-    def __init__(self, endpoint: Platform, key: str) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         if not self.__class__.CACHE:
             self.__class__.CACHE.set_class(self.__class__)
-        self.key: str = key  #: Object unique key (unique in its class)
+        self.sq_json: ApiPayload = data
         self.endpoint: Platform = endpoint  #: Reference to the SonarQube platform
-        self.concerned_object: Optional[object] = None
+        self.key: str  #: Object unique key (unique in its class)
+        self.concerned_object: Optional[SqObject] = None
         self._tags: Optional[list[str]] = None
-        self.sq_json: Optional[ApiPayload] = None
 
     def __hash__(self) -> int:
         """Default UUID for SQ objects"""
@@ -68,6 +68,18 @@ class SqObject(object):
         if type(self) is type(another):
             return hash(self) == hash(another)
         return NotImplemented
+
+    @classmethod
+    def load(cls, endpoint: Platform, data: ApiPayload, *hash_items) -> SqObject:
+        """Creates a project loaded with JSON data coming from api/components/search request
+
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param ApiPayload data: Project data entry in the search results
+        :return: The created project object
+        """
+        if o := cls.CACHE.get(endpoint.local_url, *hash_items):
+            return o.reload(data)
+        return cls(endpoint, data)
 
     @classmethod
     def api_for(cls, operation: Oper, endpoint: Platform) -> str:
