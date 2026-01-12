@@ -31,7 +31,7 @@ import requests.utils
 
 from sonar.util import cache
 import sonar.logging as log
-from sonar import components, settings, exceptions, tasks
+from sonar import components, settings, exceptions
 
 import sonar.projects as proj
 import sonar.util.misc as util
@@ -43,6 +43,7 @@ import sonar.util.constants as c
 from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
+    from sonar.tasks import Task
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
     from sonar.platform import Platform
@@ -425,8 +426,10 @@ class Branch(components.Component):
         }
         return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
-    def last_task(self) -> Optional[tasks.Task]:
+    def last_task(self) -> Optional[Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
-        if task := tasks.search_last(self.endpoint, component=self.concerned_object.key, type="REPORT", branch=self.name):
+        from sonar.tasks import Task
+
+        if task := Task.search_last(self.endpoint, component=self.concerned_object.key, type="REPORT", branch=self.name):
             task.concerned_object = self
         return task
