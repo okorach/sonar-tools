@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube background task concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Optional, Any, Union, TYPE_CHECKING
 
 from datetime import datetime
 import time
@@ -38,6 +38,10 @@ from sonar.config import get_scanners_versions
 from sonar.util import cache
 from sonar.util import misc as util
 from sonar.api.manager import ApiOperation as Oper
+
+from sonar import projects
+from sonar import applications
+from sonar import portfolios
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -65,6 +69,11 @@ IMPORT_ERRORS = (ZIP_MISSING, ZIP_CORRUPTED, ZIP_DOESNT_MATCH, CANT_UNZIP, INCOM
 
 SCANNER_VERSIONS = get_scanners_versions()
 
+if TYPE_CHECKING:
+    from sonar.projects import Project
+    from sonar.applications import Application
+    from sonar.portfolios import Portfolio
+
 
 class Task(SqObject):
     """
@@ -73,25 +82,37 @@ class Task(SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: Platform, task_id: str, concerned_object: Optional[object] = None, data: Optional[ApiPayload] = None) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor"""
-        super().__init__(endpoint=endpoint, key=task_id)
-        self.sq_json = data
-        self.concerned_object = concerned_object
-        if data is not None:
-            self.component_key = data.get("componentKey", None)
+        super().__init__(endpoint, data)
+        self.key = data["id"]
+        self.concerned_object: Optional[Union[Project, Application, Portfolio]]
+        self.component_key: Optional[str]
         self._context: Optional[dict[str, str]] = None
         self._error: Optional[dict[str, str]] = None
-        self._submitted_at: Optional[datetime] = None
-        self._started_at: Optional[datetime] = None
-        self._ended_at: Optional[datetime] = None
+        self.reload(data)
+        self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:
-        """
-        :return: String formatting of the object
-        :rtype: str
-        """
+        """Returns the string representation of the background task"""
         return f"background task '{self.key}'"
+
+    @classmethod
+    def get_object(cls, endpoint: Platform, task_id: str, use_cache: bool = True) -> Task:
+        """Returns a background task object from its id"""
+        o: Optional[Task] = cls.CACHE.get(task_id, endpoint.local_url)
+        if use_cache and o:
+            return o
+        additional_fields = "scannerContext,warnings"
+        if not endpoint.is_sonarcloud():
+            additional_fields += ",stacktrace"
+        api, _, params, ret = endpoint.api.get_details(cls, Oper.GET, id=task_id, additionalFields=additional_fields)
+        return cls.load(endpoint, json.loads(endpoint.get(api, params=params).text)[ret])
+
+    @classmethod
+    def load(cls, endpoint: Platform, data: ApiPayload, *hash_items: Any) -> Task:
+        """Loads a background task object from API payload"""
+        return super().load(endpoint, data, data["id"])
 
     @classmethod
     def search(cls, endpoint: Platform, **search_params: Any) -> list[Task]:
@@ -102,117 +123,102 @@ class Task(SqObject):
         :return: The list of found background tasks
         :rtype: list[Task]
         """
-        try:
-            api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
-            dataset = json.loads(endpoint.get(api, params=params).text)
-            return [cls(endpoint=endpoint, task_id=t["id"], data=t) for t in dataset[ret]]
-        except exceptions.SonarException:
-            return []
+        api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
+        dataset = json.loads(endpoint.get(api, params=params).text)
+        return [cls.load(endpoint, data=t) for t in dataset[ret]]
+
+    @classmethod
+    def search_last(cls, endpoint: Platform, component: str, **search_params: Any) -> Optional[Task]:
+        """Searches for last background task of a component"""
+        branch = search_params.pop("branch", None)
+        search_params = search_params | {"onlyCurrents": branch is None, "component": component}
+        bg_tasks = Task.search(endpoint=endpoint, **search_params)
+        if branch:
+            bg_tasks = [t for t in bg_tasks if t.sq_json.get("branch", "") == branch]
+        bg = next(iter(bg_tasks), None)
+        if bg is None:
+            log.debug("No background task found for component key '%s'%s", component, f" branch '{branch}'" if branch else "")
+        return bg
+
+    def refresh(self) -> Task:
+        """Refreshes a local cache Task from the SonarQube"""
+        return self.__class__.get_object(self.endpoint, self.key, use_cache=False)
 
     def url(self) -> str:
-        """
-        :return: the SonarQube permalink URL to the background task
-        :rtype: str
-        """
+        """Returns the SonarQube permalink URL to the background task"""
         u = f"{self.base_url(local=False)}/project/background_tasks"
         if self.component_key:
             u += f"?id={self.component_key}"
         return u
 
-    def project(self) -> object:
+    def reload(self, data: ApiPayload) -> Task:
+        """Reloads a Task with and API Payload"""
+        self.component_key = data.get("componentKey")
+        if self.component_key:
+            qualifier = data.get("componentQualifier")
+            if qualifier == "TRK":
+                self.concerned_object = projects.Project.get_object(self.endpoint, self.component_key)
+            elif qualifier == "APP":
+                self.concerned_object = applications.Application.get_object(self.endpoint, self.component_key)
+            elif qualifier == "VW":
+                self.concerned_object = portfolios.Portfolios.get_object(self.endpoint, self.component_key)
+            else:
+                log.error("Unknown task component qualifier %s", qualifier)
+        return self
+
+    def submit_date(self) -> Optional[datetime]:
+        return sutil.string_to_date(self.sq_json.get("submittedAt"))
+
+    def start_date(self) -> Optional[datetime]:
+        return sutil.string_to_date(self.sq_json.get("startedAt"))
+
+    def end_date(self) -> Optional[datetime]:
+        return sutil.string_to_date(self.sq_json.get("endedAt"))
+
+    def project(self) -> Project:
         """Returns the project of the background task"""
         return self.concerned_object
 
-    def reload_cache(self, use_cache: bool = True) -> Task:
-        """Loads a task context"""
-        if use_cache and self.sq_json is not None and ("scannerContext" in self.sq_json or not self.has_scanner_context()):
-            # Context already retrieved or not available
-            return self
-        return self.reload_details()
-
-    def reload_details(self) -> Task:
-        """Loads a task details"""
-        additional_fields = "scannerContext,warnings"
-        if not self.endpoint.is_sonarcloud():
-            additional_fields += ",stacktrace"
-        self.sq_json = self.sq_json or {}
-        self.sq_json.update(json.loads(self.get("ce/task", params={"id": self.key, "additionalFields": additional_fields}).text)["task"])
-        return self
-
     def id(self) -> str:
-        """
-        :return: the background task id
-        :rtype: str
-        """
+        """Return the background task id"""
         return self.key
 
     def __json_field(self, field: str) -> str:
         """Returns a background task scanner context field"""
-        self.reload_cache()
         if field not in self.sq_json:
-            self.reload_details(use_cache=False)
-        return self.sq_json[field]
+            self.refresh()
+        return self.sq_json.get(field, None)
 
     def type(self) -> str:
-        """
-        :return: the background task type
-        :rtype: str
-        """
+        """Returns the background task type"""
         return self.__json_field("type")
 
     def status(self) -> str:
-        """
-        :return: the background task status
-        :rtype: str
-        """
+        """Returns the background task status"""
         return self.__json_field("status")
 
     def component(self) -> Optional[str]:
-        """
-        :return: the background task component key or None
-        :rtype: str or None
-        """
+        """Returns the background task component key or None"""
         return self.__json_field("componentKey")
 
     def execution_time(self) -> int:
-        """
-        :return: the background task execution time in millisec
-        :rtype: int
-        """
+        """Returns the background task execution time in millisec"""
         return int(self.__json_field("executionTimeMs"))
 
     def submitter(self) -> str:
-        """
-        :return: the background task submitter
-        :rtype: str
-        """
-        self.reload_cache()
+        """Returns the background task submitter"""
         return self.sq_json.get("submitterLogin", "anonymous")
 
     def has_scanner_context(self) -> bool:
-        """
-        :return: Whether the background task has a scanner context
-        :rtype: bool
-        """
-        self.reload_details()
-        return self.sq_json.get("hasScannerContext", False)
+        """Returns whether the background task has a scanner context"""
+        return self.__json_field("hasScannerContext") or False
 
     def warnings(self) -> list[str]:
-        """
-        :return: the background task warnings, if any
-        :rtype: list
-        """
-        if not self.sq_json.get("warnings", None):
-            data = json.loads(self.get("ce/task", params={"id": self.key, "additionalFields": "warnings"}).text)
-            self.sq_json["warnings"] = []
-            self.sq_json.update(data["task"])
-        return self.sq_json["warnings"]
+        """Returns the background task warnings, if any"""
+        return self.__json_field("warnings")
 
     def warning_count(self) -> int:
-        """
-        :return: the number of warnings in the background
-        :rtype: int
-        """
+        """Returns the number of warnings in the background task"""
         return self.__json_field("warningCount")
 
     def wait_for_completion(self, timeout: int = 180) -> str:
@@ -226,67 +232,50 @@ class Task(SqObject):
         wait_time = 0
         sleep_time = 0.5
         params = {"status": ",".join(STATUSES), "type": self.type(), "component": self.component()}
-        status = PENDING
+        status = self.__json_field("status")
         while status not in (SUCCESS, FAILED, CANCELED, TIMEOUT):
             time.sleep(sleep_time)
             wait_time += sleep_time
             sleep_time *= 2
-            data = json.loads(self.get("ce/activity", params=params).text)
-            for t in data["tasks"]:
-                if t["id"] != self.key:
-                    continue
-                status = t["status"]
+            self.refresh()
+            status = self.__json_field("status")
             if wait_time >= timeout and status not in (SUCCESS, FAILED, CANCELED):
                 status = TIMEOUT
             log.debug("%s is '%s'", str(self), status)
         return status
 
     def scanner_context(self) -> Optional[dict[str, str]]:
-        """
-        :return: the background task scanner context
-        :rtype: dict
-        """
-        self.reload_cache()
-        if not self.has_scanner_context():
-            return None
-        context_line = self.sq_json.get("scannerContext", None)
-        if context_line is None:
+        """Returns the background task scanner context"""
+        if not (context_line := self.__json_field("scannerContext")):
             return None
         context = {}
-        for line in context_line.split("\n  - "):
-            if not line.startswith("sonar"):
-                continue
+        for line in [line for line in context_line.split("\n  - ") if line.startswith("sonar")]:
             (prop, val) = line.split("=", 1)
             context[prop] = val
         return context
 
     def scanner(self) -> str:
         """Returns the project type (MAVEN, GRADLE, DOTNET, OTHER, UNKNOWN)"""
-        if not self.has_scanner_context():
+        if not (ctxt := self.scanner_context()):
             return "UNKNOWN"
-        ctxt = self.scanner_context()
         return ctxt.get("sonar.scanner.app", "UNKNOWN").upper().replace("SCANNER", "").replace("MSBUILD", "DOTNET").replace("NPM", "CLI")
 
-    def error_details(self, use_cache: bool = True) -> tuple[str, str]:
+    def error_details(self) -> tuple[Optional[str], Optional[str]]:
         """
         :return: The background task error details
-        :rtype: tuple (errorMsg (str), stackTrace (str)
+        :rtype: tuple (errorMsg (str), stackTrace (str))
         """
-        self.reload_cache(use_cache=use_cache)
-        log.debug("Background task error details: %s", str(self.sq_json))
-        return (self.sq_json.get("errorMessage", None), self.sq_json.get("errorStacktrace", None))
+        return (self.__json_field("errorMessage"), self.__json_field("errorStackTrace"))
 
-    def error_message(self, use_cache: bool = True) -> Optional[str]:
-        """
-        :return: The background task error message
-        :rtype: str
-        """
-        self.reload_cache(use_cache=use_cache)
-        return self.sq_json.get("errorMessage", None)
+    def error_message(self) -> Optional[str]:
+        """Return the background task error message"""
+        return self.__json_field("errorMessage")
 
     def short_error(self) -> str:
         """Returns a short error message for the background task"""
-        details = self.error_details(use_cache=False)[1]
+        if self.endpoint.is_sonarcloud():
+            raise exceptions.UnsupportedOperation("No stacktrace info on SonarQube Cloud")
+        details = self.error_details()[1]
         if not details:
             return NO_ERROR
         errmsg = details.split("\n")[0]
@@ -460,16 +449,3 @@ class Task(SqObject):
 def search_all_last(endpoint: Platform) -> list[Task]:
     """Searches for last background task of all found components"""
     return Task.search(endpoint=endpoint, onlyCurrents=True)
-
-
-def search_last(endpoint: Platform, component: str, **search_params: Any) -> Optional[Task]:
-    """Searches for last background task of a component"""
-    branch = search_params.pop("branch", None)
-    search_params = search_params | {"onlyCurrents": branch is None, "component": component}
-    bg_tasks = Task.search(endpoint=endpoint, **search_params)
-    if branch:
-        bg_tasks = [t for t in bg_tasks if t.sq_json.get("branch", "") == branch]
-    bg = next(iter(bg_tasks), None)
-    if bg is None:
-        log.debug("No background task found for component key '%s'%s", component, f" branch '{branch}'" if branch else "")
-    return bg
