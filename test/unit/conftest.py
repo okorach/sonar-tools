@@ -31,7 +31,7 @@ from collections.abc import Generator
 import pytest
 
 import utilities as tutil
-from sonar import projects, applications, portfolios, qualityprofiles, qualitygates, exceptions, logging, issues, users, groups
+from sonar import projects, applications, portfolios, qualityprofiles, qualitygates, exceptions, issues, users, groups
 import sonar.util.constants as c
 
 TEMP_FILE_ROOT = f"temp.{os.getpid()}"
