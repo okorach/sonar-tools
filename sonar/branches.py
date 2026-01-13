@@ -56,7 +56,7 @@ class Branch(components.Component):
     """Abstraction of the SonarQube "project branch" concept"""
 
     CACHE = cache.Cache()
-    __PROJECT_ADORN = "project"
+    __PROJECT_KEY = "projectKey"
 
     def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Don't use this, use class methods to create Branch objects
@@ -65,29 +65,34 @@ class Branch(components.Component):
         """
         if endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
+        super().__init__(endpoint, data)
         self.name: str = unquote(data["name"])
-        self.concerned_object: proj.Project = proj.Project.get_project_object(endpoint, data[self.__PROJECT_ADORN])
+        self.concerned_object: proj.Project = proj.Project.get_project_object(endpoint, data[self.__class__.__PROJECT_KEY])
         log.debug("Loading branch %s of %s", self.name, self.concerned_object)
         self._is_main: bool = None
         self._new_code: str = None
         self._keep_when_inactive: str = None
-        super().__init__(endpoint, data)
         self.__class__.CACHE.put(self)
-        log.debug("Created object %s", str(self))
+        log.debug("Constructed object %s", str(self))
 
     def __str__(self) -> str:
         return f"branch '{self.name}' of {str(self.project())}"
 
-    def __hash__(self) -> int:
+    @staticmethod
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data[Branch.__PROJECT_KEY], unquote(data["name"]))
+
+    def hash_object(self) -> tuple[Any, ...]:
         """Computes a uuid for the branch that can serve as index"""
-        return hash((self.base_url(), self.concerned_object.key, self.name))
+        return (self.concerned_object.key, self.name)
 
     @classmethod
     def get_object(cls, endpoint: Platform, project: Union[str, proj.Project], branch_name: str, use_cache: bool = False) -> Branch:
         """Returns the project object from its project key"""
         branch_name = unquote(branch_name)
         project = proj.Project.get_project_object(endpoint, project)
-        o: Optional[Branch] = cls.CACHE.get(project.key, branch_name, project.base_url())
+        o: Optional[Branch] = cls.CACHE.get(endpoint.local_url, project.key, branch_name)
         if use_cache and o:
             return o
         api, _, params, ret = endpoint.api.get_details(Branch, Oper.SEARCH, project=project.key)
@@ -95,18 +100,13 @@ class Branch(components.Component):
         br = next((b for b in data.get(ret, []) if b["name"] == branch_name), None)
         if not br:
             raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(project)} not found")
-        br[cls.__PROJECT_ADORN] = project
+        br[cls.__PROJECT_KEY] = project
         if o:
             o.reload(data)
         else:
             o = cls.load(endpoint, data)
         o.concerned_object = project
         return o
-
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload, *hash_items: Any) -> Branch:
-        """Gets a Branch object from JSON data gotten from a list API call"""
-        return super().load(endpoint, data, proj.Project.get_project_key(data[cls.__PROJECT_ADORN]), unquote(data["name"]))
 
     @classmethod
     def search(cls, endpoint: Platform, project: Union[str, proj.Project], **search_params: Any) -> dict[str, Branch]:
@@ -124,17 +124,17 @@ class Branch(components.Component):
             project = proj.Project.get_object(endpoint, project, use_cache=True)
         log.debug("Reading all branches of %s", str(project))
         api, _, params, ret = project.endpoint.api.get_details(cls, Oper.SEARCH, project=project.key, **search_params)
-        dataset = json.loads(project.endpoint.get(api, params=params).text)[ret]
+        dataset = json.loads(endpoint.get(api, params=params).text)[ret]
         for branch_data in dataset:
-            branch_data[cls.__PROJECT_ADORN] = project
+            branch_data[cls.__PROJECT_KEY] = project.key
         res = {}
         for branch_data in dataset:
-            res[branch_data["name"]] = cls.load(project.endpoint, branch_data, project.key, branch_data["name"])
+            res[branch_data["name"]] = cls.load(project.endpoint, branch_data)
         return res
 
     def reload(self, data: ApiPayload) -> Branch:
         """Reloads a Branch object from API data"""
-        self.concerned_object = self.concerned_object or proj.Project.get_project_object(self.endpoint, data[self.__PROJECT_ADORN])
+        self.concerned_object = self.concerned_object or proj.Project.get_project_object(self.endpoint, data[self.__PROJECT_KEY])
         super().reload(data)
         self._is_main = self.sq_json["isMain"]
         self._keep_when_inactive = self.sq_json.get("excludedFromPurge", False)

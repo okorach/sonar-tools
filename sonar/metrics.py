@@ -82,9 +82,10 @@ class Metric(SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload = None) -> None:
         """Constructor"""
-        super().__init__(endpoint=endpoint, key=key)
+        super().__init__(endpoint, data)
+        self.key = data["key"]
         self.type: Optional[str] = None  #: Type (FLOAT, INT, STRING, WORK_DUR...)
         self.name: Optional[str] = None  #: Name
         self.description: Optional[str] = None  #: Description

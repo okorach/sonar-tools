@@ -159,13 +159,13 @@ class Rule(SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: Platform, key: str, data: ApiPayload) -> None:
-        super().__init__(endpoint=endpoint, key=key)
-        log.debug("Loading rule object '%s'", key)
-        self.sq_json = data.copy()
-        self.severity = data.get("severity", None)
-        self.repo = data.get("repo", None)
-        self.type = data.get("type", None)
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
+        super().__init__(endpoint, data)
+        self.key = data["key"]
+        log.debug("Loading rule object '%s'", self.key)
+        self.severity = data.get("severity")
+        self.repo = data.get("repo")
+        self.type = data.get("type")
         self._impacts = {}
         if "impacts" in data:
             self._impacts = {imp["softwareQuality"]: imp["severity"] for imp in data["impacts"]}
@@ -249,15 +249,6 @@ class Rule(SqObject):
         created_rule = cls.get_object(endpoint=endpoint, key=key)
         created_rule.custom_desc = kwargs.get("markdownDescription", "NO DESCRIPTION")
         return created_rule
-
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> Rule:
-        """Loads a rule object with a SonarQube API payload"""
-        key = data["key"]
-        if o := cls.CACHE.get(endpoint.local_url, key):
-            o.reload(data)
-            return o
-        return cls(key=key, endpoint=endpoint, data=data)
 
     @classmethod
     def instantiate(cls, endpoint: Platform, key: str, template_key: str, data: ObjectJsonRepr) -> Rule:

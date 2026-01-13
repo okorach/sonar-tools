@@ -136,7 +136,15 @@ class QualityGate(SqObject):
 
     def __hash__(self) -> int:
         """Default UUID for SQ objects"""
-        return hash((self.name, self.base_url()))
+        return hash((self.name,))
+
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data["name"],)
+
+    def hash_object(self) -> tuple[Any, ...]:
+        """Returns the hash elements for a given object"""
+        return (self.name,)
 
     @classmethod
     def get_object(cls, endpoint: Platform, name: str) -> QualityGate:
@@ -152,18 +160,6 @@ class QualityGate(SqObject):
         if data := search_by_name(endpoint, name):
             return cls.load(endpoint, data)
         raise exceptions.ObjectNotFound(name, f"Quality gate '{name}' not found")
-
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> QualityGate:
-        """Creates a quality gate from returned API data
-
-        :return: the QualityGate object
-        """
-        # SonarQube 10 compatibility: "id" field dropped, replaced by "name"
-        o: Optional[QualityGate] = cls.CACHE.get(endpoint.local_url, data["name"])
-        if not o:
-            o = cls(endpoint, data["name"], data=data)
-        return o.reload(data)
 
     @classmethod
     def create(cls, endpoint: Platform, name: str) -> QualityGate:

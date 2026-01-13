@@ -128,11 +128,15 @@ class Setting(sqobject.SqObject):
     """Abstraction of the Sonar setting concept"""
 
     CACHE = cache.Cache()
+    __COMPONENT = "component"
 
-    def __init__(self, endpoint: Platform, key: str, component: Optional[object] = None, data: Optional[ApiPayload] = None) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor"""
-        super().__init__(endpoint=endpoint, key=key)
-        self.component = component
+        super().__init__(endpoint, data)
+        self.key = data["key"]
+        self.component = data.get(self.__COMPONENT)
+        if self.component:
+            self.component = Component.get_object(endpoint, self.component)
         self.default_value: Optional[Any] = None
         self.value: Optional[Any] = None
         self.multi_valued: Optional[bool] = None
@@ -143,14 +147,22 @@ class Setting(sqobject.SqObject):
         log.debug("Constructed %s uuid %d value %s", str(self), hash(self), str(self.value))
         self.__class__.CACHE.put(self)
 
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data["key"], data["component"])
+
+    def hash_object(self) -> tuple[Any, ...]:
+        """Returns the hash elements for a given object"""
+        return (self.key, self.component.key if self.component else None)
+
     @classmethod
-    def read(cls, key: str, endpoint: Platform, component: Optional[object] = None) -> Setting:
+    def get_object(cls, key: str, endpoint: Platform, component: Optional[str] = None, use_cache: bool = True) -> Setting:
         """Reads a setting from the platform"""
-        log.debug("Reading setting '%s' for %s", key, str(component))
-        if o := cls.CACHE.get(endpoint.local_url, key, component):
+        o = cls.CACHE.get(endpoint.local_url, key, component)
+        if o and use_cache:
             return o
-        data = get_settings_data(endpoint, key, component)
-        return Setting.load(key=key, endpoint=endpoint, data=data, component=component)
+        data = get_settings_data(endpoint, key, component) | {"component": component}
+        return cls.load(endpoint, data)
 
     @classmethod
     def create(cls, key: str, endpoint: Platform, value: Any = None, component: Optional[object] = None) -> Union[Setting, None]:
@@ -160,17 +172,7 @@ class Setting(sqobject.SqObject):
         r = endpoint.post(api, params=params)
         if not r.ok:
             return None
-        o = cls.read(key=key, endpoint=endpoint, component=component)
-        return o
-
-    @classmethod
-    def load(cls, key: str, endpoint: Platform, data: ApiPayload, component: Optional[object] = None) -> Setting:
-        """Loads a setting with  JSON data"""
-        log.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
-        o = cls.CACHE.get(endpoint.local_url, key, component)
-        if not o:
-            o = cls(key=key, endpoint=endpoint, data=data, component=component)
-        o.reload(data)
+        o = cls.get_object(key=key, endpoint=endpoint, component=component)
         return o
 
     @classmethod
@@ -410,7 +412,8 @@ def __get_settings(endpoint: Platform, data: ApiPayload, component: Optional[sqo
             (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
             o: Optional[Setting] = Setting.CACHE.get(endpoint.local_url, key, component.key if component else None)
             if not o:
-                o = Setting(endpoint=endpoint, key=key, component=component, data=sdata)
+                sdata["key"] = key
+                o = Setting(endpoint, data=sdata, component=component)
             else:
                 o.reload(sdata)
             if o.is_internal():
@@ -481,7 +484,7 @@ def string_to_new_code(value: str) -> list[str]:
 
 def get_new_code_period(endpoint: Platform, project_or_branch: object) -> Setting:
     """returns the new code period, either the default global setting, or specific to a project/branch"""
-    return Setting.read(key=NEW_CODE_PERIOD, endpoint=endpoint, component=project_or_branch)
+    return Setting.get_object(key=NEW_CODE_PERIOD, endpoint=endpoint, component=project_or_branch)
 
 
 def set_new_code_period(endpoint: Platform, nc_type: str, nc_value: str, project_key: Optional[str] = None, branch: Optional[str] = None) -> bool:

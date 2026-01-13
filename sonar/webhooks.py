@@ -44,16 +44,17 @@ class WebHook(SqObject):
 
     CACHE: ClassVar[cache.Cache] = cache.Cache()
 
-    def __init__(self, endpoint: Platform, name: str, url: str, secret: Optional[str] = None, project: Optional[str] = None) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor"""
-        super().__init__(endpoint=endpoint, key=name)
-        self.name = name  #: Webhook name
-        self.webhook_url = url  #: Webhook key
-        self.secret = secret  #: Webhook secret
-        self.project = project  #: Webhook project, optional
-        self.last_delivery: Optional[str] = None  #: Webhook last delivery timestamp
-        self.project = project  #: Webhook project if project specific webhook
+        super().__init__(endpoint=endpoint, data=data)
+        self.name = data["name"]  #: Webhook name
+        self.webhook_url = data["url"]  #: Webhook key
+        self.secret = data.get("secret")  #: Webhook secret
+        self.project = data.get("project")  #: Webhook project, optional
+        self.last_delivery: Optional[str] = data.get("latestDelivery")  #: Webhook last delivery timestamp
+        self.project = data.get("project")  #: Webhook project if project specific webhook
         self.__class__.CACHE.put(self)
+        self.reload(data)
 
     def __str__(self) -> str:
         """Returns a string representation of the webhook"""
@@ -61,9 +62,13 @@ class WebHook(SqObject):
             return f"webhook '{self.name}' of {self.project}"
         return f"webhook '{self.name}'"
 
-    def __hash__(self) -> int:
-        """Returns an object unique Id"""
-        return hash((self.name, self.project, self.endpoint.local_url))
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data["name"], data["project"])
+
+    def hash_object(self) -> tuple[Any, ...]:
+        """Returns the hash elements for a given object"""
+        return (self.name, self.project)
 
     @classmethod
     def create(cls, endpoint: Platform, name: str, url: str, secret: Optional[str] = None, project: Optional[str] = None) -> WebHook:
@@ -100,12 +105,13 @@ class WebHook(SqObject):
         return o
 
     @classmethod
-    def get_object(cls, endpoint: Platform, name: str, project: Optional[Union[str, Project]] = None, **kwargs: Any) -> WebHook:
+    def get_object(cls, endpoint: Platform, name: str, project: Optional[Union[str, Project]] = None, use_cache: bool = True) -> WebHook:
         """Gets a WebHook object from its name and an eventual project key"""
         if project and not isinstance(project, str):
             project = project.key
         log.debug("Getting webhook name %s project key %s", name, project)
-        if kwargs.get("use_cache", True) and (o := cls.CACHE.get(endpoint.local_url, name, project)):
+        o = cls.CACHE.get(endpoint.local_url, name, project)
+        if o and use_cache:
             return o
         try:
             whs = list(cls.search(endpoint, project=project).values())
@@ -127,19 +133,17 @@ class WebHook(SqObject):
 
     def reload(self, data: ApiPayload) -> None:
         """Reloads a WebHook from the payload gotten from SonarQube"""
-        log.debug("Reloading %s with %s", self, data)
-        self.sq_json = self.sq_json or {} | data
+        super().reload(data)
         self.name = data["name"]
         self.key = data["key"]
         self.webhook_url = data["url"]
         self.secret = data.get("secret") or self.secret
         self.last_delivery = data.get("latestDelivery")
 
-    def refresh(self) -> None:
+    def refresh(self) -> WebHook:
         """Reads the Webhook data on the SonarQube platform and updates the local object"""
         log.debug("Refreshing %s", self)
-        tmp_wh = self.__class__.get_object(self.endpoint, name=self.name, project=self.project, use_cache=False)
-        self.reload(tmp_wh.sq_json)
+        return self.__class__.get_object(self.endpoint, name=self.name, project=self.project, use_cache=False)
 
     def url(self) -> str:
         """Returns the object permalink"""

@@ -63,15 +63,14 @@ class QualityProfile(SqObject):
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "profiles"
 
-    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Do not use, use class methods to create objects"""
-        super().__init__(endpoint=endpoint, key=key)
-
+        super().__init__(endpoint, data)
+        self.key = data["key"]
         self.name = data["name"]  #: Quality profile name
         self.language = data["language"]  #: Quality profile language
         self.is_default = data["isDefault"]  #: Quality profile is default
         self.is_built_in = data["isBuiltIn"]  #: Quality profile is built-in - read-only
-        self.sq_json = data
         self._permissions: Optional[object] = None
         self._rules: Optional[dict[str, rules.Rule]] = None
         self.__last_use: Optional[datetime] = None
@@ -90,13 +89,20 @@ class QualityProfile(SqObject):
 
         log.debug("Loaded %s", str(self))
         self.__class__.CACHE.put(self)
+        self.reload(data)
 
     def __str__(self) -> str:
         """String formatting of the object"""
         return f"quality profile '{self.name}' of language '{self.language}'"
 
-    def __hash__(self) -> int:
-        return hash((self.name, self.language, self.base_url()))
+    @staticmethod
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data["name"], data["language"])
+
+    def hash_object(self) -> tuple[Any, ...]:
+        """Returns the hash elements for a given object"""
+        return (self.name, self.language)
 
     @classmethod
     def search(cls, endpoint: Platform, use_cache: bool = False, **search_params: Any) -> dict[str, QualityProfile]:
@@ -111,7 +117,7 @@ class QualityProfile(SqObject):
         return cls.get_paginated(endpoint=endpoint, params=search_params)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, name: str, language: str) -> QualityProfile:
+    def get_object(cls, endpoint: Platform, name: str, language: str, use_cache: bool = True) -> QualityProfile:
         """Returns a quality profile from its name and language
 
         :param endpoint: Reference to the SonarQube platform
@@ -120,34 +126,18 @@ class QualityProfile(SqObject):
 
         :return: The quality profile object, of None if not found
         """
-        cls.search(endpoint, use_cache=True)
-        if o := cls.CACHE.get(endpoint.local_url, name, language):
-            return o
-        raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
-
-    @classmethod
-    def read(cls, endpoint: Platform, name: str, language: str) -> Optional[QualityProfile]:
-        """Creates a QualityProfile object corresponding to quality profile with same name and language in SonarQube
-
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param str name: Quality profile name
-        :param str language: Quality profile language
-        :return: The quality profile object
-        :rtype: QualityProfile or None if not found
-        """
-        if not languages.Language.exists(endpoint=endpoint, language=language):
-            log.error("Language '%s' does not exist, quality profile creation aborted", language)
-            return None
-        log.debug("Reading quality profile '%s' of language '%s'", name, language)
         o = cls.CACHE.get(endpoint.local_url, name, language)
-        if o:
+        if o and use_cache:
             return o
-        api, _, _, _ = endpoint.api.get_details(cls, Oper.SEARCH)
-        data = sutil.search_by_name(endpoint, name, api, QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language})
-        return cls(key=data["key"], endpoint=endpoint, data=data)
+        if not languages.Language.exists(endpoint, language):
+            raise exceptions.ObjectNotFound(language, message=f"Language '{language}' not found")
+        cls.search(endpoint, use_cache=False)
+        if not (o := cls.CACHE.get(endpoint.local_url, name, language)):
+            raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
+        return o
 
     @classmethod
-    def create(cls, endpoint: Platform, name: str, language: str) -> Optional[QualityProfile]:
+    def create(cls, endpoint: Platform, name: str, language: str) -> QualityProfile:
         """Creates a new quality profile in SonarQube and returns the corresponding QualityProfile object
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -158,11 +148,11 @@ class QualityProfile(SqObject):
         """
         if not languages.Language.exists(endpoint=endpoint, language=language):
             log.error("Language '%s' does not exist, quality profile creation aborted")
-            return None
+            raise exceptions.ObjectNotFound(language, message=f"Language '{language}' not found")
         log.debug("Creating quality profile '%s' of language '%s'", name, language)
         api, _, params, _ = endpoint.api.get_details(cls, Oper.CREATE, name=name, language=language)
         endpoint.post(api, params=params)
-        return cls.read(endpoint=endpoint, name=name, language=language)
+        return cls.get_object(endpoint=endpoint, name=name, language=language)
 
     @classmethod
     def clone(cls, endpoint: Platform, name: str, language: str, original_qp_name: str) -> Optional[QualityProfile]:
@@ -182,26 +172,23 @@ class QualityProfile(SqObject):
         log.debug("Found QP to clone: %s", str(original_qp))
         api, _, params, _ = endpoint.api.get_details(cls, Oper.COPY, toName=name, fromKey=original_qp.key)
         endpoint.post(api, params=params)
-        return cls.read(endpoint=endpoint, name=name, language=language)
-
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> None:
-        """Creates a QualityProfile object from the result of a SonarQube API quality profile search data
-
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param dict data: The JSON data corresponding to the quality profile
-        :type data: dict
-        :return: The quality profile object
-        :rtype: QualityProfile
-        """
-        log.debug("Loading quality profile '%s' of language '%s'", data["name"], data["language"])
-        return cls(endpoint=endpoint, key=data["key"], data=data)
+        return cls.get_object(endpoint=endpoint, name=name, language=language)
 
     @classmethod
     def api_for(cls, operation: Oper, endpoint: Platform) -> str:
         """Returns the API to use for a particular operation"""
         api, _, _, _ = endpoint.api.get_details(cls, operation)
         return api
+
+    def reload(self, data: ApiPayload) -> QualityProfile:
+        self.nbr_rules = int(data["activeRuleCount"])
+        self.nbr_deprecated_rules = int(data["activeDeprecatedRuleCount"])
+        (self._projects, self._projects_lock) = (None, Lock())
+        self.project_count = data.get("projectCount")
+        self.parent_name = data.get("parentName")
+        self.__last_use = sutil.string_to_date(data.get("lastUsed"))
+        self.__last_update = sutil.string_to_date(data.get("rulesUpdatedAt"))
+        return self
 
     def url(self) -> str:
         """

@@ -54,10 +54,10 @@ class User(SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: Platform, login: str, data: ApiPayload) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Do not use to create users, use on of the constructor class methods"""
         super().__init__(endpoint=endpoint, key=login)
-        self.login = login  #: User login (str)
+        self.login = data["login"]  #: User login (str)
         self.id: Optional[str] = None  #: SonarQube 10+ User Id (str)
         self.name: Optional[str] = None  #: User name (str)
         self._groups: Optional[list[str]] = None  #: User groups (list)
@@ -67,24 +67,21 @@ class User(SqObject):
         self.last_login: Optional[datetime] = None  #: User last login (datetime) - read-only
         self.nb_tokens: Optional[int] = None  #: Nbr of tokens (int) - read-only
         self.__tokens: Optional[list[tokens.UserToken]] = None
+        self.__class__.CACHE.put(self)
         self.reload(data)
         log.debug("Constructed object %s id '%s'", str(self), str(self.id))
-        self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:
         """Returns the string representation of the object"""
         return f"user '{self.login}'"
 
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> User:
-        """Creates a user object from the result of a SonarQube API user search data
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data["login"],)
 
-        :param endpoint: Reference to the SonarQube platform
-        :param data: The JSON data corresponding to the group
-        :return: The user object
-        """
-        log.debug("Loading user '%s'", data["login"])
-        return cls(login=data["login"], endpoint=endpoint, data=data)
+    def hash_object(self) -> tuple[Any, ...]:
+        """Returns the hash elements for a given object"""
+        return (self.login,)
 
     @classmethod
     def create(cls, endpoint: Platform, login: str, name: str, is_local: bool = True, password: Optional[str] = None) -> User:
@@ -134,17 +131,17 @@ class User(SqObject):
         :return: The user object
         :rtype: User
         """
-        if o := cls.CACHE.get(login, endpoint.local_url):
+        if o := cls.CACHE.get(endpoint.local_url, login):
             return o
         if id is not None:
-            return cls.__get_object_by_id(endpoint, id)
+            return cls.get_object_by_id(endpoint, id)
         log.debug("Getting user '%s'", login)
         if user := next((o for k, o in cls.search(endpoint, q=login).items() if k == login), None):
             return user
         raise exceptions.ObjectNotFound(login or id, f"User '{login or id}' not found")
 
     @classmethod
-    def __get_object_by_id(cls, endpoint: Platform, id: str) -> User:
+    def get_object_by_id(cls, endpoint: Platform, id: str) -> User:
         """Searches a user by its (API v2) id in SonarQube
 
         :param endpoint: Reference to the SonarQube platform
@@ -231,7 +228,6 @@ class User(SqObject):
         """
         :return: the SonarQube permalink to the user, actually the global users page only
                  since this is as close as we can get to the precise user definition
-        :rtype: str
         """
         return f"{self.base_url(local=False)}/admin/users"
 

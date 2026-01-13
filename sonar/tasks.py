@@ -100,7 +100,7 @@ class Task(SqObject):
     @classmethod
     def get_object(cls, endpoint: Platform, task_id: str, use_cache: bool = True) -> Task:
         """Returns a background task object from its id"""
-        o: Optional[Task] = cls.CACHE.get(task_id, endpoint.local_url)
+        o: Optional[Task] = cls.CACHE.get(endpoint.local_url, task_id)
         if use_cache and o:
             return o
         additional_fields = "scannerContext,warnings"
@@ -110,10 +110,14 @@ class Task(SqObject):
         data = json.loads(endpoint.get(api, params=params).text)[ret]
         return o.reload(data) if o else cls.load(endpoint, json.loads(endpoint.get(api, params=params).text)[ret])
 
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload, *hash_items: Any) -> Task:
-        """Loads a background task object from API payload"""
-        return super().load(endpoint, data, data["id"])
+    @staticmethod
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data["id"],)
+
+    def hash_object(self) -> tuple[Any, ...]:
+        """Returns the hash elements for a given object"""
+        return (self.key,)
 
     @classmethod
     def search(cls, endpoint: Platform, **search_params: Any) -> list[Task]:

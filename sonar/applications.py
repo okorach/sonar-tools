@@ -60,13 +60,13 @@ class Application(aggr.Aggregation):
     CACHE = cache.Cache()
     APP_FILTER = {"filter": "qualifier = APP"}
 
-    def __init__(self, endpoint: Platform, key: str, name: str) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
-        super().__init__(endpoint=endpoint, key=key)
+        super().__init__(endpoint, data)
         self._branches: Optional[dict[str, app_branches.ApplicationBranch]] = None
         self._projects: Optional[dict[str, str]] = None
         self._description: Optional[str] = None
-        self.name = name
+        self.name = data["name"]
         log.debug("Constructed object %s with uuid %d id %x", str(self), hash(self), id(self))
         self.__class__.CACHE.put(self)
 
@@ -94,23 +94,6 @@ class Application(aggr.Aggregation):
         return cls.load(endpoint, data)
 
     @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> Application:
-        """Loads an Application object with data retrieved from SonarQube
-
-        :param endpoint: Reference to the SonarQube platform
-        :param data: Data coming from api/components/search_projects or api/applications/show
-        :raises UnsupportedOperation: If on a Community Edition
-        :raises ObjectNotFound: If Application key not found in SonarQube
-        :return: The found Application object
-        """
-        check_supported(endpoint)
-        o: Application = cls.CACHE.get(endpoint.local_url, data["key"])
-        if not o:
-            o = cls(endpoint, data["key"], data["name"])
-        o.reload(data)
-        return o
-
-    @classmethod
     def create(cls, endpoint: Platform, key: str, name: str) -> Application:
         """Creates an Application object in SonarQube
 
@@ -124,7 +107,7 @@ class Application(aggr.Aggregation):
         check_supported(endpoint)
         api, _, params, _ = endpoint.api.get_details(cls, Oper.CREATE, key=key, name=name)
         endpoint.post(api, params=params)
-        return Application(endpoint=endpoint, key=key, name=name)
+        return cls.get_object(endpoint, key)
 
     @classmethod
     def search(cls, endpoint: Platform, use_cache: bool = True, **search_params: Any) -> dict[str, Application]:

@@ -115,7 +115,7 @@ class Project(Component):
         self._revision: Optional[str] = None
         super().__init__(endpoint, data)
         self.__class__.CACHE.put(self)
-        log.debug("Loaded object %s", str(self))
+        log.debug("Loaded object %s", self)
 
     def __str__(self) -> str:
         """Returns the string representation of the project"""
@@ -124,12 +124,12 @@ class Project(Component):
     @classmethod
     def get_object(cls, endpoint: Platform, key: str, use_cache: bool = False) -> Project:
         """Returns the project object from its project key"""
-        o: Optional[Project] = cls.CACHE.get(key, endpoint.local_url)
+        o: Optional[Project] = cls.CACHE.get(endpoint.local_url, key)
         if use_cache and o:
             return o
         api, _, params, ret = endpoint.api.get_details(cls, Oper.GET, component=key)
         data = json.loads(endpoint.get(api, params=params).text)[ret]
-        return o.reload(data) if o else cls.load(endpoint, data, key)
+        return o.reload(data) if o else cls.load(endpoint, data)
 
     @classmethod
     def create(cls, endpoint: Platform, key: str, name: str) -> Project:
@@ -185,14 +185,6 @@ class Project(Component):
     def project(self) -> Project:
         """Returns the project"""
         return self
-
-    def refresh(self) -> Project:
-        """Refresh a project from SonarQube
-
-        :raises ObjectNotFound: if project key not found
-        :return: self
-        """
-        return self.__class__.get_object(self.endpoint, self.key, use_cache=False)
 
     def reload(self, data: ApiPayload) -> Project:
         """Reloads a project with JSON data coming from api/components/search request
@@ -532,7 +524,7 @@ class Project(Component):
     def ai_code_fix(self) -> Optional[str]:
         """Returns whether this project is enabled for AI Code Fix (if only enabled per project)"""
         log.debug("Getting project AI Code Fix suggestion flag for %s", str(self))
-        global_setting = settings.Setting.read(key=settings.AI_CODE_FIX, endpoint=self.endpoint)
+        global_setting = settings.Setting.get_object(key=settings.AI_CODE_FIX, endpoint=self.endpoint)
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
@@ -976,7 +968,7 @@ class Project(Component):
         :rtype: str
         """
         if self._new_code is None:
-            new_code = settings.Setting.read(settings.NEW_CODE_PERIOD, self.endpoint, component=self)
+            new_code = settings.Setting.get_object(settings.NEW_CODE_PERIOD, self.endpoint, component=self)
             self._new_code = new_code.value if new_code else ""
             log.info("%s new code is %s", self, self._new_code)
         return self._new_code

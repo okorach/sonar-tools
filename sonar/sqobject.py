@@ -52,34 +52,39 @@ class SqObject(object):
     API: dict[str, str] = {}  # Will be defined in the subclass
 
     def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
-        if not self.__class__.CACHE:
-            self.__class__.CACHE.set_class(self.__class__)
         self.sq_json: ApiPayload = data
         self.endpoint: Platform = endpoint  #: Reference to the SonarQube platform
         self.key: str  #: Object unique key (unique in its class)
         self.concerned_object: Optional[SqObject] = None
         self._tags: Optional[list[str]] = None
+        if not self.__class__.CACHE:
+            self.__class__.CACHE.set_class(self.__class__)
 
     def __hash__(self) -> int:
         """Default UUID for SQ objects"""
-        return hash((self.base_url(), self.key))
+        return hash((self.endpoint.local_url, *self.hash_object()))
+
+    @staticmethod
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data["key"],)
+
+    def hash_object(self) -> tuple[Any, ...]:
+        """Returns the hash elements for a given object"""
+        return (self.key,)
 
     def __eq__(self, another: object) -> bool:
         if type(self) is type(another):
             return hash(self) == hash(another)
         return NotImplemented
 
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload, *hash_items) -> SqObject:
-        """Creates a project loaded with JSON data coming from api/components/search request
+    def refresh(self) -> SqObject:
+        """Refresh a project from SonarQube
 
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param ApiPayload data: Project data entry in the search results
-        :return: The created project object
+        :raises ObjectNotFound: if project key not found
+        :return: self
         """
-        if not (o := cls.CACHE.get(endpoint.local_url, *hash_items)):
-            o = cls(endpoint, data)
-        return o.reload(data)
+        return self.__class__.get_object(self.endpoint, self.key, use_cache=False)
 
     @classmethod
     def api_for(cls, operation: Oper, endpoint: Platform) -> str:
@@ -154,13 +159,19 @@ class SqObject(object):
         return sutil.nbr_total_elements(dataset)
 
     @classmethod
+    def load(cls, endpoint: Platform, data: ApiPayload) -> SqObject:
+        """Loads a SonarQube object from the API payload"""
+        o = cls.CACHE.get(endpoint.local_url, *cls.hash_payload(data))
+        return o.reload(data) if o else cls(endpoint, data)
+
+    @classmethod
     def load_objects(cls, endpoint: Platform, dataset: ApiPayload) -> dict[str, SqObject]:
         """Loads any SonarQube object with the contents of an API payload"""
         try:
             load_method = cls.load
         except AttributeError as e:
             raise exceptions.UnsupportedOperation(f"Can't load {cls.__name__.lower()}s") from e
-        obj_list = [load_method(endpoint=endpoint, data=data) for data in dataset]
+        obj_list = [load_method(endpoint, data) for data in dataset]
         return {obj.key: obj for obj in obj_list}
 
     @classmethod
@@ -341,11 +352,3 @@ class SqObject(object):
 def _get(endpoint: Platform, api: str, params: ApiParams) -> requests.Response:
     """Returns a Sonar object from its key"""
     return json.loads(endpoint.get(api, params=params).text)
-
-
-def _load(endpoint: Platform, object_class: Any, data: ObjectJsonRepr) -> dict[str, object]:
-    """Loads any SonarQube object with the contents of an API payload"""
-    key_field = object_class.SEARCH_KEY_FIELD
-    if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook", "Rule"):
-        return {obj[key_field]: object_class.load(endpoint=endpoint, data=obj) for obj in data}
-    return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}

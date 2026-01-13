@@ -88,10 +88,11 @@ class Portfolio(aggregations.Aggregation):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: Platform, key: str, name: Optional[str] = None) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor, don't use - use class methods instead"""
-        super().__init__(endpoint=endpoint, key=key)
-        self.name: str = name if name is not None else key
+        super().__init__(endpoint, data)
+        self.key = data["key"]
+        self.name: data.get("name", self.key)
         self._selection_mode: dict[str, Any] = {_SELECTION_MODE_NONE: True}  #: Portfolio project selection mode
         self._tags: list[str] = []  #: Portfolio tags when selection mode is TAGS
         self._description: Optional[str] = None  #: Portfolio description
@@ -103,6 +104,7 @@ class Portfolio(aggregations.Aggregation):
         self.root_portfolio: Optional[Portfolio] = None  #: Ref to root portfolio, if any
         self._sub_portfolios: dict[str, Portfolio] = {}  #: Subportfolios
         self.__class__.CACHE.put(self)
+        self.reload(data)
         log.debug("Created portfolio object name '%s'", name)
 
     def __str__(self) -> str:
@@ -148,28 +150,18 @@ class Portfolio(aggregations.Aggregation):
         if not name:
             name = key
         log.debug("Creating portfolio name '%s', key '%s', parent = %s", name, key, str(parent_key))
-        params = {"name": name, "key": key, "parent": parent_key}
-        for p in "description", "visibility":
-            params[p] = kwargs.get(p, None)
+        params = {"name": name, "key": key, "parent": parent_key} | {p: kwargs.get(p) for p in ("description", "visibility")}
         api, _, api_params, _ = endpoint.api.get_details(cls, Oper.CREATE, **params)
         endpoint.post(api, params=api_params)
-        o = cls(endpoint=endpoint, name=name, key=key)
+        o = cls.get_object(endpoint, key)
         if parent_key:
-            parent_p = Portfolio.get_object(endpoint, parent_key)
+            parent_p = cls.get_object(endpoint, parent_key)
             o.parent_portfolio = parent_p
             o.root_portfolio = parent_p.root_portfolio
         else:
             o.parent_portfolio = None
             o.root_portfolio = o
         # TODO - Allow on the fly selection mode
-        return o
-
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> Portfolio:
-        """Creates and load a Portfolio object with returned API data"""
-        log.debug("Loading portfolio '%s' with data %s", data["name"], util.json_dump(data))
-        o = cls(endpoint=endpoint, name=data["name"], key=data["key"])
-        o.reload(data)
         return o
 
     def reload(self, data: ApiPayload) -> Portfolio:

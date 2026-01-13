@@ -71,6 +71,15 @@ class Group(SqObject):
         """String representation of the object"""
         return f"group '{self.name}'"
 
+    @staticmethod
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data["name"],)
+
+    def hash_object(self) -> tuple[Any, ...]:
+        """Returns the hash elements for a given object"""
+        return (self.name,)
+
     @classmethod
     def read(cls, endpoint: Platform, name: str) -> Group:
         """Creates a Group object corresponding to the group with same name in SonarQube
@@ -103,16 +112,6 @@ class Group(SqObject):
         api, _, _, _ = endpoint.api.get_details(cls, Oper.CREATE, **params)
         endpoint.post(api, params=params)
         return cls.read(endpoint=endpoint, name=name)
-
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> Group:
-        """Creates a Group object from the result of a SonarQube API group search data
-
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param data: The JSON data corresponding to the group
-        :return: The group object
-        """
-        return cls(endpoint=endpoint, name=data["name"], data=data)
 
     @classmethod
     def get_object(cls, endpoint: Platform, name: str) -> Group:

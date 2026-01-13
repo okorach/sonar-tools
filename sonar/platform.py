@@ -413,7 +413,7 @@ class Platform(object):
     def __settings(self, settings_list: KeyList = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
         log.info("Getting global settings")
         settings_dict = settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
-        if ai_code_fix := settings.Setting.read(endpoint=self, key=settings.AI_CODE_FIX):
+        if ai_code_fix := settings.Setting.get_object(endpoint=self, key=settings.AI_CODE_FIX):
             settings_dict[ai_code_fix.key] = ai_code_fix
         return settings_dict
 
@@ -479,7 +479,7 @@ class Platform(object):
         json_data = {}
         settings_list = list(self.__settings(include_not_set=True).values())
         settings_list = [s for s in settings_list if s.is_global() and not s.is_internal()]
-        settings_list.append(settings.Setting.read(settings.NEW_CODE_PERIOD, self))
+        settings_list.append(settings.Setting.get_object(settings.NEW_CODE_PERIOD, self))
         for s in settings_list:
             (categ, subcateg) = s.category()
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:

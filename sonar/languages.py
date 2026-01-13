@@ -42,28 +42,18 @@ class Language(SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: Platform, key: str, name: str) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor
 
         :param endpoint: Reference of the SonarQube platform
         :param key: Language key
         :param name: Language name
         """
-        super().__init__(endpoint=endpoint, key=key)
-        self.name = name  #: Language name
+        super().__init__(endpoint, data)
+        self.key = data["key"]
+        self.name = data["name"]  #: Language name
         self._nb_rules = {"_ALL": None, idefs.TYPE_BUG: None, idefs.TYPE_VULN: None, idefs.TYPE_CODE_SMELL: None, idefs.TYPE_HOTSPOT: None}
         self.__class__.CACHE.put(self)
-
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> Language:
-        """Loads a languages from an API payload
-
-        :param endpoint: Reference of the SonarQube platform
-        :param data: API payload from api/languages/list
-        """
-        if not (o := cls.CACHE.get(endpoint.local_url, data["key"])):
-            o = cls(endpoint=endpoint, key=data["key"], name=data["name"])
-        return o
 
     @classmethod
     def read(cls, endpoint: Platform, key: str, use_cache: bool = True) -> Optional[Language]:
@@ -92,7 +82,7 @@ class Language(SqObject):
         log.debug("Searching languages from SonarQube")
         api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
         data = json.loads(endpoint.get(api, params=params).text)
-        return {lang["key"]: Language(endpoint=endpoint, key=lang["key"], name=lang["name"]) for lang in data[ret]}
+        return {lang["key"]: Language(endpoint, lang) for lang in data[ret]}
 
     def number_of_rules(self, rule_type: Optional[str] = None) -> int:
         """Count rules in the language, optionally filtering on rule type

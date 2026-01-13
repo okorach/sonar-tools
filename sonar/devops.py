@@ -55,10 +55,10 @@ class DevopsPlatform(SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: Platform, key: str, platform_type: str) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor"""
-        super().__init__(endpoint=endpoint, key=key)
-        self.type: str = platform_type  #: DevOps platform type
+        super().__init__(endpoint, data)
+        self.type: str = data["type"]  #: DevOps platform type
         self.url: Union[str, None] = None  #: DevOps platform URL
         self._specific: Union[dict[str, str], None] = None  #: DevOps platform specific settings
         self.__class__.CACHE.put(self)
@@ -72,26 +72,31 @@ class DevopsPlatform(SqObject):
         return string
 
     @classmethod
-    def read(cls, endpoint: Platform, key: str) -> DevopsPlatform:
+    def get_object(cls, endpoint: Platform, key: str) -> DevopsPlatform:
         """Reads a devops platform object in Sonar instance"""
         if o := cls.CACHE.get(endpoint.local_url, key):
             return o
-        api, _, _, _ = endpoint.api.get_details(DevopsPlatform, Oper.SEARCH)
-        data = json.loads(endpoint.get(api).text)
-        for plt_type, platforms in data.items():
-            for p in platforms:
-                if p["key"] == key:
-                    return cls.load(endpoint, plt_type, p)
+        cls.search(endpoint)
+        if o := cls.CACHE.get(endpoint.local_url, key):
+            return o
         raise exceptions.ObjectNotFound(key, f"DevOps platform key '{key}' not found")
 
     @classmethod
-    def load(cls, endpoint: Platform, plt_type: str, data: ApiPayload) -> DevopsPlatform:
-        """Finds a devops platform object and loads it with data"""
-        key = data["key"]
-        o = cls.CACHE.get(endpoint.local_url,key)
-        if not o:
-            o = DevopsPlatform(endpoint=endpoint, key=key, platform_type=plt_type)
-        return o._load(data)
+    def search(cls, endpoint: Platform) -> dict[str, DevopsPlatform]:
+        """Reads all DevOps platforms from SonarQube
+
+        :param endpoint: Reference to the SonarQube platform
+        :return: List of DevOps platforms
+        :rtype: dict{<platformKey>: <DevopsPlatform>}
+        """
+        if endpoint.is_sonarcloud():
+            raise exceptions.UnsupportedOperation("Can't get list of DevOps platforms on SonarQube Cloud")
+        api, _, _, _ = endpoint.api.get_details(cls, Oper.SEARCH)
+        data = json.loads(endpoint.get(api).text)
+        devops_platforms = {}
+        for plt_type, plt_data in data.items():
+            devops_platforms[plt_data["key"]] = cls.load(endpoint, plt_data | {"type": plt_type})
+        return devops_platforms
 
     @classmethod
     def create(cls, endpoint: Platform, key: str, plt_type: str, url_or_workspace: str) -> DevopsPlatform:
@@ -127,24 +132,6 @@ class DevopsPlatform(SqObject):
         o = DevopsPlatform(endpoint=endpoint, key=key, platform_type=plt_type)
         o.refresh()
         return o
-
-    @classmethod
-    def search(cls, endpoint: Platform) -> dict[str, DevopsPlatform]:
-        """Reads all DevOps platforms from SonarQube
-
-        :param endpoint: Reference to the SonarQube platform
-        :return: List of DevOps platforms
-        :rtype: dict{<platformKey>: <DevopsPlatform>}
-        """
-        if endpoint.is_sonarcloud():
-            raise exceptions.UnsupportedOperation("Can't get list of DevOps platforms on SonarQube Cloud")
-        api, _, _, _ = endpoint.api.get_details(cls, Oper.SEARCH)
-        data = json.loads(endpoint.get(api).text)
-        devops_platforms = {}
-        for alm_type in DEVOPS_PLATFORM_TYPES:
-            for alm_data in data.get(alm_type, {}):
-                devops_platforms[alm_data["key"]] = cls.load(endpoint, alm_type, alm_data)
-        return devops_platforms
 
     def _load(self, data: ApiPayload) -> DevopsPlatform:
         """Loads a devops platform object with data"""
@@ -240,7 +227,7 @@ class DevopsPlatform(SqObject):
         """
         if len(cls.CACHE.from_platform(endpoint)) == 0:
             cls.search(endpoint)
-        return cls.read(endpoint, key)
+        return cls.get_object(endpoint, key)
 
 
 def count(endpoint: Platform, platf_type: Optional[str] = None) -> int:
@@ -285,7 +272,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
     devops_settings = util.list_to_dict(devops_settings, "key")
     for name, data in devops_settings.items():
         try:
-            o = DevopsPlatform.read(endpoint, name)
+            o = DevopsPlatform.get_object(endpoint, name)
         except exceptions.ObjectNotFound:
             info = data["workspace"] if data["type"] == DEVOPS_BITBUCKET_CLOUD else data["url"]
             try:

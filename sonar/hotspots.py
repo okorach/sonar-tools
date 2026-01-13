@@ -111,15 +111,6 @@ class Hotspot(findings.Finding):
         return f"Hotspot key '{self.key}'"
 
     @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> Hotspot:
-        """Loads a hotspot from the API payload"""
-        o: Optional[Hotspot] = cls.CACHE.get(endpoint.local_url, data["key"])
-        if not o:
-            o = Hotspot(endpoint=endpoint, key=data["key"], data=data)
-        o.reload(data)
-        return o
-
-    @classmethod
     def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, Hotspot]:
         """Searches hotspots
 

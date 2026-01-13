@@ -118,9 +118,9 @@ class Finding(SqObject):
     A finding is a general concept that can be either an issue or a security hotspot
     """
 
-    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload, from_export: bool = False) -> None:
         """Constructor"""
-        super().__init__(endpoint=endpoint, key=key)
+        super().__init__(endpoint, data)
         self.severity = None  # BLOCKER, CRITICAL, MAJOR, MINOR, INFO
         self.type: Optional[str] = None  # VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT
         self.impacts: Optional[dict[str, str]] = None  #: 10.x MQR mode
@@ -144,11 +144,11 @@ class Finding(SqObject):
         self.reload(data, from_export)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str, data: ApiPayload, from_export: bool = False) -> Union[Issue, Hotspot]:
+    def get_object(cls, endpoint: Platform, data: ApiPayload, from_export: bool = False) -> Union[Issue, Hotspot]:
         """Returns a finding from its key"""
         o: Optional[Union[Issue, Hotspot]] = cls.CACHE.get(endpoint.local_url, key)
         if not o:
-            o = cls(endpoint=endpoint, key=key, data=data, from_export=from_export)
+            o = cls(endpoint=endpoint, data=data, from_export=from_export)
         return o
 
     @staticmethod
