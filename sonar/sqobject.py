@@ -62,7 +62,7 @@ class SqObject(object):
 
     def __hash__(self) -> int:
         """Default UUID for SQ objects"""
-        return hash((self.key, self.base_url()))
+        return hash((self.base_url(), self.key))
 
     def __eq__(self, another: object) -> bool:
         if type(self) is type(another):
@@ -77,9 +77,9 @@ class SqObject(object):
         :param ApiPayload data: Project data entry in the search results
         :return: The created project object
         """
-        if o := cls.CACHE.get(endpoint.local_url, *hash_items):
-            return o.reload(data)
-        return cls(endpoint, data)
+        if not (o := cls.CACHE.get(endpoint.local_url, *hash_items)):
+            o = cls(endpoint, data)
+        return o.reload(data)
 
     @classmethod
     def api_for(cls, operation: Oper, endpoint: Platform) -> str:
@@ -197,7 +197,7 @@ class SqObject(object):
 
     def reload(self, data: ApiPayload) -> object:
         """Loads a SonarQube API JSON payload in a SonarObject"""
-        log.debug("%s: Reloading with %s", str(self), util.json_dump(data))
+        log.debug("%s: Reloading with %s", self, data)
         self.sq_json = (self.sq_json or {}) | data
         return self
 
