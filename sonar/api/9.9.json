@@ -464,7 +464,6 @@
         }
     },
     "Metric": {
-        "CREATE": {},
         "GET": {
             "method": "GET",
             "api": "api/metrics/search",
@@ -475,11 +474,9 @@
             "return_field": "metrics",
             "max_page_size": 500
         },
-        "UPDATE": {},
-        "DELETE": {},
         "SEARCH": {
             "method": "GET",
-            "api": "metrics/search",
+            "api": "api/metrics/search",
             "params": [
                 "p",
                 "ps"
