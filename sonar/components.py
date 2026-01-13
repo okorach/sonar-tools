@@ -34,7 +34,7 @@ from requests import RequestException
 from sonar.sqobject import SqObject
 import sonar.util.constants as c
 import sonar.logging as log
-from sonar import settings, tasks, measures, rules, exceptions
+from sonar import settings, measures, rules, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.api.manager import ApiOperation as Oper
@@ -43,6 +43,7 @@ from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 
 if TYPE_CHECKING:
+    from sonar.tasks import Task
     from sonar.projects import Project
     from sonar.platform import Platform
     from sonar.hotspots import Hotspot
@@ -53,9 +54,10 @@ if TYPE_CHECKING:
 class Component(SqObject):
     """Abstraction of the Sonar component concept"""
 
-    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor"""
-        super().__init__(endpoint=endpoint, key=key)
+        super().__init__(endpoint, data)
+        self.key = next(data.get(k) for k in ("key", "projectKey", "componentKey", "project"))
         self.name: Optional[str] = None
         self.nbr_issues: Optional[int] = None
         self.ncloc: Optional[int] = None
@@ -399,9 +401,11 @@ class Component(SqObject):
             return [Problem(get_rule(RuleId.PROJ_ZERO_LOC), self, str(self))]
         return []
 
-    def last_task(self) -> Optional[tasks.Task]:
+    def last_task(self) -> Optional[Task]:
+        from sonar.tasks import Task
+
         """Returns the last analysis background task of a problem, or none if not found"""
-        return tasks.search_last(self.endpoint, component=self.key)
+        return Task.search_last(self.endpoint, component=self.key)
 
     def get_measures_history(self, metrics_list: KeyList) -> dict[str, str]:
         """Returns the history of a project metrics"""
