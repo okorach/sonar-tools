@@ -129,7 +129,7 @@ class QualityProfile(SqObject):
         o = cls.CACHE.get(endpoint.local_url, name, language)
         if o and use_cache:
             return o
-        if not languages.Language.exists(endpoint, language):
+        if not languages.Language.exists(endpoint, language=language):
             raise exceptions.ObjectNotFound(language, message=f"Language '{language}' not found")
         cls.search(endpoint, use_cache=False)
         if not (o := cls.CACHE.get(endpoint.local_url, name, language)):
