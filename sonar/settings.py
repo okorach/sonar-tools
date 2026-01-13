@@ -207,7 +207,7 @@ class Setting(sqobject.SqObject):
             self.inherited = True
         return self.inherited
 
-    def reload(self, data: Optional[ApiPayload] = None) -> None:
+    def reload(self, data: ApiPayload) -> None:
         """Reloads a Setting with JSON returned from Sonar API"""
         log.debug("Reloading setting %s data: %s", self.key, data)
         if not data:
