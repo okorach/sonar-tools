@@ -97,11 +97,13 @@ class Metric(SqObject):
         self.__class__.CACHE.put(self)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str) -> Metric:
-        cls.search(endpoint=endpoint, use_cache=True)
-        if not (o := cls.CACHE.get(key, endpoint.local_url)):
-            raise exceptions.ObjectNotFound(key, f"Metric key '{key}' not found")
-        return o
+    def get_object(cls, endpoint: Platform, key: str, use_cache: bool = True) -> Metric:
+        """Returns a Metric object from its key"""
+        o = cls.CACHE.get(endpoint.local_url, key)
+        if use_cache and o:
+            return o
+        cls.search(endpoint, include_hidden_metrics=True, use_cache=False)
+        return cls.CACHE.get(endpoint.local_url, key)
 
     @classmethod
     def search(cls, endpoint: Platform, include_hidden_metrics: bool = False, use_cache: bool = False, **search_params: Any) -> dict[str, Metric]:
@@ -127,18 +129,8 @@ class Metric(SqObject):
         """
         return len(cls.search(endpoint, include_hidden_metrics=search_params.pop("include_hidden_metrics", False), **search_params))
 
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> Metric:
-        """Loads a metric from data"""
-        key = data["key"]
-        o: Optional[Metric] = cls.CACHE.get(key, endpoint.local_url)
-        if not o:
-            o = cls(endpoint, key, data=data)
-        else:
-            o.reload(data)
-        return o
-
     def reload(self, data: ApiPayload) -> bool:
+        """Reloads a metric from data"""
         self.type = data["type"]
         self.name = data["name"]
         self.description = data.get("description", "")
