@@ -90,8 +90,8 @@ class Task(SqObject):
         self.component_key: Optional[str]
         self._context: Optional[dict[str, str]] = None
         self._error: Optional[dict[str, str]] = None
-        self.reload(data)
         self.__class__.CACHE.put(self)
+        self.reload(data)
 
     def __str__(self) -> str:
         """Returns the string representation of the background task"""
@@ -107,7 +107,8 @@ class Task(SqObject):
         if not endpoint.is_sonarcloud():
             additional_fields += ",stacktrace"
         api, _, params, ret = endpoint.api.get_details(cls, Oper.GET, id=task_id, additionalFields=additional_fields)
-        return cls.load(endpoint, json.loads(endpoint.get(api, params=params).text)[ret])
+        data = json.loads(endpoint.get(api, params=params).text)[ret]
+        return o.reload(data) if o else cls.load(endpoint, json.loads(endpoint.get(api, params=params).text)[ret])
 
     @classmethod
     def load(cls, endpoint: Platform, data: ApiPayload, *hash_items: Any) -> Task:
@@ -153,6 +154,7 @@ class Task(SqObject):
 
     def reload(self, data: ApiPayload) -> Task:
         """Reloads a Task with and API Payload"""
+        super().reload(data)
         self.component_key = data.get("componentKey")
         if self.component_key:
             qualifier = data.get("componentQualifier")
@@ -231,17 +233,17 @@ class Task(SqObject):
         """
         wait_time = 0
         sleep_time = 0.5
-        params = {"status": ",".join(STATUSES), "type": self.type(), "component": self.component()}
         status = self.__json_field("status")
         while status not in (SUCCESS, FAILED, CANCELED, TIMEOUT):
+            log.debug("%s is '%s', sleeping %5.1fs", self, status, sleep_time)
             time.sleep(sleep_time)
             wait_time += sleep_time
             sleep_time *= 2
             self.refresh()
+            log.debug("Data = %s", self.sq_json)
             status = self.__json_field("status")
             if wait_time >= timeout and status not in (SUCCESS, FAILED, CANCELED):
                 status = TIMEOUT
-            log.debug("%s is '%s'", str(self), status)
         return status
 
     def scanner_context(self) -> Optional[dict[str, str]]:
