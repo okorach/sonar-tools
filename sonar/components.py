@@ -177,7 +177,7 @@ class Component(SqObject):
 
         :param list metrics_list: List of metrics to return
         """
-        m = measures.get(self, metrics_list)
+        m = measures.Measure.search(self, metrics_list)
         if "ncloc" in m and m["ncloc"]:
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
@@ -202,7 +202,7 @@ class Component(SqObject):
 
     def refresh(self) -> Component:
         """Refreshes a component data"""
-        return self.reload(self.get_navigation_data)
+        return self.reload(self.get_navigation_data())
 
     def last_analysis(self) -> Optional[datetime]:
         """Returns a component last analysis"""
