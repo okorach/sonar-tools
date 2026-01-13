@@ -108,10 +108,10 @@ class QualityGate(SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: Platform, name: str, data: ApiPayload) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor, don't use directly, use class methods instead"""
-        super().__init__(endpoint=endpoint, key=name)
-        self.name = name  #: Object name
+        super().__init__(endpoint, data)
+        self.name = data["name"]  #: Object name
         # Override key with id if present
         self.key = data.get("id", self.name)
         log.debug("Loading %s with data %s", self, util.json_dump(data))
@@ -138,6 +138,7 @@ class QualityGate(SqObject):
         """Default UUID for SQ objects"""
         return hash((self.name,))
 
+    @staticmethod
     def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
         """Returns the hash items for a given object search payload"""
         return (data["name"],)
@@ -301,8 +302,8 @@ class QualityGate(SqObject):
 
     def copy(self, new_qg_name: str) -> QualityGate:
         """Copies the QG into another one with name new_qg_name"""
-        data = json.loads(self.post("qualitygates/copy", params={"sourceName": self.name, "name": new_qg_name}).text)
-        return QualityGate(self.endpoint, name=new_qg_name, data=data)
+        self.post("qualitygates/copy", params={"sourceName": self.name, "name": new_qg_name})
+        return QualityGate.get_object(self.endpoint, new_qg_name)
 
     def set_as_default(self) -> bool:
         """Sets the quality gate as the default
