@@ -117,7 +117,7 @@ def test_export_async() -> None:
 def test_export_sync() -> None:
     """test_export_sync"""
     proj = Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
-    (res, _) = proj.export_zip(asynchronous=False)
+    (res, _) = proj.export_zip(asynchronous=False, timeout=20)
     assert res == "SUCCESS"
 
 
