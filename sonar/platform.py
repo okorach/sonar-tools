@@ -793,12 +793,6 @@ class Platform(object):
         return False, None
 
 
-# --------------------- Static methods -----------------
-# this is a pointer to the module object instance itself.
-this = sys.modules[__name__]
-this.context = Platform(os.getenv("SONAR_HOST_URL", "http://localhost:9000"), os.getenv("SONAR_TOKEN", ""))
-
-
 def _audit_setting_value(key: str, platform_settings: dict[str, Any], audit_settings: ConfigSettings, url: str) -> list[Problem]:
     """Audits a particular platform setting is set to expected value"""
     if (v := _get_multiple_values(4, audit_settings[key], "MEDIUM", "CONFIGURATION")) is None:
