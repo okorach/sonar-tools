@@ -120,6 +120,7 @@ class Finding(SqObject):
 
     def __init__(self, endpoint: Platform, data: ApiPayload, from_export: bool = False) -> None:
         """Constructor"""
+        self.key = data["key"]
         super().__init__(endpoint, data)
         self.severity = None  # BLOCKER, CRITICAL, MAJOR, MINOR, INFO
         self.type: Optional[str] = None  # VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT
@@ -146,7 +147,7 @@ class Finding(SqObject):
     @classmethod
     def get_object(cls, endpoint: Platform, data: ApiPayload, from_export: bool = False) -> Union[Issue, Hotspot]:
         """Returns a finding from its key"""
-        o: Optional[Union[Issue, Hotspot]] = cls.CACHE.get(endpoint.local_url, key)
+        o: Optional[Union[Issue, Hotspot]] = cls.CACHE.get(endpoint.local_url, data["key"])
         if not o:
             o = cls(endpoint=endpoint, data=data, from_export=from_export)
         return o
