@@ -130,7 +130,7 @@ class Metric(SqObject):
         """
         return len(cls.search(endpoint, include_hidden_metrics=search_params.pop("include_hidden_metrics", False), **search_params))
 
-    def reload(self, data: ApiPayload) -> bool:
+    def reload(self, data: ApiPayload) -> Metric:
         """Reloads a metric from data"""
         self.type = data["type"]
         self.name = data["name"]
@@ -139,7 +139,7 @@ class Metric(SqObject):
         self.qualitative = data["qualitative"]
         self.hidden = data["hidden"]
         self.custom = data.get("custom", None)
-        return True
+        return self
 
     def is_a_rating(self) -> bool:
         """Whether a metric is a rating"""
