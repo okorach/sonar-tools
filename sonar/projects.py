@@ -640,7 +640,7 @@ class Project(Component):
         :param int timeout: timeout in seconds to complete the export operation
         :return: SUCCESS or FAILED with reason
         """
-        from sonar.tasks import ZIP_MISSING
+        from sonar.tasks import Task, ZIP_MISSING, SUCCESS
 
         mode = "asynchronously" if asynchronous else "synchronously"
         log.info("Importing %s (%s)", str(self), mode)
@@ -664,10 +664,10 @@ class Project(Component):
             return ZIP_ASYNC_SUCCESS
 
         data = json.loads(resp.text)
-        import_task = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data)
+        import_task = Task.get_object(self.endpoint, data["taskId"])
         status = import_task.wait_for_completion(timeout=timeout)
-        log.log(log.INFO if status == tasks.SUCCESS else log.ERROR, "%s import background task %s", str(self), status)
-        return status if status == tasks.SUCCESS else f"FAILED/BACKGROUND_TASK_{status}/{import_task.short_error()}"
+        log.log(log.INFO if status == SUCCESS else log.ERROR, "%s import background task %s", str(self), status)
+        return status if status == SUCCESS else f"FAILED/BACKGROUND_TASK_{status}/{import_task.short_error()}"
 
     def get_branches_and_prs(self, filters: dict[str, str]) -> Optional[dict[str, object]]:
         """Get lists of branches and PR objects"""
@@ -711,9 +711,9 @@ class Project(Component):
         data = json.loads(self.get(api, params=params).text)
         for i in data[ret]:
             if i["type"] != idefs.TYPE_HOTSPOT:
-                findings_list[i["key"]] = issues.Issue.get_object(self.endpoint, key=i["key"], data=i, from_export=True)
+                findings_list[i["key"]] = issues.Issue.get_object(self.endpoint, data=i, from_export=True)
             elif i.get("status", "") != "CLOSED":
-                findings_list[i["key"]] = hotspots.Hotspot.get_object(self.endpoint, key=i["key"], data=i, from_export=True)
+                findings_list[i["key"]] = hotspots.Hotspot.get_object(self.endpoint, data=i, from_export=True)
         findings.Finding.add_branch_and_pr(findings_list, **search_params)
         for t in idefs.ALL_TYPES:
             log.debug("%d %s exported", sum(1 for i in findings_list.values() if i.type == t), t)
