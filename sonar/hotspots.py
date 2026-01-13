@@ -98,9 +98,9 @@ class Hotspot(findings.Finding):
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
-    def __init__(self, endpoint: Platform, key: str, data: ApiPayload, from_export: bool = False) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload, from_export: bool = False) -> None:
         """Constructor"""
-        super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
+        super().__init__(endpoint, data, from_export=from_export)
         self.type = idefs.TYPE_HOTSPOT
         self.__details: ApiPayload = data
         self.__class__.CACHE.put(self)
