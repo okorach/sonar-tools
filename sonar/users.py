@@ -167,6 +167,7 @@ class User(SqObject):
         :param data: The JSON data corresponding to the user
         :return: The user itself
         """
+        super().reload(data)
         self.name = data["name"]  #: User name
         if "scmAccounts" in data:
             self.scm_accounts = list(set(util.csv_to_list(data["scmAccounts"])))  #: User SCM accounts
@@ -175,7 +176,6 @@ class User(SqObject):
         if "local" in data:
             self.is_local = data["local"]
         self.last_login = None  #: User last login - read-only
-        self.sq_json = (self.sq_json or {}) | data
         if self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             self.last_login = sutil.string_to_date(data.get("lastConnectionDate"))
             self.nb_tokens = data.get("tokenCount")  #: Nbr of tokens - read-only
@@ -251,7 +251,7 @@ class User(SqObject):
         :raises ObjectAlreadyExists: if new login already exists
         :return: self
         """
-        if self.__class__.CACHE.get(new_login, self.base_url()):
+        if self.__class__.CACHE.get(self.endpoint.local_url, new_login):
             raise exceptions.ObjectAlreadyExists(new_login, f"User '{new_login}' already exists")
         api, method, params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, login=self.login, newLogin=new_login, id=self.id)
         if method == "PATCH":
