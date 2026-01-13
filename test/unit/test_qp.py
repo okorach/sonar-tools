@@ -99,10 +99,10 @@ def test_read(get_test_qp: Generator[QualityProfile]) -> None:
     """test_read"""
     qp: QualityProfile = get_test_qp
     assert qp.url() == f"{tutil.SQ.external_url}/profiles/show?language=py&name={qp.name}"
-    new_qp = QualityProfile.read(tutil.SQ, qp.name, "py")
+    new_qp = QualityProfile.get_object(tutil.SQ, qp.name, "py")
     assert qp is new_qp
 
-    assert QualityProfile.read(tutil.SQ, qp.name, "non-existing") is None
+    assert QualityProfile.get_object(tutil.SQ, qp.name, "non-existing") is None
 
 
 def test_set_default(get_test_qp: Generator[QualityProfile]) -> None:
