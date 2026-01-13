@@ -204,10 +204,10 @@ class Rule(SqObject):
         :return: The Rule object corresponding to the input rule key
         :raises: ObjectNotFound if rule does not exist
         """
-        if o := cls.CACHE.get(key, endpoint.local_url):
+        if o := cls.CACHE.get(endpoint.local_url, key):
             return o
         Rule.get_paginated(endpoint=endpoint, params={"q": key})
-        if o := cls.CACHE.get(key, endpoint.local_url):
+        if o := cls.CACHE.get(endpoint.local_url, key):
             return o
         raise exceptions.ObjectNotFound(key, f"Rule key '{key}' not found")
 
@@ -220,7 +220,7 @@ class Rule(SqObject):
         :return: The Rule object corresponding to the input rule key
         :raises: ObjectNotFound if rule does not exist
         """
-        if o := cls.CACHE.get(key, endpoint.local_url):
+        if o := cls.CACHE.get(endpoint.local_url, key):
             return o
         api, _, api_params, ret = endpoint.api.get_details(Rule, Oper.GET, key=key, actives="true")
         rule_data = json.loads(endpoint.get(api, params=api_params).text)[ret]
@@ -254,7 +254,7 @@ class Rule(SqObject):
     def load(cls, endpoint: Platform, data: ApiPayload) -> Rule:
         """Loads a rule object with a SonarQube API payload"""
         key = data["key"]
-        if o := cls.CACHE.get(key, endpoint.local_url):
+        if o := cls.CACHE.get(endpoint.local_url, key):
             o.reload(data)
             return o
         return cls(key=key, endpoint=endpoint, data=data)

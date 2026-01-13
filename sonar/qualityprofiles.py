@@ -121,7 +121,7 @@ class QualityProfile(SqObject):
         :return: The quality profile object, of None if not found
         """
         cls.search(endpoint, use_cache=True)
-        if o := cls.CACHE.get(name, language, endpoint.local_url):
+        if o := cls.CACHE.get(endpoint.local_url, name, language):
             return o
         raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
 
@@ -139,7 +139,7 @@ class QualityProfile(SqObject):
             log.error("Language '%s' does not exist, quality profile creation aborted", language)
             return None
         log.debug("Reading quality profile '%s' of language '%s'", name, language)
-        o = cls.CACHE.get(name, language, endpoint.local_url)
+        o = cls.CACHE.get(endpoint.local_url, name, language)
         if o:
             return o
         api, _, _, _ = endpoint.api.get_details(cls, Oper.SEARCH)

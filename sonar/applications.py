@@ -86,7 +86,7 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         check_supported(endpoint)
-        o: Optional[Application] = cls.CACHE.get(key, endpoint.local_url)
+        o: Optional[Application] = cls.CACHE.get(endpoint.local_url, key)
         if o:
             return o
         api, _, params, ret = endpoint.api.get_details(cls, Oper.GET, application=key)
@@ -104,7 +104,7 @@ class Application(aggr.Aggregation):
         :return: The found Application object
         """
         check_supported(endpoint)
-        o: Application = cls.CACHE.get(data["key"], endpoint.local_url)
+        o: Application = cls.CACHE.get(endpoint.local_url, data["key"])
         if not o:
             o = cls(endpoint, data["key"], data["name"])
         o.reload(data)

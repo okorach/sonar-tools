@@ -147,7 +147,7 @@ class Setting(sqobject.SqObject):
     def read(cls, key: str, endpoint: Platform, component: Optional[object] = None) -> Setting:
         """Reads a setting from the platform"""
         log.debug("Reading setting '%s' for %s", key, str(component))
-        if o := cls.CACHE.get(key, component, endpoint.local_url):
+        if o := cls.CACHE.get(endpoint.local_url, key, component):
             return o
         data = get_settings_data(endpoint, key, component)
         return Setting.load(key=key, endpoint=endpoint, data=data, component=component)
@@ -167,7 +167,7 @@ class Setting(sqobject.SqObject):
     def load(cls, key: str, endpoint: Platform, data: ApiPayload, component: Optional[object] = None) -> Setting:
         """Loads a setting with  JSON data"""
         log.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
-        o = cls.CACHE.get(key, component, endpoint.local_url)
+        o = cls.CACHE.get(endpoint.local_url, key, component)
         if not o:
             o = cls(key=key, endpoint=endpoint, data=data, component=component)
         o.reload(data)
@@ -177,7 +177,7 @@ class Setting(sqobject.SqObject):
     def load_from_definition(cls, key: str, endpoint: Platform, def_data: ApiPayload) -> Setting:
         """Loads a setting with  JSON data"""
         log.debug("Loading setting '%s' from definition %s", key, def_data)
-        if not (o := cls.CACHE.get(key, None, endpoint.local_url)):
+        if not (o := cls.CACHE.get(endpoint.local_url, key, None)):
             o = cls(key=key, endpoint=endpoint, data=None, component=None)
         o._definition = def_data
         o.multi_valued = def_data.get("multiValues")
@@ -390,10 +390,10 @@ class Setting(sqobject.SqObject):
     @classmethod
     def get_object(cls, endpoint: Platform, key: str, component: Optional[object] = None) -> Setting:
         """Returns a Setting object from its key and, optionally, component"""
-        o = cls.CACHE.get(key, component.key if component else None, endpoint.local_url)
+        o = cls.CACHE.get(endpoint.local_url, key, component.key if component else None)
         if not o:
             get_all(endpoint, component)
-        return cls.CACHE.get(key, component.key if component else None, endpoint.local_url)
+        return cls.CACHE.get(endpoint.local_url, key, component.key if component else None)
 
 
 def __get_settings(endpoint: Platform, data: ApiPayload, component: Optional[sqobject.SqObject] = None) -> dict[str, Setting]:
@@ -408,7 +408,7 @@ def __get_settings(endpoint: Platform, data: ApiPayload, component: Optional[sqo
         log.debug("Looking at %s", setting_type)
         for s in data.get(setting_type, {}):
             (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
-            o: Optional[Setting] = Setting.CACHE.get(key, component.key if component else None, endpoint.local_url)
+            o: Optional[Setting] = Setting.CACHE.get(endpoint.local_url, key, component.key if component else None)
             if not o:
                 o = Setting(endpoint=endpoint, key=key, component=component, data=sdata)
             else:
@@ -503,7 +503,7 @@ def set_new_code_period(endpoint: Platform, nc_type: str, nc_value: str, project
 def get_visibility(endpoint: Platform, component: object) -> Setting:
     """Returns the platform global or component visibility"""
     key = COMPONENT_VISIBILITY if component else PROJECT_DEFAULT_VISIBILITY
-    o = Setting.CACHE.get(key, component, endpoint.local_url)
+    o = Setting.CACHE.get(endpoint.local_url, key, component)
     if o:
         return o
     if component:

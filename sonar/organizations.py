@@ -90,7 +90,7 @@ class Organization(SqObject):
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        if o := Organization.CACHE.get(key, endpoint.local_url):
+        if o := Organization.CACHE.get(endpoint.local_url, key):
             return o
         api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, organizations=key)
         data = json.loads(endpoint.get(api, params=params).text)
@@ -110,7 +110,7 @@ class Organization(SqObject):
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        o: Optional[Organization] = Organization.CACHE.get(data["key"], endpoint.local_url)
+        o: Optional[Organization] = Organization.CACHE.get(endpoint.local_url, data["key"])
         if not o:
             o = cls(endpoint, data["key"], data["name"])
         return o.reload(data)

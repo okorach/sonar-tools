@@ -84,11 +84,11 @@ class ApplicationBranch(Component):
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         if isinstance(app, str):
             app = apps.Application.get_object(endpoint, app)
-        if o := cls.CACHE.get(app.key, branch_name, app.base_url()):
+        if o := cls.CACHE.get(endpoint.local_url, app.key, branch_name):
             return o
         app.refresh()
         app.branches()
-        if o := cls.CACHE.get(app.key, branch_name, app.base_url()):
+        if o := cls.CACHE.get(endpoint.local_url, app.key, branch_name):
             return o
         raise exceptions.ObjectNotFound(app.key, f"Application key '{app.key}' branch '{branch_name}' not found")
 

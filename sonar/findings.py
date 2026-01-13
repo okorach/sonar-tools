@@ -146,7 +146,7 @@ class Finding(SqObject):
     @classmethod
     def get_object(cls, endpoint: Platform, key: str, data: ApiPayload, from_export: bool = False) -> Union[Issue, Hotspot]:
         """Returns a finding from its key"""
-        o: Optional[Union[Issue, Hotspot]] = cls.CACHE.get(key, endpoint.local_url)
+        o: Optional[Union[Issue, Hotspot]] = cls.CACHE.get(endpoint.local_url, key)
         if not o:
             o = cls(endpoint=endpoint, key=key, data=data, from_export=from_export)
         return o

@@ -232,7 +232,7 @@ def get_object(endpoint: Platform, name: str) -> PermissionTemplate:
     """Returns Perm Template object corresponding to name"""
     if len(PermissionTemplate.CACHE) == 0:
         PermissionTemplate.search(endpoint)
-    return PermissionTemplate.CACHE.get(name.lower(), endpoint.local_url)
+    return PermissionTemplate.CACHE.get(endpoint.local_url, name.lower())
 
 
 def create_or_update(endpoint: Platform, name: str, data: ObjectJsonRepr) -> PermissionTemplate:
