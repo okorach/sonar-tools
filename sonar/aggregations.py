@@ -42,11 +42,11 @@ if TYPE_CHECKING:
 class Aggregation(comp.Component):
     """Parent class of applications and portfolios"""
 
-    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor"""
+        super().__init__(endpoint, data)
         self._nbr_projects: Optional[int] = None
         self._permissions: Optional[object] = None
-        super().__init__(endpoint=endpoint, key=key)
 
     def reload(self, data: ApiPayload) -> Aggregation:
         """Reloads an Aggregation (Application or Portfolio) from the result of a search or get
