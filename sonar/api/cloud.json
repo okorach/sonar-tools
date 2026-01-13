@@ -474,12 +474,15 @@
         },
         "SEARCH": {
             "method": "GET",
-            "api": "api/measures/search",
+            "api": "api/measures/component",
             "params": [
-                "projectKeys",
-                "metricKeys"
+                "component",
+                "metricKeys",
+                "branch",
+                "pullRequest",
+                "additionalFields"
             ],
-            "return_field": "measures"
+            "return_field": "component"
         },
         "GET_HISTORY": {
             "method": "GET",
