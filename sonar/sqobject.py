@@ -284,7 +284,7 @@ class SqObject(object):
 
     def delete_object(self, **kwargs: Any) -> bool:
         """Deletes an object, returns whether the operation succeeded"""
-        log.info("Deleting %s", str(self))
+        log.info("Deleting %s", self)
         try:
             api, method, params, _ = self.endpoint.api.get_details(self, Oper.DELETE, **kwargs)
             if method == "DELETE":
