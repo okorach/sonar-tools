@@ -26,9 +26,7 @@ from sonar.projects import Project
 from sonar.applications import Application
 from sonar.portfolios import Portfolio
 from sonar.components import Component
-
-if TYPE_CHECKING:
-    from sonar.platform import Platform
+from sonar.platform import Platform
 
 
 def get_components(
