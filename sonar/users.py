@@ -56,8 +56,9 @@ class User(SqObject):
 
     def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Do not use to create users, use on of the constructor class methods"""
-        super().__init__(endpoint=endpoint, key=login)
+        self.key = data["login"]  #: User key (str)
         self.login = data["login"]  #: User login (str)
+        super().__init__(endpoint, data)
         self.id: Optional[str] = None  #: SonarQube 10+ User Id (str)
         self.name: Optional[str] = None  #: User name (str)
         self._groups: Optional[list[str]] = None  #: User groups (list)
@@ -201,6 +202,7 @@ class User(SqObject):
                 self, Oper.LIST_GROUPS, login=self.login, userId=self.id, ps=max_ps, pageSize=max_ps, name=self.name
             )
             data = json.loads(self.endpoint.get(api, params=params).text)[ret]
+            log.debug("GROUP DATA = %s", util.json_dump(data))
             if self.endpoint.is_sonarcloud():
                 self._groups = [g["name"] for g in data]
             else:
@@ -302,7 +304,7 @@ class User(SqObject):
         :raises ObjectNotFound: if group name not found
         :return: Whether operation succeeded
         """
-        group = groups.Group.read(endpoint=self.endpoint, name=group_name)
+        group = groups.Group.get_object(endpoint=self.endpoint, name=group_name)
         if group.is_default():
             raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't add membership for {self}")
         if group.add_user(self):
@@ -318,7 +320,7 @@ class User(SqObject):
         :raises ObjectNotFound: if group name not found
         :return: Whether operation succeeded
         """
-        group = groups.Group.read(endpoint=self.endpoint, name=group_name)
+        group = groups.Group.get_object(endpoint=self.endpoint, name=group_name)
         if group.is_default():
             raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't remove membership for {str(self)}")
         if group.remove_user(self):
