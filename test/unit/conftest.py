@@ -315,17 +315,22 @@ def get_test_quality_gate() -> Generator[qualitygates.QualityGate]:
 @pytest.fixture
 def get_test_group() -> Generator[groups.Group]:
     """setup of tests"""
+    key = f"{tutil.TEMP_KEY}-group-{os.getpid()}"
     try:
-        o = groups.Group.get_object(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
+        o = groups.Group.get_object(endpoint=tutil.SQ, name=key)
     except exceptions.ObjectNotFound:
         try:
-            o = groups.Group.create(endpoint=tutil.SQ, name=tutil.TEMP_KEY)
+            o = groups.Group.create(endpoint=tutil.SQ, name=key)
         except exceptions.UnsupportedOperation:
             if not tutil.SQ.is_sonarcloud():
                 raise
             o = None
+    if o:
+        (name, oid) = (o.name, o.id)
     yield o
     if o:
+        o.name = key
+        o.id = oid
         try:
             o.delete()
         except exceptions.ObjectNotFound:
@@ -337,7 +342,7 @@ def get_60_groups() -> Generator[list[groups.Group]]:
     group_list = []
     if not tutil.SQ.is_sonarcloud():
         for i in range(60):
-            gr_name = f"Group-{tutil.TEMP_KEY}{i}"
+            gr_name = f"{tutil.TEMP_KEY}-group-{i}"
             try:
                 o_gr = groups.Group.get_object(endpoint=tutil.SQ, name=gr_name)
             except exceptions.ObjectNotFound:
