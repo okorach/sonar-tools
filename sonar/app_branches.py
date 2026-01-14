@@ -53,23 +53,18 @@ class ApplicationBranch(Component):
 
     CACHE = cache.Cache()
 
-    def __init__(
-        self,
-        app: apps.Application,
-        name: str,
-        project_branches: list[Union[Project, Branch]],
-        is_main: bool = False,
-        branch_data: Optional[ApiPayload] = None,
-    ) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
-        super().__init__(endpoint=app.endpoint, key=f"{app.key} BRANCH {name}")
-        self.concerned_object: apps.Application = app
-        self.name = name
-        self.sq_json = branch_data
-        self._is_main = is_main
-        self._project_branches = project_branches
-        log.debug("Constructed object %s with uuid %d id %x", str(self), hash(self), id(self))
+        super().__init__(endpoint, data)
+        self.concerned_object_key = data["application"]
+        self.key = f"{self.concerned_object_key} BRANCH {self.name}"
+        self.concerned_object: apps.Application = apps.Application.get_object(endpoint, self.concerned_object_key)
+        self.name = data["branch"]
+        self._is_main = data.get("isMain", False)
+        self._project_branches = []
         self.__class__.CACHE.put(self)
+        self.reload(data)
+        log.debug("Constructed object %s with uuid %d id %x", str(self), hash(self), id(self))
 
     @classmethod
     def get_object(cls, endpoint: Platform, app: Union[str, apps.Application], branch_name: str) -> ApplicationBranch:
@@ -115,31 +110,34 @@ class ApplicationBranch(Component):
         api, _, _, _ = app.endpoint.api.get_details(cls, Oper.CREATE)
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
         app.endpoint.post(api, params=string_params)
-        return cls(app=app, name=name, project_branches=projects_or_branches)
+        return cls.get_object(app.endpoint, app.key, name)
 
-    @classmethod
-    def load(cls, app: apps.Application, branch_data: ApiPayload) -> ApplicationBranch:
-        """Loads an ApplicationBranch object from JSON data
-
-        :param Application app: Reference to the Application holding that branch
-        :param ApiPayload branch_data: Data coming from api/applications/show
-        :return: The found ApplicationBranch object
-        :rtype: ApplicationBranch
-        """
-        project_branches = []
-        for proj_data in branch_data["projects"]:
-            proj = Project.get_object(app.endpoint, proj_data["key"])
-            project_branches.append(Branch.get_object(proj.endpoint, project=proj, branch_name=proj_data["branch"]))
-        return cls(
-            app=app, name=branch_data["branch"], project_branches=project_branches, is_main=branch_data.get("isMain", False), branch_data=branch_data
-        )
+    def reload(self, data: ApiPayload) -> ApplicationBranch:
+        """Reloads an ApplicationBranch object from JSON data"""
+        super().reload(data)
+        self.name = data["branch"]
+        self._is_main = data.get("isMain", False)
+        self._project_branches = []
+        for proj_data in data["projects"]:
+            proj = Project.get_object(self.endpoint, proj_data["key"])
+            self._project_branches.append(Branch.get_object(proj.endpoint, project=proj, branch_name=proj_data["branch"]))
+        return self
 
     def __str__(self) -> str:
-        return f"application '{self.concerned_object.key}' branch '{self.name}'"
+        return f"application '{self.concerned_object_key}' branch '{self.name}'"
 
     def __hash__(self) -> int:
         """Returns the object UUID"""
-        return hash((self.concerned_object.key, self.name, self.base_url()))
+        return hash((self.endpoint.local_url, self.concerned_object_key, self.name))
+
+    def hash_object(self) -> tuple[Any, ...]:
+        """Returns the hash elements for a given object"""
+        return (self.concerned_object_key, self.name)
+
+    @staticmethod
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data["application"], data["branch"])
 
     def get_issues(self, **search_params: Any) -> dict[str, Issue]:
         """Returns a branch list of issues"""
@@ -179,15 +177,10 @@ class ApplicationBranch(Component):
         :rtype: bool
         """
         if self.is_main():
-            log.warning("Can't delete main %s, simply delete the application for that", str(self))
+            log.warning("Can't delete main application branch, simply delete the application for that", self)
             return False
+        log.info("Deleting %s", self)
         return self.delete_object(application=self.concerned_object.key, branch=self.name)
-
-    def reload(self, data: ApiPayload) -> ApplicationBranch:
-        """Reloads an App Branch from JSON data coming from Sonar"""
-        super().reload(data)
-        self.name = data.get("branch", "")
-        return self
 
     def export(self) -> ObjectJsonRepr:
         """Exports an application branch
@@ -279,8 +272,8 @@ def list_from(app: apps.Application, data: ApiPayload) -> dict[str, ApplicationB
         return {}
     branch_list = {}
     for br in data["branches"]:
-        api, _, params, ret = app.endpoint.api.get_details(ApplicationBranch, Oper.SEARCH, application=app.key, branch=br["name"])
+        api, _, params, ret = app.endpoint.api.get_details(ApplicationBranch, Oper.GET, application=app.key, branch=br["name"])
         branch_data = json.loads(app.endpoint.get(api, params=params).text)[ret]
-        branch_list[branch_data["branch"]] = ApplicationBranch.load(app, branch_data)
+        branch_list[branch_data["branch"]] = ApplicationBranch.load(app.endpoint, data=branch_data | {"application": app.key})
     log.debug("Returning Application branch list %s", list(branch_list.keys()))
     return branch_list
