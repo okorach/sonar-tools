@@ -104,6 +104,7 @@ class Project(Component):
         :param Platform endpoint: Reference to the SonarQube platform
         :param str key: The project key
         """
+        super().__init__(endpoint, data)
         self._branches_last_analysis: Optional[datetime] = None
         self._permissions: Optional[object] = None
         self._branches: Optional[dict[str, Branch]] = None
@@ -113,9 +114,9 @@ class Project(Component):
         self._new_code: Optional[str] = None
         self._ci: Optional[str] = None
         self._revision: Optional[str] = None
-        super().__init__(endpoint, data)
         self.__class__.CACHE.put(self)
-        log.debug("Loaded object %s", self)
+        self.reload(data)
+        log.debug("Constructed object %s", self)
 
     def __str__(self) -> str:
         """Returns the string representation of the project"""
