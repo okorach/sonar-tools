@@ -62,7 +62,8 @@ class DevopsPlatform(SqObject):
         self.url: Union[str, None] = None  #: DevOps platform URL
         self._specific: Union[dict[str, str], None] = None  #: DevOps platform specific settings
         self.__class__.CACHE.put(self)
-        log.debug("Created object %s", str(self))
+        log.debug("Constructed object %s", str(self))
+        self.reload(data)
 
     def __str__(self) -> str:
         """str() implementation"""
