@@ -143,9 +143,10 @@ class Setting(sqobject.SqObject):
         self.inherited: Optional[bool] = None
         self._definition: ApiPayload = None
         self._is_global: Optional[bool] = None
+        self.__class__.CACHE.put(self)
         self.reload(data)
         log.debug("Constructed %s uuid %d value %s", str(self), hash(self), str(self.value))
-        self.__class__.CACHE.put(self)
+
 
     def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
         """Returns the hash items for a given object search payload"""
