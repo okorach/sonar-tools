@@ -65,7 +65,6 @@ class Component(SqObject):
         self._last_analysis: Optional[datetime] = None
         self._visibility: Optional[str] = None
         self._new_code_start_date: Optional[datetime] = None
-        self.reload(data)
 
     def __str__(self) -> str:
         """String representation of object"""
