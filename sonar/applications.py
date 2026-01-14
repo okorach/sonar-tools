@@ -67,8 +67,9 @@ class Application(aggr.Aggregation):
         self._projects: Optional[dict[str, str]] = None
         self._description: Optional[str] = None
         self.name = data["name"]
-        log.debug("Constructed object %s with uuid %d id %x", str(self), hash(self), id(self))
         self.__class__.CACHE.put(self)
+        self.reload(data)
+        log.debug("Constructed object %s", str(self))
 
     def __str__(self) -> str:
         """String name of object"""
@@ -255,9 +256,8 @@ class Application(aggr.Aggregation):
 
         :return: Whether the delete succeeded
         """
-        if self.branches() is not None:
-            for branch in [b for b in self.branches().values() if not b.is_main()]:
-                branch.delete()
+        for branch in [b for b in self.branches().values() if not b.is_main()]:
+            branch.delete()
         return super().delete_object(application=self.key)
 
     def nbr_projects(self, use_cache: bool = False) -> int:
