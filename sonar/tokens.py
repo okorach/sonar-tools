@@ -45,18 +45,16 @@ class UserToken(SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: Platform, login: str, json_data: ApiPayload, name: Optional[str] = None) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor"""
-        super().__init__(endpoint=endpoint, key=login)
-        self.login = login  #: User login
-        self.name = name  #: Token name
-        self.sq_json = json_data  #: JSON data returned by the API
-        if self.name is None:
-            self.name = json_data.get("name", None)
-        self.created_at = sutil.string_to_date(json_data["createdAt"]) if "createdAt" in json_data else None
-        self.last_connection_date = sutil.string_to_date(json_data["lastConnectionDate"]) if "lastConnectionDate" in json_data else None
-        self.expiration_date: Optional[dt.datetime] = sutil.string_to_date(json_data["expirationDate"]) if "expirationDate" in json_data else None
-        self.token = json_data.get("token", None)
+        self.key = data["login"]
+        self.login = data["login"]
+        super().__init__(endpoint, data)
+        self.name = data["name"]  #: Token name
+        self.token = data.get("token")
+        self.created_at = sutil.string_to_date(data["createdAt"]) if "createdAt" in data else None
+        self.last_connection_date = sutil.string_to_date(data["lastConnectionDate"]) if "lastConnectionDate" in data else None
+        self.expiration_date: Optional[dt.datetime] = sutil.string_to_date(data["expirationDate"]) if "expirationDate" in data else None
         log.debug("Constructed '%s'", str(self))
 
     @classmethod
@@ -69,7 +67,7 @@ class UserToken(SqObject):
         """
         api, _, params, _ = endpoint.api.get_details(cls, Oper.CREATE, name=name, login=login)
         data = json.loads(endpoint.post(api, params).text)
-        return UserToken(endpoint=endpoint, login=data["login"], json_data=data, name=name)
+        return UserToken(endpoint=endpoint, login=data["login"], data=data, name=name)
 
     def __str__(self) -> str:
         """
@@ -85,8 +83,8 @@ class UserToken(SqObject):
         :return: list of tokens
         """
         api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
-        data = json.loads(endpoint.get(api, params=params).text)
-        return [cls(endpoint=endpoint, login=data["login"], json_data=tk) for tk in data[ret]]
+        dataset = json.loads(endpoint.get(api, params=params).text)
+        return [cls(endpoint, data | {"login": dataset["login"]}) for data in dataset[ret]]
 
     def revoke(self) -> bool:
         """Revokes the token
