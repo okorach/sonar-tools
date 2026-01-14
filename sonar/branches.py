@@ -96,17 +96,12 @@ class Branch(components.Component):
         if use_cache and o:
             return o
         api, _, params, ret = endpoint.api.get_details(Branch, Oper.SEARCH, project=project.key)
-        data = json.loads(project.get(api, params=params).text)
-        br = next((b for b in data.get(ret, []) if b["name"] == branch_name), None)
-        if not br:
-            raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(project)} not found")
-        br[cls.__PROJECT_KEY] = project
-        if o:
-            o.reload(data)
-        else:
-            o = cls.load(endpoint, data)
-        o.concerned_object = project
-        return o
+        dataset = json.loads(project.get(api, params=params).text)[ret]
+        for branch_data in dataset:
+            cls.load(endpoint, branch_data | {cls.__PROJECT_KEY: project.key})
+        if o := cls.CACHE.get(endpoint.local_url, project.key, branch_name):
+            return o
+        raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(project)} not found")
 
     @classmethod
     def search(cls, endpoint: Platform, project: Union[str, proj.Project], **search_params: Any) -> dict[str, Branch]:
