@@ -56,7 +56,7 @@ class Measure(SqObject):
         self.component_key = data.get(self.__class__.__CONCERNED_OBJECT)
         self.branch = None
         self.pull_request = None
-        self.value = self.__converted_value(data["value"])
+        self.value = self.__converted_value(data.get("value") or data["period"].get("value"))
 
     @classmethod
     def get_object(cls, endpoint: Platform, metric_key: str, component: ConcernedObject, use_cache: bool = True) -> Measure:
@@ -151,6 +151,7 @@ class Measure(SqObject):
         api, _, params, ret = concerned_object.endpoint.api.get_details(cls, Oper.SEARCH, **params)
         response_data = json.loads(concerned_object.endpoint.get(api, params=params).text)[ret]
         measures_data = response_data["measures"]
+        log.debug("Measures data = %s", util.json_dump(measures_data))
 
         # Determine branch and pull_request from concerned_object
         branch = pull_request = None
