@@ -147,7 +147,6 @@ class Setting(sqobject.SqObject):
         self.reload(data)
         log.debug("Constructed %s uuid %d value %s", str(self), hash(self), str(self.value))
 
-
     def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
         """Returns the hash items for a given object search payload"""
         return (data["key"], data["component"])
