@@ -52,7 +52,6 @@ class WebHook(SqObject):
         self.secret = data.get("secret")  #: Webhook secret
         self.project = data.get("project")  #: Webhook project, optional
         self.last_delivery: Optional[str] = data.get("latestDelivery")  #: Webhook last delivery timestamp
-        self.project = data.get("project")  #: Webhook project if project specific webhook
         self.__class__.CACHE.put(self)
         self.reload(data)
 
@@ -85,8 +84,8 @@ class WebHook(SqObject):
         params = {"name": name, "url": url, "secret": secret, "project": project}
         api, _, api_params, _ = endpoint.api.get_details(cls, Oper.CREATE, **params)
         endpoint.post(api, params=api_params)
-        o = cls(endpoint, name=name, url=url, secret=secret, project=project)
-        o.refresh()
+        o = cls.get_object(endpoint, name, project)
+        o.secret = secret
         return o
 
     @classmethod
@@ -100,7 +99,7 @@ class WebHook(SqObject):
         name, project = data["name"], data.get("project")
         log.debug("Loading Webhook '%s' of project '%s'", name, project)
         if (o := cls.CACHE.get(endpoint.local_url, name, project)) is None:
-            o = WebHook(endpoint, name, data["url"], data.get("secret"), project)
+            o = WebHook(endpoint, data)
         o.reload(data)
         return o
 
