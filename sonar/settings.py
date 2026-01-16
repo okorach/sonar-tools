@@ -131,12 +131,14 @@ class Setting(SqObject):
 
     CACHE = cache.Cache()
     __COMPONENT = "component"
+    __BRANCH = "branch"
 
     def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor"""
         super().__init__(endpoint, data)
         self.key = data["key"]
         self.component = data.get(self.__class__.__COMPONENT)
+        self.branch = data.get(self.__class__.__BRANCH)
         self.default_value: Optional[Any] = None
         self.value: Optional[Any] = None
         self.multi_valued: Optional[bool] = None
@@ -150,9 +152,6 @@ class Setting(SqObject):
             self.default_value = (
                 sorted(util.csv_to_list(default_val)) if self.multi_valued else util.convert_to_type(default_val) or self.default_value
             )
-        else:
-            if self.component:
-                self.component = Component.get_object(endpoint, self.component)
         self.__class__.CACHE.put(self)
         self.reload(data)
         log.debug("Constructed %s uuid %d value %s", str(self), hash(self), str(self.value))
@@ -160,20 +159,21 @@ class Setting(SqObject):
     @staticmethod
     def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
         """Returns the hash items for a given object search payload"""
-        return (data["key"], data[Setting.__COMPONENT])
+        return (data["key"], data.get(Setting.__COMPONENT), data.get(Setting.__BRANCH))
 
     def hash_object(self) -> tuple[Any, ...]:
         """Returns the hash elements for a given object"""
-        return (self.key, self.component.key if self.component else None)
+        return (self.key, self.component, self.branch)
 
     @classmethod
-    def get_object(cls, key: str, endpoint: Platform, component: Optional[str] = None, use_cache: bool = True) -> Setting:
+    def get_object(
+        cls, key: str, endpoint: Platform, component: Optional[str] = None, branch: Optional[str] = None, use_cache: bool = True
+    ) -> Setting:
         """Reads a setting from the platform"""
-        o = cls.CACHE.get(endpoint.local_url, key, component)
+        o = cls.CACHE.get(endpoint.local_url, key, component, branch)
         if o and use_cache:
             return o
-        data = get_settings_data(endpoint, key, component) | {"component": component}
-        return cls.load(endpoint, data)
+        return cls.load(endpoint, get_settings_data(endpoint, key, component, branch))
 
     @classmethod
     def create(cls, key: str, endpoint: Platform, value: Any = None, component: Optional[object] = None) -> Union[Setting, None]:
@@ -190,8 +190,8 @@ class Setting(SqObject):
     def load_from_definition(cls, key: str, endpoint: Platform, def_data: ApiPayload) -> Setting:
         """Loads a setting with  JSON data"""
         log.debug("Loading setting '%s' from definition %s", key, def_data)
-        if not (o := cls.CACHE.get(endpoint.local_url, key, None)):
-            o = cls(endpoint, def_data | {"component": None})
+        if not (o := cls.CACHE.get(endpoint.local_url, key, None, None)):
+            o = cls(endpoint, def_data)
         return o
 
     def __reload_inheritance(self, data: ApiPayload) -> bool:
@@ -212,7 +212,7 @@ class Setting(SqObject):
             self.inherited = True
         return self.inherited
 
-    def reload(self, data: ApiPayload) -> None:
+    def reload(self, data: ApiPayload) -> Setting:
         """Reloads a Setting with JSON returned from Sonar API"""
         log.debug("Reloading setting %s data: %s", self.key, data)
         if not data:
@@ -239,10 +239,11 @@ class Setting(SqObject):
             if isinstance(self.default_value, list) and all(isinstance(v, str) for v in self.default_value):
                 self.default_value = sorted(self.default_value)
         self.__reload_inheritance(data)
+        return self
 
-    def refresh(self) -> None:
+    def refresh(self) -> Setting:
         """Reads the setting value on SonarQube"""
-        self.reload(get_settings_data(self.endpoint, self.key, self.component))
+        return self.reload(get_settings_data(self.endpoint, self.key, self.component, self.branch))
 
     def __hash__(self) -> int:
         """Returns object unique ID"""
@@ -556,17 +557,7 @@ def encode(setting: Setting, setting_value: Any) -> dict[str, Any]:
     return {"values" if setting.multi_valued else "value": setting_value}
 
 
-def get_component_params(component: object, name: str = "component") -> ApiParams:
-    """Gets the parameters to read or write settings"""
-    if not component:
-        return {}
-    elif type(component).__name__ == "Branch":
-        return {name: component.project.key, "branch": component.key}
-    else:
-        return {name: component.key}
-
-
-def get_settings_data(endpoint: Platform, key: str, component: Optional[object]) -> ApiPayload:
+def get_settings_data(endpoint: Platform, key: str, component: Optional[str], branch: Optional[str]) -> ApiPayload:
     """Reads a setting data with different API depending on setting key
 
     :param endpoint: The SonarQube Platform object
@@ -575,7 +566,7 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[object])
     :return: The returned API data
     """
     if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
-        params = get_component_params(component, name="project")
+        params = {"project": component, "branch": branch}
         api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.GET_NEW_CODE_PERIOD, **params)
         data = json.loads(endpoint.get(api, params=api_params).text)
     elif key == MQR_ENABLED:
@@ -584,11 +575,11 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[object])
     else:
         if key == NEW_CODE_PERIOD:
             key = "sonar.leak.period.type"
-        params = get_component_params(component) | {"keys": key}
+        params = {"component": component, "branch": branch, "keys": key}
         api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.GET, **params)
         data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)["settings"]
         if not endpoint.is_sonarcloud() and len(data) > 0:
             data = data[0]
         else:
             data = {"inherited": True}
-    return data
+    return data | {"key": key, "component": component, "branch": branch}
