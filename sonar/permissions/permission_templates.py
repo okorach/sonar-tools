@@ -84,12 +84,13 @@ class PermissionTemplate(sqobject.SqObject):
             return cls.CACHE.from_platform(endpoint)
         log.info("Searching permission templates")
         api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH)
-        dataset = json.loads(endpoint.get(api, params=params).text)[ret]
+        dataset = json.loads(endpoint.get(api, params=params).text)
         objects_list = {}
         for data in dataset[ret]:
             o = cls(endpoint, data)
-            # id returned by 9.9, templateId in 2025.1
             objects_list[o.key] = o
+        # Record which template is the default for each type of Qualifier (Project, App, Portfolio)
+        # FIXME: This only supports 1 platform, this should be per connected platform
         for data in dataset["defaultTemplates"]:
             _DEFAULT_TEMPLATES[data["qualifier"]] = data.get("templateId", data.get("id"))
         return objects_list
@@ -128,6 +129,7 @@ class PermissionTemplate(sqobject.SqObject):
         log.debug("Updating %s with params %s", str(self), str(params))
         self.post(_UPDATE_API, params=params)
         if "name" in pt_data and pt_data["name"] != self.name:
+            # FIXME: This supports only 1 platform at at time
             _MAP.pop(self.name, None)
             self.name = params["name"]
             _MAP[self.name] = self.key
