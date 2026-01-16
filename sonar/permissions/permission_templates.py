@@ -54,37 +54,18 @@ class PermissionTemplate(sqobject.SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: Platform, name: str, data: ApiPayload = None, create_data: ObjectJsonRepr = None) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor"""
-        super().__init__(endpoint=endpoint, key=name)
-        self.key = None
-        self.name: str = name
+        super().__init__(endpoint, data)
+        self.key = data.get("id")
+        self.name: str = data.get("name")
         self.description: Optional[str] = None
         self.project_key_pattern: Optional[str] = None
         self._permissions: Optional[template_permissions.TemplatePermissions] = None
-        if create_data is not None:
-            log.info("Creating permission template '%s'", name)
-            log.debug("from create_data %s", util.json_dump(create_data))
-            create_data["name"] = name
-            self.post(_CREATE_API, params=create_data)
-            data = search_by_name(endpoint, name)
-            self.key = data.get("id", None)
-            self.set_pattern(create_data.pop("pattern", None))
-            self.set_permissions(create_data.pop("permissions", None))
-        elif data is None:
-            data = search_by_name(endpoint, name)
-            self.key = data.get("id", None)
-            self.permissions().read()
-            log.info("Creating permission template '%s'", name)
-            log.debug("from sync data %s", util.json_dump(data))
-        self.sq_json = data
-        self.name = name
-        data.pop("name")
-        self.key = data.pop("id", None)
-        self.description = data.get("description", None)
-        self.last_update = data.get("lastUpdate", None)
-        self.project_key_pattern = data.pop("projectKeyPattern", "")
-        self.creation_date = sutil.string_to_date(data.pop("createdAt", None))
+        self.description = data.get("description")
+        self.last_update = data.get("lastUpdate")
+        self.project_key_pattern = data.get("projectKeyPattern", "")
+        self.creation_date = sutil.string_to_date(data.get("createdAt"))
         self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:
@@ -103,12 +84,14 @@ class PermissionTemplate(sqobject.SqObject):
             return cls.CACHE.from_platform(endpoint)
         log.info("Searching permission templates")
         api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH)
-        dataset = json.loads(endpoint.get(api, params=params).text)
+        dataset = json.loads(endpoint.get(api, params=params).text)[ret]
         objects_list = {}
-        for obj in dataset[ret]:
-            o = cls(name=obj["name"], endpoint=endpoint, data=obj)
+        for data in dataset[ret]:
+            o = cls(endpoint, data)
+            # id returned by 9.9, templateId in 2025.1
             objects_list[o.key] = o
-        _load_default_templates(endpoint=endpoint, data=dataset)
+        for data in dataset["defaultTemplates"]:
+            _DEFAULT_TEMPLATES[data["qualifier"]] = data.get("templateId", data.get("id"))
         return objects_list
 
     def is_default_for(self, qualifier: str) -> bool:
@@ -150,8 +133,7 @@ class PermissionTemplate(sqobject.SqObject):
             _MAP[self.name] = self.key
         self.description = params.get("description", self.description)
         self.project_key_pattern = params.get("projectKeyPattern", self.project_key_pattern)
-        if "permissions" in pt_data:
-            self.permissions().set(pt_data["permissions"])
+        self.set_permissions(pt_data.get("permissions"))
         return self
 
     def permissions(self) -> template_permissions.TemplatePermissions:
@@ -227,48 +209,34 @@ class PermissionTemplate(sqobject.SqObject):
         log.debug("Auditing %s", str(self))
         return self._audit_pattern(audit_settings) + self.permissions().audit(audit_settings)
 
+    @classmethod
+    def get_object(cls, endpoint: Platform, name: str) -> PermissionTemplate:
+        """Returns Perm Template object corresponding to name"""
+        if len(cls.CACHE.from_platform(endpoint)) == 0:
+            cls.search(endpoint)
+        return cls.CACHE.get(endpoint.local_url, name.lower())
 
-def get_object(endpoint: Platform, name: str) -> PermissionTemplate:
-    """Returns Perm Template object corresponding to name"""
-    if len(PermissionTemplate.CACHE) == 0:
-        PermissionTemplate.search(endpoint)
-    return PermissionTemplate.CACHE.get(endpoint.local_url, name.lower())
+    @classmethod
+    def create(cls, endpoint: Platform, name: str) -> PermissionTemplate:
+        """Creates a permission template from sonar-config data"""
+        endpoint.post(_CREATE_API, params={"name": name})
+        return cls.get_object(endpoint, name)
 
 
 def create_or_update(endpoint: Platform, name: str, data: ObjectJsonRepr) -> PermissionTemplate:
     """Creates or update a permission template with sonar-config JSON data"""
     log.debug("Create or update permission template '%s'", name)
-    o = get_object(endpoint=endpoint, name=name)
+    o = PermissionTemplate.get_object(endpoint, name)
     if o is None:
         log.debug("Permission template '%s' does not exist, creating...", name)
-        return create(endpoint=endpoint, name=name, create_data=data)
-    else:
-        return o.update(name=name, **data)
-
-
-def create(endpoint: Platform, name: str, create_data: ObjectJsonRepr = None) -> PermissionTemplate:
-    """Creates a permission template from sonar-config data"""
-    o = get_object(endpoint=endpoint, name=name)
-    if o is None:
-        o = PermissionTemplate(name=name, endpoint=endpoint, create_data=create_data)
-    else:
-        log.info("%s already exists, skipping creation...", str(o))
-    return o
+        o = PermissionTemplate.create(endpoint, name=name)
+    return o.update(name=name, **data)
 
 
 def search_by_name(endpoint: Platform, name: str) -> ApiPayload:
     """Searches permissions templates by name"""
     api, _, _, ret = endpoint.api.get_details(PermissionTemplate, Oper.SEARCH)
     return sutil.search_by_name(endpoint=endpoint, name=name, api=api, returned_field=ret)
-
-
-def _load_default_templates(endpoint: Platform, data: ApiPayload = None) -> None:
-    """Loads default templates"""
-    if data is None:
-        api, _, params, _ = endpoint.api.get_details(PermissionTemplate, Oper.SEARCH)
-        data = json.loads(endpoint.get(api, params=params).text)
-    for d in data["defaultTemplates"]:
-        _DEFAULT_TEMPLATES[d["qualifier"]] = d["templateId"]
 
 
 def export(endpoint: Platform, export_settings: ConfigSettings) -> ObjectJsonRepr:
