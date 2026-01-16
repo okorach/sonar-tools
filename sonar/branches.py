@@ -66,7 +66,8 @@ class Branch(components.Component):
         if endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
         super().__init__(endpoint, data)
-        self.name: str = unquote(data["name"])
+        self.branch = unquote(data["name"])
+        self.name: str = self.branch
         self.concerned_object: proj.Project = proj.Project.get_project_object(endpoint, data[self.__class__.__PROJECT_KEY])
         log.debug("Loading branch %s of %s", self.name, self.concerned_object)
         self._is_main: bool = None

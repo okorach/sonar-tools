@@ -58,6 +58,7 @@ class Component(SqObject):
         """Constructor"""
         super().__init__(endpoint, data)
         self.key = next(data.get(k) for k in ("key", "projectKey", "componentKey", "project"))
+        self.branch = Optional[str] = None
         self.name: Optional[str] = None
         self.nbr_issues: Optional[int] = None
         self.ncloc: Optional[int] = None
