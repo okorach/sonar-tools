@@ -1425,6 +1425,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
 def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]:
     """Thread callable for project zip export"""
     from sonar.tasks import SUCCESS
+
     try:
         status, file = project.export_zip(timeout=export_timeout)
     except exceptions.UnsupportedOperation as e:
