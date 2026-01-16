@@ -34,9 +34,8 @@ import sonar.util.misc as util
 from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
-    from sonar.util.types import ConcernedObject
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, KeyList
+    from sonar.util.types import ApiPayload, ObjectJsonRepr
 
 DEVOPS_INTEGRATION = "devopsIntegration"
 GENERAL_SETTINGS = "generalSettings"
@@ -167,7 +166,7 @@ class Setting(SqObject):
 
     @classmethod
     def get_object(
-        cls, key: str, endpoint: Platform, component: Optional[str] = None, branch: Optional[str] = None, use_cache: bool = True
+        cls, endpoint: Platform, key: str, component: Optional[str] = None, branch: Optional[str] = None, use_cache: bool = True
     ) -> Setting:
         """Reads a setting from the platform"""
         o = cls.CACHE.get(endpoint.local_url, key, component, branch)
@@ -176,14 +175,12 @@ class Setting(SqObject):
         return cls.load(endpoint, get_settings_data(endpoint, key, component, branch))
 
     @classmethod
-    def create(cls, key: str, endpoint: Platform, value: Any = None, component: Optional[object] = None) -> Union[Setting, None]:
+    def create(cls, key: str, endpoint: Platform, value: Any = None, component: Optional[str] = None, branch: Optional[str] = None) -> Setting:
         """Creates a setting with a custom value"""
         log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
-        api, _, params, _ = endpoint.api.get_details(Setting, Oper.CREATE, key=key, component=component)
-        r = endpoint.post(api, params=params)
-        if not r.ok:
-            return None
-        o = cls.get_object(key=key, endpoint=endpoint, component=component)
+        api, _, params, _ = endpoint.api.get_details(Setting, Oper.CREATE, key=key, component=component, branc=branch)
+        endpoint.post(api, params=params)
+        o = cls.get_object(endpoint, key, component, branch)
         return o
 
     @classmethod
@@ -396,7 +393,7 @@ class Setting(SqObject):
         return ("thirdParty", None)
 
     @classmethod
-    def get_visibility(cls, endpoint: Platform, component: str) -> Setting:
+    def get_visibility(cls, endpoint: Platform, component: Optional[str] = None) -> Setting:
         """Returns the platform global or component visibility"""
         key = COMPONENT_VISIBILITY if component else PROJECT_DEFAULT_VISIBILITY
         o = Setting.CACHE.get(endpoint.local_url, key, component)
@@ -440,6 +437,7 @@ def search(endpoint: Platform, include_not_set: bool = False, **search_params) -
     global VALID_SETTINGS
     settings_dict = {}
     component = search_params.get("component")
+    branch = search_params.get("branch")
     if include_not_set:
         for key, data in endpoint.global_settings_definitions().items():
             if key.endswith("coverage.reportPath") or key == "languageSpecificParameters":
@@ -458,7 +456,7 @@ def search(endpoint: Platform, include_not_set: bool = False, **search_params) -
         log.warning("%s", e.message)
 
     if not endpoint.is_sonarcloud():
-        o = get_new_code_period(endpoint, component)
+        o = get_new_code_period(endpoint, component, branch)
         settings_dict[o.key] = o
     VALID_SETTINGS |= set(settings_dict.keys()) | {"sonar.scm.provider", MQR_ENABLED, "sonar.cfamily.ignoreHeaderComments"}
     return settings_dict
@@ -483,9 +481,9 @@ def string_to_new_code(value: str) -> list[str]:
     return re.split(r"\s*=\s*", value)
 
 
-def get_new_code_period(endpoint: Platform, project_or_branch: object) -> Setting:
+def get_new_code_period(endpoint: Platform, component: Optional[str], branch: Optional[str]) -> Setting:
     """returns the new code period, either the default global setting, or specific to a project/branch"""
-    return Setting.get_object(key=NEW_CODE_PERIOD, endpoint=endpoint, component=project_or_branch)
+    return Setting.get_object(endpoint, NEW_CODE_PERIOD, component, branch)
 
 
 def set_new_code_period(endpoint: Platform, nc_type: str, nc_value: str, project_key: Optional[str] = None, branch: Optional[str] = None) -> bool:
@@ -514,11 +512,11 @@ def set_visibility(endpoint: Platform, visibility: str, component: Optional[obje
         return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
 
 
-def set_setting(endpoint: Platform, key: str, value: Any, component: Optional[object] = None) -> bool:
+def set_setting(endpoint: Platform, key: str, value: Any, component: Optional[str] = None, branch: Optional[str] = None) -> bool:
     """Sets a setting to a particular value"""
     try:
         log.debug("Setting %s with value %s (for component %s)", key, value, component)
-        s = Setting.get_object(endpoint=endpoint, key=key, component=component)
+        s = Setting.get_object(endpoint, key, component, branch)
         if not s:
             log.warning("Setting '%s' does not exist on target platform, it cannot be set", key)
             return False
