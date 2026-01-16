@@ -167,7 +167,7 @@ class Task(SqObject):
             elif qualifier == "APP":
                 self.concerned_object = applications.Application.get_object(self.endpoint, self.component_key)
             elif qualifier == "VW":
-                self.concerned_object = portfolios.Portfolios.get_object(self.endpoint, self.component_key)
+                self.concerned_object = portfolios.Portfolio.get_object(self.endpoint, self.component_key)
             else:
                 log.error("Unknown task component qualifier %s", qualifier)
         return self
