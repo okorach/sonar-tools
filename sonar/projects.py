@@ -1424,6 +1424,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
 
 def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]:
     """Thread callable for project zip export"""
+    from sonar.tasks import SUCCESS
     try:
         status, file = project.export_zip(timeout=export_timeout)
     except exceptions.UnsupportedOperation as e:
@@ -1431,7 +1432,7 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
         raise exceptions.UnsupportedOperation("Zip export unsupported on your SonarQube version") from e
     log.debug("Exporting thread for %s done, status: %s", str(project), status)
     data = {"key": project.key, "name": project.name, "exportProjectUrl": project.url(), "exportStatus": status}
-    if status.startswith(tasks.SUCCESS):
+    if status.startswith(SUCCESS):
         data["file"] = os.path.basename(file)
         data["exportPath"] = file
         data["exportDate"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -1529,13 +1530,14 @@ def import_zips(endpoint: Platform, project_list: list[dict[str, str]], threads:
     :param int import_timeout: Timeout to import the project, defaults to 60 s
     :return: import results
     """
+    from sonar.tasks import SUCCESS
 
     if endpoint.edition() not in (c.EE, c.DCE):
         raise exceptions.UnsupportedOperation(f"Zip import unsupported on {endpoint.edition()} edition")
     nb_projects = len(project_list)
     log.info("Importing zip of %d projects", nb_projects)
     i = 0
-    statuses_count = {tasks.SUCCESS: 0}
+    statuses_count = {SUCCESS: 0}
     statuses: dict[str, dict[str, str]] = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipImport") as executor:
         futures, futures_map = [], {}
