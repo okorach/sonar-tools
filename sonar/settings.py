@@ -462,6 +462,7 @@ def search(endpoint: Platform, include_not_set: bool = False, **search_params) -
     VALID_SETTINGS |= set(settings_dict.keys()) | {"sonar.scm.provider", MQR_ENABLED, "sonar.cfamily.ignoreHeaderComments"}
     return settings_dict
 
+
 def new_code_to_string(data: Union[int, str, dict[str, str]]) -> Union[int, str, None]:
     """Converts a new code period from anything to int str"""
     if isinstance(data, (int, str)):
