@@ -929,7 +929,7 @@ class Project(Component):
             if export_settings.get("MODE", "") == "MIGRATION":
                 json_data.update({"migrationData": self.migration_export(export_settings)})
 
-            settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
+            settings_dict = settings.search(self.endpoint, include_not_set=False, component=self.key, keys=settings_list)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
             contains_ai = False
             try:

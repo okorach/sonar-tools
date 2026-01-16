@@ -232,7 +232,7 @@ class Component(SqObject):
     def visibility(self) -> str:
         """Returns a component visibility (public or private)"""
         if not self._visibility:
-            self._visibility = settings.get_visibility(self.endpoint, component=self).value
+            self._visibility = settings.Setting.get_visibility(self.endpoint, component=self.key).value
         return self._visibility
 
     def set_visibility(self, visibility: str) -> None:

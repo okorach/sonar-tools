@@ -28,11 +28,13 @@ import re
 import json
 import sonar.logging as log
 from sonar.util import cache, constants as c
-from sonar import sqobject, exceptions
+from sonar import exceptions
+from sonar.sqobject import SqObject
 import sonar.util.misc as util
 from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
+    from sonar.util.types import ConcernedObject
     from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, KeyList
 
@@ -124,7 +126,7 @@ _INLINE_SETTINGS = (
 VALID_SETTINGS: set[str] = set()
 
 
-class Setting(sqobject.SqObject):
+class Setting(SqObject):
     """Abstraction of the Sonar setting concept"""
 
     CACHE = cache.Cache()
@@ -134,22 +136,31 @@ class Setting(sqobject.SqObject):
         """Constructor"""
         super().__init__(endpoint, data)
         self.key = data["key"]
-        self.component = data.get(self.__COMPONENT)
-        if self.component:
-            self.component = Component.get_object(endpoint, self.component)
+        self.component = data.get(self.__class__.__COMPONENT)
         self.default_value: Optional[Any] = None
         self.value: Optional[Any] = None
         self.multi_valued: Optional[bool] = None
         self.inherited: Optional[bool] = None
         self._definition: ApiPayload = None
         self._is_global: Optional[bool] = None
+        if "category" in data:
+            self._definition = data
+            self.multi_valued = data.get("multiValues")
+            default_val = data.get("defaultValue", "" if self.multi_valued else None)
+            self.default_value = (
+                sorted(util.csv_to_list(default_val)) if self.multi_valued else util.convert_to_type(default_val) or self.default_value
+            )
+        else:
+            if self.component:
+                self.component = Component.get_object(endpoint, self.component)
         self.__class__.CACHE.put(self)
         self.reload(data)
         log.debug("Constructed %s uuid %d value %s", str(self), hash(self), str(self.value))
 
+    @staticmethod
     def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
         """Returns the hash items for a given object search payload"""
-        return (data["key"], data["component"])
+        return (data["key"], data[Setting.__COMPONENT])
 
     def hash_object(self) -> tuple[Any, ...]:
         """Returns the hash elements for a given object"""
@@ -180,13 +191,7 @@ class Setting(sqobject.SqObject):
         """Loads a setting with  JSON data"""
         log.debug("Loading setting '%s' from definition %s", key, def_data)
         if not (o := cls.CACHE.get(endpoint.local_url, key, None)):
-            o = cls(key=key, endpoint=endpoint, data=None, component=None)
-        o._definition = def_data
-        o.multi_valued = def_data.get("multiValues")
-        default_val = def_data.get("defaultValue", "" if o.multi_valued else None)
-        o.default_value = sorted(util.csv_to_list(default_val)) if o.multi_valued else util.convert_to_type(default_val)
-        if o.value is None:
-            o.value = o.default_value
+            o = cls(endpoint, def_data | {"component": None})
         return o
 
     def __reload_inheritance(self, data: ApiPayload) -> bool:
@@ -340,7 +345,7 @@ class Setting(sqobject.SqObject):
     def is_settable(self) -> bool:
         """Returns whether a setting can be set"""
         if len(VALID_SETTINGS) == 0:
-            get_bulk(endpoint=self.endpoint, include_not_set=True)
+            search(self.endpoint, include_not_set=True)
         if self.key not in VALID_SETTINGS:
             return False
         return not self.is_internal()
@@ -390,30 +395,36 @@ class Setting(sqobject.SqObject):
         return ("thirdParty", None)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str, component: Optional[object] = None) -> Setting:
-        """Returns a Setting object from its key and, optionally, component"""
-        o = cls.CACHE.get(endpoint.local_url, key, component.key if component else None)
-        if not o:
-            get_all(endpoint, component)
-        return cls.CACHE.get(endpoint.local_url, key, component.key if component else None)
+    def get_visibility(cls, endpoint: Platform, component: str) -> Setting:
+        """Returns the platform global or component visibility"""
+        key = COMPONENT_VISIBILITY if component else PROJECT_DEFAULT_VISIBILITY
+        o = Setting.CACHE.get(endpoint.local_url, key, component)
+        if o:
+            return o
+        if component:
+            data = json.loads(endpoint.get("components/show", params={"component": component}).text)
+            return Setting.load(endpoint, data["component"] | {cls.__COMPONENT: component, "key": COMPONENT_VISIBILITY})
+        else:
+            if endpoint.is_sonarcloud():
+                raise exceptions.UnsupportedOperation("Project default visibility does not exist in SonarQube Cloud")
+            api, _, params, ret = endpoint.api.get_details(Setting, Oper.GET, keys=key)
+            dataset = json.loads(endpoint.get(api, params=params).text)[ret]
+            return Setting.load(endpoint, dataset[0] | {cls.__COMPONENT: None, "key": PROJECT_DEFAULT_VISIBILITY})
 
 
-def __get_settings(endpoint: Platform, data: ApiPayload, component: Optional[sqobject.SqObject] = None) -> dict[str, Setting]:
+def __get_settings(endpoint: Platform, data: ApiPayload, component: Optional[str] = None) -> dict[str, Setting]:
     """Returns settings of the global platform or a specific component object (Project, Branch, App, Portfolio)"""
     settings = {}
-    settings_type_list = ["settings"]
     # Hack: Sonar API also return setSecureSettings for projects although it's irrelevant
-    if component is None:
-        settings_type_list += ["setSecuredSettings"]
+    settings_type_list = ["settings"] + (["setSecuredSettings"] if component is None else [])
 
     for setting_type in settings_type_list:
         log.debug("Looking at %s", setting_type)
         for s in data.get(setting_type, {}):
             (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
-            o: Optional[Setting] = Setting.CACHE.get(endpoint.local_url, key, component.key if component else None)
+            o: Optional[Setting] = Setting.CACHE.get(endpoint.local_url, key, component)
             if not o:
-                sdata["key"] = key
-                o = Setting(endpoint, data=sdata, component=component)
+                o = Setting(endpoint, data=sdata | {"key": key, "component": component})
             else:
                 o.reload(sdata)
             if o.is_internal():
@@ -423,30 +434,24 @@ def __get_settings(endpoint: Platform, data: ApiPayload, component: Optional[sqo
     return settings
 
 
-def get_bulk(
-    endpoint: Platform, settings_list: Optional[KeyList] = None, component: Optional[object] = None, include_not_set: bool = False
-) -> dict[str, Setting]:
+def search(endpoint: Platform, include_not_set: bool = False, **search_params) -> dict[str, Setting]:
     """Gets several settings as bulk (returns a dict)"""
     global VALID_SETTINGS
     settings_dict = {}
-
+    component = search_params.get("component")
     if include_not_set:
         for key, data in endpoint.global_settings_definitions().items():
             if key.endswith("coverage.reportPath") or key == "languageSpecificParameters":
                 continue
             settings_dict[key] = Setting.load_from_definition(key=key, endpoint=endpoint, def_data=data)
 
-    params = get_component_params(component)
-    if settings_list is not None:
-        params["keys"] = util.list_to_csv(settings_list)
-
-    api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.SEARCH, **params)
-    data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)
+    api, _, search_params, _ = endpoint.api.get_details(Setting, Oper.SEARCH, **search_params)
+    data = json.loads(endpoint.get(api, params=search_params, with_organization=component is None).text)
     settings_dict |= __get_settings(endpoint, data, component)
 
     # Hack since projects.default.visibility is not returned by settings/list_definitions
     try:
-        o = get_visibility(endpoint, component)
+        o = Setting.get_visibility(endpoint, component)
         settings_dict[o.key] = o
     except exceptions.UnsupportedOperation as e:
         log.warning("%s", e.message)
@@ -456,12 +461,6 @@ def get_bulk(
         settings_dict[o.key] = o
     VALID_SETTINGS |= set(settings_dict.keys()) | {"sonar.scm.provider", MQR_ENABLED, "sonar.cfamily.ignoreHeaderComments"}
     return settings_dict
-
-
-def get_all(endpoint: Platform, project: Optional[object] = None) -> dict[str, Setting]:
-    """Returns all settings, global ones or component settings"""
-    return get_bulk(endpoint, component=project, include_not_set=True)
-
 
 def new_code_to_string(data: Union[int, str, dict[str, str]]) -> Union[int, str, None]:
     """Converts a new code period from anything to int str"""
@@ -501,23 +500,6 @@ def set_new_code_period(endpoint: Platform, nc_type: str, nc_value: str, project
         )
         ok = endpoint.post(api, params=params).ok
     return ok
-
-
-def get_visibility(endpoint: Platform, component: object) -> Setting:
-    """Returns the platform global or component visibility"""
-    key = COMPONENT_VISIBILITY if component else PROJECT_DEFAULT_VISIBILITY
-    o = Setting.CACHE.get(endpoint.local_url, key, component)
-    if o:
-        return o
-    if component:
-        data = json.loads(endpoint.get("components/show", params={"component": component.key}).text)
-        return Setting.load(key=COMPONENT_VISIBILITY, endpoint=endpoint, component=component, data=data["component"])
-    else:
-        if endpoint.is_sonarcloud():
-            raise exceptions.UnsupportedOperation("Project default visibility does not exist in SonarQube Cloud")
-        api, _, params, _ = endpoint.api.get_details(Setting, Oper.GET, keys=PROJECT_DEFAULT_VISIBILITY)
-        data = json.loads(endpoint.get(api, params=params).text)
-        return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 
 
 def set_visibility(endpoint: Platform, visibility: str, component: Optional[object] = None) -> bool:

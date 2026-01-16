@@ -402,7 +402,7 @@ class Platform(object):
     def get_settings(self, settings_list: Optional[list[str]] = None) -> dict[str, dict[str, Any]]:
         """Returns a list of (or all) platform global settings dict representation from their key"""
         if settings_list is None:
-            settings_dict = settings.get_bulk(endpoint=self)
+            settings_dict = settings.search(endpoint=self)
         else:
             settings_dict = {k: settings.Setting.get_object(endpoint=self, key=k) for k in settings_list}
         platform_settings = {}
@@ -412,7 +412,7 @@ class Platform(object):
 
     def __settings(self, settings_list: KeyList = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
         log.info("Getting global settings")
-        settings_dict = settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
+        settings_dict = settings.search(self, include_not_set=include_not_set, keys=settings_list)
         if ai_code_fix := settings.Setting.get_object(endpoint=self, key=settings.AI_CODE_FIX):
             settings_dict[ai_code_fix.key] = ai_code_fix
         return settings_dict
