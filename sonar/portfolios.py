@@ -105,7 +105,7 @@ class Portfolio(aggregations.Aggregation):
         self._sub_portfolios: dict[str, Portfolio] = {}  #: Subportfolios
         self.__class__.CACHE.put(self)
         self.reload(data)
-        log.debug("Created portfolio object name '%s'", name)
+        log.debug("Created portfolio object name '%s'", self.name)
 
     def __str__(self) -> str:
         """Returns string representation of object"""
