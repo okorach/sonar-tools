@@ -134,10 +134,6 @@ class QualityGate(SqObject):
         """Returns the string formatting of the object"""
         return f"quality gate '{self.name}'"
 
-    def __hash__(self) -> int:
-        """Default UUID for SQ objects"""
-        return hash((self.name,))
-
     @staticmethod
     def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
         """Returns the hash items for a given object search payload"""
@@ -157,7 +153,9 @@ class QualityGate(SqObject):
         """
         o: Optional[QualityGate] = cls.CACHE.get(endpoint.local_url, name)
         if o:
+            log.debug("QG CACHE HIT")
             return o
+        log.debug("QG CACHE NO HIT search %s from %s", name, [qg.name for qg in cls.CACHE.values()])
         if data := search_by_name(endpoint, name):
             return cls.load(endpoint, data)
         raise exceptions.ObjectNotFound(name, f"Quality gate '{name}' not found")
@@ -206,6 +204,7 @@ class QualityGate(SqObject):
         :raises ObjectNotFound: If Quality gate not found
         :return: The list of projects using this quality gate
         """
+        log.debug("Getting %s projects", self)
         if self._projects is not None:
             return self._projects
         page, nb_pages = 1, 1
