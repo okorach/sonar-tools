@@ -141,7 +141,7 @@ class Measure(SqObject):
         log.debug("Searching measures with %s", search_params)
         branch = pull_request = None
         key = concerned_object.key
-        if concerned_object.__class__.__name__ == "Branch":
+        if concerned_object.__class__.__name__ in ("Branch", "ApplicationBranch"):
             key = concerned_object.concerned_object.key
             branch = concerned_object.name
         elif concerned_object.__class__.__name__ == "PullRequest":
