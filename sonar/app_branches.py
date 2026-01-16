@@ -57,9 +57,9 @@ class ApplicationBranch(Component):
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint, data)
         self.concerned_object_key = data["application"]
+        self.name = data["branch"]
         self.key = f"{self.concerned_object_key} BRANCH {self.name}"
         self.concerned_object: apps.Application = apps.Application.get_object(endpoint, self.concerned_object_key)
-        self.name = data["branch"]
         self._is_main = data.get("isMain", False)
         self._project_branches = []
         self.__class__.CACHE.put(self)
