@@ -149,7 +149,7 @@ class Finding(SqObject):
         """Returns a finding from its key"""
         o: Optional[Union[Issue, Hotspot]] = cls.CACHE.get(endpoint.local_url, data["key"])
         if not o:
-            o = cls(endpoint=endpoint, data=data, from_export=from_export)
+            o = cls(endpoint, data, from_export=from_export)
         return o
 
     @staticmethod
@@ -168,7 +168,7 @@ class Finding(SqObject):
     @classmethod
     def json_to_objects(cls, endpoint: Platform, dataset: ApiPayload, **search_params: Any) -> dict[str, Union[Issue, Hotspot]]:
         """Returns a list of findings from the API payload"""
-        findings_d = {data["key"]: cls.get_object(endpoint=endpoint, key=data["key"], data=data) for data in dataset}
+        findings_d = {data["key"]: cls.get_object(endpoint, data) for data in dataset}
         return cls.add_branch_and_pr(findings_d, **search_params)
 
     @classmethod
