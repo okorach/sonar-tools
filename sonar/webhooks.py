@@ -61,6 +61,7 @@ class WebHook(SqObject):
             return f"webhook '{self.name}' of {self.project}"
         return f"webhook '{self.name}'"
 
+    @staticmethod
     def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
         """Returns the hash items for a given object search payload"""
         return (data["name"], data["project"])
