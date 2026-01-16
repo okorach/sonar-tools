@@ -525,7 +525,7 @@ class Project(Component):
     def ai_code_fix(self) -> Optional[str]:
         """Returns whether this project is enabled for AI Code Fix (if only enabled per project)"""
         log.debug("Getting project AI Code Fix suggestion flag for %s", str(self))
-        global_setting = settings.Setting.get_object(key=settings.AI_CODE_FIX, endpoint=self.endpoint)
+        global_setting = settings.Setting.get_object(self.endpoint, key=settings.AI_CODE_FIX)
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
@@ -969,7 +969,7 @@ class Project(Component):
         :rtype: str
         """
         if self._new_code is None:
-            new_code = settings.Setting.get_object(settings.NEW_CODE_PERIOD, self.endpoint, component=self)
+            new_code = settings.Setting.get_object(self.endpoint, settings.NEW_CODE_PERIOD, self.key)
             self._new_code = new_code.value if new_code else ""
             log.info("%s new code is %s", self, self._new_code)
         return self._new_code
@@ -1082,7 +1082,7 @@ class Project(Component):
             if key in ("branches", settings.NEW_CODE_PERIOD):
                 continue
             log.debug("Setting 2 %s settings with %s %s", str(self), key, value)
-            settings.set_setting(endpoint=self.endpoint, key=key, value=value, component=self)
+            settings.set_setting(self.endpoint, key, value, component=self.key)
 
     def set_devops_binding(self, binding_data: ObjectJsonRepr) -> bool:
         """Sets project devops binding settings

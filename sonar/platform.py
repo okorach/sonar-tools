@@ -404,7 +404,7 @@ class Platform(object):
         if settings_list is None:
             settings_dict = settings.search(endpoint=self)
         else:
-            settings_dict = {k: settings.Setting.get_object(endpoint=self, key=k) for k in settings_list}
+            settings_dict = {k: settings.Setting.get_object(self, k) for k in settings_list}
         platform_settings = {}
         for v in settings_dict.values():
             platform_settings |= v.to_json()
@@ -413,7 +413,7 @@ class Platform(object):
     def __settings(self, settings_list: KeyList = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
         log.info("Getting global settings")
         settings_dict = settings.search(self, include_not_set=include_not_set, keys=settings_list)
-        if ai_code_fix := settings.Setting.get_object(endpoint=self, key=settings.AI_CODE_FIX):
+        if ai_code_fix := settings.Setting.get_object(self, key=settings.AI_CODE_FIX):
             settings_dict[ai_code_fix.key] = ai_code_fix
         return settings_dict
 
@@ -423,7 +423,7 @@ class Platform(object):
         :param key: Setting key
         :return: the setting value
         """
-        return settings.Setting.get_object(endpoint=self, key=key).to_json()[key].get("value")
+        return settings.Setting.get_object(self, key=key).to_json()[key].get("value")
 
     def reset_setting(self, key: str) -> bool:
         """Resets a platform global setting to the SonarQube internal default value
@@ -479,7 +479,7 @@ class Platform(object):
         json_data = {}
         settings_list = list(self.__settings(include_not_set=True).values())
         settings_list = [s for s in settings_list if s.is_global() and not s.is_internal()]
-        settings_list.append(settings.Setting.get_object(settings.NEW_CODE_PERIOD, self))
+        settings_list.append(settings.Setting.get_object(self, settings.NEW_CODE_PERIOD))
         for s in settings_list:
             (categ, subcateg) = s.category()
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
