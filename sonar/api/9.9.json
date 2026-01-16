@@ -1169,7 +1169,8 @@
                 "keys",
                 "component",
                 "branch"
-            ]
+            ],
+            "return_field": "settings"
         },
         "UPDATE": {
             "method": "POST",
@@ -1190,7 +1191,8 @@
                 "keys",
                 "component",
                 "branch"
-            ]
+            ],
+            "return_field": "settings"
         },
         "LIST_DEFINITIONS": {
             "method": "GET",

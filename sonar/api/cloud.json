@@ -1136,7 +1136,8 @@
                 "keys",
                 "component",
                 "branch"
-            ]
+            ],
+            "return_field": "component"
         },
         "UPDATE": {
             "method": "POST",
