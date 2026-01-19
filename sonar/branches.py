@@ -71,9 +71,9 @@ class Branch(components.Component):
         self.name: str = self.branch
         self.concerned_object: proj.Project = proj.Project.get_project_object(endpoint, data[self.__class__.__PROJECT_KEY])
         log.debug("Loading branch %s of %s", self.name, self.concerned_object)
-        self._is_main: bool
-        self._new_code: str
-        self._keep_when_inactive: str
+        self._is_main: bool = data.get("isMain")
+        self._new_code: str = data.get("newCode")
+        self._keep_when_inactive: str = data.get("excludedFromPurge")
         self.__class__.CACHE.put(self)
         log.debug("Constructed object %s", self)
 
