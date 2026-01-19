@@ -242,10 +242,6 @@ class Setting(SqObject):
         """Reads the setting value on SonarQube"""
         return self.reload(get_settings_data(self.endpoint, self.key, self.component, self.branch))
 
-    def __hash__(self) -> int:
-        """Returns object unique ID"""
-        return hash((self.key, self.component.key if self.component else None, self.base_url()))
-
     def __str__(self) -> str:
         if self.component is None:
             return f"setting '{self.key}'"
