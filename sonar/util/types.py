@@ -21,11 +21,6 @@
 """Sonar Custom Types for type hints"""
 
 from typing import Union, Optional, Any
-from sonar.projects import Project
-from sonar.applications import Application
-from sonar.portfolios import Portfolio
-from sonar.branches import Branch
-from sonar.pull_requests import PullRequest
 
 ConfigSettings = dict[str, Any]
 
@@ -53,5 +48,3 @@ PermissionDef = dict[str, Any]
 
 AppBranchDef = dict[str, Any]
 AppBranchProjectDef = dict[str, str]
-
-ConcernedObject = Union[Project, Application, Portfolio, Branch, PullRequest]

@@ -41,7 +41,7 @@ from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, KeyList, ConfigSettings
+    from sonar.util.types import ApiPayload, ObjectJsonRepr, KeyList, ConfigSettings
 
 __MAX_ISSUES_SHOULD_BE_ZERO = "Any numeric threshold on number of issues should be 0 or should be removed from QG conditions"
 __THRESHOLD_ON_OVERALL_CODE = "Threshold on overall code should not be too strict or passing the QG will often be impossible"

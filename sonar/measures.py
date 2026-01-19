@@ -34,8 +34,16 @@ import sonar.util.misc as util
 import sonar.utilities as sutil
 
 if TYPE_CHECKING:
-    from sonar.util.types import ApiPayload, ApiParams, KeyList, ConcernedObject
+    from sonar.util.types import ApiPayload, ApiParams, KeyList
     from sonar.platform import Platform
+    from sonar.projects import Project
+    from sonar.applications import Application
+    from sonar.portfolios import Portfolio
+    from sonar.branches import Branch
+    from sonar.pull_requests import PullRequest
+    from sonar.app_branches import ApplicationBranch
+
+    ConcernedObject = Union[Project, Application, Portfolio, Branch, PullRequest, ApplicationBranch]
 
 ALT_COMPONENTS = ("project", "application", "portfolio", "key")
 

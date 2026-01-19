@@ -53,8 +53,9 @@ if TYPE_CHECKING:
     from sonar.pull_requests import PullRequest
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
+    from sonar.app_branches import ApplicationBranch
 
-    ConcernedObject = Union[Project, Branch, PullRequest, Application, Portfolio]
+    ConcernedObject = Union[Project, Branch, PullRequest, Application, Portfolio, ApplicationBranch]
     Finding = Union[Issue, Hotspot]
 
 TOOL_NAME = "sonar-findings"

@@ -46,6 +46,14 @@ from sonar import portfolios
 if TYPE_CHECKING:
     from sonar.platform import Platform
     from sonar.util.types import ApiPayload, ConfigSettings
+    from sonar.projects import Project
+    from sonar.applications import Application
+    from sonar.portfolios import Portfolio
+    from sonar.branches import Branch
+    from sonar.pull_requests import PullRequest
+    from sonar.app_branches import ApplicationBranch
+
+    ConcernedObject = Union[Project, Branch, PullRequest, Application, ApplicationBranch, Portfolio]
 
 SUCCESS = "SUCCESS"
 PENDING = "PENDING"
@@ -68,15 +76,6 @@ INCOMPATIBLE_PLUGINS = "INCOMPATIBLE_PLUGINS"
 IMPORT_ERRORS = (ZIP_MISSING, ZIP_CORRUPTED, ZIP_DOESNT_MATCH, CANT_UNZIP, INCOMPATIBLE_SQ, INCOMPATIBLE_PLUGINS)
 
 SCANNER_VERSIONS = get_scanners_versions()
-
-if TYPE_CHECKING:
-    from sonar.projects import Project
-    from sonar.applications import Application
-    from sonar.portfolios import Portfolio
-    from sonar.branches import Branch
-    from sonar.pull_requests import PullRequest
-
-    ConcernedObject = Union[Project, Branch, PullRequest, Application, Portfolio]
 
 
 class Task(SqObject):
