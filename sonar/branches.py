@@ -41,6 +41,7 @@ from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 import sonar.util.constants as c
 from sonar.api.manager import ApiOperation as Oper
+from sonar import measures
 
 if TYPE_CHECKING:
     from sonar.tasks import Task
@@ -400,3 +401,7 @@ class Branch(components.Component):
         if task := Task.search_last(self.endpoint, component=self.concerned_object.key, type="REPORT", branch=self.name):
             task.concerned_object = self
         return task
+
+    def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
+        """Returns the history of a project metrics"""
+        return measures.get_history(self, metrics_list, component=self.concerned_object.key, branch=self.name)
