@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 from typing import Optional, Any, Union, TYPE_CHECKING
+from types import MappingProxyType
 
 import re
 import json
@@ -58,7 +59,7 @@ class Application(aggr.Aggregation):
     """
 
     CACHE = cache.Cache()
-    APP_FILTER = {"filter": "qualifier = APP"}
+    __APP_FILTER = MappingProxyType({"filter": "qualifier = APP"})
 
     def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
@@ -122,7 +123,7 @@ class Application(aggr.Aggregation):
         check_supported(endpoint)
         if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
             return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
-        app_list = cls.get_paginated(endpoint=endpoint, params=search_params | cls.APP_FILTER)
+        app_list = cls.get_paginated(endpoint=endpoint, params=search_params | cls.__APP_FILTER)
         if "s" in search_params:
             return app_list
         return dict(sorted(app_list.items()))
@@ -131,7 +132,7 @@ class Application(aggr.Aggregation):
     def count(cls, endpoint: Platform, **search_params: Any) -> int:
         """returns count of applications"""
         check_supported(endpoint)
-        return super().count(endpoint, **(search_params | cls.APP_FILTER))
+        return super().count(endpoint, **(search_params | cls.__APP_FILTER))
 
     def refresh(self) -> Application:
         """Refreshes the application by re-reading SonarQube
