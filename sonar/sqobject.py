@@ -207,7 +207,7 @@ class SqObject(object):
                     log.error(f"Error {e} while searching {cname}.")
         return objects_list
 
-    def reload(self, data: ApiPayload) -> object:
+    def reload(self, data: ApiPayload) -> SqObject:
         """Loads a SonarQube API JSON payload in a SonarObject"""
         log.debug("%s: Reloading with %s", self, data)
         self.sq_json = (self.sq_json or {}) | data
