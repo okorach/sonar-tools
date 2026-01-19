@@ -42,7 +42,7 @@ import sonar.utilities as sutil
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr
+    from sonar.util.types import ApiParams, ApiPayload
 
 
 class SqObject(object):
@@ -51,23 +51,41 @@ class SqObject(object):
     CACHE = cache.Cache()
     API: dict[str, str] = {}  # Will be defined in the subclass
 
-    def __init__(self, endpoint: Platform, key: str) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
+        log.debug("Init object from payload %s", data)
+        self.sq_json: ApiPayload = data
+        self.endpoint: Platform = endpoint  #: Reference to the SonarQube platform
+        self.key: str  #: Object unique key (unique in its class)
+        self.concerned_object: Optional[SqObject] = None
+        self._tags: Optional[list[str]] = None
         if not self.__class__.CACHE:
             self.__class__.CACHE.set_class(self.__class__)
-        self.key: str = key  #: Object unique key (unique in its class)
-        self.endpoint: Platform = endpoint  #: Reference to the SonarQube platform
-        self.concerned_object: Optional[object] = None
-        self._tags: Optional[list[str]] = None
-        self.sq_json: Optional[ApiPayload] = None
 
     def __hash__(self) -> int:
         """Default UUID for SQ objects"""
-        return hash((self.key, self.base_url()))
+        return hash((self.endpoint.local_url, *self.hash_object()))
+
+    @staticmethod
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data["key"],)
+
+    def hash_object(self) -> tuple[Any, ...]:
+        """Returns the hash elements for a given object"""
+        return (self.key,)
 
     def __eq__(self, another: object) -> bool:
         if type(self) is type(another):
             return hash(self) == hash(another)
         return NotImplemented
+
+    def refresh(self) -> SqObject:
+        """Refresh a project from SonarQube
+
+        :raises ObjectNotFound: if project key not found
+        :return: self
+        """
+        return self.__class__.get_object(self.endpoint, self.key, use_cache=False)
 
     @classmethod
     def api_for(cls, operation: Oper, endpoint: Platform) -> str:
@@ -142,13 +160,19 @@ class SqObject(object):
         return sutil.nbr_total_elements(dataset)
 
     @classmethod
+    def load(cls, endpoint: Platform, data: ApiPayload) -> SqObject:
+        """Loads a SonarQube object from the API payload"""
+        o = cls.CACHE.get(endpoint.local_url, *cls.hash_payload(data))
+        return o.reload(data) if o else cls(endpoint, data)
+
+    @classmethod
     def load_objects(cls, endpoint: Platform, dataset: ApiPayload) -> dict[str, SqObject]:
         """Loads any SonarQube object with the contents of an API payload"""
         try:
             load_method = cls.load
         except AttributeError as e:
             raise exceptions.UnsupportedOperation(f"Can't load {cls.__name__.lower()}s") from e
-        obj_list = [load_method(endpoint=endpoint, data=data) for data in dataset]
+        obj_list = [load_method(endpoint, data) for data in dataset]
         return {obj.key: obj for obj in obj_list}
 
     @classmethod
@@ -183,9 +207,9 @@ class SqObject(object):
                     log.error(f"Error {e} while searching {cname}.")
         return objects_list
 
-    def reload(self, data: ApiPayload) -> object:
+    def reload(self, data: ApiPayload) -> SqObject:
         """Loads a SonarQube API JSON payload in a SonarObject"""
-        log.debug("%s: Reloading with %s", str(self), util.json_dump(data))
+        log.debug("%s: Reloading with %s", self, data)
         self.sq_json = (self.sq_json or {}) | data
         return self
 
@@ -261,7 +285,7 @@ class SqObject(object):
 
     def delete_object(self, **kwargs: Any) -> bool:
         """Deletes an object, returns whether the operation succeeded"""
-        log.info("Deleting %s", str(self))
+        log.info("Deleting %s", self)
         try:
             api, method, params, _ = self.endpoint.api.get_details(self, Oper.DELETE, **kwargs)
             if method == "DELETE":
@@ -293,8 +317,6 @@ class SqObject(object):
         :raises UnsupportedOperation: if can't set tags on such objects
         :return: Whether the operation was successful
         """
-        if tags is None:
-            return False
         log.info("Settings tags %s to %s", tags, str(self))
         try:
             api, _, params, _ = self.endpoint.api.get_details(
@@ -302,9 +324,10 @@ class SqObject(object):
             )
             if ok := self.post(api, params=params).ok:
                 self._tags = sorted(tags)
-        except (ValueError, AttributeError, KeyError) as e:
+        except exceptions.UnsupportedOperation as e:
             raise exceptions.UnsupportedOperation(f"Can't set tags on {self.__class__.__name__.lower()}s") from e
-        except exceptions.SonarException:
+        except exceptions.SonarException as e:
+            log.error("Error setting tags on %s: %s", str(self), e.message)
             return False
         else:
             return ok
@@ -313,7 +336,7 @@ class SqObject(object):
         """Returns object tags"""
         try:
             api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET_TAGS, component=self.key)
-        except ValueError as e:
+        except exceptions.UnsupportedOperation as e:
             raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags") from e
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
@@ -329,11 +352,3 @@ class SqObject(object):
 def _get(endpoint: Platform, api: str, params: ApiParams) -> requests.Response:
     """Returns a Sonar object from its key"""
     return json.loads(endpoint.get(api, params=params).text)
-
-
-def _load(endpoint: Platform, object_class: Any, data: ObjectJsonRepr) -> dict[str, object]:
-    """Loads any SonarQube object with the contents of an API payload"""
-    key_field = object_class.SEARCH_KEY_FIELD
-    if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization", "WebHook", "Rule"):
-        return {obj[key_field]: object_class.load(endpoint=endpoint, data=obj) for obj in data}
-    return {obj[key_field]: object_class(endpoint, obj[key_field], data=obj) for obj in data}

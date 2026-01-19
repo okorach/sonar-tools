@@ -36,17 +36,17 @@ from sonar.audit.problem import Problem
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiPayload, ApiParams, ConfigSettings
+    from sonar.util.types import ApiPayload, ConfigSettings
 
 
 class Aggregation(comp.Component):
     """Parent class of applications and portfolios"""
 
-    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor"""
+        super().__init__(endpoint, data)
         self._nbr_projects: Optional[int] = None
         self._permissions: Optional[object] = None
-        super().__init__(endpoint=endpoint, key=key)
 
     def reload(self, data: ApiPayload) -> Aggregation:
         """Reloads an Aggregation (Application or Portfolio) from the result of a search or get
@@ -94,6 +94,7 @@ class Aggregation(comp.Component):
         return self._permissions
 
     def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
+        """Audits an aggregation (only permissions, the rest is specific to subclasses)"""
         if self.permissions() is None:
             return []
         return self.permissions().audit(audit_settings)

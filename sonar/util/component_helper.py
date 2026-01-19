@@ -19,15 +19,18 @@
 #
 
 import re
-from typing import Optional, Any
+from typing import Optional, Any, Union, TYPE_CHECKING
 
 import sonar.logging as log
-from sonar import platform, projects, applications, portfolios
+from sonar.projects import Project
+from sonar.applications import Application
+from sonar.portfolios import Portfolio
 from sonar.components import Component
+from sonar.platform import Platform
 
 
 def get_components(
-    endpoint: platform.Platform,
+    endpoint: Platform,
     component_type: str,
     key_regexp: Optional[str] = None,
     branch_regexp: Optional[str] = None,
@@ -38,13 +41,13 @@ def get_components(
     key_regexp = key_regexp or ".+"
     components: list[Component]
     if component_type in ("apps", "applications"):
-        components = list(applications.Application.search(endpoint).values())
+        components = list(Application.search(endpoint).values())
     elif component_type == "portfolios":
-        components = list(portfolios.Portfolio.search(endpoint).values())
+        components = list(Portfolio.search(endpoint).values())
         if kwargs.get("topLevelOnly", False):
             components = [p for p in components if p.is_toplevel()]
     else:
-        components = list(projects.Project.search(endpoint).values())
+        components = list(Project.search(endpoint).values())
     if key_regexp:
         log.info("Searching for %s matching '%s'", component_type, key_regexp)
         components = [comp for comp in components if re.match(rf"^{key_regexp}$", comp.key)]

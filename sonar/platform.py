@@ -90,7 +90,6 @@ class Platform(object):
         self.http_timeout = int(http_timeout)
         self.organization: str = org or ""
         self._user_agent = _SONAR_TOOLS_AGENT
-        self._global_settings_definitions: dict[str, dict[str, str]] = None
         self.api: Api = Api(self)
 
     def __str__(self) -> str:
@@ -340,17 +339,6 @@ class Platform(object):
             self._permissions = global_permissions.GlobalPermissions(self)
         return self._permissions
 
-    def global_settings_definitions(self) -> dict[str, dict[str, str]]:
-        """Returns the platform global settings definitions"""
-        if not self._global_settings_definitions:
-            try:
-                api, _, params, ret = self.api.get_details(settings.Setting, Oper.LIST_DEFINITIONS)
-                data = json.loads(self.get(api, params=params).text)
-                self._global_settings_definitions = {s["key"]: s for s in data[ret]}
-            except (ConnectionError, RequestException):
-                return {}
-        return self._global_settings_definitions
-
     def sys_info(self) -> dict[str, Any]:
         """Returns the SonarQube platform system info JSON"""
         MAX_RETRIES = 10
@@ -402,9 +390,9 @@ class Platform(object):
     def get_settings(self, settings_list: Optional[list[str]] = None) -> dict[str, dict[str, Any]]:
         """Returns a list of (or all) platform global settings dict representation from their key"""
         if settings_list is None:
-            settings_dict = settings.get_bulk(endpoint=self)
+            settings_dict = settings.Setting.search(self)
         else:
-            settings_dict = {k: settings.Setting.get_object(endpoint=self, key=k) for k in settings_list}
+            settings_dict = {k: settings.Setting.get_object(self, k) for k in settings_list}
         platform_settings = {}
         for v in settings_dict.values():
             platform_settings |= v.to_json()
@@ -412,8 +400,8 @@ class Platform(object):
 
     def __settings(self, settings_list: KeyList = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
         log.info("Getting global settings")
-        settings_dict = settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
-        if ai_code_fix := settings.Setting.read(endpoint=self, key=settings.AI_CODE_FIX):
+        settings_dict = settings.Setting.search(self, include_not_set=include_not_set, keys=settings_list)
+        if ai_code_fix := settings.Setting.get_object(self, key=settings.AI_CODE_FIX):
             settings_dict[ai_code_fix.key] = ai_code_fix
         return settings_dict
 
@@ -423,7 +411,8 @@ class Platform(object):
         :param key: Setting key
         :return: the setting value
         """
-        return settings.Setting.get_object(endpoint=self, key=key).to_json()[key].get("value")
+        return settings.Setting.get_object(self, key=key).value
+        # return settings.Setting.get_object(self, key=key).to_json()[key].get("value")
 
     def reset_setting(self, key: str) -> bool:
         """Resets a platform global setting to the SonarQube internal default value
@@ -479,7 +468,7 @@ class Platform(object):
         json_data = {}
         settings_list = list(self.__settings(include_not_set=True).values())
         settings_list = [s for s in settings_list if s.is_global() and not s.is_internal()]
-        settings_list.append(settings.Setting.read(settings.NEW_CODE_PERIOD, self))
+        settings_list.append(settings.Setting.get_object(self, settings.NEW_CODE_PERIOD))
         for s in settings_list:
             (categ, subcateg) = s.category()
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
@@ -791,12 +780,6 @@ class Platform(object):
             log.debug("Moved permanently to URL %s", new_url)
             return True, new_url
         return False, None
-
-
-# --------------------- Static methods -----------------
-# this is a pointer to the module object instance itself.
-this = sys.modules[__name__]
-this.context = Platform(os.getenv("SONAR_HOST_URL", "http://localhost:9000"), os.getenv("SONAR_TOKEN", ""))
 
 
 def _audit_setting_value(key: str, platform_settings: dict[str, Any], audit_settings: ConfigSettings, url: str) -> list[Problem]:

@@ -21,6 +21,7 @@
 
 from __future__ import annotations
 from typing import Optional, Union, Any, TYPE_CHECKING
+from types import MappingProxyType
 
 import os
 import re
@@ -37,7 +38,7 @@ from sonar.components import Component
 import sonar.util.issue_defs as idefs
 from sonar.util import cache
 from sonar import exceptions
-from sonar import qualityprofiles, tasks, settings, webhooks, devops
+from sonar import qualityprofiles, settings, webhooks, devops
 from sonar import qualitygates as qg
 from sonar import pull_requests, branches
 import sonar.util.misc as util
@@ -52,6 +53,7 @@ import sonar.util.project_helper as phelp
 from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
+    from sonar.tasks import Task
     from sonar.branches import Branch
     from sonar.pull_requests import PullRequest
     from sonar.issues import Issue
@@ -96,14 +98,14 @@ class Project(Component):
     """Abstraction of the SonarQube project concept"""
 
     CACHE = cache.Cache()
-    PROJECT_FILTER = {"filter": "qualifier=TRK"}
+    __PROJECT_FILTER = MappingProxyType({"filter": "qualifier=TRK"})
 
-    def __init__(self, endpoint: Platform, key: str) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """
         :param Platform endpoint: Reference to the SonarQube platform
         :param str key: The project key
         """
-        super().__init__(endpoint=endpoint, key=key)
+        super().__init__(endpoint, data)
         self._branches_last_analysis: Optional[datetime] = None
         self._permissions: Optional[object] = None
         self._branches: Optional[dict[str, Branch]] = None
@@ -114,31 +116,22 @@ class Project(Component):
         self._ci: Optional[str] = None
         self._revision: Optional[str] = None
         self.__class__.CACHE.put(self)
-        log.debug("Loaded object %s", str(self))
+        self.reload(data)
+        log.debug("Constructed object %s", self)
 
     def __str__(self) -> str:
         """Returns the string representation of the project"""
         return f"project '{self.key}'"
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str) -> Project:
+    def get_object(cls, endpoint: Platform, key: str, use_cache: bool = True) -> Project:
         """Returns the project object from its project key"""
-        if o := cls.CACHE.get(key, endpoint.local_url):
+        o: Optional[Project] = cls.CACHE.get(endpoint.local_url, key)
+        if use_cache and o:
             return o
-        api, _, params, ret = endpoint.api.get_details(Project, Oper.GET, component=key)
-        return cls.load(endpoint, json.loads(endpoint.get(api, params=params).text)[ret])
-
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> Project:
-        """Creates a project loaded with JSON data coming from api/components/search request
-
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param ApiPayload data: Project data entry in the search results
-        :return: The created project object
-        """
-        if not (o := cls.CACHE.get(data["key"], endpoint.local_url)):
-            o = cls(endpoint, data["key"])
-        return o.reload(data)
+        api, _, params, ret = endpoint.api.get_details(cls, Oper.GET, component=key)
+        data = json.loads(endpoint.get(api, params=params).text)[ret]
+        return o.reload(data) if o else cls.load(endpoint, data)
 
     @classmethod
     def create(cls, endpoint: Platform, key: str, name: str) -> Project:
@@ -152,8 +145,7 @@ class Project(Component):
         """
         api, _, params, _ = endpoint.api.get_details(Project, Oper.CREATE, project=key, name=name)
         endpoint.post(api, params=params)
-        o = cls(endpoint, key)
-        o.name = name
+        o = cls.get_object(endpoint, key, use_cache=False)
         return o.refresh()
 
     @classmethod
@@ -169,32 +161,32 @@ class Project(Component):
         if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
             return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
         if not endpoint.is_sonarcloud():
-            search_params |= cls.PROJECT_FILTER
+            search_params |= cls.__PROJECT_FILTER
         return dict(sorted(cls.get_paginated(endpoint=endpoint, params=search_params, threads=threads).items()))
 
     @classmethod
     def count(cls, endpoint: Platform, **search_params: Any) -> int:
         """Counts projects"""
-        proj_filter = {} if endpoint.is_sonarcloud() else cls.PROJECT_FILTER
+        proj_filter = {} if endpoint.is_sonarcloud() else cls.__PROJECT_FILTER
         return super().count(endpoint, **(search_params | proj_filter))
+
+    @staticmethod
+    def get_project_key(project: Union[str, Project]) -> str:
+        """Loads a list of branches from a dataset"""
+        if isinstance(project, str):
+            return project
+        return project.key
+
+    @classmethod
+    def get_project_object(cls, endpoint: Platform, project: Union[str, Project]) -> Project:
+        """Loads a list of branches from a dataset"""
+        if not isinstance(project, str):
+            return project
+        return cls.get_object(endpoint, project, use_cache=True)
 
     def project(self) -> Project:
         """Returns the project"""
         return self
-
-    def refresh(self) -> Project:
-        """Refresh a project from SonarQube
-
-        :raises ObjectNotFound: if project key not found
-        :return: self
-        """
-        try:
-            api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET, **self.api_params(Oper.GET))
-            data = json.loads(self.get(api, params=params).text)
-        except exceptions.ObjectNotFound:
-            self.__class__.CACHE.pop(self)
-            raise
-        return self.reload(data[ret])
 
     def reload(self, data: ApiPayload) -> Project:
         """Reloads a project with JSON data coming from api/components/search request
@@ -247,7 +239,7 @@ class Project(Component):
         """
         if not self._branches or not use_cache:
             try:
-                self._branches = branches.Branch.search(self)
+                self._branches = branches.Branch.search(self.endpoint, self)
             except exceptions.UnsupportedOperation:
                 self._branches = {}
         return self._branches
@@ -483,15 +475,19 @@ class Project(Component):
         log.info("%s is a %s project", str(self), projtype)
         return projtype
 
-    def last_task(self) -> Optional[tasks.Task]:
+    def last_task(self) -> Optional[Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
-        if task := tasks.search_last(self.endpoint, component=self.key, type="REPORT"):
+        from sonar.tasks import Task
+
+        if task := Task.search_last(self.endpoint, component=self.key, type="REPORT"):
             task.concerned_object = self
         return task
 
-    def task_history(self) -> Optional[tasks.Task]:
-        """Returns the last analysis background task of a problem, or none if not found"""
-        return tasks.Task.search(self.endpoint, component=self.key, type="REPORT")
+    def task_history(self) -> list[Task]:
+        """Returns the list of background tasks of a project"""
+        from sonar.tasks import Task
+
+        return Task.search(self.endpoint, component=self.key, type="REPORT")
 
     def scanner(self) -> str:
         """Returns the project type (MAVEN, GRADLE, DOTNET, OTHER, UNKNOWN)"""
@@ -530,11 +526,11 @@ class Project(Component):
     def ai_code_fix(self) -> Optional[str]:
         """Returns whether this project is enabled for AI Code Fix (if only enabled per project)"""
         log.debug("Getting project AI Code Fix suggestion flag for %s", str(self))
-        global_setting = settings.Setting.read(key=settings.AI_CODE_FIX, endpoint=self.endpoint)
+        global_setting = settings.Setting.get_object(self.endpoint, key=settings.AI_CODE_FIX)
         if not global_setting or global_setting.value != "ENABLED_FOR_SOME_PROJECTS":
             return None
         if "isAiCodeFixEnabled" not in self.sq_json:
-            api, _, params, ret = self.endpoint.api.get_details(self, Oper.SEARCH, **self.__class__.PROJECT_FILTER)
+            api, _, params, ret = self.endpoint.api.get_details(self, Oper.SEARCH, **self.__class__.__PROJECT_FILTER)
             data = self.endpoint.get_paginated(api=api, return_field=ret, **params)
             p_data = next((p for p in data[ret] if p["key"] == self.key), None)
             if p_data:
@@ -609,6 +605,8 @@ class Project(Component):
         :param int timeout: timeout in seconds to complete the export operation
         :returns: export status (success/failure/timeout), and zip file path
         """
+        from sonar.tasks import Task, SUCCESS
+
         log.info("Exporting %s (%s)", str(self), "asynchronously" if asynchronous else "synchronously")
         try:
             resp = self.post("project_dump/export", params={"key": self.key})
@@ -625,15 +623,17 @@ class Project(Component):
         if asynchronous:
             return ZIP_ASYNC_SUCCESS, None
         data = json.loads(resp.text)
-        status = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data).wait_for_completion(timeout=timeout)
-        if status != tasks.SUCCESS:
+        task = Task.get_object(self.endpoint, data["taskId"])
+        status = task.wait_for_completion(timeout=timeout)
+        task.__class__.CACHE.pop(self)
+        if status != SUCCESS:
             log.error("%s export %s", str(self), status)
             return status, None
         dump_file = json.loads(self.get("project_dump/status", params={"key": self.key}).text)["exportedDump"]
         log.debug("%s export %s, dump file %s", str(self), status, dump_file)
         if self.loc() == 0:
-            return f"{tasks.SUCCESS}/{ZIP_ZERO_LOC}", dump_file
-        return tasks.SUCCESS, dump_file
+            return f"{SUCCESS}/{ZIP_ZERO_LOC}", dump_file
+        return SUCCESS, dump_file
 
     def import_zip(self, asynchronous: bool = False, timeout: int = 180) -> str:
         """Imports a project zip file in SonarQube
@@ -642,6 +642,8 @@ class Project(Component):
         :param int timeout: timeout in seconds to complete the export operation
         :return: SUCCESS or FAILED with reason
         """
+        from sonar.tasks import Task, ZIP_MISSING, SUCCESS
+
         mode = "asynchronously" if asynchronous else "synchronously"
         log.info("Importing %s (%s)", str(self), mode)
         if self.endpoint.edition() not in (c.EE, c.DCE):
@@ -650,12 +652,12 @@ class Project(Component):
             resp = self.post("project_dump/import", params={"key": self.key})
         except exceptions.ObjectNotFound as e:
             if "Dump file does not exist" in e.message:
-                return f"FAILED/{tasks.ZIP_MISSING}"
+                return f"FAILED/{ZIP_MISSING}"
             self.__class__.CACHE.pop(self)
             raise
         except exceptions.SonarException as e:
             if "Dump file does not exist" in e.message:
-                return f"FAILED/{tasks.ZIP_MISSING}"
+                return f"FAILED/{ZIP_MISSING}"
             return f"FAILED/{e.message}"
         except ConnectionError as e:
             return f"FAILED/{str(e)}"
@@ -664,10 +666,10 @@ class Project(Component):
             return ZIP_ASYNC_SUCCESS
 
         data = json.loads(resp.text)
-        import_task = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data)
+        import_task = Task.get_object(self.endpoint, data["taskId"])
         status = import_task.wait_for_completion(timeout=timeout)
-        log.log(log.INFO if status == tasks.SUCCESS else log.ERROR, "%s import background task %s", str(self), status)
-        return status if status == tasks.SUCCESS else f"FAILED/BACKGROUND_TASK_{status}/{import_task.short_error()}"
+        log.log(log.INFO if status == SUCCESS else log.ERROR, "%s import background task %s", str(self), status)
+        return status if status == SUCCESS else f"FAILED/BACKGROUND_TASK_{status}/{import_task.short_error()}"
 
     def get_branches_and_prs(self, filters: dict[str, str]) -> Optional[dict[str, object]]:
         """Get lists of branches and PR objects"""
@@ -711,9 +713,9 @@ class Project(Component):
         data = json.loads(self.get(api, params=params).text)
         for i in data[ret]:
             if i["type"] != idefs.TYPE_HOTSPOT:
-                findings_list[i["key"]] = issues.Issue.get_object(self.endpoint, key=i["key"], data=i, from_export=True)
+                findings_list[i["key"]] = issues.Issue.get_object(self.endpoint, data=i, from_export=True)
             elif i.get("status", "") != "CLOSED":
-                findings_list[i["key"]] = hotspots.Hotspot.get_object(self.endpoint, key=i["key"], data=i, from_export=True)
+                findings_list[i["key"]] = hotspots.Hotspot.get_object(self.endpoint, data=i, from_export=True)
         findings.Finding.add_branch_and_pr(findings_list, **search_params)
         for t in idefs.ALL_TYPES:
             log.debug("%d %s exported", sum(1 for i in findings_list.values() if i.type == t), t)
@@ -928,7 +930,7 @@ class Project(Component):
             if export_settings.get("MODE", "") == "MIGRATION":
                 json_data.update({"migrationData": self.migration_export(export_settings)})
 
-            settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
+            settings_dict = settings.Setting.search(self.endpoint, include_not_set=False, component=self.key, keys=settings_list)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
             contains_ai = False
             try:
@@ -968,7 +970,7 @@ class Project(Component):
         :rtype: str
         """
         if self._new_code is None:
-            new_code = settings.Setting.read(settings.NEW_CODE_PERIOD, self.endpoint, component=self)
+            new_code = settings.Setting.get_object(self.endpoint, settings.NEW_CODE_PERIOD, self.key)
             self._new_code = new_code.value if new_code else ""
             log.info("%s new code is %s", self, self._new_code)
         return self._new_code
@@ -1081,7 +1083,7 @@ class Project(Component):
             if key in ("branches", settings.NEW_CODE_PERIOD):
                 continue
             log.debug("Setting 2 %s settings with %s %s", str(self), key, value)
-            settings.set_setting(endpoint=self.endpoint, key=key, value=value, component=self)
+            settings.set_setting(self.endpoint, key, value, component=self.key)
 
     def set_devops_binding(self, binding_data: ObjectJsonRepr) -> bool:
         """Sets project devops binding settings
@@ -1423,6 +1425,8 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
 
 def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]:
     """Thread callable for project zip export"""
+    from sonar.tasks import SUCCESS
+
     try:
         status, file = project.export_zip(timeout=export_timeout)
     except exceptions.UnsupportedOperation as e:
@@ -1430,7 +1434,7 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
         raise exceptions.UnsupportedOperation("Zip export unsupported on your SonarQube version") from e
     log.debug("Exporting thread for %s done, status: %s", str(project), status)
     data = {"key": project.key, "name": project.name, "exportProjectUrl": project.url(), "exportStatus": status}
-    if status.startswith(tasks.SUCCESS):
+    if status.startswith(SUCCESS):
         data["file"] = os.path.basename(file)
         data["exportPath"] = file
         data["exportDate"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -1449,6 +1453,8 @@ def export_zips(
     :param int export_timeout: Timeout to export the project, defaults to 30
     :return: list of exported projects with export result
     """
+    from sonar.tasks import SUCCESS
+
     statuses, results = {"SUCCESS": 0}, []
     projects_list = {k: p for k, p in Project.search(endpoint, threads=threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", p.key)}
     nbr_projects = len(projects_list)
@@ -1494,7 +1500,7 @@ def export_zips(
             try:
                 conflict = next(proj for proj in results if proj.get("file", "") == result.get("file", " "))
                 conflict["exportStatus"] = ZIP_CONFLICT
-                statuses[tasks.SUCCESS] -= 1
+                statuses[SUCCESS] -= 1
                 log.critical("Zip file export conflict detected between project keys '%s' and '%s'", result["key"], conflict["key"])
                 statuses[ZIP_CONFLICT] = 1 if ZIP_CONFLICT not in statuses else statuses[ZIP_CONFLICT] + 1
             except StopIteration:
@@ -1528,13 +1534,14 @@ def import_zips(endpoint: Platform, project_list: list[dict[str, str]], threads:
     :param int import_timeout: Timeout to import the project, defaults to 60 s
     :return: import results
     """
+    from sonar.tasks import SUCCESS
 
     if endpoint.edition() not in (c.EE, c.DCE):
         raise exceptions.UnsupportedOperation(f"Zip import unsupported on {endpoint.edition()} edition")
     nb_projects = len(project_list)
     log.info("Importing zip of %d projects", nb_projects)
     i = 0
-    statuses_count = {tasks.SUCCESS: 0}
+    statuses_count = {SUCCESS: 0}
     statuses: dict[str, dict[str, str]] = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="ProjZipImport") as executor:
         futures, futures_map = [], {}

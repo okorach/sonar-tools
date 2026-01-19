@@ -98,9 +98,9 @@ class Hotspot(findings.Finding):
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
-    def __init__(self, endpoint: Platform, key: str, data: ApiPayload, from_export: bool = False) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload, from_export: bool = False) -> None:
         """Constructor"""
-        super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
+        super().__init__(endpoint, data, from_export=from_export)
         self.type = idefs.TYPE_HOTSPOT
         self.__details: ApiPayload = data
         self.__class__.CACHE.put(self)
@@ -109,15 +109,6 @@ class Hotspot(findings.Finding):
     def __str__(self) -> str:
         """Returns the string representation of the object"""
         return f"Hotspot key '{self.key}'"
-
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> Hotspot:
-        """Loads a hotspot from the API payload"""
-        o: Optional[Hotspot] = cls.CACHE.get(data["key"], endpoint.local_url)
-        if not o:
-            o = Hotspot(endpoint=endpoint, key=data["key"], data=data)
-        o.reload(data)
-        return o
 
     @classmethod
     def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, Hotspot]:
@@ -155,13 +146,14 @@ class Hotspot(findings.Finding):
         log.info("Project '%s' has %d hotspots corresponding to filters", project, len(hotspots))
         return hotspots
 
-    def reload(self, data: ApiPayload, from_export: bool = False) -> None:
+    def reload(self, data: ApiPayload, from_export: bool = False) -> Hotspot:
         """Loads the hotspot details from the provided data (coming from api/hotspots/search)"""
         super().reload(data, from_export)
         if not self.rule:
             self.rule = data.get("ruleKey", None)
         self.severity = data.get("vulnerabilityProbability", "UNDEFINED")
         self.impacts = {idefs.QUALITY_SECURITY: self.severity}
+        return self
 
     def refresh(self) -> Hotspot:
         """Refreshes and reads hotspots details in SonarQube, returns self"""

@@ -118,9 +118,10 @@ class Finding(SqObject):
     A finding is a general concept that can be either an issue or a security hotspot
     """
 
-    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload, from_export: bool = False) -> None:
         """Constructor"""
-        super().__init__(endpoint=endpoint, key=key)
+        self.key = data["key"]
+        super().__init__(endpoint, data)
         self.severity = None  # BLOCKER, CRITICAL, MAJOR, MINOR, INFO
         self.type: Optional[str] = None  # VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT
         self.impacts: Optional[dict[str, str]] = None  #: 10.x MQR mode
@@ -144,11 +145,11 @@ class Finding(SqObject):
         self.reload(data, from_export)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str, data: ApiPayload, from_export: bool = False) -> Union[Issue, Hotspot]:
+    def get_object(cls, endpoint: Platform, data: ApiPayload, from_export: bool = False) -> Union[Issue, Hotspot]:
         """Returns a finding from its key"""
-        o: Optional[Union[Issue, Hotspot]] = cls.CACHE.get(key, endpoint.local_url)
+        o: Optional[Union[Issue, Hotspot]] = cls.CACHE.get(endpoint.local_url, data["key"])
         if not o:
-            o = cls(endpoint=endpoint, key=key, data=data, from_export=from_export)
+            o = cls(endpoint, data, from_export=from_export)
         return o
 
     @staticmethod
@@ -167,7 +168,7 @@ class Finding(SqObject):
     @classmethod
     def json_to_objects(cls, endpoint: Platform, dataset: ApiPayload, **search_params: Any) -> dict[str, Union[Issue, Hotspot]]:
         """Returns a list of findings from the API payload"""
-        findings_d = {data["key"]: cls.get_object(endpoint=endpoint, key=data["key"], data=data) for data in dataset}
+        findings_d = {data["key"]: cls.get_object(endpoint, data) for data in dataset}
         return cls.add_branch_and_pr(findings_d, **search_params)
 
     @classmethod
@@ -183,7 +184,7 @@ class Finding(SqObject):
     def post_search_filters(findings: dict[str, Union[Issue, Hotspot]], **filters: Any) -> dict[str, Union[Issue, Hotspot]]:
         return findings
 
-    def reload(self, data: ApiPayload, from_export: bool = False) -> None:
+    def reload(self, data: ApiPayload, from_export: bool = False) -> Finding:
         """Reloads a finding with JSON data"""
         super().reload(data)
         if data is not None:
@@ -191,6 +192,7 @@ class Finding(SqObject):
                 self._load_from_export(data)
             else:
                 self._load_from_search(data)
+        return self
 
     def _load_common(self, jsondata: ApiPayload) -> None:
         self.author = jsondata.get("author", None)
@@ -552,7 +554,7 @@ def export_findings(endpoint: Platform, project_key: str, branch: Optional[str] 
     :rtype: dict{<key>: <Finding>}
     """
     log.info("Using new export findings to speed up issue export")
-    return projects.Project(key=project_key, endpoint=endpoint).get_findings(branch=branch, pull_request=pull_request)
+    return projects.Project.get_object(endpoint, project_key).get_findings(branch=branch, pull_request=pull_request)
 
 
 def to_csv_header(endpoint: Platform) -> list[str]:

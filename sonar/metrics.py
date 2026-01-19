@@ -25,8 +25,6 @@ from typing import Optional, Any, TYPE_CHECKING
 
 from sonar.sqobject import SqObject
 from sonar.util import cache
-from sonar import exceptions
-import sonar.utilities as sutil
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -82,9 +80,10 @@ class Metric(SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload = None) -> None:
         """Constructor"""
-        super().__init__(endpoint=endpoint, key=key)
+        super().__init__(endpoint, data)
+        self.key = data["key"]
         self.type: Optional[str] = None  #: Type (FLOAT, INT, STRING, WORK_DUR...)
         self.name: Optional[str] = None  #: Name
         self.description: Optional[str] = None  #: Description
@@ -97,11 +96,13 @@ class Metric(SqObject):
         self.__class__.CACHE.put(self)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str) -> Metric:
-        cls.search(endpoint=endpoint, use_cache=True)
-        if not (o := cls.CACHE.get(key, endpoint.local_url)):
-            raise exceptions.ObjectNotFound(key, f"Metric key '{key}' not found")
-        return o
+    def get_object(cls, endpoint: Platform, key: str, use_cache: bool = True) -> Metric:
+        """Returns a Metric object from its key"""
+        o = cls.CACHE.get(endpoint.local_url, key)
+        if use_cache and o:
+            return o
+        cls.search(endpoint, include_hidden_metrics=True, use_cache=False)
+        return cls.CACHE.get(endpoint.local_url, key)
 
     @classmethod
     def search(cls, endpoint: Platform, include_hidden_metrics: bool = False, use_cache: bool = False, **search_params: Any) -> dict[str, Metric]:
@@ -127,18 +128,8 @@ class Metric(SqObject):
         """
         return len(cls.search(endpoint, include_hidden_metrics=search_params.pop("include_hidden_metrics", False), **search_params))
 
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> Metric:
-        """Loads a metric from data"""
-        key = data["key"]
-        o: Optional[Metric] = cls.CACHE.get(key, endpoint.local_url)
-        if not o:
-            o = cls(endpoint, key, data=data)
-        else:
-            o.reload(data)
-        return o
-
-    def reload(self, data: ApiPayload) -> bool:
+    def reload(self, data: ApiPayload) -> Metric:
+        """Reloads a metric from data"""
         self.type = data["type"]
         self.name = data["name"]
         self.description = data.get("description", "")
@@ -146,7 +137,7 @@ class Metric(SqObject):
         self.qualitative = data["qualitative"]
         self.hidden = data["hidden"]
         self.custom = data.get("custom", None)
-        return True
+        return self
 
     def is_a_rating(self) -> bool:
         """Whether a metric is a rating"""

@@ -30,6 +30,7 @@ from sonar.sqobject import SqObject
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
+    from sonar.util.types import ApiPayload
 
 
 class CustomMeasure(SqObject):
@@ -39,14 +40,14 @@ class CustomMeasure(SqObject):
 
     def __init__(
         self,
-        key: str,
         endpoint: Platform,
+        data: ApiPayload,
         uuid: Optional[str] = None,
         project_key: Optional[str] = None,
         value: Any = None,
         description: Optional[str] = None,
     ) -> None:
-        super().__init__(endpoint=endpoint, key=key)
+        super().__init__(endpoint, data)
         self.uuid = uuid
         self.projectKey = project_key
         self.value = value

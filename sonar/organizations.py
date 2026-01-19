@@ -51,11 +51,12 @@ class Organization(SqObject):
     CACHE = cache.Cache()
     CLASS_LOCK = Lock()
 
-    def __init__(self, endpoint: Platform, key: str, name: str) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
-        super().__init__(endpoint=endpoint, key=key)
+        super().__init__(endpoint, data)
+        self.key = data["key"]
         self.description: Optional[str] = None
-        self.name = name
+        self.name = data["name"]
         log.debug("Created object %s", str(self))
         with self.__class__.CLASS_LOCK:
             self.__class__.CACHE.put(self)
@@ -90,7 +91,7 @@ class Organization(SqObject):
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        if o := Organization.CACHE.get(key, endpoint.local_url):
+        if o := Organization.CACHE.get(endpoint.local_url, key):
             return o
         api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, organizations=key)
         data = json.loads(endpoint.get(api, params=params).text)
@@ -110,10 +111,7 @@ class Organization(SqObject):
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        o: Optional[Organization] = Organization.CACHE.get(data["key"], endpoint.local_url)
-        if not o:
-            o = cls(endpoint, data["key"], data["name"])
-        return o.reload(data)
+        return super().load(endpoint, data)
 
     def reload(self, data: ApiPayload) -> Organization:
         """Reloads an Organization object with data retrieved from SonarQube Cloud, returns self"""

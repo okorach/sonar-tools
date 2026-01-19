@@ -21,7 +21,7 @@
 
 """applications tests"""
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from collections.abc import Generator
 import pytest
 import os
@@ -73,7 +73,7 @@ def test_search() -> None:
     for obj in res_list.values():
         app_date = obj.last_analysis()
         if app_date and app_date != "":
-            assert previous_app_date <= app_date + timedelta(seconds=2)
+            assert previous_app_date <= app_date
             previous_app_date = app_date
 
 
@@ -222,21 +222,44 @@ def test_branch_is_main(get_test_app: Generator[App]) -> None:
         obj.branch_is_main("non-existing")
 
 
-def test_get_issues(get_test_app: Generator[App]) -> None:
+def test_get_issues_empty_application(get_test_app: Generator[App]) -> None:
     if not __verify_support():
         pytest.skip(__UNSUPPORTED_MESSAGE)
     app: App = get_test_app
     assert len(app.get_issues()) == 0
+
+
+def test_get_issues() -> None:
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
     app = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
     main_br_count = len(app.get_issues())
     assert main_br_count > 0
+
     assert len(app.get_issues(branch="main")) == main_br_count
+
+
+def test_get_issues_on_non_existing_branch() -> None:
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
+    app = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
     with pytest.raises(exceptions.ObjectNotFound):
         app.get_issues(branch="non-existing")
 
+
+def test_get_hotspots() -> None:
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
+    app = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
     main_br_count = len(app.get_hotspots())
     assert main_br_count > 0
     assert len(app.get_hotspots(branch="main")) == main_br_count
+
+
+def test_get_hotspots_on_non_existing_branch() -> None:
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
+    app = App.get_object(endpoint=tutil.SQ, key=EXISTING_KEY)
     with pytest.raises(exceptions.ObjectNotFound):
         app.get_hotspots(branch="non-existing")
 

@@ -31,7 +31,7 @@ import requests.utils
 
 from sonar.util import cache
 import sonar.logging as log
-from sonar import components, settings, exceptions, tasks
+from sonar import components, settings, exceptions
 
 import sonar.projects as proj
 import sonar.util.misc as util
@@ -43,6 +43,7 @@ import sonar.util.constants as c
 from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
+    from sonar.tasks import Task
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
     from sonar.platform import Platform
@@ -55,97 +56,90 @@ class Branch(components.Component):
     """Abstraction of the SonarQube "project branch" concept"""
 
     CACHE = cache.Cache()
+    __PROJECT_KEY = "projectKey"
 
-    def __init__(self, project: proj.Project, name: str) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Don't use this, use class methods to create Branch objects
 
         :raises UnsupportedOperation: When attempting to branches on Community Edition
         """
-        if project.endpoint.edition() == c.CE:
+        if endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
-        name = unquote(name)
-        super().__init__(endpoint=project.endpoint, key=name)
-        self.name = name
-        self.concerned_object: proj.Project = project
-        self._is_main: Optional[bool] = None
-        self._new_code: Optional[str] = None
-        self._keep_when_inactive: Optional[bool] = None
+        super().__init__(endpoint, data)
+        self.branch = unquote(data["name"])
+        self.name: str = self.branch
+        self.concerned_object: proj.Project = proj.Project.get_project_object(endpoint, data[self.__class__.__PROJECT_KEY])
+        log.debug("Loading branch %s of %s", self.name, self.concerned_object)
+        self._is_main: bool
+        self._new_code: str
+        self._keep_when_inactive: str
         self.__class__.CACHE.put(self)
-        log.debug("Created object %s", str(self))
+        log.debug("Constructed object %s", self)
 
     def __str__(self) -> str:
-        return f"branch '{self.name}' of {str(self.project())}"
+        return f"branch '{self.name}' of {self.project()}"
 
-    def __hash__(self) -> int:
+    @staticmethod
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data[Branch.__PROJECT_KEY], unquote(data["name"]))
+
+    def hash_object(self) -> tuple[Any, ...]:
         """Computes a uuid for the branch that can serve as index"""
-        return hash((self.concerned_object.key, self.name, self.base_url()))
+        return (self.concerned_object.key, self.name)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, project: Union[str, proj.Project], branch_name: str) -> Branch:
-        """Gets a SonarQube Branch object
-
-        :param str | Project project: Project concerned by the branch
-        :param str branch_name: The branch name
-        :raises UnsupportedOperation: If trying to manipulate branches on a community edition
-        :raises ObjectNotFound: If project key or branch name not found in SonarQube
-        :return: The Branch object
-        :rtype: Branch
-        """
+    def get_object(cls, endpoint: Platform, project: Union[str, proj.Project], branch_name: str, use_cache: bool = False) -> Branch:
+        """Returns the project object from its project key"""
         branch_name = unquote(branch_name)
-        if isinstance(project, str):
-            project = proj.Project.get_object(endpoint, project)
-        if o := cls.CACHE.get(project.key, branch_name, project.base_url()):
+        project = proj.Project.get_project_object(endpoint, project)
+        o: Optional[Branch] = cls.CACHE.get(endpoint.local_url, project.key, branch_name)
+        if use_cache and o:
             return o
-        api, _, params, _ = project.endpoint.api.get_details(Branch, Oper.SEARCH, project=project.key)
-        data = json.loads(project.get(api, params=params).text)
-        br = next((b for b in data.get("branches", []) if b["name"] == branch_name), None)
-        if not br:
-            raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(project)} not found")
-        return cls.load(project, branch_name, br)
+        api, _, params, ret = endpoint.api.get_details(Branch, Oper.SEARCH, project=project.key)
+        dataset = json.loads(project.get(api, params=params).text)[ret]
+        for branch_data in dataset:
+            cls.load(endpoint, branch_data | {cls.__PROJECT_KEY: project.key})
+        if o := cls.CACHE.get(endpoint.local_url, project.key, branch_name):
+            return o
+        raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(project)} not found")
 
     @classmethod
-    def load(cls, concerned_object: proj.Project, branch_name: str, data: ApiPayload) -> Branch:
-        """Gets a Branch object from JSON data gotten from a list API call
-
-        :param proj.Project concerned_object: the Project the branch belonsg to
-        :param str branch_name: Name of the branch
-        :param dict data: Data received from API call
-        :return: The Branch object
-        :rtype: Branch
-        """
-        branch_name = unquote(branch_name)
-        br_data = next((br for br in data.get("branches", []) if br["name"] == branch_name), None)
-        if not (o := cls.CACHE.get(concerned_object.key, branch_name, concerned_object.base_url())):
-            o = cls(concerned_object, branch_name)
-        if br_data:
-            o.reload(br_data)
-        return o
-
-    @classmethod
-    def search(cls, project: proj.Project) -> dict[str, Branch]:
+    def search(cls, endpoint: Platform, project: Union[str, proj.Project], **search_params: Any) -> dict[str, Branch]:
         """Retrieves the list of branches of a project
 
-        :param proj.Project project: Project the branch belongs to
+        :param Project | str project: Project the branch belongs to
         :raises UnsupportedOperation: Branches not supported in Community Edition
         :return: List of project branches
         :rtype: dict{branch_name: Branch}
         """
-        if project.endpoint.edition() == c.CE:
+        if endpoint.edition() == c.CE:
             log.debug(_UNSUPPORTED_IN_CE)
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
-
+        if isinstance(project, str):
+            project = proj.Project.get_object(endpoint, project, use_cache=True)
         log.debug("Reading all branches of %s", str(project))
-        api, _, params, _ = project.endpoint.api.get_details(cls, Oper.SEARCH, project=project.key)
-        data = json.loads(project.endpoint.get(api, params=params).text)
-        return dict(sorted({branch["name"]: cls.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}.items()))
+        api, _, params, ret = project.endpoint.api.get_details(cls, Oper.SEARCH, project=project.key, **search_params)
+        dataset = json.loads(endpoint.get(api, params=params).text)[ret]
+        for branch_data in dataset:
+            branch_data[cls.__PROJECT_KEY] = project.key
+        res = {}
+        for branch_data in dataset:
+            res[branch_data["name"]] = cls.load(project.endpoint, branch_data)
+        return res
 
     def reload(self, data: ApiPayload) -> Branch:
-        log.debug("Loading %s with data %s", self, data)
+        """Reloads a Branch object from API data"""
+        self.concerned_object = self.concerned_object or proj.Project.get_project_object(self.endpoint, data[self.__PROJECT_KEY])
         super().reload(data)
         self._is_main = self.sq_json["isMain"]
         self._keep_when_inactive = self.sq_json.get("excludedFromPurge", False)
         self._is_main = self.sq_json.get("isMain", False)
         return self
+
+    def refresh(self) -> Branch:
+        """Refresh a branch from SonarQube"""
+        return self.__class__.get_object(self.endpoint, self.concerned_object, self.name, use_cache=False)
 
     def url(self) -> str:
         """returns the branch URL in SonarQube as permalink"""
@@ -154,25 +148,6 @@ class Branch(components.Component):
     def project(self) -> proj.Project:
         """Returns the project key"""
         return self.concerned_object
-
-    def refresh(self) -> Branch:
-        """Reads a branch in SonarQube (refresh with latest data)
-
-        :raises ObjectNotFound: Branch not found in SonarQube
-        :return: itself
-        :rtype: Branch
-        """
-        api, _, params, _ = self.endpoint.api.get_details(self, Oper.SEARCH, **self.api_params(Oper.SEARCH))
-        data = json.loads(self.get(api, params=params).text)
-        br_data = next((br for br in data.get("branches", []) if br["name"] == self.name), None)
-        if not br_data:
-            Branch.CACHE.clear()
-            raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
-        self.reload(br_data)
-        # While we're there let's load other branches with up to date branch data
-        for br in [b for b in data.get("branches", []) if b["name"] != self.name]:
-            Branch.load(self.concerned_object, br["name"], data)
-        return self
 
     def is_kept_when_inactive(self) -> bool:
         """Returns whether the branch is kept when inactive"""
@@ -425,8 +400,10 @@ class Branch(components.Component):
         }
         return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
-    def last_task(self) -> Optional[tasks.Task]:
+    def last_task(self) -> Optional[Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
-        if task := tasks.search_last(self.endpoint, component=self.concerned_object.key, type="REPORT", branch=self.name):
+        from sonar.tasks import Task
+
+        if task := Task.search_last(self.endpoint, component=self.concerned_object.key, type="REPORT", branch=self.name):
             task.concerned_object = self
         return task

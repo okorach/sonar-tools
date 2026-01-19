@@ -464,7 +464,6 @@
         }
     },
     "Metric": {
-        "CREATE": {},
         "GET": {
             "method": "GET",
             "api": "api/metrics/search",
@@ -475,11 +474,9 @@
             "return_field": "metrics",
             "max_page_size": 500
         },
-        "UPDATE": {},
-        "DELETE": {},
         "SEARCH": {
             "method": "GET",
-            "api": "metrics/search",
+            "api": "api/metrics/search",
             "params": [
                 "p",
                 "ps"
@@ -509,12 +506,15 @@
         },
         "SEARCH": {
             "method": "GET",
-            "api": "api/measures/search",
+            "api": "api/measures/component",
             "params": [
-                "projectKeys",
-                "metricKeys"
+                "component",
+                "metricKeys",
+                "branch",
+                "pullRequest",
+                "additionalFields"
             ],
-            "return_field": "measures"
+            "return_field": "component"
         },
         "GET_HISTORY": {
             "method": "GET",
@@ -1169,7 +1169,8 @@
                 "keys",
                 "component",
                 "branch"
-            ]
+            ],
+            "return_field": "settings"
         },
         "UPDATE": {
             "method": "POST",
@@ -1190,7 +1191,8 @@
                 "keys",
                 "component",
                 "branch"
-            ]
+            ],
+            "return_field": "settings"
         },
         "LIST_DEFINITIONS": {
             "method": "GET",

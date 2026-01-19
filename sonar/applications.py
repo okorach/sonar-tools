@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 from typing import Optional, Any, Union, TYPE_CHECKING
+from types import MappingProxyType
 
 import re
 import json
@@ -58,17 +59,18 @@ class Application(aggr.Aggregation):
     """
 
     CACHE = cache.Cache()
-    APP_FILTER = {"filter": "qualifier = APP"}
+    __APP_FILTER = MappingProxyType({"filter": "qualifier = APP"})
 
-    def __init__(self, endpoint: Platform, key: str, name: str) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
-        super().__init__(endpoint=endpoint, key=key)
-        self._branches: Optional[dict[str, app_branches.ApplicationBranch]] = None
-        self._projects: Optional[dict[str, str]] = None
-        self._description: Optional[str] = None
-        self.name = name
-        log.debug("Constructed object %s with uuid %d id %x", str(self), hash(self), id(self))
+        super().__init__(endpoint, data)
+        self._branches: dict[str, app_branches.ApplicationBranch]
+        self._projects: dict[str, str]
+        self._description: str
+        self.name = data["name"]
         self.__class__.CACHE.put(self)
+        self.reload(data)
+        log.debug("Constructed object %s", str(self))
 
     def __str__(self) -> str:
         """String name of object"""
@@ -86,29 +88,12 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         check_supported(endpoint)
-        o: Optional[Application] = cls.CACHE.get(key, endpoint.local_url)
+        o: Optional[Application] = cls.CACHE.get(endpoint.local_url, key)
         if o:
             return o
         api, _, params, ret = endpoint.api.get_details(cls, Oper.GET, application=key)
         data = json.loads(endpoint.get(api, params=params).text)[ret]
         return cls.load(endpoint, data)
-
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> Application:
-        """Loads an Application object with data retrieved from SonarQube
-
-        :param endpoint: Reference to the SonarQube platform
-        :param data: Data coming from api/components/search_projects or api/applications/show
-        :raises UnsupportedOperation: If on a Community Edition
-        :raises ObjectNotFound: If Application key not found in SonarQube
-        :return: The found Application object
-        """
-        check_supported(endpoint)
-        o: Application = cls.CACHE.get(data["key"], endpoint.local_url)
-        if not o:
-            o = cls(endpoint, data["key"], data["name"])
-        o.reload(data)
-        return o
 
     @classmethod
     def create(cls, endpoint: Platform, key: str, name: str) -> Application:
@@ -124,7 +109,7 @@ class Application(aggr.Aggregation):
         check_supported(endpoint)
         api, _, params, _ = endpoint.api.get_details(cls, Oper.CREATE, key=key, name=name)
         endpoint.post(api, params=params)
-        return Application(endpoint=endpoint, key=key, name=name)
+        return cls.get_object(endpoint, key)
 
     @classmethod
     def search(cls, endpoint: Platform, use_cache: bool = True, **search_params: Any) -> dict[str, Application]:
@@ -138,13 +123,16 @@ class Application(aggr.Aggregation):
         check_supported(endpoint)
         if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
             return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
-        return dict(sorted(cls.get_paginated(endpoint=endpoint, params=search_params | cls.APP_FILTER).items()))
+        app_list = cls.get_paginated(endpoint=endpoint, params=search_params | cls.__APP_FILTER)
+        if "s" in search_params:
+            return app_list
+        return dict(sorted(app_list.items()))
 
     @classmethod
     def count(cls, endpoint: Platform, **search_params: Any) -> int:
         """returns count of applications"""
         check_supported(endpoint)
-        return super().count(endpoint, **(search_params | cls.APP_FILTER))
+        return super().count(endpoint, **(search_params | cls.__APP_FILTER))
 
     def refresh(self) -> Application:
         """Refreshes the application by re-reading SonarQube
@@ -272,9 +260,8 @@ class Application(aggr.Aggregation):
 
         :return: Whether the delete succeeded
         """
-        if self.branches() is not None:
-            for branch in [b for b in self.branches().values() if not b.is_main()]:
-                branch.delete()
+        for branch in [b for b in self.branches().values() if not b.is_main()]:
+            branch.delete()
         return super().delete_object(application=self.key)
 
     def nbr_projects(self, use_cache: bool = False) -> int:

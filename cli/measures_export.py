@@ -46,7 +46,7 @@ def __get_measures_history(obj: object, wanted_metrics: types.KeyList, convert_o
     try:
         data = obj.get_measures_history(wanted_metrics)
     except RequestException as e:
-        log.error("Error while getting measures history for %s: %s", str(obj), e)
+        log.error("Error while getting measures history for %s: %s", obj, e)
         return {}
     if data:
         ratings = convert_options.get("ratings", "letters")
@@ -58,7 +58,7 @@ def __get_measures_history(obj: object, wanted_metrics: types.KeyList, convert_o
 
 def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the list of requested measures of an object"""
-    log.info("Getting measures for %s", str(obj))
+    log.info("Getting measures for %s", obj)
     measures_d = {}
     try:
         measures_d = obj.component_data() | obj.get_measures(wanted_metrics)
@@ -77,7 +77,7 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: 
         else:
             measures_d["tags"] = sep.join(obj.get_tags())
     except (ConnectionError, RequestException) as e:
-        sutil.handle_error(e, f"Measures extract of {str(obj)} failed", catch_all=True)
+        sutil.handle_error(e, f"Measures extract of {obj} failed", catch_all=True)
         return {}
     return measures_d
 

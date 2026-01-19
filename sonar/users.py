@@ -54,10 +54,11 @@ class User(SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: Platform, login: str, data: ApiPayload) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Do not use to create users, use on of the constructor class methods"""
-        super().__init__(endpoint=endpoint, key=login)
-        self.login = login  #: User login (str)
+        self.key = data["login"]  #: User key (str)
+        self.login = data["login"]  #: User login (str)
+        super().__init__(endpoint, data)
         self.id: Optional[str] = None  #: SonarQube 10+ User Id (str)
         self.name: Optional[str] = None  #: User name (str)
         self._groups: Optional[list[str]] = None  #: User groups (list)
@@ -67,24 +68,22 @@ class User(SqObject):
         self.last_login: Optional[datetime] = None  #: User last login (datetime) - read-only
         self.nb_tokens: Optional[int] = None  #: Nbr of tokens (int) - read-only
         self.__tokens: Optional[list[tokens.UserToken]] = None
+        self.__class__.CACHE.put(self)
         self.reload(data)
         log.debug("Constructed object %s id '%s'", str(self), str(self.id))
-        self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:
         """Returns the string representation of the object"""
         return f"user '{self.login}'"
 
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> User:
-        """Creates a user object from the result of a SonarQube API user search data
+    @staticmethod
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data["login"],)
 
-        :param endpoint: Reference to the SonarQube platform
-        :param data: The JSON data corresponding to the group
-        :return: The user object
-        """
-        log.debug("Loading user '%s'", data["login"])
-        return cls(login=data["login"], endpoint=endpoint, data=data)
+    def hash_object(self) -> tuple[Any, ...]:
+        """Returns the hash elements for a given object"""
+        return (self.login,)
 
     @classmethod
     def create(cls, endpoint: Platform, login: str, name: str, is_local: bool = True, password: Optional[str] = None) -> User:
@@ -134,17 +133,17 @@ class User(SqObject):
         :return: The user object
         :rtype: User
         """
-        if o := cls.CACHE.get(login, endpoint.local_url):
+        if o := cls.CACHE.get(endpoint.local_url, login):
             return o
         if id is not None:
-            return cls.__get_object_by_id(endpoint, id)
+            return cls.get_object_by_id(endpoint, id)
         log.debug("Getting user '%s'", login)
         if user := next((o for k, o in cls.search(endpoint, q=login).items() if k == login), None):
             return user
         raise exceptions.ObjectNotFound(login or id, f"User '{login or id}' not found")
 
     @classmethod
-    def __get_object_by_id(cls, endpoint: Platform, id: str) -> User:
+    def get_object_by_id(cls, endpoint: Platform, id: str) -> User:
         """Searches a user by its (API v2) id in SonarQube
 
         :param endpoint: Reference to the SonarQube platform
@@ -167,6 +166,7 @@ class User(SqObject):
         :param data: The JSON data corresponding to the user
         :return: The user itself
         """
+        super().reload(data)
         self.name = data["name"]  #: User name
         if "scmAccounts" in data:
             self.scm_accounts = list(set(util.csv_to_list(data["scmAccounts"])))  #: User SCM accounts
@@ -175,7 +175,6 @@ class User(SqObject):
         if "local" in data:
             self.is_local = data["local"]
         self.last_login = None  #: User last login - read-only
-        self.sq_json = (self.sq_json or {}) | data
         if self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             self.last_login = sutil.string_to_date(data.get("lastConnectionDate"))
             self.nb_tokens = data.get("tokenCount")  #: Nbr of tokens - read-only
@@ -204,6 +203,7 @@ class User(SqObject):
                 self, Oper.LIST_GROUPS, login=self.login, userId=self.id, ps=max_ps, pageSize=max_ps, name=self.name
             )
             data = json.loads(self.endpoint.get(api, params=params).text)[ret]
+            log.debug("GROUP DATA = %s", util.json_dump(data))
             if self.endpoint.is_sonarcloud():
                 self._groups = [g["name"] for g in data]
             else:
@@ -231,7 +231,6 @@ class User(SqObject):
         """
         :return: the SonarQube permalink to the user, actually the global users page only
                  since this is as close as we can get to the precise user definition
-        :rtype: str
         """
         return f"{self.base_url(local=False)}/admin/users"
 
@@ -251,7 +250,7 @@ class User(SqObject):
         :raises ObjectAlreadyExists: if new login already exists
         :return: self
         """
-        if self.__class__.CACHE.get(new_login, self.base_url()):
+        if self.__class__.CACHE.get(self.endpoint.local_url, new_login):
             raise exceptions.ObjectAlreadyExists(new_login, f"User '{new_login}' already exists")
         api, method, params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, login=self.login, newLogin=new_login, id=self.id)
         if method == "PATCH":
@@ -306,7 +305,7 @@ class User(SqObject):
         :raises ObjectNotFound: if group name not found
         :return: Whether operation succeeded
         """
-        group = groups.Group.read(endpoint=self.endpoint, name=group_name)
+        group = groups.Group.get_object(endpoint=self.endpoint, name=group_name)
         if group.is_default():
             raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't add membership for {self}")
         if group.add_user(self):
@@ -322,7 +321,7 @@ class User(SqObject):
         :raises ObjectNotFound: if group name not found
         :return: Whether operation succeeded
         """
-        group = groups.Group.read(endpoint=self.endpoint, name=group_name)
+        group = groups.Group.get_object(endpoint=self.endpoint, name=group_name)
         if group.is_default():
             raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't remove membership for {str(self)}")
         if group.remove_user(self):

@@ -31,9 +31,9 @@ import requests.utils
 
 import sonar.logging as log
 from sonar.util import cache
-from sonar import components, exceptions
+from sonar import exceptions
+from sonar.components import Component
 import sonar.util.misc as util
-import sonar.utilities as sutil
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.util.constants as c
@@ -49,30 +49,36 @@ if TYPE_CHECKING:
 _UNSUPPORTED_IN_CE = "Pull requests not available in Community Edition"
 
 
-class PullRequest(components.Component):
+class PullRequest(Component):
     """Abstraction of the Sonar pull request concept"""
 
     CACHE = cache.Cache()
+    __PROJECT_KEY = "projectKey"
 
-    def __init__(self, project: proj.Project, key: str, data: Optional[ApiPayload] = None) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor"""
-        super().__init__(endpoint=project.endpoint, key=key)
-        self.concerned_object: proj.Project = project
-        if data is not None:
-            self.reload(data)
+        self.key = data["key"]
+        self.concerned_object: proj.Project = proj.Project.get_project_object(endpoint, data[self.__PROJECT_KEY])
+        super().__init__(endpoint, data)
+        self.reload(data)
         self.__class__.CACHE.put(self)
-        log.debug("Created object %s", str(self))
+        log.debug("Constructed object %s", str(self))
 
     def __str__(self) -> str:
         """Returns string representation of the PR"""
         return f"pull request key '{self.key}' of {str(self.project())}"
 
-    def __hash__(self) -> int:
-        """Returns a PR unique ID"""
-        return hash((self.project().key, self.key, self.base_url()))
+    @staticmethod
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data[PullRequest.__PROJECT_KEY], data["key"])
+
+    def hash_object(self) -> tuple[Any, ...]:
+        """Computes a uuid for the branch that can serve as index"""
+        return (self.concerned_object.key, self.key)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, project: Union[proj.Project, str], pull_request_key: str) -> PullRequest:
+    def get_object(cls, endpoint: Platform, project: Union[proj.Project, str], pull_request_key: str, use_cache: bool = True) -> PullRequest:
         """Returns a PR object from a PR key and a project
 
         :param endpoint: Reference to the SonarQube platform
@@ -84,21 +90,21 @@ class PullRequest(components.Component):
         """
         if endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
-        if isinstance(project, str):
-            project = proj.Project.get_object(endpoint, project)
-        if o := cls.CACHE.get(project.key, pull_request_key, project.base_url()):
+        project = proj.Project.get_project_object(endpoint, project)
+        o: Optional[PullRequest] = cls.CACHE.get(endpoint.local_url, project.key, pull_request_key)
+        if use_cache and o:
             return o
-        return cls(project, pull_request_key)
-
-    @classmethod
-    def load(cls, endpoint: Platform, project: Union[proj.Project, str], data: ApiPayload) -> PullRequest:
-        """Loads a PR object from API data"""
-        if isinstance(project, str):
-            project = proj.Project.get_object(endpoint, project)
-        if not (o := cls.CACHE.get(project.key, data["key"], project.base_url())):
-            o = cls(project, data["key"])
-        o.reload(data)
-        return o
+        api, _, params, ret = endpoint.api.get_details(PullRequest, Oper.SEARCH, project=project.key)
+        data = json.loads(project.get(api, params=params).text)[ret]
+        for pr in data:
+            pr[cls.__PROJECT_KEY] = project.key
+            o = cls.load(endpoint, pr)
+            o.concerned_object = project
+            if o.key == pull_request_key:
+                object_to_return = o
+        if not object_to_return:
+            raise exceptions.ObjectNotFound(pull_request_key, f"PR '{pull_request_key} of {project} not found")
+        return object_to_return
 
     @classmethod
     def search(cls, endpoint: Platform, project: Union[proj.Project, str], **search_params: Any) -> dict[str, PullRequest]:
@@ -112,15 +118,20 @@ class PullRequest(components.Component):
         if project.endpoint.edition() == c.CE:
             log.debug(_UNSUPPORTED_IN_CE)
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
-        if isinstance(project, str):
-            project = proj.Project.get_object(endpoint, project)
+        project = proj.Project.get_project_object(endpoint, project)
         api, _, params, ret = project.endpoint.api.get_details(cls, Oper.SEARCH, project=project.key)
         dataset = json.loads(project.get(api, params=params).text)[ret]
-        return dict(sorted({pr["key"]: cls.load(project.endpoint, project, pr) for pr in dataset}.items()))
+        for pr in dataset:
+            pr[cls.__PROJECT_KEY] = project.key
+        res = {}
+        for pr in dataset:
+            res[pr["key"]] = cls.load(endpoint, pr)
+        return res
 
     def reload(self, data: ApiPayload) -> PullRequest:
         """Reloads a PR object from API data"""
         super().reload(data)
+        self.concerned_object = self.concerned_object or proj.Project.get_project_object(self.endpoint, data[self.__PROJECT_KEY])
         self.name = self._description = data["title"]
         return self
 

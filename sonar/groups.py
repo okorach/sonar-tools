@@ -48,31 +48,41 @@ MEMBERSHIP_API = "v2/authorizations/group-memberships"
 
 
 class Group(SqObject):
-    """
-    Abstraction of the SonarQube "group" concept.
-    Objects of this class must be created with one of the 3 available class methods. Don't use __init__
-    """
+    """Abstraction of the SonarQube "group" concept"""
 
     CACHE = cache.Cache()
+    ID_TO_NAME = {}
 
-    def __init__(self, endpoint: Platform, name: str, data: ApiPayload) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Do not use, use class methods to create objects"""
-        super().__init__(endpoint=endpoint, key=name)
-        self.name = name  #: Group name
+        log.debug("Constructing GROUP data = %s", util.json_dump(data))
+        self.key = data["name"]
+        self.id = data.get("id")  #: SonarQube 10.4+ Group id
+        super().__init__(endpoint, data)
+        self.name = data["name"]  #: Group name
         self.description = data.get("description", "")  #: Group description
         self.__members: Optional[list[users.User]] = None
-        self.__is_default = data.get("default", None)
-        self.id = data.get("id", None)  #: SonarQube 10.4+ Group id
-        self.sq_json = data
+        self.__is_default = data.get("default")
         self.__class__.CACHE.put(self)
-        log.debug("Created %s object, id '%s'", str(self), str(self.id))
+        if self.id:
+            self.__class__.ID_TO_NAME[self.id] = self.name
+        log.debug("Constructed %s object, id '%s'", self, self.id)
 
     def __str__(self) -> str:
         """String representation of the object"""
         return f"group '{self.name}'"
 
+    @staticmethod
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data["name"],)
+
+    def hash_object(self) -> tuple[Any, ...]:
+        """Returns the hash elements for a given object"""
+        return (self.name,)
+
     @classmethod
-    def read(cls, endpoint: Platform, name: str) -> Group:
+    def get_object(cls, endpoint: Platform, name: str, use_cache: bool = True) -> Group:
         """Creates a Group object corresponding to the group with same name in SonarQube
         :param Platform endpoint: Reference to the SonarQube platform
         :param str name: Group name
@@ -80,14 +90,16 @@ class Group(SqObject):
         :return: The group object
         """
         log.debug("Reading group '%s'", name)
-        if o := cls.CACHE.get(name, endpoint.local_url):
+        o = cls.CACHE.get(endpoint.local_url, name)
+        if o and use_cache:
             return o
         api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, q=name)
-        data = json.loads(endpoint.get(api, params=params).text)[ret]
-        if not data or data == []:
+        dataset = json.loads(endpoint.get(api, params=params).text)[ret]
+        objs = [cls(endpoint, data) for data in dataset]
+        o = next((g for g in objs if g.name == name), None)
+        if not o:
             raise exceptions.ObjectNotFound(name, f"Group '{name}' not found")
-        data = next((d for d in data if d["name"] == name), None)
-        return cls(endpoint, name, data=data)
+        return o
 
     @classmethod
     def create(cls, endpoint: Platform, name: str, description: Optional[str] = None) -> Group:
@@ -102,31 +114,7 @@ class Group(SqObject):
         params = util.remove_nones({"name": name, "description": description})
         api, _, _, _ = endpoint.api.get_details(cls, Oper.CREATE, **params)
         endpoint.post(api, params=params)
-        return cls.read(endpoint=endpoint, name=name)
-
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> Group:
-        """Creates a Group object from the result of a SonarQube API group search data
-
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param data: The JSON data corresponding to the group
-        :return: The group object
-        """
-        return cls(endpoint=endpoint, name=data["name"], data=data)
-
-    @classmethod
-    def get_object(cls, endpoint: Platform, name: str) -> Group:
-        """Returns a group object
-
-        :param endpoint: reference to the SonarQube platform
-        :param name: group name
-        :return: The group
-        """
-        if not cls.CACHE.get(name, endpoint.local_url):
-            cls.search(endpoint)
-        if o := cls.CACHE.get(name, endpoint.local_url):
-            return o
-        raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
+        return cls.get_object(endpoint=endpoint, name=name)
 
     @classmethod
     def search(cls, endpoint: Platform, use_cache: bool = True, **search_params: Any) -> dict[str, Group]:
@@ -251,7 +239,7 @@ class Group(SqObject):
         """
         log.info("Removing %s from %s", user, self)
         if user not in self.members(use_cache=False):
-            raise exceptions.ObjectNotFound(user.login or user.id, f"{user} not in {self}")
+            raise exceptions.UnsupportedOperation(f"{user} not in {self}")
         mb_id = self.__get_membership_id(user)
         api, method, params, _ = self.endpoint.api.get_details(self, Oper.REMOVE_USER, id=mb_id, login=user.login, name=self.name)
         if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION and not mb_id:
@@ -339,8 +327,9 @@ def get_object_from_id(endpoint: Platform, id: str) -> Group:
     """Searches a Group object from its id - SonarQube 10.4+"""
     if endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
         raise exceptions.UnsupportedOperation("Operation unsupported before SonarQube 10.4")
-    if len(Group.CACHE) == 0:
-        Group.search(endpoint)
+    if name := Group.ID_TO_NAME.get(id):
+        return Group.get_object(endpoint, name=name)
+    Group.search(endpoint, use_cache=False)
     if gr := next((o for o in Group.CACHE.values() if o.id == id), None):
         return gr
     raise exceptions.ObjectNotFound(id, message=f"Group '{id}' not found")

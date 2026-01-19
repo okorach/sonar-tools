@@ -108,10 +108,10 @@ class QualityGate(SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: Platform, name: str, data: ApiPayload) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor, don't use directly, use class methods instead"""
-        super().__init__(endpoint=endpoint, key=name)
-        self.name = name  #: Object name
+        super().__init__(endpoint, data)
+        self.name = data["name"]  #: Object name
         # Override key with id if present
         self.key = data.get("id", self.name)
         log.debug("Loading %s with data %s", self, util.json_dump(data))
@@ -134,9 +134,14 @@ class QualityGate(SqObject):
         """Returns the string formatting of the object"""
         return f"quality gate '{self.name}'"
 
-    def __hash__(self) -> int:
-        """Default UUID for SQ objects"""
-        return hash((self.name, self.base_url()))
+    @staticmethod
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data["name"],)
+
+    def hash_object(self) -> tuple[Any, ...]:
+        """Returns the hash elements for a given object"""
+        return (self.name,)
 
     @classmethod
     def get_object(cls, endpoint: Platform, name: str) -> QualityGate:
@@ -146,24 +151,14 @@ class QualityGate(SqObject):
         :param name: Quality gate
         :return: the QualityGate object or None if not found
         """
-        o: Optional[QualityGate] = cls.CACHE.get(name, endpoint.local_url)
+        o: Optional[QualityGate] = cls.CACHE.get(endpoint.local_url, name)
         if o:
+            log.debug("QG CACHE HIT")
             return o
+        log.debug("QG CACHE NO HIT search %s from %s", name, [qg.name for qg in cls.CACHE.values()])
         if data := search_by_name(endpoint, name):
             return cls.load(endpoint, data)
         raise exceptions.ObjectNotFound(name, f"Quality gate '{name}' not found")
-
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> QualityGate:
-        """Creates a quality gate from returned API data
-
-        :return: the QualityGate object
-        """
-        # SonarQube 10 compatibility: "id" field dropped, replaced by "name"
-        o: Optional[QualityGate] = cls.CACHE.get(data["name"], endpoint.local_url)
-        if not o:
-            o = cls(endpoint, data["name"], data=data)
-        return o.reload(data)
 
     @classmethod
     def create(cls, endpoint: Platform, name: str) -> QualityGate:
@@ -209,6 +204,7 @@ class QualityGate(SqObject):
         :raises ObjectNotFound: If Quality gate not found
         :return: The list of projects using this quality gate
         """
+        log.debug("Getting %s projects", self)
         if self._projects is not None:
             return self._projects
         page, nb_pages = 1, 1
@@ -305,8 +301,8 @@ class QualityGate(SqObject):
 
     def copy(self, new_qg_name: str) -> QualityGate:
         """Copies the QG into another one with name new_qg_name"""
-        data = json.loads(self.post("qualitygates/copy", params={"sourceName": self.name, "name": new_qg_name}).text)
-        return QualityGate(self.endpoint, name=new_qg_name, data=data)
+        self.post("qualitygates/copy", params={"sourceName": self.name, "name": new_qg_name})
+        return QualityGate.get_object(self.endpoint, new_qg_name)
 
     def set_as_default(self) -> bool:
         """Sets the quality gate as the default

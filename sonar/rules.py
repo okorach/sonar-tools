@@ -159,13 +159,13 @@ class Rule(SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, endpoint: Platform, key: str, data: ApiPayload) -> None:
-        super().__init__(endpoint=endpoint, key=key)
-        log.debug("Loading rule object '%s'", key)
-        self.sq_json = data.copy()
-        self.severity = data.get("severity", None)
-        self.repo = data.get("repo", None)
-        self.type = data.get("type", None)
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
+        super().__init__(endpoint, data)
+        self.key = data["key"]
+        log.debug("Loading rule object '%s'", self.key)
+        self.severity = data.get("severity")
+        self.repo = data.get("repo")
+        self.type = data.get("type")
         self._impacts = {}
         if "impacts" in data:
             self._impacts = {imp["softwareQuality"]: imp["severity"] for imp in data["impacts"]}
@@ -204,10 +204,10 @@ class Rule(SqObject):
         :return: The Rule object corresponding to the input rule key
         :raises: ObjectNotFound if rule does not exist
         """
-        if o := cls.CACHE.get(key, endpoint.local_url):
+        if o := cls.CACHE.get(endpoint.local_url, key):
             return o
         Rule.get_paginated(endpoint=endpoint, params={"q": key})
-        if o := cls.CACHE.get(key, endpoint.local_url):
+        if o := cls.CACHE.get(endpoint.local_url, key):
             return o
         raise exceptions.ObjectNotFound(key, f"Rule key '{key}' not found")
 
@@ -220,11 +220,12 @@ class Rule(SqObject):
         :return: The Rule object corresponding to the input rule key
         :raises: ObjectNotFound if rule does not exist
         """
-        if o := cls.CACHE.get(key, endpoint.local_url):
+        if o := cls.CACHE.get(endpoint.local_url, key):
             return o
         api, _, api_params, ret = endpoint.api.get_details(Rule, Oper.GET, key=key, actives="true")
         rule_data = json.loads(endpoint.get(api, params=api_params).text)[ret]
-        return Rule(endpoint=endpoint, key=key, data=rule_data)
+        rule_data["key"] = key
+        return Rule(endpoint, rule_data)
 
     @classmethod
     def create(cls, endpoint: Platform, key: str, **kwargs) -> Rule:
@@ -249,15 +250,6 @@ class Rule(SqObject):
         created_rule = cls.get_object(endpoint=endpoint, key=key)
         created_rule.custom_desc = kwargs.get("markdownDescription", "NO DESCRIPTION")
         return created_rule
-
-    @classmethod
-    def load(cls, endpoint: Platform, data: ApiPayload) -> Rule:
-        """Loads a rule object with a SonarQube API payload"""
-        key = data["key"]
-        if o := cls.CACHE.get(key, endpoint.local_url):
-            o.reload(data)
-            return o
-        return cls(key=key, endpoint=endpoint, data=data)
 
     @classmethod
     def instantiate(cls, endpoint: Platform, key: str, template_key: str, data: ObjectJsonRepr) -> Rule:
@@ -310,14 +302,14 @@ class Rule(SqObject):
         log.info("Rule search returning a list of %d rules", len(rule_list))
         return rule_list
 
-    def refresh(self, use_cache: bool = True) -> bool:
+    def refresh(self, use_cache: bool = True) -> Rule:
         """Refreshes a rule object from the platform
 
         :param use_cache: If True, will use the cache to avoid unnecessary calls
-        :return: True if the rule was actually refreshed, False cache was used
+        :return: The object
         """
         if use_cache and "actives" in self.sq_json:
-            return False
+            return self
 
         try:
             api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.GET, **self.api_params() | {"actives": "true"})
@@ -327,7 +319,11 @@ class Rule(SqObject):
             raise
         self.sq_json.update(data["rule"])
         self.sq_json["actives"] = data["actives"].copy()
-        return True
+        return self
+
+    def delete(self) -> bool:
+        """Deletes a rule, returns whether the operation succeeded"""
+        return self.delete_object(key=self.key)
 
     def is_extended(self) -> bool:
         """Returns True if the rule has been extended with tags or a custom description, False otherwise"""

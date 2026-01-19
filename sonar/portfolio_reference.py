@@ -35,6 +35,7 @@ import sonar.util.constants as c
 if TYPE_CHECKING:
     from sonar.platform import Platform
     from sonar.util.types import ApiParams, ObjectJsonRepr, ConfigSettings
+    from sonar.portfolios import Portfolio
 
 
 class PortfolioReference(SqObject):
@@ -44,10 +45,10 @@ class PortfolioReference(SqObject):
 
     CACHE = cache.Cache()
 
-    def __init__(self, reference: object, parent: object) -> None:
+    def __init__(self, reference: Portfolio, parent: Portfolio) -> None:
         """Constructor, don't use - use class methods instead"""
         self.key = f"{parent.key}:{reference.key}"
-        super().__init__(endpoint=parent.endpoint, key=self.key)
+        super().__init__(parent.endpoint, None)
         self.reference = reference
         self.parent = parent
         self.__class__.CACHE.put(self)
@@ -58,18 +59,18 @@ class PortfolioReference(SqObject):
         """Gets a subportfolio by reference object from its key and parent"""
         check_supported(endpoint)
         log.info("Getting subportfolio by ref key '%s:%s'", parent_key, key)
-        o = cls.CACHE.get(f"{parent_key}:{key}", endpoint.local_url)
+        o = cls.CACHE.get(endpoint.local_url, f"{parent_key}:{key}")
         if not o:
             raise exceptions.ObjectNotFound(f"{parent_key}:{key}", f"Portfolio reference key '{parent_key}:{key}' not found")
         return o
 
     @classmethod
-    def load(cls, reference: object, parent: object) -> PortfolioReference:
+    def load(cls, reference: Portfolio, parent: Portfolio) -> PortfolioReference:
         """Constructor, don't use - use class methods instead"""
         return PortfolioReference(reference=reference, parent=parent)
 
     @classmethod
-    def create(cls, reference: object, parent: object, params: ApiParams = None) -> PortfolioReference:
+    def create(cls, reference: Portfolio, parent: Portfolio, params: ApiParams = None) -> PortfolioReference:
         """Constructor, don't use - use class methods instead"""
         check_supported(parent.endpoint)
         parent.endpoint.post("views/add_portfolio", params={"portfolio": parent.key, "reference": reference.key})

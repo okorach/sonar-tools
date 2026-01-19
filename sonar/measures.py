@@ -28,13 +28,13 @@ import json
 from sonar.sqobject import SqObject
 from sonar import metrics, exceptions
 from sonar.api.manager import ApiOperation as Oper
-from sonar.util import cache, constants as c
+from sonar.util import cache
 import sonar.logging as log
 import sonar.util.misc as util
 import sonar.utilities as sutil
 
 if TYPE_CHECKING:
-    from sonar.util.types import ApiPayload, ApiParams, KeyList
+    from sonar.util.types import ApiPayload, ApiParams, KeyList, ConcernedObject
     from sonar.platform import Platform
 
 ALT_COMPONENTS = ("project", "application", "portfolio", "key")
@@ -43,49 +43,51 @@ DATETIME_METRICS = ("last_analysis", "createdAt", "updatedAt", "creation_date", 
 
 
 class Measure(SqObject):
-    """
-    Abstraction of the SonarQube "measure" concept
-    """
+    """Abstraction of the SonarQube "measure" concept"""
 
     CACHE = cache.Cache()
+    __CONCERNED_OBJECT = "concerned_object"
 
-    def __init__(self, concerned_object: object, key: str, value: Any) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor"""
-        super().__init__(endpoint=concerned_object.endpoint, key=key)
+        super().__init__(endpoint, data)
         self.value: Optional[Any] = None  #: Measure value
-        self.metric = key  #: Measure metric
-        self.concerned_object = concerned_object  #: Object concerned by the measure
-        self.value = self.__converted_value(value)
+        self.key = f'{data["metric"]} of {data.get(self.__class__.__CONCERNED_OBJECT)}'
+        self.metric = data["metric"]  #: Measure metric
+        self.component_key = data.get(self.__class__.__CONCERNED_OBJECT)
+        self.branch = None
+        self.pull_request = None
+        self.value = self.__converted_value(data.get("value") or data["period"].get("value"))
 
     @classmethod
-    def load(cls, concerned_object: object, data: ApiPayload) -> Measure:
-        """Loads a measure from data
+    def get_object(cls, endpoint: Platform, metric_key: str, component: ConcernedObject, use_cache: bool = True) -> Measure:
+        """Returns the project object from its project key"""
+        return cls.search(component, [metric_key])[metric_key]
 
-        :param endpoint: Reference to SonarQube platform
-        :paramm data: Data retrieved from a measure search
-        :return: The created measure
-        :rtype: Measure
-        """
-        metrics.Metric.search(concerned_object.endpoint, use_cache=True)
-        return cls(concerned_object=concerned_object, key=data["metric"], value=_search_value(data))
+    @staticmethod
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data["metric"], data[Measure.__CONCERNED_OBJECT], data["branch"], data["pull_request"])
+
+    def hash_object(self) -> tuple[Any, ...]:
+        """Returns the hash elements for a given object"""
+        return (self.metric, self.component_key, self.branch, self.pull_request)
+
+    def reload(self, data: ApiPayload) -> Measure:
+        """Reloads a Measure object from API data"""
+        super().reload(data)
+        self.value = self.__converted_value(data["value"])
+        return self
+
+    def refresh(self) -> Measure:
+        """Refreshes a measure by re-reading it in SonarQube"""
+        return self.__class__.get_object(self.endpoint, self.metric, self.concerned_object, use_cache=False)
 
     def __converted_value(self, value: Any) -> Any:
         value = sutil.string_to_date(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
         if self.is_a_rating():
             value = int(float(value))
         return value
-
-    def refresh(self) -> Any:
-        """Refreshes a measure by re-reading it in SonarQube
-
-        :return: The new measure value
-        :rtype: int or float or str
-        """
-        params = {"metricKeys": self.metric} | util.replace_keys(ALT_COMPONENTS, "component", self.concerned_object.api_params(Oper.GET))
-        api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET, **params)
-        data = json.loads(self.endpoint.get(api, params=params).text)[ret]["measures"]
-        self.value = self.__converted_value(_search_value(data[0]))
-        return self.value
 
     def count_history(self, params: Optional[ApiParams] = None) -> int:
         """Returns the number of measures in history of the metric"""
@@ -115,39 +117,60 @@ class Measure(SqObject):
         return measures
 
     def is_a_rating(self) -> bool:
-        return metrics.Metric.get_object(self.endpoint, self.key).is_a_rating()
+        return metrics.Metric.get_object(self.endpoint, self.metric).is_a_rating()
 
     def is_a_percent(self) -> bool:
-        return metrics.Metric.get_object(self.endpoint, self.key).is_a_percent()
+        return metrics.Metric.get_object(self.endpoint, self.metric).is_a_percent()
 
     def is_an_effort(self) -> bool:
-        return metrics.Metric.get_object(self.endpoint, self.key).is_an_effort()
+        return metrics.Metric.get_object(self.endpoint, self.metric).is_an_effort()
 
     def format(self, ratings: str = "letters", percents: str = "float") -> Any:
-        return format(self.endpoint, self.key, self.value, ratings=ratings, percents=percents)
+        return format(self.endpoint, self.metric, self.value, ratings=ratings, percents=percents)
 
+    @classmethod
+    def search(cls, concerned_object: ConcernedObject, metrics_list: KeyList, use_cache: bool = True, **search_params: Any) -> dict[str, Measure]:
+        """Reads a list of measures of a component (project, branch, pull request, application or portfolio)
 
-def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, Measure]:
-    """Reads a list of measures of a component (project, branch, pull request, application or portfolio)
+        :param Component concerned_object: Concerned object (project, branch, pull request, application or portfolio)
+        :param KeyList metrics_list: List of metrics to read
+        :param kwargs: List of filters to search for the measures, defaults to None
+        :type kwargs: dict, optional
+        :return: Dict of found measures
+        :rtype: dict{<metric>: <value>}
+        """
+        log.debug("Searching measures with %s", search_params)
+        branch = pull_request = None
+        key = concerned_object.key
+        if concerned_object.__class__.__name__ in ("Branch", "ApplicationBranch"):
+            key = concerned_object.concerned_object.key
+            branch = concerned_object.name
+        elif concerned_object.__class__.__name__ == "PullRequest":
+            key = concerned_object.concerned_object.key
+            pull_request = concerned_object.key
+        params = search_params | {"component": key, "metricKeys": util.list_to_csv(metrics_list), "branch": branch, "pullRequest": pull_request}
+        api, _, params, ret = concerned_object.endpoint.api.get_details(cls, Oper.SEARCH, **params)
+        response_data = json.loads(concerned_object.endpoint.get(api, params=params).text)[ret]
+        measures_data = response_data["measures"]
+        log.debug("Measures data = %s", util.json_dump(measures_data))
 
-    :param Component concerned_object: Concerned object (project, branch, pull request, application or portfolio)
-    :param KeyList metrics_list: List of metrics to read
-    :param kwargs: List of filters to search for the measures, defaults to None
-    :type kwargs: dict, optional
-    :return: Dict of found measures
-    :rtype: dict{<metric>: <value>}
-    """
-    params = (
-        kwargs
-        | util.replace_keys(ALT_COMPONENTS, "component", concerned_object.api_params(Oper.GET))
-        | {"metricKeys": util.list_to_csv(metrics_list)}
-    )
-    log.debug("Getting measures with %s", params)
-    api, _, params, ret = concerned_object.endpoint.api.get_details(Measure, Oper.GET, **params)
-    data = json.loads(concerned_object.endpoint.get(api, params=params).text)[ret]["measures"]
-    m_dict = dict.fromkeys(metrics_list, None) | {m["metric"]: Measure.load(concerned_object=concerned_object, data=m) for m in data}
-    log.debug("Returning measures %s", m_dict)
-    return m_dict
+        # Determine branch and pull_request from concerned_object
+        branch = pull_request = None
+        component_key = concerned_object.key
+        if concerned_object.__class__.__name__ == "Branch":
+            component_key = concerned_object.concerned_object.key
+            branch = concerned_object.name
+        elif concerned_object.__class__.__name__ == "PullRequest":
+            component_key = concerned_object.concerned_object.key
+            pull_request = concerned_object.key
+
+        m_dict = dict.fromkeys(metrics_list, None)
+        addon_data = {cls.__CONCERNED_OBJECT: component_key, "branch": branch, "pull_request": pull_request}
+        for m in measures_data:
+            measure_obj = cls.load(concerned_object.endpoint, m | addon_data)
+            measure_obj.concerned_object = concerned_object
+            m_dict[m["metric"]] = measure_obj
+        return m_dict
 
 
 def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> list[str, str, str]:

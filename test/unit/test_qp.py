@@ -66,7 +66,8 @@ def test_create_delete(get_test_qp: Generator[QualityProfile]) -> None:
     qp: QualityProfile = get_test_qp
     assert qp is not None
 
-    assert QualityProfile.create(endpoint=tutil.SQ, name=qp.name, language="non-existing") is None
+    with pytest.raises(exceptions.ObjectNotFound):
+        QualityProfile.create(endpoint=tutil.SQ, name=qp.name, language="non-existing")
 
     with pytest.raises(exceptions.ObjectAlreadyExists):
         QualityProfile.create(endpoint=tutil.SQ, name=qp.name, language="py")
@@ -99,10 +100,11 @@ def test_read(get_test_qp: Generator[QualityProfile]) -> None:
     """test_read"""
     qp: QualityProfile = get_test_qp
     assert qp.url() == f"{tutil.SQ.external_url}/profiles/show?language=py&name={qp.name}"
-    new_qp = QualityProfile.read(tutil.SQ, qp.name, "py")
+    new_qp = QualityProfile.get_object(tutil.SQ, qp.name, "py")
     assert qp is new_qp
 
-    assert QualityProfile.read(tutil.SQ, qp.name, "non-existing") is None
+    with pytest.raises(exceptions.ObjectNotFound):
+        QualityProfile.get_object(tutil.SQ, qp.name, "non-existing")
 
 
 def test_set_default(get_test_qp: Generator[QualityProfile]) -> None:

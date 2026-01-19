@@ -104,9 +104,9 @@ class Issue(findings.Finding):
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
-    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload, from_export: bool = False) -> None:
         """Constructor"""
-        super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
+        super().__init__(endpoint, data, from_export=from_export)
         self._debt: Optional[int] = None
         self.__class__.CACHE.put(self)
 
@@ -386,7 +386,7 @@ class Issue(findings.Finding):
             self.reload(json.loads(resp.text)[ret][0])
         return resp.ok
 
-    def reload(self, data: ApiPayload, from_export: bool = False) -> None:
+    def reload(self, data: ApiPayload, from_export: bool = False) -> Issue:
         """Loads the issue from a JSON payload"""
         super().reload(data, from_export)
         self.hash = data.get("hash")
@@ -401,6 +401,7 @@ class Issue(findings.Finding):
             self.impacts = {
                 idefs.TYPE_QUALITY_MAPPING[data.get("type", idefs.TYPE_NONE)]: idefs.SEVERITY_MAPPING[data.get("severity", idefs.SEVERITY_NONE)]
             }
+        return self
 
     def changelog(self, after: Optional[datetime] = None, manual_only: bool = True) -> dict[str, changelog.Changelog]:
         """Returns the changelog of an issue

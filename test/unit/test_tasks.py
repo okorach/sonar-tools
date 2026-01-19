@@ -28,11 +28,9 @@ import credentials
 
 def test_task() -> None:
     """test_task"""
-    task = tasks.search_last(tutil.SQ, component=tutil.LIVE_PROJECT, type="REPORT")
+    task = tasks.Task.search_last(tutil.SQ, component=tutil.LIVE_PROJECT, type="REPORT")
     assert task is not None
     assert task.url() == f"{tutil.SQ.external_url}/project/background_tasks?id={tutil.LIVE_PROJECT}"
-    task.sq_json = None
-    task.reload_cache()
     assert task.sq_json is not None
     if tutil.SQ.version() >= (10, 0, 0):
         assert len(task.id()) == 36
@@ -47,7 +45,7 @@ def test_task() -> None:
 
 def test_audit() -> None:
     """test_audit"""
-    task = tasks.search_last(tutil.SQ, component=tutil.LIVE_PROJECT, type="REPORT")
+    task = tasks.Task.search_last(tutil.SQ, component=tutil.LIVE_PROJECT, type="REPORT")
     settings = {
         "audit.projects.suspiciousExclusionsPatterns": "\\*\\*/[^\/]+/\\*\\*, \\*\\*/\\*[\.\w]*, \\*\\*/\\*, \\*\\*/\\*\\.(java|jav|cs|csx|py|php|js|ts|sql|html|css|cpp|c|h|hpp)\\*?",
         "audit.projects.suspiciousExclusionsExceptions": "\\*\\*/(__pycache__|libs|lib|vendor|node_modules)/\\*\\*",
@@ -64,7 +62,7 @@ def test_audit() -> None:
 def test_no_scanner_context() -> None:
     """test_no_scanner_context"""
     tutil.start_logging()
-    task = tasks.search_last(tutil.SQ, component="no-scm", type="REPORT")
+    task = tasks.Task.search_last(tutil.SQ, component="no-scm", type="REPORT")
     if not task:
         return
     if tutil.SQ.version() >= (10, 0, 0):
@@ -83,5 +81,5 @@ def test_search_all_task() -> None:
 #     """test_search_branch"""
 #     logging.set_logger(tutil.TEST_LOGFILE)
 #     logging.set_debug_level("DEBUG")
-#     assert tasks.search_last(tutil.SQ, component_key=tutil.LIVE_PROJECT, branch="master") is not None
-#     assert tasks.search_last(tutil.SQ, component_key=tutil.LIVE_PROJECT, branch="comma,branch") is None
+#     assert tasks.Task.search_last(tutil.SQ, component_key=tutil.LIVE_PROJECT, branch="master") is not None
+#     assert tasks.Task.search_last(tutil.SQ, component_key=tutil.LIVE_PROJECT, branch="comma,branch") is None

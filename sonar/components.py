@@ -34,7 +34,7 @@ from requests import RequestException
 from sonar.sqobject import SqObject
 import sonar.util.constants as c
 import sonar.logging as log
-from sonar import settings, tasks, measures, rules, exceptions
+from sonar import settings, measures, rules, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
 from sonar.api.manager import ApiOperation as Oper
@@ -43,6 +43,7 @@ from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 
 if TYPE_CHECKING:
+    from sonar.tasks import Task
     from sonar.projects import Project
     from sonar.platform import Platform
     from sonar.hotspots import Hotspot
@@ -53,9 +54,11 @@ if TYPE_CHECKING:
 class Component(SqObject):
     """Abstraction of the Sonar component concept"""
 
-    def __init__(self, endpoint: Platform, key: str, data: ApiPayload = None) -> None:
+    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor"""
-        super().__init__(endpoint=endpoint, key=key)
+        super().__init__(endpoint, data)
+        self.key = next(data.get(k) for k in ("key", "projectKey", "componentKey", "project"))
+        self.branch: Optional[str] = None
         self.name: Optional[str] = None
         self.nbr_issues: Optional[int] = None
         self.ncloc: Optional[int] = None
@@ -63,8 +66,6 @@ class Component(SqObject):
         self._last_analysis: Optional[datetime] = None
         self._visibility: Optional[str] = None
         self._new_code_start_date: Optional[datetime] = None
-        if data is not None:
-            self.reload(data)
 
     def __str__(self) -> str:
         """String representation of object"""
@@ -176,7 +177,7 @@ class Component(SqObject):
 
         :param list metrics_list: List of metrics to return
         """
-        m = measures.get(self, metrics_list)
+        m = measures.Measure.search(self, metrics_list)
         if "ncloc" in m and m["ncloc"]:
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
@@ -201,7 +202,7 @@ class Component(SqObject):
 
     def refresh(self) -> Component:
         """Refreshes a component data"""
-        return self.reload(self.get_navigation_data)
+        return self.reload(self.get_navigation_data())
 
     def last_analysis(self) -> Optional[datetime]:
         """Returns a component last analysis"""
@@ -232,13 +233,13 @@ class Component(SqObject):
     def visibility(self) -> str:
         """Returns a component visibility (public or private)"""
         if not self._visibility:
-            self._visibility = settings.get_visibility(self.endpoint, component=self).value
+            self._visibility = settings.Setting.get_visibility(self.endpoint, self.key).value
         return self._visibility
 
     def set_visibility(self, visibility: str) -> None:
         """Sets a component visibility (public or private)"""
         if visibility:
-            settings.set_visibility(self.endpoint, visibility=visibility, component=self)
+            settings.set_visibility(self.endpoint, visibility=visibility, component=self.key)
             self._visibility = visibility
 
     def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None) -> ApiPayload:
@@ -399,9 +400,11 @@ class Component(SqObject):
             return [Problem(get_rule(RuleId.PROJ_ZERO_LOC), self, str(self))]
         return []
 
-    def last_task(self) -> Optional[tasks.Task]:
+    def last_task(self) -> Optional[Task]:
+        from sonar.tasks import Task
+
         """Returns the last analysis background task of a problem, or none if not found"""
-        return tasks.search_last(self.endpoint, component=self.key)
+        return Task.search_last(self.endpoint, component=self.key)
 
     def get_measures_history(self, metrics_list: KeyList) -> dict[str, str]:
         """Returns the history of a project metrics"""
