@@ -386,7 +386,7 @@ class Issue(findings.Finding):
             self.reload(json.loads(resp.text)[ret][0])
         return resp.ok
 
-    def reload(self, data: ApiPayload, from_export: bool = False) -> None:
+    def reload(self, data: ApiPayload, from_export: bool = False) -> Issue:
         """Loads the issue from a JSON payload"""
         super().reload(data, from_export)
         self.hash = data.get("hash")
@@ -401,6 +401,7 @@ class Issue(findings.Finding):
             self.impacts = {
                 idefs.TYPE_QUALITY_MAPPING[data.get("type", idefs.TYPE_NONE)]: idefs.SEVERITY_MAPPING[data.get("severity", idefs.SEVERITY_NONE)]
             }
+        return self
 
     def changelog(self, after: Optional[datetime] = None, manual_only: bool = True) -> dict[str, changelog.Changelog]:
         """Returns the changelog of an issue
