@@ -553,7 +553,7 @@ def export_findings(endpoint: Platform, project_key: str, branch: Optional[str] 
     :rtype: dict{<key>: <Finding>}
     """
     log.info("Using new export findings to speed up issue export")
-    return projects.Project(key=project_key, endpoint=endpoint).get_findings(branch=branch, pull_request=pull_request)
+    return projects.Project.get_object(endpoint, project_key).get_findings(branch=branch, pull_request=pull_request)
 
 
 def to_csv_header(endpoint: Platform) -> list[str]:
