@@ -73,7 +73,10 @@ if TYPE_CHECKING:
     from sonar.projects import Project
     from sonar.applications import Application
     from sonar.portfolios import Portfolio
+    from sonar.branches import Branch
+    from sonar.pull_requests import PullRequest
 
+ConcernedObject = Union[Project, Branch, PullRequest, Application, Portfolio]
 
 class Task(SqObject):
     """
@@ -86,7 +89,7 @@ class Task(SqObject):
         """Constructor"""
         super().__init__(endpoint, data)
         self.key = data["id"]
-        self.concerned_object: Optional[Union[Project, Application, Portfolio]]
+        self.concerned_object: Optional[ConcernedObject]
         self.component_key: Optional[str]
         self._context: Optional[dict[str, str]] = None
         self._error: Optional[dict[str, str]] = None
@@ -450,8 +453,3 @@ class Task(SqObject):
         problems += self.__audit_scanner_version(audit_settings)
 
         return problems
-
-
-def search_all_last(endpoint: Platform) -> list[Task]:
-    """Searches for last background task of all found components"""
-    return Task.search(endpoint=endpoint, onlyCurrents=True)
