@@ -102,6 +102,8 @@ class PullRequest(Component):
             o.concerned_object = project
             if o.key == pull_request_key:
                 object_to_return = o
+        if not object_to_return:
+            raise exceptions.ObjectNotFound(pull_request_key, f"PR '{pull_request_key} of {project} not found")
         return object_to_return
 
     @classmethod

@@ -70,14 +70,14 @@ class Branch(components.Component):
         self.name: str = self.branch
         self.concerned_object: proj.Project = proj.Project.get_project_object(endpoint, data[self.__class__.__PROJECT_KEY])
         log.debug("Loading branch %s of %s", self.name, self.concerned_object)
-        self._is_main: bool = None
-        self._new_code: str = None
-        self._keep_when_inactive: str = None
+        self._is_main: bool
+        self._new_code: str
+        self._keep_when_inactive: str
         self.__class__.CACHE.put(self)
-        log.debug("Constructed object %s", str(self))
+        log.debug("Constructed object %s", self)
 
     def __str__(self) -> str:
-        return f"branch '{self.name}' of {str(self.project())}"
+        return f"branch '{self.name}' of {self.project()}"
 
     @staticmethod
     def hash_payload(data: ApiPayload) -> tuple[Any, ...]:

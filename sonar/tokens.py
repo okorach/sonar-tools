@@ -30,6 +30,7 @@ from sonar.sqobject import SqObject
 import sonar.logging as log
 import sonar.utilities as sutil
 import sonar.util.misc as util
+from sonar import exceptions
 from sonar.util import cache, constants as c
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
@@ -66,8 +67,11 @@ class UserToken(SqObject):
         :param name: Token name
         """
         api, _, params, _ = endpoint.api.get_details(cls, Oper.CREATE, name=name, login=login)
-        data = json.loads(endpoint.post(api, params).text)
-        return UserToken(endpoint=endpoint, login=data["login"], data=data, name=name)
+        json.loads(endpoint.post(api, params).text)
+        o = next((t for t in cls.search(endpoint, login=login) if t.name == name), None)
+        if not o:
+            raise exceptions.SonarException(f"Token '{name}' for user '{login}' could not be created")
+        return o
 
     def __str__(self) -> str:
         """

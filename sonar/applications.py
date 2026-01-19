@@ -64,9 +64,9 @@ class Application(aggr.Aggregation):
     def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint, data)
-        self._branches: Optional[dict[str, app_branches.ApplicationBranch]] = None
-        self._projects: Optional[dict[str, str]] = None
-        self._description: Optional[str] = None
+        self._branches: dict[str, app_branches.ApplicationBranch]
+        self._projects: dict[str, str]
+        self._description: str
         self.name = data["name"]
         self.__class__.CACHE.put(self)
         self.reload(data)
