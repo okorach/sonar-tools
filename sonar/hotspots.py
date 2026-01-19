@@ -146,13 +146,14 @@ class Hotspot(findings.Finding):
         log.info("Project '%s' has %d hotspots corresponding to filters", project, len(hotspots))
         return hotspots
 
-    def reload(self, data: ApiPayload, from_export: bool = False) -> None:
+    def reload(self, data: ApiPayload, from_export: bool = False) -> Hotspot:
         """Loads the hotspot details from the provided data (coming from api/hotspots/search)"""
-        super().reload(data, from_export)
+        return super().reload(data, from_export)
         if not self.rule:
             self.rule = data.get("ruleKey", None)
         self.severity = data.get("vulnerabilityProbability", "UNDEFINED")
         self.impacts = {idefs.QUALITY_SECURITY: self.severity}
+        return self
 
     def refresh(self) -> Hotspot:
         """Refreshes and reads hotspots details in SonarQube, returns self"""
