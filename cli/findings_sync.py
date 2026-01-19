@@ -51,7 +51,7 @@ def __parse_args(desc: str) -> object:
     """Defines CLI arguments and parses them"""
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
-    parser = options.set_output_file_args(parser, allowed_formats=("json", ))
+    parser = options.set_output_file_args(parser, allowed_formats=("json",))
     parser = options.set_target_sonar_args(parser)
     parser.add_argument(
         "-r",
