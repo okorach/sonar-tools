@@ -119,7 +119,7 @@ def __get_object_json_data(o: object, **kwargs: Any) -> dict[str, str]:
         if kwargs[options.WITH_URL]:
             d["url"] = o.url()
     except (ConnectionError, RequestException) as e:
-        sutil.handle_error(e, f"LoC extract of {str(o)} failed", catch_all=True)
+        sutil.handle_error(e, f"LoC extract of {o} failed", catch_all=True)
     return d
 
 

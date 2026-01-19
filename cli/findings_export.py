@@ -44,13 +44,13 @@ import sonar.util.misc as util
 import sonar.utilities as sutil
 
 import sonar.util.common_helper as chelp
+from sonar.applications import Application
+from sonar.portfolios import Portfolio
 
 if TYPE_CHECKING:
     from sonar.projects import Project
     from sonar.branches import Branch
     from sonar.pull_requests import PullRequest
-    from sonar.applications import Application
-    from sonar.portfolios import Portfolio
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
 

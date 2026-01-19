@@ -36,7 +36,7 @@ from sonar.audit.problem import Problem
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiPayload, ApiParams, ConfigSettings
+    from sonar.util.types import ApiPayload, ConfigSettings
 
 
 class Aggregation(comp.Component):
@@ -94,6 +94,7 @@ class Aggregation(comp.Component):
         return self._permissions
 
     def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
+        """Audits an aggregation (only permissions, the rest is specific to subclasses)"""
         if self.permissions() is None:
             return []
         return self.permissions().audit(audit_settings)

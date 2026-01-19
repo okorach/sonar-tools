@@ -317,8 +317,6 @@ class SqObject(object):
         :raises UnsupportedOperation: if can't set tags on such objects
         :return: Whether the operation was successful
         """
-        if tags is None:
-            return False
         log.info("Settings tags %s to %s", tags, str(self))
         try:
             api, _, params, _ = self.endpoint.api.get_details(
