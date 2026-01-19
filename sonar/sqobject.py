@@ -324,9 +324,10 @@ class SqObject(object):
             )
             if ok := self.post(api, params=params).ok:
                 self._tags = sorted(tags)
-        except (ValueError, AttributeError, KeyError) as e:
+        except exceptions.UnsupportedOperation as e:
             raise exceptions.UnsupportedOperation(f"Can't set tags on {self.__class__.__name__.lower()}s") from e
-        except exceptions.SonarException:
+        except exceptions.SonarException as e:
+            log.error("Error setting tags on %s: %s", str(self), e.message)
             return False
         else:
             return ok
@@ -335,7 +336,7 @@ class SqObject(object):
         """Returns object tags"""
         try:
             api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET_TAGS, component=self.key)
-        except ValueError as e:
+        except exceptions.UnsupportedOperation as e:
             raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags") from e
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
