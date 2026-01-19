@@ -389,11 +389,6 @@ class Application(aggr.Aggregation):
         for branch_data in appl_branches:
             self.set_branches(branch_data["name"], branch_data.get("projects", []))
 
-    def api_params(self, operation: Optional[str] = None) -> ApiParams:
-        """Returns the base params to be used for the object API"""
-        ops = {Oper.GET: {"application": self.key}, Oper.RECOMPUTE: {"key": self.key}}
-        return ops[operation] if operation and operation in ops else ops[Oper.GET]
-
     def __get_project_branches(self, branch_definition: ObjectJsonRepr) -> list[Union[projects.Project, branches.Branch]]:
         project_branches = []
         list_mode = isinstance(branch_definition, list)
