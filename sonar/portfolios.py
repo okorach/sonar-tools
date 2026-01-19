@@ -167,7 +167,7 @@ class Portfolio(aggregations.Aggregation):
     def reload(self, data: ApiPayload) -> Portfolio:
         """Reloads a portfolio with returned API data"""
         super().reload(data)
-        if "originalKey" not in data and data["qualifier"] == _PORTFOLIO_QUALIFIER:
+        if "originalKey" not in data and data.get("qualifier") == _PORTFOLIO_QUALIFIER:
             self.parent_portfolio = None
             self.root_portfolio = self
         self.load_selection_mode()

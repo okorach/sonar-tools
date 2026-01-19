@@ -185,10 +185,6 @@ class Project(Component):
             return project
         return cls.get_object(endpoint, project, use_cache=True)
 
-    def project(self) -> Project:
-        """Returns the project"""
-        return self
-
     def reload(self, data: ApiPayload) -> Project:
         """Reloads a project with JSON data coming from api/components/search request
 

@@ -146,7 +146,7 @@ class PullRequest(Component):
         """
         return self.concerned_object.get_tags(**kwargs)
 
-    def project(self) -> proj.Project:
+    def project(self) -> Component:
         """Returns the project"""
         return self.concerned_object
 

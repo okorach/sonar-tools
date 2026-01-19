@@ -88,7 +88,7 @@ class Component(SqObject):
 
     def project(self) -> Component:
         """Implemented in relevant subclasses (Project, Branch, PullRequest, Application, ApplicationBranch)"""
-        raise NotImplementedError
+        return self
 
     def get_issues(self, **search_params: Any) -> dict[str, Issue]:
         """Returns list of issues for a portfolios"""

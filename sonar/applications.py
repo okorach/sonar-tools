@@ -397,10 +397,6 @@ class Application(aggr.Aggregation):
             )
         return project_branches
 
-    def project(self) -> Component:
-        """The application"""
-        return self
-
 
 def _project_list(data: ObjectJsonRepr) -> KeyList:
     """Returns the list of project keys of an application"""
