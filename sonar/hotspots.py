@@ -148,7 +148,7 @@ class Hotspot(findings.Finding):
 
     def reload(self, data: ApiPayload, from_export: bool = False) -> Hotspot:
         """Loads the hotspot details from the provided data (coming from api/hotspots/search)"""
-        return super().reload(data, from_export)
+        super().reload(data, from_export)
         if not self.rule:
             self.rule = data.get("ruleKey", None)
         self.severity = data.get("vulnerabilityProbability", "UNDEFINED")
