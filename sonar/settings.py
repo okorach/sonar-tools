@@ -246,7 +246,7 @@ class Setting(SqObject):
         if self.component is None:
             return f"setting '{self.key}'"
         else:
-            return f"setting '{self.key}' of {str(self.component)}"
+            return f"setting '{self.key}' of {self.component} branch {self.branch}"
 
     def set(self, value: Any) -> bool:
         """Sets a setting value, returns if operation succeeded"""
@@ -276,7 +276,7 @@ class Setting(SqObject):
         if not self.multi_valued and isinstance(value, list):
             value = util.list_to_csv(value)
         log.debug("Setting %s to value '%s'", str(self), str(value))
-        params = {"key": self.key, "component": self.component.key if self.component else None} | encode(self, value)
+        params = {"key": self.key, "component": self.component, "branch": self.branch} | encode(self, value)
         try:
             api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.CREATE, **params)
             if ok := self.post(api, params=api_params).ok:
@@ -288,7 +288,7 @@ class Setting(SqObject):
 
     def reset(self) -> bool:
         log.info("Resetting %s", str(self))
-        params = {"keys": self.key} | {} if not self.component else {"component": self.component.key}
+        params = {"keys": self.key, "component": self.component, "branch": self.branch}
         try:
             api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.RESET, **params)
             ok = self.post(api, params=api_params).ok
@@ -498,11 +498,11 @@ def set_new_code_period(endpoint: Platform, nc_type: str, nc_value: str, project
     return ok
 
 
-def set_visibility(endpoint: Platform, visibility: str, component: Optional[object] = None) -> bool:
+def set_visibility(endpoint: Platform, visibility: str, component: Optional[str] = None) -> bool:
     """Sets the platform global default visibility or component visibility"""
     if component:
         log.debug("Setting setting '%s' of %s to value '%s'", COMPONENT_VISIBILITY, str(component), visibility)
-        return endpoint.post("projects/update_visibility", params={"project": component.key, "visibility": visibility}).ok
+        return endpoint.post("projects/update_visibility", params={"project": component, "visibility": visibility}).ok
     else:
         log.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
         return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
