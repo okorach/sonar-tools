@@ -47,7 +47,7 @@ from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiPayload, ApiParams, ConfigSettings, KeyList, ObjectJsonRepr, PermissionDef
+    from sonar.util.types import ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, PermissionDef
     from sonar.branches import Branch
 
 _PORTFOLIO_QUALIFIER = "VW"

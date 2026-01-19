@@ -34,7 +34,7 @@ from sonar.api.manager import ApiOperation as Oper
 if TYPE_CHECKING:
     from sonar.platform import Platform
     from sonar.projects import Project
-    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr
+    from sonar.util.types import ApiPayload, ObjectJsonRepr
 
 _IMPORTABLE_PROPERTIES = ("name", "url", "secret")
 

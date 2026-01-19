@@ -37,7 +37,7 @@ from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
+    from sonar.util.types import ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
 
 TYPE_TO_QUALITY = {
     idefs.TYPE_BUG: idefs.QUALITY_RELIABILITY,

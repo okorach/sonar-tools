@@ -33,7 +33,7 @@ from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
+    from sonar.util.types import ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
 
 #: DevOps platform types in SonarQube
 DEVOPS_AZURE = "azure"
