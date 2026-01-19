@@ -48,6 +48,7 @@ if TYPE_CHECKING:
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
     from sonar.platform import Platform
+    from sonar.components import Component
     from sonar.util.types import ApiPayload, ApiParams, ConfigSettings, ObjectJsonRepr
 
 _UNSUPPORTED_IN_CE = "Branches not available in Community Edition"
@@ -146,7 +147,7 @@ class Branch(components.Component):
         """returns the branch URL in SonarQube as permalink"""
         return f"{self.concerned_object.url()}&branch={requests.utils.quote(self.name)}"
 
-    def project(self) -> proj.Project:
+    def project(self) -> Component:
         """Returns the project key"""
         return self.concerned_object
 
