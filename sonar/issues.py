@@ -326,16 +326,6 @@ class Issue(findings.Finding):
         issue_list, _ = cls.search_one_page(endpoint, **(search_params | {"ps": 1}))
         return None if len(issue_list) == 0 else next(iter(issue_list.values()))
 
-    def api_params(self, operation: Oper = Oper.GET) -> ApiParams:
-        """Returns the base API params to be used of an issue"""
-        ops = {
-            Oper.GET: {"issue": self.key},
-            Oper.SEARCH: {"issues": self.key},
-            Oper.SET_TAGS: {"issue": self.key},
-            Oper.GET_TAGS: {"issues": self.key},
-        }
-        return ops[operation] if operation in ops else ops[Oper.GET]
-
     def url(self) -> str:
         """Returns a permalink URL to the issue in the SonarQube platform"""
         branch = ""
