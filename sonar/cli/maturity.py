@@ -446,7 +446,20 @@ def compute_global_maturity_level_statistics(data: dict[str, Any], gov_data: dic
     """Computes statistics on global maturity levels"""
     nbr_projects = len(data)
     gov_mat = 0
-    summary_data = dict.fromkeys([ANALYSIS_MATURITY_KEY, NEW_CODE_MATURITY_KEY, QG_ENFORCEMENT_MATURITY_KEY, "governance_maturity_level", OVERALL_MATURITY_KEY, f"{ANALYSIS_MATURITY_KEY}_distribution", f"{NEW_CODE_MATURITY_KEY}_distribution", f"{QG_ENFORCEMENT_MATURITY_KEY}_distribution", f"{OVERALL_MATURITY_KEY}_distribution"], 0)
+    summary_data = dict.fromkeys(
+        [
+            ANALYSIS_MATURITY_KEY,
+            NEW_CODE_MATURITY_KEY,
+            QG_ENFORCEMENT_MATURITY_KEY,
+            "governance_maturity_level",
+            OVERALL_MATURITY_KEY,
+            f"{ANALYSIS_MATURITY_KEY}_distribution",
+            f"{NEW_CODE_MATURITY_KEY}_distribution",
+            f"{QG_ENFORCEMENT_MATURITY_KEY}_distribution",
+            f"{OVERALL_MATURITY_KEY}_distribution",
+        ],
+        0,
+    )
     # If enough portfolios and good ratio of portfolios to projects, then 1 point of governance maturity
     if gov_data["number_of_portfolios"] > 5 and gov_data[PORTFOLIO_RATIO_KEY] is not None and gov_data[PORTFOLIO_RATIO_KEY] < 20:
         gov_mat += 1

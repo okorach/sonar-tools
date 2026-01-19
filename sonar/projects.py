@@ -209,7 +209,7 @@ class Project(Component):
         :returns: Project last analysis date or None if never analyzed
         """
         if not self._last_analysis:
-            self.reload(self.get_navigation_data())
+            self.get_navigation_data()
         if not include_branches:
             return self._last_analysis
         if self._branches_last_analysis:

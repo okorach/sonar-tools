@@ -87,8 +87,8 @@ class Component(SqObject):
             self._last_analysis = sutil.string_to_date(data[key])
         return self
 
-    def project(self) -> Project:
-        """Implemented in relevant subclasses (Project, Branch, PullRequest)"""
+    def project(self) -> Component:
+        """Implemented in relevant subclasses (Project, Branch, PullRequest, Application, ApplicationBranch)"""
         raise NotImplementedError
 
     def get_issues(self, **search_params: Any) -> dict[str, Issue]:
@@ -195,8 +195,8 @@ class Component(SqObject):
 
     def get_navigation_data(self) -> ApiPayload:
         """Returns a component navigation data"""
-        data = json.loads(self.get("navigation/component", params={"component": self.project().key}).text)
-        super().reload(data)
+        data = json.loads(self.get("navigation/component", params={"component": self.project().key, "branch": self.branch}).text)
+        self.reload(data)
         return data
 
     def refresh(self) -> Component:

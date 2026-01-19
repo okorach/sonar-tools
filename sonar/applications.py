@@ -26,7 +26,6 @@ from types import MappingProxyType
 
 import re
 import json
-from datetime import datetime
 from http import HTTPStatus
 from requests import RequestException
 
@@ -47,7 +46,8 @@ from sonar.util import common_json_helper
 if TYPE_CHECKING:
     from sonar.issues import Issue
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, AppBranchDef, PermissionDef, AppBranchProjectDef
+    from sonar.util.types import ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, AppBranchDef, PermissionDef, AppBranchProjectDef
+    from sonar.components import Component
 
 
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")
@@ -140,7 +140,7 @@ class Application(aggr.Aggregation):
         :raises ObjectNotFound: If the Application does not exists anymore
         """
         try:
-            self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
+            self.get_navigation_data()
             api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET, application=self.key)
             self.reload(json.loads(self.endpoint.get(api, params=params).text)[ret])
             return self
@@ -350,12 +350,6 @@ class Application(aggr.Aggregation):
         self.projects()
         return ok
 
-    def last_analysis(self) -> datetime:
-        """Returns the last analysis date of an app"""
-        if self._last_analysis is None:
-            self.refresh()
-        return self._last_analysis
-
     def recompute(self) -> bool:
         """Triggers application recomputation, return whether the operation succeeded"""
         log.debug("Recomputing %s", str(self))
@@ -402,6 +396,10 @@ class Application(aggr.Aggregation):
                 o_proj if proj_br == c.DEFAULT_BRANCH else branches.Branch.get_object(self.endpoint, project=o_proj, branch_name=proj_br)
             )
         return project_branches
+
+    def project(self) -> Component:
+        """The application"""
+        return self
 
 
 def _project_list(data: ObjectJsonRepr) -> KeyList:

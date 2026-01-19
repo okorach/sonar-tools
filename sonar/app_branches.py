@@ -29,7 +29,6 @@ import sonar.logging as log
 from sonar.util import cache
 
 from sonar.components import Component
-
 from sonar.branches import Branch
 from sonar.projects import Project
 from sonar import exceptions
@@ -43,7 +42,7 @@ if TYPE_CHECKING:
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr
+    from sonar.util.types import ApiPayload, ObjectJsonRepr
 
 
 _NOT_SUPPORTED = "Applications not supported in community edition"
@@ -113,15 +112,24 @@ class ApplicationBranch(Component):
         app.endpoint.post(api, params=string_params)
         return cls.get_object(app.endpoint, app.key, name)
 
+    def refresh(self) -> ApplicationBranch:
+        """Refreshes an ApplicationBranch object from SonarQube"""
+        self.get_navigation_data()
+        api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET, application=self.concerned_object.key, branch=self.name)
+        self.reload(json.loads(self.endpoint.get(api, params=params).text)[ret])
+        return self
+
     def reload(self, data: ApiPayload) -> ApplicationBranch:
         """Reloads an ApplicationBranch object from JSON data"""
         super().reload(data)
         self.name = data["branch"]
-        self._is_main = data.get("isMain", False)
-        self._project_branches = []
-        for proj_data in data["projects"]:
-            proj = Project.get_object(self.endpoint, proj_data["key"])
-            self._project_branches.append(Branch.get_object(proj.endpoint, project=proj, branch_name=proj_data["branch"]))
+        if "isMain" in data:
+            self._is_main = data["isMain"]
+        if "projects" in data:
+            self._project_branches = []
+            for proj_data in data["projects"]:
+                proj = Project.get_object(self.endpoint, proj_data["key"])
+                self._project_branches.append(Branch.get_object(proj.endpoint, project=proj, branch_name=proj_data["branch"]))
         return self
 
     def __str__(self) -> str:
@@ -161,6 +169,10 @@ class ApplicationBranch(Component):
     def projects_branches(self) -> list[Union[Project, Branch]]:
         """The list of project or project branches included in the application branch"""
         return self._project_branches
+
+    def project(self) -> Component:
+        """The application the app branch belongs to"""
+        return self.concerned_object
 
     def delete(self) -> bool:
         """Deletes an ApplicationBranch
