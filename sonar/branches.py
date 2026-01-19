@@ -223,10 +223,6 @@ class Branch(components.Component):
         self._keep_when_inactive = keep
         return True
 
-    def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None, **search_params) -> ApiPayload:
-        """Returns a component analyses"""
-        return super().get_analyses(filter_in=filter_in, filter_out=filter_out, **(search_params | {"project": self.key, "branch": self.name}))
-
     def rename(self, new_name: str) -> bool:
         """Renames a branch
 

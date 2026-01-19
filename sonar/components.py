@@ -48,7 +48,7 @@ if TYPE_CHECKING:
     from sonar.platform import Platform
     from sonar.hotspots import Hotspot
     from sonar.issues import Issue
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList
+    from sonar.util.types import ApiPayload, ConfigSettings, KeyList
 
 
 class Component(SqObject):
@@ -243,7 +243,8 @@ class Component(SqObject):
     def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None, **search_params: Any) -> ApiPayload:
         """Returns a component analyses"""
         log.debug("%s: Getting history of analyses", self)
-        data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", **search_params)["analyses"]
+        params = search_params | {"project": self.project().key, "branch": self.branch} if self.branch else {"project": self.project().key}
+        data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", **params)["analyses"]
         if filter_in and len(filter_in) > 0:
             data = [d for d in data if any(e["category"] in filter_in for e in d["events"])]
         if filter_out and len(filter_out) > 0:
