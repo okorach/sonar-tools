@@ -76,7 +76,8 @@ if TYPE_CHECKING:
     from sonar.branches import Branch
     from sonar.pull_requests import PullRequest
 
-ConcernedObject = Union[Project, Branch, PullRequest, Application, Portfolio]
+    ConcernedObject = Union[Project, Branch, PullRequest, Application, Portfolio]
+
 
 class Task(SqObject):
     """
