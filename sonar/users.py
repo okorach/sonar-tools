@@ -76,6 +76,7 @@ class User(SqObject):
         """Returns the string representation of the object"""
         return f"user '{self.login}'"
 
+    @staticmethod
     def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
         """Returns the hash items for a given object search payload"""
         return (data["login"],)
