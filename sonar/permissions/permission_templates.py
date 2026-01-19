@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube permission template concept"""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 import json
 import re
@@ -72,9 +72,15 @@ class PermissionTemplate(sqobject.SqObject):
         """Returns the string representation of the object"""
         return f"permission template '{self.name}'"
 
-    def __hash__(self) -> int:
-        """Returns object unique id"""
-        return hash((self.name.lower(), self.base_url()))
+    def hash_object(self) -> tuple[Any, ...]:
+        """Returns the hash elements for a given object"""
+        return (self.name.lower(), )
+
+    @staticmethod
+    def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
+        """Returns the hash items for a given object search payload"""
+        return (data["name"].lower(), )
+
 
     @classmethod
     def search(cls, endpoint: Platform, use_cache: bool = False) -> dict[str, PermissionTemplate]:
