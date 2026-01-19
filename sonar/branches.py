@@ -217,11 +217,15 @@ class Branch(components.Component):
                 raise exceptions.UnsupportedOperation(f"{str(self)} is the main branch, can't be purgeable")
             return True
         api, _, params, _ = self.endpoint.api.get_details(
-            self, Oper.KEEP_WHEN_INACTIVE, project=self.concerned_object.key, branch=self.name, keep=str(keep).lower()
+            self, Oper.KEEP_WHEN_INACTIVE, project=self.concerned_object.key, branch=self.name, value=str(keep).lower()
         )
         self.post(api, params=params)
         self._keep_when_inactive = keep
         return True
+
+    def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None, **search_params) -> ApiPayload:
+        """Returns a component analyses"""
+        return super().get_analyses(filter_in=filter_in, filter_out=filter_out, **(search_params | {"project": self.key, "branch": self.name}))
 
     def rename(self, new_name: str) -> bool:
         """Renames a branch

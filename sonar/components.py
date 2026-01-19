@@ -240,10 +240,10 @@ class Component(SqObject):
             settings.set_visibility(self.endpoint, visibility=visibility, component=self.key)
             self._visibility = visibility
 
-    def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None) -> ApiPayload:
+    def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None, **search_params: Any) -> ApiPayload:
         """Returns a component analyses"""
         log.debug("%s: Getting history of analyses", self)
-        data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", component=self.project().key)["analyses"]
+        data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", **search_params)["analyses"]
         if filter_in and len(filter_in) > 0:
             data = [d for d in data if any(e["category"] in filter_in for e in d["events"])]
         if filter_out and len(filter_out) > 0:

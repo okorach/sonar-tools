@@ -1208,6 +1208,10 @@ class Project(Component):
         """Returns the history of a project metrics"""
         return measures.get_history(self, metrics_list, component=self.key)
 
+    def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None, **search_params) -> ApiPayload:
+        """Returns a projects analyses"""
+        return super().get_analyses(filter_in=filter_in, filter_out=filter_out, **(search_params | {"project": self.key}))
+
     def update(self, config: ObjectJsonRepr) -> None:
         """Updates a project with a whole configuration set
 

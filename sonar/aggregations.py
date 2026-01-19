@@ -30,7 +30,7 @@ import json
 import sonar.logging as log
 
 import sonar.components as comp
-import sonar.utilities as sutil
+import sonar.exceptions as exceptions
 from sonar.audit.rules import get_rule
 from sonar.audit.problem import Problem
 from sonar import measures
@@ -63,6 +63,10 @@ class Aggregation(comp.Component):
     def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
         """Returns the history of a project metrics"""
         return measures.get_history(self, metrics_list, component=self.key)
+
+    def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None, **search_params) -> ApiPayload:
+        """Returns a projects analyses"""
+        raise exceptions.UnsupportedOperation("Aggregations don't have analyses")
 
     def nbr_projects(self, use_cache: bool = False) -> int:
         """Returns the number of projects of an Aggregation (Application or Portfolio)

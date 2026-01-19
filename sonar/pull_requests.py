@@ -192,3 +192,7 @@ class PullRequest(Component):
     def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
         """Returns the history of a project metrics"""
         return measures.get_history(self, metrics_list, component=self.concerned_object.key, pullRequest=self.key)
+
+    def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None, **search_params) -> ApiPayload:
+        """Returns a projects analyses"""
+        raise exceptions.UnsupportedOperation("Can't retrieve Pull requests analyses")
