@@ -25,8 +25,6 @@ from typing import Optional, Any, TYPE_CHECKING
 
 from sonar.sqobject import SqObject
 from sonar.util import cache
-from sonar import exceptions
-import sonar.utilities as sutil
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

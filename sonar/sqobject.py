@@ -42,7 +42,7 @@ import sonar.utilities as sutil
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr
+    from sonar.util.types import ApiParams, ApiPayload
 
 
 class SqObject(object):
