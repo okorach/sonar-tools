@@ -184,7 +184,7 @@ class Finding(SqObject):
     def post_search_filters(findings: dict[str, Union[Issue, Hotspot]], **filters: Any) -> dict[str, Union[Issue, Hotspot]]:
         return findings
 
-    def reload(self, data: ApiPayload, from_export: bool = False) -> None:
+    def reload(self, data: ApiPayload, from_export: bool = False) -> Finding:
         """Reloads a finding with JSON data"""
         super().reload(data)
         if data is not None:
@@ -192,6 +192,7 @@ class Finding(SqObject):
                 self._load_from_export(data)
             else:
                 self._load_from_search(data)
+        return self
 
     def _load_common(self, jsondata: ApiPayload) -> None:
         self.author = jsondata.get("author", None)
