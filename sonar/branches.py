@@ -163,7 +163,7 @@ class Branch(components.Component):
 
     def delete(self) -> bool:
         """Deletes a branch, return whether the deletion was successful"""
-        return super().delete_object(**self.api_params(Oper.DELETE))
+        return self.delete_object(**self.api_params(Oper.DELETE))
 
     def get(self, api: str, params: ApiParams = None, data: Optional[str] = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
         """Performs an HTTP GET request for the object"""

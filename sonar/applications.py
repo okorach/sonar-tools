@@ -262,7 +262,7 @@ class Application(aggr.Aggregation):
         """
         for branch in [b for b in self.branches().values() if not b.is_main()]:
             branch.delete()
-        return super().delete_object(application=self.key)
+        return self.delete_object(application=self.key)
 
     def nbr_projects(self, use_cache: bool = False) -> int:
         """Returns the nbr of projects of an application"""

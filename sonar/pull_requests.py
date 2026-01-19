@@ -178,7 +178,7 @@ class PullRequest(Component):
 
     def delete(self) -> bool:
         """Deletes a pull request"""
-        return super().delete_object(project=self.concerned_object.key, pullRequest=self.key)
+        return self.delete_object(project=self.concerned_object.key, pullRequest=self.key)
 
     def get_issues(self, **search_params: Any) -> dict[str, Issue]:
         """Returns a list of issues on a PR"""

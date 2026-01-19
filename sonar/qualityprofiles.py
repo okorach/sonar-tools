@@ -255,11 +255,7 @@ class QualityProfile(SqObject):
         return r.ok
 
     def delete(self) -> bool:
-        """Deletes the quality profile
-
-        :return: Whether the deletion was successful
-        :rtype: bool
-        """
+        """Deletes the quality profile, returns whether the operation succeeded"""
         return self.delete_object(**self.api_params(Oper.DELETE))
 
     def is_child(self) -> bool:

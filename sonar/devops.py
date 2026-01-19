@@ -148,7 +148,7 @@ class DevopsPlatform(SqObject):
 
     def delete(self) -> bool:
         """Deletes a DevOps platform"""
-        return super().delete_object(key=self.key)
+        return self.delete_object(key=self.key)
 
     def refresh(self) -> DevopsPlatform:
         """Reads / Refresh a DevOps platform information, and returns itself"""

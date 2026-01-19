@@ -164,7 +164,7 @@ class WebHook(SqObject):
         return ok
 
     def delete(self) -> bool:
-        """Deletes the webhook and return whether the deletion was successful"""
+        """Deletes the webhook, returns whether the operation succeeded"""
         return self.delete_object(**self.api_params(Oper.DELETE))
 
     def audit(self) -> list[problem.Problem]:
