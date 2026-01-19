@@ -39,10 +39,10 @@ import sonar.utilities as sutil
 from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
-    from sonar.issues import Issue
     from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
     from sonar.projects import Project
+    from sonar.findings import IssueOrHotspot
 
 PROJECT_FILTER = "project"
 PROJECT_FILTER_OLD = "projectKey"
@@ -406,7 +406,7 @@ class Hotspot(findings.Finding):
         return criterias
 
     @staticmethod
-    def post_search_filters(findings: dict[str, Union[Issue, Hotspot]], **filters: Any) -> dict[str, Union[Issue, Hotspot]]:
+    def post_search_filters(findings: dict[str, IssueOrHotspot], **filters: Any) -> dict[str, IssueOrHotspot]:
         """Filters a dict of hotspots with provided filters"""
         log.debug("Post filtering findings with %s - Starting with %d hotspots", str(filters), len(findings))
         filtered_findings = findings.copy()
