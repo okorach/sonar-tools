@@ -126,10 +126,6 @@ class ApplicationBranch(Component):
     def __str__(self) -> str:
         return f"application '{self.concerned_object_key}' branch '{self.name}'"
 
-    def __hash__(self) -> int:
-        """Returns the object UUID"""
-        return hash((self.endpoint.local_url, self.concerned_object_key, self.name))
-
     def hash_object(self) -> tuple[Any, ...]:
         """Returns the hash elements for a given object"""
         return (self.concerned_object_key, self.name)
