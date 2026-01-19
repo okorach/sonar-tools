@@ -44,7 +44,6 @@ from sonar.audit.rules import get_rule, RuleId
 
 if TYPE_CHECKING:
     from sonar.tasks import Task
-    from sonar.projects import Project
     from sonar.platform import Platform
     from sonar.hotspots import Hotspot
     from sonar.issues import Issue
@@ -270,7 +269,7 @@ class Component(SqObject):
         if version >= (2025, 1, 0):
             api = "project_branches/get_ai_code_assurance"
         try:
-            return str(json.loads(self.get(api, params={"component": self.project().key}).text)["aiCodeAssurance"]).upper()
+            return str(json.loads(self.get(api, params={"project": self.project().key, "branch": self.branch}).text)["aiCodeAssurance"]).upper()
         except (ConnectionError, RequestException) as e:
             sutil.handle_error(e, f"getting AI code assurance of {self}", catch_all=True)
             if "Unknown url" in sutil.error_msg(e):
