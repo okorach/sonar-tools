@@ -38,7 +38,7 @@ from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings
+    from sonar.util.types import ApiPayload, ConfigSettings
 
 
 class UserToken(SqObject):
