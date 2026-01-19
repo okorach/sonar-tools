@@ -74,13 +74,12 @@ class PermissionTemplate(sqobject.SqObject):
 
     def hash_object(self) -> tuple[Any, ...]:
         """Returns the hash elements for a given object"""
-        return (self.name.lower(), )
+        return (self.name.lower(),)
 
     @staticmethod
     def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
         """Returns the hash items for a given object search payload"""
-        return (data["name"].lower(), )
-
+        return (data["name"].lower(),)
 
     @classmethod
     def search(cls, endpoint: Platform, use_cache: bool = False) -> dict[str, PermissionTemplate]:
