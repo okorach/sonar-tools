@@ -131,7 +131,7 @@ class WebHook(SqObject):
             wh.project = search_params.get("project")
         return wh_list
 
-    def reload(self, data: ApiPayload) -> None:
+    def reload(self, data: ApiPayload) -> WebHook:
         """Reloads a WebHook from the payload gotten from SonarQube"""
         super().reload(data)
         self.name = data["name"]
@@ -139,6 +139,7 @@ class WebHook(SqObject):
         self.webhook_url = data["url"]
         self.secret = data.get("secret") or self.secret
         self.last_delivery = data.get("latestDelivery")
+        return self
 
     def refresh(self) -> WebHook:
         """Reads the Webhook data on the SonarQube platform and updates the local object"""
