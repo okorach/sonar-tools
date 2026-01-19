@@ -21,7 +21,7 @@
 
 """applications tests"""
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from collections.abc import Generator
 import pytest
 import os
@@ -73,7 +73,7 @@ def test_search() -> None:
     for obj in res_list.values():
         app_date = obj.last_analysis()
         if app_date and app_date != "":
-            assert previous_app_date <= app_date + timedelta(seconds=2)
+            assert previous_app_date <= app_date
             previous_app_date = app_date
 
 
