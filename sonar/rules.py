@@ -224,7 +224,8 @@ class Rule(SqObject):
             return o
         api, _, api_params, ret = endpoint.api.get_details(Rule, Oper.GET, key=key, actives="true")
         rule_data = json.loads(endpoint.get(api, params=api_params).text)[ret]
-        return Rule(endpoint=endpoint, key=key, data=rule_data)
+        rule_data["key"] = key
+        return Rule(endpoint, rule_data)
 
     @classmethod
     def create(cls, endpoint: Platform, key: str, **kwargs) -> Rule:
