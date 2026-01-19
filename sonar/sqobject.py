@@ -300,18 +300,6 @@ class SqObject(object):
             raise
         return ok
 
-    def delete(self) -> bool:
-        """Deletes an object, returns whether the operation succeeded"""
-        log.info("Deleting %s (old method)", str(self))
-        try:
-            ok = self.post(api=self.__class__.API[Oper.DELETE], params=self.api_params(Oper.DELETE)).ok
-            if ok:
-                log.info("Removing from %s cache", str(self.__class__.__name__))
-                self.__class__.CACHE.pop(self)
-        except (AttributeError, KeyError) as e:
-            raise exceptions.UnsupportedOperation(f"Can't delete {self.__class__.__name__.lower()}s") from e
-        return ok
-
     def set_tags(self, tags: list[str]) -> bool:
         """Sets object tags
         :raises UnsupportedOperation: if can't set tags on such objects
