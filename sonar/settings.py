@@ -206,7 +206,7 @@ class Setting(SqObject):
         """Reloads a Setting with JSON returned from Sonar API"""
         log.debug("Reloading setting %s data: %s", self.key, data)
         if self._definition is None:
-            self.__class__.search(self.endpoint, include_not_set=True)
+            self.get_definition()
         if self.key == NEW_CODE_PERIOD:
             self.value = new_code_to_string(data)
         elif self.key == MQR_ENABLED:
