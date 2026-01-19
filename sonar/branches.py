@@ -163,7 +163,7 @@ class Branch(components.Component):
 
     def delete(self) -> bool:
         """Deletes a branch, return whether the deletion was successful"""
-        return self.delete_object(**self.api_params(Oper.DELETE))
+        return self.delete_object(project=self.concerned_object.key, branch=self.name)
 
     def get(self, api: str, params: ApiParams = None, data: Optional[str] = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
         """Performs an HTTP GET request for the object"""
@@ -190,7 +190,7 @@ class Branch(components.Component):
         if self._new_code is None and self.endpoint.is_sonarcloud():
             self._new_code = settings.new_code_to_string({"inherited": True})
         elif self._new_code is None:
-            api, _, params, _ = self.endpoint.api.get_details(self, Oper.LIST_NEW_CODE_PERIODS, **self.api_params(Oper.SEARCH))
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.LIST_NEW_CODE_PERIODS, project=self.concerned_object.key)
             data = json.loads(self.get(api, params=params).text)
             for b in data["newCodePeriods"]:
                 new_code = settings.new_code_to_string(b)
@@ -215,7 +215,9 @@ class Branch(components.Component):
                 log.warning("%s is main branch, can't be purgeable, skipping...", str(self))
                 raise exceptions.UnsupportedOperation(f"{str(self)} is the main branch, can't be purgeable")
             return True
-        api, _, params, _ = self.endpoint.api.get_details(self, Oper.KEEP_WHEN_INACTIVE, **self.api_params(), value=str(keep).lower())
+        api, _, params, _ = self.endpoint.api.get_details(
+            self, Oper.KEEP_WHEN_INACTIVE, project=self.concerned_object.key, branch=self.name, keep=str(keep).lower()
+        )
         self.post(api, params=params)
         self._keep_when_inactive = keep
         return True
@@ -244,7 +246,7 @@ class Branch(components.Component):
         :raises ObjectNotFound: If the branch is not found
         :return: Whether the operation was successful
         """
-        api, _, params, _ = self.endpoint.api.get_details(self, Oper.SET_MAIN, **self.api_params())
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.SET_MAIN, project=self.concerned_object.key, branch=self.name)
         self.post(api, params=params)
         for b in self.concerned_object.branches().values():
             b._is_main = b.name == self.name
@@ -390,15 +392,6 @@ class Branch(components.Component):
         except Exception as e:
             log.error("%s while auditing %s, audit skipped", sutil.error_msg(e), str(self))
         return []
-
-    def api_params(self, operation: Optional[Any] = None) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        ops = {
-            Oper.GET: {"project": self.concerned_object.key, "branch": self.name},
-            Oper.SEARCH: {"project": self.concerned_object.key},
-            Oper.DELETE: {"project": self.concerned_object.key, "branch": self.name},
-        }
-        return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
     def last_task(self) -> Optional[Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
