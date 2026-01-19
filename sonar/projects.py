@@ -929,7 +929,7 @@ class Project(Component):
             if export_settings.get("MODE", "") == "MIGRATION":
                 json_data.update({"migrationData": self.migration_export(export_settings)})
 
-            settings_dict = settings.search(self.endpoint, include_not_set=False, component=self.key, keys=settings_list)
+            settings_dict = settings.Setting.search(self.endpoint, include_not_set=False, component=self.key, keys=settings_list)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
             contains_ai = False
             try:
@@ -1452,6 +1452,8 @@ def export_zips(
     :param int export_timeout: Timeout to export the project, defaults to 30
     :return: list of exported projects with export result
     """
+    from sonar.tasks import SUCCESS
+
     statuses, results = {"SUCCESS": 0}, []
     projects_list = {k: p for k, p in Project.search(endpoint, threads=threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", p.key)}
     nbr_projects = len(projects_list)
@@ -1497,7 +1499,7 @@ def export_zips(
             try:
                 conflict = next(proj for proj in results if proj.get("file", "") == result.get("file", " "))
                 conflict["exportStatus"] = ZIP_CONFLICT
-                statuses[tasks.SUCCESS] -= 1
+                statuses[SUCCESS] -= 1
                 log.critical("Zip file export conflict detected between project keys '%s' and '%s'", result["key"], conflict["key"])
                 statuses[ZIP_CONFLICT] = 1 if ZIP_CONFLICT not in statuses else statuses[ZIP_CONFLICT] + 1
             except StopIteration:

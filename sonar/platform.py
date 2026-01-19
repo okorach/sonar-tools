@@ -90,7 +90,6 @@ class Platform(object):
         self.http_timeout = int(http_timeout)
         self.organization: str = org or ""
         self._user_agent = _SONAR_TOOLS_AGENT
-        self._global_settings_definitions: dict[str, dict[str, str]] = None
         self.api: Api = Api(self)
 
     def __str__(self) -> str:
@@ -340,17 +339,6 @@ class Platform(object):
             self._permissions = global_permissions.GlobalPermissions(self)
         return self._permissions
 
-    def global_settings_definitions(self) -> dict[str, dict[str, str]]:
-        """Returns the platform global settings definitions"""
-        if not self._global_settings_definitions:
-            try:
-                api, _, params, ret = self.api.get_details(settings.Setting, Oper.LIST_DEFINITIONS)
-                data = json.loads(self.get(api, params=params).text)
-                self._global_settings_definitions = {s["key"]: s for s in data[ret]}
-            except (ConnectionError, RequestException):
-                return {}
-        return self._global_settings_definitions
-
     def sys_info(self) -> dict[str, Any]:
         """Returns the SonarQube platform system info JSON"""
         MAX_RETRIES = 10
@@ -402,7 +390,7 @@ class Platform(object):
     def get_settings(self, settings_list: Optional[list[str]] = None) -> dict[str, dict[str, Any]]:
         """Returns a list of (or all) platform global settings dict representation from their key"""
         if settings_list is None:
-            settings_dict = settings.search(endpoint=self)
+            settings_dict = settings.Setting.search(self)
         else:
             settings_dict = {k: settings.Setting.get_object(self, k) for k in settings_list}
         platform_settings = {}
@@ -412,7 +400,7 @@ class Platform(object):
 
     def __settings(self, settings_list: KeyList = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
         log.info("Getting global settings")
-        settings_dict = settings.search(self, include_not_set=include_not_set, keys=settings_list)
+        settings_dict = settings.Setting.search(self, include_not_set=include_not_set, keys=settings_list)
         if ai_code_fix := settings.Setting.get_object(self, key=settings.AI_CODE_FIX):
             settings_dict[ai_code_fix.key] = ai_code_fix
         return settings_dict
@@ -423,7 +411,8 @@ class Platform(object):
         :param key: Setting key
         :return: the setting value
         """
-        return settings.Setting.get_object(self, key=key).to_json()[key].get("value")
+        return settings.Setting.get_object(self, key=key).value
+        # return settings.Setting.get_object(self, key=key).to_json()[key].get("value")
 
     def reset_setting(self, key: str) -> bool:
         """Resets a platform global setting to the SonarQube internal default value
