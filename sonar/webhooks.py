@@ -165,7 +165,7 @@ class WebHook(SqObject):
 
     def delete(self) -> bool:
         """Deletes the webhook, returns whether the operation succeeded"""
-        return self.delete_object(**self.api_params(Oper.DELETE))
+        return self.delete_object(webhook=self.key)
 
     def audit(self) -> list[problem.Problem]:
         """
@@ -184,11 +184,6 @@ class WebHook(SqObject):
         :rtype: dict
         """
         return util.filter_export(self.sq_json, _IMPORTABLE_PROPERTIES, full)
-
-    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
-        """Returns the std api params to pass for a given webhook"""
-        ops = {Oper.GET: {"webhook": self.key}}
-        return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
 
 def export(endpoint: Platform, project_key: Optional[str] = None, full: bool = False) -> ObjectJsonRepr:

@@ -141,11 +141,6 @@ class DevopsPlatform(SqObject):
         self._specific = {k: v for k, v in data.items() if k not in ("key", "url")}
         return self
 
-    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
-        """Returns the API parameters for the operation"""
-        ops = {Oper.SEARCH: {"key": self.key}}
-        return ops[operation] if operation and operation in ops else ops[Oper.SEARCH]
-
     def delete(self) -> bool:
         """Deletes a DevOps platform"""
         return self.delete_object(key=self.key)
@@ -189,7 +184,7 @@ class DevopsPlatform(SqObject):
             log.error("DevOps platform type '%s' for update of %s is incompatible", alm_type, str(self))
             return False
 
-        params = self.api_params() | {"url": kwargs.get("url")}
+        params = {"key": self.key, "url": kwargs.get("url")}
         additional = ()
         if alm_type == DEVOPS_BITBUCKET_CLOUD:
             additional = ("clientId", "workspace")

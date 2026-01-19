@@ -96,11 +96,6 @@ class UserToken(SqObject):
         """
         return self.delete_object(name=self.name, login=self.login)
 
-    def api_params(self, operation: Oper = Oper.GET) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        ops = {Oper.GET: {"name": self.name, "login": self.login}}
-        return ops[operation] if operation in ops else ops[Oper.GET]
-
     def is_expired(self) -> bool:
         """Returns True if the token is expired, False otherwise"""
         return self.sq_json.get("isExpired", False) or (

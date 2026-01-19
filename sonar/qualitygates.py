@@ -348,11 +348,6 @@ class QualityGate(SqObject):
         """
         return sorted(self.conditions(encoded=True)) == sorted(other_qg.conditions(encoded=True))
 
-    def api_params(self, operation: Oper = Oper.GET) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        ops = {Oper.GET: {"name": self.name}}
-        return ops[operation] if operation in ops else ops[Oper.GET]
-
     def audit_conditions(self) -> list[Problem]:
         problems = []
         for cond in self.conditions():
