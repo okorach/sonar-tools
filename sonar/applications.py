@@ -122,7 +122,10 @@ class Application(aggr.Aggregation):
         check_supported(endpoint)
         if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
             return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
-        return dict(sorted(cls.get_paginated(endpoint=endpoint, params=search_params | cls.APP_FILTER).items()))
+        app_list = cls.get_paginated(endpoint=endpoint, params=search_params | cls.APP_FILTER)
+        if "s" in search_params:
+            return app_list
+        return dict(sorted(app_list.items()))
 
     @classmethod
     def count(cls, endpoint: Platform, **search_params: Any) -> int:
