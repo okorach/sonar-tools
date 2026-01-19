@@ -212,8 +212,6 @@ class Setting(SqObject):
     def reload(self, data: ApiPayload) -> Setting:
         """Reloads a Setting with JSON returned from Sonar API"""
         log.debug("Reloading setting %s data: %s", self.key, data)
-        if not data:
-            return
         if self.key == NEW_CODE_PERIOD:
             self.value = new_code_to_string(data)
         elif self.key == MQR_ENABLED:
