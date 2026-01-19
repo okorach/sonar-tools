@@ -51,6 +51,7 @@ from sonar.audit.problem import Problem
 import sonar.util.constants as c
 import sonar.util.project_helper as phelp
 from sonar.api.manager import ApiOperation as Oper
+from sonar import measures
 
 if TYPE_CHECKING:
     from sonar.tasks import Task
@@ -285,7 +286,7 @@ class Project(Component):
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         log.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-        return self.delete_object(**self.api_params(Oper.DELETE))
+        return self.delete_object(project=self.key)
 
     def has_binding(self) -> bool:
         """Whether the project has a DevOps platform binding"""
@@ -1203,6 +1204,10 @@ class Project(Component):
         params["inlineAnnotations"] = str(inline_annotations).lower()
         return self.post("alm_settings/set_azure_binding", params=params).ok
 
+    def get_measures_history(self, metrics_list: KeyList) -> dict[str, str]:
+        """Returns the history of a project metrics"""
+        return measures.get_history(self, metrics_list, component=self.key)
+
     def update(self, config: ObjectJsonRepr) -> None:
         """Updates a project with a whole configuration set
 
@@ -1248,11 +1253,6 @@ class Project(Component):
         self.set_contains_ai_code(config.get(_CONTAINS_AI_CODE, config.get("aiCodeAssurance", False)))
 
         # TODO: Set branch settings See https://github.com/okorach/sonar-tools/issues/1828
-
-    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        ops = {Oper.GET: {"component": self.key}, Oper.DELETE: {"project": self.key}, Oper.SET_TAGS: {"project": self.key}}
-        return ops[operation] if operation and operation in ops else {"project": self.key}
 
 
 def get_matching_list(endpoint: Platform, pattern: str, threads: int = 8) -> dict[str, Project]:

@@ -33,6 +33,7 @@ import sonar.components as comp
 import sonar.utilities as sutil
 from sonar.audit.rules import get_rule
 from sonar.audit.problem import Problem
+from sonar import measures
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -58,6 +59,10 @@ class Aggregation(comp.Component):
             if d in data:
                 self._description = self.sq_json[d]
         return self
+
+    def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
+        """Returns the history of a project metrics"""
+        return measures.get_history(self, metrics_list, component=self.key)
 
     def nbr_projects(self, use_cache: bool = False) -> int:
         """Returns the number of projects of an Aggregation (Application or Portfolio)

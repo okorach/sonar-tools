@@ -39,11 +39,12 @@ from sonar.audit.problem import Problem
 import sonar.util.constants as c
 from sonar.api.manager import ApiOperation as Oper
 from sonar import projects as proj
+from sonar import measures
 
 if TYPE_CHECKING:
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
-    from sonar.util.types import ApiPayload, ApiParams, ConfigSettings
+    from sonar.util.types import ApiPayload, ConfigSettings
     from sonar.platform import Platform
 
 _UNSUPPORTED_IN_CE = "Pull requests not available in Community Edition"
@@ -168,14 +169,6 @@ class PullRequest(Component):
         """Returns the project key"""
         return self.concerned_object.key
 
-    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        ops = {
-            Oper.GET: {"project": self.concerned_object.key, "pullRequest": self.key},
-            Oper.DELETE: {"project": self.concerned_object.key, "pullRequest": self.key},
-        }
-        return ops[operation] if operation and operation in ops else ops[Oper.GET]
-
     def delete(self) -> bool:
         """Deletes a pull request"""
         return self.delete_object(project=self.concerned_object.key, pullRequest=self.key)
@@ -195,3 +188,7 @@ class PullRequest(Component):
     def get_findings(self, **search_params: Any) -> dict[str, Union[Issue, Hotspot]]:
         """Returns a list of findings, issues and hotspots together on a PR"""
         return self.concerned_object.get_findings(**(search_params | {"pullRequest": self.key}))
+
+    def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
+        """Returns the history of a project metrics"""
+        return measures.get_history(self, metrics_list, component=self.concerned_object.key, pullRequest=self.key)

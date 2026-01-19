@@ -37,6 +37,7 @@ import sonar.utilities as sutil
 from sonar.api.manager import ApiOperation as Oper
 import sonar.util.constants as c
 from sonar import applications as apps
+from sonar import measures
 
 if TYPE_CHECKING:
     from sonar.issues import Issue
@@ -147,11 +148,6 @@ class ApplicationBranch(Component):
 
         return Hotspot.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "branch": self.name}))
 
-    def api_params(self, operation: Optional[str] = None) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        ops = {Oper.GET: {"application": self.concerned_object.key, "branch": self.name}}
-        return ops[operation] if operation and operation in ops else ops[Oper.GET]
-
     def is_main(self) -> bool:
         """Returns whether app branch is main"""
         return self._is_main
@@ -204,7 +200,7 @@ class ApplicationBranch(Component):
         custom_branches = [e for e in projects_or_branches if isinstance(e, Branch)]
         if len(custom_branches) == 0:
             raise exceptions.UnsupportedOperation("No custom branch defined in Application Branch during update")
-        params = [("name", name)] + [(k, v) for k, v in self.api_params().items()]
+        params = [("name", name), ("application", self.concerned_object.key), ("branch", self.name)]
         for branch in custom_branches:
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
@@ -260,6 +256,10 @@ class ApplicationBranch(Component):
     def url(self) -> str:
         """Returns the URL of the Application Branch"""
         return f"{self.base_url(local=False)}/dashboard?id={self.concerned_object.key}&branch={quote(self.name)}"
+
+    def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
+        """Returns the history of a project metrics"""
+        return measures.get_history(self, metrics_list, component=self.concerned_object.key, branch=self.name)
 
 
 def list_from(app: apps.Application, data: ApiPayload) -> dict[str, ApplicationBranch]:
