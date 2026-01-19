@@ -316,14 +316,20 @@ class Setting(SqObject):
                 cls.SETTINGS_DEFINITIONS = {s["key"]: s for s in data[ret]}
             except ConnectionError:
                 return {}
+            log.debug("Loaded %d settings definitions", len(cls.SETTINGS_DEFINITIONS))
         return cls.SETTINGS_DEFINITIONS
 
-    def get_definition(self) -> dict[str, str]:
+    def get_definition(self) -> dict[str, Any]:
         """Returns the setting global definition"""
         self._definition = self.__class__.load_definitions(self.endpoint).get(self.key)
-        self.multi_valued = self._definition.get("multiValues")
-        default_val = self._definition.get("defaultValue", "") if self.multi_valued else None
-        self.default_value = sorted(util.csv_to_list(default_val)) if self.multi_valued else util.convert_to_type(default_val) or self.default_value
+        log.debug("Loaded setting definition for %s: %s", self.key, self._definition)
+        self.multi_valued = False if self._definition is None else self._definition.get("multiValues")
+        if self.multi_valued:
+            self.default_value = sorted(util.csv_to_list(self._definition.get("defaultValue", "")))
+        elif self._definition is not None:
+            self.default_value = util.convert_to_type(self._definition.get("defaultValue", ""))
+        else:
+            self.default_value = None
         return self._definition
 
     def is_global(self) -> bool:
