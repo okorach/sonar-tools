@@ -302,14 +302,14 @@ class Rule(SqObject):
         log.info("Rule search returning a list of %d rules", len(rule_list))
         return rule_list
 
-    def refresh(self, use_cache: bool = True) -> bool:
+    def refresh(self, use_cache: bool = True) -> Rule:
         """Refreshes a rule object from the platform
 
         :param use_cache: If True, will use the cache to avoid unnecessary calls
-        :return: True if the rule was actually refreshed, False cache was used
+        :return: The object
         """
         if use_cache and "actives" in self.sq_json:
-            return False
+            return self
 
         try:
             api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.GET, **self.api_params() | {"actives": "true"})
@@ -319,7 +319,11 @@ class Rule(SqObject):
             raise
         self.sq_json.update(data["rule"])
         self.sq_json["actives"] = data["actives"].copy()
-        return True
+        return self
+
+    def delete(self) -> bool:
+        """Deletes a rule, returns whether the operation succeeded"""
+        return self.delete_object(key=self.key)
 
     def is_extended(self) -> bool:
         """Returns True if the rule has been extended with tags or a custom description, False otherwise"""
