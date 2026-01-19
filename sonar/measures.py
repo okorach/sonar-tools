@@ -28,7 +28,7 @@ import json
 from sonar.sqobject import SqObject
 from sonar import metrics, exceptions
 from sonar.api.manager import ApiOperation as Oper
-from sonar.util import cache, constants as c
+from sonar.util import cache
 import sonar.logging as log
 import sonar.util.misc as util
 import sonar.utilities as sutil
@@ -52,6 +52,7 @@ class Measure(SqObject):
         """Constructor"""
         super().__init__(endpoint, data)
         self.value: Optional[Any] = None  #: Measure value
+        self.key = f'{data["metric"]} of {data.get(self.__class__.__CONCERNED_OBJECT)}'
         self.metric = data["metric"]  #: Measure metric
         self.component_key = data.get(self.__class__.__CONCERNED_OBJECT)
         self.branch = None
@@ -125,7 +126,7 @@ class Measure(SqObject):
         return metrics.Metric.get_object(self.endpoint, self.metric).is_an_effort()
 
     def format(self, ratings: str = "letters", percents: str = "float") -> Any:
-        return format(self.endpoint, self.key, self.value, ratings=ratings, percents=percents)
+        return format(self.endpoint, self.metric, self.value, ratings=ratings, percents=percents)
 
     @classmethod
     def search(cls, concerned_object: ConcernedObject, metrics_list: KeyList, use_cache: bool = True, **search_params: Any) -> dict[str, Measure]:
