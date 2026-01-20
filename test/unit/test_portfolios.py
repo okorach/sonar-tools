@@ -251,7 +251,7 @@ def test_add_standard_subp_2(get_test_portfolio: Generator[pf.Portfolio]) -> Non
     if not __verify_support():
         pytest.skip(__UNSUPPORTED_MESSAGE)
     parent = get_test_portfolio
-    subp = parent.add_subportfolio(key=f"{tutil.TEMP_KEY_3}-subportfolio")
+    subp = parent.add_subportfolio(key=parent.key)
     subp_d = parent.sub_portfolios()
     assert len(subp_d) == 1
     assert list(subp_d.keys()) == [subp.key]
