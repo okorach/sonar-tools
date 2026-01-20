@@ -1,4 +1,4 @@
-FROM alpine:3.22.2
+FROM alpine:3.23.2
 LABEL maintainer="olivier.korach@gmail.com" 
 ENV IN_DOCKER="Yes"
 
