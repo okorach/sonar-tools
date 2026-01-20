@@ -269,7 +269,7 @@ def test_history() -> None:
     assert len(hist) == counter
     last_date = None
     for k, v in hist.items():
-        this_date = sutil.string_to_date(k)
+        this_date = sutil.string_to_datetime(k)
         assert isinstance(this_date, datetime)
         assert last_date is None or this_date >= last_date
         last_date = this_date

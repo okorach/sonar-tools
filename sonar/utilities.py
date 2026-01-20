@@ -115,7 +115,7 @@ def redacted_token(token: str) -> str:
         return re.sub(r"(..).*(..)", r"\1***\2", token)
 
 
-def string_to_date(string: Optional[str]) -> Union[datetime.datetime, datetime.date, None]:
+def string_to_datetime(string: Optional[str]) -> Union[datetime.datetime, None]:
     """Converts a string date to a date"""
     if string is None:
         return None
@@ -123,8 +123,8 @@ def string_to_date(string: Optional[str]) -> Union[datetime.datetime, datetime.d
         return util.add_tz(util.to_datetime(string, SQ_DATETIME_FORMAT))
     except (ValueError, TypeError):
         try:
-            return util.to_date(string, SQ_DATE_FORMAT)
-        except (ValueError, TypeError) as e:
+            return util.add_tz(util.to_datetime(string, SQ_DATE_FORMAT))
+        except (ValueError, TypeError):
             return None
 
 

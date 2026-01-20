@@ -136,11 +136,11 @@ class Sif(object):
     def start_time(self) -> Optional[datetime.datetime]:
         """Returns the last start time of the SQ instance represented by the SIF"""
         try:
-            return sutil.string_to_date(self.json[_SETTINGS]["sonar.core.startTime"])
+            return sutil.string_to_datetime(self.json[_SETTINGS]["sonar.core.startTime"])
         except KeyError:
             pass
         try:
-            return sutil.string_to_date(self.json[_SYSTEM]["Start Time"])
+            return sutil.string_to_datetime(self.json[_SYSTEM]["Start Time"])
         except KeyError:
             return None
 

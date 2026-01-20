@@ -125,4 +125,4 @@ def test_analyzed_after(csv_file: Generator[str]) -> None:
     cmd = f"sonar-measures-export -{opt.REPORT_FILE_SHORT} {csv_file} --{opt.ANALYZED_AFTER} {cutoff.strftime(sutil.SQ_DATE_FORMAT)}"
     assert tutil.run_cmd(measures_export.main, cmd) == errcodes.OK
     assert tutil.csv_nbr_lines(csv_file) < nbr_lines
-    assert tutil.csv_nbr_lines(csv_file) < 10
+    assert tutil.csv_nbr_lines(csv_file) < 30

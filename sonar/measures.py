@@ -92,7 +92,7 @@ class Measure(SqObject):
         return self.__class__.get_object(self.endpoint, self.metric, self.concerned_object, use_cache=False)
 
     def __converted_value(self, value: Any) -> Any:
-        value = sutil.string_to_date(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
+        value = sutil.string_to_datetime(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
         if self.is_a_rating():
             value = int(float(value))
         return value

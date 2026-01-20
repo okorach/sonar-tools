@@ -231,7 +231,7 @@ def parse_and_check(parser: ArgumentParser, logger_name: Optional[str] = None, v
     if verify_token:
         sutil.check_token(args.token, sutil.is_sonarcloud_url(kwargs[URL]))
     if ANALYZED_AFTER in kwargs and kwargs[ANALYZED_AFTER] is not None:
-        kwargs[ANALYZED_AFTER] = sutil.string_to_date(kwargs[ANALYZED_AFTER])
+        kwargs[ANALYZED_AFTER] = sutil.string_to_datetime(kwargs[ANALYZED_AFTER])
         if kwargs[ANALYZED_AFTER] is None:
             raise ArgumentsError(
                 f"CLI argument --{ANALYZED_AFTER} value is not in the expected '{sutil.SQ_DATE_FORMAT}' or '{sutil.SQ_DATETIME_FORMAT}' format"

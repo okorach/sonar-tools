@@ -176,11 +176,11 @@ class User(SqObject):
             self.is_local = data["local"]
         self.last_login = None  #: User last login - read-only
         if self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
-            self.last_login = sutil.string_to_date(data.get("lastConnectionDate"))
+            self.last_login = sutil.string_to_datetime(data.get("lastConnectionDate"))
             self.nb_tokens = data.get("tokenCount")  #: Nbr of tokens - read-only
         else:
-            dt1 = sutil.string_to_date(data.get("sonarQubeLastConnectionDate"))
-            dt2 = sutil.string_to_date(data.get("sonarLintLastConnectionDate"))
+            dt1 = sutil.string_to_datetime(data.get("sonarQubeLastConnectionDate"))
+            dt2 = sutil.string_to_datetime(data.get("sonarLintLastConnectionDate"))
             oldest = datetime(MINYEAR, 1, 1).replace(tzinfo=timezone.utc)
             self.last_login = max(dt1 or oldest, dt2 or oldest)
             if "id" not in self.sq_json:

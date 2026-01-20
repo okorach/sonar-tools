@@ -84,8 +84,8 @@ class QualityProfile(SqObject):
         self.project_count = data.get("projectCount", None)  #: Number of projects using this quality profile
         self.parent_name = data.get("parentName", None)  #: Name of parent profile, or None if none
 
-        self.__last_use = sutil.string_to_date(data.get("lastUsed", None))
-        self.__last_update = sutil.string_to_date(data.get("rulesUpdatedAt", None))
+        self.__last_use = sutil.string_to_datetime(data.get("lastUsed", None))
+        self.__last_update = sutil.string_to_datetime(data.get("rulesUpdatedAt", None))
 
         log.debug("Loaded %s", str(self))
         self.__class__.CACHE.put(self)
@@ -186,8 +186,8 @@ class QualityProfile(SqObject):
         (self._projects, self._projects_lock) = (None, Lock())
         self.project_count = data.get("projectCount")
         self.parent_name = data.get("parentName")
-        self.__last_use = sutil.string_to_date(data.get("lastUsed"))
-        self.__last_update = sutil.string_to_date(data.get("rulesUpdatedAt"))
+        self.__last_use = sutil.string_to_datetime(data.get("lastUsed"))
+        self.__last_update = sutil.string_to_datetime(data.get("rulesUpdatedAt"))
         return self
 
     def url(self) -> str:
