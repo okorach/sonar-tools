@@ -236,7 +236,6 @@ def parse_and_check(parser: ArgumentParser, logger_name: Optional[str] = None, v
             raise ArgumentsError(
                 f"CLI argument --{ANALYZED_AFTER} value is not in the expected '{sutil.SQ_DATE_FORMAT}' or '{sutil.SQ_DATETIME_FORMAT}' format"
             )
-        log.info("ANA AFTER = %s", str(kwargs[ANALYZED_AFTER]))
     return args
 
 
