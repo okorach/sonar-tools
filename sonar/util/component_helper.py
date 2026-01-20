@@ -19,7 +19,7 @@
 #
 
 import re
-from typing import Optional, Any, Union, TYPE_CHECKING
+from typing import Optional, Any
 
 import sonar.logging as log
 from sonar.projects import Project
@@ -27,6 +27,7 @@ from sonar.applications import Application
 from sonar.portfolios import Portfolio
 from sonar.components import Component
 from sonar.platform import Platform
+from cli import options
 
 
 def get_components(
@@ -58,4 +59,9 @@ def get_components(
     elif component_type == "projects" and pr_regexp:
         log.info("Searching for %s PRs matching '%s'", component_type, pr_regexp)
         components = [pr for proj in components for pr in proj.pull_requests().values() if re.match(rf"^{pr_regexp}$", pr.key)]
+
+    if kwargs.get(options.ANALYZED_AFTER):
+        log.info("Filtering components analyzed after %s", kwargs.get(options.ANALYZED_AFTER))
+        analyzed_after = kwargs.get(options.ANALYZED_AFTER)
+        components = [comp for comp in components if comp.last_analysis() and comp.last_analysis() >= analyzed_after]
     return components
