@@ -118,7 +118,12 @@ class ApiManager:
             data = self.__class__.SQC_API
         else:
             api_versions = sorted([tuple(int(s) for s in v.split(".")) for v in self.__class__.SQS_API], reverse=True)
-            api_version_to_use = sutil.version_to_string(next(v for v in api_versions if self.endpoint.version() >= v))
+            vers = self.endpoint.version()
+            # for community build the version major is 2000 less (eg 25.x vs 2025.x)
+            if vers > (10, 8, 0):
+                major, minor, patch = vers
+                vers = (major + 2000, minor, patch)
+            api_version_to_use = sutil.version_to_string(next(v for v in api_versions if vers >= v))
             data = self.__class__.SQS_API[api_version_to_use]
         self.api_def = data
         log.debug("%s API definition: %s", endpoint, misc.json_dump(data))
