@@ -30,7 +30,7 @@ import json
 import sonar.logging as log
 
 import sonar.components as comp
-import sonar.exceptions as exceptions
+from sonar import exceptions
 from sonar.audit.rules import get_rule
 from sonar.audit.problem import Problem
 from sonar import measures
