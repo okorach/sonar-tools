@@ -159,6 +159,7 @@ def __parse_args(desc: str) -> object:
         required=False,
         help="Report measures history as table, instead of <date>,<metric>,<measure>",
     )
+    options.add_analyzed_after_arg(parser)
     options.add_dateformat_arg(parser)
     options.add_url_arg(parser)
     args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
@@ -270,6 +271,7 @@ def main() -> None:
             component_type=kwargs[options.COMPONENT_TYPE],
             key_regexp=kwargs[options.KEY_REGEXP],
             branch_regexp=kwargs[options.BRANCH_REGEXP],
+            **kwargs,
         )
         if len(obj_list) == 0:
             chelp.clear_cache_and_exit(errcodes.WRONG_SEARCH_CRITERIA, f"No components matching regexp '{kwargs[options.KEY_REGEXP]}'")

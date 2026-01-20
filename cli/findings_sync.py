@@ -110,7 +110,7 @@ def __since_date(**kwargs) -> Optional[datetime.datetime]:
     since = None
     if kwargs["sinceDate"] is not None:
         try:
-            since = util.to_date(kwargs["sinceDate"]).replace(tzinfo=datetime.timezone.utc)
+            since = sutil.string_to_date(kwargs["sinceDate"])
         except (ValueError, TypeError):
             log.warning("sinceDate value '%s' is not in the expected YYYY-MM-DD date format, ignored", kwargs["sinceDate"])
     return since

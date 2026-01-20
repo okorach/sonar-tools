@@ -23,7 +23,6 @@
 from typing import Any, Union, Optional
 from http import HTTPStatus
 import sys
-import os
 import math
 import re
 import json
@@ -121,11 +120,11 @@ def string_to_date(string: Optional[str]) -> Union[datetime.datetime, datetime.d
     if string is None:
         return None
     try:
-        return util.to_datetime(string, SQ_DATETIME_FORMAT)
+        return util.add_tz(util.to_datetime(string, SQ_DATETIME_FORMAT))
     except (ValueError, TypeError):
         try:
-            return util.to_date(string, SQ_DATE_FORMAT).replace(tzinfo=datetime.timezone.utc)
-        except (ValueError, TypeError):
+            return util.to_date(string, SQ_DATE_FORMAT)
+        except (ValueError, TypeError) as e:
             return None
 
 

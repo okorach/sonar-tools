@@ -7,7 +7,7 @@ ARG USER_UID=1000
 ARG GROUPNAME=sonar
 
 # Create the user
-RUN addgroup -S ${GROUPNAME} && adduser -u ${USER_UID} -S ${USERNAME} -G ${GROUPNAME}
+RUN addgroup -S "${GROUPNAME}" && adduser -u "${USER_UID}" -S "${USERNAME}" -G "${GROUPNAME}""
 
 # Install python/pip
 ENV PYTHONUNBUFFERED=1
@@ -16,7 +16,7 @@ RUN apk add --update --no-cache python3 && ln -sf python3 /usr/bin/python
 # create a virtual environment and add it to PATH so that it is 
 # applied for all future RUN and CMD calls
 ENV VIRTUAL_ENV=/opt/venv
-RUN python3 -m venv ${VIRTUAL_ENV}
+RUN python3 -m venv "${VIRTUAL_ENV}"
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
 WORKDIR /opt/sonar-tools

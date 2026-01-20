@@ -111,6 +111,7 @@ DATE_AFTER = "createdAfter"
 DATE_BEFORE = "createdBefore"
 DATES_WITHOUT_TIME_SHORT = "d"
 DATES_WITHOUT_TIME = "datesWithoutTime"
+ANALYZED_AFTER = "analyzedAfter"
 
 LOGFILE_SHORT = "l"
 LOGFILE = "logfile"
@@ -229,6 +230,13 @@ def parse_and_check(parser: ArgumentParser, logger_name: Optional[str] = None, v
         raise ArgumentsError(f"Organization (-{ORG_TARGET_SHORT}) option is mandatory for SonarQube Cloud")
     if verify_token:
         sutil.check_token(args.token, sutil.is_sonarcloud_url(kwargs[URL]))
+    if ANALYZED_AFTER in kwargs and kwargs[ANALYZED_AFTER] is not None:
+        kwargs[ANALYZED_AFTER] = sutil.string_to_date(kwargs[ANALYZED_AFTER])
+        if kwargs[ANALYZED_AFTER] is None:
+            raise ArgumentsError(
+                f"CLI argument --{ANALYZED_AFTER} value is not in the expected '{sutil.SQ_DATE_FORMAT}' or '{sutil.SQ_DATETIME_FORMAT}' format"
+            )
+        log.info("ANA AFTER = %s", str(kwargs[ANALYZED_AFTER]))
     return args
 
 
@@ -269,6 +277,13 @@ def add_dateformat_arg(parser: ArgumentParser) -> ArgumentParser:
 def add_url_arg(parser: ArgumentParser) -> ArgumentParser:
     """Adds the option to export URL of objects"""
     return add_optional_arg(parser, f"--{WITH_URL}", action="store_true", help="Also list the URL of the objects")
+
+
+def add_analyzed_after_arg(parser: ArgumentParser) -> ArgumentParser:
+    """Adds the option to filter components analyzed after a given date"""
+    return add_optional_arg(
+        parser, f"--{ANALYZED_AFTER}", default=None, help="Will only select components that have been analyzed after the given date (YYYY-MM-DD)"
+    )
 
 
 def add_import_export_arg(parser: ArgumentParser, topic: str, import_opt: bool = True, export_opt: bool = True) -> ArgumentParser:

@@ -374,7 +374,7 @@ def filename(file: Optional[str]) -> str:
 
 def to_datetime(date_str: str, fmt: str = "%Y-%m-%dT%H:%M:%S%z") -> datetime:
     """Converts an ISO datetime string to a datetime object"""
-    return datetime.strptime(date_str, fmt)
+    return add_tz(datetime.strptime(date_str, fmt))
 
 
 def to_date(date_str: str, fmt: str = "%Y-%m-%d") -> date:
