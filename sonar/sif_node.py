@@ -35,10 +35,10 @@ from sonar.audit.problem import Problem
 from sonar import config
 import sonar.util.constants as c
 
-_RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)
-_RELEASE_DATE_7_9 = datetime.datetime(2019, 7, 1) + relativedelta(months=+6)
-_RELEASE_DATE_8_9 = datetime.datetime(2021, 5, 4) + relativedelta(months=+6)
-_RELEASE_DATE_9_9 = datetime.datetime(2023, 2, 1) + relativedelta(months=+6)
+_RELEASE_DATE_6_7 = util.add_tz(datetime.datetime(2017, 11, 8) + relativedelta(months=+6))
+_RELEASE_DATE_7_9 = util.add_tz(datetime.datetime(2019, 7, 1) + relativedelta(months=+6))
+_RELEASE_DATE_8_9 = util.add_tz(datetime.datetime(2021, 5, 4) + relativedelta(months=+6))
+_RELEASE_DATE_9_9 = util.add_tz(datetime.datetime(2023, 2, 1) + relativedelta(months=+6))
 
 _CE_TASKS = "Compute Engine Tasks"
 _WORKER_COUNT = "Worker Count"
