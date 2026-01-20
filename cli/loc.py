@@ -216,13 +216,15 @@ def main() -> None:
 
         kwargs = __check_options(endpoint.edition(), kwargs)
 
+        if endpoint.edition() == c.CE and kwargs.get(options.PULL_REQUESTS, False):
+            raise exceptions.UnsupportedOperation(f"Option --{options.PULL_REQUESTS} not supported in Community Edition")
         objects_list = component_helper.get_components(
             endpoint=endpoint,
             component_type=kwargs[options.COMPONENT_TYPE],
             key_regexp=kwargs[options.KEY_REGEXP],
             branch_regexp=kwargs[options.BRANCH_REGEXP],
             topLevelOnly=kwargs["topLevelOnly"],
-            pull_requests=kwargs.get("pullRequests", False),
+            pull_requests=kwargs.get(options.PULL_REQUESTS, False),
         )
         if len(objects_list) == 0:
             raise exceptions.SonarException(f"No object matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)

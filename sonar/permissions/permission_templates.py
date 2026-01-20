@@ -65,7 +65,7 @@ class PermissionTemplate(sqobject.SqObject):
         self.description = data.get("description")
         self.last_update = data.get("lastUpdate")
         self.project_key_pattern = data.get("projectKeyPattern", "")
-        self.creation_date = sutil.string_to_date(data.get("createdAt"))
+        self.creation_date = sutil.string_to_datetime(data.get("createdAt"))
         self.__class__.CACHE.put(self)
 
     def __str__(self) -> str:

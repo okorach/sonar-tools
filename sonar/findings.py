@@ -217,14 +217,14 @@ class Finding(SqObject):
         if self.component:
             self.file = self.component.replace(f"{self.projectKey}:", "", 1)
         self.branch, self.pull_request = self.get_branch_and_pr(jsondata)
-        self.creation_date = sutil.string_to_date(jsondata["creationDate"])
-        self.modification_date = sutil.string_to_date(jsondata["updateDate"])
+        self.creation_date = sutil.string_to_datetime(jsondata["creationDate"])
+        self.modification_date = sutil.string_to_datetime(jsondata["updateDate"])
 
     def _load_from_export(self, jsondata: ObjectJsonRepr) -> None:
         self._load_common(jsondata)
         self.projectKey = jsondata["projectKey"]
-        self.creation_date = sutil.string_to_date(jsondata["createdAt"])
-        self.modification_date = sutil.string_to_date(jsondata["updatedAt"])
+        self.creation_date = sutil.string_to_datetime(jsondata["createdAt"])
+        self.modification_date = sutil.string_to_datetime(jsondata["updatedAt"])
 
     def url(self) -> str:
         """Returns the URL of the finding, must be implemented in subclasses"""

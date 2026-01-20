@@ -46,7 +46,8 @@ def test_autodetect_ai() -> None:
     """test_autodetect_ai"""
 
     o = settings.Setting.get_object(tutil.SQ, "sonar.autodetect.ai.code")
-    if tutil.SQ.version() < (2025, 1, 0):
+    # Even if invisible in the UI, the setting is present in the API in Community Builds
+    if tutil.SQ.version() < (25, 1, 0):
         assert o is None
         return
 

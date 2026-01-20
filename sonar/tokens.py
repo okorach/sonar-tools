@@ -53,9 +53,9 @@ class UserToken(SqObject):
         super().__init__(endpoint, data)
         self.name = data["name"]  #: Token name
         self.token = data.get("token")
-        self.created_at = sutil.string_to_date(data["createdAt"]) if "createdAt" in data else None
-        self.last_connection_date = sutil.string_to_date(data["lastConnectionDate"]) if "lastConnectionDate" in data else None
-        self.expiration_date: Optional[dt.datetime] = sutil.string_to_date(data["expirationDate"]) if "expirationDate" in data else None
+        self.created_at = sutil.string_to_datetime(data["createdAt"]) if "createdAt" in data else None
+        self.last_connection_date = sutil.string_to_datetime(data["lastConnectionDate"]) if "lastConnectionDate" in data else None
+        self.expiration_date: Optional[dt.datetime] = sutil.string_to_datetime(data["expirationDate"]) if "expirationDate" in data else None
         log.debug("Constructed '%s'", str(self))
 
     @classmethod

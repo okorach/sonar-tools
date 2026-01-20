@@ -83,7 +83,7 @@ class Component(SqObject):
             self._visibility = data["visibility"]
         key = next((k for k in ("lastAnalysisDate", "analysisDate") if k in data), None)
         if key in data:
-            self._last_analysis = sutil.string_to_date(data[key])
+            self._last_analysis = sutil.string_to_datetime(data[key])
         return self
 
     def project(self) -> Component:
@@ -210,7 +210,7 @@ class Component(SqObject):
                 self.get_navigation_data()
             key = next((k for k in ("lastAnalysisDate", "analysisDate") if self.sq_json and k in self.sq_json), None)
             if key:
-                self._last_analysis = sutil.string_to_date(self.sq_json[key])
+                self._last_analysis = sutil.string_to_datetime(self.sq_json[key])
         return self._last_analysis
 
     def new_code_start_date(self) -> Optional[datetime]:
@@ -220,7 +220,7 @@ class Component(SqObject):
             data = json.loads(self.get(api, params=api_params).text)[ret]
             self.sq_json |= data
             if "leakPeriodDate" in data:
-                self._new_code_start_date = sutil.string_to_date(data["leakPeriodDate"])
+                self._new_code_start_date = sutil.string_to_datetime(data["leakPeriodDate"])
         return self._new_code_start_date
 
     def url(self) -> str:
@@ -253,7 +253,7 @@ class Component(SqObject):
 
     def get_versions(self) -> dict[str, datetime]:
         """Returns a dict of project versions and their dates"""
-        data = {a["projectVersion"]: sutil.string_to_date(a["date"]) for a in reversed(self.get_analyses(filter_in=["VERSION"]))}
+        data = {a["projectVersion"]: sutil.string_to_datetime(a["date"]) for a in reversed(self.get_analyses(filter_in=["VERSION"]))}
         log.debug("Component versions = %s", str(data.keys()))
         return data
 

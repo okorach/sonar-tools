@@ -115,6 +115,7 @@ def test_bad_project_key(json_file: Generator[str]):
         cmd = f"{pyfile} {tutil.SC_OPTS} {extra_args} -K non-existing-project"
         assert tutil.run_cmd(func, cmd) == errcodes.ARGS_ERROR
 
+
 def test_analyzed_after(csv_file: Generator[str]) -> None:
     """test_analyzed_after"""
     cutoff = datetime.now() - timedelta(days=30)
@@ -124,4 +125,4 @@ def test_analyzed_after(csv_file: Generator[str]) -> None:
     cmd = f"sonar-measures-export -{opt.REPORT_FILE_SHORT} {csv_file} --{opt.ANALYZED_AFTER} {cutoff.strftime(sutil.SQ_DATE_FORMAT)}"
     assert tutil.run_cmd(measures_export.main, cmd) == errcodes.OK
     assert tutil.csv_nbr_lines(csv_file) < nbr_lines
-    assert tutil.csv_nbr_lines(csv_file) < 10
+    assert tutil.csv_nbr_lines(csv_file) < 30

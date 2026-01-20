@@ -414,11 +414,11 @@ class Hotspot(findings.Finding):
             filtered_findings = {k: v for k, v in filtered_findings.items() if v.severity in filters["severities"]}
             log.debug("%d hotspots remaining after filtering by severities %s", len(filtered_findings), filters["severities"])
         if "createdAfter" in filters:
-            min_date = sutil.string_to_date(filters["createdAfter"])
+            min_date = sutil.string_to_datetime(filters["createdAfter"])
             filtered_findings = {k: v for k, v in filtered_findings.items() if v.creation_date >= min_date}
             log.debug("%d hotspots remaining after filtering by createdAfter %s", len(filtered_findings), filters["createdAfter"])
         if "createdBefore" in filters:
-            max_date = sutil.string_to_date(filters["createdBefore"])
+            max_date = sutil.string_to_datetime(filters["createdBefore"])
             filtered_findings = {k: v for k, v in filtered_findings.items() if v.creation_date <= max_date}
             log.debug("%d hotspots remaining after filtering by createdBefore %s", len(filtered_findings), filters["createdBefore"])
         if "languages" in filters:
