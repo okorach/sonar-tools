@@ -38,7 +38,7 @@ from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings
+    from sonar.util.types import ApiPayload, ConfigSettings
 
 
 class UserToken(SqObject):
@@ -95,11 +95,6 @@ class UserToken(SqObject):
         :return: Whether the revocation succeeded
         """
         return self.delete_object(name=self.name, login=self.login)
-
-    def api_params(self, operation: Oper = Oper.GET) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        ops = {Oper.GET: {"name": self.name, "login": self.login}}
-        return ops[operation] if operation in ops else ops[Oper.GET]
 
     def is_expired(self) -> bool:
         """Returns True if the token is expired, False otherwise"""

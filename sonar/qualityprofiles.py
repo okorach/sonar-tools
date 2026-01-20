@@ -48,7 +48,7 @@ from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, KeyList, ConfigSettings
+    from sonar.util.types import ApiPayload, ObjectJsonRepr, KeyList, ConfigSettings
 
 _IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefault", "rules", "permissions", "prioritizedRules")
 
@@ -255,12 +255,8 @@ class QualityProfile(SqObject):
         return r.ok
 
     def delete(self) -> bool:
-        """Deletes the quality profile
-
-        :return: Whether the deletion was successful
-        :rtype: bool
-        """
-        return self.delete_object(**self.api_params(Oper.DELETE))
+        """Deletes the quality profile, returns whether the operation succeeded"""
+        return self.delete_object(qualityProfile=self.name, language=self.language)
 
     def is_child(self) -> bool:
         """
@@ -483,14 +479,6 @@ class QualityProfile(SqObject):
             for k in ("name", "pluginKey", "pluginName", "languageKey", "languageName"):
                 r.pop(k, None)
         return data
-
-    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
-        operations = {
-            Oper.GET: {"qualityProfile": self.name, "language": self.language},
-            Oper.SEARCH: {"q": self.name, "language": self.language},
-            Oper.DELETE: {"qualityProfile": self.name, "language": self.language},
-        }
-        return operations[operation] if operation and operation in operations else operations[Oper.GET]
 
     def rule_impacts(self, rule_key: str, substitute_with_default: bool = True) -> dict[str, str]:
         """Returns the impacts of a rule in the quality profile

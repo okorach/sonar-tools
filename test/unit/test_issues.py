@@ -52,9 +52,6 @@ def test_issue() -> None:
     assert not issue.is_wont_fix()
     assert issue.is_false_positive()
     assert issue.refresh()
-    assert issue.api_params(Oper.SEARCH) == {"issues": issue_key}
-    assert issue.api_params(Oper.SET_TAGS) == {"issue": issue_key}
-    assert issue.api_params(Oper.GET_TAGS) == {"issues": issue_key}
 
     assert issue_key_accepted in issues_d
     issue2 = issues_d[issue_key_accepted]

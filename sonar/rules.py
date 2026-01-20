@@ -37,7 +37,7 @@ from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
+    from sonar.util.types import ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
 
 TYPE_TO_QUALITY = {
     idefs.TYPE_BUG: idefs.QUALITY_RELIABILITY,
@@ -312,7 +312,7 @@ class Rule(SqObject):
             return self
 
         try:
-            api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.GET, **self.api_params() | {"actives": "true"})
+            api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.GET, key=self.key, actives="true")
             data = json.loads(self.get(api, params=api_params).text)
         except exceptions.ObjectNotFound:
             self.__class__.CACHE.pop(self)
@@ -373,7 +373,7 @@ class Rule(SqObject):
     def set_tags(self, tags: list[str]) -> bool:
         """Sets rule custom tags"""
         log.info("Setting %s custom tags to '%s' ", str(self), str(tags))
-        api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, **self.api_params() | {"tags": util.list_to_csv(tags)})
+        api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, key=self.key, tags=util.list_to_csv(tags))
         if ok := self.post(api, params=api_params).ok:
             self.tags = sorted(tags) if len(tags) > 0 else None
         return ok
@@ -388,7 +388,7 @@ class Rule(SqObject):
         if self.endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Can't extend rules description on SonarQube Cloud")
         log.info("Setting %s custom description to '%s'", str(self), description)
-        api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, **self.api_params() | {"markdown_note": description})
+        api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, key=self.key, markdown_note=description)
         if ok := self.post(api, params=api_params).ok:
             self.custom_desc = description if description != "" else None
         return ok
@@ -449,11 +449,6 @@ class Rule(SqObject):
         if (found_qp := self.__get_quality_profile_data(quality_profile_id)) is None:
             return None
         return None if "params" not in found_qp or len(found_qp["params"]) == 0 else {p["key"]: p.get("value", "") for p in found_qp["params"]}
-
-    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        ops = {Oper.GET: {"key": self.key}}
-        return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
 
 def get_facet(facet: str, endpoint: Platform) -> dict[str, str]:

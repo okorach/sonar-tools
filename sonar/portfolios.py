@@ -47,7 +47,7 @@ from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiPayload, ApiParams, ConfigSettings, KeyList, ObjectJsonRepr, PermissionDef
+    from sonar.util.types import ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, PermissionDef
     from sonar.branches import Branch
 
 _PORTFOLIO_QUALIFIER = "VW"
@@ -167,7 +167,7 @@ class Portfolio(aggregations.Aggregation):
     def reload(self, data: ApiPayload) -> Portfolio:
         """Reloads a portfolio with returned API data"""
         super().reload(data)
-        if "originalKey" not in data and data["qualifier"] == _PORTFOLIO_QUALIFIER:
+        if "originalKey" not in data and data.get("qualifier") == _PORTFOLIO_QUALIFIER:
             self.parent_portfolio = None
             self.root_portfolio = self
         self.load_selection_mode()
@@ -566,7 +566,7 @@ class Portfolio(aggregations.Aggregation):
     def recompute(self) -> bool:
         """Triggers portfolio recomputation, return whether operation REQUEST succeeded"""
         log.debug("Recomputing %s", str(self))
-        params = self.root_portfolio.api_params() if self.root_portfolio else self.api_params()
+        params = {"key": self.root_portfolio.key if self.root_portfolio else self.key}
         api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.RECOMPUTE, **params)
         return self.post(api, params=api_params).ok
 
@@ -576,7 +576,7 @@ class Portfolio(aggregations.Aggregation):
         :return: Whether the deletion was successful
         :rtype: bool
         """
-        return self.delete_object(**self.api_params(Oper.DELETE))
+        return self.delete_object(key=self.key)
 
     def get_project_list(self) -> list[str]:
         log.debug("Search %s projects list", str(self))
@@ -655,11 +655,6 @@ class Portfolio(aggregations.Aggregation):
                 except exceptions.ObjectNotFound:
                     o_subp = self.add_subportfolio(key=key, name=subp_data["name"], by_ref=False)
                 o_subp.update(data=subp_data, recurse=True)
-
-    def api_params(self, operation: Optional[Oper] = None) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        ops = {Oper.GET: {"key": self.key}, Oper.DELETE: {"key": self.key}}
-        return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
 
 def check_supported(endpoint: Platform) -> None:

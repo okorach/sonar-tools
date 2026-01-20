@@ -41,12 +41,14 @@ from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 import sonar.util.constants as c
 from sonar.api.manager import ApiOperation as Oper
+from sonar import measures
 
 if TYPE_CHECKING:
     from sonar.tasks import Task
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
     from sonar.platform import Platform
+    from sonar.components import Component
     from sonar.util.types import ApiPayload, ApiParams, ConfigSettings, ObjectJsonRepr
 
 _UNSUPPORTED_IN_CE = "Branches not available in Community Edition"
@@ -70,9 +72,9 @@ class Branch(components.Component):
         self.name: str = self.branch
         self.concerned_object: proj.Project = proj.Project.get_project_object(endpoint, data[self.__class__.__PROJECT_KEY])
         log.debug("Loading branch %s of %s", self.name, self.concerned_object)
-        self._is_main: bool
-        self._new_code: str
-        self._keep_when_inactive: str
+        self._is_main: bool = data.get("isMain")
+        self._new_code: str = data.get("newCode")
+        self._keep_when_inactive: str = data.get("excludedFromPurge")
         self.__class__.CACHE.put(self)
         log.debug("Constructed object %s", self)
 
@@ -145,7 +147,7 @@ class Branch(components.Component):
         """returns the branch URL in SonarQube as permalink"""
         return f"{self.concerned_object.url()}&branch={requests.utils.quote(self.name)}"
 
-    def project(self) -> proj.Project:
+    def project(self) -> Component:
         """Returns the project key"""
         return self.concerned_object
 
@@ -163,7 +165,7 @@ class Branch(components.Component):
 
     def delete(self) -> bool:
         """Deletes a branch, return whether the deletion was successful"""
-        return super().delete_object(**self.api_params(Oper.DELETE))
+        return self.delete_object(project=self.concerned_object.key, branch=self.name)
 
     def get(self, api: str, params: ApiParams = None, data: Optional[str] = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
         """Performs an HTTP GET request for the object"""
@@ -190,7 +192,7 @@ class Branch(components.Component):
         if self._new_code is None and self.endpoint.is_sonarcloud():
             self._new_code = settings.new_code_to_string({"inherited": True})
         elif self._new_code is None:
-            api, _, params, _ = self.endpoint.api.get_details(self, Oper.LIST_NEW_CODE_PERIODS, **self.api_params(Oper.SEARCH))
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.LIST_NEW_CODE_PERIODS, project=self.concerned_object.key)
             data = json.loads(self.get(api, params=params).text)
             for b in data["newCodePeriods"]:
                 new_code = settings.new_code_to_string(b)
@@ -215,7 +217,9 @@ class Branch(components.Component):
                 log.warning("%s is main branch, can't be purgeable, skipping...", str(self))
                 raise exceptions.UnsupportedOperation(f"{str(self)} is the main branch, can't be purgeable")
             return True
-        api, _, params, _ = self.endpoint.api.get_details(self, Oper.KEEP_WHEN_INACTIVE, **self.api_params(), value=str(keep).lower())
+        api, _, params, _ = self.endpoint.api.get_details(
+            self, Oper.KEEP_WHEN_INACTIVE, project=self.concerned_object.key, branch=self.name, value=str(keep).lower()
+        )
         self.post(api, params=params)
         self._keep_when_inactive = keep
         return True
@@ -244,7 +248,7 @@ class Branch(components.Component):
         :raises ObjectNotFound: If the branch is not found
         :return: Whether the operation was successful
         """
-        api, _, params, _ = self.endpoint.api.get_details(self, Oper.SET_MAIN, **self.api_params())
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.SET_MAIN, project=self.concerned_object.key, branch=self.name)
         self.post(api, params=params)
         for b in self.concerned_object.branches().values():
             b._is_main = b.name == self.name
@@ -391,15 +395,6 @@ class Branch(components.Component):
             log.error("%s while auditing %s, audit skipped", sutil.error_msg(e), str(self))
         return []
 
-    def api_params(self, operation: Optional[Any] = None) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        ops = {
-            Oper.GET: {"project": self.concerned_object.key, "branch": self.name},
-            Oper.SEARCH: {"project": self.concerned_object.key},
-            Oper.DELETE: {"project": self.concerned_object.key, "branch": self.name},
-        }
-        return ops[operation] if operation and operation in ops else ops[Oper.GET]
-
     def last_task(self) -> Optional[Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
         from sonar.tasks import Task
@@ -407,3 +402,7 @@ class Branch(components.Component):
         if task := Task.search_last(self.endpoint, component=self.concerned_object.key, type="REPORT", branch=self.name):
             task.concerned_object = self
         return task
+
+    def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
+        """Returns the history of a project metrics"""
+        return measures.get_history(self, metrics_list, component=self.concerned_object.key, branch=self.name)

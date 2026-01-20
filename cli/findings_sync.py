@@ -39,6 +39,11 @@ import sonar.util.misc as util
 import sonar.utilities as sutil
 import sonar.util.common_helper as chelp
 
+from sonar.projects import Project
+from sonar.branches import Branch
+
+ProjectOrBranch = Union[Project, Branch]
+
 TOOL_NAME = "sonar-findings-sync"
 
 
@@ -46,7 +51,7 @@ def __parse_args(desc: str) -> object:
     """Defines CLI arguments and parses them"""
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
-    parser = options.set_output_file_args(parser, allowed_formats=("json,"))
+    parser = options.set_output_file_args(parser, allowed_formats=("json",))
     parser = options.set_target_sonar_args(parser)
     parser.add_argument(
         "-r",
@@ -111,9 +116,7 @@ def __since_date(**kwargs) -> Optional[datetime.datetime]:
     return since
 
 
-def __get_objects_pairs_to_sync(
-    source_env: Platform, target_env: Platform, **kwargs: Any
-) -> tuple[Union[projects.Project, branches.Branch], Union[projects.Project, branches.Branch]]:
+def __get_objects_pairs_to_sync(source_env: Platform, target_env: Platform, **kwargs: Any) -> tuple[ProjectOrBranch, ProjectOrBranch]:
     """Returns the 2 objects to compare (projects or branches)"""
     source_pattern = kwargs.get(options.KEY_REGEXP, ".+")
     source_projects = projects.get_matching_list(endpoint=source_env, pattern=source_pattern)

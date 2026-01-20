@@ -53,6 +53,10 @@ if TYPE_CHECKING:
     from sonar.pull_requests import PullRequest
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
+    from sonar.app_branches import ApplicationBranch
+
+    ConcernedObject = Union[Project, Branch, PullRequest, Application, Portfolio, ApplicationBranch]
+    Finding = Union[Issue, Hotspot]
 
 TOOL_NAME = "sonar-findings"
 DATES_WITHOUT_TIME = False
@@ -183,7 +187,7 @@ def __write_footer(file: str, fmt: str) -> None:
         print(f"{closing_sequence}", file=fd)
 
 
-def __write_json_findings(findings_list: dict[str, Union[Issue, Hotspot]], fd: TextIO, **kwargs: str) -> None:
+def __write_json_findings(findings_list: dict[str, Finding], fd: TextIO, **kwargs: str) -> None:
     """Appends a list of findings in JSON or SARIF format in a file"""
     log.debug("in write_json_findings")
     i = len(findings_list)
@@ -201,7 +205,7 @@ def __write_json_findings(findings_list: dict[str, Union[Issue, Hotspot]], fd: T
         print(f"{util.json_dump(json_data, indent=1)}{comma}", file=fd)
 
 
-def __write_csv_findings(findings_list: dict[str, Union[Issue, Hotspot]], fd: TextIO, **kwargs: str) -> None:
+def __write_csv_findings(findings_list: dict[str, Finding], fd: TextIO, **kwargs: str) -> None:
     """Appends a list of findings in a CSV file"""
     csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
     for finding in findings_list.values():
@@ -211,7 +215,7 @@ def __write_csv_findings(findings_list: dict[str, Union[Issue, Hotspot]], fd: Te
         csvwriter.writerow(row)
 
 
-def __write_findings(findings_list: dict[str, Union[Issue, Hotspot]], file: str, is_first: bool, **kwargs: str) -> None:
+def __write_findings(findings_list: dict[str, Finding], file: str, is_first: bool, **kwargs: str) -> None:
     """Writes a list of findings in a file"""
     log.info("Writing %d more findings in format %s", len(findings_list), kwargs[options.FORMAT])
     with util.open_file(file=file, mode="a") as fd:
@@ -275,9 +279,7 @@ def needs_hotspot_search(params: types.ApiParams) -> bool:
     )
 
 
-def get_component_findings(
-    component: Union[Project, Branch, PullRequest, Application, Portfolio], search_findings: bool, params: ConfigSettings
-) -> dict[str, Union[Issue, Hotspot]]:
+def get_component_findings(component: ConcernedObject, search_findings: bool, params: ConfigSettings) -> dict[str, Finding]:
     """Gets the findings of a component and puts them in a writing queue"""
     if any(k in params and params[k] is not None for k in _SEARCH_CRITERIA):
         search_findings = False

@@ -29,7 +29,6 @@ import sonar.logging as log
 from sonar.util import cache
 
 from sonar.components import Component
-
 from sonar.branches import Branch
 from sonar.projects import Project
 from sonar import exceptions
@@ -37,12 +36,13 @@ import sonar.utilities as sutil
 from sonar.api.manager import ApiOperation as Oper
 import sonar.util.constants as c
 from sonar import applications as apps
+from sonar import measures
 
 if TYPE_CHECKING:
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr
+    from sonar.util.types import ApiPayload, ObjectJsonRepr
 
 
 _NOT_SUPPORTED = "Applications not supported in community edition"
@@ -112,15 +112,24 @@ class ApplicationBranch(Component):
         app.endpoint.post(api, params=string_params)
         return cls.get_object(app.endpoint, app.key, name)
 
+    def refresh(self) -> ApplicationBranch:
+        """Refreshes an ApplicationBranch object from SonarQube"""
+        self.get_navigation_data()
+        api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET, application=self.concerned_object.key, branch=self.name)
+        self.reload(json.loads(self.endpoint.get(api, params=params).text)[ret])
+        return self
+
     def reload(self, data: ApiPayload) -> ApplicationBranch:
         """Reloads an ApplicationBranch object from JSON data"""
         super().reload(data)
         self.name = data["branch"]
-        self._is_main = data.get("isMain", False)
-        self._project_branches = []
-        for proj_data in data["projects"]:
-            proj = Project.get_object(self.endpoint, proj_data["key"])
-            self._project_branches.append(Branch.get_object(proj.endpoint, project=proj, branch_name=proj_data["branch"]))
+        if "isMain" in data:
+            self._is_main = data["isMain"]
+        if "projects" in data:
+            self._project_branches = []
+            for proj_data in data["projects"]:
+                proj = Project.get_object(self.endpoint, proj_data["key"])
+                self._project_branches.append(Branch.get_object(proj.endpoint, project=proj, branch_name=proj_data["branch"]))
         return self
 
     def __str__(self) -> str:
@@ -147,11 +156,6 @@ class ApplicationBranch(Component):
 
         return Hotspot.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "branch": self.name}))
 
-    def api_params(self, operation: Optional[str] = None) -> ApiParams:
-        """Return params used to search/create/delete for that object"""
-        ops = {Oper.GET: {"application": self.concerned_object.key, "branch": self.name}}
-        return ops[operation] if operation and operation in ops else ops[Oper.GET]
-
     def is_main(self) -> bool:
         """Returns whether app branch is main"""
         return self._is_main
@@ -165,6 +169,10 @@ class ApplicationBranch(Component):
     def projects_branches(self) -> list[Union[Project, Branch]]:
         """The list of project or project branches included in the application branch"""
         return self._project_branches
+
+    def project(self) -> Component:
+        """The application the app branch belongs to"""
+        return self.concerned_object
 
     def delete(self) -> bool:
         """Deletes an ApplicationBranch
@@ -204,7 +212,7 @@ class ApplicationBranch(Component):
         custom_branches = [e for e in projects_or_branches if isinstance(e, Branch)]
         if len(custom_branches) == 0:
             raise exceptions.UnsupportedOperation("No custom branch defined in Application Branch during update")
-        params = [("name", name)] + [(k, v) for k, v in self.api_params().items()]
+        params = [("name", name), ("application", self.concerned_object.key), ("branch", self.name)]
         for branch in custom_branches:
             params.append(("project", branch.concerned_object.key))
             params.append(("projectBranch", branch.name))
@@ -260,6 +268,10 @@ class ApplicationBranch(Component):
     def url(self) -> str:
         """Returns the URL of the Application Branch"""
         return f"{self.base_url(local=False)}/dashboard?id={self.concerned_object.key}&branch={quote(self.name)}"
+
+    def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
+        """Returns the history of a project metrics"""
+        return measures.get_history(self, metrics_list, component=self.concerned_object.key, branch=self.name)
 
 
 def list_from(app: apps.Application, data: ApiPayload) -> dict[str, ApplicationBranch]:

@@ -337,10 +337,7 @@ class User(SqObject):
         return self.delete()
 
     def delete(self) -> bool:
-        """Deletes the user (true deleting is not possible with api v1)
-
-        :return: Whether the deactivation succeeded
-        """
+        """Deletes the user (true deleting is not possible with api v1), returns whether the operation succeeded"""
         return self.delete_object(login=self.login, id=self.id, name=self.name)
 
     def set_groups(self, group_list: list[str]) -> bool:

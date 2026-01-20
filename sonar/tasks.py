@@ -46,6 +46,14 @@ from sonar import portfolios
 if TYPE_CHECKING:
     from sonar.platform import Platform
     from sonar.util.types import ApiPayload, ConfigSettings
+    from sonar.projects import Project
+    from sonar.applications import Application
+    from sonar.portfolios import Portfolio
+    from sonar.branches import Branch
+    from sonar.pull_requests import PullRequest
+    from sonar.app_branches import ApplicationBranch
+
+    ConcernedObject = Union[Project, Branch, PullRequest, Application, ApplicationBranch, Portfolio]
 
 SUCCESS = "SUCCESS"
 PENDING = "PENDING"
@@ -69,11 +77,6 @@ IMPORT_ERRORS = (ZIP_MISSING, ZIP_CORRUPTED, ZIP_DOESNT_MATCH, CANT_UNZIP, INCOM
 
 SCANNER_VERSIONS = get_scanners_versions()
 
-if TYPE_CHECKING:
-    from sonar.projects import Project
-    from sonar.applications import Application
-    from sonar.portfolios import Portfolio
-
 
 class Task(SqObject):
     """
@@ -86,7 +89,7 @@ class Task(SqObject):
         """Constructor"""
         super().__init__(endpoint, data)
         self.key = data["id"]
-        self.concerned_object: Optional[Union[Project, Application, Portfolio]]
+        self.concerned_object: Optional[ConcernedObject]
         self.component_key: Optional[str]
         self._context: Optional[dict[str, str]] = None
         self._error: Optional[dict[str, str]] = None
@@ -450,8 +453,3 @@ class Task(SqObject):
         problems += self.__audit_scanner_version(audit_settings)
 
         return problems
-
-
-def search_all_last(endpoint: Platform) -> list[Task]:
-    """Searches for last background task of all found components"""
-    return Task.search(endpoint=endpoint, onlyCurrents=True)

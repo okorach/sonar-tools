@@ -33,7 +33,7 @@ from sonar import platform
 from sonar.util import common_helper as chelp
 from sonar.util import component_helper
 from sonar import errcodes
-from sonar import projects, portfolios as pf
+from sonar import projects
 from sonar.portfolios import Portfolio
 from sonar.projects import Project
 from sonar import qualitygates as qg
@@ -461,12 +461,21 @@ def compute_global_maturity_level_statistics(data: dict[str, Any], gov_data: dic
     # If no more than 5 custom quality profiles pein any language, then 1 point of governance maturity
     if all(qp_count <= 5 for qp_count in gov_data["number_of_custom_quality_profiles"].values()):
         gov_mat += 1
-    summary_data = {
-        ANALYSIS_MATURITY_KEY: __rounded(sum(proj[ANALYSIS_MATURITY_KEY] for proj in data.values()) / nbr_projects),
-        NEW_CODE_MATURITY_KEY: __rounded(sum(proj[NEW_CODE_MATURITY_KEY] for proj in data.values()) / nbr_projects),
-        QG_ENFORCEMENT_MATURITY_KEY: __rounded(sum(proj[QG_ENFORCEMENT_MATURITY_KEY] for proj in data.values()) / nbr_projects),
-        "governance_maturity_level": gov_mat,
-    }
+    if nbr_projects > 0:
+        summary_data = {
+            ANALYSIS_MATURITY_KEY: __rounded(sum(proj[ANALYSIS_MATURITY_KEY] for proj in data.values()) / nbr_projects),
+            NEW_CODE_MATURITY_KEY: __rounded(sum(proj[NEW_CODE_MATURITY_KEY] for proj in data.values()) / nbr_projects),
+            QG_ENFORCEMENT_MATURITY_KEY: __rounded(sum(proj[QG_ENFORCEMENT_MATURITY_KEY] for proj in data.values()) / nbr_projects),
+            "governance_maturity_level": gov_mat,
+        }
+    else:
+        summary_data = {
+            ANALYSIS_MATURITY_KEY: 0,
+            NEW_CODE_MATURITY_KEY: 0,
+            QG_ENFORCEMENT_MATURITY_KEY: 0,
+            "governance_maturity_level": 0,
+        }
+
     summary_data[OVERALL_MATURITY_KEY] = __rounded(sum(summary_data.values()) / 4)
     summary_data[f"{ANALYSIS_MATURITY_KEY}_distribution"] = {}
     summary_data[f"{NEW_CODE_MATURITY_KEY}_distribution"] = {}

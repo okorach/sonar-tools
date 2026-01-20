@@ -44,11 +44,10 @@ from sonar.audit.rules import get_rule, RuleId
 
 if TYPE_CHECKING:
     from sonar.tasks import Task
-    from sonar.projects import Project
     from sonar.platform import Platform
     from sonar.hotspots import Hotspot
     from sonar.issues import Issue
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList
+    from sonar.util.types import ApiPayload, ConfigSettings, KeyList
 
 
 class Component(SqObject):
@@ -87,9 +86,9 @@ class Component(SqObject):
             self._last_analysis = sutil.string_to_date(data[key])
         return self
 
-    def project(self) -> Project:
-        """Implemented in relevant subclasses (Project, Branch, PullRequest)"""
-        raise NotImplementedError
+    def project(self) -> Component:
+        """Implemented in relevant subclasses (Project, Branch, PullRequest, Application, ApplicationBranch)"""
+        return self
 
     def get_issues(self, **search_params: Any) -> dict[str, Issue]:
         """Returns list of issues for a portfolios"""
@@ -195,9 +194,8 @@ class Component(SqObject):
 
     def get_navigation_data(self) -> ApiPayload:
         """Returns a component navigation data"""
-        params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(Oper.GET))
-        data = json.loads(self.get("navigation/component", params=params).text)
-        super().reload(data)
+        data = json.loads(self.get("navigation/component", params={"component": self.project().key, "branch": self.branch}).text)
+        self.reload(data)
         return data
 
     def refresh(self) -> Component:
@@ -218,8 +216,7 @@ class Component(SqObject):
     def new_code_start_date(self) -> Optional[datetime]:
         """Returns the new code period start date of a component or None if this component has no new code start date"""
         if self._new_code_start_date is None:
-            params = util.replace_keys(measures.ALT_COMPONENTS, "component", self.api_params(Oper.GET))
-            api, _, api_params, ret = self.endpoint.api.get_details(self, Oper.GET, **params)
+            api, _, api_params, ret = self.endpoint.api.get_details(self, Oper.GET, component=self.project().key)
             data = json.loads(self.get(api, params=api_params).text)[ret]
             self.sq_json |= data
             if "leakPeriodDate" in data:
@@ -242,10 +239,10 @@ class Component(SqObject):
             settings.set_visibility(self.endpoint, visibility=visibility, component=self.key)
             self._visibility = visibility
 
-    def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None) -> ApiPayload:
+    def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None, **search_params: Any) -> ApiPayload:
         """Returns a component analyses"""
         log.debug("%s: Getting history of analyses", self)
-        params = util.dict_remap(self.api_params(Oper.GET), {"component": "project"})
+        params = search_params | {"project": self.project().key, "branch": self.branch} if self.branch else {"project": self.project().key}
         data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", **params)["analyses"]
         if filter_in and len(filter_in) > 0:
             data = [d for d in data if any(e["category"] in filter_in for e in d["events"])]
@@ -272,8 +269,7 @@ class Component(SqObject):
         if version >= (2025, 1, 0):
             api = "project_branches/get_ai_code_assurance"
         try:
-            params = util.dict_remap(self.api_params(Oper.GET), {"component": "project"})
-            return str(json.loads(self.get(api, params=params).text)["aiCodeAssurance"]).upper()
+            return str(json.loads(self.get(api, params={"project": self.project().key, "branch": self.branch}).text)["aiCodeAssurance"]).upper()
         except (ConnectionError, RequestException) as e:
             sutil.handle_error(e, f"getting AI code assurance of {self}", catch_all=True)
             if "Unknown url" in sutil.error_msg(e):
@@ -405,20 +401,6 @@ class Component(SqObject):
 
         """Returns the last analysis background task of a problem, or none if not found"""
         return Task.search_last(self.endpoint, component=self.key)
-
-    def get_measures_history(self, metrics_list: KeyList) -> dict[str, str]:
-        """Returns the history of a project metrics"""
-        return measures.get_history(self, metrics_list)
-
-    def api_params(self, operation: Optional[str] = None) -> ApiParams:
-        """Returns the base params for any API call for this object"""
-        from sonar.issues import component_search_field
-
-        ops = {
-            Oper.GET: {"component": self.key},
-            Oper.SEARCH: {component_search_field(self.endpoint): self.key},
-        }
-        return ops[operation] if operation and operation in ops else ops[Oper.SEARCH]
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""

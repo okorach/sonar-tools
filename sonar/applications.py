@@ -26,7 +26,6 @@ from types import MappingProxyType
 
 import re
 import json
-from datetime import datetime
 from http import HTTPStatus
 from requests import RequestException
 
@@ -47,7 +46,8 @@ from sonar.util import common_json_helper
 if TYPE_CHECKING:
     from sonar.issues import Issue
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, AppBranchDef, PermissionDef, AppBranchProjectDef
+    from sonar.util.types import ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, AppBranchDef, PermissionDef, AppBranchProjectDef
+    from sonar.components import Component
 
 
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")
@@ -64,9 +64,9 @@ class Application(aggr.Aggregation):
     def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint, data)
-        self._branches: dict[str, app_branches.ApplicationBranch]
-        self._projects: dict[str, str]
-        self._description: str
+        self._branches: dict[str, app_branches.ApplicationBranch] = None
+        self._projects: dict[str, str] = None
+        self._description: str = data.get("description")
         self.name = data["name"]
         self.__class__.CACHE.put(self)
         self.reload(data)
@@ -140,7 +140,7 @@ class Application(aggr.Aggregation):
         :raises ObjectNotFound: If the Application does not exists anymore
         """
         try:
-            self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
+            self.get_navigation_data()
             api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET, application=self.key)
             self.reload(json.loads(self.endpoint.get(api, params=params).text)[ret])
             return self
@@ -262,7 +262,7 @@ class Application(aggr.Aggregation):
         """
         for branch in [b for b in self.branches().values() if not b.is_main()]:
             branch.delete()
-        return super().delete_object(application=self.key)
+        return self.delete_object(application=self.key)
 
     def nbr_projects(self, use_cache: bool = False) -> int:
         """Returns the nbr of projects of an application"""
@@ -350,12 +350,6 @@ class Application(aggr.Aggregation):
         self.projects()
         return ok
 
-    def last_analysis(self) -> datetime:
-        """Returns the last analysis date of an app"""
-        if self._last_analysis is None:
-            self.refresh()
-        return self._last_analysis
-
     def recompute(self) -> bool:
         """Triggers application recomputation, return whether the operation succeeded"""
         log.debug("Recomputing %s", str(self))
@@ -388,11 +382,6 @@ class Application(aggr.Aggregation):
 
         for branch_data in appl_branches:
             self.set_branches(branch_data["name"], branch_data.get("projects", []))
-
-    def api_params(self, operation: Optional[str] = None) -> ApiParams:
-        """Returns the base params to be used for the object API"""
-        ops = {Oper.GET: {"application": self.key}, Oper.RECOMPUTE: {"key": self.key}}
-        return ops[operation] if operation and operation in ops else ops[Oper.GET]
 
     def __get_project_branches(self, branch_definition: ObjectJsonRepr) -> list[Union[projects.Project, branches.Branch]]:
         project_branches = []

@@ -46,6 +46,8 @@ if TYPE_CHECKING:
     from sonar.util.types import ApiPayload, ObjectJsonRepr
     from sonar.changelog import Changelog
 
+    IssueOrHotspot = Union[Issue, Hotspot]
+
 _JSON_FIELDS_REMAPPED = (("pull_request", "pullRequest"), ("_comments", "comments"))
 
 _JSON_FIELDS_PRIVATE = (
@@ -145,15 +147,15 @@ class Finding(SqObject):
         self.reload(data, from_export)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, data: ApiPayload, from_export: bool = False) -> Union[Issue, Hotspot]:
+    def get_object(cls, endpoint: Platform, data: ApiPayload, from_export: bool = False) -> IssueOrHotspot:
         """Returns a finding from its key"""
-        o: Optional[Union[Issue, Hotspot]] = cls.CACHE.get(endpoint.local_url, data["key"])
+        o: Optional[IssueOrHotspot] = cls.CACHE.get(endpoint.local_url, data["key"])
         if not o:
             o = cls(endpoint, data, from_export=from_export)
         return o
 
     @staticmethod
-    def add_branch_and_pr(findings_list: dict[str, Union[Issue, Hotspot]], **search_params: Any) -> dict[str, Union[Issue, Hotspot]]:
+    def add_branch_and_pr(findings_list: dict[str, IssueOrHotspot], **search_params: Any) -> dict[str, IssueOrHotspot]:
         """Enriches findings with branch and pull request info"""
         for e_key in [elem for elem in ["branch", "pullRequest"] if elem in search_params]:
             e_val = search_params[e_key]
@@ -166,13 +168,13 @@ class Finding(SqObject):
         return findings_list
 
     @classmethod
-    def json_to_objects(cls, endpoint: Platform, dataset: ApiPayload, **search_params: Any) -> dict[str, Union[Issue, Hotspot]]:
+    def json_to_objects(cls, endpoint: Platform, dataset: ApiPayload, **search_params: Any) -> dict[str, IssueOrHotspot]:
         """Returns a list of findings from the API payload"""
         findings_d = {data["key"]: cls.get_object(endpoint, data) for data in dataset}
         return cls.add_branch_and_pr(findings_d, **search_params)
 
     @classmethod
-    def search_one_page(cls, endpoint: Platform, **search_params: Any) -> tuple[dict[str, Union[Issue, Hotspot]], dict[str, Any]]:
+    def search_one_page(cls, endpoint: Platform, **search_params: Any) -> tuple[dict[str, IssueOrHotspot], dict[str, Any]]:
         """Search one page of hotspots findings"""
         search_params = cls.sanitize_search_params(endpoint, **search_params)
         api, _, api_params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
@@ -181,7 +183,7 @@ class Finding(SqObject):
         return findings_d, dataset
 
     @staticmethod
-    def post_search_filters(findings: dict[str, Union[Issue, Hotspot]], **filters: Any) -> dict[str, Union[Issue, Hotspot]]:
+    def post_search_filters(findings: dict[str, IssueOrHotspot], **filters: Any) -> dict[str, IssueOrHotspot]:
         return findings
 
     def reload(self, data: ApiPayload, from_export: bool = False) -> Finding:
