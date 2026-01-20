@@ -115,6 +115,7 @@ def test_bad_project_key(json_file: Generator[str]):
         cmd = f"{pyfile} {tutil.SC_OPTS} {extra_args} -K non-existing-project"
         assert tutil.run_cmd(func, cmd) == errcodes.ARGS_ERROR
 
+
 def test_analyzed_after(csv_file: Generator[str]) -> None:
     """test_analyzed_after"""
     cutoff = datetime.now() - timedelta(days=30)
