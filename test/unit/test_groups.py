@@ -144,11 +144,26 @@ def test_import() -> None:
 def test_set_name(get_test_group: Generator[Group]) -> None:
     gr: Group = get_test_group
     assert gr.name.startswith(f"{tutil.TEMP_KEY}-group-")
+    for name in "Some group", "FOOBAR":
+        try:
+            g = groups.Group.get_object(tutil.SQ, name)
+            g.delete()
+        except exceptions.ObjectNotFound:
+            pass
     assert gr.set_name("Some group")
-    assert not gr.set_name(None)
     assert gr.name == "Some group"
+
+    with pytest.raises(exceptions.ObjectAlreadyExists):
+        g = groups.Group.create(tutil.SQ, "Some group")
+
     assert gr.set_name("FOOBAR")
     assert gr.name == "FOOBAR"
+
+    new_gr = groups.Group.create(tutil.SQ, "Some group")
+    assert new_gr.name == "Some group"
+    with pytest.raises(exceptions.ObjectAlreadyExists):
+        new_gr.set_name("FOOBAR")
+    new_gr.delete()
 
 
 def test_create_or_update(get_test_group: Generator[Group]) -> None:

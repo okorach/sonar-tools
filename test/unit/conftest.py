@@ -326,11 +326,10 @@ def get_test_group() -> Generator[groups.Group]:
                 raise
             o = None
     if o:
-        (name, oid) = (o.name, o.id)
+        oid = o.id
     yield o
     if o:
-        o.name = key
-        o.id = oid
+        o.key, o.id = key, oid
         try:
             o.delete()
         except exceptions.ObjectNotFound:

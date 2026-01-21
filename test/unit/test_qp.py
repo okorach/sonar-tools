@@ -165,8 +165,11 @@ def test_import() -> None:
     # Make Sonar Way the default quality profile and delete all quality profiles in test
     for qp in [qp for qp in QualityProfile.search(tutil.TEST_SQ, use_cache=False).values() if qp.name == tutil.SONAR_WAY]:
         qp.set_as_default()
-    for qp in [qp for qp in QualityProfile.search(tutil.TEST_SQ, use_cache=False).values() if not qp.is_built_in and not qp.is_default]:
-        qp.delete()
+    for qp in [qp for qp in QualityProfile.search(tutil.TEST_SQ).values() if not qp.is_built_in and not qp.is_default]:
+        try:
+            qp.delete()
+        except exceptions.ObjectNotFound:
+            pass
     # Import quality profiles from config.json
     with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
         json_exp = json.loads(f.read())["qualityProfiles"]
@@ -180,10 +183,13 @@ def test_import() -> None:
     log.debug("Imported  list = %s", str(json_name_list))
     log.debug("SonarQube list = %s", str(qp_name_list))
     assert json_name_list == qp_name_list
-    languages.Language.CACHE.clear()
-    QualityProfile.CACHE.clear()
 
 
 def test_audit_disabled() -> None:
     """test_audit_disabled"""
     assert len(qualityprofiles.audit(tutil.SQ, {"audit.qualityProfiles": False})) == 0
+
+
+def test_audit() -> None:
+    """test_audit"""
+    assert len(qualityprofiles.audit(tutil.SQ, {"audit.qualityProfiles": True})) > 0

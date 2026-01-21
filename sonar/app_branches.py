@@ -122,7 +122,8 @@ class ApplicationBranch(Component):
     def reload(self, data: ApiPayload) -> ApplicationBranch:
         """Reloads an ApplicationBranch object from JSON data"""
         super().reload(data)
-        self.name = data["branch"]
+        if "branch" in data:
+            self.name = data["branch"]
         if "isMain" in data:
             self._is_main = data["isMain"]
         if "projects" in data:
