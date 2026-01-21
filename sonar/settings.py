@@ -586,6 +586,8 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[str], br
         params = {"component": component, "branch": branch, "keys": key}
         api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.GET, **params)
         data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)["settings"]
+        if len(data) == 0 and component is None:
+            raise exceptions.ObjectNotFound(key, f"Setting '{key}' not found")
         if not endpoint.is_sonarcloud() and len(data) > 0:
             data = data[0]
         else:

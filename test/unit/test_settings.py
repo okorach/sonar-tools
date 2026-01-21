@@ -19,8 +19,9 @@
 
 """Test of settings"""
 
+import pytest
 import utilities as tutil
-from sonar import settings
+from sonar import settings, exceptions
 
 
 def test_set_standard() -> None:
@@ -45,10 +46,14 @@ def test_set_standard() -> None:
 def test_autodetect_ai() -> None:
     """test_autodetect_ai"""
 
-    o = settings.Setting.get_object(tutil.SQ, "sonar.autodetect.ai.code")
     # Even if invisible in the UI, the setting is present in the API in Community Builds
-    if tutil.SQ.version() < (25, 1, 0):
-        assert o is None
+    if tutil.SQ.version() < (10, 8, 0):
+        with pytest.raises(exceptions.ObjectNotFound):
+            settings.Setting.get_object(tutil.SQ, "sonar.autodetect.ai.code")
+        return
+
+    o = settings.Setting.get_object(tutil.SQ, "sonar.autodetect.ai.code")
+    if tutil.SQ.version() < (2025, 1, 0):
         return
 
     val = o.value
