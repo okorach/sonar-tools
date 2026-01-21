@@ -185,10 +185,10 @@ def test_import() -> None:
     assert json_name_list == qp_name_list
 
 
-
 def test_audit_disabled() -> None:
     """test_audit_disabled"""
     assert len(qualityprofiles.audit(tutil.SQ, {"audit.qualityProfiles": False})) == 0
+
 
 def test_audit() -> None:
     """test_audit"""
