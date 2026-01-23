@@ -220,9 +220,9 @@ class Sif(object):
         return None
 
     def __process_cmdline(self, sq_process_name: str) -> Optional[str]:
-        opts = [x.format(sq_process_name) for x in ("sonar.{}.javaOpts", "sonar.{}.javaAdditionalOpts")]
         if _SETTINGS in self.json:
-            return f"{self.json[_SETTINGS][opts[1]].strip()} {self.json[_SETTINGS][opts[0]].strip()}".strip()
+            opts = [x.format(sq_process_name) for x in ("sonar.{}.javaOpts", "sonar.{}.javaAdditionalOpts")]
+            return f"{self.json[_SETTINGS].get(opts[1], '').strip()} {self.json[_SETTINGS].get(opts[0], '').strip()}".strip()
         return None
 
     def web_jvm_cmdline(self) -> Optional[str]:
