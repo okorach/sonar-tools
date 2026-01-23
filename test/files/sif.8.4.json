@@ -1,0 +1,677 @@
+{
+   "Health": "GREEN",
+   "Health Causes": [],
+   "System": {
+      "Server ID": "F50B3F58-AWlfWOMDmEwSNradwCCG",
+      "Version": "8.4.2.36762",
+      "Docker": false,
+      "External User Authentication": "LDAP",
+      "High Availability": false,
+      "Official Distribution": true,
+      "Force authentication": true,
+      "Home Dir": "F:\\sonarqube-8.4.2.36762",
+      "Data Dir": "G:/sonarqube/data",
+      "Temp Dir": "D:/sonarqube/temp",
+      "Processors": 8
+   },
+   "Database": {
+      "Database": "Microsoft SQL Server",
+      "Database Version": "12.00.2000",
+      "Username": "sonarqube",
+      "URL": "jdbc:sqlserver://a1pdpsqsnq01.database.windows.net:1433;useFmtOnly=false;useBulkCopyForBatchInsert=false;cancelQueryTimeout=-1;sslProtocol=TLS;jaasConfigurationName=SQLJDBCDriver;statementPoolingCacheSize=0;serverPreparedStatementDiscardThreshold=10;enablePrepareOnFirstPreparedStatementCall=false;fips=false;socketTimeout=0;authentication=NotSpecified;authenticationScheme=nativeAuthentication;xopenStates=false;sendTimeAsDatetime=true;trustStoreType=JKS;trustServerCertificate=false;TransparentNetworkIPResolution=true;serverNameAsACE=false;sendStringParametersAsUnicode=true;selectMethod=direct;responseBuffering=adaptive;queryTimeout=-1;packetSize=8000;multiSubnetFailover=false;loginTimeout=15;lockTimeout=-1;lastUpdateCount=true;encrypt=false;disableStatementPooling=true;databaseName=sonarqube;columnEncryptionSetting=Disabled;applicationName=Microsoft JDBC Driver for SQL Server;applicationIntent=readwrite;",
+      "Driver": "Microsoft JDBC Driver 7.4 for SQL Server",
+      "Driver Version": "7.4.1.0"
+   },
+   "Plugins": {
+      "cssfamily": "1.2.0.1325 [SonarCSS]",
+      "scmsvn": "1.10.0.1917 [Svn]",
+      "plsql": "3.4.1.2576 [SonarPLSQL]",
+      "sonarscala": "1.5.0.315 [SonarScala]",
+      "csharp": "8.9.0.19135 [C# Code Quality and Security]",
+      "security": "8.4.0.2759 [Vulnerability Analysis]",
+      "java": "6.5.1.22586 [Java Code Quality and Security]",
+      "web": "3.2.0.2082 [SonarHTML]",
+      "flex": "2.5.1.1831 [SonarFlex]",
+      "xml": "2.0.1.2020 [SonarXML]",
+      "typescript": "2.1.0.4359 [SonarTS]",
+      "vbnet": "8.9.0.19135 [VB.NET Code Quality and Security]",
+      "swift": "4.2.2.77 [SonarSwift]",
+      "cpp": "6.11.0.19130 [CFamily Code Quality and Security]",
+      "python": "2.13.0.7236 [Python Code Quality and Security]",
+      "go": "1.6.0.719 [SonarGo]",
+      "jacoco": "1.1.0.898 [JaCoCo]",
+      "kotlin": "1.5.0.315 [SonarKotlin]",
+      "rpg": "2.4.0.2183 [RPG Code Quality]",
+      "pli": "1.10.0.1880 [SonarPLI]",
+      "tsql": "1.4.0.3334 [SonarTSQL]",
+      "vb": "2.6.0.1875 [SonarVB6]",
+      "sonarapex": "1.7.0.883 [SonarApex]",
+      "javascript": "6.2.1.12157 [SonarJS]",
+      "ruby": "1.5.0.315 [SonarRuby]",
+      "securitycsharpfrontend": "8.4.0.2759 [Vulnerability Rules for C#]",
+      "securityjavafrontend": "8.4.0.2759 [Vulnerability Rules for Java]",
+      "cobol": "4.5.1.4460 [COBOL Code Quality]",
+      "securitypythonfrontend": "8.4.0.2759 [Vulnerability Rules for Python]",
+      "scmgit": "1.12.0.2034 [Git]",
+      "php": "3.5.0.5655 [PHP Code Quality and Security]",
+      "abap": "3.8.0.2034 [SonarABAP]",
+      "securityphpfrontend": "8.4.0.2759 [Vulnerability Rules for PHP]"
+   },
+   "Web JVM State": {
+      "Max Memory (MB)": 4096,
+      "Free Memory (MB)": 173,
+      "Heap Committed (MB)": 308,
+      "Heap Init (MB)": 256,
+      "Heap Max (MB)": 4096,
+      "Heap Used (MB)": 133,
+      "Non Heap Committed (MB)": 236,
+      "Non Heap Init (MB)": 7,
+      "Non Heap Used (MB)": 223,
+      "System Load Average": "-100.0% (last minute)",
+      "Threads": 63
+   },
+   "Web Database Connection": {
+      "Pool Active Connections": 1,
+      "Pool Max Connections": 60,
+      "Pool Initial Size": 0,
+      "Pool Idle Connections": 3,
+      "Pool Min Idle Connections": 2,
+      "Pool Max Idle Connections": 5,
+      "Pool Max Wait (ms)": 5000,
+      "Pool Remove Abandoned": false,
+      "Pool Remove Abandoned Timeout (seconds)": 300
+   },
+   "Web Logging": {
+      "Logs Level": "INFO",
+      "Logs Dir": "F:\\sonarqube-8.4.2.36762\\logs"
+   },
+   "Web JVM Properties": {
+      "awt.toolkit": "sun.awt.windows.WToolkit",
+      "catalina.base": "D:\\sonarqube\\temp\\tc",
+      "catalina.home": "D:\\sonarqube\\temp\\tc",
+      "catalina.useNaming": "false",
+      "file.encoding": "UTF-8",
+      "file.separator": "\\",
+      "http.agent": "SonarQube 8.4.2.36762 # F50B3F58-AWlfWOMDmEwSNradwCCG",
+      "http.nonProxyHosts": "localhost|127.*|[::1]",
+      "java.awt.graphicsenv": "sun.awt.Win32GraphicsEnvironment",
+      "java.awt.headless": "true",
+      "java.awt.printerjob": "sun.awt.windows.WPrinterJob",
+      "java.class.path": "./lib/common/activation-1.1.jar;./lib/common/alm-distributedtask-client-1.0.2.jar;./lib/common/alm-extensionmanagement-client-1.0.2.jar;./lib/common/alm-gallery-client-1.0.2.jar;./lib/common/alm-releasemanagement-client-1.0.2.jar;./lib/common/alm-tfs-client-1.0.2.jar;./lib/common/alm-vss-client-1.0.2.jar;./lib/common/aopalliance-repackaged-2.5.0-b42.jar;./lib/common/bcpkix-jdk15on-1.64.jar;./lib/common/bcprov-jdk15on-1.64.jar;./lib/common/commons-codec-1.14.jar;./lib/common/commons-csv-1.7.jar;./lib/common/commons-dbcp2-2.7.0.jar;./lib/common/commons-email-1.5.jar;./lib/common/commons-io-2.7.jar;./lib/common/commons-lang-2.6.jar;./lib/common/commons-lang3-3.4.jar;./lib/common/commons-logging-1.2.jar;./lib/common/commons-pool2-2.7.0.jar;./lib/common/core-3.1.0.jar;./lib/common/diffutils-1.2.jar;./lib/common/edition-enterprise-8.4.2.36762.jar;./lib/common/elasticsearch-6.8.4.jar;./lib/common/elasticsearch-cli-6.8.4.jar;./lib/common/elasticsearch-core-6.8.4.jar;./lib/common/elasticsearch-secure-sm-6.8.4.jar;./lib/common/elasticsearch-x-content-6.8.4.jar;./lib/common/failureaccess-1.0.1.jar;./lib/common/fontbox-2.0.19.jar;./lib/common/github-api-1.93.0.71.jar;./lib/common/gson-2.8.6.jar;./lib/common/guava-28.2-jre.jar;./lib/common/hazelcast-3.12.7.jar;./lib/common/HdrHistogram-2.1.9.jar;./lib/common/hk2-api-2.5.0-b42.jar;./lib/common/hk2-locator-2.5.0-b42.jar;./lib/common/hk2-utils-2.5.0-b42.jar;./lib/common/hppc-0.7.1.jar;./lib/common/httpclient-4.5.12.jar;./lib/common/httpcore-4.4.13.jar;./lib/common/jackson-annotations-2.10.4.jar;./lib/common/jackson-core-2.10.4.jar;./lib/common/jackson-databind-2.10.4.jar;./lib/common/jackson-dataformat-cbor-2.10.4.jar;./lib/common/jackson-dataformat-smile-2.10.4.jar;./lib/common/jackson-dataformat-yaml-2.10.4.jar;./lib/common/jackson-jaxrs-base-2.4.1.jar;./lib/common/jackson-jaxrs-json-provider-2.4.1.jar;./lib/common/jackson-module-jaxb-annotations-2.4.1.jar;./lib/common/java-jwt-3.10.3.jar;./lib/common/java-saml-2.5.0.jar;./lib/common/java-saml-core-2.5.0.jar;./lib/common/javassist-3.22.0-CR2.jar;./lib/common/javax.annotation-api-1.3.2.jar;./lib/common/javax.inject-1.jar;./lib/common/javax.inject-2.5.0-b42.jar;./lib/common/javax.mail-1.5.6.jar;./lib/common/javax.ws.rs-api-2.1.jar;./lib/common/jbcrypt-0.4.jar;./lib/common/jersey-apache-connector-2.26.jar;./lib/common/jersey-client-2.26.jar;./lib/common/jersey-common-2.26.jar;./lib/common/jersey-hk2-2.26.jar;./lib/common/jfreechart-1.5.0.jar;./lib/common/jjwt-api-0.11.2.jar;./lib/common/jjwt-impl-0.11.2.jar;./lib/common/jjwt-jackson-0.11.2.jar;./lib/common/jna-4.5.1.jar;./lib/common/joda-time-2.10.1.jar;./lib/common/joda-time-2.10.3.jar;./lib/common/jopt-simple-5.0.2.jar;./lib/common/jsr305-3.0.2.jar;./lib/common/jul-to-slf4j-1.7.30.jar;./lib/common/log4j-api-2.8.2.jar;./lib/common/log4j-to-slf4j-2.8.2.jar;./lib/common/logback-access-1.2.3.jar;./lib/common/logback-classic-1.2.3.jar;./lib/common/logback-core-1.2.3.jar;./lib/common/lucene-analyzers-common-7.7.2.jar;./lib/common/lucene-backward-codecs-7.7.2.jar;./lib/common/lucene-core-7.7.2.jar;./lib/common/lucene-grouping-7.7.2.jar;./lib/common/lucene-highlighter-7.7.2.jar;./lib/common/lucene-join-7.7.2.jar;./lib/common/lucene-memory-7.7.2.jar;./lib/common/lucene-misc-7.7.2.jar;./lib/common/lucene-queries-7.7.2.jar;./lib/common/lucene-queryparser-7.7.2.jar;./lib/common/lucene-sandbox-7.7.2.jar;./lib/common/lucene-spatial-7.7.2.jar;./lib/common/lucene-spatial-extras-7.7.2.jar;./lib/common/lucene-spatial3d-7.7.2.jar;./lib/common/lucene-suggest-7.7.2.jar;./lib/common/lz4-1.3.0.jar;./lib/common/mybatis-3.5.4.jar;./lib/common/nanohttpd-2.3.1.jar;./lib/common/netty-buffer-4.1.32.Final.jar;./lib/common/netty-codec-4.1.32.Final.jar;./lib/common/netty-codec-http-4.1.32.Final.jar;./lib/common/netty-common-4.1.32.Final.jar;./lib/common/netty-handler-4.1.32.Final.jar;./lib/common/netty-resolver-4.1.32.Final.jar;./lib/common/netty-transport-4.1.32.Final.jar;./lib/common/okhttp-3.14.7.jar;./lib/common/okio-1.17.2.jar;./lib/common/osgi-resource-locator-1.0.1.jar;./lib/common/parent-join-client-6.8.4.jar;./lib/common/pdfbox-2.0.19.jar;./lib/common/percolator-client-6.8.4.jar;./lib/common/picocontainer-2.15.jar;./lib/common/protobuf-java-3.11.4.jar;./lib/common/scribejava-apis-6.9.0.jar;./lib/common/scribejava-core-6.9.0.jar;./lib/common/slf4j-api-1.7.30.jar;./lib/common/snakeyaml-1.26.jar;./lib/common/sonar-auth-common-8.4.2.36762.jar;./lib/common/sonar-auth-github-8.4.2.36762.jar;./lib/common/sonar-auth-gitlab-8.4.2.36762.jar;./lib/common/sonar-auth-ldap-8.4.2.36762.jar;./lib/common/sonar-auth-saml-8.4.2.36762.jar;./lib/common/sonar-ce-8.4.2.36762.jar;./lib/common/sonar-ce-common-8.4.2.36762.jar;./lib/common/sonar-ce-task-8.4.2.36762.jar;./lib/common/sonar-ce-task-projectanalysis-8.4.2.36762.jar;./lib/common/sonar-channel-4.2.jar;./lib/common/sonar-classloader-1.0.jar;./lib/common/sonar-core-8.4.2.36762.jar;./lib/common/sonar-db-core-8.4.2.36762.jar;./lib/common/sonar-db-dao-8.4.2.36762.jar;./lib/common/sonar-db-migration-8.4.2.36762.jar;./lib/common/sonar-duplications-8.4.2.36762.jar;./lib/common/sonar-main-8.4.2.36762.jar;./lib/common/sonar-markdown-8.4.2.36762.jar;./lib/common/sonar-plugin-api-8.4.2.36762-all.jar;./lib/common/sonar-plugin-api-impl-8.4.2.36762.jar;./lib/common/sonar-process-8.4.2.36762.jar;./lib/common/sonar-scanner-protocol-8.4.2.36762.jar;./lib/common/sonar-server-common-8.4.2.36762.jar;./lib/common/sonar-update-center-common-1.23.0.723.jar;./lib/common/sonar-webserver-8.4.2.36762.jar;./lib/common/sonar-webserver-api-8.4.2.36762.jar;./lib/common/sonar-webserver-auth-8.4.2.36762.jar;./lib/common/sonar-webserver-core-8.4.2.36762.jar;./lib/common/sonar-webserver-es-8.4.2.36762.jar;./lib/common/sonar-webserver-webapi-8.4.2.36762.jar;./lib/common/sonar-webserver-ws-8.4.2.36762.jar;./lib/common/sonar-ws-8.4.2.36762.jar;./lib/common/stax2-api-3.1.4.jar;./lib/common/staxmate-2.0.1.jar;./lib/common/t-digest-3.2.jar;./lib/common/tomcat-annotations-api-8.5.56.jar;./lib/common/tomcat-embed-core-8.5.56.jar;./lib/common/transport-6.8.4.jar;./lib/common/transport-netty4-client-6.8.4.jar;./lib/common/woodstox-core-5.0.3.jar;./lib/common/woodstox-core-lgpl-4.4.1.jar;./lib/common/xmlsec-2.1.4.jar;F:\\sonarqube-8.4.2.36762\\lib\\jdbc\\mssql\\mssql-jdbc-7.4.1.jre11.jar",
+      "java.class.version": "55.0",
+      "java.home": "C:\\Program Files\\Java\\jdk-11.0.2",
+      "java.io.tmpdir": "D:\\sonarqube\\temp",
+      "java.library.path": "C:\\Program Files\\Java\\jdk-11.0.2\\bin;C:\\windows\\Sun\\Java\\bin;C:\\windows\\system32;C:\\windows;C:\\windows\\system32\\config\\systemprofile\\AppData\\Local\\Microsoft\\WindowsApps;;.",
+      "java.runtime.name": "OpenJDK Runtime Environment",
+      "java.runtime.version": "11.0.2+9",
+      "java.specification.name": "Java Platform API Specification",
+      "java.specification.vendor": "Oracle Corporation",
+      "java.specification.version": "11",
+      "java.vendor": "Oracle Corporation",
+      "java.vendor.url": "http://java.oracle.com/",
+      "java.vendor.url.bug": "http://bugreport.java.com/bugreport/",
+      "java.vendor.version": "18.9",
+      "java.version": "11.0.2",
+      "java.version.date": "2019-01-15",
+      "java.vm.compressedOopsMode": "Zero based",
+      "java.vm.info": "mixed mode",
+      "java.vm.name": "OpenJDK 64-Bit Server VM",
+      "java.vm.specification.name": "Java Virtual Machine Specification",
+      "java.vm.specification.vendor": "Oracle Corporation",
+      "java.vm.specification.version": "11",
+      "java.vm.vendor": "Oracle Corporation",
+      "java.vm.version": "11.0.2+9",
+      "jdk.debug": "release",
+      "line.separator": "\r\n",
+      "logbackDisableServletContainerInitializer": "true",
+      "org.apache.catalina.startup.EXIT_ON_INIT_FAILURE": "true",
+      "org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH": "true",
+      "os.arch": "amd64",
+      "os.name": "Windows Server 2016",
+      "os.version": "10.0",
+      "path.separator": ";",
+      "sun.arch.data.model": "64",
+      "sun.boot.library.path": "C:\\Program Files\\Java\\jdk-11.0.2\\bin",
+      "sun.cpu.endian": "little",
+      "sun.cpu.isalist": "amd64",
+      "sun.desktop": "windows",
+      "sun.io.unicode.encoding": "UnicodeLittle",
+      "sun.java.command": "org.sonar.server.app.WebServer D:\\sonarqube\\temp\\sq-process6458221955320964879properties",
+      "sun.java.launcher": "SUN_STANDARD",
+      "sun.jnu.encoding": "Cp1252",
+      "sun.management.compiler": "HotSpot 64-Bit Tiered Compilers",
+      "sun.nio.ch.bugLevel": "",
+      "sun.os.patch.level": "",
+      "user.country": "US",
+      "user.dir": "F:\\sonarqube-8.4.2.36762",
+      "user.home": "C:\\windows\\system32\\config\\systemprofile",
+      "user.language": "en",
+      "user.name": "SYSTEM",
+      "user.script": "",
+      "user.timezone": "America/Chicago",
+      "user.variant": ""
+   },
+   "Compute Engine Tasks": {
+      "Pending": 0,
+      "Longest Time Pending (ms)": 0,
+      "In Progress": 0,
+      "Processed With Error": 0,
+      "Processed With Success": 783,
+      "Processing Time (ms)": 11459454,
+      "Worker Count": 3,
+      "Max Worker Count": 10,
+      "Workers Paused": false
+   },
+   "Compute Engine JVM State": {
+      "Max Memory (MB)": 2048,
+      "Free Memory (MB)": 336,
+      "Heap Committed (MB)": 780,
+      "Heap Init (MB)": 128,
+      "Heap Max (MB)": 2048,
+      "Heap Used (MB)": 443,
+      "Non Heap Committed (MB)": 190,
+      "Non Heap Init (MB)": 7,
+      "Non Heap Used (MB)": 181,
+      "System Load Average": "-100.0% (last minute)",
+      "Threads": 50
+   },
+   "Compute Engine Database Connection": {
+      "Pool Initial Size": 0,
+      "Pool Active Connections": 0,
+      "Pool Idle Connections": 3,
+      "Pool Max Active Connections": 60,
+      "Pool Max Idle Connections": 5,
+      "Pool Min Idle Connections": 2,
+      "Pool Max Wait (ms)": 5000,
+      "Pool Remove Abandoned": false,
+      "Pool Remove Abandoned Timeout (sec)": 300
+   },
+   "Compute Engine Logging": {
+      "Logs Level": "INFO",
+      "Logs Dir": "F:\\sonarqube-8.4.2.36762\\logs"
+   },
+   "Compute Engine JVM Properties": {
+      "awt.toolkit": "sun.awt.windows.WToolkit",
+      "file.encoding": "UTF-8",
+      "file.separator": "\\",
+      "http.nonProxyHosts": "localhost|127.*|[::1]",
+      "java.awt.graphicsenv": "sun.awt.Win32GraphicsEnvironment",
+      "java.awt.headless": "true",
+      "java.awt.printerjob": "sun.awt.windows.WPrinterJob",
+      "java.class.path": "./lib/common/activation-1.1.jar;./lib/common/alm-distributedtask-client-1.0.2.jar;./lib/common/alm-extensionmanagement-client-1.0.2.jar;./lib/common/alm-gallery-client-1.0.2.jar;./lib/common/alm-releasemanagement-client-1.0.2.jar;./lib/common/alm-tfs-client-1.0.2.jar;./lib/common/alm-vss-client-1.0.2.jar;./lib/common/aopalliance-repackaged-2.5.0-b42.jar;./lib/common/bcpkix-jdk15on-1.64.jar;./lib/common/bcprov-jdk15on-1.64.jar;./lib/common/commons-codec-1.14.jar;./lib/common/commons-csv-1.7.jar;./lib/common/commons-dbcp2-2.7.0.jar;./lib/common/commons-email-1.5.jar;./lib/common/commons-io-2.7.jar;./lib/common/commons-lang-2.6.jar;./lib/common/commons-lang3-3.4.jar;./lib/common/commons-logging-1.2.jar;./lib/common/commons-pool2-2.7.0.jar;./lib/common/core-3.1.0.jar;./lib/common/diffutils-1.2.jar;./lib/common/edition-enterprise-8.4.2.36762.jar;./lib/common/elasticsearch-6.8.4.jar;./lib/common/elasticsearch-cli-6.8.4.jar;./lib/common/elasticsearch-core-6.8.4.jar;./lib/common/elasticsearch-secure-sm-6.8.4.jar;./lib/common/elasticsearch-x-content-6.8.4.jar;./lib/common/failureaccess-1.0.1.jar;./lib/common/fontbox-2.0.19.jar;./lib/common/github-api-1.93.0.71.jar;./lib/common/gson-2.8.6.jar;./lib/common/guava-28.2-jre.jar;./lib/common/hazelcast-3.12.7.jar;./lib/common/HdrHistogram-2.1.9.jar;./lib/common/hk2-api-2.5.0-b42.jar;./lib/common/hk2-locator-2.5.0-b42.jar;./lib/common/hk2-utils-2.5.0-b42.jar;./lib/common/hppc-0.7.1.jar;./lib/common/httpclient-4.5.12.jar;./lib/common/httpcore-4.4.13.jar;./lib/common/jackson-annotations-2.10.4.jar;./lib/common/jackson-core-2.10.4.jar;./lib/common/jackson-databind-2.10.4.jar;./lib/common/jackson-dataformat-cbor-2.10.4.jar;./lib/common/jackson-dataformat-smile-2.10.4.jar;./lib/common/jackson-dataformat-yaml-2.10.4.jar;./lib/common/jackson-jaxrs-base-2.4.1.jar;./lib/common/jackson-jaxrs-json-provider-2.4.1.jar;./lib/common/jackson-module-jaxb-annotations-2.4.1.jar;./lib/common/java-jwt-3.10.3.jar;./lib/common/java-saml-2.5.0.jar;./lib/common/java-saml-core-2.5.0.jar;./lib/common/javassist-3.22.0-CR2.jar;./lib/common/javax.annotation-api-1.3.2.jar;./lib/common/javax.inject-1.jar;./lib/common/javax.inject-2.5.0-b42.jar;./lib/common/javax.mail-1.5.6.jar;./lib/common/javax.ws.rs-api-2.1.jar;./lib/common/jbcrypt-0.4.jar;./lib/common/jersey-apache-connector-2.26.jar;./lib/common/jersey-client-2.26.jar;./lib/common/jersey-common-2.26.jar;./lib/common/jersey-hk2-2.26.jar;./lib/common/jfreechart-1.5.0.jar;./lib/common/jjwt-api-0.11.2.jar;./lib/common/jjwt-impl-0.11.2.jar;./lib/common/jjwt-jackson-0.11.2.jar;./lib/common/jna-4.5.1.jar;./lib/common/joda-time-2.10.1.jar;./lib/common/joda-time-2.10.3.jar;./lib/common/jopt-simple-5.0.2.jar;./lib/common/jsr305-3.0.2.jar;./lib/common/jul-to-slf4j-1.7.30.jar;./lib/common/log4j-api-2.8.2.jar;./lib/common/log4j-to-slf4j-2.8.2.jar;./lib/common/logback-access-1.2.3.jar;./lib/common/logback-classic-1.2.3.jar;./lib/common/logback-core-1.2.3.jar;./lib/common/lucene-analyzers-common-7.7.2.jar;./lib/common/lucene-backward-codecs-7.7.2.jar;./lib/common/lucene-core-7.7.2.jar;./lib/common/lucene-grouping-7.7.2.jar;./lib/common/lucene-highlighter-7.7.2.jar;./lib/common/lucene-join-7.7.2.jar;./lib/common/lucene-memory-7.7.2.jar;./lib/common/lucene-misc-7.7.2.jar;./lib/common/lucene-queries-7.7.2.jar;./lib/common/lucene-queryparser-7.7.2.jar;./lib/common/lucene-sandbox-7.7.2.jar;./lib/common/lucene-spatial-7.7.2.jar;./lib/common/lucene-spatial-extras-7.7.2.jar;./lib/common/lucene-spatial3d-7.7.2.jar;./lib/common/lucene-suggest-7.7.2.jar;./lib/common/lz4-1.3.0.jar;./lib/common/mybatis-3.5.4.jar;./lib/common/nanohttpd-2.3.1.jar;./lib/common/netty-buffer-4.1.32.Final.jar;./lib/common/netty-codec-4.1.32.Final.jar;./lib/common/netty-codec-http-4.1.32.Final.jar;./lib/common/netty-common-4.1.32.Final.jar;./lib/common/netty-handler-4.1.32.Final.jar;./lib/common/netty-resolver-4.1.32.Final.jar;./lib/common/netty-transport-4.1.32.Final.jar;./lib/common/okhttp-3.14.7.jar;./lib/common/okio-1.17.2.jar;./lib/common/osgi-resource-locator-1.0.1.jar;./lib/common/parent-join-client-6.8.4.jar;./lib/common/pdfbox-2.0.19.jar;./lib/common/percolator-client-6.8.4.jar;./lib/common/picocontainer-2.15.jar;./lib/common/protobuf-java-3.11.4.jar;./lib/common/scribejava-apis-6.9.0.jar;./lib/common/scribejava-core-6.9.0.jar;./lib/common/slf4j-api-1.7.30.jar;./lib/common/snakeyaml-1.26.jar;./lib/common/sonar-auth-common-8.4.2.36762.jar;./lib/common/sonar-auth-github-8.4.2.36762.jar;./lib/common/sonar-auth-gitlab-8.4.2.36762.jar;./lib/common/sonar-auth-ldap-8.4.2.36762.jar;./lib/common/sonar-auth-saml-8.4.2.36762.jar;./lib/common/sonar-ce-8.4.2.36762.jar;./lib/common/sonar-ce-common-8.4.2.36762.jar;./lib/common/sonar-ce-task-8.4.2.36762.jar;./lib/common/sonar-ce-task-projectanalysis-8.4.2.36762.jar;./lib/common/sonar-channel-4.2.jar;./lib/common/sonar-classloader-1.0.jar;./lib/common/sonar-core-8.4.2.36762.jar;./lib/common/sonar-db-core-8.4.2.36762.jar;./lib/common/sonar-db-dao-8.4.2.36762.jar;./lib/common/sonar-db-migration-8.4.2.36762.jar;./lib/common/sonar-duplications-8.4.2.36762.jar;./lib/common/sonar-main-8.4.2.36762.jar;./lib/common/sonar-markdown-8.4.2.36762.jar;./lib/common/sonar-plugin-api-8.4.2.36762-all.jar;./lib/common/sonar-plugin-api-impl-8.4.2.36762.jar;./lib/common/sonar-process-8.4.2.36762.jar;./lib/common/sonar-scanner-protocol-8.4.2.36762.jar;./lib/common/sonar-server-common-8.4.2.36762.jar;./lib/common/sonar-update-center-common-1.23.0.723.jar;./lib/common/sonar-webserver-8.4.2.36762.jar;./lib/common/sonar-webserver-api-8.4.2.36762.jar;./lib/common/sonar-webserver-auth-8.4.2.36762.jar;./lib/common/sonar-webserver-core-8.4.2.36762.jar;./lib/common/sonar-webserver-es-8.4.2.36762.jar;./lib/common/sonar-webserver-webapi-8.4.2.36762.jar;./lib/common/sonar-webserver-ws-8.4.2.36762.jar;./lib/common/sonar-ws-8.4.2.36762.jar;./lib/common/stax2-api-3.1.4.jar;./lib/common/staxmate-2.0.1.jar;./lib/common/t-digest-3.2.jar;./lib/common/tomcat-annotations-api-8.5.56.jar;./lib/common/tomcat-embed-core-8.5.56.jar;./lib/common/transport-6.8.4.jar;./lib/common/transport-netty4-client-6.8.4.jar;./lib/common/woodstox-core-5.0.3.jar;./lib/common/woodstox-core-lgpl-4.4.1.jar;./lib/common/xmlsec-2.1.4.jar;F:\\sonarqube-8.4.2.36762\\lib\\jdbc\\mssql\\mssql-jdbc-7.4.1.jre11.jar",
+      "java.class.version": "55.0",
+      "java.home": "C:\\Program Files\\Java\\jdk-11.0.2",
+      "java.io.tmpdir": "D:\\sonarqube\\temp",
+      "java.library.path": "C:\\Program Files\\Java\\jdk-11.0.2\\bin;C:\\windows\\Sun\\Java\\bin;C:\\windows\\system32;C:\\windows;C:\\windows\\system32\\config\\systemprofile\\AppData\\Local\\Microsoft\\WindowsApps;;.",
+      "java.runtime.name": "OpenJDK Runtime Environment",
+      "java.runtime.version": "11.0.2+9",
+      "java.specification.name": "Java Platform API Specification",
+      "java.specification.vendor": "Oracle Corporation",
+      "java.specification.version": "11",
+      "java.vendor": "Oracle Corporation",
+      "java.vendor.url": "http://java.oracle.com/",
+      "java.vendor.url.bug": "http://bugreport.java.com/bugreport/",
+      "java.vendor.version": "18.9",
+      "java.version": "11.0.2",
+      "java.version.date": "2019-01-15",
+      "java.vm.compressedOopsMode": "32-bit",
+      "java.vm.info": "mixed mode",
+      "java.vm.name": "OpenJDK 64-Bit Server VM",
+      "java.vm.specification.name": "Java Virtual Machine Specification",
+      "java.vm.specification.vendor": "Oracle Corporation",
+      "java.vm.specification.version": "11",
+      "java.vm.vendor": "Oracle Corporation",
+      "java.vm.version": "11.0.2+9",
+      "jdk.debug": "release",
+      "line.separator": "\r\n",
+      "os.arch": "amd64",
+      "os.name": "Windows Server 2016",
+      "os.version": "10.0",
+      "path.separator": ";",
+      "sun.arch.data.model": "64",
+      "sun.boot.library.path": "C:\\Program Files\\Java\\jdk-11.0.2\\bin",
+      "sun.cpu.endian": "little",
+      "sun.cpu.isalist": "amd64",
+      "sun.desktop": "windows",
+      "sun.io.unicode.encoding": "UnicodeLittle",
+      "sun.java.command": "org.sonar.ce.app.CeServer D:\\sonarqube\\temp\\sq-process14427398137922540975properties",
+      "sun.java.launcher": "SUN_STANDARD",
+      "sun.jnu.encoding": "Cp1252",
+      "sun.management.compiler": "HotSpot 64-Bit Tiered Compilers",
+      "sun.nio.ch.bugLevel": "",
+      "sun.os.patch.level": "",
+      "user.country": "US",
+      "user.dir": "F:\\sonarqube-8.4.2.36762",
+      "user.home": "C:\\windows\\system32\\config\\systemprofile",
+      "user.language": "en",
+      "user.name": "SYSTEM",
+      "user.script": "",
+      "user.timezone": "America/Chicago",
+      "user.variant": ""
+   },
+   "Search State": {
+      "State": "GREEN",
+      "CPU Usage (%)": 1,
+      "Disk Available": "127 GB",
+      "Store Size": "390 MB",
+      "Translog Size": "254 MB",
+      "Open File Descriptors": -1,
+      "Max File Descriptors": -1,
+      "JVM Heap Usage": "29.0%",
+      "JVM Heap Used": "589 MB",
+      "JVM Heap Max": "1 GB",
+      "JVM Non Heap Used": "128 MB",
+      "JVM Threads": 76,
+      "Field Data Memory": "522 KB",
+      "Field Data Circuit Breaker Limit": "1 GB",
+      "Field Data Circuit Breaker Estimation": "522 KB",
+      "Request Circuit Breaker Limit": "1 GB",
+      "Request Circuit Breaker Estimation": "0 bytes",
+      "Query Cache Memory": "1 MB",
+      "Request Cache Memory": "38 KB"
+   },
+   "Search Indexes": {
+      "Index components - Docs": 5173,
+      "Index components - Shards": 5,
+      "Index components - Store Size": "6 MB",
+      "Index projectmeasures - Docs": 21607,
+      "Index projectmeasures - Shards": 5,
+      "Index projectmeasures - Store Size": "4 MB",
+      "Index metadatas - Docs": 18,
+      "Index metadatas - Shards": 1,
+      "Index metadatas - Store Size": "12 KB",
+      "Index rules - Docs": 23417,
+      "Index rules - Shards": 2,
+      "Index rules - Store Size": "9 MB",
+      "Index issues - Docs": 2637688,
+      "Index issues - Shards": 5,
+      "Index issues - Store Size": "368 MB",
+      "Index users - Docs": 615,
+      "Index users - Shards": 1,
+      "Index users - Store Size": "1 MB",
+      "Index views - Docs": 62,
+      "Index views - Shards": 5,
+      "Index views - Store Size": "191 KB"
+   },
+   "Settings": {
+      "email.from": "noreply@hrblock.com",
+      "email.smtp_host.secured": "xxxxxxxx",
+      "http.nonProxyHosts": "localhost|127.*|[::1]",
+      "ldap.authentication": "simple",
+      "ldap.bindDn": "CN=SVC-SONARQUBEAUTH,OU=Service Accounts,OU=Domain Management,DC=hrbinc,DC=hrblock,DC=net",
+      "ldap.bindPassword": "xxxxxxxx",
+      "ldap.group.baseDn": "CN=Users,DC=hrbinc,DC=hrblock,DC=net",
+      "ldap.group.request": "(&(objectClass=group)(member={dn}))",
+      "ldap.url": "ldap://KCHCDC03.hrbinc.hrblock.net:389",
+      "ldap.user.baseDn": "DC=hrbinc,DC=hrblock,DC=net",
+      "ldap.user.request": "(&(objectClass=user)(sAMAccountName={login}))",
+      "process.gracefulStopTimeout": "270000",
+      "process.index": "2",
+      "process.key": "web",
+      "process.sharedDir": "D:\\sonarqube\\temp",
+      "sonar.analytics.gtm.trackingId": "",
+      "sonar.authenticator.ignoreStartupFailure": "false",
+      "sonar.blueGreenEnabled": "false",
+      "sonar.ce.gracefulStopTimeOutInMs": "21600000",
+      "sonar.ce.javaAdditionalOpts": "",
+      "sonar.ce.javaOpts": "-Xmx2G -Xms128m -XX:+HeapDumpOnOutOfMemoryError",
+      "sonar.cluster.enabled": "false",
+      "sonar.cluster.name": "sonarqube",
+      "sonar.cluster.node.name": "sonarqube-de70cf19-2f9f-41ba-9dd1-72b0afe238af",
+      "sonar.cluster.node.port": "9003",
+      "sonar.cluster.web.startupLeader": "true",
+      "sonar.core.id": "F50B3F58-AWlfWOMDmEwSNradwCCG",
+      "sonar.core.serverBaseURL": "https://sonarqube.hrblock.com",
+      "sonar.core.startTime": "2020-12-18T00:00:00-0600",
+      "sonar.forceAuthentication": "true",
+      "sonar.homepage.url": "",
+      "sonar.jdbc.driverPath": "F:\\sonarqube-8.4.2.36762\\lib\\jdbc\\mssql\\mssql-jdbc-7.4.1.jre11.jar",
+      "sonar.jdbc.maxActive": "60",
+      "sonar.jdbc.maxIdle": "5",
+      "sonar.jdbc.maxWait": "5000",
+      "sonar.jdbc.minEvictableIdleTimeMillis": "600000",
+      "sonar.jdbc.minIdle": "2",
+      "sonar.jdbc.password": "xxxxxxxx",
+      "sonar.jdbc.timeBetweenEvictionRunsMillis": "30000",
+      "sonar.jdbc.url": "jdbc:sqlserver://a1pdpsqsnq01.database.windows.net;databaseName=sonarqube",
+      "sonar.jdbc.username": "sonarqube",
+      "sonar.onboardingTutorial.showToNewUsers": "true",
+      "sonar.path.data": "G:/sonarqube/data",
+      "sonar.path.home": "F:\\sonarqube-8.4.2.36762",
+      "sonar.path.logs": "F:\\sonarqube-8.4.2.36762\\logs",
+      "sonar.path.temp": "D:/sonarqube/temp",
+      "sonar.path.web": "F:\\sonarqube-8.4.2.36762\\web",
+      "sonar.plsql.file.suffixes": "pks,pkb",
+      "sonar.prismic.accessToken": "",
+      "sonar.search.host": "127.0.0.1",
+      "sonar.search.javaAdditionalOpts": "",
+      "sonar.search.javaOpts": "-Xmx2G -Xms2G -XX:+HeapDumpOnOutOfMemoryError",
+      "sonar.search.port": "9001",
+      "sonar.security.realm": "LDAP",
+      "sonar.sonarcloud.enabled": "false",
+      "sonar.telemetry.enable": "true",
+      "sonar.telemetry.frequencyInSeconds": "21600",
+      "sonar.telemetry.url": "https://telemetry.sonarsource.com/sonarqube",
+      "sonar.tsql.file.suffixes": ".tsql,sql",
+      "sonar.updatecenter.activate": "true",
+      "sonar.validateWebhooks": "true",
+      "sonar.vb.file.suffixes": ".vbq,.bas,.frm,.cls,.ctl,.VBQ,.BAS,.FRM,.CLS,.CTL",
+      "sonar.web.gracefulStopTimeOutInMs": "240000",
+      "sonar.web.javaAdditionalOpts": "",
+      "sonar.web.javaOpts": "-server",
+      "sonar.web.port": "80",
+      "sonar.web.sso.emailHeader": "X-Forwarded-Email",
+      "sonar.web.sso.enable": "false",
+      "sonar.web.sso.groupsHeader": "X-Forwarded-Groups",
+      "sonar.web.sso.loginHeader": "X-Forwarded-Login",
+      "sonar.web.sso.nameHeader": "X-Forwarded-Name",
+      "sonar.web.sso.refreshIntervalInMinutes": "5",
+      "sonar.wrapped": "true"
+   },
+   "Statistics": {
+      "id": "F50B3F58-AWlfWOMDmEwSNradwCCG",
+      "version": "8.4.2.36762",
+      "edition": "enterprise",
+      "licenseType": "PRODUCTION",
+      "database": {
+         "name": "Microsoft SQL Server",
+         "version": "12.00.2000"
+      },
+      "plugins": [
+         {
+            "name": "cssfamily",
+            "version": "1.2.0.1325"
+         },
+         {
+            "name": "scmsvn",
+            "version": "1.10.0.1917"
+         },
+         {
+            "name": "plsql",
+            "version": "3.4.1.2576"
+         },
+         {
+            "name": "sonarscala",
+            "version": "1.5.0.315"
+         },
+         {
+            "name": "csharp",
+            "version": "8.9.0.19135"
+         },
+         {
+            "name": "security",
+            "version": "8.4.0.2759"
+         },
+         {
+            "name": "java",
+            "version": "6.5.1.22586"
+         },
+         {
+            "name": "web",
+            "version": "3.2.0.2082"
+         },
+         {
+            "name": "flex",
+            "version": "2.5.1.1831"
+         },
+         {
+            "name": "xml",
+            "version": "2.0.1.2020"
+         },
+         {
+            "name": "typescript",
+            "version": "2.1.0.4359"
+         },
+         {
+            "name": "vbnet",
+            "version": "8.9.0.19135"
+         },
+         {
+            "name": "swift",
+            "version": "4.2.2.77"
+         },
+         {
+            "name": "cpp",
+            "version": "6.11.0.19130"
+         },
+         {
+            "name": "python",
+            "version": "2.13.0.7236"
+         },
+         {
+            "name": "go",
+            "version": "1.6.0.719"
+         },
+         {
+            "name": "jacoco",
+            "version": "1.1.0.898"
+         },
+         {
+            "name": "kotlin",
+            "version": "1.5.0.315"
+         },
+         {
+            "name": "rpg",
+            "version": "2.4.0.2183"
+         },
+         {
+            "name": "pli",
+            "version": "1.10.0.1880"
+         },
+         {
+            "name": "tsql",
+            "version": "1.4.0.3334"
+         },
+         {
+            "name": "vb",
+            "version": "2.6.0.1875"
+         },
+         {
+            "name": "sonarapex",
+            "version": "1.7.0.883"
+         },
+         {
+            "name": "javascript",
+            "version": "6.2.1.12157"
+         },
+         {
+            "name": "ruby",
+            "version": "1.5.0.315"
+         },
+         {
+            "name": "securitycsharpfrontend",
+            "version": "8.4.0.2759"
+         },
+         {
+            "name": "securityjavafrontend",
+            "version": "8.4.0.2759"
+         },
+         {
+            "name": "cobol",
+            "version": "4.5.1.4460"
+         },
+         {
+            "name": "securitypythonfrontend",
+            "version": "8.4.0.2759"
+         },
+         {
+            "name": "scmgit",
+            "version": "1.12.0.2034"
+         },
+         {
+            "name": "php",
+            "version": "3.5.0.5655"
+         },
+         {
+            "name": "abap",
+            "version": "3.8.0.2034"
+         },
+         {
+            "name": "securityphpfrontend",
+            "version": "8.4.0.2759"
+         }
+      ],
+      "userCount": 602,
+      "projectCount": 1160,
+      "usingBranches": true,
+      "ncloc": 17059772,
+      "projectCountByLanguage": [
+         {
+            "language": "cs",
+            "count": 564
+         },
+         {
+            "language": "xml",
+            "count": 487
+         },
+         {
+            "language": "java",
+            "count": 297
+         },
+         {
+            "language": "web",
+            "count": 192
+         },
+         {
+            "language": "css",
+            "count": 167
+         },
+         {
+            "language": "js",
+            "count": 127
+         },
+         {
+            "language": "ts",
+            "count": 88
+         },
+         {
+            "language": "vbnet",
+            "count": 56
+         },
+         {
+            "language": "tsql",
+            "count": 39
+         },
+         {
+            "language": "jsp",
+            "count": 28
+         },
+         {
+            "language": "py",
+            "count": 5
+         },
+         {
+            "language": "kotlin",
+            "count": 4
+         },
+         {
+            "language": "swift",
+            "count": 3
+         },
+         {
+            "language": "c",
+            "count": 2
+         },
+         {
+            "language": "cpp",
+            "count": 2
+         },
+         {
+            "language": "go",
+            "count": 2
+         },
+         {
+            "language": "php",
+            "count": 2
+         },
+         {
+            "language": "ruby",
+            "count": 2
+         },
+         {
+            "language": "plsql",
+            "count": 1
+         }
+      ],
+      "nclocByLanguage": [
+         {
+            "language": "css",
+            "ncloc": 706551
+         },
+         {
+            "language": "cpp",
+            "ncloc": 142842
+         },
+         {
+            "language": "c",
+            "ncloc": 325940
+         },
+         {
+            "language": "jsp",
+            "ncloc": 39069
+         },
+         {
+            "language": "kotlin",
+            "ncloc": 51390
+         },
+         {
+            "language": "go",
+            "ncloc": 6902
+         },
+         {
+            "language": "js",
+            "ncloc": 1227706
+         },
+         {
+            "language": "py",
+            "ncloc": 3959
+         },
+         {
+            "language": "tsql",
+            "ncloc": 666189
+         },
+         {
+            "language": "ruby",
+            "ncloc": 189
+         },
+         {
+            "language": "plsql",
+            "ncloc": 58260
+         },
+         {
+            "language": "cs",
+            "ncloc": 6220980
+         },
+         {
+            "language": "java",
+            "ncloc": 1229745
+         },
+         {
+            "language": "web",
+            "ncloc": 640936
+         },
+         {
+            "language": "xml",
+            "ncloc": 1560850
+         },
+         {
+            "language": "php",
+            "ncloc": 16
+         },
+         {
+            "language": "vbnet",
+            "ncloc": 2958655
+         },
+         {
+            "language": "ts",
+            "ncloc": 495621
+         },
+         {
+            "language": "swift",
+            "ncloc": 73156
+         }
+      ],
+      "installationDate": 1552082838612,
+      "docker": false
+   }
+}

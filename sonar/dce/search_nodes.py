@@ -133,7 +133,7 @@ def __audit_index_balance(searchnodes: list[SearchNode]) -> list[Problem]:
             if size_j is None or size_j == 0:
                 continue
             store_ratio = size_i / size_j
-            if store_ratio >= 0.5 or store_ratio <= 2:
+            if 0.5 <= store_ratio <= 2:
                 continue
             return [Problem(get_rule(RuleId.DCE_ES_UNBALANCED_INDEX), "SearchNodes")]
     log.info("Search nodes store size balance acceptable")

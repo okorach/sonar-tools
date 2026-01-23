@@ -175,12 +175,12 @@ class Sif(object):
                 + sifn.audit_ce(self, "CE process")
                 + sifn.audit_plugins(self, "WebApp", audit_settings)
                 + self.__audit_es_settings()
-                + self.__audit_branch_use()
+                + self._audit_branch_use()
                 + self.__audit_undetected_scm()
             )
         return problems
 
-    def __audit_branch_use(self) -> list[Problem]:
+    def _audit_branch_use(self) -> list[Problem]:
         """Audits whether branch analysis is used or not"""
         if self.edition() == c.CE:
             return []
@@ -220,9 +220,9 @@ class Sif(object):
         return None
 
     def __process_cmdline(self, sq_process_name: str) -> Optional[str]:
-        opts = [x.format(sq_process_name) for x in ("sonar.{}.javaOpts", "sonar.{}.javaAdditionalOpts")]
         if _SETTINGS in self.json:
-            return f"{self.json[_SETTINGS][opts[1]].strip()} {self.json[_SETTINGS][opts[0]].strip()}".strip()
+            opts = [x.format(sq_process_name) for x in ("sonar.{}.javaOpts", "sonar.{}.javaAdditionalOpts")]
+            return f"{self.json[_SETTINGS].get(opts[1], '').strip()} {self.json[_SETTINGS].get(opts[0], '').strip()}".strip()
         return None
 
     def web_jvm_cmdline(self) -> Optional[str]:
