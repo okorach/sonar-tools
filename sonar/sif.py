@@ -175,12 +175,12 @@ class Sif(object):
                 + sifn.audit_ce(self, "CE process")
                 + sifn.audit_plugins(self, "WebApp", audit_settings)
                 + self.__audit_es_settings()
-                + self.__audit_branch_use()
+                + self._audit_branch_use()
                 + self.__audit_undetected_scm()
             )
         return problems
 
-    def __audit_branch_use(self) -> list[Problem]:
+    def _audit_branch_use(self) -> list[Problem]:
         """Audits whether branch analysis is used or not"""
         if self.edition() == c.CE:
             return []
