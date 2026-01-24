@@ -62,7 +62,7 @@ class TestSifBasic:
         """Test Sif creation with invalid JSON raises exception"""
         invalid_json = {"not": "a", "sif": "file"}
 
-        with pytest.raises(sif.NotSystemInfo) as e:
+        with pytest.raises(sif.NotSystemInfo):
             sif.Sif(invalid_json)
 
     def test_sif_str_representation(self):
