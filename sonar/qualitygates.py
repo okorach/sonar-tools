@@ -380,6 +380,7 @@ class QualityGate(SqObject):
             return [Problem(get_rule(RuleId.QG_NO_COND), self, str(self))]
         elif nb_conditions > max_conds:
             return [Problem(get_rule(RuleId.QG_TOO_MANY_COND), self, str(self), nb_conditions, max_conds)]
+        return []
 
     def audit(self, audit_settings: Optional[ConfigSettings] = None) -> list[Problem]:
         """Audits a quality gate, returns found problems"""
