@@ -156,7 +156,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   
 - Quality Gates: (if `audit.qualityGates = yes`, default `yes`)
   - Unused QG
-  - QG with 0 conditions or more than 7 conditions
+  - QG with 0 conditions or more than 8 conditions (10 if Advanced Security conditions used)
   - QG not using the recommended metrics: `reliability`, `security`, `maintainibility`, `coverage`, `duplication`,
     `security review rating on new code`, `new bugs`, `new vulnerabilities`, `new hotspots`, `new blocker issues`, `new critical issues`, `new major issues`
     and `reliability rating on overall code` and `security rating on overall code`
