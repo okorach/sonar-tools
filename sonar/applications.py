@@ -47,7 +47,6 @@ if TYPE_CHECKING:
     from sonar.issues import Issue
     from sonar.platform import Platform
     from sonar.util.types import ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, AppBranchDef, PermissionDef, AppBranchProjectDef
-    from sonar.components import Component
 
 
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")
@@ -284,7 +283,7 @@ class Application(aggr.Aggregation):
             return []
         return super()._audit_singleton_aggregation(broken_rule=rules.RuleId.APPLICATION_SINGLETON)
 
-    def audit(self, audit_settings: ConfigSettings, **kwargs) -> list[problem.Problem]:
+    def audit(self, audit_settings: ConfigSettings, **kwargs: Any) -> list[problem.Problem]:
         """Audits an application and returns list of problems found
 
         :param dict audit_settings: Audit configuration settings from sonar-audit properties config file
@@ -343,7 +342,7 @@ class Application(aggr.Aggregation):
                 r = self.endpoint.post(api, params=params)
                 ok = ok and r.ok
             except (ConnectionError, RequestException) as e:
-                sutil.handle_error(e, f"adding project '{proj}' to {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+                sutil.handle_error(e, f"adding project '{proj}' to {self}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
                 self.__class__.CACHE.pop(self)
                 ok = False
         self._projects = None

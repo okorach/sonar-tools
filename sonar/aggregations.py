@@ -24,7 +24,7 @@ Parent module of applications and portfolios
 """
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 import json
 
 import sonar.logging as log
@@ -64,7 +64,7 @@ class Aggregation(comp.Component):
         """Returns the history of a project metrics"""
         return measures.get_history(self, metrics_list, component=self.key)
 
-    def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None, **search_params) -> ApiPayload:
+    def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None, **search_params: Any) -> ApiPayload:
         """Returns a projects analyses"""
         raise exceptions.UnsupportedOperation("Aggregations don't have analyses")
 

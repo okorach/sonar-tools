@@ -438,9 +438,9 @@ class Project(Component):
             return []
         try:
             self.get("alm_settings/validate_binding", params={"project": self.key})
-            log.debug("%s binding is valid", str(self))
+            log.debug("%s binding is valid", self)
         except (ConnectionError, RequestException) as e:
-            sutil.handle_error(e, f"auditing binding of {str(self)}", catch_all=True)
+            sutil.handle_error(e, f"auditing binding of {self}", catch_all=True)
             # Hack: 8.9 returns 404, 9.x returns 400
             if isinstance(e, HTTPError) and e.response.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
                 return [Problem(get_rule(RuleId.PROJ_INVALID_BINDING), self, str(self))]
@@ -613,7 +613,7 @@ class Project(Component):
         except exceptions.SonarException as e:
             return f"FAILED/{e.message}", None
         except RequestException as e:
-            sutil.handle_error(e, f"exporting zip of {str(self)}", catch_all=True)
+            sutil.handle_error(e, f"exporting zip of {self}", catch_all=True)
             return f"FAILED/{sutil.http_error_string(e.response.status_code)}", None
         except ConnectionError as e:
             return str(e), None
@@ -719,6 +719,7 @@ class Project(Component):
         return findings_list
 
     def count_third_party_issues(self, **search_params: Any) -> dict[str, int]:
+        """Returns the nbr of thrid party issues for the project"""
         search_params = {k: [v] for k, v in search_params.items() if k in ("branch", "pullRequest")}
         branches_or_prs = self.get_branches_and_prs(search_params)
         if branches_or_prs is None:
@@ -952,7 +953,7 @@ class Project(Component):
             log.debug("Exporting %s done, returning %s", str(self), util.json_dump(json_data))
         except Exception as e:
             traceback.print_exc()
-            sutil.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
+            sutil.handle_error(e, f"exporting {self}, export of this project interrupted", catch_all=True)
             json_data["ERROR"] = f"{sutil.error_msg(e)} while exporting project"
 
         tmp_branches = json_data.pop("branches", None)
@@ -1204,7 +1205,7 @@ class Project(Component):
         """Returns the history of a project metrics"""
         return measures.get_history(self, metrics_list, component=self.key)
 
-    def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None, **search_params) -> ApiPayload:
+    def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None, **search_params: Any) -> ApiPayload:
         """Returns a projects analyses"""
         return super().get_analyses(filter_in=filter_in, filter_out=filter_out, **(search_params | {"project": self.key}))
 
@@ -1306,7 +1307,7 @@ def __audit_bindings(projects_list: dict[str, Project], audit_settings: ConfigSe
     return problems
 
 
-def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[Problem]:
+def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs: Any) -> list[Problem]:
     """Audits all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1345,7 +1346,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[
     return problems
 
 
-def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -> ObjectJsonRepr:
     """Exports all or a list of projects configuration as dict
 
     :param endpoint: reference to the SonarQube platform

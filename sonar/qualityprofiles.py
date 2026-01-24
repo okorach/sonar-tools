@@ -174,13 +174,8 @@ class QualityProfile(SqObject):
         endpoint.post(api, params=params)
         return cls.get_object(endpoint=endpoint, name=name, language=language)
 
-    @classmethod
-    def api_for(cls, operation: Oper, endpoint: Platform) -> str:
-        """Returns the API to use for a particular operation"""
-        api, _, _, _ = endpoint.api.get_details(cls, operation)
-        return api
-
     def reload(self, data: ApiPayload) -> QualityProfile:
+        """Reloads a QualityProfile object with data retrieved from SonarQube, returns self"""
         self.nbr_rules = int(data["activeRuleCount"])
         self.nbr_deprecated_rules = int(data["activeDeprecatedRuleCount"])
         (self._projects, self._projects_lock) = (None, Lock())
@@ -756,7 +751,7 @@ def __audit_nbr_of_qp(qp_list: dict[str, QualityProfile], audit_settings: Config
     return problems
 
 
-def audit(endpoint: Platform, audit_settings: ConfigSettings = None, **kwargs) -> list[Problem]:
+def audit(endpoint: Platform, audit_settings: ConfigSettings = None, **kwargs: Any) -> list[Problem]:
     """Audits all quality profiles and return list of problems found
 
     :param endpoint: reference to the SonarQube platform
@@ -814,7 +809,7 @@ def hierarchize(qp_list: ObjectJsonRepr, endpoint: Platform) -> ObjectJsonRepr:
     return {lang: hierarchize_language(lang_qp_list, endpoint=endpoint, language=lang) for lang, lang_qp_list in qp_list.items()}
 
 
-def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -> ObjectJsonRepr:
     """Exports all or a list of quality profiles configuration as dict
 
     :param ConfigSettings export_settings: Export parameters

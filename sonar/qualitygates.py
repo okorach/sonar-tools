@@ -349,6 +349,7 @@ class QualityGate(SqObject):
         return sorted(self.conditions(encoded=True)) == sorted(other_qg.conditions(encoded=True))
 
     def audit_conditions(self) -> list[Problem]:
+        """Audits quality gate conditions, make sure they make sense, returns found problems"""
         problems = []
         for cond in self.conditions():
             m = cond["metric"]

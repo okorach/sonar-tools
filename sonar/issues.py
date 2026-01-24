@@ -155,7 +155,7 @@ class Issue(findings.Finding):
                 try:
                     issue_list.update(future.result(timeout=30)[0])
                 except Exception as e:
-                    log.error(f"{str(e)} for {str(future)}.")
+                    log.error(f"{e} for {future}.")
         return issue_list
 
     @classmethod
@@ -277,6 +277,7 @@ class Issue(findings.Finding):
 
     @staticmethod
     def get_search_date_range(date_start: Union[datetime, date, None], date_stop: Union[datetime, date, None]) -> dict[str, datetime]:
+        """Returns the date range search parameters"""
         date_range: dict[str, datetime] = {}
         if date_start:
             if isinstance(date_start, datetime):
@@ -318,7 +319,7 @@ class Issue(findings.Finding):
         return issue_list
 
     @classmethod
-    def search_first(cls, endpoint: Platform, **search_params) -> Optional[Issue]:
+    def search_first(cls, endpoint: Platform, **search_params: Any) -> Optional[Issue]:
         """
         :return: The first issue of a search, for instance the oldest, if params = s="CREATION_DATE", asc=asc_sort
         :rtype: Issue or None if not issue found
@@ -818,7 +819,7 @@ def status_search_field(endpoint: Platform) -> str:
     return _OLD_SEARCH_STATUS_FIELD if endpoint.is_mqr_mode() else _NEW_SEARCH_STATUS_FIELD
 
 
-def _get_facets(endpoint: Platform, project_key: str, facet: str = "directories", **search_params) -> list[str]:
+def _get_facets(endpoint: Platform, project_key: str, facet: str = "directories", **search_params: Any) -> list[str]:
     """Returns the facets of a search"""
     search_params = search_params.copy()
     search_params.update({component_search_field(endpoint): project_key, "facets": facet, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})

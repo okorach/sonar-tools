@@ -141,7 +141,7 @@ class Portfolio(aggregations.Aggregation):
         return Portfolio.load(endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint: Platform, key: str, name: Optional[str] = None, **kwargs) -> Portfolio:
+    def create(cls, endpoint: Platform, key: str, name: Optional[str] = None, **kwargs: Any) -> Portfolio:
         """Creates a portfolio object"""
         check_supported(endpoint)
         if cls.exists(endpoint=endpoint, key=key):
@@ -333,7 +333,7 @@ class Portfolio(aggregations.Aggregation):
             return []
         return self._audit_singleton_aggregation(broken_rule=rules.RuleId.PORTFOLIO_SINGLETON)
 
-    def audit(self, audit_settings: ConfigSettings, **kwargs) -> list[problem.Problem]:
+    def audit(self, audit_settings: ConfigSettings, **kwargs: Any) -> list[problem.Problem]:
         """Audits a portfolio"""
         log.info("Auditing %s", str(self))
         problems = (
@@ -665,7 +665,7 @@ def check_supported(endpoint: Platform) -> None:
         raise exceptions.UnsupportedOperation(f"No portfolios in {endpoint.edition()} edition")
 
 
-def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[object]:
+def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs: Any) -> list[object]:
     """Audits all portfolios"""
     check_supported(endpoint)
     if not audit_settings.get("audit.portfolios", True):
@@ -737,7 +737,7 @@ def search_by_key(endpoint: Platform, key: str) -> ApiPayload:
     return sutil.search_by_key(endpoint, key, api, "components")
 
 
-def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -> ObjectJsonRepr:
     """Exports portfolios as JSON
 
     :param Platform endpoint: Reference to the SonarQube platform

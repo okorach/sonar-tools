@@ -282,7 +282,7 @@ class Group(SqObject):
         return util.remove_nones(json_data)
 
 
-def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -> ObjectJsonRepr:
     """Exports groups representation in JSON
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -303,7 +303,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     return g_list
 
 
-def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[Problem]:
+def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs: Any) -> list[Problem]:
     """Audits all groups
 
     :param dict audit_settings: Configuration of audit
@@ -323,16 +323,16 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[
     return problems
 
 
-def get_object_from_id(endpoint: Platform, id: str) -> Group:
+def get_object_from_id(endpoint: Platform, group_id: str) -> Group:
     """Searches a Group object from its id - SonarQube 10.4+"""
     if endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
         raise exceptions.UnsupportedOperation("Operation unsupported before SonarQube 10.4")
-    if name := Group.ID_TO_NAME.get(id):
+    if name := Group.ID_TO_NAME.get(group_id):
         return Group.get_object(endpoint, name=name)
     Group.search(endpoint, use_cache=False)
-    if gr := next((o for o in Group.CACHE.values() if o.id == id), None):
+    if gr := next((o for o in Group.CACHE.values() if o.id == group_id), None):
         return gr
-    raise exceptions.ObjectNotFound(id, message=f"Group '{id}' not found")
+    raise exceptions.ObjectNotFound(group_id, message=f"Group '{group_id}' not found")
 
 
 def create_or_update(endpoint: Platform, name: str, description: str) -> Group:

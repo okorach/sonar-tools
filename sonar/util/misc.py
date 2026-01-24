@@ -19,13 +19,11 @@
 #
 """Miscellaneous utilities"""
 
-from math import log
 from typing import Union, Optional, Any
 import json
 import re
 from datetime import datetime, date, timezone, timedelta
 import contextlib
-import os
 import sys
 from typing import TextIO, Generator
 from copy import deepcopy
@@ -57,7 +55,7 @@ def convert_types(data: Any) -> Any:
     """Converts strings to corresponding types in a dictionary"""
     if isinstance(data, str):
         return convert_string(data)
-    elif isinstance(data, dict):
+    if isinstance(data, dict):
         data = {k: convert_types(v) for k, v in data.items()}
     elif isinstance(data, list):
         data = [convert_types(elem) for elem in data]
@@ -105,7 +103,7 @@ def sort_lists(data: Any) -> Any:
         if len(data) > 0 and isinstance(data[0], (str, int, float)):
             return sorted(data)
         return [sort_lists(elem) for elem in data]
-    elif isinstance(data, dict):
+    if isinstance(data, dict):
         for k, v in data.items():
             if isinstance(v, (list, set, tuple)) and len(v) > 0 and isinstance(v[0], (str, int, float)):
                 data[k] = sorted(v)
@@ -241,8 +239,7 @@ def __prefix(value: Any) -> Any:
         return {f"_{k}": __prefix(v) for k, v in value.items()}
     elif isinstance(value, list):
         return [__prefix(v) for v in value]
-    else:
-        return value
+    return value
 
 
 def replace_keys(key_list: list[str], new_key: str, data: dict[str, Any]) -> dict[str, Any]:

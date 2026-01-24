@@ -184,6 +184,7 @@ class Finding(SqObject):
 
     @staticmethod
     def post_search_filters(findings: dict[str, IssueOrHotspot], **filters: Any) -> dict[str, IssueOrHotspot]:
+        """Applies post-search filters to findings list"""
         return findings
 
     def reload(self, data: ApiPayload, from_export: bool = False) -> Finding:

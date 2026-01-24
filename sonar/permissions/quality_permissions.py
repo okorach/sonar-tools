@@ -42,7 +42,7 @@ class QualityPermissions(permissions.Permissions):
     Abstractions of QP and QG permissions
     """
 
-    def _post_api(self, api: str, set_field: str, perms_dict: JsonPermissions, **extra_params) -> bool:
+    def _post_api(self, api: str, set_field: str, perms_dict: JsonPermissions, **extra_params: str) -> bool:
         """Runs a post on QG or QP permissions"""
         if perms_dict is None:
             return True
@@ -90,7 +90,7 @@ class QualityPermissions(permissions.Permissions):
                 page += 1
         return perms
 
-    def _set_perms(self, new_perms: ObjectJsonRepr, apis: dict[str, dict[str, str]], field: str, diff_func: Callable, **kwargs) -> bool:
+    def _set_perms(self, new_perms: ObjectJsonRepr, apis: dict[str, dict[str, str]], field: str, diff_func: Callable, **kwargs: Any) -> bool:
         """Sets permissions of a QG or QP"""
         if self.concerned_object.is_built_in:
             log.debug("Can't set %s because it's built-in", str(self))

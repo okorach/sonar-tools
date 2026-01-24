@@ -397,9 +397,9 @@ class Component(SqObject):
         return []
 
     def last_task(self) -> Optional[Task]:
+        """Returns the last analysis background task of a component, or none if not found"""
         from sonar.tasks import Task
 
-        """Returns the last analysis background task of a problem, or none if not found"""
         return Task.search_last(self.endpoint, component=self.key)
 
     def component_data(self) -> dict[str, str]:
