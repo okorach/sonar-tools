@@ -660,9 +660,10 @@ class TestSearchNodesAudit:
         """Test SearchNodes audit with wrong number of nodes"""
         with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
-        json_sif["Search Nodes"] += json_sif["Search Nodes"][0:2] # Set to 5 nodes
+        json_sif["Search Nodes"] += json_sif["Search Nodes"][0:2]  # Set to 5 nodes
         problems = search_nodes.audit(json_sif["Search Nodes"], sif.Sif(json_sif), {})
         assert any(p.rule_id == rules.RuleId.DCE_ES_CLUSTER_WRONG_NUMBER_OF_NODES for p in problems)
+
 
 class TestSifEdgeCases:
     """Test Sif edge cases and error conditions"""
