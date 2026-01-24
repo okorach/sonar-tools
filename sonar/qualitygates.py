@@ -21,7 +21,7 @@
 """Abstraction of the SonarQube "quality gate" concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Optional, Any, Union, TYPE_CHECKING
 
 import json
 
@@ -228,7 +228,7 @@ class QualityGate(SqObject):
             page += 1
         return self._projects
 
-    def conditions(self, encoded: bool = False) -> list[str]:
+    def conditions(self, encoded: bool = False) -> Union[list[str], list[dict[str, str]]]:
         """
         :param encoded: Whether to encode the conditions or not, optional, defaults to False
         :return: The quality gate conditions, encoded (for simplication) or not
@@ -363,25 +363,33 @@ class QualityGate(SqObject):
                 problems.append(Problem(rule, self, str(self), val, m, mini, maxi, precise_msg))
         return problems
 
-    def audit(self, audit_settings: ConfigSettings = None) -> list[Problem]:
-        """Audits a quality gate, returns found problems"""
-        my_name = str(self)
-        log.debug("Auditing %s", my_name)
+    def audit_nbr_conditions(self, audit_settings: Optional[ConfigSettings] = None) -> list[Problem]:
+        """Audits number of conditions, returns found problems"""
+        log.debug("Auditing %s number of conditions", self)
         if self.is_built_in:
             return []
-        problems = []
-        audit_settings = audit_settings or {}
-        max_cond = int(sutil.get_setting(audit_settings, "audit.qualitygates.maxConditions", 8))
-        nb_conditions = len(self.conditions())
-        log.debug("Auditing %s number of conditions (%d) is OK", my_name, nb_conditions)
+        max_conds = int(sutil.get_setting(audit_settings or {}, "audit.qualitygates.maxConditions", 8))
+        conds = self.conditions()
+        if any("sca" in cond["metric"] for cond in conds):
+            log.debug("%s is using SCA metrics, adding 2 to max conditions", self)
+            max_conds += 2
+        nb_conditions = len(conds)
+        msg = "%s: Auditing that number of conditions (%d) is not 0 and less than the max %d recommended"
+        log.debug(msg, self, nb_conditions, max_conds)
         if nb_conditions == 0:
-            problems.append(Problem(get_rule(RuleId.QG_NO_COND), self, my_name))
-        elif nb_conditions > max_cond:
-            problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_COND), self, my_name, nb_conditions, max_cond))
-        problems += self.audit_conditions()
-        problems += self.permissions().audit(audit_settings)
+            return [Problem(get_rule(RuleId.QG_NO_COND), self, str(self))]
+        elif nb_conditions > max_conds:
+            return [Problem(get_rule(RuleId.QG_TOO_MANY_COND), self, str(self), nb_conditions, max_conds)]
+
+    def audit(self, audit_settings: Optional[ConfigSettings] = None) -> list[Problem]:
+        """Audits a quality gate, returns found problems"""
+        log.debug("Auditing %s", self)
+        if self.is_built_in:
+            log.debug("%s is built-in, skipping audit", self)
+            return []
+        problems = self.audit_nbr_conditions(audit_settings) + self.audit_conditions() + self.permissions().audit(audit_settings)
         if not self.is_default and len(self.projects()) == 0:
-            problems.append(Problem(get_rule(RuleId.QG_NOT_USED), self, my_name))
+            problems.append(Problem(get_rule(RuleId.QG_NOT_USED), self, str(self)))
         return problems
 
     def to_json(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
