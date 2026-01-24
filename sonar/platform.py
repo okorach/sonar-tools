@@ -206,7 +206,7 @@ class Platform(object):
         """
         return group_name == self.default_user_group()
 
-    def get(self, api: str, params: Optional[ApiParams] = None, **kwargs) -> requests.Response:
+    def get(self, api: str, params: Optional[ApiParams] = None, **kwargs: Any) -> requests.Response:
         """Makes an HTTP GET request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -215,7 +215,7 @@ class Platform(object):
         """
         return self.__run_request(requests.get, api, params, **kwargs)
 
-    def post(self, api: str, params: Optional[ApiParams] = None, **kwargs) -> requests.Response:
+    def post(self, api: str, params: Optional[ApiParams] = None, **kwargs: Any) -> requests.Response:
         """Makes an HTTP POST request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -228,7 +228,7 @@ class Platform(object):
         else:
             return self.__run_request(requests.post, api, params, **kwargs)
 
-    def patch(self, api: str, params: Optional[ApiParams] = None, **kwargs) -> requests.Response:
+    def patch(self, api: str, params: Optional[ApiParams] = None, **kwargs: Any) -> requests.Response:
         """Makes an HTTP PATCH request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -238,7 +238,7 @@ class Platform(object):
         kwargs["headers"] = kwargs.get("headers", {}) | {"content-type": "application/merge-patch+json"}
         return self.__run_request(requests.patch, api=api, data=json.dumps(params), **kwargs)
 
-    def delete(self, api: str, params: Optional[ApiParams] = None, **kwargs) -> requests.Response:
+    def delete(self, api: str, params: Optional[ApiParams] = None, **kwargs: Any) -> requests.Response:
         """Makes an HTTP DELETE request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -247,7 +247,7 @@ class Platform(object):
         """
         return self.__run_request(requests.delete, api, params, **kwargs)
 
-    def __run_request(self, request: Callable, api: str, params: Optional[Union[ApiParams, str]] = None, **kwargs) -> requests.Response:
+    def __run_request(self, request: Callable, api: str, params: Optional[Union[ApiParams, str]] = None, **kwargs: Any) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
         mute = kwargs.pop("mute", ())
         api = pfhelp.normalize_api(api)

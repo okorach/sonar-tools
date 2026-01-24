@@ -276,7 +276,7 @@ class Permissions(ABC):
                 page += 1
         return perms
 
-    def _post_api(self, api: str, set_field: str, identifier: str, perms: list[PermissionDef], **extra_params) -> bool:
+    def _post_api(self, api: str, set_field: str, identifier: str, perms: list[PermissionDef], **extra_params: str) -> bool:
         ok = True
         params = extra_params | {set_field: identifier}
         for p in self._filter_permissions_for_edition(perms):

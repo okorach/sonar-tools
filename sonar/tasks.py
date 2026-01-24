@@ -176,12 +176,15 @@ class Task(SqObject):
         return self
 
     def submit_date(self) -> Optional[datetime]:
+        """Returns the background task submission date"""
         return sutil.string_to_datetime(self.sq_json.get("submittedAt"))
 
     def start_date(self) -> Optional[datetime]:
+        """Returns the background task start date, or None if not started yet"""
         return sutil.string_to_datetime(self.sq_json.get("startedAt"))
 
     def end_date(self) -> Optional[datetime]:
+        """Returns the background task end date or None if not ended yet"""
         return sutil.string_to_datetime(self.sq_json.get("endedAt"))
 
     def project(self) -> Project:

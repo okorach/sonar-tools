@@ -104,7 +104,7 @@ class Branch(components.Component):
             cls.load(endpoint, branch_data | {cls.__PROJECT_KEY: project.key})
         if o := cls.CACHE.get(endpoint.local_url, project.key, branch_name):
             return o
-        raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {str(project)} not found")
+        raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of {project} not found")
 
     @classmethod
     def search(cls, endpoint: Platform, project: Union[str, proj.Project], **search_params: Any) -> dict[str, Branch]:

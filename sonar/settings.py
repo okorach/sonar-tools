@@ -27,7 +27,7 @@ from typing import Any, Union, Optional, TYPE_CHECKING
 import re
 import json
 import sonar.logging as log
-from sonar.util import cache, constants as c
+from sonar.util import cache
 from sonar import exceptions
 from sonar.sqobject import SqObject
 import sonar.util.misc as util
@@ -297,6 +297,7 @@ class Setting(SqObject):
             return ok
 
     def to_json(self) -> ObjectJsonRepr:
+        """Returns the JSON representation of the setting"""
         val = self.value
         def_val = self.default_value
         if self.key == NEW_CODE_PERIOD:
@@ -442,7 +443,7 @@ class Setting(SqObject):
         return settings
 
     @classmethod
-    def search(cls, endpoint: Platform, include_not_set: bool = False, **search_params) -> dict[str, Setting]:
+    def search(cls, endpoint: Platform, include_not_set: bool = False, **search_params: Any) -> dict[str, Setting]:
         """Gets several settings as bulk (returns a dict)"""
         global VALID_SETTINGS
         settings_dict = {}

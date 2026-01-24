@@ -27,7 +27,6 @@ from __future__ import annotations
 from typing import Any, Optional, TYPE_CHECKING
 
 import json
-import abc
 from http import HTTPStatus
 import concurrent.futures
 import requests
@@ -86,18 +85,6 @@ class SqObject(object):
         :return: self
         """
         return self.__class__.get_object(self.endpoint, self.key, use_cache=False)
-
-    @classmethod
-    def api_for(cls, operation: Oper, endpoint: Platform) -> str:
-        """Returns the API to use for a particular operation for a particular object class.
-        This function must be overloaded for classes that need specific treatment. e.g. API V1 or V2
-        depending on SonarQube version, different API for SonarQube Cloud
-
-        :param op: The desired API operation
-        :param endpoint: The SQS or SQC to invoke the API
-        :return: The API to use for the operation, or None if not defined
-        """
-        return cls.API[operation] if operation in cls.API else cls.API[Oper.SEARCH]
 
     @classmethod
     def clear_cache(cls, endpoint: Optional[Platform] = None) -> None:

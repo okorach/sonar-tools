@@ -99,6 +99,6 @@ def update(project_key: str, metric_key: str, value: Any, description: Optional[
     c_meas.update(value, description)
 
 
-def delete(id: str, endpoint: Platform) -> bool:
+def delete(cust_meas_id: str, endpoint: Platform) -> bool:
     """Delects a custom measure, returns whether the operation succeeded"""
-    return endpoint.post(CustomMeasure.API_ROOT + "delete", {"id": id})
+    return endpoint.post(CustomMeasure.API_ROOT + "delete", {"id": cust_meas_id})

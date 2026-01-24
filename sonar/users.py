@@ -123,7 +123,7 @@ class User(SqObject):
         return cls.get_paginated(endpoint=endpoint, params=search_params)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, login: Optional[str] = None, id: Optional[str] = None) -> User:
+    def get_object(cls, endpoint: Platform, login: Optional[str] = None, user_id: Optional[str] = None) -> User:
         """Creates a User object corresponding to the user with same login in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -135,19 +135,19 @@ class User(SqObject):
         """
         if o := cls.CACHE.get(endpoint.local_url, login):
             return o
-        if id is not None:
-            return cls.get_object_by_id(endpoint, id)
+        if user_id is not None:
+            return cls.get_object_by_id(endpoint, user_id)
         log.debug("Getting user '%s'", login)
         if user := next((o for k, o in cls.search(endpoint, q=login).items() if k == login), None):
             return user
-        raise exceptions.ObjectNotFound(login or id, f"User '{login or id}' not found")
+        raise exceptions.ObjectNotFound(login or user_id, f"User '{login or user_id}' not found")
 
     @classmethod
-    def get_object_by_id(cls, endpoint: Platform, id: str) -> User:
+    def get_object_by_id(cls, endpoint: Platform, user_id: str) -> User:
         """Searches a user by its (API v2) id in SonarQube
 
         :param endpoint: Reference to the SonarQube platform
-        :param id: User id
+        :param user_id: User id
         :raises ObjectNotFound: if id not found
         :raises UnsupportedOperation: If SonarQube version < 10.4
         :return: The user object
@@ -155,8 +155,8 @@ class User(SqObject):
         """
         if endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             raise exceptions.UnsupportedOperation("Get by ID is an APIv2 features, staring from SonarQube 10.4")
-        log.debug("Getting user id '%s'", id)
-        api, _, params, _ = endpoint.api.get_details(cls, Oper.GET, id=id)
+        log.debug("Getting user id '%s'", user_id)
+        api, _, params, _ = endpoint.api.get_details(cls, Oper.GET, id=user_id)
         data = json.loads(endpoint.get(api, params=params, mute=()).text)
         return cls.load(endpoint, data)
 
@@ -445,7 +445,7 @@ class User(SqObject):
         return convert_user_json(json_data)
 
 
-def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -> ObjectJsonRepr:
     """Exports all users in JSON representation
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -464,7 +464,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> Obj
     return u_list
 
 
-def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs) -> list[Problem]:
+def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs: Any) -> list[Problem]:
     """Audits all users for last login date and too old tokens
 
     :param Platform endpoint: reference to the SonarQube platform

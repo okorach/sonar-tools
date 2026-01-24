@@ -228,7 +228,7 @@ class Rule(SqObject):
         return Rule(endpoint, rule_data)
 
     @classmethod
-    def create(cls, endpoint: Platform, key: str, **kwargs) -> Rule:
+    def create(cls, endpoint: Platform, key: str, **kwargs: Any) -> Rule:
         """Creates a rule object
 
         :param endpoint: The SonarQube reference
@@ -253,6 +253,7 @@ class Rule(SqObject):
 
     @classmethod
     def instantiate(cls, endpoint: Platform, key: str, template_key: str, data: ObjectJsonRepr) -> Rule:
+        """Instantiates a rule from a rule template, with a certain number of parameters defined in data"""
         if endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Can't instantiate rules on SonarQube Cloud")
         try:
@@ -334,6 +335,7 @@ class Rule(SqObject):
         return self.template_key is not None
 
     def to_json(self) -> ObjectJsonRepr:
+        """Returns the JSON representation of the rule"""
         return util.remove_nones(self.sq_json | {"templateKey": self.template_key})
 
     def to_csv(self) -> list[str]:
@@ -458,13 +460,13 @@ def get_facet(facet: str, endpoint: Platform) -> dict[str, str]:
     return {f["val"]: f["count"] for f in data["facets"][0]["values"]}
 
 
-def count(endpoint: Platform, **params) -> int:
+def count(endpoint: Platform, **params: Any) -> int:
     """Count number of rules that correspond to certain filters"""
     api, _, api_params, _ = endpoint.api.get_details(Rule, Oper.SEARCH, **{**params, "ps": 1})
     return json.loads(endpoint.get(api, params=api_params).text)["total"]
 
 
-def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs) -> ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -> ObjectJsonRepr:
     """Returns a JSON export of all rules"""
     log.info("Exporting rules")
     full = export_settings.get("FULL_EXPORT", False)

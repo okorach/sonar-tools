@@ -91,9 +91,9 @@ class Cache(object):
         # log.info("Clearing %s", self)
         with self.lock:
             if endpoint:
-                for hash, object in self.objects.copy().items():
-                    if object.endpoint is endpoint:
-                        self.objects.pop(hash)
+                for o_hash, o in self.objects.copy().items():
+                    if o.endpoint is endpoint:
+                        self.objects.pop(o_hash)
             else:
                 self.objects = {}
 

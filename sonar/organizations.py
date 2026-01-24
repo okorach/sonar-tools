@@ -145,7 +145,8 @@ class Organization(SqObject):
         return self.sq_json.get("subscription", "UNKNOWN")
 
     def alm(self) -> ApiPayload:
-        return self.sq_json.get("alm", None)
+        """Returns The DevOps platform bound to the organization, or None if not set"""
+        return self.sq_json.get("alm")
 
 
 def export(endpoint: Platform, key_list: KeyList = None) -> ObjectJsonRepr:
