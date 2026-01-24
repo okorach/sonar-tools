@@ -23,8 +23,6 @@ from __future__ import annotations
 from typing import Any, Union, Optional, Callable, TYPE_CHECKING
 
 from http import HTTPStatus
-import sys
-import os
 import re
 import time
 import datetime
@@ -48,6 +46,7 @@ from sonar.audit.problem import Problem
 from sonar import webhooks
 from sonar.api.manager import ApiOperation as Oper
 from sonar.api.manager import ApiManager as Api
+from sonar.settings import Setting
 
 if TYPE_CHECKING:
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
@@ -105,7 +104,8 @@ class Platform(object):
     def verify_connection(self) -> None:
         """Verifies the connection to the SonarQube platform
 
-        :raises: ConnectionError if the connection cannot be established"""
+        :raises: ConnectionError if the connection cannot be established
+        """
         try:
             log.info("Connecting to %s", self.local_url)
             self.get("server/version")
@@ -120,7 +120,7 @@ class Platform(object):
                     self.external_url = s
         except (ConnectionError, RequestException) as e:
             sutil.handle_error(e, "verifying connection", catch_all=True)
-            raise exceptions.ConnectionError(f"{str(e)} while connecting to {self.local_url}")
+            raise exceptions.ConnectionError(f"{e} while connecting to {self.local_url}")
 
     def url(self) -> str:
         """Returns the SonarQube URL"""
@@ -389,19 +389,16 @@ class Platform(object):
 
     def get_settings(self, settings_list: Optional[list[str]] = None) -> dict[str, dict[str, Any]]:
         """Returns a list of (or all) platform global settings dict representation from their key"""
-        if settings_list is None:
-            settings_dict = settings.Setting.search(self)
-        else:
-            settings_dict = {k: settings.Setting.get_object(self, k) for k in settings_list}
+        settings_dict = {k: Setting.get_object(self, k) for k in settings_list} if settings_list else Setting.search(self)
         platform_settings = {}
         for v in settings_dict.values():
             platform_settings |= v.to_json()
         return platform_settings
 
-    def __settings(self, settings_list: KeyList = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
+    def __settings(self, settings_list: KeyList = None, include_not_set: bool = False) -> dict[str, Setting]:
         log.info("Getting global settings")
-        settings_dict = settings.Setting.search(self, include_not_set=include_not_set, keys=settings_list)
-        if ai_code_fix := settings.Setting.get_object(self, key=settings.AI_CODE_FIX):
+        settings_dict = Setting.search(self, include_not_set=include_not_set, keys=settings_list)
+        if ai_code_fix := Setting.get_object(self, key=settings.AI_CODE_FIX):
             settings_dict[ai_code_fix.key] = ai_code_fix
         return settings_dict
 
@@ -411,8 +408,7 @@ class Platform(object):
         :param key: Setting key
         :return: the setting value
         """
-        return settings.Setting.get_object(self, key=key).value
-        # return settings.Setting.get_object(self, key=key).to_json()[key].get("value")
+        return Setting.get_object(self, key=key).value
 
     def reset_setting(self, key: str) -> bool:
         """Resets a platform global setting to the SonarQube internal default value
@@ -420,7 +416,7 @@ class Platform(object):
         :param key: Setting key
         :return: Whether the reset was successful or not
         """
-        return settings.Setting.get_object(self, key=key).reset()
+        return Setting.get_object(self, key=key).reset()
 
     def set_setting(self, key: str, value: Any) -> bool:
         """Sets a platform global setting
@@ -433,7 +429,7 @@ class Platform(object):
 
     def __urlstring(self, api: str, params: Optional[ApiParams] = None, data: Optional[str] = None) -> str:
         """Returns a string corresponding to the URL and parameters"""
-        url = f"{str(self)}{api}"
+        url = f"{self}{api}"
         params_string = ""
         if isinstance(params, str):
             params_string = params
@@ -468,7 +464,7 @@ class Platform(object):
         json_data = {}
         settings_list = list(self.__settings(include_not_set=True).values())
         settings_list = [s for s in settings_list if s.is_global() and not s.is_internal()]
-        settings_list.append(settings.Setting.get_object(self, settings.NEW_CODE_PERIOD))
+        settings_list.append(Setting.get_object(self, settings.NEW_CODE_PERIOD))
         for s in settings_list:
             (categ, subcateg) = s.category()
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
@@ -519,11 +515,9 @@ class Platform(object):
         flat_settings = sutil.flatten(settings_to_import)
         count += sum(1 if self.set_setting(k, v) else 0 for k, v in flat_settings.items())
 
-        try:
+        if "webhooks" in config_data:
             self.set_webhooks(config_data["webhooks"])
             count += len(config_data["webhooks"])
-        except KeyError:
-            pass
 
         if settings.NEW_CODE_PERIOD in config_data[settings.GENERAL_SETTINGS]:
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data[settings.GENERAL_SETTINGS][settings.NEW_CODE_PERIOD])
@@ -548,6 +542,7 @@ class Platform(object):
         :return: List of problems found, or empty list
         """
         log.info("--- Auditing global settings ---")
+        log.debug("Audit settings: %s", util.json_dump(audit_settings))
         problems = []
         platform_settings = {k: v["value"] for k, v in self.get_settings().items()}
         settings_url = f"{self.local_url}/admin/settings"
@@ -647,7 +642,7 @@ class Platform(object):
         """Audits whether project default visibility is public"""
         log.info("Auditing project default visibility")
         problems = []
-        api, _, params, _ = self.api.get_details(settings.Setting, Oper.GET, keys="projects.default.visibility")
+        api, _, params, _ = self.api.get_details(Setting, Oper.GET, keys="projects.default.visibility")
         resp = self.get(api, params=params)
         visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)
@@ -665,7 +660,7 @@ class Platform(object):
             if data.get("valid", False):
                 problems.append(Problem(get_rule(RuleId.DEFAULT_ADMIN_PASSWORD), self.local_url))
             else:
-                log.info("User 'admin' default password has been changed")
+                log.info("User 'admin' default password has been changed, good.")
         except requests.RequestException as e:
             raise exceptions.SonarException(str(e), errcodes.SONAR_API) from e
         return problems
@@ -737,8 +732,7 @@ class Platform(object):
     def _audit_token_max_lifetime(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits the maximum lifetime of a token"""
         log.info("Auditing maximum token lifetime global setting")
-        lifetime_setting = settings.Setting.get_object(self, settings.TOKEN_MAX_LIFETIME)
-        if lifetime_setting is None:
+        if not Setting.get_object(self, settings.TOKEN_MAX_LIFETIME):
             log.info("Token maximum lifetime setting not found, skipping audit")
             return []
         max_lifetime = sutil.to_days(self.get_setting(settings.TOKEN_MAX_LIFETIME))
