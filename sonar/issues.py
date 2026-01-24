@@ -44,7 +44,7 @@ from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import SearchParams, ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
+    from sonar.util.types import SearchParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
 _OLD_SEARCH_COMPONENT_FIELD = "componentKeys"
 _NEW_SEARCH_COMPONENT_FIELD = "components"
