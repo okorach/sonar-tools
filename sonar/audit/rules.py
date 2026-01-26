@@ -200,7 +200,7 @@ class Rule(object):
     """Abstraction of the audit rule concept"""
 
     def __init__(self, rule_id: str, severity: str, rule_type: str, concerned_object: object, message: str) -> None:
-        self.id = to_id(rule_id)
+        self.rule_id = to_id(rule_id)
         self.severity = severities.to_severity(severity)
         self.type = types.to_type(rule_type)
         self.object = concerned_object
