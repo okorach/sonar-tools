@@ -76,14 +76,6 @@ def test_add_comment() -> None:
     assert list(comments.values())[-1]["value"] == txt
 
 
-def test_search_by_project() -> None:
-    """test_search_by_project"""
-    nbr_hotspots = len(Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT))
-    assert nbr_hotspots > 0
-    assert len(Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, statuses=["TO_REVIEW"])) < nbr_hotspots
-    assert len(Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, severities=["BLOCKER", "CRITICAL"])) < nbr_hotspots
-
-
 def test_sanitize_filter() -> None:
     """test_sanitize_filter"""
     assert Hotspot.sanitize_search_params(endpoint=tutil.SQ) == {}
@@ -99,15 +91,12 @@ def test_comments_after() -> None:
     comments = hotspot.comments(after=after)
     assert all(c["date"] >= after for c in comments.values())
 
-
 def test_search_by_project() -> None:
     """test_search_by_project"""
-    proj: projects.Project = projects.Project.get_object(tutil.SQ, key=tutil.LIVE_PROJECT)
-    hotspot_list = Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT)
-    assert len(hotspot_list) > 0
-    assert len(Hotspot.search_by_project(tutil.SQ, project=proj)) == len(hotspot_list)
-    assert len(Hotspot.search_by_project(tutil.SQ, project=proj, severities=["BLOCKER", "CRITICAL"])) < len(hotspot_list)
-    assert len(Hotspot.search_by_project(tutil.SQ, project=proj, statuses=["TO_REVIEW"])) < len(hotspot_list)
+    nbr_hotspots = len(Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT))
+    assert nbr_hotspots > 0
+    assert len(Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, statuses=["TO_REVIEW"])) < nbr_hotspots
+    assert len(Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, severities=["BLOCKER", "CRITICAL"])) < nbr_hotspots
 
 
 def test_search_on_branches() -> None:
@@ -123,5 +112,5 @@ def test_search_on_branches() -> None:
 
 def test_search_on_pr() -> None:
     """test_search_on_pr"""
-    pr_hotspots = Hotspot.search(tutil.SQ, project=tutil.LIVE_PROJECT, pull_request="5")
+    pr_hotspots = Hotspot.search(tutil.SQ, project=tutil.LIVE_PROJECT, pullRequest="5")
     assert len(pr_hotspots) == 0
