@@ -293,7 +293,7 @@ class Setting(SqObject):
         try:
             api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.RESET, **params)
             ok = self.post(api, params=api_params).ok
-            self.refresh()
+            self.value = self.default_value
         except exceptions.SonarException:
             return False
         else:
