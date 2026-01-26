@@ -171,8 +171,8 @@ class Sif(object):
             problems += self.__audit_dce_settings(audit_settings)
         else:
             problems += (
-                sifn.audit_web(self, "Web process")
-                + sifn.audit_ce(self, "CE process")
+                sifn.audit_web(self, "Web process", audit_settings)
+                + sifn.audit_ce(self, "CE process", audit_settings)
                 + sifn.audit_plugins(self, "WebApp", audit_settings)
                 + self.__audit_es_settings()
                 + self._audit_branch_use()
