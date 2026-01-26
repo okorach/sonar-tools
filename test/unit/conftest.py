@@ -222,14 +222,14 @@ def get_test_user() -> Generator[users.User]:
                 raise
             o = None
     if o:
-        (uid, uname, ulogin) = (o.name, o.id, o.login)
+        (uid, uname, ulogin) = (o.name, o.user_id, o.login)
         for g in o.groups():
             if g != tutil.SQ.default_user_group():
                 o.remove_from_group(g)
     yield o
     if o:
         try:
-            (o.name, o.id, o.login) = (uid, uname, ulogin)
+            (o.name, o.user_id, o.login) = (uid, uname, ulogin)
             for g in o.groups():
                 if g != tutil.SQ.default_user_group():
                     o.remove_from_group(g)
@@ -326,10 +326,10 @@ def get_test_group() -> Generator[groups.Group]:
                 raise
             o = None
     if o:
-        oid = o.id
+        oid = o.group_id
     yield o
     if o:
-        o.key, o.id = key, oid
+        o.key, o.group_id = key, oid
         try:
             o.delete()
         except exceptions.ObjectNotFound:

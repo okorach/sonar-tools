@@ -140,11 +140,9 @@ def test_set_as_default(get_loaded_qg: Generator[qualitygates.QualityGate]) -> N
 def test_audit(get_empty_qg: Generator[qualitygates.QualityGate]) -> None:
     """test_audit"""
     qg = get_empty_qg
-    for pb in qg.audit():
-        logging.debug(str(pb))
-    assert len(qg.audit()) == 2
+    assert len(qg.audit({})) == 2
     qg.set_conditions(["new_coverage <= 50", "new_duplicated_lines_density >= 3"])
-    assert len(qg.audit()) == 1
+    assert len(qg.audit({})) == 1
     conds = [
         "new_coverage <= 80",
         "new_duplicated_lines_density >= 3",

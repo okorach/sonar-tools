@@ -176,8 +176,8 @@ def test_create_or_update(get_test_group: Generator[Group]) -> None:
 def test_get_from_id(get_test_group: Generator[Group]) -> None:
     gr: Group = get_test_group
     if tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
-        gr2 = groups.get_object_from_id(tutil.SQ, gr.id)
+        gr2 = groups.get_object_from_id(tutil.SQ, gr.group_id)
         assert gr2 is gr
     else:
         with pytest.raises(exceptions.UnsupportedOperation):
-            _ = groups.get_object_from_id(tutil.SQ, gr.id)
+            _ = groups.get_object_from_id(tutil.SQ, gr.group_id)

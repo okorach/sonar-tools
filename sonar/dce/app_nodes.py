@@ -85,8 +85,8 @@ class AppNode(dce_nodes.DceNode):
         return (
             self.__audit_official()
             + self.__audit_health()
-            + sifn.audit_web(self, f"{str(self)} Web process")
-            + sifn.audit_ce(self, f"{str(self)} CE process")
+            + sifn.audit_web(self, f"{str(self)} Web process", audit_settings)
+            + sifn.audit_ce(self, f"{str(self)} CE process", audit_settings)
             + sifn.audit_plugins(self, f"{str(self)} WebApp", audit_settings)
         )
 

@@ -173,7 +173,10 @@ class Setting(SqObject):
         o = cls.CACHE.get(endpoint.local_url, key, component, branch)
         if o and use_cache:
             return o
-        return cls.load(endpoint, get_settings_data(endpoint, key, component, branch))
+        cls.search(endpoint, use_cache=False, include_not_set=True)
+        if o := cls.CACHE.get(endpoint.local_url, key, component, branch):
+            return o
+        raise exceptions.ObjectNotFound(key, message=f"Setting '{key}' not found for component '{component}' branch '{branch}'")
 
     @classmethod
     def create(cls, key: str, endpoint: Platform, value: Any = None, component: Optional[str] = None, branch: Optional[str] = None) -> Setting:
@@ -290,7 +293,7 @@ class Setting(SqObject):
         try:
             api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.RESET, **params)
             ok = self.post(api, params=api_params).ok
-            self.refresh()
+            self.value = self.default_value
         except exceptions.SonarException:
             return False
         else:
@@ -315,6 +318,7 @@ class Setting(SqObject):
                 api, _, params, ret = endpoint.api.get_details(Setting, Oper.LIST_DEFINITIONS)
                 data = json.loads(endpoint.get(api, params=params).text)
                 cls.SETTINGS_DEFINITIONS = {s["key"]: s for s in data[ret]}
+
             except ConnectionError:
                 return {}
             log.debug("Loaded %d settings definitions", len(cls.SETTINGS_DEFINITIONS))
@@ -494,7 +498,10 @@ def string_to_new_code(value: str) -> list[str]:
 
 def get_new_code_period(endpoint: Platform, component: Optional[str], branch: Optional[str]) -> Setting:
     """returns the new code period, either the default global setting, or specific to a project/branch"""
-    return Setting.get_object(endpoint, NEW_CODE_PERIOD, component, branch)
+    if o := Setting.CACHE.get(endpoint.local_url, NEW_CODE_PERIOD, component, branch):
+        return o
+    data = get_settings_data(endpoint, NEW_CODE_PERIOD, component, branch)
+    return Setting.load(endpoint, data | {"key": NEW_CODE_PERIOD, "component": component, "branch": branch})
 
 
 def set_new_code_period(endpoint: Platform, nc_type: str, nc_value: str, project_key: Optional[str] = None, branch: Optional[str] = None) -> bool:

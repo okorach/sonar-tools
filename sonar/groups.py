@@ -57,16 +57,16 @@ class Group(SqObject):
         """Do not use, use class methods to create objects"""
         log.debug("Constructing GROUP data = %s", util.json_dump(data))
         self.key = data["name"]
-        self.id = data.get("id")  #: SonarQube 10.4+ Group id
+        self.group_id = data.get("id")  #: SonarQube 10.4+ Group id
         super().__init__(endpoint, data)
         self.name = data["name"]  #: Group name
         self.description = data.get("description", "")  #: Group description
         self.__members: Optional[list[users.User]] = None
         self.__is_default = data.get("default")
         self.__class__.CACHE.put(self)
-        if self.id:
-            self.__class__.ID_TO_NAME[self.id] = self.name
-        log.debug("Constructed %s object, id '%s'", self, self.id)
+        if self.group_id:
+            self.__class__.ID_TO_NAME[self.group_id] = self.name
+        log.debug("Constructed %s object, id '%s'", self, self.group_id)
 
     def __str__(self) -> str:
         """String representation of the object"""
@@ -147,7 +147,7 @@ class Group(SqObject):
             log.debug("No name or description to update for %s", self)
             return False
         log.info("Updating %s with name = %s, description = %s", self, name, description)
-        params = util.remove_nones({"currentName": self.name, "id": self.id, "name": name, "description": description})
+        params = util.remove_nones({"currentName": self.name, "id": self.group_id, "name": name, "description": description})
         api, method, params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, **params)
         if method == "PATCH":
             ok = self.endpoint.patch(api, params=params).ok
@@ -163,7 +163,7 @@ class Group(SqObject):
     def delete(self) -> bool:
         """Deletes an object, returns whether the operation succeeded"""
         log.info("Deleting %s", str(self))
-        return self.delete_object(id=self.id, name=self.name)
+        return self.delete_object(id=self.group_id, name=self.name)
 
     def set_description(self, description: str) -> bool:
         """Set a group description
@@ -191,7 +191,7 @@ class Group(SqObject):
         """Returns the group members"""
         if self.__members is None or not use_cache:
             # TODO: handle pagination
-            api, _, params, ret = self.endpoint.api.get_details(self, Oper.LIST_MEMBERS, groupId=self.id, ps=500, pageSize=500, name=self.name)
+            api, _, params, ret = self.endpoint.api.get_details(self, Oper.LIST_MEMBERS, groupId=self.group_id, ps=500, pageSize=500, name=self.name)
             data = json.loads(self.endpoint.get(api, params=params).text)[ret]
             if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
                 pname = "id"
@@ -213,9 +213,9 @@ class Group(SqObject):
         """
         if self.endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
             return None
-        api, _, params, ret = self.endpoint.api.get_details(self, Oper.LIST_MEMBERS, groupId=self.id, userId=user.id)
+        api, _, params, ret = self.endpoint.api.get_details(self, Oper.LIST_MEMBERS, groupId=self.group_id, userId=user.user_id)
         data = json.loads(self.endpoint.get(api, params=params).text)[ret]
-        return next((m["id"] for m in data if m["groupId"] == self.id and m["userId"] == user.id), None)
+        return next((m["id"] for m in data if m["groupId"] == self.group_id and m["userId"] == user.user_id), None)
 
     def add_user(self, user: users.User) -> bool:
         """Adds an user to the group
@@ -224,7 +224,9 @@ class Group(SqObject):
         :return: Whether the operation succeeded
         """
         log.info("Adding %s to %s", str(user), str(self))
-        api, method, params, _ = self.endpoint.api.get_details(self, Oper.ADD_USER, groupId=self.id, userId=user.id, login=user.login, name=self.name)
+        api, method, params, _ = self.endpoint.api.get_details(
+            self, Oper.ADD_USER, groupId=self.group_id, userId=user.user_id, login=user.login, name=self.name
+        )
         if method == "POST":
             return self.endpoint.post(api, params=params).ok
         else:
@@ -243,7 +245,7 @@ class Group(SqObject):
         mb_id = self.__get_membership_id(user)
         api, method, params, _ = self.endpoint.api.get_details(self, Oper.REMOVE_USER, id=mb_id, login=user.login, name=self.name)
         if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION and not mb_id:
-            raise exceptions.ObjectNotFound(user.login, f"{self} or user id '{user.id}' not found")
+            raise exceptions.ObjectNotFound(user.login, f"{self} or user id '{user.user_id}' not found")
         if method == "DELETE":
             return self.endpoint.delete(api=api, params=params).ok
         else:
@@ -330,7 +332,7 @@ def get_object_from_id(endpoint: Platform, group_id: str) -> Group:
     if name := Group.ID_TO_NAME.get(group_id):
         return Group.get_object(endpoint, name=name)
     Group.search(endpoint, use_cache=False)
-    if gr := next((o for o in Group.CACHE.values() if o.id == group_id), None):
+    if gr := next((o for o in Group.CACHE.values() if o.group_id == group_id), None):
         return gr
     raise exceptions.ObjectNotFound(group_id, message=f"Group '{group_id}' not found")
 

@@ -18,22 +18,25 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+from __future__ import annotations
+from typing import Optional, TYPE_CHECKING
+
 import csv
-from typing import Optional
 
 import sonar.logging as log
 import sonar.util.misc as util
 
+if TYPE_CHECKING:
+    from sonar.audit.rules import Rule
+
 
 class Problem:
-    """
-    Abstraction of an audit problem
-    """
+    """Abstraction of an audit problem"""
 
-    def __init__(self, broken_rule: object, concerned_object: object, *args, **kwargs) -> None:
+    def __init__(self, broken_rule: Rule, concerned_object: object, *args, **kwargs) -> None:
         # dict.__init__(type=problem_type, severity=severity, message=msg)
         self.concerned_object = concerned_object
-        self.rule_id = broken_rule.id
+        self.rule_id = broken_rule.rule_id
         self.type = broken_rule.type
         self.severity = broken_rule.severity
         if len(args) > 0:

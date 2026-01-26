@@ -50,7 +50,7 @@ def test_plugins() -> None:
 
 
 def test_get_set_reset_settings() -> None:
-    # util.start_logging()
+    """test_get_set_reset_settings"""
     assert tutil.SQ.reset_setting("sonar.exclusions")
     assert tutil.SQ.get_setting("sonar.exclusions") == []
 
