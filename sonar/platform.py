@@ -398,8 +398,11 @@ class Platform(object):
     def __settings(self, settings_list: KeyList = None, include_not_set: bool = False) -> dict[str, Setting]:
         log.info("Getting global settings")
         settings_dict = Setting.search(self, include_not_set=include_not_set, keys=settings_list)
-        if ai_code_fix := Setting.get_object(self, key=settings.AI_CODE_FIX):
+        try:
+            ai_code_fix = Setting.get_object(self, key=settings.AI_CODE_FIX)
             settings_dict[ai_code_fix.key] = ai_code_fix
+        except exceptions.ObjectNotFound:
+            log.debug(_NON_EXISTING_SETTING_SKIPPED, settings.AI_CODE_FIX)
         return settings_dict
 
     def get_setting(self, key: str) -> Any:
