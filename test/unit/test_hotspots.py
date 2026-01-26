@@ -91,6 +91,7 @@ def test_comments_after() -> None:
     comments = hotspot.comments(after=after)
     assert all(c["date"] >= after for c in comments.values())
 
+
 def test_search_by_project() -> None:
     """test_search_by_project"""
     nbr_hotspots = len(Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT))
