@@ -28,7 +28,6 @@ import utilities as tutil
 from sonar.hotspots import Hotspot
 from sonar import exceptions
 import sonar.util.misc as util
-from sonar import projects
 import credentials
 
 
