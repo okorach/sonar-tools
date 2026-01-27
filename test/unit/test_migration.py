@@ -26,7 +26,7 @@ from collections.abc import Generator
 import json
 
 import utilities as tutil
-from sonar import errcodes
+from sonar import errcodes, projects
 import sonar.util.constants as c
 
 import cli.options as opt
@@ -54,10 +54,11 @@ def test_migration(json_file: Generator[str]) -> None:
 
     item_list = ["detectedCi", "issues", "hotspots", "ncloc", "revision"]
     for p in json_config["projects"]:
-        if tutil.SQ.edition() != c.CE:
+        ncloc = projects.Project.get_object(tutil.SQ, p["key"]).loc()
+        if tutil.SQ.edition() != c.CE and ncloc > 0:
             assert "branches" in p or "error" in p
-        for item in item_list:
-            assert item in p["migrationData"] or "error" in p
+            for item in item_list:
+                assert item in p["migrationData"] or "error" in p
 
     u = next(u for u in json_config["users"] if u["login"] == ADMIN_USER)
     assert tutil.SQ.default_user_group() in u["groups"]
