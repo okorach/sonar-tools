@@ -736,10 +736,11 @@ class Platform(object):
     def _audit_token_max_lifetime(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits the maximum lifetime of a token"""
         log.info("Auditing maximum token lifetime global setting")
-        if not Setting.get_object(self, settings.TOKEN_MAX_LIFETIME):
+        try:
+            max_lifetime = sutil.to_days(Setting.get_object(self, key=settings.TOKEN_MAX_LIFETIME).value)
+        except exceptions.ObjectNotFound:
             log.info("Token maximum lifetime setting not found, skipping audit")
             return []
-        max_lifetime = sutil.to_days(self.get_setting(settings.TOKEN_MAX_LIFETIME))
         if max_lifetime is None:
             return [Problem(get_rule(RuleId.TOKEN_LIFETIME_UNLIMITED), self.external_url)]
         if max_lifetime > audit_settings.get("audit.tokens.maxAge", 90):
