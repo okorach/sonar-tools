@@ -97,7 +97,7 @@ class Component(SqObject):
         log.info("Searching issues for %s with filters %s", self, search_params)
         # Strip off project, application and portfolio search params
         new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio")}
-        issue_list = Issue.search(endpoint=self.endpoint, **(new_params | {"project": self.key}))
+        issue_list = Issue.search_by_project(endpoint=self.endpoint, project=self.key, **new_params)
         self.nbr_issues = len(issue_list)
         return issue_list
 
