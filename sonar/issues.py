@@ -173,8 +173,13 @@ class Issue(findings.Finding):
             issue_list = cls.search_unsafe(endpoint, threads=threads, **search_params)
         except TooManyIssuesError as e:
             log.info(e.message)
-            for key in Project.search(endpoint):
-                issue_list |= cls.search_by_project(endpoint, search_findings=True, **(search_params | {"project": key}))
+            search_params = cls.sanitize_search_params(endpoint, **search_params)
+            if proj_key := search_params.get(component_search_field(endpoint)):
+                search_params.pop(component_search_field(endpoint))
+                issue_list = cls.search_by_project(endpoint, project=proj_key, search_findings=True, **search_params)
+            else:
+                for key in Project.search(endpoint):
+                    issue_list |= cls.search_by_project(endpoint, search_findings=True, **(search_params | {"project": key}))
         return issue_list
 
     @classmethod
