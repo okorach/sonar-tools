@@ -31,7 +31,6 @@ from sonar import settings
 from sonar import platform
 import sonar.util.update_center as uc
 import sonar.util.platform_helper as phelp
-from sonar.audit import rules
 
 
 def test_system_id() -> None:

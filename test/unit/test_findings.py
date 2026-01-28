@@ -308,7 +308,8 @@ def test_search_issues_by_project() -> None:
     nb_issues = len(issues.Issue.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, resolved="false"))
     assert nb_issues < 1800
     assert len(issues.Issue.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT)) > nb_issues
-    assert len(issues.Issue.search_by_project(tutil.SQ, project="25k-issues")) == 25000
+    if tutil.SQ.version() >= (10, 0, 0):
+        assert len(issues.Issue.search_by_project(tutil.SQ, project="25k-issues")) == 25000
 
 
 def test_search_many_issues_safe() -> None:

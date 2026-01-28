@@ -177,7 +177,7 @@ class PullRequest(Component):
         """Returns a list of issues on a PR"""
         from sonar.issues import Issue
 
-        return Issue.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "pullRequest": self.key}))
+        return Issue.search_by_project(self.endpoint, project=self.concerned_object.key, **(search_params | {"pullRequest": self.key}))
 
     def get_hotspots(self, **search_params: Any) -> dict[str, Hotspot]:
         """Returns a list of hotspots on a PR"""

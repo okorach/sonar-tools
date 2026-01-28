@@ -301,7 +301,8 @@ class Platform(object):
             err_msg_lower = err_msg.lower()
             key = next((params[k] for k in ("key", "project", "component", "componentKey") if k in params), "Unknown")
             if any(
-                msg in err_msg_lower for msg in ("not found", "no quality gate has been found", "does not exist", "could not find")
+                msg in err_msg_lower
+                for msg in ("not found", "no quality gate has been found", "no group with name", "does not exist", "could not find")
             ):  # code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key, err_msg) from e
             if any(msg in err_msg_lower for msg in ("already exists", "already been taken")):
@@ -735,10 +736,11 @@ class Platform(object):
     def _audit_token_max_lifetime(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits the maximum lifetime of a token"""
         log.info("Auditing maximum token lifetime global setting")
-        if not Setting.get_object(self, settings.TOKEN_MAX_LIFETIME):
+        try:
+            max_lifetime = sutil.to_days(Setting.get_object(self, key=settings.TOKEN_MAX_LIFETIME).value)
+        except exceptions.ObjectNotFound:
             log.info("Token maximum lifetime setting not found, skipping audit")
             return []
-        max_lifetime = sutil.to_days(self.get_setting(settings.TOKEN_MAX_LIFETIME))
         if max_lifetime is None:
             return [Problem(get_rule(RuleId.TOKEN_LIFETIME_UNLIMITED), self.external_url)]
         if max_lifetime > audit_settings.get("audit.tokens.maxAge", 90):

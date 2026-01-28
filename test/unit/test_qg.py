@@ -24,7 +24,7 @@ from collections.abc import Generator
 import pytest
 
 import utilities as tutil
-from sonar import qualitygates, exceptions, logging
+from sonar import qualitygates, exceptions
 from sonar.util import constants as c
 
 

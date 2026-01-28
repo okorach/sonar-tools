@@ -310,7 +310,7 @@ class Branch(components.Component):
         """Returns a list of issues on a branch"""
         from sonar.issues import Issue
 
-        return Issue.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "branch": self.name}))
+        return Issue.search_by_project(self.endpoint, project=self.concerned_object.key, **(search_params | {"branch": self.name}))
 
     def get_hotspots(self, **search_params: Any) -> dict[str, Hotspot]:
         """Returns a list of hotspots on a branch"""
