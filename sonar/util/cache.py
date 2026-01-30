@@ -99,4 +99,5 @@ class Cache(object):
 
     def from_platform(self, endpoint: Platform) -> dict[str, SqObject]:
         """Returns the objects from the cache for a given platform"""
-        return {o.key: o for o in self.objects.values() if o.endpoint is endpoint}
+        with self.lock:
+            return {o.key: o for o in self.objects.values() if o.endpoint is endpoint}
