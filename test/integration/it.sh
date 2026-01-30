@@ -77,7 +77,7 @@ function tag_for {
     echo $tag
 }
 
-[ $# -eq 0 ]] && echo "Usage: $0 <env1> [... <envN>]" && exit 1
+[[ $# -eq 0 ]] && echo "Usage: $0 <env1> [... <envN>]" && exit 1
 rm -f "${TMP}"/*.log "${TMP}"/*.csv "${TMP}"/*.json
 
 noExport=0
@@ -92,7 +92,7 @@ for env in "$@"
 do
 
     logmsg "Install sonar-tools current local version: root = ${TMP}"
-    cd "${REPO_ROOT}"; ./deploy.sh nodoc nodocker 1>$IT_LOG_FILE 2>&1; cd -
+    cd "${REPO_ROOT}"; conf/deploy.sh nodoc nodocker 1>$IT_LOG_FILE 2>&1; cd -
 
     if [[ "${env}" = "sonarcloud" ]]; then
         logmsg "Running with environment ${env}"

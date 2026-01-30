@@ -96,7 +96,7 @@ test_passed_if_identical() {
 }
 
 test_passed_if_file_not_empty() {
-    [[ -s "${1}" ]
+    [[ -s "${1}" ]]
     code=$?
     test_result $code
     return $code
