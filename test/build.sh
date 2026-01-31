@@ -28,7 +28,7 @@ export GEN_LOC=test/gen
 echo ""
 echo "Generating edition / version specific tests"
 
-for target in lts latest cb 9 cloud common
+for target in latest 20261 20251 99 cb cloud common
 do
     echo "Generating tests for ${target}"
     rm -rf "${ROOT_DIR:?}/${GEN_LOC:?}/${target}"

@@ -33,7 +33,7 @@ function create_fresh_project {
         opt_org="-Dsonar.organization=okorach"
     fi
     opt_token="-Dsonar.token=${token}"
-    if [[ "${url}" = "${SONAR_HOST_URL_9}" ]]; then
+    if [[ "${url}" = "${SONAR_HOST_URL_99}" ]]; then
         opt_token="-Dsonar.login=${token}"  
     fi
     curl -X POST -u "${usertoken}:" "${url}/api/projects/delete?project=${key}"
@@ -48,20 +48,22 @@ conf/run_linters.sh
 create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_TEST:?}" "${SONAR_TOKEN_TEST_ADMIN_USER}" "${SONAR_TOKEN_TEST_ADMIN_ANALYSIS}"
 create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_LATEST:?}" "${SONAR_TOKEN_LATEST_ADMIN_USER}" "${SONAR_TOKEN_LATEST_ADMIN_ANALYSIS}"
 create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_CB:?}" "${SONAR_TOKEN_CB_ADMIN_USER}" "${SONAR_TOKEN_CB_ADMIN_ANALYSIS}"
-create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_9:?}" "${SONAR_TOKEN_9_ADMIN_USER}" "${SONAR_TOKEN_9_ADMIN_ANALYSIS}"
+create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_99:?}" "${SONAR_TOKEN_99_ADMIN_USER}" "${SONAR_TOKEN_99_ADMIN_ANALYSIS}"
+create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_20251:?}" "${SONAR_TOKEN_20251_ADMIN_USER}" "${SONAR_TOKEN_20251_ADMIN_ANALYSIS}"
+#create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_20261:?}" "${SONAR_TOKEN_20261_ADMIN_USER}" "${SONAR_TOKEN_20261_ADMIN_ANALYSIS}"
 create_fresh_project "${SYNC_PROJECT_KEY}" "https://sonarcloud.io" "${SONAR_TOKEN_SONARCLOUD}" "${SONAR_TOKEN_SONARCLOUD}"
-create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_CB:?}" "${SONAR_TOKEN_CB_ADMIN_USER}" "${SONAR_TOKEN_CB_ADMIN_ANALYSIS}"
 
 for pr in 5 7; do
     feature="${pr}"
     [[ $pr -eq 5 ]] && feature="Add parameter to choose UI language"
     [[ $pr -eq 7 ]] && feature="Redesign login page"
     sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_LATEST:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${feature}" -Dsonar.token="${SONAR_TOKEN_LATEST_ADMIN_ANALYSIS}"
-    sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_LTS:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${feature}" -Dsonar.token="${SONAR_TOKEN_LTS_ADMIN_ANALYSIS}"
+    #sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_20261:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${feature}" -Dsonar.token="${SONAR_TOKEN_20261_ADMIN_ANALYSIS}"
+    sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_20251:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${feature}" -Dsonar.token="${SONAR_TOKEN_20251_ADMIN_ANALYSIS}"
 done
 # Format for 10.x and 9.x is different, file was generated for 10.x, so removing for 9.9
 
 rm build/external-issues*
 for pr in 5 7; do
-    sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_9:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${pr}" -Dsonar.login="${SONAR_TOKEN_9_ADMIN_ANALYSIS}"
+    sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_99:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${pr}" -Dsonar.login="${SONAR_TOKEN_9_ADMIN_ANALYSIS}"
 done

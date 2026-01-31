@@ -252,37 +252,28 @@ def test_transitions() -> None:
     issue = list(issues_d.values())[0]
 
     assert issue.confirm()
-    with pytest.raises(exceptions.UnsupportedOperation):
-        issue.confirm()
+    assert not issue.confirm()
     assert issue.unconfirm()
-    with pytest.raises(exceptions.UnsupportedOperation):
-        issue.unconfirm()
+    assert not issue.unconfirm()
 
     assert issue.resolve_as_fixed()
-    with pytest.raises(exceptions.UnsupportedOperation):
-        issue.resolve_as_fixed()
+    assert not issue.resolve_as_fixed()
     assert issue.reopen()
-    with pytest.raises(exceptions.UnsupportedOperation):
-        issue.reopen()
+    assert not issue.reopen()
 
     if tutil.SQ.version() >= c.ACCEPT_INTRO_VERSION:
         assert issue.accept()
-        with pytest.raises(exceptions.UnsupportedOperation):
-            issue.accept()
+        assert not issue.accept()
     else:
         assert issue.mark_as_wont_fix()
-        with pytest.raises(exceptions.UnsupportedOperation):
-            issue.mark_as_wont_fix()
+        assert not issue.mark_as_wont_fix()
     assert issue.reopen()
-    with pytest.raises(exceptions.UnsupportedOperation):
-        issue.reopen()
+    assert not issue.reopen()
 
     assert issue.mark_as_false_positive()
-    with pytest.raises(exceptions.UnsupportedOperation):
-        issue.mark_as_false_positive()
+    assert not issue.mark_as_false_positive()
     assert issue.reopen()
-    with pytest.raises(exceptions.UnsupportedOperation):
-        issue.reopen()
+    assert not issue.reopen()
 
 
 def test_search_first() -> None:

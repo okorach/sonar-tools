@@ -37,7 +37,7 @@ cd "${ROOT_DIR}" || exit 1
 
 sonar start -i test
 
-for target in latest cb 9 cloud common
+for target in latest cb 99 cloud common
 do
     if [[ "${target}" != "common" ]]; then
         sonar start -i "${target}" && sleep 30
