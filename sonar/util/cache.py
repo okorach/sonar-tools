@@ -36,6 +36,7 @@ class Cache(object):
     def __init__(self) -> None:
         """Constructor"""
         self.objects: dict[int, SqObject] = {}
+        self.objects_by_platform: dict[str, dict[int, SqObject]] = {}
         self.object_class: Optional[Any] = None
         self.lock = Lock()
 
@@ -61,6 +62,10 @@ class Cache(object):
             h = hash(obj)
             if h not in self.objects:
                 self.objects[h] = obj
+                url = obj.endpoint.local_url
+                if url not in self.objects_by_platform:
+                    self.objects_by_platform[url] = {}
+                self.objects_by_platform[url][h] = obj
         return self.objects[h]
 
     def get(self, *args: Any) -> Optional[SqObject]:
@@ -100,4 +105,4 @@ class Cache(object):
     def from_platform(self, endpoint: Platform) -> dict[str, SqObject]:
         """Returns the objects from the cache for a given platform"""
         with self.lock:
-            return {o.key: o for o in self.objects.values() if o.endpoint is endpoint}
+            return self.objects_by_platform.get(endpoint.local_url, {})
