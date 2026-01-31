@@ -532,8 +532,10 @@ class Finding(SqObject):
             return self.post(api, params=params).ok
         except exceptions.SonarException as e:
             if re.match(r"Transition from state [A-Za-z]+ does not exist", e.message):
-                raise exceptions.UnsupportedOperation(e.message) from e
-            raise
+                log.warning("Transition from state %s does not exist for %s: %s", transition, str(self), e.message)
+                return False
+            else:
+                raise
 
     def get_branch_and_pr(self, data: ApiPayload) -> tuple[Optional[str], Optional[str]]:
         """
