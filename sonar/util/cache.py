@@ -65,7 +65,7 @@ class Cache(object):
                 url = obj.endpoint.local_url
                 if url not in self.objects_by_platform:
                     self.objects_by_platform[url] = {}
-                self.objects_by_platform[url][h] = obj
+                self.objects_by_platform[url]["|".join(str(e) for e in obj.hash_object())] = obj
         return self.objects[h]
 
     def get(self, *args: Any) -> Optional[SqObject]:
@@ -77,6 +77,9 @@ class Cache(object):
         """Pops an object from the cache"""
         with self.lock:
             o = self.objects.pop(hash(obj), None)
+            url = obj.endpoint.local_url
+            if url in self.objects_by_platform:
+                self.objects_by_platform[url].pop("|".join(str(e) for e in obj.hash_object()), None)
         return o
 
     def values(self) -> list[SqObject]:
@@ -99,8 +102,10 @@ class Cache(object):
                 for o_hash, o in self.objects.copy().items():
                     if o.endpoint is endpoint:
                         self.objects.pop(o_hash)
+                self.objects_by_platform.pop(endpoint.local_url, None)
             else:
                 self.objects = {}
+                self.objects_by_platform = {}
 
     def from_platform(self, endpoint: Platform) -> dict[str, SqObject]:
         """Returns the objects from the cache for a given platform"""

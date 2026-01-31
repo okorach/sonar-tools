@@ -33,6 +33,16 @@ def test_search() -> None:
     assert len(langs) > 0
     for lang in ("py", "java", "js", "ts", "go"):
         assert lang in langs
+    for lang in ("fubar", "unknown", "python", "JavaScript"):
+        assert lang not in langs
+
+
+def test_exists() -> None:
+    """Test exists"""
+    for lang in ("py", "java", "js", "ts", "go"):
+        assert Language.exists(tutil.SQ, language=lang)
+    for lang in ("fubar", "unknown", "python", "JavaScript"):
+        assert not Language.exists(tutil.SQ, language=lang)
 
 
 def test_read() -> None:
