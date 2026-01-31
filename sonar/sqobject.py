@@ -172,12 +172,12 @@ class SqObject(object):
         new_params = {"ps": max_ps, "pageSize": max_ps} | (params or {})
         api, _, new_params, returned_field = endpoint.api.get_details(cls, Oper.SEARCH, **new_params)
 
-        objects_list: dict[str, cls] = {}
+        objects_list: dict[str, SqObject] = {}
         data = json.loads(endpoint.get(api, new_params).text)
         nb_pages = sutil.nbr_pages(data)
         nb_objects = max(len(data[returned_field]), sutil.nbr_total_elements(data))
-        msg = "Searching %d %ss, %d pages of %d elements, %d pages in parallel..."
-        log.info(msg, nb_objects, cname, nb_pages, len(data[returned_field]), threads)
+        msg = "Searching %d %ss, %d pages of %d elements, %d pages in parallel with params %s..."
+        log.info(msg, nb_objects, cname, nb_pages, len(data[returned_field]), threads, new_params)
         if sutil.nbr_total_elements(data) > 0 and len(data[returned_field]) == 0:
             log.fatal(msg := f"Index on {cname} is corrupted, please reindex before using API")
             raise exceptions.SonarException(msg, errcodes.SONAR_INTERNAL_ERROR)
@@ -192,6 +192,7 @@ class SqObject(object):
                     objects_list |= cls.load_objects(endpoint, data[returned_field])
                 except Exception as e:
                     log.error(f"Error {e} while searching {cname}.")
+        log.info("Search returned %d %s(s)", len(objects_list), cname)
         return objects_list
 
     def reload(self, data: ApiPayload) -> SqObject:
