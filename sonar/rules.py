@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # sonar-tools
 # Copyright (C) 2019-2026 Olivier Korach
@@ -204,9 +203,11 @@ class Rule(SqObject):
         :return: The Rule object corresponding to the input rule key
         :raises: ObjectNotFound if rule does not exist
         """
+        if len(cls.CACHE.from_platform(endpoint)) == 0:
+            cls.search(endpoint, threads=8, use_cache=False, include_external=True)
         if o := cls.CACHE.get(endpoint.local_url, key):
             return o
-        Rule.get_paginated(endpoint=endpoint, params={"q": key})
+        cls.get_paginated(endpoint=endpoint, params={"include_external": True, "q": key})
         if o := cls.CACHE.get(endpoint.local_url, key):
             return o
         raise exceptions.ObjectNotFound(key, f"Rule key '{key}' not found")
@@ -288,7 +289,8 @@ class Rule(SqObject):
         :return: Dict of rules indexed by rule key
         """
         log.debug("Searching rules with params %s", search_params)
-        if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 1000:
+        tmp_params = {k: v for k, v in search_params.items() if k != "include_external"}
+        if use_cache and len(tmp_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 1000:
             log.debug("Searching rules from cache")
             return cls.CACHE.from_platform(endpoint)
         langs = search_params.pop("languages", None)
