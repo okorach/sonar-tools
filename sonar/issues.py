@@ -602,6 +602,11 @@ class Issue(findings.Finding):
         :return: Whether the operation succeeded
         """
         log.debug("Marking %s as false positive", str(self))
+        if self.status == "RESOLVED":
+            try:
+                self.reopen()
+            except exceptions.UnsupportedOperation:
+                pass
         return self.do_transition("falsepositive")
 
     def confirm(self) -> bool:
@@ -610,6 +615,11 @@ class Issue(findings.Finding):
         :return: Whether the operation succeeded
         """
         log.debug("Confirming %s", str(self))
+        if self.status == "RESOLVED":
+            try:
+                self.reopen()
+            except exceptions.UnsupportedOperation:
+                pass
         return self.do_transition("confirm")
 
     def unconfirm(self) -> bool:
@@ -618,6 +628,11 @@ class Issue(findings.Finding):
         :return: Whether the operation succeeded
         """
         log.debug("Unconfirming %s", str(self))
+        if self.status == "RESOLVED":
+            try:
+                self.reopen()
+            except exceptions.UnsupportedOperation:
+                pass
         return self.do_transition("unconfirm")
 
     def resolve_as_fixed(self) -> bool:
@@ -645,6 +660,8 @@ class Issue(findings.Finding):
         :return: Whether the operation succeeded
         """
         log.debug("Marking %s as accepted", str(self))
+        if self.status == "RESOLVED":
+            self.reopen()
         return self.do_transition("accept")
 
     def __apply_event(self, event: changelog.Changelog, settings: ConfigSettings) -> bool:
