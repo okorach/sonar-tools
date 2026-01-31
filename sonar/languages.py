@@ -77,9 +77,7 @@ class Language(SqObject):
         :rtype: dict{<language_key>: <language_name>}
         """
         if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
-            log.debug("Searching languages from cache")
             return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
-        log.debug("Searching languages from SonarQube")
         api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
         data = json.loads(endpoint.get(api, params=params).text)
         return {lang["key"]: Language(endpoint, lang) for lang in data[ret]}
@@ -102,4 +100,4 @@ class Language(SqObject):
         :param endpoint: Reference of the SonarQube platform
         :param language: The language key
         """
-        return kwargs.get("language") in cls.search(endpoint, use_cache=True)
+        return kwargs.get("language") in [lang.key for lang in cls.search(endpoint, use_cache=True).values()]
