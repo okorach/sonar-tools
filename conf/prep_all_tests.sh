@@ -65,5 +65,5 @@ done
 
 rm build/external-issues*
 for pr in 5 7; do
-    sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_9:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${pr}" -Dsonar.login="${SONAR_TOKEN_9_ADMIN_ANALYSIS}"
+    sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_99:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${pr}" -Dsonar.login="${SONAR_TOKEN_9_ADMIN_ANALYSIS}"
 done
