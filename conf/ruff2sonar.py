@@ -58,7 +58,7 @@ def main() -> None:
             rule_id = m.group(4)
             message = m.group(6)
             sonar_issue = {
-                "ruleId": f"{TOOLNAME}:{rule_id}",
+                "ruleId": rule_id,
                 "effortMinutes": 5,
                 "primaryLocation": {
                     "message": m.group(6),
@@ -70,9 +70,9 @@ def main() -> None:
                 sonar_issue["engineId"] = TOOLNAME
                 sonar_issue["severity"] = "MAJOR"
                 sonar_issue["type"] = "CODE_SMELL"
-            rules_dict[f"{TOOLNAME}:{rule_id}"] = {
-                "id": f"{TOOLNAME}:{rule_id}",
-                "name": f"{TOOLNAME}:{rule_id}",
+            rules_dict[rule_id] = {
+                "id": rule_id,
+                "name": rule_id,
                 "description": message,
                 "engineId": TOOLNAME,
                 "type": "CODE_SMELL",
