@@ -33,7 +33,7 @@ function create_fresh_project {
         opt_org="-Dsonar.organization=okorach"
     fi
     opt_token="-Dsonar.token=${token}"
-    if [[ "${url}" = "${SONAR_HOST_URL_9}" ]]; then
+    if [[ "${url}" = "${SONAR_HOST_URL_99}" ]]; then
         opt_token="-Dsonar.login=${token}"  
     fi
     curl -X POST -u "${usertoken}:" "${url}/api/projects/delete?project=${key}"
