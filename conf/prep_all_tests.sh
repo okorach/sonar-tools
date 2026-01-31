@@ -45,21 +45,59 @@ function create_fresh_project {
 
 conf/run_linters.sh
 
-create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_TEST:?}" "${SONAR_TOKEN_TEST_ADMIN_USER}" "${SONAR_TOKEN_TEST_ADMIN_ANALYSIS}"
-create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_LATEST:?}" "${SONAR_TOKEN_LATEST_ADMIN_USER}" "${SONAR_TOKEN_LATEST_ADMIN_ANALYSIS}"
-create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_CB:?}" "${SONAR_TOKEN_CB_ADMIN_USER}" "${SONAR_TOKEN_CB_ADMIN_ANALYSIS}"
-create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_99:?}" "${SONAR_TOKEN_99_ADMIN_USER}" "${SONAR_TOKEN_99_ADMIN_ANALYSIS}"
-create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_20251:?}" "${SONAR_TOKEN_20251_ADMIN_USER}" "${SONAR_TOKEN_20251_ADMIN_ANALYSIS}"
-#create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_20261:?}" "${SONAR_TOKEN_20261_ADMIN_USER}" "${SONAR_TOKEN_20261_ADMIN_ANALYSIS}"
-create_fresh_project "${SYNC_PROJECT_KEY}" "https://sonarcloud.io" "${SONAR_TOKEN_SONARCLOUD}" "${SONAR_TOKEN_SONARCLOUD}"
+if [[ $# -eq 0 ]]; then
+    sqs_list="latest cb 99 20251 cloud test"
+else
+    sqs_list="$@"
+fi
+
+if [[ "${sqs_list}" == *"test"* ]]; then
+    create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_TEST:?}" "${SONAR_TOKEN_TEST_ADMIN_USER}" "${SONAR_TOKEN_TEST_ADMIN_ANALYSIS}"
+fi
+if [[ "${sqs_list}" == *"latest"* ]]; then
+    create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_LATEST:?}" "${SONAR_TOKEN_LATEST_ADMIN_USER}" "${SONAR_TOKEN_LATEST_ADMIN_ANALYSIS}"
+fi
+if [[ "${sqs_list}" == *"cb"* ]]; then
+    create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_CB:?}" "${SONAR_TOKEN_CB_ADMIN_USER}" "${SONAR_TOKEN_CB_ADMIN_ANALYSIS}"
+fi
+if [[ "${sqs_list}" == *"99"* ]]; then
+    create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_99:?}" "${SONAR_TOKEN_99_ADMIN_USER}" "${SONAR_TOKEN_99_ADMIN_ANALYSIS}"
+fi
+if [[ "${sqs_list}" == *"20251"* ]]; then
+    create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_20251:?}" "${SONAR_TOKEN_20251_ADMIN_USER}" "${SONAR_TOKEN_20251_ADMIN_ANALYSIS}"
+fi
+if [[ "${sqs_list}" == *"20261"* ]]; then
+    create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_20261:?}" "${SONAR_TOKEN_20261_ADMIN_USER}" "${SONAR_TOKEN_20261_ADMIN_ANALYSIS}"
+fi
+if [[ "${sqs_list}" == *"cloud"* ]]; then
+    create_fresh_project "${SYNC_PROJECT_KEY}" "https://sonarcloud.io" "${SONAR_TOKEN_SONARCLOUD}" "${SONAR_TOKEN_SONARCLOUD}"
+fi
 
 for pr in 5 7; do
     feature="${pr}"
     [[ $pr -eq 5 ]] && feature="Add parameter to choose UI language"
     [[ $pr -eq 7 ]] && feature="Redesign login page"
-    sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_LATEST:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${feature}" -Dsonar.token="${SONAR_TOKEN_LATEST_ADMIN_ANALYSIS}"
-    #sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_20261:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${feature}" -Dsonar.token="${SONAR_TOKEN_20261_ADMIN_ANALYSIS}"
-    sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_20251:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${feature}" -Dsonar.token="${SONAR_TOKEN_20251_ADMIN_ANALYSIS}"
+#    if [[ "${sqs_list}" == *"test"* ]]; then
+#        sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_TEST:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${feature}" -Dsonar.token="${SONAR_TOKEN_TEST_ADMIN_ANALYSIS}"
+#    fi
+    if [[ "${sqs_list}" == *"latest"* ]]; then
+         sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_LATEST:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${feature}" -Dsonar.token="${SONAR_TOKEN_LATEST_ADMIN_ANALYSIS}"
+    fi
+#    if [[ "${sqs_list}" == *"20261"* ]]; then
+#        sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_20261:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${feature}" -Dsonar.token="${SONAR_TOKEN_20261_ADMIN_ANALYSIS}"
+#    fi
+    if [[ "${sqs_list}" == *"20251"* ]]; then
+        sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_20251:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${feature}" -Dsonar.token="${SONAR_TOKEN_20251_ADMIN_ANALYSIS}"
+    fi
+#    if [[ "${sqs_list}" == *"cb"* ]]; then
+#        sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_CB:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${feature}" -Dsonar.token="${SONAR_TOKEN_CB_ADMIN_ANALYSIS}"
+#    fi
+#    if [[ "${sqs_list}" == *"99"* ]]; then
+#        sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL_99:?}" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${feature}" -Dsonar.login="${SONAR_TOKEN_9_ADMIN_ANALYSIS}"
+#    fi
+#    if [[ "${sqs_list}" == *"cloud"* ]]; then
+#        sonar-scanner -Dsonar.host.url="https://sonarcloud.io" -Dsonar.pullrequest.key="${pr}" -Dsonar.pullrequest.branch="feature/${feature}" -Dsonar.token="${SONAR_TOKEN_SONARCLOUD}"
+#    fi
 done
 # Format for 10.x and 9.x is different, file was generated for 10.x, so removing for 9.9
 

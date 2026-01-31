@@ -79,8 +79,8 @@ else
   echo "===> NO EXTERNAL ISSUES"
 fi
 
-echo
+echo "=============================================================="
 echo "Running: ${cmd}" | sed "s/${SONAR_TOKEN}/<SONAR_TOKEN>/g"
-echo
+echo "=============================================================="
 
 ${cmd}
