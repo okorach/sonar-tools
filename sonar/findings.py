@@ -250,7 +250,6 @@ class Finding(SqObject):
             data["maintainabilityImpact"] = data["impacts"].get(idefs.QUALITY_MAINTAINABILITY, "")
             data["otherImpact"] = data["impacts"].get(idefs.QUALITY_NONE, "")
             data.pop("impacts", None)
-        data["projectName"] = projects.Project.get_object(endpoint=self.endpoint, key=self.projectKey).name
         fields = CSV_EXPORT_FIELDS if self.endpoint.version() >= c.MQR_INTRO_VERSION else LEGACY_CSV_EXPORT_FIELDS
         return [str(data.get(field, "")) for field in fields]
 
@@ -270,8 +269,10 @@ class Finding(SqObject):
         data["updateDate"] = self.modification_date.strftime(fmt)
         data["language"] = self.language()
         data["url"] = self.url()
+        proj = projects.Project.get_object(endpoint=self.endpoint, key=self.projectKey)
+        data["projectName"] = proj.name
         if data["pullRequest"] is None and data["branch"] is None:
-            data["branch"] = projects.Project.get_object(self.endpoint, key=self.projectKey).main_branch_name()
+            data["branch"] = proj.main_branch_name()
         if data.get("resolution", None):
             data["status"] = data.pop("resolution")
         if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION:
