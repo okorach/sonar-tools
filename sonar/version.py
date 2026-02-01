@@ -20,5 +20,5 @@
 
 """sonar-tools project version"""
 
-PACKAGE_VERSION = "3.18"
+PACKAGE_VERSION = "3.18.1"
 MIGRATION_TOOL_VERSION = "0.7"
