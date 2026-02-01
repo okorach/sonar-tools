@@ -2,8 +2,8 @@
 Command line tools to help in SonarQube administration tasks. Available as a **pypi.org** package or a **docker** image.
 
 `sonar-tools` is compatible with:
-- SonarQube Server versions 9.9.x, January LTA (2025.1.x), July LTA (2025.4.x), latest 2025.x (2025.5 as of Oct 2025). It may work with older 9.x versions or intermediate 10.x versions but this is not guaranteed.
-- The **latest** SonarQube Community Build (25.10 as of Oct 2025).
+- SonarQube Server versions 9.9.x, January LTA (2025.1.x), July LTA (2025.4.x), 2026.1 LTA. It may work with intermediate 10.x, 2025.x or 2026.x versions but this is not guaranteed.
+- The **latest** SonarQube Community Build (26.1 as of Jan 2026).
 
 
 ![Downloads](https://img.shields.io/pypi/dm/sonar-tools?color=informational)
