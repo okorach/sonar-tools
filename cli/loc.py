@@ -224,7 +224,7 @@ def main() -> None:
             key_regexp=kwargs[options.KEY_REGEXP],
             branch_regexp=kwargs[options.BRANCH_REGEXP],
             topLevelOnly=kwargs["topLevelOnly"],
-            pull_requests=kwargs.get(options.PULL_REQUESTS, False),
+            pr_regexp=".+" if kwargs.get(options.PULL_REQUESTS, False) else None,
         )
         if len(objects_list) == 0:
             raise exceptions.SonarException(f"No object matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)
