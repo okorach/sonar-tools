@@ -58,14 +58,14 @@ if [[ "${branch}" != "master" ]]; then
 fi
 
 relativeDir=$(basename "${BUILD_DIR}")
-  if ls "${BUILD_DIR}"/coverage*.xml >/dev/null 2>&1; then
-  cmd="${cmd} -Dsonar.python.coverage.reportPaths=${relativeDir}/coverage*.xml"
+  if ls "${BUILD_DIR}"/coverage.xml >/dev/null 2>&1; then
+  cmd="${cmd} -Dsonar.python.coverage.reportPaths=${relativeDir}/coverage.xml"
 else
   echo "===> NO COVERAGE REPORT"
 fi
 
-if ls "${BUILD_DIR}"/xunit-results*.xml >/dev/null 2>&1; then
-  cmd="${cmd} -Dsonar.python.xunit.reportPath=${relativeDir}/xunit-results*.xml"
+if ls "${BUILD_DIR}"/xunit-results.xml >/dev/null 2>&1; then
+  cmd="${cmd} -Dsonar.python.xunit.reportPath=${relativeDir}/xunit-results.xml"
 else
   echo "===> NO UNIT TESTS REPORT"
   cmd="${cmd} -Dsonar.python.xunit.reportPath="

@@ -48,5 +48,5 @@ done
 # curl -X POST -u "${SONAR_TOKEN_TEST_ADMIN_USER}:" "${SONAR_HOST_URL_TEST}/api/projects/delete?project=${SYNC_PROJECT_KEY}"
 # conf/run_scanner.sh -Dsonar.host.url="${SONAR_HOST_URL_TEST}" -Dsonar.projectKey="${SYNC_PROJECT_KEY}" -Dsonar.projectName="${SYNC_PROJECT_KEY}" -Dsonar.token="${SONAR_TOKEN_TEST_ADMIN_ANALYSIS}"
 # Run tests
-poetry run coverage run --branch --source="${ROOT_DIR}" -m pytest ${test_dirs} --junit-xml="${BUILD_DIR}/xunit-results-${target}.xml"
-poetry run coverage xml -o "${BUILD_DIR}/coverage-${target}.xml"
+poetry run coverage run --branch --source="${ROOT_DIR}" -m pytest ${test_dirs} --junit-xml="${BUILD_DIR}/xunit-results.xml"
+poetry run coverage xml -o "${BUILD_DIR}/coverage.xml"
