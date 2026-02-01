@@ -105,7 +105,7 @@ def test_loc_branches(csv_file: Generator[str]) -> None:
         assert tutil.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
         return
     assert tutil.run_cmd(loc.main, cmd) == e.OK
-    assert tutil.csv_col_match(csv_file, "branch", r"^[^\s]+$")
+    assert tutil.csv_col_match(csv_file, "branch", r"^(|[^\s]+)$")
 
 
 def test_loc_pull_requests(csv_file: Generator[str]) -> None:
@@ -126,7 +126,7 @@ def test_loc_branches_json(json_file: Generator[str]) -> None:
         assert tutil.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
         return
     assert tutil.run_cmd(loc.main, cmd) == e.OK
-    assert tutil.json_field_match(json_file, "branch", r"^[^\s]+$")
+    assert tutil.json_field_match(json_file, "branch", r"^(|[^\s]+)$")
 
 
 def test_loc_proj_all_options(csv_file: Generator[str]) -> None:
@@ -143,7 +143,7 @@ def test_loc_proj_all_options(csv_file: Generator[str]) -> None:
     assert tutil.csv_col_int(csv_file, "ncloc", False)
     assert tutil.csv_col_url(csv_file, "URL")
     assert tutil.csv_col_datetime(csv_file, "last analysis")
-    assert tutil.csv_col_not_all_empty(csv_file, "tags")
+    assert not tutil.csv_col_all_empty(csv_file, "tags")
 
 
 def test_loc_apps_all_options(csv_file: Generator[str]) -> None:
@@ -159,7 +159,7 @@ def test_loc_apps_all_options(csv_file: Generator[str]) -> None:
     assert tutil.csv_col_int(csv_file, "ncloc", False)
     assert tutil.csv_col_url(csv_file, "URL")
     assert tutil.csv_col_datetime(csv_file, "last analysis")
-    assert tutil.csv_col_not_all_empty(csv_file, "tags")
+    assert not tutil.csv_col_all_empty(csv_file, "tags")
 
 
 def test_loc_portfolios_all_options(csv_file: Generator[str]) -> None:
@@ -220,3 +220,43 @@ def test_loc_portfolios_all_options_json(json_file: Generator[str]) -> None:
     assert tutil.json_field_url(json_file, "url")
     assert tutil.json_field_datetime(json_file, "lastAnalysis")
     # Check file contents
+
+
+def test_branch(csv_file: Generator[str]) -> None:
+    """test_branch"""
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.BRANCH_REGEXP} develop"
+    if tutil.SQ.edition() == c.CE:
+        assert tutil.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
+        return
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.csv_nbr_lines(csv_file) > 0
+    assert not tutil.csv_col_all_empty(csv_file, "branch")
+    assert tutil.csv_col_is_value(csv_file, "type", "branch", "project")
+    assert tutil.csv_col_match(csv_file, "branch", r"^(develop|)$")
+    assert tutil.csv_col_match(csv_file, "type", r"^(branch|project)$")
+    assert tutil.csv_col_match(csv_file, "pr", r"^$")
+
+
+def test_pr(csv_file: Generator[str]) -> None:
+    """test_pr"""
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.PULL_REQUESTS}"
+    if tutil.SQ.edition() == c.CE:
+        assert tutil.run_cmd(loc.main, cmd) == e.UNSUPPORTED_OPERATION
+        return
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.csv_nbr_lines(csv_file) > 0
+    assert tutil.csv_col_is_value(csv_file, "type", "pullrequest", "project")
+    assert not tutil.csv_col_all_empty(csv_file, "pr")
+    assert tutil.csv_col_match(csv_file, "type", r"^(pullrequest|project)$")
+
+
+def test_project_regexp(csv_file: Generator[str]) -> None:
+    """test_pr"""
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} okorach.+"
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.csv_nbr_lines(csv_file) > 0
+    assert tutil.csv_col_all_empty(csv_file, "pr")
+    assert tutil.csv_col_all_empty(csv_file, "branch")
+    assert tutil.csv_col_is_value(csv_file, "type", "project")
+    assert tutil.csv_col_match(csv_file, "type", r"^project$")
+    assert tutil.csv_col_match(csv_file, "project key", r"^okorach.+$")

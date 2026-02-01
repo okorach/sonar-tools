@@ -2,8 +2,8 @@
 Command line tools to help in SonarQube administration tasks. Available as a **pypi.org** package or a **docker** image.
 
 `sonar-tools` is compatible with:
-- SonarQube Server versions 9.9.x, January LTA (2025.1.x), July LTA (2025.4.x), latest 2025.x (2025.5 as of Oct 2025). It may work with older 9.x versions or intermediate 10.x versions but this is not guaranteed.
-- The **latest** SonarQube Community Build (25.10 as of Oct 2025).
+- SonarQube Server versions 9.9.x, January LTA (2025.1.x), July LTA (2025.4.x), 2026.1 LTA. It may work with intermediate 10.x, 2025.x or 2026.x versions but this is not guaranteed.
+- The **latest** SonarQube Community Build (26.1 as of Jan 2026).
 
 
 ![Downloads](https://img.shields.io/pypi/dm/sonar-tools?color=informational)
@@ -33,7 +33,7 @@ deletes tokens created since more than a certain number of days
 - [sonar-misra](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-misra.md): Exports a MISRA C++:2023 report.
 - [sonar-maturity](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-maturity.md): Computes SonarQube metrics reflecting maturity in SonarQube usage.
 
-:information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube Server Jan LTA (Long Term Active, 2025.1.x as of Oct 2025), July LTA (2025.4.x as of Oct 2025), LATEST (2025.5.x as of Oct 2025), Community Build (25.9.x as of Oct 2025) and 9.9.9 versions, and SonarQube Clou**
+:information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube Server 2026.1.x LTA (Long Term Active), 2025.1 (Jan) and 2025.4 (July) LTA and LATEST (2026.1.x as of Oct 2025), Community Build (26.1 as of Jan 2026) and 9.9.9 versions, and SonarQube Cloud**
 
 :warning: **sonar-tools** 2.7 or higher is required for compatibility with SonarQube Cloud or SonarQube Server 10 and higher
 
