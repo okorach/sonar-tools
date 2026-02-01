@@ -32,7 +32,6 @@ from sonar.util import constants as c
 import sonar.util.issue_defs as idefs
 import credentials as tconf
 import sonar.util.misc as util
-from sonar.api.manager import ApiOperation as Oper
 
 
 def test_issue() -> None:
