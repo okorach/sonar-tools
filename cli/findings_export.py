@@ -46,6 +46,7 @@ import sonar.utilities as sutil
 import sonar.util.common_helper as chelp
 from sonar.applications import Application
 from sonar.portfolios import Portfolio
+from sonar.rules import Rule
 
 if TYPE_CHECKING:
     from sonar.projects import Project
@@ -306,6 +307,8 @@ def store_findings(components_list: list[object], endpoint: platform.Platform, p
     comp_params = {k: v for k, v in params.items() if k in _SEARCH_CRITERIA}
     local_params = params.copy()
     file = local_params.pop(options.REPORT_FILE)
+    if any("misra" in p for p in params.get(options.TAGS, {})):
+        Rule.search(endpoint=endpoint, languages="c,cpp,objc")
     __write_header(file, endpoint=endpoint, **local_params)
     total_findings = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=params.get(options.NBR_THREADS, 4), thread_name_prefix="FindingSearch") as executor:
