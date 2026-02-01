@@ -7,7 +7,7 @@ ARG USER_UID=1000
 ARG GROUPNAME=sonar
 
 # Create the user
-RUN addgroup -S "${GROUPNAME}" && adduser -u "${USER_UID}" -S "${USERNAME}" -G "${GROUPNAME}""
+RUN addgroup -S "${GROUPNAME}" && adduser -u "${USER_UID}" -S "${USERNAME}" -G "${GROUPNAME}"
 
 # Install python/pip
 ENV PYTHONUNBUFFERED=1
@@ -28,7 +28,7 @@ COPY ./LICENSE .
 COPY ./sonar/audit sonar/audit
 
 RUN pip install --upgrade pip \
-&& pip install sonar-tools==3.18.1
+&& pip install sonar-tools==3.19
 
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}
