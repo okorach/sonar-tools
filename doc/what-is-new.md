@@ -1,9 +1,21 @@
 # Next version
 
+# Version 3.18
+
 * Dropped compatibility with SonarQube versions older than 9.9.0
 * Dropped `sonar-custom-measures` tool (Custom measures are no longer supported since SonarQube 9.0)
 * Added `sonar-misra` to export a MISRA report. See [sonar-misra doc](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-misra.md) for details
 * Added `sonar-maturity` to compute metrics related to the maturity of SonarQube usage
+* `sonar-measures-export`:
+  - Allowed to filter export of objects (projects/portfolios/apps) by last analysis date. See `--analyzedAfter` option
+  - Allowed to select measures by regexp
+* `sonar-audit`: A couple of fixes on audit false positives and false negatives
+* `sonar-loc`: Allow to export LoC on PRs (Credit @sylvain-combe-sonarsource)
+* `sonar-config`: Allow to import config in YAML format + A couple of bug fixes
+
+* Significant refactoring for easier maintainability
+
+See: https://github.com/okorach/sonar-tools/issues?q=is%3Aissue%20state%3Aclosed%20milestone%3A3.18
 
 # Version 3.17.1
 
