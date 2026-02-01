@@ -294,14 +294,16 @@ class Rule(SqObject):
             log.debug("Searching rules from cache")
             return cls.CACHE.from_platform(endpoint)
         langs = search_params.pop("languages", None)
-        lang_list = util.csv_to_list(langs) if langs else languages.Language.search(endpoint).keys()
+        lang_list = util.csv_to_list(langs) if langs else list(languages.Language.search(endpoint).keys())
         for lang_key in lang_list:
             if not languages.Language.exists(endpoint, language=lang_key):
                 raise exceptions.ObjectNotFound(key=lang_key, message=f"Language '{lang_key}' does not exist")
         log.info("Getting rules for %d languages", len(lang_list))
         rule_list: dict[str, Rule] = {}
-        for lang_key in lang_list:
-            rule_list |= cls.get_paginated(endpoint, threads=threads, params=search_params | {"languages": lang_key})
+        # Groups languages by 15 to accelerate searches
+        lang_groups = [lang_list[i : i + 15] for i in range(0, len(lang_list), 10)]
+        for lang_group in lang_groups:
+            rule_list |= cls.get_paginated(endpoint, threads=threads, params=search_params | {"languages": lang_group})
         log.info("Rule search returning a list of %d rules", len(rule_list))
         return rule_list
 
