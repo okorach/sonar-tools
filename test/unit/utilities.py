@@ -386,9 +386,9 @@ def csv_col_url(csv_file: str, col_name: str, allow_empty: bool = False) -> bool
     return csv_col_condition(csv_file, col_name, is_url, allow_empty)
 
 
-def csv_col_not_all_empty(csv_file: str, col_name: str) -> bool:
+def csv_col_all_empty(csv_file: str, col_name: str) -> bool:
     """return whether not all values of a CSV column are empty"""
-    return not csv_col_condition(csv_file, col_name, is_empty)
+    return csv_col_condition(csv_file, col_name, is_empty)
 
 
 def read_json(json_file: str) -> dict[str, Any]:
