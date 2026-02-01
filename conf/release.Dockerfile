@@ -7,7 +7,7 @@ ARG USER_UID=1000
 ARG GROUPNAME=sonar
 
 # Create the user
-RUN addgroup -S "${GROUPNAME}" && adduser -u "${USER_UID}" -S "${USERNAME}" -G "${GROUPNAME}""
+RUN addgroup -S "${GROUPNAME}" && adduser -u "${USER_UID}" -S "${USERNAME}" -G "${GROUPNAME}"
 
 # Install python/pip
 ENV PYTHONUNBUFFERED=1
