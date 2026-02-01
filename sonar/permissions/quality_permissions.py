@@ -21,7 +21,7 @@
 """Parent permissions class for quality gates and quality profiles permissions subclasses"""
 
 from __future__ import annotations
-from typing import Optional, Callable, TYPE_CHECKING
+from typing import Optional, Callable, Any, TYPE_CHECKING
 
 import json
 
