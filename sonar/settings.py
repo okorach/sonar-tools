@@ -235,7 +235,6 @@ class Setting(SqObject):
                 self.default_value = def_value
             if isinstance(self.default_value, list) and all(isinstance(v, str) for v in self.default_value):
                 self.default_value = sorted(self.default_value)
-        log.debug("Reloaded setting %s value %s default value %s", self.key, self.value, self.default_value)
         self.__reload_inheritance(data)
         return self
 
