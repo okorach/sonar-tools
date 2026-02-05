@@ -47,6 +47,7 @@ class WebHook(SqObject):
     def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, data=data)
+        self.key = data["key"]  #: Webhook key
         self.name = data["name"]  #: Webhook name
         self.webhook_url = data["url"]  #: Webhook key
         self.secret = data.get("secret")  #: Webhook secret
@@ -64,11 +65,11 @@ class WebHook(SqObject):
     @staticmethod
     def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
         """Returns the hash items for a given object search payload"""
-        return (data["name"], data["project"])
+        return (data["key"], data["project"])
 
     def hash_object(self) -> tuple[Any, ...]:
         """Returns the hash elements for a given object"""
-        return (self.name, self.project)
+        return (self.key, self.project)
 
     @classmethod
     def create(cls, endpoint: Platform, name: str, url: str, secret: Optional[str] = None, project: Optional[str] = None) -> WebHook:
@@ -79,13 +80,16 @@ class WebHook(SqObject):
         :param str url: Webhook URL
         :param str secret: Webhook secret, optional
         :param str project: Webhook project key, optional
-        :return: The created WebHook
+        :return: The webhook
         """
         log.info("Creating webhook name %s, url %s project %s", name, url, str(project))
         params = {"name": name, "url": url, "secret": secret, "project": project}
+        existing_webhooks = list(cls.search(endpoint, project=project))
         api, _, api_params, _ = endpoint.api.get_details(cls, Oper.CREATE, **params)
         endpoint.post(api, params=api_params)
-        o = cls.get_object(endpoint, name, project)
+        o = next((wh for wh in cls.search(endpoint, project=project).values() if wh.key not in existing_webhooks), None)
+        if o is None:
+            raise exceptions.SonarException("Webhook creation failed")
         o.secret = secret
         return o
 
@@ -101,23 +105,31 @@ class WebHook(SqObject):
         log.debug("Loading Webhook '%s' of project '%s'", name, project)
         if (o := cls.CACHE.get(endpoint.local_url, name, project)) is None:
             o = WebHook(endpoint, data)
-        o.reload(data)
-        return o
+        return o.reload(data)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, name: str, project: Optional[Union[str, Project]] = None, use_cache: bool = True) -> WebHook:
-        """Gets a WebHook object from its name and an eventual project key"""
+    def get_object(cls, endpoint: Platform, key: str, project: Optional[Union[str, Project]] = None, use_cache: bool = True) -> WebHook:
+        """Gets a WebHook object from a key and an eventual project key"""
         if project and not isinstance(project, str):
             project = project.key
-        log.debug("Getting webhook name %s project key %s", name, project)
-        o = cls.CACHE.get(endpoint.local_url, name, project)
-        if o and use_cache:
+        log.debug("Getting webhook key '%s' project key '%s'", key, project)
+        if use_cache and (o := cls.CACHE.get(endpoint.local_url, key, project)):
             return o
-        try:
-            whs = list(cls.search(endpoint, project=project).values())
-            return next(wh for wh in whs if wh.name == name)
-        except StopIteration as e:
-            raise exceptions.ObjectNotFound(str(project), f"Webhook '{name}' of project '{project}' not found") from e
+        cls.search(endpoint, project=project).values()
+        if o := cls.CACHE.get(endpoint.local_url, key, project):
+            return o
+        raise exceptions.ObjectNotFound(str(project), f"Webhook key '{key}' of project '{project}' not found")
+
+    @classmethod
+    def get_by_name(cls, endpoint: Platform, name: str, project: Optional[Union[str, Project]] = None) -> list[WebHook]:
+        """Gets WebHook objects from a name and an eventual project key"""
+        if project and not isinstance(project, str):
+            project = project.key
+        log.debug("Getting webhook name '%s' project key '%s'", name, project)
+        whs = [wh for wh in cls.search(endpoint, project=project).values() if wh.name == name]
+        if len(whs) == 0:
+            raise exceptions.ObjectNotFound(str(project), f"Webhook name '{name}' of project '{project}' not found")
+        return whs
 
     @classmethod
     def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, WebHook]:
@@ -144,7 +156,8 @@ class WebHook(SqObject):
     def refresh(self) -> WebHook:
         """Reads the Webhook data on the SonarQube platform and updates the local object"""
         log.debug("Refreshing %s", self)
-        return self.__class__.get_object(self.endpoint, name=self.name, project=self.project, use_cache=False)
+        self.__class__.get_by_name(self.endpoint, name=self.name, project=self.project)
+        return self
 
     def url(self) -> str:
         """Returns the object permalink"""

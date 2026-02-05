@@ -33,30 +33,30 @@ WEBHOOK = "Jenkins"
 
 def test_get_object() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
-    webhook = wh.WebHook.get_object(tutil.SQ, WEBHOOK)
+    webhook: wh.WebHook = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)[0]
     assert webhook.name == WEBHOOK
     assert str(webhook) == f"webhook '{WEBHOOK}'"
     assert webhook.url() == f"{tutil.SQ.external_url}/admin/webhooks"
-    webhook2 = wh.WebHook.get_object(endpoint=tutil.SQ, name=WEBHOOK)
+    webhook2 = wh.WebHook.get_by_name(endpoint=tutil.SQ, name=WEBHOOK)[0]
     assert webhook2 is webhook
 
 
 def test_get_object_not_found() -> None:
     """Test get_object_not_found"""
     with pytest.raises(exceptions.ObjectNotFound) as e:
-        _ = wh.WebHook.get_object(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY)
+        _ = wh.WebHook.get_by_name(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY)
     assert str(e.value).endswith(f"Webhook '{tutil.NON_EXISTING_KEY}' of project 'None' not found")
     with pytest.raises(exceptions.ObjectNotFound) as e:
-        _ = wh.WebHook.get_object(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY, project=tutil.LIVE_PROJECT)
+        _ = wh.WebHook.get_by_name(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY, project=tutil.LIVE_PROJECT)
     assert str(e.value).endswith(f"Webhook '{tutil.NON_EXISTING_KEY}' of project '{tutil.LIVE_PROJECT}' not found")
     with pytest.raises(exceptions.ObjectNotFound) as e:
-        _ = wh.WebHook.get_object(endpoint=tutil.SQ, name=WEBHOOK, project=tutil.LIVE_PROJECT)
+        _ = wh.WebHook.get_by_name(endpoint=tutil.SQ, name=WEBHOOK, project=tutil.LIVE_PROJECT)
     assert str(e.value).endswith(f"Webhook '{WEBHOOK}' of project '{tutil.LIVE_PROJECT}' not found")
 
 
 def test_audit() -> None:
     """test_audit"""
-    webhook = wh.WebHook.get_object(tutil.SQ, WEBHOOK)
+    webhook = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)
     pbs = webhook.audit()
     assert len(pbs) == 1
     assert pbs[0].rule_id == audit_rules.RuleId.FAILED_WEBHOOK
@@ -67,14 +67,14 @@ def test_audit() -> None:
 
 def test_update() -> None:
     """test_update"""
-    webhook = wh.WebHook.get_object(tutil.SQ, WEBHOOK)
+    webhook: wh.WebHook = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)
     old_url = webhook.webhook_url
     new_url = "https://my.jenkins.server/sonar-webhook/"
     webhook.update(url=new_url)
-    webhook = wh.WebHook.get_object(tutil.SQ, WEBHOOK)
+    webhook = wh.WebHook.get_object(tutil.SQ, webhook.key)
     assert webhook.webhook_url == new_url
     webhook.update(url_target=old_url)
-    webhook = wh.WebHook.get_object(tutil.SQ, WEBHOOK)
+    webhook = wh.WebHook.get_object(tutil.SQ, webhook.key)
     assert webhook.webhook_url == old_url
 
 
@@ -103,3 +103,28 @@ def test_create_delete() -> None:
     if tutil.SQ.version() >= (10, 0, 0):
         with pytest.raises(exceptions.ObjectNotFound):
             hook.refresh()
+
+
+def test_2_same_name() -> None:
+    """Test get_object and verify that if requested twice the same object is returned"""
+    webhook2 = wh.WebHook.create(tutil.SQ, WEBHOOK, "http://yahoo.com")
+    assert webhook2.name == WEBHOOK
+    whs = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)
+    assert len(whs) == 2
+    assert whs[0].key != whs[1].key
+
+    # Create a new WH with same URL, this is stupid, but possible
+    webhook3 = wh.WebHook.create(tutil.SQ, WEBHOOK, "http://yahoo.com")
+    whs = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)
+    assert len(whs) == 3
+    assert whs[2].key != whs[1].key
+
+    tmp_wh = wh.WebHook.get_object(tutil.SQ, webhook2.key)
+    assert tmp_wh is webhook2
+
+    webhook2.delete()
+    whs = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)
+    assert len(whs) == 2
+    webhook3.delete()
+    whs = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)
+    assert len(whs) == 1
