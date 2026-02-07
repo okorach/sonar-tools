@@ -1356,5 +1356,16 @@
             ],
             "return_field": "task"
         }
+    },
+    "Language": {
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/languages/list",
+            "params": [
+                "ps",
+                "q"
+            ],
+            "return_field": "languages"
+        }
     }
 }
