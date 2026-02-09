@@ -1,5 +1,9 @@
 # Next version
 
+# Version 3.18.2
+
+* Fix issue https://github.com/okorach/sonar-tools/issues/2262: `sonar-findings-export` failing on SonarQube cloud 
+
 # Version 3.18.1
 
 * Dropped compatibility with SonarQube versions older than 9.9.0
