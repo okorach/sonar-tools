@@ -173,7 +173,7 @@ class Setting(SqObject):
         o = cls.CACHE.get(endpoint.local_url, key, component, branch)
         if o and use_cache:
             return o
-        cls.search(endpoint, use_cache=False, include_not_set=True)
+        cls.search(endpoint, use_cache=False, include_not_set=True, component=component, branch=branch)
         if o := cls.CACHE.get(endpoint.local_url, key, component, branch):
             return o
         raise exceptions.ObjectNotFound(key, message=f"Setting '{key}' not found for component '{component}' branch '{branch}'")
@@ -276,9 +276,15 @@ class Setting(SqObject):
         if not self.multi_valued and isinstance(value, list):
             value = util.list_to_csv(value)
         log.debug("Setting %s to value '%s'", str(self), str(value))
-        params = {"key": self.key, "component": self.component, "branch": self.branch} | encode(self, value)
+        setting_val = encode(self, value)
+        if isinstance(setting_val, dict):
+            params = {"key": self.key, "component": self.component, "branch": self.branch} | setting_val
+            api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, **params)
+        else:
+            params = [("key", self.key), ("component", self.component), ("branch", self.branch)] + setting_val
+            api_params = "&".join([f"{p[0]}={p[1]}" for p in params])
+            api, _, _, _ = self.endpoint.api.get_details(self, Oper.UPDATE)
         try:
-            api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.CREATE, **params)
             if ok := self.post(api, params=api_params).ok:
                 self.value = value
         except exceptions.SonarException:
@@ -566,7 +572,11 @@ def decode(setting_key: str, setting_value: Any) -> Any:
 def encode(setting: Setting, setting_value: Any) -> dict[str, Any]:
     """Encodes the params to pass to api/settings/set according to setting value type"""
     if isinstance(setting_value, list):
-        return {"values": setting_value} if isinstance(setting_value[0], str) else {"fieldValues": [json.dumps(v) for v in setting_value]}
+        if isinstance(setting_value[0], str):
+            return [("values", v) for v in setting_value]
+            # return "&".join([f"values={quote(v)}" for v in setting_value])
+        else:
+            return {"fieldValues": [json.dumps(v) for v in setting_value]}
     if isinstance(setting_value, bool):
         return {"value": str(setting_value).lower()}
     return {"values" if setting.multi_valued else "value": setting_value}
