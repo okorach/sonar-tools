@@ -87,3 +87,14 @@ def test_unsettable() -> None:
     assert o is not None
     res = True if tutil.SQ.version() < (10, 0, 0) else False
     assert o.set("https://api.github.com/") == res
+
+
+def test_multi_valued() -> None:
+    """test_multi_valued"""
+    o = settings.Setting.get_object(tutil.SQ, "sonar.java.file.suffixes", tutil.PROJECT_1)
+    assert o.set([".jav", ".java", ".javacard"])
+    assert sorted(o.value) == sorted([".jav", ".java", ".javacard"])
+    assert o.set([".jav", ".java", ".javacard", ".jah"])
+    assert sorted(o.value) == sorted([".jav", ".java", ".javacard", ".jah"])
+    assert o.reset()
+    assert sorted(o.value) == sorted([".jav", ".java"])
