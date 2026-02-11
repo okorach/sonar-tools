@@ -24,23 +24,45 @@ import utilities as tutil
 from sonar import settings, exceptions
 
 
-def test_set_standard() -> None:
-    """test_set_standard"""
+def test_set_single_valued() -> None:
+    """test_set_single_valued_setting"""
 
-    o = settings.Setting.get_object(tutil.SQ, "sonar.java.file.suffixes")
+    o = settings.Setting.get_object(tutil.SQ, "sonar.dbcleaner.daysBeforeDeletingClosedIssues")
+    assert o.value == 30
+    assert o.set(60)
+    assert o.value == 60
+    assert o.reset()
+    assert o.value == 30
+
+
+def test_set_boolean() -> None:
+    """test_set_boolean_setting"""
+
+    o = settings.Setting.get_object(tutil.SQ, "sonar.cpd.cross_project")
+    assert o.value is False
+    assert o.set(True)
+    assert o.value is True
+    assert o.reset()
+    assert o.value is False
+
+
+def test_unsettable() -> None:
+    """test_unsettable"""
+    o = settings.Setting.get_object(tutil.SQ, "sonar.core.startTime")
     val = o.value
-    new_val = [".jav", ".java", ".javacard"]
-    assert o.set(new_val)
-    assert sorted(o.value) == sorted(new_val)
+    assert not o.set("2022-02-07T13:43:10+0000")
+    assert o.value == val
 
-    new_val = [".jav", ".java", ".javacard", ".jah"]
-    assert o.set(", ".join(new_val))
-    assert sorted(o.value) == sorted(new_val)
 
+def test_multi_valued() -> None:
+    """test_multi_valued"""
+    o = settings.Setting.get_object(tutil.SQ, "sonar.java.file.suffixes", tutil.PROJECT_1)
+    assert o.set([".jav", ".java", ".javacard"])
+    assert sorted(o.value) == sorted([".jav", ".java", ".javacard"])
+    assert o.set([".jav", ".java", ".javacard", ".jah"])
+    assert sorted(o.value) == sorted([".jav", ".java", ".javacard", ".jah"])
     assert o.reset()
     assert sorted(o.value) == sorted([".jav", ".java"])
-    assert o.set(val)
-    assert sorted(o.value) == sorted(val)
 
 
 def test_autodetect_ai() -> None:
@@ -87,14 +109,3 @@ def test_unsettable() -> None:
     assert o is not None
     res = True if tutil.SQ.version() < (10, 0, 0) else False
     assert o.set("https://api.github.com/") == res
-
-
-def test_multi_valued() -> None:
-    """test_multi_valued"""
-    o = settings.Setting.get_object(tutil.SQ, "sonar.java.file.suffixes", tutil.PROJECT_1)
-    assert o.set([".jav", ".java", ".javacard"])
-    assert sorted(o.value) == sorted([".jav", ".java", ".javacard"])
-    assert o.set([".jav", ".java", ".javacard", ".jah"])
-    assert sorted(o.value) == sorted([".jav", ".java", ".javacard", ".jah"])
-    assert o.reset()
-    assert sorted(o.value) == sorted([".jav", ".java"])
