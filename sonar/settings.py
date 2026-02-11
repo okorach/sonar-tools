@@ -252,7 +252,7 @@ class Setting(SqObject):
         """Sets a setting value, returns if operation succeeded"""
         log.debug("%s set to '%s'", str(self), str(value))
         if not self.is_settable():
-            log.error("Setting '%s' does not seem to be a settable setting, trying to set anyway...", str(self))
+            log.error("Setting '%s' does not seem to be a settable setting...", self)
             return False
         if value is None or value == "" or (self.key == "sonar.autodetect.ai.code" and value is True and self.endpoint.version() < (2025, 2, 0)):
             return self.reset()
@@ -275,15 +275,23 @@ class Setting(SqObject):
             value = util.csv_to_list(value)
         if not self.multi_valued and isinstance(value, list):
             value = util.list_to_csv(value)
-        log.debug("Setting %s to value '%s'", str(self), str(value))
-        setting_val = encode(self, value)
-        if isinstance(setting_val, dict):
-            params = {"key": self.key, "component": self.component, "branch": self.branch} | setting_val
-            api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, **params)
-        else:
-            params = [("key", self.key), ("component", self.component), ("branch", self.branch)] + setting_val
-            api_params = "&".join([f"{p[0]}={p[1]}" for p in params])
+        log.debug("Setting %s to value '%s'", self, value)
+        if isinstance(value, list) and isinstance(value[0], str):
+            params = [("key", self.key)] + [("values", v) for v in value]
+            if self.component:
+                params += [("component", self.component)]
+            if self.branch:
+                params += [("branch", self.branch)]
             api, _, _, _ = self.endpoint.api.get_details(self, Oper.UPDATE)
+            api_params = "&".join([f"{p[0]}={p[1]}" for p in params])
+        else:
+            if isinstance(value, bool):
+                params = {"key": self.key, "component": self.component, "branch": self.branch, "value": str(value).lower()}
+            elif isinstance(value, list):
+                params = {"key": self.key, "component": self.component, "branch": self.branch, "fieldValues": [json.dumps(v) for v in value]}
+            else:
+                params = {"key": self.key, "component": self.component, "branch": self.branch, "values" if self.multi_valued else "value": value}
+            api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, **params)
         try:
             if ok := self.post(api, params=api_params).ok:
                 self.value = value
@@ -467,6 +475,11 @@ class Setting(SqObject):
         api, _, search_params, _ = endpoint.api.get_details(cls, Oper.SEARCH, **search_params)
         data = json.loads(endpoint.get(api, params=search_params, with_organization=component is None).text)
         settings_dict |= cls.load_settings(endpoint, data, component)
+        if len(search_params) == 0:
+            # Hack: Add AI_CODE_FIX that is not returned by settings/values global search
+            api, _, search_params, _ = endpoint.api.get_details(cls, Oper.SEARCH, keys=AI_CODE_FIX)
+            data = json.loads(endpoint.get(api, params=search_params, with_organization=component is None).text)
+            settings_dict |= cls.load_settings(endpoint, data, component)
 
         # Hack since projects.default.visibility is not returned by settings/list_definitions
         try:
@@ -596,6 +609,9 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[str], br
         data = json.loads(endpoint.get(api, params=api_params).text)
     elif key == MQR_ENABLED:
         api, _, params, _ = endpoint.api.get_details(Setting, Oper.GET_MQR_MODE)
+        data = json.loads(endpoint.get(api, params=params).text)
+    elif key == AI_CODE_FIX:
+        api, _, params, _ = endpoint.api.get_details(Setting, Oper.GET, keys=AI_CODE_FIX)
         data = json.loads(endpoint.get(api, params=params).text)
     else:
         if key == NEW_CODE_PERIOD:
