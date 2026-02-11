@@ -582,19 +582,6 @@ def decode(setting_key: str, setting_value: Any) -> Any:
     return setting_value
 
 
-def encode(setting: Setting, setting_value: Any) -> dict[str, Any]:
-    """Encodes the params to pass to api/settings/set according to setting value type"""
-    if isinstance(setting_value, list):
-        if isinstance(setting_value[0], str):
-            return [("values", v) for v in setting_value]
-            # return "&".join([f"values={quote(v)}" for v in setting_value])
-        else:
-            return {"fieldValues": [json.dumps(v) for v in setting_value]}
-    if isinstance(setting_value, bool):
-        return {"value": str(setting_value).lower()}
-    return {"values" if setting.multi_valued else "value": setting_value}
-
-
 def get_settings_data(endpoint: Platform, key: str, component: Optional[str], branch: Optional[str]) -> ApiPayload:
     """Reads a setting data with different API depending on setting key
 
