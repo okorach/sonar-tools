@@ -134,7 +134,6 @@ class Issue(findings.Finding):
         :raises: TooManyIssuesError if more than 10'000 issues found
         """
         log.info("Searching issues with %s", search_params)
-        log.info("Searching issues with %s", search_params)
         new_params = {"ps": cls.MAX_PAGE_SIZE} | cls.sanitize_search_params(endpoint=endpoint, **search_params)
         log.debug("Sanitized search params = %s", new_params)
 
@@ -143,6 +142,10 @@ class Issue(findings.Finding):
         dataset = json.loads(endpoint.get(api, params=api_params).text)
         nbr_issues = sutil.nbr_total_elements(dataset)
         nbr_pages = sutil.nbr_pages(dataset)
+        log.debug("Number of issues: %d - Nbr pages: %d - Edition %s Max issues %d", nbr_issues, nbr_pages, str(endpoint.edition()), cls.MAX_SEARCH)
+        # On SQS the total nbr of issues is the true number (more than 10K if that's the case), on SQC it's capped at 10K at all cases
+        if nbr_issues >= cls.MAX_SEARCH:
+            msg = f"Number of issues returned by {api} is greater or equal than the maximum {cls.MAX_SEARCH}"
         log.debug("Number of issues: %d - Nbr pages: %d - Edition %s Max issues %d", nbr_issues, nbr_pages, str(endpoint.edition()), cls.MAX_SEARCH)
         # On SQS the total nbr of issues is the true number (more than 10K if that's the case), on SQC it's capped at 10K at all cases
         if nbr_issues >= cls.MAX_SEARCH:
@@ -289,11 +292,7 @@ class Issue(findings.Finding):
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by file", e.message)
-            facets = _get_facets(endpoint, project, facet="files", **new_params)
-            if len(facets) == _MAX_FACETS:
-                raise TooManyIssuesError(len(facets), f"Too many files (>={len(facets)}) in facets")
-            for f in facets:
-                log.debug("Searching issues by file '%s' from %s", f, new_params)
+            for f in _get_facets(endpoint, project, facet="files", **new_params):
                 issue_list |= cls.search_by_file(endpoint, project=project, file=f, **new_params)
         log.debug("Searching issues by project '%s' and directory '%s': %d issues found", project, directory, len(issue_list))
         return issue_list
