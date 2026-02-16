@@ -132,6 +132,7 @@ class Issue(findings.Finding):
         :raises: TooManyIssuesError if more than 10'000 issues found
         """
         log.info("Searching issues with %s", search_params)
+        log.info("Searching issues with %s", search_params)
         new_params = {"ps": cls.MAX_PAGE_SIZE} | cls.sanitize_search_params(endpoint=endpoint, **search_params)
         log.debug("Sanitized search params = %s", new_params)
 
@@ -195,15 +196,14 @@ class Issue(findings.Finding):
         new_params = cls.sanitize_search_params(endpoint, **search_params) | {"project": project}
         if endpoint.edition() in (c.EE, c.DCE) and search_findings:
             log.debug("Using export_findings() to speed up issue export")
-            return findings.export_findings(endpoint, project, new_params.get("branch"), new_params.get("pullRequest"))
-
-        try:
-            issue_list = cls.search_unsafe(endpoint, **new_params)
-        except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by date", e.message)
-            date_start = get_oldest_issue(endpoint, params=new_params)
-            date_stop = get_newest_issue(endpoint, params=new_params)
+            issue_list: dict[str, Issue] = findings.export_findings(endpoint, project, new_params.get("branch"), new_params.get("pullRequest"))
+        else:
             try:
+                issue_list = cls.search_unsafe(endpoint, **new_params)
+            except TooManyIssuesError as e:
+                log.info("%s - Recursing and slicing the search by date", e.message)
+                date_start = get_oldest_issue(endpoint, params=new_params)
+                date_stop = get_newest_issue(endpoint, params=new_params)
                 issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_stop, **new_params)
             except TooManyIssuesError as e:
                 # In last resort, use export_findings() to avoid exceeding the 10K limit
@@ -263,7 +263,7 @@ class Issue(findings.Finding):
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by file", e.message)
+            log.info("%s - Recursing and slicing the search by file", "%s - Recursing and slicing the search by file", e.message)
             facets = _get_facets(endpoint, project, facet="files", **new_params)
             if len(facets) == _MAX_FACETS:
                 raise TooManyIssuesError(len(facets), f"Too many files (>={len(facets)}) in facets")
