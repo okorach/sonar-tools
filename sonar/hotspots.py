@@ -118,7 +118,7 @@ class Hotspot(findings.Finding):
         :param search_params: Search filters to narrow down the search
         :return: Dict of found hotspots indexed by hotspot key
         """
-        log.debug("Searching hotspots with params %s", search_params)
+        log.info("Searching hotspots with params %s", search_params)
         split_filters = split_search_filters(cls.sanitize_search_params(endpoint=endpoint, **search_params))
         log.debug("Split search filters = %s", split_filters)
         hotspots_list: dict[str, Hotspot] = {}
