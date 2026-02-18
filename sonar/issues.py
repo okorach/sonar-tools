@@ -46,6 +46,8 @@ if TYPE_CHECKING:
     from sonar.platform import Platform
     from sonar.util.types import SearchParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
+
+_MAX_FACETS = 100
 _OLD_SEARCH_COMPONENT_FIELD = "componentKeys"
 _NEW_SEARCH_COMPONENT_FIELD = "components"
 
@@ -201,18 +203,15 @@ class Issue(findings.Finding):
                 log.info("%s - Recursing and slicing the search by date", e.message)
                 date_start = get_oldest_issue(endpoint, params=new_params)
                 date_stop = get_newest_issue(endpoint, params=new_params)
-                issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_stop, **new_params)
+                try:
+                    issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_stop, **new_params)
+                except TooManyIssuesError as e:
+                    # In last resort, use export_findings() to avoid exceeding the 10K limit
+                    if endpoint.edition() in (c.EE, c.DCE):
+                        issue_list = findings.export_findings(endpoint, project, new_params.get("branch"), new_params.get("pullRequest"))
+                    else:
+                        raise e
         log.debug("Searching issues by project '%s': %d issues found", project, len(issue_list))
-        return issue_list
-
-    @classmethod
-    def search_by_facet(cls, endpoint: Platform, project: Union[str, Project], facet: str, **search_params: Any) -> dict[str, Issue]:
-        """Searches issues splitting by directory to avoid exceeding the 10K limit"""
-        if isinstance(project, Project):
-            project = project.key
-        issue_list: dict[str, Issue] = {}
-        for f in _get_facets(endpoint, project, facet=facet, **search_params):
-            issue_list |= cls.search_unsafe(endpoint, components=f, **search_params)
         return issue_list
 
     @classmethod
@@ -226,7 +225,29 @@ class Issue(findings.Finding):
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by directory", e.message)
             project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            for f in _get_facets(endpoint, project, facet="directories", **search_params):
+            facets = _get_facets(endpoint, project, facet="directories", **search_params)
+            if len(facets) == _MAX_FACETS:
+                raise TooManyIssuesError(len(facets), f"Too many directories (>={len(facets)}) in facets")
+            for f in facets:
+                issue_list |= cls.search_by_directory(endpoint, project=project, directory=f, **new_params)
+        log.debug("Searching by issue type '%s': %d issues found", issue_type, len(issue_list))
+        return issue_list
+
+    @classmethod
+    def search_by_rule(cls, endpoint: Platform, rule_key: str, **search_params: Any) -> dict[str, Issue]:
+        """Searches issues splitting by rule to avoid exceeding the 10K limit"""
+        log.debug("Searching issues by rule '%s' from %s", rule_key, search_params)
+        new_params = cls.sanitize_search_params(endpoint, **search_params) | {"rules": [rule_key]}
+        issue_list = {}
+        try:
+            issue_list = cls.search_unsafe(endpoint, **new_params)
+        except TooManyIssuesError as e:
+            log.info("%s - Recursing and slicing the search by directory", e.message)
+            project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
+            facets = _get_facets(endpoint, project, facet="directories", **search_params)
+            if len(facets) == _MAX_FACETS:
+                raise TooManyIssuesError(len(facets), f"Too many directories (>={len(facets)}) in facets")
+            for f in facets:
                 issue_list |= cls.search_by_directory(endpoint, project=project, directory=f, **new_params)
         log.debug("Searching by issue type '%s': %d issues found", issue_type, len(issue_list))
         return issue_list
@@ -243,7 +264,11 @@ class Issue(findings.Finding):
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by file", e.message)
-            for f in _get_facets(endpoint, project, facet="files", **new_params):
+            facets = _get_facets(endpoint, project, facet="files", **new_params)
+            if len(facets) == _MAX_FACETS:
+                raise TooManyIssuesError(len(facets), f"Too many files (>={len(facets)}) in facets")
+            for f in facets:
+                log.debug("Searching issues by file '%s' from %s", f, new_params)
                 issue_list |= cls.search_by_file(endpoint, project=project, file=f, **new_params)
         log.debug("Searching issues by project '%s' and directory '%s': %d issues found", project, directory, len(issue_list))
         return issue_list
