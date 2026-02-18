@@ -808,6 +808,11 @@ class Issue(findings.Finding):
             if allowed is not None and params[field] is not None:
                 params[field] = list(set(params[field]) & set(allowed))
 
+        # SonarQube 10.2 to 10.7 only had 3 impact severities (HIGH, MEDIUM, LOW)
+        # BLOCKER and INFO were added in 10.8
+        if _NEW_SEARCH_SEVERITY_FIELD in params and c.MQR_INTRO_VERSION <= endpoint.version() < c.MQR_5_SEVERITIES_VERSION:
+            params[_NEW_SEARCH_SEVERITY_FIELD] = [s for s in params[_NEW_SEARCH_SEVERITY_FIELD] if s not in ("BLOCKER", "INFO")]
+
         disallowed = _STD_SEARCH_FIELDS if endpoint.is_mqr_mode() else _MQR_SEARCH_FIELDS
         params = {k: v for k, v in params.items() if k not in disallowed}
 
