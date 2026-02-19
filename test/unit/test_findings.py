@@ -308,8 +308,6 @@ def test_search_issues_by_project() -> None:
     nb_issues = len(issues.Issue.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, resolved="false"))
     assert nb_issues < 1800
     assert len(issues.Issue.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT)) > nb_issues
-    if tutil.SQ.version() >= (10, 0, 0):
-        assert len(issues.Issue.search_by_project(tutil.SQ, project="25k-issues")) == 25000
 
 
 def test_search_many_issues_safe() -> None:
@@ -325,8 +323,8 @@ def test_search_many_issues_unsafe() -> None:
 
 def test_search_by_project() -> None:
     """test_search_by_project"""
-    issue_list1 = issues.Issue.search_by_project(tutil.SQ, project="25k-issues")
-    issue_list2 = issues.Issue.search_by_project(tutil.SQ, project="25k-issues", search_findings=True)
+    issue_list1 = issues.Issue.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT)
+    issue_list2 = issues.Issue.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, search_findings=True)
     assert sorted(issue_list1.keys()) == sorted(issue_list2.keys())
 
 
@@ -424,3 +422,17 @@ def test_one_pr(csv_file: Generator[str]) -> None:
         assert tutil.run_cmd(findings_export.main, cmd) == e.OK
         assert tutil.csv_col_is_value(csv_file, "pullRequest", pr)
         assert tutil.csv_col_is_value(csv_file, "projectKey", tutil.LIVE_PROJECT)
+
+
+def test_10k_flat(csv_file: Generator[str]) -> None:
+    """test_10k_flat"""
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} 25k-issues-flat"
+    assert tutil.run_cmd(findings_export.main, cmd) == e.OK
+    assert tutil.csv_nbr_lines(csv_file) == 19800
+
+
+def test_10k_structured(csv_file: Generator[str]) -> None:
+    """test_10k_structured"""
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} 25k-issues-structured"
+    assert tutil.run_cmd(findings_export.main, cmd) == e.OK
+    assert tutil.csv_nbr_lines(csv_file) == 25000
