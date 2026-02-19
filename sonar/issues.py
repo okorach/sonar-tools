@@ -295,6 +295,7 @@ class Issue(findings.Finding):
     @classmethod
     def search_by_status(cls, endpoint: Platform, status: str, **search_params: Any) -> dict[str, Issue]:
         """Searches issues splitting by type to avoid exceeding the 10K limit"""
+
         log.debug("Searching issues by status '%s' from %s", status, search_params)
         new_params = cls.sanitize_search_params(endpoint, **search_params) | {status_search_field(endpoint): [status]}
         issue_list = {}
@@ -969,7 +970,7 @@ def _get_facets(endpoint: Platform, project_key: str, facet: str = "directories"
             if file := next((comp["path"] for comp in data["components"] if comp["uuid"] == uuid), None):
                 new_facet_list.append(file)
         facets_list = sorted(new_facet_list)
-    log.debug("Facets for %s = %s", facet, facets_list)
+    log.info("Facets for %s = %s", facet, facets_list)
     if len(facets_list) == _MAX_FACETS:
         raise TooManyFacetsError(len(facets_list), f"Too many {facet} facets (>={_MAX_FACETS}) in search results")
     return facets_list
