@@ -280,7 +280,7 @@ class Issue(findings.Finding):
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
-            log.info(e.message)
+            log.info("%s - Recursing and slicing the search by directory", e.message)
             project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
             # if (10, 2, 0) <= endpoint.version() < (10, 4, 0):
             #    log.info("SonarQube Releases 10.2 to 10.4 special case, bypassing search by status")
@@ -969,9 +969,7 @@ def _get_facets(endpoint: Platform, project_key: str, facet: str = "directories"
             if file := next((comp["path"] for comp in data["components"] if comp["uuid"] == uuid), None):
                 new_facet_list.append(file)
         facets_list = sorted(new_facet_list)
-    log.info("Facets for %s = %s", facet, facets_list)
-    if len(facets_list) == _MAX_FACETS:
-        raise TooManyFacetsError(len(facets_list), facet=facet, **search_params)
+    log.debug("Facets for %s = %s", facet, facets_list)
     return facets_list
 
 
