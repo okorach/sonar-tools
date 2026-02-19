@@ -246,6 +246,25 @@ class Issue(findings.Finding):
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
+            log.info("%s - Recursing and slicing the search by rules", e.message)
+            project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
+            facets = _get_facets(endpoint, project, facet="rules", **search_params)
+            if len(facets) == _MAX_FACETS:
+                raise TooManyIssuesError(len(facets), f"Too many rules (>={len(facets)}) in facets")
+            for f in facets:
+                issue_list |= cls.search_by_rule(endpoint, project=project, rule_key=f, **new_params)
+        log.debug("Searching by issue type '%s': %d issues found", issue_type, len(issue_list))
+        return issue_list
+
+    @classmethod
+    def search_by_status(cls, endpoint: Platform, status: str, **search_params: Any) -> dict[str, Issue]:
+        """Searches issues splitting by type to avoid exceeding the 10K limit"""
+        log.debug("Searching issues by status '%s' from %s", status, search_params)
+        new_params = cls.sanitize_search_params(endpoint, **search_params) | {status_search_field(endpoint): [status]}
+        issue_list = {}
+        try:
+            issue_list = cls.search_unsafe(endpoint, **new_params)
+        except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by directory", e.message)
             project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
             facets = _get_facets(endpoint, project, facet="directories", **search_params)
@@ -253,7 +272,7 @@ class Issue(findings.Finding):
                 raise TooManyIssuesError(len(facets), f"Too many directories (>={len(facets)}) in facets")
             for f in facets:
                 issue_list |= cls.search_by_directory(endpoint, project=project, directory=f, **new_params)
-        log.debug("Searching by issue type '%s': %d issues found", issue_type, len(issue_list))
+        log.debug("Searching by status '%s': %d issues found", status, len(issue_list))
         return issue_list
 
     @classmethod
@@ -265,11 +284,11 @@ class Issue(findings.Finding):
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by directory", e.message)
+            log.info("%s - Recursing and slicing the search by status", e.message)
             project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            facets = _get_facets(endpoint, project, facet="directories", **search_params)
+            facets = _get_facets(endpoint, project, facet=status_search_field(endpoint), **search_params)
             if len(facets) == _MAX_FACETS:
-                raise TooManyIssuesError(len(facets), f"Too many directories (>={len(facets)}) in facets")
+                raise TooManyIssuesError(len(facets), f"Too many statuses (>={len(facets)}) in facets")
             for f in facets:
                 issue_list |= cls.search_by_directory(endpoint, project=project, directory=f, **new_params)
         log.debug("Searching by status '%s': %d issues found", status, len(issue_list))
@@ -880,11 +899,6 @@ class Issue(findings.Finding):
                     params[field] = list(set(params[field]) & set(allowed))
                 else:
                     params[field] = list(set(params[field]))
-
-        # SonarQube 10.2 to 10.7 only had 3 impact severities (HIGH, MEDIUM, LOW)
-        # BLOCKER and INFO were added in 10.8
-        if _NEW_SEARCH_SEVERITY_FIELD in params and c.MQR_INTRO_VERSION <= endpoint.version() < c.MQR_5_SEVERITIES_VERSION:
-            params[_NEW_SEARCH_SEVERITY_FIELD] = [s for s in params[_NEW_SEARCH_SEVERITY_FIELD] if s not in ("BLOCKER", "INFO")]
 
         # SonarQube 10.2 to 10.7 only had 3 impact severities (HIGH, MEDIUM, LOW)
         # BLOCKER and INFO were added in 10.8
