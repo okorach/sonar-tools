@@ -228,6 +228,51 @@ class Issue(findings.Finding):
         return issue_list
 
     @classmethod
+    def search_by_date(
+        cls, endpoint: Platform, date_start: Union[datetime, date, None], date_stop: Union[datetime, date, None], **search_params: Any
+    ) -> dict[str, Issue]:
+        """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
+        new_params = cls.sanitize_search_params(endpoint, **search_params) | cls.get_search_date_range(date_start, date_stop)
+        tstart, tstop = new_params.get("createdAfter"), new_params.get("createdBefore")
+        log.debug("Searching issues by date between [%s - %s] from %s", tstart, tstop, search_params)
+        issue_list = {}
+        try:
+            issue_list = cls.search_unsafe(endpoint, **new_params)
+        except TooManyIssuesError as e:
+            log.info("%s - Recursing and slicing the search by narrowed date windows", e.message)
+            diff = (date_stop - date_start).days
+            if diff == 0:
+                log.info(_TOO_MANY_ISSUES_MSG)
+                severities = idefs.MQR_SEVERITIES if endpoint.is_mqr_mode() else idefs.STD_SEVERITIES
+                for severity in severities:
+                    issue_list |= cls.search_by_severity(endpoint, severity=severity, **new_params)
+            elif diff == 1:
+                issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_start, **new_params)
+                issue_list |= cls.search_by_date(endpoint, date_start=date_stop, date_stop=date_stop, **new_params)
+            else:
+                date_middle = date_start + timedelta(days=diff // 2)
+                issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_middle, **new_params)
+                issue_list |= cls.search_by_date(endpoint, date_start=date_middle + timedelta(days=1), date_stop=date_stop, **new_params)
+        log.debug("Searching issues by date between [%s - %s]: %d issues found", tstart, tstop, len(issue_list))
+        return issue_list
+
+    @classmethod
+    def search_by_severity(cls, endpoint: Platform, severity: str, **search_params: Any) -> dict[str, Issue]:
+        """Searches issues splitting by severity to avoid exceeding the 10K limit"""
+        log.debug("Searching issues by severity '%s' from %s", severity, search_params)
+        issue_list = {}
+        new_params = cls.sanitize_search_params(endpoint, **search_params) | {severity_search_field(endpoint): [severity]}
+        try:
+            issue_list = cls.search_unsafe(endpoint, **new_params)
+        except TooManyIssuesError as e:
+            log.info("%s - Recursing and slicing the search by type", e.message)
+            types = idefs.MQR_QUALITIES if endpoint.is_mqr_mode() else idefs.STD_TYPES
+            for issue_type in types:
+                issue_list |= cls.search_by_type(endpoint, issue_type=issue_type, **new_params)
+        log.debug("Searching by severity '%s': %d issues found", severity, len(issue_list))
+        return issue_list
+
+    @classmethod
     def search_by_type(cls, endpoint: Platform, issue_type: str, **search_params: Any) -> dict[str, Issue]:
         """Searches issues splitting by type to avoid exceeding the 10K limit"""
         log.debug("Searching issues by issue type '%s' from %s", issue_type, search_params)
@@ -238,78 +283,8 @@ class Issue(findings.Finding):
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by rules", e.message)
             project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            for f in _get_facets(endpoint, project, facet="rules", **new_params):
-                issue_list |= cls.search_by_rule(endpoint, project=project, rule_key=f, **new_params)
-        log.debug("Searching by issue type '%s': %d issues found", issue_type, len(issue_list))
-        return issue_list
-
-    @classmethod
-    def search_by_status(cls, endpoint: Platform, status: str, **search_params: Any) -> dict[str, Issue]:
-        """Searches issues splitting by type to avoid exceeding the 10K limit"""
-        log.debug("Searching issues by status '%s' from %s", status, search_params)
-        new_params = cls.sanitize_search_params(endpoint, **search_params) | {status_search_field(endpoint): [status]}
-        issue_list = {}
-        try:
-            issue_list = cls.search_unsafe(endpoint, **new_params)
-        except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by rules", e.message)
-            project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            for f in _get_facets(endpoint, project, facet="rules", **new_params):
-                issue_list |= cls.search_by_rule(endpoint, project=project, rule_key=f, **new_params)
-        log.debug("Searching by issue type '%s': %d issues found", issue_type, len(issue_list))
-        return issue_list
-
-    @classmethod
-    def search_by_status(cls, endpoint: Platform, status: str, **search_params: Any) -> dict[str, Issue]:
-        """Searches issues splitting by type to avoid exceeding the 10K limit"""
-        log.debug("Searching issues by status '%s' from %s", status, search_params)
-        new_params = cls.sanitize_search_params(endpoint, **search_params) | {status_search_field(endpoint): [status]}
-        issue_list = {}
-        try:
-            issue_list = cls.search_unsafe(endpoint, **new_params)
-        except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by rules", e.message)
-            project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            facets = _get_facets(endpoint, project, facet="rules", **search_params)
-            if len(facets) == _MAX_FACETS:
-                raise TooManyIssuesError(len(facets), f"Too many rules (>={len(facets)}) in facets")
-            for f in facets:
-                issue_list |= cls.search_by_rule(endpoint, project=project, rule_key=f, **new_params)
-        log.debug("Searching by issue type '%s': %d issues found", issue_type, len(issue_list))
-        return issue_list
-
-    @classmethod
-    def search_by_status(cls, endpoint: Platform, status: str, **search_params: Any) -> dict[str, Issue]:
-        """Searches issues splitting by type to avoid exceeding the 10K limit"""
-        log.debug("Searching issues by status '%s' from %s", status, search_params)
-        new_params = cls.sanitize_search_params(endpoint, **search_params) | {status_search_field(endpoint): [status]}
-        issue_list = {}
-        try:
-            issue_list = cls.search_unsafe(endpoint, **new_params)
-        except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by rules", e.message)
-            project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            for f in _get_facets(endpoint, project, facet="rules", **search_params):
-                issue_list |= cls.search_by_rule(endpoint, project=project, rule_key=f, **new_params)
-        log.debug("Searching by issue type '%s': %d issues found", issue_type, len(issue_list))
-        return issue_list
-
-    @classmethod
-    def search_by_status(cls, endpoint: Platform, status: str, **search_params: Any) -> dict[str, Issue]:
-        """Searches issues splitting by type to avoid exceeding the 10K limit"""
-        log.debug("Searching issues by status '%s' from %s", status, search_params)
-        new_params = cls.sanitize_search_params(endpoint, **search_params) | {status_search_field(endpoint): [status]}
-        issue_list = {}
-        try:
-            issue_list = cls.search_unsafe(endpoint, **new_params)
-        except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by rules", e.message)
-            project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            facets = _get_facets(endpoint, project, facet="rules", **search_params)
-            if len(facets) == _MAX_FACETS:
-                raise TooManyIssuesError(len(facets), f"Too many rules (>={len(facets)}) in facets")
-            for f in facets:
-                issue_list |= cls.search_by_rule(endpoint, project=project, rule_key=f, **new_params)
+            for status in _get_facets(endpoint, project, facet=status_search_field(endpoint), **new_params):
+                issue_list |= cls.search_by_status(endpoint, project=project, status=status, **new_params)
         log.debug("Searching by issue type '%s': %d issues found", issue_type, len(issue_list))
         return issue_list
 
@@ -324,8 +299,8 @@ class Issue(findings.Finding):
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by directory", e.message)
             project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            for f in _get_facets(endpoint, project, facet="directories", **new_params):
-                issue_list |= cls.search_by_directory(endpoint, project=project, directory=f, **new_params)
+            for rule in _get_facets(endpoint, project, facet="rules", **new_params):
+                issue_list |= cls.search_by_rule(endpoint, project=project, rule_key=rule, **new_params)
         log.debug("Searching by status '%s': %d issues found", status, len(issue_list))
         return issue_list
 
@@ -340,78 +315,8 @@ class Issue(findings.Finding):
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by status", e.message)
             project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            for f in _get_facets(endpoint, project, facet=status_search_field(endpoint), **search_params):
-                issue_list |= cls.search_by_directory(endpoint, project=project, directory=f, **new_params)
-        log.debug("Searching by status '%s': %d issues found", status, len(issue_list))
-        return issue_list
-
-    @classmethod
-    def search_by_rule(cls, endpoint: Platform, rule_key: str, **search_params: Any) -> dict[str, Issue]:
-        """Searches issues splitting by rule to avoid exceeding the 10K limit"""
-        log.debug("Searching issues by rule '%s' from %s", rule_key, search_params)
-        new_params = cls.sanitize_search_params(endpoint, **search_params) | {"rules": [rule_key]}
-        issue_list = {}
-        try:
-            issue_list = cls.search_unsafe(endpoint, **new_params)
-        except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by status", e.message)
-            project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            facets = 
-            if len(facets) == _MAX_FACETS:
-                raise TooManyIssuesError(len(facets), f"Too many statuses (>={len(facets)}) in facets")
-            for f in _get_facets(endpoint, project, facet=status_search_field(endpoint), **search_params):
-                issue_list |= cls.search_by_directory(endpoint, project=project, directory=f, **new_params)
-        log.debug("Searching by status '%s': %d issues found", status, len(issue_list))
-        return issue_list
-
-    @classmethod
-    def search_by_rule(cls, endpoint: Platform, rule_key: str, **search_params: Any) -> dict[str, Issue]:
-        """Searches issues splitting by rule to avoid exceeding the 10K limit"""
-        log.debug("Searching issues by rule '%s' from %s", rule_key, search_params)
-        new_params = cls.sanitize_search_params(endpoint, **search_params) | {"rules": [rule_key]}
-        issue_list = {}
-        try:
-            issue_list = cls.search_unsafe(endpoint, **new_params)
-        except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by status", e.message)
-            project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            for f in _get_facets(endpoint, project, facet=status_search_field(endpoint), **new_params):
-                issue_list |= cls.search_by_directory(endpoint, project=project, directory=f, **new_params)
-        log.debug("Searching by status '%s': %d issues found", status, len(issue_list))
-        return issue_list
-
-    @classmethod
-    def search_by_rule(cls, endpoint: Platform, rule_key: str, **search_params: Any) -> dict[str, Issue]:
-        """Searches issues splitting by rule to avoid exceeding the 10K limit"""
-        log.debug("Searching issues by rule '%s' from %s", rule_key, search_params)
-        new_params = cls.sanitize_search_params(endpoint, **search_params) | {"rules": [rule_key]}
-        issue_list = {}
-        try:
-            issue_list = cls.search_unsafe(endpoint, **new_params)
-        except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by status", e.message)
-            project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            facets = 
-            if len(facets) == _MAX_FACETS:
-                raise TooManyIssuesError(len(facets), f"Too many statuses (>={len(facets)}) in facets")
-            for f in _get_facets(endpoint, project, facet=status_search_field(endpoint), **search_params):
-                issue_list |= cls.search_by_directory(endpoint, project=project, directory=f, **new_params)
-        log.debug("Searching by status '%s': %d issues found", status, len(issue_list))
-        return issue_list
-
-    @classmethod
-    def search_by_rule(cls, endpoint: Platform, rule_key: str, **search_params: Any) -> dict[str, Issue]:
-        """Searches issues splitting by rule to avoid exceeding the 10K limit"""
-        log.debug("Searching issues by rule '%s' from %s", rule_key, search_params)
-        new_params = cls.sanitize_search_params(endpoint, **search_params) | {"rules": [rule_key]}
-        issue_list = {}
-        try:
-            issue_list = cls.search_unsafe(endpoint, **new_params)
-        except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by status", e.message)
-            project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            for f in _get_facets(endpoint, project, facet=status_search_field(endpoint), **new_params):
-                issue_list |= cls.search_by_status(endpoint, project=project, status=f, **new_params)
+            for directory in _get_facets(endpoint, project, facet="directories", **new_params):
+                issue_list |= cls.search_by_directory(endpoint, project=project, directory=directory, **new_params)
         log.debug("Searching by rule '%s': %d issues found", rule_key, len(issue_list))
         return issue_list
 
@@ -452,22 +357,6 @@ class Issue(findings.Finding):
         log.debug("Searching issues by file '%s': %d issues found", file, len(issue_list))
         return issue_list
 
-    @classmethod
-    def search_by_severity(cls, endpoint: Platform, severity: str, **search_params: Any) -> dict[str, Issue]:
-        """Searches issues splitting by severity to avoid exceeding the 10K limit"""
-        log.debug("Searching issues by severity '%s' from %s", severity, search_params)
-        issue_list = {}
-        new_params = cls.sanitize_search_params(endpoint, **search_params) | {severity_search_field(endpoint): [severity]}
-        try:
-            issue_list = cls.search_unsafe(endpoint, **new_params)
-        except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by type", e.message)
-            types = idefs.MQR_QUALITIES if endpoint.is_mqr_mode() else idefs.STD_TYPES
-            for issue_type in types:
-                issue_list |= cls.search_by_type(endpoint, issue_type=issue_type, **new_params)
-        log.debug("Searching by severity '%s': %d issues found", severity, len(issue_list))
-        return issue_list
-
     @staticmethod
     def get_search_date_range(date_start: Union[datetime, date, None], date_stop: Union[datetime, date, None]) -> dict[str, datetime]:
         """Returns the date range search parameters"""
@@ -481,35 +370,6 @@ class Issue(findings.Finding):
                 date_stop = date_stop.date()
             date_range["createdBefore"] = sutil.date_to_string(date_stop, with_time=False)
         return date_range
-
-    @classmethod
-    def search_by_date(
-        cls, endpoint: Platform, date_start: Union[datetime, date, None], date_stop: Union[datetime, date, None], **search_params: Any
-    ) -> dict[str, Issue]:
-        """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
-        new_params = cls.sanitize_search_params(endpoint, **search_params) | cls.get_search_date_range(date_start, date_stop)
-        tstart, tstop = new_params.get("createdAfter"), new_params.get("createdBefore")
-        log.debug("Searching issues by date between [%s - %s] from %s", tstart, tstop, search_params)
-        issue_list = {}
-        try:
-            issue_list = cls.search_unsafe(endpoint, **new_params)
-        except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by narrowed date windows", e.message)
-            diff = (date_stop - date_start).days
-            if diff == 0:
-                log.info(_TOO_MANY_ISSUES_MSG)
-                severities = idefs.MQR_SEVERITIES if endpoint.is_mqr_mode() else idefs.STD_SEVERITIES
-                for severity in severities:
-                    issue_list |= cls.search_by_severity(endpoint, severity=severity, **new_params)
-            elif diff == 1:
-                issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_start, **new_params)
-                issue_list |= cls.search_by_date(endpoint, date_start=date_stop, date_stop=date_stop, **new_params)
-            else:
-                date_middle = date_start + timedelta(days=diff // 2)
-                issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_middle, **new_params)
-                issue_list |= cls.search_by_date(endpoint, date_start=date_middle + timedelta(days=1), date_stop=date_stop, **new_params)
-        log.debug("Searching issues by date between [%s - %s]: %d issues found", tstart, tstop, len(issue_list))
-        return issue_list
 
     @classmethod
     def search_first(cls, endpoint: Platform, **search_params: Any) -> Optional[Issue]:
