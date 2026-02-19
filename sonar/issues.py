@@ -234,7 +234,7 @@ class Issue(findings.Finding):
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by rules", e.message)
             project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            for f in _get_facets(endpoint, project, facet="rules", **search_params):
+            for f in _get_facets(endpoint, project, facet="rules", **new_params):
                 issue_list |= cls.search_by_rule(endpoint, project=project, rule_key=f, **new_params)
         log.debug("Searching by issue type '%s': %d issues found", issue_type, len(issue_list))
         return issue_list
@@ -250,7 +250,7 @@ class Issue(findings.Finding):
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by directory", e.message)
             project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            for f in _get_facets(endpoint, project, facet="directories", **search_params):
+            for f in _get_facets(endpoint, project, facet="directories", **new_params):
                 issue_list |= cls.search_by_directory(endpoint, project=project, directory=f, **new_params)
         log.debug("Searching by status '%s': %d issues found", status, len(issue_list))
         return issue_list
@@ -266,7 +266,7 @@ class Issue(findings.Finding):
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by status", e.message)
             project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            for f in _get_facets(endpoint, project, facet=status_search_field(endpoint), **search_params):
+            for f in _get_facets(endpoint, project, facet=status_search_field(endpoint), **new_params):
                 issue_list |= cls.search_by_status(endpoint, project=project, status=f, **new_params)
         log.debug("Searching by rule '%s': %d issues found", rule_key, len(issue_list))
         return issue_list
@@ -313,9 +313,9 @@ class Issue(findings.Finding):
         """Searches issues splitting by severity to avoid exceeding the 10K limit"""
         log.debug("Searching issues by severity '%s' from %s", severity, search_params)
         issue_list = {}
-        new_params = cls.sanitize_search_params(endpoint, **search_params)
+        new_params = cls.sanitize_search_params(endpoint, **search_params) | {severity_search_field(endpoint): [severity]}
         try:
-            issue_list = cls.search_unsafe(endpoint, **new_params | {severity_search_field(endpoint): [severity]})
+            issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by type", e.message)
             types = idefs.MQR_QUALITIES if endpoint.is_mqr_mode() else idefs.STD_TYPES
