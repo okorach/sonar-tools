@@ -215,11 +215,12 @@ class Issue(findings.Finding):
             date_stop = get_newest_issue(endpoint, params=new_params)
             try:
                 issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_stop, **new_params)
-            except (TooManyIssuesError, TooManyFacetsError) as e:
-                # In last resort, use export_findings() if EE or DCEto avoid exceeding the 10K limit
-                if endpoint.edition() not in (c.EE, c.DCE):
-                    raise
-                issue_list = findings.export_findings(endpoint, project, new_params.get("branch"), new_params.get("pullRequest"))
+            except TooManyIssuesError as e:
+                # In last resort, use export_findings() to avoid exceeding the 10K limit
+                if endpoint.edition() in (c.EE, c.DCE):
+                    issue_list = findings.export_findings(endpoint, project, new_params.get("branch"), new_params.get("pullRequest"))
+                else:
+                    raise e
         log.debug("Searching issues by project '%s': %d issues found", project, len(issue_list))
         return issue_list
 
@@ -232,6 +233,7 @@ class Issue(findings.Finding):
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
+            log.info("%s - Recursing and slicing the search by rules", e.message)
             log.info("%s - Recursing and slicing the search by rules", e.message)
             project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
             for f in _get_facets(endpoint, project, facet="rules", **new_params):
