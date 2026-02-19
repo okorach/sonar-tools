@@ -364,9 +364,9 @@ class Issue(findings.Finding):
         """Searches issues splitting by severity to avoid exceeding the 10K limit"""
         log.debug("Searching issues by severity '%s' from %s", severity, search_params)
         issue_list = {}
-        new_params = cls.sanitize_search_params(endpoint, **search_params)
+        new_params = cls.sanitize_search_params(endpoint, **search_params) | {severity_search_field(endpoint): [severity]}
         try:
-            issue_list = cls.search_unsafe(endpoint, **new_params | {severity_search_field(endpoint): [severity]})
+            issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
             log.info(e.message)
             types = idefs.MQR_QUALITIES if endpoint.is_mqr_mode() else idefs.STD_TYPES
@@ -970,6 +970,8 @@ def _get_facets(endpoint: Platform, project_key: str, facet: str = "directories"
                 new_facet_list.append(file)
         facets_list = sorted(new_facet_list)
     log.debug("Facets for %s = %s", facet, facets_list)
+    if len(facets_list) == _MAX_FACETS:
+        raise TooManyFacetsError(len(facets_list), f"Too many {facet} facets (>={_MAX_FACETS}) in search results")
     return facets_list
 
 
