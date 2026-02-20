@@ -256,6 +256,7 @@ def compute_project_analysis_maturity(data: dict[str, Any], settings: dict[str, 
     l3_threshold = util.convert_types(settings.get("projectLevel3MinimumNbrOfAnalyses", 50))
     pr_threshold = util.convert_types(settings.get("prInactivityThreshold", 7))
     for proj in data.values():
+        analysis_level = 0
         if proj[AGE_KEY] is None:
             analysis_level = 0
         elif proj[ANALYSES_ANY_BRANCH_KEY]["total"] > l3_threshold:

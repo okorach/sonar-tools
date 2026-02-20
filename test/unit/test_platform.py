@@ -123,7 +123,7 @@ def test_lta_latest() -> None:
     else:
         lta = uc.get_lta()
         latest = uc.get_latest()
-        sq_version = tutil.SQ.version()
+        sq_version = tutil.SQ.version()[0:2]
         pbs = tutil.SQ.audit_lta_latest()
         if sq_version == lta or sq_version == latest:
             assert pbs == []

@@ -41,6 +41,7 @@ def get_components(
     """Returns list of components that match the filters"""
     key_regexp = key_regexp or ".+"
     components: list[Component]
+    br_filter = pr_filter = False
     br_components = pr_components = []
     if component_type in ("apps", "applications"):
         components = list(Application.search(endpoint).values())
@@ -56,12 +57,14 @@ def get_components(
     if component_type in ("projects", "apps", "applications") and branch_regexp:
         log.info("Searching for %s branches matching '%s'", component_type, branch_regexp)
         br_components = [br for comp in components for br in comp.branches().values() if re.match(rf"^{branch_regexp}$", br.name)]
+        br_filter = True
     # If pull_requests flag is set, include PRs for each project
     if component_type == "projects" and pr_regexp:
         log.info("Searching for %s PRs matching '%s'", component_type, pr_regexp)
         pr_components = [pr for proj in components for pr in proj.pull_requests().values() if re.match(rf"^{pr_regexp}$", pr.key)]
-
-    components += br_components + pr_components
+        pr_filter = True
+    if br_filter or pr_filter:
+        components = br_components + pr_components
     components.sort(key=lambda comp: comp.project().key)
     if kwargs.get(options.ANALYZED_AFTER):
         log.info("Filtering components analyzed after %s", kwargs.get(options.ANALYZED_AFTER))
