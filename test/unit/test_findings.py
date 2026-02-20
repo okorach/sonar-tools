@@ -34,6 +34,7 @@ from sonar import projects
 import sonar.util.misc as util
 from sonar import issues
 from sonar.issues import Issue
+from sonar import hotspots
 from sonar import errcodes as e
 from sonar.util import constants as c, issue_defs as idefs
 
@@ -323,7 +324,7 @@ def test_search_many_issues_unsafe() -> None:
 
 def test_search_by_project() -> None:
     """test_search_by_project"""
-    issue_list1 = issues.Issue.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT)
+    issue_list1 = issues.Issue.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT) | hotspots.Hotspot.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT)
     issue_list2 = issues.Issue.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, search_findings=True)
     assert sorted(issue_list1.keys()) == sorted(issue_list2.keys())
 
