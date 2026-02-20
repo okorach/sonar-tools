@@ -218,7 +218,7 @@ class Issue(findings.Finding):
             date_stop = get_newest_issue(endpoint, params=new_params)
             try:
                 issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_stop, **new_params)
-            except (TooManyIssuesError, TooManyFacetsError) as e:
+            except (TooManyIssuesError, TooManyFacetsError):
                 # In last resort, use export_findings() if EE or DCEto avoid exceeding the 10K limit
                 if endpoint.edition() not in (c.EE, c.DCE):
                     raise
@@ -295,7 +295,6 @@ class Issue(findings.Finding):
     @classmethod
     def search_by_status(cls, endpoint: Platform, status: str, **search_params: Any) -> dict[str, Issue]:
         """Searches issues splitting by type to avoid exceeding the 10K limit"""
-
         log.debug("Searching issues by status '%s' from %s", status, search_params)
         new_params = cls.sanitize_search_params(endpoint, **search_params) | {status_search_field(endpoint): [status]}
         issue_list = {}
