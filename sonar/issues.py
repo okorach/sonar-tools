@@ -218,7 +218,7 @@ class Issue(findings.Finding):
             date_stop = get_newest_issue(endpoint, params=new_params)
             try:
                 issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_stop, **new_params)
-            except (TooManyIssuesError, TooManyFacetsError):
+            except (TooManyIssuesError, TooManyFacetsError) as e:
                 # In last resort, use export_findings() if EE or DCEto avoid exceeding the 10K limit
                 if endpoint.edition() not in (c.EE, c.DCE):
                     raise
@@ -971,7 +971,7 @@ def _get_facets(endpoint: Platform, project_key: str, facet: str = "directories"
         facets_list = sorted(new_facet_list)
     log.info("Facets for %s = %s", facet, facets_list)
     if len(facets_list) == _MAX_FACETS:
-        raise TooManyFacetsError(len(facets_list), f"Too many {facet} facets (>={_MAX_FACETS}) in search results")
+        raise TooManyFacetsError(len(facets_list), facet=facet, **search_params)
     return facets_list
 
 
