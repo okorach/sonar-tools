@@ -36,37 +36,35 @@ OPTS = f"{CMD} {tutil.SQS_OPTS} --{opt.NBR_THREADS} 8"
 def test_export_all_proj(json_file: Generator[str]) -> None:
     """test_export_all_proj"""
     cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.NBR_THREADS} 16"
-    assert tutil.run_cmd(projects_cli.main, cmd) == e.OK
+    err_code = e.UNSUPPORTED_OPERATION if tutil.SQ.is_sonarcloud() else e.OK
+    assert tutil.run_cmd(projects_cli.main, cmd) == err_code
 
 
 def test_export_single_proj(json_file: Generator[str]) -> None:
     """test_export_single_proj"""
     cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} -{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT}"
-    assert tutil.run_cmd(projects_cli.main, cmd) == e.OK
+    err_code = e.UNSUPPORTED_OPERATION if tutil.SQ.is_sonarcloud() else e.OK
+    assert tutil.run_cmd(projects_cli.main, cmd) == err_code
 
 
 def test_export_timeout(json_file: Generator[str]) -> None:
     """test_export_timeout"""
     cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} --exportTimeout 10"
-    assert tutil.run_cmd(projects_cli.main, cmd) == e.OK
+    err_code = e.UNSUPPORTED_OPERATION if tutil.SQ.is_sonarcloud() else e.OK
+    assert tutil.run_cmd(projects_cli.main, cmd) == err_code
 
 
 def test_export_no_file() -> None:
     """test_export_timeout"""
     cmd = f"{OPTS} -{opt.EXPORT_SHORT} -{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT}"
-    assert tutil.run_cmd(projects_cli.main, cmd) == e.OK
+    err_code = e.UNSUPPORTED_OPERATION if tutil.SQ.is_sonarcloud() else e.OK
+    assert tutil.run_cmd(projects_cli.main, cmd) == err_code
 
 
 def test_export_non_existing_project(json_file: Generator[str]) -> None:
     """test_config_non_existing_project"""
     cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} -{opt.KEY_REGEXP_SHORT} bad_project"
     assert tutil.run_cmd(projects_cli.main, cmd) == e.NO_SUCH_KEY
-
-
-def test_export_sq_cloud(json_file: Generator[str]) -> None:
-    """test_export_sq_cloud"""
-    cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} {tutil.SC_OPTS}"
-    assert tutil.run_cmd(projects_cli.main, cmd) == e.UNSUPPORTED_OPERATION
 
 
 def test_import_no_file() -> None:

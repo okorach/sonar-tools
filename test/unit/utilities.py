@@ -82,8 +82,6 @@ TEMP_KEY_2 = "TEMP2"
 TEMP_KEY_3 = "TEMP3"
 TEMP_NAME = "Temp Name"
 
-STD_OPTS = [f"-{opt.URL_SHORT}", creds.TARGET_PLATFORM, f"-{opt.TOKEN_SHORT}", creds.TARGET_TOKEN]
-SQS_OPTS = " ".join(STD_OPTS)
 
 TEST_OPTS = [f"-{opt.URL_SHORT}", LATEST_TEST, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_TEST_ADMIN_USER")]
 SQS_TEST_OPTS = " ".join(TEST_OPTS)
@@ -92,13 +90,15 @@ CE_OPTS = [f"-{opt.URL_SHORT}", CB, f"-{opt.TOKEN_SHORT}", creds.TARGET_TOKEN]
 
 SC_TOKEN = os.getenv("SONAR_TOKEN_SONARCLOUD")
 SC_URL = "https://sonarcloud.io"
-SC_ORG = "okorach"
-SC_OPTS_NO_ORG = f"--{opt.URL} {SC_URL} --{opt.TOKEN} {SC_TOKEN}"
-SC_OPTS = f"{SC_OPTS_NO_ORG} --{opt.ORG} {SC_ORG}"
 
 SQ = platform.Platform(url=creds.TARGET_PLATFORM, token=creds.TARGET_TOKEN, org=creds.ORGANIZATION)
 SC = platform.Platform(url=SC_URL, token=SC_TOKEN, org="okorach")
 TEST_SQ = platform.Platform(url=LATEST_TEST, token=os.getenv("SONAR_TOKEN_TEST_ADMIN_USER"))
+
+STD_OPTS = [f"-{opt.URL_SHORT}", creds.TARGET_PLATFORM, f"-{opt.TOKEN_SHORT}", creds.TARGET_TOKEN]
+if SQ.is_sonarcloud():
+    STD_OPTS += [f"--{opt.ORG}", creds.ORGANIZATION]
+SQS_OPTS = " ".join(STD_OPTS)
 
 TAGS = ["foo", "bar"]
 

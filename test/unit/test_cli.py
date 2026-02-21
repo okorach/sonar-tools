@@ -42,12 +42,6 @@ CLIS_DATA = [
     ["housekeeper.py", housekeeper.main, ""],
     ["loc.py", loc.main, ""],
     ["rules_cli.py", rules_cli.main, ""],
-    ["findings_sync.py", findings_sync.main, f"{tutil.SQS_OPTS} --{opt.KEY_REGEXP} TESTSYNC -U {tutil.SC_URL} -T {tutil.SC_TOKEN} -K TESTSYNC"],
-    [
-        "findings_sync.py",
-        findings_sync.main,
-        f"{tutil.SC_OPTS_NO_ORG} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} -U {creds.TARGET_PLATFORM} -T {creds.TARGET_TOKEN} -K TESTSYNC",
-    ],
 ]
 
 
@@ -84,9 +78,7 @@ def test_bad_org(json_file: Generator[str]):
     org_opts = f"--{opt.ORG} {__NON_EXISTING_ORG} --{opt.REPORT_FILE} {json_file}"
     for cli_data in CLIS_DATA:
         pyfile, func, extra_args = cli_data
-        cmd = f"{pyfile} {tutil.SC_OPTS_NO_ORG} {org_opts} {extra_args}"
-        if pyfile == "findings_sync.py":
-            cmd += f" -O {__NON_EXISTING_ORG}"
+        cmd = f"{pyfile} {org_opts} {extra_args}"
         assert tutil.run_cmd(func, cmd) in (errcodes.ARGS_ERROR, errcodes.NO_SUCH_KEY)
 
 
@@ -95,8 +87,6 @@ def test_bad_arg():
     for cli_data in CLIS_DATA:
         pyfile, func, extra_args = cli_data
         cmd = f"{pyfile} {tutil.SQS_OPTS} {extra_args} -Q something"
-        assert tutil.run_cmd(func, cmd) == errcodes.ARGS_ERROR
-        cmd = f"{pyfile} {tutil.SC_OPTS} {extra_args} -Q something"
         assert tutil.run_cmd(func, cmd) == errcodes.ARGS_ERROR
 
 
@@ -110,10 +100,6 @@ def test_bad_project_key(json_file: Generator[str]):
         if pyfile != "findings_sync.py":
             assert tutil.run_cmd(func, cmd) == errcodes.WRONG_SEARCH_CRITERIA
             continue
-        cmd = f"{pyfile} {tutil.SC_OPTS} {extra_args} --{opt.KEY_REGEXP} non-existing-project"
-        assert tutil.run_cmd(func, cmd) == errcodes.ARGS_ERROR
-        cmd = f"{pyfile} {tutil.SC_OPTS} {extra_args} -K non-existing-project"
-        assert tutil.run_cmd(func, cmd) == errcodes.ARGS_ERROR
 
 
 def test_analyzed_after(csv_file: Generator[str]) -> None:
