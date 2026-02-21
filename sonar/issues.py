@@ -158,6 +158,10 @@ class Issue(findings.Finding):
         # On SQS the total nbr of issues is the true number (more than 10K if that's the case), on SQC it's capped at 10K at all cases
         if nbr_issues >= cls.MAX_SEARCH:
             msg = f"Number of issues returned by {api} is greater or equal than the maximum {cls.MAX_SEARCH}"
+        log.debug("Number of issues: %d - Nbr pages: %d - Edition %s Max issues %d", nbr_issues, nbr_pages, str(endpoint.edition()), cls.MAX_SEARCH)
+        # On SQS the total nbr of issues is the true number (more than 10K if that's the case), on SQC it's capped at 10K at all cases
+        if nbr_issues >= cls.MAX_SEARCH:
+            msg = f"Number of issues returned by {api} is greater or equal than the maximum {cls.MAX_SEARCH}"
             raise TooManyIssuesError(nbr_issues, msg)
 
         issue_list = cls.json_to_objects(endpoint, dataset[ret], **new_params)
