@@ -37,7 +37,6 @@ from sonar.issues import Issue
 from sonar import hotspots
 from sonar import errcodes as e
 from sonar.util import constants as c, issue_defs as idefs
-
 from cli import findings_export
 import cli.options as opt
 
@@ -100,6 +99,23 @@ def test_findings_export_sarif_implicit(sarif_file: Generator[str]) -> None:
     assert tutil.file_contains(sarif_file, "schemas/json/sarif-2.1.0-rtm.4")
 
 
+def test_tune_params() -> None:
+    """Test tune params"""
+    tuned = findings_export.__turn_off_use_findings_if_needed(tutil.SQ, {opt.USE_FINDINGS: True})
+    assert tuned[opt.USE_FINDINGS] is (False if tutil.SQ.is_sonarcloud() else True)
+    tuned = findings_export.__turn_off_use_findings_if_needed(tutil.SQ, {opt.USE_FINDINGS: True, opt.SEVERITIES: "BLOCKER"})
+    assert tuned[opt.USE_FINDINGS] is False
+
+
+def test_export_max_facets(csv_file: Generator[str]) -> None:
+    """test_export_max_facets"""
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.NBR_THREADS} 16 --{opt.KEY_REGEXP} 12k-issues-flat"
+    if tutil.SQ.edition() in (c.EE, c.DCE):
+        assert tutil.run_cmd(findings_export.main, cmd) == e.OK
+    else:
+        assert tutil.run_cmd(findings_export.main, cmd) == e.UNSUPPORTED_OPERATION
+
+
 def test_wrong_filters(csv_file: Generator[str]) -> None:
     """test_wrong_filters"""
     for bad_opts in __WRONG_FILTER_OPTS:
@@ -120,7 +136,7 @@ def test_wrong_opts(csv_file: Generator[str]) -> None:
 
 def test_findings_export_non_existing_branch() -> None:
     """test_findings_export_non_existing_branch"""
-    cmd = f"{CMD} --{opt.KEY_REGEXP} training:security --{opt.BRANCH_REGEXP} non-existing-branch"
+    cmd = f"{CMD} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} --{opt.BRANCH_REGEXP} non-existing-branch"
     err = e.UNSUPPORTED_OPERATION if tutil.SQ.edition() == c.CE else e.WRONG_SEARCH_CRITERIA
     assert tutil.run_cmd(findings_export.main, cmd) == err
 
@@ -392,6 +408,8 @@ def test_output_format_branch(csv_file: Generator[str]) -> None:
         br_list = util.csv_to_list(br)
         regexp = util.csv_to_regexp(br)
         cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} --{opt.BRANCH_REGEXP} {regexp}"
+        if tutil.SQ.is_sonarcloud():
+            cmd += f" --{opt.ORG} okorach"
         if tutil.SQ.edition() == c.CE:
             assert tutil.run_cmd(findings_export.main, cmd) == e.UNSUPPORTED_OPERATION
             continue
@@ -404,6 +422,8 @@ def test_output_format_branch(csv_file: Generator[str]) -> None:
 def test_all_prs(csv_file: Generator[str]) -> None:
     """Tests that findings extport for all PRs of a project works"""
     cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} --{opt.PULL_REQUESTS} ".+"'
+    if tutil.SQ.is_sonarcloud():
+        cmd += f" --{opt.ORG} okorach"
     if tutil.SQ.edition() == c.CE:
         assert tutil.run_cmd(findings_export.main, cmd) == e.UNSUPPORTED_OPERATION
         return
@@ -427,15 +447,19 @@ def test_one_pr(csv_file: Generator[str]) -> None:
         assert tutil.csv_col_is_value(csv_file, "projectKey", tutil.LIVE_PROJECT)
 
 
-def test_10k_flat(csv_file: Generator[str]) -> None:
-    """test_10k_flat"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} 25k-issues-flat"
+def test_12k_flat(csv_file: Generator[str]) -> None:
+    """test_12k_flat"""
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} 12k-issues-flat"
+    if tutil.SQ.is_sonarcloud():
+        cmd += f" --{opt.ORG} okorach"
     assert tutil.run_cmd(findings_export.main, cmd) == e.OK
-    assert tutil.csv_nbr_lines(csv_file) == 19800
+    assert tutil.csv_nbr_lines(csv_file) == 12000
 
 
-def test_10k_structured(csv_file: Generator[str]) -> None:
-    """test_10k_structured"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} 25k-issues-structured"
+def test_12k_structured(csv_file: Generator[str]) -> None:
+    """test_12k_structured"""
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} 12k-issues-structured"
+    if tutil.SQ.is_sonarcloud():
+        cmd += f" --{opt.ORG} okorach"
     assert tutil.run_cmd(findings_export.main, cmd) == e.OK
-    assert tutil.csv_nbr_lines(csv_file) == 25000
+    assert tutil.csv_nbr_lines(csv_file) == 12000

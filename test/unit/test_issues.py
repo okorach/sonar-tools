@@ -28,6 +28,7 @@ from requests.exceptions import ConnectionError
 import utilities as tutil
 from sonar import issues, exceptions, logging
 from sonar.issues import Issue
+from sonar.projects import Project
 from sonar.util import constants as c
 import sonar.util.issue_defs as idefs
 import credentials as tconf
@@ -125,6 +126,14 @@ def test_set_severity() -> None:
     tutil.SQ.set_mqr_mode(is_mqr)
 
 
+def set_cloud_mqr_severity() -> None:
+    """set_cloud_mqr_severity"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
+    issue = list(issues_d.values())[0]
+    if issue.endpoint.is_sonarcloud():
+        assert issue.set_severity("BLOCKER") is False
+
+
 def test_add_remove_tag() -> None:
     """test_add_remove_tag"""
     issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
@@ -143,16 +152,23 @@ def test_set_type() -> None:
     issue = list(issues_d.values())[0]
     old_type = issue.type
     new_type = c.VULN if old_type == c.BUG else c.BUG
-    if tutil.SQ.is_mqr_mode():
-        with pytest.raises(exceptions.UnsupportedOperation):
-            issue.set_type(new_type)
-    else:
+    if tutil.SQ.version() < c.MQR_INTRO_VERSION:
         assert issue.set_type(new_type)
         issue.refresh()
         assert issue.type == new_type
         with pytest.raises(exceptions.UnsupportedOperation):
             issue.set_type("NON_EXISTING")
         issue.set_type(old_type)
+    else:
+        with pytest.raises(exceptions.UnsupportedOperation):
+            issue.set_type(new_type)
+
+
+def test_get_no_tags() -> None:
+    """test_set_type"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
+    issue = list(issues_d.values())[1]
+    assert issue.get_tags() == []
 
 
 def test_assign() -> None:
@@ -326,3 +342,58 @@ def test_comments_after() -> None:
     after = util.add_tz(datetime(2024, 1, 1))
     comments = issue.comments(after=after)
     assert all(c["date"] >= after for c in comments.values())
+
+
+def test_too_many_facets() -> None:
+    """test_too_many_facets"""
+    with pytest.raises(issues.TooManyFacetsError):
+        Issue.search_by_date(tutil.SQ, date_start=datetime(2000, 1, 1), date_stop=datetime(2030, 1, 1), project="12k-issues-flat")
+
+
+def test_too_many_facets_by_project() -> None:
+    """test_too_many_facets_by_project"""
+    if tutil.SQ.edition() in (c.EE, c.DCE):
+        issues_d = Issue.search_by_project(tutil.SQ, project="12k-issues-flat")
+        assert len(issues_d) == 12000
+    else:
+        with pytest.raises(issues.TooManyFacetsError):
+            Issue.search_by_project(tutil.SQ, project="12k-issue")
+
+
+def test_search_by_project_object() -> None:
+    """test_search_by_project_object"""
+    project = Project.get_object(tutil.SQ, tutil.PROJECT_1)
+    list1 = Issue.search_by_project(tutil.SQ, project=project).keys()
+    list2 = Issue.search_by_project(tutil.SQ, project=project.key).keys()
+    assert len(list1) > 0
+    assert list1 == list2
+
+
+def test_search_by_status() -> None:
+    """test_too_mtest_search_by_statusany_facets_by_project"""
+    issues_d = Issue.search_by_status(tutil.SQ, status="OPEN", project=tutil.PROJECT_1)
+    assert len(issues_d) > 0
+
+
+def test_search_by_status_facet_error() -> None:
+    """test_search_by_status_facet_error"""
+    with pytest.raises(issues.TooManyFacetsError):
+        Issue.search_by_status(tutil.SQ, status="OPEN", t=tutil.PROJECT_1)
+
+
+def test_search_by_directory() -> None:
+    """test_search_by_directory"""
+    issues_d = Issue.search_by_directory(tutil.SQ, project="12k-issues-structured", directory="src1")
+    assert len(issues_d) == 6000
+
+
+def test_search_by_directory_facet_error() -> None:
+    """test_search_by_directory_facet_error"""
+    with pytest.raises(issues.TooManyFacetsError):
+        Issue.search_by_directory(tutil.SQ, project="12k-issues-flat", directory="/")
+
+
+def test_subsearch_by_project() -> None:
+    """test_subsearch_by_project"""
+    issues_d = Issue.search(tutil.SQ, 8, **{issues.component_search_field(tutil.SQ): "12k-issues-structured"})
+    assert len(issues_d) == 12000
