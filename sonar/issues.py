@@ -109,9 +109,8 @@ class TooManyFacetsError(Exception):
         self.errcode = errcodes.UNSUPPORTED_OPERATION
         for k in ("ps", "p", "additionalFields", "facets"):
             search_params.pop(k, None)
-        self.message = f"Too many facets ({nbr_facets}) for '{facet}' in issue search results with the following filters: " + ", ".join(
-            [f"{k}: {v}" for k, v in search_params.items() if v is not None]
-        )
+        filters = " ".join([f"{k}={v}" for k, v in search_params.items() if v is not None])
+        self.message = f"Too many facets ({nbr_facets}) for '{facet}' in issue search results with the following filters: {filters}"
 
 
 class Issue(findings.Finding):
@@ -284,13 +283,13 @@ class Issue(findings.Finding):
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by rules", e.message)
             project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
-            if (10, 2, 0) <= endpoint.version() < (10, 4, 0):
-                log.info("SonarQube Releases 10.2 to 10.4 special case, bypassing search by status")
-                for rule in _get_facets(endpoint, project, facet="rules", **new_params):
-                    issue_list |= cls.search_by_rule(endpoint, project=project, rule_key=rule, **new_params)
-            else:
-                for status in _get_facets(endpoint, project, facet=status_search_field(endpoint), **new_params):
-                    issue_list |= cls.search_by_status(endpoint, project=project, status=status, **new_params)
+            # if (10, 2, 0) <= endpoint.version() < (10, 4, 0):
+            #    log.info("SonarQube Releases 10.2 to 10.4 special case, bypassing search by status")
+            for rule in _get_facets(endpoint, project, facet="rules", **new_params):
+                issue_list |= cls.search_by_rule(endpoint, project=project, rule_key=rule, **new_params)
+            # else:
+            #     for status in _get_facets(endpoint, project, facet=status_search_field(endpoint), **new_params):
+            #         issue_list |= cls.search_by_status(endpoint, project=project, status=status, **new_params)
         log.debug("Searching by issue type '%s': %d issues found", issue_type, len(issue_list))
         return issue_list
 

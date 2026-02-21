@@ -38,6 +38,7 @@ from sonar import syncer, exceptions, projects, branches, version
 import sonar.util.misc as util
 import sonar.utilities as sutil
 import sonar.util.common_helper as chelp
+from sonar.issues import TooManyFacetsError
 
 from sonar.projects import Project
 from sonar.branches import Branch
@@ -202,6 +203,8 @@ def main() -> None:
                 for key, desc in __COUNTER_MAP.items():
                     log.info("   %d %s %s", counters.get(f"{t}_{key}", 0), t, desc)
 
+    except TooManyFacetsError as e:
+        chelp.clear_cache_and_exit("Can't sync findings: " + e.message)
     except exceptions.SonarException as e:
         chelp.clear_cache_and_exit(e.errcode, e.message)
     chelp.clear_cache_and_exit(0, start_time=start_time)
