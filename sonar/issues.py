@@ -35,7 +35,7 @@ import sonar.logging as log
 from sonar.util import cache, issue_defs as idefs
 import sonar.util.constants as c
 
-from sonar import users, findings, changelog, rules, config, exceptions
+from sonar import users, findings, changelog, rules, config, exceptions, errcodes
 from sonar.projects import Project
 
 import sonar.util.misc as util
@@ -102,11 +102,16 @@ class TooManyIssuesError(Exception):
 class TooManyFacetsError(Exception):
     """When a call to api/issues/search returns too many facets."""
 
-    def __init__(self, nbr_facets: int, message: str) -> None:
+    def __init__(self, nbr_facets: int, facet: str, **search_params: Any) -> None:
         """Exception constructor"""
         super().__init__()
         self.nbr_facets = nbr_facets
-        self.message = message
+        self.errcode = errcodes.UNSUPPORTED_OPERATION
+        for k in ("ps", "p", "additionalFields", "facets"):
+            search_params.pop(k, None)
+        self.message = f"Too many facets ({nbr_facets}) for '{facet}' in issue search results with the following filters: " + ", ".join(
+            [f"{k}: {v}" for k, v in search_params.items() if v is not None]
+        )
 
 
 class Issue(findings.Finding):
@@ -215,7 +220,7 @@ class Issue(findings.Finding):
             date_stop = get_newest_issue(endpoint, params=new_params)
             try:
                 issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_stop, **new_params)
-            except (TooManyIssuesError, TooManyFacetsError):
+            except (TooManyIssuesError, TooManyFacetsError) as e:
                 # In last resort, use export_findings() if EE or DCEto avoid exceeding the 10K limit
                 if endpoint.edition() not in (c.EE, c.DCE):
                     raise
@@ -924,7 +929,7 @@ def _get_facets(endpoint: Platform, project_key: str, facet: str = "directories"
         facets_list = sorted(new_facet_list)
     log.info("Facets for %s = %s", facet, facets_list)
     if len(facets_list) == _MAX_FACETS:
-        raise TooManyFacetsError(len(facets_list), f"Too many {facet} facets (>={_MAX_FACETS}) in search results")
+        raise TooManyFacetsError(len(facets_list), facet=facet, **search_params)
     return facets_list
 
 
