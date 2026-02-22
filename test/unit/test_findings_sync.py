@@ -49,9 +49,12 @@ def test_sync_help() -> None:
     assert tutil.run_cmd(findings_sync.main, f"{CMD} -h") == e.ARGS_ERROR
 
 
-def test_sync_2_proj_all_branches(json_file: Generator[str]) -> None:
-    """test_sync_2_proj_all_branches"""
-    assert tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
+def test_sync_2_proj_main_branches(json_file: Generator[str]) -> None:
+    """test_sync_2_proj_main_branches"""
+    assert (
+        tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} --{opt.BRANCH_REGEXP} master -B main -{opt.REPORT_FILE_SHORT} {json_file}")
+        == e.OK
+    )
 
 
 def test_sync_same_proj_all_branches(json_file: Generator[str]) -> None:
