@@ -63,15 +63,15 @@ fi
 if [[ "${sqs_list}" == *"99"* ]]; then
     create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_99:?}" "${SONAR_TOKEN_99_ADMIN_USER}" "${SONAR_TOKEN_99_ADMIN_ANALYSIS}"
 fi
-if [[ "${sqs_list}" == *"20251"* ]]; then
-    create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_20251:?}" "${SONAR_TOKEN_20251_ADMIN_USER}" "${SONAR_TOKEN_20251_ADMIN_ANALYSIS}"
-fi
+#if [[ "${sqs_list}" == *"20251"* ]]; then
+#    create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_20251:?}" "${SONAR_TOKEN_20251_ADMIN_USER}" "${SONAR_TOKEN_20251_ADMIN_ANALYSIS}"
+#fi
 if [[ "${sqs_list}" == *"20261"* ]]; then
     create_fresh_project "${SYNC_PROJECT_KEY}" "${SONAR_HOST_URL_20261:?}" "${SONAR_TOKEN_20261_ADMIN_USER}" "${SONAR_TOKEN_20261_ADMIN_ANALYSIS}"
 fi
-#if [[ "${sqs_list}" == *"cloud"* ]]; then
-#    create_fresh_project "${SYNC_PROJECT_KEY}" "https://sonarcloud.io" "${SONAR_TOKEN_SONARCLOUD}" "${SONAR_TOKEN_SONARCLOUD}"
-#fi
+if [[ "${sqs_list}" == *"cloud"* ]]; then
+    create_fresh_project "${SYNC_PROJECT_KEY}" "https://sonarcloud.io" "${SONAR_TOKEN_SONARCLOUD}" "${SONAR_TOKEN_SONARCLOUD}"
+fi
 
 for pr in 5 7; do
     feature="${pr}"
