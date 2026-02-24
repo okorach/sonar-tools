@@ -928,7 +928,10 @@ def _get_facets(endpoint: Platform, project_key: str, facet: str = "directories"
         facets_list = sorted(new_facet_list)
     log.info("Facets for %s = %s", facet, facets_list)
     if len(facets_list) == _MAX_FACETS:
-        raise TooManyFacetsError(len(facets_list), facet=facet, **search_params)
+        if endpoint.edition() in (c.CE, c.DE, c.SC):
+            log.error("Too many facets (%d) for '%s' in issue search results, the search result may be incomplete", len(facets_list), facet)
+        else:
+            raise TooManyFacetsError(len(facets_list), facet=facet, **search_params)
     return facets_list
 
 
