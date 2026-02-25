@@ -426,6 +426,10 @@ class Finding(SqObject):
             log.debug("%s and %s are the same issue, they have the same key %s", str(self), str(another_finding), self.key)
             return True
         prelim_check = True
+        if self.hash is None:
+            self.refresh()
+        if another_finding.hash is None:
+            another_finding.refresh()
         if self.rule in ("python:S6540"):
             try:
                 prelim_check = self.sq_json["textRange"]["startOffset"] == another_finding.sq_json["textRange"]["startOffset"]
@@ -448,6 +452,10 @@ class Finding(SqObject):
         """
         if self.rule != another_finding.rule:
             return False
+        if self.hash is None:
+            self.refresh()
+        if another_finding.hash is None:
+            another_finding.refresh()
         score = 0
         match_msg = " Match"
         if self.message == another_finding.message or kwargs.get("ignore_message", False):
@@ -513,7 +521,7 @@ class Finding(SqObject):
                 match_but_modified.append(candidate_match)
             return exact_matches, approx_matches, match_but_modified
 
-        log.info("No exact match, searching for an approximate match of %s", str(self))
+        log.debug("No exact match, searching for an approximate match of %s", str(self))
         candidates = [f for f in findings_list if f.almost_identical_to(self, ignore_component, **kwargs)]
         for finding in candidates:
             if finding.last_changelog_date() is None or (last_change is not None and finding.last_changelog_date() < last_change):
@@ -524,7 +532,14 @@ class Finding(SqObject):
                 match_but_modified.append(finding)
 
         if len(approx_matches) + len(match_but_modified) == 0:
-            log.info("No approximate match found for %s", str(self))
+            log.debug("No approximate match found for %s", str(self))
+        log.info(
+            "%s has %d exact matches, %d approximate matches, %d modified matches",
+            self,
+            len(exact_matches),
+            len(approx_matches),
+            len(match_but_modified),
+        )
         return exact_matches, approx_matches, match_but_modified
 
     def do_transition(self, transition: str) -> bool:
