@@ -240,6 +240,10 @@ class Issue(findings.Finding):
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by narrowed date windows", e.message)
+            if isinstance(date_start, datetime):
+                date_start = date_start.date()
+            if isinstance(date_stop, datetime):
+                date_stop = date_stop.date()
             diff = (date_stop - date_start).days
             if diff == 0:
                 log.info(_TOO_MANY_ISSUES_MSG)
@@ -339,9 +343,9 @@ class Issue(findings.Finding):
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by file", e.message)
-            for f in _get_facets(endpoint, project, facet="files", **new_params):
-                log.debug("Searching issues by file '%s' from %s", f, new_params)
+            facet = "fileUuids" if endpoint.is_sonarcloud() else "files"
+            for f in _get_facets(endpoint, project, facet=facet, **new_params):
+                log.debug("Searching issues by %s '%s' from %s", facet, f, new_params)
                 issue_list |= cls.search_by_file(endpoint, project=project, file=f, **new_params)
         log.debug("Searching issues by project '%s' and directory '%s': %d issues found", project, directory, len(issue_list))
         return issue_list
@@ -351,12 +355,14 @@ class Issue(findings.Finding):
         """Searches issues splitting by directory to avoid exceeding the 10K limit"""
         if isinstance(project, Project):
             project = project.key
-        log.debug("Searching issues by file '%s' from %s", file, search_params)
-        new_params = cls.sanitize_search_params(endpoint, **search_params) | {component_search_field(endpoint): project, "files": file}
+        facet = "fileUuids" if endpoint.is_sonarcloud() else "files"
+        log.debug("Searching issues by %s '%s' from %s", facet, file, search_params)
+        new_params = cls.sanitize_search_params(endpoint, **search_params) | {component_search_field(endpoint): project, facet: file}
+        issue_list: dict[str, Issue] = {}
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
-            log.error("%s, aborting search issue for this file", e.message, f"{project}:{file}")
+            log.error("%s, aborting search issue for this %s '%s'", e.message, facet, f"{project}:{file}")
         except exceptions.SonarException as e:
             log.error("Error while searching issues in file '%s': %s", f"{project}:{file}", str(e))
         log.debug("Searching issues by file '%s': %d issues found", file, len(issue_list))
@@ -920,12 +926,12 @@ def _get_facets(endpoint: Platform, project_key: str, facet: str = "directories"
     data = json.loads(endpoint.get(api, params=search_params).text)
     facets_d = {f["property"]: f["values"] for f in data["facets"] if f["property"] in util.csv_to_list(facet)}
     facets_list = sorted([elem["val"] for elem in facets_d[facet]])
-    if facet == "fileUuids":
-        new_facet_list = []
-        for uuid in facets_list:
-            if file := next((comp["path"] for comp in data["components"] if comp["uuid"] == uuid), None):
-                new_facet_list.append(file)
-        facets_list = sorted(new_facet_list)
+    # if facet == "fileUuids":
+    #    new_facet_list = []
+    #    for uuid in facets_list:
+    #        if file := next((comp["path"] for comp in data["components"] if comp["uuid"] == uuid), None):
+    #            new_facet_list.append(file)
+    #    facets_list = sorted(new_facet_list)
     log.info("Facets for %s = %s", facet, facets_list)
     if len(facets_list) == _MAX_FACETS:
         if endpoint.edition() in (c.CE, c.DE, c.SC):
