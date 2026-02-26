@@ -365,22 +365,6 @@ class Issue(findings.Finding):
         log.debug("Searching issues by file '%s': %d issues found", file, len(issue_list))
         return issue_list
 
-    @classmethod
-    def search_by_severity(cls, endpoint: Platform, severity: str, **search_params: Any) -> dict[str, Issue]:
-        """Searches issues splitting by severity to avoid exceeding the 10K limit"""
-        log.debug("Searching issues by severity '%s' from %s", severity, search_params)
-        issue_list = {}
-        new_params = cls.sanitize_search_params(endpoint, **search_params) | {severity_search_field(endpoint): [severity]}
-        try:
-            issue_list = cls.search_unsafe(endpoint, **new_params)
-        except TooManyIssuesError as e:
-            log.info(e.message)
-            types = idefs.MQR_QUALITIES if endpoint.is_mqr_mode() else idefs.STD_TYPES
-            for issue_type in types:
-                issue_list |= cls.search_by_type(endpoint, issue_type=issue_type, **new_params)
-        log.debug("Searching by severity '%s': %d issues found", severity, len(issue_list))
-        return issue_list
-
     @staticmethod
     def get_search_date_range(date_start: Union[datetime, date, None], date_stop: Union[datetime, date, None]) -> dict[str, datetime]:
         """Returns the date range search parameters"""
@@ -394,35 +378,6 @@ class Issue(findings.Finding):
                 date_stop = date_stop.date()
             date_range["createdBefore"] = sutil.date_to_string(date_stop, with_time=False)
         return date_range
-
-    @classmethod
-    def search_by_date(
-        cls, endpoint: Platform, date_start: Union[datetime, date, None], date_stop: Union[datetime, date, None], **search_params: Any
-    ) -> dict[str, Issue]:
-        """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
-        new_params = cls.sanitize_search_params(endpoint, **search_params) | cls.get_search_date_range(date_start, date_stop)
-        tstart, tstop = new_params.get("createdAfter"), new_params.get("createdBefore")
-        log.debug("Searching issues by date between [%s - %s] from %s", tstart, tstop, search_params)
-        issue_list = {}
-        try:
-            issue_list = cls.search_unsafe(endpoint, **new_params)
-        except TooManyIssuesError as e:
-            log.info(e.message)
-            diff = (date_stop - date_start).days
-            if diff == 0:
-                log.info(_TOO_MANY_ISSUES_MSG)
-                severities = idefs.MQR_SEVERITIES if endpoint.is_mqr_mode() else idefs.STD_SEVERITIES
-                for severity in severities:
-                    issue_list |= cls.search_by_severity(endpoint, severity=severity, **new_params)
-            elif diff == 1:
-                issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_start, **new_params)
-                issue_list |= cls.search_by_date(endpoint, date_start=date_stop, date_stop=date_stop, **new_params)
-            else:
-                date_middle = date_start + timedelta(days=diff // 2)
-                issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_middle, **new_params)
-                issue_list |= cls.search_by_date(endpoint, date_start=date_middle + timedelta(days=1), date_stop=date_stop, **new_params)
-        log.debug("Searching issues by date between [%s - %s]: %d issues found", tstart, tstop, len(issue_list))
-        return issue_list
 
     @classmethod
     def search_first(cls, endpoint: Platform, **search_params: Any) -> Optional[Issue]:
