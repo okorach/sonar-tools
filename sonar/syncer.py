@@ -217,9 +217,20 @@ def sync_lists(
 ) -> tuple[list[dict[str, str]], dict[str, int]]:
     """Syncs 2 list of findings and returns report and count of syncs"""
     # Mass collect changelogs with multithreading, that will be needed later
+
+    log.info("Removing closed issues from the source issues to sync")
+    total_findings = len(src_findings)
+    src_findings = [f for f in src_findings if not f.is_closed()]
+    log.info("Removed %d closed issues from the sync, %d left to sync", total_findings - len(src_findings), len(src_findings))
+
     min_date = sync_settings[SYNC_SINCE_DATE]
     findings.get_changelogs(issue_list=src_findings, added_after=min_date, threads=sync_settings[SYNC_THREADS])
     findings.get_changelogs(issue_list=tgt_findings, added_after=min_date, threads=sync_settings[SYNC_THREADS])
+
+    log.info("Removing issues with no changelogs%s and no comments from the source issues to sync", f" after {min_date}" if min_date else "")
+    total_findings = len(src_findings)
+    src_findings = [f for f in src_findings if f.has_changelog(after=min_date) or f.has_comments(after=min_date)]
+    log.info("Removed %d issues from the sync, %d left to sync", total_findings - len(src_findings), len(src_findings))
 
     interesting_src_findings = []
     counters = dict.fromkeys(("nb_to_sync", "nb_applies", "nb_approx_match", "nb_tgt_has_changelog", "nb_multiple_matches", "exception"), 0)
@@ -227,30 +238,23 @@ def sync_lists(
     if len(src_findings) == 0 or len(tgt_findings) == 0:
         log.info("source or target list of findings to sync empty, skipping...")
         return ([], counters)
-    name = util.class_name(src_findings[0]).lower()
-    sync_settings[SYNC_IGNORE_COMPONENTS] = src_object.project().key != tgt_object.project().key
-    log.info("Syncing %d %ss from %s into %d %ss from %s", len(src_findings), name, str(src_object), len(tgt_findings), name, str(tgt_object))
+
+    log.info("Removing issues with only changes from the sync service account from the source issues to sync")
+    syncer = sync_settings[SYNC_SERVICE_ACCOUNT]
     for finding in src_findings:
-        if finding.is_closed():
-            log.debug("%s is closed, so it will not be synchronized despite having a changelog", str(finding))
-            continue
-        if not (finding.has_changelog(after=min_date) or finding.has_comments()):
-            log.debug("%s has no manual changelog or comments added after %s, skipped in sync", str(finding), str(min_date))
-            continue
-
         modifiers = finding.modifiers().union(finding.commenters())
-        syncer = sync_settings[SYNC_SERVICE_ACCOUNT]
-
         if len(modifiers) == 1 and list(modifiers)[0] == syncer:
-            log.info(
-                "%s has only been changed by %s, so it will not be synchronized despite having a changelog",
-                str(finding),
-                syncer,
-            )
+            log.info("%s has only been changed by %s, so it will not be synchronized despite having a changelog", finding, syncer)
             continue
         interesting_src_findings.append(finding)
 
-    log.info("Found %d %ss with manual changes in %s", len(interesting_src_findings), name, str(src_object))
+    log.info(
+        "Found %d %ss with manual changes left to sync in %s",
+        len(interesting_src_findings),
+        util.class_name(src_findings[0]).lower(),
+        str(src_object),
+    )
+    sync_settings[SYNC_IGNORE_COMPONENTS] = src_object.project().key != tgt_object.project().key
     return __sync_curated_list(interesting_src_findings, tgt_findings, sync_settings)
 
 

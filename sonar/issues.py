@@ -158,10 +158,6 @@ class Issue(findings.Finding):
         # On SQS the total nbr of issues is the true number (more than 10K if that's the case), on SQC it's capped at 10K at all cases
         if nbr_issues >= cls.MAX_SEARCH:
             msg = f"Number of issues returned by {api} is greater or equal than the maximum {cls.MAX_SEARCH}"
-        log.debug("Number of issues: %d - Nbr pages: %d - Edition %s Max issues %d", nbr_issues, nbr_pages, str(endpoint.edition()), cls.MAX_SEARCH)
-        # On SQS the total nbr of issues is the true number (more than 10K if that's the case), on SQC it's capped at 10K at all cases
-        if nbr_issues >= cls.MAX_SEARCH:
-            msg = f"Number of issues returned by {api} is greater or equal than the maximum {cls.MAX_SEARCH}"
             raise TooManyIssuesError(nbr_issues, msg)
 
         issue_list = cls.json_to_objects(endpoint, dataset[ret], **new_params)
@@ -243,6 +239,10 @@ class Issue(findings.Finding):
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by narrowed date windows", e.message)
+            if isinstance(date_start, datetime):
+                date_start = date_start.date()
+            if isinstance(date_stop, datetime):
+                date_stop = date_stop.date()
             diff = (date_stop - date_start).days
             if diff == 0:
                 log.info(_TOO_MANY_ISSUES_MSG)
@@ -284,7 +284,7 @@ class Issue(findings.Finding):
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by rules", e.message)
+            log.info("%s - Recursing and slicing the search by directory", e.message)
             project = new_params.get("project", new_params.get(component_search_field(endpoint), None))
             # if (10, 2, 0) <= endpoint.version() < (10, 4, 0):
             #    log.info("SonarQube Releases 10.2 to 10.4 special case, bypassing search by status")
@@ -341,9 +341,9 @@ class Issue(findings.Finding):
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
-            log.info("%s - Recursing and slicing the search by file", e.message)
-            for f in _get_facets(endpoint, project, facet="files", **new_params):
-                log.debug("Searching issues by file '%s' from %s", f, new_params)
+            facet = "fileUuids" if endpoint.is_sonarcloud() else "files"
+            for f in _get_facets(endpoint, project, facet=facet, **new_params):
+                log.debug("Searching issues by %s '%s' from %s", facet, f, new_params)
                 issue_list |= cls.search_by_file(endpoint, project=project, file=f, **new_params)
         log.debug("Searching issues by project '%s' and directory '%s': %d issues found", project, directory, len(issue_list))
         return issue_list
@@ -352,15 +352,33 @@ class Issue(findings.Finding):
     def search_by_file(cls, endpoint: Platform, project: Union[str, Project], file: str, **search_params: Any) -> dict[str, Issue]:
         """Searches issues splitting by directory to avoid exceeding the 10K limit"""
         project = cls.get_key(project)
-        log.debug("Searching issues by file '%s' from %s", file, search_params)
-        new_params = cls.sanitize_search_params(endpoint, **search_params) | {component_search_field(endpoint): project, "files": file}
+        facet = "fileUuids" if endpoint.is_sonarcloud() else "files"
+        log.debug("Searching issues by %s '%s' from %s", facet, file, search_params)
+        new_params = cls.sanitize_search_params(endpoint, **search_params) | {component_search_field(endpoint): project, facet: file}
+        issue_list: dict[str, Issue] = {}
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
-            log.error("%s, aborting search issue for this file", e.message, f"{project}:{file}")
+            log.error("%s, aborting search issue for this %s '%s'", e.message, facet, f"{project}:{file}")
         except exceptions.SonarException as e:
             log.error("Error while searching issues in file '%s': %s", f"{project}:{file}", str(e))
         log.debug("Searching issues by file '%s': %d issues found", file, len(issue_list))
+        return issue_list
+
+    @classmethod
+    def search_by_severity(cls, endpoint: Platform, severity: str, **search_params: Any) -> dict[str, Issue]:
+        """Searches issues splitting by severity to avoid exceeding the 10K limit"""
+        log.debug("Searching issues by severity '%s' from %s", severity, search_params)
+        issue_list = {}
+        new_params = cls.sanitize_search_params(endpoint, **search_params) | {severity_search_field(endpoint): [severity]}
+        try:
+            issue_list = cls.search_unsafe(endpoint, **new_params)
+        except TooManyIssuesError as e:
+            log.info(e.message)
+            types = idefs.MQR_QUALITIES if endpoint.is_mqr_mode() else idefs.STD_TYPES
+            for issue_type in types:
+                issue_list |= cls.search_by_type(endpoint, issue_type=issue_type, **new_params)
+        log.debug("Searching by severity '%s': %d issues found", severity, len(issue_list))
         return issue_list
 
     @staticmethod
@@ -376,6 +394,35 @@ class Issue(findings.Finding):
                 date_stop = date_stop.date()
             date_range["createdBefore"] = sutil.date_to_string(date_stop, with_time=False)
         return date_range
+
+    @classmethod
+    def search_by_date(
+        cls, endpoint: Platform, date_start: Union[datetime, date, None], date_stop: Union[datetime, date, None], **search_params: Any
+    ) -> dict[str, Issue]:
+        """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
+        new_params = cls.sanitize_search_params(endpoint, **search_params) | cls.get_search_date_range(date_start, date_stop)
+        tstart, tstop = new_params.get("createdAfter"), new_params.get("createdBefore")
+        log.debug("Searching issues by date between [%s - %s] from %s", tstart, tstop, search_params)
+        issue_list = {}
+        try:
+            issue_list = cls.search_unsafe(endpoint, **new_params)
+        except TooManyIssuesError as e:
+            log.info(e.message)
+            diff = (date_stop - date_start).days
+            if diff == 0:
+                log.info(_TOO_MANY_ISSUES_MSG)
+                severities = idefs.MQR_SEVERITIES if endpoint.is_mqr_mode() else idefs.STD_SEVERITIES
+                for severity in severities:
+                    issue_list |= cls.search_by_severity(endpoint, severity=severity, **new_params)
+            elif diff == 1:
+                issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_start, **new_params)
+                issue_list |= cls.search_by_date(endpoint, date_start=date_stop, date_stop=date_stop, **new_params)
+            else:
+                date_middle = date_start + timedelta(days=diff // 2)
+                issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_middle, **new_params)
+                issue_list |= cls.search_by_date(endpoint, date_start=date_middle + timedelta(days=1), date_stop=date_stop, **new_params)
+        log.debug("Searching issues by date between [%s - %s]: %d issues found", tstart, tstop, len(issue_list))
+        return issue_list
 
     @classmethod
     def search_first(cls, endpoint: Platform, **search_params: Any) -> Optional[Issue]:
@@ -866,6 +913,11 @@ class Issue(findings.Finding):
         if _NEW_SEARCH_SEVERITY_FIELD in params and c.MQR_INTRO_VERSION <= endpoint.version() < c.MQR_5_SEVERITIES_VERSION:
             params[_NEW_SEARCH_SEVERITY_FIELD] = [s for s in params[_NEW_SEARCH_SEVERITY_FIELD] if s not in ("BLOCKER", "INFO")]
 
+        # SonarQube 10.2 to 10.7 only had 3 impact severities (HIGH, MEDIUM, LOW)
+        # BLOCKER and INFO were added in 10.8
+        if _NEW_SEARCH_SEVERITY_FIELD in params and c.MQR_INTRO_VERSION <= endpoint.version() < c.MQR_5_SEVERITIES_VERSION:
+            params[_NEW_SEARCH_SEVERITY_FIELD] = [s for s in params[_NEW_SEARCH_SEVERITY_FIELD] if s not in ("BLOCKER", "INFO")]
+
         disallowed = _STD_SEARCH_FIELDS if endpoint.is_mqr_mode() else _MQR_SEARCH_FIELDS
         params = {k: v for k, v in params.items() if k not in disallowed}
 
@@ -917,15 +969,18 @@ def _get_facets(endpoint: Platform, project_key: str, facet: str = "directories"
     data = json.loads(endpoint.get(api, params=search_params).text)
     facets_d = {f["property"]: f["values"] for f in data["facets"] if f["property"] in util.csv_to_list(facet)}
     facets_list = sorted([elem["val"] for elem in facets_d[facet]])
-    if facet == "fileUuids":
-        new_facet_list = []
-        for uuid in facets_list:
-            if file := next((comp["path"] for comp in data["components"] if comp["uuid"] == uuid), None):
-                new_facet_list.append(file)
-        facets_list = sorted(new_facet_list)
+    # if facet == "fileUuids":
+    #    new_facet_list = []
+    #    for uuid in facets_list:
+    #        if file := next((comp["path"] for comp in data["components"] if comp["uuid"] == uuid), None):
+    #            new_facet_list.append(file)
+    #    facets_list = sorted(new_facet_list)
     log.info("Facets for %s = %s", facet, facets_list)
     if len(facets_list) == _MAX_FACETS:
-        raise TooManyFacetsError(len(facets_list), facet=facet, **search_params)
+        if endpoint.edition() in (c.CE, c.DE, c.SC):
+            log.error("Too many facets (%d) for '%s' in issue search results, the search result may be incomplete", len(facets_list), facet)
+        else:
+            raise TooManyFacetsError(len(facets_list), facet=facet, **search_params)
     return facets_list
 
 
