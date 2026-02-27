@@ -818,18 +818,19 @@ class Issue(findings.Finding):
         params = {k: v if k not in _COMMA_CRITERIAS else util.csv_to_list(v) for k, v in params.items()}
 
         # Apply value equivalences between old and new API (on search field names and values)
-        # val_equiv = config.get_issues_search_values_equivalences()
-        # key_equiv = config.get_issues_search_fields_equivalences()
-        # filters_to_patch = {k: v for k, v in params.items() if isinstance(v, (list, set, str, tuple))}
-        # for k, v in filters_to_patch.items():
-        #    for value_list in val_equiv:
-        #        if any(value in value_list for value in v):
-        #            params[k] += value_list
-        #    # for k in filters.copy().keys():
-        #    for key_list in [kl for kl in key_equiv if k in kl]:
-        #        for key in key_list:
-        #            params[key] = params[k]
-
+        val_equiv = config.get_issues_search_values_equivalences()
+        key_equiv = config.get_issues_search_fields_equivalences()
+        filters_to_patch = {k: v for k, v in params.items() if isinstance(v, (list, set, str, tuple))}
+        for k, v in filters_to_patch.items():
+            for value_list in val_equiv:
+                if any(value in value_list for value in v):
+                    params[k] += value_list
+            # for k in filters.copy().keys():
+            for key_list in [kl for kl in key_equiv if k in kl]:
+                for key in key_list:
+                    params[key] = params[k]
+        if endpoint.version() >= (10, 4, 0) or endpoint.is_sonarcloud():
+            params.pop("statuses", None)
         params = {k: v for k, v in params.items() if v is not None and (not isinstance(v, (list, set, str, tuple)) or len(v) > 0)}
         old_or_new = "new" if endpoint.is_sonarcloud() or endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else "old"
         for field in params:
@@ -889,7 +890,9 @@ def status_search_field(endpoint: Platform) -> str:
     return _NEW_SEARCH_STATUS_FIELD
 
 
-def _get_facets(endpoint: Platform, project_key: str, facet: str = "directories", min_count: int = 1, **search_params: Any) -> dict[str, int]:
+def _get_facets(
+    endpoint: Platform, project_key: str, facet: str = "directories", min_count: int = 1, **search_params: Any
+) -> dict[str, Union[int, dict[str, Any]]]:
     """Returns the facets of a search"""
     search_params = search_params.copy()
     if endpoint.is_sonarcloud() and facet == "files":
@@ -908,6 +911,10 @@ def _get_facets(endpoint: Platform, project_key: str, facet: str = "directories"
             log.error("Too many facets (%d) for '%s' in issue search results, the search result may be incomplete", len(facets_d), facet)
         else:
             raise TooManyFacetsError(len(facets_d), facet=facet, **search_params)
+    if facet == "fileUuids":
+        for uuid in facets_d.keys():
+            if file := next((comp["path"] for comp in data["components"] if comp["uuid"] == uuid), None):
+                facets_d[uuid] = {"count": facets_d[uuid], "path": file}
     return facets_d
 
 
