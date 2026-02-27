@@ -333,12 +333,12 @@ class Issue(findings.Finding):
         return cls.search(endpoint, **{**search_params, **new_params})
 
     @classmethod
-    def search_by_file(cls, endpoint: Platform, project: Union[str, Project], fileOrFileUuid: str, **search_params: Any) -> dict[str, Issue]:
+    def search_by_file(cls, endpoint: Platform, project: Union[str, Project], fileOrUuid: str, **search_params: Any) -> dict[str, Issue]:
         """Searches issues by project and file. If too many issues, the search is split in smaller searches"""
-        file = fileOrFileUuid if endpoint.is_sonarcloud() else fileOrFileUuid.split(":")[1]
+        file_filter = "fileUuids" if endpoint.is_sonarcloud() else "files"
         new_params = cls.sanitize_search_params(endpoint, **search_params) | {
             component_search_field(endpoint): cls.get_key(project),
-            "files": {requests.utils.quote(file)},
+            file_filter: {requests.utils.quote(fileOrUuid)},
         }
         return cls.search(endpoint, **{**search_params, **new_params})
 
@@ -818,17 +818,17 @@ class Issue(findings.Finding):
         params = {k: v if k not in _COMMA_CRITERIAS else util.csv_to_list(v) for k, v in params.items()}
 
         # Apply value equivalences between old and new API (on search field names and values)
-        val_equiv = config.get_issues_search_values_equivalences()
-        key_equiv = config.get_issues_search_fields_equivalences()
-        filters_to_patch = {k: v for k, v in params.items() if isinstance(v, (list, set, str, tuple))}
-        for k, v in filters_to_patch.items():
-            for value_list in val_equiv:
-                if any(value in value_list for value in v):
-                    params[k] += value_list
-            # for k in filters.copy().keys():
-            for key_list in [kl for kl in key_equiv if k in kl]:
-                for key in key_list:
-                    params[key] = params[k]
+        # val_equiv = config.get_issues_search_values_equivalences()
+        # key_equiv = config.get_issues_search_fields_equivalences()
+        # filters_to_patch = {k: v for k, v in params.items() if isinstance(v, (list, set, str, tuple))}
+        # for k, v in filters_to_patch.items():
+        #    for value_list in val_equiv:
+        #        if any(value in value_list for value in v):
+        #            params[k] += value_list
+        #    # for k in filters.copy().keys():
+        #    for key_list in [kl for kl in key_equiv if k in kl]:
+        #        for key in key_list:
+        #            params[key] = params[k]
 
         params = {k: v for k, v in params.items() if v is not None and (not isinstance(v, (list, set, str, tuple)) or len(v) > 0)}
         old_or_new = "new" if endpoint.is_sonarcloud() or endpoint.version() >= c.NEW_ISSUE_SEARCH_INTRO_VERSION else "old"
