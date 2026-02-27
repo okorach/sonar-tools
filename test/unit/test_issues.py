@@ -338,7 +338,7 @@ def test_search_by_small() -> None:
     if tutil.SQ.is_sonarcloud():
         uuids = issues._get_facets(tutil.SQ, project_key=tutil.LIVE_PROJECT, facet="fileUuids").keys()
         file = next((k for k, v in uuids if v["path"] == file), None)
-    issues_in_file = len(Issue.search_by_file(tutil.SQ, project=tutil.LIVE_PROJECT, fileOrUuid=file, **params))
+    issues_in_file = len(Issue.search_by_file(tutil.SQ, project=tutil.LIVE_PROJECT, file_or_uuid=file, **params))
     assert issues_in_file == len([i for i in list1.values() if i.file == file])
 
 

@@ -285,6 +285,7 @@ class Issue(findings.Finding):
         project = search_params.get("project", search_params.get(component_search_field(endpoint), None))
         facet_values = _get_facets(endpoint, project, facet=current_facet, **search_params).keys()
         if len(facet_values) >= _MAX_FACETS and len(remaining_facets) == 0:
+            log.info("Number of facets for '%s' is greater or equal than the maximum %d, doing best effort search", current_facet, _MAX_FACETS)
             return cls.search_unsafe(endpoint, raise_error=False, sanitize=False, **search_params)
         for facet_value in facet_values:
             try:
@@ -302,25 +303,25 @@ class Issue(findings.Finding):
     def search_by_severity(cls, endpoint: Platform, severity: str, **search_params: Any) -> dict[str, Issue]:
         """Searches issues by severity. If too many issues, the search is split in smaller searches"""
         log.debug("Searching issues by severity '%s' from %s", severity, search_params)
-        return cls.search(endpoint, **{**search_params, severity_search_field(endpoint): [severity]})
+        return cls.search(endpoint, **(search_params | {severity_search_field(endpoint): [severity]}))
 
     @classmethod
     def search_by_type(cls, endpoint: Platform, issue_type: str, **search_params: Any) -> dict[str, Issue]:
         """Searches issues by type. If too many issues, the search is split in smaller searches"""
         log.debug("Searching issues by type '%s' from %s", issue_type, search_params)
-        return cls.search(endpoint, **{**search_params, type_search_field(endpoint): [issue_type]})
+        return cls.search(endpoint, **(search_params | {type_search_field(endpoint): [issue_type]}))
 
     @classmethod
     def search_by_status(cls, endpoint: Platform, status: str, **search_params: Any) -> dict[str, Issue]:
         """Searches issues by status. If too many issues, the search is split in smaller searches"""
         log.debug("Searching issues by status '%s' from %s", status, search_params)
-        return cls.search(endpoint, **{**search_params, status_search_field(endpoint): [status]})
+        return cls.search(endpoint, **(search_params | {status_search_field(endpoint): [status]}))
 
     @classmethod
     def search_by_rule(cls, endpoint: Platform, rule_key: str, **search_params: Any) -> dict[str, Issue]:
         """Searches issues by rule. If too many issues, the search is split in smaller searches"""
         log.debug("Searching issues by rule '%s' from %s", rule_key, search_params)
-        return cls.search(endpoint, **{**search_params, "rules": [rule_key]})
+        return cls.search(endpoint, **(search_params | {"rules": [rule_key]}))
 
     @classmethod
     def search_by_directory(cls, endpoint: Platform, project: Union[str, Project], directory: str, **search_params: Any) -> dict[str, Issue]:
@@ -333,12 +334,12 @@ class Issue(findings.Finding):
         return cls.search(endpoint, **{**search_params, **new_params})
 
     @classmethod
-    def search_by_file(cls, endpoint: Platform, project: Union[str, Project], fileOrUuid: str, **search_params: Any) -> dict[str, Issue]:
+    def search_by_file(cls, endpoint: Platform, project: Union[str, Project], file_or_uuid: str, **search_params: Any) -> dict[str, Issue]:
         """Searches issues by project and file. If too many issues, the search is split in smaller searches"""
         file_filter = "fileUuids" if endpoint.is_sonarcloud() else "files"
         new_params = cls.sanitize_search_params(endpoint, **search_params) | {
             component_search_field(endpoint): cls.get_key(project),
-            file_filter: {requests.utils.quote(fileOrUuid)},
+            file_filter: {requests.utils.quote(file_or_uuid)},
         }
         return cls.search(endpoint, **{**search_params, **new_params})
 
