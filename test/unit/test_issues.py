@@ -62,7 +62,7 @@ def test_issue() -> None:
 
 def test_add_comments() -> None:
     """Test issue comments manipulations"""
-    findings_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
+    findings_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
     finding = list(findings_d.values())[0]
     nb_comments = len(finding.comments())
 
@@ -128,7 +128,7 @@ def test_set_severity() -> None:
 
 def set_cloud_mqr_severity() -> None:
     """set_cloud_mqr_severity"""
-    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
     issue = list(issues_d.values())[0]
     if issue.endpoint.is_sonarcloud():
         assert issue.set_severity("BLOCKER") is False
@@ -136,7 +136,7 @@ def set_cloud_mqr_severity() -> None:
 
 def test_add_remove_tag() -> None:
     """test_add_remove_tag"""
-    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
     issue = list(issues_d.values())[0]
     tag = "test-tag"
     issue.remove_tag(tag)
@@ -148,7 +148,7 @@ def test_add_remove_tag() -> None:
 
 def test_set_type() -> None:
     """test_set_type"""
-    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
     issue = list(issues_d.values())[0]
     old_type = issue.type
     new_type = c.VULN if old_type == c.BUG else c.BUG
@@ -166,14 +166,14 @@ def test_set_type() -> None:
 
 def test_get_no_tags() -> None:
     """test_set_type"""
-    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
     issue = list(issues_d.values())[1]
     assert issue.get_tags() == []
 
 
 def test_assign() -> None:
     """test_assign"""
-    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
     issue = list(issues_d.values())[0]
     old_assignee = issue.assignee
     new_assignee = "olivier" if old_assignee is None or old_assignee != "olivier" else "michal"
@@ -301,7 +301,8 @@ def test_get_facets() -> None:
     facets = issues._get_facets(tutil.SQ, project_key=tutil.LIVE_PROJECT)
     assert len(facets) > 1
     assert not any(f.endswith(".py") for f in facets)
-    facets = issues._get_facets(tutil.SQ, facet="files", project_key=tutil.LIVE_PROJECT)
+    facet = "fileUuids" if tutil.SQ.is_sonarcloud() else "files"
+    facets = issues._get_facets(tutil.SQ, facet=facet, project_key=tutil.LIVE_PROJECT)
     assert len(facets) > 1
     assert any(f.endswith(".py") for f in facets)
 
@@ -318,7 +319,7 @@ def test_search_by_small() -> None:
     assert len(list1) == sum(len(Issue.search_by_severity(tutil.SQ, severity=val, **params)) for val in facets)
 
     facets = issues._get_facets(tutil.SQ, project_key=tutil.LIVE_PROJECT, facet=issues.status_search_field(tutil.SQ)).keys()
-    assert len(list1) == sum(len(Issue.search_by_status(tutil.SQ, severity=val, **params)) for val in facets)
+    assert len(list1) == sum(len(Issue.search_by_status(tutil.SQ, status=val, **params)) for val in facets)
 
     assert len(list1) == len(Issue.search_by_date(tutil.SQ, date_start=datetime(2000, 1, 1), date_stop=datetime(2030, 1, 1), **params))
 
@@ -329,11 +330,11 @@ def test_search_by_small() -> None:
         # Search does not aggregate subdirs in 9.9
         dirs += ["sonar/permissions", "sonar/util", "sonar/dce", "sonar/cli"]
     assert len(list1) == sum([len(Issue.search_by_directory(tutil.SQ, project=tutil.LIVE_PROJECT, directory=dir, **params)) for dir in dirs])
-    
+
     issues_in_dir = len(Issue.search_by_directory(tutil.SQ, project=tutil.LIVE_PROJECT, directory="cli", **params))
     assert issues_in_dir == len([i for i in list1.values() if i.file.startswith("cli/")])
 
-    issues_in_file = len(Issue.search_by_file(tutil.SQ, project=tutil.LIVE_PROJECT, file="sonar/issues.py", **params))
+    issues_in_file = len(Issue.search_by_file(tutil.SQ, project=tutil.LIVE_PROJECT, fileOrUuid="sonar/issues.py", **params))
     assert issues_in_file == len([i for i in list1.values() if i.file == "sonar/issues.py"])
 
 
@@ -387,7 +388,7 @@ def test_search_by_status() -> None:
 def test_search_by_status_facet_error() -> None:
     """test_search_by_status_facet_error"""
     with pytest.raises(issues.TooManyFacetsError):
-        Issue.search_by_status(tutil.SQ, status="OPEN", t=tutil.PROJECT_1)
+        Issue.search_by_status(tutil.SQ, status="OPEN", project="12k-issues")
 
 
 def test_search_by_directory() -> None:
