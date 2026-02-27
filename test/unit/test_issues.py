@@ -311,10 +311,10 @@ def test_search_by_small() -> None:
     list1 = Issue.search_by_project(tutil.SQ, tutil.LIVE_PROJECT)
     params = {"components": tutil.LIVE_PROJECT, "project": tutil.LIVE_PROJECT}
 
-    type_list = idefs.STD_TYPES if tutil.SQ.version() < c.MQR_INTRO_VERSION else idefs.MQR_QUALITIES
+    type_list = issues._get_facets(tutil.SQ, project_key=tutil.LIVE_PROJECT, facet=issues.type_search_field(tutil.SQ))
     assert len(list1) == sum(len(Issue.search_by_type(tutil.SQ, issue_type=i_type, **params)) for i_type in type_list)
 
-    sev_list = idefs.STD_SEVERITIES if tutil.SQ.version() < c.MQR_INTRO_VERSION else idefs.MQR_SEVERITIES
+    sev_list = issues._get_facets(tutil.SQ, project_key=tutil.LIVE_PROJECT, facet=issues.severity_search_field(tutil.SQ))
     assert len(list1) == sum(len(Issue.search_by_severity(tutil.SQ, severity=i_severity, **params)) for i_severity in sev_list)
     assert len(list1) == len(Issue.search_by_date(tutil.SQ, date_start=datetime(2000, 1, 1), date_stop=datetime(2030, 1, 1), **params))
 
