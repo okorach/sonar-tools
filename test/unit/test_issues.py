@@ -334,8 +334,12 @@ def test_search_by_small() -> None:
     issues_in_dir = len(Issue.search_by_directory(tutil.SQ, project=tutil.LIVE_PROJECT, directory="cli", **params))
     assert issues_in_dir == len([i for i in list1.values() if i.file.startswith("cli/")])
 
-    issues_in_file = len(Issue.search_by_file(tutil.SQ, project=tutil.LIVE_PROJECT, fileOrUuid="sonar/issues.py", **params))
-    assert issues_in_file == len([i for i in list1.values() if i.file == "sonar/issues.py"])
+    file = "sonar/issues.py"
+    if tutil.SQ.is_sonarcloud():
+        uuids = issues._get_facets(tutil.SQ, project_key=tutil.LIVE_PROJECT, facet="fileUuids").keys()
+        file = next((k for k, v in uuids if v["path"] == file), None)
+    issues_in_file = len(Issue.search_by_file(tutil.SQ, project=tutil.LIVE_PROJECT, fileOrUuid=file, **params))
+    assert issues_in_file == len([i for i in list1.values() if i.file == file])
 
 
 def test_changelog_after() -> None:
