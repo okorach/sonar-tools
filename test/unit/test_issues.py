@@ -311,11 +311,15 @@ def test_search_by_small() -> None:
     list1 = Issue.search_by_project(tutil.SQ, tutil.LIVE_PROJECT)
     params = {"components": tutil.LIVE_PROJECT, "project": tutil.LIVE_PROJECT}
 
-    type_list = issues._get_facets(tutil.SQ, project_key=tutil.LIVE_PROJECT, facet=issues.type_search_field(tutil.SQ))
-    assert len(list1) == sum(len(Issue.search_by_type(tutil.SQ, issue_type=i_type, **params)) for i_type in type_list)
+    facets = issues._get_facets(tutil.SQ, project_key=tutil.LIVE_PROJECT, facet=issues.type_search_field(tutil.SQ)).keys()
+    assert len(list1) == sum(len(Issue.search_by_type(tutil.SQ, issue_type=val, **params)) for val in facets)
 
-    sev_list = issues._get_facets(tutil.SQ, project_key=tutil.LIVE_PROJECT, facet=issues.severity_search_field(tutil.SQ))
-    assert len(list1) == sum(len(Issue.search_by_severity(tutil.SQ, severity=i_severity, **params)) for i_severity in sev_list)
+    facets = issues._get_facets(tutil.SQ, project_key=tutil.LIVE_PROJECT, facet=issues.severity_search_field(tutil.SQ)).keys()
+    assert len(list1) == sum(len(Issue.search_by_severity(tutil.SQ, severity=val, **params)) for val in facets)
+
+    facets = issues._get_facets(tutil.SQ, project_key=tutil.LIVE_PROJECT, facet=issues.status_search_field(tutil.SQ)).keys()
+    assert len(list1) == sum(len(Issue.search_by_status(tutil.SQ, severity=val, **params)) for val in facets)
+
     assert len(list1) == len(Issue.search_by_date(tutil.SQ, date_start=datetime(2000, 1, 1), date_stop=datetime(2030, 1, 1), **params))
 
     params.pop("project")
@@ -325,7 +329,8 @@ def test_search_by_small() -> None:
         # Search does not aggregate subdirs in 9.9
         dirs += ["sonar/permissions", "sonar/util", "sonar/dce", "sonar/cli"]
     assert len(list1) == sum([len(Issue.search_by_directory(tutil.SQ, project=tutil.LIVE_PROJECT, directory=dir, **params)) for dir in dirs])
-    assert len(list1) > len(Issue.search_by_file(tutil.SQ, project=tutil.LIVE_PROJECT, file="sonar/issues.py", **params))
+    issues_in_file = len(Issue.search_by_file(tutil.SQ, project=tutil.LIVE_PROJECT, file="sonar/issues.py", **params))
+    assert issues_in_file == len([i for i in list1.values() if i.file == "sonar/issues.py"])
 
 
 def test_changelog_after() -> None:
