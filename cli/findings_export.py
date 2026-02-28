@@ -312,7 +312,6 @@ def store_findings(components_list: list[object], endpoint: platform.Platform, p
         Rule.search(endpoint=endpoint, languages="c,cpp,objc")
     __write_header(file, endpoint=endpoint, **local_params)
     total_findings = 0
-    unrecoverable_facets_error = None
     with concurrent.futures.ThreadPoolExecutor(max_workers=params.get(options.NBR_THREADS, 4), thread_name_prefix="FindingSearch") as executor:
         futures, futures_map = [], {}
         for comp in components_list:
@@ -327,17 +326,12 @@ def store_findings(components_list: list[object], endpoint: platform.Platform, p
                     continue
                 __write_findings(found_findings, file, total_findings == 0, **local_params)
                 total_findings += len(found_findings)
-            except TooManyFacetsError as e:
-                log.critical(e.message)
-                unrecoverable_facets_error = e
             except TimeoutError as e:
                 log.error(f"Getting findings for {str(comp)} timed out after 60 seconds for {str(future)}.")
             except Exception as e:
                 traceback.print_exc()
                 log.error(f"Exception {str(e)} when exporting findings of {str(comp)}.")
     __write_footer(file, local_params[options.FORMAT])
-    if unrecoverable_facets_error:
-        raise unrecoverable_facets_error
     return total_findings
 
 

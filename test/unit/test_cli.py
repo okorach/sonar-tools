@@ -23,16 +23,17 @@
 
 from collections.abc import Generator
 import json
+import csv
 import pytest
 from datetime import datetime, timedelta
 from sonar import projects
 from sonar import errcodes
 import utilities as tutil
-import credentials as creds
 from cli import options as opt
-from cli import findings_export, projects_cli as proj_cli, measures_export, findings_sync, housekeeper, loc, rules_cli
+from cli import findings_export, projects_cli as proj_cli, measures_export, housekeeper, loc, rules_cli
 from sonar.cli import audit, config
 import sonar.utilities as sutil
+
 
 CLIS_DATA = [
     ["findings_export.py", findings_export.main, ""],
@@ -104,11 +105,15 @@ def test_bad_project_key(json_file: Generator[str]):
 
 def test_analyzed_after(csv_file: Generator[str]) -> None:
     """test_analyzed_after"""
-    cutoff = datetime.now() - timedelta(days=30)
+    cutoff = (datetime.now() - timedelta(days=30)).date()
     cmd = f"sonar-measures-export {tutil.SQS_OPTS} -{opt.REPORT_FILE_SHORT} {csv_file}"
     assert tutil.run_cmd(measures_export.main, cmd) == errcodes.OK
     nbr_lines = tutil.csv_nbr_lines(csv_file)
     cmd = f"sonar-measures-export {tutil.SQS_OPTS} -{opt.REPORT_FILE_SHORT} {csv_file} --{opt.ANALYZED_AFTER} {cutoff.strftime(sutil.SQ_DATE_FORMAT)}"
     assert tutil.run_cmd(measures_export.main, cmd) == errcodes.OK
     assert tutil.csv_nbr_lines(csv_file) < nbr_lines
-    assert tutil.csv_nbr_lines(csv_file) < 35
+    last_ana_col = 2
+    with open(csv_file, encoding="utf-8") as fd:
+        next(reader := csv.reader(fd))
+        for row in reader:
+            assert datetime.strptime(row[last_ana_col], sutil.SQ_DATETIME_FORMAT).date() >= cutoff

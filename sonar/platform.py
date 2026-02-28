@@ -87,6 +87,8 @@ class Platform(object):
         self._server_id: Optional[str] = None
         self._permissions: Optional[object] = None
         self.http_timeout = int(http_timeout)
+        if org and not sutil.is_sonarcloud_url(self.local_url):
+            raise exceptions.SonarException(f"Organization should not be provided for non-SonarCloud instance {self.local_url}", errcodes.ARGS_ERROR)
         self.organization: str = org or ""
         self._user_agent = _SONAR_TOOLS_AGENT
         self.api: Api = Api(self)
