@@ -101,9 +101,9 @@ class WebHook(SqObject):
         :param ApiPayload data: The webhook data received from the API
         :return: The created WebHook
         """
-        name, project = data["name"], data.get("project")
+        name, key, project = data["name"], data["key"], data.get("project")
         log.debug("Loading Webhook '%s' of project '%s'", name, project)
-        if (o := cls.CACHE.get(endpoint.local_url, name, project)) is None:
+        if (o := cls.CACHE.get(endpoint.local_url, key, project)) is None:
             o = WebHook(endpoint, data)
         return o.reload(data)
 
@@ -123,8 +123,7 @@ class WebHook(SqObject):
     @classmethod
     def get_by_name(cls, endpoint: Platform, name: str, project: Optional[Union[str, Project]] = None) -> list[WebHook]:
         """Gets WebHook objects from a name and an eventual project key"""
-        if project and not isinstance(project, str):
-            project = project.key
+        project = cls.get_key(project)
         log.debug("Getting webhook name '%s' project key '%s'", name, project)
         whs = [wh for wh in cls.search(endpoint, project=project).values() if wh.name == name]
         if len(whs) == 0:
