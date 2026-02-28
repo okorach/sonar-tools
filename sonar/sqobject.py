@@ -164,7 +164,7 @@ class SqObject(object):
 
     @classmethod
     def get_key(cls, obj: Any) -> str:
-        return obj if isinstance(obj, str) else obj.key
+        return None if obj is None else obj if isinstance(obj, str) else obj.key
 
     @classmethod
     def get_paginated(cls, endpoint: Platform, params: Optional[ApiParams] = None, threads: int = 8) -> dict[str, SqObject]:
