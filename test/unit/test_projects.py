@@ -183,7 +183,7 @@ def test_count_third_party_issues() -> None:
     if tutil.SQ.edition() != c.CE:
         filters = {"branch": "develop"}
     if tutil.SQ.version() >= (10, 0, 0):
-        assert len(proj.count_third_party_issues(**filters)) > 0
+        assert len(proj.count_third_party_issues(**filters)) > 100
     if tutil.SQ.edition() != c.CE:
         assert len(proj.count_third_party_issues(branch="non-existing-branch")) == 0
 
