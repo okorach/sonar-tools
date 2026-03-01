@@ -76,11 +76,12 @@ def test_import(json_file: Generator[str]) -> None:
 def test_bad_org(json_file: Generator[str]):
     """Test that passing a wrong org to any CLI tool fails fast"""
     __NON_EXISTING_ORG = "letsfindsomethngimpossible"
-    org_opts = f"--{opt.ORG} {__NON_EXISTING_ORG} --{opt.REPORT_FILE} {json_file}"
+    org_opts = f"{tutil.SQS_OPTS} --{opt.ORG} {__NON_EXISTING_ORG} --{opt.REPORT_FILE} {json_file}"
     for cli_data in CLIS_DATA:
         pyfile, func, extra_args = cli_data
         cmd = f"{pyfile} {org_opts} {extra_args}"
-        assert tutil.run_cmd(func, cmd) in (errcodes.ARGS_ERROR, errcodes.NO_SUCH_KEY)
+        errcode = errcodes.NO_SUCH_ORG if tutil.SQ.is_sonarcloud() else errcodes.ARGS_ERROR
+        assert tutil.run_cmd(func, cmd) == errcode
 
 
 def test_bad_arg():
