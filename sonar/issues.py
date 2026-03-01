@@ -219,8 +219,8 @@ class Issue(findings.Finding):
         new_params = cls.sanitize_search_params(endpoint, **search_params) | {"project": project}
         if endpoint.edition() in (c.EE, c.DCE) and search_findings:
             log.debug("Using export_findings() to speed up issue export")
-            return findings.export_findings(endpoint, project, new_params.get("branch"), new_params.get("pullRequest"))
-
+            issue_list = findings.export_findings(endpoint, project, new_params.get("branch"), new_params.get("pullRequest"))
+            issue_list = post_search_filter(issue_list, **new_params)
         try:
             issue_list = cls.search_unsafe(endpoint, **new_params)
         except TooManyIssuesError as e:
@@ -233,7 +233,9 @@ class Issue(findings.Finding):
                 # In last resort, use export_findings() if EE or DCEto avoid exceeding the 10K limit
                 if endpoint.edition() not in (c.EE, c.DCE):
                     raise
+                log.info("Project %s - %s - Traditional search failed, switching to export_findings()", project, e.message)
                 issue_list = findings.export_findings(endpoint, project, new_params.get("branch"), new_params.get("pullRequest"))
+                issue_list = post_search_filter(issue_list, **new_params)
         log.debug("Searching issues by project '%s': %d issues found", project, len(issue_list))
         return issue_list
 
@@ -957,3 +959,53 @@ def count_by_rule(endpoint: Platform, **search_params: Any) -> dict[str, int]:
         except Exception as e:
             log.error("%s while counting issues per rule, count may be incomplete", sutil.error_msg(e))
     return rulecount
+
+
+def post_search_filter(issue_list: dict[str, Issue], **search_params: Any) -> dict[str, Issue]:
+    """Applies post-search filtering on an issue list, for criteria that are not supported by the SonarQube API"""
+    log.debug("Applying post-search filters %s on %d issues", search_params, len(issue_list))
+    params = search_params.copy()
+    for k in (
+        "statuses",
+        "issueStatuses",
+        "severities",
+        "impactSeverities",
+        "types",
+        "impactSoftwareQualities",
+        "assignees",
+        "rules",
+        "languages",
+        "tags",
+    ):
+        if k in params:
+            params[k] = util.csv_to_list(params[k])
+    if "statuses" in params:
+        issue_list = {k: i for k, i in issue_list.items() if i.status in params["statuses"]}
+    if "issueStatuses" in params:
+        issue_list = {k: i for k, i in issue_list.items() if i.status in params["issueStatuses"]}
+    if "severities" in params:
+        issue_list = {k: i for k, i in issue_list.items() if i.severity in params["severities"]}
+    if "impactSeverities" in params:
+        issue_list = {k: i for k, i in issue_list.items() if any(i.impacts.values() in params["impactSeverities"])}
+    if "types" in params:
+        issue_list = {k: i for k, i in issue_list.items() if i.type in params["types"]}
+    if "impactSoftwareQualities" in params:
+        issue_list = {k: i for k, i in issue_list.items() if any(i.impacts.keys() in params["impactSoftwareQualities"])}
+    if "createdAfter" in params:
+        min_date = util.to_datetime(params["createdAfter"])
+        issue_list = {k: i for k, i in issue_list.items() if i.creation_date and i.creation_date > min_date}
+    if "createdBefore" in params:
+        max_date = util.to_datetime(params["createdBefore"])
+        issue_list = {k: i for k, i in issue_list.items() if i.creation_date and i.creation_date < max_date}
+    if "rules" in params:
+        issue_list = {k: i for k, i in issue_list.items() if i.rule in params["rules"]}
+    if "assignees" in params:
+        issue_list = {k: i for k, i in issue_list.items() if i.assignee in params["assignees"]}
+    if "author" in params:
+        issue_list = {k: i for k, i in issue_list.items() if i.assignee in params["author"]}
+    if "languages" in params:
+        issue_list = {k: i for k, i in issue_list.items() if i.language() in params["languages"]}
+    if "tags" in params:
+        issue_list = {k: i for k, i in issue_list.items() if i.tags and all(t in i._tags for t in params["tags"])}
+    log.debug("Post-search filters %s returns %d issues", search_params, len(issue_list))
+    return issue_list
