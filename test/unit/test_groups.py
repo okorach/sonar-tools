@@ -141,6 +141,25 @@ def test_import() -> None:
         o_g.delete()
 
 
+def test_get_from_id(get_test_group: Generator[Group]) -> None:
+    gr: Group = get_test_group
+    if tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
+        gr2 = groups.get_object_from_id(tutil.SQ, gr.group_id)
+        assert gr2 is gr
+    else:
+        with pytest.raises(exceptions.UnsupportedOperation):
+            _ = groups.get_object_from_id(tutil.SQ, gr.group_id)
+
+
+def test_create_or_update(get_test_group: Generator[Group]) -> None:
+    gr: Group = get_test_group
+    print(f"Testing create_or_update with group '{gr.name}'")
+    gr2 = groups.create_or_update(tutil.SQ, gr.name, "Some new group description")
+    print(f"Testing create_or_update with group 2 '{gr2.name}'")
+    assert gr2 is gr
+    assert gr.description == "Some new group description"
+
+
 def test_set_name(get_test_group: Generator[Group]) -> None:
     gr: Group = get_test_group
     assert gr.name.startswith(f"{tutil.TEMP_KEY}-group-")
@@ -164,20 +183,3 @@ def test_set_name(get_test_group: Generator[Group]) -> None:
     with pytest.raises(exceptions.ObjectAlreadyExists):
         new_gr.set_name("FOOBAR")
     new_gr.delete()
-
-
-def test_create_or_update(get_test_group: Generator[Group]) -> None:
-    gr: Group = get_test_group
-    gr2 = groups.create_or_update(tutil.SQ, gr.name, "Some new group description")
-    assert gr2 is gr
-    assert gr.description == "Some new group description"
-
-
-def test_get_from_id(get_test_group: Generator[Group]) -> None:
-    gr: Group = get_test_group
-    if tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
-        gr2 = groups.get_object_from_id(tutil.SQ, gr.group_id)
-        assert gr2 is gr
-    else:
-        with pytest.raises(exceptions.UnsupportedOperation):
-            _ = groups.get_object_from_id(tutil.SQ, gr.group_id)
