@@ -522,7 +522,9 @@ def get_new_code_period(endpoint: Platform, component: Optional[str], branch: Op
     return Setting.load(endpoint, data | {"key": NEW_CODE_PERIOD, "component": component, "branch": branch})
 
 
-def set_new_code_period(endpoint: Platform, nc_type: str, nc_value: str, project_key: Optional[str] = None, branch: Optional[str] = None) -> bool:
+def set_new_code_period(
+    endpoint: Platform, nc_type: str, nc_value: Union[int, str], project_key: Optional[str] = None, branch: Optional[str] = None
+) -> bool:
     """Sets the new code period at global level or for a project"""
     log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
     if endpoint.is_sonarcloud():

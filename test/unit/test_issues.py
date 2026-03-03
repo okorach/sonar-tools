@@ -404,6 +404,12 @@ def test_search_by_directory() -> None:
     assert len(issues_d) == 6000
 
 
+def test_search_by_rule() -> None:
+    """test_search_by_rule"""
+    issues_d = Issue.search_by_rule(tutil.SQ, rule_key="python:S3776")
+    assert all(i.rule == "python:S3776" for i in issues_d.values())
+
+
 def test_search_by_directory_facet_error() -> None:
     """test_search_by_directory_facet_error"""
     if tutil.SQ.is_sonarcloud() or tutil.SQ.edition() in (c.CE, c.DE):

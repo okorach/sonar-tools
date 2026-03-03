@@ -128,3 +128,15 @@ def test_2_same_name() -> None:
     webhook3.delete()
     whs = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)
     assert len(whs) == 1
+
+
+def test_get_without_cache() -> None:
+    """Test get_object without cache"""
+    wh.WebHook.CACHE.clear()
+    webhook: wh.WebHook = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)[0]
+    assert webhook.name == WEBHOOK
+    webhook2 = wh.WebHook.get_object(endpoint=tutil.SQ, key=webhook.key)
+    assert webhook2 is webhook
+
+    webhook2 = wh.WebHook.get_object(endpoint=tutil.SQ, key=webhook.key, use_cache=False)
+    assert webhook2 is webhook

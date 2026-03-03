@@ -110,8 +110,7 @@ class WebHook(SqObject):
     @classmethod
     def get_object(cls, endpoint: Platform, key: str, project: Optional[Union[str, Project]] = None, use_cache: bool = True) -> WebHook:
         """Gets a WebHook object from a key and an eventual project key"""
-        if project and not isinstance(project, str):
-            project = project.key
+        project = cls.get_key(project)
         log.debug("Getting webhook key '%s' project key '%s'", key, project)
         if use_cache and (o := cls.CACHE.get(endpoint.local_url, key, project)):
             return o
