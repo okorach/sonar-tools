@@ -46,14 +46,6 @@ def test_set_boolean() -> None:
     assert o.value is False
 
 
-def test_unsettable() -> None:
-    """test_unsettable"""
-    o = settings.Setting.get_object(tutil.SQ, "sonar.core.startTime")
-    val = o.value
-    assert not o.set("2022-02-07T13:43:10+0000")
-    assert o.value == val
-
-
 def test_multi_valued() -> None:
     """test_multi_valued"""
     o = settings.Setting.get_object(tutil.SQ, "sonar.java.file.suffixes", tutil.PROJECT_1)
@@ -109,3 +101,56 @@ def test_unsettable() -> None:
     assert o is not None
     res = True if tutil.SQ.version() < (10, 0, 0) else False
     assert o.set("https://api.github.com/") == res
+
+
+def test_is_default_value() -> None:
+    """test_is_default_value"""
+    o = settings.Setting.get_object(tutil.SQ, "sonar.python.file.suffixes")
+    assert o is not None
+    assert o.is_default_value()
+    assert o.set([".py", ".pyw", ".pyx", ".pyz"])
+    assert not o.is_default_value()
+    assert o.reset()
+    assert o.is_default_value()
+
+
+def test_visi_cache() -> None:
+    """test_visi_cache"""
+    o = settings.Setting.get_visibility(tutil.SQ)
+    assert o is not None
+    assert settings.Setting.get_visibility(tutil.SQ) is o
+
+
+def test_set_visibility() -> None:
+    """test_set_visibility"""
+    o = settings.Setting.get_visibility(tutil.SQ, component=tutil.PROJECT_1)
+    assert o.value == "private"
+    settings.set_visibility(tutil.SQ, "public", component=tutil.PROJECT_1)
+    o.refresh()
+    assert o.value == "public"
+    settings.set_visibility(tutil.SQ, "private", component=tutil.PROJECT_1)
+    o.refresh()
+    assert o.value == "private"
+
+
+def test_set_new_code_period() -> None:
+    """test_set_new_code_period"""
+    assert settings.set_new_code_period(tutil.SQ, "DAYS", 42, project_key=tutil.PROJECT_1)
+    o = settings.get_new_code_period(tutil.SQ, component=tutil.PROJECT_1)
+    assert o.value == "DAYS = 42"
+    assert settings.set_new_code_period(tutil.SQ, "SPECIFIC_ANALYSIS", "XXX", project_key=tutil.PROJECT_1)
+    assert o.value == "SPECIFIC_ANALYSIS = XXX"
+    assert o.reset()
+    assert o.value == "PREVIOUS_VERSION"
+
+
+def test_is_internal() -> None:
+    """test_is_internal"""
+    name = "sonar.filesize.limit" if tutil.SQ.is_sonarcloud() else "sonar.plugins.risk.consent"
+    assert settings.Setting.get_object(tutil.SQ, name).is_internal()
+    assert not settings.Setting.get_object(tutil.SQ, "sonar.python.file.suffixes").is_internal()
+
+
+def test_set_non_existing() -> None:
+    """test_set_non_existing"""
+    assert not settings.set_setting(tutil.SQ, "sonar.non.existing.setting", 42)
