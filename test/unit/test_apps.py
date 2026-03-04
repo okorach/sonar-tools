@@ -335,6 +335,18 @@ def test_app_branches(get_test_app: Generator[App]) -> None:
     assert obj.main_branch().name == APP_BRANCH_MAIN
 
 
+def test_remove_project(get_test_app: Generator[App]) -> None:
+    """Test removing a project from an application"""
+    if not __verify_support():
+        pytest.skip(__UNSUPPORTED_MESSAGE)
+    obj: App = get_test_app
+    proj_key = tutil.PROJECT_1
+    assert obj.add_projects([proj_key])
+    assert proj_key in obj.projects()
+    assert obj.remove_project(proj_key)
+    assert proj_key not in obj.projects()
+
+
 def test_sorted_search() -> None:
     """test_sorted_search"""
     if not __verify_support():
