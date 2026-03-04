@@ -286,8 +286,28 @@ class Rule(SqObject):
         )
 
     @classmethod
+    def search_quality_profile(
+        cls, endpoint: Platform, quality_profile_id: str, language: str, use_cache: bool = True, threads: int = 4
+    ) -> dict[str, Rule]:
+        """Searches rules in a quality profile
+
+        :param endpoint: The SonarQube reference
+        :param quality_profile_id: The quality profile ID
+        :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        :param threads: Number of threads to use for parallel search, default 4
+        :return: Dict of rules indexed by rule key
+        """
+        if use_cache and not cls.CACHE.is_complete(endpoint):
+            return cls.search(endpoint, use_cache=False, threads=threads)
+        if use_cache and cls.CACHE.is_complete(endpoint):
+            log.info("Searching rules in quality profile '%s' for language '%s': Cache hit!", quality_profile_id, language)
+            return {rule.key: rule for rule in cls.CACHE.from_platform(endpoint).values() if rule.is_active_in_quality_profile(quality_profile_id)}
+        log.info("Searching rules in quality profile '%s' for language '%s': Cache miss, querying SonarQube", quality_profile_id, language)
+        return cls.search(endpoint, qprofile=quality_profile_id, languages=language, use_cache=use_cache, threads=threads)
+
+    @classmethod
     def search(cls, endpoint: Platform, use_cache: bool = False, threads: int = 4, **search_params: Any) -> dict[str, Rule]:
-        """Searches rules with optional filters
+        """Searches rules with optional filtergrep s
 
         :param endpoint: The SonarQube reference
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
@@ -296,8 +316,8 @@ class Rule(SqObject):
         :return: Dict of rules indexed by rule key
         """
         log.debug("Searching rules with params %s", search_params)
-        tmp_params = {k: v for k, v in search_params.items() if k != "include_external"}
-        if use_cache and len(tmp_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 1000:
+        tmp_params = {k: v for k, v in search_params.items() if k not in ("include_external", "activation")}
+        if use_cache and len(tmp_params) == 0 and cls.CACHE.is_complete(endpoint):
             log.debug("Searching rules from cache")
             return cls.CACHE.from_platform(endpoint)
         langs = search_params.pop("languages", None)
@@ -309,9 +329,22 @@ class Rule(SqObject):
         rule_list: dict[str, Rule] = {}
         # Groups languages by 15 to accelerate searches
         lang_groups = [lang_list[i : i + 15] for i in range(0, len(lang_list), 10)]
-        for lang_group in lang_groups:
-            rule_list |= cls.get_paginated(endpoint, threads=threads, params=search_params | {"languages": lang_group})
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(threads, len(lang_groups)), thread_name_prefix="RuleLangSearch") as executor:
+            futures = [
+                executor.submit(cls.get_paginated, endpoint, threads=threads, params=search_params | {"languages": lang_group, "activation": "true"})
+                for lang_group in lang_groups
+            ]
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    rule_list |= future.result(timeout=120)
+                except Exception as e:
+                    log.error("Error searching rules by language group: %s", e)
         log.info("Rule search returning a list of %d rules", len(rule_list))
+        if len(tmp_params) == 0:
+            log.info("Rule search is complete, marking cache as complete")
+            cls.CACHE.set_complete(endpoint=endpoint, is_complete=True)
+        else:
+            log.info("Rule search is not complete, can't mark cache as complete")
         return rule_list
 
     def refresh(self, use_cache: bool = True) -> Rule:
@@ -414,17 +447,30 @@ class Rule(SqObject):
         """Returns the rule clean code attributes"""
         return self._clean_code_attribute
 
+    def __get_quality_profile_data(self, quality_profile_id: str) -> Optional[dict[str, str]]:
+        """Returns the data of a quality profile if the rule is active in it"""
+        self.refresh()
+        return next((qp for qp in self.sq_json.get("actives", []) if qp["qProfile"] == quality_profile_id), None)
+
+    def is_active_in_quality_profile(self, quality_profile_id: str) -> bool:
+        """Returns True if the rule is active in a given quality profile, False otherwise"""
+        self.refresh()
+        return bool(self.__get_quality_profile_data(quality_profile_id))
+
+    def is_prioritized_in_quality_profile(self, quality_profile_id: str) -> bool:
+        """Returns True if the rule is a prioritized rule in a given quality profile, False otherwise"""
+        if (found_qp := self.__get_quality_profile_data(quality_profile_id)) is None:
+            return False
+        return found_qp.get("prioritizedRule", False)
+
     def impacts(self, quality_profile_id: Optional[str] = None, substitute_with_default: bool = True) -> dict[str, str]:
         """Returns the rule clean code attributes"""
-        found_qp = None
-        if quality_profile_id:
-            if "actives" not in self.sq_json:
-                self.refresh()
-            found_qp = next((qp for qp in self.sq_json.get("actives", []) if quality_profile_id and qp["qProfile"] == quality_profile_id), None)
-        if not found_qp:
+
+        if not quality_profile_id or not self.is_active_in_quality_profile(quality_profile_id):
             return self._impacts if len(self._impacts) > 0 else {TYPE_TO_QUALITY[self.type]: self.severity}
+        qp = self.__get_quality_profile_data(quality_profile_id)
         if self.endpoint.is_mqr_mode():
-            qp_impacts = {imp["softwareQuality"]: imp["severity"] for imp in found_qp["impacts"]}
+            qp_impacts = {imp["softwareQuality"]: imp["severity"] for imp in qp["impacts"]}
             default_impacts = self._impacts
         else:
             qp_impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
@@ -436,26 +482,10 @@ class Rule(SqObject):
 
     def rule_severity(self, quality_profile_id: Optional[str] = None, substitute_with_default: bool = True) -> str:
         """Returns the severity, potentially customized in a QP"""
-        found_qp = None
-        if quality_profile_id:
-            if "actives" not in self.sq_json:
-                self.refresh()
-            found_qp = next((qp for qp in self.sq_json.get("actives", []) if quality_profile_id and qp["qProfile"] == quality_profile_id), None)
-        if not found_qp:
+        if not quality_profile_id or not self.is_active_in_quality_profile(quality_profile_id):
             return c.DEFAULT if substitute_with_default else self.severity
+        found_qp = self.__get_quality_profile_data(quality_profile_id)
         return c.DEFAULT if substitute_with_default and found_qp["severity"] == self.severity else found_qp["severity"]
-
-    def __get_quality_profile_data(self, quality_profile_id: str) -> Optional[dict[str, str]]:
-        if not quality_profile_id:
-            return None
-        self.refresh()
-        return next((qp for qp in self.sq_json.get("actives", []) if qp["qProfile"] == quality_profile_id), None)
-
-    def is_prioritized_in_quality_profile(self, quality_profile_id: str) -> bool:
-        """Returns True if the rule is a prioritized rule in a given quality profile, False otherwise"""
-        if (found_qp := self.__get_quality_profile_data(quality_profile_id)) is None:
-            return False
-        return found_qp.get("prioritizedRule", False)
 
     def custom_parameters_in_quality_profile(self, quality_profile_id: str) -> Optional[dict[str, str]]:
         """Returns the rule custom params in the QP if any, else None"""
@@ -481,9 +511,9 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -
     """Returns a JSON export of all rules"""
     log.info("Exporting rules")
     full = export_settings.get("FULL_EXPORT", False)
-    threads = 16 if endpoint.is_sonarcloud() else 8
-    all_rules = Rule.search(endpoint=endpoint, use_cache=False).items()
-    get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", threads))
+    threads = export_settings.get("threads", 16 if endpoint.is_sonarcloud() else 8)
+    all_rules = Rule.search(endpoint=endpoint, use_cache=False, threads=threads).items()
+    get_all_rules_details(endpoint=endpoint, threads=threads)
 
     rule_list = {}
     rule_list["instantiated"] = {k: rule.export(full) for k, rule in all_rules if rule.is_instantiated()}
