@@ -129,7 +129,7 @@ class Finding(SqObject):
         self.impacts: Optional[dict[str, str]] = None  #: 10.x MQR mode
         self.author: Optional[str] = None
         self.assignee: Optional[str] = None
-        self.status: Optional[str] = None  # OPEN, CONFIRMED, REOPENED, RESOLVED, CLOSED, ACCEPTED, FALSE_POSITIVE
+        self.status: Optional[str] = None  # OPEN, CONFIRMED, REOPENED, RESOLVED, CLOSED, ACCEPTED, FALSE_POSITIVE, IN_SANDBOX
         self.resolution: Optional[str] = None
         self.rule: Optional[str] = None
         self.projectKey: Optional[str] = None
