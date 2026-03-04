@@ -24,6 +24,7 @@ from __future__ import annotations
 from typing import Optional, Any, TYPE_CHECKING
 
 from threading import Lock
+import sonar.logging as log
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
@@ -39,6 +40,7 @@ class Cache(object):
         self.objects_by_platform: dict[str, dict[int, SqObject]] = {}
         self.object_class: Optional[Any] = None
         self.lock = Lock()
+        self.complete: dict[str, bool] = {}  # Whether the cache is complete for a given platform (all objects have been loaded)
 
     def __len__(self) -> int:
         """Returns size of cache"""
@@ -111,3 +113,13 @@ class Cache(object):
         """Returns the objects from the cache for a given platform"""
         with self.lock:
             return self.objects_by_platform.get(endpoint.local_url, {})
+
+    def set_complete(self, endpoint: Platform, is_complete: bool) -> None:
+        """Marks the cache as complete"""
+        with self.lock:
+            self.complete[endpoint.local_url] = is_complete
+        log.info("%s for %s (%d rules) is complete: %s", self, endpoint.local_url, len(self.from_platform(endpoint)), is_complete)
+
+    def is_complete(self, endpoint: Platform) -> bool:
+        """Returns whether the cache is complete for a given platform"""
+        return self.complete.get(endpoint.local_url, False)

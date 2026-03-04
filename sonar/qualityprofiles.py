@@ -287,7 +287,7 @@ class QualityProfile(SqObject):
         if self._rules is not None and use_cache:
             # Assume nobody changed QP during execution
             return self._rules
-        self._rules = rules.Rule.search(self.endpoint, activation="true", qprofile=self.key, s="key", languages=self.language)
+        self._rules = rules.Rule.search_quality_profile(self.endpoint, self.key, self.language, use_cache=use_cache, threads=8)
         return self._rules
 
     def activate_rule(
@@ -610,6 +610,14 @@ class QualityProfile(SqObject):
         """
         return rules.Rule.get_object(self.endpoint, rule_key).is_prioritized_in_quality_profile(self.key)
 
+    def rule_is_active(self, rule_key: str) -> bool:
+        """Checks whether the rule is active in the quality profile
+
+        :param str rule_key: The rule key to check
+        :return: Whether the rule is active in the quality profile
+        """
+        return rules.Rule.get_object(self.endpoint, rule_key).is_active_in_quality_profile(self.key)
+
     def rule_custom_params(self, rule_key: str) -> Optional[dict[str, str]]:
         """Returns the rule custom params in the quality profile if any, None otherwise
 
@@ -816,7 +824,8 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -
     :return: Dict of quality profiles JSON representation
     """
     log.info("Exporting quality profiles")
-    rules.get_all_rules_details(endpoint=endpoint, threads=export_settings.get("threads", 8))
+    threads = export_settings.get("threads", 16 if endpoint.is_sonarcloud() else 8)
+    rules.get_all_rules_details(endpoint=endpoint, threads=threads)
     qp_list = {}
     for qp in QualityProfile.search(endpoint, use_cache=False).values():
         log.debug("Exporting %s", str(qp))
