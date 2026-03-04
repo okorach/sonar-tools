@@ -98,6 +98,8 @@ GOOD_QG_CONDITIONS = {
     "software_quality_blocker_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
     "software_quality_high_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
     "prioritized_rule_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "sca_count_malware": (0, 0, "Malware count on overall code should always be 0"),
+    "security_hotspots_reviewed": (1, 50, "Security hotspots reviewed on overall code should be between 1% and 50%"),
 }
 
 _IMPORTABLE_PROPERTIES = ("name", "isDefault", "isBuiltIn", "conditions", "permissions")
