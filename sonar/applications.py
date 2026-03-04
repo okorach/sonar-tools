@@ -349,6 +349,26 @@ class Application(aggr.Aggregation):
         self.projects()
         return ok
 
+    def remove_project(self, project: Union[projects.Project, str]) -> bool:
+        """Remove a project from an application
+
+        :param project: Project object or project key string
+        :return: Whether the operation succeeded
+        """
+        proj_key = self.__class__.get_key(project)
+        log.debug("Removing project '%s' from %s", proj_key, str(self))
+        try:
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.REMOVE_PROJECT, application=self.key, project=proj_key)
+            r = self.endpoint.post(api, params=params)
+            ok = r.ok
+        except (ConnectionError, RequestException) as e:
+            sutil.handle_error(e, f"removing project '{proj_key}' from {self}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            self.__class__.CACHE.pop(self)
+            ok = False
+        self._projects = None
+        self.projects()
+        return ok
+
     def recompute(self) -> bool:
         """Triggers application recomputation, return whether the operation succeeded"""
         log.debug("Recomputing %s", str(self))
