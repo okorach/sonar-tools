@@ -329,7 +329,7 @@ class Rule(SqObject):
         rule_list: dict[str, Rule] = {}
         # Groups languages by 15 to accelerate searches
         lang_groups = [lang_list[i : i + 15] for i in range(0, len(lang_list), 10)]
-        with concurrent.futures.ThreadPoolExecutor(max_workers=min(threads, len(lang_groups)), thread_name_prefix="RuleLangSearch") as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(threads, len(lang_groups)), thread_name_prefix="RuleSearch") as executor:
             futures = [
                 executor.submit(cls.get_paginated, endpoint, threads=threads, params=search_params | {"languages": lang_group, "activation": "true"})
                 for lang_group in lang_groups
@@ -343,8 +343,8 @@ class Rule(SqObject):
         if len(tmp_params) == 0:
             log.info("Rule search is complete, marking cache as complete")
             cls.CACHE.set_complete(endpoint=endpoint, is_complete=True)
-        else:
-            log.info("Rule search is not complete, can't mark cache as complete")
+        elif not cls.CACHE.is_complete(endpoint):
+            log.info("Rule search is partial, can't mark cache as complete")
         return rule_list
 
     def refresh(self, use_cache: bool = True) -> Rule:
@@ -595,7 +595,7 @@ def get_all_rules_details(endpoint: Platform, threads: int = 8) -> bool:
     rule_list = Rule.search(endpoint=endpoint, use_cache=True, threads=threads).values()
     ok = True
     if endpoint.is_sonarcloud():
-        threads = max(threads, 20)
+        threads = max(threads, 32)
     log.info("Collecting rules details for %d rules with %d threads", len(rule_list), threads)
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="RuleDetails") as executor:
         futures = [executor.submit(Rule.refresh, rule, True) for rule in rule_list]
