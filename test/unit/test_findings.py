@@ -235,6 +235,12 @@ def test_findings_filter_on_status(csv_file: Generator[str]) -> None:
     assert tutil.csv_col_is_value(csv_file, "status", "FALSE-POSITIVE", "ACCEPTED", "WONTFIX")
 
 
+def test_findings_filter_on_invalid_status(csv_file: Generator[str]) -> None:
+    """test_findings_filter_on_invalid_status"""
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.STATUSES} INVALID_STATUS"
+    assert tutil.run_cmd(findings_export.main, cmd) == e.WRONG_SEARCH_CRITERIA
+
+
 def test_findings_filter_on_in_sandbox_status(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_in_sandbox_status"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.STATUSES} IN_SANDBOX"
