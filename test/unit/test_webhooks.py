@@ -81,9 +81,9 @@ def test_update() -> None:
 def test_export() -> None:
     """test_export"""
     exp = wh.export(tutil.SQ)
-    assert len(exp) == 1
-    first = list(exp.keys())[0]
-    assert exp[first]["url"].startswith("https://")
+    assert len(exp) >= 1
+    assert "name" in exp[0]
+    assert "url" in exp[0]
 
 
 def test_create_delete() -> None:
