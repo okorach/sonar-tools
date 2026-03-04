@@ -199,11 +199,9 @@ class WebHook(SqObject):
 
 def export(endpoint: Platform, project_key: Optional[str] = None, full: bool = False) -> ObjectJsonRepr:
     """Export webhooks of a project as JSON"""
-    json_data = {}
+    json_data = []
     for wb in WebHook.search(endpoint, project=project_key).values():
-        j = wb.to_json(full)
-        j.pop("name", None)
-        json_data[wb.name] = util.remove_nones(j)
+        json_data.append(util.remove_nones(wb.to_json(full)))
     return json_data if len(json_data) > 0 else None
 
 
@@ -211,13 +209,14 @@ def import_config(endpoint: Platform, data: list[dict[str, str]], project_key: O
     """Imports a set of webhooks defined from a JSON description"""
     log.info("Importing webhooks %s for %s", str(data), str(project_key))
     current_wh = WebHook.search(endpoint, project=project_key)
-    existing_webhooks = {wh.name: k for k, wh in current_wh.items()}
+    existing_by_name: dict[str, list[str]] = {}
+    for k, wh in current_wh.items():
+        existing_by_name.setdefault(wh.name, []).append(k)
 
-    # FIXME: Handle several webhooks with same name
     for wh_data in data:
         wh_name = wh_data["name"]
-        if wh_name in existing_webhooks:
-            current_wh[existing_webhooks[wh_name]].update(**wh_data)
+        if wh_name in existing_by_name and existing_by_name[wh_name]:
+            current_wh[existing_by_name[wh_name].pop(0)].update(**wh_data)
         else:
             hook = WebHook.create(endpoint=endpoint, name=wh_name, url=wh_data.get("url", "https://to.be.defined"), project=project_key)
             hook.update(**wh_data)

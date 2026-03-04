@@ -482,11 +482,9 @@ class Platform(object):
                 setting_json[s.key].pop("value")
             sutil.update_json(json_data, categ, subcateg, setting_json)
 
-        hooks = {}
+        hooks = []
         for wb in self.webhooks().values():
-            j = util.remove_nones(wb.to_json(full))
-            j.pop("name", None)
-            hooks[wb.name] = j
+            hooks.append(util.remove_nones(wb.to_json(full)))
         if len(hooks) > 0:
             json_data["webhooks"] = hooks
         json_data["permissions"] = self.global_permissions().export(export_settings=export_settings)
