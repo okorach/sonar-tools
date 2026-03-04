@@ -8,7 +8,7 @@ Plenty of issue filters can be specified from the command line, type `sonar-find
 Basic Usage: `sonar-findings-export [--format csv|json|sarif] [--sarifNoCustomProperties] [-k <keyList>] ...`
 
 - `--format csv|json|sarif`: Choose export format. Default is based on output file extension, and csv in last - `--sarifNoCustomProperties`: For SARIF export. By default all Sonar custom properties are exported which makes the SARIF export quite verbose. Use this option to not export the Sonar custom properties (only the SARIF standard ones)
-- `--statuses <statusList>`: Only export findings with given statuses, comma separated among OPEN,CONFIRMED,REOPENED,RESOLVED,CLOSED,TO_REVIEW,REVIEWED
+- `--statuses <statusList>`: Only export findings with given statuses, comma separated among OPEN,CONFIRMED,REOPENED,RESOLVED,CLOSED,IN_SANDBOX,TO_REVIEW,REVIEWED
 - `--resolutions <resolutionList>`: Only export findings with given resolution, comma separated among FALSE-POSITIVE,WONTFIX,FIXED,REMOVED,ACCEPTED,SAFE,ACKNOWLEDGED,FIXED
 - `--severities <severityList>`: Only export findings with given resolution, comma separated among BLOCKER,CRITICAL,MAJOR,MINOR,INFO
 - `--types <typeList>`: Only export findings with given type, comma separated among BUG,VULNERABILITY,CODE_SMELL,SECURITY_HOTSPOT
