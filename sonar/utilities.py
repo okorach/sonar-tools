@@ -227,24 +227,25 @@ def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: Any
     return json_data
 
 
-def nbr_pages(sonar_api_json: dict[str, Any]) -> int:
-    """Returns nbr of pages of a paginated Sonar API call"""
-    if (total_elements := nbr_total_elements(sonar_api_json)) == 0:
-        return 1
-    # Some APIs return paging data in "paging" field, others in "page" field :-/
-    page_data = sonar_api_json["paging"] if "paging" in sonar_api_json else sonar_api_json.get("page")
-    if page_data and "pageSize" in page_data:
-        return math.ceil(total_elements / page_data["pageSize"])
-    return 1
+def page_size(sonar_api_json: dict[str, Any]) -> int:
+    """Returns page size of a paginated Sonar API call"""
+    # Some APIs return paging data at the root of the payload, others in "paging" field, others in "page" field :-/
+    page_data = next((sonar_api_json[key] for key in ("paging", "page") if key in sonar_api_json), sonar_api_json)
+    return next((page_data.get(psize) for psize in ("pageSize", "ps") if psize in page_data), None)
 
 
 def nbr_total_elements(sonar_api_json: dict[str, Any]) -> int:
     """Returns nbr of elements of a paginated Sonar API call"""
-    # Some APIs return paging data in "paging" field, others in "page" field :-/
-    page_data = sonar_api_json["paging"] if "paging" in sonar_api_json else sonar_api_json.get("page")
-    if page_data and "total" in page_data:
-        return page_data["total"]
-    return 0
+    # Some APIs return paging data at the root of the payload, others in "paging" field, others in "page" field :-/
+    page_data = next((sonar_api_json[key] for key in ("paging", "page") if key in sonar_api_json), sonar_api_json)
+    return page_data.get("total", 0) if page_data else 0
+
+
+def nbr_pages(sonar_api_json: dict[str, Any]) -> int:
+    """Returns nbr of pages of a paginated Sonar API call"""
+    total_elements = nbr_total_elements(sonar_api_json)
+    psize = page_size(sonar_api_json)
+    return math.ceil(total_elements / psize) if psize and total_elements > 0 else 1
 
 
 def is_api_v2(api: str) -> bool:
