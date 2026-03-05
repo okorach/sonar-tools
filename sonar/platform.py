@@ -388,7 +388,11 @@ class Platform(object):
         sysinfo = self.sys_info()
         if "Application Nodes" in sysinfo:
             sysinfo = sysinfo["Application Nodes"][0]
-        return sif.Sif(sysinfo).plugins()
+        try:
+            return sif.Sif(sysinfo).plugins()
+        except sif.NotSystemInfo:
+            log.critical("Sysinfo is not a system info file")
+            return {}
 
     def get_settings(self, settings_list: Optional[list[str]] = None) -> dict[str, dict[str, Any]]:
         """Returns a list of (or all) platform global settings dict representation from their key"""
@@ -583,8 +587,11 @@ class Platform(object):
             + self._audit_admin_password()
             + self.audit_lta_latest()
             + self._audit_token_max_lifetime(audit_settings)
-            + sif.Sif(pf_sif, self).audit(audit_settings)
         )
+        try:
+            problems += sif.Sif(pf_sif, self).audit(audit_settings)
+        except sif.NotSystemInfo:
+            log.critical("Platform sysinfo is not a system info file")
         return problems
 
     def _audit_logfile(self, logtype: str, logfile: str) -> list[Problem]:

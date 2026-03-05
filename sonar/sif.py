@@ -34,6 +34,7 @@ import sonar.util.constants as c
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 import sonar.sif_node as sifn
+from sonar.util import misc
 
 import sonar.dce.app_nodes as appnodes
 import sonar.dce.search_nodes as searchnodes
@@ -63,7 +64,7 @@ class Sif(object):
     def __init__(self, json_sif: dict[str, str], concerned_object: Optional[object] = None) -> None:
         """Constructor"""
         if not is_sysinfo(json_sif):
-            log.critical("Provided JSON does not seem to be a system info")
+            log.critical("Provided JSON %s does not seem to be a system info", misc.json_dump(json_sif))
             raise NotSystemInfo("JSON is not a system info nor a support info")
         self.json = json_sif
         self.concerned_object = concerned_object
