@@ -77,8 +77,12 @@ def _audit_sif(sysinfo: str, audit_settings: ConfigSettings) -> tuple[str, list[
     except PermissionError:
         log.critical("No permission to open file %s", sysinfo)
         raise
-    sif_obj = sif.Sif(sysinfo)
-    return sif_obj.server_id(), sif_obj.audit(audit_settings)
+    try:
+        sif_obj = sif.Sif(sysinfo)
+        return sif_obj.server_id(), sif_obj.audit(audit_settings)
+    except sif.NotSystemInfo:
+        log.critical("File %s is not a system info file", sysinfo)
+    return "", []
 
 
 def __filter_problems(problems: list[problem.Problem], settings: ConfigSettings) -> list[problem.Problem]:
