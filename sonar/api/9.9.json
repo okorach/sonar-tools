@@ -262,6 +262,13 @@
                 "text"
             ]
         },
+        "DELETE_COMMENT": {
+            "method": "POST",
+            "api": "api/issues/delete_comment",
+            "params": [
+                "comment"
+            ]
+        },
         "SET_SEVERITY": {
             "method": "POST",
             "api": "api/issues/set_severity",

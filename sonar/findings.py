@@ -361,6 +361,10 @@ class Finding(SqObject):
         ch = self.comments()
         return list(ch.values())[-1]["date"] if len(ch) > 0 else None
 
+    def delete_comment(self, comment_key: str) -> bool:
+        # Implemented in subclasses, should not reach this
+        raise NotImplementedError()
+
     def assign(self, assignee: Optional[str]) -> bool:
         """Assigns a finding (and optionally comment)
 
@@ -541,6 +545,46 @@ class Finding(SqObject):
             len(match_but_modified),
         )
         return exact_matches, approx_matches, match_but_modified
+
+    def search_siblings_bidirectional(
+        self, findings_list: list[Finding], ignore_component: bool = False, **kwargs
+    ) -> tuple[list[Finding], list[Finding]]:
+        """Searches for sibling findings without direction bias (for bidirectional sync).
+        Unlike search_siblings(), this does not check which side has a more recent changelog.
+
+        :return: (exact_matches, approx_matches)
+        :meta private:
+        """
+        exact_matches = []
+        approx_matches = []
+        log.debug("Searching for a bidirectional exact match of %s", str(self))
+        candidates = [f for f in findings_list if f is not self and f.strictly_identical_to(self, ignore_component, **kwargs)]
+        candidate_match = None
+        line_gap = None
+        for finding in candidates:
+            if line_gap is None or abs(finding.line - self.line) < line_gap:
+                line_gap = abs(finding.line - self.line)
+                candidate_match = finding
+                log.info("%s and %s are exact match with a line gap of %d", str(self), str(candidate_match), line_gap)
+            if line_gap == 0:
+                break
+        if candidate_match is not None:
+            log.info("%s and %s are exact bidirectional match", str(self), str(candidate_match))
+            exact_matches.append(candidate_match)
+            return exact_matches, approx_matches
+
+        log.debug("No exact match, searching for an approximate bidirectional match of %s", str(self))
+        approx_matches = [f for f in findings_list if f.almost_identical_to(self, ignore_component, **kwargs)]
+
+        if len(approx_matches) == 0:
+            log.debug("No approximate bidirectional match found for %s", str(self))
+        log.info(
+            "%s has %d exact bidirectional matches, %d approximate bidirectional matches",
+            self,
+            len(exact_matches),
+            len(approx_matches),
+        )
+        return exact_matches, approx_matches
 
     def do_transition(self, transition: str) -> bool:
         try:

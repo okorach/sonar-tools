@@ -484,6 +484,7 @@ class Issue(findings.Finding):
                     "value": cmt["markdown"],
                     "user": cmt["login"],
                     "userName": cmt["login"],
+                    "commentKey": cmt["key"],
                 }
         if after is not None:
             return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > after}
@@ -502,6 +503,21 @@ class Issue(findings.Finding):
             self.refresh()
             self._comments = None
             self.comments()
+            return True
+        except exceptions.SonarException:
+            return False
+
+    def delete_comment(self, comment_key: str) -> bool:
+        """Deletes a comment from an issue
+
+        :param comment_key: The key of the comment to delete
+        :return: Whether the operation succeeded
+        """
+        log.debug("Deleting comment '%s' from %s", comment_key, str(self))
+        try:
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.DELETE_COMMENT, comment=comment_key)
+            self.post(api, params=params)
+            self._comments = None
             return True
         except exceptions.SonarException:
             return False

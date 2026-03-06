@@ -254,6 +254,11 @@ class Hotspot(findings.Finding):
         except exceptions.SonarException:
             return False
 
+    def delete_comment(self, comment_key: str) -> bool:
+        """Deleting comments on hotspots is not supported by the SonarQube API"""
+        log.debug("Deleting comments on hotspots is not supported, skipping comment '%s' on %s", comment_key, str(self))
+        return False
+
     def __apply_event(self, event: object, settings: ConfigSettings) -> bool:
         """Applies a changelog event (transition, comment, assign) to the hotspot"""
         from sonar import syncer
