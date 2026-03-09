@@ -12,10 +12,10 @@ Command line tools to help in SonarQube administration tasks. Available as a **p
 ![Issues](https://img.shields.io/github/issues/okorach/sonar-tools)
 ![Stars](https://img.shields.io/github/stars/okorach/sonar-tools?style=social)
 
-[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=okorach_sonar-tools)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
-[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonar-tools&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
-[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonar-tools&metric=bugs)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
-[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonar-tools&metric=ncloc)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=okorach-oss_sonar-tools&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=okorach-oss_sonar-tools)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=okorach-oss_sonar-tools&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=okorach-oss_sonar-tools)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=okorach-oss_sonar-tools&metric=bugs)](https://sonarcloud.io/dashboard?id=okorach-oss_sonar-tools)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=okorach-oss_sonar-tools&metric=ncloc)](https://sonarcloud.io/dashboard?id=okorach-oss_sonar-tools)
 
 **DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource Sarl, the company publishing the [SonarQube Server](https://www.sonarsource.com/products/sonarqube/), [SonarQube Cloud](https://sonarcloud.io) and [SonarQube for IDE (ex- SonarLint)](https://www.sonarsource.com/products/sonarlint/) products
 
