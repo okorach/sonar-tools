@@ -80,3 +80,21 @@ def test_sync_2_proj_branches(json_file: Generator[str]) -> None:
 def test_sync_scloud(json_file: Generator[str]) -> None:
     """test_sync_scloud"""
     assert tutil.run_cmd(findings_sync.main, f"{CMD} {SC_PLAT_OPTS} {SYNC_OPTS} --{opt.NBR_THREADS} 16 -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
+
+
+def test_sync_bidirectional_same_proj_2_branches(json_file: Generator[str]) -> None:
+    """test_sync_bidirectional_same_proj_2_branches"""
+    assert (
+        tutil.run_cmd(findings_sync.main, f"{CMD} {TEST_OPTS} -b main -B develop -K TESTSYNC --bidirectional --{opt.REPORT_FILE} {json_file}") == e.OK
+    )
+
+
+def test_sync_bidirectional_2_proj(json_file: Generator[str]) -> None:
+    """test_sync_bidirectional_2_proj - bidirectional sync between 2 projects on same instance"""
+    assert (
+        tutil.run_cmd(
+            findings_sync.main,
+            f"{CMD} {PLAT_OPTS} {SYNC_OPTS} --bidirectional --{opt.REPORT_FILE} {json_file}",
+        )
+        == e.OK
+    )

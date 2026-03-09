@@ -15,7 +15,7 @@ When the source or target is a Community Edition/Build then only the main branch
 
 ## Usage
 
-`sonar-findings-sync -k <projectKeyPattern> [-b <sourceBranch>] [-B <targetBranch>] [-K <targetProjectKey>] [-B <targetBranch>] [-U <targetUrl> [-T <targetToken>] [-f <file>] [--nolink] [--since <YYYY-MM-DD>] [--tag <tag>]`
+`sonar-findings-sync -k <projectKeyPattern> [-b <sourceBranch>] [-B <targetBranch>] [-K <targetProjectKey>] [-B <targetBranch>] [-U <targetUrl> [-T <targetToken>] [-f <file>] [--nolink] [--since <YYYY-MM-DD>] [--tag <tag>] [--bidirectional]`
 
 - `-k <projectKeyPattern>`: Project key regexp pattern of the source projects to sync. If the pattern selects more than 1 project then the `-K` option shall not be speciified and the sync happens 1-to-1 for all project keys matching the pattern in the source platform. A same project key must exist on the target.
 - `-K <projectKey>`: Optional. Key of the target project. If not specified, the same project key as the source is assumed
@@ -30,6 +30,7 @@ When the source or target is a Community Edition/Build then only the main branch
 the target token.
 - `--nolink`: Do not add a HTTP link comment in the source and target findings (that point at each other)
 - `--tag`: Defines the tag applied to synchronized issues, default is `synchronized`. Use `--tag ''` to not tag the issues
+- `--bidirectional`: Enables bidirectional sync. Only supported for 2 branches of a same project or 2 Community Edition projects on the same instance. See [Bidirectional sync](#bidirectional-sync) below
 - `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 
@@ -67,6 +68,33 @@ Example of synchronization options
 - **main** branch of a source project key **myProject** in a SonarQube Server instance and **master** branch of the same project in SonarQube Cloud:
   `sonar-findings-sync -k myProject -u https://sonar.acme.com -t <sourceToken> -K myProject -U https://sonarcloud.io -T <targetToken> -O myOrganization`
 
+
+# <a name="bidirectional-sync"></a>Bidirectional sync
+
+By default, `sonar-findings-sync` performs a **unidirectional** sync: changes flow from the source to the target.
+With the `--bidirectional` flag, changes flow **both ways** between two branches or projects.
+
+## Requirements
+
+- Source and target must be on the **same SonarQube instance** (same URL)
+- Typical use cases: syncing 2 branches of the same project, or 2 Community Edition projects
+
+## Behavior
+
+- **Changelog**: The finding with the most recent changelog is treated as the source. Its changelog is applied to the other side (most-recent-wins)
+- **Comments**: User comments are merged bidirectionally. A comment present on one side but missing on the other is added. Content-based deduplication prevents the same comment from being added twice across repeated syncs
+- **Tags**: Both findings converge to the **union** of their tags (plus the optional sync tag)
+- **Sync link comment**: A single comment is added on both findings indicating the sync direction (as source or as target), replacing any previous sync link comments. Example: `Automatic bidirectional sync (as source) with [this issue](<url>)`
+
+## Examples
+
+```
+# Bidirectional sync between branch develop and branch main of project myProjKey
+sonar-findings-sync -k myProjKey -b develop -B main --bidirectional
+
+# Bidirectional sync between 2 CE projects on the same instance
+sonar-findings-sync -k sourceProject -K targetProject --bidirectional
+```
 
 # Selection of source findings for synchronization
 

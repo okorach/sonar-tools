@@ -91,6 +91,13 @@ def __parse_args(desc: str) -> object:
         default="synchronized",
         help="tag to set on synchronized issues, default is 'synchronized', set to '' if you don't want any tag",
     )
+    parser.add_argument(
+        "--bidirectional",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Enable bidirectional sync (only for 2 branches of same project, or 2 CE projects on same instance)",
+    )
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
@@ -165,6 +172,10 @@ def main() -> None:
         if params["login"] == "admin":
             raise options.ArgumentsError("sonar-findings-sync should not be run with 'admin' user token, but with an account dedicated to sync")
 
+        is_bidirectional = params.get("bidirectional", False)
+        if is_bidirectional and source_env.local_url != target_env.local_url:
+            raise options.ArgumentsError("Bidirectional sync requires source and target to be on the same SonarQube instance")
+
         settings = {
             syncer.SYNC_ADD_LINK: not params["nolink"],
             syncer.SYNC_ASSIGN: True,
@@ -173,6 +184,7 @@ def main() -> None:
             syncer.SYNC_SINCE_DATE: __since_date(**params),
             syncer.SYNC_THREADS: params[options.NBR_THREADS],
             syncer.SYNC_TAG: params.get("tag", ""),
+            syncer.SYNC_BIDIRECTIONAL: is_bidirectional,
         }
 
         report, counters = [], {}
