@@ -19,7 +19,7 @@ Branches marked as "keep when inactive" are excluded from housekeeping
 - `--mode delete`: If not specified, `sonar-housekeeper` will only perform a dry run and list projects
 branches, pull requests and tokens that would be deleted.
 If `--mode delete` is specified objects are actually deleted
-- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
+- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`, `--skipCertVerify`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 ## Examples
 

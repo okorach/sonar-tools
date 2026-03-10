@@ -42,7 +42,7 @@ When `--what` is not specified, everything is audited
 - `--format [json|csv]`: Generates output in JSON or CSV format (CSV is the default)
 - `--csvSeparator <separator>`: Allows to select the separator character for CSV, `,` is the default
 - `-h`: Displays help and exits
-- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
+- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`, `--skipCertVerify`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 ## Configuration file
 

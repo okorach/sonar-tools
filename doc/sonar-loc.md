@@ -16,7 +16,7 @@ Basic Usage: `sonar-loc [-f <file>] [--format csv|json] [-a] [-n] [-b <branchReg
 - `--withURL`: Outputs the URL of the project, app or portfolio for each record
 - `-b` | `--branches`: On top of the projects or apps, export LoCs for each branches of targeted objects
 - `-p` | `--pullRequests`: On top of the projects, export LoCs for each pull request
-- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
+- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`, `--skipCertVerify`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 ## Required Permissions
 
