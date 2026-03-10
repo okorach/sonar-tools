@@ -9,7 +9,7 @@ Basic Usage: `sonar-misra [--tags <tag>,<tag>,...] -f <file>`
   - `misra-c++2008`: Incomplete list of MISRA C++2008 violations (report is not exhaustive, not all rules are covered)
   - `misra-c2004`, `misra-c2012`: : Incomplete list of MISRA C2004 or C2012 rules (report is not exhaustive, not all rules are covered)
   - `misra-mandatory`, `misra-required`, `misra-advisory`, `misra-directive`: Subset of MISRA C++2023 violation of mandatory, required, advisory and directive rules
-- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
+- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`, `--skipCertVerify`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 
 ## Required Permissions

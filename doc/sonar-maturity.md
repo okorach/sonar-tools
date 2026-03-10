@@ -8,7 +8,7 @@ Basic Usage: `sonar-maturity [-k <projectKeyRegexp>] [-f <file>]`
 - `--config`: Creates a configuration file for `sonar-maturity` as `$HOME/.sonar-maturity.properties` or sends
   the default config to stdout if the file already exists
 - `-D<settingKey>=<settingValue>`: Overrides config setting with value given on command line
-- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
+- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`, `--skipCertVerify`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 
 ## Required Permissions

@@ -59,6 +59,7 @@ HTTP_TIMEOUT = "httpTimeout"
 SKIP_VERSION_CHECK = "skipVersionCheck"
 CERT_SHORT = "c"
 CERT = "clientCert"
+SKIP_CERT_VERIFY = "skipCertVerify"
 
 REPORT_FILE_SHORT = "f"
 REPORT_FILE = "file"
@@ -321,6 +322,9 @@ def set_common_args(desc: str) -> ArgumentParser:
 
     args = [f"--{HTTP_TIMEOUT}"]
     parser = add_optional_arg(parser, *args, default=10, help="HTTP timeout for requests to SonarQube, 10 by default (in seconds)")
+
+    args = [f"--{SKIP_CERT_VERIFY}"]
+    parser = add_optional_arg(parser, *args, action="store_true", help="Skips SSL certificate verification (useful for self-signed certificates)")
 
     args = [f"--{SKIP_VERSION_CHECK}"]
     parser = add_optional_arg(parser, *args, action="store_true", help="Prevents sonar-tools to occasionnally check from more recent version")

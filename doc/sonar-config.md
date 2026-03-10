@@ -62,7 +62,7 @@ When `--what` is not specified, everything is exported or
 - `--convertTo <filename>`: Used for config file format conversion. Defines the target config file in sonar-config 3.17 format to generate
 - `--validate`: Verifies that a JSON or YAML config file is valid, i.e. it could be imported.
 - `-h`: Displays help and exits
-- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
+- `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`, `--skipCertVerify`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 ## Required Permissions
 
