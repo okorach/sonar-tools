@@ -66,20 +66,34 @@ class Platform(object):
     """Abstraction of the SonarQube "platform" concept"""
 
     def __init__(
-        self, url: str, token: str, org: Optional[str] = None, cert_file: Optional[str] = None, http_timeout: int = 10, **kwargs: str
+        self,
+        url: str,
+        token: str,
+        org: Optional[str] = None,
+        cert_file: Optional[str] = None,
+        http_timeout: int = 10,
+        skip_cert_verify: bool = False,
+        **kwargs: str,
     ) -> None:
         """Creates a SonarQube platform object
 
         :param str url: base URL of the SonarQube platform
         :param str token: token to connect to the platform
         :param str cert_file: Client certificate, if any needed, defaults to None
+        :param bool skip_cert_verify: If True, skips SSL certificate verification, defaults to False
         :return: the SonarQube object
         :rtype: Platform
         """
         self.local_url = url.rstrip("/").lower()  #: SonarQube URL
         self.external_url = self.local_url
         self.__token = token
-        self.__cert_file = cert_file
+        if skip_cert_verify:
+            log.warning("SSL certificate verification is disabled")
+            self.__verify = False
+        elif cert_file:
+            self.__verify = cert_file
+        else:
+            self.__verify = True
         self.__user_data: ApiPayload = None
         self._version: Optional[tuple[int, ...]] = None
         self._sys_info: Optional[dict[str, Any]] = None
@@ -281,7 +295,7 @@ class Platform(object):
                 r = request(
                     url=self.local_url + api,
                     auth=self.__credentials(),
-                    verify=self.__cert_file,
+                    verify=self.__verify,
                     params=params,
                     timeout=self.http_timeout,
                     **kwargs,
@@ -319,6 +333,13 @@ class Platform(object):
             if "unknown url" in err_msg_lower:
                 raise exceptions.UnsupportedOperation(err_msg) from e
             raise exceptions.SonarException(err_msg, errcodes.SONAR_API) from e
+        except requests.exceptions.SSLError as e:
+            raise exceptions.SonarException(
+                f"SSL certificate verification failed connecting to {self.local_url}. "
+                "If using a self-signed certificate, use --skipCertVerify to skip SSL verification, "
+                "or provide the CA certificate with -c/--clientCert",
+                errcodes.CONNECTION_ERROR,
+            ) from e
         except ConnectionError as e:
             sutil.handle_error(e, "")
         return r
@@ -667,7 +688,12 @@ class Platform(object):
         log.info("Auditing admin password")
         problems = []
         try:
-            r = requests.get(url=self.local_url + "/api/authentication/validate", auth=("admin", "admin"), timeout=self.http_timeout)
+            r = requests.get(
+                url=self.local_url + "/api/authentication/validate",
+                auth=("admin", "admin"),
+                verify=self.__verify,
+                timeout=self.http_timeout,
+            )
             data = json.loads(r.text)
             if data.get("valid", False):
                 problems.append(Problem(get_rule(RuleId.DEFAULT_ADMIN_PASSWORD), self.local_url))

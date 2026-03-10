@@ -392,6 +392,7 @@ def convert_args(args: object, second_platform: bool = False) -> dict[str, str]:
     kwargs = vars(args).copy()
     kwargs["org"] = kwargs.pop(opt.ORG, None)
     kwargs["cert_file"] = kwargs.pop(opt.CERT, None)
+    kwargs["skip_cert_verify"] = kwargs.pop(opt.SKIP_CERT_VERIFY, False)
 
     if second_platform:
         kwargs[opt.URL] = kwargs.pop(opt.URL_TARGET, kwargs[opt.URL])
