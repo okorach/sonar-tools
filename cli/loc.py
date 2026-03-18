@@ -76,14 +76,13 @@ def __dump_csv(object_list: list[object], file: str, **kwargs: Any) -> None:
         writer.writerow(__get_csv_header_list(**kwargs))
 
         for o in object_list:
-            arr, _ = __get_csv_row(o, **kwargs)
+            arr, obj_ncloc = __get_csv_row(o, **kwargs)
             writer.writerow(arr)
             nb_objects += 1
-            # arr[0] is project key, arr[3] (or arr[-1] if columns change) is ncloc
             project_key = arr[0]
             try:
-                ncloc = int(arr[3])
-            except (ValueError, IndexError):
+                ncloc = int(obj_ncloc)
+            except (ValueError, TypeError):
                 ncloc = 0
             if project_key not in project_max_loc or ncloc > project_max_loc[project_key]:
                 project_max_loc[project_key] = ncloc
@@ -126,26 +125,37 @@ def __get_object_json_data(o: object, **kwargs: Any) -> dict[str, str]:
 def __dump_json(object_list: list[object], file: str, **kwargs: Any) -> None:
     """Dumps LoC of passed list of objects (projects, branches or portfolios) as JSON"""
     nb_loc, nb_objects = 0, 0
+    project_max_loc = {}
     data = []
     if len(object_list) <= 0:
         log.warning("No objects with LoCs to dump, dump skipped")
         return
     obj_type = type(object_list[0]).__name__.lower()
+    parent_type = kwargs[options.COMPONENT_TYPE][:-1]
     # Collect all objects data
     for o in object_list:
-        data.append(__get_object_json_data(o, **kwargs))
+        obj_data = __get_object_json_data(o, **kwargs)
+        data.append(obj_data)
         nb_objects += 1
+        try:
+            ncloc = int(obj_data["ncloc"])
+        except (ValueError, TypeError):
+            ncloc = 0
+        project_key = obj_data[parent_type]
+        if project_key not in project_max_loc or ncloc > project_max_loc[project_key]:
+            project_max_loc[project_key] = ncloc
         if nb_objects % 50 != 0:
             continue
         if obj_type == "project":
-            log.info("%d %ss and %d LoCs, still counting...", nb_objects, str(obj_type), nb_loc)
+            log.info("%d %ss and %d LoCs, still counting...", nb_objects, str(obj_type), sum(project_max_loc.values()))
         else:
             log.info("%d %ss dumped, still counting...", nb_objects, str(obj_type))
 
+    nb_loc = sum(project_max_loc.values())
     with util.open_file(file) as fd:
         print(util.json_dump(data), file=fd)
     if obj_type == "project":
-        log.info("%d %ss and %d LoCs in total", len(object_list), str(obj_type), nb_loc)
+        log.info("%d %ss and %d LoCs in total", len(project_max_loc), str(obj_type), nb_loc)
     else:
         log.info("%d %ss dumped in total", len(object_list), str(obj_type))
 
