@@ -62,6 +62,18 @@ def test_release_date():
     assert uc.get_release_date((9, 10, 3)) is None
 
 
+def test_get_latest_patch():
+    """Test get_latest_patch returns valid patch for known versions"""
+    lta = uc.get_lta()
+    latest_patch = uc.get_latest_patch(lta[:2])
+    assert latest_patch is not None
+    assert latest_patch[:2] == lta[:2]
+    assert latest_patch[2] >= lta[2]
+
+    # Non-existent version should return None
+    assert uc.get_latest_patch((1, 0)) is None
+
+
 def tes_get_registered_plugins():
     """Test the registered plugins"""
     plugin_list = ["authaad", "clover", "ecocodephp"]

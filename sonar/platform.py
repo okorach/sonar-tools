@@ -762,6 +762,11 @@ class Platform(object):
         elif sq_vers[:2] > update_center.get_lta()[:2] and sq_vers < update_center.get_latest()[:2]:
             rule = get_rule(RuleId.BELOW_LATEST)
             v = update_center.get_latest()
+        else:
+            latest_patch = update_center.get_latest_patch(sq_vers[:2])
+            if latest_patch and sq_vers < latest_patch:
+                rule = get_rule(RuleId.LATEST_PATCH_MISSING)
+                v = latest_patch
         if not v:
             return []
         # pylint: disable-next=E0606
