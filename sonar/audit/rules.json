@@ -44,6 +44,11 @@
         "type": "OPERATIONS",
         "message": "SonarQube version ({}) missed a Long Term Active patch ({})"
     },
+    "LATEST_PATCH_MISSING": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "message": "SonarQube version ({}) is not on the latest patch level, latest patch is {}"
+    },
     "BELOW_LATEST": {
         "severity": "LOW",
         "type": "OPERATIONS",
