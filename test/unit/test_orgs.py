@@ -41,7 +41,6 @@ def test_get_object() -> None:
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         with pytest.raises(exceptions.UnsupportedOperation) as e:
             _ = orgs.Organization.get_object(endpoint=tutil.SQ, key=MY_ORG)
-            assert str(e.value) == orgs._NOT_SUPPORTED
         return
     org = orgs.Organization.get_object(endpoint=tutil.SQ, key=MY_ORG)
     assert org.key == MY_ORG

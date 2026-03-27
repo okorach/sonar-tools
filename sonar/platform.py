@@ -30,6 +30,7 @@ import json
 import requests
 from requests import HTTPError, RequestException
 
+from sonar.audit import problem
 import sonar.logging as log
 import sonar.util.misc as util
 import sonar.utilities as sutil
@@ -750,6 +751,7 @@ class Platform(object):
 
     def audit_lta_latest(self) -> list[Problem]:
         """Audits that a SonarQube server version is LTA or LATEST"""
+        problems = []
         if self.is_sonarcloud():
             return []
         sq_vers, v = self.version(), None
@@ -762,15 +764,16 @@ class Platform(object):
         elif sq_vers[:2] > update_center.get_lta()[:2] and sq_vers < update_center.get_latest()[:2]:
             rule = get_rule(RuleId.BELOW_LATEST)
             v = update_center.get_latest()
-        else:
-            latest_patch = update_center.get_latest_patch(sq_vers[:2])
-            if latest_patch and sq_vers < latest_patch:
-                rule = get_rule(RuleId.LATEST_PATCH_MISSING)
-                v = latest_patch
-        if not v:
-            return []
-        # pylint: disable-next=E0606
-        return [Problem(rule, self.external_url, ".".join([str(n) for n in sq_vers]), ".".join([str(n) for n in v]))]
+
+        if v:
+            problems = [Problem(rule, self.external_url, sutil.version_to_string(sq_vers), sutil.version_to_string(v))]
+
+        latest_patch = update_center.get_latest_patch(sq_vers[:2])
+        log.info("Current version is %s, latest patch is %s", sutil.version_to_string(sq_vers), sutil.version_to_string(latest_patch))
+        if latest_patch and sq_vers < latest_patch:
+            rule = get_rule(RuleId.LATEST_PATCH_MISSING)
+            problems.append(Problem(rule, self.external_url, sutil.version_to_string(sq_vers), sutil.version_to_string(latest_patch)))
+        return problems
 
     def _audit_token_max_lifetime(self, audit_settings: ConfigSettings) -> list[Problem]:
         """Audits the maximum lifetime of a token"""
