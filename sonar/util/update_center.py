@@ -109,7 +109,7 @@ def get_latest_patch(major_minor: tuple[int, ...]) -> Optional[tuple[int, ...]]:
     for key in props:
         if key.startswith(prefix):
             found = True
-            first_part = key[len(prefix) :].split(".", 1)[0]
+            first_part = key[len(prefix):].split(".", 1)[0]
             if first_part.isdigit():
                 max_patch = max(max_patch, int(first_part))
     return (major_minor[0], major_minor[1], max_patch) if found else None
