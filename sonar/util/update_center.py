@@ -98,6 +98,23 @@ def get_latest() -> tuple[int, ...]:
         return tuple(int(s) for s in sqs.split("."))
 
 
+def get_latest_patch(major_minor: tuple[int, ...]) -> Optional[tuple[int, ...]]:
+    """Returns the latest patch version for a given major.minor version from the update center"""
+    props = get_update_center_properties()
+    if not props:
+        return None
+    prefix = f"{major_minor[0]}.{major_minor[1]}."
+    found = False
+    max_patch = 0
+    for key in props:
+        if key.startswith(prefix):
+            found = True
+            first_part = key[len(prefix):].split(".", 1)[0]
+            if first_part.isdigit():
+                max_patch = max(max_patch, int(first_part))
+    return (major_minor[0], major_minor[1], max_patch) if found else None
+
+
 def get_registered_plugins() -> list[str]:
     """
     :returns: a list of registered plugin keys in the update center
