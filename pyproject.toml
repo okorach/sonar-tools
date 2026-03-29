@@ -206,3 +206,10 @@ exclude = [
 [tool.ruff.lint.pyupgrade]
 # Preserve types, even if a file imports `from __future__ import annotations`.
 keep-runtime-typing = true
+
+# Pylance / Pyright (Cursor): keep imports resolvable like `poetry run` / editable install.
+[tool.pyright]
+pythonVersion = "3.9"
+extraPaths = ["."]
+# `requests` and similar libs are often resolved via stubs; this diagnostic is noisy (Pylance #77, Pyright #4757).
+reportMissingModuleSource = false
