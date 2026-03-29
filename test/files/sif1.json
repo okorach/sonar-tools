@@ -2,7 +2,7 @@
     "Health": "GREEN",
     "Health Causes": [],
     "System": {
-        "Server ID": "XXX",
+        "Server ID": "XXXB8A4D-XXXSFSbmgIK8PCmM81th",
         "Version": "10.5.1.90531",
         "Edition": "Enterprise",
         "Lines of Code": 2452830,
@@ -309,7 +309,7 @@
         "sonar.cluster.web.startupLeader": "true",
         "sonar.core.id": "243B8A4D-AY5SFSbmgIK8PCmM81th",
         "sonar.core.serverBaseURL": "https://sonarqube.acme.com",
-        "sonar.core.startTime": "2024-01-01T00:00:00+0000",
+        "sonar.core.startTime": "2024-05-23T13:37:24+0000",
         "sonar.es.bootstrap.checks.disable": "true",
         "sonar.es.port": "42917",
         "sonar.forceAuthentication": "true",
