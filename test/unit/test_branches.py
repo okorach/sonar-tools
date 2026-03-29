@@ -30,7 +30,7 @@ from sonar import projects, exceptions
 from sonar.branches import Branch
 import sonar.util.constants as c
 
-SUPPORTED_EDITIONS = (c.DE, c.EE, c.DCE)
+SUPPORTED_EDITIONS = (c.DE, c.EE, c.DCE, c.SC)
 
 
 def verify_branch_support(func: Callable, **kwargs: Any) -> bool:
