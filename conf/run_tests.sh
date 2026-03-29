@@ -25,28 +25,33 @@ CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 . "${CONF_DIR}/env.sh"
 
-SYNC_PROJECT_KEY="TESTSYNC"
-
 [[ ! -d "${BUILD_DIR}" ]] && mkdir "${BUILD_DIR}"
 
 echo "Running tests"
-
-. "${ROOT_DIR}/test/build"
 
 cd "${ROOT_DIR}" || exit 1
 
 sonar start -i test
 
-for target in latest cb 99 cloud common
+testList="${1:-"latest cb 99 cloud"}"
+for target in ${testList}
 do
-    if [[ "${target}" != "common" ]]; then
-        sonar start -i "${target}" && sleep 30
+    sonar start -i "${target}" && sleep 30
+    if [[ "${target}" != "cloud" ]]; then
+        skippedTests="--ignore=${ROOT_DIR}/test/unit/test_common_sonarcloud.py"
     fi
-    test_dirs="${test_dirs} ${ROOT_DIR}/${GEN_LOC}/${target}/"
+    SONAR_TEST_PLATFORM="${target}" poetry run coverage run --append --branch --source="${ROOT_DIR}" \
+        -m pytest --platform="${target}" "${ROOT_DIR}/test/unit/" \
+        --ignore="${ROOT_DIR}/test/unit/test_common_audit.py" \
+        --ignore="${ROOT_DIR}/test/unit/test_common_misc.py" \
+        --ignore="${ROOT_DIR}/test/unit/test_common_sif.py" \
+        ${skippedTests} \
+        --junit-xml="${BUILD_DIR}/xunit-${target}.xml"
 done
 
-# curl -X POST -u "${SONAR_TOKEN_TEST_ADMIN_USER}:" "${SONAR_HOST_URL_TEST}/api/projects/delete?project=${SYNC_PROJECT_KEY}"
-# conf/run_scanner.sh -Dsonar.host.url="${SONAR_HOST_URL_TEST}" -Dsonar.projectKey="${SYNC_PROJECT_KEY}" -Dsonar.projectName="${SYNC_PROJECT_KEY}" -Dsonar.token="${SONAR_TOKEN_TEST_ADMIN_ANALYSIS}"
-# Run tests
-poetry run coverage run --branch --source="${ROOT_DIR}" -m pytest ${test_dirs} --junit-xml="${BUILD_DIR}/xunit-results.xml"
+# Common tests (platform-independent)
+poetry run coverage run --append --branch --source="${ROOT_DIR}" \
+    -m pytest "${ROOT_DIR}"/test/unit/test_common_*.py \
+    --junit-xml="${BUILD_DIR}/xunit-common.xml"
+
 poetry run coverage xml -o "${BUILD_DIR}/coverage.xml"

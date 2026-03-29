@@ -40,6 +40,7 @@ from sonar import logging, exceptions
 from sonar import utilities as util
 from sonar import platform
 import cli.options as opt
+import credentials as creds
 
 TEST_LOGFILE = "pytest.log"
 LOGGER_COUNT = 0
@@ -92,7 +93,7 @@ SC_TOKEN = os.getenv("SONAR_TOKEN_SONARCLOUD")
 SC_URL = "https://sonarcloud.io"
 
 SQ = platform.Platform(url=creds.TARGET_PLATFORM, token=creds.TARGET_TOKEN, org=creds.ORGANIZATION)
-SC = platform.Platform(url=SC_URL, token=SC_TOKEN, org="okorach-oss")
+SC = platform.Platform(url=SC_URL, token=SC_TOKEN, org=creds.ORGANIZATION)
 TEST_SQ = platform.Platform(url=LATEST_TEST, token=os.getenv("SONAR_TOKEN_TEST_ADMIN_USER"))
 
 STD_OPTS = [f"-{opt.URL_SHORT}", creds.TARGET_PLATFORM, f"-{opt.TOKEN_SHORT}", creds.TARGET_TOKEN]

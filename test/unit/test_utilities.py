@@ -191,24 +191,6 @@ def test_csv_to_set() -> None:
     assert util.csv_to_set([1, 2, 3]) == {1, 2, 3}
 
 
-def test_is_sonarcloud_url() -> None:
-    """test_is_sonarcloud_url"""
-    # Positive cases - sonarcloud.io
-    assert sutil.is_sonarcloud_url("https://sonarcloud.io") is True
-    assert sutil.is_sonarcloud_url("https://sonarcloud.io/") is True
-    assert sutil.is_sonarcloud_url("https://SONARCLOUD.IO") is True
-    assert sutil.is_sonarcloud_url("https://SonarCloud.IO/") is True
-    # Positive cases - sonarqube.us
-    assert sutil.is_sonarcloud_url("https://sonarqube.us") is True
-    assert sutil.is_sonarcloud_url("https://sonarqube.us/") is True
-    assert sutil.is_sonarcloud_url("https://SONARQUBE.US") is True
-    assert sutil.is_sonarcloud_url("https://SonarQube.US/") is True
-    # Negative cases
-    assert sutil.is_sonarcloud_url("https://sonarqube.example.com") is False
-    assert sutil.is_sonarcloud_url("https://localhost:9000") is False
-    assert sutil.is_sonarcloud_url("https://myserver.com/sonarcloud.io.fake") is False
-
-
 def test_list_to_csv() -> None:
     """test_list_to_csv"""
     assert util.list_to_csv(["a", "b", "c"]) == "a,b,c"

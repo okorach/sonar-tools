@@ -39,6 +39,7 @@ from sonar import errcodes as e
 from sonar.util import constants as c, issue_defs as idefs
 from cli import findings_export
 import cli.options as opt
+import credentials as creds
 
 CMD = f"sonar-findings-export.py {tutil.SQS_OPTS}"
 
@@ -424,7 +425,7 @@ def test_output_format_branch(csv_file: Generator[str]) -> None:
         regexp = util.csv_to_regexp(br)
         cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} --{opt.BRANCH_REGEXP} {regexp}"
         if tutil.SQ.is_sonarcloud():
-            cmd += f" --{opt.ORG} okorach"
+            cmd += f" --{opt.ORG} {creds.ORGANIZATION}"
         if tutil.SQ.edition() == c.CE:
             assert tutil.run_cmd(findings_export.main, cmd) == e.UNSUPPORTED_OPERATION
             continue
@@ -438,7 +439,7 @@ def test_all_prs(csv_file: Generator[str]) -> None:
     """Tests that findings extport for all PRs of a project works"""
     cmd = f'{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} --{opt.PULL_REQUESTS} ".+"'
     if tutil.SQ.is_sonarcloud():
-        cmd += f" --{opt.ORG} okorach"
+        cmd += f" --{opt.ORG} {creds.ORGANIZATION}"
     if tutil.SQ.edition() == c.CE:
         assert tutil.run_cmd(findings_export.main, cmd) == e.UNSUPPORTED_OPERATION
         return
@@ -466,7 +467,7 @@ def test_12k_flat(csv_file: Generator[str]) -> None:
     """test_12k_flat"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} 12k-issues-flat"
     if tutil.SQ.is_sonarcloud():
-        cmd += f" --{opt.ORG} okorach"
+        cmd += f" --{opt.ORG} {creds.ORGANIZATION}"
     assert tutil.run_cmd(findings_export.main, cmd) == e.OK
     assert tutil.csv_nbr_lines(csv_file) == 12000
 
@@ -475,6 +476,6 @@ def test_12k_structured(csv_file: Generator[str]) -> None:
     """test_12k_structured"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} 12k-issues-structured"
     if tutil.SQ.is_sonarcloud():
-        cmd += f" --{opt.ORG} okorach"
+        cmd += f" --{opt.ORG} {creds.ORGANIZATION}"
     assert tutil.run_cmd(findings_export.main, cmd) == e.OK
     assert tutil.csv_nbr_lines(csv_file) == 12000

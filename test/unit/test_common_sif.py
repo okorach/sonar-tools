@@ -26,6 +26,7 @@ from collections.abc import Generator
 
 import json
 import datetime
+from zoneinfo import ZoneInfo
 import pytest
 
 import utilities as tutil
@@ -100,10 +101,10 @@ def test_audit_sif_ut() -> None:
     assert sysinfo.database() == "PostgreSQL"
     assert len(sysinfo.plugins()) == 0
     assert sysinfo.license_type() == "TEST"
-    assert sysinfo.server_id() == "243B8A4D-AY5SFSbmgIK8PCmM81th"
-    assert sysinfo.start_time() == datetime.datetime(2024, 5, 23, 13, 37, 24)
+    assert sysinfo.server_id() == "XXXB8A4D-XXXSFSbmgIK8PCmM81th"
+    assert sysinfo.start_time() == datetime.datetime(2024, 5, 23, 13, 37, 24, tzinfo=datetime.timezone.utc)
     assert sysinfo.store_size() == 131
-    assert sysinfo.url() == ""
+    assert sysinfo.url() == "https://sonarqube.acme.com"
     assert sysinfo.web_jvm_cmdline() == "-Xmx512m -Xms128m -XX:+HeapDumpOnOutOfMemoryError"
     assert sysinfo.ce_jvm_cmdline() == "-Xmx1G -Xms128m -XX:+HeapDumpOnOutOfMemoryError"
     assert sysinfo.search_jvm_cmdline() == "-Xmx1G -Xms1G -XX:+HeapDumpOnOutOfMemoryError"
@@ -150,7 +151,7 @@ def test_dce_sif_ut() -> None:
         assert len(node.plugins()) == 6
         assert node.health() == "GREEN"
         assert node.node_type() == "APPLICATION"
-        assert node.start_time() == datetime.datetime(2024, 2, 22, 22, 4, 30)
+        assert node.start_time() == datetime.datetime(2024, 2, 22, 22, 4, 30, tzinfo=ZoneInfo("US/Central"))
         assert node.version() == (9, 9, 0)
         assert node.edition() == c.DCE
         assert node.name().startswith("app-node")

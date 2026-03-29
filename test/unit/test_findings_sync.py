@@ -32,6 +32,7 @@ from sonar import errcodes as e
 from sonar.util import constants as c
 from cli import findings_sync
 import cli.options as opt
+import credentials as creds
 
 
 CMD = "sonar-findings-sync.py"
@@ -40,7 +41,7 @@ TEST_URL = os.getenv("SONAR_HOST_URL_TEST")
 TEST_TOKEN = os.getenv("SONAR_TOKEN_SYNC_USER")
 PLAT_OPTS = f"{tutil.SQS_OPTS} --{opt.URL_TARGET} {TEST_URL} --{opt.TOKEN_TARGET} {TEST_TOKEN}"
 TEST_OPTS = f"--{opt.URL} {TEST_URL} --{opt.TOKEN} {TEST_TOKEN} --{opt.KEY_REGEXP} TESTSYNC"
-SC_PLAT_OPTS = f"{tutil.SQS_OPTS} -U https://sonarcloud.io -T {os.getenv('SONAR_TOKEN_SONARCLOUD')} -O okorach"
+SC_PLAT_OPTS = f"{tutil.SQS_OPTS} -U https://sonarcloud.io -T {os.getenv('SONAR_TOKEN_SONARCLOUD')} -O {creds.ORGANIZATION}"
 SYNC_OPTS = f"-{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT} -K TESTSYNC"
 
 
