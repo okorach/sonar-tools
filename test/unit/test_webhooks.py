@@ -107,16 +107,21 @@ def test_create_delete() -> None:
 
 def test_2_same_name() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
+    whs = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)
+    # Delete all existing WH with same name, to be sure we start with a clean slate
+    for webh in [webh for webh in whs if webh.webhook_url == "http://yahoo.com"]:
+        webh.delete()
+    whs = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)
+    nb_hooks = len(whs)
     webhook2 = wh.WebHook.create(tutil.SQ, WEBHOOK, "http://yahoo.com")
     assert webhook2.name == WEBHOOK
-    whs = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)
-    assert len(whs) == 2
+    assert len(whs) == nb_hooks + 1
     assert whs[0].key != whs[1].key
 
     # Create a new WH with same URL, this is stupid, but possible
     webhook3 = wh.WebHook.create(tutil.SQ, WEBHOOK, "http://yahoo.com")
     whs = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)
-    assert len(whs) == 3
+    assert len(whs) == nb_hooks + 2
     assert whs[2].key != whs[1].key
 
     tmp_wh = wh.WebHook.get_object(tutil.SQ, webhook2.key)
@@ -124,10 +129,10 @@ def test_2_same_name() -> None:
 
     webhook2.delete()
     whs = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)
-    assert len(whs) == 2
+    assert len(whs) == nb_hooks + 1
     webhook3.delete()
     whs = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)
-    assert len(whs) == 1
+    assert len(whs) == nb_hooks
 
 
 def test_get_without_cache() -> None:
