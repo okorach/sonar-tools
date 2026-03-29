@@ -37,16 +37,15 @@ testList="${1:-"latest cb 99 cloud"}"
 for target in ${testList}
 do
     sonar start -i "${target}" && sleep 30
-    skipCloud=""
     if [[ "${target}" != "cloud" ]]; then
-        skipCloud="--ignore=${ROOT_DIR}/test/unit/test_common_sonarcloud.py"
+        skippedTests="--ignore=${ROOT_DIR}/test/unit/test_common_sonarcloud.py"
     fi
     SONAR_TEST_PLATFORM="${target}" poetry run coverage run --append --branch --source="${ROOT_DIR}" \
         -m pytest --platform="${target}" "${ROOT_DIR}/test/unit/" \
         --ignore="${ROOT_DIR}/test/unit/test_common_audit.py" \
         --ignore="${ROOT_DIR}/test/unit/test_common_misc.py" \
         --ignore="${ROOT_DIR}/test/unit/test_common_sif.py" \
-        ${skipCloud} \
+        ${skippedTests} \
         --junit-xml="${BUILD_DIR}/xunit-${target}.xml"
 done
 
