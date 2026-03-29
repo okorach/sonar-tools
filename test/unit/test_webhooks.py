@@ -114,6 +114,7 @@ def test_2_same_name() -> None:
     whs = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)
     nb_hooks = len(whs)
     webhook2 = wh.WebHook.create(tutil.SQ, WEBHOOK, "http://yahoo.com")
+    whs = wh.WebHook.get_by_name(tutil.SQ, WEBHOOK)
     assert webhook2.name == WEBHOOK
     assert len(whs) == nb_hooks + 1
     assert whs[0].key != whs[1].key
