@@ -393,9 +393,9 @@ def test_search_by_status_facet_error() -> None:
     """test_search_by_status_facet_error"""
     if tutil.SQ.is_sonarcloud() or tutil.SQ.edition() in (c.CE, c.DE):
         with pytest.raises(issues.TooManyFacetsError):
-            Issue.search_by_status(tutil.SQ, status="OPEN", project="12k-issues")
+            Issue.search_by_status(tutil.SQ, status="OPEN", project="12k-issues-flat")
     else:
-        assert len(Issue.search_by_status(tutil.SQ, status="OPEN", project="12k-issues")) == 11990
+        assert len(Issue.search_by_status(tutil.SQ, status="OPEN", project="12k-issues-flat")) == 11990
 
 
 def test_search_by_directory() -> None:

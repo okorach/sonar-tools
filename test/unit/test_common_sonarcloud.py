@@ -27,6 +27,8 @@ import utilities as tutil
 from sonar import errcodes, exceptions
 from sonar import organizations
 
+import credentials as creds
+
 import cli.options as opt
 from sonar.cli import config
 
@@ -34,13 +36,12 @@ CMD = "config.py"
 SC_OPTS = f'-{opt.URL_SHORT} https://sonarcloud.io -{opt.TOKEN_SHORT} {os.getenv("SONAR_TOKEN_SONARCLOUD")}'
 
 OPTS = f"{CMD} {SC_OPTS} -{opt.EXPORT_SHORT}"
-MY_ORG_1 = "okorach"
 MY_ORG_2 = "okorach-github"
 
 
 def test_sc_config_export(json_file: Generator[str]) -> None:
     """test_sc_config_export"""
-    cmd = f"{OPTS} --{opt.REPORT_FILE} {json_file} -{opt.ORG_SHORT} {MY_ORG_1}"
+    cmd = f"{OPTS} --{opt.REPORT_FILE} {json_file} -{opt.ORG_SHORT} {creds.ORGANIZATION}"
     assert tutil.run_cmd(config.main, cmd) == errcodes.OK
 
 
@@ -52,7 +53,7 @@ def test_sc_config_export_no_org() -> None:
 def test_org_search() -> None:
     """test_org_search"""
     org_list = organizations.Organization.search(tutil.SC)
-    assert MY_ORG_1 in org_list
+    assert creds.ORGANIZATION in org_list
     assert MY_ORG_2 in org_list
 
 
@@ -67,21 +68,21 @@ def test_org_get_non_existing() -> None:
 
 def test_org_str() -> None:
     """test_org_str"""
-    org = organizations.Organization.get_object(endpoint=tutil.SC, key=MY_ORG_1)
-    assert str(org) == f"organization key '{MY_ORG_1}'"
+    org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
+    assert str(org) == f"organization key '{creds.ORGANIZATION}'"
 
 
 def test_org_export() -> None:
     """test_org_export"""
-    org = organizations.Organization.get_object(endpoint=tutil.SC, key=MY_ORG_1)
+    org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
     exp = org.export()
     assert "newCodePeriod" in exp
 
 
 def test_org_attr() -> None:
     """test_org_attr"""
-    org = organizations.Organization.get_object(endpoint=tutil.SC, key=MY_ORG_1)
-    assert org.key == MY_ORG_1
+    org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
+    assert org.key == creds.ORGANIZATION
     assert org.name == "Olivier Korach"
     assert org.sq_json["url"] == "https://github.com/okorach"
     (nc_type, _) = org.new_code_period()

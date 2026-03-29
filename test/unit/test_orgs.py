@@ -21,16 +21,12 @@
 
 """portfolio tests"""
 
-from collections.abc import Generator
-import time
-import json
 import pytest
 
 import utilities as tutil
 from sonar import organizations as orgs, exceptions
 import sonar.util.constants as c
-
-MY_ORG = "okorach"
+import credentials as creds
 
 
 SUPPORTED_EDITIONS = c.SC
@@ -40,14 +36,13 @@ def test_get_object() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         with pytest.raises(exceptions.UnsupportedOperation) as e:
-            _ = orgs.Organization.get_object(endpoint=tutil.SQ, key=MY_ORG)
-            assert str(e.value) == orgs._NOT_SUPPORTED
+            _ = orgs.Organization.get_object(endpoint=tutil.SQ, key=creds.ORGANIZATION)
         return
-    org = orgs.Organization.get_object(endpoint=tutil.SQ, key=MY_ORG)
-    assert org.key == MY_ORG
-    assert str(org) == f"organization '{MY_ORG}'"
-    assert org.url() == f"{tutil.SQ.external_url}/organizations/{MY_ORG}"
-    org2 = orgs.Organization.get_object(endpoint=tutil.SQ, key=MY_ORG)
+    org = orgs.Organization.get_object(endpoint=tutil.SQ, key=creds.ORGANIZATION)
+    assert org.key == creds.ORGANIZATION
+    assert str(org) == f"organization '{creds.ORGANIZATION}'"
+    assert org.url() == f"{tutil.SQ.external_url}/organizations/{creds.ORGANIZATION}"
+    org2 = orgs.Organization.get_object(endpoint=tutil.SQ, key=creds.ORGANIZATION)
     assert org2 is org
 
 
@@ -64,7 +59,7 @@ def test_exists() -> None:
     """Test exist"""
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Organizations not supported")
-    assert orgs.exists(endpoint=tutil.SQ, org_key=MY_ORG)
+    assert orgs.exists(endpoint=tutil.SQ, org_key=creds.ORGANIZATION)
     assert not orgs.exists(endpoint=tutil.SQ, org_key=tutil.NON_EXISTING_KEY)
 
 
@@ -72,21 +67,21 @@ def test_attributes() -> None:
     """Test attributes"""
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Organizations not supported")
-    org = orgs.Organization.get_object(endpoint=tutil.SQ, key=MY_ORG)
-    assert org.search_params() == {"organization": MY_ORG}
+    org = orgs.Organization.get_object(endpoint=tutil.SQ, key=creds.ORGANIZATION)
+    assert org.search_params() == {"organization": creds.ORGANIZATION}
     assert org.new_code_period() == ("PREVIOUS_VERSION", None)
     assert org.subscription() != "UNKNOWN"
     assert len(org.alm()) > 3
-    assert str(org) == f"organization '{MY_ORG}'"
+    assert str(org) == f"organization '{creds.ORGANIZATION}'"
 
 
 def test_export() -> None:
     """Test attributes"""
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Organizations not supported")
-    org = orgs.Organization.get_object(endpoint=tutil.SQ, key=MY_ORG)
+    org = orgs.Organization.get_object(endpoint=tutil.SQ, key=creds.ORGANIZATION)
     exp = org.export()
-    assert exp["key"] == MY_ORG
+    assert exp["key"] == creds.ORGANIZATION
     assert exp["name"] == org.name
     assert "newCodePeriod" in exp
     assert "subscription" in exp
@@ -99,7 +94,7 @@ def test_search() -> None:
         pytest.skip("Organizations not supported")
     org_list = orgs.Organization.search(tutil.SQ)
     assert len(org_list) >= 2
-    assert MY_ORG in org_list
-    org = org_list[MY_ORG]
+    assert creds.ORGANIZATION in org_list
+    org = org_list[creds.ORGANIZATION]
     assert isinstance(org, orgs.Organization)
-    assert org.key == MY_ORG
+    assert org.key == creds.ORGANIZATION
