@@ -4510,7 +4510,7 @@ projects:
     - codeviewer
     - issueadmin
     - user
-- key: okorach_sonar-tools
+- key: okorach-oss_sonar-tools
   name: Sonar Tools
   tags:
   - python
@@ -4571,7 +4571,7 @@ projects:
   links:
   - name: Bug Tracker
     url: https://github.com/okorach/sonar-tools/issues
-- key: okorach_sonar-tools-target
+- key: okorach-oss_sonar-tools-target
   name: Sonar Tools Target
   visibility: private
   branches:

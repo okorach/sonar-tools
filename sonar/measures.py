@@ -192,7 +192,7 @@ def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> li
     :return: List of found history of measures
     :rtype: list[<date>, <metricKey>, <value>]
     """
-    # http://localhost:9999/api/measures/search_history?component=okorach_sonar-tools&metrics=ncloc&p=1&ps=1000
+    # http://localhost:9999/api/measures/search_history?component=okorach-oss_sonar-tools&metrics=ncloc&p=1&ps=1000
 
     params = kwargs | {"metrics": util.list_to_csv(metrics_list)}
     log.debug("Getting measures history with %s", str(params))

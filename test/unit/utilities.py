@@ -55,7 +55,7 @@ CSV_FILE = f"temp.{os.getpid()}.csv"
 JSON_FILE = f"temp.{os.getpid()}.json"
 YAML_FILE = f"temp.{os.getpid()}.yaml"
 
-PROJECT_0 = "okorach_sonar-tools"
+PROJECT_0 = "okorach-oss_sonar-tools"
 PROJECT_1 = "test:project1"
 PROJECT_2 = "test:project2"
 PROJECT_3 = "test:project3"
@@ -92,7 +92,7 @@ SC_TOKEN = os.getenv("SONAR_TOKEN_SONARCLOUD")
 SC_URL = "https://sonarcloud.io"
 
 SQ = platform.Platform(url=creds.TARGET_PLATFORM, token=creds.TARGET_TOKEN, org=creds.ORGANIZATION)
-SC = platform.Platform(url=SC_URL, token=SC_TOKEN, org="okorach")
+SC = platform.Platform(url=SC_URL, token=SC_TOKEN, org="okorach-oss")
 TEST_SQ = platform.Platform(url=LATEST_TEST, token=os.getenv("SONAR_TOKEN_TEST_ADMIN_USER"))
 
 STD_OPTS = [f"-{opt.URL_SHORT}", creds.TARGET_PLATFORM, f"-{opt.TOKEN_SHORT}", creds.TARGET_TOKEN]

@@ -33,7 +33,7 @@ import credentials
 
 def test_transitions() -> None:
     """test_transitions"""
-    pkey = "okorach_sonar-tools-test" if tutil.SQ.is_sonarcloud() else "test:juice-shop"
+    pkey = "okorach-oss_sonar-tools-test" if tutil.SQ.is_sonarcloud() else "test:juice-shop"
     hotspot_d = Hotspot.search(tutil.SQ, project=pkey)
     hotspot = list(hotspot_d.values())[0]
 

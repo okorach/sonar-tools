@@ -1971,7 +1971,7 @@
          },
          "visibility": "private"
       },
-      "okorach_sonar-tools": {
+      "okorach-oss_sonar-tools": {
          "branches": {
             "develop": {
                "keepWhenInactive": true,
