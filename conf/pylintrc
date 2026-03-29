@@ -94,7 +94,8 @@ disable=raw-checker-failed,
         R1711,
         R0913,
         W0212,        # Covered by ruff
-        W1404         # Covered by Sonar
+        W1404,        # Covered by Sonar
+        W0718,        # Covered by ruff
 
 
 
