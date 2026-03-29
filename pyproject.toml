@@ -180,6 +180,8 @@ extend-ignore = [
     "TD001", # Disallow TODO/FIXME comments
     "EM101", # Don't use string literals in exceptions raise
     "UP004", # Useless inheritance to object
+    "D209", # Multiline docstrings quotes on separate line
+    "D205", # 1 blank line between doctring title and body
 ]
 
 exclude = [
