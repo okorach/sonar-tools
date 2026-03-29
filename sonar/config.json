@@ -219,7 +219,7 @@
                 "impactSoftwareQualities": ["RELIABILITY", "SECURITY", "MAINTAINABILITY"],
                 "severities": ["BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO"],
                 "resolutions": ["FALSE-POSITIVE", "WONTFIX", "FIXED", "REMOVED"],
-                "issueStatuses": ["OPEN", "CONFIRMED", "FALSE_POSITIVE", "ACCEPTED", "FIXED"],
+                "issueStatuses": ["OPEN", "CONFIRMED", "FALSE_POSITIVE", "ACCEPTED", "FIXED", "IN_SANDBOX"],
                 "impactSeverities": ["INFO", "LOW", "MEDIUM", "HIGH", "BLOCKER"],
                 "statuses": [],
                 "componentKeys": []
