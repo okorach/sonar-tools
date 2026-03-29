@@ -385,7 +385,7 @@ def is_sonarcloud_url(url: str) -> bool:
     :rtype: str
     """
     normalized = url.rstrip("/").lower()
-    return normalized.endswith("sonarcloud.io") or normalized.endswith("sonarqube.us")
+    return normalized.endswith(("sonarcloud.io", "sonarqube.us"))
 
 
 def convert_args(args: object, second_platform: bool = False) -> dict[str, str]:

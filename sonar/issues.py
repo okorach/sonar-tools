@@ -229,11 +229,11 @@ class Issue(findings.Finding):
             date_stop = get_newest_issue(endpoint, params=new_params)
             try:
                 issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_stop, **new_params)
-            except (TooManyIssuesError, TooManyFacetsError) as e:
+            except (TooManyIssuesError, TooManyFacetsError) as inner_error:
                 # In last resort, use export_findings() if EE or DCEto avoid exceeding the 10K limit
                 if endpoint.edition() not in (c.EE, c.DCE):
                     raise
-                log.info("Project %s - %s - Traditional search failed, switching to export_findings()", project, e.message)
+                log.info("Project %s - %s - Traditional search failed, switching to export_findings()", project, inner_error.message)
                 issue_list = findings.export_findings(endpoint, project, new_params.get("branch"), new_params.get("pullRequest"))
                 issue_list = post_search_filter(issue_list, **new_params)
         log.debug("Searching issues by project '%s': %d issues found", project, len(issue_list))
@@ -298,7 +298,7 @@ class Issue(findings.Finding):
             except TooManyIssuesError as e:
                 log.info("%s - Recursing and slicing the search by %s", e.message, current_facet)
                 issue_list |= cls.search_by_facets(endpoint, facets_list=remaining_facets, **search_params)
-        log.debug("Searching by %s '%s': %d issues found", current_facet, facet_value, len(issue_list))
+            log.debug("Searching by %s '%s': %d issues found", current_facet, facet_value, len(issue_list))
         return issue_list
 
     @classmethod
@@ -931,7 +931,7 @@ def _get_facets(
         else:
             raise TooManyFacetsError(len(facets_d), facet=facet, **search_params)
     if facet == "fileUuids":
-        for uuid in facets_d.keys():
+        for uuid in facets_d:
             if file := next((comp["path"] for comp in data["components"] if comp["uuid"] == uuid), None):
                 facets_d[uuid] = {"count": facets_d[uuid], "path": file}
     return facets_d

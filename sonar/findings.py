@@ -362,8 +362,9 @@ class Finding(SqObject):
         return list(ch.values())[-1]["date"] if len(ch) > 0 else None
 
     def delete_comment(self, comment_key: str) -> bool:
+        """Deletes a comment from a finding"""
         # Implemented in subclasses, should not reach this
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def assign(self, assignee: Optional[str]) -> bool:
         """Assigns a finding (and optionally comment)
@@ -547,11 +548,11 @@ class Finding(SqObject):
         return exact_matches, approx_matches, match_but_modified
 
     def search_siblings_bidirectional(
-        self, findings_list: list[Finding], ignore_component: bool = False, **kwargs
+        self, findings_list: list[Finding], ignore_component: bool = False, **kwargs: Any
     ) -> tuple[list[Finding], list[Finding]]:
         """Searches for sibling findings without direction bias (for bidirectional sync).
+        
         Unlike search_siblings(), this does not check which side has a more recent changelog.
-
         :return: (exact_matches, approx_matches)
         :meta private:
         """

@@ -79,7 +79,7 @@ def __is_sync_comment(text: str) -> bool:
 
 def __delete_sync_comments(finding: findings.Finding) -> None:
     """Deletes all previous auto-generated sync link comments from a finding."""
-    for cmt in list(finding.comments().values()):
+    for cmt in finding.comments().values():
         if __is_sync_comment(cmt.get("value", "")) and "commentKey" in cmt:
             finding.delete_comment(cmt["commentKey"])
 
@@ -288,8 +288,10 @@ def __build_pair_mapping(
     ignore_component: bool,
 ) -> tuple[list[tuple[findings.Finding, findings.Finding]], list[dict[str, str]], dict[str, int]]:
     """Builds finding pairs for bidirectional sync.
+
     Each driving finding is matched against the full pool on the opposite side.
-    Single-threaded because it mutates the available pools."""
+    Single-threaded because it mutates the available pools.
+    """
     available_src = list(all_src_findings)
     available_tgt = list(all_tgt_findings)
     src_keys = {f.key for f in all_src_findings}
@@ -304,10 +306,7 @@ def __build_pair_mapping(
             counters["nb_skipped"] += 1
             continue
         # Determine which pool to search: if the driving finding comes from src, search tgt, and vice versa
-        if finding.key in src_keys:
-            search_pool = available_tgt
-        else:
-            search_pool = available_src
+        search_pool = available_tgt if finding.key in src_keys else available_src
 
         (exact_matches, approx_matches) = finding.search_siblings_bidirectional(search_pool, ignore_component=ignore_component)
         if len(exact_matches) == 1:
@@ -338,7 +337,9 @@ def __build_pair_mapping(
 
 def __sync_comments_bidirectional(finding_a: findings.Finding, finding_b: findings.Finding, service_account: str) -> int:
     """Syncs comments bidirectionally between two findings using content-based dedup.
-    Returns the number of comments added."""
+
+    Returns the number of comments added.
+    """
     count = 0
     comments_a = finding_a.comments()
     comments_b = finding_b.comments()
