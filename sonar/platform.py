@@ -30,7 +30,6 @@ import json
 import requests
 from requests import HTTPError, RequestException
 
-from sonar.audit import problem
 import sonar.logging as log
 import sonar.util.misc as util
 import sonar.utilities as sutil
@@ -508,9 +507,7 @@ class Platform(object):
                 setting_json[s.key].pop("value")
             sutil.update_json(json_data, categ, subcateg, setting_json)
 
-        hooks = []
-        for wb in self.webhooks().values():
-            hooks.append(util.remove_nones(wb.to_json(full)))
+        hooks = [util.remove_nones(wb.to_json(full)) for wb in self.webhooks().values()]
         if len(hooks) > 0:
             json_data["webhooks"] = hooks
         json_data["permissions"] = self.global_permissions().export(export_settings=export_settings)

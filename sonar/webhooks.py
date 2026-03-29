@@ -25,7 +25,7 @@ from typing import Optional, ClassVar, Any, Union, TYPE_CHECKING
 
 from sonar.sqobject import SqObject
 import sonar.logging as log
-from sonar import exceptions
+from sonar import exceptions, errcodes
 from sonar.util import cache
 import sonar.util.misc as util
 from sonar.audit import rules, problem
@@ -89,7 +89,7 @@ class WebHook(SqObject):
         endpoint.post(api, params=api_params)
         o = next((wh for wh in cls.search(endpoint, project=project).values() if wh.key not in existing_webhooks), None)
         if o is None:
-            raise exceptions.SonarException("Webhook creation failed")
+            raise exceptions.SonarException(code=errcodes.SONAR_INTERNAL_ERROR, message="Webhook creation failed")
         o.secret = secret
         return o
 
@@ -197,11 +197,9 @@ class WebHook(SqObject):
         return util.filter_export(self.sq_json, _IMPORTABLE_PROPERTIES, full)
 
 
-def export(endpoint: Platform, project_key: Optional[str] = None, full: bool = False) -> ObjectJsonRepr:
+def export(endpoint: Platform, project_key: Optional[str] = None, full: bool = False) -> Optional[list[ObjectJsonRepr]]:
     """Export webhooks of a project as JSON"""
-    json_data = []
-    for wb in WebHook.search(endpoint, project=project_key).values():
-        json_data.append(util.remove_nones(wb.to_json(full)))
+    json_data = [util.remove_nones(wb.to_json(full)) for wb in WebHook.search(endpoint, project=project_key).values()]
     return json_data if len(json_data) > 0 else None
 
 
@@ -215,7 +213,7 @@ def import_config(endpoint: Platform, data: list[dict[str, str]], project_key: O
 
     for wh_data in data:
         wh_name = wh_data["name"]
-        if wh_name in existing_by_name and existing_by_name[wh_name]:
+        if existing_by_name.get(wh_name):
             current_wh[existing_by_name[wh_name].pop(0)].update(**wh_data)
         else:
             hook = WebHook.create(endpoint=endpoint, name=wh_name, url=wh_data.get("url", "https://to.be.defined"), project=project_key)

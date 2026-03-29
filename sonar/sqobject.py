@@ -164,6 +164,7 @@ class SqObject(object):
 
     @classmethod
     def get_key(cls, obj: Any) -> str:
+        """Returns the key of an object"""
         return None if obj is None else obj if isinstance(obj, str) else obj.key
 
     @classmethod

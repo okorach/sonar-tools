@@ -1,4 +1,7 @@
 {
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}"
+    ],
     "sonarlint.connectedMode.project": {
         "connectionId": "LATEST",
         "projectKey": "okorach_sonar-tools"
