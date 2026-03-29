@@ -551,7 +551,7 @@ class Finding(SqObject):
         self, findings_list: list[Finding], ignore_component: bool = False, **kwargs: Any
     ) -> tuple[list[Finding], list[Finding]]:
         """Searches for sibling findings without direction bias (for bidirectional sync).
-        
+
         Unlike search_siblings(), this does not check which side has a more recent changelog.
         :return: (exact_matches, approx_matches)
         :meta private:
