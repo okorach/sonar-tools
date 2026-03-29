@@ -27,6 +27,15 @@ from typing import Optional
 import os
 from typing import Union
 
+
+def pytest_addoption(parser):
+    parser.addoption("--platform", default="latest", help="SonarQube platform target")
+
+
+def pytest_configure(config):
+    os.environ["SONAR_TEST_PLATFORM"] = config.getoption("--platform")
+
+
 from collections.abc import Generator
 import pytest
 
