@@ -186,7 +186,7 @@ class Issue(findings.Finding):
         return issue_list
 
     @classmethod
-    def search(cls, endpoint: Platform, threads: int = 8, **search_params: Any) -> dict[str, Issue]:
+    def search(cls, endpoint: Platform, threads: int = 8, raise_error: bool = True, **search_params: Any) -> dict[str, Issue]:
         """Search issues overcoming the 10K issue limit by splitting by smaller search chunks
 
         :param endpoint: The SonarQube platform endpoint
@@ -203,17 +203,27 @@ class Issue(findings.Finding):
             search_params = cls.sanitize_search_params(endpoint, **search_params)
             if proj_key := search_params.get(component_search_field(endpoint)):
                 search_params.pop(component_search_field(endpoint))
-                issue_list = cls.search_by_project(endpoint, project=proj_key, search_findings=True, **search_params)
+                issue_list = cls.search_by_project(endpoint, project=proj_key, search_findings=True, raise_error=raise_error, **search_params)
             else:
                 for key in Project.search(endpoint):
-                    issue_list |= cls.search_by_project(endpoint, search_findings=True, **(search_params | {"project": key}))
+                    issue_list |= cls.search_by_project(endpoint, search_findings=True, raise_error=raise_error, **(search_params | {"project": key}))
         return issue_list
 
     @classmethod
     def search_by_project(
-        cls, endpoint: Platform, project: Union[str, Project], search_findings: bool = False, **search_params: Any
+        cls, endpoint: Platform, project: Union[str, Project], search_findings: bool = False, raise_error: bool = True, **search_params: Any
     ) -> dict[str, Issue]:
-        """Search issues by project"""
+        """Search issues by project
+
+        :param endpoint: The SonarQube platform endpoint
+        :param project: The project key or object
+        :param search_findings: Whether to search findings instead of issues
+        :param raise_error: Whether to raise an error if the number of issues is greater than the maximum 10000,
+        if set to false, the search will return the number of issues foudn, potentially less than the right number
+        :param search_params: Search criteria to narrow down the search or control ordering
+        :return: Dictionary of issues found indexed by issue key
+        :rtype: dict{<key>: <Issue>}
+        """
         project = cls.get_key(project)
         log.debug("Searching issues by project '%s' from %s", project, search_params)
         new_params = cls.sanitize_search_params(endpoint, **search_params) | {"project": project}
@@ -222,13 +232,13 @@ class Issue(findings.Finding):
             issue_list = findings.export_findings(endpoint, project, new_params.get("branch"), new_params.get("pullRequest"))
             issue_list = post_search_filter(issue_list, **new_params)
         try:
-            issue_list = cls.search_unsafe(endpoint, **new_params)
+            issue_list = cls.search_unsafe(endpoint, raise_error=raise_error, **new_params)
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by date", e.message)
             date_start = get_oldest_issue(endpoint, params=new_params)
             date_stop = get_newest_issue(endpoint, params=new_params)
             try:
-                issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_stop, **new_params)
+                issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_stop, raise_error=raise_error, **new_params)
             except (TooManyIssuesError, TooManyFacetsError) as inner_error:
                 # In last resort, use export_findings() if EE or DCEto avoid exceeding the 10K limit
                 if endpoint.edition() not in (c.EE, c.DCE):
@@ -241,7 +251,12 @@ class Issue(findings.Finding):
 
     @classmethod
     def search_by_date(
-        cls, endpoint: Platform, date_start: Union[datetime, date, None], date_stop: Union[datetime, date, None], **search_params: Any
+        cls,
+        endpoint: Platform,
+        date_start: Union[datetime, date, None],
+        date_stop: Union[datetime, date, None],
+        raise_error: bool = True,
+        **search_params: Any,
     ) -> dict[str, Issue]:
         """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
         new_params = cls.sanitize_search_params(endpoint, **search_params) | cls.get_search_date_range(date_start, date_stop)
@@ -266,19 +281,21 @@ class Issue(findings.Finding):
                     facet_search_order = list(_NEW_FACET_SEARCH_ORDER)
                 else:
                     facet_search_order = list(_OLD_FACET_SEARCH_ORDER)
-                issue_list = cls.search_by_facets(endpoint, project=project, facets_list=facet_search_order, **new_params)
+                issue_list = cls.search_by_facets(endpoint, project=project, facets_list=facet_search_order, raise_error=raise_error, **new_params)
             elif diff == 1:
-                issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_start, **new_params)
-                issue_list |= cls.search_by_date(endpoint, date_start=date_stop, date_stop=date_stop, **new_params)
+                issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_start, raise_error=raise_error, **new_params)
+                issue_list |= cls.search_by_date(endpoint, date_start=date_stop, date_stop=date_stop, raise_error=raise_error, **new_params)
             else:
                 date_middle = date_start + timedelta(days=diff // 2)
-                issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_middle, **new_params)
-                issue_list |= cls.search_by_date(endpoint, date_start=date_middle + timedelta(days=1), date_stop=date_stop, **new_params)
+                issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_middle, raise_error=raise_error, **new_params)
+                issue_list |= cls.search_by_date(
+                    endpoint, date_start=date_middle + timedelta(days=1), date_stop=date_stop, raise_error=raise_error, **new_params
+                )
         log.debug("Searching issues by date between [%s - %s]: %d issues found", tstart, tstop, len(issue_list))
         return issue_list
 
     @classmethod
-    def search_by_facets(cls, endpoint: Platform, facets_list: list[str], **search_params: Any) -> dict[str, Issue]:
+    def search_by_facets(cls, endpoint: Platform, facets_list: list[str], raise_error: bool = True, **search_params: Any) -> dict[str, Issue]:
         """Searches issues splitting by severity to avoid exceeding the 10K limit"""
         log.info("Searching issues by facets order %s from %s", facets_list, search_params)
         issue_list = {}
@@ -288,62 +305,65 @@ class Issue(findings.Finding):
         facet_values = _get_facets(endpoint, project, facet=current_facet, **search_params).keys()
         if len(facet_values) >= _MAX_FACETS and len(remaining_facets) == 0:
             log.info("Number of facets for '%s' is greater or equal than the maximum %d, doing best effort search", current_facet, _MAX_FACETS)
-            return cls.search_unsafe(endpoint, raise_error=False, sanitize=False, **search_params)
+            return cls.search_unsafe(endpoint, raise_error=raise_error, sanitize=False, **search_params)
+        raise_error_facets = raise_error or (endpoint.edition() in (c.EE, c.DCE) and len(remaining_facets) > 0)
         for facet_value in facet_values:
             try:
                 search_params |= {current_facet: facet_value}
-                issue_list |= cls.search_unsafe(
-                    endpoint, sanitize=False, raise_error=not endpoint.is_sonarcloud() or len(remaining_facets) > 0, **search_params
-                )
+                issue_list |= cls.search_unsafe(endpoint, sanitize=False, raise_error=raise_error_facets, **search_params)
             except TooManyIssuesError as e:
                 log.info("%s - Recursing and slicing the search by %s", e.message, current_facet)
-                issue_list |= cls.search_by_facets(endpoint, facets_list=remaining_facets, **search_params)
+                issue_list |= cls.search_by_facets(endpoint, facets_list=remaining_facets, raise_error=raise_error, **search_params)
             log.debug("Searching by %s '%s': %d issues found", current_facet, facet_value, len(issue_list))
         return issue_list
 
     @classmethod
-    def search_by_severity(cls, endpoint: Platform, severity: str, **search_params: Any) -> dict[str, Issue]:
+    def search_by_severity(cls, endpoint: Platform, severity: str, raise_error: bool = True, **search_params: Any) -> dict[str, Issue]:
         """Searches issues by severity. If too many issues, the search is split in smaller searches"""
         log.debug("Searching issues by severity '%s' from %s", severity, search_params)
-        return cls.search(endpoint, **(search_params | {severity_search_field(endpoint): [severity]}))
+        return cls.search(endpoint, raise_error=raise_error, **(search_params | {severity_search_field(endpoint): [severity]}))
 
     @classmethod
-    def search_by_type(cls, endpoint: Platform, issue_type: str, **search_params: Any) -> dict[str, Issue]:
+    def search_by_type(cls, endpoint: Platform, issue_type: str, raise_error: bool = True, **search_params: Any) -> dict[str, Issue]:
         """Searches issues by type. If too many issues, the search is split in smaller searches"""
         log.debug("Searching issues by type '%s' from %s", issue_type, search_params)
-        return cls.search(endpoint, **(search_params | {type_search_field(endpoint): [issue_type]}))
+        return cls.search(endpoint, raise_error=raise_error, **(search_params | {type_search_field(endpoint): [issue_type]}))
 
     @classmethod
-    def search_by_status(cls, endpoint: Platform, status: str, **search_params: Any) -> dict[str, Issue]:
+    def search_by_status(cls, endpoint: Platform, status: str, raise_error: bool = True, **search_params: Any) -> dict[str, Issue]:
         """Searches issues by status. If too many issues, the search is split in smaller searches"""
         log.debug("Searching issues by status '%s' from %s", status, search_params)
-        return cls.search(endpoint, **(search_params | {status_search_field(endpoint): [status]}))
+        return cls.search(endpoint, raise_error=raise_error, **(search_params | {status_search_field(endpoint): [status]}))
 
     @classmethod
-    def search_by_rule(cls, endpoint: Platform, rule_key: str, **search_params: Any) -> dict[str, Issue]:
+    def search_by_rule(cls, endpoint: Platform, rule_key: str, raise_error: bool = True, **search_params: Any) -> dict[str, Issue]:
         """Searches issues by rule. If too many issues, the search is split in smaller searches"""
         log.debug("Searching issues by rule '%s' from %s", rule_key, search_params)
-        return cls.search(endpoint, **(search_params | {"rules": [rule_key]}))
+        return cls.search(endpoint, raise_error=raise_error, **(search_params | {"rules": [rule_key]}))
 
     @classmethod
-    def search_by_directory(cls, endpoint: Platform, project: Union[str, Project], directory: str, **search_params: Any) -> dict[str, Issue]:
+    def search_by_directory(
+        cls, endpoint: Platform, project: Union[str, Project], directory: str, raise_error: bool = True, **search_params: Any
+    ) -> dict[str, Issue]:
         """Searches issues by project anddirectory. If too many issues, the search is split in smaller searches"""
         log.debug("Searching issues by project '%s' and directory '%s' from %s", project, directory, search_params)
         new_params = cls.sanitize_search_params(endpoint, **search_params) | {
             component_search_field(endpoint): cls.get_key(project),
             "directories": {requests.utils.quote(directory)},
         }
-        return cls.search(endpoint, **{**search_params, **new_params})
+        return cls.search(endpoint, raise_error=raise_error, **{**search_params, **new_params})
 
     @classmethod
-    def search_by_file(cls, endpoint: Platform, project: Union[str, Project], file_or_uuid: str, **search_params: Any) -> dict[str, Issue]:
+    def search_by_file(
+        cls, endpoint: Platform, project: Union[str, Project], file_or_uuid: str, raise_error: bool = True, **search_params: Any
+    ) -> dict[str, Issue]:
         """Searches issues by project and file. If too many issues, the search is split in smaller searches"""
         file_filter = "fileUuids" if endpoint.is_sonarcloud() else "files"
         new_params = cls.sanitize_search_params(endpoint, **search_params) | {
             component_search_field(endpoint): cls.get_key(project),
             file_filter: {requests.utils.quote(file_or_uuid)},
         }
-        return cls.search(endpoint, **{**search_params, **new_params})
+        return cls.search(endpoint, raise_error=raise_error, **{**search_params, **new_params})
 
     @staticmethod
     def get_search_date_range(date_start: Union[datetime, date, None], date_stop: Union[datetime, date, None]) -> dict[str, datetime]:
