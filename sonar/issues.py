@@ -197,7 +197,7 @@ class Issue(findings.Finding):
         """
         issue_list = {}
         try:
-            issue_list = cls.search_unsafe(endpoint, threads=threads, **search_params)
+            issue_list = cls.search_unsafe(endpoint, raise_error=True, threads=threads, **search_params)
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by projects", e.message)
             search_params = cls.sanitize_search_params(endpoint, **search_params)
@@ -232,7 +232,7 @@ class Issue(findings.Finding):
             issue_list = findings.export_findings(endpoint, project, new_params.get("branch"), new_params.get("pullRequest"))
             issue_list = post_search_filter(issue_list, **new_params)
         try:
-            issue_list = cls.search_unsafe(endpoint, raise_error=raise_error, **new_params)
+            issue_list = cls.search_unsafe(endpoint, raise_error=True, **new_params)
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by date", e.message)
             date_start = get_oldest_issue(endpoint, params=new_params)
@@ -264,7 +264,7 @@ class Issue(findings.Finding):
         log.debug("Searching issues by date between [%s - %s] from %s", tstart, tstop, search_params)
         issue_list = {}
         try:
-            issue_list = cls.search_unsafe(endpoint, **new_params)
+            issue_list = cls.search_unsafe(endpoint, raise_error=True, **new_params)
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by narrowed date windows", e.message)
             if isinstance(date_start, datetime):
@@ -302,7 +302,7 @@ class Issue(findings.Finding):
         remaining_facets = facets_list.copy()
         current_facet = remaining_facets.pop(0)
         project = search_params.get("project", search_params.get(component_search_field(endpoint), None))
-        facet_values = _get_facets(endpoint, project, facet=current_facet, **search_params).keys()
+        facet_values = _get_facets(endpoint, project, facet=current_facet, raise_error=raise_error, **search_params).keys()
         if len(facet_values) >= _MAX_FACETS and len(remaining_facets) == 0:
             log.info("Number of facets for '%s' is greater or equal than the maximum %d, doing best effort search", current_facet, _MAX_FACETS)
             return cls.search_unsafe(endpoint, raise_error=raise_error, sanitize=False, **search_params)
@@ -310,10 +310,10 @@ class Issue(findings.Finding):
         for facet_value in facet_values:
             try:
                 search_params |= {current_facet: facet_value}
-                issue_list |= cls.search_unsafe(endpoint, sanitize=False, raise_error=raise_error_facets, **search_params)
+                issue_list |= cls.search_unsafe(endpoint, sanitize=False, raise_error=True, **search_params)
             except TooManyIssuesError as e:
                 log.info("%s - Recursing and slicing the search by %s", e.message, current_facet)
-                issue_list |= cls.search_by_facets(endpoint, facets_list=remaining_facets, raise_error=raise_error, **search_params)
+                issue_list |= cls.search_by_facets(endpoint, facets_list=remaining_facets, raise_error=True, **search_params)
             log.debug("Searching by %s '%s': %d issues found", current_facet, facet_value, len(issue_list))
         return issue_list
 
@@ -930,7 +930,7 @@ def status_search_field(endpoint: Platform) -> str:
 
 
 def _get_facets(
-    endpoint: Platform, project_key: str, facet: str = "directories", min_count: int = 1, **search_params: Any
+    endpoint: Platform, project_key: str, facet: str = "directories", min_count: int = 1, raise_error: bool = True, **search_params: Any
 ) -> dict[str, Union[int, dict[str, Any]]]:
     """Returns the facets of a search"""
     search_params = search_params.copy()
@@ -946,7 +946,7 @@ def _get_facets(
     log.info("Facets for %s = %s", facet, facets_d)
     facets_d = {k: v for k, v in facets_d.items() if v >= min_count}
     if len(facets_d) == _MAX_FACETS:
-        if endpoint.edition() in (c.CE, c.DE, c.SC):
+        if endpoint.edition() in (c.CE, c.DE, c.SC) and not raise_error:
             log.error("Too many facets (%d) for '%s' in issue search results, the search result may be incomplete", len(facets_d), facet)
         else:
             raise TooManyFacetsError(len(facets_d), facet=facet, **search_params)
