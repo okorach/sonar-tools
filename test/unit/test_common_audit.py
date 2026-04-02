@@ -77,8 +77,7 @@ def test_audit(csv_file: Generator[str]) -> None:
             old_problems.append((row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4]))))
     for row in old_problems:
         if row not in problems:
-            print(f"Problem {row[4]} not found in new audit")
-            assert False, f"Problem {row[4]} not found in new audit"
+            assert False, f"Problem {row} not found in new audit"
     assert problems_present(csv_file, problems)
 
 
