@@ -36,8 +36,9 @@ import sonar.util.misc as util
 
 FLAT_12K_PROJECT = "12k-issues-flat"
 STRUCTURED_12K_PROJECT = "12k-issues-structured"
-NBR_ISSUES_12K = 11900
+NBR_ISSUES_12K = 12000
 NBR_ISSUES_12K_BEST_EFFORT = 10000
+
 
 def test_issue() -> None:
     """Test issues"""
@@ -424,14 +425,25 @@ def test_search_by_directory_facet_error() -> None:
         with pytest.raises(issues.TooManyFacetsError):
             Issue.search_by_directory(tutil.SQ, project=FLAT_12K_PROJECT, raise_error=True, directory="/", status="OPEN")
         issues_d = Issue.search_by_directory(tutil.SQ, project=FLAT_12K_PROJECT, raise_error=False, directory="/", status="OPEN")
-        assert len(issues_d) == 10000
+        assert len(issues_d) == NBR_ISSUES_12K_BEST_EFFORT
     else:
-        assert len(Issue.search_by_directory(tutil.SQ, project=FLAT_12K_PROJECT, directory="/", statuses="OPEN", issueStatuses="OPEN")) == NBR_ISSUES_12K
+        assert (
+            len(Issue.search_by_directory(tutil.SQ, project=FLAT_12K_PROJECT, directory="/", statuses="OPEN", issueStatuses="OPEN")) == NBR_ISSUES_12K
+        )
 
 
 def test_subsearch_by_project() -> None:
     """test_subsearch_by_project"""
     issues_d = Issue.search(tutil.SQ, threads=8, raise_error=False, **{issues.component_search_field(tutil.SQ): STRUCTURED_12K_PROJECT})
     assert len(issues_d) == NBR_ISSUES_12K
-    with pytest.raises(issues.TooManyIssuesError):
-        Issue.search(tutil.SQ, threads=8, raise_error=True, **{issues.component_search_field(tutil.SQ): STRUCTURED_12K_PROJECT})
+
+
+def test_subsearch_by_project_2() -> None:
+    """test_subsearch_by_project_2"""
+    issues_d = Issue.search(tutil.SQ, threads=8, raise_error=False, **{issues.component_search_field(tutil.SQ): FLAT_12K_PROJECT})
+    if tutil.SQ.edition() in (c.EE, c.DCE):
+        assert len(issues_d) == NBR_ISSUES_12K
+    else:
+        assert len(issues_d) == NBR_ISSUES_12K_BEST_EFFORT
+        with pytest.raises(issues.TooManyIssuesError):
+            Issue.search(tutil.SQ, threads=8, raise_error=True, **{issues.component_search_field(tutil.SQ): FLAT_12K_PROJECT})
