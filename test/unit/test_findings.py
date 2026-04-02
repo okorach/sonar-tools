@@ -36,6 +36,7 @@ from sonar import issues
 from sonar.issues import Issue
 from sonar import hotspots
 from sonar import errcodes as e
+from sonar import exceptions
 from sonar.util import constants as c, issue_defs as idefs
 from cli import findings_export
 import cli.options as opt
@@ -85,6 +86,11 @@ __WRONG_OPTS = [
     [f"--{opt.PORTFOLIOS}", f"-{opt.KEY_REGEXP_SHORT}", tutil.LIVE_PROJECT],
 ]
 
+_FLAT_12K_PROJECT = "12k-issues-flat"
+_STRUCTURED_12K_PROJECT = "12k-issues-structured"
+_NBR_ISSUES_12K = 12000
+_NBR_ISSUES_12K_BEST_EFFORT = 10000
+
 
 def test_findings_export_sarif_explicit(json_file: Generator[str]) -> None:
     """Test SARIF export"""
@@ -110,11 +116,10 @@ def test_tune_params() -> None:
 
 def test_export_max_facets(csv_file: Generator[str]) -> None:
     """test_export_max_facets"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.NBR_THREADS} 16 --{opt.KEY_REGEXP} 12k-issues-flat"
-    if tutil.SQ.edition() in (c.EE, c.DCE):
-        assert tutil.run_cmd(findings_export.main, cmd) == e.OK
-    else:
-        assert tutil.run_cmd(findings_export.main, cmd) == e.UNSUPPORTED_OPERATION
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.NBR_THREADS} 16 --{opt.KEY_REGEXP} {_FLAT_12K_PROJECT}"
+    assert tutil.run_cmd(findings_export.main, cmd) == e.OK
+    expected_nbr_lines = _NBR_ISSUES_12K if tutil.SQ.edition() in (c.EE, c.DCE) else _NBR_ISSUES_12K_BEST_EFFORT
+    assert tutil.csv_nbr_lines(csv_file) == expected_nbr_lines
 
 
 def test_wrong_filters(csv_file: Generator[str]) -> None:
@@ -314,7 +319,7 @@ def test_findings_export_long(csv_file: Generator[str]) -> None:
 
 def test_issues_count_0() -> None:
     """test_issues_count_0"""
-    assert Issue.count(tutil.SQ) > 10000
+    assert Issue.count(tutil.SQ) > _NBR_ISSUES_12K_BEST_EFFORT
 
 
 def test_issues_count_1() -> None:
@@ -345,7 +350,7 @@ def test_search_issues_by_project() -> None:
 
 def test_search_many_issues_safe() -> None:
     """test_search_too_many_issues"""
-    assert len(issues.Issue.search(tutil.SQ)) > issues.Issue.MAX_SEARCH
+    assert len(issues.Issue.search(tutil.SQ, raise_error=False)) > issues.Issue.MAX_SEARCH
 
 
 def test_search_many_issues_unsafe() -> None:
@@ -359,8 +364,12 @@ def test_search_by_project() -> None:
     issue_list1 = issues.Issue.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT) | hotspots.Hotspot.search_by_project(
         tutil.SQ, project=tutil.LIVE_PROJECT
     )
-    issue_list2 = issues.Issue.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, search_findings=True)
-    assert sorted(issue_list1.keys()) == sorted(issue_list2.keys())
+    if tutil.SQ.edition() in (c.EE, c.DCE):
+        issue_list2 = issues.Issue.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, search_findings=True)
+        assert sorted(issue_list1.keys()) == sorted(issue_list2.keys())
+    else:
+        with pytest.raises(exceptions.UnsupportedOperation):
+            issues.Issue.search_by_project(tutil.SQ, project=tutil.LIVE_PROJECT, search_findings=True)
 
 
 def test_output_format_sarif(sarif_file: Generator[str]) -> None:
@@ -452,12 +461,14 @@ def test_all_prs(csv_file: Generator[str]) -> None:
 def test_one_pr(csv_file: Generator[str]) -> None:
     """Tests that findings export for a single name PR of a project works"""
     proj = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
+    if tutil.SQ.edition() == c.CE:
+        with pytest.raises(exceptions.UnsupportedOperation):
+            proj.pull_requests()
+        return
+
     for pr in proj.pull_requests().keys():
         cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {tutil.LIVE_PROJECT} -{opt.PULL_REQUESTS_SHORT} {pr}"
         print(cmd)
-        if tutil.SQ.edition() == c.CE:
-            assert tutil.run_cmd(findings_export.main, cmd) == e.UNSUPPORTED_OPERATION
-            break
         assert tutil.run_cmd(findings_export.main, cmd) == e.OK
         assert tutil.csv_col_is_value(csv_file, "pullRequest", pr)
         assert tutil.csv_col_is_value(csv_file, "projectKey", tutil.LIVE_PROJECT)
@@ -465,17 +476,18 @@ def test_one_pr(csv_file: Generator[str]) -> None:
 
 def test_12k_flat(csv_file: Generator[str]) -> None:
     """test_12k_flat"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} 12k-issues-flat"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {_FLAT_12K_PROJECT}"
     if tutil.SQ.is_sonarcloud():
         cmd += f" --{opt.ORG} {creds.ORGANIZATION}"
     assert tutil.run_cmd(findings_export.main, cmd) == e.OK
-    assert tutil.csv_nbr_lines(csv_file) == 12000
+    expected_nbr_lines = _NBR_ISSUES_12K if tutil.SQ.edition() in (c.EE, c.DCE) else _NBR_ISSUES_12K_BEST_EFFORT
+    assert tutil.csv_nbr_lines(csv_file) == expected_nbr_lines
 
 
 def test_12k_structured(csv_file: Generator[str]) -> None:
     """test_12k_structured"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} 12k-issues-structured"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.KEY_REGEXP} {_STRUCTURED_12K_PROJECT}"
     if tutil.SQ.is_sonarcloud():
         cmd += f" --{opt.ORG} {creds.ORGANIZATION}"
     assert tutil.run_cmd(findings_export.main, cmd) == e.OK
-    assert tutil.csv_nbr_lines(csv_file) == 12000
+    assert tutil.csv_nbr_lines(csv_file) == _NBR_ISSUES_12K

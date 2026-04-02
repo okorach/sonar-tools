@@ -227,10 +227,19 @@ class Issue(findings.Finding):
         project = cls.get_key(project)
         log.debug("Searching issues by project '%s' from %s", project, search_params)
         new_params = cls.sanitize_search_params(endpoint, **search_params) | {"project": project}
-        if endpoint.edition() in (c.EE, c.DCE) and search_findings:
-            log.debug("Using export_findings() to speed up issue export")
-            issue_list = findings.export_findings(endpoint, project, new_params.get("branch"), new_params.get("pullRequest"))
-            issue_list = post_search_filter(issue_list, **new_params)
+        if search_findings:
+            if endpoint.edition() in (c.EE, c.DCE):
+                log.debug("Using export_findings() to speed up issue export")
+                issue_list = findings.export_findings(endpoint, project, new_params.get("branch"), new_params.get("pullRequest"))
+                issue_list = post_search_filter(issue_list, **new_params)
+                return issue_list
+            else:
+                raise exceptions.UnsupportedOperation("DB based issues search is not supported on non-EE/DCE/SC edition")
+        if endpoint.edition() in (c.EE, c.DCE):
+            # Rather than an approximate result, on EE and DCE we'll revert to
+            # search findings if TooManyIssuesError is raised
+            raise_error = True
+
         try:
             issue_list = cls.search_unsafe(endpoint, raise_error=True, **new_params)
         except TooManyIssuesError as e:
@@ -313,7 +322,7 @@ class Issue(findings.Finding):
                 issue_list |= cls.search_unsafe(endpoint, sanitize=False, raise_error=True, **search_params)
             except TooManyIssuesError as e:
                 log.info("%s - Recursing and slicing the search by %s", e.message, current_facet)
-                issue_list |= cls.search_by_facets(endpoint, facets_list=remaining_facets, raise_error=True, **search_params)
+                issue_list |= cls.search_by_facets(endpoint, facets_list=remaining_facets, raise_error=raise_error, **search_params)
             log.debug("Searching by %s '%s': %d issues found", current_facet, facet_value, len(issue_list))
         return issue_list
 

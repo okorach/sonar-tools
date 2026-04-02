@@ -34,10 +34,10 @@ import sonar.util.issue_defs as idefs
 import credentials as tconf
 import sonar.util.misc as util
 
-FLAT_12K_PROJECT = "12k-issues-flat"
-STRUCTURED_12K_PROJECT = "12k-issues-structured"
-NBR_ISSUES_12K = 12000
-NBR_ISSUES_12K_BEST_EFFORT = 10000
+_FLAT_12K_PROJECT = "12k-issues-flat"
+_STRUCTURED_12K_PROJECT = "12k-issues-structured"
+_NBR_ISSUES_12K = 12000
+_NBR_ISSUES_12K_BEST_EFFORT = 10000
 
 
 def test_issue() -> None:
@@ -366,19 +366,19 @@ def test_comments_after() -> None:
 def test_too_many_facets() -> None:
     """test_too_many_facets"""
     with pytest.raises(issues.TooManyFacetsError):
-        Issue.search_by_date(tutil.SQ, raise_error=True, date_start=datetime(2000, 1, 1), date_stop=datetime(2030, 1, 1), project=FLAT_12K_PROJECT)
+        Issue.search_by_date(tutil.SQ, raise_error=True, date_start=datetime(2000, 1, 1), date_stop=datetime(2030, 1, 1), project=_FLAT_12K_PROJECT)
 
 
 def test_too_many_facets_by_project() -> None:
     """test_too_many_facets_by_project"""
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        issues_d = Issue.search_by_project(tutil.SQ, project=FLAT_12K_PROJECT)
-        assert len(issues_d) == NBR_ISSUES_12K
+        issues_d = Issue.search_by_project(tutil.SQ, project=_FLAT_12K_PROJECT)
+        assert len(issues_d) == _NBR_ISSUES_12K
     else:
-        issues_d = Issue.search_by_project(tutil.SQ, raise_error=False, project=FLAT_12K_PROJECT)
-        assert len(issues_d) == NBR_ISSUES_12K_BEST_EFFORT
+        issues_d = Issue.search_by_project(tutil.SQ, raise_error=False, project=_FLAT_12K_PROJECT)
+        assert len(issues_d) == _NBR_ISSUES_12K_BEST_EFFORT
         with pytest.raises(issues.TooManyFacetsError):
-            Issue.search_by_project(tutil.SQ, raise_error=True, project=FLAT_12K_PROJECT)
+            Issue.search_by_project(tutil.SQ, raise_error=True, project=_FLAT_12K_PROJECT)
 
 
 def test_search_by_project_object() -> None:
@@ -399,17 +399,17 @@ def test_search_by_status() -> None:
 def test_search_by_status_facet_error() -> None:
     """test_search_by_status_facet_error"""
     if tutil.SQ.is_sonarcloud() or tutil.SQ.edition() in (c.CE, c.DE):
-        issues_d = Issue.search_by_status(tutil.SQ, status="OPEN", project=FLAT_12K_PROJECT, raise_error=False)
-        assert len(issues_d) == NBR_ISSUES_12K_BEST_EFFORT
+        issues_d = Issue.search_by_status(tutil.SQ, status="OPEN", project=_FLAT_12K_PROJECT, raise_error=False)
+        assert len(issues_d) == _NBR_ISSUES_12K_BEST_EFFORT
         with pytest.raises(issues.TooManyFacetsError):
-            Issue.search_by_status(tutil.SQ, status="OPEN", project=FLAT_12K_PROJECT)
+            Issue.search_by_status(tutil.SQ, status="OPEN", project=_FLAT_12K_PROJECT)
     else:
-        assert len(Issue.search_by_status(tutil.SQ, status="OPEN", project=FLAT_12K_PROJECT)) == NBR_ISSUES_12K
+        assert len(Issue.search_by_status(tutil.SQ, status="OPEN", project=_FLAT_12K_PROJECT)) == _NBR_ISSUES_12K
 
 
 def test_search_by_directory() -> None:
     """test_search_by_directory"""
-    issues_d = Issue.search_by_directory(tutil.SQ, project=STRUCTURED_12K_PROJECT, directory="src1")
+    issues_d = Issue.search_by_directory(tutil.SQ, project=_STRUCTURED_12K_PROJECT, directory="src1")
     assert len(issues_d) == 6000
 
 
@@ -423,27 +423,28 @@ def test_search_by_directory_facet_error() -> None:
     """test_search_by_directory_facet_error"""
     if tutil.SQ.is_sonarcloud() or tutil.SQ.edition() in (c.CE, c.DE):
         with pytest.raises(issues.TooManyFacetsError):
-            Issue.search_by_directory(tutil.SQ, project=FLAT_12K_PROJECT, raise_error=True, directory="/", status="OPEN")
-        issues_d = Issue.search_by_directory(tutil.SQ, project=FLAT_12K_PROJECT, raise_error=False, directory="/", status="OPEN")
-        assert len(issues_d) == NBR_ISSUES_12K_BEST_EFFORT
+            Issue.search_by_directory(tutil.SQ, project=_FLAT_12K_PROJECT, raise_error=True, directory="/", status="OPEN")
+        issues_d = Issue.search_by_directory(tutil.SQ, project=_FLAT_12K_PROJECT, raise_error=False, directory="/", status="OPEN")
+        assert len(issues_d) == _NBR_ISSUES_12K_BEST_EFFORT
     else:
         assert (
-            len(Issue.search_by_directory(tutil.SQ, project=FLAT_12K_PROJECT, directory="/", statuses="OPEN", issueStatuses="OPEN")) == NBR_ISSUES_12K
+            len(Issue.search_by_directory(tutil.SQ, project=_FLAT_12K_PROJECT, directory="/", statuses="OPEN", issueStatuses="OPEN"))
+            == _NBR_ISSUES_12K
         )
 
 
 def test_subsearch_by_project() -> None:
     """test_subsearch_by_project"""
-    issues_d = Issue.search(tutil.SQ, threads=8, raise_error=False, **{issues.component_search_field(tutil.SQ): STRUCTURED_12K_PROJECT})
-    assert len(issues_d) == NBR_ISSUES_12K
+    issues_d = Issue.search(tutil.SQ, threads=8, raise_error=False, **{issues.component_search_field(tutil.SQ): _STRUCTURED_12K_PROJECT})
+    assert len(issues_d) == _NBR_ISSUES_12K
 
 
 def test_subsearch_by_project_2() -> None:
     """test_subsearch_by_project_2"""
-    issues_d = Issue.search(tutil.SQ, threads=8, raise_error=False, **{issues.component_search_field(tutil.SQ): FLAT_12K_PROJECT})
+    issues_d = Issue.search(tutil.SQ, threads=8, raise_error=False, **{issues.component_search_field(tutil.SQ): _FLAT_12K_PROJECT})
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        assert len(issues_d) == NBR_ISSUES_12K
+        assert len(issues_d) == _NBR_ISSUES_12K
     else:
-        assert len(issues_d) == NBR_ISSUES_12K_BEST_EFFORT
+        assert len(issues_d) == _NBR_ISSUES_12K_BEST_EFFORT
         with pytest.raises(issues.TooManyIssuesError):
-            Issue.search(tutil.SQ, threads=8, raise_error=True, **{issues.component_search_field(tutil.SQ): FLAT_12K_PROJECT})
+            Issue.search(tutil.SQ, threads=8, raise_error=True, **{issues.component_search_field(tutil.SQ): _FLAT_12K_PROJECT})
