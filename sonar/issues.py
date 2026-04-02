@@ -203,10 +203,10 @@ class Issue(findings.Finding):
             search_params = cls.sanitize_search_params(endpoint, **search_params)
             if proj_key := search_params.get(component_search_field(endpoint)):
                 search_params.pop(component_search_field(endpoint))
-                issue_list = cls.search_by_project(endpoint, project=proj_key, search_findings=True, raise_error=raise_error, **search_params)
+                issue_list = cls.search_by_project(endpoint, project=proj_key, raise_error=raise_error, **search_params)
             else:
                 for key in Project.search(endpoint):
-                    issue_list |= cls.search_by_project(endpoint, search_findings=True, raise_error=raise_error, **(search_params | {"project": key}))
+                    issue_list |= cls.search_by_project(endpoint, raise_error=raise_error, **(search_params | {"project": key}))
         return issue_list
 
     @classmethod
@@ -234,7 +234,7 @@ class Issue(findings.Finding):
                 issue_list = post_search_filter(issue_list, **new_params)
                 return issue_list
             else:
-                raise exceptions.UnsupportedOperation("DB based issues search is not supported on non-EE/DCE/SC edition")
+                raise exceptions.UnsupportedOperation("DB based issues search is not supported on non-EE/DCE edition")
         if endpoint.edition() in (c.EE, c.DCE):
             # Rather than an approximate result, on EE and DCE we'll revert to
             # search findings if TooManyIssuesError is raised
