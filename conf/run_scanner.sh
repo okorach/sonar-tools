@@ -64,8 +64,9 @@ else
   echo "===> NO COVERAGE REPORT"
 fi
 
-if ls "${BUILD_DIR}"/xunit-results.xml >/dev/null 2>&1; then
-  cmd="${cmd} -Dsonar.python.xunit.reportPath=${relativeDir}/xunit-results.xml"
+if ls "${BUILD_DIR}"/xunit-*.xml >/dev/null 2>&1; then
+  # files=$(ls "${BUILD_DIR}"/xunit-*.xml | tr '\n' ' ' | sed -E -e 's/ +$//' -e 's/ +/,/g')
+  cmd="${cmd} -Dsonar.python.xunit.reportPath=${relativeDir}/xunit-*.xml"
 else
   echo "===> NO UNIT TESTS REPORT"
   cmd="${cmd} -Dsonar.python.xunit.reportPath="

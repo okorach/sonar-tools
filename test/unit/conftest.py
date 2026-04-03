@@ -21,24 +21,33 @@
 """Test fixtures"""
 
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import os
 from typing import Union
 import contextlib
 import pytest
 
-
-from collections.abc import Generator
-
 import utilities as tutil
-from sonar import projects, applications, portfolios, qualityprofiles, qualitygates, exceptions, issues, users, groups
+from sonar import exceptions
 import sonar.util.constants as c
+from sonar.qualitygates import QualityGate
+from sonar.qualityprofiles import QualityProfile
+from sonar.issues import Issue
+from sonar.users import User
+from sonar.groups import Group
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+    from sonar.projects import Project
+    from sonar.applications import Application
+    from sonar.portfolios import Portfolio
+
 
 def pytest_addoption(parser: pytest.Parser) -> None:
-    """Add command line options to pytest
-    """
+    """Add command line options to pytest"""
     parser.addoption("--platform", default="latest", help="SonarQube platform target")
+
 
 def pytest_configure(config: pytest.Config) -> None:
     """Configure pytest"""
@@ -72,10 +81,10 @@ def run_around_tests() -> Generator[None]:
 
 
 @pytest.fixture()
-def get_test_project() -> Generator[projects.Project]:
+def get_test_project() -> Generator[Project]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-project-{os.getpid()}"
-    o = create_test_object(projects.Project, key=key)
+    o = create_test_object(Project, key=key)
     yield o
     # Teardown: Clean up resources (if any) after the test
     o.key = key
@@ -84,46 +93,46 @@ def get_test_project() -> Generator[projects.Project]:
 
 
 @pytest.fixture()
-def get_empty_qg() -> Generator[qualitygates.QualityGate]:
+def get_empty_qg() -> Generator[QualityGate]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-qualitygate-{os.getpid()}"
     try:
-        o = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=key)
+        o = QualityGate.get_object(endpoint=tutil.SQ, name=key)
     except exceptions.ObjectNotFound:
-        o = qualitygates.QualityGate.create(endpoint=tutil.SQ, name=key)
+        o = QualityGate.create(endpoint=tutil.SQ, name=key)
     o.clear_conditions()
     yield o
     # Teardown: Clean up resources (if any) after the test
     o.key = key
     with contextlib.suppress(exceptions.ObjectNotFound):
-        sw = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY)
+        sw = QualityGate.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY)
         sw.set_as_default()
         o.delete()
 
 
 @pytest.fixture()
-def get_loaded_qg() -> Generator[qualitygates.QualityGate]:
+def get_loaded_qg() -> Generator[QualityGate]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-qualitygate-{os.getpid()}"
     try:
-        o = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=key)
+        o = QualityGate.get_object(endpoint=tutil.SQ, name=key)
     except exceptions.ObjectNotFound:
-        o = qualitygates.QualityGate.create(endpoint=tutil.SQ, name=key)
+        o = QualityGate.create(endpoint=tutil.SQ, name=key)
     yield o
     o.key = key
     with contextlib.suppress(exceptions.ObjectNotFound):
-        sw = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY)
+        sw = QualityGate.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY)
         sw.set_as_default()
         o.delete()
 
 
 @pytest.fixture()
-def get_test_app() -> Generator[applications.Application]:
+def get_test_app() -> Generator[Application]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-application-{os.getpid()}"
     o = None
     if tutil.SQ.edition() in (c.DE, c.EE, c.DCE):
-        o = create_test_object(applications.Application, key=key)
+        o = create_test_object(Application, key=key)
     yield o
     if tutil.SQ.edition() in (c.DE, c.EE, c.DCE):
         o.key = key
@@ -132,12 +141,12 @@ def get_test_app() -> Generator[applications.Application]:
 
 
 @pytest.fixture()
-def get_test_portfolio() -> Generator[Union[portfolios.Portfolio, None]]:
+def get_test_portfolio() -> Generator[Union[Portfolio, None]]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-portfolio-{os.getpid()}"
     o = None
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        o = create_test_object(portfolios.Portfolio, key=key)
+        o = create_test_object(Portfolio, key=key)
     yield o
     if tutil.SQ.edition() in (c.EE, c.DCE):
         o.key = key
@@ -146,12 +155,12 @@ def get_test_portfolio() -> Generator[Union[portfolios.Portfolio, None]]:
 
 
 @pytest.fixture()
-def get_test_portfolio_2() -> Generator[portfolios.Portfolio]:
+def get_test_portfolio_2() -> Generator[Portfolio]:
     """setup of tests"""
     key = f"portfolio-{tutil.TEMP_KEY_2}-portfolio-{os.getpid()}"
     o = None
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        o = create_test_object(portfolios.Portfolio, key=key)
+        o = create_test_object(Portfolio, key=key)
     yield o
     if tutil.SQ.edition() in (c.EE, c.DCE):
         o.key = key
@@ -160,58 +169,56 @@ def get_test_portfolio_2() -> Generator[portfolios.Portfolio]:
 
 
 @pytest.fixture()
-def get_test_subportfolio() -> Generator[portfolios.Portfolio]:
+def get_test_subportfolio() -> Generator[Portfolio]:
     """setup of tests"""
     parent_key = f"{tutil.TEMP_KEY}-portfolio-{os.getpid()}"
     subp_key = f"{tutil.TEMP_KEY_2}-portfolio-{os.getpid()}"
-    subp: Optional[portfolios.Portfolio] = None
+    subp: Optional[Portfolio] = None
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        parent = create_test_object(portfolios.Portfolio, key=parent_key)
+        parent = create_test_object(Portfolio, key=parent_key)
         subp = parent.add_standard_subportfolio(key=subp_key, name=subp_key)
     yield subp
     if tutil.SQ.edition() in (c.EE, c.DCE):
         subp.key = subp_key
-        try:
+        with contextlib.suppress(exceptions.ObjectNotFound):
             subp.delete()
-        except exceptions.ObjectNotFound:
-            pass
         parent.key = parent_key
         with contextlib.suppress(exceptions.ObjectNotFound):
             parent.delete()
 
 
 @pytest.fixture()
-def get_test_qp() -> Generator[qualityprofiles.QualityProfile]:
+def get_test_qp() -> Generator[QualityProfile]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-qualityprofile-{os.getpid()}"
     try:
-        o = qualityprofiles.QualityProfile.get_object(endpoint=tutil.SQ, name=key, language="py")
+        o = QualityProfile.get_object(endpoint=tutil.SQ, name=key, language="py")
         if o.is_default:
-            sw = qualityprofiles.QualityProfile.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY, language="py")
+            sw = QualityProfile.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY, language="py")
             sw.set_as_default()
     except exceptions.ObjectNotFound:
-        o = qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=key, language="py")
+        o = QualityProfile.create(endpoint=tutil.SQ, name=key, language="py")
     yield o
     with contextlib.suppress(exceptions.ObjectNotFound):
         o.delete()
 
 
 @pytest.fixture()
-def get_test_issue() -> Generator[issues.Issue]:
+def get_test_issue() -> Generator[Issue]:
     """setup of tests"""
-    issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
     return issues_d[TEST_ISSUE]
 
 
 @pytest.fixture()
-def get_test_user() -> Generator[users.User]:
+def get_test_user() -> Generator[User]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-user-{os.getpid()}"
     try:
-        o = users.User.get_object(endpoint=tutil.SQ, login=key)
+        o = User.get_object(endpoint=tutil.SQ, login=key)
     except exceptions.ObjectNotFound:
         try:
-            o = users.User.create(endpoint=tutil.SQ, login=key, name=f"User name {key}")
+            o = User.create(endpoint=tutil.SQ, login=key, name=f"User name {key}")
         except exceptions.UnsupportedOperation:
             if not tutil.SQ.is_sonarcloud():
                 raise
@@ -292,9 +299,9 @@ def sarif_file() -> Generator[str]:
 
 
 @pytest.fixture()
-def get_test_quality_gate() -> Generator[qualitygates.QualityGate]:
+def get_test_quality_gate() -> Generator[QualityGate]:
     """setup of tests"""
-    sonar_way = qualitygates.QualityGate.get_object(tutil.SQ, tutil.SONAR_WAY)
+    sonar_way = QualityGate.get_object(tutil.SQ, tutil.SONAR_WAY)
     o = sonar_way.copy(tutil.TEMP_KEY)
     yield o
     with contextlib.suppress(exceptions.ObjectNotFound):
@@ -302,14 +309,14 @@ def get_test_quality_gate() -> Generator[qualitygates.QualityGate]:
 
 
 @pytest.fixture()
-def get_test_group() -> Generator[groups.Group]:
+def get_test_group() -> Generator[Group]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-group-{os.getpid()}"
     try:
-        o = groups.Group.get_object(endpoint=tutil.SQ, name=key)
+        o = Group.get_object(endpoint=tutil.SQ, name=key)
     except exceptions.ObjectNotFound:
         try:
-            o = groups.Group.create(endpoint=tutil.SQ, name=key)
+            o = Group.create(endpoint=tutil.SQ, name=key)
         except exceptions.UnsupportedOperation:
             if not tutil.SQ.is_sonarcloud():
                 raise
@@ -324,16 +331,16 @@ def get_test_group() -> Generator[groups.Group]:
 
 
 @pytest.fixture()
-def get_60_groups() -> Generator[list[groups.Group]]:
+def get_60_groups() -> Generator[list[Group]]:
     """setup of tests"""
     group_list = []
     if not tutil.SQ.is_sonarcloud():
         for i in range(60):
             gr_name = f"{tutil.TEMP_KEY}-group-{i}"
             try:
-                o_gr = groups.Group.get_object(endpoint=tutil.SQ, name=gr_name)
+                o_gr = Group.get_object(endpoint=tutil.SQ, name=gr_name)
             except exceptions.ObjectNotFound:
-                o_gr = groups.Group.create(endpoint=tutil.SQ, name=gr_name, description=gr_name)
+                o_gr = Group.create(endpoint=tutil.SQ, name=gr_name, description=gr_name)
             group_list.append(o_gr)
     yield group_list
     for g in group_list:
@@ -341,15 +348,15 @@ def get_60_groups() -> Generator[list[groups.Group]]:
 
 
 @pytest.fixture()
-def get_60_users() -> Generator[list[users.User]]:
+def get_60_users() -> Generator[list[User]]:
     """setup of tests"""
     user_list = []
     for i in range(60):
         u_name = f"User-{tutil.TEMP_KEY}{i}"
         try:
-            o_user = users.User.get_object(endpoint=tutil.SQ, login=u_name)
+            o_user = User.get_object(endpoint=tutil.SQ, login=u_name)
         except exceptions.ObjectNotFound:
-            o_user = users.User.create(endpoint=tutil.SQ, login=u_name, name=u_name)
+            o_user = User.create(endpoint=tutil.SQ, login=u_name, name=u_name)
         user_list.append(o_user)
     yield user_list
     for u in user_list:

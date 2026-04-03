@@ -334,7 +334,7 @@ def test_search_by_small() -> None:
     if tutil.SQ.version() <= c.NEW_ISSUE_SEARCH_INTRO_VERSION:
         # Search does not aggregate subdirs in 9.9
         dirs += ["sonar/permissions", "sonar/util", "sonar/dce", "sonar/cli"]
-    assert len(list1) == sum([len(Issue.search_by_directory(tutil.SQ, project=tutil.LIVE_PROJECT, directory=dir, **params)) for dir in dirs])
+    assert len(list1) == sum([len(Issue.search_by_directory(tutil.SQ, project=tutil.LIVE_PROJECT, directory=d, **params)) for d in dirs])
 
     issues_in_dir = len(Issue.search_by_directory(tutil.SQ, project=tutil.LIVE_PROJECT, directory="cli", **params))
     assert issues_in_dir == len([i for i in list1.values() if i.file.startswith("cli/")])
