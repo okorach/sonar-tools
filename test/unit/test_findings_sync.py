@@ -67,13 +67,19 @@ def test_sync_same_proj_all_branches(json_file: Generator[str]) -> None:
 
 def test_sync_same_proj_2_branches(json_file: Generator[str]) -> None:
     """test_sync_same_proj_2_branches"""
-    assert tutil.run_cmd(findings_sync.main, f"{CMD} {TEST_OPTS} -{opt.BRANCHES_SHORT} main -B develop -K TESTSYNC --{opt.REPORT_FILE} {json_file}") == e.OK
+    assert (
+        tutil.run_cmd(findings_sync.main, f"{CMD} {TEST_OPTS} -{opt.BRANCHES_SHORT} main -B develop -K TESTSYNC --{opt.REPORT_FILE} {json_file}")
+        == e.OK
+    )
 
 
 def test_sync_2_proj_branches(json_file: Generator[str]) -> None:
     """test_sync_2_proj_branches"""
     code = e.UNSUPPORTED_OPERATION if tutil.SQ.edition() == c.CE else e.OK
-    assert tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -{opt.BRANCHES_SHORT} master -B main -{opt.REPORT_FILE_SHORT} {json_file}") == code
+    assert (
+        tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -{opt.BRANCHES_SHORT} master -B main -{opt.REPORT_FILE_SHORT} {json_file}")
+        == code
+    )
     if tutil.SQ.edition() == c.CE:
         assert tutil.run_cmd(findings_sync.main, f"{CMD} {PLAT_OPTS} {SYNC_OPTS} -B main -{opt.REPORT_FILE_SHORT} {json_file}") == e.OK
 
@@ -86,7 +92,10 @@ def test_sync_scloud(json_file: Generator[str]) -> None:
 def test_sync_bidirectional_same_proj_2_branches(json_file: Generator[str]) -> None:
     """test_sync_bidirectional_same_proj_2_branches"""
     assert (
-        tutil.run_cmd(findings_sync.main, f"{CMD} {TEST_OPTS} -{opt.BRANCHES_SHORT} main -B develop -K TESTSYNC --bidirectional --{opt.REPORT_FILE} {json_file}") == e.OK
+        tutil.run_cmd(
+            findings_sync.main, f"{CMD} {TEST_OPTS} -{opt.BRANCHES_SHORT} main -B develop -K TESTSYNC --bidirectional --{opt.REPORT_FILE} {json_file}"
+        )
+        == e.OK
     )
 
 
