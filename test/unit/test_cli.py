@@ -25,7 +25,7 @@ from collections.abc import Generator
 import json
 import csv
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sonar import projects
 from sonar import errcodes
 import utilities as tutil
@@ -106,7 +106,7 @@ def test_bad_project_key(json_file: Generator[str]):
 
 def test_analyzed_after(csv_file: Generator[str]) -> None:
     """test_analyzed_after"""
-    cutoff = (datetime.now() - timedelta(days=30)).date()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=30)).date()
     cmd = f"sonar-measures-export {tutil.SQS_OPTS} -{opt.REPORT_FILE_SHORT} {csv_file}"
     assert tutil.run_cmd(measures_export.main, cmd) == errcodes.OK
     nbr_lines = tutil.csv_nbr_lines(csv_file)

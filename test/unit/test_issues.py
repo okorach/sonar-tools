@@ -20,7 +20,7 @@
 
 """Test of the issues module and class, as well as changelog"""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pytest
 
 from requests.exceptions import ConnectionError
@@ -77,7 +77,7 @@ def test_add_comments() -> None:
     assert list(comments.values())[-1]["value"] == txt
     assert len(comments) == nb_comments + 1
 
-    just_before = datetime.now().astimezone() - timedelta(seconds=2)
+    just_before = datetime.now(timezone.utc) - timedelta(seconds=2)
     comments = finding.comments(after=just_before)
     assert len(comments) == 1
     assert list(comments.values())[-1]["value"] == txt
@@ -87,7 +87,7 @@ def test_add_comments() -> None:
 
 
 def test_set_severity() -> None:
-    """Test issue severity"""
+    """test_set_severity"""
     issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
     issue = list(issues_d.values())[0]
     is_mqr = tutil.SQ.is_mqr_mode()
@@ -132,7 +132,7 @@ def test_set_severity() -> None:
 
 
 def set_cloud_mqr_severity() -> None:
-    """set_cloud_mqr_severity"""
+    """test_set_cloud_mqr_severity"""
     issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
     issue = list(issues_d.values())[0]
     if issue.endpoint.is_sonarcloud():
@@ -224,7 +224,7 @@ def test_changelog() -> None:
     assert changelog.author() == tconf.ADMIN_USER
 
 
-def test_multiple_changelogs():
+def test_multiple_changelogs() -> None:
     """test_multiple_changelogs"""
     issue_key = tconf.ISSUE_FP
     issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1)

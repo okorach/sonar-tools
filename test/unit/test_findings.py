@@ -109,7 +109,7 @@ def test_findings_export_sarif_implicit(sarif_file: Generator[str]) -> None:
 def test_tune_params() -> None:
     """Test tune params"""
     tuned = findings_export.__turn_off_use_findings_if_needed(tutil.SQ, {opt.USE_FINDINGS: True})
-    assert tuned[opt.USE_FINDINGS] is (False if tutil.SQ.is_sonarcloud() else True)
+    assert tuned[opt.USE_FINDINGS] is not tutil.SQ.is_sonarcloud()
     tuned = findings_export.__turn_off_use_findings_if_needed(tutil.SQ, {opt.USE_FINDINGS: True, opt.SEVERITIES: "BLOCKER"})
     assert tuned[opt.USE_FINDINGS] is False
 

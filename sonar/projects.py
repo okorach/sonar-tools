@@ -31,7 +31,7 @@ from datetime import datetime
 import traceback
 
 from http import HTTPStatus
-from requests import HTTPError, RequestException
+from requests import RequestException
 
 import sonar.logging as log
 from sonar.components import Component

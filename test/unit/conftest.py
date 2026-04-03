@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # sonar-tools tests
 # Copyright (C) 2024-2026 Olivier Korach
@@ -26,22 +25,25 @@ from typing import Optional
 
 import os
 from typing import Union
-
-
-def pytest_addoption(parser):
-    parser.addoption("--platform", default="latest", help="SonarQube platform target")
-
-
-def pytest_configure(config):
-    os.environ["SONAR_TEST_PLATFORM"] = config.getoption("--platform")
+import contextlib
+import pytest
 
 
 from collections.abc import Generator
-import pytest
 
 import utilities as tutil
 from sonar import projects, applications, portfolios, qualityprofiles, qualitygates, exceptions, issues, users, groups
 import sonar.util.constants as c
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Add command line options to pytest
+    """
+    parser.addoption("--platform", default="latest", help="SonarQube platform target")
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Configure pytest"""
+    os.environ["SONAR_TEST_PLATFORM"] = config.getoption("--platform")
+
 
 TEMP_FILE_ROOT = f"temp.{os.getpid()}"
 CSV_FILE = f"{TEMP_FILE_ROOT}.csv"
@@ -61,14 +63,15 @@ def create_test_object(a_class: type, key: str) -> any:
 
 
 @pytest.fixture(autouse=True)
-def run_around_tests():
+def run_around_tests() -> Generator[None]:
+    """Test preamble"""
     tutil.start_logging()
     url = tutil.TEST_SQ.local_url
     yield
     tutil.TEST_SQ.local_url = url
 
 
-@pytest.fixture
+@pytest.fixture()
 def get_test_project() -> Generator[projects.Project]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-project-{os.getpid()}"
@@ -76,13 +79,11 @@ def get_test_project() -> Generator[projects.Project]:
     yield o
     # Teardown: Clean up resources (if any) after the test
     o.key = key
-    try:
+    with contextlib.suppress(exceptions.ObjectNotFound):
         o.delete()
-    except exceptions.ObjectNotFound:
-        pass
 
 
-@pytest.fixture
+@pytest.fixture()
 def get_empty_qg() -> Generator[qualitygates.QualityGate]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-qualitygate-{os.getpid()}"
@@ -94,15 +95,13 @@ def get_empty_qg() -> Generator[qualitygates.QualityGate]:
     yield o
     # Teardown: Clean up resources (if any) after the test
     o.key = key
-    try:
+    with contextlib.suppress(exceptions.ObjectNotFound):
         sw = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY)
         sw.set_as_default()
         o.delete()
-    except exceptions.ObjectNotFound:
-        pass
 
 
-@pytest.fixture
+@pytest.fixture()
 def get_loaded_qg() -> Generator[qualitygates.QualityGate]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-qualitygate-{os.getpid()}"
@@ -112,15 +111,13 @@ def get_loaded_qg() -> Generator[qualitygates.QualityGate]:
         o = qualitygates.QualityGate.create(endpoint=tutil.SQ, name=key)
     yield o
     o.key = key
-    try:
+    with contextlib.suppress(exceptions.ObjectNotFound):
         sw = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.SONAR_WAY)
         sw.set_as_default()
         o.delete()
-    except exceptions.ObjectNotFound:
-        pass
 
 
-@pytest.fixture
+@pytest.fixture()
 def get_test_app() -> Generator[applications.Application]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-application-{os.getpid()}"
@@ -130,13 +127,11 @@ def get_test_app() -> Generator[applications.Application]:
     yield o
     if tutil.SQ.edition() in (c.DE, c.EE, c.DCE):
         o.key = key
-        try:
+        with contextlib.suppress(exceptions.ObjectNotFound):
             o.delete()
-        except exceptions.ObjectNotFound:
-            pass
 
 
-@pytest.fixture
+@pytest.fixture()
 def get_test_portfolio() -> Generator[Union[portfolios.Portfolio, None]]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-portfolio-{os.getpid()}"
@@ -146,13 +141,11 @@ def get_test_portfolio() -> Generator[Union[portfolios.Portfolio, None]]:
     yield o
     if tutil.SQ.edition() in (c.EE, c.DCE):
         o.key = key
-        try:
+        with contextlib.suppress(exceptions.ObjectNotFound):
             o.delete()
-        except exceptions.ObjectNotFound:
-            pass
 
 
-@pytest.fixture
+@pytest.fixture()
 def get_test_portfolio_2() -> Generator[portfolios.Portfolio]:
     """setup of tests"""
     key = f"portfolio-{tutil.TEMP_KEY_2}-portfolio-{os.getpid()}"
@@ -162,13 +155,11 @@ def get_test_portfolio_2() -> Generator[portfolios.Portfolio]:
     yield o
     if tutil.SQ.edition() in (c.EE, c.DCE):
         o.key = key
-        try:
+        with contextlib.suppress(exceptions.ObjectNotFound):
             o.delete()
-        except exceptions.ObjectNotFound:
-            pass
 
 
-@pytest.fixture
+@pytest.fixture()
 def get_test_subportfolio() -> Generator[portfolios.Portfolio]:
     """setup of tests"""
     parent_key = f"{tutil.TEMP_KEY}-portfolio-{os.getpid()}"
@@ -185,13 +176,11 @@ def get_test_subportfolio() -> Generator[portfolios.Portfolio]:
         except exceptions.ObjectNotFound:
             pass
         parent.key = parent_key
-        try:
+        with contextlib.suppress(exceptions.ObjectNotFound):
             parent.delete()
-        except exceptions.ObjectNotFound:
-            pass
 
 
-@pytest.fixture
+@pytest.fixture()
 def get_test_qp() -> Generator[qualityprofiles.QualityProfile]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-qualityprofile-{os.getpid()}"
@@ -203,21 +192,18 @@ def get_test_qp() -> Generator[qualityprofiles.QualityProfile]:
     except exceptions.ObjectNotFound:
         o = qualityprofiles.QualityProfile.create(endpoint=tutil.SQ, name=key, language="py")
     yield o
-    try:
+    with contextlib.suppress(exceptions.ObjectNotFound):
         o.delete()
-    except exceptions.ObjectNotFound:
-        pass
 
 
-@pytest.fixture
+@pytest.fixture()
 def get_test_issue() -> Generator[issues.Issue]:
     """setup of tests"""
     issues_d = issues.Issue.search_by_project(endpoint=tutil.SQ, project_key=tutil.LIVE_PROJECT)
-    yield issues_d[TEST_ISSUE]
-    # Teardown: Clean up resources (if any) after the test - Nothing in that case
+    return issues_d[TEST_ISSUE]
 
 
-@pytest.fixture
+@pytest.fixture()
 def get_test_user() -> Generator[users.User]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-user-{os.getpid()}"
@@ -237,22 +223,18 @@ def get_test_user() -> Generator[users.User]:
                 o.remove_from_group(g)
     yield o
     if o:
-        try:
+        with contextlib.suppress(exceptions.ObjectNotFound):
             (o.name, o.user_id, o.login) = (uid, uname, ulogin)
             for g in o.groups():
                 if g != tutil.SQ.default_user_group():
                     o.remove_from_group(g)
             o.delete()
-        except exceptions.ObjectNotFound:
-            pass
 
 
 def rm(file: str) -> None:
     """Removes a file if exists"""
-    try:
+    with contextlib.suppress(FileNotFoundError):
         os.remove(file)
-    except FileNotFoundError:
-        pass
 
 
 def get_temp_filename(ext: str) -> str:
@@ -264,7 +246,7 @@ def get_temp_filename(ext: str) -> str:
     return file
 
 
-@pytest.fixture
+@pytest.fixture()
 def csv_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("csv")
@@ -273,7 +255,7 @@ def csv_file() -> Generator[str]:
         rm(file)
 
 
-@pytest.fixture
+@pytest.fixture()
 def txt_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("txt")
@@ -282,7 +264,7 @@ def txt_file() -> Generator[str]:
         rm(file)
 
 
-@pytest.fixture
+@pytest.fixture()
 def json_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("json")
@@ -291,7 +273,7 @@ def json_file() -> Generator[str]:
         rm(file)
 
 
-@pytest.fixture
+@pytest.fixture()
 def yaml_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("yaml")
@@ -300,7 +282,7 @@ def yaml_file() -> Generator[str]:
         rm(file)
 
 
-@pytest.fixture
+@pytest.fixture()
 def sarif_file() -> Generator[str]:
     """setup of tests"""
     file = get_temp_filename("sarif")
@@ -309,19 +291,17 @@ def sarif_file() -> Generator[str]:
         rm(file)
 
 
-@pytest.fixture
+@pytest.fixture()
 def get_test_quality_gate() -> Generator[qualitygates.QualityGate]:
     """setup of tests"""
     sonar_way = qualitygates.QualityGate.get_object(tutil.SQ, tutil.SONAR_WAY)
     o = sonar_way.copy(tutil.TEMP_KEY)
     yield o
-    try:
+    with contextlib.suppress(exceptions.ObjectNotFound):
         o.delete()
-    except exceptions.ObjectNotFound:
-        pass
 
 
-@pytest.fixture
+@pytest.fixture()
 def get_test_group() -> Generator[groups.Group]:
     """setup of tests"""
     key = f"{tutil.TEMP_KEY}-group-{os.getpid()}"
@@ -339,14 +319,13 @@ def get_test_group() -> Generator[groups.Group]:
     yield o
     if o:
         o.key, o.group_id = key, oid
-        try:
+        with contextlib.suppress(exceptions.ObjectNotFound):
             o.delete()
-        except exceptions.ObjectNotFound:
-            pass
 
 
-@pytest.fixture
+@pytest.fixture()
 def get_60_groups() -> Generator[list[groups.Group]]:
+    """setup of tests"""
     group_list = []
     if not tutil.SQ.is_sonarcloud():
         for i in range(60):
@@ -361,8 +340,9 @@ def get_60_groups() -> Generator[list[groups.Group]]:
         g.delete()
 
 
-@pytest.fixture
+@pytest.fixture()
 def get_60_users() -> Generator[list[users.User]]:
+    """setup of tests"""
     user_list = []
     for i in range(60):
         u_name = f"User-{tutil.TEMP_KEY}{i}"
