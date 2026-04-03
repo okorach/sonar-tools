@@ -40,6 +40,9 @@ do
     if [[ "${target}" != "cloud" ]]; then
         skippedTests="--ignore=${ROOT_DIR}/test/unit/test_common_sonarcloud.py"
     fi
+    echo "===================================================================================\n"
+    echo "       Running tests for platform: ${target}\n"
+    echo "===================================================================================\n"
     SONAR_TEST_PLATFORM="${target}" poetry run coverage run --append --branch --source="${ROOT_DIR}" \
         -m pytest --platform="${target}" "${ROOT_DIR}/test/unit/" \
         --ignore="${ROOT_DIR}/test/unit/test_common_audit.py" \
