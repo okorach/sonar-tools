@@ -30,7 +30,6 @@ import pytest
 import utilities as tutil
 from sonar import errcodes as e
 import cli.options as opt
-from sonar.util import constants as c
 from sonar.cli import audit, maturity
 
 CMD_ONLY = "sonar-audit.py"
@@ -64,20 +63,16 @@ def test_audit(csv_file: Generator[str]) -> None:
     audit_file = f"{tutil.FILES_ROOT}/audit.{platform}.csv"
     if platform is None or not os.path.exists(audit_file):
         audit_file = f"{tutil.FILES_ROOT}/audit.csv"
-    with open(csv_file, mode="r", encoding="utf-8") as fd:
+    with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         next(reader)
-        for row in reader:
-            problems.append((row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4]))))
-    old_problems = []
-    with open(audit_file, mode="r", encoding="utf-8") as fd:
+        problems = [tuple((row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4])))) for row in reader]
+    with open(audit_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         next(reader)
-        for row in reader:
-            old_problems.append((row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4]))))
+        old_problems = [tuple(row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4]))) for row in reader]
     for row in old_problems:
-        if row not in problems:
-            assert False, f"Problem {row} not found in new audit"
+        assert row in problems, f"Problem {row} not found in new audit"
     assert problems_present(csv_file, problems)
 
 

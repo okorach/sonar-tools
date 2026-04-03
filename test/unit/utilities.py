@@ -40,7 +40,6 @@ from sonar import logging, exceptions
 from sonar import utilities as util
 from sonar import platform
 import cli.options as opt
-import credentials as creds
 
 TEST_LOGFILE = "pytest.log"
 LOGGER_COUNT = 0
