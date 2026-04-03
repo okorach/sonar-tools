@@ -26,7 +26,6 @@ from sonar import settings, exceptions
 
 def test_set_single_valued() -> None:
     """test_set_single_valued_setting"""
-
     o = settings.Setting.get_object(tutil.SQ, "sonar.dbcleaner.daysBeforeDeletingClosedIssues")
     assert o.value == 30
     assert o.set(60)
@@ -37,7 +36,6 @@ def test_set_single_valued() -> None:
 
 def test_set_boolean() -> None:
     """test_set_boolean_setting"""
-
     o = settings.Setting.get_object(tutil.SQ, "sonar.cpd.cross_project")
     assert o.value is False
     assert o.set(True)
