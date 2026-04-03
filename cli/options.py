@@ -213,8 +213,16 @@ def parse_and_check(parser: ArgumentParser, logger_name: Optional[str] = None, v
         kwargs[URL] = kwargs[URL].replace("http://localhost", "http://host.docker.internal")
     kwargs = __convert_args_to_lists(kwargs=kwargs)
     log.debug("CLI arguments = %s", util.json_dump(sutil.redact_tokens(kwargs)))
-    if not kwargs.get(IMPORT, False) and not kwargs.get(VALIDATE_FILE, False) and not kwargs.get(CONVERT_FROM, False):
-        __check_file_writeable(kwargs.get(REPORT_FILE))
+    if kwargs.get(VALIDATE_FILE, False):
+        if not kwargs.get(REPORT_FILE, False):
+            raise ArgumentsError(f"File (--{REPORT_FILE} option) is mandatory with options --{VALIDATE_FILE}")
+        return args
+    if kwargs.get(CONVERT_FROM, False):
+        if not kwargs.get(CONVERT_TO, False):
+            __check_file_writeable(kwargs.get(CONVERT_TO))
+        return args
+    if not kwargs.get(IMPORT, False):
+        __check_file_writeable(kwargs.get(IMPORT))
     # Verify version randomly once every 10 runs
     if not kwargs[SKIP_VERSION_CHECK] and random.randrange(10) == 0:
         sutil.check_last_version(f"https://pypi.org/simple/{tool}")

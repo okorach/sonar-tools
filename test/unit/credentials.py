@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # sonar-tools tests
 # Copyright (C) 2024-2026 Olivier Korach
@@ -18,19 +17,20 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
+"""Define parameters that are different from platform to platform"""
 
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 _PLATFORMS = {
     "latest": {
         "TARGET_PLATFORM": "http://localhost:10000",
         "TARGET_TOKEN": os.getenv("SONAR_TOKEN_LATEST_ADMIN_USER"),
-        "ORGANIZATION": None,
+        "ORGANIZATION": "okorach-oss",
         "ISSUE_FP": "64e848c0-d5f4-402e-8c80-af6536041b5e",
         "ISSUE_FP_NBR_CHANGELOGS": 15,
-        "ISSUE_FP_CHANGELOG_DATE": datetime(2025, 11, 2),
+        "ISSUE_FP_CHANGELOG_DATE": datetime(2025, 11, 2, tzinfo=timezone.utc),
         "ISSUE_ACCEPTED": "b6637cb9-3be1-4160-9d08-84622a818ff6",
         "NBR_PROJECTS": 70,
         "ADMIN_USER": "admin",
@@ -40,10 +40,10 @@ _PLATFORMS = {
     "20261": {
         "TARGET_PLATFORM": "http://localhost:20261",
         "TARGET_TOKEN": os.getenv("SONAR_TOKEN_LATEST_ADMIN_USER"),
-        "ORGANIZATION": None,
+        "ORGANIZATION": "okorach-oss",
         "ISSUE_FP": "64e848c0-d5f4-402e-8c80-af6536041b5e",
         "ISSUE_FP_NBR_CHANGELOGS": 15,
-        "ISSUE_FP_CHANGELOG_DATE": datetime(2025, 11, 2),
+        "ISSUE_FP_CHANGELOG_DATE": datetime(2025, 11, 2, tzinfo=timezone.utc),
         "ISSUE_ACCEPTED": "b6637cb9-3be1-4160-9d08-84622a818ff6",
         "NBR_PROJECTS": 70,
         "ADMIN_USER": "admin",
@@ -53,10 +53,10 @@ _PLATFORMS = {
     "20251": {
         "TARGET_PLATFORM": "http://localhost:20251",
         "TARGET_TOKEN": os.getenv("SONAR_TOKEN_20251_ADMIN_USER"),
-        "ORGANIZATION": None,
+        "ORGANIZATION": "okorach-oss",
         "ISSUE_FP": "1a5e12a2-3db8-41b3-9414-d7275371b6d3",
         "ISSUE_FP_NBR_CHANGELOGS": 31,
-        "ISSUE_FP_CHANGELOG_DATE": datetime(2025, 10, 23),
+        "ISSUE_FP_CHANGELOG_DATE": datetime(2025, 10, 23, tzinfo=timezone.utc),
         "ISSUE_ACCEPTED": "f2322714-7955-4134-923e-5353959b6e1f",
         "NBR_PROJECTS": 70,
         "ADMIN_USER": "admin",
@@ -66,10 +66,10 @@ _PLATFORMS = {
     "99": {
         "TARGET_PLATFORM": "http://localhost:9900",
         "TARGET_TOKEN": os.getenv("SONAR_TOKEN_99_ADMIN_USER"),
-        "ORGANIZATION": None,
+        "ORGANIZATION": "okorach-oss",
         "ISSUE_FP": "AZrWSZgXG2ojjjMGNBfu",
         "ISSUE_FP_NBR_CHANGELOGS": 20,
-        "ISSUE_FP_CHANGELOG_DATE": datetime(2025, 12, 1),
+        "ISSUE_FP_CHANGELOG_DATE": datetime(2025, 12, 1, tzinfo=timezone.utc),
         "ISSUE_ACCEPTED": "AZrWSZgXG2ojjjMGNBfw",
         "NBR_PROJECTS": 60,
         "ADMIN_USER": "admin",
@@ -79,10 +79,10 @@ _PLATFORMS = {
     "cb": {
         "TARGET_PLATFORM": "http://localhost:9000",
         "TARGET_TOKEN": os.getenv("SONAR_TOKEN_LATEST_ADMIN_USER"),
-        "ORGANIZATION": None,
+        "ORGANIZATION": "okorach-oss",
         "ISSUE_FP": "64e848c0-d5f4-402e-8c80-af6536041b5e",
         "ISSUE_FP_NBR_CHANGELOGS": 15,
-        "ISSUE_FP_CHANGELOG_DATE": datetime(2025, 11, 2),
+        "ISSUE_FP_CHANGELOG_DATE": datetime(2025, 11, 2, tzinfo=timezone.utc),
         "ISSUE_ACCEPTED": "e9eb08fe-bb53-443a-8a92-425589807c78",
         "NBR_PROJECTS": 70,
         "ADMIN_USER": "admin",
@@ -114,8 +114,6 @@ _cfg = _PLATFORMS[_platform]
 TARGET_PLATFORM = _cfg["TARGET_PLATFORM"]
 TARGET_TOKEN = _cfg["TARGET_TOKEN"]
 ORGANIZATION = _cfg["ORGANIZATION"]
-print(f"PLATFORM: {_platform} ({TARGET_PLATFORM})")
-print(f"ORGA: {ORGANIZATION}")
 
 ISSUE_FP = _cfg["ISSUE_FP"]
 ISSUE_FP_NBR_CHANGELOGS = _cfg["ISSUE_FP_NBR_CHANGELOGS"]

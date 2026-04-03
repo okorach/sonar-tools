@@ -37,7 +37,7 @@ GROUP2 = credentials.ADMIN_GROUP
 
 
 def test_get_object() -> None:
-    """Test group get_obejct"""
+    """test_get_object"""
     for name in GROUP1, GROUP2:
         gr = Group.get_object(endpoint=tutil.SQ, name=name)
         assert gr.name == name
@@ -54,7 +54,7 @@ def test_get_object() -> None:
 
 
 def test_more_than_50_groups(get_60_groups: Generator[list[Group]]) -> None:
-    # Count groups first
+    """test_more_than_50_groups"""
     group_list = get_60_groups
     Group.clear_cache()
     new_group_list = Group.search(tutil.SQ)
@@ -63,27 +63,32 @@ def test_more_than_50_groups(get_60_groups: Generator[list[Group]]) -> None:
 
 
 def test_read_non_existing() -> None:
+    """test_read_non_existing"""
     with pytest.raises(exceptions.ObjectNotFound):
         Group.get_object(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY)
 
 
 def test_create_already_exists(get_test_group: Generator[Group]) -> None:
+    """test_create_already_exists"""
     gr = get_test_group
     with pytest.raises(exceptions.ObjectAlreadyExists):
         Group.create(endpoint=tutil.SQ, name=gr.name)
 
 
 def test_size() -> None:
+    """test_size"""
     gr = Group.get_object(endpoint=tutil.SQ, name=tutil.SQ.default_user_group())
     assert gr.size() > 4
 
 
 def test_url() -> None:
+    """test_url"""
     gr = Group.get_object(endpoint=tutil.SQ, name=tutil.SQ.default_user_group())
     assert gr.url() == f"{tutil.SQ.external_url}/admin/groups"
 
 
 def test_remove_non_existing_user(get_test_group: Generator[Group], get_test_user: Generator[User]) -> None:
+    """test_remove_non_existing_user"""
     gr: Group = get_test_group
     u: User = get_test_user
 
@@ -97,12 +102,14 @@ def test_remove_non_existing_user(get_test_group: Generator[Group], get_test_use
 
 
 def test_audit_empty(get_test_group: Generator[Group]) -> None:
+    """test_audit_empty"""
     gr: Group = get_test_group
     settings = {"audit.groups.empty": True}
     assert len(gr.audit(settings)) == 1
 
 
 def test_to_json(get_test_group: Generator[Group]) -> None:
+    """test_to_json"""
     gr: Group = get_test_group
     json_data = gr.to_json()
     assert json_data["name"].startswith(f"{tutil.TEMP_KEY}-group-")
@@ -124,6 +131,7 @@ def test_to_json(get_test_group: Generator[Group]) -> None:
 
 
 def test_import() -> None:
+    """test_import"""
     data = {}
     groups.import_config(tutil.SQ, data)
     data = {
@@ -142,6 +150,7 @@ def test_import() -> None:
 
 
 def test_get_from_id(get_test_group: Generator[Group]) -> None:
+    """test_get_from_id"""
     gr: Group = get_test_group
     if tutil.SQ.version() >= c.GROUP_API_V2_INTRO_VERSION:
         gr2 = groups.get_object_from_id(tutil.SQ, gr.group_id)
@@ -152,15 +161,15 @@ def test_get_from_id(get_test_group: Generator[Group]) -> None:
 
 
 def test_create_or_update(get_test_group: Generator[Group]) -> None:
+    """test_create_or_update"""
     gr: Group = get_test_group
-    print(f"Testing create_or_update with group '{gr.name}'")
     gr2 = groups.create_or_update(tutil.SQ, gr.name, "Some new group description")
-    print(f"Testing create_or_update with group 2 '{gr2.name}'")
     assert gr2 is gr
     assert gr.description == "Some new group description"
 
 
 def test_set_name(get_test_group: Generator[Group]) -> None:
+    """test_set_name"""
     gr: Group = get_test_group
     assert gr.name.startswith(f"{tutil.TEMP_KEY}-group-")
     for name in "Some group", "FOOBAR":
