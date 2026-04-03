@@ -36,12 +36,12 @@ from sonar.qualityprofiles import QualityProfile
 from sonar.issues import Issue
 from sonar.users import User
 from sonar.groups import Group
+from sonar.projects import Project
+from sonar.applications import Application
+from sonar.portfolios import Portfolio
 
 if TYPE_CHECKING:
     from collections.abc import Generator
-    from sonar.projects import Project
-    from sonar.applications import Application
-    from sonar.portfolios import Portfolio
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
