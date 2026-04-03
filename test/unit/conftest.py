@@ -35,10 +35,11 @@ import utilities as tutil
 from sonar import projects, applications, portfolios, qualityprofiles, qualitygates, exceptions, issues, users, groups
 import sonar.util.constants as c
 
+
 def pytest_addoption(parser: pytest.Parser) -> None:
-    """Add command line options to pytest
-    """
+    """Add command line options to pytest"""
     parser.addoption("--platform", default="latest", help="SonarQube platform target")
+
 
 def pytest_configure(config: pytest.Config) -> None:
     """Configure pytest"""
