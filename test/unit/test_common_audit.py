@@ -58,10 +58,21 @@ def test_audit(csv_file: Generator[str]) -> None:
     # Ensure no duplicate alarms #1478
     problems = []
     regexp = re.compile(r"\d+\\ days")
-    with open(f"{tutil.FILES_ROOT}/audit.csv", mode="r", encoding="utf-8") as fd:
+    platform = os.environ.get("SONAR_TEST_PLATFORM")
+    csv_file = "audit.csv"
+    audit_file = f"{tutil.FILES_ROOT}/audit.{platform}.csv"
+    if platform is None or not os.path.exists(audit_file):
+        audit_file = f"{tutil.FILES_ROOT}/audit.csv"
+    with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
-        for row in reader:
-            problems.append((row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4]))))
+        next(reader)
+        problems = [tuple((row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4])))) for row in reader]
+    with open(audit_file, encoding="utf-8") as fd:
+        reader = csv.reader(fd)
+        next(reader)
+        old_problems = [tuple(row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4]))) for row in reader]
+    for row in old_problems:
+        assert row in problems, f"Problem {row} not found in new audit"
     assert problems_present(csv_file, problems)
 
 

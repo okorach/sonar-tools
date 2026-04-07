@@ -30,7 +30,7 @@ function create_fresh_project {
     opts=("$@")
     opt_org=""
     if [[ "${url}" = "https://sonarcloud.io" ]]; then
-        opt_org="-Dsonar.organization=-oss"
+        opt_org="-Dsonar.organization=okorach-oss"
     fi
     opt_token="-Dsonar.token=${token}"
     if [[ "${url}" = "${SONAR_HOST_URL_99}" ]]; then

@@ -31,7 +31,7 @@ from datetime import datetime
 import traceback
 
 from http import HTTPStatus
-from requests import HTTPError, RequestException
+from requests import RequestException
 
 import sonar.logging as log
 from sonar.components import Component
@@ -439,11 +439,10 @@ class Project(Component):
         try:
             self.get("alm_settings/validate_binding", params={"project": self.key})
             log.debug("%s binding is valid", self)
-        except (ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException, exceptions.SonarException) as e:
             sutil.handle_error(e, f"auditing binding of {self}", catch_all=True)
             # Hack: 8.9 returns 404, 9.x returns 400
-            if isinstance(e, HTTPError) and e.response.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
-                return [Problem(get_rule(RuleId.PROJ_INVALID_BINDING), self, str(self))]
+            return [Problem(get_rule(RuleId.PROJ_INVALID_BINDING), self, str(self))]
         return []
 
     def get_type(self) -> str:

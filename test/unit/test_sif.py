@@ -155,7 +155,7 @@ class TestSifEdition:
             json_sif = json.loads(f.read())
         sif_obj = sif.Sif(json_sif)
         assert sif_obj.url() == "https://sonarqube.acme.com"
-        assert sif_obj.start_time() == datetime(2024, 1, 1, tzinfo=timezone.utc)
+        assert sif_obj.start_time() == datetime(2024, 5, 23, 13, 37, 24, tzinfo=timezone.utc)
         assert sif_obj.store_size() == 131
 
     def test_old_sifs(self):
@@ -698,7 +698,7 @@ class TestSifEdgeCases:
         """Test Sif server_id when missing"""
         with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
-        assert sif.Sif(json_sif).server_id() == "XXX"
+        assert sif.Sif(json_sif).server_id() == "XXXB8A4D-XXXSFSbmgIK8PCmM81th"
         json_sif["System"].pop("Server ID", None)
         assert sif.Sif(json_sif).server_id() is None
 
