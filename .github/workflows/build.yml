@@ -35,13 +35,6 @@ jobs:
           poetry build
         continue-on-error: false
         # Linting is done in the run_linters.sh script
-
-      - name: Prep tests
-        # Keep this stage so that the test dirs exists and scanner is happy with sonar.tests property
-        working-directory: .
-        run: |
-          chmod +x test/build
-          test/build
       
       # - name: Run tests
       #  working-directory: .
