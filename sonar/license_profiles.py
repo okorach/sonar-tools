@@ -169,14 +169,9 @@ class LicenseProfile(SqObject):
             json_data["isDefault"] = self.is_default
         if self._categories:
             json_data["categories"] = [{"key": cat["key"], "policy": cat["policy"]} for cat in self._categories]
-        # Only export licenses whose policy differs from their category's policy (overrides)
-        license_overrides = _get_license_overrides(self._categories, self._licenses)
-        if license_overrides:
-            json_data["licenses"] = license_overrides
-        elif full and self._licenses:
+        if self._licenses:
             json_data["licenses"] = [
-                {"spdxLicenseId": lic.get("spdxLicenseId", ""), "name": lic.get("name", ""), "policy": lic["policy"]}
-                for lic in self._licenses
+                {"spdxLicenseId": lic.get("spdxLicenseId", ""), "name": lic.get("name", ""), "policy": lic["policy"]} for lic in self._licenses
             ]
         return util.remove_nones(json_data)
 
@@ -217,7 +212,11 @@ class LicenseProfile(SqObject):
         for cat in categories:
             try:
                 api, _, params, _ = self.endpoint.api.get_details(
-                    self, Oper.UPDATE_CATEGORY, key=self.key, categoryKey=cat["key"], policy=cat["policy"],
+                    self,
+                    Oper.UPDATE_CATEGORY,
+                    key=self.key,
+                    categoryKey=cat["key"],
+                    policy=cat["policy"],
                 )
                 ok = self.patch(api, params=params).ok and ok
             except exceptions.SonarException as e:
@@ -231,7 +230,11 @@ class LicenseProfile(SqObject):
             try:
                 lic_id = lic.get("licensePolicyId", lic.get("spdxLicenseId", lic.get("id", "")))
                 api, _, params, _ = self.endpoint.api.get_details(
-                    self, Oper.UPDATE_LICENSE, key=self.key, licensePolicyId=lic_id, policy=lic["policy"],
+                    self,
+                    Oper.UPDATE_LICENSE,
+                    key=self.key,
+                    licensePolicyId=lic_id,
+                    policy=lic["policy"],
                 )
                 ok = self.patch(api, params=params).ok and ok
             except exceptions.SonarException as e:
@@ -252,21 +255,7 @@ def _get_full_profile(endpoint: Platform, profile_data: ApiPayload) -> ApiPayloa
         log.warning("Could not fetch full data for license profile '%s'", profile_data.get("name", key))
         return profile_data
     else:
-        return json.loads(endpoint.get(api).text)
-
-
-def _get_license_overrides(categories: list[dict[str, Any]], licenses: list[dict[str, Any]]) -> list[dict[str, str]]:
-    """Returns only licenses whose policy differs from their category's policy"""
-    if not licenses:
-        return []
-    cat_policies = {cat["key"]: cat["policy"] for cat in categories}
-    overrides = []
-    for lic in licenses:
-        cat_key = lic.get("categoryKey", "")
-        cat_policy = cat_policies.get(cat_key)
-        if cat_policy and lic.get("policy") != cat_policy:
-            overrides.append({"spdxLicenseId": lic.get("spdxLicenseId", ""), "name": lic.get("name", ""), "policy": lic["policy"]})
-    return overrides
+        return profile_data | json.loads(endpoint.get(api).text)
 
 
 def sca_enabled(endpoint: Platform) -> bool:
