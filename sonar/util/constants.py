@@ -38,6 +38,7 @@ CONFIG_KEY_PROFILES = "qualityProfiles"
 CONFIG_KEY_PROJECTS = "projects"
 CONFIG_KEY_APPS = "applications"
 CONFIG_KEY_PORTFOLIOS = "portfolios"
+CONFIG_KEY_LICENSE_PROFILES = "licenseProfiles"
 
 CE = "community"
 DE = "developer"

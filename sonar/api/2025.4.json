@@ -195,6 +195,7 @@
                 "author",
                 "branch",
                 "componentKeys",
+                "components",
                 "createdAfter",
                 "createdAt",
                 "createdBefore",
@@ -202,7 +203,7 @@
                 "cwe",
                 "directories",
                 "facets",
-                "fileUuids",
+                "files",
                 "impactSeverities",
                 "impactSoftwareQualities",
                 "inNewCodePeriod",
@@ -225,6 +226,7 @@
                 "severities",
                 "sinceLeakPeriod",
                 "sonarsourceSecurity",
+                "statuses",
                 "issueStatuses",
                 "tags",
                 "timeZone",
@@ -320,52 +322,86 @@
         }
     },
     "User": {
+        "CREATE": {
+            "method": "POST",
+            "api": "v2/users-management/users",
+            "content_type": "application/json",
+            "params": [
+                "login",
+                "name",
+                "email",
+                "password",
+                "local",
+                "scmAccounts"
+            ]
+        },
         "GET": {
             "method": "GET",
-            "api": "api/users/search",
+            "api": "v2/users-management/users/{id}",
+            "return_field": "user"
+        },
+        "UPDATE": {
+            "method": "PATCH",
+            "api": "v2/users-management/users/{id}",
+            "content_type": "application/merge-patch+json",
             "params": [
-                "ids",
-                "p",
-                "ps",
-                "q"
-            ],
-            "return_field": "users",
-            "page_field": "pageIndex",
-            "max_page_size": 500
+                "login",
+                "name",
+                "email",
+                "scmAccounts"
+            ]
+        },
+        "DELETE": {
+            "method": "DELETE",
+            "api": "v2/users-management/users/{id}"
         },
         "SEARCH": {
             "method": "GET",
-            "api": "api/users/search",
+            "api": "v2/users-management/users",
             "params": [
-                "ids",
-                "p",
-                "ps",
-                "q"
+                "organization",
+                "active",
+                "managed",
+                "q",
+                "groupId",
+                "pageIndex",
+                "pageSize",
+                "sonarLintLastConnectionDateFrom",
+                "sonarLintLastConnectionDateTo"
             ],
             "return_field": "users",
             "page_field": "pageIndex",
             "max_page_size": 500
         },
+        "UPDATE_LOGIN": {
+            "method": "PATCH",
+            "api": "v2/users-management/users/{id}",
+            "content_type": "application/merge-patch+json",
+            "params": [
+                "login",
+                "name",
+                "email",
+                "scmAccounts"
+            ]
+        },
         "LIST_GROUPS": {
             "method": "GET",
-            "api": "api/users/groups",
+            "api": "v2/authorizations/group-memberships",
             "params": [
-                "p",
-                "ps",
-                "q",
-                "selected",
-                "organization",
-                "login"
+                "userId",
+                "groupId",
+                "pageIndex",
+                "pageSize"
             ],
-            "return_field": "groups",
-            "page_field": "pageIndex",
+            "return_field": "groupMemberships",
             "max_page_size": 500
         }
     },
     "Group": {
         "CREATE": {
             "method": "POST",
-            "api": "api/user_groups/create",
+            "api": "v2/authorizations/groups",
+            "content_type": "application/json",
             "params": [
                 "name",
                 "description"
@@ -373,71 +409,63 @@
         },
         "GET": {
             "method": "GET",
-            "api": "api/user_groups/search",
-            "params": [
-                "q",
-                "p",
-                "ps"
-            ],
-            "return_field": "groups"
+            "api": "v2/authorizations/groups/{id}",
+            "return_field": ""
         },
         "UPDATE": {
-            "method": "POST",
-            "api": "api/user_groups/update",
+            "method": "PATCH",
+            "api": "v2/authorizations/groups/{id}",
+            "content_type": "application/merge-patch+json",
             "params": [
-                "currentName",
                 "name",
                 "description"
             ]
         },
         "DELETE": {
-            "method": "POST",
-            "api": "api/user_groups/delete",
-            "params": [
-                "name"
-            ]
+            "method": "DELETE",
+            "api": "v2/authorizations/groups/{id}"
         },
         "SEARCH": {
             "method": "GET",
-            "api": "api/user_groups/search",
+            "api": "v2/authorizations/groups",
             "params": [
+                "managed",
+                "userId",
+                "organization",
                 "q",
-                "p",
-                "ps"
+                "pageIndex",
+                "pageSize"
             ],
-            "page_field": "p",
+            "page_field": "pageIndex",
             "return_field": "groups",
             "max_page_size": 500
         },
         "LIST_MEMBERS": {
             "method": "GET",
-            "api": "api/user_groups/users",
+            "api": "v2/authorizations/group-memberships",
             "params": [
-                "name",
-                "p",
-                "ps",
-                "q",
-                "selected"
+                "userId",
+                "groupId",
+                "pageIndex",
+                "pageSize"
             ],
-            "page_field": "p",
-            "return_field": "users",
+            "page_field": "pageIndex",
+            "return_field": "groupMemberships",
             "max_page_size": 500
         },
         "ADD_USER": {
             "method": "POST",
-            "api": "api/user_groups/add_user",
+            "api": "v2/authorizations/group-memberships",
+            "content_type": "application/json",
             "params": [
-                "login",
-                "name"
-            ]
+                "groupId",
+                "userId"
+            ],
+            "return_field": "groupMemberships"
         },
         "REMOVE_USER": {
-            "method": "POST",
-            "api": "api/user_groups/remove_user",
-            "params": [
-                "login",
-                "name"
-            ]
+            "method": "DELETE",
+            "api": "v2/authorizations/group-memberships/{id}"
         }
     },
     "Metric": {
@@ -534,7 +562,7 @@
             "method": "POST",
             "api": "api/qualitygates/destroy",
             "params": [
-                "id"
+                "name"
             ]
         },
         "SEARCH": {
@@ -554,6 +582,7 @@
             "method": "GET",
             "api": "api/qualitygates/search",
             "params": [
+                "gateName",
                 "gateId",
                 "p",
                 "ps"
@@ -566,7 +595,7 @@
             "method": "POST",
             "api": "api/qualitygates/create_condition",
             "params": [
-                "gateId",
+                "gateName",
                 "metric",
                 "op",
                 "error"
@@ -1149,7 +1178,7 @@
                 "component",
                 "branch"
             ],
-            "return_field": "component"
+            "return_field": "settings"
         },
         "UPDATE": {
             "method": "POST",
@@ -1170,7 +1199,8 @@
                 "keys",
                 "component",
                 "branch"
-            ]
+            ],
+            "return_field": "settings"
         },
         "LIST_DEFINITIONS": {
             "method": "GET",
@@ -1326,19 +1356,6 @@
             "return_field": "export_findings"
         }
     },
-    "Organization": {
-        "SEARCH": {
-            "method": "GET",
-            "api": "api/organizations/search",
-            "params": [
-                "member",
-                "organizations"
-            ],
-            "return_field": "organizations",
-            "page_field": "p",
-            "max_page_size": 500
-        }
-    },
     "Task": {
         "SEARCH": {
             "method": "GET",
@@ -1367,6 +1384,14 @@
                 "additionalFields"
             ],
             "return_field": "task"
+        }
+    },
+    "PermissionTemplate": {
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/permissions/search_templates",
+            "params": ["q"],
+            "return_field": "permissionTemplates"
         }
     },
     "Language": {
@@ -1430,6 +1455,15 @@
         "SELF_TEST": {
             "method": "GET",
             "api": "api/v2/sca/self-test"
+        }
+    },
+    "Platform": {
+        "GET_LOGS": {
+            "method": "GET",
+            "api": "api/system/logs",
+            "params": [
+                "name"
+            ]
         }
     }
 }

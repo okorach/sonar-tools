@@ -336,6 +336,86 @@
                 }
             }
         },
+        "licenseProfiles": {
+            "type": "array",
+            "description": "The list of SCA license profiles",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "A license profile",
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The license profile name"
+                    },
+                    "isDefault": {
+                        "type": "boolean",
+                        "description": "Whether this license profile is the default one"
+                    },
+                    "categories": {
+                        "type": "array",
+                        "description": "License category policies",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                "key",
+                                "policy"
+                            ],
+                            "properties": {
+                                "key": {
+                                    "type": "string",
+                                    "description": "The license category key"
+                                },
+                                "policy": {
+                                    "type": "string",
+                                    "description": "The policy for this category",
+                                    "enum": [
+                                        "ALLOW",
+                                        "DENY",
+                                        "REVIEW"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "licenses": {
+                        "type": "array",
+                        "description": "Individual license policy overrides",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                "spdxLicenseId",
+                                "policy"
+                            ],
+                            "properties": {
+                                "spdxLicenseId": {
+                                    "type": "string",
+                                    "description": "The SPDX license identifier"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "The license display name"
+                                },
+                                "policy": {
+                                    "type": "string",
+                                    "description": "The policy for this license",
+                                    "enum": [
+                                        "ALLOW",
+                                        "DENY",
+                                        "REVIEW"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "projects": {
             "type": "array",
             "description": "The list of projects",
