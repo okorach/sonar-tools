@@ -163,6 +163,7 @@ class LicenseProfile(SqObject):
 
     def to_json(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
         """Returns JSON representation of object"""
+        log.info("Exporting %s", str(self))
         full = export_settings.get("FULL_EXPORT", False)
         json_data = {"name": self.name}
         if self.is_default or full:
@@ -225,23 +226,45 @@ class LicenseProfile(SqObject):
         return ok
 
     def _update_licenses(self, licenses: list[dict[str, str]], ok: bool) -> bool:
-        """Updates individual license policies (overrides) on this license profile"""
+        """Updates individual license policies on this license profile"""
+        # Fetch the full profile from the API to get the internal license policy IDs
+        spdx_to_id = self._build_spdx_to_id_map()
+        if not spdx_to_id:
+            log.warning("No license entries found in %s, cannot update individual licenses", self)
+            return False
         for lic in licenses:
+            spdx = lic.get("spdxLicenseId", "")
+            lic_policy_id = spdx_to_id.get(spdx)
+            if not lic_policy_id:
+                log.warning("License '%s' not found in %s, skipping", spdx, self)
+                ok = False
+                continue
             try:
-                lic_id = lic.get("licensePolicyId", lic.get("spdxLicenseId", lic.get("id", "")))
                 api, _, params, _ = self.endpoint.api.get_details(
                     self,
                     Oper.UPDATE_LICENSE,
                     key=self.key,
-                    licensePolicyId=lic_id,
+                    licensePolicyId=lic_policy_id,
                     policy=lic["policy"],
                 )
                 ok = self.patch(api, params=params).ok and ok
             except exceptions.SonarException as e:
-                log.warning("Failed to update license '%s' on %s: %s", lic.get("spdxLicenseId", ""), self, e.message)
+                log.warning("Failed to update license '%s' on %s: %s", spdx, self, e.message)
                 ok = False
 
         return ok
+
+    def _build_spdx_to_id_map(self) -> dict[str, str]:
+        """Builds a mapping from spdxLicenseId to internal license policy id by fetching the full profile from the API"""
+        try:
+            api, _, _, _ = self.endpoint.api.get_details(self, Oper.GET, key=self.key)
+            full_data = json.loads(self.endpoint.get(api).text)
+        except exceptions.SonarException:
+            log.warning("Could not fetch full data for %s", self)
+            return {}
+        api_licenses = full_data.get("licenses", [])
+        log.debug("Fetched %d licenses from API for %s", len(api_licenses), self)
+        return {lic["spdxLicenseId"]: lic["id"] for lic in api_licenses if "spdxLicenseId" in lic and "id" in lic}
 
 
 def _get_full_profile(endpoint: Platform, profile_data: ApiPayload) -> ApiPayload:
@@ -317,6 +340,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
         except exceptions.ObjectNotFound:
             log.debug("License profile '%s' not found, creating it", name)
             o = LicenseProfile.create(endpoint, name)
+        log.info("Importing %s", str(o))
         log.debug("Importing %s with %s", str(o), util.json_dump(data))
         ok = o.update(**data) and ok
     return ok
