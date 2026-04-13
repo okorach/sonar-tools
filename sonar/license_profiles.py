@@ -227,25 +227,24 @@ class LicenseProfile(SqObject):
 
     def _update_licenses(self, licenses: list[dict[str, str]], ok: bool) -> bool:
         """Updates individual license policies on this license profile"""
-        # Fetch the full profile from the API to get the internal license policy IDs
-        spdx_to_id = self._build_spdx_to_id_map()
-        if not spdx_to_id:
-            log.warning("No license entries found in %s, cannot update individual licenses", self)
-            return False
+        if not licenses:
+            return ok
+        current_policies = self._get_current_license_policies()
         for lic in licenses:
             spdx = lic.get("spdxLicenseId", "")
-            lic_policy_id = spdx_to_id.get(spdx)
-            if not lic_policy_id:
-                log.warning("License '%s' not found in %s, skipping", spdx, self)
-                ok = False
+            target_policy = lic["policy"]
+            current_policy = current_policies.get(spdx, "")
+            if current_policy == target_policy:
+                log.debug("License '%s' already has policy '%s', skipping", spdx, target_policy)
                 continue
+            log.debug("Updating license '%s' from '%s' to '%s' on %s", spdx, current_policy, target_policy, self)
             try:
                 api, _, params, _ = self.endpoint.api.get_details(
                     self,
                     Oper.UPDATE_LICENSE,
                     key=self.key,
-                    licensePolicyId=lic_policy_id,
-                    policy=lic["policy"],
+                    licensePolicyId=spdx,
+                    policy=target_policy,
                 )
                 ok = self.patch(api, params=params).ok and ok
             except exceptions.SonarException as e:
@@ -254,8 +253,11 @@ class LicenseProfile(SqObject):
 
         return ok
 
-    def _build_spdx_to_id_map(self) -> dict[str, str]:
-        """Builds a mapping from spdxLicenseId to internal license policy id by fetching the full profile from the API"""
+    def _get_current_license_policies(self) -> dict[str, str]:
+        """Fetches current license policies from the API for no-op detection
+
+        :return: Dict mapping spdxLicenseId to current policy
+        """
         try:
             api, _, _, _ = self.endpoint.api.get_details(self, Oper.GET, key=self.key)
             full_data = json.loads(self.endpoint.get(api).text)
@@ -264,7 +266,7 @@ class LicenseProfile(SqObject):
             return {}
         api_licenses = full_data.get("licenses", [])
         log.debug("Fetched %d licenses from API for %s", len(api_licenses), self)
-        return {lic["spdxLicenseId"]: lic["id"] for lic in api_licenses if "spdxLicenseId" in lic and "id" in lic}
+        return {lic["spdxLicenseId"]: lic.get("policy", "") for lic in api_licenses if "spdxLicenseId" in lic}
 
 
 def _get_full_profile(endpoint: Platform, profile_data: ApiPayload) -> ApiPayload:
