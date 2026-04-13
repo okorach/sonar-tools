@@ -45,7 +45,7 @@ from sonar.util import misc
 
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
-from sonar import projects, portfolios, applications
+from sonar import projects, portfolios, applications, license_profiles
 from sonar.util import component_helper
 import sonar.util.common_helper as chelp
 
@@ -55,12 +55,13 @@ TOOL_NAME = "sonar-config"
 FULL_EXPORT = "fullExport"
 EXPORT_EMPTY = "exportEmpty"
 
-_SECTIONS_TO_SORT = ("projects", "applications", "portfolios", "users", "groups", "qualityGates", "qualityProfiles")
+_SECTIONS_TO_SORT = ("projects", "applications", "portfolios", "users", "groups", "qualityGates", "qualityProfiles", "licenseProfiles")
 _SECTIONS_ORDER = (
     "platform",
     "globalSettings",
     "qualityGates",
     "qualityProfiles",
+    "licenseProfiles",
     "projects",
     "applications",
     "portfolios",
@@ -86,6 +87,7 @@ _EXPORT_CALLS = {
     options.WHAT_PORTFOLIOS: [c.CONFIG_KEY_PORTFOLIOS, portfolios.export],
     options.WHAT_USERS: [c.CONFIG_KEY_USERS, users.export],
     options.WHAT_GROUPS: [c.CONFIG_KEY_GROUPS, groups.export],
+    options.WHAT_LICENSE_PROFILES: [c.CONFIG_KEY_LICENSE_PROFILES, license_profiles.export],
 }
 
 WHAT_EVERYTHING = list(_EXPORT_CALLS.keys())[1:]
@@ -153,7 +155,7 @@ def __get_schema(fmt: Optional[str] = "json") -> dict[str, Any]:
 
 def __normalize_json(json_data: dict[str, Any], remove_empty: bool = True, remove_none: bool = True) -> dict[str, Any]:
     """Sorts a JSON file and optionally remove empty and none values"""
-    sort_fields = {"users": "login", "groups": "name", "qualityGates": "name", "qualityProfiles": "language"}
+    sort_fields = {"users": "login", "groups": "name", "qualityGates": "name", "qualityProfiles": "language", "licenseProfiles": "name"}
     log.debug("Normalizing JSON - remove empty = %s, remove nones = %s", str(remove_empty), str(remove_none))
     json_data = util.order_keys(json_data, *_SECTIONS_ORDER)
     for key in [k for k in _SECTIONS_TO_SORT if k in json_data]:
@@ -192,7 +194,7 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
     prefix = ""
     log.info("Waiting %s to write...", object_type)
     objects_exported_as_lists = ("projects", "applications", "users", "portfolios")
-    objects_exported_as_whole = ("qualityGates", "groups", "qualityProfiles")
+    objects_exported_as_whole = ("qualityGates", "groups", "qualityProfiles", "licenseProfiles")
     log.info("Waiting %s to write...", object_type)
     if object_type in objects_exported_as_lists:
         start, stop = ("[", "]")
@@ -345,6 +347,7 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         options.WHAT_PROJECTS: projects.import_config,
         options.WHAT_APPS: applications.import_config,
         options.WHAT_PORTFOLIOS: portfolios.import_config,
+        options.WHAT_LICENSE_PROFILES: license_profiles.import_config,
     }
 
     for what_item, func in calls.items():
