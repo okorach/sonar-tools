@@ -29,8 +29,7 @@ from sonar import devops, settings, tasks, tokens, webhooks
 
 
 def clear(endpoint: Optional[platform.Platform] = None) -> None:
-    """
-    Clear the cache of a given class
+    """Clear the cache of a given class
     :param Platform endpoint: Optional, clears only the cache for this platform if specified, clear all if not
     """
     for obj_class in (

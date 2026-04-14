@@ -25,7 +25,8 @@ import re
 from datetime import datetime, date, timezone, timedelta
 import contextlib
 import sys
-from typing import TextIO, Generator
+from typing import TextIO
+from collections.abc import Generator
 from copy import deepcopy
 
 ISO_DATE_FORMAT = "%04d-%02d-%02d"

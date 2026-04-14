@@ -175,9 +175,8 @@ class Rule(SqObject):
         self._impacts = {}
         if "impacts" in data:
             self._impacts = {imp["softwareQuality"]: imp["severity"] for imp in data["impacts"]}
-        else:
-            if self.type in idefs.STD_TYPES:
-                self._impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
+        elif self.type in idefs.STD_TYPES:
+            self._impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
 
         self.tags: Optional[list[str]] = None if len(data.get("tags", [])) == 0 else data["tags"]
         self.systags = data.get("sysTags", [])
@@ -465,7 +464,6 @@ class Rule(SqObject):
 
     def impacts(self, quality_profile_id: Optional[str] = None, substitute_with_default: bool = True) -> dict[str, str]:
         """Returns the rule clean code attributes"""
-
         if not quality_profile_id or not self.is_active_in_quality_profile(quality_profile_id):
             return self._impacts if len(self._impacts) > 0 else {TYPE_TO_QUALITY[self.type]: self.severity}
         qp = self.__get_quality_profile_data(quality_profile_id)
@@ -607,7 +605,7 @@ def get_all_rules_details(endpoint: Platform, threads: int = 8) -> bool:
                 if i % 100 == 0 or i == nb_rules:
                     log.info("Collected rules details for %d rules out of %d (%d%%)", i, nb_rules, int(100 * i / nb_rules))
             except Exception as e:
-                log.error(f"{str(e)} for {str(future)}.")
+                log.error(f"{e!s} for {future!s}.")
                 ok = False
     return ok
 
@@ -636,4 +634,4 @@ def severities(endpoint: Platform, json_data: dict[str, Any]) -> Optional[dict[s
     if endpoint.is_mqr_mode():
         return {impact["softwareQuality"]: impact["severity"] for impact in json_data.get("impacts", [])}
     else:
-        return json_data.get("severity", None)
+        return json_data.get("severity")

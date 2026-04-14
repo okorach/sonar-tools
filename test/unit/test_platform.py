@@ -64,7 +64,7 @@ def test_get_set_reset_settings() -> None:
 
 
 def test_import() -> None:
-    with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
+    with open(f"{tutil.FILES_ROOT}/config.json", encoding="utf-8") as f:
         json_config = json.load(f)
     nc = next((s for s in json_config["globalSettings"]["generalSettings"] if s["key"] == settings.NEW_CODE_PERIOD), None)
     nc["value"] = "NUMBER_OF_DAYS = 60"

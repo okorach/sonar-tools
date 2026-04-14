@@ -269,7 +269,7 @@ def audit_web(sif_obj: Union[Sif, AppNode], obj_name: str, audit_settings: Confi
     heap_range = audit_settings.get("audit.web.nonDceHeapRange", "1024, 4096")
     if sif_obj.edition() == c.DCE:
         audit_settings.get("audit.web.dceHeapRange", "2048, 8192")
-    (heap_min, heap_max) = [int(s) for s in heap_range.split(",")]
+    (heap_min, heap_max) = (int(s) for s in heap_range.split(","))
     return (
         audit_version(sif_obj, obj_name)
         + __audit_jvm(sif_obj, obj_name, sif_obj.json["Web JVM State"], (heap_min, heap_max))

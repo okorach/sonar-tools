@@ -79,7 +79,7 @@ def load(filename: str) -> dict[str, Any]:
 def configure(config_file: str, package_location: str) -> None:
     """Configures a default config file"""
     template_file = get_install_root() / package_location / config_file
-    with open(template_file, "r", encoding="utf-8") as fh:
+    with open(template_file, encoding="utf-8") as fh:
         text = fh.read()
 
     config_file = f"{os.path.expanduser('~')}{os.sep}.{config_file}"

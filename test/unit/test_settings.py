@@ -57,7 +57,6 @@ def test_multi_valued() -> None:
 
 def test_autodetect_ai() -> None:
     """test_autodetect_ai"""
-
     # Even if invisible in the UI, the setting is present in the API in Community Builds
     if tutil.SQ.version() < (10, 8, 0):
         with pytest.raises(exceptions.ObjectNotFound):

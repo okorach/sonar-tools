@@ -79,8 +79,7 @@ SCANNER_VERSIONS = get_scanners_versions()
 
 
 class Task(SqObject):
-    """
-    Abstraction of the SonarQube "background task" concept
+    """Abstraction of the SonarQube "background task" concept
     """
 
     CACHE = cache.Cache()
@@ -273,8 +272,7 @@ class Task(SqObject):
         return ctxt.get("sonar.scanner.app", "UNKNOWN").upper().replace("SCANNER", "").replace("MSBUILD", "DOTNET").replace("NPM", "CLI")
 
     def error_details(self) -> tuple[Optional[str], Optional[str]]:
-        """
-        :return: The background task error details
+        """:return: The background task error details
         :rtype: tuple (errorMsg (str), stackTrace (str))
         """
         return (self.__json_field("errorMessage"), self.__json_field("errorStackTrace"))

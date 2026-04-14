@@ -19,8 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""
-test utilities
+"""test utilities
 """
 
 from __future__ import annotations
@@ -30,7 +29,8 @@ import os
 import sys
 import datetime
 import re
-import csv, json
+import csv
+import json
 from typing import Optional, Union, Any
 from unittest.mock import patch
 import pytest
@@ -136,7 +136,7 @@ def file_contains(file: str, string: str) -> bool:
     """Returns whether a file contains a given string"""
     if not os.path.isfile(file):
         return False
-    with open(file=file, mode="r", encoding="utf-8") as fh:
+    with open(file=file, encoding="utf-8") as fh:
         content = fh.read()
     return string in content
 
@@ -393,7 +393,7 @@ def csv_col_all_empty(csv_file: str, col_name: str) -> bool:
 
 def read_json(json_file: str) -> dict[str, Any]:
     """Reads a JSON file and returns its content"""
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+    with open(file=json_file, encoding="utf-8") as fh:
         return json.loads(fh.read())
 
 

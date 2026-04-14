@@ -326,11 +326,11 @@ def store_findings(components_list: list[object], endpoint: platform.Platform, p
                     continue
                 __write_findings(found_findings, file, total_findings == 0, **local_params)
                 total_findings += len(found_findings)
-            except TimeoutError as e:
-                log.error(f"Getting findings for {str(comp)} timed out after 60 seconds for {str(future)}.")
+            except TimeoutError:
+                log.error(f"Getting findings for {comp!s} timed out after 60 seconds for {future!s}.")
             except Exception as e:
                 traceback.print_exc()
-                log.error(f"Exception {str(e)} when exporting findings of {str(comp)}.")
+                log.error(f"Exception {e!s} when exporting findings of {comp!s}.")
     __write_footer(file, local_params[options.FORMAT])
     return total_findings
 
@@ -345,7 +345,7 @@ def __turn_off_use_findings_if_needed(endpoint: object, params: dict[str, str]) 
         return params
 
     for p in _OPTIONS_INCOMPATIBLE_WITH_USE_FINDINGS:
-        if params.get(p, None) is not None:
+        if params.get(p) is not None:
             log.warning("Selected search criteria %s will disable --%s", params[p], options.USE_FINDINGS)
             params[options.USE_FINDINGS] = False
             break

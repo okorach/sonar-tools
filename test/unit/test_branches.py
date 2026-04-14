@@ -43,7 +43,6 @@ def verify_branch_support(func: Callable, **kwargs: Any) -> bool:
 
 def test_get_object() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
-
     project = projects.Project.get_object(tutil.SQ, tutil.LIVE_PROJECT)
     if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project=project.key, branch_name="develop"):
         return

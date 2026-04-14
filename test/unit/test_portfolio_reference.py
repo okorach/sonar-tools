@@ -47,7 +47,6 @@ def test_get_object_from_root() -> None:
 
 def test_get_object() -> None:
     """Test get_object method"""
-
     if tutil.SQ.edition() not in c.EDITIONS_SUPPORTING_PORTFOLIOS:
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = pfr.PortfolioReference.get_object(endpoint=tutil.SQ, key=REF_PORTFOLIO, parent_key=EXISTING_PORTFOLIO)
@@ -59,7 +58,6 @@ def test_get_object() -> None:
 
 def test_get_object_not_found() -> None:
     """Test exception raised when providing non existing portfolio reference key"""
-
     if tutil.SQ.edition() not in c.EDITIONS_SUPPORTING_PORTFOLIOS:
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = pfr.PortfolioReference.get_object(endpoint=tutil.SQ, key=REF_PORTFOLIO, parent_key=EXISTING_PORTFOLIO)

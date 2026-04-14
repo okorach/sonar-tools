@@ -18,9 +18,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-Exports/Imports all projects of a SonarQube Server platform
+"""Exports/Imports all projects of a SonarQube Server platform
 
 """
 
@@ -78,10 +76,10 @@ def __import_projects(endpoint: Platform, **kwargs: Any) -> None:
     if not file:
         raise options.ArgumentsError(f"Option --{options.REPORT_FILE} is mandatory to import")
     try:
-        with open(file, "r", encoding="utf-8") as fd:
+        with open(file, encoding="utf-8") as fd:
             data = json.load(fd)
     except json.JSONDecodeError as e:
-        raise options.ArgumentsError(f"JSON decoding error while reading file '{file}': {str(e)}")
+        raise options.ArgumentsError(f"JSON decoding error while reading file '{file}': {e!s}")
 
     if "projects" in data:
         # 3.13 and higher format

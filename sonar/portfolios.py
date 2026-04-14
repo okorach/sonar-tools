@@ -17,9 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-Abstraction of the SonarQube "portfolio" concept
+"""Abstraction of the SonarQube "portfolio" concept
 
 """
 
@@ -529,7 +527,6 @@ class Portfolio(aggregations.Aggregation):
 
     def add_subportfolio(self, key: str, name: Optional[str] = None, by_ref: bool = False) -> Portfolio:
         """Adds a subportfolio to a portfolio, defined by key, name and by reference option"""
-
         log.info("Adding sub-portfolios to %s", str(self))
         if self.is_parent_of(key):
             log.warning("Portfolio '%s' is already subportfolio of %s", key, str(self))
@@ -603,14 +600,14 @@ class Portfolio(aggregations.Aggregation):
 
     def update(self, data: dict[str, Any], recurse: bool) -> None:
         """Updates a portfolio with sonar-config JSON data, if recurse is true, this recurses in sub portfolios"""
-        if "byReference" in data and data["byReference"]:
+        if data.get("byReference"):
             log.debug("Skipping setting portfolio details, it's a reference")
             return
 
         log.debug("Updating details of %s with %s", str(self), str(data))
-        self.set_description(data.get("description", None))
-        self.set_name(data.get("name", None))
-        self.set_visibility(data.get("visibility", None))
+        self.set_description(data.get("description"))
+        self.set_name(data.get("name"))
+        self.set_visibility(data.get("visibility"))
         if "permissions" in data:
             self.set_permissions(data["permissions"])
         log.debug("1.Setting root of %s is %s", str(self), str(self.root_portfolio))

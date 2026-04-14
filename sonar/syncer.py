@@ -218,7 +218,7 @@ def __sync_curated_list(
                 counters[match_type] += 1
             except TimeoutError:
                 counters["timeout"] += 1
-                log.error(f"Finding sync timed out after 60 seconds for {str(future)}, sync killed.")
+                log.error(f"Finding sync timed out after 60 seconds for {future!s}, sync killed.")
             except Exception as e:
                 counters["exception"] += 1
                 log.error(f"Task raised an exception: {e}")

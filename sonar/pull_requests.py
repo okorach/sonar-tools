@@ -17,9 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-Abstraction of the SonarQube "pull request" concept
+"""Abstraction of the SonarQube "pull request" concept
 
 """
 
@@ -67,7 +65,7 @@ class PullRequest(Component):
 
     def __str__(self) -> str:
         """Returns string representation of the PR"""
-        return f"pull request key '{self.key}' of {str(self.project())}"
+        return f"pull request key '{self.key}' of {self.project()!s}"
 
     @staticmethod
     def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
@@ -141,8 +139,7 @@ class PullRequest(Component):
         return f"{self.concerned_object.url()}&pullRequest={requests.utils.quote(self.key)}"
 
     def get_tags(self, **kwargs) -> list[str]:
-        """
-        :return: The tags of the project corresponding to the PR
+        """:return: The tags of the project corresponding to the PR
         """
         return self.concerned_object.get_tags(**kwargs)
 

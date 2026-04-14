@@ -17,8 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-Abstraction of the SonarQube setting concept
+"""Abstraction of the SonarQube setting concept
 """
 
 from __future__ import annotations
@@ -191,9 +190,7 @@ class Setting(SqObject):
         """Verifies if a setting is inherited from the data returned by SQ"""
         if "inherited" in data:
             self.inherited = data["inherited"]
-        elif self.key == NEW_CODE_PERIOD:
-            self.inherited = False
-        elif "parentValues" in data or "parentValue" in data or "parentFieldValues" in data:
+        elif self.key == NEW_CODE_PERIOD or ("parentValues" in data or "parentValue" in data or "parentFieldValues" in data):
             self.inherited = False
         elif "category" in data:
             self.inherited = True

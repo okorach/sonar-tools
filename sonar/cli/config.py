@@ -18,8 +18,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-Exports SonarQube platform configuration as JSON
+"""Exports SonarQube platform configuration as JSON
 """
 
 from typing import TextIO, Any, Optional
@@ -146,7 +145,6 @@ def __parse_args(desc: str) -> object:
 
 def __get_schema(fmt: Optional[str] = "json") -> dict[str, Any]:
     """Gets the JSON schema for sonar-config"""
-
     schema_file = pathlib.Path(__file__).parent / f"sonar-config.schema.{fmt}"
     with open(schema_file, encoding="utf-8") as fh:
         txt = fh.read()
@@ -187,8 +185,7 @@ def __normalize_file(file: str, format: str) -> bool:
 
 
 def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: str, export_settings: types.ConfigSettings) -> None:
-    """
-    Thread to write projects in the JSON file
+    """Thread to write projects in the JSON file
     """
     done = False
     prefix = ""

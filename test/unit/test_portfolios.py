@@ -25,7 +25,6 @@ from collections.abc import Generator
 import time
 import json
 import pytest
-import os
 
 import utilities as tutil
 from sonar import portfolios as pf, projects, exceptions, logging
@@ -289,10 +288,9 @@ def test_export() -> None:
 
 def test_import() -> None:
     """test_import"""
-
     if not __verify_support():
         pytest.skip(__UNSUPPORTED_MESSAGE)
-    with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
+    with open(f"{tutil.FILES_ROOT}/config.json", encoding="utf-8") as f:
         json_exp = json.loads(f.read())["portfolios"]
     # delete all portfolios in test
     logging.info("Deleting all portfolios")

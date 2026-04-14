@@ -203,13 +203,8 @@ class PermissionTemplate(sqobject.SqObject):
         if not self.project_key_pattern or self.project_key_pattern == "":
             if not (self.is_applications_default() or self.is_portfolios_default() or self.is_projects_default()):
                 return [pb.Problem(get_rule(RuleId.TEMPLATE_WITH_NO_PATTERN), self, str(self))]
-        else:
-            # Inspect regexp to detect suspicious pattern - Can't determine all bad cases but do our best
-            # Currently detecting:
-            # - Absence of '.' in the regexp
-            # - '*' not preceded by '.' (confusion between wildcard and regexp)
-            if not re.search(r"(^|[^\\])\.", self.project_key_pattern) or re.search(r"(^|[^.])\*", self.project_key_pattern):
-                return [pb.Problem(get_rule(RuleId.TEMPLATE_WITH_SUSPICIOUS_PATTERN), self, str(self), self.project_key_pattern)]
+        elif not re.search(r"(^|[^\\])\.", self.project_key_pattern) or re.search(r"(^|[^.])\*", self.project_key_pattern):
+            return [pb.Problem(get_rule(RuleId.TEMPLATE_WITH_SUSPICIOUS_PATTERN), self, str(self), self.project_key_pattern)]
         return []
 
     def audit(self, audit_settings: ConfigSettings) -> list[pb.Problem]:

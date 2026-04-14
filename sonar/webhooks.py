@@ -179,8 +179,7 @@ class WebHook(SqObject):
         return self.delete_object(webhook=self.key)
 
     def audit(self) -> list[problem.Problem]:
-        """
-        :meta private:
+        """:meta private:
         """
         if "latestDelivery" not in self.sq_json or self.sq_json["latestDelivery"]["success"]:
             return []

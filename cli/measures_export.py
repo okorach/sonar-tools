@@ -18,8 +18,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-Exports some measures of all projects
+"""Exports some measures of all projects
 - Either all measures (-m _all)
 - Or the main measures (-m _main)
 - Or a custom selection of measures (-m <measure1,measure2,measure3...>)
@@ -176,7 +175,6 @@ def __get_ts(ts: str, **kwargs) -> str:
 
 def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
-
     mapping = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch", options.WITH_URL: "url"}
     fields = ["key", "date"] + [v for k, v in mapping.items() if kwargs[k]] + list(wanted_metrics)
 
@@ -199,7 +197,6 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyLi
 
 def __write_measures_history_csv_as_list(file: str, data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
-
     mapping = {options.WITH_NAME: "name", options.BRANCH_REGEXP: "branch"}
     header_list = ["timestamp", "key"] + [v for k, v in mapping.items() if kwargs[k]] + ["metric", "value"]
     with util.open_file(file) as fd:

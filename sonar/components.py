@@ -17,15 +17,12 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-Abstraction of the SonarQube "component" concept
+"""Abstraction of the SonarQube "component" concept
 
 """
 
 from __future__ import annotations
 from typing import Any, Optional, TYPE_CHECKING
-import math
 import json
 
 from datetime import datetime
@@ -177,7 +174,7 @@ class Component(SqObject):
         :param list metrics_list: List of metrics to return
         """
         m = measures.Measure.search(self, metrics_list)
-        if "ncloc" in m and m["ncloc"]:
+        if m.get("ncloc"):
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
@@ -258,13 +255,12 @@ class Component(SqObject):
         return data
 
     def get_ai_code_assurance(self) -> Optional[str]:
-        """
-        :return: The AI code assurance status of a project or a branch
+        """:return: The AI code assurance status of a project or a branch
         """
         version = self.endpoint.version()
         log.debug("AI Code assurance version = %s", str(version))
         if version < (10, 7, 0):
-            raise exceptions.UnsupportedOperation(f"AI code assurance is not available for {self.endpoint.edition()} edition version {str(version)}")
+            raise exceptions.UnsupportedOperation(f"AI code assurance is not available for {self.endpoint.edition()} edition version {version!s}")
         api = "project/get_ai_code_assurance"
         if version >= (2025, 1, 0):
             api = "project_branches/get_ai_code_assurance"
@@ -274,7 +270,7 @@ class Component(SqObject):
             sutil.handle_error(e, f"getting AI code assurance of {self}", catch_all=True)
             if "Unknown url" in sutil.error_msg(e):
                 raise exceptions.UnsupportedOperation(
-                    f"AI code assurance is not available for {self.endpoint.edition()} edition version {str(version)}"
+                    f"AI code assurance is not available for {self.endpoint.edition()} edition version {version!s}"
                 )
         return None
 
@@ -324,7 +320,6 @@ class Component(SqObject):
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
         """
-
         loc_min = audit_settings.get("audit.projects.minLocSize", 10000)
         fp_min = audit_settings.get("audit.projects.minLocPerFalsePositiveIssue", 500)
         accepted_min = audit_settings.get("audit.projects.minLocPerAcceptedIssue", 500)

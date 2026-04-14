@@ -102,8 +102,7 @@ class Project(Component):
     __PROJECT_FILTER = MappingProxyType({"filter": "qualifier=TRK"})
 
     def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
-        """
-        :param Platform endpoint: Reference to the SonarQube platform
+        """:param Platform endpoint: Reference to the SonarQube platform
         :param str key: The project key
         """
         super().__init__(endpoint, data)
@@ -199,8 +198,7 @@ class Project(Component):
         return self
 
     def last_analysis(self, include_branches: bool = False) -> Optional[datetime]:
-        """
-        :param include_branches: Take into account branch to determine last analysis, defaults to False
+        """:param include_branches: Take into account branch to determine last analysis, defaults to False
         :type include_branches: bool, optional
         :returns: Project last analysis date or None if never analyzed
         """
@@ -215,8 +213,7 @@ class Project(Component):
         return self._branches_last_analysis
 
     def loc(self) -> int:
-        """
-        :return: Number of LoCs of the project, taking into account branches and pull requests, if any
+        """:return: Number of LoCs of the project, taking into account branches and pull requests, if any
         :rtype: int
         """
         if self._ncloc_with_branches is not None:
@@ -228,8 +225,7 @@ class Project(Component):
         return self._ncloc_with_branches
 
     def branches(self, use_cache: bool = True) -> dict[str, Branch]:
-        """
-        :return: Dict of branches of the project
+        """:return: Dict of branches of the project
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
         :type use_cache: bool
         :rtype: dict{<branchName>: <Branch>}
@@ -242,8 +238,7 @@ class Project(Component):
         return self._branches
 
     def main_branch_name(self) -> str:
-        """
-        :return: Project main branch name
+        """:return: Project main branch name
         """
         if self.endpoint.edition() == c.CE:
             return self.sq_json.get("branch", "main")
@@ -251,8 +246,7 @@ class Project(Component):
         return b.name if b else ""
 
     def main_branch(self) -> Optional[Branch]:
-        """
-        :return: Main branch of the project
+        """:return: Main branch of the project
         """
         if self.endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation("Main branch is not supported in Community Edition")
@@ -263,8 +257,7 @@ class Project(Component):
         return None
 
     def pull_requests(self, use_cache: bool = True) -> dict[str, PullRequest]:
-        """
-        :return: List of pull requests of the project
+        """:return: List of pull requests of the project
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
         :type use_cache: bool
         :rtype: dict{PR_ID: PullRequest}
@@ -291,8 +284,7 @@ class Project(Component):
         return self._binding.get("has_binding", False)
 
     def binding(self) -> Optional[dict[str, Any]]:
-        """
-        :return: The project DevOps platform binding
+        """:return: The project DevOps platform binding
         :rtype: dict
         """
         if not self._binding:
@@ -323,8 +315,7 @@ class Project(Component):
         return key
 
     def is_part_of_monorepo(self) -> bool:
-        """
-        :return: From the DevOps binding, Whether the project is part of a monorepo
+        """:return: From the DevOps binding, Whether the project is part of a monorepo
         :rtype: bool
         """
         bind = self.binding()
@@ -656,7 +647,7 @@ class Project(Component):
                 return f"FAILED/{ZIP_MISSING}"
             return f"FAILED/{e.message}"
         except ConnectionError as e:
-            return f"FAILED/{str(e)}"
+            return f"FAILED/{e!s}"
 
         if asynchronous:
             return ZIP_ASYNC_SUCCESS
@@ -813,8 +804,7 @@ class Project(Component):
         return data["qualityGate"]["name"], data["qualityGate"]["default"]
 
     def webhooks(self) -> dict[str, webhooks.WebHook]:
-        """
-        :return: Project webhooks indexed by their key
+        """:return: Project webhooks indexed by their key
         :rtype: dict{key: WebHook}
         """
         log.debug("Getting %s webhooks", str(self))
@@ -962,8 +952,7 @@ class Project(Component):
         return util.order_keys(json_data, *_IMPORTABLE_PROPERTIES)
 
     def new_code(self) -> str:
-        """
-        :return: The project new code definition
+        """:return: The project new code definition
         :rtype: str
         """
         if self._new_code is None:
@@ -973,8 +962,7 @@ class Project(Component):
         return self._new_code
 
     def permissions(self) -> pperms.ProjectPermissions:
-        """
-        :return: The project permissions
+        """:return: The project permissions
         :rtype: ProjectPermissions
         """
         if self._permissions is None:
@@ -1128,7 +1116,7 @@ class Project(Component):
 
     def _check_binding_supported(self) -> bool:
         if self.endpoint.edition() == c.CE:
-            raise exceptions.UnsupportedOperation(f"{str(self)}: Can't set project binding on Community Edition")
+            raise exceptions.UnsupportedOperation(f"{self!s}: Can't set project binding on Community Edition")
         return True
 
     def set_binding_github(self, devops_platform_key: str, repository: str, monorepo: bool = False, summary_comment: bool = True) -> bool:
@@ -1333,7 +1321,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs: Any) -> 
                 problems += (proj_pbs := future.result(timeout=60))
                 write_q and write_q.put(proj_pbs)
             except (TimeoutError, RequestException, exceptions.SonarException) as e:
-                log.error(f"Exception {str(e)} when auditing {str(futures_map[future])}.")
+                log.error(f"Exception {e!s} when auditing {futures_map[future]!s}.")
             current += 1
             lvl = log.INFO if current % 10 == 0 or total - current < 10 else log.DEBUG
             log.log(lvl, "%d/%d projects audited (%d%%)", current, total, (current * 100) // total)
@@ -1352,7 +1340,6 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -
     :param export_settings: Export parameters
     :return: list of projects settings
     """
-
     write_q = kwargs.get("write_q", None)
     key_regexp = kwargs.get("key_list", ".+")
     nb_threads = export_settings.get("threads", 8)
@@ -1373,7 +1360,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -
                 write_q and write_q.put(phelp.convert_project_json(exp_json))
                 results[futures_map[future].key] = exp_json
             except (TimeoutError, RequestException, exceptions.SonarException) as e:
-                log.error(f"Exception {str(e)} when exporting {str(futures_map[future])}.")
+                log.error(f"Exception {e!s} when exporting {futures_map[future]!s}.")
             current += 1
             lvl = log.INFO if current % 10 == 0 or total - current < 10 else log.DEBUG
             log.log(lvl, "%d/%d projects exported (%d%%)", current, total, (current * 100) // total)
@@ -1479,11 +1466,11 @@ def export_zips(
             try:
                 result = future.result(timeout=export_timeout + 10)  # Retrieve result or raise an exception
                 status = result["exportStatus"]
-            except TimeoutError as e:
+            except TimeoutError:
                 status = f"{ZIP_TIMEOUT}({export_timeout}s)"
                 o_proj = futures_map[future]
                 result = {"key": o_proj.key, "name": o_proj.name, "exportProjectUrl": o_proj.url(), "exportStatus": status}
-                log.error(f"Project Zip export timed out after {export_timeout} seconds for {str(future)}.")
+                log.error(f"Project Zip export timed out after {export_timeout} seconds for {future!s}.")
             except exceptions.UnsupportedOperation:
                 raise
             except Exception as e:
@@ -1555,7 +1542,7 @@ def import_zips(endpoint: Platform, project_list: list[dict[str, str]], threads:
                 o_proj, status = future.result(timeout=import_timeout + 10)  # Retrieve result or raise an exception
             except TimeoutError as e:
                 status = f"TIMEOUT Exception {e}"
-                log.error(f"Project Zip import timed out after {import_timeout} seconds for {str(future)}.")
+                log.error(f"Project Zip import timed out after {import_timeout} seconds for {future!s}.")
             except Exception as e:
                 status = f"EXCEPTION {e}"
             statuses_count[status] = statuses_count[status] + 1 if status in statuses_count else 1

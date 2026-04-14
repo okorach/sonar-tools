@@ -20,7 +20,6 @@
 
 """sonar-misra tests"""
 
-import os
 from collections.abc import Generator
 import pytest
 

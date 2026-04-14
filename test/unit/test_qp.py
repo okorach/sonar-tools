@@ -42,7 +42,6 @@ def test_get_object(get_test_qp: Generator[QualityProfile]) -> None:
 
 def test_get_object_non_existing() -> None:
     """Test exception raised when providing non existing portfolio key"""
-
     with pytest.raises(exceptions.ObjectNotFound) as e:
         _ = QualityProfile.get_object(endpoint=tutil.SQ, name="NON-EXISTING", language="py")
     assert str(e.value).endswith("Quality Profile 'py:NON-EXISTING' not found")
@@ -171,7 +170,7 @@ def test_import() -> None:
         except exceptions.ObjectNotFound:
             pass
     # Import quality profiles from config.json
-    with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
+    with open(f"{tutil.FILES_ROOT}/config.json", encoding="utf-8") as f:
         json_exp = json.loads(f.read())["qualityProfiles"]
     assert qualityprofiles.import_config(tutil.TEST_SQ, {"qualityProfiles": json_exp})
 

@@ -21,7 +21,8 @@
 
 """Common tests, independent of SonarQube version"""
 
-import os, stat
+import os
+import stat
 from collections.abc import Generator
 
 import json
@@ -93,7 +94,7 @@ def test_sif_2(json_file: Generator[str]) -> None:
 
 def test_audit_sif_ut() -> None:
     """test_audit_sif_ut"""
-    with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+    with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
         json_sif = json.loads(f.read())
     sysinfo = sif.Sif(json_sif)
     assert sysinfo.edition() == c.EE
@@ -115,7 +116,7 @@ def test_audit_sif_ut() -> None:
 
 def test_modified_sif() -> None:
     """test_modified_sif"""
-    with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+    with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
         json_sif = json.loads(f.read())
 
     json_sif["System"].pop("Edition")
@@ -132,7 +133,7 @@ def test_modified_sif() -> None:
 def test_json_not_sif() -> None:
     """Tests that the right exception is raised if JSON file is not a SIF"""
     with pytest.raises(sif.NotSystemInfo) as e:
-        with open(f"{tutil.FILES_ROOT}/config.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/config.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
             _ = sif.Sif(json_sif)
     assert e.type == sif.NotSystemInfo
@@ -140,7 +141,7 @@ def test_json_not_sif() -> None:
 
 def test_dce_sif_ut() -> None:
     """test_audit_sif_ut"""
-    with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+    with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
         json_sif = json.loads(f.read())
 
     sysinfo = sif.Sif(json_sif)

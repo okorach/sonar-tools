@@ -47,8 +47,7 @@ SETTABLE_PROPERTIES = ("login", "name", "email", "groups", "scmAccounts", "local
 
 
 class User(SqObject):
-    """
-    Abstraction of the SonarQube "user" concept
+    """Abstraction of the SonarQube "user" concept
     Objects of this class must be created with one of the 3 available class constructor methods. Don't use __init__
     """
 
@@ -228,15 +227,13 @@ class User(SqObject):
         return self
 
     def url(self) -> str:
-        """
-        :return: the SonarQube permalink to the user, actually the global users page only
-                 since this is as close as we can get to the precise user definition
+        """:return: the SonarQube permalink to the user, actually the global users page only
+        since this is as close as we can get to the precise user definition
         """
         return f"{self.base_url(local=False)}/admin/users"
 
     def tokens(self, **kwargs) -> list[tokens.UserToken]:
-        """
-        :return: The list of tokens of the user
+        """:return: The list of tokens of the user
         :rtype: list[Token]
         """
         if self.__tokens is None or not kwargs.get(c.USE_CACHE, True):
@@ -323,7 +320,7 @@ class User(SqObject):
         """
         group = groups.Group.get_object(endpoint=self.endpoint, name=group_name)
         if group.is_default():
-            raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't remove membership for {str(self)}")
+            raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't remove membership for {self!s}")
         if group.remove_user(self):
             self._groups.remove(group_name)
             return True
@@ -485,7 +482,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs: Any) -> 
             try:
                 problems += future.result(timeout=60)
             except (TimeoutError, RequestException, exceptions.SonarException) as e:
-                log.error(f"Exception {str(e)} when auditing {str(futures_map[future])}.")
+                log.error(f"Exception {e!s} when auditing {futures_map[future]!s}.")
     "write_q" in kwargs and kwargs["write_q"].put(problems)
     log.info("--- Auditing users: END ---")
     return problems

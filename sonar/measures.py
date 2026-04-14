@@ -205,8 +205,7 @@ def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> li
 
 
 def get_rating_letter(rating: Union[float, str]) -> str:
-    """
-    :param any rating: The rating as repturned by the API (a str or float)
+    """:param any rating: The rating as repturned by the API (a str or float)
     :return: The rating converted from number to letter, if number between 1 and 5, else the unchanged rating
     :rtype: str
     """
@@ -218,8 +217,7 @@ def get_rating_letter(rating: Union[float, str]) -> str:
 
 
 def get_rating_number(rating_letter: str) -> int:
-    """
-    :return: The measure converted from letter to number, if letter in [a-eA-E]
+    """:return: The measure converted from letter to number, if letter in [a-eA-E]
     :rtype: int
     """
     if not isinstance(rating_letter, str):
@@ -245,7 +243,7 @@ def format(endpoint: Platform, metric_key: str, value: Any, ratings: str = "lett
 
 def _search_value(data: dict[str, str]) -> Any:
     """Searches a measure value in all possible field of a JSON returned by the Sonar API"""
-    value = data.get("value", None)
+    value = data.get("value")
     if not value and "periods" in data:
         value = data["periods"][0]["value"]
     elif not value and "period" in data:

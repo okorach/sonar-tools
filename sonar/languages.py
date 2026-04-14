@@ -30,7 +30,6 @@ from sonar import rules
 from sonar.util import cache
 import sonar.util.issue_defs as idefs
 from sonar.api.manager import ApiOperation as Oper
-import sonar.logging as log
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

@@ -38,8 +38,7 @@ MAX_PERMS = 25
 
 
 class QualityPermissions(permissions.Permissions):
-    """
-    Abstractions of QP and QG permissions
+    """Abstractions of QP and QG permissions
     """
 
     def _post_api(self, api: str, set_field: str, perms_dict: JsonPermissions, **extra_params: str) -> bool:

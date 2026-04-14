@@ -23,7 +23,8 @@
 
 from collections.abc import Generator
 
-import json, yaml
+import json
+import yaml
 
 import utilities as tutil
 from sonar import errcodes as e
@@ -65,7 +66,7 @@ def test_config_export_partial_2(json_file: Generator[str]) -> None:
     """test_config_export_partial_2"""
     what = ["settings", "portfolios", "users"]
     assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --{opt.WHAT} {','.join(what)}") == e.OK
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+    with open(file=json_file, encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert __sections_present(json_config, what, config._SECTIONS_ORDER)
 
@@ -79,7 +80,7 @@ def test_config_export_partial_3(json_file: Generator[str]) -> None:
         )
         == e.OK
     )
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+    with open(file=json_file, encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     assert __sections_present(json_config, what, config._SECTIONS_ORDER)
 
@@ -87,7 +88,7 @@ def test_config_export_partial_3(json_file: Generator[str]) -> None:
 def test_config_export_yaml(yaml_file: Generator[str]) -> None:
     """test_config_export_yaml"""
     assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {yaml_file}") == e.OK
-    with open(file=yaml_file, mode="r", encoding="utf-8") as fh:
+    with open(file=yaml_file, encoding="utf-8") as fh:
         json_config = yaml.safe_load(fh.read())
     # Verify YAML export is in the expected key order
     assert __is_ordered_as_expected(list(json_config.keys()), config._SECTIONS_ORDER)
@@ -122,7 +123,7 @@ def test_config_non_existing_project() -> None:
 def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
     """test_config_dont_inline_lists"""
     assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --{opt.WHAT} settings,projects,portfolios") == e.OK
-    with open(file=json_file, mode="r", encoding="utf-8") as fh:
+    with open(file=json_file, encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
     # assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], list)
     o = util.search_list(json_config["globalSettings"]["languages"], "language", "javascript")
@@ -156,7 +157,7 @@ def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
 def test_config_import_portfolios() -> None:
     """test_config_import_portfolios"""
     config_file = f"{tutil.FILES_ROOT}/config.json"
-    with open(config_file, "r", encoding="utf-8") as f:
+    with open(config_file, encoding="utf-8") as f:
         json_config = json.loads(f.read())["portfolios"]
 
     # delete all portfolios in test
@@ -176,7 +177,7 @@ def test_config_import_portfolios() -> None:
 def test_config_import_apps() -> None:
     """test_config_import_apps"""
     config_file = f"{tutil.FILES_ROOT}/config.json"
-    with open(config_file, "r", encoding="utf-8") as f:
+    with open(config_file, encoding="utf-8") as f:
         json_config = json.loads(f.read())["applications"]
 
     # delete all apps in test
