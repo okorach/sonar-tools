@@ -17,9 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-Abstraction of the SonarQube Cloud organization concept
+"""Abstraction of the SonarQube Cloud organization concept
 
 """
 
@@ -157,7 +155,6 @@ def export(endpoint: Platform, key_list: KeyList = None) -> ObjectJsonRepr:
     :return: Dict of organization settings
     :rtype: dict
     """
-
     org_settings = {k: org.export() for k, org in Organization.search(endpoint).items()}
     for k in org_settings:
         # remove key from JSON value, it's already the dict key

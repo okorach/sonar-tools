@@ -20,7 +20,6 @@
 
 
 from sonar.api.manager import ApiOperation as Oper
-from sonar.api.manager import ApiManager as Api
 from sonar.groups import Group
 import sonar.util.constants as c
 import utilities as tutil

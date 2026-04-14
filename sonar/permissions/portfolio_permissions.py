@@ -24,6 +24,5 @@ from sonar.permissions import aggregation_permissions
 
 
 class PortfolioPermissions(aggregation_permissions.AggregationPermissions):
-    """
-    Abstraction of Portfolio permissions
+    """Abstraction of Portfolio permissions
     """

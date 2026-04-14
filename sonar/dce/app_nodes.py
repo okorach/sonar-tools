@@ -17,9 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-Abstraction of the App Node concept
+"""Abstraction of the App Node concept
 
 """
 
@@ -85,9 +83,9 @@ class AppNode(dce_nodes.DceNode):
         return (
             self.__audit_official()
             + self.__audit_health()
-            + sifn.audit_web(self, f"{str(self)} Web process", audit_settings)
-            + sifn.audit_ce(self, f"{str(self)} CE process", audit_settings)
-            + sifn.audit_plugins(self, f"{str(self)} WebApp", audit_settings)
+            + sifn.audit_web(self, f"{self!s} Web process", audit_settings)
+            + sifn.audit_ce(self, f"{self!s} CE process", audit_settings)
+            + sifn.audit_plugins(self, f"{self!s} WebApp", audit_settings)
         )
 
     def __audit_health(self) -> list[Problem]:

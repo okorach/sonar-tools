@@ -17,9 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-Removes obsolete data from SonarQube platform
+"""Removes obsolete data from SonarQube platform
 Currently:
 - projects, branches, PR not analyzed since a given number of days
 - Tokens not renewed since a given number of days

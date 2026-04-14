@@ -39,7 +39,7 @@ class TestSifBasic:
 
     def test_sif_creation_with_valid_json(self):
         """Test Sif creation with valid JSON"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         sif_obj = sif.Sif(json_sif)
@@ -49,7 +49,7 @@ class TestSifBasic:
 
     def test_sif_creation_with_concerned_object(self):
         """Test Sif creation with concerned object"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         mock_object = Mock()
@@ -67,7 +67,7 @@ class TestSifBasic:
 
     def test_sif_str_representation(self):
         """Test Sif string representation"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         sif_obj = sif.Sif(json_sif)
@@ -80,14 +80,14 @@ class TestSifBasic:
 
     def test_sif_url_with_concerned_object(self):
         """Test Sif url() method with concerned object"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         sif_obj = sif.Sif(json_sif)
         assert sif_obj.url() == "https://sonarqube.acme.com"
 
     def test_sif_url_without_concerned_object(self):
         """Test Sif url() method without concerned object"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         json_sif["Settings"].pop("sonar.core.serverBaseURL", None)
         sif_obj = sif.Sif(json_sif)
@@ -96,7 +96,7 @@ class TestSifBasic:
 
     def test_sif_url_with_server_base_url(self):
         """Test Sif url() method with serverBaseURL in settings"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         # Add serverBaseURL to settings
@@ -111,7 +111,7 @@ class TestSifEdition:
 
     def test_sif_edition(self):
         """Test Sif edition detection from System section"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         sif_obj = sif.Sif(json_sif)
@@ -130,7 +130,7 @@ class TestSifEdition:
 
     def test_sif_edition_dce(self):
         """Test Sif DCE edition detection from Application Nodes presence"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         sif_obj = sif.Sif(json_sif)
@@ -138,7 +138,7 @@ class TestSifEdition:
 
     def test_sif_edition_unknown(self):
         """Test Sif edition detection when no edition found"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         # Remove all edition information
@@ -151,7 +151,7 @@ class TestSifEdition:
         assert sif_obj.edition() is None
 
     def test_sif_attributes(self):
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         sif_obj = sif.Sif(json_sif)
         assert sif_obj.url() == "https://sonarqube.acme.com"
@@ -159,7 +159,7 @@ class TestSifEdition:
         assert sif_obj.store_size() == 131
 
     def test_old_sifs(self):
-        with open(f"{tutil.FILES_ROOT}/sif.7.6.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.7.6.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         sif_obj = sif.Sif(json_sif)
         assert sif_obj.edition() == c.EE
@@ -168,7 +168,7 @@ class TestSifEdition:
         assert sif_obj.store_size() == 44
         assert sif_obj.start_time() == datetime(2020, 11, 22, tzinfo=timezone.utc)
 
-        with open(f"{tutil.FILES_ROOT}/sif.8.4.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.8.4.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         sif_obj = sif.Sif(json_sif)
         assert sif_obj.edition() == c.EE
@@ -183,7 +183,7 @@ class TestSifDatabase:
 
     def test_sif_database_old_version(self):
         """Test Sif database detection for old versions"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         # Mock version to be old
@@ -193,7 +193,7 @@ class TestSifDatabase:
 
     def test_sif_database_new_version(self):
         """Test Sif database detection for new versions"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         # Mock version to be new
@@ -207,7 +207,7 @@ class TestSifPlugins:
 
     def test_sif_plugins(self):
         """Test Sif plugins retrieval"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         sif_obj = sif.Sif(json_sif)
@@ -221,7 +221,7 @@ class TestSifAudit:
 
     def test_sif_audit_ce_edition(self):
         """Test Sif audit for CE edition"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         # Mock edition to be CE
@@ -232,7 +232,7 @@ class TestSifAudit:
 
     def test_sif_audit_dce_edition(self):
         """Test Sif audit for DCE edition"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         sif_obj = sif.Sif(json_sif)
@@ -241,7 +241,7 @@ class TestSifAudit:
 
     def test_sif_audit_branch_use(self):
         """Test Sif audit for branch usage"""
-        with open(f"{tutil.FILES_ROOT}/sif.8.4.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.8.4.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         sif_obj = sif.Sif(json_sif)
@@ -259,7 +259,7 @@ class TestSifAudit:
 
     def test_sif_audit_branch_use_ce(self):
         """Test Sif audit for branch usage on CE edition"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         # Mock edition to be CE
@@ -270,7 +270,7 @@ class TestSifAudit:
 
     def test_sif_audit_branch_use_missing_info(self):
         """Test Sif audit for branch usage when info is missing"""
-        with open(f"{tutil.FILES_ROOT}/sif.8.4.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.8.4.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         # Remove branch usage information
@@ -308,7 +308,7 @@ class TestAppNode:
 
     def test_app_node_creation(self):
         """Test AppNode creation"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         app_node_data = json_sif["Application Nodes"][0]
@@ -320,7 +320,7 @@ class TestAppNode:
 
     def test_app_node_str_representation(self):
         """Test AppNode string representation"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         app_node_data = json_sif["Application Nodes"][0]
@@ -331,7 +331,7 @@ class TestAppNode:
 
     def test_app_node_plugins(self):
         """Test AppNode plugins retrieval"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         app_node_data = json_sif["Application Nodes"][0]
@@ -344,7 +344,7 @@ class TestAppNode:
 
     def test_app_node_health(self):
         """Test AppNode health retrieval"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         app_node_data = json_sif["Application Nodes"][0]
@@ -371,7 +371,7 @@ class TestAppNode:
 
     def test_app_node_start_time(self):
         """Test AppNode start time"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         app_node_data = json_sif["Application Nodes"][0]
@@ -383,7 +383,7 @@ class TestAppNode:
 
     def test_app_node_version(self):
         """Test AppNode version"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         app_node_data = json_sif["Application Nodes"][0]
@@ -404,7 +404,7 @@ class TestAppNode:
 
     def test_app_node_edition(self):
         """Test AppNode edition"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         app_node_data = json_sif["Application Nodes"][0]
@@ -416,7 +416,7 @@ class TestAppNode:
 
     def test_app_node_name(self):
         """Test AppNode name"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         app_node_data = json_sif["Application Nodes"][0]
@@ -428,7 +428,7 @@ class TestAppNode:
 
     def test_app_node_audit(self):
         """Test AppNode audit"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         app_node_data = json_sif["Application Nodes"][0]
@@ -491,7 +491,7 @@ class TestSearchNode:
 
     def test_search_node_creation(self):
         """Test SearchNode creation"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         search_node_data = json_sif["Search Nodes"][0]
@@ -503,7 +503,7 @@ class TestSearchNode:
 
     def test_search_node_str_representation(self):
         """Test SearchNode string representation"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         search_node_data = json_sif["Search Nodes"][0]
@@ -514,7 +514,7 @@ class TestSearchNode:
 
     def test_search_node_store_size(self):
         """Test SearchNode store size"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         search_node_data = json_sif["Search Nodes"][0]
@@ -527,7 +527,7 @@ class TestSearchNode:
 
     def test_search_node_name(self):
         """Test SearchNode name"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         search_node_data = json_sif["Search Nodes"][0]
@@ -547,7 +547,7 @@ class TestSearchNode:
 
     def test_search_node_audit(self):
         """Test SearchNode audit"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         search_node_data = json_sif["Search Nodes"][0]
@@ -559,7 +559,7 @@ class TestSearchNode:
 
     def test_search_node_max_heap(self):
         """Test SearchNode max heap"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
         search_node_data = json_sif["Search Nodes"][0]
@@ -582,7 +582,7 @@ class TestSearchNode:
 
     def test_search_node_audit_store_size_empty(self):
         """Test SearchNode audit with empty store size"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         json_sif["Search State"]["Store Size"] = "17 MB"
         o_sif = sif.Sif(json_sif)
@@ -594,7 +594,7 @@ class TestSearchNode:
 
     def test_search_node_audit_available_disk(self):
         """Test SearchNode audit available disk"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         json_sif["Search Nodes"][0]["Search State"]["Store Size"] = "2.4 GB"
         json_sif["Search Nodes"][0]["Search State"]["Disk Available"] = "3 GB"
@@ -620,7 +620,7 @@ class TestAppNodesAudit:
 
     def test_app_nodes_audit_different_versions(self):
         """Test AppNodes audit with different versions"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         json_sif["Application Nodes"][0]["System"]["Version"] = "9.9.0"
         json_sif["Application Nodes"][1]["System"]["Version"] = "9.8.0"
@@ -629,7 +629,7 @@ class TestAppNodesAudit:
 
     def test_app_nodes_audit_different_plugins(self):
         """Test AppNodes audit with different plugins"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         json_sif["Application Nodes"][0]["Plugins"] = {"plugin1": "1.0", "plugin2": "3.1", "plugin3": "3.0"}
         json_sif["Application Nodes"][1]["Plugins"] = {"plugin1": "1.0", "plugin2": "2.1", "plugin3": "3.0"}
@@ -642,7 +642,7 @@ class TestSearchNodesAudit:
 
     def test_search_nodes_audit_insufficient_nodes(self):
         """Test SearchNodes audit with insufficient nodes"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         json_sif["Search Nodes"].pop()  # Set to 2 nodes
         problems = search_nodes.audit(json_sif["Search Nodes"], sif.Sif(json_sif), {})
@@ -650,7 +650,7 @@ class TestSearchNodesAudit:
 
     def test_search_nodes_audit_even_number_of_nodes(self):
         """Test SearchNodes audit with even number of nodes"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         json_sif["Search Nodes"].append(json_sif["Search Nodes"][0])  # Set to 4 nodes
         problems = search_nodes.audit(json_sif["Search Nodes"], sif.Sif(json_sif), {})
@@ -658,7 +658,7 @@ class TestSearchNodesAudit:
 
     def test_search_nodes_audit_wrong_number_of_nodes(self):
         """Test SearchNodes audit with wrong number of nodes"""
-        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif.dce.1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         json_sif["Search Nodes"] += json_sif["Search Nodes"][0:2]  # Set to 5 nodes
         problems = search_nodes.audit(json_sif["Search Nodes"], sif.Sif(json_sif), {})
@@ -670,7 +670,7 @@ class TestSifEdgeCases:
 
     def test_sif_start_time_missing(self):
         """Test Sif start_time when missing"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         assert isinstance(sif.Sif(json_sif).start_time(), datetime)
         json_sif["Settings"].pop("sonar.core.startTime")
@@ -678,7 +678,7 @@ class TestSifEdgeCases:
 
     def test_sif_store_size(self):
         """Test Sif store_size when missing"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         assert isinstance(sif.Sif(json_sif).store_size(), (int, float))
         # Remove store size information
@@ -688,7 +688,7 @@ class TestSifEdgeCases:
 
     def test_sif_license_type(self):
         """Test Sif license_type when missing"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         assert sif.Sif(json_sif).license_type() == "TEST"
         json_sif.pop("License", None)
@@ -696,7 +696,7 @@ class TestSifEdgeCases:
 
     def test_sif_server_id(self):
         """Test Sif server_id when missing"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         assert sif.Sif(json_sif).server_id() == "XXXB8A4D-XXXSFSbmgIK8PCmM81th"
         json_sif["System"].pop("Server ID", None)
@@ -704,7 +704,7 @@ class TestSifEdgeCases:
 
     def test_sif_jvm_cmdlines(self):
         """Test Sif JVM cmdlines when missing"""
-        with open(f"{tutil.FILES_ROOT}/sif1.json", "r", encoding="utf-8") as f:
+        with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         sif_obj = sif.Sif(json_sif)
         assert sif_obj.web_jvm_cmdline() == "-Xmx512m -Xms128m -XX:+HeapDumpOnOutOfMemoryError"

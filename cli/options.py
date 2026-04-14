@@ -17,9 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-Cmd line options
+"""Cmd line options
 
 """
 
@@ -165,8 +163,7 @@ COMPONENT_TYPES = (PROJECTS, APPS, PORTFOLIOS)
 
 
 class ArgumentsError(exceptions.SonarException):
-    """
-    Arguments error
+    """Arguments error
     """
 
     def __init__(self, message: str) -> None:
@@ -178,7 +175,7 @@ def __convert_args_to_lists(kwargs: dict[str, str]) -> dict[str, str]:
     for argname in MULTI_VALUED_OPTS:
         if argname in kwargs and kwargs[argname] is not None and isinstance(kwargs[argname], (str, list)) and len(kwargs[argname]) > 0:
             kwargs[argname] = util.csv_to_list(kwargs[argname])
-    if kwargs.get(LANGUAGES, None) not in (None, ""):
+    if kwargs.get(LANGUAGES) not in (None, ""):
         kwargs[LANGUAGES] = [lang.lower() for lang in util.csv_to_list(kwargs[LANGUAGES])]
         kwargs[LANGUAGES] = [LANGUAGE_MAPPING.get(lang, lang) for lang in util.csv_to_list(kwargs[LANGUAGES])]
     return kwargs

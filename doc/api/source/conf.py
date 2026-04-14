@@ -1,6 +1,4 @@
-"""
-
-Configuration file for the sphinx doc builder
+"""Configuration file for the sphinx doc builder
 
 """
 
@@ -18,7 +16,6 @@ Configuration file for the sphinx doc builder
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-import sphinx_rtd_theme
 
 # -- Project information -----------------------------------------------------
 

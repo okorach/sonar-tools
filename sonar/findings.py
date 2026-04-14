@@ -115,8 +115,7 @@ STATUS_MAPPING = {"WONTFIX": "ACCEPTED", "REOPENED": "OPEN", "REMOVED": "CLOSED"
 
 
 class Finding(SqObject):
-    """
-    Abstraction of the SonarQube "findings" concept.
+    """Abstraction of the SonarQube "findings" concept.
     A finding is a general concept that can be either an issue or a security hotspot
     """
 
@@ -229,7 +228,7 @@ class Finding(SqObject):
 
     def url(self) -> str:
         """Returns the URL of the finding, must be implemented in subclasses"""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def language(self) -> str:
         """Returns the finding language"""
@@ -345,7 +344,7 @@ class Finding(SqObject):
 
     def changelog(self, after: Optional[datetime] = None, manual_only: bool = True) -> dict[str, Changelog]:
         # Implemented in subclasses, should not reach this
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def last_changelog_date(self) -> Optional[datetime]:
         """Returns the date of the last changelog entry, or None if no changelog"""
@@ -354,7 +353,7 @@ class Finding(SqObject):
 
     def comments(self, after: Optional[datetime] = None) -> dict[str, dict[str, Any]]:
         # Implemented in subclasses, should not reach this
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def last_comment_date(self) -> Optional[datetime]:
         """Returns the date of the last comment, or None if no comment"""
@@ -391,8 +390,7 @@ class Finding(SqObject):
         return self.assign(assignee=None)
 
     def has_changelog(self, after: Optional[datetime] = None, manual_only: Optional[bool] = True) -> bool:
-        """
-        :param Optional[datetime] after: If set, only changelogs after that date will be considered
+        """:param Optional[datetime] after: If set, only changelogs after that date will be considered
         :param manual_only: Whether to check only manual changes
         :return: Whether the finding has a changelog
         :rtype: bool
@@ -403,29 +401,25 @@ class Finding(SqObject):
         return len(self.changelog(after=after, manual_only=manual_only)) > 0
 
     def has_comments(self, after: Optional[datetime] = None) -> bool:
-        """
-        :return: Whether the finding has comments
+        """:return: Whether the finding has comments
         :rtype: bool
         """
         return len(self.comments(after=after)) > 0
 
     def modifiers(self, after: Optional[datetime] = None) -> set[str]:
-        """
-        :return: the set of users that modified the finding
+        """:return: the set of users that modified the finding
         :rtype: set(str)
         """
         return {c.author() for c in self.changelog(after=after).values()}
 
     def commenters(self) -> set[str]:
-        """
-        :return: the set of users that commented the finding
+        """:return: the set of users that commented the finding
         :rtype: set(str)
         """
         return {v["user"] for v in self.comments() if "user" in v}
 
     def strictly_identical_to(self, another_finding: Finding, ignore_component: bool = False) -> bool:
-        """
-        :meta private:
+        """:meta private:
         """
         if self.key == another_finding.key:
             log.debug("%s and %s are the same issue, they have the same key %s", str(self), str(another_finding), self.key)
@@ -452,8 +446,7 @@ class Finding(SqObject):
         return identical
 
     def almost_identical_to(self, another_finding: Finding, ignore_component: bool = False, **kwargs) -> bool:
-        """
-        :meta private:
+        """:meta private:
         """
         if self.rule != another_finding.rule:
             return False
@@ -497,8 +490,7 @@ class Finding(SqObject):
     def search_siblings(
         self, findings_list: list[Finding], ignore_component: bool = False, **kwargs
     ) -> tuple[list[Finding], list[Finding], list[Finding]]:
-        """
-        :meta private:
+        """:meta private:
         """
         exact_matches = []
         approx_matches = []
@@ -599,8 +591,7 @@ class Finding(SqObject):
                 raise
 
     def get_branch_and_pr(self, data: ApiPayload) -> tuple[Optional[str], Optional[str]]:
-        """
-        :param data: The data to extract the branch and pull request from
+        """:param data: The data to extract the branch and pull request from
         :return: The branch name or pull request id
         """
         pr = data.get("pullRequest", None)
@@ -655,4 +646,4 @@ def get_changelogs(issue_list: list[Finding], added_after: Optional[datetime] = 
                 if count % log_frequency == 0 or count == total:
                     log.info("Collected changelog for %d of %d findings (%d%%)", count, total, count * 100 // total)
             except Exception as e:
-                log.error(f"Changelog collection error {str(e)} for {str(future)}.")
+                log.error(f"Changelog collection error {e!s} for {future!s}.")

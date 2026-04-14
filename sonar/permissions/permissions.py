@@ -44,8 +44,8 @@ COMMUNITY_GLOBAL_PERMISSIONS = {
     "provisioning": "Create Projects",
     "scan": "Execute Analysis",
 }
-DEVELOPER_GLOBAL_PERMISSIONS = {**COMMUNITY_GLOBAL_PERMISSIONS, **{"applicationcreator": "Create Applications"}}
-ENTERPRISE_GLOBAL_PERMISSIONS = {**DEVELOPER_GLOBAL_PERMISSIONS, **{"portfoliocreator": "Create Portfolios"}}
+DEVELOPER_GLOBAL_PERMISSIONS = {**COMMUNITY_GLOBAL_PERMISSIONS, "applicationcreator": "Create Applications"}
+ENTERPRISE_GLOBAL_PERMISSIONS = {**DEVELOPER_GLOBAL_PERMISSIONS, "portfoliocreator": "Create Portfolios"}
 
 PROJECT_PERMISSIONS = {
     "admin": "Administer Project",
@@ -72,8 +72,7 @@ MAX_PERMS = 100
 
 
 class Permissions(ABC):
-    """
-    Abstraction of sonar objects permissions
+    """Abstraction of sonar objects permissions
     """
 
     def __init__(self, concerned_object: object) -> None:
@@ -86,7 +85,7 @@ class Permissions(ABC):
         self.read()
 
     def __str__(self) -> str:
-        return f"permissions of {str(self.concerned_object)}"
+        return f"permissions of {self.concerned_object!s}"
 
     def to_json(self, perm_type: Optional[str] = None) -> JsonPermissions:
         """Converts a permission object to JSON"""
@@ -104,8 +103,7 @@ class Permissions(ABC):
 
     @abstractmethod
     def read(self) -> Permissions:
-        """
-        :return: The concerned object permissions
+        """:return: The concerned object permissions
         :rtype: Permissions
         """
 
@@ -124,8 +122,7 @@ class Permissions(ABC):
         return self.set([])
 
     def users(self) -> dict[str, list[str]]:
-        """
-        :return: User permissions of an object
+        """:return: User permissions of an object
         :rtype: list (for QualityGate and QualityProfile) or dict (for other objects)
         """
         if self.permissions is None:
@@ -133,8 +130,7 @@ class Permissions(ABC):
         return self.to_json(perm_type="users")
 
     def groups(self) -> dict[str, list[str]]:
-        """
-        :return: Group permissions of an object
+        """:return: Group permissions of an object
         :rtype: list (for QualityGate and QualityProfile) or dict (for other objects)
         """
         if self.permissions is None:
@@ -151,14 +147,12 @@ class Permissions(ABC):
         return {"added": diff(self.permissions, other_perms), "removed": diff(other_perms, self.permissions)}
 
     def black_list(self, disallowed_perms: list[str]) -> None:
-        """
-        :meta private:
+        """:meta private:
         """
         self.permissions = black_list(self.permissions, disallowed_perms)
 
     def white_list(self, allowed_perms: list[str]) -> None:
-        """
-        :meta private:
+        """:meta private:
         """
         self.permissions = white_list(self.permissions, allowed_perms)
 
@@ -295,15 +289,13 @@ def simplify(perms_dict: dict[str, list[str]]) -> Optional[dict[str, str]]:
 
 
 def encode(perms_array: dict[str, list[str]]) -> dict[str, str]:
-    """
-    :meta private:
+    """:meta private:
     """
     return util.list_to_csv(perms_array, ", ", check_for_separator=True)
 
 
 def decode(encoded_perms: dict[str, str]) -> dict[str, list[str]]:
-    """
-    :meta private:
+    """:meta private:
     """
     return util.csv_to_list(encoded_perms)
 
@@ -317,8 +309,7 @@ def decode_full(encoded_perms: dict[str, str]) -> dict[str, list[str]]:
 
 
 def is_valid(perm_type: str) -> bool:
-    """
-    :param str perm_type:
+    """:param str perm_type:
     :return: Whether that permission type exists
     :rtype: bool
     """
@@ -326,23 +317,20 @@ def is_valid(perm_type: str) -> bool:
 
 
 def normalize(perm_type: str | None) -> tuple[str]:
-    """
-    :meta private:
+    """:meta private:
     """
     return (perm_type,) if is_valid(perm_type) else PERMISSION_TYPES
 
 
 def apply_api(endpoint: object, api: str, ufield: str, uvalue: str, ofield: str, ovalue: str, perm_list: list[str]) -> None:
-    """
-    :meta private:
+    """:meta private:
     """
     for p in perm_list:
         endpoint.post(api, params={ufield: uvalue, ofield: ovalue, "permission": p})
 
 
 def diff_full(perms_1: JsonPermissions, perms_2: JsonPermissions) -> JsonPermissions:
-    """
-    :meta private:
+    """:meta private:
     """
     diff_perms = perms_1.copy()
     for perm_type in PERMISSION_TYPES:
@@ -368,8 +356,7 @@ def diff(perms_1: PermissionDef, perms_2: PermissionDef) -> PermissionDef:
 
 
 def diffarray(perms_1: list[str], perms_2: list[str]) -> list[str]:
-    """
-    :meta private:
+    """:meta private:
     """
     return list(set(perms_1) - set(perms_2))
 

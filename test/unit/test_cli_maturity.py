@@ -24,7 +24,6 @@ import json
 from collections.abc import Generator
 import utilities as tutil
 from sonar import errcodes as e
-import sonar.util.constants as c
 
 from sonar.cli import maturity
 import cli.options as opt

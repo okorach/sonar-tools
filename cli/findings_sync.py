@@ -18,8 +18,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-This script propagates the manual issue changes (FP, WF, Change
+"""This script propagates the manual issue changes (FP, WF, Change
 of severity, of issue type, comments) from:
 - One project to another (normally on different platforms but not necessarily).
   The 2 platform don't need to be identical in version, edition or plugins

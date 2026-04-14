@@ -53,8 +53,7 @@ _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches"
 
 
 class Application(aggr.Aggregation):
-    """
-    Abstraction of the SonarQube "application" concept
+    """Abstraction of the SonarQube "application" concept
     """
 
     CACHE = cache.Cache()
@@ -148,16 +147,14 @@ class Application(aggr.Aggregation):
             raise
 
     def permissions(self) -> application_permissions.ApplicationPermissions:
-        """
-        :return: The application permissions
+        """:return: The application permissions
         """
         if self._permissions is None:
             self._permissions = application_permissions.ApplicationPermissions(self)
         return self._permissions
 
     def projects(self) -> dict[str, str]:
-        """
-        :return: The project branches included in the application
+        """:return: The project branches included in the application
         :rtype: dict{<projectKey>: <branch>}
         """
         if self._projects is not None:
@@ -182,8 +179,7 @@ class Application(aggr.Aggregation):
         return super().get_issues(**search_params)
 
     def branch_is_main(self, branch: str) -> bool:
-        """
-        :return: Whether the Application branch is the main branch
+        """:return: Whether the Application branch is the main branch
         :rtype: bool
         """
         return app_branches.ApplicationBranch.get_object(self.endpoint, self, branch).is_main()
@@ -246,8 +242,7 @@ class Application(aggr.Aggregation):
         return self
 
     def branches(self) -> dict[str, object]:
-        """
-        :return: the list of branches of the application and their definition
+        """:return: the list of branches of the application and their definition
         :rtype: dict {<branchName>: <ApplicationBranch>}
         """
         self.refresh()

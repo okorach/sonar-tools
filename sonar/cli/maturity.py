@@ -502,7 +502,6 @@ def compute_global_maturity_level_statistics(data: dict[str, Any], gov_data: dic
 
 def draw_charts(data: dict[str, Any]) -> None:
     """Draws. bar charts from maturity data"""
-
     kv = {
         f"{ANALYSIS_MATURITY_KEY}_distribution": "Projects Analysis Maturity Distribution",
         f"{NEW_CODE_MATURITY_KEY}_distribution": "Projects New Code Maturity Distribution",

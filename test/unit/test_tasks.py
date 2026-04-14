@@ -47,7 +47,7 @@ def test_audit() -> None:
     """test_audit"""
     task = tasks.Task.search_last(tutil.SQ, component=tutil.LIVE_PROJECT, type="REPORT")
     settings = {
-        "audit.projects.suspiciousExclusionsPatterns": "\\*\\*/[^\/]+/\\*\\*, \\*\\*/\\*[\.\w]*, \\*\\*/\\*, \\*\\*/\\*\\.(java|jav|cs|csx|py|php|js|ts|sql|html|css|cpp|c|h|hpp)\\*?",
+        "audit.projects.suspiciousExclusionsPatterns": "\\*\\*/[^\\/]+/\\*\\*, \\*\\*/\\*[\\.\\w]*, \\*\\*/\\*, \\*\\*/\\*\\.(java|jav|cs|csx|py|php|js|ts|sql|html|css|cpp|c|h|hpp)\\*?",
         "audit.projects.suspiciousExclusionsExceptions": "\\*\\*/(__pycache__|libs|lib|vendor|node_modules)/\\*\\*",
     }
     assert len(task.audit(settings)) > 0

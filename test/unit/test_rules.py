@@ -20,8 +20,7 @@
 #
 
 
-"""
-sonar-rules tests
+"""sonar-rules tests
 """
 
 from collections.abc import Generator
@@ -31,7 +30,6 @@ from cli import rules_cli
 import cli.options as opt
 from sonar import rules, exceptions, errcodes as e
 from sonar.util import constants as c, issue_defs as idefs
-import sonar.utilities as sutil
 
 CMD = "rules_cli.py"
 OPTS = f"{CMD} {tutil.SQS_OPTS}"

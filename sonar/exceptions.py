@@ -18,9 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""
-
-Exceptions raised but the sonar python APIs
+"""Exceptions raised but the sonar python APIs
 
 """
 

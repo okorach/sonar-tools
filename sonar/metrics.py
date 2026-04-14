@@ -106,8 +106,7 @@ class Metric(SqObject):
 
     @classmethod
     def search(cls, endpoint: Platform, include_hidden_metrics: bool = False, use_cache: bool = False, **search_params: Any) -> dict[str, Metric]:
-        """
-        :param endpoint: Reference to the SonarQube platform object
+        """:param endpoint: Reference to the SonarQube platform object
         :param include_hidden_metrics: Whether to also include hidden (private) metrics
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
         :param search_params: Search filters (see api/metrics/search parameters)

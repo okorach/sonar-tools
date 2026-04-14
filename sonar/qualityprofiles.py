@@ -54,8 +54,7 @@ _IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefa
 
 
 class QualityProfile(SqObject):
-    """
-    Abstraction of the SonarQube "quality profile" concept
+    """Abstraction of the SonarQube "quality profile" concept
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
     """
 
@@ -186,22 +185,19 @@ class QualityProfile(SqObject):
         return self
 
     def url(self) -> str:
-        """
-        :return: the SonarQube permalink URL to the quality profile
+        """:return: the SonarQube permalink URL to the quality profile
         :rtype: str
         """
         return f"{self.base_url(local=False)}/profiles/show?language={self.language}&name={requests.utils.quote(self.name)}"
 
     def last_use(self) -> datetime:
-        """
-        :return: When the quality profile was last used
+        """:return: When the quality profile was last used
         :rtype: datetime or None if never
         """
         return self.__last_use
 
     def last_update(self) -> datetime:
-        """
-        :return: When the quality profile was last updated
+        """:return: When the quality profile was last updated
         :rtype: datetime or None
         """
         return self.__last_update
@@ -254,22 +250,19 @@ class QualityProfile(SqObject):
         return self.delete_object(qualityProfile=self.name, language=self.language)
 
     def is_child(self) -> bool:
-        """
-        :return: Whether the quality profile has a parent
+        """:return: Whether the quality profile has a parent
         :rtype: bool
         """
         return self.parent_name is not None
 
     def inherits_from_built_in(self) -> bool:
-        """
-        :return: Whether the quality profile inherits from a built-in profile (following parents of parents)
+        """:return: Whether the quality profile inherits from a built-in profile (following parents of parents)
         :rtype: bool
         """
         return self.built_in_parent() is not None
 
     def built_in_parent(self) -> Optional[QualityProfile]:
-        """
-        :return: The built-in parent profile of the profile, or None
+        """:return: The built-in parent profile of the profile, or None
         :rtype: QualityProfile or None if profile does not inherit from a built-in profile
         """
         self.is_built_in = self.sq_json.get("isBuiltIn", False)
@@ -280,8 +273,7 @@ class QualityProfile(SqObject):
         return QualityProfile.get_object(endpoint=self.endpoint, name=self.parent_name, language=self.language).built_in_parent()
 
     def rules(self, use_cache: bool = False) -> dict[str, rules.Rule]:
-        """
-        :return: The list of rules active in the quality profile
+        """:return: The list of rules active in the quality profile
         :rtype: dict{<rule_key>: <rule_data>}
         """
         if self._rules is not None and use_cache:
@@ -430,8 +422,7 @@ class QualityProfile(SqObject):
         return self
 
     def to_json(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
-        """
-        :param export_settings: Settings for export, such as whether to export all rules or only the active ones
+        """:param export_settings: Settings for export, such as whether to export all rules or only the active ones
         :return: the quality profile properties as JSON dict
         """
         json_data = self.sq_json.copy()
@@ -535,7 +526,6 @@ class QualityProfile(SqObject):
         :return: List of projects using explicitly this QP
         :rtype: List[project_key]
         """
-
         with self._projects_lock:
             if self._projects is None:
                 self._projects = []
@@ -556,8 +546,7 @@ class QualityProfile(SqObject):
         return self._projects
 
     def used_by_project(self, project: object) -> bool:
-        """
-        :param Project project: The project
+        """:param Project project: The project
         :return: Whether the quality profile is used by the project
         :rtype: bool
         """
@@ -626,8 +615,7 @@ class QualityProfile(SqObject):
         return rules.Rule.get_object(self.endpoint, rule_key).custom_parameters_in_quality_profile(self.key)
 
     def permissions(self) -> permissions.QualityProfilePermissions:
-        """
-        :return: The list of users and groups that can edit the quality profile
+        """:return: The list of users and groups that can edit the quality profile
         """
         if self._permissions is None:
             self._permissions = permissions.QualityProfilePermissions(self)
@@ -728,7 +716,7 @@ def __audit_duplicates(qp_list: dict[str, QualityProfile], audit_settings: Confi
     pairs = set()
     for lang in sorted(langs):
         lang_qp_list = {k: qp for k, qp in qp_list.items() if qp.language == lang}
-        pairs |= {(key1, key2) if key1 < key2 else (key2, key1) for key1 in lang_qp_list.keys() for key2 in lang_qp_list.keys() if key1 != key2}
+        pairs |= {(key1, key2) if key1 < key2 else (key2, key1) for key1 in lang_qp_list for key2 in lang_qp_list if key1 != key2}
 
     threads = audit_settings.get("threads", 1)
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads, thread_name_prefix="QPDuplication") as executor:
@@ -737,7 +725,7 @@ def __audit_duplicates(qp_list: dict[str, QualityProfile], audit_settings: Confi
             try:
                 problems += future.result(timeout=30)
             except Exception as e:
-                log.error(f"{str(e)} for {str(future)}.")
+                log.error(f"{e!s} for {future!s}.")
     return problems
 
 
@@ -887,7 +875,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
             try:
                 _ = future.result(timeout=60)
             except TimeoutError:
-                log.error(f"Importing {qp} timed out after 60 seconds for {str(future)}.")
+                log.error(f"Importing {qp} timed out after 60 seconds for {future!s}.")
             except Exception as e:
-                log.error(f"Exception {str(e)} when importing {qp} or its chilren.")
+                log.error(f"Exception {e!s} when importing {qp} or its chilren.")
     return True

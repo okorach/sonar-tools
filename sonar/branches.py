@@ -215,7 +215,7 @@ class Branch(components.Component):
         if self.is_main():
             if not keep:
                 log.warning("%s is main branch, can't be purgeable, skipping...", str(self))
-                raise exceptions.UnsupportedOperation(f"{str(self)} is the main branch, can't be purgeable")
+                raise exceptions.UnsupportedOperation(f"{self!s} is the main branch, can't be purgeable")
             return True
         api, _, params, _ = self.endpoint.api.get_details(
             self, Oper.KEEP_WHEN_INACTIVE, project=self.concerned_object.key, branch=self.name, value=str(keep).lower()
@@ -232,7 +232,7 @@ class Branch(components.Component):
         :return: Whether the operation was successful
         """
         if not self.is_main():
-            raise exceptions.UnsupportedOperation(f"{str(self)} can't be renamed since it's not the main branch")
+            raise exceptions.UnsupportedOperation(f"{self!s} can't be renamed since it's not the main branch")
 
         log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
         api, _, params, _ = self.endpoint.api.get_details(self, Oper.RENAME, project=self.concerned_object.key, name=new_name)

@@ -202,8 +202,7 @@ class QualityGate(SqObject):
         return self.delete_object(id=self.qg_id, name=self.name)
 
     def projects(self) -> dict[str, projects.Project]:
-        """
-        :raises ObjectNotFound: If Quality gate not found
+        """:raises ObjectNotFound: If Quality gate not found
         :return: The list of projects using this quality gate
         """
         log.debug("Getting %s projects", self)
@@ -231,8 +230,7 @@ class QualityGate(SqObject):
         return self._projects
 
     def conditions(self, encoded: bool = False) -> Union[list[str], list[dict[str, str]]]:
-        """
-        :param encoded: Whether to encode the conditions or not, optional, defaults to False
+        """:param encoded: Whether to encode the conditions or not, optional, defaults to False
         :return: The quality gate conditions, encoded (for simplication) or not
         """
         if self._conditions is None:
@@ -285,8 +283,7 @@ class QualityGate(SqObject):
         return ok
 
     def permissions(self) -> permissions.QualityGatePermissions:
-        """
-        :return: The quality gate permissions
+        """:return: The quality gate permissions
         :rtype: QualityGatePermissions
         """
         if self._permissions is None:
@@ -421,7 +418,7 @@ def __audit_duplicates(qg_list: dict[str, QualityGate], audit_settings: ConfigSe
     if not audit_settings.get("audit.qualityGates.duplicates", True):
         return []
     problems = []
-    pairs = {(key1, key2) if key1 < key2 else (key2, key1) for key1 in qg_list.keys() for key2 in qg_list.keys() if key1 != key2}
+    pairs = {(key1, key2) if key1 < key2 else (key2, key1) for key1 in qg_list for key2 in qg_list if key1 != key2}
     for key1, key2 in pairs:
         qg1, qg2 = qg_list[key1], qg_list[key2]
         log.debug("Comparing %s and %s", qg1, qg2)
@@ -495,8 +492,7 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
 
 
 def count(endpoint: Platform) -> int:
-    """
-    :param Platform endpoint: Reference to the SonarQube platform
+    """:param Platform endpoint: Reference to the SonarQube platform
     :return: Number of quality gates
     :rtype: int
     """

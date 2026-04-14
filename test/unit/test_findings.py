@@ -151,7 +151,7 @@ def test_findings_filter_on_date_after(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_date_after"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} -{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT} --{opt.DATE_AFTER} 2023-05-01"
     assert tutil.run_cmd(findings_export.main, cmd) == e.OK
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
+    with open(file=csv_file, encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         (date_col,) = tutil.get_cols(next(csvreader), "creationDate")
         for line in csvreader:
@@ -162,7 +162,7 @@ def test_findings_filter_on_date_before(csv_file: Generator[str]) -> None:
     """test_findings_filter_on_date_before"""
     cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} -{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT} --{opt.DATE_BEFORE} 2024-05-01"
     assert tutil.run_cmd(findings_export.main, cmd) == e.OK
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
+    with open(file=csv_file, encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         (date_col,) = tutil.get_cols(next(csvreader), "creationDate")
         for line in csvreader:
@@ -193,7 +193,7 @@ def test_findings_filter_on_severity(csv_file: Generator[str]) -> None:
     if tutil.SQ.version() < c.MQR_INTRO_VERSION:
         assert tutil.csv_col_is_value(csv_file, "severity", idefs.STD_SEVERITY_BLOCKER, idefs.STD_SEVERITY_CRITICAL)
         return
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
+    with open(file=csv_file, encoding="utf-8") as fh:
         (sec, other, legacy) = tutil.get_cols(next(csvreader := csv.reader(fh)), "securityImpact", "otherImpact", "legacySeverity")
         other += 1
         for line in csvreader:
@@ -219,7 +219,7 @@ def test_findings_filter_on_multiple_criteria(csv_file: Generator[str]) -> None:
     assert tutil.csv_col_is_value(csv_file, "status", "FALSE-POSITIVE", "WONTFIX" if tutil.SQ.version() < c.ACCEPT_INTRO_VERSION else "ACCEPTED")
     if tutil.SQ.version() < c.MQR_INTRO_VERSION:
         return
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
+    with open(file=csv_file, encoding="utf-8") as fh:
         (maint_col, rel_col) = tutil.get_cols(next(csvreader := csv.reader(fh)), "maintainabilityImpact", "reliabilityImpact")
         for line in csvreader:
             assert line[maint_col] != "" or line[rel_col] != ""
@@ -263,7 +263,7 @@ def test_findings_filter_on_multiple_criteria_3(csv_file: Generator[str]) -> Non
     statuses = ("FALSE_POSITIVE", "FALSE-POSITIVE")
     statuses += ("ACCEPTED",) if tutil.SQ.version() >= c.ACCEPT_INTRO_VERSION else ("WONTFIX",)
     assert tutil.csv_col_is_value(csv_file, "status", *statuses)
-    with open(file=csv_file, mode="r", encoding="utf-8") as fh:
+    with open(file=csv_file, encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         (status_col,) = tutil.get_cols(next(csvreader), "status")
         for line in csvreader:
@@ -428,7 +428,6 @@ def test_output_format_csv(csv_file: Generator[str]) -> None:
 
 def test_output_format_branch(csv_file: Generator[str]) -> None:
     """test_output_format_branch"""
-
     for br in "develop", "master,develop":
         br_list = util.csv_to_list(br)
         regexp = util.csv_to_regexp(br)

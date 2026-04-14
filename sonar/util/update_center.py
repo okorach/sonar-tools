@@ -41,8 +41,7 @@ _UPDATE_CENTER_PROPERTIES = None
 
 
 def get_update_center_properties() -> Optional[dict[str, str]]:
-    """
-    Gets Sonar update center properties
+    """Gets Sonar update center properties
     :returns: All properties as dict or None if update center is unreachable
     """
     global _UPDATE_CENTER_PROPERTIES
@@ -55,7 +54,7 @@ def get_update_center_properties() -> Optional[dict[str, str]]:
         _, tmpfile = tempfile.mkstemp(prefix="sonar-tools", suffix=".txt", text=True)
         with open(tmpfile, "w", encoding="utf-8") as fp:
             print(requests.get(_UPDATE_CENTER_URL, headers={"user-agent": _SONAR_TOOLS_AGENT}, timeout=10).text, file=fp)
-        with open(tmpfile, "r", encoding="utf-8") as fp:
+        with open(tmpfile, encoding="utf-8") as fp:
             _UPDATE_CENTER_PROPERTIES = jprops.load_properties(fp)
         os.remove(tmpfile)
     except OSError as e:
@@ -81,15 +80,13 @@ def get_release_date(version: tuple[int, ...]) -> Optional[datetime.date]:
 
 
 def get_lta() -> tuple[int, ...]:
-    """
-    :returns: the current SonarQube LTA (ex-LTS) version
+    """:returns: the current SonarQube LTA (ex-LTS) version
     """
     return tuple(int(s) for s in get_update_center_properties().get("ltaVersion", _HARDCODED_LTA_STR).split("."))
 
 
 def get_latest() -> tuple[int, ...]:
-    """
-    :returns: the current SonarQube LATEST version
+    """:returns: the current SonarQube LATEST version
     """
     sqs = get_update_center_properties().get("sqs", "").split(",")[-1].strip()
     if sqs == "":
@@ -116,8 +113,7 @@ def get_latest_patch(major_minor: tuple[int, ...]) -> Optional[tuple[int, ...]]:
 
 
 def get_registered_plugins() -> list[str]:
-    """
-    :returns: a list of registered plugin keys in the update center
+    """:returns: a list of registered plugin keys in the update center
     """
     plugins = get_update_center_properties().get("plugins", None)
     if not plugins:

@@ -182,8 +182,7 @@ class Group(SqObject):
         return self.update(name=name)
 
     def is_default(self) -> bool:
-        """
-        :return: whether the group is a default group (sonar-users on SQS, Mambers on SQC) or not
+        """:return: whether the group is a default group (sonar-users on SQS, Mambers on SQC) or not
         """
         return self.__is_default
 
@@ -291,7 +290,6 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -
     :param ConfigSettings export_settings: Export parameters
     :rtype: ObjectJsonRepr
     """
-
     log.info("Exporting groups")
     g_list = []
     for g_name, g_obj in Group.search(endpoint).items():

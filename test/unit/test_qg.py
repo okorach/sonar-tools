@@ -41,7 +41,6 @@ def test_get_object(get_loaded_qg: Generator[qualitygates.QualityGate]) -> None:
 
 def test_get_object_non_existing() -> None:
     """Test exception raised when providing non existing portfolio key"""
-
     with pytest.raises(exceptions.ObjectNotFound) as e:
         _ = qualitygates.QualityGate.get_object(endpoint=tutil.SQ, name=tutil.NON_EXISTING_KEY)
     assert str(e.value).endswith(f"Quality gate '{tutil.NON_EXISTING_KEY}' not found")

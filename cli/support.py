@@ -18,9 +18,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-Audits a SUPPORT ticket SIF
+"""Audits a SUPPORT ticket SIF
 
 """
 
@@ -36,7 +34,6 @@ import sonar.logging as log
 from sonar import sif, errcodes
 from sonar.audit import problem, audit_config
 from sonar.audit.severities import Severity
-import sonar.utilities as sutil
 import sonar.util.common_helper as chelp
 
 PRIVATE_COMMENT = [{"key": "sd.public.comment", "value": {"internal": "true"}}]

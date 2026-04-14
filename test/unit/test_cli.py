@@ -54,7 +54,7 @@ def test_import(json_file: Generator[str]) -> None:
     if tutil.SQ.version() == tutil.TEST_SQ.version():
         assert proj_cli.__import_projects(tutil.TEST_SQ, file=json_file) is None
 
-        with open(json_file, "r", encoding="utf-8") as fd:
+        with open(json_file, encoding="utf-8") as fd:
             data = json.load(fd)
         data["projects"][0]["key"] = "TEMP-IMPORT_PROJECT-KEY"
         with open(json_file, "w", encoding="utf-8") as fd:
@@ -64,7 +64,7 @@ def test_import(json_file: Generator[str]) -> None:
         proj.delete()
 
     # Mess up the JSON file and retry import
-    with open(json_file, "r", encoding="utf-8") as fd:
+    with open(json_file, encoding="utf-8") as fd:
         data = fd.read()
     data += "]"
     with open(json_file, "w", encoding="utf-8") as fd:

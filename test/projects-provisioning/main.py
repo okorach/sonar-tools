@@ -7,7 +7,6 @@ TOOL_NAME = "main.py"
 
 def is_prime(n: int) -> bool:
     """Check if a number is prime."""
-
     # TODO: Make the algorithm faster
     if n <= 1:
         return False

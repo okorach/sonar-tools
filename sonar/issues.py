@@ -388,8 +388,7 @@ class Issue(findings.Finding):
 
     @classmethod
     def search_first(cls, endpoint: Platform, **search_params: Any) -> Optional[Issue]:
-        """
-        :return: The first issue of a search, for instance the oldest, if params = s="CREATION_DATE", asc=asc_sort
+        """:return: The first issue of a search, for instance the oldest, if params = s="CREATION_DATE", asc=asc_sort
         :rtype: Issue or None if not issue found
         """
         issue_list, _ = cls.search_one_page(endpoint, **(search_params | {"ps": 1}))

@@ -223,7 +223,7 @@ def load() -> None:
 
     log.info("Loading audit rules")
     path = pathlib.Path(__file__).parent
-    with open(path / "rules.json", "r", encoding="utf-8") as rulefile:
+    with open(path / "rules.json", encoding="utf-8") as rulefile:
         rules = json.loads(rulefile.read())
     rulefile.close()
     __RULES = {}
