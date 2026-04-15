@@ -271,14 +271,13 @@ class Platform(object):
             params = [(v[0], str(v[1]).lower() if isinstance(v[1], bool) else v[1]) for v in params]
         headers["Authorization"] = f"Bearer {self.__token}"
         with_org = kwargs.pop("with_organization", True)
-        if self.is_sonarcloud():
-            if with_org:
-                if isinstance(params, dict):
-                    params["organization"] = self.organization
-                elif isinstance(params, (list, tuple)):
-                    params.append(("organization", self.organization))
-                elif isinstance(params, str):
-                    params += f"&organization={self.organization}"
+        if self.is_sonarcloud() and with_org:
+            if isinstance(params, dict):
+                params["organization"] = self.organization
+            elif isinstance(params, (list, tuple)):
+                params.append(("organization", self.organization))
+            elif isinstance(params, str):
+                params += f"&organization={self.organization}"
         req_type, url = getattr(request, "__name__", repr(request)).upper(), ""
         if log.get_level() <= log.DEBUG:
             url = self.__urlstring(api, params, kwargs.get("data", {}))
