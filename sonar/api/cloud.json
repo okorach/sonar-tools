@@ -372,7 +372,8 @@
     "Group": {
         "CREATE": {
             "method": "POST",
-            "api": "api/user_groups/create",
+            "api": "api/v2/authorizations/groups",
+            "content_type": "application/json",
             "params": [
                 "name",
                 "description"
@@ -380,71 +381,60 @@
         },
         "GET": {
             "method": "GET",
-            "api": "api/user_groups/search",
-            "params": [
-                "q",
-                "p",
-                "ps"
-            ],
-            "return_field": "groups"
+            "api": "api/v2/authorizations/groups/{id}",
+            "return_field": ""
         },
         "UPDATE": {
-            "method": "POST",
-            "api": "api/user_groups/update",
+            "method": "PATCH",
+            "api": "api/v2/authorizations/groups/{id}",
+            "content_type": "application/merge-patch+json",
             "params": [
-                "currentName",
                 "name",
                 "description"
             ]
         },
         "DELETE": {
-            "method": "POST",
-            "api": "api/user_groups/delete",
-            "params": [
-                "name"
-            ]
+            "method": "DELETE",
+            "api": "api/v2/authorizations/groups/{id}"
         },
         "SEARCH": {
             "method": "GET",
-            "api": "api/user_groups/search",
+            "api": "api/v2/authorizations/groups",
             "params": [
                 "q",
-                "p",
-                "ps"
+                "pageIndex",
+                "pageSize"
             ],
-            "page_field": "p",
+            "page_field": "pageIndex",
             "return_field": "groups",
             "max_page_size": 500
         },
         "LIST_MEMBERS": {
             "method": "GET",
-            "api": "api/user_groups/users",
+            "api": "api/v2/authorizations/group-memberships",
             "params": [
-                "name",
-                "p",
-                "ps",
-                "q",
-                "selected"
+                "userId",
+                "groupId",
+                "pageIndex",
+                "pageSize"
             ],
-            "page_field": "p",
-            "return_field": "users",
+            "page_field": "pageIndex",
+            "return_field": "groupMemberships",
             "max_page_size": 500
         },
         "ADD_USER": {
             "method": "POST",
-            "api": "api/user_groups/add_user",
+            "api": "api/v2/authorizations/group-memberships",
+            "content_type": "application/json",
             "params": [
-                "login",
-                "name"
-            ]
+                "groupId",
+                "userId"
+            ],
+            "return_field": "groupMemberships"
         },
         "REMOVE_USER": {
-            "method": "POST",
-            "api": "api/user_groups/remove_user",
-            "params": [
-                "login",
-                "name"
-            ]
+            "method": "DELETE",
+            "api": "api/v2/authorizations/group-memberships/{id}"
         }
     },
     "Metric": {
