@@ -175,7 +175,10 @@ class User(SqObject):
         if "local" in data:
             self.is_local = data["local"]
         self.last_login = None  #: User last login - read-only
-        if self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
+        if self.endpoint.is_sonarcloud():
+            self.last_login = sutil.string_to_datetime(data.get("lastConnectionDate"))
+            self.user_id = data.get("id")
+        elif self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             self.last_login = sutil.string_to_datetime(data.get("lastConnectionDate"))
             self.nb_tokens = data.get("tokenCount")  #: Nbr of tokens - read-only
         else:
