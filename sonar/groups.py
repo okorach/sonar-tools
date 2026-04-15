@@ -191,7 +191,7 @@ class Group(SqObject):
             # TODO: handle pagination
             api, _, params, ret = self.endpoint.api.get_details(self, Oper.LIST_MEMBERS, groupId=self.group_id, ps=500, pageSize=500, name=self.name)
             data = json.loads(self.endpoint.get(api, params=params).text)[ret]
-            if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
+            if self.endpoint.is_sonarcloud() or self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION:
                 pname = "id"
                 fname = "userId"
             else:
@@ -209,7 +209,7 @@ class Group(SqObject):
         :param user: the User to get the membership of
         :return: the membership id of the user in the group
         """
-        if self.endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
+        if not self.endpoint.is_sonarcloud() and self.endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
             return None
         api, _, params, ret = self.endpoint.api.get_details(self, Oper.LIST_MEMBERS, groupId=self.group_id, userId=user.user_id)
         data = json.loads(self.endpoint.get(api, params=params).text)[ret]
@@ -242,7 +242,7 @@ class Group(SqObject):
             raise exceptions.UnsupportedOperation(f"{user} not in {self}")
         mb_id = self.__get_membership_id(user)
         api, method, params, _ = self.endpoint.api.get_details(self, Oper.REMOVE_USER, id=mb_id, login=user.login, name=self.name)
-        if self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION and not mb_id:
+        if (self.endpoint.is_sonarcloud() or self.endpoint.version() >= c.GROUP_API_V2_INTRO_VERSION) and not mb_id:
             raise exceptions.ObjectNotFound(user.login, f"{self} or user id '{user.user_id}' not found")
         if method == "DELETE":
             return self.endpoint.delete(api=api, params=params).ok
@@ -324,7 +324,7 @@ def audit(endpoint: Platform, audit_settings: ConfigSettings, **kwargs: Any) -> 
 
 def get_object_from_id(endpoint: Platform, group_id: str) -> Group:
     """Searches a Group object from its id - SonarQube 10.4+"""
-    if endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
+    if not endpoint.is_sonarcloud() and endpoint.version() < c.GROUP_API_V2_INTRO_VERSION:
         raise exceptions.UnsupportedOperation("Operation unsupported before SonarQube 10.4")
     if name := Group.ID_TO_NAME.get(group_id):
         return Group.get_object(endpoint, name=name)

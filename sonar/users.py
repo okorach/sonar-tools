@@ -153,9 +153,16 @@ class User(SqObject):
         :return: The user object
         :rtype: User
         """
-        if endpoint.version() < c.USER_API_V2_INTRO_VERSION:
+        if not endpoint.is_sonarcloud() and endpoint.version() < c.USER_API_V2_INTRO_VERSION:
             raise exceptions.UnsupportedOperation("Get by ID is an APIv2 features, staring from SonarQube 10.4")
         log.debug("Getting user id '%s'", user_id)
+        if endpoint.is_sonarcloud():
+            api, _, params, ret = endpoint.api.get_details(cls, Oper.GET, ids=user_id)
+            data = json.loads(endpoint.get(api, params=params, mute=()).text)
+            users_list = data.get(ret, [])
+            if not users_list:
+                raise exceptions.ObjectNotFound(user_id, f"User id '{user_id}' not found")
+            return cls.load(endpoint, users_list[0])
         api, _, params, _ = endpoint.api.get_details(cls, Oper.GET, id=user_id)
         data = json.loads(endpoint.get(api, params=params, mute=()).text)
         return cls.load(endpoint, data)
