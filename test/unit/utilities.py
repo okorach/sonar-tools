@@ -19,8 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""test utilities
-"""
+"""test utilities"""
 
 from __future__ import annotations
 from typing import Callable

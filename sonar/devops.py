@@ -49,8 +49,7 @@ _IMPORTABLE_PROPERTIES = ("key", "type", "url", "workspace", "appId", "clientId"
 
 
 class DevopsPlatform(SqObject):
-    """Abstraction of the SonarQube ALM/DevOps Platform concept
-    """
+    """Abstraction of the SonarQube ALM/DevOps Platform concept"""
 
     CACHE = cache.Cache()
 
@@ -216,8 +215,7 @@ def count(endpoint: Platform, platf_type: Optional[str] = None) -> int:
 
 
 def export(endpoint: Platform, export_settings: ConfigSettings) -> ObjectJsonRepr:
-    """:meta private:
-    """
+    """:meta private:"""
     log.info("Exporting DevOps integration settings")
     json_data = {}
     for s in DevopsPlatform.search(endpoint).values():

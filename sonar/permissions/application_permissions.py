@@ -24,5 +24,4 @@ from sonar.permissions import aggregation_permissions
 
 
 class ApplicationPermissions(aggregation_permissions.AggregationPermissions):
-    """Abstraction of Application permission
-    """
+    """Abstraction of Application permission"""

@@ -18,9 +18,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""Exports all projects of a SonarQube platform
-
-"""
+"""Exports all projects of a SonarQube platform"""
 
 import sys
 from unittest.mock import patch

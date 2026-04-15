@@ -17,9 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""Abstraction of the SonarQube "pull request" concept
-
-"""
+"""Abstraction of the SonarQube "pull request" concept"""
 
 from __future__ import annotations
 from typing import Optional, Union, Any, TYPE_CHECKING
@@ -139,8 +137,7 @@ class PullRequest(Component):
         return f"{self.concerned_object.url()}&pullRequest={requests.utils.quote(self.key)}"
 
     def get_tags(self, **kwargs) -> list[str]:
-        """:return: The tags of the project corresponding to the PR
-        """
+        """:return: The tags of the project corresponding to the PR"""
         return self.concerned_object.get_tags(**kwargs)
 
     def project(self) -> Component:

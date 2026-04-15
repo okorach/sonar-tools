@@ -80,14 +80,12 @@ def get_release_date(version: tuple[int, ...]) -> Optional[datetime.date]:
 
 
 def get_lta() -> tuple[int, ...]:
-    """:returns: the current SonarQube LTA (ex-LTS) version
-    """
+    """:returns: the current SonarQube LTA (ex-LTS) version"""
     return tuple(int(s) for s in get_update_center_properties().get("ltaVersion", _HARDCODED_LTA_STR).split("."))
 
 
 def get_latest() -> tuple[int, ...]:
-    """:returns: the current SonarQube LATEST version
-    """
+    """:returns: the current SonarQube LATEST version"""
     sqs = get_update_center_properties().get("sqs", "").split(",")[-1].strip()
     if sqs == "":
         return _HARDCODED_LATEST
@@ -113,8 +111,7 @@ def get_latest_patch(major_minor: tuple[int, ...]) -> Optional[tuple[int, ...]]:
 
 
 def get_registered_plugins() -> list[str]:
-    """:returns: a list of registered plugin keys in the update center
-    """
+    """:returns: a list of registered plugin keys in the update center"""
     plugins = get_update_center_properties().get("plugins", None)
     if not plugins:
         return []

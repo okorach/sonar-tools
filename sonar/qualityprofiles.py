@@ -615,8 +615,7 @@ class QualityProfile(SqObject):
         return rules.Rule.get_object(self.endpoint, rule_key).custom_parameters_in_quality_profile(self.key)
 
     def permissions(self) -> permissions.QualityProfilePermissions:
-        """:return: The list of users and groups that can edit the quality profile
-        """
+        """:return: The list of users and groups that can edit the quality profile"""
         if self._permissions is None:
             self._permissions = permissions.QualityProfilePermissions(self)
         return self._permissions

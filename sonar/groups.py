@@ -182,8 +182,7 @@ class Group(SqObject):
         return self.update(name=name)
 
     def is_default(self) -> bool:
-        """:return: whether the group is a default group (sonar-users on SQS, Mambers on SQC) or not
-        """
+        """:return: whether the group is a default group (sonar-users on SQS, Mambers on SQC) or not"""
         return self.__is_default
 
     def members(self, use_cache: bool = True) -> list[users.User]:

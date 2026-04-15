@@ -163,8 +163,7 @@ class ApplicationBranch(Component):
         return self._is_main
 
     def get_tags(self, **kwargs) -> list[str]:
-        """:return: The tags of the project corresponding to the branch
-        """
+        """:return: The tags of the project corresponding to the branch"""
         return self.concerned_object.get_tags(**kwargs)
 
     def projects_branches(self) -> list[Union[Project, Branch]]:

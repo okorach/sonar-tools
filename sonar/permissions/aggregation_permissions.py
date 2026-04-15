@@ -35,8 +35,7 @@ AGGREGATION_PERMISSIONS = {
 
 
 class AggregationPermissions(project_permissions.ProjectPermissions):
-    """Abstraction of aggregations (Portfolios and Applications) permissions
-    """
+    """Abstraction of aggregations (Portfolios and Applications) permissions"""
 
     def read(self) -> AggregationPermissions:
         """Reads permissions of an aggregation (Portfolio or Application) in SonarQube"""

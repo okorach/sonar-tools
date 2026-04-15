@@ -36,7 +36,7 @@ sonar start -i test
 testList="${1:-"latest cb 99 cloud"}"
 for target in ${testList}
 do
-    sonar start -i "${target}" && sleep 30
+    sqs start -i "${target}" && sleep 30
     if [[ "${target}" != "cloud" ]]; then
         skippedTests="--ignore=${ROOT_DIR}/test/unit/test_common_sonarcloud.py"
     fi

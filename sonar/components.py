@@ -17,9 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""Abstraction of the SonarQube "component" concept
-
-"""
+"""Abstraction of the SonarQube "component" concept"""
 
 from __future__ import annotations
 from typing import Any, Optional, TYPE_CHECKING
@@ -255,8 +253,7 @@ class Component(SqObject):
         return data
 
     def get_ai_code_assurance(self) -> Optional[str]:
-        """:return: The AI code assurance status of a project or a branch
-        """
+        """:return: The AI code assurance status of a project or a branch"""
         version = self.endpoint.version()
         log.debug("AI Code assurance version = %s", str(version))
         if version < (10, 7, 0):
@@ -269,9 +266,7 @@ class Component(SqObject):
         except (ConnectionError, RequestException) as e:
             sutil.handle_error(e, f"getting AI code assurance of {self}", catch_all=True)
             if "Unknown url" in sutil.error_msg(e):
-                raise exceptions.UnsupportedOperation(
-                    f"AI code assurance is not available for {self.endpoint.edition()} edition version {version!s}"
-                )
+                raise exceptions.UnsupportedOperation(f"AI code assurance is not available for {self.endpoint.edition()} edition version {version!s}")
         return None
 
     def _audit_bg_task(self, audit_settings: ConfigSettings) -> list[Problem]:

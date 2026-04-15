@@ -17,9 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""Abstraction of the App Node concept
-
-"""
+"""Abstraction of the App Node concept"""
 
 from __future__ import annotations
 from typing import Optional, Union, TYPE_CHECKING

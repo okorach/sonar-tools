@@ -17,9 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""Abstraction of the Sonar sub-portfolio by reference concept
-
-"""
+"""Abstraction of the Sonar sub-portfolio by reference concept"""
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
@@ -37,8 +35,7 @@ if TYPE_CHECKING:
 
 
 class PortfolioReference(SqObject):
-    """Abstraction of the Sonar portfolio reference concept
-    """
+    """Abstraction of the Sonar portfolio reference concept"""
 
     CACHE = cache.Cache()
 

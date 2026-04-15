@@ -18,8 +18,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""Exports SonarQube platform configuration as JSON
-"""
+"""Exports SonarQube platform configuration as JSON"""
 
 from typing import TextIO, Any, Optional
 from threading import Thread
@@ -185,8 +184,7 @@ def __normalize_file(file: str, format: str) -> bool:
 
 
 def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: str, export_settings: types.ConfigSettings) -> None:
-    """Thread to write projects in the JSON file
-    """
+    """Thread to write projects in the JSON file"""
     done = False
     prefix = ""
     log.info("Waiting %s to write...", object_type)

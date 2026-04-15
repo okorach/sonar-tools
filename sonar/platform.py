@@ -387,8 +387,7 @@ class Platform(object):
         return self._sys_info
 
     def global_nav(self) -> dict[str, Any]:
-        """:return: the SonarQube platform global navigation data
-        """
+        """:return: the SonarQube platform global navigation data"""
         if self.__global_nav is None:
             resp = self.get("navigation/global", mute=(HTTPStatus.INTERNAL_SERVER_ERROR,))
             self.__global_nav = json.loads(resp.text)

@@ -17,9 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""Abstraction of the SonarQube System Info File (or Support Info File) concept
-
-"""
+"""Abstraction of the SonarQube System Info File (or Support Info File) concept"""
 
 import datetime
 import re

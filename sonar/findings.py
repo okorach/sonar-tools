@@ -419,8 +419,7 @@ class Finding(SqObject):
         return {v["user"] for v in self.comments() if "user" in v}
 
     def strictly_identical_to(self, another_finding: Finding, ignore_component: bool = False) -> bool:
-        """:meta private:
-        """
+        """:meta private:"""
         if self.key == another_finding.key:
             log.debug("%s and %s are the same issue, they have the same key %s", str(self), str(another_finding), self.key)
             return True
@@ -446,8 +445,7 @@ class Finding(SqObject):
         return identical
 
     def almost_identical_to(self, another_finding: Finding, ignore_component: bool = False, **kwargs) -> bool:
-        """:meta private:
-        """
+        """:meta private:"""
         if self.rule != another_finding.rule:
             return False
         if self.hash is None:
@@ -490,8 +488,7 @@ class Finding(SqObject):
     def search_siblings(
         self, findings_list: list[Finding], ignore_component: bool = False, **kwargs
     ) -> tuple[list[Finding], list[Finding], list[Finding]]:
-        """:meta private:
-        """
+        """:meta private:"""
         exact_matches = []
         approx_matches = []
         match_but_modified = []
