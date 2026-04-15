@@ -212,9 +212,9 @@ class PermissionTemplate(sqobject.SqObject):
         return self._audit_pattern(audit_settings) + self.permissions().audit(audit_settings)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, name: str) -> PermissionTemplate:
+    def get_object(cls, endpoint: Platform, name: str, use_cache: bool = True) -> PermissionTemplate:
         """Returns Perm Template object corresponding to name"""
-        if len(cls.CACHE.from_platform(endpoint)) == 0:
+        if len(cls.CACHE.from_platform(endpoint)) == 0 or not use_cache:
             cls.search(endpoint)
         return cls.CACHE.get(endpoint.local_url, name.lower())
 

@@ -122,12 +122,12 @@ class Portfolio(aggregations.Aggregation):
         return dict(sorted(cls.get_paginated(endpoint=endpoint, params=search_params).items()))
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str) -> Portfolio:
+    def get_object(cls, endpoint: Platform, key: str, use_cache: bool = True) -> Portfolio:
         """Gets a portfolio object from its key"""
         check_supported(endpoint)
         log.debug("Getting portfolio object key '%s'", key)
         o = cls.CACHE.get(endpoint.local_url, key)
-        if o:
+        if o and use_cache:
             log.debug("%s is in cache", str(o))
             return o
         log.debug("Portfolio key '%s' not in cache, searching it", key)

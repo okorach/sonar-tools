@@ -146,15 +146,16 @@ class QualityGate(SqObject):
         return (self.name,)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, name: str) -> QualityGate:
+    def get_object(cls, endpoint: Platform, name: str, use_cache: bool = True) -> QualityGate:
         """Reads a quality gate from SonarQube
 
         :param endpoint: Reference to the SonarQube platform
         :param name: Quality gate
+        :param use_cache: Whether to use cached object, default True
         :return: the QualityGate object or None if not found
         """
         o: Optional[QualityGate] = cls.CACHE.get(endpoint.local_url, name)
-        if o:
+        if o and use_cache:
             log.debug("QG CACHE HIT")
             return o
         log.debug("QG CACHE NO HIT search %s from %s", name, [qg.name for qg in cls.CACHE.values()])

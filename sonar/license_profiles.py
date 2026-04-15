@@ -91,18 +91,19 @@ class LicenseProfile(SqObject):
         return (self.name,)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, name: str) -> LicenseProfile:
+    def get_object(cls, endpoint: Platform, name: str, use_cache: bool = True) -> LicenseProfile:
         """Gets a license profile by name
 
         :param endpoint: Reference to the SonarQube platform
         :param name: License profile name
+        :param use_cache: Whether to use cached object, default True
         :return: the LicenseProfile object
         :raises ObjectNotFound: if not found
         :raises UnsupportedOperation: if platform version is too old
         """
         _check_supported(endpoint)
         o: Optional[LicenseProfile] = cls.CACHE.get(endpoint.local_url, name)
-        if o:
+        if o and use_cache:
             return o
         # Search all profiles and try to find by name
         all_profiles = cls.search(endpoint)

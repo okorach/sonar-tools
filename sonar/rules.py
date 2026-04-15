@@ -201,17 +201,18 @@ class Rule(SqObject):
         return f"rule key '{self.key}'"
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str) -> Rule:
+    def get_object(cls, endpoint: Platform, key: str, use_cache: bool = True) -> Rule:
         """Returns a rule object from it key
 
         :param endpoint: The SonarQube reference
         :param key: The rule key
+        :param use_cache: Whether to use cached object, default True
         :return: The Rule object corresponding to the input rule key
         :raises: ObjectNotFound if rule does not exist
         """
         if len(cls.CACHE.from_platform(endpoint)) == 0:
             cls.search(endpoint, threads=8, use_cache=False, include_external=True)
-        if o := cls.CACHE.get(endpoint.local_url, key):
+        if use_cache and (o := cls.CACHE.get(endpoint.local_url, key)):
             return o
         cls.get_paginated(endpoint=endpoint, params={"include_external": True, "q": key})
         if o := cls.CACHE.get(endpoint.local_url, key):

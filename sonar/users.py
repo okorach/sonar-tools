@@ -122,17 +122,18 @@ class User(SqObject):
         return cls.get_paginated(endpoint=endpoint, params=search_params)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, login: Optional[str] = None, id: Optional[str] = None) -> User:
+    def get_object(cls, endpoint: Platform, login: Optional[str] = None, id: Optional[str] = None, use_cache: bool = True) -> User:
         """Creates a User object corresponding to the user with same login in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
         :param login: User login (SonarQube 10.3 and lower)
         :param id: User id (SonarQube 10.4 and above)
+        :param use_cache: Whether to use cached object, default True
         :raises ObjectNotFound: if login not found
         :return: The user object
         :rtype: User
         """
-        if o := cls.CACHE.get(endpoint.local_url, login):
+        if use_cache and (o := cls.CACHE.get(endpoint.local_url, login)):
             return o
         if id is not None:
             return cls.get_object_by_id(endpoint, id)
