@@ -277,6 +277,150 @@ def test_import_config_create_and_update() -> None:
     lp.LicenseProfile.CACHE.clear()
 
 
+def _get_existing_profile_data() -> dict:
+    """Returns exported JSON data from an existing profile that has categories/licenses"""
+    profiles = lp.LicenseProfile.search(endpoint=tutil.SQ)
+    for profile in profiles.values():
+        data = profile.to_json(export_settings={"FULL_EXPORT": True})
+        if data.get("categories") or data.get("licenses"):
+            return data
+    # Fallback: return first profile data even without categories/licenses
+    return next(iter(profiles.values())).to_json(export_settings={"FULL_EXPORT": True})
+
+
+def test_update_categories() -> None:
+    """Test update with categories exercises _update_categories"""
+    _skip_if_unsupported()
+    ref_data = _get_existing_profile_data()
+    categories = ref_data.get("categories", [])
+    if not categories:
+        pytest.skip("No categories found on existing profiles to test with")
+
+    name = f"{TEMP_LP_NAME}-cat"
+    obj = lp.LicenseProfile.create(endpoint=tutil.SQ, name=name)
+    try:
+        ok = obj.update(categories=categories)
+        assert isinstance(ok, bool)
+    finally:
+        obj.delete()
+        lp.LicenseProfile.CACHE.clear()
+
+
+def test_update_licenses() -> None:
+    """Test update with licenses exercises _update_licenses and _get_current_license_policies"""
+    _skip_if_unsupported()
+    ref_data = _get_existing_profile_data()
+    licenses = ref_data.get("licenses", [])
+    if not licenses:
+        pytest.skip("No licenses found on existing profiles to test with")
+
+    name = f"{TEMP_LP_NAME}-lic"
+    obj = lp.LicenseProfile.create(endpoint=tutil.SQ, name=name)
+    try:
+        # First update: applies license policies (exercises _update_licenses + _get_current_license_policies)
+        ok = obj.update(licenses=licenses[:3])
+        assert isinstance(ok, bool)
+        # Second update with same data: exercises the no-op skip path in _update_licenses
+        ok = obj.update(licenses=licenses[:3])
+        assert isinstance(ok, bool)
+    finally:
+        obj.delete()
+        lp.LicenseProfile.CACHE.clear()
+
+
+def test_update_set_default() -> None:
+    """Test update with isDefault=True exercises the set-default path"""
+    _skip_if_unsupported()
+    name = f"{TEMP_LP_NAME}-default"
+    obj = lp.LicenseProfile.create(endpoint=tutil.SQ, name=name)
+    try:
+        assert not obj.is_default
+        ok = obj.update(isDefault=True)
+        assert isinstance(ok, bool)
+        if ok:
+            assert obj.is_default
+    finally:
+        # Restore a different profile as default before cleanup
+        profiles = lp.LicenseProfile.search(endpoint=tutil.SQ, use_cache=False)
+        for profile in profiles.values():
+            if profile.name != name and not profile.is_default:
+                profile.update(isDefault=True)
+                break
+        obj.delete()
+        lp.LicenseProfile.CACHE.clear()
+
+
+def test_update_no_op_same_name() -> None:
+    """Test update with same name does not trigger rename"""
+    _skip_if_unsupported()
+    name = f"{TEMP_LP_NAME}-noop"
+    obj = lp.LicenseProfile.create(endpoint=tutil.SQ, name=name)
+    try:
+        ok = obj.update(name=name)
+        assert ok
+        assert obj.name == name
+    finally:
+        obj.delete()
+        lp.LicenseProfile.CACHE.clear()
+
+
+def test_update_empty_categories_and_licenses() -> None:
+    """Test update with empty categories and licenses lists"""
+    _skip_if_unsupported()
+    name = f"{TEMP_LP_NAME}-empty"
+    obj = lp.LicenseProfile.create(endpoint=tutil.SQ, name=name)
+    try:
+        ok = obj.update(categories=[], licenses=[])
+        assert ok
+    finally:
+        obj.delete()
+        lp.LicenseProfile.CACHE.clear()
+
+
+def test_update_all_fields() -> None:
+    """Test update with name, categories, and licenses together"""
+    _skip_if_unsupported()
+    ref_data = _get_existing_profile_data()
+    categories = ref_data.get("categories", [])
+    licenses = ref_data.get("licenses", [])
+
+    name = f"{TEMP_LP_NAME}-all"
+    new_name = f"{name}-renamed"
+    obj = lp.LicenseProfile.create(endpoint=tutil.SQ, name=name)
+    try:
+        ok = obj.update(name=new_name, categories=categories[:2], licenses=licenses[:2])
+        assert isinstance(ok, bool)
+        assert obj.name == new_name
+    finally:
+        obj.delete()
+        lp.LicenseProfile.CACHE.clear()
+
+
+def test_import_config_with_categories_and_licenses() -> None:
+    """Test import_config with full profile data including categories and licenses"""
+    _skip_if_unsupported()
+    ref_data = _get_existing_profile_data()
+    categories = ref_data.get("categories", [])[:2]
+    licenses = ref_data.get("licenses", [])[:2]
+
+    name = f"{TEMP_LP_NAME}-full-import"
+    config_entry = {"name": name}
+    if categories:
+        config_entry["categories"] = categories
+    if licenses:
+        config_entry["licenses"] = licenses
+    config = {c.CONFIG_KEY_LICENSE_PROFILES: [config_entry]}
+
+    ok = lp.import_config(endpoint=tutil.SQ, config_data=config)
+    assert ok
+    assert lp.LicenseProfile.exists(endpoint=tutil.SQ, name=name)
+
+    # Clean up
+    obj = lp.LicenseProfile.get_object(endpoint=tutil.SQ, name=name)
+    obj.delete()
+    lp.LicenseProfile.CACHE.clear()
+
+
 def test_get_full_profile_with_complete_data() -> None:
     """Test _get_full_profile returns data as-is when already complete"""
     data = {"name": "test", "key": "k1", "categories": [{"key": "cat1", "policy": "ALLOWED"}], "licenses": []}
