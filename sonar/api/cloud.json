@@ -322,12 +322,15 @@
     "User": {
         "GET": {
             "method": "GET",
-            "api": "api/users/search",
+            "api": "api/v2/users-management/users",
             "params": [
                 "ids",
-                "p",
-                "ps",
-                "q"
+                "q",
+                "email",
+                "organizationIds",
+                "groupId",
+                "pageIndex",
+                "pageSize"
             ],
             "return_field": "users",
             "page_field": "pageIndex",
@@ -335,12 +338,16 @@
         },
         "SEARCH": {
             "method": "GET",
-            "api": "api/users/search",
+            "api": "api/v2/users-management/users",
             "params": [
                 "ids",
-                "p",
-                "ps",
-                "q"
+                "q",
+                "email",
+                "organizationIds",
+                "groupId",
+                "notInGroupId",
+                "pageIndex",
+                "pageSize"
             ],
             "return_field": "users",
             "page_field": "pageIndex",
