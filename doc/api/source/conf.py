@@ -1,6 +1,4 @@
-"""Configuration file for the sphinx doc builder
-
-"""
+"""Configuration file for the sphinx doc builder"""
 
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:

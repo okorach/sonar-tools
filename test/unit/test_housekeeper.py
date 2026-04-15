@@ -20,8 +20,7 @@
 #
 
 
-"""sonar-housekeeper tests
-"""
+"""sonar-housekeeper tests"""
 
 from collections.abc import Generator
 import pytest

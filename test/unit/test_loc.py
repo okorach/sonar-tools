@@ -19,8 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""sonar-loc tests
-"""
+"""sonar-loc tests"""
 
 from collections.abc import Generator
 import utilities as tutil

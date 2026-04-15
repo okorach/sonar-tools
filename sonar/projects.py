@@ -238,16 +238,14 @@ class Project(Component):
         return self._branches
 
     def main_branch_name(self) -> str:
-        """:return: Project main branch name
-        """
+        """:return: Project main branch name"""
         if self.endpoint.edition() == c.CE:
             return self.sq_json.get("branch", "main")
         b = self.main_branch()
         return b.name if b else ""
 
     def main_branch(self) -> Optional[Branch]:
-        """:return: Main branch of the project
-        """
+        """:return: Main branch of the project"""
         if self.endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation("Main branch is not supported in Community Edition")
         try:

@@ -79,8 +79,7 @@ SCANNER_VERSIONS = get_scanners_versions()
 
 
 class Task(SqObject):
-    """Abstraction of the SonarQube "background task" concept
-    """
+    """Abstraction of the SonarQube "background task" concept"""
 
     CACHE = cache.Cache()
 

@@ -19,8 +19,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""sonar-findings-sync tests
-"""
+"""sonar-findings-sync tests"""
 
 import os
 from collections.abc import Generator

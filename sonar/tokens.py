@@ -74,8 +74,7 @@ class UserToken(SqObject):
         return o
 
     def __str__(self) -> str:
-        """:return: Token string representation
-        """
+        """:return: Token string representation"""
         return f"token '{self.name}' of user '{self.login}'"
 
     @classmethod

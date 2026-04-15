@@ -53,8 +53,7 @@ _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches"
 
 
 class Application(aggr.Aggregation):
-    """Abstraction of the SonarQube "application" concept
-    """
+    """Abstraction of the SonarQube "application" concept"""
 
     CACHE = cache.Cache()
     __APP_FILTER = MappingProxyType({"filter": "qualifier = APP"})
@@ -148,8 +147,7 @@ class Application(aggr.Aggregation):
             raise
 
     def permissions(self) -> application_permissions.ApplicationPermissions:
-        """:return: The application permissions
-        """
+        """:return: The application permissions"""
         if self._permissions is None:
             self._permissions = application_permissions.ApplicationPermissions(self)
         return self._permissions

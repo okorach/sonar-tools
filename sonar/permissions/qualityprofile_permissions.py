@@ -30,8 +30,7 @@ if TYPE_CHECKING:
 
 
 class QualityProfilePermissions(quality_permissions.QualityPermissions):
-    """Abtraction of quality profiles permissions
-    """
+    """Abtraction of quality profiles permissions"""
 
     APIS = {
         "get": {"users": "qualityprofiles/search_users", "groups": "qualityprofiles/search_groups"},

@@ -31,8 +31,7 @@ if TYPE_CHECKING:
 
 
 class TemplatePermissions(project_permissions.ProjectPermissions):
-    """Abstraction of the permission templates permissions
-    """
+    """Abstraction of the permission templates permissions"""
 
     API_GET = {"users": "permissions/template_users", "groups": "permissions/template_groups"}
     API_SET = {"users": "permissions/add_user_to_template", "groups": "permissions/add_group_to_template"}
