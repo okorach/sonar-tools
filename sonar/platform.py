@@ -113,9 +113,6 @@ class Platform(object):
         """
         return f"{sutil.redacted_token(self.__token)}@{self.local_url}"
 
-    def __credentials(self) -> tuple[str, str]:
-        return self.__token, ""
-
     def verify_connection(self) -> None:
         """Verifies the connection to the SonarQube platform
 
@@ -272,9 +269,9 @@ class Platform(object):
             params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
         elif isinstance(params, (list, tuple)):
             params = [(v[0], str(v[1]).lower() if isinstance(v[1], bool) else v[1]) for v in params]
+        headers["Authorization"] = f"Bearer {self.__token}"
         with_org = kwargs.pop("with_organization", True)
         if self.is_sonarcloud():
-            headers["Authorization"] = f"Bearer {self.__token}"
             if with_org:
                 if isinstance(params, dict):
                     params["organization"] = self.organization
@@ -293,7 +290,6 @@ class Platform(object):
                 start = time.perf_counter_ns()
                 r = request(
                     url=self.local_url + api,
-                    auth=self.__credentials(),
                     verify=self.__verify,
                     params=params,
                     timeout=self.http_timeout,
