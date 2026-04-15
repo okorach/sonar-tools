@@ -73,9 +73,9 @@ class DevopsPlatform(SqObject):
         return string
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str) -> DevopsPlatform:
+    def get_object(cls, endpoint: Platform, key: str, use_cache: bool = True) -> DevopsPlatform:
         """Reads a devops platform object in Sonar instance"""
-        if o := cls.CACHE.get(endpoint.local_url, key):
+        if use_cache and (o := cls.CACHE.get(endpoint.local_url, key)):
             return o
         cls.search(endpoint)
         if o := cls.CACHE.get(endpoint.local_url, key):

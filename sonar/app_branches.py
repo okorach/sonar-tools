@@ -67,11 +67,12 @@ class ApplicationBranch(Component):
         log.debug("Constructed object %s with uuid %d id %x", str(self), hash(self), id(self))
 
     @classmethod
-    def get_object(cls, endpoint: Platform, app: Union[str, apps.Application], branch_name: str) -> ApplicationBranch:
+    def get_object(cls, endpoint: Platform, app: Union[str, apps.Application], branch_name: str, use_cache: bool = True) -> ApplicationBranch:
         """Gets an Application object from SonarQube
 
         :param str | Application app: Reference to the Application holding that branch
         :param branch_name: Name of the application branch
+        :param use_cache: Whether to use cached object, default True
         :raises ObjectNotFound: If Application or Brnach not found
         :return: The found ApplicationBranch object
         """
@@ -79,7 +80,7 @@ class ApplicationBranch(Component):
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         if isinstance(app, str):
             app = apps.Application.get_object(endpoint, app)
-        if o := cls.CACHE.get(endpoint.local_url, app.key, branch_name):
+        if use_cache and (o := cls.CACHE.get(endpoint.local_url, app.key, branch_name)):
             return o
         app.refresh()
         app.branches()

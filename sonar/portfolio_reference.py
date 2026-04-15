@@ -52,7 +52,7 @@ class PortfolioReference(SqObject):
         log.debug("Created subportfolio by reference key '%s'", self.key)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str, parent_key: str) -> PortfolioReference:
+    def get_object(cls, endpoint: Platform, key: str, parent_key: str, use_cache: bool = True) -> PortfolioReference:
         """Gets a subportfolio by reference object from its key and parent"""
         check_supported(endpoint)
         log.info("Getting subportfolio by ref key '%s:%s'", parent_key, key)

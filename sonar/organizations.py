@@ -77,11 +77,12 @@ class Organization(SqObject):
         return cls.get_paginated(endpoint=endpoint, params=search_params | {"member": "true"})
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str) -> Organization:
+    def get_object(cls, endpoint: Platform, key: str, use_cache: bool = True) -> Organization:
         """Gets an Organization object from SonarQube Cloud
 
         :param Platform endpoint: Reference to the SonarQube platform
         :param str key: Application key, must not already exist on SonarQube
+        :param use_cache: Whether to use cached object, default True
         :raises UnsupportedOperation: If on a Community Edition
         :raises ObjectNotFound: If Application key not found in SonarQube
         :return: The found Application object
@@ -89,7 +90,7 @@ class Organization(SqObject):
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        if o := Organization.CACHE.get(endpoint.local_url, key):
+        if use_cache and (o := Organization.CACHE.get(endpoint.local_url, key)):
             return o
         api, _, params, ret = endpoint.api.get_details(cls, Oper.SEARCH, organizations=key)
         data = json.loads(endpoint.get(api, params=params).text)

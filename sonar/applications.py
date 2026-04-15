@@ -75,11 +75,12 @@ class Application(aggr.Aggregation):
         return f"application key '{self.key}'"
 
     @classmethod
-    def get_object(cls, endpoint: Platform, key: str) -> Application:
+    def get_object(cls, endpoint: Platform, key: str, use_cache: bool = True) -> Application:
         """Gets an Application object from SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
         :param str key: Application key, must not already exist on SonarQube
+        :param bool use_cache: Whether to use cached object, default True
         :raises UnsupportedOperation: If on a Community Edition
         :raises ObjectNotFound: If Application key not found in SonarQube
         :return: The found Application object
@@ -87,7 +88,7 @@ class Application(aggr.Aggregation):
         """
         check_supported(endpoint)
         o: Optional[Application] = cls.CACHE.get(endpoint.local_url, key)
-        if o:
+        if o and use_cache:
             return o
         api, _, params, ret = endpoint.api.get_details(cls, Oper.GET, application=key)
         data = json.loads(endpoint.get(api, params=params).text)[ret]

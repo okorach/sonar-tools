@@ -146,10 +146,10 @@ class Finding(SqObject):
         self.reload(data, from_export)
 
     @classmethod
-    def get_object(cls, endpoint: Platform, data: ApiPayload, from_export: bool = False) -> IssueOrHotspot:
+    def get_object(cls, endpoint: Platform, data: ApiPayload, from_export: bool = False, use_cache: bool = True) -> IssueOrHotspot:
         """Returns a finding from its key"""
         o: Optional[IssueOrHotspot] = cls.CACHE.get(endpoint.local_url, data["key"])
-        if not o:
+        if not o or not use_cache:
             o = cls(endpoint, data, from_export=from_export)
         return o
 
