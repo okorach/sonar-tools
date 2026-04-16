@@ -61,6 +61,8 @@ _APP_JSON = "application/json"
 
 _SERVER_ID_KEY = "Server ID"
 
+_UNAUTH_APIS = {"/api/server/version"}
+
 
 class Platform(object):
     """Abstraction of the SonarQube "platform" concept"""
@@ -112,6 +114,9 @@ class Platform(object):
         with the token recognizable but largely redacted
         """
         return f"{sutil.redacted_token(self.__token)}@{self.local_url}"
+
+    def __credentials(self) -> tuple[str, str]:
+        return self.__token, ""
 
     def verify_connection(self) -> None:
         """Verifies the connection to the SonarQube platform
@@ -269,8 +274,14 @@ class Platform(object):
             params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
         elif isinstance(params, (list, tuple)):
             params = [(v[0], str(v[1]).lower() if isinstance(v[1], bool) else v[1]) for v in params]
-        headers["Authorization"] = f"Bearer {self.__token}"
         with_org = kwargs.pop("with_organization", True)
+        credentials = None
+        if api not in _UNAUTH_APIS:
+            if self.is_sonarcloud() or self.version() >= (25, 0, 0):
+                headers["Authorization"] = f"Bearer {self.__token}"
+            else:
+                credentials = self.__credentials()
+
         if self.is_sonarcloud() and with_org:
             if isinstance(params, dict):
                 params["organization"] = self.organization
@@ -289,6 +300,7 @@ class Platform(object):
                 start = time.perf_counter_ns()
                 r = request(
                     url=self.local_url + api,
+                    auth=credentials,
                     verify=self.__verify,
                     params=params,
                     timeout=self.http_timeout,
@@ -382,7 +394,9 @@ class Platform(object):
         return self._sys_info
 
     def global_nav(self) -> dict[str, Any]:
-        """:return: the SonarQube platform global navigation data"""
+        """
+        :return: the SonarQube platform global navigation data
+        """
         if self.__global_nav is None:
             resp = self.get("navigation/global", mute=(HTTPStatus.INTERNAL_SERVER_ERROR,))
             self.__global_nav = json.loads(resp.text)
