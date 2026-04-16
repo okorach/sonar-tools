@@ -324,7 +324,12 @@ def test_search_by_small() -> None:
     assert len(list1) == sum(len(Issue.search_by_severity(tutil.SQ, severity=val, **params)) for val in facets)
 
     facets = issues._get_facets(tutil.SQ, project_key=tutil.LIVE_PROJECT, facet=issues.status_search_field(tutil.SQ)).keys()
-    assert len(list1) == sum(len(Issue.search_by_status(tutil.SQ, status=val, **params)) for val in facets)
+    # Hack for SQS 9.9 and below - The facet value "" may be returned for unresolved issues, it corresponds to Unresolved issues
+    unresolved_count = 0
+    if "" in facets:
+        facets = [f for f in facets if f != ""]
+        unresolved_count = len(Issue.search(tutil.SQ, status="", **(params | {"resolved": False})))
+    assert len(list1) == sum(len(Issue.search_by_status(tutil.SQ, status=val, **params)) for val in facets) + unresolved_count
 
     assert len(list1) == len(Issue.search_by_date(tutil.SQ, date_start=datetime(2000, 1, 1), date_stop=datetime(2030, 1, 1), **params))
 
@@ -391,7 +396,7 @@ def test_search_by_project_object() -> None:
 
 
 def test_search_by_status() -> None:
-    """test_too_mtest_search_by_statusany_facets_by_project"""
+    """test_search_by_status"""
     issues_d = Issue.search_by_status(tutil.SQ, status="OPEN", project=tutil.PROJECT_1)
     assert len(issues_d) > 0
 
