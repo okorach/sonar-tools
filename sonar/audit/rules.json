@@ -538,6 +538,11 @@
         "object": "QualityGate",
         "message": "Quality gates '{}' and '{}' are duplicates, one should be removed"
     },
+    "QG_REDUNDANT_CONDITION": {
+        "severity": "MEDIUM",
+        "type": "HOUSEKEEPING",
+        "object": "QualityGate",
+        "message": "{} has redundant conditions: '{}' and '{}' are equivalent, only '{}' should be kept"
     "QG_WRONG_MODE": {
         "severity": "MEDIUM",
         "type": "HOUSEKEEPING",

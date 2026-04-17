@@ -86,7 +86,10 @@ GOOD_QG_CONDITIONS = {
     "security_rating": (4, 4, __THRESHOLD_ON_OVERALL_CODE),
     "reliability_rating": (4, 4, __THRESHOLD_ON_OVERALL_CODE),
     "software_quality_security_rating": (3, 4, __THRESHOLD_ON_OVERALL_CODE),
+    "software_quality_security_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
     "software_quality_reliability_rating": (3, 4, __THRESHOLD_ON_OVERALL_CODE),
+    "software_quality_reliability_issues": (0, 0, __MAX_ISSUES_SHOULD_BE_ZERO),
+    "software_quality_maintainability_rating": (3, 4, __THRESHOLD_ON_OVERALL_CODE),
     "sca_severity_any_issue": (SCA_HIGH, SCA_HIGH, __SCA_THRESHOLD),
     "sca_rating_any_issue": (3, 5, __SCA_THRESHOLD),
     "sca_severity_licensing": (SCA_HIGH, SCA_HIGH, __SCA_THRESHOLD),
@@ -102,6 +105,17 @@ GOOD_QG_CONDITIONS = {
     "sca_count_malware": (0, 0, "Malware count on overall code should always be 0"),
     "security_hotspots_reviewed": (1, 50, "Security hotspots reviewed on overall code should be between 1% and 50%"),
 }
+
+# Each tuple: (preferred_metric, preferred_op, preferred_error, equivalent_metric, equivalent_op, equivalent_error)
+_EQUIVALENT_CONDITIONS = (
+    (("new_vulnerabilities", "GT", "0"), ("new_security_rating", "GT", "1")),
+    (("new_software_quality_security_issues", "GT", "0"), ("new_security_rating", "GT", "1")),
+    (("new_bugs", "GT", "0"), ("new_reliability_rating", "GT", "1")),
+    (("new_software_quality_reliability_issues", "GT", "0"), ("new_software_quality_reliability_rating", "GT", "1")),
+    (("vulnerabilities", "GT", "0"), ("security_rating", "GT", "1")),
+    (("software_quality_security_issues", "GT", "0"), ("software_quality_security_rating", "GT", "1")),
+    (("software_quality_reliability_issues", "GT", "0"), ("software_quality_reliability_rating", "GT", "1")),
+)
 
 _IMPORTABLE_PROPERTIES = ("name", "isDefault", "isBuiltIn", "conditions", "permissions")
 
@@ -273,7 +287,7 @@ class QualityGate(SqObject):
         base_params = {"gateId": self.key, "gateName": self.name}
         ok = True
         for cond in conditions_list:
-            (metric, op, error) = _decode_condition(cond)
+            (metric, op, error) = decode_condition(cond)
             params = base_params | {"metric": metric, "op": op, "error": error}
             try:
                 api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.CREATE_CONDITION, **params)
@@ -362,7 +376,29 @@ class QualityGate(SqObject):
             log.info("Condition on metric '%s': Check that %d in range [%d - %d]", m, val, mini, maxi)
             if val < mini or val > maxi:
                 rule = get_rule(RuleId.QG_WRONG_THRESHOLD)
+                if "rating" in m:
+                    (mini, maxi) = measures.get_rating_letter(mini), measures.get_rating_letter(maxi)
                 problems.append(Problem(rule, self, str(self), val, m, mini, maxi, precise_msg))
+        return problems
+
+    def audit_redundant_conditions(self) -> list[Problem]:
+        """Audits that a quality gate does not use equivalent conditions, returns found problems"""
+        problems = []
+        cond_set = {(c["metric"], c["op"], c["error"]) for c in self.conditions()}
+        log.debug("Auditing %s for redundant conditions, conditions: %s", self, cond_set)
+        for preferred_cond, equiv_cond in _EQUIVALENT_CONDITIONS:
+            log.debug("%s comparing conditions: '%s' and '%s'", self, preferred_cond, equiv_cond)
+            if preferred_cond in cond_set and equiv_cond in cond_set:
+                problems.append(
+                    Problem(
+                        get_rule(RuleId.QG_REDUNDANT_CONDITION),
+                        self,
+                        str(self),
+                        encode_condition(preferred_cond),
+                        encode_condition(equiv_cond),
+                        encode_condition(preferred_cond),
+                    )
+                )
         return problems
 
     def audit_nbr_conditions(self, audit_settings: Optional[ConfigSettings] = None) -> list[Problem]:
@@ -405,7 +441,13 @@ class QualityGate(SqObject):
         if self.is_built_in:
             log.debug("%s is built-in, skipping audit", self)
             return []
-        problems = self.audit_nbr_conditions(audit_settings) + self.audit_conditions() + self.audit_mode() + self.permissions().audit(audit_settings)
+        problems = (
+            self.audit_nbr_conditions(audit_settings)
+            + self.audit_conditions()
+            + self.audit_redundant_conditions()
+            + self.audit_mode()
+            + self.permissions().audit(audit_settings)
+        )
         if not self.is_default and len(self.projects()) == 0:
             problems.append(Problem(get_rule(RuleId.QG_NOT_USED), self, str(self)))
         return problems
@@ -520,16 +562,16 @@ def _encode_conditions(conds: list[dict[str, str]]) -> list[str]:
     """Encode dict conditions in strings"""
     simple_conds = []
     for cond in conds:
-        simple_conds.append(_encode_condition(cond))
+        simple_conds.append(encode_condition((cond["metric"], cond["op"], cond["error"])))
     return simple_conds
 
 
 _PERCENTAGE_METRICS = ("density", "ratio", "percent", "security_hotspots_reviewed", "coverage")
 
 
-def _encode_condition(cond: dict[str, str]) -> str:
+def encode_condition(cond: tuple(str, str, str)) -> str:
     """Encode one dict conditions in a string"""
-    metric, oper, val = cond["metric"], cond["op"], cond["error"]
+    metric, oper, val = cond[0], cond[1], cond[2]
     if oper == "GT":
         oper = ">="
     elif oper == "LT":
@@ -543,7 +585,7 @@ def _encode_condition(cond: dict[str, str]) -> str:
     return f"{metric} {oper} {val}"
 
 
-def _decode_condition(cond: str) -> tuple[str, str, str]:
+def decode_condition(cond: str) -> tuple[str, str, str]:
     """Decodes a string condition in a tuple metric, op, value"""
     (metric, oper, val) = cond.strip().split(" ")
     if oper in (">", ">="):
