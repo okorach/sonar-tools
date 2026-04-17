@@ -29,6 +29,7 @@ from sonar.sqobject import SqObject
 import sonar.logging as log
 from sonar.util import cache
 from sonar import measures, exceptions
+from sonar.util import constants as c
 from sonar import projects
 import sonar.permissions.qualitygate_permissions as permissions
 import sonar.util.misc as util
@@ -383,13 +384,28 @@ class QualityGate(SqObject):
             return [Problem(get_rule(RuleId.QG_TOO_MANY_COND), self, str(self), nb_conditions, max_conds)]
         return []
 
+    def audit_mode(self) -> list[Problem]:
+        """Audits that quality gate conditions match the platform issue mode (MQR vs Standard), returns found problems"""
+        log.info("Auditing %s conditions are consistent with the platform issue mode", self)
+        if self.endpoint.is_sonarcloud() or self.endpoint.version() < c.MQR_5_SEVERITIES_VERSION:
+            return []
+        has_mqr = self.sq_json.get("hasMQRConditions", False)
+        has_std = self.sq_json.get("hasStandardConditions", False)
+        is_mqr = self.endpoint.is_mqr_mode()
+        log.debug("%s has MQR = %s, has std mode = %s - and MQR mode = %s", self, has_mqr, has_std, is_mqr)
+        if is_mqr and has_std:
+            return [Problem(get_rule(RuleId.QG_WRONG_MODE), self, str(self), "Standard Experience", "MQR")]
+        if not is_mqr and has_mqr:
+            return [Problem(get_rule(RuleId.QG_WRONG_MODE), self, str(self), "MQR", "Standard Experience")]
+        return []
+
     def audit(self, audit_settings: Optional[ConfigSettings] = None) -> list[Problem]:
         """Audits a quality gate, returns found problems"""
         log.debug("Auditing %s", self)
         if self.is_built_in:
             log.debug("%s is built-in, skipping audit", self)
             return []
-        problems = self.audit_nbr_conditions(audit_settings) + self.audit_conditions() + self.permissions().audit(audit_settings)
+        problems = self.audit_nbr_conditions(audit_settings) + self.audit_conditions() + self.audit_mode() + self.permissions().audit(audit_settings)
         if not self.is_default and len(self.projects()) == 0:
             problems.append(Problem(get_rule(RuleId.QG_NOT_USED), self, str(self)))
         return problems
