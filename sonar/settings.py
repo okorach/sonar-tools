@@ -209,7 +209,10 @@ class Setting(SqObject):
         if self.key == NEW_CODE_PERIOD:
             self.value = new_code_to_string(data)
         elif self.key == MQR_ENABLED:
-            self.value = data.get("mode", "MQR") != "STANDARD_EXPERIENCE"
+            if "key" in data:
+                self.value = data.get("value", "false") == "true"
+            elif "mode" in data:
+                self.value = data.get("mode", "MQR") != "STANDARD_EXPERIENCE"
         elif self.key == COMPONENT_VISIBILITY:
             self.value = data.get("visibility", None)
         elif self.key in ("sonar.login.message", "sonar.announcement.message"):
@@ -459,6 +462,7 @@ class Setting(SqObject):
     def search(cls, endpoint: Platform, include_not_set: bool = False, **search_params: Any) -> dict[str, Setting]:
         """Gets several settings as bulk (returns a dict)"""
         global VALID_SETTINGS
+        log.debug("Searching settings with parameters %s, include not set = %s", search_params, include_not_set)
         settings_dict = {}
         component = search_params.get("component")
         branch = search_params.get("branch")
@@ -487,6 +491,8 @@ class Setting(SqObject):
         if not endpoint.is_sonarcloud():
             o = get_new_code_period(endpoint, component, branch)
             settings_dict[o.key] = o
+        o = get_mqr_mode(endpoint, component, branch)
+        settings_dict[o.key] = o
         VALID_SETTINGS |= set(settings_dict.keys()) | {"sonar.scm.provider", MQR_ENABLED, "sonar.cfamily.ignoreHeaderComments"}
         return settings_dict
 
@@ -510,12 +516,23 @@ def string_to_new_code(value: str) -> list[str]:
     return re.split(r"\s*=\s*", value)
 
 
-def get_new_code_period(endpoint: Platform, component: Optional[str], branch: Optional[str]) -> Setting:
-    """returns the new code period, either the default global setting, or specific to a project/branch"""
-    if o := Setting.CACHE.get(endpoint.local_url, NEW_CODE_PERIOD, component, branch):
+def get_special_settings(endpoint: Platform, setting_key: str, component: Optional[str] = None, branch: Optional[str] = None) -> dict[str, Setting]:
+    """Returns settings that are not returned by the global search API"""
+    if o := Setting.CACHE.get(endpoint.local_url, setting_key, component, branch):
+        log.debug("Found %s in cache with value %s", setting_key, str(o.value))
         return o
-    data = get_settings_data(endpoint, NEW_CODE_PERIOD, component, branch)
-    return Setting.load(endpoint, data | {"key": NEW_CODE_PERIOD, "component": component, "branch": branch})
+    data = get_settings_data(endpoint, setting_key, component, branch)
+    return Setting.load(endpoint, data | {"key": setting_key, "component": component, "branch": branch})
+
+
+def get_new_code_period(endpoint: Platform, component: Optional[str] = None, branch: Optional[str] = None) -> Setting:
+    """returns the new code period, either the default global setting, or specific to a project/branch"""
+    return get_special_settings(endpoint, NEW_CODE_PERIOD, component, branch)
+
+
+def get_mqr_mode(endpoint: Platform, component: Optional[str] = None, branch: Optional[str] = None) -> Setting:
+    """returns the MQR mode setting, either the default global setting, or specific to a project/branch"""
+    return get_special_settings(endpoint, MQR_ENABLED, component, branch)
 
 
 def set_new_code_period(

@@ -543,6 +543,11 @@
         "type": "HOUSEKEEPING",
         "object": "QualityGate",
         "message": "{} has redundant conditions: '{}' and '{}' are equivalent, only '{}' should be kept"
+    "QG_WRONG_MODE": {
+        "severity": "MEDIUM",
+        "type": "HOUSEKEEPING",
+        "object": "QualityGate",
+        "message": "{} has conditions based on {} mode while the platform is in {} mode, quality gate conditions should be migrated"
     },
     "QP_TOO_MANY_QP": {
         "severity": "MEDIUM",

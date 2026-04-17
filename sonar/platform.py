@@ -445,6 +445,8 @@ class Platform(object):
         :param key: Setting key
         :return: the setting value
         """
+        if key == settings.MQR_ENABLED:
+            return settings.get_mqr_mode(self).value
         return Setting.get_object(self, key=key).value
 
     def reset_setting(self, key: str) -> bool:
@@ -794,9 +796,12 @@ class Platform(object):
 
     def is_mqr_mode(self) -> bool:
         """Returns whether the platform is in MQR mode"""
+        log.debug("Checking MQR mode")
         if self.is_sonarcloud():
+            log.debug("SonarQube Cloud is always in MQR mode")
             return True
-        if self.version() >= (10, 8, 0):
+        if self.version() >= c.MQR_5_SEVERITIES_VERSION:
+            log.debug("MQR mode is configurable, checking setting %s", settings.MQR_ENABLED)
             return self.get_setting(settings.MQR_ENABLED)
         return self.version() >= c.MQR_INTRO_VERSION
 
@@ -805,10 +810,10 @@ class Platform(object):
         if self.is_sonarcloud():
             log.error("Cannot change MQR mode on SonarQube Cloud")
             return False
-        if self.version() < c.MQR_INTRO_VERSION:
+        if self.version() < c.MQR_5_SEVERITIES_VERSION:
             log.error("MQR mode not available before SonarQube %s", sutil.version_to_string(c.MQR_INTRO_VERSION))
             return False
-        if self.version() >= (10, 8, 0):
+        if self.version() >= c.MQR_5_SEVERITIES_VERSION:
             return self.set_setting(settings.MQR_ENABLED, enable)
         return False
 

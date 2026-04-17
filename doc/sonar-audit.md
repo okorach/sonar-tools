@@ -164,6 +164,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
     coverage not between 20% and 90%, duplication not between 1% and 3%, security and reliability on overall code lower than D)
   - More than `audit.qualitygates.maxNumber` quality gates (default 5)
   - Redundant equivalent conditions (e.g. 0 `new_vulnerabilities` and `new_security_rating` A are equivalent)
+  - Quality gate conditions not matching the platform issue mode (MQR vs Standard Experience) - SonarQube Server 10.8+
   - Duplicate quality gates
 - Quality Profiles: (if `audit.qualityProfiles = yes`, default `yes`)
   - Non built-in QP not modified in 6 months
