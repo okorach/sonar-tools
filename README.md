@@ -2,8 +2,11 @@
 Command line tools to help in SonarQube administration tasks. Available as a **pypi.org** package or a **docker** image.
 
 `sonar-tools` is compatible with:
-- SonarQube Server versions 9.9.x, January LTA (2025.1.x), July LTA (2025.4.x), 2026.1 LTA. It may work with intermediate 10.x, 2025.x or 2026.x versions but this is not guaranteed.
-- The **latest** SonarQube Community Build (26.1 as of Jan 2026).
+- SonarQube Cloud
+- SonarQube Server versions 9.9.x, Jan 2025 LTA (2025.1.x), July 2025 LTA (2025.4.x), Jan 2026 LTA (2026.1.x).
+- SonarQube Server **latest** version (2026.2 as of Apr 2026)
+- SonarQube Community Build **latest version** (26.4 as of Apr 2026).
+- It is likely to work with intermediate 10.x, 2025.x or 2026.x versions but this is not guaranteed.
 
 
 ![Downloads](https://img.shields.io/pypi/dm/sonar-tools?color=informational)
@@ -17,7 +20,7 @@ Command line tools to help in SonarQube administration tasks. Available as a **p
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=okorach-oss_sonar-tools&metric=bugs)](https://sonarcloud.io/dashboard?id=okorach-oss_sonar-tools)
 [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=okorach-oss_sonar-tools&metric=ncloc)](https://sonarcloud.io/dashboard?id=okorach-oss_sonar-tools)
 
-**DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource Sarl, the company publishing the [SonarQube Server](https://www.sonarsource.com/products/sonarqube/), [SonarQube Cloud](https://sonarcloud.io) and [SonarQube for IDE (ex- SonarLint)](https://www.sonarsource.com/products/sonarlint/) products
+**DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource Sàrl, the company publishing the [SonarQube Server](https://www.sonarsource.com/products/sonarqube/), [SonarQube Cloud](https://sonarcloud.io) and [SonarQube for IDE (ex- SonarLint)](https://www.sonarsource.com/products/sonarlint/) products
 
 The following utilities are available:
 - [sonar-audit](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-audit.md): Audits a SonarQube Server or Cloud instance, and reports all the problems
@@ -32,8 +35,6 @@ deletes tokens created since more than a certain number of days
 - [sonar-rules](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-rules.md): Exports SonarQube Server or Cloud rules.
 - [sonar-misra](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-misra.md): Exports a MISRA C++:2023 report.
 - [sonar-maturity](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-maturity.md): Computes SonarQube metrics reflecting maturity in SonarQube usage.
-
-:information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube Server 2026.1.x LTA (Long Term Active), 2025.1 (Jan) and 2025.4 (July) LTA and LATEST (2026.1.x as of Oct 2025), Community Build (26.1 as of Jan 2026) and 9.9.9 versions, and SonarQube Cloud**
 
 :warning: **sonar-tools** 2.7 or higher is required for compatibility with SonarQube Cloud or SonarQube Server 10 and higher
 
