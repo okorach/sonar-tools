@@ -271,7 +271,9 @@ def main() -> None:
             **kwargs,
         )
         if len(obj_list) == 0:
-            chelp.clear_cache_and_exit(errcodes.WRONG_SEARCH_CRITERIA, f"No components matching regexp '{kwargs[options.KEY_REGEXP]}'")
+            chelp.clear_cache_and_exit(
+                errcodes.WRONG_SEARCH_CRITERIA, f"No components matching regexp '{kwargs[options.KEY_REGEXP]}' and with filters {kwargs}"
+            )
         if kwargs["history"]:
             measure_list = []
             for obj in obj_list:

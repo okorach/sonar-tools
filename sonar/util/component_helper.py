@@ -67,7 +67,8 @@ def get_components(
         components = br_components + pr_components
     components.sort(key=lambda comp: comp.project().key)
     if kwargs.get(options.ANALYZED_AFTER):
-        log.info("Filtering components analyzed after %s", kwargs.get(options.ANALYZED_AFTER))
+        log.info("Filtering components analyzed after %s from a list of %d components", kwargs.get(options.ANALYZED_AFTER), len(components))
         analyzed_after = kwargs.get(options.ANALYZED_AFTER)
         components = [comp for comp in components if comp.last_analysis() and comp.last_analysis() >= analyzed_after]
+        log.info("%d components analyzed after %s", len(components), kwargs.get(options.ANALYZED_AFTER))
     return components
