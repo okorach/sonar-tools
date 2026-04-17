@@ -543,6 +543,7 @@
         "type": "HOUSEKEEPING",
         "object": "QualityGate",
         "message": "{} has redundant conditions: '{}' and '{}' are equivalent, only '{}' should be kept"
+    },
     "QG_WRONG_MODE": {
         "severity": "MEDIUM",
         "type": "HOUSEKEEPING",
