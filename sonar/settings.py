@@ -27,6 +27,7 @@ import json
 import sonar.logging as log
 from sonar.util import cache
 from sonar import exceptions
+from sonar.util import constants as c
 from sonar.sqobject import SqObject
 import sonar.util.misc as util
 from sonar.api.manager import ApiOperation as Oper
@@ -209,10 +210,11 @@ class Setting(SqObject):
         if self.key == NEW_CODE_PERIOD:
             self.value = new_code_to_string(data)
         elif self.key == MQR_ENABLED:
-            if "key" in data:
-                self.value = data.get("value", "false") == "true"
-            elif "mode" in data:
-                self.value = data.get("mode", "MQR") != "STANDARD_EXPERIENCE"
+            if "mode" in data:
+                self.value = data["mode"] != "STANDARD_EXPERIENCE"
+            else:
+                val = data.get("value", "false")
+                self.value = str(val).lower() == "true"
         elif self.key == COMPONENT_VISIBILITY:
             self.value = data.get("visibility", None)
         elif self.key in ("sonar.login.message", "sonar.announcement.message"):
@@ -491,8 +493,9 @@ class Setting(SqObject):
         if not endpoint.is_sonarcloud():
             o = get_new_code_period(endpoint, component, branch)
             settings_dict[o.key] = o
-        o = get_mqr_mode(endpoint, component, branch)
-        settings_dict[o.key] = o
+        if not endpoint.is_sonarcloud() and endpoint.version() >= c.MQR_5_SEVERITIES_VERSION:
+            o = get_mqr_mode(endpoint, component, branch)
+            settings_dict[o.key] = o
         VALID_SETTINGS |= set(settings_dict.keys()) | {"sonar.scm.provider", MQR_ENABLED, "sonar.cfamily.ignoreHeaderComments"}
         return settings_dict
 
