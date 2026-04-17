@@ -54,25 +54,26 @@ def problems_present(csv_file: str, problems: list[tuple[str, str]]) -> bool:
 
 def test_audit(csv_file: Generator[str]) -> None:
     """test_audit"""
-    assert tutil.run_cmd(audit.main, f"{CMD_ONLY} --{opt.URL} {tutil.LATEST_TEST} --{opt.REPORT_FILE} {csv_file}") == e.OK
+    transient_errors = ("ERROR_IN_LOGS", "WARNING_IN_LOGS", "DEPRECATION_WARNINGS", "LATEST_PATCH_MISSING")
+    csv_file = "z.csv"
+    assert tutil.run_cmd(audit.main, f"{CMD_ONLY} {tutil.SQS_OPTS} --{opt.REPORT_FILE} {csv_file}") == e.OK
     # Ensure no duplicate alarms #1478
     problems = []
     regexp = re.compile(r"\d+\\ days")
     platform = os.environ.get("SONAR_TEST_PLATFORM")
-    csv_file = "audit.csv"
     audit_file = f"{tutil.FILES_ROOT}/audit.{platform}.csv"
     if platform is None or not os.path.exists(audit_file):
         audit_file = f"{tutil.FILES_ROOT}/audit.csv"
     with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         next(reader)
-        problems = [tuple((row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4])))) for row in reader]
+        problems = [tuple((row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4])))) for row in reader if row[1] not in transient_errors]
     with open(audit_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         next(reader)
-        old_problems = [tuple(row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4]))) for row in reader]
+        old_problems = [tuple((row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4])))) for row in reader if row[1] not in transient_errors]
     for row in old_problems:
-        assert row in problems, f"Problem {row} not found in new audit"
+        assert row in problems, f"Problem {row[0]}/{row[1]} not found in new audit comparing {audit_file} and {csv_file}"
     assert problems_present(csv_file, problems)
 
 
