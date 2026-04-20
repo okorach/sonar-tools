@@ -102,6 +102,9 @@ class ApiOperation(Enum):
     UPDATE_CATEGORY = "UPDATE_CATEGORY"
     UPDATE_LICENSE = "UPDATE_LICENSE"
     SELF_TEST = "SELF_TEST"
+    FEATURE_ENABLED = "FEATURE_ENABLED"
+    UPDATE_ASSIGNEE = "UPDATE_ASSIGNEE"
+    DELETE_COMMENT = "DELETE_COMMENT"
 
 
 class ApiManager:
@@ -162,6 +165,10 @@ class ApiManager:
     def page_field(self, object_or_class: object, operation: ApiOperation) -> str:
         """Returns the page field for the API call"""
         return self.get_api_entry(object_or_class, operation).get(ApiManager.__PAGE_FIELD_KEY, "p")
+
+    def content_type(self, object_or_class: object, operation: ApiOperation) -> Optional[str]:
+        """Returns the content type for the API call, or None if not specified"""
+        return self.get_api_entry(object_or_class, operation).get("content_type")
 
     def params(self, object_or_class: object, operation: ApiOperation, **kwargs: Any) -> dict[str, Any]:
         """Returns the parameters for the API call, removes any params not part of the API endpoint"""

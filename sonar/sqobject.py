@@ -47,7 +47,7 @@ class SqObject(object):
     API: dict[str, str] = {}  # Will be defined in the subclass
 
     def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
-        log.debug("Init object from payload %s", data)
+        log.debug("Init object with endpoint %s and payload %s", endpoint, data)
         self.sq_json: ApiPayload = data
         self.endpoint: Platform = endpoint  #: Reference to the SonarQube platform
         self.key: str  #: Object unique key (unique in its class)
