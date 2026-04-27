@@ -274,7 +274,7 @@ class Platform(object):
             params = {k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()}
         elif isinstance(params, (list, tuple)):
             params = [(v[0], str(v[1]).lower() if isinstance(v[1], bool) else v[1]) for v in params]
-        with_org = kwargs.pop("with_organization", True)
+        with_org = self.is_sonarcloud() and kwargs.pop("with_organization")
         credentials = None
         if api not in _UNAUTH_APIS:
             if self.is_sonarcloud() or self.version() >= (25, 0, 0):
