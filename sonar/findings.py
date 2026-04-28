@@ -249,7 +249,7 @@ class Finding(SqObject):
             data["maintainabilityImpact"] = data["impacts"].get(idefs.QUALITY_MAINTAINABILITY, "")
             data["otherImpact"] = data["impacts"].get(idefs.QUALITY_NONE, "")
             data.pop("impacts", None)
-        fields = CSV_EXPORT_FIELDS if self.endpoint.version() >= c.MQR_INTRO_VERSION else LEGACY_CSV_EXPORT_FIELDS
+        fields = CSV_EXPORT_FIELDS if self.endpoint.is_mqr_mode() else LEGACY_CSV_EXPORT_FIELDS
         return [str(data.get(field, "")) for field in fields]
 
     def to_json(self, without_time: bool = False) -> ObjectJsonRepr:
@@ -274,9 +274,9 @@ class Finding(SqObject):
             data["branch"] = proj.main_branch_name()
         if data.get("resolution", None):
             data["status"] = data.pop("resolution")
-        if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION:
+        if self.endpoint.is_sonarcloud() or self.endpoint.version() >= c.ACCEPT_INTRO_VERSION:
             data["status"] = STATUS_MAPPING.get(data["status"], data["status"])
-        if self.endpoint.version() >= c.MQR_INTRO_VERSION:
+        if self.endpoint.is_mqr_mode():
             data["securityImpact"] = self.impacts.get(idefs.QUALITY_SECURITY, "")
             data["reliabilityImpact"] = self.impacts.get(idefs.QUALITY_RELIABILITY, "")
             data["maintainabilityImpact"] = self.impacts.get(idefs.QUALITY_MAINTAINABILITY, "")
@@ -613,7 +613,7 @@ def export_findings(endpoint: Platform, project_key: str, branch: Optional[str] 
 
 def to_csv_header(endpoint: Platform) -> list[str]:
     """Returns the list of CSV fields provided by an issue CSV export"""
-    if endpoint.version() >= c.MQR_INTRO_VERSION:
+    if endpoint.is_mqr_mode():
         return list(CSV_EXPORT_FIELDS)
     else:
         return list(LEGACY_CSV_EXPORT_FIELDS)
