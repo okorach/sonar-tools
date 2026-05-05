@@ -252,7 +252,7 @@ class Platform(object):
         :param params: params to pass in the HTTP request, defaults to None
         :return: the HTTP response
         """
-        kwargs["headers"] = kwargs.get("headers", {}) | {"content-type": "application/merge-patch+json"}
+        kwargs["headers"] = kwargs.get("headers", {}) | {"content-type": kwargs.pop("content_type", "application/merge-patch+json")}
         return self.__run_request(requests.patch, api=api, data=json.dumps(params), **kwargs)
 
     def delete(self, api: str, params: Optional[ApiParams] = None, **kwargs: Any) -> requests.Response:

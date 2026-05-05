@@ -1290,5 +1290,75 @@
             "method": "GET",
             "api": "api/v2/sca/self-test"
         }
+    },
+    "DependencyRisk": {
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/v2/sca/issues-releases",
+            "params": [
+                "projectKey",
+                "branchKey",
+                "pullRequestKey",
+                "pageSize",
+                "pageIndex"
+            ],
+            "return_field": "issuesReleases",
+            "page_field": "pageIndex",
+            "max_page_size": 500
+        },
+        "GET_CHANGELOG": {
+            "method": "GET",
+            "api": "api/v2/sca/issues-releases/{key}/changelogs",
+            "return_field": "changelog"
+        },
+        "CHANGE_STATUS": {
+            "method": "PATCH",
+            "api": "api/v2/sca/issues-releases/change-status",
+            "content_type": "application/json",
+            "params": [
+                "issueReleaseKey",
+                "transitionKey",
+                "comment"
+            ]
+        },
+        "UPDATE": {
+            "method": "PATCH",
+            "api": "api/v2/sca/issues-releases/{id}",
+            "content_type": "application/json",
+            "params": [
+                "issueReleaseKey",
+                "quality",
+                "severity"
+            ]
+        },
+        "UPDATE_ASSIGNEE": {
+            "method": "PATCH",
+            "api": "api/v2/sca/issues-releases/update-assignee",
+            "content_type": "application/json",
+            "params": [
+                "issueReleaseKey",
+                "assigneeLogin"
+            ]
+        },
+        "ADD_COMMENT": {
+            "method": "POST",
+            "api": "api/v2/sca/issues-releases/comments",
+            "content_type": "application/json",
+            "params": [
+                "issueReleaseKey",
+                "comment"
+            ]
+        },
+        "DELETE_COMMENT": {
+            "method": "DELETE",
+            "api": "api/v2/sca/issues-releases/{key}/changelog",
+            "params": [
+                "issueReleaseChangeKey"
+            ]
+        },
+        "FEATURE_ENABLED": {
+            "method": "GET",
+            "api": "api/v2/sca/feature-enabled"
+        }
     }
 }
