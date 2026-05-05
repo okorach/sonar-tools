@@ -160,7 +160,9 @@ class Project(Component):
         """
         if use_cache and len(search_params) == 0 and len(cls.CACHE.from_platform(endpoint)) > 0:
             return dict(sorted(cls.CACHE.from_platform(endpoint).items()))
-        if not endpoint.is_sonarcloud():
+        if endpoint.is_sonarcloud():
+            search_params |= {"with_organization": True}
+        else:
             search_params |= cls.__PROJECT_FILTER
         return dict(sorted(cls.get_paginated(endpoint=endpoint, params=search_params, threads=threads).items()))
 
@@ -193,7 +195,7 @@ class Project(Component):
         """Loads a project object with contents of an api/projects/search call"""
         super().reload(data)
         self.name = data["name"]
-        self._visibility = data["visibility"]
+        self._visibility = data.get("visibility")
         self._revision = data.get("revision", self._revision)
         return self
 
