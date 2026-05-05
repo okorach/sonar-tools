@@ -316,6 +316,8 @@ class Rule(SqObject):
         :return: Dict of rules indexed by rule key
         """
         log.debug("Searching rules with params %s", search_params)
+        if endpoint.is_sonarcloud():
+            search_params |= {"with_organization": True}
         tmp_params = {k: v for k, v in search_params.items() if k not in ("include_external", "activation")}
         if use_cache and len(tmp_params) == 0 and cls.CACHE.is_complete(endpoint):
             log.debug("Searching rules from cache")
