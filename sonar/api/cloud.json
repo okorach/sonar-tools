@@ -1,144 +1,4 @@
 {
-    "Application": {
-        "CREATE": {
-            "method": "POST",
-            "api": "api/applications/create",
-            "params": [
-                "name",
-                "description",
-                "key",
-                "visibility"
-            ]
-        },
-        "GET": {
-            "method": "GET",
-            "api": "api/applications/show",
-            "params": [
-                "application",
-                "branch"
-            ],
-            "return_field": "application"
-        },
-        "UPDATE": {
-            "method": "POST",
-            "api": "api/applications/update",
-            "params": [
-                "name",
-                "description",
-                "application"
-            ]
-        },
-        "DELETE": {
-            "method": "POST",
-            "api": "api/applications/delete",
-            "params": [
-                "application"
-            ]
-        },
-        "SEARCH": {
-            "method": "GET",
-            "api": "api/components/search_projects",
-            "params": [
-                "p",
-                "ps",
-                "component",
-                "filter",
-                "s"
-            ],
-            "return_field": "components",
-            "page_field": "p",
-            "max_page_size": 500
-        },
-        "ADD_PROJECT": {
-            "method": "POST",
-            "api": "api/applications/add_project",
-            "params": [
-                "application",
-                "project"
-            ]
-        },
-        "REMOVE_PROJECT": {
-            "method": "POST",
-            "api": "api/applications/remove_project",
-            "params": [
-                "application",
-                "project"
-            ]
-        },
-        "RECOMPUTE": {
-            "method": "POST",
-            "api": "api/applications/refresh",
-            "params": [
-                "key"
-            ]
-        },
-        "SET_TAGS": {
-            "method": "POST",
-            "api": "api/applications/set_tags",
-            "params": [
-                "application",
-                "tags"
-            ]
-        },
-        "GET_TAGS": {
-            "method": "GET",
-            "api": "api/components/show",
-            "params": [
-                "component",
-                "branch",
-                "pullRequest"
-            ],
-            "return_field": "component"
-        }
-    },
-    "ApplicationBranch": {
-        "CREATE": {
-            "method": "POST",
-            "api": "api/applications/create_branch",
-            "params": [
-                "application",
-                "branch",
-                "project",
-                "projectBranch"
-            ]
-        },
-        "GET": {
-            "method": "GET",
-            "api": "api/applications/show",
-            "params": [
-                "application",
-                "branch"
-            ],
-            "return_field": "application"
-        },
-        "UPDATE": {
-            "method": "POST",
-            "api": "api/applications/update_branch",
-            "params": [
-                "application",
-                "branch",
-                "project",
-                "projectBranch"
-            ]
-        },
-        "DELETE": {
-            "method": "POST",
-            "api": "api/applications/delete_branch",
-            "params": [
-                "application",
-                "branch"
-            ]
-        },
-        "SEARCH": {
-            "method": "GET",
-            "api": "api/applications/show",
-            "params": [
-                "application",
-                "branch"
-            ],
-            "return_field": "application"
-        }
-    },
     "Component": {
         "GET": {
             "method": "GET",
@@ -1086,6 +946,7 @@
             "method": "GET",
             "api": "api/rules/search",
             "params": [
+                "organization",
                 "activation",
                 "active_impactSeverities",
                 "active_severities",
@@ -1291,9 +1152,10 @@
             "method": "GET",
             "api": "api/components/search_projects",
             "params": [
+                "organization",
                 "filter",
-                "q",
-                "qualifiers"
+                "p",
+                "ps"
             ],
             "return_field": "components"
         },
