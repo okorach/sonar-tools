@@ -90,7 +90,7 @@ def clean_data(d: Any, remove_empty: bool = True, remove_none: bool = True) -> A
         d = {k: v for k, v in d.items() if not isinstance(v, (str, list, dict, tuple, set)) or len(v) != 0}
 
     # Recurse
-    return {k: clean_data(v, remove_empty, remove_none) for k, v in d.items()}
+    return {k: clean_data(v, remove_empty, remove_none) if k not in ("key", "pattern") else v for k, v in d.items()}
 
 
 def remove_nones(d: Any) -> Any:
