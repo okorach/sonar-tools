@@ -222,7 +222,7 @@ class PermissionTemplate(sqobject.SqObject):
     def create(cls, endpoint: Platform, name: str) -> PermissionTemplate:
         """Creates a permission template from sonar-config data"""
         endpoint.post(_CREATE_API, params={"name": name})
-        return cls.get_object(endpoint, name)
+        return cls.get_object(endpoint, name, use_cache=False)
 
 
 def create_or_update(endpoint: Platform, name: str, data: ObjectJsonRepr) -> PermissionTemplate:
