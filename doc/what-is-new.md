@@ -1,5 +1,7 @@
 # Next version
 
+* `sonar-findings-export`: Added support for exporting SCA dependency risks via `--types DEPENDENCY_RISK`. Requires the SonarQube Advanced Security add-on (SonarQube Server 2025.4+ Enterprise/Data Center editions, or SonarQube Cloud). Fixes [#2371](https://github.com/okorach/sonar-tools/issues/2371)
+
 # Version 3.18.3
 
 # Version 3.18.2

@@ -11,7 +11,7 @@ Basic Usage: `sonar-findings-export [--format csv|json|sarif] [--sarifNoCustomPr
 - `--statuses <statusList>`: Only export findings with given statuses, comma separated among OPEN,CONFIRMED,REOPENED,RESOLVED,CLOSED,IN_SANDBOX,TO_REVIEW,REVIEWED
 - `--resolutions <resolutionList>`: Only export findings with given resolution, comma separated among FALSE-POSITIVE,WONTFIX,FIXED,REMOVED,ACCEPTED,SAFE,ACKNOWLEDGED,FIXED
 - `--severities <severityList>`: Only export findings with given resolution, comma separated among BLOCKER,CRITICAL,MAJOR,MINOR,INFO
-- `--types <typeList>`: Only export findings with given type, comma separated among BUG,VULNERABILITY,CODE_SMELL,SECURITY_HOTSPOT
+- `--types <typeList>`: Only export findings with given type, comma separated among BUG,VULNERABILITY,CODE_SMELL,SECURITY_HOTSPOT,DEPENDENCY_RISK. `DEPENDENCY_RISK` is exclusive of all other type values and exports SCA dependency risks (requires the SonarQube Advanced Security add-on, available on SonarQube Server 2025.4+ Enterprise/Data Center editions and on SonarQube Cloud)
 - `--createdAfter <YYYY-MM-DD>`: Only export findings created after a given date
 - `--createdBefore <YYYY-MM-DD>`: Only export findings created before a given date
 - `--tags <tagList>`: Comma separated list of tags corresponding to issues
@@ -60,4 +60,22 @@ sonar-findings-export -types VULNERABILITY,BUG --format sarif >bugs_and_vulnerab
 
 # Export all findings of project myProjectKey in SARIF format without the custom Sonar properties
 sonar-findings-export -k myProjectKey ----sarifNoCustomProperties -f myProjectKey.sarif
+
+# Export all SCA dependency risks (vulnerable dependencies, prohibited licenses, malware)
+# Requires the SonarQube Advanced Security add-on
+sonar-findings-export --types DEPENDENCY_RISK -f dependency_risks.csv
+
+# Export dependency risks of a specific project on a given branch as JSON
+sonar-findings-export --types DEPENDENCY_RISK -k myProjectKey -b main --format json >risks.json
 ```
+
+## SCA dependency risks
+
+When `--types DEPENDENCY_RISK` is used, `sonar-findings-export` queries the SCA `api/v2/sca/issues-releases` endpoint instead of the regular issues/hotspots endpoints. The export schema differs from regular findings and includes package metadata (name, version, package manager, transitivity, scope) along with vulnerability identifiers (CVE) and CVSS score.
+
+CSV columns: `key, projectKey, projectName, type, quality, severity, status, headline, CVE, cvssScore, packageName, packageVersion, packageManager, transitivity, scope, newlyIntroduced, assignee, branch, pullRequest, createdAt`.
+
+Notes:
+- `--types DEPENDENCY_RISK` cannot be combined with other type values.
+- For applications, the export is automatically expanded to the underlying project members (SCA risks are queried per-project).
+- Pull requests and branches are supported via the standard `-b` / PR options.
