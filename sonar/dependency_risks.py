@@ -179,6 +179,7 @@ class DependencyRisk(SqObject):
         self._sync_source_url: str = ""
 
         self.project_key: Optional[str] = project_key or data.get("projectKey")
+        self.projectKey: Optional[str] = self.project_key  # alias for Finding-protocol callers (syncer)
         self.project_name: Optional[str] = project_name
         self.branch: Optional[str] = branch or data.get("branchKey")
         self.pull_request: Optional[str] = pull_request or data.get("pullRequestKey")
