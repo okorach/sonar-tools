@@ -21,11 +21,13 @@
 
 """Unit tests for SCA dependency risk export (no live SonarQube required)."""
 
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 import pytest
 
 from sonar import dependency_risks as dr
 from sonar.dependency_risks import DependencyRisk, CSV_FIELDS
+from sonar.dependency_risk_changelog import DependencyRiskChangelog
 import sonar.util.issue_defs as idefs
 
 
@@ -212,3 +214,285 @@ def test_sca_enabled_returns_false_on_unsupported() -> None:
     endpoint = _mock_endpoint()
     endpoint.version.return_value = (10, 0, 0)
     assert dr.sca_enabled(endpoint) is False
+
+
+def test_project_returns_project_for_risks_project_key() -> None:
+    """project() should resolve the risk's project_key via Project.get_object."""
+    endpoint = _mock_endpoint()
+    risk = DependencyRisk(endpoint, _payload(), project_key="my-proj", project_name="My Project", branch="main")
+
+    sentinel_project = MagicMock(name="Project(my-proj)")
+    with patch("sonar.projects.Project.get_object", return_value=sentinel_project) as get_object:
+        result = risk.project()
+
+    assert result is sentinel_project
+    get_object.assert_called_once_with(endpoint, "my-proj")
+
+
+def test_project_resolves_per_risk_project_key() -> None:
+    """Each risk should look up its own project_key, not share state across instances."""
+    endpoint = _mock_endpoint()
+    risk_a = DependencyRisk(endpoint, _payload(key="a"), project_key="proj-a")
+    risk_b = DependencyRisk(endpoint, _payload(key="b"), project_key="proj-b")
+
+    proj_a, proj_b = MagicMock(name="proj-a"), MagicMock(name="proj-b")
+    with patch("sonar.projects.Project.get_object", side_effect=lambda _ep, key: {"proj-a": proj_a, "proj-b": proj_b}[key]) as get_object:
+        assert risk_a.project() is proj_a
+        assert risk_b.project() is proj_b
+
+    assert get_object.call_count == 2
+    assert [c.args[1] for c in get_object.call_args_list] == ["proj-a", "proj-b"]
+
+
+def _assign_mocks(login: str = "alice") -> tuple[MagicMock, MagicMock]:
+    """Build syncer/users module mocks suitable for DependencyRisk.assign()."""
+    syncer = MagicMock()
+    syncer.SYNC_ASSIGN = "sync_assignments"
+    users = MagicMock()
+    users.get_login_from_name.return_value = login
+    return syncer, users
+
+
+def test_assign_no_op_when_sync_assign_disabled() -> None:
+    """assign() should be a no-op when settings disable assignment sync."""
+    risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
+    syncer, users = _assign_mocks()
+    settings = {"sync_assignments": False}
+
+    with patch.object(risk, "_sca_patch") as patch_call:
+        ok = risk.assign("Alice", settings, syncer, users)
+
+    assert ok is False
+    users.get_login_from_name.assert_not_called()
+    patch_call.assert_not_called()
+
+
+def test_assign_returns_false_when_login_unresolvable() -> None:
+    """assign() returns False without patching when no login matches the name."""
+    risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
+    syncer, users = _assign_mocks(login=None)
+
+    with patch.object(risk, "_sca_patch") as patch_call:
+        ok = risk.assign("Ghost User", {}, syncer, users)
+
+    assert ok is False
+    users.get_login_from_name.assert_called_once()
+    patch_call.assert_not_called()
+
+
+def test_assign_patches_with_resolved_login() -> None:
+    """assign() should PATCH with the resolved login and return True."""
+    endpoint = _mock_endpoint()
+    risk = DependencyRisk(endpoint, _payload(key="r1"), project_key="p")
+    syncer, users = _assign_mocks(login="alice-login")
+
+    with patch.object(risk, "_sca_patch") as patch_call:
+        ok = risk.assign("Alice", {}, syncer, users)
+
+    assert ok is True
+    users.get_login_from_name.assert_called_once_with(endpoint=endpoint, name="Alice")
+    patch_call.assert_called_once()
+    kwargs = patch_call.call_args.kwargs
+    assert kwargs["issueReleaseKey"] == "r1"
+    assert kwargs["assigneeLogin"] == "alice-login"
+
+
+def test_assign_returns_false_on_sonar_exception() -> None:
+    """A SonarException from the patch must be swallowed and surface as False."""
+    from sonar import exceptions
+
+    risk = DependencyRisk(_mock_endpoint(), _payload(key="r1"), project_key="p")
+    syncer, users = _assign_mocks(login="alice-login")
+
+    with patch.object(risk, "_sca_patch", side_effect=exceptions.SonarException("boom", 1)):
+        ok = risk.assign("Alice", {}, syncer, users)
+
+    assert ok is False
+
+
+def _changelog_entry(date_iso: str, key_suffix: str = "") -> DependencyRiskChangelog:
+    """Build a minimal DependencyRiskChangelog with a known createdAt."""
+    return DependencyRiskChangelog(
+        {
+            "key": f"chg-{key_suffix or date_iso}",
+            "createdAt": date_iso,
+            "changeData": [{"fieldName": "severity", "oldValue": "LOW", "newValue": "HIGH"}],
+        }
+    )
+
+
+def test_changelog_with_after_filters_older_entries() -> None:
+    """changelog(after=...) returns only entries strictly after the cutoff."""
+    risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
+    older = _changelog_entry("2026-01-01T10:00:00+0000", "older")
+    newer = _changelog_entry("2026-03-01T10:00:00+0000", "newer")
+    risk._changelog = {"a": older, "b": newer}
+    risk._comments = {}  # short-circuit the lazy loader
+
+    cutoff = datetime(2026, 2, 1, tzinfo=timezone.utc)
+    filtered = risk.changelog(after=cutoff)
+
+    assert list(filtered.keys()) == ["b"]
+    assert filtered["b"] is newer
+
+
+def test_changelog_with_after_in_future_returns_empty() -> None:
+    """A cutoff after every entry returns an empty dict, not the full changelog."""
+    risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
+    risk._changelog = {"a": _changelog_entry("2026-01-01T10:00:00+0000")}
+    risk._comments = {}
+
+    cutoff = datetime(2030, 1, 1, tzinfo=timezone.utc)
+    assert risk.changelog(after=cutoff) == {}
+
+
+def test_changelog_after_excludes_entries_with_matching_timestamp() -> None:
+    """The filter is strictly greater-than: entries equal to the cutoff are excluded."""
+    risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
+    boundary = "2026-02-15T12:00:00+0000"
+    risk._changelog = {
+        "a": _changelog_entry(boundary, "exact"),
+        "b": _changelog_entry("2026-02-15T12:00:01+0000", "after"),
+    }
+    risk._comments = {}
+
+    cutoff = datetime(2026, 2, 15, 12, 0, 0, tzinfo=timezone.utc)
+    filtered = risk.changelog(after=cutoff)
+
+    assert list(filtered.keys()) == ["b"]
+
+
+def test_changelog_with_after_lazy_loads_when_unloaded() -> None:
+    """changelog() must trigger _load_changelog_and_comments when _changelog is None."""
+    risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
+
+    def fake_load() -> None:
+        risk._changelog = {"a": _changelog_entry("2026-04-01T10:00:00+0000")}
+        risk._comments = {}
+
+    with patch.object(risk, "_load_changelog_and_comments", side_effect=fake_load) as load:
+        result = risk.changelog(after=datetime(2026, 1, 1, tzinfo=timezone.utc))
+
+    load.assert_called_once()
+    assert "a" in result
+
+
+# ---------------------------------------------------------------------------
+# cli.findings_export._expand_applications_to_components
+#
+# Lives in cli/, but only ever runs in the SCA + applications path, so the
+# unit tests live here next to the rest of the SCA-flow coverage.
+# ---------------------------------------------------------------------------
+
+
+def _mock_branch(name: str) -> MagicMock:
+    b = MagicMock()
+    b.name = name
+    return b
+
+
+def _mock_project(key: str, branches: tuple[str, ...] = ("main",)) -> MagicMock:
+    proj = MagicMock(name=f"Project({key})")
+    proj.key = key
+    proj.branches.return_value = {n: _mock_branch(n) for n in branches}
+    return proj
+
+
+def _mock_application(endpoint: MagicMock, projects_map: dict[str, str]) -> MagicMock:
+    """Build a Mock that passes isinstance(app, Application) and exposes .projects() / .endpoint."""
+    from sonar.applications import Application
+
+    app = MagicMock(spec=Application)
+    app.endpoint = endpoint
+    app.projects.return_value = projects_map
+    return app
+
+
+def test_expand_applications_passes_through_non_application_items() -> None:
+    """Items that aren't Application instances should be returned untouched."""
+    from cli.findings_export import _expand_applications_to_components
+
+    proj_a = _mock_project("a")
+    proj_b = _mock_project("b")
+    out = _expand_applications_to_components([proj_a, proj_b])
+    assert out == [proj_a, proj_b]
+
+
+def test_expand_applications_resolves_branch_when_set() -> None:
+    """An app binding a non-main branch should expand to that branch object."""
+    from cli.findings_export import _expand_applications_to_components
+
+    endpoint = _mock_endpoint()
+    proj = _mock_project("p", branches=("main", "develop"))
+    app = _mock_application(endpoint, {"p": "develop"})
+
+    with patch("sonar.projects.Project.get_object", return_value=proj):
+        out = _expand_applications_to_components([app])
+
+    assert len(out) == 1
+    assert out[0] is proj.branches.return_value["develop"]
+
+
+def test_expand_applications_falls_back_to_project_when_no_branch() -> None:
+    """If the application binds the project without a branch, return the Project itself."""
+    from cli.findings_export import _expand_applications_to_components
+
+    endpoint = _mock_endpoint()
+    proj = _mock_project("p")
+    app = _mock_application(endpoint, {"p": ""})
+
+    with patch("sonar.projects.Project.get_object", return_value=proj):
+        out = _expand_applications_to_components([app])
+
+    assert out == [proj]
+
+
+def test_expand_applications_skips_missing_projects() -> None:
+    """ObjectNotFound from Project.get_object should be logged and skipped, not raised."""
+    from cli.findings_export import _expand_applications_to_components
+    from sonar import exceptions
+
+    endpoint = _mock_endpoint()
+    survivor = _mock_project("survivor")
+    app = _mock_application(endpoint, {"missing": "", "survivor": ""})
+
+    def fake_get(_ep, key):
+        if key == "missing":
+            raise exceptions.ObjectNotFound(key, "not found")
+        return survivor
+
+    with patch("sonar.projects.Project.get_object", side_effect=fake_get):
+        out = _expand_applications_to_components([app])
+
+    assert out == [survivor]
+
+
+def test_expand_applications_dedupes_repeated_components() -> None:
+    """Two apps pointing at the same (project, branch) yield a single component."""
+    from cli.findings_export import _expand_applications_to_components
+
+    endpoint = _mock_endpoint()
+    proj = _mock_project("p", branches=("main", "develop"))
+    app1 = _mock_application(endpoint, {"p": "develop"})
+    app2 = _mock_application(endpoint, {"p": "develop"})
+
+    with patch("sonar.projects.Project.get_object", return_value=proj):
+        out = _expand_applications_to_components([app1, app2])
+
+    assert len(out) == 1
+
+
+def test_expand_applications_keeps_distinct_branches_separate() -> None:
+    """Same project bound on two different branches yields two distinct components."""
+    from cli.findings_export import _expand_applications_to_components
+
+    endpoint = _mock_endpoint()
+    proj = _mock_project("p", branches=("main", "develop", "release"))
+    app_dev = _mock_application(endpoint, {"p": "develop"})
+    app_rel = _mock_application(endpoint, {"p": "release"})
+
+    with patch("sonar.projects.Project.get_object", return_value=proj):
+        out = _expand_applications_to_components([app_dev, app_rel])
+
+    names = sorted(getattr(c, "name", None) for c in out)
+    assert names == ["develop", "release"]

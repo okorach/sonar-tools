@@ -486,7 +486,7 @@ class DependencyRisk(SqObject):
         if event_type == "SEVERITY" and data:
             return self._apply_severity_change(data)
         if event_type == "ASSIGN" and data:
-            return self._apply_assignment(data, settings, syncer, users)
+            return self.assign(data, settings, syncer, users)
 
         log.debug("SCA event %s not applied to %s", str(event), str(self))
         return False
@@ -521,7 +521,7 @@ class DependencyRisk(SqObject):
         else:
             return True
 
-    def _apply_assignment(self, assignee_name: str, settings: ConfigSettings, syncer: Any, users: Any) -> bool:
+    def assign(self, assignee_name: str, settings: ConfigSettings, syncer: Any, users: Any) -> bool:
         """Applies an assignee change."""
         if not settings.get(syncer.SYNC_ASSIGN, True):
             return False
