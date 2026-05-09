@@ -1,6 +1,7 @@
 # Next version
 
 * `sonar-findings-export`: Added support for exporting SCA dependency risks via `--types DEPENDENCY_RISK`. Requires the SonarQube Advanced Security add-on (SonarQube Server 2025.4+ Enterprise/Data Center editions, or SonarQube Cloud). Fixes [#2371](https://github.com/okorach/sonar-tools/issues/2371)
+* `sonar-measures-export`: All SCA metrics (domain `DependencyRisks`) are now automatically included in the default `_main` export when the SonarQube Advanced Security add-on is enabled. Fixes [#2370](https://github.com/okorach/sonar-tools/issues/2370). Note: the keys `sca_count_any_issue` and `new_sca_count_any_issue` are no longer included in `_main` on Enterprise / Data Center 2025.3 instances *without* the SCA add-on (those columns were always empty there).
 
 # Version 3.18.3
 
