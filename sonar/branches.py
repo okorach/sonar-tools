@@ -326,9 +326,7 @@ class Branch(components.Component):
         """Returns the SCA dependency risks for this branch"""
         from sonar.dependency_risks import DependencyRisk
 
-        new_params = {
-            k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio", "branch", "pullRequest", "types")
-        }
+        new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio", "branch", "pullRequest", "types")}
         return DependencyRisk.search(self.endpoint, project_key=self.concerned_object.key, branch=self.name, **new_params)
 
     def component_data(self) -> dict[str, str]:

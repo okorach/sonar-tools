@@ -796,12 +796,9 @@ class Platform(object):
 
     def is_mqr_mode(self) -> bool:
         """Returns whether the platform is in MQR mode"""
-        log.debug("Checking MQR mode")
         if self.is_sonarcloud():
-            log.debug("SonarQube Cloud is always in MQR mode")
             return True
         if self.version() >= c.MQR_5_SEVERITIES_VERSION:
-            log.debug("MQR mode is configurable, checking setting %s", settings.MQR_ENABLED)
             return self.get_setting(settings.MQR_ENABLED)
         return self.version() >= c.MQR_INTRO_VERSION
 
