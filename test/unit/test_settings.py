@@ -132,9 +132,13 @@ def test_set_visibility() -> None:
 
 def test_set_new_code_period() -> None:
     """test_set_new_code_period"""
-    assert settings.set_new_code_period(tutil.SQ, "DAYS", 42, project_key=tutil.PROJECT_1)
+    assert settings.set_new_code_period(tutil.SQ, "NUMBER_OF_DAYS", 42, project_key=tutil.PROJECT_1)
     o = settings.get_new_code_period(tutil.SQ, component=tutil.PROJECT_1)
-    assert o.value == "DAYS = 42"
+    assert o.value == "NUMBER_OF_DAYS = 42"
+    # Legacy alias DAYS must be normalized to NUMBER_OF_DAYS at the API boundary.
+    assert settings.set_new_code_period(tutil.SQ, "DAYS", 30, project_key=tutil.PROJECT_1)
+    o = settings.get_new_code_period(tutil.SQ, component=tutil.PROJECT_1)
+    assert o.value == "NUMBER_OF_DAYS = 30"
     assert settings.set_new_code_period(tutil.SQ, "SPECIFIC_ANALYSIS", "XXX", project_key=tutil.PROJECT_1)
     assert o.value == "SPECIFIC_ANALYSIS = XXX"
     assert o.reset()
