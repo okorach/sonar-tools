@@ -542,6 +542,10 @@ def set_new_code_period(
     endpoint: Platform, nc_type: str, nc_value: Union[int, str], project_key: Optional[str] = None, branch: Optional[str] = None
 ) -> bool:
     """Sets the new code period at global level or for a project"""
+    # The api/new_code_periods/set endpoint expects NUMBER_OF_DAYS; older code paths and
+    # exports pass the legacy alias DAYS. Normalize so both keep working.
+    if nc_type == "DAYS":
+        nc_type = "NUMBER_OF_DAYS"
     log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
     if endpoint.is_sonarcloud():
         api, _, params1, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period.type", value=nc_type, project=project_key)
