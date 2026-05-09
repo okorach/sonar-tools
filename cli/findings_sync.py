@@ -208,7 +208,7 @@ def main() -> None:
             "nb_tgt_has_changelog": "were not synchronized because target finding has a more recent changelog",
             "exception": "could not be synchronized because of unexpected exception",
         }
-        for t in "issues", "hotspots":
+        for t in "issues", "hotspots", "dependency_risks":
             log.info("%d %s needed to be synchronized", counters.get(f"{t}_nb_to_sync", 0), t)
             if counters.get(f"{t}_nb_to_sync", 0) > 0:
                 for key, desc in __COUNTER_MAP.items():

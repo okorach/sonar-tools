@@ -561,6 +561,44 @@ def sync_lists_bidirectional(
     return pair_report + sync_report, counters
 
 
+def _sync_dependency_risks(
+    src_object: Union[Project, Branch], tgt_object: Union[Project, Branch], sync_settings: ConfigSettings
+) -> tuple[list[dict[str, str]], dict[str, int]]:
+    """Syncs dependency risks from source to target (unidirectional only)."""
+    from sonar.dependency_risks import DependencyRisk, get_changelogs
+
+    src_drs = list(src_object.get_dependency_risks().values())
+    tgt_drs = list(tgt_object.get_dependency_risks().values())
+
+    log.info("Removing closed dependency risks from source, %d total", len(src_drs))
+    src_drs = [dr for dr in src_drs if not dr.is_closed()]
+    log.info("%d open dependency risks to sync, %d target dependency risks", len(src_drs), len(tgt_drs))
+
+    if len(src_drs) == 0 or len(tgt_drs) == 0:
+        counters = dict.fromkeys(("nb_to_sync", "nb_applies", "nb_no_match", "exception"), 0)
+        return [], counters
+
+    min_date = sync_settings[SYNC_SINCE_DATE]
+    get_changelogs(src_drs, added_after=min_date)
+    get_changelogs(tgt_drs, added_after=min_date)
+
+    src_drs = [dr for dr in src_drs if dr.has_changelog(after=min_date) or dr.has_comments(after=min_date)]
+    log.info("%d dependency risks with changes to sync", len(src_drs))
+
+    # Filter out service-account-only changes
+    syncer_account = sync_settings[SYNC_SERVICE_ACCOUNT]
+    interesting = []
+    for dr in src_drs:
+        modifiers = dr.modifiers().union(dr.commenters())
+        if len(modifiers) == 1 and list(modifiers)[0] == syncer_account:
+            log.info("%s has only been changed by %s, skipping", dr, syncer_account)
+            continue
+        interesting.append(dr)
+
+    sync_settings[SYNC_IGNORE_COMPONENTS] = src_object.project().key != tgt_object.project().key
+    return __sync_curated_list(interesting, tgt_drs, sync_settings)
+
+
 def sync_objects(
     src_object: Union[Project, Branch], tgt_object: Union[Project, Branch], sync_settings: ConfigSettings = None
 ) -> tuple[list[dict[str, str]], dict[str, int]]:
@@ -595,4 +633,24 @@ def sync_objects(
     )
     report += tmp_report
     hotspot_counters = {f"hotspots_{k}": v for k, v in hotspot_counters.items()}
-    return report, issue_counters | hotspot_counters
+
+    # Sync dependency risks (SCA) if available on both sides
+    dr_counters = {}
+    try:
+        from sonar.dependency_risks import sca_feature_enabled
+
+        if sca_feature_enabled(src_object.endpoint) and sca_feature_enabled(tgt_object.endpoint):
+            log.info(
+                "Syncing %s and %s dependency risks (unidirectional)",
+                str(src_object),
+                str(tgt_object),
+            )
+            (tmp_report, dr_counters) = _sync_dependency_risks(src_object, tgt_object, sync_settings)
+            report += tmp_report
+            dr_counters = {f"dependency_risks_{k}": v for k, v in dr_counters.items()}
+        else:
+            log.info("SCA not enabled on one or both sides, skipping dependency risk sync")
+    except exceptions.UnsupportedOperation:
+        log.info("SCA dependency risk sync not supported on this version, skipping")
+
+    return report, issue_counters | hotspot_counters | dr_counters

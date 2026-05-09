@@ -708,6 +708,13 @@ class Project(Component):
             log.debug("%d %s exported", sum(1 for i in findings_list.values() if i.type == t), t)
         return findings_list
 
+    def get_dependency_risks(self, **search_params: Any) -> dict[str, Any]:
+        """Returns dependency risks for the project"""
+        from sonar.dependency_risks import DependencyRisk
+
+        log.info("Searching dependency risks for %s with endpoint %s", str(self), str(self.endpoint))
+        return DependencyRisk.search(self.endpoint, project=self.key, **search_params)
+
     def count_third_party_issues(self, **search_params: Any) -> dict[str, int]:
         """Returns the nbr of thrid party issues for the project"""
         search_params = {k: [v] for k, v in search_params.items() if k in ("branch", "pullRequest")}
