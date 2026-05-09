@@ -185,6 +185,13 @@ class PullRequest(Component):
         """Returns a list of findings, issues and hotspots together on a PR"""
         return self.concerned_object.get_findings(**(search_params | {"pullRequest": self.key}))
 
+    def get_dependency_risks(self, **search_params: Any) -> dict:
+        """Returns the SCA dependency risks for this pull request"""
+        from sonar.dependency_risks import DependencyRisk
+
+        new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio", "branch", "pullRequest", "types")}
+        return DependencyRisk.search(self.endpoint, project_key=self.concerned_object.key, pull_request=self.key, **new_params)
+
     def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
         """Returns the history of a project metrics"""
         return measures.get_history(self, metrics_list, component=self.concerned_object.key, pullRequest=self.key)

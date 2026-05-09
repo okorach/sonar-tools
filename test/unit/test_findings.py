@@ -37,6 +37,8 @@ from sonar.issues import Issue
 from sonar import hotspots
 from sonar import errcodes as e
 from sonar import exceptions
+from sonar import dependency_risks
+from sonar.dependency_risks import DependencyRisk
 from sonar.util import constants as c, issue_defs as idefs
 from cli import findings_export
 import cli.options as opt

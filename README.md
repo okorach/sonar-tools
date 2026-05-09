@@ -28,7 +28,7 @@ The following utilities are available:
 deletes tokens created since more than a certain number of days
 - [sonar-loc](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-loc.md): Computes lines of code per project and in total, as they would be computed by SonarQube (and the licensing system on commercial editions)
 - [sonar-measures-export](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-measures-export.md): Exports measures/metrics of one, several or all projects of the instance in CSV
-- [sonar-findings-export](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-findings-export.md) (Also available as **sonar-issues-export** (deprecated) for backward compatibility): Exports issues and hotspots (potentially filtered) from the instance in CSV
+- [sonar-findings-export](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-findings-export.md) (Also available as **sonar-issues-export** (deprecated) for backward compatibility): Exports issues, hotspots and SCA dependency risks (potentially filtered) from the instance in CSV, JSON or SARIF
 - [sonar-findings-sync](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-findings-sync.md): Synchronizes issues and hotspots changelog between branches, projects or even SonarQube instances (formerly **sonar-issues-sync**, now deprecated)
 - [sonar-projects](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-projects.md): Exports or imports projects from/to a SonarQube Server instance (EE and higher required for import)
 - [sonar-config](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md): Exports or Imports a SonarQube Server or Cloud platform configuration to/from configuration as code file (JSON file).

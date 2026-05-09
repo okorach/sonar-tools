@@ -1457,6 +1457,17 @@
             "api": "api/v2/sca/self-test"
         }
     },
+    "DependencyRisk": {
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/v2/sca/issues-releases",
+            "return_field": "issuesReleases"
+        },
+        "SELF_TEST": {
+            "method": "GET",
+            "api": "api/v2/sca/self-test"
+        }
+    },
     "Platform": {
         "GET_LOGS": {
             "method": "GET",

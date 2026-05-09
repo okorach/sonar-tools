@@ -105,6 +105,14 @@ class Component(SqObject):
         new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio")}
         return Hotspot.search(endpoint=self.endpoint, **(new_params | {"project": self.key}))
 
+    def get_dependency_risks(self, **search_params: Any) -> dict:
+        """Returns list of SCA dependency risks for a project component"""
+        from sonar.dependency_risks import DependencyRisk
+
+        log.info("Searching dependency risks for %s with filters %s", self, search_params)
+        new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio", "branch", "pullRequest", "types")}
+        return DependencyRisk.search(endpoint=self.endpoint, project_key=self.key, **new_params)
+
     def count_specific_rules_issues(self, ruleset: list[str], **search_params: Any) -> dict[str, int]:
         """Returns the count of issues of a component for a given ruleset"""
         from sonar.issues import count_by_rule

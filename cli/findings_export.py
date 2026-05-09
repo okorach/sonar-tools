@@ -37,6 +37,8 @@ from sonar.util.types import ConfigSettings
 import sonar.logging as log
 from sonar import platform, exceptions, errcodes, version
 from sonar import hotspots, findings
+from sonar import dependency_risks
+from sonar.dependency_risks import DependencyRisk
 from sonar.util import issue_defs as idefs, types, component_helper
 import sonar.util.constants as c
 
@@ -145,7 +147,12 @@ def parse_args(desc: str) -> Namespace:
     parser.add_argument(
         f"--{options.TYPES}",
         required=False,
-        help="Comma separated types among " + util.list_to_csv(idefs.STD_TYPES + hotspots.TYPES),
+        help=(
+            "Comma separated types among "
+            + util.list_to_csv(idefs.STD_TYPES + hotspots.TYPES + (idefs.TYPE_DEPENDENCY_RISK,))
+            + f". '{idefs.TYPE_DEPENDENCY_RISK}' is exclusive of all other type values and exports SCA dependency risks "
+            "(requires the SonarQube Advanced Security add-on)."
+        ),
     )
     parser.add_argument(f"--{options.TAGS}", help="Comma separated findings tags", required=False)
     parser.add_argument(
@@ -173,7 +180,7 @@ def __write_header(file: str, endpoint: platform.Platform, **kwargs) -> None:
             print("[\n", file=fd)
         else:
             csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
-            row = findings.to_csv_header(endpoint)
+            row = DependencyRisk.csv_header() if kwargs.get("dependency_risks_mode") else findings.to_csv_header(endpoint)
             row[0] = "# " + row[0]
             if kwargs[options.WITH_URL]:
                 row.append("URL")
@@ -244,9 +251,15 @@ def __verify_inputs(params: types.ApiParams) -> bool:
     if diff:
         chelp.clear_cache_and_exit(errcode, f"Severities {diff} are not legit severities")
 
-    diff = list(set(util.csv_to_list(params.get(options.TYPES))) - set(idefs.STD_TYPES + hotspots.TYPES))
+    types_list = util.csv_to_list(params.get(options.TYPES))
+    diff = list(set(types_list) - set(idefs.STD_TYPES + hotspots.TYPES + (idefs.TYPE_DEPENDENCY_RISK,)))
     if diff:
         chelp.clear_cache_and_exit(errcode, f"Types {diff} are not legit types")
+    if idefs.TYPE_DEPENDENCY_RISK in types_list and len(types_list) > 1:
+        chelp.clear_cache_and_exit(
+            errcode,
+            f"--{options.TYPES} {idefs.TYPE_DEPENDENCY_RISK} cannot be combined with other type values",
+        )
     if len(params[options.CSV_SEPARATOR]) > 1:
         chelp.clear_cache_and_exit(errcode, f"CSV separator must be a single character, {params[options.CSV_SEPARATOR]} is not legit")
 
@@ -273,6 +286,8 @@ def needs_hotspot_search(params: types.ApiParams) -> bool:
     """Returns whether an hotspot search is needed based on the parameters"""
     if options.TAGS in params:
         return False
+    if needs_dependency_risk_search(params):
+        return False
     return (options.TYPES not in params and options.STATUSES not in params and options.RESOLUTIONS not in params) or (
         has_filter(params, options.TYPES, hotspots.TYPES)
         or has_filter(params, options.STATUSES, hotspots.STATUSES)
@@ -281,8 +296,16 @@ def needs_hotspot_search(params: types.ApiParams) -> bool:
     )
 
 
+def needs_dependency_risk_search(params: types.ApiParams) -> bool:
+    """Returns whether a SCA dependency risks search is needed based on the parameters"""
+    return has_filter(params, options.TYPES, (idefs.TYPE_DEPENDENCY_RISK,))
+
+
 def get_component_findings(component: ConcernedObject, search_findings: bool, params: ConfigSettings) -> dict[str, Finding]:
     """Gets the findings of a component and puts them in a writing queue"""
+    if needs_dependency_risk_search(params):
+        return component.get_dependency_risks(**params)
+
     if any(k in params and params[k] is not None for k in _SEARCH_CRITERIA):
         search_findings = False
 
@@ -307,6 +330,7 @@ def store_findings(components_list: list[object], endpoint: platform.Platform, p
     """
     comp_params = {k: v for k, v in params.items() if k in _SEARCH_CRITERIA}
     local_params = params.copy()
+    local_params["dependency_risks_mode"] = needs_dependency_risk_search(comp_params)
     file = local_params.pop(options.REPORT_FILE)
     if any("misra" in p for p in params.get(options.TAGS, {})):
         Rule.search(endpoint=endpoint, languages="c,cpp,objc")
@@ -333,6 +357,35 @@ def store_findings(components_list: list[object], endpoint: platform.Platform, p
                 log.error(f"Exception {e!s} when exporting findings of {comp!s}.")
     __write_footer(file, local_params[options.FORMAT])
     return total_findings
+
+
+def _expand_applications_to_components(applications_list: list) -> list:
+    """Expands a list of Application objects into the underlying Project / Branch components.
+
+    SCA dependency risks are only queryable per-project, so applications are flattened to their
+    member projects (or specific branches when the application binds a non-main branch).
+    """
+    from sonar.projects import Project
+
+    expanded = []
+    seen = set()
+    for app in applications_list:
+        if not isinstance(app, Application):
+            expanded.append(app)
+            continue
+        for proj_key, branch_name in app.projects().items():
+            try:
+                proj = Project.get_object(app.endpoint, proj_key)
+            except exceptions.ObjectNotFound:
+                log.warning("Project '%s' from %s not found, skipping", proj_key, app)
+                continue
+            comp = next((b for b in proj.branches().values() if b.name == branch_name), proj) if branch_name else proj
+            uid = (proj_key, getattr(comp, "name", "") if comp is not proj else "")
+            if uid in seen:
+                continue
+            seen.add(uid)
+            expanded.append(comp)
+    return expanded
 
 
 def __turn_off_use_findings_if_needed(endpoint: object, params: dict[str, str]) -> dict[str, str]:
@@ -390,6 +443,15 @@ def main() -> None:
         # params.pop(options.BRANCH_REGEXP, None)
         if params[options.COMPONENT_TYPE] == "portfolios":
             components_list = [c for pf in components_list for c in pf.components()]
+
+        if needs_dependency_risk_search(params):
+            if not dependency_risks.sca_enabled(sqenv):
+                chelp.clear_cache_and_exit(
+                    errcodes.UNSUPPORTED_OPERATION,
+                    f"--{options.TYPES} {idefs.TYPE_DEPENDENCY_RISK} requires the SonarQube Advanced Security add-on, which is not enabled on this platform",
+                )
+            if params[options.COMPONENT_TYPE] == "applications":
+                components_list = _expand_applications_to_components(components_list)
 
         if len(components_list) == 0:
             msg = f"No {params[options.COMPONENT_TYPE]} found with key matching regexp '{params.get(options.KEY_REGEXP, None)}'"
