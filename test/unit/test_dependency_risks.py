@@ -134,8 +134,9 @@ def test_assignee_none_when_unassigned() -> None:
 def test_to_json_excludes_none_and_empty() -> None:
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p", branch="main")
     data = risk.to_json()
-    assert "id" in data
-    assert "vulnerabilityId" in data
+    assert "id" not in data
+    assert "key" in data
+    assert "CVE" in data
     assert "spdxLicenseId" not in data  # was None in payload
     assert "pullRequest" not in data  # not provided
     assert data["url"].startswith("http://localhost:9000/dependency-risks/issue?")
@@ -146,8 +147,9 @@ def test_to_csv_matches_csv_header() -> None:
     row = risk.to_csv()
     header = DependencyRisk.csv_header()
     assert len(row) == len(header) == len(CSV_FIELDS)
+    assert "id" not in CSV_FIELDS
     # Spot-check that fields land in their correct columns
-    assert row[CSV_FIELDS.index("id")] == "risk-1"
+    assert row[CSV_FIELDS.index("key")] == "risk-1-key"
     assert row[CSV_FIELDS.index("type")] == idefs.SCA_TYPE_VULNERABLE_DEPENDENCY
     assert row[CSV_FIELDS.index("packageName")] == "lodash"
     assert row[CSV_FIELDS.index("transitivity")] == "DIRECT"

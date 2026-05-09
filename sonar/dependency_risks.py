@@ -45,14 +45,15 @@ _UNSUPPORTED_EDITION_MSG = "SCA dependency risks require Enterprise Edition or D
 _DEFAULT_PAGE_SIZE = 500
 
 CSV_FIELDS = (
-    "id",
     "key",
+    "projectKey",
+    "projectName",
     "type",
     "quality",
     "severity",
     "status",
     "headline",
-    "vulnerabilityId",
+    "CVE",
     "cvssScore",
     "packageName",
     "packageVersion",
@@ -61,8 +62,6 @@ CSV_FIELDS = (
     "scope",
     "newlyIntroduced",
     "assignee",
-    "projectKey",
-    "projectName",
     "branch",
     "pullRequest",
     "createdAt",
@@ -146,7 +145,8 @@ class DependencyRisk(SqObject):
         release = data.get("release") or {}
         self.package_name: Optional[str] = release.get("packageName")
         self.package_version: Optional[str] = release.get("version")
-        self.package_manager: Optional[str] = release.get("packageManager")
+        package_manager = release.get("packageManager")
+        self.package_manager: Optional[str] = package_manager.lower() if package_manager else None
         self.package_url: Optional[str] = release.get("packageUrl")
         self.transitivity: str = "DIRECT" if release.get("directSummary") else "TRANSITIVE"
         self.scope: str = "PRODUCTION" if release.get("productionScopeSummary") else "TEST"
@@ -188,14 +188,13 @@ class DependencyRisk(SqObject):
         """Returns the dependency risk as a JSON-serializable dict."""
         del without_time  # accepted for protocol parity with Finding.to_json
         data = {
-            "id": self.id,
             "key": self.key,
             "type": self.type,
             "quality": self.quality,
             "severity": self.severity,
             "status": self.status,
             "headline": self.headline,
-            "vulnerabilityId": self.vulnerability_id,
+            "CVE": self.vulnerability_id,
             "cvssScore": self.cvss_score,
             "spdxLicenseId": self.spdx_license_id,
             "packageName": self.package_name,
