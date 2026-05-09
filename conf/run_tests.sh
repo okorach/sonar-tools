@@ -31,6 +31,10 @@ echo "Running tests"
 
 cd "${ROOT_DIR}" || exit 1
 
+# Clear stale coverage data so `coverage xml` at the end doesn't fail
+# on records pointing to test files that have since been removed/renamed.
+poetry run coverage erase
+
 sonar start -i test
 
 testList="${1:-"latest cb 99 cloud"}"
