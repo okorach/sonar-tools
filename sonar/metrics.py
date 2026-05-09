@@ -67,7 +67,9 @@ MAIN_METRICS = (
 
 MAIN_METRICS_10 = ("accepted_issues", "software_quality_blocker_issues", "software_quality_high_issues")
 MAIN_METRICS_ENTERPRISE_10 = ("prioritized_rule_issues",)
-MAIN_METRICS_ENTERPRISE_2025_3 = ("contains_ai_code", "sca_count_any_issue", "new_sca_count_any_issue")
+MAIN_METRICS_ENTERPRISE_2025_3 = ("contains_ai_code",)
+
+SCA_METRIC_DOMAIN = "DependencyRisks"
 
 #: Dict of metric grouped by type (INT, FLOAT, WORK_DUR etc...)
 METRICS_BY_TYPE = {}
@@ -149,3 +151,8 @@ class Metric(SqObject):
     def is_an_effort(self) -> bool:
         """Whether a metric is an effort"""
         return self.type == "WORK_DUR"
+
+
+def sca_metrics(endpoint: Platform) -> list[str]:
+    """Returns the metric keys belonging to the SCA (DependencyRisks) domain on the given platform."""
+    return [k for k, m in Metric.search(endpoint, use_cache=True).items() if m.domain == SCA_METRIC_DOMAIN]
