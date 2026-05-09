@@ -1472,6 +1472,10 @@
             "page_field": "pageIndex",
             "max_page_size": 500
         },
+        "SELF_TEST": {
+            "method": "GET",
+            "api": "api/v2/sca/self-test"
+        },
         "GET_CHANGELOG": {
             "method": "GET",
             "api": "api/v2/sca/issues-releases/{key}/changelogs",

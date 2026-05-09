@@ -18,10 +18,10 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""Abstraction of the SonarQube SCA dependency risk concept"""
+"""Abstraction of SonarQube SCA dependency risks (issue-release pairs)"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 import json
 from http import HTTPStatus
@@ -29,109 +29,303 @@ from http import HTTPStatus
 from sonar.sqobject import SqObject
 from sonar.dependency_risk_changelog import DependencyRiskChangelog
 import sonar.logging as log
-import sonar.utilities as sutil
-from sonar.api.manager import ApiOperation as Oper
+from sonar.util import cache
 from sonar import exceptions
+import sonar.util.issue_defs as idefs
+from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
     from datetime import datetime
     from sonar.platform import Platform
-    from sonar.util.types import ApiPayload, ConfigSettings
+    from sonar.util.types import ApiPayload, ConfigSettings, ObjectJsonRepr
 
+_MIN_SQ_VERSION = (2025, 4, 0)
+_CB_VERSION_OFFSET = 2000
+_SUPPORTED_EDITIONS = ("enterprise", "datacenter")
+_UNSUPPORTED_VERSION_MSG = "SCA dependency risks require SonarQube Server 2025.4 or later, or SonarQube Cloud"
+_UNSUPPORTED_EDITION_MSG = "SCA dependency risks require Enterprise Edition or Data Center Edition"
+
+_DEFAULT_PAGE_SIZE = 500
 _CLOSED_STATUSES = ("FIXED", "SAFE")
+
+CSV_FIELDS = (
+    "key",
+    "projectKey",
+    "projectName",
+    "type",
+    "quality",
+    "severity",
+    "status",
+    "headline",
+    "CVE",
+    "cvssScore",
+    "packageName",
+    "packageVersion",
+    "packageManager",
+    "transitivity",
+    "scope",
+    "newlyIntroduced",
+    "assignee",
+    "branch",
+    "pullRequest",
+    "createdAt",
+)
+
+_API_FILTER_PARAMS = (
+    "packageManagers",
+    "types",
+    "qualities",
+    "severities",
+    "statuses",
+    "packageName",
+    "vulnerabilityId",
+    "newlyIntroduced",
+    "direct",
+    "productionScope",
+    "assignees",
+    "assigned",
+    "onlyShowConfirmedReachable",
+    "sort",
+)
+
+
+def _check_supported(endpoint: Platform) -> None:
+    """Raises UnsupportedOperation if the platform does not support SCA dependency risks"""
+    if endpoint.is_sonarcloud():
+        return
+    vers = endpoint.version()
+    if vers > (10, 8, 0) and vers[0] < _CB_VERSION_OFFSET:
+        vers = (vers[0] + _CB_VERSION_OFFSET, vers[1], vers[2])
+    if vers < _MIN_SQ_VERSION:
+        raise exceptions.UnsupportedOperation(_UNSUPPORTED_VERSION_MSG)
+    if endpoint.edition() not in _SUPPORTED_EDITIONS:
+        raise exceptions.UnsupportedOperation(_UNSUPPORTED_EDITION_MSG)
+
+
+def sca_enabled(endpoint: Platform) -> bool:
+    """Returns whether the SCA add-on (SonarQube Advanced Security) is enabled on the platform"""
+    try:
+        _check_supported(endpoint)
+        api, _, _, _ = endpoint.api.get_details(DependencyRisk, Oper.SELF_TEST)
+        resp = endpoint.get(api)
+    except (exceptions.SonarException, exceptions.UnsupportedOperation):
+        return False
+    else:
+        return resp.ok
+
+
+def sca_feature_enabled(endpoint: Platform) -> bool:
+    """Returns True if SCA is available on the given endpoint via api/v2/sca/feature-enabled."""
+    try:
+        api, _, _, _ = endpoint.api.get_details(DependencyRisk, Oper.FEATURE_ENABLED)
+        resp = endpoint.get(api, mute=(HTTPStatus.NOT_FOUND, HTTPStatus.FORBIDDEN))
+        if not resp.ok:
+            return False
+        data = json.loads(resp.text)
+    except (exceptions.SonarException, exceptions.UnsupportedOperation, exceptions.ObjectNotFound):
+        return False
+    else:
+        return data.get("enabled", False)
 
 
 class DependencyRisk(SqObject):
-    """Abstraction of a SonarQube SCA dependency risk (issue-release)."""
+    """Abstraction of a SonarQube SCA dependency risk (an issue paired with a package release)"""
 
-    def __init__(self, endpoint: Platform, data: ApiPayload) -> None:
-        """Constructor"""
-        self.key = data["key"]
+    CACHE = cache.Cache()
+
+    def __init__(
+        self,
+        endpoint: Platform,
+        data: ApiPayload,
+        project_key: Optional[str] = None,
+        project_name: Optional[str] = None,
+        branch: Optional[str] = None,
+        pull_request: Optional[str] = None,
+    ) -> None:
+        """Builds a DependencyRisk from a single issuesReleases entry."""
+        self.id: str = data["id"]
+        self.key: str = data.get("key", data["id"])
         super().__init__(endpoint, data)
-        self.vulnerabilityId: Optional[str] = data.get("vulnerabilityId")
-        self.packageName: Optional[str] = data.get("packageName")
-        self.version: Optional[str] = data.get("version")
-        self.status: Optional[str] = data.get("status")
+
         self.severity: Optional[str] = data.get("severity")
-        self.type: Optional[str] = data.get("type")
-        self.spdxLicenseId: Optional[str] = data.get("spdxLicenseId")
-        release = data.get("release", {})
-        self.packageUrl: Optional[str] = release.get("packageUrl")
-        self.licenseExpression: Optional[str] = release.get("licenseExpression")
-        self.assignee: Optional[str] = data.get("assignee")
+        api_type: str = data.get("type", "")
+        self.type: str = idefs.SCA_API_TYPE_MAPPING.get(api_type, api_type)
+        self.quality: Optional[str] = data.get("quality")
+        self.status: Optional[str] = data.get("status")
+        self.created_at: Optional[str] = data.get("createdAt")
+        self.vulnerability_id: Optional[str] = data.get("vulnerabilityId")
+        self.cvss_score: Optional[str] = data.get("cvssScore")
+        self.spdx_license_id: Optional[str] = data.get("spdxLicenseId")
+
+        assignee = data.get("assignee") or {}
+        self.assignee: Optional[str] = assignee.get("login") if isinstance(assignee, dict) else assignee
+
+        release = data.get("release") or {}
+        self.package_name: Optional[str] = release.get("packageName") or data.get("packageName")
+        self.package_version: Optional[str] = release.get("version") or data.get("version")
+        package_manager = release.get("packageManager")
+        self.package_manager: Optional[str] = package_manager.lower() if package_manager else None
+        self.package_url: Optional[str] = release.get("packageUrl")
+        self.license_expression: Optional[str] = release.get("licenseExpression")
+        self.transitivity: str = "DIRECT" if release.get("directSummary") else "TRANSITIVE"
+        self.scope: str = "PRODUCTION" if release.get("productionScopeSummary") else "TEST"
+        self.newly_introduced: bool = bool(release.get("newlyIntroduced", False))
+
+        # Sync-related state
         self.transitions: list[str] = data.get("transitions", [])
         self.actions: list[str] = data.get("actions", [])
-        self.projectKey: Optional[str] = data.get("projectKey")
-        self.branch: Optional[str] = data.get("branchKey")
-        self.pull_request: Optional[str] = data.get("pullRequestKey")
         self._changelog: Optional[dict[str, DependencyRiskChangelog]] = None
         self._comments: Optional[dict[str, dict[str, Any]]] = None
         self._sync_source_url: str = ""
 
+        self.project_key: Optional[str] = project_key or data.get("projectKey")
+        self.project_name: Optional[str] = project_name
+        self.branch: Optional[str] = branch or data.get("branchKey")
+        self.pull_request: Optional[str] = pull_request or data.get("pullRequestKey")
+
+        self.headline: str = self._compute_headline()
+        self.__class__.CACHE.put(self)
+
+    def _compute_headline(self) -> str:
+        """Returns a short human-readable description of the risk."""
+        pkg = self.package_name or "?"
+        version = self.package_version or "?"
+        if self.type == idefs.SCA_TYPE_PROHIBITED_LICENCE:
+            license_id = self.spdx_license_id or "unknown license"
+            return f"Prohibited license {license_id} in {pkg} {version}"
+        if self.type == idefs.SCA_TYPE_MALWARE:
+            return f"Malware {self.vulnerability_id or ''} in {pkg} {version}".strip()
+        return f"{self.vulnerability_id or 'Vulnerability'} in {pkg} {version}"
+
     def __str__(self) -> str:
-        """String representation"""
-        if self.type == "PROHIBITED_LICENSE":
-            return f"DependencyRisk '{self.packageUrl}' {self.type} '{self.spdxLicenseId}'"
-        return f"DependencyRisk '{self.packageUrl}' {self.type} '{self.vulnerabilityId}'"
+        return f"dependency risk '{self.key}' ({self.type})"
+
+    def url(self) -> str:
+        """Returns the permalink to the dependency risk in the SonarQube UI."""
+        base = self.endpoint.local_url
+        params = [f"id={self.id}", f"projectKey={self.project_key}"]
+        if self.pull_request:
+            params.append(f"pullRequest={self.pull_request}")
+        elif self.branch:
+            params.append(f"branch={self.branch}")
+        return f"{base}/dependency-risks/issue?{'&'.join(params)}"
+
+    def to_json(self, without_time: bool = False) -> ObjectJsonRepr:
+        """Returns the dependency risk as a JSON-serializable dict."""
+        del without_time  # accepted for protocol parity with Finding.to_json
+        data = {
+            "key": self.key,
+            "type": self.type,
+            "quality": self.quality,
+            "severity": self.severity,
+            "status": self.status,
+            "headline": self.headline,
+            "CVE": self.vulnerability_id,
+            "cvssScore": self.cvss_score,
+            "spdxLicenseId": self.spdx_license_id,
+            "packageName": self.package_name,
+            "packageVersion": self.package_version,
+            "packageManager": self.package_manager,
+            "packageUrl": self.package_url,
+            "transitivity": self.transitivity,
+            "scope": self.scope,
+            "newlyIntroduced": self.newly_introduced,
+            "assignee": self.assignee,
+            "projectKey": self.project_key,
+            "projectName": self.project_name,
+            "branch": self.branch,
+            "pullRequest": self.pull_request,
+            "createdAt": self.created_at,
+            "url": self.url(),
+        }
+        return {k: v for k, v in data.items() if v is not None and v != ""}
+
+    def to_csv(self, without_time: bool = False) -> list[str]:
+        """Returns the dependency risk as a CSV row matching csv_header()."""
+        del without_time
+        data = self.to_json()
+        return [str(data.get(field, "")) for field in CSV_FIELDS]
+
+    @classmethod
+    def csv_header(cls) -> list[str]:
+        """Returns the CSV header row for dependency risk export."""
+        return list(CSV_FIELDS)
+
+    def to_sarif(self, full: bool = True) -> dict[str, Any]:
+        """Returns the dependency risk in SARIF format."""
+        rule_id = self.vulnerability_id or self.spdx_license_id or self.key
+        level = "error" if self.severity in ("BLOCKER", "CRITICAL", "HIGH") else "warning"
+        sarif: dict[str, Any] = {
+            "level": level,
+            "ruleId": rule_id,
+            "message": {"text": self.headline},
+            "properties": {"url": self.url()},
+            "locations": [{"logicalLocations": [{"name": self.package_name or "", "kind": "package"}]}],
+        }
+        if full:
+            props = self.to_json()
+            for redundant in ("url",):
+                props.pop(redundant, None)
+            sarif["properties"].update(props)
+        return sarif
 
     @classmethod
     def search(
-        cls,
-        endpoint: Platform,
-        project: str,
-        branch: Optional[str] = None,
-        pull_request: Optional[str] = None,
-        **kwargs: Any,
+        cls, endpoint: Platform, project_key: str, branch: Optional[str] = None, pull_request: Optional[str] = None, **search_params: Any
     ) -> dict[str, DependencyRisk]:
-        """Searches dependency risks for a project/branch.
+        """Searches dependency risks for a project, optionally on a branch or pull request.
 
-        :return: Dictionary of DependencyRisk keyed by key
+        Pages through `api/v2/sca/issues-releases` and returns a dict keyed by risk key.
+
+        :raises UnsupportedOperation: if the platform does not support SCA dependency risks
         """
-        params: dict[str, Any] = {"projectKey": project}
+        _check_supported(endpoint)
+        log.info("Searching dependency risks for project '%s' branch=%s pr=%s", project_key, branch, pull_request)
+
+        api_params: dict[str, Any] = {"projectKey": project_key}
         if branch:
-            params["branchKey"] = branch
+            api_params["branchKey"] = branch
         if pull_request:
-            params["pullRequestKey"] = pull_request
-        params.update(kwargs)
+            api_params["pullRequestKey"] = pull_request
+        for param in _API_FILTER_PARAMS:
+            if param in search_params and search_params[param] is not None:
+                api_params[param] = search_params[param]
 
-        api, _, api_params, ret = endpoint.api.get_details(cls, Oper.SEARCH, **params)
-        max_ps = endpoint.api.max_page_size(cls, Oper.SEARCH)
-        page_field = endpoint.api.page_field(cls, Oper.SEARCH)
-        api_params["pageSize"] = max_ps
-
-        data = json.loads(endpoint.get(api, api_params).text)
+        api, _, _, ret = endpoint.api.get_details(cls, Oper.SEARCH)
         results: dict[str, DependencyRisk] = {}
-        for item in data.get(ret, []):
-            item["projectKey"] = project
-            if branch:
-                item["branchKey"] = branch
-            if pull_request:
-                item["pullRequestKey"] = pull_request
-            dr = cls(endpoint, item)
-            results[dr.key] = dr
-
-        nb_pages = sutil.nbr_pages(data)
-        for page in range(2, nb_pages + 1):
-            page_params = {**api_params, page_field: page}
-            page_data = json.loads(endpoint.get(api, page_params).text)
-            for item in page_data.get(ret, []):
-                item["projectKey"] = project
-                if branch:
-                    item["branchKey"] = branch
-                if pull_request:
-                    item["pullRequestKey"] = pull_request
-                dr = cls(endpoint, item)
-                results[dr.key] = dr
-
-        log.info("Found %d dependency risks for project '%s' branch '%s' PR '%s'", len(results), project, branch, pull_request)
+        page_index = 1
+        while True:
+            page_params = dict(api_params)
+            page_params["pageIndex"] = page_index
+            page_params["pageSize"] = _DEFAULT_PAGE_SIZE
+            payload = json.loads(endpoint.get(api, params=page_params).text)
+            project_name = cls._lookup_project_name(payload, project_key)
+            for entry in payload.get(ret, []):
+                risk = cls(endpoint, entry, project_key=project_key, project_name=project_name, branch=branch, pull_request=pull_request)
+                results[risk.key] = risk
+            page_info = payload.get("page", {})
+            total = int(page_info.get("total", 0))
+            page_size = int(page_info.get("pageSize", _DEFAULT_PAGE_SIZE)) or _DEFAULT_PAGE_SIZE
+            if page_index * page_size >= total:
+                break
+            page_index += 1
+        log.info("Found %d dependency risks for project '%s'", len(results), project_key)
         return results
 
-    def changelog(self, after: Optional[datetime] = None) -> dict[str, DependencyRiskChangelog]:
-        """Returns the changelog of a dependency risk.
+    @staticmethod
+    def _lookup_project_name(payload: ApiPayload, project_key: str) -> Optional[str]:
+        """Extracts the project display name from the issues-releases response 'branches' array."""
+        for br in payload.get("branches", []) or []:
+            if br.get("projectKey") == project_key and br.get("projectName"):
+                return br.get("projectName")
+        return None
 
-        :param after: If set, only changes after that date are returned
-        :return: The changelog
-        """
+    # ---------------------------------------------------------------------
+    # Sync-related API: changelog, comments, transitions, assignment
+    # ---------------------------------------------------------------------
+
+    def changelog(self, after: Optional[datetime] = None) -> dict[str, DependencyRiskChangelog]:
+        """Returns the changelog of a dependency risk, optionally filtered to entries after a date."""
         if self._changelog is None:
             self._load_changelog_and_comments()
         if after is not None:
@@ -183,9 +377,7 @@ class DependencyRisk(SqObject):
         """Deletes a comment from a dependency risk."""
         log.debug("Deleting comment %s from %s", comment_key, str(self))
         try:
-            api, _, params, _ = self.endpoint.api.get_details(
-                self, Oper.DELETE_COMMENT, key=self.key, issueReleaseChangeKey=comment_key
-            )
+            api, _, params, _ = self.endpoint.api.get_details(self, Oper.DELETE_COMMENT, key=self.key, issueReleaseChangeKey=comment_key)
             self.endpoint.delete(api, params=params)
         except exceptions.SonarException:
             return False
@@ -231,32 +423,23 @@ class DependencyRisk(SqObject):
         """Returns the set of users that commented on the dependency risk"""
         return {v["user"] for v in self.comments().values() if v.get("user")}
 
-    def url(self) -> str:
-        """Returns a permalink URL to the dependency risk in the SonarQube UI."""
-        branch_param = ""
-        if self.branch:
-            branch_param = f"&branch={self.branch}"
-        elif self.pull_request:
-            branch_param = f"&pullRequest={self.pull_request}"
-        return f"{self.base_url(local=False)}/dependency-risks/{self.key}/what?id={self.projectKey}{branch_param}"
-
     def strictly_identical_to(self, other: DependencyRisk, ignore_component: bool = False) -> bool:  # noqa: ARG002
         """Two dependency risks are identical if they share the same identity fields.
 
-        For PROHIBITED_LICENSE risks: match on packageUrl + licenseExpression + spdxLicenseId.
-        For VULNERABILITY risks: match on packageUrl + vulnerabilityId.
+        For prohibited-license risks: match on package_url + license_expression + spdx_license_id.
+        For other types: match on package_url + vulnerability_id.
         """
         if self.key == other.key:
             return True
-        if self.type == "PROHIBITED_LICENSE":
+        if self.type == idefs.SCA_TYPE_PROHIBITED_LICENCE:
             is_match = (
                 self.type == other.type
-                and self.packageUrl == other.packageUrl
-                and self.licenseExpression == other.licenseExpression
-                and self.spdxLicenseId == other.spdxLicenseId
+                and self.package_url == other.package_url
+                and self.license_expression == other.license_expression
+                and self.spdx_license_id == other.spdx_license_id
             )
         else:
-            is_match = self.type == other.type and self.packageUrl == other.packageUrl and self.vulnerabilityId == other.vulnerabilityId
+            is_match = self.type == other.type and self.package_url == other.package_url and self.vulnerability_id == other.vulnerability_id
         log.log(log.INFO if is_match else log.DEBUG, "Comparing %s and %s - Match = %s", str(self), str(other), is_match)
         return is_match
 
@@ -265,8 +448,8 @@ class DependencyRisk(SqObject):
     ) -> tuple[list[DependencyRisk], list[DependencyRisk], list[DependencyRisk]]:
         """Finds matching dependency risks in a target list.
 
-        Returns (exact_matches, approx_matches, modified_matches).
-        Dependency risks don't have approximate matches, so that list is always empty.
+        Returns (exact_matches, approx_matches, modified_matches). Dependency risks don't have
+        approximate matches, so that list is always empty.
         """
         exact_matches = []
         modified_matches = []
@@ -385,23 +568,7 @@ class DependencyRisk(SqObject):
         """Returns the project object (needed by syncer for ignore_components check)."""
         from sonar.projects import Project
 
-        return Project.get_object(self.endpoint, self.projectKey)
-
-
-def sca_feature_enabled(endpoint: Platform) -> bool:
-    """Returns True if SCA is available on the given endpoint."""
-    try:
-        api = endpoint.api.api(DependencyRisk, Oper.FEATURE_ENABLED)
-        resp = endpoint.get(api, mute=(HTTPStatus.NOT_FOUND, HTTPStatus.FORBIDDEN))
-        if not resp.ok:
-            return False
-        data = json.loads(resp.text)
-        return data.get("enabled", False)
-    except (exceptions.UnsupportedOperation, exceptions.ObjectNotFound):
-        return False
-    except Exception:  # noqa: BLE001
-        log.debug("SCA feature check failed")
-        return False
+        return Project.get_object(self.endpoint, self.project_key)
 
 
 def get_changelogs(dr_list: list[DependencyRisk], added_after: Optional[datetime] = None, threads: int = 8) -> None:  # noqa: ARG001

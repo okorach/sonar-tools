@@ -30,7 +30,7 @@ from requests import RequestException
 from sonar.util import types
 from cli import options
 import sonar.logging as log
-from sonar import metrics, platform, exceptions, errcodes, version, measures
+from sonar import metrics, platform, exceptions, errcodes, version, measures, dependency_risks
 import sonar.utilities as sutil
 import sonar.util.misc as util
 import sonar.util.constants as c
@@ -81,7 +81,7 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: 
     return measures_d
 
 
-def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeySet) -> types.KeyList:
+def _get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeySet) -> types.KeyList:
     """Returns an ordered list of metrics based on CLI inputs"""
     main_metrics = list(metrics.MAIN_METRICS)
     if endpoint.version() >= c.ACCEPT_INTRO_VERSION:
@@ -91,6 +91,8 @@ def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyS
             main_metrics += metrics.MAIN_METRICS_ENTERPRISE_10
         if endpoint.version() >= (2025, 3, 0):
             main_metrics += metrics.MAIN_METRICS_ENTERPRISE_2025_3
+    if dependency_risks.sca_enabled(endpoint):
+        main_metrics += metrics.sca_metrics(endpoint)
     if "_all" in wanted_metrics or "*" in wanted_metrics:
         all_metrics = list(metrics.Metric.search(endpoint).keys())
         all_metrics.remove("quality_gate_details")
@@ -257,7 +259,7 @@ def main() -> None:
         endpoint.verify_connection()
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
 
-        wanted_metrics = __get_wanted_metrics(endpoint=endpoint, wanted_metrics=set(kwargs[options.METRIC_KEYS]))
+        wanted_metrics = _get_wanted_metrics(endpoint=endpoint, wanted_metrics=set(kwargs[options.METRIC_KEYS]))
         file = kwargs.pop(options.REPORT_FILE)
         fmt = util.deduct_format(kwargs[options.FORMAT], file)
         kwargs = __check_options_vs_edition(edition=endpoint.edition(), params=kwargs)

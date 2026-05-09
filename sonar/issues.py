@@ -428,7 +428,7 @@ class Issue(findings.Finding):
     def to_json(self, without_time: bool = False) -> ObjectJsonRepr:
         """Returns the issue JSON representation"""
         data = super().to_json(without_time)
-        if self.endpoint.version() >= c.MQR_INTRO_VERSION:
+        if self.endpoint.is_mqr_mode():
             data["impacts"] = {elem["softwareQuality"]: elem["severity"] for elem in self.sq_json["impacts"]}
         data["effort"] = self.debt()
         return data
@@ -451,7 +451,7 @@ class Issue(findings.Finding):
             self.rule = data.get("rule")
         self.type = data.get("type")
         self.branch, self.pull_request = self.get_branch_and_pr(data)
-        if self.endpoint.version() >= c.MQR_INTRO_VERSION:
+        if self.endpoint.is_mqr_mode():
             self.impacts = {i["softwareQuality"]: i["severity"] for i in data.get("impacts", {})}
         else:
             self.impacts = {

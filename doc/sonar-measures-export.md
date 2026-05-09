@@ -8,6 +8,7 @@ Basic Usage: `sonar-measures-export -m _main [-f <file>] [--format csv|json] [-b
 - `-m | --metricKeys`: comma separated list of metrics to export
   - `-m _main` is a shortcut to list all main metrics. It's the recommended option
   - `-m _all` is a shortcut to list all metrics, including the most obscure ones
+  - When the SonarQube Advanced Security (SCA) add-on is enabled on the platform, all SCA metrics (`domain: DependencyRisks`, e.g. `sca_count_any_issue`, `sca_rating_vulnerability`, ...) are automatically included in `_main`
 - `-f`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
 - `--format`: Choose export format between csv (default) and json
 - `-b | --withBranches`: Exports measures for all project branches (by default only export measures of the main branch)
@@ -47,4 +48,12 @@ sonar-measures-export -m _main -b -f measures.json
 
 # Exports all metrics of projects myProjectKey1 and myOtherProjectKey main branch. Convert ratings to letters
 sonar-measures-export -k myProjectKey1,myOtherProjectKey -m _all -r -f all_measures.csv
+
+# On a platform with the SonarQube Advanced Security (SCA) add-on enabled, the default _main export
+# automatically includes the SCA dependency-risk metrics (counts and ratings for vulnerabilities,
+# licenses, malware, security and any-issue, with current and new-code variants)
+sonar-measures-export -m _main -f measures_with_sca.csv
+
+# Limit to specific SCA metrics
+sonar-measures-export -m sca_count_vulnerability,sca_rating_vulnerability,new_sca_count_vulnerability -f sca.csv
 ```
