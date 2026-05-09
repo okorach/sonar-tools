@@ -130,6 +130,36 @@ def test_wrong_filters(csv_file: Generator[str]) -> None:
         assert tutil.run_cmd(findings_export.main, f"{CMD} --{opt.REPORT_FILE} {csv_file} {bad_opts}") == e.WRONG_SEARCH_CRITERIA
 
 
+def test_dependency_risk_type_is_exclusive(csv_file: Generator[str]) -> None:
+    """`--types DEPENDENCY_RISK` cannot be combined with any other type value."""
+    for combo in (
+        "DEPENDENCY_RISK,BUG",
+        "BUG,DEPENDENCY_RISK",
+        "DEPENDENCY_RISK,VULNERABILITY,CODE_SMELL",
+        "DEPENDENCY_RISK,SECURITY_HOTSPOT",
+    ):
+        cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.TYPES} {combo}"
+        rc = tutil.run_cmd(findings_export.main, cmd)
+        assert rc != e.OK, f"Expected non-zero exit for --types {combo}, got OK"
+        assert rc == e.WRONG_SEARCH_CRITERIA, f"Expected WRONG_SEARCH_CRITERIA for --types {combo}, got {rc}"
+
+
+def test_findings_export_dependency_risks_csv_contains_risks(csv_file: Generator[str]) -> None:
+    """`--types DEPENDENCY_RISK` should produce a CSV populated with dependency risk rows."""
+    if not dependency_risks.sca_enabled(tutil.SQ):
+        pytest.skip("SCA is not enabled on this test platform")
+
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.TYPES} {idefs.TYPE_DEPENDENCY_RISK}"
+    assert tutil.run_cmd(findings_export.main, cmd) == e.OK
+    assert os.path.isfile(csv_file)
+
+    # The CSV must use the DependencyRisk header (key columns that don't exist on the
+    # standard issue export) and must contain at least one dependency risk row.
+    assert tutil.csv_cols_present(csv_file, "packageName", "cvssScore", "transitivity")
+    nbr_rows = tutil.csv_nbr_lines(csv_file)
+    assert nbr_rows > 0, "Expected at least one dependency risk row in the exported CSV"
+
+
 def test_wrong_opts(csv_file: Generator[str]) -> None:
     """test_wrong_opts"""
     for bad_opts in __WRONG_OPTS:
