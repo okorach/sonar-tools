@@ -322,6 +322,13 @@ class Branch(components.Component):
         """Returns a list of findings, issues and hotspots together on a branch"""
         return self.concerned_object.get_findings(**(search_params | {"branch": self.name}))
 
+    def get_dependency_risks(self, **search_params: Any) -> dict:
+        """Returns the SCA dependency risks for this branch"""
+        from sonar.dependency_risks import DependencyRisk
+
+        new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio", "branch", "pullRequest", "types")}
+        return DependencyRisk.search(self.endpoint, project_key=self.concerned_object.key, branch=self.name, **new_params)
+
     def component_data(self) -> dict[str, str]:
         """Returns key data"""
         return {
