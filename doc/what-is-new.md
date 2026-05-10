@@ -1,9 +1,22 @@
 # Next version
 
-* `sonar-findings-export`: Added support for exporting SCA dependency risks via `--types DEPENDENCY_RISK`. Requires the SonarQube Advanced Security add-on (SonarQube Server 2025.4+ Enterprise/Data Center editions, or SonarQube Cloud). Fixes [#2371](https://github.com/okorach/sonar-tools/issues/2371)
-* `sonar-measures-export`: All SCA metrics (domain `DependencyRisks`) are now automatically included in the default `_main` export when the SonarQube Advanced Security add-on is enabled. Fixes [#2370](https://github.com/okorach/sonar-tools/issues/2370). Note: the keys `sca_count_any_issue` and `new_sca_count_any_issue` are no longer included in `_main` on Enterprise / Data Center 2025.3 instances *without* the SCA add-on (those columns were always empty there).
+# Version 3.20
 
-# Version 3.18.3
+* Support of SCA for most features
+   - `sonar-measures-export` export SCA metrics (dependency risks counts etc...)
+   - `sonar-findings-export` can export issues of type `DEPENDENCY_RISK`
+   - `sonar-config` exports and import license profiles, and attach them to projects
+   - `sonar-findings-sync` syncs status, severity, assignee of dependency risks
+* `sonar-config` bug fixes for #2377, #2381, #2364, #2385
+
+# Version 3.19
+
+* Several fixes on sonar-config export and import and sonar-audit
+* Add support for new languages and new configuration parameters
+* Fix compatibility problems with SonarQube Server 2026.x and Community Build 26.x
+* Add support for IN_SANDBOX state for issues (sonar-findings-export)
+* Support of multiple webhooks with same name
+* Add support for SonarQube Cloud US instance
 
 # Version 3.18.2
 
