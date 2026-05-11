@@ -330,8 +330,13 @@ def _changelog_entry(date_iso: str, key_suffix: str = "") -> DependencyRiskChang
     )
 
 
+def _filter_after(entries: dict, cutoff: datetime) -> dict:
+    """Mirrors the caller-side date filter callers apply to the changelog property."""
+    return {k: v for k, v in entries.items() if v.date_time() > cutoff}
+
+
 def test_changelog_with_after_filters_older_entries() -> None:
-    """changelog(after=...) returns only entries strictly after the cutoff."""
+    """Caller-side filtering of the changelog property keeps only entries strictly after the cutoff."""
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
     older = _changelog_entry("2026-01-01T10:00:00+0000", "older")
     newer = _changelog_entry("2026-03-01T10:00:00+0000", "newer")
@@ -339,7 +344,7 @@ def test_changelog_with_after_filters_older_entries() -> None:
     risk._comments = {}  # short-circuit the lazy loader
 
     cutoff = datetime(2026, 2, 1, tzinfo=timezone.utc)
-    filtered = risk.changelog(after=cutoff)
+    filtered = _filter_after(risk.changelog, cutoff)
 
     assert list(filtered.keys()) == ["b"]
     assert filtered["b"] is newer
@@ -352,11 +357,11 @@ def test_changelog_with_after_in_future_returns_empty() -> None:
     risk._comments = {}
 
     cutoff = datetime(2030, 1, 1, tzinfo=timezone.utc)
-    assert risk.changelog(after=cutoff) == {}
+    assert _filter_after(risk.changelog, cutoff) == {}
 
 
 def test_changelog_after_excludes_entries_with_matching_timestamp() -> None:
-    """The filter is strictly greater-than: entries equal to the cutoff are excluded."""
+    """The caller-side filter is strictly greater-than: entries equal to the cutoff are excluded."""
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
     boundary = "2026-02-15T12:00:00+0000"
     risk._changelog = {
@@ -366,13 +371,13 @@ def test_changelog_after_excludes_entries_with_matching_timestamp() -> None:
     risk._comments = {}
 
     cutoff = datetime(2026, 2, 15, 12, 0, 0, tzinfo=timezone.utc)
-    filtered = risk.changelog(after=cutoff)
+    filtered = _filter_after(risk.changelog, cutoff)
 
     assert list(filtered.keys()) == ["b"]
 
 
-def test_changelog_with_after_lazy_loads_when_unloaded() -> None:
-    """changelog() must trigger _load_changelog_and_comments when _changelog is None."""
+def test_changelog_property_lazy_loads_when_unloaded() -> None:
+    """The changelog property must trigger _load_changelog_and_comments when _changelog is None."""
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
 
     def fake_load() -> None:
@@ -380,7 +385,7 @@ def test_changelog_with_after_lazy_loads_when_unloaded() -> None:
         risk._comments = {}
 
     with patch.object(risk, "_load_changelog_and_comments", side_effect=fake_load) as load:
-        result = risk.changelog(after=datetime(2026, 1, 1, tzinfo=timezone.utc))
+        result = risk.changelog
 
     load.assert_called_once()
     assert "a" in result

@@ -79,7 +79,9 @@ def __is_sync_comment(text: str) -> bool:
 
 def __delete_sync_comments(finding: findings.Finding) -> None:
     """Deletes all previous auto-generated sync link comments from a finding."""
-    for cmt in finding.comments().values():
+    # DependencyRisk exposes `comments` as a property; Issue/Hotspot still expose it as a method.
+    comments = finding.comments() if callable(finding.comments) else finding.comments
+    for cmt in comments.values():
         if __is_sync_comment(cmt.get("value", "")) and "commentKey" in cmt:
             finding.delete_comment(cmt["commentKey"])
 
