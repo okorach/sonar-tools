@@ -449,8 +449,8 @@ def main() -> None:
             if not dependency_risks.sca_enabled(sqenv):
                 chelp.clear_cache_and_exit(
                     errcodes.UNSUPPORTED_OPERATION,
-                    f"--{options.TYPES} {idefs.TYPE_DEPENDENCY_RISK} " +
-                    "requires the SonarQube Advanced Security add-on, which is not enabled on this platform",
+                    f"--{options.TYPES} {idefs.TYPE_DEPENDENCY_RISK} "
+                    + "requires the SonarQube Advanced Security add-on, which is not enabled on this platform",
                 )
             if params[options.COMPONENT_TYPE] == "applications":
                 components_list = _expand_applications_to_components(components_list)

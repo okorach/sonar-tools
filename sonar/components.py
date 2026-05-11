@@ -275,7 +275,9 @@ class Component(SqObject):
         except (ConnectionError, RequestException) as e:
             sutil.handle_error(e, f"getting AI code assurance of {self}", catch_all=True)
             if "Unknown url" in sutil.error_msg(e):
-                raise exceptions.UnsupportedOperation(f"AI code assurance is not available for {self.endpoint.edition()} edition version {version!s}") from e
+                raise exceptions.UnsupportedOperation(
+                    f"AI code assurance is not available for {self.endpoint.edition()} edition version {version!s}"
+                ) from e
         return None
 
     def _audit_bg_task(self, audit_settings: ConfigSettings) -> list[Problem]:

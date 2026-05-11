@@ -552,10 +552,7 @@ class DependencyRisk(SqObject):
         counter = 0
         self._sync_source_url = source.url()
         last_target_change = self.last_changelog_date()
-        events = {
-            k: v for k, v in source.changelog.items()
-            if last_target_change is None or v.date_time() > last_target_change
-        }
+        events = {k: v for k, v in source.changelog.items() if last_target_change is None or v.date_time() > last_target_change}
         if len(events) == 0:
             log.info("Source %s has no changelog after target %s last change (%s)", source, self, last_target_change)
         else:
@@ -565,10 +562,7 @@ class DependencyRisk(SqObject):
                 counter += 1
 
         last_target_comment = self.last_comment_date()
-        comment_events = {
-            k: v for k, v in source.comments.items()
-            if last_target_comment is None or (v["date"] and v["date"] > last_target_comment)
-        }
+        comment_events = {k: v for k, v in source.comments.items() if last_target_comment is None or (v["date"] and v["date"] > last_target_comment)}
         if len(comment_events) == 0:
             log.info("Source %s has no comments after target %s last comment (%s)", source, self, last_target_comment)
         else:
