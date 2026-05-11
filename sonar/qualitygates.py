@@ -254,9 +254,9 @@ class QualityGate(SqObject):
             data = json.loads(self.get(api, params=params).text)
             log.debug("Loading %s with conditions %s", self, util.json_dump(data))
             self._conditions = list(data.get("conditions", []))
-        if encoded:
-            return _encode_conditions(self._conditions)
-        return self._conditions
+        if not encoded:
+            return self._conditions
+        return [encode_condition((cond["metric"], cond["op"], cond["error"])) for cond in self._conditions]
 
     def clear_conditions(self) -> bool:
         """Clears all quality gate conditions, if quality gate is not built-in
@@ -560,10 +560,7 @@ def count(endpoint: Platform) -> int:
 
 def _encode_conditions(conds: list[dict[str, str]]) -> list[str]:
     """Encode dict conditions in strings"""
-    simple_conds = []
-    for cond in conds:
-        simple_conds.append(encode_condition((cond["metric"], cond["op"], cond["error"])))
-    return simple_conds
+    return [encode_condition((cond["metric"], cond["op"], cond["error"])) for cond in conds]
 
 
 _PERCENTAGE_METRICS = ("density", "ratio", "percent", "security_hotspots_reviewed", "coverage")

@@ -53,6 +53,7 @@ from sonar.issues import TooManyFacetsError
 
 if TYPE_CHECKING:
     from sonar.projects import Project
+    from sonar.components import Component
     from sonar.branches import Branch
     from sonar.pull_requests import PullRequest
     from sonar.issues import Issue
@@ -359,7 +360,7 @@ def store_findings(components_list: list[object], endpoint: platform.Platform, p
     return total_findings
 
 
-def _expand_applications_to_components(applications_list: list) -> list:
+def _expand_applications_to_components(applications_list: list[Component]) -> list[Union[Project, Branch]]:
     """Expands a list of Application objects into the underlying Project / Branch components.
 
     SCA dependency risks are only queryable per-project, so applications are flattened to their
@@ -448,7 +449,8 @@ def main() -> None:
             if not dependency_risks.sca_enabled(sqenv):
                 chelp.clear_cache_and_exit(
                     errcodes.UNSUPPORTED_OPERATION,
-                    f"--{options.TYPES} {idefs.TYPE_DEPENDENCY_RISK} requires the SonarQube Advanced Security add-on, which is not enabled on this platform",
+                    f"--{options.TYPES} {idefs.TYPE_DEPENDENCY_RISK} "
+                    + "requires the SonarQube Advanced Security add-on, which is not enabled on this platform",
                 )
             if params[options.COMPONENT_TYPE] == "applications":
                 components_list = _expand_applications_to_components(components_list)

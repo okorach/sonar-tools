@@ -89,7 +89,7 @@ def test_create_delete(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     portfolio: pf.Portfolio = get_test_portfolio
     assert portfolio is not None
     assert portfolio.key.startswith(f"{tutil.TEMP_KEY}-portfolio")
-    assert "none" in portfolio.selection_mode()
+    assert "none" in portfolio.selection_mode
     assert portfolio.name.startswith(f"{tutil.TEMP_KEY}-portfolio")
     key = portfolio.key
     assert portfolio.is_toplevel()
@@ -104,15 +104,15 @@ def test_add_project(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     if not __verify_support():
         pytest.skip(__UNSUPPORTED_MESSAGE)
     p = get_test_portfolio
-    assert "none" in p.selection_mode()
+    assert "none" in p.selection_mode
 
     project = projects.Project.get_object(endpoint=tutil.SQ, key=tutil.LIVE_PROJECT)
-    assert "none" in p.selection_mode()
-    p._selection_mode = None
-    p.selection_mode()
+    assert "none" in p.selection_mode
+    p.selection_mode = None  # invalidate cache via setter
+    _ = p.selection_mode  # trigger reload path
     assert not p.has_project(project.key)
     p.add_projects({project.key})
-    mode = p.selection_mode()
+    mode = p.selection_mode
     assert "manual" in mode
     assert mode["manual"] == {tutil.LIVE_PROJECT: {c.DEFAULT_BRANCH}}
     assert p.projects() == {tutil.LIVE_PROJECT: {c.DEFAULT_BRANCH}}
@@ -133,12 +133,12 @@ def test_tags_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     p = get_test_portfolio
     in_tags = ["foss", "favorites"]
     p.set_tags_mode(in_tags)
-    mode = p.selection_mode()
+    mode = p.selection_mode
     assert "tags" in mode and mode["tags"].sort() == in_tags.sort()
     assert mode["branch"] == c.DEFAULT_BRANCH
 
     p.set_tags_mode(tags=in_tags, branch="some_branch")
-    mode = p.selection_mode()
+    mode = p.selection_mode
     assert "tags" in mode and mode["tags"].sort() == in_tags.sort()
     assert mode["branch"] == "some_branch"
     assert p.recompute()
@@ -151,14 +151,14 @@ def test_regexp_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     p = get_test_portfolio
     in_regexp = "^FAVORITES.*$"
     p.set_regexp_mode(in_regexp)
-    mode = p.selection_mode()
+    mode = p.selection_mode
     assert "regexp" in mode and mode["regexp"] == in_regexp
     assert "branch" in mode and mode["branch"] == c.DEFAULT_BRANCH
     assert p.recompute()
 
     in_regexp = "^BRANCH_FAVORITES.*$"
     p.set_regexp_mode(regexp=in_regexp, branch="develop")
-    mode = p.selection_mode()
+    mode = p.selection_mode
     assert "regexp" in mode and mode["regexp"] == in_regexp
     assert "branch" in mode and mode["branch"] == "develop"
     assert p.recompute()
@@ -170,9 +170,9 @@ def test_remaining_projects_mode(get_test_portfolio: Generator[pf.Portfolio]) ->
         pytest.skip(__UNSUPPORTED_MESSAGE)
     p = get_test_portfolio
     p.set_remaining_projects_mode()
-    assert p._selection_mode == {"rest": True, "branch": c.DEFAULT_BRANCH}
+    assert p.selection_mode == {"rest": True, "branch": c.DEFAULT_BRANCH}
     p.set_remaining_projects_mode("develop")
-    assert p._selection_mode == {"rest": True, "branch": "develop"}
+    assert p.selection_mode == {"rest": True, "branch": "develop"}
 
 
 def test_none_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
@@ -181,9 +181,9 @@ def test_none_mode(get_test_portfolio: Generator[pf.Portfolio]) -> None:
         pytest.skip(__UNSUPPORTED_MESSAGE)
     p = get_test_portfolio
     p.set_remaining_projects_mode()
-    assert p._selection_mode == {"rest": True, "branch": c.DEFAULT_BRANCH}
+    assert p.selection_mode == {"rest": True, "branch": c.DEFAULT_BRANCH}
     p.set_none_mode()
-    assert p._selection_mode == {}
+    assert p.selection_mode == {}
 
 
 def test_attributes(get_test_portfolio: Generator[pf.Portfolio]) -> None:
@@ -201,7 +201,7 @@ def test_attributes(get_test_portfolio: Generator[pf.Portfolio]) -> None:
     assert data["key"] == p.key
     p.set_description("some description of a portfolio")
     p.refresh()
-    assert p._description == "some description of a portfolio"
+    assert p.description == "some description of a portfolio"
 
 
 def test_permissions_1(get_test_portfolio: Generator[pf.Portfolio]) -> None:

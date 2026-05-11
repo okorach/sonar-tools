@@ -70,6 +70,7 @@ class Sif(object):
         """str() implementation"""
         return str(self.concerned_object)
 
+    @property
     def url(self) -> str:
         """Returns the SQ URL of the SQ instance represented by the SIF"""
         if not self._url:

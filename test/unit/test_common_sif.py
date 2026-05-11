@@ -105,12 +105,12 @@ def test_audit_sif_ut() -> None:
     assert sysinfo.server_id() == "XXXB8A4D-XXXSFSbmgIK8PCmM81th"
     assert sysinfo.start_time() == datetime.datetime(2024, 5, 23, 13, 37, 24, tzinfo=datetime.timezone.utc)
     assert sysinfo.store_size() == 131
-    assert sysinfo.url() == "https://sonarqube.acme.com"
+    assert sysinfo.url == "https://sonarqube.acme.com"
     assert sysinfo.web_jvm_cmdline() == "-Xmx512m -Xms128m -XX:+HeapDumpOnOutOfMemoryError"
     assert sysinfo.ce_jvm_cmdline() == "-Xmx1G -Xms128m -XX:+HeapDumpOnOutOfMemoryError"
     assert sysinfo.search_jvm_cmdline() == "-Xmx1G -Xms1G -XX:+HeapDumpOnOutOfMemoryError"
     sysinfo = sif.Sif(json_sif, concerned_object=tutil.SQ)
-    assert sysinfo.url() == tutil.SQ.external_url
+    assert sysinfo.url == tutil.SQ.external_url
     assert str(sysinfo).split("@")[1] == tutil.SQ.external_url
 
 

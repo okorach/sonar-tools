@@ -77,11 +77,11 @@ def test_is_main_is_kept():
     if not verify_branch_support(Branch.get_object, endpoint=project.endpoint, project=project.key, branch_name="develop"):
         return
     obj = Branch.get_object(tutil.SQ, project=project, branch_name="develop")
-    obj._keep_when_inactive = None
+    obj.is_kept_when_inactive = None  # invalidate the cache via the setter
     obj.refresh()
-    assert obj.is_kept_when_inactive() in (True, False)
-    obj._is_main = None
-    assert obj.is_main() in (True, False)
+    assert obj.is_kept_when_inactive in (True, False)
+    obj.is_main = None  # invalidate the cache via the setter
+    assert obj.is_main in (True, False)
 
 
 def test_set_as_main():
@@ -92,8 +92,8 @@ def test_set_as_main():
     dev_br = Branch.get_object(tutil.SQ, project=project, branch_name="develop")
     main_br_name = project.main_branch_name()
     main_br = Branch.get_object(tutil.SQ, project=project, branch_name=main_br_name)
-    assert main_br.is_main()
-    assert not dev_br.is_main()
+    assert main_br.is_main
+    assert not dev_br.is_main
 
     if tutil.SQ.version() < (10, 0, 0):
         with pytest.raises(exceptions.UnsupportedOperation):
@@ -101,8 +101,8 @@ def test_set_as_main():
         return
 
     assert dev_br.set_as_main()
-    assert not main_br.is_main()
-    assert dev_br.is_main()
+    assert not main_br.is_main
+    assert dev_br.is_main
 
     assert main_br.set_as_main()
 
@@ -120,12 +120,12 @@ def test_set_keep_as_inactive():
         return
     dev_br = Branch.get_object(tutil.SQ, project=project, branch_name="develop")
     master_br = Branch.get_object(tutil.SQ, project=project, branch_name="master")
-    assert dev_br.is_kept_when_inactive()
-    assert master_br.is_kept_when_inactive()
+    assert dev_br.is_kept_when_inactive
+    assert master_br.is_kept_when_inactive
 
     assert dev_br.set_keep_when_inactive(False)
-    assert not dev_br.is_kept_when_inactive()
-    assert master_br.is_kept_when_inactive()
+    assert not dev_br.is_kept_when_inactive
+    assert master_br.is_kept_when_inactive
 
     assert dev_br.set_keep_when_inactive(True)
 

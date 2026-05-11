@@ -77,7 +77,7 @@ def __import_projects(endpoint: Platform, **kwargs: Any) -> None:
         with open(file, encoding="utf-8") as fd:
             data = json.load(fd)
     except json.JSONDecodeError as e:
-        raise options.ArgumentsError(f"JSON decoding error while reading file '{file}': {e!s}")
+        raise options.ArgumentsError(f"JSON decoding error while reading file '{file}': {e!s}") from e
 
     if "projects" in data:
         # 3.13 and higher format

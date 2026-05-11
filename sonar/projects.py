@@ -251,7 +251,7 @@ class Project(Component):
         if self.endpoint.edition() == c.CE:
             raise exceptions.UnsupportedOperation("Main branch is not supported in Community Edition")
         try:
-            return next(b for b in self.branches().values() if b.is_main())
+            return next(b for b in self.branches().values() if b.is_main)
         except StopIteration:
             log.warning("Could not find main branch for %s", str(self))
         return None

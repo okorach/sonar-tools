@@ -75,19 +75,19 @@ def test_import() -> None:
 
 
 def test_sys_info() -> None:
-    data = tutil.SC.sys_info()
+    data = tutil.SC.sys_info
     assert data == {"System": {"Server ID": "sonarcloud"}}
 
-    data = tutil.SQ.sys_info()
+    data = tutil.SQ.sys_info
     assert "System" in data
 
 
 def test_wrong_url() -> None:
     tutil.TEST_SQ.local_url = "http://localhost:3337"
 
-    tutil.TEST_SQ._sys_info = None
+    tutil.TEST_SQ.sys_info = None  # invalidate cache via setter
     with pytest.raises(requests.exceptions.ConnectionError):
-        tutil.TEST_SQ.sys_info()
+        _ = tutil.TEST_SQ.sys_info
 
     with pytest.raises(requests.exceptions.ConnectionError):
         tutil.TEST_SQ.global_permissions()

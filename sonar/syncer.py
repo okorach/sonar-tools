@@ -79,7 +79,9 @@ def __is_sync_comment(text: str) -> bool:
 
 def __delete_sync_comments(finding: findings.Finding) -> None:
     """Deletes all previous auto-generated sync link comments from a finding."""
-    for cmt in finding.comments().values():
+    # DependencyRisk exposes `comments` as a property; Issue/Hotspot still expose it as a method.
+    comments = finding.comments() if callable(finding.comments) else finding.comments
+    for cmt in comments.values():
         if __is_sync_comment(cmt.get("value", "")) and "commentKey" in cmt:
             finding.delete_comment(cmt["commentKey"])
 
@@ -565,7 +567,7 @@ def _sync_dependency_risks(
     src_object: Union[Project, Branch], tgt_object: Union[Project, Branch], sync_settings: ConfigSettings
 ) -> tuple[list[dict[str, str]], dict[str, int]]:
     """Syncs dependency risks from source to target (unidirectional only)."""
-    from sonar.dependency_risks import DependencyRisk, get_changelogs
+    from sonar.dependency_risks import get_changelogs
 
     src_drs = list(src_object.get_dependency_risks().values())
     tgt_drs = list(tgt_object.get_dependency_risks().values())

@@ -45,7 +45,7 @@ class TestSifBasic:
         sif_obj = sif.Sif(json_sif)
         assert sif_obj.json == json_sif
         assert sif_obj.concerned_object is None
-        assert sif_obj._url is None
+        assert sif_obj._url is None  # pre-lazy-load backing store
 
     def test_sif_creation_with_concerned_object(self):
         """Test Sif creation with concerned object"""
@@ -79,23 +79,23 @@ class TestSifBasic:
         assert str(sif_obj) == str(mock_object)
 
     def test_sif_url_with_concerned_object(self):
-        """Test Sif url() method with concerned object"""
+        """Test Sif url property with concerned object"""
         with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         sif_obj = sif.Sif(json_sif)
-        assert sif_obj.url() == "https://sonarqube.acme.com"
+        assert sif_obj.url == "https://sonarqube.acme.com"
 
     def test_sif_url_without_concerned_object(self):
-        """Test Sif url() method without concerned object"""
+        """Test Sif url property without concerned object"""
         with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         json_sif["Settings"].pop("sonar.core.serverBaseURL", None)
         sif_obj = sif.Sif(json_sif)
         # Should return empty string as no serverBaseURL in settings
-        assert sif_obj.url() == ""
+        assert sif_obj.url == ""
 
     def test_sif_url_with_server_base_url(self):
-        """Test Sif url() method with serverBaseURL in settings"""
+        """Test Sif url property with serverBaseURL in settings"""
         with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
 
@@ -103,7 +103,7 @@ class TestSifBasic:
         json_sif["Settings"]["sonar.core.serverBaseURL"] = "https://custom.sonarqube.com"
 
         sif_obj = sif.Sif(json_sif)
-        assert sif_obj.url() == "https://custom.sonarqube.com"
+        assert sif_obj.url == "https://custom.sonarqube.com"
 
 
 class TestSifEdition:
@@ -154,7 +154,7 @@ class TestSifEdition:
         with open(f"{tutil.FILES_ROOT}/sif1.json", encoding="utf-8") as f:
             json_sif = json.loads(f.read())
         sif_obj = sif.Sif(json_sif)
-        assert sif_obj.url() == "https://sonarqube.acme.com"
+        assert sif_obj.url == "https://sonarqube.acme.com"
         assert sif_obj.start_time() == datetime(2024, 5, 23, 13, 37, 24, tzinfo=timezone.utc)
         assert sif_obj.store_size() == 131
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # sonar-tools tests
 # Copyright (C) 2026 Olivier Korach
@@ -21,6 +20,7 @@
 
 """Unit tests for SCA dependency risk export (no live SonarQube required)."""
 
+from typing import Any, Generator
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 import pytest
@@ -41,7 +41,7 @@ def _mock_endpoint() -> MagicMock:
     return endpoint
 
 
-def _payload(**overrides) -> dict:
+def _payload(**overrides: Any) -> dict[str, Any]:
     base = {
         "id": "risk-1",
         "key": "risk-1-key",
@@ -70,13 +70,14 @@ def _payload(**overrides) -> dict:
 
 
 @pytest.fixture(autouse=True)
-def _clear_cache():
+def _clear_cache() -> Generator[None, None, None]:
     DependencyRisk.CACHE.clear()
     yield
     DependencyRisk.CACHE.clear()
 
 
 def test_field_mapping_vulnerability() -> None:
+    """Test that a DependencyRisk correctly maps fields from the API payload, including nested ones, and constructs a headline."""
     risk = DependencyRisk(
         _mock_endpoint(),
         _payload(),
@@ -120,6 +121,7 @@ def test_api_type_mapping() -> None:
 
 
 def test_transitivity_and_scope_defaults_when_release_missing_flags() -> None:
+    """When release summary flags are false, transitivity falls back to TRANSITIVE and scope to TEST."""
     payload = _payload()
     payload["release"]["directSummary"] = False
     payload["release"]["productionScopeSummary"] = False
@@ -129,11 +131,13 @@ def test_transitivity_and_scope_defaults_when_release_missing_flags() -> None:
 
 
 def test_assignee_none_when_unassigned() -> None:
+    """An absent assignee in the payload should surface as None on the risk."""
     risk = DependencyRisk(_mock_endpoint(), _payload(assignee=None), project_key="p")
     assert risk.assignee is None
 
 
 def test_to_json_excludes_none_and_empty() -> None:
+    """to_json() should drop None/empty fields, omit internal id, and emit a usable risk URL."""
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p", branch="main")
     data = risk.to_json()
     assert "id" not in data
@@ -145,6 +149,7 @@ def test_to_json_excludes_none_and_empty() -> None:
 
 
 def test_to_csv_matches_csv_header() -> None:
+    """to_csv() rows must align column-by-column with CSV_FIELDS and the public CSV header."""
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
     row = risk.to_csv()
     header = DependencyRisk.csv_header()
@@ -159,6 +164,7 @@ def test_to_csv_matches_csv_header() -> None:
 
 
 def test_to_sarif_severity_promotes_to_error() -> None:
+    """BLOCKER severity should map to SARIF level 'error' and carry the CVE as ruleId."""
     risk = DependencyRisk(_mock_endpoint(), _payload(severity="BLOCKER"), project_key="p")
     sarif = risk.to_sarif()
     assert sarif["level"] == "error"
@@ -167,11 +173,13 @@ def test_to_sarif_severity_promotes_to_error() -> None:
 
 
 def test_to_sarif_minor_severity_is_warning() -> None:
+    """LOW severity should map to SARIF level 'warning' rather than 'error'."""
     risk = DependencyRisk(_mock_endpoint(), _payload(severity="LOW"), project_key="p")
     assert risk.to_sarif()["level"] == "warning"
 
 
 def test_url_encodes_branch_and_pull_request() -> None:
+    """url() should include exactly one of pullRequest or branch — never both — based on context."""
     pr_risk = DependencyRisk(_mock_endpoint(), _payload(key="pr-risk"), project_key="p", pull_request="42")
     assert "pullRequest=42" in pr_risk.url()
     assert "branch=" not in pr_risk.url()
@@ -211,6 +219,7 @@ def test_search_paginates_and_lookups_project_name() -> None:
 
 
 def test_sca_enabled_returns_false_on_unsupported() -> None:
+    """sca_enabled() should return False on SonarQube versions that predate SCA support."""
     endpoint = _mock_endpoint()
     endpoint.version.return_value = (10, 0, 0)
     assert dr.sca_enabled(endpoint) is False
@@ -321,16 +330,21 @@ def _changelog_entry(date_iso: str, key_suffix: str = "") -> DependencyRiskChang
     )
 
 
+def _filter_after(entries: dict, cutoff: datetime) -> dict:
+    """Mirrors the caller-side date filter callers apply to the changelog property."""
+    return {k: v for k, v in entries.items() if v.date_time() > cutoff}
+
+
 def test_changelog_with_after_filters_older_entries() -> None:
-    """changelog(after=...) returns only entries strictly after the cutoff."""
+    """Caller-side filtering of the changelog property keeps only entries strictly after the cutoff."""
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
     older = _changelog_entry("2026-01-01T10:00:00+0000", "older")
     newer = _changelog_entry("2026-03-01T10:00:00+0000", "newer")
-    risk._changelog = {"a": older, "b": newer}
-    risk._comments = {}  # short-circuit the lazy loader
+    risk.changelog = {"a": older, "b": newer}
+    risk.comments = {}  # short-circuit the lazy loader
 
     cutoff = datetime(2026, 2, 1, tzinfo=timezone.utc)
-    filtered = risk.changelog(after=cutoff)
+    filtered = _filter_after(risk.changelog, cutoff)
 
     assert list(filtered.keys()) == ["b"]
     assert filtered["b"] is newer
@@ -339,39 +353,39 @@ def test_changelog_with_after_filters_older_entries() -> None:
 def test_changelog_with_after_in_future_returns_empty() -> None:
     """A cutoff after every entry returns an empty dict, not the full changelog."""
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
-    risk._changelog = {"a": _changelog_entry("2026-01-01T10:00:00+0000")}
-    risk._comments = {}
+    risk.changelog = {"a": _changelog_entry("2026-01-01T10:00:00+0000")}
+    risk.comments = {}
 
     cutoff = datetime(2030, 1, 1, tzinfo=timezone.utc)
-    assert risk.changelog(after=cutoff) == {}
+    assert _filter_after(risk.changelog, cutoff) == {}
 
 
 def test_changelog_after_excludes_entries_with_matching_timestamp() -> None:
-    """The filter is strictly greater-than: entries equal to the cutoff are excluded."""
+    """The caller-side filter is strictly greater-than: entries equal to the cutoff are excluded."""
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
     boundary = "2026-02-15T12:00:00+0000"
-    risk._changelog = {
+    risk.changelog = {
         "a": _changelog_entry(boundary, "exact"),
         "b": _changelog_entry("2026-02-15T12:00:01+0000", "after"),
     }
-    risk._comments = {}
+    risk.comments = {}
 
     cutoff = datetime(2026, 2, 15, 12, 0, 0, tzinfo=timezone.utc)
-    filtered = risk.changelog(after=cutoff)
+    filtered = _filter_after(risk.changelog, cutoff)
 
     assert list(filtered.keys()) == ["b"]
 
 
-def test_changelog_with_after_lazy_loads_when_unloaded() -> None:
-    """changelog() must trigger _load_changelog_and_comments when _changelog is None."""
+def test_changelog_property_lazy_loads_when_unloaded() -> None:
+    """The changelog property must trigger _load_changelog_and_comments when _changelog is None."""
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
 
     def fake_load() -> None:
-        risk._changelog = {"a": _changelog_entry("2026-04-01T10:00:00+0000")}
-        risk._comments = {}
+        risk.changelog = {"a": _changelog_entry("2026-04-01T10:00:00+0000")}
+        risk.comments = {}
 
     with patch.object(risk, "_load_changelog_and_comments", side_effect=fake_load) as load:
-        result = risk.changelog(after=datetime(2026, 1, 1, tzinfo=timezone.utc))
+        result = risk.changelog
 
     load.assert_called_once()
     assert "a" in result

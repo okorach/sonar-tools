@@ -40,6 +40,7 @@ from sonar import measures
 if TYPE_CHECKING:
     from sonar.issues import Issue
     from sonar.hotspots import Hotspot
+    from sonar.dependency_risks import DependencyRisk
     from sonar.util.types import ApiPayload, ConfigSettings
     from sonar.platform import Platform
 
@@ -185,7 +186,7 @@ class PullRequest(Component):
         """Returns a list of findings, issues and hotspots together on a PR"""
         return self.concerned_object.get_findings(**(search_params | {"pullRequest": self.key}))
 
-    def get_dependency_risks(self, **search_params: Any) -> dict:
+    def get_dependency_risks(self, **search_params: Any) -> dict[str, DependencyRisk]:
         """Returns the SCA dependency risks for this pull request"""
         from sonar.dependency_risks import DependencyRisk
 

@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from sonar.platform import Platform
     from sonar.hotspots import Hotspot
     from sonar.issues import Issue
+    from sonar.dependency_risks import DependencyRisk
     from sonar.util.types import ApiPayload, ConfigSettings, KeyList
 
 
@@ -105,7 +106,7 @@ class Component(SqObject):
         new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio")}
         return Hotspot.search(endpoint=self.endpoint, **(new_params | {"project": self.key}))
 
-    def get_dependency_risks(self, **search_params: Any) -> dict:
+    def get_dependency_risks(self, **search_params: Any) -> dict[str, DependencyRisk]:
         """Returns list of SCA dependency risks for a project component"""
         from sonar.dependency_risks import DependencyRisk
 
@@ -274,7 +275,9 @@ class Component(SqObject):
         except (ConnectionError, RequestException) as e:
             sutil.handle_error(e, f"getting AI code assurance of {self}", catch_all=True)
             if "Unknown url" in sutil.error_msg(e):
-                raise exceptions.UnsupportedOperation(f"AI code assurance is not available for {self.endpoint.edition()} edition version {version!s}")
+                raise exceptions.UnsupportedOperation(
+                    f"AI code assurance is not available for {self.endpoint.edition()} edition version {version!s}"
+                ) from e
         return None
 
     def _audit_bg_task(self, audit_settings: ConfigSettings) -> list[Problem]:

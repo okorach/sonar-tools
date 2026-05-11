@@ -199,7 +199,8 @@ class DependencyRisk(SqObject):
         return f"{self.vulnerability_id or 'Vulnerability'} in {pkg} {version}"
 
     def __str__(self) -> str:
-        return f"dependency risk '{self.key}' ({self.type})"
+        """Returns a human-readable representation of the risk."""
+        return f"{self._compute_headline()} for {str(self.project_key)}{f' branch {self.branch}' if self.branch else ''}{f' PR {self.pull_request}' if self.pull_request else ''}"
 
     def url(self) -> str:
         """Returns the permalink to the dependency risk in the SonarQube UI."""
@@ -325,21 +326,27 @@ class DependencyRisk(SqObject):
     # Sync-related API: changelog, comments, transitions, assignment
     # ---------------------------------------------------------------------
 
-    def changelog(self, after: Optional[datetime] = None) -> dict[str, DependencyRiskChangelog]:
-        """Returns the changelog of a dependency risk, optionally filtered to entries after a date."""
+    @property
+    def changelog(self) -> dict[str, DependencyRiskChangelog]:
+        """Lazy-loaded changelog of the dependency risk. Callers needing a date filter apply it themselves."""
         if self._changelog is None:
             self._load_changelog_and_comments()
-        if after is not None:
-            return {k: v for k, v in self._changelog.items() if v.date_time() > after}
         return self._changelog
 
-    def comments(self, after: Optional[datetime] = None) -> dict[str, dict[str, Any]]:
-        """Returns comments extracted from the changelog."""
+    @changelog.setter
+    def changelog(self, value: Optional[dict[str, DependencyRiskChangelog]]) -> None:
+        self._changelog = value
+
+    @property
+    def comments(self) -> dict[str, dict[str, Any]]:
+        """Lazy-loaded comments extracted from the changelog. Callers needing a date filter apply it themselves."""
         if self._comments is None:
             self._load_changelog_and_comments()
-        if after is not None:
-            return {k: v for k, v in self._comments.items() if v["date"] and v["date"] > after}
         return self._comments
+
+    @comments.setter
+    def comments(self, value: Optional[dict[str, dict[str, Any]]]) -> None:
+        self._comments = value
 
     def _load_changelog_and_comments(self) -> None:
         """Loads both changelog and comments from the API in a single call."""
@@ -386,7 +393,7 @@ class DependencyRisk(SqObject):
             self._comments = None
             return True
 
-    def get_tags(self) -> list[str]:
+    def get_tags(self, **kwargs: Any) -> list[str]:
         """Returns tags - not applicable for dependency risks."""
         raise exceptions.UnsupportedOperation("DependencyRisk does not support tags")
 
@@ -400,29 +407,29 @@ class DependencyRisk(SqObject):
 
     def has_changelog(self, after: Optional[datetime] = None, manual_only: Optional[bool] = True) -> bool:  # noqa: ARG002
         """Returns whether the dependency risk has a changelog"""
-        return len(self.changelog(after=after)) > 0
+        return any(after is None or v.date_time() > after for v in self.changelog.values())
 
     def has_comments(self, after: Optional[datetime] = None) -> bool:
         """Returns whether the dependency risk has comments"""
-        return len(self.comments(after=after)) > 0
+        return any(after is None or (v["date"] and v["date"] > after) for v in self.comments.values())
 
     def last_changelog_date(self) -> Optional[datetime]:
         """Returns the date of the last changelog entry"""
-        ch = self.changelog()
+        ch = self.changelog
         return list(ch.values())[-1].date_time() if len(ch) > 0 else None
 
     def last_comment_date(self) -> Optional[datetime]:
         """Returns the date of the last comment"""
-        ch = self.comments()
+        ch = self.comments
         return list(ch.values())[-1]["date"] if len(ch) > 0 else None
 
     def modifiers(self, after: Optional[datetime] = None) -> set[str]:
         """Returns the set of users that modified the dependency risk"""
-        return {c.author() for c in self.changelog(after=after).values() if c.author()}
+        return {c.author() for c in self.changelog.values() if c.author() and (after is None or c.date_time() > after)}
 
     def commenters(self) -> set[str]:
         """Returns the set of users that commented on the dependency risk"""
-        return {v["user"] for v in self.comments().values() if v.get("user")}
+        return {v["user"] for v in self.comments.values() if v.get("user")}
 
     def strictly_identical_to(self, other: DependencyRisk, ignore_component: bool = False) -> bool:  # noqa: ARG002
         """Two dependency risks are identical if they share the same identity fields.
@@ -545,7 +552,7 @@ class DependencyRisk(SqObject):
         counter = 0
         self._sync_source_url = source.url()
         last_target_change = self.last_changelog_date()
-        events = source.changelog(after=last_target_change)
+        events = {k: v for k, v in source.changelog.items() if last_target_change is None or v.date_time() > last_target_change}
         if len(events) == 0:
             log.info("Source %s has no changelog after target %s last change (%s)", source, self, last_target_change)
         else:
@@ -555,7 +562,7 @@ class DependencyRisk(SqObject):
                 counter += 1
 
         last_target_comment = self.last_comment_date()
-        comment_events = source.comments(after=last_target_comment)
+        comment_events = {k: v for k, v in source.comments.items() if last_target_comment is None or (v["date"] and v["date"] > last_target_comment)}
         if len(comment_events) == 0:
             log.info("Source %s has no comments after target %s last comment (%s)", source, self, last_target_comment)
         else:
