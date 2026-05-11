@@ -565,7 +565,7 @@ def _sync_dependency_risks(
     src_object: Union[Project, Branch], tgt_object: Union[Project, Branch], sync_settings: ConfigSettings
 ) -> tuple[list[dict[str, str]], dict[str, int]]:
     """Syncs dependency risks from source to target (unidirectional only)."""
-    from sonar.dependency_risks import DependencyRisk, get_changelogs
+    from sonar.dependency_risks import get_changelogs
 
     src_drs = list(src_object.get_dependency_risks().values())
     tgt_drs = list(tgt_object.get_dependency_risks().values())

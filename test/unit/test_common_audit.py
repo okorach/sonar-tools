@@ -67,11 +67,11 @@ def test_audit(csv_file: Generator[str]) -> None:
     with open(csv_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         next(reader)
-        problems = [tuple((row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4])))) for row in reader if row[1] not in transient_errors]
+        problems = [(row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4]))) for row in reader if row[1] not in transient_errors]
     with open(audit_file, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         next(reader)
-        old_problems = [tuple((row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4])))) for row in reader if row[1] not in transient_errors]
+        old_problems = [(row[1], re.sub(regexp, "[0-9]+ days", re.escape(row[4]))) for row in reader if row[1] not in transient_errors]
     for row in old_problems:
         assert row in problems, f"Problem {row[0]}/{row[1]} not found in new audit comparing {audit_file} and {csv_file}"
     assert problems_present(csv_file, problems)

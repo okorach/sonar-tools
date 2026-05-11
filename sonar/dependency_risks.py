@@ -199,7 +199,8 @@ class DependencyRisk(SqObject):
         return f"{self.vulnerability_id or 'Vulnerability'} in {pkg} {version}"
 
     def __str__(self) -> str:
-        return f"dependency risk '{self.key}' ({self.type})"
+        """Returns a human-readable representation of the risk."""
+        return f"{self._compute_headline()} for {str(self.project_key)}{f' branch {self.branch}' if self.branch else ''}{f' PR {self.pull_request}' if self.pull_request else ''}"
 
     def url(self) -> str:
         """Returns the permalink to the dependency risk in the SonarQube UI."""
@@ -386,7 +387,7 @@ class DependencyRisk(SqObject):
             self._comments = None
             return True
 
-    def get_tags(self) -> list[str]:
+    def get_tags(self, **kwargs: Any) -> list[str]:
         """Returns tags - not applicable for dependency risks."""
         raise exceptions.UnsupportedOperation("DependencyRisk does not support tags")
 

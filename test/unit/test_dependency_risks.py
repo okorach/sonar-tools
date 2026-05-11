@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # sonar-tools tests
 # Copyright (C) 2026 Olivier Korach
@@ -21,6 +20,7 @@
 
 """Unit tests for SCA dependency risk export (no live SonarQube required)."""
 
+from typing import Any, Generator
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 import pytest
@@ -41,7 +41,7 @@ def _mock_endpoint() -> MagicMock:
     return endpoint
 
 
-def _payload(**overrides) -> dict:
+def _payload(**overrides: Any) -> dict[str, Any]:
     base = {
         "id": "risk-1",
         "key": "risk-1-key",
@@ -70,13 +70,14 @@ def _payload(**overrides) -> dict:
 
 
 @pytest.fixture(autouse=True)
-def _clear_cache():
+def _clear_cache() -> Generator[None, None, None]:
     DependencyRisk.CACHE.clear()
     yield
     DependencyRisk.CACHE.clear()
 
 
 def test_field_mapping_vulnerability() -> None:
+    """Test that a DependencyRisk correctly maps fields from the API payload, including nested ones, and constructs a headline."""
     risk = DependencyRisk(
         _mock_endpoint(),
         _payload(),
@@ -120,6 +121,7 @@ def test_api_type_mapping() -> None:
 
 
 def test_transitivity_and_scope_defaults_when_release_missing_flags() -> None:
+    """When release summary flags are false, transitivity falls back to TRANSITIVE and scope to TEST."""
     payload = _payload()
     payload["release"]["directSummary"] = False
     payload["release"]["productionScopeSummary"] = False
@@ -129,11 +131,13 @@ def test_transitivity_and_scope_defaults_when_release_missing_flags() -> None:
 
 
 def test_assignee_none_when_unassigned() -> None:
+    """An absent assignee in the payload should surface as None on the risk."""
     risk = DependencyRisk(_mock_endpoint(), _payload(assignee=None), project_key="p")
     assert risk.assignee is None
 
 
 def test_to_json_excludes_none_and_empty() -> None:
+    """to_json() should drop None/empty fields, omit internal id, and emit a usable risk URL."""
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p", branch="main")
     data = risk.to_json()
     assert "id" not in data
@@ -145,6 +149,7 @@ def test_to_json_excludes_none_and_empty() -> None:
 
 
 def test_to_csv_matches_csv_header() -> None:
+    """to_csv() rows must align column-by-column with CSV_FIELDS and the public CSV header."""
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
     row = risk.to_csv()
     header = DependencyRisk.csv_header()
@@ -159,6 +164,7 @@ def test_to_csv_matches_csv_header() -> None:
 
 
 def test_to_sarif_severity_promotes_to_error() -> None:
+    """BLOCKER severity should map to SARIF level 'error' and carry the CVE as ruleId."""
     risk = DependencyRisk(_mock_endpoint(), _payload(severity="BLOCKER"), project_key="p")
     sarif = risk.to_sarif()
     assert sarif["level"] == "error"
@@ -167,11 +173,13 @@ def test_to_sarif_severity_promotes_to_error() -> None:
 
 
 def test_to_sarif_minor_severity_is_warning() -> None:
+    """LOW severity should map to SARIF level 'warning' rather than 'error'."""
     risk = DependencyRisk(_mock_endpoint(), _payload(severity="LOW"), project_key="p")
     assert risk.to_sarif()["level"] == "warning"
 
 
 def test_url_encodes_branch_and_pull_request() -> None:
+    """url() should include exactly one of pullRequest or branch — never both — based on context."""
     pr_risk = DependencyRisk(_mock_endpoint(), _payload(key="pr-risk"), project_key="p", pull_request="42")
     assert "pullRequest=42" in pr_risk.url()
     assert "branch=" not in pr_risk.url()
@@ -211,6 +219,7 @@ def test_search_paginates_and_lookups_project_name() -> None:
 
 
 def test_sca_enabled_returns_false_on_unsupported() -> None:
+    """sca_enabled() should return False on SonarQube versions that predate SCA support."""
     endpoint = _mock_endpoint()
     endpoint.version.return_value = (10, 0, 0)
     assert dr.sca_enabled(endpoint) is False

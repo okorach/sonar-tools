@@ -46,6 +46,7 @@ from sonar import measures
 if TYPE_CHECKING:
     from sonar.tasks import Task
     from sonar.issues import Issue
+    from sonar.dependency_risks import DependencyRisk
     from sonar.hotspots import Hotspot
     from sonar.platform import Platform
     from sonar.components import Component
@@ -322,7 +323,7 @@ class Branch(components.Component):
         """Returns a list of findings, issues and hotspots together on a branch"""
         return self.concerned_object.get_findings(**(search_params | {"branch": self.name}))
 
-    def get_dependency_risks(self, **search_params: Any) -> dict:
+    def get_dependency_risks(self, **search_params: Any) -> dict[str, DependencyRisk]:
         """Returns the SCA dependency risks for this branch"""
         from sonar.dependency_risks import DependencyRisk
 
