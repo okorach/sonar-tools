@@ -249,7 +249,7 @@ class Portfolio(aggregations.Aggregation):
         for app_data in apps:
             app_o = applications.Application.get_object(self.endpoint, app_data["originalKey"])
             for branch in app_data["selectedBranches"]:
-                if app_branches.ApplicationBranch.get_object(self.endpoint, app=app_o, branch_name=branch).is_main():
+                if app_branches.ApplicationBranch.get_object(self.endpoint, app=app_o, branch_name=branch).is_main:
                     app_data["selectedBranches"].remove(branch)
                     app_data["selectedBranches"].insert(0, c.DEFAULT_BRANCH)
             self._applications[app_data["originalKey"]] = app_data["selectedBranches"]
@@ -362,7 +362,7 @@ class Portfolio(aggregations.Aggregation):
                 subp_json = s.to_json(export_settings)
                 subp_key = subp_json.pop("key")
                 json_data["portfolios"][subp_key] = subp_json
-        mode = self.selection_mode().copy()
+        mode = self.selection_mode.copy()
         if mode:
             if "none" not in mode or export_settings.get("MODE", "") == "MIGRATION":
                 json_data["projects"] = mode
@@ -392,6 +392,7 @@ class Portfolio(aggregations.Aggregation):
             # No permissions for SVW
             self.permissions().set(portfolio_perms)
 
+    @property
     def selection_mode(self) -> dict[str, str]:
         """Returns a portfolio selection mode"""
         if self._selection_mode is None:
@@ -399,6 +400,15 @@ class Portfolio(aggregations.Aggregation):
             api, _, params, _ = self.endpoint.api.get_details(self, Oper.GET, key=self.root_portfolio.key)
             self.reload(json.loads(self.get(api, params=params).text))
         return {k.lower(): v for k, v in self._selection_mode.items()}
+
+    @selection_mode.setter
+    def selection_mode(self, value: Optional[dict[str, Any]]) -> None:
+        self._selection_mode = value
+
+    @property
+    def description(self) -> Optional[str]:
+        """Returns the portfolio description"""
+        return self._description
 
     def has_project(self, key: str) -> bool:
         return _SELECTION_MODE_MANUAL in self._selection_mode and key in self._selection_mode[_SELECTION_MODE_MANUAL]

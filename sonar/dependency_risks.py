@@ -333,12 +333,20 @@ class DependencyRisk(SqObject):
             self._load_changelog_and_comments()
         return self._changelog
 
+    @changelog.setter
+    def changelog(self, value: Optional[dict[str, DependencyRiskChangelog]]) -> None:
+        self._changelog = value
+
     @property
     def comments(self) -> dict[str, dict[str, Any]]:
         """Lazy-loaded comments extracted from the changelog. Callers needing a date filter apply it themselves."""
         if self._comments is None:
             self._load_changelog_and_comments()
         return self._comments
+
+    @comments.setter
+    def comments(self, value: Optional[dict[str, dict[str, Any]]]) -> None:
+        self._comments = value
 
     def _load_changelog_and_comments(self) -> None:
         """Loads both changelog and comments from the API in a single call."""

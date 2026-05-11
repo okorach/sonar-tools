@@ -71,6 +71,11 @@ class DevopsPlatform(SqObject):
             string += f" workspace '{self._specific['workspace']}'"
         return string
 
+    @property
+    def specific(self) -> Optional[dict[str, str]]:
+        """Returns the DevOps platform-specific settings."""
+        return self._specific
+
     @classmethod
     def get_object(cls, endpoint: Platform, key: str, use_cache: bool = True) -> DevopsPlatform:
         """Reads a devops platform object in Sonar instance"""

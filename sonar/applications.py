@@ -181,11 +181,11 @@ class Application(aggr.Aggregation):
         """:return: Whether the Application branch is the main branch
         :rtype: bool
         """
-        return app_branches.ApplicationBranch.get_object(self.endpoint, self, branch).is_main()
+        return app_branches.ApplicationBranch.get_object(self.endpoint, self, branch).is_main
 
     def main_branch(self) -> object:
         """Returns the application main branch"""
-        return next((br for br in self.branches().values() if br.is_main()), None)
+        return next((br for br in self.branches().values() if br.is_main), None)
 
     def create_branch(self, branch_name: str, branch_definition: ObjectJsonRepr) -> object:
         """Creates an application branch
@@ -253,7 +253,7 @@ class Application(aggr.Aggregation):
 
         :return: Whether the delete succeeded
         """
-        for branch in [b for b in self.branches().values() if not b.is_main()]:
+        for branch in [b for b in self.branches().values() if not b.is_main]:
             branch.delete()
         return self.delete_object(application=self.key)
 

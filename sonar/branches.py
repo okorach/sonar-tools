@@ -152,17 +152,27 @@ class Branch(components.Component):
         """Returns the project key"""
         return self.concerned_object
 
+    @property
     def is_kept_when_inactive(self) -> bool:
         """Returns whether the branch is kept when inactive"""
         if self._keep_when_inactive is None or self.sq_json is None:
             self.refresh()
         return self._keep_when_inactive
 
+    @is_kept_when_inactive.setter
+    def is_kept_when_inactive(self, value: Optional[bool]) -> None:
+        self._keep_when_inactive = value
+
+    @property
     def is_main(self) -> bool:
         """Returns whether the branch is the project main branch"""
         if self._is_main is None or self.sq_json is None:
             self.refresh()
         return self._is_main
+
+    @is_main.setter
+    def is_main(self, value: Optional[bool]) -> None:
+        self._is_main = value
 
     def delete(self) -> bool:
         """Deletes a branch, return whether the deletion was successful"""
@@ -213,7 +223,7 @@ class Branch(components.Component):
         :return: Whether the operation was successful
         """
         log.info("Setting %s keep when inactive to %s", self, keep)
-        if self.is_main():
+        if self.is_main:
             if not keep:
                 log.warning("%s is main branch, can't be purgeable, skipping...", str(self))
                 raise exceptions.UnsupportedOperation(f"{self!s} is the main branch, can't be purgeable")
@@ -232,7 +242,7 @@ class Branch(components.Component):
         :raises UnsupportedOperation: If trying to rename anything than the main branch
         :return: Whether the operation was successful
         """
-        if not self.is_main():
+        if not self.is_main:
             raise exceptions.UnsupportedOperation(f"{self!s} can't be renamed since it's not the main branch")
 
         log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
@@ -252,7 +262,7 @@ class Branch(components.Component):
         api, _, params, _ = self.endpoint.api.get_details(self, Oper.SET_MAIN, project=self.concerned_object.key, branch=self.name)
         self.post(api, params=params)
         for b in self.concerned_object.branches().values():
-            b._is_main = b.name == self.name
+            b.is_main = b.name == self.name
         return True
 
     def set_new_code(self, new_code_type: str, additional_data: Optional[Any]) -> bool:
@@ -275,9 +285,9 @@ class Branch(components.Component):
         """
         log.debug("Exporting %s", str(self))
         data = {settings.NEW_CODE_PERIOD: self.new_code()}
-        if self.is_main():
+        if self.is_main:
             data["isMain"] = True
-        if self.is_kept_when_inactive() and not self.is_main():
+        if self.is_kept_when_inactive and not self.is_main:
             data["keepWhenInactive"] = True
         if self.new_code():
             data[settings.NEW_CODE_PERIOD] = self.new_code()
@@ -358,12 +368,12 @@ class Branch(components.Component):
 
     def __audit_never_analyzed(self) -> list[Problem]:
         """Detects branches that have never been analyzed are are kept when inactive"""
-        if not self.last_analysis() and self.is_kept_when_inactive():
+        if not self.last_analysis() and self.is_kept_when_inactive:
             return [Problem(get_rule(RuleId.BRANCH_NEVER_ANALYZED), self, str(self))]
         return []
 
     def __audit_last_analysis(self, audit_settings: ConfigSettings) -> list[Problem]:
-        if self.is_main():
+        if self.is_main:
             log.info("%s is main (not purgeable)", str(self))
             return []
         if (max_age := audit_settings.get("audit.projects.branches.maxLastAnalysisAge", 30)) == 0:
@@ -377,7 +387,7 @@ class Branch(components.Component):
         if preserved is not None and age > max_age and not re.match(rf"^{preserved}$", self.name):
             log.info("%s age %d greater than %d days and not matches '%s'", str(self), age, max_age, preserved)
             problems.append(Problem(get_rule(RuleId.BRANCH_LAST_ANALYSIS), self, str(self), age))
-        elif self.is_kept_when_inactive():
+        elif self.is_kept_when_inactive:
             log.info("%s is kept when inactive (not purgeable)", str(self))
         elif age > max_age:
             problems.append(Problem(get_rule(RuleId.BRANCH_LAST_ANALYSIS), self, str(self), age))

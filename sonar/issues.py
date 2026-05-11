@@ -585,6 +585,13 @@ class Issue(findings.Finding):
         else:
             return self.__set_severity(impact=f"{software_quality}={severity}")
 
+    @property
+    def tags(self) -> Optional[list[str]]:
+        """Returns the cached tags of an issue without forcing a refresh."""
+        if self._tags is None:
+            self._tags = self.sq_json.get("tags")
+        return self._tags
+
     def get_tags(self, **kwargs: Any) -> list[str]:
         """Returns the tags of an issue"""
         use_cache = kwargs.get(c.USE_CACHE, True)
@@ -1048,6 +1055,6 @@ def post_search_filter(issue_list: dict[str, Issue], **search_params: Any) -> di
     if "languages" in params:
         issue_list = {k: i for k, i in issue_list.items() if i.language() in params["languages"]}
     if "tags" in params:
-        issue_list = {k: i for k, i in issue_list.items() if i.tags and all(t in i._tags for t in params["tags"])}
+        issue_list = {k: i for k, i in issue_list.items() if i.tags and all(t in i.tags for t in params["tags"])}
     log.debug("Post-search filters %s returns %d issues", search_params, len(issue_list))
     return issue_list

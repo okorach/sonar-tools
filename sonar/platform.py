@@ -162,7 +162,7 @@ class Platform(object):
         """Returns the SonarQube edition: 'community', 'developer', 'enterprise', 'datacenter' or 'sonarcloud'"""
         if self.is_sonarcloud():
             return c.SC
-        return sutil.edition_normalize(self.global_nav().get("edition") or self.sys_info()["Statistics"]["edition"])
+        return sutil.edition_normalize(self.global_nav().get("edition") or self.sys_info["Statistics"]["edition"])
 
     def user(self) -> str:
         """Returns the user corresponding to the provided token"""
@@ -369,6 +369,7 @@ class Platform(object):
             self._permissions = global_permissions.GlobalPermissions(self)
         return self._permissions
 
+    @property
     def sys_info(self) -> dict[str, Any]:
         """Returns the SonarQube platform system info JSON"""
         MAX_RETRIES = 10
@@ -393,6 +394,10 @@ class Platform(object):
             success = True
         return self._sys_info
 
+    @sys_info.setter
+    def sys_info(self, value: Optional[dict[str, Any]]) -> None:
+        self._sys_info = value
+
     def global_nav(self) -> dict[str, Any]:
         """Returns the SonarQube platform global navigation data"""
         if self.__global_nav is None:
@@ -404,13 +409,13 @@ class Platform(object):
         """Returns the SonarQube platform backend database"""
         if self.is_sonarcloud():
             return "postgresql"
-        return self.sys_info()["Database"]["Database"]
+        return self.sys_info["Database"]["Database"]
 
     def plugins(self) -> dict[str, dict[str, str]]:
         """Returns the SonarQube platform plugins data"""
         if self.is_sonarcloud():
             return {}
-        sysinfo = self.sys_info()
+        sysinfo = self.sys_info
         if "Application Nodes" in sysinfo:
             sysinfo = sysinfo["Application Nodes"][0]
         try:
@@ -606,7 +611,7 @@ class Platform(object):
         if self.is_sonarcloud():
             return problems
 
-        pf_sif = self.sys_info() | {"edition": self.edition()}
+        pf_sif = self.sys_info | {"edition": self.edition()}
         problems += (
             _audit_maintainability_rating_grid(platform_settings, audit_settings, settings_url)
             + self._audit_admin_password()

@@ -340,8 +340,8 @@ def test_changelog_with_after_filters_older_entries() -> None:
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
     older = _changelog_entry("2026-01-01T10:00:00+0000", "older")
     newer = _changelog_entry("2026-03-01T10:00:00+0000", "newer")
-    risk._changelog = {"a": older, "b": newer}
-    risk._comments = {}  # short-circuit the lazy loader
+    risk.changelog = {"a": older, "b": newer}
+    risk.comments = {}  # short-circuit the lazy loader
 
     cutoff = datetime(2026, 2, 1, tzinfo=timezone.utc)
     filtered = _filter_after(risk.changelog, cutoff)
@@ -353,8 +353,8 @@ def test_changelog_with_after_filters_older_entries() -> None:
 def test_changelog_with_after_in_future_returns_empty() -> None:
     """A cutoff after every entry returns an empty dict, not the full changelog."""
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
-    risk._changelog = {"a": _changelog_entry("2026-01-01T10:00:00+0000")}
-    risk._comments = {}
+    risk.changelog = {"a": _changelog_entry("2026-01-01T10:00:00+0000")}
+    risk.comments = {}
 
     cutoff = datetime(2030, 1, 1, tzinfo=timezone.utc)
     assert _filter_after(risk.changelog, cutoff) == {}
@@ -364,11 +364,11 @@ def test_changelog_after_excludes_entries_with_matching_timestamp() -> None:
     """The caller-side filter is strictly greater-than: entries equal to the cutoff are excluded."""
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
     boundary = "2026-02-15T12:00:00+0000"
-    risk._changelog = {
+    risk.changelog = {
         "a": _changelog_entry(boundary, "exact"),
         "b": _changelog_entry("2026-02-15T12:00:01+0000", "after"),
     }
-    risk._comments = {}
+    risk.comments = {}
 
     cutoff = datetime(2026, 2, 15, 12, 0, 0, tzinfo=timezone.utc)
     filtered = _filter_after(risk.changelog, cutoff)
@@ -381,8 +381,8 @@ def test_changelog_property_lazy_loads_when_unloaded() -> None:
     risk = DependencyRisk(_mock_endpoint(), _payload(), project_key="p")
 
     def fake_load() -> None:
-        risk._changelog = {"a": _changelog_entry("2026-04-01T10:00:00+0000")}
-        risk._comments = {}
+        risk.changelog = {"a": _changelog_entry("2026-04-01T10:00:00+0000")}
+        risk.comments = {}
 
     with patch.object(risk, "_load_changelog_and_comments", side_effect=fake_load) as load:
         result = risk.changelog

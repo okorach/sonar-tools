@@ -158,6 +158,7 @@ class ApplicationBranch(Component):
 
         return Hotspot.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "branch": self.name}))
 
+    @property
     def is_main(self) -> bool:
         """Returns whether app branch is main"""
         return self._is_main
@@ -180,7 +181,7 @@ class ApplicationBranch(Component):
         :return: Whether the delete succeeded
         :rtype: bool
         """
-        if self.is_main():
+        if self.is_main:
             log.warning("Can't delete main application branch, simply delete the application for that", self)
             return False
         log.info("Deleting %s", self)
@@ -194,7 +195,7 @@ class ApplicationBranch(Component):
         """
         log.info("Exporting %s from %s", self, self.sq_json)
         jsondata = {"projects": {b["key"]: b["branch"] if b["selected"] else sutil.DEFAULT for b in self.sq_json["projects"]}}
-        if self.is_main():
+        if self.is_main:
             jsondata["isMain"] = True
         return jsondata
 
