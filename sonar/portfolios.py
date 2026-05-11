@@ -186,7 +186,7 @@ class Portfolio(aggregations.Aggregation):
             return
         branch = self.sq_json.get("branch", c.DEFAULT_BRANCH)
         if mode == _SELECTION_MODE_MANUAL:
-            self._selection_mode = {mode: {}}
+            self.selection_mode = {mode: {}}
             if not (sprojects := self.sq_json.get("selectedProjects")):
                 return
             selected_projects = dict(sorted(util.list_to_dict(sprojects, "projectKey", keep_in_values=True).items()))
@@ -194,13 +194,13 @@ class Portfolio(aggregations.Aggregation):
                 branch_list = projdata.get("selectedBranches", [c.DEFAULT_BRANCH])
                 self._selection_mode[mode].update({projdata["projectKey"]: set(branch_list)})
         elif mode == _SELECTION_MODE_REGEXP:
-            self._selection_mode = {mode: self.sq_json["regexp"], "branch": branch}
+            self.selection_mode = {mode: self.sq_json["regexp"], "branch": branch}
         elif mode == _SELECTION_MODE_TAGS:
-            self._selection_mode = {mode: self.sq_json["tags"], "branch": branch}
+            self.selection_mode = {mode: self.sq_json["tags"], "branch": branch}
         elif mode == _SELECTION_MODE_REST:
-            self._selection_mode = {mode: True, "branch": branch}
+            self.selection_mode = {mode: True, "branch": branch}
         else:
-            self._selection_mode = {mode: True}
+            self.selection_mode = {mode: True}
 
     def refresh(self) -> Portfolio:
         """Refreshes a portfolio data from the Sonar instance"""
@@ -222,12 +222,12 @@ class Portfolio(aggregations.Aggregation):
 
     def projects(self) -> Optional[dict[str, str]]:
         """Returns list of projects and their branches if selection mode is manual, or the list of projects for other modes"""
-        if not self._selection_mode or _SELECTION_MODE_MANUAL not in self._selection_mode:
+        if not self.selection_mode or _SELECTION_MODE_MANUAL not in self.selection_mode:
             if self._projects is None:
                 data = json.loads(self.get("api/views/projects_status", params={"portfolio": self.key}).text)
                 self._projects = {p["refKey"]: {c.DEFAULT_BRANCH} for p in data["projects"]}
             return self._projects
-        return self._selection_mode[_SELECTION_MODE_MANUAL]
+        return self.selection_mode[_SELECTION_MODE_MANUAL]
 
     def components(self) -> list[Union[Project, Branch]]:
         """Returns the list of components objects (projects/branches) in the portfolio"""
@@ -450,34 +450,34 @@ class Portfolio(aggregations.Aggregation):
         """Sets a portfolio to manual mode"""
         if not self._selection_mode or _SELECTION_MODE_MANUAL not in self._selection_mode:
             self.post("views/set_manual_mode", params={"portfolio": self.key})
-            self._selection_mode = {_SELECTION_MODE_MANUAL: {}}
+            self.selection_mode = {_SELECTION_MODE_MANUAL: {}}
         return self
 
     def set_tags_mode(self, tags: list[str], branch: Optional[str] = None) -> Portfolio:
         """Sets a portfolio to tags mode"""
         self.post("views/set_tags_mode", params={"portfolio": self.key, "tags": util.list_to_csv(tags), "branch": branch})
-        self._selection_mode = {_SELECTION_MODE_TAGS: tags, "branch": branch or c.DEFAULT_BRANCH}
+        self.selection_mode = {_SELECTION_MODE_TAGS: tags, "branch": branch or c.DEFAULT_BRANCH}
         return self
 
     def set_regexp_mode(self, regexp: str, branch: Optional[str] = None) -> Portfolio:
         """Sets a portfolio to regexp mode"""
         self.post("views/set_regexp_mode", params={"portfolio": self.key, "regexp": regexp, "branch": branch})
-        self._selection_mode = {_SELECTION_MODE_REGEXP: regexp, "branch": branch or c.DEFAULT_BRANCH}
+        self.selection_mode = {_SELECTION_MODE_REGEXP: regexp, "branch": branch or c.DEFAULT_BRANCH}
         return self
 
     def set_remaining_projects_mode(self, branch: Optional[str] = None) -> Portfolio:
         """Sets a portfolio to remaining projects mode"""
         self.post("views/set_remaining_projects_mode", params={"portfolio": self.key, "branch": branch})
-        self._selection_mode = {"rest": True, "branch": branch or c.DEFAULT_BRANCH}
+        self.selection_mode = {"rest": True, "branch": branch or c.DEFAULT_BRANCH}
         return self
 
     def set_none_mode(self) -> Portfolio:
         """Sets a portfolio to none mode"""
         # Hack: API change between 9.0 and 9.1
-        mode = self._selection_mode
+        mode = self.selection_mode
         if not mode or len(mode) > 0:
             self.post("views/set_none_mode", params={"portfolio": self.key})
-            self._selection_mode = {}
+            self.selection_mode = {}
         return self
 
     def set_selection_mode(self, data: dict[str, Any]) -> Portfolio:
