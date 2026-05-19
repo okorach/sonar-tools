@@ -133,6 +133,37 @@ def test_dict_remap() -> None:
     assert util.dict_remap(None, remap) == {}
 
 
+def test_is_sonarcloud_url() -> None:
+    """test_is_sonarcloud_url"""
+    # Production SQC hosts
+    assert sutil.is_sonarcloud_url("https://sonarcloud.io")
+    assert sutil.is_sonarcloud_url("https://sonarcloud.io/")
+    assert sutil.is_sonarcloud_url("https://SonarCloud.IO")
+    assert sutil.is_sonarcloud_url("https://sonarqube.us")
+    assert sutil.is_sonarcloud_url("https://sonarqube.us/")
+
+    # Non-production SQC staging hosts
+    assert sutil.is_sonarcloud_url("https://api.sc-staging.io")
+    assert sutil.is_sonarcloud_url("https://api.us-sc-staging.io/")
+    assert sutil.is_sonarcloud_url("https://sc-staging.io")
+
+    # Non-production SQC dev hosts (X in 0..100)
+    assert sutil.is_sonarcloud_url("https://dev0.sc-dev0.io")
+    assert sutil.is_sonarcloud_url("https://dev1.sc-dev1.io")
+    assert sutil.is_sonarcloud_url("https://dev42.sc-dev42.io/")
+    assert sutil.is_sonarcloud_url("https://dev99.sc-dev99.io")
+    assert sutil.is_sonarcloud_url("https://dev100.sc-dev100.io")
+
+    # SonarQube Server URLs must NOT match
+    assert not sutil.is_sonarcloud_url("https://sonar.example.com")
+    assert not sutil.is_sonarcloud_url("https://next.sonarqube.com")
+    assert not sutil.is_sonarcloud_url("http://localhost:9000")
+
+    # Out-of-range dev hosts must NOT match
+    assert not sutil.is_sonarcloud_url("https://dev101.sc-dev101.io")
+    assert not sutil.is_sonarcloud_url("https://dev999.sc-dev999.io")
+
+
 def test_list_to_dict() -> None:
     """test_list_to_dict"""
     input_list = [
