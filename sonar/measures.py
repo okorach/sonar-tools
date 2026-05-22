@@ -65,7 +65,7 @@ class Measure(SqObject):
         self.component_key = data.get(self.__class__.__CONCERNED_OBJECT)
         self.branch = None
         self.pull_request = None
-        self.value = self.__converted_value(data.get("value") or data["period"].get("value"))
+        self.value = self.__converted_value(_search_value(data))
 
     @classmethod
     def get_object(cls, endpoint: Platform, metric_key: str, component: ConcernedObject, use_cache: bool = True) -> Measure:
@@ -84,7 +84,7 @@ class Measure(SqObject):
     def reload(self, data: ApiPayload) -> Measure:
         """Reloads a Measure object from API data"""
         super().reload(data)
-        self.value = self.__converted_value(data["value"])
+        self.value = self.__converted_value(_search_value(data))
         return self
 
     def refresh(self) -> Measure:
