@@ -393,7 +393,7 @@ class Rule(SqObject):
             data["ruleType"] = "TEMPLATE"
         elif self.template_key:
             data["ruleType"] = "INSTANTIATED"
-        if self.endpoint.version() >= c.MQR_INTRO_VERSION:
+        if self.endpoint.is_mqr_mode():
             data["legacySeverity"] = data.pop("severity", "")
             data["legacyType"] = data.pop("type", "")
             for qual in idefs.MQR_QUALITIES:
