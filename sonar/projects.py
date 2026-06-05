@@ -211,7 +211,19 @@ class Project(Component):
         if self._branches_last_analysis:
             return self._branches_last_analysis
 
-        self._branches_last_analysis = self._last_analysis
+        # Calculate the most recent analysis date across all branches
+        most_recent = self._last_analysis
+        try:
+            for branch_obj in self.branches().values():
+                branch_analysis = branch_obj.last_analysis()
+                if branch_analysis:
+                    if most_recent is None or branch_analysis > most_recent:
+                        most_recent = branch_analysis
+        except exceptions.UnsupportedOperation:
+            # Community Edition doesn't support branches
+            pass
+
+        self._branches_last_analysis = most_recent
         return self._branches_last_analysis
 
     def loc(self) -> int:
