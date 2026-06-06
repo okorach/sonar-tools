@@ -35,7 +35,7 @@ cd "${ROOT_DIR}" || exit 1
 # on records pointing to test files that have since been removed/renamed.
 poetry run coverage erase
 
-sonar start -i test
+sqs start -i test
 
 testList="${1:-"latest cb 99 cloud"}"
 for target in ${testList}
