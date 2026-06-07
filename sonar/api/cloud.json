@@ -780,6 +780,7 @@
             "method": "GET",
             "api": "api/qualityprofiles/search",
             "params": [
+                "organization",
                 "q",
                 "language"
             ],
@@ -797,6 +798,7 @@
             "method": "GET",
             "api": "api/qualityprofiles/search",
             "params": [
+                "organization",
                 "q",
                 "language",
                 "defaults",
