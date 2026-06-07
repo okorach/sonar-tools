@@ -303,6 +303,7 @@
             "method": "GET",
             "api": "api/metrics/search",
             "params": [
+                "organization",
                 "p",
                 "ps"
             ],
@@ -315,6 +316,7 @@
             "method": "GET",
             "api": "metrics/search",
             "params": [
+                "organization",
                 "p",
                 "ps"
             ],
@@ -383,6 +385,7 @@
             "method": "GET",
             "api": "api/qualitygates/show",
             "params": [
+                "organization",
                 "name"
             ]
         },
@@ -397,7 +400,10 @@
         "SEARCH": {
             "method": "GET",
             "api": "api/qualitygates/list",
-            "return_field": "qualitygates"
+            "return_field": "qualitygates",
+            "params": [
+                "organization"
+            ]
         },
         "RENAME": {
             "method": "POST",
@@ -411,6 +417,7 @@
             "method": "GET",
             "api": "api/qualitygates/search",
             "params": [
+                "organization",
                 "gateId",
                 "p",
                 "ps"
@@ -441,7 +448,10 @@
         "SEARCH": {
             "method": "GET",
             "api": "api/alm_settings/list_definitions",
-            "return_field": ""
+            "return_field": "",
+            "params": [
+                "organization"
+            ]
         },
         "DELETE": {
             "method": "POST",
@@ -737,6 +747,7 @@
             "method": "GET",
             "api": "api/webhooks/list",
             "params": [
+                "organization",
                 "webhook"
             ],
             "return_field": "webhooks"
@@ -762,6 +773,7 @@
             "method": "GET",
             "api": "api/webhooks/list",
             "params": [
+                "organization",
                 "project"
             ],
             "return_field": "webhooks"
@@ -780,6 +792,7 @@
             "method": "GET",
             "api": "api/qualityprofiles/search",
             "params": [
+                "organization",
                 "q",
                 "language"
             ],
@@ -797,6 +810,7 @@
             "method": "GET",
             "api": "api/qualityprofiles/search",
             "params": [
+                "organization",
                 "q",
                 "language",
                 "defaults",
@@ -902,6 +916,7 @@
             "method": "GET",
             "api": "api/rules/show",
             "params": [
+                "organization",
                 "key",
                 "actives"
             ],
@@ -936,6 +951,7 @@
             "method": "GET",
             "api": "api/rules/tags",
             "params": [
+                "organization",
                 "ps",
                 "q"
             ],
@@ -1003,6 +1019,7 @@
             "method": "GET",
             "api": "api/settings/values",
             "params": [
+                "organization",
                 "keys",
                 "component",
                 "branch"
@@ -1025,6 +1042,7 @@
             "method": "GET",
             "api": "api/settings/values",
             "params": [
+                "organization",
                 "keys",
                 "component",
                 "branch"
@@ -1033,7 +1051,10 @@
         "LIST_DEFINITIONS": {
             "method": "GET",
             "api": "api/settings/list_definitions",
-            "return_field": "definitions"
+            "return_field": "definitions",
+            "params": [
+                "organization"
+            ]
         },
         "GET_NEW_CODE_PERIOD": {
             "method": "GET",
@@ -1233,6 +1254,7 @@
             "method": "GET",
             "api": "api/languages/list",
             "params": [
+                "organization",
                 "ps",
                 "q"
             ],
