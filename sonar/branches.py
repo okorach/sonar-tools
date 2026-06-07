@@ -200,7 +200,9 @@ class Branch(components.Component):
                     self._new_code = new_code
                 else:
                     # While we're there let's store the new code of other branches
-                    Branch.get_object(endpoint=self.endpoint, project=self.concerned_object, branch_name=b["branchKey"], use_cache=True)._new_code = new_code
+                    Branch.get_object(
+                        endpoint=self.endpoint, project=self.concerned_object, branch_name=b["branchKey"], use_cache=True
+                    )._new_code = new_code
         if self._new_code is None:
             self._new_code = ""  # inherited period — prevent perpetual re-fetch
         return self._new_code
