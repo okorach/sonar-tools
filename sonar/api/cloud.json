@@ -737,6 +737,7 @@
             "method": "GET",
             "api": "api/webhooks/list",
             "params": [
+                "organization",
                 "webhook"
             ],
             "return_field": "webhooks"
@@ -762,6 +763,7 @@
             "method": "GET",
             "api": "api/webhooks/list",
             "params": [
+                "organization",
                 "project"
             ],
             "return_field": "webhooks"
