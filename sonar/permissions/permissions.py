@@ -253,7 +253,7 @@ class Permissions(ABC):
         while page <= nbr_pages and counter <= 5:
             params["p"] = page
             try:
-                resp = self.endpoint.get(api, params=params)
+                resp = self.endpoint.get(api, params=params, with_organization=True)
                 data = json.loads(resp.text)
                 # perms.update({p[ret_field]: p["permissions"] for p in data[perm_type]})
                 for p in data[perm_type]:
