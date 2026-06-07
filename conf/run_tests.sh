@@ -38,7 +38,7 @@ poetry run coverage erase
 sqs start -i test
 
 if [[ "$1" == "" ]]; then
-    rm -rf "${ROOT_DIR}/.coverage
+    rm -rf "${ROOT_DIR}/.coverage"
 fi
 testList="${1:-"latest cb 99 cloud"}"
 for target in ${testList}
