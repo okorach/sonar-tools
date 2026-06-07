@@ -58,7 +58,14 @@ jobs:
       - name: Patch project version
         run: |
           version=$(grep PACKAGE_VERSION sonar/version.py | cut -d "=" -f 2 | sed "s/[\'\" ]//g")
-          echo "sonar.projectVersion=$version" >> sonar-project.properties
+          if [[ -z "$version" ]]; then
+            echo "Could not extract PACKAGE_VERSION from sonar/version.py" >&2
+            exit 1
+          fi
+          # Ensure a newline separates any existing last line from the new key,
+          # in case sonar-project.properties does not end with a newline.
+          printf '\nsonar.projectVersion=%s\n' "$version" >> sonar-project.properties
+          echo "Set sonar.projectVersion=$version"
       - name: SonarQube Cloud scan
         uses: SonarSource/sonarqube-scan-action@v7
         env:
