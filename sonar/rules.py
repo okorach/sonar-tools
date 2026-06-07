@@ -160,6 +160,27 @@ CSV_EXPORT_FIELDS = [
 LEGACY_CSV_EXPORT_FIELDS = ["key", "language", "repo", "type", "severity", "name", "ruleType", "tags"]
 
 
+def _build_description(data: dict) -> Optional[str]:
+    """Builds the rule HTML description from the api/rules/search payload.
+
+    Recent SonarQube versions return the description in ``descriptionSections``
+    (an array of ``{key, content}`` entries) and no longer in ``description``.
+    Behaviour:
+
+    * If ``descriptionSections`` is present and contains a single entry with
+      ``key == "default"``, the description is just that entry's ``content``.
+    * If ``descriptionSections`` is present with multiple entries, the
+      description is the concatenation of ``<h1>{key}</h1>{content}`` for each.
+    * Otherwise, fall back to the legacy ``description`` field.
+    """
+    sections = data.get("descriptionSections")
+    if sections:
+        if len(sections) == 1 and sections[0].get("key") == "default":
+            return sections[0].get("content", "")
+        return "".join(f"<h1>{s.get('key', '')}</h1>{s.get('content', '')}" for s in sections)
+    return data.get("description")
+
+
 class Rule(SqObject):
     """Abstraction of the Sonar Rule concept"""
 
@@ -186,7 +207,7 @@ class Rule(SqObject):
             log.debug("Guessing rule '%s' language from repo '%s'", self.key, str(data.get("repo", "")))
             self.language = EXTERNAL_REPOS.get(data.get("repo", ""), "UNKNOWN")
         self.template_key = data.get("templateKey")
-        self.description = data.get("mdDesc")
+        self.description = _build_description(data)
         self.custom_desc = data.get("mdDesc" if self.template_key else "mdNote")
         self.created_at = data["createdAt"]
         self.is_template = data.get("isTemplate", False)
