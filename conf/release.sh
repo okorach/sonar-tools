@@ -25,7 +25,7 @@ CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 DOCKERFILE_RELEASE="${CONF_DIR}/release.Dockerfile"
 
-docker_VERSION=$(grep 'pip install sonar-tools==' "${DOCKERFILE_RELEASE}" | sed -E 's/.*sonar-tools==([0-9\.]+).*/\1/')
+docker_VERSION=$(grep -E 'pip install .* ?sonar-tools==' "${DOCKERFILE_RELEASE}" | sed -E 's/.*sonar-tools==([0-9\.]+).*/\1/')
 
 if [[ "${VERSION}" != "${docker_VERSION}" ]]; then
     echo "Docker VERSION and pypi VERSION are different (${docker_VERSION} vs ${VERSION}), release aborted"
