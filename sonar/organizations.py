@@ -141,10 +141,8 @@ class Organization(SqObject):
     def set_new_code_period(self, nc_type: str, nc_value: Union[int, str, None]) -> bool:
         """Sets the organization-level default new code period on SonarQube Cloud.
 
-        Uses PATCH api/v2/organizations/organizations/{organizationId}. The path
-        parameter accepts the organization key directly, so no separate id
-        lookup is needed (the v1 search response does not expose an ``id``
-        field anyway).
+        Uses PATCH api/v2/organizations/{organizationId} with a JSON body of
+        ``{defaultLeakPeriod, defaultLeakPeriodType}``.
 
         SonarQube Cloud only supports three types at the organization level —
         PREVIOUS_VERSION, NUMBER_OF_DAYS, SPECIFIC_DATE — which map to the API
@@ -162,14 +160,15 @@ class Organization(SqObject):
         else:
             raise exceptions.UnsupportedOperation(f"New code period type '{nc_type}' is not supported at organization level on SonarQube Cloud")
 
-        log.info("Setting %s default new code period to %s = %s", self, nc_type, nc_value)
-        # SQC's PATCH endpoint returns 405 unless `name` is in the body — send the current
-        # name back unchanged so the update is a pure new-code-period change.
+        # The v2 endpoint addresses orgs by id. If the search payload exposes
+        # an "id", use it; otherwise fall back to the key (the user must verify
+        # this works on their SQC instance — see #2402 PR for context).
+        org_id = self.sq_json.get("id") or self.key
+        log.info("Setting %s default new code period to %s = %s (using id=%s)", self, nc_type, nc_value, org_id)
         api, _, body, _ = self.endpoint.api.get_details(
             self.__class__,
             Oper.UPDATE,
-            organizationId=self.key,
-            name=self.name,
+            organizationId=org_id,
             defaultLeakPeriod=api_value,
             defaultLeakPeriodType=api_type,
         )

@@ -1220,10 +1220,9 @@
         },
         "UPDATE": {
             "method": "PATCH",
-            "api": "api/v2/organizations/organizations/{organizationId}",
+            "api": "api/v2/organizations/{organizationId}",
             "content_type": "application/json",
             "params": [
-                "name",
                 "defaultLeakPeriod",
                 "defaultLeakPeriodType"
             ]
