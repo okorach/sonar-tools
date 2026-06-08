@@ -1218,6 +1218,13 @@
             "page_field": "p",
             "max_page_size": 500
         },
+        "GET": {
+            "method": "GET",
+            "api": "api/v2/organizations",
+            "params": [
+                "organizationKey"
+            ]
+        },
         "UPDATE": {
             "method": "PATCH",
             "api": "api/v2/organizations/{organizationId}",

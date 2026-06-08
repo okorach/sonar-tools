@@ -138,11 +138,34 @@ class Organization(SqObject):
             return "NUMBER_OF_DAYS", self.sq_json["defaultLeakPeriod"]
         return "PREVIOUS_VERSION", None
 
+    def _resolve_id(self) -> str:
+        """Returns the v2 internal id for this organization, fetching and caching it on demand.
+
+        The legacy ``api/organizations/search`` payload only exposes the key,
+        but the v2 ``api/v2/organizations/{id}`` endpoints need the internal
+        id. ``GET api/v2/organizations?organizationKey=<key>`` returns the
+        mapping; the result is cached on ``self.sq_json`` so subsequent
+        lookups don't re-hit the API.
+        """
+        if cached := self.sq_json.get("id"):
+            return cached
+        api, _, params, _ = self.endpoint.api.get_details(self.__class__, Oper.GET, organizationKey=self.key)
+        data = json.loads(self.endpoint.get(api, params=params).text)
+        if not data:
+            raise exceptions.ObjectNotFound(self.key, f"v2 endpoint returned no organization for key '{self.key}'")
+        org_id = data[0].get("id")
+        if not org_id:
+            raise exceptions.ObjectNotFound(self.key, f"v2 endpoint response for '{self.key}' did not include an id field")
+        self.sq_json["id"] = org_id
+        return org_id
+
     def set_new_code_period(self, nc_type: str, nc_value: Union[int, str, None]) -> bool:
         """Sets the organization-level default new code period on SonarQube Cloud.
 
         Uses PATCH api/v2/organizations/{organizationId} with a JSON body of
-        ``{defaultLeakPeriod, defaultLeakPeriodType}``.
+        ``{defaultLeakPeriod, defaultLeakPeriodType}``. The id is resolved via
+        ``api/v2/organizations?organizationKey=<key>`` because the legacy v1
+        search response only exposes the key.
 
         SonarQube Cloud only supports three types at the organization level —
         PREVIOUS_VERSION, NUMBER_OF_DAYS, SPECIFIC_DATE — which map to the API
@@ -150,6 +173,8 @@ class Organization(SqObject):
 
         :raises UnsupportedOperation: for nc_type values SonarQube Cloud does
             not accept at the organization level.
+        :raises ObjectNotFound: when the v2 endpoint cannot resolve an id for
+            this organization's key.
         """
         if nc_type == "PREVIOUS_VERSION":
             api_type, api_value = "previous_version", "previous_version"
@@ -160,11 +185,8 @@ class Organization(SqObject):
         else:
             raise exceptions.UnsupportedOperation(f"New code period type '{nc_type}' is not supported at organization level on SonarQube Cloud")
 
-        # The v2 endpoint addresses orgs by id. If the search payload exposes
-        # an "id", use it; otherwise fall back to the key (the user must verify
-        # this works on their SQC instance — see #2402 PR for context).
-        org_id = self.sq_json.get("id") or self.key
-        log.info("Setting %s default new code period to %s = %s (using id=%s)", self, nc_type, nc_value, org_id)
+        org_id = self._resolve_id()
+        log.info("Setting %s default new code period to %s = %s (id=%s)", self, nc_type, nc_value, org_id)
         api, _, body, _ = self.endpoint.api.get_details(
             self.__class__,
             Oper.UPDATE,
