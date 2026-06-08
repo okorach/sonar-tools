@@ -552,17 +552,18 @@ class Platform(object):
         count = 0
         settings_to_import = {k: v for k, v in config_data.items() if k not in ("devopsIntegration", "permissionTemplates", "webhooks")}
         flat_settings = sutil.flatten(settings_to_import)
-        # newCodePeriod is not a regular Setting (Setting.get_object cannot find it on SQC);
-        # it is handled by the dedicated set_new_code_period call below.
-        flat_settings.pop(settings.NEW_CODE_PERIOD, None)
+        # newCodePeriod is not a regular Setting (Setting.get_object cannot find it on SQC,
+        # and the dedicated /new_code_periods/set / v2 organizations endpoint is required).
+        # Pull it out of the generic loop and handle it separately below.
+        new_code_period_value = flat_settings.pop(settings.NEW_CODE_PERIOD, None)
         count += sum(1 if self.set_setting(k, v) else 0 for k, v in flat_settings.items())
 
         if "webhooks" in config_data:
             self.set_webhooks(config_data["webhooks"])
             count += len(config_data["webhooks"])
 
-        if settings.NEW_CODE_PERIOD in config_data[settings.GENERAL_SETTINGS]:
-            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data[settings.GENERAL_SETTINGS][settings.NEW_CODE_PERIOD])
+        if new_code_period_value is not None:
+            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, new_code_period_value)
             try:
                 settings.set_new_code_period(self, nc_type, nc_val)
                 count += 1
