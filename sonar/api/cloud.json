@@ -1223,6 +1223,7 @@
             "api": "api/v2/organizations/organizations/{organizationId}",
             "content_type": "application/json",
             "params": [
+                "name",
                 "defaultLeakPeriod",
                 "defaultLeakPeriodType"
             ]

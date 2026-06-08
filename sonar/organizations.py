@@ -163,10 +163,13 @@ class Organization(SqObject):
             raise exceptions.UnsupportedOperation(f"New code period type '{nc_type}' is not supported at organization level on SonarQube Cloud")
 
         log.info("Setting %s default new code period to %s = %s", self, nc_type, nc_value)
+        # SQC's PATCH endpoint returns 405 unless `name` is in the body — send the current
+        # name back unchanged so the update is a pure new-code-period change.
         api, _, body, _ = self.endpoint.api.get_details(
             self.__class__,
             Oper.UPDATE,
             organizationId=self.key,
+            name=self.name,
             defaultLeakPeriod=api_value,
             defaultLeakPeriodType=api_type,
         )
