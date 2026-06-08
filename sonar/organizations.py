@@ -20,7 +20,7 @@
 """Abstraction of the SonarQube Cloud organization concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Optional, Any, Union, TYPE_CHECKING
 
 import json
 from threading import Lock
@@ -137,6 +137,44 @@ class Organization(SqObject):
         if "defaultLeakPeriodType" in self.sq_json and self.sq_json["defaultLeakPeriodType"] == "days":
             return "NUMBER_OF_DAYS", self.sq_json["defaultLeakPeriod"]
         return "PREVIOUS_VERSION", None
+
+    def set_new_code_period(self, nc_type: str, nc_value: Union[int, str, None]) -> bool:
+        """Sets the organization-level default new code period on SonarQube Cloud.
+
+        Uses PATCH api/v2/organizations/organizations/{id}. SonarQube Cloud only
+        supports three types at the organization level — PREVIOUS_VERSION,
+        NUMBER_OF_DAYS, SPECIFIC_DATE — which map to the API enum values
+        previous_version, days, date respectively.
+
+        :raises ObjectNotFound: when the organization payload does not expose
+            an ``id`` field (the v2 endpoint addresses the org by id, not key).
+        :raises UnsupportedOperation: for nc_type values SonarQube Cloud does
+            not accept at the organization level.
+        """
+        org_id = self.sq_json.get("id")
+        if not org_id:
+            raise exceptions.ObjectNotFound(self.key, f"Cannot resolve organization id for {self}")
+
+        if nc_type == "PREVIOUS_VERSION":
+            api_type, api_value = "previous_version", "previous_version"
+        elif nc_type in ("NUMBER_OF_DAYS", "DAYS"):
+            api_type, api_value = "days", str(nc_value)
+        elif nc_type in ("SPECIFIC_DATE", "DATE"):
+            api_type, api_value = "date", str(nc_value)
+        else:
+            raise exceptions.UnsupportedOperation(
+                f"New code period type '{nc_type}' is not supported at organization level on SonarQube Cloud"
+            )
+
+        api, _, body, _ = self.endpoint.api.get_details(
+            self.__class__,
+            Oper.UPDATE,
+            organizationId=org_id,
+            defaultLeakPeriod=api_value,
+            defaultLeakPeriodType=api_type,
+        )
+        ct = self.endpoint.api.content_type(self.__class__, Oper.UPDATE)
+        return self.endpoint.patch(api, params=body, content_type=ct).ok
 
     def subscription(self) -> str:
         return self.sq_json.get("subscription", "UNKNOWN")

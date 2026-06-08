@@ -1217,6 +1217,15 @@
             "return_field": "organizations",
             "page_field": "p",
             "max_page_size": 500
+        },
+        "UPDATE": {
+            "method": "PATCH",
+            "api": "api/v2/organizations/organizations/{organizationId}",
+            "content_type": "application/json",
+            "params": [
+                "defaultLeakPeriod",
+                "defaultLeakPeriodType"
+            ]
         }
     },
     "Task": {
