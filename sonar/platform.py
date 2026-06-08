@@ -267,7 +267,13 @@ class Platform(object):
     def __run_request(self, request: Callable, api: str, params: Optional[Union[ApiParams, str]] = None, **kwargs: Any) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
         mute = kwargs.pop("mute", ())
-        api = pfhelp.normalize_api(api)
+        # Allow targeting a different host (e.g. SonarQube Cloud's api.sonarcloud.io
+        # for the v2 organizations API, which is not served from the main host).
+        base_url = kwargs.pop("base_url", None)
+        if base_url is None:
+            api = pfhelp.normalize_api(api)
+        elif not api.startswith("/"):
+            api = "/" + api
         headers = {"user-agent": self._user_agent, "accept": _APP_JSON} | kwargs.get("headers", {})
         params = params or {}
         if isinstance(params, dict):
@@ -290,8 +296,9 @@ class Platform(object):
             elif isinstance(params, str):
                 params += f"&organization={self.organization}"
         req_type, url = getattr(request, "__name__", repr(request)).upper(), ""
+        host = base_url if base_url is not None else self.local_url
         if log.get_level() <= log.DEBUG:
-            url = self.__urlstring(api, params, kwargs.get("data", {}))
+            url = self.__urlstring(api, params, kwargs.get("data", {}), host=base_url)
             log.debug("%s: %s", req_type, url)
         kwargs["headers"] = headers
         try:
@@ -299,7 +306,7 @@ class Platform(object):
             while retry:
                 start = time.perf_counter_ns()
                 r = request(
-                    url=self.local_url + api,
+                    url=host + api,
                     auth=credentials,
                     verify=self.__verify,
                     params=params,
@@ -469,9 +476,12 @@ class Platform(object):
         """
         return settings.set_setting(self, key, value)
 
-    def __urlstring(self, api: str, params: Optional[ApiParams] = None, data: Optional[str] = None) -> str:
+    def __urlstring(self, api: str, params: Optional[ApiParams] = None, data: Optional[str] = None, host: Optional[str] = None) -> str:
         """Returns a string corresponding to the URL and parameters"""
-        url = f"{self}{api}"
+        if host is not None:
+            url = f"{sutil.redacted_token(self.__token)}@{host}{api}"
+        else:
+            url = f"{self}{api}"
         params_string = ""
         if isinstance(params, str):
             params_string = params

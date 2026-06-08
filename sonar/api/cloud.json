@@ -1220,14 +1220,16 @@
         },
         "GET": {
             "method": "GET",
-            "api": "api/v2/organizations",
+            "api": "/organizations",
+            "base_url": "https://api.sonarcloud.io",
             "params": [
                 "organizationKey"
             ]
         },
         "UPDATE": {
             "method": "PATCH",
-            "api": "api/v2/organizations/{organizationId}",
+            "api": "/organizations/{organizationId}",
+            "base_url": "https://api.sonarcloud.io",
             "content_type": "application/json",
             "params": [
                 "defaultLeakPeriod",

@@ -142,15 +142,16 @@ class Organization(SqObject):
         """Returns the v2 internal id for this organization, fetching and caching it on demand.
 
         The legacy ``api/organizations/search`` payload only exposes the key,
-        but the v2 ``api/v2/organizations/{id}`` endpoints need the internal
-        id. ``GET api/v2/organizations?organizationKey=<key>`` returns the
-        mapping; the result is cached on ``self.sq_json`` so subsequent
-        lookups don't re-hit the API.
+        but the v2 ``/organizations/{id}`` endpoint on ``api.sonarcloud.io``
+        needs the internal id. ``GET api.sonarcloud.io/organizations?organizationKey=<key>``
+        returns the mapping; the result is cached on ``self.sq_json`` so
+        subsequent lookups don't re-hit the API.
         """
         if cached := self.sq_json.get("id"):
             return cached
         api, _, params, _ = self.endpoint.api.get_details(self.__class__, Oper.GET, organizationKey=self.key)
-        data = json.loads(self.endpoint.get(api, params=params).text)
+        base_url = self.endpoint.api.base_url(self.__class__, Oper.GET)
+        data = json.loads(self.endpoint.get(api, params=params, base_url=base_url).text)
         if not data:
             raise exceptions.ObjectNotFound(self.key, f"v2 endpoint returned no organization for key '{self.key}'")
         org_id = data[0].get("id")
@@ -162,10 +163,10 @@ class Organization(SqObject):
     def set_new_code_period(self, nc_type: str, nc_value: Union[int, str, None]) -> bool:
         """Sets the organization-level default new code period on SonarQube Cloud.
 
-        Uses PATCH api/v2/organizations/{organizationId} with a JSON body of
-        ``{defaultLeakPeriod, defaultLeakPeriodType}``. The id is resolved via
-        ``api/v2/organizations?organizationKey=<key>`` because the legacy v1
-        search response only exposes the key.
+        Uses ``PATCH api.sonarcloud.io/organizations/{organizationId}`` with a
+        JSON body of ``{defaultLeakPeriod, defaultLeakPeriodType}``. The id is
+        resolved via ``GET api.sonarcloud.io/organizations?organizationKey=<key>``
+        because the legacy v1 search response only exposes the key.
 
         SonarQube Cloud only supports three types at the organization level —
         PREVIOUS_VERSION, NUMBER_OF_DAYS, SPECIFIC_DATE — which map to the API
@@ -195,7 +196,8 @@ class Organization(SqObject):
             defaultLeakPeriodType=api_type,
         )
         ct = self.endpoint.api.content_type(self.__class__, Oper.UPDATE)
-        return self.endpoint.patch(api, params=body, content_type=ct).ok
+        base_url = self.endpoint.api.base_url(self.__class__, Oper.UPDATE)
+        return self.endpoint.patch(api, params=body, content_type=ct, base_url=base_url).ok
 
     def subscription(self) -> str:
         return self.sq_json.get("subscription", "UNKNOWN")

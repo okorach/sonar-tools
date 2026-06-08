@@ -169,6 +169,10 @@ class ApiManager:
         """Returns the content type for the API call, or None if not specified"""
         return self.get_api_entry(object_or_class, operation).get("content_type")
 
+    def base_url(self, object_or_class: object, operation: ApiOperation) -> Optional[str]:
+        """Returns the base URL override for the API call, or None to use the Platform's default host"""
+        return self.get_api_entry(object_or_class, operation).get("base_url")
+
     def params(self, object_or_class: object, operation: ApiOperation, **kwargs: Any) -> dict[str, Any]:
         """Returns the parameters for the API call, removes any params not part of the API endpoint"""
         params = self.get_api_entry(object_or_class, operation).get("params", {})
