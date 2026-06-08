@@ -162,9 +162,7 @@ class Organization(SqObject):
         elif nc_type in ("SPECIFIC_DATE", "DATE"):
             api_type, api_value = "date", str(nc_value)
         else:
-            raise exceptions.UnsupportedOperation(
-                f"New code period type '{nc_type}' is not supported at organization level on SonarQube Cloud"
-            )
+            raise exceptions.UnsupportedOperation(f"New code period type '{nc_type}' is not supported at organization level on SonarQube Cloud")
 
         api, _, body, _ = self.endpoint.api.get_details(
             self.__class__,
