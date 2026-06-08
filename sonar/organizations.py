@@ -141,20 +141,18 @@ class Organization(SqObject):
     def set_new_code_period(self, nc_type: str, nc_value: Union[int, str, None]) -> bool:
         """Sets the organization-level default new code period on SonarQube Cloud.
 
-        Uses PATCH api/v2/organizations/organizations/{id}. SonarQube Cloud only
-        supports three types at the organization level — PREVIOUS_VERSION,
-        NUMBER_OF_DAYS, SPECIFIC_DATE — which map to the API enum values
-        previous_version, days, date respectively.
+        Uses PATCH api/v2/organizations/organizations/{organizationId}. The path
+        parameter accepts the organization key directly, so no separate id
+        lookup is needed (the v1 search response does not expose an ``id``
+        field anyway).
 
-        :raises ObjectNotFound: when the organization payload does not expose
-            an ``id`` field (the v2 endpoint addresses the org by id, not key).
+        SonarQube Cloud only supports three types at the organization level —
+        PREVIOUS_VERSION, NUMBER_OF_DAYS, SPECIFIC_DATE — which map to the API
+        enum values previous_version, days, date respectively.
+
         :raises UnsupportedOperation: for nc_type values SonarQube Cloud does
             not accept at the organization level.
         """
-        org_id = self.sq_json.get("id")
-        if not org_id:
-            raise exceptions.ObjectNotFound(self.key, f"Cannot resolve organization id for {self}")
-
         if nc_type == "PREVIOUS_VERSION":
             api_type, api_value = "previous_version", "previous_version"
         elif nc_type in ("NUMBER_OF_DAYS", "DAYS"):
@@ -164,10 +162,11 @@ class Organization(SqObject):
         else:
             raise exceptions.UnsupportedOperation(f"New code period type '{nc_type}' is not supported at organization level on SonarQube Cloud")
 
+        log.info("Setting %s default new code period to %s = %s", self, nc_type, nc_value)
         api, _, body, _ = self.endpoint.api.get_details(
             self.__class__,
             Oper.UPDATE,
-            organizationId=org_id,
+            organizationId=self.key,
             defaultLeakPeriod=api_value,
             defaultLeakPeriodType=api_type,
         )
