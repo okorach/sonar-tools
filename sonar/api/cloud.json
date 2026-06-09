@@ -1220,7 +1220,7 @@
         },
         "GET": {
             "method": "GET",
-            "api": "/organizations",
+            "api": "/organizations/organizations",
             "base_url": "https://api.sonarcloud.io",
             "params": [
                 "organizationKey"
@@ -1228,7 +1228,7 @@
         },
         "UPDATE": {
             "method": "PATCH",
-            "api": "/organizations/{organizationId}",
+            "api": "/organizations/organizations/{organizationId}",
             "base_url": "https://api.sonarcloud.io",
             "content_type": "application/json",
             "params": [
