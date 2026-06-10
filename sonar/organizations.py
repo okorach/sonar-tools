@@ -20,7 +20,7 @@
 """Abstraction of the SonarQube Cloud organization concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Optional, Any, Union, TYPE_CHECKING
 
 import json
 from threading import Lock
@@ -137,6 +137,67 @@ class Organization(SqObject):
         if "defaultLeakPeriodType" in self.sq_json and self.sq_json["defaultLeakPeriodType"] == "days":
             return "NUMBER_OF_DAYS", self.sq_json["defaultLeakPeriod"]
         return "PREVIOUS_VERSION", None
+
+    def _resolve_id(self) -> str:
+        """Returns the v2 internal id for this organization, fetching and caching it on demand.
+
+        The legacy ``api/organizations/search`` payload only exposes the key,
+        but the v2 ``/organizations/{id}`` endpoint on ``api.sonarcloud.io``
+        needs the internal id. ``GET api.sonarcloud.io/organizations?organizationKey=<key>``
+        returns the mapping; the result is cached on ``self.sq_json`` so
+        subsequent lookups don't re-hit the API.
+        """
+        if cached := self.sq_json.get("id"):
+            return cached
+        api, _, params, _ = self.endpoint.api.get_details(self.__class__, Oper.GET, organizationKey=self.key)
+        base_url = self.endpoint.api.base_url(self.__class__, Oper.GET)
+        data = json.loads(self.endpoint.get(api, params=params, base_url=base_url).text)
+        if not data:
+            raise exceptions.ObjectNotFound(self.key, f"v2 endpoint returned no organization for key '{self.key}'")
+        org_id = data[0].get("id")
+        if not org_id:
+            raise exceptions.ObjectNotFound(self.key, f"v2 endpoint response for '{self.key}' did not include an id field")
+        self.sq_json["id"] = org_id
+        return org_id
+
+    def set_new_code_period(self, nc_type: str, nc_value: Union[int, str, None]) -> bool:
+        """Sets the organization-level default new code period on SonarQube Cloud.
+
+        Uses ``PATCH api.sonarcloud.io/organizations/{organizationId}`` with a
+        JSON body of ``{defaultLeakPeriod, defaultLeakPeriodType}``. The id is
+        resolved via ``GET api.sonarcloud.io/organizations?organizationKey=<key>``
+        because the legacy v1 search response only exposes the key.
+
+        SonarQube Cloud only supports three types at the organization level —
+        PREVIOUS_VERSION, NUMBER_OF_DAYS, SPECIFIC_DATE — which map to the API
+        enum values previous_version, days, date respectively.
+
+        :raises UnsupportedOperation: for nc_type values SonarQube Cloud does
+            not accept at the organization level.
+        :raises ObjectNotFound: when the v2 endpoint cannot resolve an id for
+            this organization's key.
+        """
+        if nc_type == "PREVIOUS_VERSION":
+            api_type, api_value = "previous_version", "previous_version"
+        elif nc_type in ("NUMBER_OF_DAYS", "DAYS"):
+            api_type, api_value = "days", str(nc_value)
+        elif nc_type in ("SPECIFIC_DATE", "DATE"):
+            api_type, api_value = "date", str(nc_value)
+        else:
+            raise exceptions.UnsupportedOperation(f"New code period type '{nc_type}' is not supported at organization level on SonarQube Cloud")
+
+        org_id = self._resolve_id()
+        log.info("Setting %s default new code period to %s = %s (id=%s)", self, nc_type, nc_value, org_id)
+        api, _, body, _ = self.endpoint.api.get_details(
+            self.__class__,
+            Oper.UPDATE,
+            organizationId=org_id,
+            defaultLeakPeriod=api_value,
+            defaultLeakPeriodType=api_type,
+        )
+        ct = self.endpoint.api.content_type(self.__class__, Oper.UPDATE)
+        base_url = self.endpoint.api.base_url(self.__class__, Oper.UPDATE)
+        return self.endpoint.patch(api, params=body, content_type=ct, base_url=base_url).ok
 
     def subscription(self) -> str:
         return self.sq_json.get("subscription", "UNKNOWN")

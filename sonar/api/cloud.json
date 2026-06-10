@@ -1217,6 +1217,24 @@
             "return_field": "organizations",
             "page_field": "p",
             "max_page_size": 500
+        },
+        "GET": {
+            "method": "GET",
+            "api": "/organizations/organizations",
+            "base_url": "https://api.sonarcloud.io",
+            "params": [
+                "organizationKey"
+            ]
+        },
+        "UPDATE": {
+            "method": "PATCH",
+            "api": "/organizations/organizations/{organizationId}",
+            "base_url": "https://api.sonarcloud.io",
+            "content_type": "application/json",
+            "params": [
+                "defaultLeakPeriod",
+                "defaultLeakPeriodType"
+            ]
         }
     },
     "Task": {

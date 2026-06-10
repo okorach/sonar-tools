@@ -548,6 +548,13 @@ def set_new_code_period(
         nc_type = "NUMBER_OF_DAYS"
     log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
     if endpoint.is_sonarcloud():
+        if project_key is None:
+            # Org-level on SQC goes through the v2 organizations PATCH endpoint, not the
+            # legacy sonar.leak.period.* settings (which the platform silently ignores).
+            from sonar import organizations  # lazy import to avoid potential cycles
+
+            org = organizations.Organization.get_object(endpoint, endpoint.organization)
+            return org.set_new_code_period(nc_type, nc_value)
         api, _, params1, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period.type", value=nc_type, project=project_key)
         ok = endpoint.post(api, params=params1).ok
         api, _, params2, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period", value=nc_value, project=project_key)
