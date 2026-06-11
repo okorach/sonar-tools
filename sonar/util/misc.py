@@ -113,9 +113,25 @@ def sort_lists(data: Any) -> Any:
     return data
 
 
+def fix_float_names(data: Any) -> None:
+    """Recursively fix float names to strings"""
+    if isinstance(data, list):
+        for item in data:
+            if isinstance(item, dict):
+                if "name" in item and isinstance(item["name"], (int, float)):
+                    item["name"] = str(item["name"])
+                fix_float_names(item)
+    elif isinstance(data, dict):
+        for v in data.values():
+            if isinstance(v, dict) and "name" in v and isinstance(v["name"], (int, float)):
+                v["name"] = str(v["name"])
+            fix_float_names(v)
+
+
 def json_dump(jsondata: Union[list[str], dict[str, str]], indent: int = 3, sort_keys: bool = False) -> str:
     """JSON dump helper"""
     newdata = sort_lists(deepcopy(jsondata))
+    fix_float_names(newdata)
     return json.dumps(newdata, indent=indent, sort_keys=sort_keys, separators=(",", ": "))
 
 
