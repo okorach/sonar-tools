@@ -267,7 +267,13 @@ class Platform(object):
     def __run_request(self, request: Callable, api: str, params: Optional[Union[ApiParams, str]] = None, **kwargs: Any) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
         mute = kwargs.pop("mute", ())
-        api = pfhelp.normalize_api(api)
+        # Allow targeting a different host (e.g. SonarQube Cloud's api.sonarcloud.io
+        # for the v2 organizations API, which is not served from the main host).
+        base_url = kwargs.pop("base_url", None)
+        if base_url is None:
+            api = pfhelp.normalize_api(api)
+        elif not api.startswith("/"):
+            api = "/" + api
         headers = {"user-agent": self._user_agent, "accept": _APP_JSON} | kwargs.get("headers", {})
         params = params or {}
         if isinstance(params, dict):
@@ -290,8 +296,9 @@ class Platform(object):
             elif isinstance(params, str):
                 params += f"&organization={self.organization}"
         req_type, url = getattr(request, "__name__", repr(request)).upper(), ""
+        host = base_url if base_url is not None else self.local_url
         if log.get_level() <= log.DEBUG:
-            url = self.__urlstring(api, params, kwargs.get("data", {}))
+            url = self.__urlstring(api, params, kwargs.get("data", {}), host=base_url)
             log.debug("%s: %s", req_type, url)
         kwargs["headers"] = headers
         try:
@@ -299,7 +306,7 @@ class Platform(object):
             while retry:
                 start = time.perf_counter_ns()
                 r = request(
-                    url=self.local_url + api,
+                    url=host + api,
                     auth=credentials,
                     verify=self.__verify,
                     params=params,
@@ -469,9 +476,12 @@ class Platform(object):
         """
         return settings.set_setting(self, key, value)
 
-    def __urlstring(self, api: str, params: Optional[ApiParams] = None, data: Optional[str] = None) -> str:
+    def __urlstring(self, api: str, params: Optional[ApiParams] = None, data: Optional[str] = None, host: Optional[str] = None) -> str:
         """Returns a string corresponding to the URL and parameters"""
-        url = f"{self}{api}"
+        if host is not None:
+            url = f"{sutil.redacted_token(self.__token)}@{host}{api}"
+        else:
+            url = f"{self}{api}"
         params_string = ""
         if isinstance(params, str):
             params_string = params
@@ -552,14 +562,18 @@ class Platform(object):
         count = 0
         settings_to_import = {k: v for k, v in config_data.items() if k not in ("devopsIntegration", "permissionTemplates", "webhooks")}
         flat_settings = sutil.flatten(settings_to_import)
+        # newCodePeriod is not a regular Setting (Setting.get_object cannot find it on SQC,
+        # and the dedicated /new_code_periods/set / v2 organizations endpoint is required).
+        # Pull it out of the generic loop and handle it separately below.
+        new_code_period_value = flat_settings.pop(settings.NEW_CODE_PERIOD, None)
         count += sum(1 if self.set_setting(k, v) else 0 for k, v in flat_settings.items())
 
         if "webhooks" in config_data:
             self.set_webhooks(config_data["webhooks"])
             count += len(config_data["webhooks"])
 
-        if settings.NEW_CODE_PERIOD in config_data[settings.GENERAL_SETTINGS]:
-            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data[settings.GENERAL_SETTINGS][settings.NEW_CODE_PERIOD])
+        if new_code_period_value is not None:
+            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, new_code_period_value)
             try:
                 settings.set_new_code_period(self, nc_type, nc_val)
                 count += 1

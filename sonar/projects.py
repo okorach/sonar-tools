@@ -113,6 +113,7 @@ class Project(Component):
         self._ncloc_with_branches: Optional[int] = None
         self._binding: Optional[dict[str, str]] = None
         self._new_code: Optional[str] = None
+        self._branch_new_code_periods: Optional[dict[str, str]] = None
         self._ci: Optional[str] = None
         self._revision: Optional[str] = None
         self.__class__.CACHE.put(self)
@@ -211,7 +212,19 @@ class Project(Component):
         if self._branches_last_analysis:
             return self._branches_last_analysis
 
-        self._branches_last_analysis = self._last_analysis
+        # Calculate the most recent analysis date across all branches
+        most_recent = self._last_analysis
+        try:
+            for branch_obj in self.branches().values():
+                branch_analysis = branch_obj.last_analysis()
+                if branch_analysis:
+                    if most_recent is None or branch_analysis > most_recent:
+                        most_recent = branch_analysis
+        except exceptions.UnsupportedOperation:
+            # Community Edition doesn't support branches
+            pass
+
+        self._branches_last_analysis = most_recent
         return self._branches_last_analysis
 
     def loc(self) -> int:
@@ -967,6 +980,23 @@ class Project(Component):
             self._new_code = new_code.value if new_code else ""
             log.info("%s new code is %s", self, self._new_code)
         return self._new_code
+
+    def branch_new_code_periods(self) -> dict[str, str]:
+        """:return: Mapping of {branchKey: new_code_string} for every branch of this project.
+
+        The result of api/new_code_periods/list is cached on the Project so that
+        repeated lookups across many Branch.new_code() calls only trigger one
+        HTTP round-trip per project. Returns an empty dict on SonarCloud, which
+        does not expose per-branch new code period configuration.
+        """
+        if self._branch_new_code_periods is None:
+            if self.endpoint.is_sonarcloud():
+                self._branch_new_code_periods = {}
+            else:
+                api, _, params, _ = self.endpoint.api.get_details(branches.Branch, Oper.LIST_NEW_CODE_PERIODS, project=self.key)
+                data = json.loads(self.get(api, params=params).text)
+                self._branch_new_code_periods = {b["branchKey"]: settings.new_code_to_string(b) for b in data["newCodePeriods"]}
+        return self._branch_new_code_periods
 
     def permissions(self) -> pperms.ProjectPermissions:
         """:return: The project permissions

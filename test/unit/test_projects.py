@@ -429,3 +429,24 @@ def test_sorted_search() -> None:
 
     proj_list = projects.Project.search(tutil.SQ, use_cache=True)
     assert sorted(proj_list.keys()) == list(proj_list.keys())
+
+
+def test_last_analysis() -> None:
+    """test_last_analysis"""
+    proj = Project.get_object(tutil.SQ, key=tutil.LIVE_PROJECT)
+    last_analysis = proj.last_analysis()
+    assert last_analysis is not None
+    assert isinstance(last_analysis, type(proj.last_analysis()))
+
+
+def test_last_analysis_with_branches() -> None:
+    """test_last_analysis_with_branches"""
+    if tutil.SQ.edition() == c.CE:
+        pytest.skip("Branches unsupported in SonarQube Community Edition")
+    proj = Project.get_object(tutil.SQ, key=tutil.LIVE_PROJECT)
+    last_analysis_without_branches = proj.last_analysis(include_branches=False)
+    last_analysis_with_branches = proj.last_analysis(include_branches=True)
+    assert last_analysis_with_branches is not None
+    # The result with branches should be >= the result without branches
+    if last_analysis_without_branches:
+        assert last_analysis_with_branches >= last_analysis_without_branches

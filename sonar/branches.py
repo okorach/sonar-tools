@@ -200,18 +200,15 @@ class Branch(components.Component):
 
     def new_code(self) -> str:
         """returns the branch new code period definition"""
-        if self._new_code is None and self.endpoint.is_sonarcloud():
-            self._new_code = settings.new_code_to_string({"inherited": True})
-        elif self._new_code is None:
-            api, _, params, _ = self.endpoint.api.get_details(self, Oper.LIST_NEW_CODE_PERIODS, project=self.concerned_object.key)
-            data = json.loads(self.get(api, params=params).text)
-            for b in data["newCodePeriods"]:
-                new_code = settings.new_code_to_string(b)
-                if b["branchKey"] == self.name:
-                    self._new_code = new_code
-                else:
-                    # While we're there let's store the new code of other branches
-                    Branch.get_object(endpoint=self.endpoint, project=self.concerned_object, branch_name=b["branchKey"])._new_code = new_code
+        if self._new_code is None:
+            if self.endpoint.is_sonarcloud():
+                self._new_code = settings.new_code_to_string({"inherited": True})
+            else:
+                # Delegate to the parent project so a single api/new_code_periods/list
+                # call is shared (and cached) across every branch of the project.
+                self._new_code = self.concerned_object.branch_new_code_periods().get(self.name, "")
+        if self._new_code is None:
+            self._new_code = ""  # inherited period — prevent perpetual re-fetch
         return self._new_code
 
     def set_keep_when_inactive(self, keep: bool) -> bool:

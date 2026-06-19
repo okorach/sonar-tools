@@ -133,6 +133,37 @@ def test_dict_remap() -> None:
     assert util.dict_remap(None, remap) == {}
 
 
+def test_is_sonarcloud_url() -> None:
+    """test_is_sonarcloud_url"""
+    # Production SQC hosts
+    assert sutil.is_sonarcloud_url("https://sonarcloud.io")
+    assert sutil.is_sonarcloud_url("https://sonarcloud.io/")
+    assert sutil.is_sonarcloud_url("https://SonarCloud.IO")
+    assert sutil.is_sonarcloud_url("https://sonarqube.us")
+    assert sutil.is_sonarcloud_url("https://sonarqube.us/")
+
+    # Non-production SQC staging hosts
+    assert sutil.is_sonarcloud_url("https://api.sc-staging.io")
+    assert sutil.is_sonarcloud_url("https://api.us-sc-staging.io/")
+    assert sutil.is_sonarcloud_url("https://sc-staging.io")
+
+    # Non-production SQC dev hosts (X in 0..100)
+    assert sutil.is_sonarcloud_url("https://dev0.sc-dev0.io")
+    assert sutil.is_sonarcloud_url("https://dev1.sc-dev1.io")
+    assert sutil.is_sonarcloud_url("https://dev42.sc-dev42.io/")
+    assert sutil.is_sonarcloud_url("https://dev99.sc-dev99.io")
+    assert sutil.is_sonarcloud_url("https://dev100.sc-dev100.io")
+
+    # SonarQube Server URLs must NOT match
+    assert not sutil.is_sonarcloud_url("https://sonar.example.com")
+    assert not sutil.is_sonarcloud_url("https://next.sonarqube.com")
+    assert not sutil.is_sonarcloud_url("http://localhost:9000")
+
+    # Out-of-range dev hosts must NOT match
+    assert not sutil.is_sonarcloud_url("https://dev101.sc-dev101.io")
+    assert not sutil.is_sonarcloud_url("https://dev999.sc-dev999.io")
+
+
 def test_list_to_dict() -> None:
     """test_list_to_dict"""
     input_list = [
@@ -173,6 +204,18 @@ def test_clean_data() -> None:
     d = {"a": {"1": None, "2": [], "3": "foo", "4": {}, "5": set(), "6": ()}, "b": [5, {}, [], "bar", set(), ()], "c": "5"}
     res = util.clean_data(d, remove_none=True, remove_empty=True)
     assert res == {"a": {"3": "foo"}, "b": [5, "bar"], "c": 5}
+
+
+def test_clean_data_identifiers_not_coerced() -> None:
+    """Identifier fields (key, name, pattern) must keep their string type even when they look numeric (issue #2422)"""
+    branches = [{"name": "1.203", "keepWhenInactive": True}, {"name": "master", "isMain": True}]
+    res = util.clean_data(branches, remove_none=True, remove_empty=True)
+    assert res == [{"name": "1.203", "keepWhenInactive": True}, {"name": "master", "isMain": True}]
+    assert all(isinstance(b["name"], str) for b in res)
+
+    d = {"key": "1.2", "name": "3.4", "pattern": "5.6", "value": "7.8"}
+    res = util.clean_data(d, remove_none=True, remove_empty=True)
+    assert res == {"key": "1.2", "name": "3.4", "pattern": "5.6", "value": 7.8}
 
 
 def test_sort_lists() -> None:

@@ -377,15 +377,21 @@ def version_to_string(vers: tuple[int, ...]) -> str:
     return ".".join([str(n) for n in vers])
 
 
+_SQC_HOST_SUFFIX_RE = re.compile(r"(?:sonarcloud\.io|sonarqube\.us|sc-staging\.io|sc-dev\d+\.io)$")
+
+
 def is_sonarcloud_url(url: str) -> bool:
-    """Returns whether an URL is the SonarQube Cloud URL
+    """Returns whether an URL is a SonarQube Cloud URL
+
+    Recognizes production hosts (sonarcloud.io, sonarqube.us) as well as
+    non-production SQC hosts (sc-staging.io variants and sc-dev{0..100}.io).
 
     :param str url: The URL to examine
-    :return: Whether the URL is the SonarQube Cloud URL (in any form)
-    :rtype: str
+    :return: Whether the URL is a SonarQube Cloud URL (in any form)
+    :rtype: bool
     """
     normalized = url.rstrip("/").lower()
-    return normalized.endswith(("sonarcloud.io", "sonarqube.us"))
+    return bool(_SQC_HOST_SUFFIX_RE.search(normalized))
 
 
 def convert_args(args: object, second_platform: bool = False) -> dict[str, str]:

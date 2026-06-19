@@ -303,6 +303,7 @@
             "method": "GET",
             "api": "api/metrics/search",
             "params": [
+                "organization",
                 "p",
                 "ps"
             ],
@@ -315,6 +316,7 @@
             "method": "GET",
             "api": "metrics/search",
             "params": [
+                "organization",
                 "p",
                 "ps"
             ],
@@ -376,6 +378,7 @@
             "method": "POST",
             "api": "api/qualitygates/create",
             "params": [
+                "organization",
                 "name"
             ]
         },
@@ -383,6 +386,7 @@
             "method": "GET",
             "api": "api/qualitygates/show",
             "params": [
+                "organization",
                 "name"
             ]
         },
@@ -391,18 +395,23 @@
             "method": "POST",
             "api": "api/qualitygates/destroy",
             "params": [
+                "organization",
                 "id"
             ]
         },
         "SEARCH": {
             "method": "GET",
             "api": "api/qualitygates/list",
-            "return_field": "qualitygates"
+            "return_field": "qualitygates",
+            "params": [
+                "organization"
+            ]
         },
         "RENAME": {
             "method": "POST",
             "api": "api/qualitygates/rename",
             "params": [
+                "organization",
                 "id",
                 "name"
             ]
@@ -411,6 +420,7 @@
             "method": "GET",
             "api": "api/qualitygates/search",
             "params": [
+                "organization",
                 "gateId",
                 "p",
                 "ps"
@@ -423,6 +433,7 @@
             "method": "POST",
             "api": "api/qualitygates/create_condition",
             "params": [
+                "organization",
                 "gateId",
                 "metric",
                 "op",
@@ -433,6 +444,7 @@
             "method": "POST",
             "api": "api/qualitygates/delete_condition",
             "params": [
+                "organization",
                 "id"
             ]
         }
@@ -441,12 +453,16 @@
         "SEARCH": {
             "method": "GET",
             "api": "api/alm_settings/list_definitions",
-            "return_field": ""
+            "return_field": "",
+            "params": [
+                "organization"
+            ]
         },
         "DELETE": {
             "method": "POST",
             "api": "api/alm_settings/delete",
             "params": [
+                "organization",
                 "key"
             ]
         },
@@ -454,6 +470,7 @@
             "method": "POST",
             "api": "api/alm_settings/create_github",
             "params": [
+                "organization",
                 "key",
                 "url",
                 "appId",
@@ -466,6 +483,7 @@
             "method": "POST",
             "api": "api/alm_settings/create_gitlab",
             "params": [
+                "organization",
                 "key",
                 "url",
                 "personalAccessToken"
@@ -475,6 +493,7 @@
             "method": "POST",
             "api": "api/alm_settings/create_azure",
             "params": [
+                "organization",
                 "key",
                 "url",
                 "personalAccessToken"
@@ -484,6 +503,7 @@
             "method": "POST",
             "api": "api/alm_settings/create_bitbucket",
             "params": [
+                "organization",
                 "key",
                 "url",
                 "personalAccessToken"
@@ -493,6 +513,7 @@
             "method": "POST",
             "api": "api/alm_settings/create_bitbucketcloud",
             "params": [
+                "organization",
                 "key",
                 "workspace",
                 "clientId",
@@ -503,6 +524,7 @@
             "method": "POST",
             "api": "api/alm_settings/update_github",
             "params": [
+                "organization",
                 "key",
                 "url",
                 "clientId",
@@ -515,6 +537,7 @@
             "method": "POST",
             "api": "api/alm_settings/update_gitlab",
             "params": [
+                "organization",
                 "key",
                 "url",
                 "personalAccessToken"
@@ -524,6 +547,7 @@
             "method": "POST",
             "api": "api/alm_settings/update_azure",
             "params": [
+                "organization",
                 "key",
                 "url",
                 "personalAccessToken"
@@ -533,6 +557,7 @@
             "method": "POST",
             "api": "api/alm_settings/update_bitbucket",
             "params": [
+                "organization",
                 "key",
                 "url",
                 "personalAccessToken"
@@ -542,6 +567,7 @@
             "method": "POST",
             "api": "api/alm_settings/update_bitbucketcloud",
             "params": [
+                "organization",
                 "key",
                 "workspace",
                 "clientId",
@@ -552,6 +578,7 @@
             "method": "POST",
             "api": "api/alm_integrations/set_pat",
             "params": [
+                "organization",
                 "almSettings",
                 "pat",
                 "username"
@@ -727,6 +754,7 @@
             "method": "POST",
             "api": "api/webhooks/create",
             "params": [
+                "organization",
                 "name",
                 "url",
                 "secret",
@@ -737,6 +765,7 @@
             "method": "GET",
             "api": "api/webhooks/list",
             "params": [
+                "organization",
                 "webhook"
             ],
             "return_field": "webhooks"
@@ -745,6 +774,7 @@
             "method": "POST",
             "api": "api/webhooks/update",
             "params": [
+                "organization",
                 "webhook",
                 "name",
                 "url",
@@ -755,6 +785,7 @@
             "method": "POST",
             "api": "api/webhooks/delete",
             "params": [
+                "organization",
                 "webhook"
             ]
         },
@@ -762,6 +793,7 @@
             "method": "GET",
             "api": "api/webhooks/list",
             "params": [
+                "organization",
                 "project"
             ],
             "return_field": "webhooks"
@@ -772,6 +804,7 @@
             "method": "POST",
             "api": "api/qualityprofiles/create",
             "params": [
+                "organization",
                 "name",
                 "language"
             ]
@@ -780,6 +813,7 @@
             "method": "GET",
             "api": "api/qualityprofiles/search",
             "params": [
+                "organization",
                 "q",
                 "language"
             ],
@@ -789,6 +823,7 @@
             "method": "POST",
             "api": "api/qualityprofiles/delete",
             "params": [
+                "organization",
                 "qualityProfile",
                 "language"
             ]
@@ -797,6 +832,7 @@
             "method": "GET",
             "api": "api/qualityprofiles/search",
             "params": [
+                "organization",
                 "q",
                 "language",
                 "defaults",
@@ -811,6 +847,7 @@
             "method": "POST",
             "api": "api/qualityprofiles/rename",
             "params": [
+                "organization",
                 "id",
                 "name"
             ]
@@ -819,6 +856,7 @@
             "method": "POST",
             "api": "api/qualityprofiles/copy",
             "params": [
+                "organization",
                 "toName",
                 "fromKey"
             ]
@@ -827,6 +865,7 @@
             "method": "POST",
             "api": "api/qualityprofiles/change_parent",
             "params": [
+                "organization",
                 "qualityProfile",
                 "language",
                 "parentQualityProfile"
@@ -836,6 +875,7 @@
             "method": "POST",
             "api": "api/qualityprofiles/set_default",
             "params": [
+                "organization",
                 "qualityProfile",
                 "language"
             ]
@@ -844,6 +884,7 @@
             "method": "POST",
             "api": "api/qualityprofiles/activate_rule",
             "params": [
+                "organization",
                 "key",
                 "rule",
                 "prioritizedRule",
@@ -856,6 +897,7 @@
             "method": "POST",
             "api": "api/qualityprofiles/deactivate_rule",
             "params": [
+                "organization",
                 "key",
                 "rule"
             ]
@@ -902,6 +944,7 @@
             "method": "GET",
             "api": "api/rules/show",
             "params": [
+                "organization",
                 "key",
                 "actives"
             ],
@@ -936,6 +979,7 @@
             "method": "GET",
             "api": "api/rules/tags",
             "params": [
+                "organization",
                 "ps",
                 "q"
             ],
@@ -991,6 +1035,7 @@
             "method": "POST",
             "api": "api/settings/set",
             "params": [
+                "organization",
                 "key",
                 "value",
                 "values",
@@ -1003,6 +1048,7 @@
             "method": "GET",
             "api": "api/settings/values",
             "params": [
+                "organization",
                 "keys",
                 "component",
                 "branch"
@@ -1013,6 +1059,7 @@
             "method": "POST",
             "api": "api/settings/set",
             "params": [
+                "organization",
                 "key",
                 "value",
                 "values",
@@ -1025,6 +1072,7 @@
             "method": "GET",
             "api": "api/settings/values",
             "params": [
+                "organization",
                 "keys",
                 "component",
                 "branch"
@@ -1033,7 +1081,10 @@
         "LIST_DEFINITIONS": {
             "method": "GET",
             "api": "api/settings/list_definitions",
-            "return_field": "definitions"
+            "return_field": "definitions",
+            "params": [
+                "organization"
+            ]
         },
         "GET_NEW_CODE_PERIOD": {
             "method": "GET",
@@ -1047,6 +1098,7 @@
             "method": "POST",
             "api": "api/new_code_periods/set",
             "params": [
+                "organization",
                 "type",
                 "value",
                 "project",
@@ -1068,6 +1120,7 @@
             "method": "POST",
             "api": "api/settings/reset",
             "params": [
+                "organization",
                 "keys",
                 "component"
             ]
@@ -1196,6 +1249,24 @@
             "return_field": "organizations",
             "page_field": "p",
             "max_page_size": 500
+        },
+        "GET": {
+            "method": "GET",
+            "api": "/organizations/organizations",
+            "base_url": "https://api.sonarcloud.io",
+            "params": [
+                "organizationKey"
+            ]
+        },
+        "UPDATE": {
+            "method": "PATCH",
+            "api": "/organizations/organizations/{organizationId}",
+            "base_url": "https://api.sonarcloud.io",
+            "content_type": "application/json",
+            "params": [
+                "defaultLeakPeriod",
+                "defaultLeakPeriodType"
+            ]
         }
     },
     "Task": {
@@ -1233,6 +1304,7 @@
             "method": "GET",
             "api": "api/languages/list",
             "params": [
+                "organization",
                 "ps",
                 "q"
             ],
