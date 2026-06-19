@@ -206,6 +206,18 @@ def test_clean_data() -> None:
     assert res == {"a": {"3": "foo"}, "b": [5, "bar"], "c": 5}
 
 
+def test_clean_data_identifiers_not_coerced() -> None:
+    """Identifier fields (key, name, pattern) must keep their string type even when they look numeric (issue #2422)"""
+    branches = [{"name": "1.203", "keepWhenInactive": True}, {"name": "master", "isMain": True}]
+    res = util.clean_data(branches, remove_none=True, remove_empty=True)
+    assert res == [{"name": "1.203", "keepWhenInactive": True}, {"name": "master", "isMain": True}]
+    assert all(isinstance(b["name"], str) for b in res)
+
+    d = {"key": "1.2", "name": "3.4", "pattern": "5.6", "value": "7.8"}
+    res = util.clean_data(d, remove_none=True, remove_empty=True)
+    assert res == {"key": "1.2", "name": "3.4", "pattern": "5.6", "value": 7.8}
+
+
 def test_sort_lists() -> None:
     """test_sort_lists"""
     d = {"c": [3, 1, 2], "b": {"y": [5, 4], "x": "foo"}, "a": "bar"}
