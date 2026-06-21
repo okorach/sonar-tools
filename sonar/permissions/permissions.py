@@ -272,7 +272,7 @@ class Permissions(ABC):
         params = extra_params | {set_field: identifier}
         for p in self._filter_permissions_for_edition(perms):
             try:
-                ok = self.endpoint.post(api, params=params | {"permission": p}).ok and ok
+                ok = self.endpoint.post(api, params=params | {"permission": p}, with_organization=True).ok and ok
             except exceptions.SonarException:
                 ok = False
         return ok

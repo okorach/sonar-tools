@@ -1436,5 +1436,26 @@
             "method": "GET",
             "api": "api/v2/sca/feature-enabled"
         }
+    },
+    "PermissionTemplate": {
+        "SEARCH": {
+            "method": "GET",
+            "api": "api/permissions/search_templates",
+            "params": [
+                "q",
+                "organization"
+            ],
+            "return_field": "permissionTemplates"
+        },
+        "CREATE": {
+            "method": "POST",
+            "api": "api/permissions/create_template",
+            "params": ["name", "description", "projectKeyPattern", "organization"]
+        },
+        "UPDATE": {
+            "method": "POST",
+            "api": "api/permissions/update_template",
+            "params": ["id", "name", "description", "projectKeyPattern"]
+        }
     }
 }

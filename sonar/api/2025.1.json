@@ -1392,6 +1392,16 @@
             "api": "api/permissions/search_templates",
             "params": ["q"],
             "return_field": "permissionTemplates"
+        },
+        "CREATE": {
+            "method": "POST",
+            "api": "api/permissions/create_template",
+            "params": ["name", "description", "projectKeyPattern"]
+        },
+        "UPDATE": {
+            "method": "POST",
+            "api": "api/permissions/update_template",
+            "params": ["id", "name", "description", "projectKeyPattern"]
         }
     },
     "Language": {

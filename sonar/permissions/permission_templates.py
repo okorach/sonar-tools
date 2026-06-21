@@ -45,8 +45,6 @@ if TYPE_CHECKING:
 _MAP = {}
 _DEFAULT_TEMPLATES = {}
 _QUALIFIER_REVERSE_MAP = {"projects": "TRK", "applications": "APP", "portfolios": "VW"}
-_CREATE_API = "permissions/create_template"
-_UPDATE_API = "permissions/update_template"
 
 
 class PermissionTemplate(sqobject.SqObject):
@@ -124,22 +122,23 @@ class PermissionTemplate(sqobject.SqObject):
     def update(self, **pt_data) -> PermissionTemplate:
         """Updates a permission template"""
         log.debug("Updating %s with %s", str(self), str(pt_data))
-        params = {"id": self.key}
-        # Hack: On SQ 8.9 if you pass all params otherwise SQ does NPE
-
-        for k, v in {"name": "name", "description": "description", "pattern": "projectKeyPattern"}.items():
-            if k in pt_data:
-                params[v] = pt_data[k]
-
+        api, _, params, _ = self.endpoint.api.get_details(
+            self,
+            Oper.UPDATE,
+            id=self.key,
+            name=pt_data.get("name"),
+            description=pt_data.get("description"),
+            projectKeyPattern=pt_data.get("pattern"),
+        )
         log.debug("Updating %s with params %s", str(self), str(params))
-        self.post(_UPDATE_API, params=params)
+        self.post(api, params=params)
         if "name" in pt_data and pt_data["name"] != self.name:
             # FIXME: This supports only 1 platform at at time
             _MAP.pop(self.name, None)
-            self.name = params["name"]
+            self.name = pt_data["name"]
             _MAP[self.name] = self.key
-        self.description = params.get("description", self.description)
-        self.project_key_pattern = params.get("projectKeyPattern", self.project_key_pattern)
+        self.description = pt_data.get("description", self.description)
+        self.project_key_pattern = pt_data.get("pattern", self.project_key_pattern)
         self.set_permissions(pt_data.get("permissions"))
         return self
 
@@ -159,7 +158,7 @@ class PermissionTemplate(sqobject.SqObject):
                 log.warning("Can't set permission template as default for %s on a %s edition", qual, ed)
                 continue
             try:
-                return self.post("permissions/set_default_template", params={"templateId": self.key, "qualifier": qual}).ok
+                return self.post("permissions/set_default_template", params={"templateId": self.key, "qualifier": qual}, with_organization=True).ok
             except exceptions.SonarException:
                 return False
         return False
@@ -221,7 +220,8 @@ class PermissionTemplate(sqobject.SqObject):
     @classmethod
     def create(cls, endpoint: Platform, name: str) -> PermissionTemplate:
         """Creates a permission template from sonar-config data"""
-        endpoint.post(_CREATE_API, params={"name": name})
+        api, _, params, _ = endpoint.api.get_details(cls, Oper.CREATE, name=name)
+        endpoint.post(api, params=params)
         return cls.get_object(endpoint, name, use_cache=False)
 
 
