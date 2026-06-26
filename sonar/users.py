@@ -440,8 +440,6 @@ class User(SqObject):
         json_data["login"] = self.login
         json_data["scmAccounts"] = self.scm_accounts
         json_data["groups"] = self.groups().copy()
-        if export_settings.get("MODE", "") == "MIGRATION":
-            return json_data
         if self.endpoint.default_user_group() in json_data["groups"]:
             json_data["groups"].remove(self.endpoint.default_user_group())
 

@@ -135,46 +135,6 @@ class Component(SqObject):
         params = {"components": key} if self.endpoint.version() >= (10, 0, 0) else {"componentKeys": key}
         return self.count_specific_rules_issues(ruleset=rules.instantiated(self.endpoint), **(search_params | params))
 
-    def migration_export(self, export_settings: ConfigSettings, **search_params: Any) -> dict[str, Any]:
-        """Prepares all data for a sonar-migration export"""
-        from sonar.issues import Issue
-        from sonar.hotspots import Hotspot
-
-        json_data: dict[str, Any] = {"lastAnalysis": sutil.date_to_string(self.last_analysis())}
-        lang_distrib = self.get_measure("ncloc_language_distribution")
-        loc_distrib = {}
-        if lang_distrib:
-            loc_distrib = {m.split("=")[0]: int(m.split("=")[1]) for m in lang_distrib.split(";")}
-        loc_distrib["total"] = self.loc()
-        json_data["ncloc"] = loc_distrib
-        json_data["analysisHistory"] = {r[0]: int(r[2]) for r in self.get_measures_history(["ncloc"])}
-        if export_settings["SKIP_ISSUES"]:
-            log.debug("Issues count extract skipped for %s`", str(self))
-            return json_data
-
-        tpissues = self.count_third_party_issues(**search_params)
-        inst_issues = self.count_instantiated_rules_issues(**search_params)
-        key = self.component_key(**search_params)
-        params = {"components": key} if self.endpoint.version() >= (10, 0, 0) else {"componentKeys": key}
-        params = search_params | params
-        log.info("Counting issues for %s with params %s", str(self), str(params))
-        json_data["issues"] = {
-            "thirdParty": tpissues if len(tpissues) > 0 else 0,
-            "instantiatedRules": inst_issues if len(inst_issues) > 0 else 0,
-            "falsePositives": Issue.count(self.endpoint, **(params | {"issueStatuses": ["FALSE_POSITIVE"]})),
-        }
-        status = "accepted" if self.endpoint.version() >= c.ACCEPT_INTRO_VERSION else "wontFix"
-        json_data["issues"][status] = Issue.count(self.endpoint, issueStatuses=[status.upper()], **params)
-        params = search_params | {"project": key}
-        json_data["hotspots"] = {
-            "acknowledged": Hotspot.count(self.endpoint, **(params | {"resolution": ["ACKNOWLEDGED"]})),
-            "safe": Hotspot.count(self.endpoint, **(params | {"resolution": ["SAFE"]})),
-            "fixed": Hotspot.count(self.endpoint, **(params | {"resolution": ["FIXED"]})),
-        }
-        log.debug("%s has these notable issues %s", str(self), str(json_data["issues"]))
-
-        return json_data
-
     def get_measures(self, metrics_list: KeyList) -> dict[str, measures.Measure]:
         """Retrieves a project list of measures
 

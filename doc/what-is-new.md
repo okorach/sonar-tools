@@ -1,5 +1,7 @@
 # Next version
 
+* Removed the legacy `sonar-migration` tool and its Docker image. It is superseded by the official [Sonar Migration Tool](https://github.com/sonar-solutions/sonar-migration-tool)
+
 # Version 3.20
 
 * Support of SCA for most features

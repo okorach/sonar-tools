@@ -68,12 +68,6 @@ _SECTIONS_ORDER = (
     "rules",
 )
 
-_MIGRATION_EXPORT_SETTINGS = {
-    "FULL_EXPORT": False,
-    "INLINE_LISTS": False,
-    EXPORT_EMPTY: True,
-}
-
 _EXPORT_CALLS = {
     c.CONFIG_KEY_PLATFORM: [c.CONFIG_KEY_PLATFORM, platform.basics],
     options.WHAT_SETTINGS: [c.CONFIG_KEY_SETTINGS, platform.export],
@@ -228,11 +222,8 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
             "EXPORT_DEFAULTS": kwargs.get(FULL_EXPORT, False),
             "FULL_EXPORT": kwargs.get(FULL_EXPORT, False),
             "MODE": mode,
-            "SKIP_ISSUES": kwargs.get("skipIssues", False),
         }
     )
-    if mode == "MIGRATION":
-        export_settings |= _MIGRATION_EXPORT_SETTINGS
     log.info("Exporting with settings: %s", util.json_dump(sutil.redact_tokens(export_settings)))
     if "projects" in what and kwargs[options.KEY_REGEXP]:
         if len(component_helper.get_components(endpoint, "projects", kwargs[options.KEY_REGEXP])) == 0:
@@ -274,8 +265,6 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
 def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
     """Cleans up the JSON before writing"""
     json_data = misc.sort_lists(json_data)
-    if export_settings.get("MODE", "CONFIG") == "MIGRATION":
-        return json_data
     if not export_settings.get("FULL_EXPORT", False):
         json_data = misc.clean_data(json_data, remove_none=True, remove_empty=not export_settings.get(EXPORT_EMPTY, False))
     return json_data

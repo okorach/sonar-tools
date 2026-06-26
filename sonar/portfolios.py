@@ -364,10 +364,8 @@ class Portfolio(aggregations.Aggregation):
                 json_data["portfolios"][subp_key] = subp_json
         mode = self.selection_mode.copy()
         if mode:
-            if "none" not in mode or export_settings.get("MODE", "") == "MIGRATION":
+            if "none" not in mode:
                 json_data["projects"] = mode
-            if export_settings.get("MODE", "") == "MIGRATION":
-                json_data["projects"]["keys"] = self.get_project_list()
         json_data["applications"] = self._applications
         return json_data
 
@@ -375,8 +373,6 @@ class Portfolio(aggregations.Aggregation):
         """Exports a portfolio (for sonar-config)"""
         log.info("Exporting %s", str(self))
         data = self.to_json(export_settings)
-        if export_settings.get("MODE", "") == "MIGRATION":
-            return util.remove_nones(data)
         return util.remove_nones(util.filter_export(data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
 
     def permissions(self) -> pperms.PortfolioPermissions:
@@ -763,10 +759,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -
         try:
             exp = util.clean_data(p.export(export_settings), True, True)
             if write_q:
-                if export_settings.get("MODE", "") == "MIGRATION":
-                    write_q.put(exp)
-                else:
-                    write_q.put(phelp.convert_portfolio_json(exp))
+                write_q.put(phelp.convert_portfolio_json(exp))
             else:
                 exp.pop("key")
                 exported_portfolios[k] = exp
