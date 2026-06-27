@@ -22,7 +22,7 @@ conf/run_linters.sh
 
 # Run individual linters
 ruff check .
-pylint --rcfile conf/pylintrc sonar/ cli/ migration/
+pylint --rcfile conf/pylintrc sonar/ cli/
 flake8 --config conf/.flake8 --exclude test/gen .
 
 # Run tests with coverage
@@ -52,7 +52,6 @@ Tests require running SonarQube instances with pre-provisioned test data. Test g
 - **`sonar/`** - Core library: SonarQube object abstractions and API layer
 - **`cli/`** - CLI entry points for most commands (findings-export, housekeeper, projects, measures, etc.)
 - **`sonar/cli/`** - CLI entry points for audit, config, maturity, misra commands
-- **`migration/`** - Separate migration tool for SonarQube Cloud migration
 - **`conf/`** - Build scripts, linter configs, Dockerfiles
 - **`test/`** - Tests: `unit/` for unit tests, `gen/` for generated integration tests per SQ version
 

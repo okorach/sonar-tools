@@ -882,28 +882,6 @@ class Project(Component):
         main_br = {k: v for k, v in branch_data.items() if v and v.get("isMain")}
         return main_br | branch_data
 
-    def migration_export(self, export_settings: ConfigSettings, **search_params: Any) -> ObjectJsonRepr:
-        """Produces the data that is exported for SQ to SC migration"""
-        json_data = super().migration_export(export_settings, project=self.key, **search_params)
-        json_data["detectedCi"] = self.ci()
-        json_data["revision"] = self.revision()
-        last_task = self.last_task()
-        json_data["backgroundTasks"] = {}
-        if last_task:
-            ctxt = last_task.scanner_context()
-            if ctxt:
-                ctxt = {k: v for k, v in ctxt.items() if k not in phelp.UNNEEDED_CONTEXT_DATA}
-            t_hist = []
-            for t in self.task_history():
-                t_hist.append({k: v for k, v in t.sq_json.items() if k not in phelp.UNNEEDED_TASK_DATA})
-            json_data["backgroundTasks"] = {
-                "lastTaskScannerContext": ctxt,
-                # "lastTaskWarnings": last_task.warnings(),
-                "taskHistory": t_hist,
-            }
-        log.debug("Returning %s migration data %s", str(self), util.json_dump(json_data))
-        return json_data
-
     def export(self, export_settings: ConfigSettings, settings_list: Optional[dict[str, str]] = None) -> ObjectJsonRepr:
         """Exports the entire project configuration as JSON
 
@@ -933,9 +911,6 @@ class Project(Component):
             if hooks is not None:
                 json_data["webhooks"] = hooks
             json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
-
-            if export_settings.get("MODE", "") == "MIGRATION":
-                json_data.update({"migrationData": self.migration_export(export_settings)})
 
             settings_dict = settings.Setting.search(self.endpoint, include_not_set=False, component=self.key, keys=settings_list)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})

@@ -189,7 +189,7 @@ def __check_file_writeable(file: Optional[str]) -> None:
         os.remove(file)
 
 
-def parse_and_check(parser: ArgumentParser, logger_name: Optional[str] = None, verify_token: bool = True, is_migration: bool = False) -> object:
+def parse_and_check(parser: ArgumentParser, logger_name: Optional[str] = None, verify_token: bool = True) -> object:
     """Parses arguments, applies default settings and perform common environment checks"""
     try:
         args = parser.parse_args()
@@ -200,9 +200,7 @@ def parse_and_check(parser: ArgumentParser, logger_name: Optional[str] = None, v
     log.set_logger(filename=kwargs[LOGFILE], logger_name=logger_name)
     log.set_debug_level(kwargs.pop(VERBOSE))
 
-    tool = "sonar-migration" if is_migration else "sonar-tools"
-    vers = version.MIGRATION_TOOL_VERSION if is_migration else version.PACKAGE_VERSION
-    log.info("%s version %s", tool, vers)
+    log.info("sonar-tools version %s", version.PACKAGE_VERSION)
 
     if os.getenv("IN_DOCKER", "No") == "Yes":
         kwargs[URL] = kwargs[URL].replace("http://localhost", "http://host.docker.internal")
@@ -220,7 +218,7 @@ def parse_and_check(parser: ArgumentParser, logger_name: Optional[str] = None, v
         __check_file_writeable(kwargs.get(IMPORT))
     # Verify version randomly once every 10 runs
     if not kwargs[SKIP_VERSION_CHECK] and random.randrange(10) == 0:
-        sutil.check_last_version(f"https://pypi.org/simple/{tool}")
+        sutil.check_last_version("https://pypi.org/simple/sonar-tools")
     kwargs.pop(SKIP_VERSION_CHECK, None)
     if sutil.is_sonarcloud_url(kwargs[URL]) and kwargs[ORG] is None:
         raise ArgumentsError(f"Organization (-{ORG_SHORT}) option is mandatory for SonarQube Cloud")

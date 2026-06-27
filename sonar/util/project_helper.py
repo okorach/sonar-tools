@@ -23,46 +23,6 @@ from typing import Any
 import sonar.util.misc as util
 from sonar.util import common_json_helper
 
-UNNEEDED_TASK_DATA = (
-    "analysisId",
-    "componentId",
-    "hasScannerContext",
-    "id",
-    "warningCount",
-    "componentQualifier",
-    "nodeName",
-    "componentName",
-    "componentKey",
-    "submittedAt",
-    "executedAt",
-    "type",
-)
-
-UNNEEDED_CONTEXT_DATA = (
-    "sonar.announcement.message",
-    "sonar.auth.github.allowUsersToSignUp",
-    "sonar.auth.github.apiUrl",
-    "sonar.auth.github.appId",
-    "sonar.auth.github.enabled",
-    "sonar.auth.github.groupsSync",
-    "sonar.auth.github.organizations",
-    "sonar.auth.github.webUrl",
-    "sonar.builtInQualityProfiles.disableNotificationOnUpdate",
-    "sonar.core.id",
-    "sonar.core.serverBaseURL",
-    "sonar.core.startTime",
-    "sonar.dbcleaner.branchesToKeepWhenInactive",
-    "sonar.forceAuthentication",
-    "sonar.host.url",
-    "sonar.java.jdkHome",
-    "sonar.links.ci",
-    "sonar.links.homepage",
-    "sonar.links.issue",
-    "sonar.links.scm",
-    "sonar.links.scm_dev",
-    "sonar.plugins.risk.consent",
-)
-
 AI_CODE_FIX = "aiCodeFix"
 
 _JSON_KEY_ORDER = (
@@ -79,7 +39,6 @@ _JSON_KEY_ORDER = (
     "qualityProfiles",
     "links",
     "webhooks",
-    "migrationData",
 )
 
 

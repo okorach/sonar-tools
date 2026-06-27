@@ -550,8 +550,6 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -
         )
     if full:
         rule_list["standard"] = {k: rule.export(full) for k, rule in all_rules if not rule.is_instantiated() and not rule.is_extended()}
-    if export_settings.get("MODE", "") == "MIGRATION":
-        rule_list["thirdParty"] = {r.key: r.export() for r in third_party(endpoint=endpoint)}
 
     for k in ("instantiated", "extended", "standard", "thirdParty"):
         if len(rule_list.get(k, {})) == 0:
