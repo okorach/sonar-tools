@@ -720,7 +720,12 @@ def test_last_comment_date_none_when_empty() -> None:
 def test_modifiers_collects_authors() -> None:
     """modifiers() returns the set of author logins from changelog entries."""
     e1 = DependencyRiskChangelog(
-        {"key": "c1", "createdAt": "2026-01-01T10:00:00+0000", "changeData": [{"fieldName": "severity", "newValue": "HIGH"}], "user": {"login": "alice"}}
+        {
+            "key": "c1",
+            "createdAt": "2026-01-01T10:00:00+0000",
+            "changeData": [{"fieldName": "severity", "newValue": "HIGH"}],
+            "user": {"login": "alice"},
+        }
     )
     e2 = DependencyRiskChangelog(
         {"key": "c2", "createdAt": "2026-02-01T10:00:00+0000", "changeData": [{"fieldName": "severity", "newValue": "LOW"}], "user": {"login": "bob"}}
@@ -732,7 +737,12 @@ def test_modifiers_collects_authors() -> None:
 def test_modifiers_with_after_cutoff() -> None:
     """modifiers(after=...) only returns authors of entries after the cutoff."""
     e_old = DependencyRiskChangelog(
-        {"key": "c1", "createdAt": "2026-01-01T10:00:00+0000", "changeData": [{"fieldName": "severity", "newValue": "HIGH"}], "user": {"login": "alice"}}
+        {
+            "key": "c1",
+            "createdAt": "2026-01-01T10:00:00+0000",
+            "changeData": [{"fieldName": "severity", "newValue": "HIGH"}],
+            "user": {"login": "alice"},
+        }
     )
     e_new = DependencyRiskChangelog(
         {"key": "c2", "createdAt": "2026-06-01T10:00:00+0000", "changeData": [{"fieldName": "severity", "newValue": "LOW"}], "user": {"login": "bob"}}
@@ -1052,9 +1062,10 @@ def test_apply_changelog_applies_events_and_comments() -> None:
 
     target = _make_risk("tgt", "CVE-X")  # no changelog, no comments
 
-    with patch.object(target, "_DependencyRisk__apply_event", return_value=True) as mock_event, patch.object(
-        target, "add_comment", return_value=True
-    ) as mock_comment:
+    with (
+        patch.object(target, "_DependencyRisk__apply_event", return_value=True) as mock_event,
+        patch.object(target, "add_comment", return_value=True) as mock_comment,
+    ):
         count = target.apply_changelog(source, {})
 
     assert count == 2
@@ -1096,9 +1107,12 @@ def test_get_changelogs_loads_all_risks() -> None:
     """get_changelogs triggers has_changelog and has_comments on every risk in the list."""
     r1 = _make_risk("r1")
     r2 = _make_risk("r2")
-    with patch.object(r1, "has_changelog", return_value=False) as hcl1, patch.object(r1, "has_comments", return_value=False) as hco1, patch.object(
-        r2, "has_changelog", return_value=False
-    ) as hcl2, patch.object(r2, "has_comments", return_value=False) as hco2:
+    with (
+        patch.object(r1, "has_changelog", return_value=False) as hcl1,
+        patch.object(r1, "has_comments", return_value=False) as hco1,
+        patch.object(r2, "has_changelog", return_value=False) as hcl2,
+        patch.object(r2, "has_comments", return_value=False) as hco2,
+    ):
         dr.get_changelogs([r1, r2])
 
     hcl1.assert_called_once()
@@ -1111,9 +1125,11 @@ def test_get_changelogs_survives_exception_on_one_risk() -> None:
     """get_changelogs must not propagate an exception from one risk — it logs and continues."""
     r1 = _make_risk("r1")
     r2 = _make_risk("r2")
-    with patch.object(r1, "has_changelog", side_effect=RuntimeError("boom")), patch.object(r2, "has_changelog", return_value=False) as hcl2, patch.object(
-        r2, "has_comments", return_value=False
-    ) as hco2:
+    with (
+        patch.object(r1, "has_changelog", side_effect=RuntimeError("boom")),
+        patch.object(r2, "has_changelog", return_value=False) as hcl2,
+        patch.object(r2, "has_comments", return_value=False) as hco2,
+    ):
         dr.get_changelogs([r1, r2])  # must not raise
 
     hcl2.assert_called_once()
