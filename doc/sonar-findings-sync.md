@@ -202,6 +202,46 @@ sonar-findings-sync -k projectKey1 -K projectKey2 -f sync_2_projects.json
 sonar-findings-sync -k myProjectKey -U https://anothersonar.acme-corp.com -t d04d671eaec0272b6c83c056ac363f9b78919b06 -K otherInstanceProjKey >sync_2_instances.json
 ```
 
+# <a name="docker"></a>Using with Docker
+
+See the [general Docker documentation](docker.md) for installation and background. Below are `sonar-findings-sync`-specific examples.
+
+```sh
+# Sync findings between two branches on the same SonarQube instance — sync report to stdout
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-findings-sync -k myProject -b develop -B main
+
+# Redirect the sync report to a local file (works on Linux, macOS and Windows PowerShell)
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-findings-sync -k myProject -b develop -B main > sync-report.json
+
+# Write sync report using -f: mount the current directory so the file appears on the host
+# Linux / macOS:
+docker run --rm -v "$(pwd):/output" -w /output \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-findings-sync -k myProject -b develop -B main -f sync-report.json
+# Windows (PowerShell):
+docker run --rm -v "${PWD}:/output" -w /output `
+  -e SONAR_TOKEN=$SONAR_TOKEN `
+  -e SONAR_HOST_URL=https://sonar.acme.com `
+  olivierkorach/sonar-tools sonar-findings-sync -k myProject -b develop -B main -f sync-report.json
+
+# If SonarQube Server runs on localhost:
+# Linux:
+docker run --rm --network host \
+  -e SONAR_TOKEN=$SONAR_TOKEN -e SONAR_HOST_URL=http://localhost:9000 \
+  olivierkorach/sonar-tools sonar-findings-sync -k myProject -b develop -B main
+# macOS / Windows:
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN -e SONAR_HOST_URL=http://host.docker.internal:9000 \
+  olivierkorach/sonar-tools sonar-findings-sync -k myProject -b develop -B main
+```
+
 # License
 
 Copyright (C) 2019-2026 Olivier Korach

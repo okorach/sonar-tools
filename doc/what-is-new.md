@@ -1,6 +1,7 @@
 # Next version
 
 * `sonar-loc`: Add a `--sortby` option to sort the output by project key, lines of code or last analysis date, ascending or descending (#2424)
+* Improved Docker documentation: each tool now has its own Docker section with portable, copy-paste-ready examples covering stdout, file output (with volume mounts), and localhost SonarQube Server on Linux, macOS and Windows (#2407)
 * Removed the legacy `sonar-migration` tool and its Docker image. It is superseded by the official [Sonar Migration Tool](https://github.com/sonar-solutions/sonar-migration-tool)
 
 # Version 3.20

@@ -61,7 +61,7 @@ deletes tokens created since more than a certain number of days
   - `sonar-tools` is now also available as a docker image.
   - Run: `docker pull olivierkorach/sonar-tools:latest` to install
 
- Then see [Using sonar-tools in Docker](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-loc.md) for details
+ Then see [Using sonar-tools in Docker](https://github.com/okorach/sonar-tools/blob/master/doc/docker.md) for details
 
 # Common command line parameters
 

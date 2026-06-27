@@ -44,3 +44,43 @@ sonar-misra -k <projectKey> --tags misra-mandatory,misra-required -f misra-repor
 # MISRA report of MISRA C2012 rules violations (ruleset is not entirely covered, the report will be incompleted)
 sonar-misra -k <projectKey> --tags misra-c2012 -f misra-report.csv
 ```
+
+## <a name="docker"></a>Using with Docker
+
+See the [general Docker documentation](docker.md) for installation and background. Below are `sonar-misra`-specific examples.
+
+```sh
+# Export MISRA report to stdout
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-misra -k myProject
+
+# Redirect stdout to a local file (works on Linux, macOS and Windows PowerShell)
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-misra -k myProject > misra-report.csv
+
+# Write to a file using -f: mount the current directory so the file appears on the host
+# Linux / macOS:
+docker run --rm -v "$(pwd):/output" -w /output \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-misra -k myProject -f misra-report.csv
+# Windows (PowerShell):
+docker run --rm -v "${PWD}:/output" -w /output `
+  -e SONAR_TOKEN=$SONAR_TOKEN `
+  -e SONAR_HOST_URL=https://sonar.acme.com `
+  olivierkorach/sonar-tools sonar-misra -k myProject -f misra-report.csv
+
+# If SonarQube Server runs on localhost:
+# Linux:
+docker run --rm --network host \
+  -e SONAR_TOKEN=$SONAR_TOKEN -e SONAR_HOST_URL=http://localhost:9000 \
+  olivierkorach/sonar-tools sonar-misra -k myProject
+# macOS / Windows:
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN -e SONAR_HOST_URL=http://host.docker.internal:9000 \
+  olivierkorach/sonar-tools sonar-misra -k myProject
+```

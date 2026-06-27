@@ -59,3 +59,37 @@ To avoid bad mistakes (mistakenly deleting too many projects), the tools will re
 
 ### :warning: Database backup
 **A database backup should always be taken before executing this script. There is no recovery.**
+
+## <a name="docker"></a>Using with Docker
+
+See the [general Docker documentation](docker.md) for installation and background. Below are `sonar-housekeeper`-specific examples.
+
+```sh
+# Dry-run: list projects not analyzed in the last 365 days (output goes to stdout)
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-housekeeper -P 365
+
+# Dry-run: redirect report to a local file
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-housekeeper -P 365 > housekeeper-report.csv
+
+# Actually delete: add --mode delete
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-housekeeper -P 365 --mode delete
+
+# If SonarQube Server runs on localhost:
+# Linux:
+docker run --rm --network host \
+  -e SONAR_TOKEN=$SONAR_TOKEN -e SONAR_HOST_URL=http://localhost:9000 \
+  olivierkorach/sonar-tools sonar-housekeeper -P 365
+# macOS / Windows:
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN -e SONAR_HOST_URL=http://host.docker.internal:9000 \
+  olivierkorach/sonar-tools sonar-housekeeper -P 365
+```
