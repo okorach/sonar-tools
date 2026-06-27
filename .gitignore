@@ -17,6 +17,7 @@ tmp/
 .venv/
 .DS_Store
 !sonar/api/*.json
+!.claude/settings.json
 
 !sonar/config.json
 !test/config.json
