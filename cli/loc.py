@@ -160,8 +160,80 @@ def __dump_json(object_list: list[object], file: str, **kwargs: Any) -> None:
         log.info("%d %ss dumped in total", len(object_list), str(obj_type))
 
 
+def __project_key(o: object) -> str:
+    """Returns the project key of an object (project, branch or pull request)"""
+    co = getattr(o, "concerned_object", None)
+    return co.key if co is not None else o.key
+
+
+def __object_ncloc(o: object) -> int:
+    """Returns the LoC of an object, 0 when unavailable"""
+    try:
+        return int(o.loc() or 0)
+    except (ValueError, TypeError):
+        return 0
+
+
+def __latest(current: Any, candidate: Any) -> Any:
+    """Returns the most recent of 2 analysis dates, ignoring None values"""
+    if candidate is None:
+        return current
+    if current is None or candidate > current:
+        return candidate
+    return current
+
+
+def __aggregate_by_project(object_list: list[object], field: str) -> dict[str, Any]:
+    """Aggregates the sort value per project: max ncloc or most recent analysis across branches/PRs"""
+    agg: dict[str, Any] = {}
+    for o in object_list:
+        pk = __project_key(o)
+        if field == "ncloc":
+            agg[pk] = max(__object_ncloc(o), agg.get(pk, 0))
+        else:  # lastAnalysis
+            agg[pk] = __latest(agg.get(pk), o.last_analysis())
+    return agg
+
+
+def __sort_key(o: object, field: str, project_agg: dict[str, Any], reverse: bool) -> tuple:
+    """Builds the sort key for an object, using the per-project aggregate and project key as tie-breaker.
+
+    None analysis dates always sort last (mapped to +infinity), regardless of sort direction.
+    """
+    pk = __project_key(o)
+    agg = project_agg.get(pk)
+    if field == "ncloc":
+        value = float(agg or 0)
+        return (-value if reverse else value, pk)
+    if agg is None:
+        return (float("inf"), pk)
+    ts = agg.timestamp()
+    return (-ts if reverse else ts, pk)
+
+
+def __sort_objects(object_list: list[object], sort_by: str) -> list[object]:
+    """Sorts objects according to the --sortby option.
+
+    For ncloc and lastAnalysis, when branches/PRs are included, the sort key
+    is the max ncloc (or most recent analysis) across all branches/PRs of the
+    same project.
+    """
+    object_list = [o for o in object_list if o is not None]
+    field, order = sort_by[:-1], sort_by[-1]
+    reverse = order == "-"
+
+    if field == "key":
+        return sorted(object_list, key=__project_key, reverse=reverse)
+
+    # For ncloc / lastAnalysis: aggregate per project then sort, preserving branch/PR grouping
+    project_agg = __aggregate_by_project(object_list, field)
+    return sorted(object_list, key=lambda o: __sort_key(o, field, project_agg, reverse))
+
+
 def __dump_loc(object_list: list[object], file: str, **kwargs: Any) -> None:
     """Dumps the LoC of collection of objects either in CSV or JSON format"""
+    sort_by = kwargs.get(options.SORT_BY, "key+")
+    object_list = __sort_objects(object_list, sort_by)
     log.info("%d objects with LoCs to export, in format %s...", len(object_list), kwargs[options.FORMAT])
     if kwargs[options.FORMAT] == "json":
         __dump_json(object_list, file, **kwargs)
@@ -192,6 +264,14 @@ def __parse_args(desc: str) -> object:
 
     help_str = "Extracts only toplevel portfolios LoCs, not sub-portfolios"
     options.add_optional_arg(parser, "--topLevelOnly", action="store_true", help=help_str)
+
+    options.add_optional_arg(
+        parser,
+        f"--{options.SORT_BY}",
+        choices=options.SORT_BY_CHOICES,
+        default="key+",
+        help="Sort order: key+/key- (by project key), ncloc+/ncloc- (by LoC), lastAnalysis+/lastAnalysis- (by last analysis date). Default: key+",
+    )
 
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 

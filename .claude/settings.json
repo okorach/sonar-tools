@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ruff check *)",
+      "Bash(flake8 *)",
+      "Bash(pylint *)",
+      "Bash(poetry check *)",
+      "Bash(ruff format *)",
+      "Bash(conf/run_linters.sh*)",
+      "mcp__sonarqube__search_sonar_issues_in_projects",
+      "mcp__sonarqube__get_project_quality_gate_status",
+      "mcp__sonarqube__get_guidelines"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/sonar-secrets/build-scripts/pretool-secrets.sh",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/sonar-secrets/build-scripts/prompt-secrets.sh",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

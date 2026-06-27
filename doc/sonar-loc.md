@@ -3,7 +3,7 @@
 Exports all projects lines of code as they would be counted by the commercial licences.
 See `sonar-loc -h` for details
 
-Basic Usage: `sonar-loc [-f <file>] [--format csv|json] [-a] [-n] [-b <branchRegexp>] [-p] [--withTags] [--withURL] [--apps] [--portfolios] [--topLevelOnly]`
+Basic Usage: `sonar-loc [-f <file>] [--format csv|json] [-a] [-n] [-b <branchRegexp>] [-p] [--withTags] [--withURL] [--apps] [--portfolios] [--topLevelOnly] [--sortby <order>]`
 - `-f`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
 - `--format`: Choose export format between csv (default) and json
 - `--projects`: Output the LOC of projects (this is the default if nothing specified)
@@ -16,6 +16,7 @@ Basic Usage: `sonar-loc [-f <file>] [--format csv|json] [-a] [-n] [-b <branchReg
 - `--withURL`: Outputs the URL of the project, app or portfolio for each record
 - `-b` | `--branches`: On top of the projects or apps, export LoCs for each branches of targeted objects
 - `-p` | `--pullRequests`: On top of the projects, export LoCs for each pull request
+- `--sortby`: Sort order of the output, one of `key+`, `key-`, `ncloc+`, `ncloc-`, `lastAnalysis+`, `lastAnalysis-` (default `key+`). The `+`/`-` suffix selects ascending/descending order, sorting respectively by project key, lines of code, or last analysis date. When branches or pull requests are exported, `ncloc` sorts by the largest LoC across all branches/PRs of a project and `lastAnalysis` by the most recent analysis of any branch/PR
 - `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`, `--skipCertVerify`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)
 
 ## Required Permissions

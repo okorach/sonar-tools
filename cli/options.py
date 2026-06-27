@@ -103,6 +103,8 @@ WITH_NAME = "withName"
 WITH_LAST_ANALYSIS_SHORT = "a"
 WITH_LAST_ANALYSIS = "withLastAnalysis"
 WITH_TAGS = "withTags"
+SORT_BY = "sortby"
+SORT_BY_CHOICES = ("key+", "key-", "ncloc+", "ncloc-", "lastAnalysis+", "lastAnalysis-")
 
 DATE_AFTER = "createdAfter"
 DATE_BEFORE = "createdBefore"
