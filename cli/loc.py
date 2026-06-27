@@ -160,6 +160,57 @@ def __dump_json(object_list: list[object], file: str, **kwargs: Any) -> None:
         log.info("%d %ss dumped in total", len(object_list), str(obj_type))
 
 
+def __project_key(o: object) -> str:
+    """Returns the project key of an object (project, branch or pull request)"""
+    co = getattr(o, "concerned_object", None)
+    return co.key if co is not None else o.key
+
+
+def __object_ncloc(o: object) -> int:
+    """Returns the LoC of an object, 0 when unavailable"""
+    try:
+        return int(o.loc() or 0)
+    except (ValueError, TypeError):
+        return 0
+
+
+def __latest(current: Any, candidate: Any) -> Any:
+    """Returns the most recent of 2 analysis dates, ignoring None values"""
+    if candidate is None:
+        return current
+    if current is None or candidate > current:
+        return candidate
+    return current
+
+
+def __aggregate_by_project(object_list: list[object], field: str) -> dict[str, Any]:
+    """Aggregates the sort value per project: max ncloc or most recent analysis across branches/PRs"""
+    agg: dict[str, Any] = {}
+    for o in object_list:
+        pk = __project_key(o)
+        if field == "ncloc":
+            agg[pk] = max(__object_ncloc(o), agg.get(pk, 0))
+        else:  # lastAnalysis
+            agg[pk] = __latest(agg.get(pk), o.last_analysis())
+    return agg
+
+
+def __sort_key(o: object, field: str, project_agg: dict[str, Any], reverse: bool) -> tuple:
+    """Builds the sort key for an object, using the per-project aggregate and project key as tie-breaker.
+
+    None analysis dates always sort last (mapped to +infinity), regardless of sort direction.
+    """
+    pk = __project_key(o)
+    agg = project_agg.get(pk)
+    if field == "ncloc":
+        value = float(agg or 0)
+        return (-value if reverse else value, pk)
+    if agg is None:
+        return (float("inf"), pk)
+    ts = agg.timestamp()
+    return (-ts if reverse else ts, pk)
+
+
 def __sort_objects(object_list: list[object], sort_by: str) -> list[object]:
     """Sorts objects according to the --sortby option.
 
@@ -171,41 +222,12 @@ def __sort_objects(object_list: list[object], sort_by: str) -> list[object]:
     field, order = sort_by[:-1], sort_by[-1]
     reverse = order == "-"
 
-    def _project_key(o: object) -> str:
-        co = getattr(o, "concerned_object", None)
-        return co.key if co is not None else o.key
-
     if field == "key":
-        return sorted(object_list, key=_project_key, reverse=reverse)
+        return sorted(object_list, key=__project_key, reverse=reverse)
 
-    # For ncloc / lastAnalysis: aggregate per project then sort projects, preserving branch/PR grouping
-
-    # Build per-project aggregate
-    project_agg: dict[str, Any] = {}
-    for o in object_list:
-        pk = _project_key(o)
-        if field == "ncloc":
-            try:
-                val = int(o.loc() or 0)
-            except (ValueError, TypeError):
-                val = 0
-            if pk not in project_agg or val > project_agg[pk]:
-                project_agg[pk] = val
-        else:  # lastAnalysis
-            val = o.last_analysis()
-            if pk not in project_agg or (val is not None and (project_agg[pk] is None or val > project_agg[pk])):
-                project_agg[pk] = val
-
-    # Sort objects using per-project aggregate as primary key, project key as tie-breaker
-    def _sort_key(o: object) -> tuple:
-        pk = _project_key(o)
-        agg = project_agg.get(pk)
-        if field == "ncloc":
-            return (-(agg or 0) if reverse else (agg or 0), pk)
-        # None sorts last regardless of direction
-        return (agg is None, (None if agg is None else (-agg.timestamp() if reverse else agg.timestamp())), pk)
-
-    return sorted(object_list, key=_sort_key)
+    # For ncloc / lastAnalysis: aggregate per project then sort, preserving branch/PR grouping
+    project_agg = __aggregate_by_project(object_list, field)
+    return sorted(object_list, key=lambda o: __sort_key(o, field, project_agg, reverse))
 
 
 def __dump_loc(object_list: list[object], file: str, **kwargs: Any) -> None:
