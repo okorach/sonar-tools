@@ -103,3 +103,84 @@ def test_org_search_sqs() -> None:
 def test_audit() -> None:
     """test_audit"""
     tutil.SC.audit({})
+
+
+def test_org_resolve_id() -> None:
+    """Test that _resolve_id returns a non-empty string and caches the result"""
+    org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
+    # Remove any cached id so we force a real API call on first invocation
+    org.sq_json.pop("id", None)
+    org_id = org._resolve_id()
+    assert isinstance(org_id, str)
+    assert len(org_id) > 0
+    # Second call must use the cached value — id is now stored in sq_json
+    assert org.sq_json.get("id") == org_id
+    org_id2 = org._resolve_id()
+    assert org_id2 == org_id
+
+
+def test_org_resolve_id_non_existing() -> None:
+    """Test that _resolve_id raises ObjectNotFound for an unknown org key"""
+    org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
+    org.sq_json.pop("id", None)
+    original_key = org.key
+    org.key = "this-key-does-not-exist-xyz"
+    try:
+        with pytest.raises(exceptions.ObjectNotFound):
+            org._resolve_id()
+    finally:
+        org.key = original_key
+
+
+def test_org_set_new_code_period_previous_version() -> None:
+    """Test setting org new code period to PREVIOUS_VERSION"""
+    org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
+    assert org.set_new_code_period("PREVIOUS_VERSION", None) is True
+    # Verify it round-trips: the new_code_period() accessor should reflect it
+    org.sq_json.pop("defaultLeakPeriodType", None)
+    org.sq_json.pop("defaultLeakPeriod", None)
+
+
+def test_org_set_new_code_period_days() -> None:
+    """Test setting org new code period to NUMBER_OF_DAYS (and DAYS alias)"""
+    org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
+    assert org.set_new_code_period("NUMBER_OF_DAYS", 30) is True
+    assert org.set_new_code_period("DAYS", 14) is True
+    # Restore to a clean state
+    org.set_new_code_period("PREVIOUS_VERSION", None)
+
+
+def test_org_set_new_code_period_unsupported_type() -> None:
+    """Test that an unsupported nc_type raises UnsupportedOperation"""
+    org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
+    with pytest.raises(exceptions.UnsupportedOperation):
+        org.set_new_code_period("REFERENCE_BRANCH", "main")
+
+
+def test_org_export_keys() -> None:
+    """Test that export() returns the expected top-level keys"""
+    org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
+    exp = org.export()
+    assert exp.get("key") == creds.ORGANIZATION
+    assert "name" in exp
+    assert "newCodePeriod" in exp
+    # export() calls util.filter_export with _IMPORTABLE_PROPERTIES; none of the
+    # internal-only fields should leak through
+    for forbidden in ("defaultLeakPeriod", "defaultLeakPeriodType"):
+        assert forbidden not in exp
+
+
+def test_org_export_days_new_code_period() -> None:
+    """Test that export() renders newCodePeriod correctly when type is NUMBER_OF_DAYS"""
+    org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
+    org.set_new_code_period("NUMBER_OF_DAYS", 30)
+    # Force sq_json to reflect the updated period so export() picks it up
+    org.sq_json["defaultLeakPeriodType"] = "days"
+    org.sq_json["defaultLeakPeriod"] = "30"
+    exp = org.export()
+    assert "NUMBER_OF_DAYS" in exp["newCodePeriod"]
+    assert "30" in exp["newCodePeriod"]
+    # Restore
+    org.set_new_code_period("PREVIOUS_VERSION", None)
+    org.sq_json.pop("defaultLeakPeriodType", None)
+    org.sq_json.pop("defaultLeakPeriod", None)
