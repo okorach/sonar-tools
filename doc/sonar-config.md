@@ -122,3 +122,55 @@ And shall be fed manually after import
 
 See sample export file [config.json](../test/config.json) that should cover the format for every single situation
 
+## <a name="docker"></a>Using with Docker
+
+See the [general Docker documentation](docker.md) for installation and background. Below are `sonar-config`-specific examples.
+
+```sh
+# Export config to stdout
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-config -e
+
+# Redirect stdout to a local file (works on Linux, macOS and Windows PowerShell)
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-config -e > config.json
+
+# Export to a file using -f: mount the current directory so the file appears on the host
+# Linux / macOS:
+docker run --rm -v "$(pwd):/output" -w /output \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-config -e -f config.json
+# Windows (PowerShell):
+docker run --rm -v "${PWD}:/output" -w /output `
+  -e SONAR_TOKEN=$SONAR_TOKEN `
+  -e SONAR_HOST_URL=https://sonar.acme.com `
+  olivierkorach/sonar-tools sonar-config -e -f config.json
+
+# Import from a local file: mount the directory containing the file
+# Linux / macOS:
+docker run --rm -v "$(pwd):/data" -w /data \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-config -i -f config.json
+# Windows (PowerShell):
+docker run --rm -v "${PWD}:/data" -w /data `
+  -e SONAR_TOKEN=$SONAR_TOKEN `
+  -e SONAR_HOST_URL=https://sonar.acme.com `
+  olivierkorach/sonar-tools sonar-config -i -f config.json
+
+# If SonarQube Server runs on localhost:
+# Linux:
+docker run --rm --network host \
+  -e SONAR_TOKEN=$SONAR_TOKEN -e SONAR_HOST_URL=http://localhost:9000 \
+  olivierkorach/sonar-tools sonar-config -e
+# macOS / Windows:
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN -e SONAR_HOST_URL=http://host.docker.internal:9000 \
+  olivierkorach/sonar-tools sonar-config -e
+```
+

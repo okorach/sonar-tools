@@ -57,3 +57,43 @@ sonar-measures-export -m _main -f measures_with_sca.csv
 # Limit to specific SCA metrics
 sonar-measures-export -m sca_count_vulnerability,sca_rating_vulnerability,new_sca_count_vulnerability -f sca.csv
 ```
+
+## <a name="docker"></a>Using with Docker
+
+See the [general Docker documentation](docker.md) for installation and background. Below are `sonar-measures-export`-specific examples.
+
+```sh
+# Export measures to stdout
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-measures-export -m _main
+
+# Redirect stdout to a local file (works on Linux, macOS and Windows PowerShell)
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-measures-export -m _main > measures.csv
+
+# Write to a file using -f: mount the current directory so the file appears on the host
+# Linux / macOS:
+docker run --rm -v "$(pwd):/output" -w /output \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-measures-export -m _main -f measures.csv
+# Windows (PowerShell):
+docker run --rm -v "${PWD}:/output" -w /output `
+  -e SONAR_TOKEN=$SONAR_TOKEN `
+  -e SONAR_HOST_URL=https://sonar.acme.com `
+  olivierkorach/sonar-tools sonar-measures-export -m _main -f measures.csv
+
+# If SonarQube Server runs on localhost:
+# Linux:
+docker run --rm --network host \
+  -e SONAR_TOKEN=$SONAR_TOKEN -e SONAR_HOST_URL=http://localhost:9000 \
+  olivierkorach/sonar-tools sonar-measures-export -m _main
+# macOS / Windows:
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN -e SONAR_HOST_URL=http://host.docker.internal:9000 \
+  olivierkorach/sonar-tools sonar-measures-export -m _main
+```

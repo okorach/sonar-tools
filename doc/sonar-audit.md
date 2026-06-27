@@ -239,6 +239,58 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - Failed webhooks deliveries
 </details>
 
+# <a name="docker"></a>Using with Docker
+
+See the [general Docker documentation](docker.md) for installation and background. Below are `sonar-audit`-specific examples.
+
+```sh
+# Audit a SonarQube instance — output to stdout
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-audit
+
+# Redirect output to a local file (works on Linux, macOS and Windows PowerShell)
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-audit > audit.csv
+
+# Write to a file using -f: mount the current directory so the file appears on the host
+# Linux / macOS:
+docker run --rm -v "$(pwd):/output" -w /output \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-audit -f audit.json
+# Windows (PowerShell):
+docker run --rm -v "${PWD}:/output" -w /output `
+  -e SONAR_TOKEN=$SONAR_TOKEN `
+  -e SONAR_HOST_URL=https://sonar.acme.com `
+  olivierkorach/sonar-tools sonar-audit -f audit.json
+
+# Audit using a local SIF (Support Info File): mount the directory containing it
+# Linux / macOS:
+docker run --rm -v "$(pwd):/data" -w /data \
+  -e SONAR_TOKEN=$SONAR_TOKEN \
+  -e SONAR_HOST_URL=https://sonar.acme.com \
+  olivierkorach/sonar-tools sonar-audit --sif support-info.json
+# Windows (PowerShell):
+docker run --rm -v "${PWD}:/data" -w /data `
+  -e SONAR_TOKEN=$SONAR_TOKEN `
+  -e SONAR_HOST_URL=https://sonar.acme.com `
+  olivierkorach/sonar-tools sonar-audit --sif support-info.json
+
+# If SonarQube Server runs on localhost:
+# Linux:
+docker run --rm --network host \
+  -e SONAR_TOKEN=$SONAR_TOKEN -e SONAR_HOST_URL=http://localhost:9000 \
+  olivierkorach/sonar-tools sonar-audit
+# macOS / Windows:
+docker run --rm \
+  -e SONAR_TOKEN=$SONAR_TOKEN -e SONAR_HOST_URL=http://host.docker.internal:9000 \
+  olivierkorach/sonar-tools sonar-audit
+```
+
 # License
 
 Copyright (C) 2019-2026 Olivier Korach
