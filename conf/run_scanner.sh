@@ -80,6 +80,14 @@ else
   echo "===> NO EXTERNAL ISSUES"
 fi
 
+if ls "${BUILD_DIR}"/*.sarif >/dev/null 2>&1; then
+  files=$(ls "${BUILD_DIR}"/*.sarif | tr '\n' ' ' | sed -E -e 's/ +$//' -e 's/ +/,/g')
+  echo "SARIF FILES = ${files}"
+  cmd="${cmd} -Dsonar.sarifReportPaths=${files}"
+else
+  echo "===> NO SARIF REPORT"
+fi
+
 echo "=============================================================="
 echo "Running: ${cmd}" | sed "s/${SONAR_TOKEN}/<SONAR_TOKEN>/g"
 echo "=============================================================="
