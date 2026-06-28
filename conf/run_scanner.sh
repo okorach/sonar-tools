@@ -65,11 +65,11 @@ else
 fi
 
 if ls "${BUILD_DIR}"/xunit-*.xml >/dev/null 2>&1; then
-  # files=$(ls "${BUILD_DIR}"/xunit-*.xml | tr '\n' ' ' | sed -E -e 's/ +$//' -e 's/ +/,/g')
-  cmd="${cmd} -Dsonar.python.xunit.reportPath=${relativeDir}/xunit-*.xml"
+  files=$(ls "${BUILD_DIR}"/xunit-*.xml | tr '\n' ' ' | sed -E -e 's/ +$//' -e 's/ +/,/g')
+  echo "XUNIT FILES = ${files}"
+  cmd="${cmd} -Dsonar.python.xunit.reportPaths=${files}"
 else
   echo "===> NO UNIT TESTS REPORT"
-  cmd="${cmd} -Dsonar.python.xunit.reportPath="
 fi
 
 if ls "${BUILD_DIR}"/external-issues*.json >/dev/null 2>&1; then
