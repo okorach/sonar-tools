@@ -1227,11 +1227,11 @@
         },
         "GET_MQR_MODE": {
             "method": "GET",
-            "api": "api/v2/clean-code-policy/mode"
+            "api": "v2/clean-code-policy/mode"
         },
         "SET_MQR_MODE": {
             "method": "PATCH",
-            "api": "api/v2/clean-code-policy/mode",
+            "api": "v2/clean-code-policy/mode",
             "params": [
                 "mode"
             ]
@@ -1418,16 +1418,16 @@
     "LicenseProfile": {
         "SEARCH": {
             "method": "GET",
-            "api": "api/v2/sca/license-profiles",
+            "api": "v2/sca/license-profiles",
             "return_field": "licenseProfiles"
         },
         "GET": {
             "method": "GET",
-            "api": "api/v2/sca/license-profiles/{key}"
+            "api": "v2/sca/license-profiles/{key}"
         },
         "CREATE": {
             "method": "POST",
-            "api": "api/v2/sca/license-profiles",
+            "api": "v2/sca/license-profiles",
             "content_type": "application/json",
             "params": [
                 "name"
@@ -1435,7 +1435,7 @@
         },
         "UPDATE": {
             "method": "PATCH",
-            "api": "api/v2/sca/license-profiles/{key}",
+            "api": "v2/sca/license-profiles/{key}",
             "content_type": "application/merge-patch+json",
             "params": [
                 "name",
@@ -1444,11 +1444,11 @@
         },
         "DELETE": {
             "method": "DELETE",
-            "api": "api/v2/sca/license-profiles/{key}"
+            "api": "v2/sca/license-profiles/{key}"
         },
         "UPDATE_CATEGORY": {
             "method": "PATCH",
-            "api": "api/v2/sca/license-profiles/{key}/categories/{categoryKey}",
+            "api": "v2/sca/license-profiles/{key}/categories/{categoryKey}",
             "content_type": "application/merge-patch+json",
             "params": [
                 "policy"
@@ -1456,7 +1456,7 @@
         },
         "UPDATE_LICENSE": {
             "method": "PATCH",
-            "api": "api/v2/sca/license-profiles/{key}/licenses/{licensePolicyId}",
+            "api": "v2/sca/license-profiles/{key}/licenses/{licensePolicyId}",
             "content_type": "application/merge-patch+json",
             "params": [
                 "policy"
@@ -1464,13 +1464,13 @@
         },
         "SELF_TEST": {
             "method": "GET",
-            "api": "api/v2/sca/self-test"
+            "api": "v2/sca/self-test"
         }
     },
     "DependencyRisk": {
         "SEARCH": {
             "method": "GET",
-            "api": "api/v2/sca/issues-releases",
+            "api": "v2/sca/issues-releases",
             "params": [
                 "projectKey",
                 "branchKey",
@@ -1484,16 +1484,16 @@
         },
         "SELF_TEST": {
             "method": "GET",
-            "api": "api/v2/sca/self-test"
+            "api": "v2/sca/self-test"
         },
         "GET_CHANGELOG": {
             "method": "GET",
-            "api": "api/v2/sca/issues-releases/{key}/changelogs",
+            "api": "v2/sca/issues-releases/{key}/changelogs",
             "return_field": "changelog"
         },
         "CHANGE_STATUS": {
             "method": "PATCH",
-            "api": "api/v2/sca/issues-releases/change-status",
+            "api": "v2/sca/issues-releases/change-status",
             "content_type": "application/json",
             "params": [
                 "issueReleaseKey",
@@ -1503,7 +1503,7 @@
         },
         "UPDATE": {
             "method": "PATCH",
-            "api": "api/v2/sca/issues-releases/{id}",
+            "api": "v2/sca/issues-releases/{id}",
             "content_type": "application/json",
             "params": [
                 "issueReleaseKey",
@@ -1513,7 +1513,7 @@
         },
         "UPDATE_ASSIGNEE": {
             "method": "PATCH",
-            "api": "api/v2/sca/issues-releases/update-assignee",
+            "api": "v2/sca/issues-releases/update-assignee",
             "content_type": "application/json",
             "params": [
                 "issueReleaseKey",
@@ -1522,7 +1522,7 @@
         },
         "ADD_COMMENT": {
             "method": "POST",
-            "api": "api/v2/sca/issues-releases/comments",
+            "api": "v2/sca/issues-releases/comments",
             "content_type": "application/json",
             "params": [
                 "issueReleaseKey",
@@ -1531,14 +1531,14 @@
         },
         "DELETE_COMMENT": {
             "method": "DELETE",
-            "api": "api/v2/sca/issues-releases/{key}/changelog",
+            "api": "v2/sca/issues-releases/{key}/changelog",
             "params": [
                 "issueReleaseChangeKey"
             ]
         },
         "FEATURE_ENABLED": {
             "method": "GET",
-            "api": "api/v2/sca/feature-enabled"
+            "api": "v2/sca/feature-enabled"
         }
     },
     "Platform": {

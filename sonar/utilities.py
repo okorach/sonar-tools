@@ -374,7 +374,7 @@ def version_to_string(vers: tuple[int, ...]) -> str:
     return ".".join([str(n) for n in vers])
 
 
-_SQC_HOST_SUFFIX_RE = re.compile(r"(?:sonarcloud\.io|sonarqube\.us|sc-staging\.io|sc-dev\d+\.io)$")
+_SQC_HOST_SUFFIX_RE = re.compile(r"(?:sonarcloud\.io|sonarqube\.us|sc-staging\.io|sc-dev(?:100|\d{1,2})\.io)$")
 
 
 def is_sonarcloud_url(url: str) -> bool:

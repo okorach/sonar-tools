@@ -61,18 +61,25 @@ class Organization(SqObject):
         return f"organization key '{self.key}'"
 
     @classmethod
-    def search(cls, endpoint: Platform, **search_params: Any) -> dict[str, Organization]:
+    def search(cls, endpoint: Platform, key_list: Optional[list[str]] = None, **search_params: Any) -> dict[str, Organization]:
         """Searches organizations
 
         :param Platform endpoint: Reference to the SonarQube platform
+        :param key_list: Optional list of organization keys to filter results
         :param search_params: Search filters (see api/organizations/search parameters)
         :raises UnsupportedOperation: If not on a SonarQube Cloud platform
+        :raises ObjectNotFound: If key_list is given and none of the keys were found
         :return: dict of organizations
         :rtype: dict {<orgKey>: Organization, ...}
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        return cls.get_paginated(endpoint=endpoint, params=search_params | {"member": "true"})
+        result = cls.get_paginated(endpoint=endpoint, params=search_params | {"member": "true"})
+        if key_list is not None:
+            result = {k: v for k, v in result.items() if k in key_list}
+            if not result:
+                raise exceptions.ObjectNotFound(str(key_list), f"Organizations {key_list} not found")
+        return result
 
     @classmethod
     def get_object(cls, endpoint: Platform, key: str, use_cache: bool = True) -> Organization:
@@ -131,7 +138,7 @@ class Organization(SqObject):
 
     def search_params(self) -> ApiParams:
         """Return params used to search/create/delete for that object"""
-        return {"organizations": self.key}
+        return {"organization": self.key}
 
     def new_code_period(self) -> tuple[str, str]:
         if "defaultLeakPeriodType" in self.sq_json and self.sq_json["defaultLeakPeriodType"] == "days":
@@ -199,12 +206,31 @@ class Organization(SqObject):
         base_url = self.endpoint.api.base_url(self.__class__, Oper.UPDATE)
         return self.endpoint.patch(api, params=body, content_type=ct, base_url=base_url).ok
 
+    @classmethod
+    def get_list(cls, endpoint: Platform) -> dict[str, Organization]:
+        """Returns all organizations accessible on the platform (SonarQube Cloud only)"""
+        return cls.search(endpoint=endpoint)
+
     def subscription(self) -> str:
         return self.sq_json.get("subscription", "UNKNOWN")
 
     def alm(self) -> ApiPayload:
         """Returns The DevOps platform bound to the organization, or None if not set"""
         return self.sq_json.get("alm")
+
+
+def exists(endpoint: Platform, org_key: str) -> bool:
+    """Returns whether an organization with the given key exists on SonarQube Cloud"""
+    try:
+        Organization.get_object(endpoint=endpoint, key=org_key)
+        return True
+    except exceptions.ObjectNotFound:
+        return False
+
+
+def get_list(endpoint: Platform) -> dict[str, Organization]:
+    """Returns all organizations accessible on the platform (SonarQube Cloud only)"""
+    return Organization.search(endpoint=endpoint)
 
 
 def export(endpoint: Platform, key_list: KeyList = None) -> ObjectJsonRepr:
