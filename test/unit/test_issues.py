@@ -86,6 +86,24 @@ def test_add_comments() -> None:
     assert issue_wo_comments.comments() == {}
 
 
+def test_delete_comment() -> None:
+    """Test that a comment can be added and then deleted"""
+    findings_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
+    finding = list(findings_d.values())[0]
+    nb_comments = len(finding.comments())
+
+    txt = f"comment to delete on {datetime.now()}"
+    assert finding.add_comment(txt)
+    comments = finding.comments()
+    assert len(comments) == nb_comments + 1
+    comment_key = list(comments.values())[-1]["commentKey"]
+
+    assert finding.delete_comment(comment_key)
+    comments = finding.comments()
+    assert len(comments) == nb_comments
+    assert all(c.get("commentKey") != comment_key for c in comments.values())
+
+
 def test_set_severity() -> None:
     """test_set_severity"""
     issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
