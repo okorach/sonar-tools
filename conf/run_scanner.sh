@@ -58,22 +58,24 @@ if [[ "${branch}" != "master" ]]; then
 fi
 
 relativeDir=$(basename "${BUILD_DIR}")
-  if ls "${BUILD_DIR}"/coverage.xml >/dev/null 2>&1; then
+TO_CSV="tr '\n' ' ' | sed -E -e 's/ +$//' -e 's/ +/,/g'"
+
+if ls "${BUILD_DIR}"/coverage.xml >/dev/null 2>&1; then
   cmd="${cmd} -Dsonar.python.coverage.reportPaths=${relativeDir}/coverage.xml"
 else
   echo "===> NO COVERAGE REPORT"
 fi
 
 if ls "${BUILD_DIR}"/xunit-*.xml >/dev/null 2>&1; then
-  files=$(ls "${BUILD_DIR}"/xunit-*.xml | tr '\n' ' ' | sed -E -e 's/ +$//' -e 's/ +/,/g')
+  files=$(ls "${BUILD_DIR}"/xunit-*.xml | eval "${TO_CSV}")
   echo "XUNIT FILES = ${files}"
-  cmd="${cmd} -Dsonar.python.xunit.reportPaths=${files}"
+  cmd="${cmd} -Dsonar.python.xunit.reportPath=${files}"
 else
   echo "===> NO UNIT TESTS REPORT"
 fi
 
 if ls "${BUILD_DIR}"/external-issues*.json >/dev/null 2>&1; then
-  files=$(ls "${BUILD_DIR}"/external-issues*.json | tr '\n' ' ' | sed -E -e 's/ +$//' -e 's/ +/,/g')
+  files=$(ls "${BUILD_DIR}"/external-issues*.json | eval "${TO_CSV}")
   echo "EXTERNAL ISSUES FILES = ${files}"
   cmd="${cmd} -Dsonar.externalIssuesReportPaths=${files}"
 else
@@ -81,7 +83,7 @@ else
 fi
 
 if ls "${BUILD_DIR}"/*.sarif >/dev/null 2>&1; then
-  files=$(ls "${BUILD_DIR}"/*.sarif | tr '\n' ' ' | sed -E -e 's/ +$//' -e 's/ +/,/g')
+  files=$(ls "${BUILD_DIR}"/*.sarif | eval "${TO_CSV}")
   echo "SARIF FILES = ${files}"
   cmd="${cmd} -Dsonar.sarifReportPaths=${files}"
 else
@@ -89,7 +91,7 @@ else
 fi
 
 if ls "${BUILD_DIR}"/*.cdx.json >/dev/null 2>&1; then
-  files=$(ls "${BUILD_DIR}"/*.cdx.json | tr '\n' ' ' | sed -E -e 's/ +$//' -e 's/ +/,/g')
+  files=$(ls "${BUILD_DIR}"/*.cdx.json | eval "${TO_CSV}")
   echo "SBOM FILES = ${files}"
   cmd="${cmd} -Dsonar.sca.sbomImportPaths=${files}"
 else
