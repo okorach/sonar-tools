@@ -1,6 +1,6 @@
 [project]
 name = "sonar-tools"
-version = "3.21"
+version = "3.22"
 description = "A collection of utility tools for the SonarQube ecosystem"
 authors = [
   {name = "Olivier Korach", email = "olivier.korach@gmail.com"},
