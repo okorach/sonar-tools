@@ -21,6 +21,7 @@
 
 from __future__ import annotations
 import concurrent.futures
+import contextlib
 from typing import Optional, Any, Union, TYPE_CHECKING
 
 import json
@@ -429,10 +430,8 @@ class Finding(SqObject):
         if another_finding.hash is None:
             another_finding.refresh()
         if self.rule in ("python:S6540"):
-            try:
+            with contextlib.suppress(KeyError):
                 prelim_check = self.sq_json["textRange"]["startOffset"] == another_finding.sq_json["textRange"]["startOffset"]
-            except KeyError:
-                pass
         identical = (
             self.rule == another_finding.rule
             and self.hash == another_finding.hash

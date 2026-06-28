@@ -420,8 +420,7 @@ class Rule(SqObject):
             for qual in idefs.MQR_QUALITIES:
                 data[qual.lower() + "Impact"] = self._impacts.get(qual, "")
             return [data[key] for key in CSV_EXPORT_FIELDS]
-        else:
-            return [data[key] for key in LEGACY_CSV_EXPORT_FIELDS]
+        return [data[key] for key in LEGACY_CSV_EXPORT_FIELDS]
 
     def export(self, full: bool = False) -> ObjectJsonRepr:
         """Returns the JSON corresponding to a rule export"""
@@ -655,5 +654,4 @@ def severities(endpoint: Platform, json_data: dict[str, Any]) -> Optional[dict[s
     """Returns the list of severities from a given rule JSON data"""
     if endpoint.is_mqr_mode():
         return {impact["softwareQuality"]: impact["severity"] for impact in json_data.get("impacts", [])}
-    else:
-        return json_data.get("severity")
+    return json_data.get("severity")

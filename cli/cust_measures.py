@@ -31,7 +31,7 @@ import sonar.util.common_helper as chelp
 TOOL_NAME = "sonar-custom-measures"
 
 
-def main():
+def main() -> None:
     start_time = util.start_clock()
     chelp.clear_cache_and_exit(errcodes.UNSUPPORTED_OPERATION, "Custom measures are not supported anymore", start_time=start_time)
 

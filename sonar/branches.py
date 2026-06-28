@@ -23,7 +23,6 @@
 from __future__ import annotations
 from typing import Optional, Any, Union, TYPE_CHECKING
 
-from http import HTTPStatus
 import json
 import re
 from urllib.parse import unquote
@@ -44,6 +43,7 @@ from sonar.api.manager import ApiOperation as Oper
 from sonar import measures
 
 if TYPE_CHECKING:
+    from http import HTTPStatus
     from sonar.tasks import Task
     from sonar.issues import Issue
     from sonar.dependency_risks import DependencyRisk

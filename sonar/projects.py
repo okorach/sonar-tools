@@ -217,9 +217,8 @@ class Project(Component):
         try:
             for branch_obj in self.branches().values():
                 branch_analysis = branch_obj.last_analysis()
-                if branch_analysis:
-                    if most_recent is None or branch_analysis > most_recent:
-                        most_recent = branch_analysis
+                if branch_analysis and (most_recent is None or branch_analysis > most_recent):
+                    most_recent = branch_analysis
         except exceptions.UnsupportedOperation:
             # Community Edition doesn't support branches
             pass
@@ -418,8 +417,8 @@ class Project(Component):
         resp = self.get_measure("ncloc_language_distribution")
         if resp is None:
             return []
-        for lang in self.get_measure("ncloc_language_distribution").split(";"):
-            (lang, ncloc) = lang.split("=")
+        for lang_entry in self.get_measure("ncloc_language_distribution").split(";"):
+            (lang, ncloc) = lang_entry.split("=")
             languages[lang] = int(ncloc)
             total_locs += int(ncloc)
         utility_locs = sum(lcount for lang, lcount in languages.items() if lang in ("xml", "json"))
@@ -434,10 +433,10 @@ class Project(Component):
         if self.endpoint.edition() == c.CE:
             log.info("Community edition, skipping binding validation...")
             return []
-        elif not audit_settings.get("audit.projects.bindings", True):
+        if not audit_settings.get("audit.projects.bindings", True):
             log.info("%s binding validation disabled, skipped", str(self))
             return []
-        elif not self.has_binding():
+        if not self.has_binding():
             log.info("%s has no binding, skipping binding validation...", str(self))
             return []
         try:
@@ -1518,10 +1517,7 @@ def import_zip(endpoint: Platform, project_key: str, project_name: Optional[str]
         o_proj = Project.create(key=project_key, endpoint=endpoint, name=project_name)
     except exceptions.ObjectAlreadyExists:
         o_proj = Project.get_object(key=project_key, endpoint=endpoint)
-    if o_proj.last_analysis() is None:
-        s = o_proj.import_zip(asynchronous=False, timeout=import_timeout)
-    else:
-        s = ZIP_PROJ_EXISTS
+    s = o_proj.import_zip(asynchronous=False, timeout=import_timeout) if o_proj.last_analysis() is None else ZIP_PROJ_EXISTS
     return o_proj, s
 
 

@@ -47,7 +47,7 @@ class Problem:
             self.severity = kwargs["severity"]
         log.warning(self.message)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Type: {self.type} - Severity: {self.severity} - Description: {self.message}"
 
     def to_json(self, with_url=False):

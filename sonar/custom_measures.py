@@ -20,13 +20,12 @@
 """Abstraction of the SonarQube "custom measure" concept"""
 
 import json
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Optional
 
 from sonar.sqobject import SqObject
+from sonar.platform import Platform
+from sonar.util.types import ApiPayload
 
-if TYPE_CHECKING:
-    from sonar.platform import Platform
-    from sonar.util.types import ApiPayload
 
 
 class CustomMeasure(SqObject):

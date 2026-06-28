@@ -22,7 +22,6 @@
 from __future__ import annotations
 from typing import Optional, Union, TYPE_CHECKING
 
-import datetime
 
 import sonar.logging as log
 import sonar.utilities as sutil
@@ -32,6 +31,7 @@ from sonar.audit.problem import Problem
 import sonar.dce.nodes as dce_nodes
 
 if TYPE_CHECKING:
+    import datetime
     from sonar.util.types import ConfigSettings
 
 _SYSTEM = "System"
@@ -115,10 +115,8 @@ def audit(sub_sif: dict[str, str], sif_object: object, audit_settings: ConfigSet
     :param audit_settings: Config settings for audit
     :return: List of Problems
     """
-    nodes = []
+    nodes = [AppNode(n, sif_object) for n in sub_sif]
     problems = []
-    for n in sub_sif:
-        nodes.append(AppNode(n, sif_object))
     if len(nodes) == 1:
         return [Problem(get_rule(RuleId.DCE_APP_CLUSTER_NOT_HA), "AppNodes Cluster")]
     for node_1 in nodes:

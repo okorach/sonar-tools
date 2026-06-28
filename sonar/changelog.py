@@ -22,12 +22,12 @@
 
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
-from datetime import datetime
 import sonar.logging as log
 import sonar.util.misc as util
 from sonar.util import issue_defs as idefs
 
 if TYPE_CHECKING:
+    from datetime import datetime
     from sonar.util.types import ApiPayload
 
 

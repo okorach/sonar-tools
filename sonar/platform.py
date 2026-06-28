@@ -137,7 +137,7 @@ class Platform(object):
                     self.external_url = s
         except (ConnectionError, RequestException) as e:
             sutil.handle_error(e, "verifying connection", catch_all=True)
-            raise exceptions.ConnectionError(f"{e} while connecting to {self.local_url}")
+            raise exceptions.ConnectionError(f"{e} while connecting to {self.local_url}") from e
 
     def url(self) -> str:
         """Returns the SonarQube URL"""
@@ -396,7 +396,7 @@ class Platform(object):
                         counter += 1
                     else:
                         log.error("%s while getting system info", sutil.error_msg(e))
-                        raise e
+                        raise
             self._sys_info = json.loads(resp.text)
             success = True
         return self._sys_info
@@ -478,10 +478,7 @@ class Platform(object):
 
     def __urlstring(self, api: str, params: Optional[ApiParams] = None, data: Optional[str] = None, host: Optional[str] = None) -> str:
         """Returns a string corresponding to the URL and parameters"""
-        if host is not None:
-            url = f"{sutil.redacted_token(self.__token)}@{host}{api}"
-        else:
-            url = f"{self}{api}"
+        url = f"{sutil.redacted_token(self.__token)}@{host}{api}" if host is not None else f"{self}{api}"
         params_string = ""
         if isinstance(params, str):
             params_string = params

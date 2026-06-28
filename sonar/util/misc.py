@@ -45,10 +45,8 @@ def convert_string(value: str) -> Union[str, int, float, bool]:
         try:
             new_val = int(value)
         except ValueError:
-            try:
+            with contextlib.suppress(ValueError):
                 new_val = float(value)
-            except ValueError:
-                pass
     return new_val
 
 
@@ -189,8 +187,8 @@ def none_to_zero(d: dict[str, Any], key_match: str = "^.+$") -> dict[str, Any]:
         elif isinstance(v, dict):
             new_d[k] = none_to_zero(v)
         elif isinstance(v, list):
-            v = [0 if elem is None else elem for elem in v]
-            new_d[k] = [none_to_zero(elem) if isinstance(elem, dict) else elem for elem in v]
+            v_list = [0 if elem is None else elem for elem in v]
+            new_d[k] = [none_to_zero(elem) if isinstance(elem, dict) else elem for elem in v_list]
     return new_d
 
 

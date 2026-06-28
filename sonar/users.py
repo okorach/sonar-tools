@@ -100,10 +100,7 @@ class User(SqObject):
         if is_local:
             params["password"] = password or login
         api, _, params, ret = endpoint.api.get_details(cls, Oper.CREATE, **params)
-        if ret:
-            data = json.loads(endpoint.post(api, params=params).text)[ret]
-        else:
-            data = json.loads(endpoint.post(api, params=params).text)
+        data = json.loads(endpoint.post(api, params=params).text)[ret] if ret else json.loads(endpoint.post(api, params=params).text)
         return cls.load(endpoint=endpoint, data=data)
 
     @classmethod
@@ -205,7 +202,7 @@ class User(SqObject):
         if self._groups is not None and use_cache:
             return self._groups
         if not self.endpoint.is_sonarcloud() and self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
-            self._groups = list(set(self.sq_json.get("groups", []) + [self.endpoint.default_user_group()]))
+            self._groups = list({*self.sq_json.get("groups", []), self.endpoint.default_user_group()})
         else:
             max_ps = self.endpoint.api.max_page_size(self, Oper.LIST_GROUPS)
             # TODO: handle pagination
@@ -261,10 +258,7 @@ class User(SqObject):
         if self.__class__.CACHE.get(self.endpoint.local_url, new_login):
             raise exceptions.ObjectAlreadyExists(new_login, f"User '{new_login}' already exists")
         api, method, params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, login=self.login, newLogin=new_login, id=self.user_id)
-        if method == "PATCH":
-            ok = self.endpoint.patch(api, params=params).ok
-        else:
-            ok = self.endpoint.post(api, params=params).ok
+        ok = self.endpoint.patch(api, params=params).ok if method == "PATCH" else self.endpoint.post(api, params=params).ok
         if ok:
             self.__class__.CACHE.pop(self)
             self.login = new_login
@@ -294,10 +288,7 @@ class User(SqObject):
         )
         if len(params) == 0:
             return self
-        if method == "PATCH":
-            ok = self.endpoint.patch(api, params=params).ok
-        else:
-            ok = self.endpoint.post(api, params=params).ok
+        ok = self.endpoint.patch(api, params=params).ok if method == "PATCH" else self.endpoint.post(api, params=params).ok
         if ok:
             if kwargs.get("name"):
                 self.name = kwargs["name"]
@@ -317,7 +308,7 @@ class User(SqObject):
         if group.is_default():
             raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't add membership for {self}")
         if group.add_user(self):
-            self._groups = sorted(set(self._groups + [group_name]))
+            self._groups = sorted({*self._groups, group_name})
             return True
         return False
 

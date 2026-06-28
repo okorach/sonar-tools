@@ -28,10 +28,10 @@ import json
 import sonar.logging as log
 from sonar import exceptions
 import sonar.utilities as sutil
-from sonar.audit.problem import Problem
 from sonar.permissions import permissions
 
 if TYPE_CHECKING:
+    from sonar.audit.problem import Problem
     from sonar.util.types import ConfigSettings, JsonPermissions, ObjectJsonRepr
 
 MAX_PERMS = 25

@@ -37,6 +37,7 @@ from sonar.util import types, constants as c
 import sonar.util.misc as util
 
 import cli.options as opt
+import contextlib
 
 
 SQ_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
@@ -191,7 +192,6 @@ def final_exit(exit_code: int, err_msg: Optional[str] = None, start_time: Option
     """Fatal exit with error msg"""
     if exit_code != errcodes.OK:
         log.fatal(err_msg)
-        print(f"FATAL: {err_msg}", file=sys.stderr)
     if start_time:
         log.info("Total execution time: %s", str(datetime.datetime.now() - start_time))
     sys.exit(exit_code)
@@ -209,10 +209,8 @@ def convert_string(value: str) -> Union[str, int, float, bool]:
         try:
             value = int(value)
         except ValueError:
-            try:
+            with contextlib.suppress(ValueError):
                 value = float(value)
-            except ValueError:
-                pass
     return value
 
 
@@ -418,7 +416,7 @@ def inline_lists(element: Any, exception_values: tuple[str]) -> Any:
             if k not in exception_values:
                 new_dict[k] = inline_lists(v, exception_values=exception_values)
         return new_dict
-    elif isinstance(element, (list, set)):
+    if isinstance(element, (list, set)):
         cannot_be_csv = any(not isinstance(v, str) or "," in v for v in element)
         return element if cannot_be_csv else util.list_to_csv(element, separator=", ")
 

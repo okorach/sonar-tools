@@ -77,7 +77,7 @@ def main() -> None:
     external_issues = {"rules": list(rules_dict.values()), "issues": issue_list}
     if v1:
         external_issues.pop("rules")
-    print(json.dumps(external_issues, indent=3, separators=(",", ": ")))
+    print(json.dumps(external_issues, indent=3, separators=(",", ": ")))  # noqa: T201
 
 
 if __name__ == "__main__":

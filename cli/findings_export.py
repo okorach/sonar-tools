@@ -29,11 +29,9 @@ from typing import Union, TextIO, TYPE_CHECKING
 import os
 import csv
 import concurrent.futures
-from argparse import Namespace
 import traceback
 
 from cli import options
-from sonar.util.types import ConfigSettings
 import sonar.logging as log
 from sonar import platform, exceptions, errcodes, version
 from sonar import hotspots, findings
@@ -52,6 +50,8 @@ from sonar.rules import Rule
 from sonar.issues import TooManyFacetsError
 
 if TYPE_CHECKING:
+    from sonar.util.types import ConfigSettings
+    from argparse import Namespace
     from sonar.projects import Project
     from sonar.components import Component
     from sonar.branches import Branch
@@ -449,8 +449,7 @@ def main() -> None:
             if not dependency_risks.sca_enabled(sqenv):
                 chelp.clear_cache_and_exit(
                     errcodes.UNSUPPORTED_OPERATION,
-                    f"--{options.TYPES} {idefs.TYPE_DEPENDENCY_RISK} "
-                    + "requires the SonarQube Advanced Security add-on, which is not enabled on this platform",
+                    f"--{options.TYPES} {idefs.TYPE_DEPENDENCY_RISK} requires the SonarQube Advanced Security add-on, which is not enabled on this platform",
                 )
             if params[options.COMPONENT_TYPE] == "applications":
                 components_list = _expand_applications_to_components(components_list)

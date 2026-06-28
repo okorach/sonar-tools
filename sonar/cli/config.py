@@ -225,9 +225,12 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
         }
     )
     log.info("Exporting with settings: %s", util.json_dump(sutil.redact_tokens(export_settings)))
-    if "projects" in what and kwargs[options.KEY_REGEXP]:
-        if len(component_helper.get_components(endpoint, "projects", kwargs[options.KEY_REGEXP])) == 0:
-            chelp.clear_cache_and_exit(errcodes.WRONG_SEARCH_CRITERIA, f"No projects matching regexp '{kwargs[options.KEY_REGEXP]}'")
+    if (
+        "projects" in what
+        and kwargs[options.KEY_REGEXP]
+        and len(component_helper.get_components(endpoint, "projects", kwargs[options.KEY_REGEXP])) == 0
+    ):
+        chelp.clear_cache_and_exit(errcodes.WRONG_SEARCH_CRITERIA, f"No projects matching regexp '{kwargs[options.KEY_REGEXP]}'")
 
     what.append(c.CONFIG_KEY_PLATFORM)
     log.info("Exporting configuration from %s", kwargs[options.URL])

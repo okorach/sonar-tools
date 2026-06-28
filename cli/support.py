@@ -93,7 +93,7 @@ def __get_issue_id(**kwargs):
     return json.loads(r.text)["issueId"]
 
 
-def __add_comment(comment, **kwargs):
+def __add_comment(comment, **kwargs) -> None:
     url = f'{kwargs["url"]}/rest/api/2/issue/{__get_issue_id(**kwargs)}/comment'
     requests.post(url, auth=kwargs["creds"], json={"body": comment, "properties": PRIVATE_COMMENT}, timeout=10)
 
@@ -142,7 +142,7 @@ def build_jira_comments(problems) -> str:
     return "\n".join([f"{sev_symbol(p.severity)} {p.message}" for p in problems])
 
 
-def main():
+def main() -> None:
     kwargs = vars(__get_args("Audits a Sonar ServiceDesk ticket (Searches for SIF attachment and audits SIF)"))
     kwargs["creds"] = (kwargs.pop("login"), kwargs.pop("password"))
     if not kwargs["ticket"].startswith("SUPPORT-"):
@@ -158,7 +158,6 @@ def main():
         try:
             problems = sif.Sif(sysinfo).audit(settings)
             comment += f"h3. SIF *[^{file}]* audit:\n"
-            print(f"SIF file '{file}' audit:")
             if problems:
                 found_problems = True
                 log.warning("%d issues found during audit", len(problems))
@@ -166,7 +165,6 @@ def main():
                 comment += build_jira_comments(problems)
             else:
                 log.info("%d issues found during audit", len(problems))
-                print("No issues found is SIF")
                 comment += "(y) No issues found\n"
 
         except sif.NotSystemInfo:

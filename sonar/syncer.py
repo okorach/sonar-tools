@@ -29,11 +29,11 @@ import traceback
 import sonar.logging as log
 import sonar.util.misc as util
 from sonar import findings
-from sonar.projects import Project
-from sonar.branches import Branch
 from sonar import exceptions
 
 if TYPE_CHECKING:
+    from sonar.branches import Branch
+    from sonar.projects import Project
     from sonar.util.types import ConfigSettings
 
 
@@ -265,7 +265,7 @@ def sync_lists(
     syncer = sync_settings[SYNC_SERVICE_ACCOUNT]
     for finding in src_findings:
         modifiers = finding.modifiers().union(finding.commenters())
-        if len(modifiers) == 1 and list(modifiers)[0] == syncer:
+        if len(modifiers) == 1 and next(iter(modifiers)) == syncer:
             log.info("%s has only been changed by %s, so it will not be synchronized despite having a changelog", finding, syncer)
             continue
         interesting_src_findings.append(finding)
@@ -477,7 +477,7 @@ def __filter_service_account_only(finding_list: list[findings.Finding], service_
     interesting = []
     for finding in finding_list:
         modifiers = finding.modifiers().union(finding.commenters())
-        if len(modifiers) == 1 and list(modifiers)[0] == service_account:
+        if len(modifiers) == 1 and next(iter(modifiers)) == service_account:
             log.info("%s has only been changed by %s, so it will not be synchronized despite having a changelog", finding, service_account)
             continue
         interesting.append(finding)
@@ -592,7 +592,7 @@ def _sync_dependency_risks(
     interesting = []
     for dr in src_drs:
         modifiers = dr.modifiers().union(dr.commenters())
-        if len(modifiers) == 1 and list(modifiers)[0] == syncer_account:
+        if len(modifiers) == 1 and next(iter(modifiers)) == syncer_account:
             log.info("%s has only been changed by %s, skipping", dr, syncer_account)
             continue
         interesting.append(dr)

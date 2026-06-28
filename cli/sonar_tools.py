@@ -27,7 +27,7 @@ import sonar.util.common_helper as chelp
 
 def main() -> None:
     """Main entry point for sonar-tools"""
-    print(
+    print(  # noqa: T201
         f"""
 sonar-tools version {version.PACKAGE_VERSION}
 (c) Olivier Korach 2019-2026

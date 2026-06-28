@@ -37,54 +37,55 @@ def main() -> None:
     rules_dict = {}
     issue_list = {}
 
-    for issue in json.loads(text)["Results"][0]["Vulnerabilities"]:
-        sonar_issue = {
-            "ruleId": f"{TOOLNAME}:{issue['VulnerabilityID']}",
-            "effortMinutes": 30,
-            "primaryLocation": {
-                "message": f"{issue['VulnerabilityID']} - {issue['Title']}",
-                "filePath": "conf/snapshot.Dockerfile",
-                "textRange": {
-                    "startLine": 1,
-                    # "endLine": 1,
-                    # "startColumn": 1,
-                    # "endColumn": 1,
+    for result in json.loads(text).get("Results", []):
+        for issue in result.get("Vulnerabilities", []):
+            sonar_issue = {
+                "ruleId": f"{TOOLNAME}:{issue['VulnerabilityID']}",
+                "effortMinutes": 30,
+                "primaryLocation": {
+                    "message": f"{issue['VulnerabilityID']} - {issue['Title']}",
+                    "filePath": "conf/snapshot.Dockerfile",
+                    "textRange": {
+                        "startLine": 1,
+                        # "endLine": 1,
+                        # "startColumn": 1,
+                        # "endColumn": 1,
+                    },
                 },
-            },
-        }
-        # score = max([v["V3Score"] for v in issue['CVSS'].values()])
-        # if score <= 4:
-        #     sev = "LOW"
-        # elif score <= 7:
-        #     sev = "MEDIUM"
-        # else:
-        #     sev = "HIGH"
-        sev_mqr = issue.get("Severity", "MEDIUM")
-        sev_mqr = TRIVY_TO_MQR_MAPPING.get(sev_mqr, sev_mqr)
-        if sev_mqr == "UNKNOWN":
-            sev_mqr = "MEDIUM"
-        rules_dict[f"{TOOLNAME}:{issue['VulnerabilityID']}"] = {
-            "id": f"{TOOLNAME}:{issue['VulnerabilityID']}",
-            "name": f"{TOOLNAME}:{issue['VulnerabilityID']} - {issue['Title']}",
-            "description": issue.get("Description", ""),
-            "engineId": TOOLNAME,
-            "type": "VULNERABILITY",
-            "severity": MAPPING.get(sev_mqr, sev_mqr),
-            "cleanCodeAttribute": "LOGICAL",
-            "impacts": [{"softwareQuality": "SECURITY", "severity": sev_mqr}],
-        }
-        if v1:
-            sonar_issue["engineId"] = TOOLNAME
-            sonar_issue["severity"] = MAPPING.get(sev_mqr, sev_mqr)
-            sonar_issue["type"] = "VULNERABILITY"
-        issue_list[sonar_issue["primaryLocation"]["message"]] = sonar_issue
+            }
+            # score = max([v["V3Score"] for v in issue['CVSS'].values()])
+            # if score <= 4:
+            #     sev = "LOW"
+            # elif score <= 7:
+            #     sev = "MEDIUM"
+            # else:
+            #     sev = "HIGH"
+            sev_mqr = issue.get("Severity", "MEDIUM")
+            sev_mqr = TRIVY_TO_MQR_MAPPING.get(sev_mqr, sev_mqr)
+            if sev_mqr == "UNKNOWN":
+                sev_mqr = "MEDIUM"
+            rules_dict[f"{TOOLNAME}:{issue['VulnerabilityID']}"] = {
+                "id": f"{TOOLNAME}:{issue['VulnerabilityID']}",
+                "name": f"{TOOLNAME}:{issue['VulnerabilityID']} - {issue['Title']}",
+                "description": issue.get("Description", ""),
+                "engineId": TOOLNAME,
+                "type": "VULNERABILITY",
+                "severity": MAPPING.get(sev_mqr, sev_mqr),
+                "cleanCodeAttribute": "LOGICAL",
+                "impacts": [{"softwareQuality": "SECURITY", "severity": sev_mqr}],
+            }
+            if v1:
+                sonar_issue["engineId"] = TOOLNAME
+                sonar_issue["severity"] = MAPPING.get(sev_mqr, sev_mqr)
+                sonar_issue["type"] = "VULNERABILITY"
+            issue_list[sonar_issue["primaryLocation"]["message"]] = sonar_issue
 
     if len(issue_list) == 0:
         return
     external_issues = {"rules": list(rules_dict.values()), "issues": list(issue_list.values())}
     if v1:
         external_issues.pop("rules")
-    print(json.dumps(external_issues, indent=3, separators=(",", ": ")))
+    print(json.dumps(external_issues, indent=3, separators=(",", ": ")))  # noqa: T201
 
 
 if __name__ == "__main__":

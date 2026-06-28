@@ -363,9 +363,8 @@ class Portfolio(aggregations.Aggregation):
                 subp_key = subp_json.pop("key")
                 json_data["portfolios"][subp_key] = subp_json
         mode = self.selection_mode.copy()
-        if mode:
-            if "none" not in mode:
-                json_data["projects"] = mode
+        if mode and "none" not in mode:
+            json_data["projects"] = mode
         json_data["applications"] = self._applications
         return json_data
 
