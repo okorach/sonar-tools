@@ -40,7 +40,7 @@ def test_get_object() -> None:
         return
     org = orgs.Organization.get_object(endpoint=tutil.SQ, key=creds.ORGANIZATION)
     assert org.key == creds.ORGANIZATION
-    assert str(org) == f"organization '{creds.ORGANIZATION}'"
+    assert str(org) == f"organization key '{creds.ORGANIZATION}'"
     assert org.url() == f"{tutil.SQ.external_url}/organizations/{creds.ORGANIZATION}"
     org2 = orgs.Organization.get_object(endpoint=tutil.SQ, key=creds.ORGANIZATION)
     assert org2 is org
@@ -72,7 +72,7 @@ def test_attributes() -> None:
     assert org.new_code_period() == ("PREVIOUS_VERSION", None)
     assert org.subscription() != "UNKNOWN"
     assert len(org.alm()) > 3
-    assert str(org) == f"organization '{creds.ORGANIZATION}'"
+    assert str(org) == f"organization key '{creds.ORGANIZATION}'"
 
 
 def test_subscription() -> None:

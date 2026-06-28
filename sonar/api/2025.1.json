@@ -1227,11 +1227,11 @@
         },
         "GET_MQR_MODE": {
             "method": "GET",
-            "api": "api/v2/clean-code-policy/mode"
+            "api": "v2/clean-code-policy/mode"
         },
         "SET_MQR_MODE": {
             "method": "PATCH",
-            "api": "api/v2/clean-code-policy/mode",
+            "api": "v2/clean-code-policy/mode",
             "params": [
                 "mode"
             ]

@@ -104,7 +104,10 @@ def test_normalize_api() -> None:
 
 
 def test_release_date() -> None:
-    assert datetime(2022, 1, 1).date() < tutil.SQ.release_date() <= datetime.today().date()
+    if tutil.SQ.is_sonarcloud():
+        assert tutil.SQ.release_date() is None
+    else:
+        assert datetime(2022, 1, 1).date() < tutil.SQ.release_date() <= datetime.today().date()
     assert tutil.SC.release_date() is None
 
 

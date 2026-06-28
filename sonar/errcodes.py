@@ -72,3 +72,6 @@ SONAR_INTERNAL_ERROR = 17
 
 # sonar-config JSON schema error
 SCHEMA_ERROR = 18
+
+# Organization not found (SonarQube Cloud only)
+NO_SUCH_ORG = 19

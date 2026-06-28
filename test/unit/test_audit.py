@@ -31,7 +31,7 @@ from sonar.audit import rules
 def test_audit_proj_good_key_pattern() -> None:
     """test_audit_cmd_line_settings"""
     if tutil.SQ.is_sonarcloud():
-        map_patterns = {"": None, "okorach_.+": None}
+        map_patterns = {"": None, ".+": None, "okorach-oss_.+": None}
     else:
         map_patterns = {"": "BANKING.+", ".+": "BANKING.+", "(BANK|INSU|demo:).+": "(BANKING|INSURANCE|demo:).+"}
 

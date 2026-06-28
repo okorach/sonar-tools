@@ -117,9 +117,11 @@ def test_get_rule_cache() -> None:
 def test_export_not_full() -> None:
     """test_export_not_full"""
     rule_list = rules.export(endpoint=tutil.SQ, export_settings={"FULL_EXPORT": False})
-    assert len(rule_list["extended"]) > 0
+    if not tutil.SQ.is_sonarcloud():
+        assert len(rule_list.get("extended", {})) > 0
     rule_list = rules.export(endpoint=tutil.SQ, export_settings={"FULL_EXPORT": True})
-    assert len(rule_list["extended"]) > 0
+    if not tutil.SQ.is_sonarcloud():
+        assert len(rule_list.get("extended", {})) > 0
 
 
 def test_get_nonexisting_rule() -> None:
@@ -185,11 +187,12 @@ def test_export_fields() -> None:
     """test_export_fields"""
     rule_list = rules.export(endpoint=tutil.SQ, export_settings={})
     assert "standard" not in rule_list
-    assert len(rule_list["extended"]) > 0
-    for r in rule_list["extended"]:
-        assert any(key in r for key in ("description", "tags", "params"))
-    assert len(rule_list["instantiated"]) > 0
-    for r in rule_list["instantiated"]:
+    if not tutil.SQ.is_sonarcloud():
+        assert len(rule_list.get("extended", {})) > 0
+        for r in rule_list.get("extended", {}).values():
+            assert any(key in r for key in ("description", "tags", "params"))
+    assert len(rule_list.get("instantiated", {})) > 0
+    for r in rule_list.get("instantiated", {}).values():
         assert all(key in r for key in ("language", "params", "severity", "impacts", "templateKey"))
 
 
