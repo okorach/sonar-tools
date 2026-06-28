@@ -23,6 +23,7 @@
 import enum
 import json
 from typing import Optional
+
 import sonar.logging as log
 from sonar.audit import severities, types
 

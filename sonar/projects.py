@@ -20,46 +20,42 @@
 """Abstraction of the SonarQube "project" concept"""
 
 from __future__ import annotations
-from typing import Optional, Union, Any, TYPE_CHECKING
-from types import MappingProxyType
 
+import concurrent.futures
+import json
 import os
 import re
-import json
-import concurrent.futures
-from datetime import datetime
 import traceback
-
+from datetime import datetime
 from http import HTTPStatus
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 from requests import RequestException
 
 import sonar.logging as log
-from sonar.components import Component
-import sonar.util.issue_defs as idefs
-from sonar.util import cache
-from sonar import exceptions
-from sonar import qualityprofiles, settings, webhooks, devops
-from sonar import qualitygates as qg
-from sonar import pull_requests, branches
-import sonar.util.misc as util
 import sonar.permissions.project_permissions as pperms
-import sonar.utilities as sutil
-
-from sonar.audit import severities
-from sonar.audit.rules import get_rule, RuleId
-from sonar.audit.problem import Problem
 import sonar.util.constants as c
+import sonar.util.issue_defs as idefs
+import sonar.util.misc as util
 import sonar.util.project_helper as phelp
+import sonar.utilities as sutil
+from sonar import branches, devops, exceptions, measures, pull_requests, qualityprofiles, settings, webhooks
+from sonar import qualitygates as qg
 from sonar.api.manager import ApiOperation as Oper
-from sonar import measures
+from sonar.audit import severities
+from sonar.audit.problem import Problem
+from sonar.audit.rules import RuleId, get_rule
+from sonar.components import Component
+from sonar.util import cache
 
 if TYPE_CHECKING:
-    from sonar.tasks import Task
     from sonar.branches import Branch
-    from sonar.pull_requests import PullRequest
-    from sonar.issues import Issue
     from sonar.hotspots import Hotspot
+    from sonar.issues import Issue
     from sonar.platform import Platform
+    from sonar.pull_requests import PullRequest
+    from sonar.tasks import Task
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, PermissionDef
 
 MAX_PAGE_SIZE = 500
@@ -604,7 +600,7 @@ class Project(Component):
         :param int timeout: timeout in seconds to complete the export operation
         :returns: export status (success/failure/timeout), and zip file path
         """
-        from sonar.tasks import Task, SUCCESS
+        from sonar.tasks import SUCCESS, Task
 
         log.info("Exporting %s (%s)", str(self), "asynchronously" if asynchronous else "synchronously")
         try:
@@ -641,7 +637,7 @@ class Project(Component):
         :param int timeout: timeout in seconds to complete the export operation
         :return: SUCCESS or FAILED with reason
         """
-        from sonar.tasks import Task, ZIP_MISSING, SUCCESS
+        from sonar.tasks import SUCCESS, ZIP_MISSING, Task
 
         mode = "asynchronously" if asynchronous else "synchronously"
         log.info("Importing %s (%s)", str(self), mode)
@@ -704,7 +700,7 @@ class Project(Component):
         :param search_params: Any search parameter
         :return: List of all findings, with finding key as key
         """
-        from sonar import issues, hotspots, findings
+        from sonar import findings, hotspots, issues
 
         log.info("Exporting findings for %s with params %s", str(self), search_params)
         findings_list: dict[str, Union[Issue, Hotspot]] = {}

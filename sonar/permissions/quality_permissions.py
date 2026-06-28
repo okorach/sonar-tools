@@ -21,13 +21,13 @@
 """Parent permissions class for quality gates and quality profiles permissions subclasses"""
 
 from __future__ import annotations
-from typing import Optional, Callable, Any, TYPE_CHECKING
 
 import json
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import sonar.logging as log
-from sonar import exceptions
 import sonar.utilities as sutil
+from sonar import exceptions
 from sonar.permissions import permissions
 
 if TYPE_CHECKING:

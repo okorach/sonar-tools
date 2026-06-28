@@ -20,6 +20,7 @@
 """Helper tools for the Rule object"""
 
 from typing import Any
+
 import sonar.util.misc as util
 import sonar.utilities as sutil
 

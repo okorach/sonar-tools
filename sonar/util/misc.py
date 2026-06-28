@@ -19,15 +19,14 @@
 #
 """Miscellaneous utilities"""
 
-from typing import Union, Optional, Any
+import contextlib
 import json
 import re
-from datetime import datetime, date, timezone, timedelta
-import contextlib
 import sys
-from typing import TextIO
 from collections.abc import Generator
 from copy import deepcopy
+from datetime import date, datetime, timedelta, timezone
+from typing import Any, Optional, TextIO, Union
 
 ISO_DATE_FORMAT = "%04d-%02d-%02d"
 

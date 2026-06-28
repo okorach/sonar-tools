@@ -21,30 +21,30 @@
 """Abstraction of the SonarQube issue concept"""
 
 from __future__ import annotations
-from typing import Any, Union, Optional, TYPE_CHECKING
 
-import math
-from datetime import date, datetime, timedelta
+import concurrent.futures
 import json
+import math
 import re
 from copy import deepcopy
-import concurrent.futures
+from datetime import date, datetime, timedelta
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 import requests.utils
 
 import sonar.logging as log
-from sonar.util import cache, issue_defs as idefs
 import sonar.util.constants as c
-
-from sonar import users, findings, changelog, rules, config, exceptions, errcodes
-from sonar.projects import Project
-
 import sonar.util.misc as util
 import sonar.utilities as sutil
+from sonar import changelog, config, errcodes, exceptions, findings, rules, users
 from sonar.api.manager import ApiOperation as Oper
+from sonar.projects import Project
+from sonar.util import cache
+from sonar.util import issue_defs as idefs
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import SearchParams, ApiPayload, ObjectJsonRepr, ConfigSettings
+    from sonar.util.types import ApiPayload, ConfigSettings, ObjectJsonRepr, SearchParams
 
 
 _MAX_FACETS = 100

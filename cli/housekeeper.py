@@ -25,15 +25,16 @@ Currently:
 """
 
 from requests import RequestException
-from cli import options
-import sonar.logging as log
-from sonar import platform, tokens, users, projects, branches, pull_requests, version, errcodes
-import sonar.util.constants as c
-import sonar.utilities as sutil
-import sonar.util.misc as util
+
 import sonar.exceptions as ex
-from sonar.audit import problem
+import sonar.logging as log
 import sonar.util.common_helper as chelp
+import sonar.util.constants as c
+import sonar.util.misc as util
+import sonar.utilities as sutil
+from cli import options
+from sonar import branches, errcodes, platform, projects, pull_requests, tokens, users, version
+from sonar.audit import problem
 
 TOOL_NAME = "sonar-housekeeper"
 PROJ_MAX_AGE = "audit.projects.maxLastAnalysisAge"

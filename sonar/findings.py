@@ -20,32 +20,32 @@
 """Findings abstraction"""
 
 from __future__ import annotations
+
 import concurrent.futures
 import contextlib
-from typing import Optional, Any, Union, TYPE_CHECKING
-
 import json
 import re
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 import Levenshtein
 
-from sonar.sqobject import SqObject
 import sonar.logging as log
-from sonar.util import constants as c
-from sonar import exceptions
-
+import sonar.util.issue_defs as idefs
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar import projects, rules
-import sonar.util.issue_defs as idefs
+from sonar import exceptions, projects, rules
 from sonar.api.manager import ApiOperation as Oper
+from sonar.sqobject import SqObject
+from sonar.util import constants as c
 
 if TYPE_CHECKING:
-    from sonar.issues import Issue
-    from sonar.hotspots import Hotspot
-    from sonar.platform import Platform
     from datetime import datetime
-    from sonar.util.types import ApiPayload, ObjectJsonRepr
+
     from sonar.changelog import Changelog
+    from sonar.hotspots import Hotspot
+    from sonar.issues import Issue
+    from sonar.platform import Platform
+    from sonar.util.types import ApiPayload, ObjectJsonRepr
 
     IssueOrHotspot = Union[Issue, Hotspot]
 

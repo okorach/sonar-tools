@@ -21,19 +21,19 @@
 """SonarQube API manager"""
 
 from __future__ import annotations
-from typing import Any, Optional, ClassVar, TYPE_CHECKING
 
+import inspect
+import json
 import os
+from collections import defaultdict
 from enum import Enum
 from pathlib import Path
-import json
-from collections import defaultdict
-import inspect
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
-import sonar.utilities as sutil
 import sonar.logging as log
-from sonar.util import misc
+import sonar.utilities as sutil
 from sonar.exceptions import UnsupportedOperation
+from sonar.util import misc
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

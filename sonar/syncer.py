@@ -21,15 +21,14 @@
 """Findings syncer"""
 
 from __future__ import annotations
-from typing import Union, TYPE_CHECKING
 
 import concurrent.futures
 import traceback
+from typing import TYPE_CHECKING, Union
 
 import sonar.logging as log
 import sonar.util.misc as util
-from sonar import findings
-from sonar import exceptions
+from sonar import exceptions, findings
 
 if TYPE_CHECKING:
     from sonar.branches import Branch

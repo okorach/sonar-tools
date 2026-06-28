@@ -20,7 +20,7 @@
 
 """Sonar Custom Types for type hints"""
 
-from typing import Union, Optional, Any
+from typing import Any, Optional, Union
 
 ConfigSettings = dict[str, Any]
 

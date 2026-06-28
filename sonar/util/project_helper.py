@@ -20,6 +20,7 @@
 """Helper tools for the Project object"""
 
 from typing import Any
+
 import sonar.util.misc as util
 from sonar.util import common_json_helper
 

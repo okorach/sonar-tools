@@ -20,29 +20,29 @@
 """Abstraction of the SonarQube "pull request" concept"""
 
 from __future__ import annotations
-from typing import Optional, Union, Any, TYPE_CHECKING
 
 import json
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 import requests.utils
 
 import sonar.logging as log
-from sonar.util import cache
-from sonar import exceptions
-from sonar.components import Component
-import sonar.util.misc as util
-from sonar.audit.rules import get_rule, RuleId
-from sonar.audit.problem import Problem
 import sonar.util.constants as c
-from sonar.api.manager import ApiOperation as Oper
+import sonar.util.misc as util
+from sonar import exceptions, measures
 from sonar import projects as proj
-from sonar import measures
+from sonar.api.manager import ApiOperation as Oper
+from sonar.audit.problem import Problem
+from sonar.audit.rules import RuleId, get_rule
+from sonar.components import Component
+from sonar.util import cache
 
 if TYPE_CHECKING:
-    from sonar.issues import Issue
-    from sonar.hotspots import Hotspot
     from sonar.dependency_risks import DependencyRisk
-    from sonar.util.types import ApiPayload, ConfigSettings
+    from sonar.hotspots import Hotspot
+    from sonar.issues import Issue
     from sonar.platform import Platform
+    from sonar.util.types import ApiPayload, ConfigSettings
 
 _UNSUPPORTED_IN_CE = "Pull requests not available in Community Edition"
 

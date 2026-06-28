@@ -20,19 +20,21 @@
 """Abstraction of the SonarQube "rule" concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
 
-import json
 import concurrent.futures
+import json
+from typing import TYPE_CHECKING, Any, Optional
 
-from sonar.sqobject import SqObject
 import sonar.logging as log
-from sonar.util import cache, constants as c, issue_defs as idefs
-from sonar import exceptions, languages
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar.util import rule_helper as rhelp
+from sonar import exceptions, languages
 from sonar.api.manager import ApiOperation as Oper
+from sonar.sqobject import SqObject
+from sonar.util import cache
+from sonar.util import constants as c
+from sonar.util import issue_defs as idefs
+from sonar.util import rule_helper as rhelp
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

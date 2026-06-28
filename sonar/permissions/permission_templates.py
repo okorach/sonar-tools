@@ -21,22 +21,22 @@
 """Abstraction of the SonarQube permission template concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
 
 import json
 import re
+from typing import TYPE_CHECKING, Any, Optional
 
-import sonar.logging as log
-from sonar.util import cache
-from sonar.util import platform_helper as phelp
-from sonar import sqobject, exceptions
-from sonar.permissions import template_permissions
-from sonar.audit.rules import get_rule, RuleId
 import sonar.audit.problem as pb
+import sonar.logging as log
 import sonar.util.constants as c
 import sonar.util.misc as util
 import sonar.utilities as sutil
+from sonar import exceptions, sqobject
 from sonar.api.manager import ApiOperation as Oper
+from sonar.audit.rules import RuleId, get_rule
+from sonar.permissions import template_permissions
+from sonar.util import cache
+from sonar.util import platform_helper as phelp
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

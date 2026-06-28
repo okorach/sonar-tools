@@ -21,37 +21,33 @@
 """Abstraction of the SonarQube background task concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, Union, TYPE_CHECKING
 
-from datetime import datetime
-import time
 import json
 import re
+import time
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Optional, Union
 
-from sonar.sqobject import SqObject
 import sonar.logging as log
-from sonar import exceptions
 import sonar.utilities as sutil
-from sonar.audit.rules import get_rule, RuleId
+from sonar import applications, exceptions, portfolios, projects
+from sonar.api.manager import ApiOperation as Oper
 from sonar.audit.problem import Problem
+from sonar.audit.rules import RuleId, get_rule
 from sonar.config import get_scanners_versions
+from sonar.sqobject import SqObject
 from sonar.util import cache
 from sonar.util import misc as util
-from sonar.api.manager import ApiOperation as Oper
-
-from sonar import projects
-from sonar import applications
-from sonar import portfolios
 
 if TYPE_CHECKING:
-    from sonar.platform import Platform
-    from sonar.util.types import ApiPayload, ConfigSettings
-    from sonar.projects import Project
-    from sonar.applications import Application
-    from sonar.portfolios import Portfolio
-    from sonar.branches import Branch
-    from sonar.pull_requests import PullRequest
     from sonar.app_branches import ApplicationBranch
+    from sonar.applications import Application
+    from sonar.branches import Branch
+    from sonar.platform import Platform
+    from sonar.portfolios import Portfolio
+    from sonar.projects import Project
+    from sonar.pull_requests import PullRequest
+    from sonar.util.types import ApiPayload, ConfigSettings
 
     ConcernedObject = Union[Project, Branch, PullRequest, Application, ApplicationBranch, Portfolio]
 

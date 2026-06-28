@@ -24,9 +24,9 @@ Update a custom measure value:
     Usage: cust_measures.py -t <SQ_TOKEN> -u <SQ_URL> -k <projectKey> -m <metricKey> --updateValue <value>
 """
 
-from sonar import errcodes
-import sonar.util.misc as util
 import sonar.util.common_helper as chelp
+import sonar.util.misc as util
+from sonar import errcodes
 
 TOOL_NAME = "sonar-custom-measures"
 

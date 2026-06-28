@@ -20,9 +20,9 @@
 #
 """Converts Ruff report format to Sonar external issues format"""
 
-import sys
-import re
 import json
+import re
+import sys
 
 TOOLNAME = "ruff"
 

@@ -22,6 +22,7 @@
 
 import sys
 from unittest.mock import patch
+
 from cli import findings_export
 from cli.options import TAGS
 

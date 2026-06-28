@@ -20,29 +20,30 @@
 """Abstraction of the SonarQube "component" concept"""
 
 from __future__ import annotations
-from typing import Any, Optional, TYPE_CHECKING
+
 import json
+from typing import TYPE_CHECKING, Any, Optional
 
 from requests import RequestException
 
-from sonar.sqobject import SqObject
-import sonar.util.constants as c
 import sonar.logging as log
-from sonar import settings, measures, rules, exceptions
+import sonar.util.constants as c
 import sonar.util.misc as util
 import sonar.utilities as sutil
+from sonar import exceptions, measures, rules, settings
 from sonar.api.manager import ApiOperation as Oper
-
 from sonar.audit.problem import Problem
-from sonar.audit.rules import get_rule, RuleId
+from sonar.audit.rules import RuleId, get_rule
+from sonar.sqobject import SqObject
 
 if TYPE_CHECKING:
     from datetime import datetime
-    from sonar.tasks import Task
-    from sonar.platform import Platform
+
+    from sonar.dependency_risks import DependencyRisk
     from sonar.hotspots import Hotspot
     from sonar.issues import Issue
-    from sonar.dependency_risks import DependencyRisk
+    from sonar.platform import Platform
+    from sonar.tasks import Task
     from sonar.util.types import ApiPayload, ConfigSettings, KeyList
 
 

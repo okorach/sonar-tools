@@ -20,19 +20,18 @@
 """Abstraction of the Search Node concept"""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from sonar.util.types import ConfigSettings
 
 import sonar.logging as log
-
-import sonar.utilities as sutil
-from sonar.audit.rules import get_rule, RuleId
-from sonar.audit.problem import Problem
-from sonar.dce import nodes
 import sonar.util.constants as c
-
+import sonar.utilities as sutil
+from sonar.audit.problem import Problem
+from sonar.audit.rules import RuleId, get_rule
+from sonar.dce import nodes
 
 _STORE_SIZE = "Store Size"
 _ES_STATE = "Search State"

@@ -20,15 +20,15 @@
 """Cmd line options"""
 
 import os
-import sys
 import random
+import sys
 from argparse import ArgumentParser
-from typing import Optional, Any
+from typing import Any, Optional
 
 import sonar.logging as log
-from sonar import errcodes, version, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
+from sonar import errcodes, exceptions, version
 
 # Command line options
 

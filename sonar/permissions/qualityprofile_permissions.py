@@ -21,6 +21,7 @@
 """Quality profiles permissions class"""
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from sonar.permissions import permissions, quality_permissions

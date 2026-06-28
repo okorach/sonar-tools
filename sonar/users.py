@@ -21,27 +21,28 @@
 """Abstraction of the SonarQube User concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
 
 import concurrent.futures
-from datetime import datetime, timezone, MINYEAR
 import json
+from datetime import MINYEAR, datetime, timezone
+from typing import TYPE_CHECKING, Any, Optional
+
 from requests import RequestException
 
-from sonar.sqobject import SqObject
 import sonar.logging as log
-from sonar.util import cache
 import sonar.util.constants as c
-from sonar import groups, tokens, exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar.audit.rules import get_rule, RuleId
-from sonar.audit.problem import Problem
+from sonar import exceptions, groups, tokens
 from sonar.api.manager import ApiOperation as Oper
+from sonar.audit.problem import Problem
+from sonar.audit.rules import RuleId, get_rule
+from sonar.sqobject import SqObject
+from sonar.util import cache
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiPayload, ConfigSettings, ObjectJsonRepr, KeyList, AuditSettings
+    from sonar.util.types import ApiPayload, AuditSettings, ConfigSettings, KeyList, ObjectJsonRepr
 
 SETTABLE_PROPERTIES = ("login", "name", "email", "groups", "scmAccounts", "local")
 

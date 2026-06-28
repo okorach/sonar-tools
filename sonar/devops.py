@@ -21,15 +21,17 @@
 """Abstraction of the SonarQube DevOps platform concept"""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+
 import json
-from sonar.sqobject import SqObject
+from typing import TYPE_CHECKING, Optional
+
 import sonar.logging as log
-from sonar.util import cache
-from sonar import exceptions
-import sonar.util.misc as util
 import sonar.util.constants as c
+import sonar.util.misc as util
+from sonar import exceptions
 from sonar.api.manager import ApiOperation as Oper
+from sonar.sqobject import SqObject
+from sonar.util import cache
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

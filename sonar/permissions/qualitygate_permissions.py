@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 from typing import Any
+
 import sonar.logging as log
 from sonar.permissions import permissions, quality_permissions
 

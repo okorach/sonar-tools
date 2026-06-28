@@ -20,23 +20,25 @@
 """Abstraction of the SonarQube general object concept"""
 
 from __future__ import annotations
-from typing import Any, Optional, TYPE_CHECKING
 
+import concurrent.futures
 import contextlib
 import json
-import concurrent.futures
+from typing import TYPE_CHECKING, Any, Optional
 
-from sonar.api.manager import ApiOperation as Oper
 import sonar.logging as log
-from sonar.util import cache
-from sonar.util import constants as c
-from sonar import exceptions, errcodes
 import sonar.util.misc as util
 import sonar.utilities as sutil
+from sonar import errcodes, exceptions
+from sonar.api.manager import ApiOperation as Oper
+from sonar.util import cache
+from sonar.util import constants as c
 
 if TYPE_CHECKING:
     from http import HTTPStatus
+
     import requests
+
     from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload
 

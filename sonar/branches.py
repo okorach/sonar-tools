@@ -21,36 +21,35 @@
 """Abstraction of the SonarQube project branch concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, Union, TYPE_CHECKING
 
 import json
 import re
+from typing import TYPE_CHECKING, Any, Optional, Union
 from urllib.parse import unquote
+
 import requests.utils
 
-from sonar.util import cache
 import sonar.logging as log
-from sonar import components, settings, exceptions
-
 import sonar.projects as proj
+import sonar.util.constants as c
 import sonar.util.misc as util
 import sonar.utilities as sutil
-
-from sonar.audit.problem import Problem
-from sonar.audit.rules import get_rule, RuleId
-import sonar.util.constants as c
+from sonar import components, exceptions, measures, settings
 from sonar.api.manager import ApiOperation as Oper
-from sonar import measures
+from sonar.audit.problem import Problem
+from sonar.audit.rules import RuleId, get_rule
+from sonar.util import cache
 
 if TYPE_CHECKING:
     from http import HTTPStatus
-    from sonar.tasks import Task
-    from sonar.issues import Issue
+
+    from sonar.components import Component
     from sonar.dependency_risks import DependencyRisk
     from sonar.hotspots import Hotspot
+    from sonar.issues import Issue
     from sonar.platform import Platform
-    from sonar.components import Component
-    from sonar.util.types import ApiPayload, ApiParams, ConfigSettings, ObjectJsonRepr
+    from sonar.tasks import Task
+    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, ObjectJsonRepr
 
 _UNSUPPORTED_IN_CE = "Branches not available in Community Edition"
 

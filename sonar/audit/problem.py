@@ -19,9 +19,9 @@
 #
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
 
 import csv
+from typing import TYPE_CHECKING, Optional
 
 import sonar.logging as log
 import sonar.util.misc as util

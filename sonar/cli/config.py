@@ -20,33 +20,42 @@
 #
 """Exports SonarQube platform configuration as JSON"""
 
-from typing import TextIO, Any, Optional
-from threading import Thread
-from queue import Queue
-
 import json
+import pathlib
+from queue import Queue
+from threading import Thread
+from typing import Any, Optional, TextIO
+
 import jsonschema
 import yaml
-import pathlib
-
-from cli import options
-from sonar import exceptions, errcodes, version
-from sonar.util import misc as util
-import sonar.utilities as sutil
-from sonar.util import types, constants as c
-from sonar.util import platform_helper as pfhelp
-from sonar.util import project_helper as pjhelp
-from sonar.util import portfolio_helper as foliohelp
-from sonar.util import qualityprofile_helper as qphelp
-from sonar.util import rule_helper as rhelp
-from sonar.util import misc
 
 import sonar.logging as log
-from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
-from sonar import projects, portfolios, applications, license_profiles
-from sonar.util import component_helper
 import sonar.util.common_helper as chelp
-
+import sonar.utilities as sutil
+from cli import options
+from sonar import (
+    applications,
+    errcodes,
+    exceptions,
+    groups,
+    license_profiles,
+    platform,
+    portfolios,
+    projects,
+    qualitygates,
+    qualityprofiles,
+    rules,
+    users,
+    version,
+)
+from sonar.util import component_helper, misc, types
+from sonar.util import constants as c
+from sonar.util import misc as util
+from sonar.util import platform_helper as pfhelp
+from sonar.util import portfolio_helper as foliohelp
+from sonar.util import project_helper as pjhelp
+from sonar.util import qualityprofile_helper as qphelp
+from sonar.util import rule_helper as rhelp
 
 TOOL_NAME = "sonar-config"
 

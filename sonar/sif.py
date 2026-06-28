@@ -24,17 +24,15 @@ import datetime
 import re
 from typing import Optional
 
-import sonar.logging as log
-import sonar.utilities as sutil
-from sonar.util import types
-import sonar.util.constants as c
-from sonar.audit.rules import get_rule, RuleId
-from sonar.audit.problem import Problem
-import sonar.sif_node as sifn
-from sonar.util import misc
-
 import sonar.dce.app_nodes as appnodes
 import sonar.dce.search_nodes as searchnodes
+import sonar.logging as log
+import sonar.sif_node as sifn
+import sonar.util.constants as c
+import sonar.utilities as sutil
+from sonar.audit.problem import Problem
+from sonar.audit.rules import RuleId, get_rule
+from sonar.util import misc, types
 
 _APP_NODES = "Application Nodes"
 _ES_NODES = "Search Nodes"

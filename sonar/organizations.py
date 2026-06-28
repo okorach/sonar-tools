@@ -20,21 +20,21 @@
 """Abstraction of the SonarQube Cloud organization concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, Union, TYPE_CHECKING
 
 import json
 from threading import Lock
+from typing import TYPE_CHECKING, Any, Optional, Union
 
-from sonar.sqobject import SqObject
 import sonar.logging as log
-from sonar.util import cache
-from sonar import exceptions
 import sonar.util.misc as util
+from sonar import exceptions
 from sonar.api.manager import ApiOperation as Oper
+from sonar.sqobject import SqObject
+from sonar.util import cache
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, KeyList
+    from sonar.util.types import ApiParams, ApiPayload, KeyList, ObjectJsonRepr
 
 
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "url", "avatar", "newCodePeriod")

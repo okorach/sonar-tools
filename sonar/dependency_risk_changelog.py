@@ -21,15 +21,16 @@
 """Changelog adapter for SCA dependency risk changelog format"""
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
 
 import re
+from typing import TYPE_CHECKING, Optional
 
 import sonar.logging as log
 import sonar.util.misc as util
 
 if TYPE_CHECKING:
     from datetime import datetime
+
     from sonar.util.types import ApiPayload
 
 # SCA timestamps include milliseconds (e.g. "2026-03-27T08:42:12.993Z")

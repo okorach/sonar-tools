@@ -28,19 +28,18 @@ Only issues with a 100% match are synchronized. When there's a doubt, nothing is
 """
 
 import datetime
-from typing import Optional, Union, Any
+from typing import Any, Optional, Union
 
-from cli import options
 import sonar.logging as log
-from sonar.platform import Platform
-from sonar import syncer, exceptions, projects, branches, version
+import sonar.util.common_helper as chelp
 import sonar.util.misc as util
 import sonar.utilities as sutil
-import sonar.util.common_helper as chelp
-from sonar.issues import TooManyFacetsError
-
-from sonar.projects import Project
+from cli import options
+from sonar import branches, exceptions, projects, syncer, version
 from sonar.branches import Branch
+from sonar.issues import TooManyFacetsError
+from sonar.platform import Platform
+from sonar.projects import Project
 
 ProjectOrBranch = Union[Project, Branch]
 

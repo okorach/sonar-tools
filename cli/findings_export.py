@@ -24,41 +24,39 @@ Usage: sonar-findings-export.py -t <SQ_TOKEN> -u <SQ_URL> [<filters>]
 """
 
 from __future__ import annotations
-from typing import Union, TextIO, TYPE_CHECKING
 
-import os
-import csv
 import concurrent.futures
+import csv
+import os
 import traceback
+from typing import TYPE_CHECKING, TextIO, Union
 
-from cli import options
 import sonar.logging as log
-from sonar import platform, exceptions, errcodes, version
-from sonar import hotspots, findings
-from sonar import dependency_risks
-from sonar.dependency_risks import DependencyRisk
-from sonar.util import issue_defs as idefs, types, component_helper
+import sonar.util.common_helper as chelp
 import sonar.util.constants as c
-
 import sonar.util.misc as util
 import sonar.utilities as sutil
-
-import sonar.util.common_helper as chelp
+from cli import options
+from sonar import dependency_risks, errcodes, exceptions, findings, hotspots, platform, version
 from sonar.applications import Application
+from sonar.dependency_risks import DependencyRisk
+from sonar.issues import TooManyFacetsError
 from sonar.portfolios import Portfolio
 from sonar.rules import Rule
-from sonar.issues import TooManyFacetsError
+from sonar.util import component_helper, types
+from sonar.util import issue_defs as idefs
 
 if TYPE_CHECKING:
-    from sonar.util.types import ConfigSettings
     from argparse import Namespace
-    from sonar.projects import Project
-    from sonar.components import Component
-    from sonar.branches import Branch
-    from sonar.pull_requests import PullRequest
-    from sonar.issues import Issue
-    from sonar.hotspots import Hotspot
+
     from sonar.app_branches import ApplicationBranch
+    from sonar.branches import Branch
+    from sonar.components import Component
+    from sonar.hotspots import Hotspot
+    from sonar.issues import Issue
+    from sonar.projects import Project
+    from sonar.pull_requests import PullRequest
+    from sonar.util.types import ConfigSettings
 
     ConcernedObject = Union[Project, Branch, PullRequest, Application, Portfolio, ApplicationBranch]
     Finding = Union[Issue, Hotspot]

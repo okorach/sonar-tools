@@ -21,9 +21,10 @@
 """Cache manager"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
 
 from threading import Lock
+from typing import TYPE_CHECKING, Any, Optional
+
 import sonar.logging as log
 
 if TYPE_CHECKING:

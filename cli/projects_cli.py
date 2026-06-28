@@ -21,18 +21,18 @@
 """Exports/Imports all projects of a SonarQube Server platform"""
 
 from __future__ import annotations
-from typing import Any
+
 import json
+from typing import Any
 
 from requests import RequestException
 
-from cli import options
 import sonar.logging as log
-from sonar import errcodes, exceptions, version
+import sonar.util.common_helper as chelp
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar import projects
-import sonar.util.common_helper as chelp
+from cli import options
+from sonar import errcodes, exceptions, projects, version
 from sonar.platform import Platform
 
 TOOL_NAME = "sonar-projects"

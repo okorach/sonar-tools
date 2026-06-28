@@ -22,12 +22,12 @@
 
 import csv
 
-from cli import options
 import sonar.logging as log
-from sonar import rules, platform, exceptions, errcodes, version, qualityprofiles
-import sonar.utilities as sutil
-import sonar.util.misc as util
 import sonar.util.common_helper as chelp
+import sonar.util.misc as util
+import sonar.utilities as sutil
+from cli import options
+from sonar import errcodes, exceptions, platform, qualityprofiles, rules, version
 
 TOOL_NAME = "sonar-rules"
 

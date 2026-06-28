@@ -21,7 +21,8 @@
 """Abstraction of the SonarQube metric concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Any, Optional
 
 from sonar.sqobject import SqObject
 from sonar.util import cache

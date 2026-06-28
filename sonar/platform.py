@@ -20,33 +20,32 @@
 """Abstraction of the SonarQube platform or instance concept"""
 
 from __future__ import annotations
-from typing import Any, Union, Optional, Callable, TYPE_CHECKING
 
-from http import HTTPStatus
-import re
-import time
 import datetime
 import json
+import re
+import time
+from http import HTTPStatus
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
+
 import requests
 from requests import HTTPError, RequestException
 
-import sonar.logging as log
-import sonar.util.misc as util
-import sonar.utilities as sutil
-from sonar.util import update_center
-import sonar.util.constants as c
-import sonar.util.platform_helper as pfhelp
-
-from sonar import errcodes, settings, devops, version, sif, exceptions, organizations
-from sonar.permissions import permissions, global_permissions, permission_templates
-from sonar.audit.rules import get_rule, RuleId
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
-from sonar.audit.problem import Problem
-from sonar import webhooks
-from sonar.api.manager import ApiOperation as Oper
+import sonar.logging as log
+import sonar.util.constants as c
+import sonar.util.misc as util
+import sonar.util.platform_helper as pfhelp
+import sonar.utilities as sutil
+from sonar import devops, errcodes, exceptions, organizations, settings, sif, version, webhooks
 from sonar.api.manager import ApiManager as Api
+from sonar.api.manager import ApiOperation as Oper
+from sonar.audit.problem import Problem
+from sonar.audit.rules import RuleId, get_rule
+from sonar.permissions import global_permissions, permission_templates, permissions
 from sonar.settings import Setting
+from sonar.util import update_center
 
 if TYPE_CHECKING:
     from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr

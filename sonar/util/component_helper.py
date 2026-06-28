@@ -19,15 +19,15 @@
 #
 
 import re
-from typing import Optional, Any
+from typing import Any, Optional
 
 import sonar.logging as log
-from sonar.projects import Project
+from cli import options
 from sonar.applications import Application
-from sonar.portfolios import Portfolio
 from sonar.components import Component
 from sonar.platform import Platform
-from cli import options
+from sonar.portfolios import Portfolio
+from sonar.projects import Project
 
 
 def get_components(

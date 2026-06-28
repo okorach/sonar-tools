@@ -19,10 +19,11 @@
 #
 """Common helper functions"""
 
-from typing import Optional
 from datetime import datetime
-from sonar.util import cache_helper
+from typing import Optional
+
 import sonar.utilities as sutil
+from sonar.util import cache_helper
 
 
 def clear_cache_and_exit(exit_code: int, err_msg: Optional[str] = None, start_time: Optional[datetime] = None) -> None:

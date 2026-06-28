@@ -20,8 +20,8 @@
 #
 """Converts Trivy JSON format to Sonar external issues format"""
 
-import sys
 import json
+import sys
 
 TOOLNAME = "trivy"
 

@@ -21,26 +21,26 @@
 """Abstraction of Sonar Application Branch"""
 
 from __future__ import annotations
-from typing import Optional, Union, Any, TYPE_CHECKING
+
 import json
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 from requests.utils import quote
 
 import sonar.logging as log
+import sonar.util.constants as c
+import sonar.utilities as sutil
+from sonar import applications as apps
+from sonar import exceptions, measures
+from sonar.api.manager import ApiOperation as Oper
+from sonar.branches import Branch
+from sonar.components import Component
+from sonar.projects import Project
 from sonar.util import cache
 
-from sonar.components import Component
-from sonar.branches import Branch
-from sonar.projects import Project
-from sonar import exceptions
-import sonar.utilities as sutil
-from sonar.api.manager import ApiOperation as Oper
-import sonar.util.constants as c
-from sonar import applications as apps
-from sonar import measures
-
 if TYPE_CHECKING:
-    from sonar.issues import Issue
     from sonar.hotspots import Hotspot
+    from sonar.issues import Issue
     from sonar.platform import Platform
     from sonar.util.types import ApiPayload, ObjectJsonRepr
 

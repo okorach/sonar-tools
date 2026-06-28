@@ -21,8 +21,8 @@
 
 """Main entry point for sonar-tools"""
 
-from sonar import version, errcodes
 import sonar.util.common_helper as chelp
+from sonar import errcodes, version
 
 
 def main() -> None:

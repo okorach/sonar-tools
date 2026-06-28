@@ -23,8 +23,8 @@
 import sys
 from unittest.mock import patch
 
-from cli import options, projects_cli
 import sonar.logging as log
+from cli import options, projects_cli
 
 
 def main() -> None:

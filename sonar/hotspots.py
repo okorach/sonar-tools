@@ -20,29 +20,29 @@
 """Abstraction of the SonarQube "hotspot" concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, Union, TYPE_CHECKING
 
 import json
 from copy import deepcopy
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 import requests.utils
 
 import sonar.logging as log
-import sonar.util.misc as util
-from sonar.util import cache, constants as c
-
-from sonar import users
-from sonar import findings, rules, changelog
-from sonar import exceptions
 import sonar.util.issue_defs as idefs
+import sonar.util.misc as util
 import sonar.utilities as sutil
+from sonar import changelog, exceptions, findings, rules, users
 from sonar.api.manager import ApiOperation as Oper
+from sonar.util import cache
+from sonar.util import constants as c
 
 if TYPE_CHECKING:
     from datetime import datetime
-    from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
-    from sonar.projects import Project
+
     from sonar.findings import IssueOrHotspot
+    from sonar.platform import Platform
+    from sonar.projects import Project
+    from sonar.util.types import ApiParams, ApiPayload, ConfigSettings, ObjectJsonRepr
 
 PROJECT_FILTER = "project"
 PROJECT_FILTER_OLD = "projectKey"

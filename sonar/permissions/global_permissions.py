@@ -21,14 +21,15 @@
 """Abstraction of SonarQube global permissions"""
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import sonar.logging as log
-from sonar.permissions import permissions
 import sonar.util.constants as c
+from sonar.permissions import permissions
 
 if TYPE_CHECKING:
-    from sonar.util.types import PermissionDef, ObjectJsonRepr
+    from sonar.util.types import ObjectJsonRepr, PermissionDef
 
 
 class GlobalPermissions(permissions.Permissions):

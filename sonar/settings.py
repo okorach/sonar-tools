@@ -20,17 +20,18 @@
 """Abstraction of the SonarQube setting concept"""
 
 from __future__ import annotations
-from typing import Any, Union, Optional, TYPE_CHECKING
 
-import re
 import json
+import re
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 import sonar.logging as log
-from sonar.util import cache
-from sonar import exceptions
-from sonar.util import constants as c
-from sonar.sqobject import SqObject
 import sonar.util.misc as util
+from sonar import exceptions
 from sonar.api.manager import ApiOperation as Oper
+from sonar.sqobject import SqObject
+from sonar.util import cache
+from sonar.util import constants as c
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

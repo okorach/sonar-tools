@@ -20,9 +20,9 @@
 
 """sonar-config utils"""
 
-import pathlib
 import datetime
 import json
+import pathlib
 from typing import Optional
 
 _CONFIG_DATA = None

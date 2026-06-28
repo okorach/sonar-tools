@@ -21,32 +21,30 @@
 """Abstraction of the SonarQube "application" concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, Union, TYPE_CHECKING
-from types import MappingProxyType
 
-import re
 import json
+import re
 from http import HTTPStatus
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 from requests import RequestException
 
-import sonar.logging as log
-from sonar.util import cache
-
-from sonar.api.manager import ApiOperation as Oper
-from sonar import exceptions, projects, branches, app_branches
-from sonar.permissions import application_permissions
 import sonar.aggregations as aggr
+import sonar.logging as log
+import sonar.util.constants as c
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar.audit import rules, problem
-import sonar.util.constants as c
-from sonar.util import common_json_helper
-
+from sonar import app_branches, branches, exceptions, projects
+from sonar.api.manager import ApiOperation as Oper
+from sonar.audit import problem, rules
+from sonar.permissions import application_permissions
+from sonar.util import cache, common_json_helper
 
 if TYPE_CHECKING:
     from sonar.issues import Issue
     from sonar.platform import Platform
-    from sonar.util.types import ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, AppBranchDef, PermissionDef, AppBranchProjectDef
+    from sonar.util.types import ApiPayload, AppBranchDef, AppBranchProjectDef, ConfigSettings, KeyList, ObjectJsonRepr, PermissionDef
 
 
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")

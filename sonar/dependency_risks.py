@@ -21,21 +21,22 @@
 """Abstraction of SonarQube SCA dependency risks (issue-release pairs)"""
 
 from __future__ import annotations
-from typing import Any, Optional, TYPE_CHECKING
 
 import json
 from http import HTTPStatus
+from typing import TYPE_CHECKING, Any, Optional
 
-from sonar.sqobject import SqObject
-from sonar.dependency_risk_changelog import DependencyRiskChangelog
 import sonar.logging as log
-from sonar.util import cache
-from sonar import exceptions
 import sonar.util.issue_defs as idefs
+from sonar import exceptions
 from sonar.api.manager import ApiOperation as Oper
+from sonar.dependency_risk_changelog import DependencyRiskChangelog
+from sonar.sqobject import SqObject
+from sonar.util import cache
 
 if TYPE_CHECKING:
     from datetime import datetime
+
     from sonar.platform import Platform
     from sonar.util.types import ApiPayload, ConfigSettings, ObjectJsonRepr
 

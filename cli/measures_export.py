@@ -25,17 +25,17 @@
 """
 
 import csv
+
 from requests import RequestException
 
-from sonar.util import types
-from cli import options
 import sonar.logging as log
-from sonar import metrics, platform, exceptions, errcodes, version, measures, dependency_risks
-import sonar.utilities as sutil
-import sonar.util.misc as util
-import sonar.util.constants as c
-from sonar.util import component_helper
 import sonar.util.common_helper as chelp
+import sonar.util.constants as c
+import sonar.util.misc as util
+import sonar.utilities as sutil
+from cli import options
+from sonar import dependency_risks, errcodes, exceptions, measures, metrics, platform, version
+from sonar.util import component_helper, types
 
 TOOL_NAME = "sonar-measures"
 

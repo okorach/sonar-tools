@@ -20,9 +20,10 @@
 """Helper tools for the Portfolio object"""
 
 from typing import Any
+
 import sonar.util.misc as util
-from sonar.util import constants as c
 from sonar.util import common_json_helper
+from sonar.util import constants as c
 
 
 def __convert_projects_json(json_to_convert: dict[str, Any]) -> dict[str, Any]:
