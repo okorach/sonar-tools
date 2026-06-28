@@ -22,6 +22,7 @@
 
 import sys
 import re
+import json
 
 TOOLNAME = "ruff"
 
@@ -79,7 +80,8 @@ def main() -> None:
                 "cleanCodeAttribute": "LOGICAL",
                 "impacts": [{"softwareQuality": "MAINTAINABILITY", "severity": "MEDIUM"}],
             }
-        elif m := re.match(r"\s+\|\s\|(_+)\^ [A-Z0-9]+", lines[i]):
+        elif m := re.match(r"\s+\|\s\|(_+)\^ [A-Z0-9]+", line):
+            # Search for pattern like "   |  |____^ B904" or "    |     ^^^^ RET505"
             issue_range["endLine"] = end_line or issue_range["startLine"]
             end_line = None
             if rule_id != "I001":
@@ -89,7 +91,19 @@ def main() -> None:
                 issue_range.pop("startColumn")
                 issue_range.pop("endColumn")
             end_line = None
-        elif m := re.match(r"\s*(\d+)\s\|\s\|.*$", lines[i]):
+        elif m := re.match(r"\s+\| (\s+)(\^+) [A-Z0-9]+", line):
+            # Search for pattern like "    |     ^^^^ RET505"
+            issue_range["endLine"] = end_line or issue_range["startLine"]
+            end_line = None
+            if rule_id != "I001":
+                issue_range["startColumn"] = len(m.group(1))
+                issue_range["endColumn"] = issue_range["startColumn"] + len(m.group(2))
+            else:
+                issue_range["endLine"] -= 1
+                issue_range.pop("startColumn")
+                issue_range.pop("endColumn")
+            end_line = None
+        elif m := re.match(r"\s*(\d+)\s\|\s\|.*$", line):
             end_line = int(m.group(1))
         i += 1
 
@@ -98,6 +112,7 @@ def main() -> None:
     external_issues = {"rules": list(rules_dict.values()), "issues": issue_list}
     if v1:
         external_issues.pop("rules")
+    print(json.dumps(external_issues, indent=3, separators=(",", ": ")))  # noqa: T201
 
 
 if __name__ == "__main__":
