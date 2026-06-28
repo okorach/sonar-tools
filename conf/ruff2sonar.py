@@ -58,6 +58,7 @@ def main() -> None:
             rule_id = m.group(4)
             message = m.group(6)
             sonar_issue = {
+                "engineId": TOOLNAME,
                 "ruleId": rule_id,
                 "effortMinutes": 5,
                 "primaryLocation": {
@@ -67,7 +68,6 @@ def main() -> None:
                 },
             }
             if v1:
-                sonar_issue["engineId"] = TOOLNAME
                 sonar_issue["severity"] = "MAJOR"
                 sonar_issue["type"] = "CODE_SMELL"
             rules_dict[rule_id] = {
@@ -106,6 +106,9 @@ def main() -> None:
         elif m := re.match(r"\s*(\d+)\s\|\s\|.*$", line):
             end_line = int(m.group(1))
         i += 1
+
+    if sonar_issue is not None:
+        issue_list.append(sonar_issue)
 
     if len(issue_list) == 0:
         return
