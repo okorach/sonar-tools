@@ -80,6 +80,15 @@ if [[ "${localbuild}" = "true" ]]; then
     if [[ "${linters_to_run}" == *"checkov"* ]]; then
         echo "===> Running checkov"
         checkov -d . --framework dockerfile -o sarif --output-file-path "${BUILD_DIR}"
+        # Delete SARIF file if checkov found 0 results (empty results cause sonar-scanner import failure)
+        for sarif_file in "${BUILD_DIR}"/*.sarif; do
+            [[ -f "${sarif_file}" ]] || continue
+            results_count=$(python3 -c "import json,sys; d=json.load(open('${sarif_file}')); print(sum(len(r.get('results',[])) for r in d.get('runs',[])))" 2>/dev/null)
+            if [[ "${results_count}" = "0" ]]; then
+                echo "===> Deleting empty SARIF report: ${sarif_file}"
+                rm -f "${sarif_file}"
+            fi
+        done
     fi
     if [[ "${linters_to_run}" == *"trivy"* ]]; then
         echo "===> Running trivy"
