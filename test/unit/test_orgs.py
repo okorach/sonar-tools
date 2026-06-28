@@ -75,17 +75,99 @@ def test_attributes() -> None:
     assert str(org) == f"organization '{creds.ORGANIZATION}'"
 
 
+def test_subscription() -> None:
+    """Test that subscription() returns a known non-UNKNOWN value"""
+    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
+        pytest.skip("Organizations not supported")
+    org = orgs.Organization.get_object(endpoint=tutil.SQ, key=creds.ORGANIZATION)
+    sub = org.subscription()
+    assert isinstance(sub, str)
+    assert sub != "UNKNOWN"
+
+
+def test_alm() -> None:
+    """Test that alm() returns a non-empty dict containing at least a 'key' field"""
+    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
+        pytest.skip("Organizations not supported")
+    org = orgs.Organization.get_object(endpoint=tutil.SQ, key=creds.ORGANIZATION)
+    alm = org.alm()
+    assert isinstance(alm, dict)
+    assert len(alm) > 0
+    assert "key" in alm
+
+
 def test_export() -> None:
-    """Test attributes"""
+    """Test the export of an organization"""
     if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
         pytest.skip("Organizations not supported")
     org = orgs.Organization.get_object(endpoint=tutil.SQ, key=creds.ORGANIZATION)
     exp = org.export()
+    # Importable properties are exported as-is
     assert exp["key"] == creds.ORGANIZATION
     assert exp["name"] == org.name
     assert "newCodePeriod" in exp
-    assert "subscription" in exp
-    assert "alm" in exp
+    # Non-importable properties are prefixed with _ by filter_export(full=True)
+    assert "_subscription" in exp
+    assert "_alm" in exp
+    # Internal leak/period fields must not appear at all
+    assert "defaultLeakPeriod" not in exp
+    assert "defaultLeakPeriodType" not in exp
+
+
+def test_resolve_id() -> None:
+    """Test that _resolve_id() returns a non-empty string and caches it in sq_json"""
+    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
+        pytest.skip("Organizations not supported")
+    org = orgs.Organization.get_object(endpoint=tutil.SQ, key=creds.ORGANIZATION)
+    org.sq_json.pop("id", None)
+    org_id = org._resolve_id()
+    assert isinstance(org_id, str) and len(org_id) > 0
+    assert org.sq_json.get("id") == org_id
+    # Second call must return the cached value
+    assert org._resolve_id() == org_id
+
+
+def test_resolve_id_non_existing() -> None:
+    """Test that _resolve_id() raises ObjectNotFound for an unknown org key"""
+    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
+        pytest.skip("Organizations not supported")
+    org = orgs.Organization.get_object(endpoint=tutil.SQ, key=creds.ORGANIZATION)
+    org.sq_json.pop("id", None)
+    original_key = org.key
+    org.key = tutil.NON_EXISTING_KEY
+    try:
+        with pytest.raises(exceptions.ObjectNotFound):
+            org._resolve_id()
+    finally:
+        org.key = original_key
+
+
+def test_set_new_code_period_previous_version() -> None:
+    """Test setting the org new code period to PREVIOUS_VERSION"""
+    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
+        pytest.skip("Organizations not supported")
+    org = orgs.Organization.get_object(endpoint=tutil.SQ, key=creds.ORGANIZATION)
+    assert org.set_new_code_period("PREVIOUS_VERSION", None) is True
+
+
+def test_set_new_code_period_days() -> None:
+    """Test setting the org new code period to NUMBER_OF_DAYS and its DAYS alias"""
+    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
+        pytest.skip("Organizations not supported")
+    org = orgs.Organization.get_object(endpoint=tutil.SQ, key=creds.ORGANIZATION)
+    assert org.set_new_code_period("NUMBER_OF_DAYS", 30) is True
+    assert org.set_new_code_period("DAYS", 14) is True
+    # Restore to PREVIOUS_VERSION
+    org.set_new_code_period("PREVIOUS_VERSION", None)
+
+
+def test_set_new_code_period_unsupported() -> None:
+    """Test that an unsupported nc_type raises UnsupportedOperation"""
+    if tutil.SQ.edition() not in SUPPORTED_EDITIONS:
+        pytest.skip("Organizations not supported")
+    org = orgs.Organization.get_object(endpoint=tutil.SQ, key=creds.ORGANIZATION)
+    with pytest.raises(exceptions.UnsupportedOperation):
+        org.set_new_code_period("REFERENCE_BRANCH", "main")
 
 
 def test_search() -> None:

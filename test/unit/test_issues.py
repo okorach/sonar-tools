@@ -86,6 +86,24 @@ def test_add_comments() -> None:
     assert issue_wo_comments.comments() == {}
 
 
+def test_delete_comment() -> None:
+    """Test that a comment can be added and then deleted"""
+    findings_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
+    finding = list(findings_d.values())[0]
+    nb_comments = len(finding.comments())
+
+    txt = f"comment to delete on {datetime.now()}"
+    assert finding.add_comment(txt)
+    comments = finding.comments()
+    assert len(comments) == nb_comments + 1
+    comment_key = list(comments.values())[-1]["commentKey"]
+
+    assert finding.delete_comment(comment_key)
+    comments = finding.comments()
+    assert len(comments) == nb_comments
+    assert all(c.get("commentKey") != comment_key for c in comments.values())
+
+
 def test_set_severity() -> None:
     """test_set_severity"""
     issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
@@ -453,3 +471,238 @@ def test_subsearch_by_project_2() -> None:
         assert len(issues_d) == _NBR_ISSUES_12K_BEST_EFFORT
         with pytest.raises(issues.TooManyIssuesError):
             Issue.search(tutil.SQ, threads=8, raise_error=True, **{issues.component_search_field(tutil.SQ): _FLAT_12K_PROJECT})
+
+
+def test_tags_property() -> None:
+    """Test that the tags @property returns the cached tags without a refresh and matches get_tags()"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
+    issue = list(issues_d.values())[0]
+    # Warm the cache via get_tags(), then verify the property reflects it
+    tags_via_method = issue.get_tags()
+    assert issue.tags == tags_via_method
+    # The property must return a list (possibly empty)
+    assert isinstance(issue.tags, list)
+
+
+def test_strictly_identical_to() -> None:
+    """Test that two references to the same issue key are strictly identical, and two different issues are not"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
+    issue_list = list(issues_d.values())
+    issue = issue_list[0]
+    # An issue is strictly identical to itself
+    assert issue.strictly_identical_to(issue)
+    # Two distinct issues are not strictly identical
+    if len(issue_list) > 1:
+        other = issue_list[1]
+        assert not issue.strictly_identical_to(other)
+
+
+def test_mark_as_wont_fix() -> None:
+    """Test mark_as_wont_fix: transitions to wontfix/accept then back to open"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
+    issue = list(issues_d.values())[0]
+    # mark_as_wont_fix uses 'accept' on newer SQ versions
+    assert issue.mark_as_wont_fix()
+    # Calling it again when already in that state should return False
+    assert not issue.mark_as_wont_fix()
+    # Restore to OPEN
+    assert issue.reopen()
+
+
+def test_apply_event_false_positive() -> None:
+    """Test that __apply_event applies a FALSE-POSITIVE event to an open issue"""
+    from sonar import syncer
+
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
+    issue = list(issues_d.values())[0]
+
+    # Build a minimal Changelog object representing a false-positive event
+    from sonar.changelog import Changelog
+
+    fp_event = Changelog({"creationDate": "2026-01-01T00:00:00+0000", "diffs": [{"key": "resolution", "newValue": "FALSE-POSITIVE"}]})
+
+    settings = {syncer.SYNC_ASSIGN: True}
+    result = issue._Issue__apply_event(fp_event, settings)
+    assert result is True
+    issue.refresh()
+    assert issue.is_false_positive()
+    # Restore
+    issue.reopen()
+
+
+def test_apply_changelog() -> None:
+    """Test apply_changelog copies false-positive and comment from source to target"""
+    from sonar import syncer
+
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
+    issue_list = list(issues_d.values())
+    if len(issue_list) < 2:
+        pytest.skip("Need at least 2 open issues in PROJECT_1")
+
+    source = issue_list[0]
+    target = issue_list[1]
+
+    # Put source into false-positive and add a comment so it has a changelog to copy
+    source.mark_as_false_positive()
+    comment_txt = f"apply_changelog test comment {datetime.now()}"
+    source.add_comment(comment_txt)
+
+    settings = {
+        syncer.SYNC_ADD_LINK: False,
+        syncer.SYNC_ASSIGN: False,
+        syncer.SYNC_SERVICE_ACCOUNT: "",
+        syncer.SYNC_TAG: "",
+    }
+    count = target.apply_changelog(source, settings)
+    assert count > 0
+    target.refresh()
+    assert target.is_false_positive()
+
+    # Restore both issues
+    source.reopen()
+    target.reopen()
+
+
+# ---------------------------------------------------------------------------
+# Finding base-class methods tested via Issue
+# ---------------------------------------------------------------------------
+
+
+def test_finding_changelog_and_last_changelog_date() -> None:
+    """Test Finding.changelog() and Finding.last_changelog_date() via Issue"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1)
+    assert tconf.ISSUE_FP in issues_d
+    issue = issues_d[tconf.ISSUE_FP]
+    ch = issue.changelog(manual_only=False)
+    assert len(ch) >= 1
+    # last_changelog_date() returns the date of the newest entry
+    assert issue.last_changelog_date() is not None
+    # After ancient past cutoff – all entries still returned
+    all_after = issue.changelog(after=datetime(2000, 1, 1, tzinfo=timezone.utc), manual_only=False)
+    assert len(all_after) == len(ch)
+    # After far-future cutoff – no entries
+    assert issue.changelog(after=datetime(2030, 1, 1, tzinfo=timezone.utc)) == {}
+
+
+def test_finding_last_changelog_date_no_changelog() -> None:
+    """Test Finding.last_changelog_date() returns None when there is no changelog"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
+    # Find an issue with no manual changelog (just pick the first OPEN one)
+    for issue in issues_d.values():
+        if not issue.has_changelog():
+            assert issue.last_changelog_date() is None
+            return
+    pytest.skip("No issue without manual changelog found in PROJECT_1")
+
+
+def test_finding_comments_last_comment_date_and_commenters() -> None:
+    """Test Finding.comments(), .last_comment_date(), .commenters() via Issue"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
+    issue = list(issues_d.values())[0]
+
+    txt = f"commenters test {datetime.now()}"
+    assert issue.add_comment(txt)
+
+    comments = issue.comments()
+    assert len(comments) > 0
+    assert any(c.get("value") == txt for c in comments.values())
+    assert issue.last_comment_date() is not None
+
+    # After future cutoff — empty
+    future = datetime.now(timezone.utc) + timedelta(days=1)
+    assert issue.comments(after=future) == {}
+
+    # commenters() must include the user who added the comment
+    commenters = issue.commenters()
+    assert isinstance(commenters, set)
+    assert tutil.SQ.user() in commenters
+
+    # Cleanup
+    comment_key = next(c["commentKey"] for c in issue.comments().values() if c.get("value") == txt)
+    issue.delete_comment(comment_key)
+
+
+def test_finding_last_comment_date_no_comments() -> None:
+    """Test Finding.last_comment_date() returns None when the issue has no comments"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
+    for issue in issues_d.values():
+        if not issue.has_comments():
+            assert issue.last_comment_date() is None
+            return
+    pytest.skip("No issue without comments found in PROJECT_1")
+
+
+def test_finding_strictly_identical_to_same_key() -> None:
+    """Finding.strictly_identical_to(): same object → True (key equality short-circuit)"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1)
+    issue = issues_d[tconf.ISSUE_FP]
+    assert issue.strictly_identical_to(issue)
+
+
+def test_finding_strictly_identical_to_different_issues() -> None:
+    """Finding.strictly_identical_to(): two different issues → False"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
+    issue_list = list(issues_d.values())
+    if len(issue_list) < 2:
+        pytest.skip("Need at least 2 issues in PROJECT_1")
+    assert not issue_list[0].strictly_identical_to(issue_list[1])
+
+
+def test_finding_strictly_identical_to_ignore_component() -> None:
+    """Finding.strictly_identical_to(ignore_component=True): ignore component field"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
+    issue_list = list(issues_d.values())
+    if len(issue_list) < 2:
+        pytest.skip("Need at least 2 issues in PROJECT_1")
+    # Two different issues are still not identical even with ignore_component
+    assert not issue_list[0].strictly_identical_to(issue_list[1], ignore_component=True)
+
+
+def test_finding_search_siblings_empty_list() -> None:
+    """Finding.search_siblings(): empty target list → no matches in any category"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1)
+    issue = issues_d[tconf.ISSUE_FP]
+    exact, approx, modified = issue.search_siblings([])
+    assert exact == [] and approx == [] and modified == []
+
+
+def test_finding_search_siblings_no_match() -> None:
+    """Finding.search_siblings(): list of unrelated issues → structure is correct, no crash"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
+    issue_list = list(issues_d.values())
+    issue = issue_list[0]
+    exact, approx, modified = issue.search_siblings(issue_list[1:])
+    assert isinstance(exact, list)
+    assert isinstance(approx, list)
+    assert isinstance(modified, list)
+
+
+def test_finding_search_siblings_bidirectional_empty() -> None:
+    """Finding.search_siblings_bidirectional(): empty list → no matches"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1)
+    issue = issues_d[tconf.ISSUE_FP]
+    exact, approx = issue.search_siblings_bidirectional([])
+    assert exact == [] and approx == []
+
+
+def test_finding_search_siblings_bidirectional_exact_match() -> None:
+    """Finding.search_siblings_bidirectional(): two Issue objects from the same payload → exact match"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1)
+    issue1 = issues_d[tconf.ISSUE_FP]
+    # use_cache=False + full payload → new Python object, same field values, different identity
+    issue2 = Issue.get_object(tutil.SQ, issue1.sq_json.copy(), use_cache=False)
+    assert issue1 is not issue2
+    exact, approx = issue1.search_siblings_bidirectional([issue2])
+    assert len(exact) == 1
+    assert exact[0] is issue2
+    assert approx == []
+
+
+def test_finding_search_siblings_bidirectional_no_match() -> None:
+    """Finding.search_siblings_bidirectional(): unrelated issues → no exact match"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
+    issue_list = list(issues_d.values())
+    issue = issue_list[0]
+    exact, approx = issue.search_siblings_bidirectional(issue_list[1:])
+    assert isinstance(exact, list)
+    assert isinstance(approx, list)
