@@ -20,30 +20,25 @@
 #
 """Computes SonarQube maturity metrics"""
 
-from typing import Any
-
+import concurrent.futures
 import os
 import traceback
-import concurrent.futures
-from termgraph import Data, Args, BarChart
+from typing import Any
 
-from sonar import version
+from termgraph import Args, BarChart, Data
+
+import sonar.util.misc as util
+import sonar.utilities as sutil
 from cli import options
-from sonar import exceptions
-from sonar import platform
-from sonar.util import common_helper as chelp
-from sonar.util import component_helper
-from sonar import errcodes
-from sonar import projects
-from sonar.portfolios import Portfolio
-from sonar.projects import Project
+from sonar import errcodes, exceptions, languages, platform, projects, version
+from sonar import logging as log
 from sonar import qualitygates as qg
 from sonar import qualityprofiles as qp
-from sonar import languages
-from sonar import logging as log
+from sonar.portfolios import Portfolio
+from sonar.projects import Project
+from sonar.util import common_helper as chelp
+from sonar.util import component_helper
 from sonar.util import conf_mgr as conf
-import sonar.utilities as sutil
-import sonar.util.misc as util
 from sonar.util import constants as c
 
 TOOL_NAME = "sonar-maturity"

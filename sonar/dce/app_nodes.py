@@ -20,18 +20,19 @@
 """Abstraction of the App Node concept"""
 
 from __future__ import annotations
-from typing import Optional, Union, TYPE_CHECKING
 
+from typing import TYPE_CHECKING, Optional, Union
 
-import sonar.logging as log
-import sonar.utilities as sutil
-from sonar.audit.rules import get_rule, RuleId
-import sonar.sif_node as sifn
-from sonar.audit.problem import Problem
 import sonar.dce.nodes as dce_nodes
+import sonar.logging as log
+import sonar.sif_node as sifn
+import sonar.utilities as sutil
+from sonar.audit.problem import Problem
+from sonar.audit.rules import RuleId, get_rule
 
 if TYPE_CHECKING:
     import datetime
+
     from sonar.util.types import ConfigSettings
 
 _SYSTEM = "System"

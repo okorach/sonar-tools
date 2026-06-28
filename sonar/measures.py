@@ -21,27 +21,27 @@
 """Abstraction of the SonarQube measure concept"""
 
 from __future__ import annotations
-from typing import Any, Optional, Union, TYPE_CHECKING
 
 import json
+from typing import TYPE_CHECKING, Any, Optional, Union
 
-from sonar.sqobject import SqObject
-from sonar import metrics, exceptions
-from sonar.api.manager import ApiOperation as Oper
-from sonar.util import cache
 import sonar.logging as log
 import sonar.util.misc as util
 import sonar.utilities as sutil
+from sonar import exceptions, metrics
+from sonar.api.manager import ApiOperation as Oper
+from sonar.sqobject import SqObject
+from sonar.util import cache
 
 if TYPE_CHECKING:
-    from sonar.util.types import ApiPayload, ApiParams, KeyList
-    from sonar.platform import Platform
-    from sonar.projects import Project
-    from sonar.applications import Application
-    from sonar.portfolios import Portfolio
-    from sonar.branches import Branch
-    from sonar.pull_requests import PullRequest
     from sonar.app_branches import ApplicationBranch
+    from sonar.applications import Application
+    from sonar.branches import Branch
+    from sonar.platform import Platform
+    from sonar.portfolios import Portfolio
+    from sonar.projects import Project
+    from sonar.pull_requests import PullRequest
+    from sonar.util.types import ApiParams, ApiPayload, KeyList
 
     ConcernedObject = Union[Project, Application, Portfolio, Branch, PullRequest, ApplicationBranch]
 

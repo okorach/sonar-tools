@@ -22,8 +22,8 @@
 import json
 from typing import Any, Optional
 
-from sonar.sqobject import SqObject
 from sonar.platform import Platform
+from sonar.sqobject import SqObject
 from sonar.util.types import ApiPayload
 
 

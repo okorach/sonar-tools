@@ -21,20 +21,21 @@
 """Abstraction of the SonarQube User Token concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
 
-import json
 import datetime as dt
+import json
+from typing import TYPE_CHECKING, Any, Optional
 
-from sonar.sqobject import SqObject
 import sonar.logging as log
-import sonar.utilities as sutil
 import sonar.util.misc as util
-from sonar import exceptions, errcodes
-from sonar.util import cache, constants as c
-from sonar.audit.problem import Problem
-from sonar.audit.rules import get_rule, RuleId
+import sonar.utilities as sutil
+from sonar import errcodes, exceptions
 from sonar.api.manager import ApiOperation as Oper
+from sonar.audit.problem import Problem
+from sonar.audit.rules import RuleId, get_rule
+from sonar.sqobject import SqObject
+from sonar.util import cache
+from sonar.util import constants as c
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

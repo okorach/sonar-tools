@@ -20,12 +20,11 @@
 """Helper tools for the Project object"""
 
 from typing import Any
-import sonar.util.misc as util
 
-from sonar.util import constants as c
-from sonar.util import common_json_helper
 import sonar.util.issue_defs as idefs
-
+import sonar.util.misc as util
+from sonar.util import common_json_helper
+from sonar.util import constants as c
 
 KEY_PARENT = "parent"
 KEY_CHILDREN = "children"

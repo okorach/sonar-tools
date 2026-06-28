@@ -22,14 +22,15 @@
 """Abstraction of the SonarQube language concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
 
 import json
-from sonar.sqobject import SqObject
-from sonar import rules
-from sonar.util import cache
+from typing import TYPE_CHECKING, Any, Optional
+
 import sonar.util.issue_defs as idefs
+from sonar import rules
 from sonar.api.manager import ApiOperation as Oper
+from sonar.sqobject import SqObject
+from sonar.util import cache
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

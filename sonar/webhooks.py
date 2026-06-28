@@ -21,15 +21,16 @@
 """Abstraction of the SonarQube webhook concept"""
 
 from __future__ import annotations
-from typing import Optional, ClassVar, Any, Union, TYPE_CHECKING
 
-from sonar.sqobject import SqObject
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, Union
+
 import sonar.logging as log
-from sonar import exceptions, errcodes
-from sonar.util import cache
 import sonar.util.misc as util
-from sonar.audit import rules, problem
+from sonar import errcodes, exceptions
 from sonar.api.manager import ApiOperation as Oper
+from sonar.audit import problem, rules
+from sonar.sqobject import SqObject
+from sonar.util import cache
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

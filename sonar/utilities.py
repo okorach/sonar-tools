@@ -20,25 +20,24 @@
 
 """Utilities for sonar-tools"""
 
-from typing import Any, Union, Optional
-from http import HTTPStatus
-import sys
+import contextlib
+import datetime
+import json
 import math
 import re
-import json
-import datetime
-import contextlib
-import requests
+import sys
+from http import HTTPStatus
+from typing import Any, Optional, Union
 
 import Levenshtein
-
-import sonar.logging as log
-from sonar import version, errcodes, exceptions
-from sonar.util import types, constants as c
-import sonar.util.misc as util
+import requests
 
 import cli.options as opt
-
+import sonar.logging as log
+import sonar.util.misc as util
+from sonar import errcodes, exceptions, version
+from sonar.util import constants as c
+from sonar.util import types
 
 SQ_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 SQ_DATE_FORMAT = "%Y-%m-%d"

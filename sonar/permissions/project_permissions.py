@@ -21,15 +21,16 @@
 """Projects permissions class"""
 
 from __future__ import annotations
-from typing import Callable, TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Callable
 
 import sonar.logging as log
-from sonar.permissions import permissions
-from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
+from sonar.audit.rules import RuleId, get_rule
+from sonar.permissions import permissions
 
 if TYPE_CHECKING:
-    from sonar.util.types import PermissionDef, ConfigSettings
+    from sonar.util.types import ConfigSettings, PermissionDef
 
 PROJECT_PERMISSIONS = {
     "user": "Browse",

@@ -21,28 +21,25 @@
 """Abstraction of the SonarQube "quality gate" concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, Union, TYPE_CHECKING
 
 import json
+from typing import TYPE_CHECKING, Any, Optional, Union
 
-from sonar.sqobject import SqObject
 import sonar.logging as log
-from sonar.util import cache
-from sonar import measures, exceptions
-from sonar.util import constants as c
-from sonar import projects
 import sonar.permissions.qualitygate_permissions as permissions
 import sonar.util.misc as util
 import sonar.utilities as sutil
-
-from sonar.audit.rules import get_rule, RuleId
-from sonar.audit.problem import Problem
-from sonar.util import common_json_helper
+from sonar import exceptions, measures, projects
 from sonar.api.manager import ApiOperation as Oper
+from sonar.audit.problem import Problem
+from sonar.audit.rules import RuleId, get_rule
+from sonar.sqobject import SqObject
+from sonar.util import cache, common_json_helper
+from sonar.util import constants as c
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiPayload, ObjectJsonRepr, KeyList, ConfigSettings
+    from sonar.util.types import ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
 
 __MAX_ISSUES_SHOULD_BE_ZERO = "Any numeric threshold on number of issues should be 0 or should be removed from QG conditions"
 __THRESHOLD_ON_OVERALL_CODE = "Threshold on overall code should not be too strict or passing the QG will often be impossible"

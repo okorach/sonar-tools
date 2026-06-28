@@ -20,8 +20,8 @@
 #
 """Converts shellcheck JSON format to Sonar external issues format"""
 
-import sys
 import json
+import sys
 
 TOOLNAME = "shellcheck"
 MAPPING = {"INFO": "INFO", "LOW": "MINOR", "MEDIUM": "MAJOR", "HIGH": "CRITICAL", "BLOCKER": "BLOCKER"}

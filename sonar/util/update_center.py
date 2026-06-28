@@ -20,12 +20,14 @@
 
 """Update center utilities"""
 
-import os
-from typing import Optional
 import datetime
-import requests
+import os
 import tempfile
+from typing import Optional
+
 import jprops
+import requests
+
 import sonar.logging as log
 import sonar.util.misc as util
 from sonar import version

@@ -21,32 +21,33 @@
 """Cache manager"""
 
 from typing import Optional
-from sonar import logging as log
+
 from sonar import (
-    projects,
+    app_branches,
+    applications,
     branches,
-    pull_requests,
-    issues,
+    devops,
+    groups,
     hotspots,
+    issues,
+    languages,
     measures,
     metrics,
-    users,
-    groups,
-    rules,
-    languages,
-    qualityprofiles,
-    qualitygates,
-    portfolios,
-    applications,
-    app_branches,
-    devops,
     organizations,
     portfolio_reference,
+    portfolios,
+    projects,
+    pull_requests,
+    qualitygates,
+    qualityprofiles,
+    rules,
     settings,
-    tokens,
-    webhooks,
     tasks,
+    tokens,
+    users,
+    webhooks,
 )
+from sonar import logging as log
 from sonar.permissions import permission_templates
 
 

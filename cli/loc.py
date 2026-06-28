@@ -20,19 +20,20 @@
 #
 """Exports LoC per projects"""
 
-from typing import Any
 import csv
 import datetime
+from typing import Any
+
 from requests import RequestException
 
-from cli import options
 import sonar.logging as log
-from sonar import platform, portfolios, applications, projects, errcodes, exceptions, version
-import sonar.utilities as sutil
-import sonar.util.misc as util
-import sonar.util.constants as c
-from sonar.util import component_helper
 import sonar.util.common_helper as chelp
+import sonar.util.constants as c
+import sonar.util.misc as util
+import sonar.utilities as sutil
+from cli import options
+from sonar import applications, errcodes, exceptions, platform, portfolios, projects, version
+from sonar.util import component_helper
 
 TOOL_NAME = "sonar-loc"
 

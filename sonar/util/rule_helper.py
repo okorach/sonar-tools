@@ -20,10 +20,11 @@
 """Helper tools for the Rule object"""
 
 from typing import Any
-import sonar.util.misc as util
-from sonar.util import constants as c
-from sonar.util import common_json_helper
+
 import sonar.util.issue_defs as idefs
+import sonar.util.misc as util
+from sonar.util import common_json_helper
+from sonar.util import constants as c
 
 
 def __convert_rule_json(json_to_convert: dict[str, Any]) -> dict[str, Any]:

@@ -20,24 +20,25 @@
 """Abstraction of SIF node, for audit"""
 
 from __future__ import annotations
-from typing import Union, TYPE_CHECKING
 
 import datetime
+from typing import TYPE_CHECKING, Union
+
 from dateutil.relativedelta import relativedelta
 
 import sonar.logging as log
+import sonar.util.constants as c
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar.util import types, update_center
-from sonar.audit.rules import get_rule, RuleId
-from sonar.audit.problem import Problem
 from sonar import config
-import sonar.util.constants as c
+from sonar.audit.problem import Problem
+from sonar.audit.rules import RuleId, get_rule
+from sonar.util import types, update_center
 
 if TYPE_CHECKING:
-    from sonar.util.types import ConfigSettings
-    from sonar.sif import Sif
     from sonar.dce.app_nodes import AppNode
+    from sonar.sif import Sif
+    from sonar.util.types import ConfigSettings
 
 _RELEASE_DATES = {
     "2026.1": (2026, 1, 27),

@@ -20,16 +20,15 @@
 """Parent module of applications and portfolios"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
-import json
 
-import sonar.logging as log
+import json
+from typing import TYPE_CHECKING, Any, Optional
 
 import sonar.components as comp
-from sonar import exceptions
-from sonar.audit.rules import get_rule
+import sonar.logging as log
+from sonar import exceptions, measures
 from sonar.audit.problem import Problem
-from sonar import measures
+from sonar.audit.rules import get_rule
 
 if TYPE_CHECKING:
     from sonar.platform import Platform

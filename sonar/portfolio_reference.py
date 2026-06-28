@@ -20,18 +20,19 @@
 """Abstraction of the Sonar sub-portfolio by reference concept"""
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
-from sonar.sqobject import SqObject
-import sonar.logging as log
-from sonar.util import cache
 
-from sonar import exceptions
+from typing import TYPE_CHECKING
+
+import sonar.logging as log
 import sonar.util.constants as c
+from sonar import exceptions
+from sonar.sqobject import SqObject
+from sonar.util import cache
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiParams, ObjectJsonRepr, ConfigSettings
     from sonar.portfolios import Portfolio
+    from sonar.util.types import ApiParams, ConfigSettings, ObjectJsonRepr
 
 
 class PortfolioReference(SqObject):

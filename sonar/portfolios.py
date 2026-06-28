@@ -20,31 +20,29 @@
 """Abstraction of the SonarQube "portfolio" concept"""
 
 from __future__ import annotations
-from typing import Optional, Union, Any, TYPE_CHECKING
 
-import re
 import json
+import re
 from http import HTTPStatus
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import sonar.logging as log
-from sonar.util import cache
-import sonar.util.constants as c
-
-from sonar import aggregations, exceptions, applications, app_branches
-from sonar.projects import Project
-
 import sonar.permissions.portfolio_permissions as pperms
+import sonar.util.constants as c
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar.audit import rules, problem
-from sonar.portfolio_reference import PortfolioReference
-from sonar.util import portfolio_helper as phelp
+from sonar import aggregations, app_branches, applications, exceptions
 from sonar.api.manager import ApiOperation as Oper
+from sonar.audit import problem, rules
+from sonar.portfolio_reference import PortfolioReference
+from sonar.projects import Project
+from sonar.util import cache
+from sonar.util import portfolio_helper as phelp
 
 if TYPE_CHECKING:
+    from sonar.branches import Branch
     from sonar.platform import Platform
     from sonar.util.types import ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr, PermissionDef
-    from sonar.branches import Branch
 
 _PORTFOLIO_QUALIFIER = "VW"
 _SUBPORTFOLIO_QUALIFIER = "SVW"

@@ -21,34 +21,34 @@
 """Abstraction of the SonarQube Quality Profile concept"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
 
-import json
-from copy import deepcopy
-import traceback
 import concurrent.futures
-
+import json
+import traceback
+from copy import deepcopy
 from threading import Lock
+from typing import TYPE_CHECKING, Any, Optional
+
 import requests.utils
 
-from sonar.sqobject import SqObject
 import sonar.logging as log
-from sonar.util import cache, constants as c
-from sonar.util import qualityprofile_helper as qphelp
-from sonar import exceptions
-from sonar import rules, languages
 import sonar.permissions.qualityprofile_permissions as permissions
 import sonar.util.misc as util
 import sonar.utilities as sutil
-
-from sonar.audit.rules import get_rule, RuleId
-from sonar.audit.problem import Problem
+from sonar import exceptions, languages, rules
 from sonar.api.manager import ApiOperation as Oper
+from sonar.audit.problem import Problem
+from sonar.audit.rules import RuleId, get_rule
+from sonar.sqobject import SqObject
+from sonar.util import cache
+from sonar.util import constants as c
+from sonar.util import qualityprofile_helper as qphelp
 
 if TYPE_CHECKING:
     from datetime import datetime
+
     from sonar.platform import Platform
-    from sonar.util.types import ApiPayload, ObjectJsonRepr, KeyList, ConfigSettings
+    from sonar.util.types import ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
 
 _IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefault", "rules", "permissions", "prioritizedRules")
 

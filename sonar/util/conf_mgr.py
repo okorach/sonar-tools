@@ -19,13 +19,14 @@
 #
 """Utility to manage configuration files"""
 
-import os
-from pathlib import Path
 import json
-import jprops
+import os
 import site
-
+from pathlib import Path
 from typing import Any, Union
+
+import jprops
+
 import sonar.logging as log
 from sonar.util import misc
 

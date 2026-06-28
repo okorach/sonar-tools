@@ -22,24 +22,24 @@
 """Abstraction of the SonarQube group concept"""
 
 from __future__ import annotations
-import json
 
-from typing import Optional, Any, TYPE_CHECKING
-from sonar.sqobject import SqObject
+import json
+from typing import TYPE_CHECKING, Any, Optional
+
 import sonar.logging as log
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar import exceptions
-from sonar import users
-from sonar.util import cache, constants as c
-
+from sonar import exceptions, users
+from sonar.api.manager import ApiOperation as Oper
 from sonar.audit import rules
 from sonar.audit.problem import Problem
-from sonar.api.manager import ApiOperation as Oper
+from sonar.sqobject import SqObject
+from sonar.util import cache
+from sonar.util import constants as c
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiPayload, ObjectJsonRepr, ConfigSettings, KeyList
+    from sonar.util.types import ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
 
 ADD_USER = "ADD_USER"
 REMOVE_USER = "REMOVE_USER"

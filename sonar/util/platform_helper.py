@@ -20,10 +20,11 @@
 """Helper tools for the Platform object"""
 
 from __future__ import annotations
+
 from typing import Any
 
-from sonar import settings
 import sonar.util.misc as util
+from sonar import settings
 from sonar.util import common_json_helper
 
 _PERM_TPL_IMPORTABLE_PROPERTIES = ("name", "description", "pattern", "defaultFor", "permissions")

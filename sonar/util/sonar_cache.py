@@ -21,11 +21,28 @@
 """Cache module"""
 
 from typing import Optional
-from sonar import platform, projects, branches, pull_requests
-from sonar import applications, app_branches, portfolios
-from sonar import rules, issues, hotspots, metrics, measures
-from sonar import qualitygates, qualityprofiles
-from sonar import devops, settings, tasks, tokens, webhooks
+
+from sonar import (
+    app_branches,
+    applications,
+    branches,
+    devops,
+    hotspots,
+    issues,
+    measures,
+    metrics,
+    platform,
+    portfolios,
+    projects,
+    pull_requests,
+    qualitygates,
+    qualityprofiles,
+    rules,
+    settings,
+    tasks,
+    tokens,
+    webhooks,
+)
 
 
 def clear(endpoint: Optional[platform.Platform] = None) -> None:

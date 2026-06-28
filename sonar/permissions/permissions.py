@@ -21,21 +21,21 @@
 """Abstract permissions class, parent of sub-objects permissions classes"""
 
 from __future__ import annotations
-from typing import Optional, Any, TYPE_CHECKING
 
 import json
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, Optional
 
 import sonar.logging as log
-from sonar import exceptions
-import sonar.utilities as sutil
-import sonar.util.misc as util
-from sonar.audit.rules import get_rule, RuleId
-from sonar.audit.problem import Problem
 import sonar.util.constants as c
+import sonar.util.misc as util
+import sonar.utilities as sutil
+from sonar import exceptions
+from sonar.audit.problem import Problem
+from sonar.audit.rules import RuleId, get_rule
 
 if TYPE_CHECKING:
-    from sonar.util.types import ConfigSettings, PermissionDef, JsonPermissions
+    from sonar.util.types import ConfigSettings, JsonPermissions, PermissionDef
 
 COMMUNITY_GLOBAL_PERMISSIONS = {
     "admin": "Administer System",

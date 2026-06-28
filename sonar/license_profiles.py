@@ -21,22 +21,22 @@
 """Abstraction of the SonarQube "license profile" concept (SCA / Advanced Security)"""
 
 from __future__ import annotations
-from typing import Any, Optional, TYPE_CHECKING
 
 import json
+from typing import TYPE_CHECKING, Any, Optional
 
-from sonar.sqobject import SqObject
 import sonar.logging as log
-from sonar.util import cache
-from sonar import exceptions
 import sonar.util.misc as util
 import sonar.utilities as sutil
+from sonar import exceptions
 from sonar.api.manager import ApiOperation as Oper
+from sonar.sqobject import SqObject
+from sonar.util import cache
 from sonar.util import constants as c
 
 if TYPE_CHECKING:
     from sonar.platform import Platform
-    from sonar.util.types import ApiPayload, ObjectJsonRepr, KeyList, ConfigSettings
+    from sonar.util.types import ApiPayload, ConfigSettings, KeyList, ObjectJsonRepr
 
 _IMPORTABLE_PROPERTIES = ("name", "isDefault", "categories", "licenses")
 _MIN_SQ_VERSION = (2025, 4, 0)

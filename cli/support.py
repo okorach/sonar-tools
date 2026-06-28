@@ -20,19 +20,20 @@
 #
 """Audits a SUPPORT ticket SIF"""
 
-from http import HTTPStatus
-import sys
-import os
-import json
 import argparse
+import json
+import os
+import sys
+from http import HTTPStatus
+
 import requests
 
-from cli import options
 import sonar.logging as log
-from sonar import sif, errcodes
-from sonar.audit import problem, audit_config
-from sonar.audit.severities import Severity
 import sonar.util.common_helper as chelp
+from cli import options
+from sonar import errcodes, sif
+from sonar.audit import audit_config, problem  # pylint: disable=no-name-in-module
+from sonar.audit.severities import Severity
 
 PRIVATE_COMMENT = [{"key": "sd.public.comment", "value": {"internal": "true"}}]
 
