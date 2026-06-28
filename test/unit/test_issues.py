@@ -471,3 +471,93 @@ def test_subsearch_by_project_2() -> None:
         assert len(issues_d) == _NBR_ISSUES_12K_BEST_EFFORT
         with pytest.raises(issues.TooManyIssuesError):
             Issue.search(tutil.SQ, threads=8, raise_error=True, **{issues.component_search_field(tutil.SQ): _FLAT_12K_PROJECT})
+
+
+def test_tags_property() -> None:
+    """Test that the tags @property returns the cached tags without a refresh and matches get_tags()"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
+    issue = list(issues_d.values())[0]
+    # Warm the cache via get_tags(), then verify the property reflects it
+    tags_via_method = issue.get_tags()
+    assert issue.tags == tags_via_method
+    # The property must return a list (possibly empty)
+    assert isinstance(issue.tags, list)
+
+
+def test_strictly_identical_to() -> None:
+    """Test that two references to the same issue key are strictly identical, and two different issues are not"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
+    issue_list = list(issues_d.values())
+    issue = issue_list[0]
+    # An issue is strictly identical to itself
+    assert issue.strictly_identical_to(issue)
+    # Two distinct issues are not strictly identical
+    if len(issue_list) > 1:
+        other = issue_list[1]
+        assert not issue.strictly_identical_to(other)
+
+
+def test_mark_as_wont_fix() -> None:
+    """Test mark_as_wont_fix: transitions to wontfix/accept then back to open"""
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
+    issue = list(issues_d.values())[0]
+    # mark_as_wont_fix uses 'accept' on newer SQ versions
+    assert issue.mark_as_wont_fix()
+    # Calling it again when already in that state should return False
+    assert not issue.mark_as_wont_fix()
+    # Restore to OPEN
+    assert issue.reopen()
+
+
+def test_apply_event_false_positive() -> None:
+    """Test that __apply_event applies a FALSE-POSITIVE event to an open issue"""
+    from sonar import syncer
+
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN")
+    issue = list(issues_d.values())[0]
+
+    # Build a minimal Changelog object representing a false-positive event
+    from sonar.changelog import Changelog
+
+    fp_event = Changelog({"creationDate": "2026-01-01T00:00:00+0000", "diffs": [{"key": "resolution", "newValue": "FALSE-POSITIVE"}]})
+
+    settings = {syncer.SYNC_ASSIGN: True}
+    result = issue._Issue__apply_event(fp_event, settings)
+    assert result is True
+    issue.refresh()
+    assert issue.is_false_positive()
+    # Restore
+    issue.reopen()
+
+
+def test_apply_changelog() -> None:
+    """Test apply_changelog copies false-positive and comment from source to target"""
+    from sonar import syncer
+
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
+    issue_list = list(issues_d.values())
+    if len(issue_list) < 2:
+        pytest.skip("Need at least 2 open issues in PROJECT_1")
+
+    source = issue_list[0]
+    target = issue_list[1]
+
+    # Put source into false-positive and add a comment so it has a changelog to copy
+    source.mark_as_false_positive()
+    comment_txt = f"apply_changelog test comment {datetime.now()}"
+    source.add_comment(comment_txt)
+
+    settings = {
+        syncer.SYNC_ADD_LINK: False,
+        syncer.SYNC_ASSIGN: False,
+        syncer.SYNC_SERVICE_ACCOUNT: "",
+        syncer.SYNC_TAG: "",
+    }
+    count = target.apply_changelog(source, settings)
+    assert count > 0
+    target.refresh()
+    assert target.is_false_positive()
+
+    # Restore both issues
+    source.reopen()
+    target.reopen()
