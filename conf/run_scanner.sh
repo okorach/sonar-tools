@@ -67,9 +67,8 @@ else
 fi
 
 if ls "${BUILD_DIR}"/xunit-*.xml >/dev/null 2>&1; then
-  files=$(ls "${BUILD_DIR}"/xunit-*.xml | eval "${TO_CSV}")
-  echo "XUNIT FILES = ${files}"
-  cmd="${cmd} -Dsonar.python.xunit.reportPath=${files}"
+  echo "XUNIT FILES = ${BUILD_DIR}/xunit-*.xml"
+  cmd="${cmd} -Dsonar.python.xunit.reportPath=${BUILD_DIR}/xunit-*.xml"
 else
   echo "===> NO UNIT TESTS REPORT"
 fi
