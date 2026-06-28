@@ -30,6 +30,20 @@ TRIVY_TO_MQR_MAPPING = {"CRITICAL": "BLOCKER"}
 MAPPING = {"LOW": "MINOR", "MEDIUM": "MAJOR", "HIGH": "CRITICAL", "BLOCKER": "BLOCKER"}
 
 
+def _apply_range_marker(issue_range: dict, rule_id: str, end_line: int | None, start_col: int | None, end_col: int | None) -> None:
+    """Update issue_range when a caret/underscore range marker line is parsed."""
+    issue_range["endLine"] = end_line or issue_range["startLine"]
+    if rule_id != "I001":
+        if start_col is not None:
+            issue_range["startColumn"] = start_col
+        if end_col is not None:
+            issue_range["endColumn"] = end_col
+    else:
+        issue_range["endLine"] -= 1
+        issue_range.pop("startColumn", None)
+        issue_range.pop("endColumn", None)
+
+
 def main() -> None:
     """Main script entry point"""
     v1 = len(sys.argv) > 1 and sys.argv[1] == "v1"
@@ -39,6 +53,7 @@ def main() -> None:
     i = 0
     sonar_issue = None
     issue_range = {}
+    rule_id = ""
     nblines = len(lines)
     end_line = None
     while i < nblines:
@@ -49,59 +64,21 @@ def main() -> None:
                 issue_list.append(sonar_issue)
                 end_line = None
             file_path = m.group(1)
-            issue_range = {
-                "startLine": int(m.group(2)),
-                "endLine": int(m.group(2)),
-                "startColumn": int(m.group(3)) - 1,
-                "endColumn": int(m.group(3)),
-            }
             rule_id = m.group(4)
             message = m.group(6)
-            sonar_issue = {
-                "engineId": TOOLNAME,
-                "ruleId": rule_id,
-                "effortMinutes": 5,
-                "primaryLocation": {
-                    "message": m.group(6),
-                    "filePath": file_path,
-                    "textRange": issue_range,
-                },
-            }
+            issue_range = {"startLine": int(m.group(2)), "endLine": int(m.group(2)), "startColumn": int(m.group(3)) - 1, "endColumn": int(m.group(3))}
+            sonar_issue = {"engineId": TOOLNAME, "ruleId": rule_id, "effortMinutes": 5, "primaryLocation": {"message": message, "filePath": file_path, "textRange": issue_range}}
             if v1:
                 sonar_issue["severity"] = "MAJOR"
                 sonar_issue["type"] = "CODE_SMELL"
-            rules_dict[rule_id] = {
-                "id": rule_id,
-                "name": rule_id,
-                "description": message,
-                "engineId": TOOLNAME,
-                "type": "CODE_SMELL",
-                "severity": "MAJOR",
-                "cleanCodeAttribute": "LOGICAL",
-                "impacts": [{"softwareQuality": "MAINTAINABILITY", "severity": "MEDIUM"}],
-            }
+            rules_dict[rule_id] = {"id": rule_id, "name": rule_id, "description": message, "engineId": TOOLNAME, "type": "CODE_SMELL", "severity": "MAJOR", "cleanCodeAttribute": "LOGICAL", "impacts": [{"softwareQuality": "MAINTAINABILITY", "severity": "MEDIUM"}]}
         elif m := re.match(r"\s+\|\s\|(_+)\^ [A-Z0-9]+", line):
-            # Search for pattern like "   |  |____^ B904" or "    |     ^^^^ RET505"
-            issue_range["endLine"] = end_line or issue_range["startLine"]
-            end_line = None
-            if rule_id != "I001":
-                issue_range["endColumn"] = len(m.group(1))
-            else:
-                issue_range["endLine"] -= 1
-                issue_range.pop("startColumn")
-                issue_range.pop("endColumn")
+            # Multi-line span closing marker: "   | |_____^ RUF012"
+            _apply_range_marker(issue_range, rule_id, end_line, None, len(m.group(1)))
             end_line = None
         elif m := re.match(r"\s+\| (\s+)(\^+) [A-Z0-9]+", line):
-            # Search for pattern like "    |     ^^^^ RET505"
-            issue_range["endLine"] = end_line or issue_range["startLine"]
-            end_line = None
-            if rule_id != "I001":
-                issue_range["startColumn"] = len(m.group(1))
-                issue_range["endColumn"] = issue_range["startColumn"] + len(m.group(2))
-            else:
-                issue_range["endLine"] -= 1
-                issue_range.pop("startColumn")
-                issue_range.pop("endColumn")
+            # Inline caret marker: "    |     ^^^^ RET505"
+            _apply_range_marker(issue_range, rule_id, end_line, len(m.group(1)), len(m.group(1)) + len(m.group(2)))
             end_line = None
         elif m := re.match(r"\s*(\d+)\s\|\s\|.*$", line):
             end_line = int(m.group(1))

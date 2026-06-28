@@ -600,7 +600,7 @@ class Project(Component):
         :param int timeout: timeout in seconds to complete the export operation
         :returns: export status (success/failure/timeout), and zip file path
         """
-        from sonar.tasks import SUCCESS, Task
+        from sonar.tasks import SUCCESS, Task  # pylint: disable=import-outside-toplevel
 
         log.info("Exporting %s (%s)", str(self), "asynchronously" if asynchronous else "synchronously")
         try:
@@ -637,7 +637,7 @@ class Project(Component):
         :param int timeout: timeout in seconds to complete the export operation
         :return: SUCCESS or FAILED with reason
         """
-        from sonar.tasks import SUCCESS, ZIP_MISSING, Task
+        from sonar.tasks import SUCCESS, ZIP_MISSING, Task  # pylint: disable=import-outside-toplevel
 
         mode = "asynchronously" if asynchronous else "synchronously"
         log.info("Importing %s (%s)", str(self), mode)
@@ -700,7 +700,7 @@ class Project(Component):
         :param search_params: Any search parameter
         :return: List of all findings, with finding key as key
         """
-        from sonar import findings, hotspots, issues
+        from sonar import findings, hotspots, issues  # pylint: disable=import-outside-toplevel
 
         log.info("Exporting findings for %s with params %s", str(self), search_params)
         findings_list: dict[str, Union[Issue, Hotspot]] = {}

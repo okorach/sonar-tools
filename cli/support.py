@@ -32,7 +32,7 @@ import sonar.logging as log
 import sonar.util.common_helper as chelp
 from cli import options
 from sonar import errcodes, sif
-from sonar.audit import audit_config, problem
+from sonar.audit import audit_config, problem  # pylint: disable=no-name-in-module
 from sonar.audit.severities import Severity
 
 PRIVATE_COMMENT = [{"key": "sd.public.comment", "value": {"internal": "true"}}]
