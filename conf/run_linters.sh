@@ -97,5 +97,7 @@ if [[ "${localbuild}" = "true" ]]; then
         cat "${BUILD_DIR}"/trivy_results.json
         python3 "${CONF_DIR}"/trivy2sonar.py "${external_format}" < "${BUILD_DIR}"/trivy_results.json > "${TRIVY_REPORT}"
         [[ ! -s "${TRIVY_REPORT}" ]] && rm -f "${TRIVY_REPORT}"
+        echo "===> Generating SBOM in CycloneDX format"
+        trivy image -f cyclonedx -o "${BUILD_DIR}"/container.cdx.json olivierkorach/sonar-tools:latest
     fi
 fi

@@ -88,6 +88,14 @@ else
   echo "===> NO SARIF REPORT"
 fi
 
+if ls "${BUILD_DIR}"/*.cdx.json >/dev/null 2>&1; then
+  files=$(ls "${BUILD_DIR}"/*.cdx.json | tr '\n' ' ' | sed -E -e 's/ +$//' -e 's/ +/,/g')
+  echo "SBOM FILES = ${files}"
+  cmd="${cmd} -Dsonar.sca.sbomImportPaths=${files}"
+else
+  echo "===> NO SBOM"
+fi
+
 echo "=============================================================="
 echo "Running: ${cmd}" | sed "s/${SONAR_TOKEN}/<SONAR_TOKEN>/g"
 echo "=============================================================="
