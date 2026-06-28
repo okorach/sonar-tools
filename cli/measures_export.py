@@ -166,7 +166,6 @@ def __parse_args(desc: str) -> object:
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
-
 def __get_ts(ts: str, **kwargs) -> str:
     """Return datetime or date only depending on cmd line options"""
     if kwargs[options.DATES_WITHOUT_TIME]:

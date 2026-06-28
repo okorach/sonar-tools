@@ -202,7 +202,7 @@ class User(SqObject):
         if self._groups is not None and use_cache:
             return self._groups
         if not self.endpoint.is_sonarcloud() and self.endpoint.version() < c.USER_API_V2_INTRO_VERSION:
-            self._groups = list({*self.sq_json.get("groups", []), self.endpoint.default_user_group()})
+            self._groups = sorted({*self.sq_json.get("groups", []), self.endpoint.default_user_group()})
         else:
             max_ps = self.endpoint.api.max_page_size(self, Oper.LIST_GROUPS)
             # TODO: handle pagination

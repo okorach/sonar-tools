@@ -27,6 +27,7 @@ import math
 import re
 import json
 import datetime
+import contextlib
 import requests
 
 import Levenshtein
@@ -37,7 +38,6 @@ from sonar.util import types, constants as c
 import sonar.util.misc as util
 
 import cli.options as opt
-import contextlib
 
 
 SQ_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"

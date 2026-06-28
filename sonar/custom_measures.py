@@ -27,7 +27,6 @@ from sonar.platform import Platform
 from sonar.util.types import ApiPayload
 
 
-
 class CustomMeasure(SqObject):
     """Abstraction of the SonarQube customer measure concept"""
 

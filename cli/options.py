@@ -336,7 +336,6 @@ def set_common_args(desc: str) -> ArgumentParser:
     return add_optional_arg(parser, *args, help="Define location of logfile, logs are only sent to stderr if not set")
 
 
-
 def set_key_arg(parser: ArgumentParser) -> ArgumentParser:
     """Adds the cmd line parameter to select object keys"""
     args = [f"-{KEY_REGEXP_SHORT}", f"--{KEY_REGEXP}", "--keys", "--projectKey"]
