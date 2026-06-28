@@ -416,7 +416,7 @@ class Finding(SqObject):
         """:return: the set of users that commented the finding
         :rtype: set(str)
         """
-        return {v["user"] for v in self.comments() if "user" in v}
+        return {v["user"] for v in self.comments().values() if "user" in v}
 
     def strictly_identical_to(self, another_finding: Finding, ignore_component: bool = False) -> bool:
         """:meta private:"""
