@@ -105,7 +105,7 @@ def __dump_report(report: dict[str, Any], file: Optional[str]) -> None:
     txt = util.json_dump(report)
     if file is None:
         log.info("Dumping report to stdout")
-        print(txt)
+        print(txt)  # noqa: T201
     else:
         log.info("Dumping report to file '%s'", file)
         with open(file, "w", encoding="utf-8") as fh:
@@ -136,9 +136,9 @@ def __get_objects_pairs_to_sync(source_env: Platform, target_env: Platform, **kw
             if tgt_proj:
                 sync_list += ((src_proj, tgt_proj),)
         return sync_list
-    elif len(source_projects) == 1 and len(target_projects) == 1:
-        src_obj = list(source_projects.values())[0]
-        tgt_obj = list(target_projects.values())[0]
+    if len(source_projects) == 1 and len(target_projects) == 1:
+        src_obj = next(iter(source_projects.values()))
+        tgt_obj = next(iter(target_projects.values()))
         if source_branch := kwargs.get("sourceBranch", None):
             src_obj = branches.Branch.get_object(src_obj.endpoint, project=src_obj, branch_name=source_branch)
         if target_branch := kwargs.get("targetBranch", None):

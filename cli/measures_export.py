@@ -163,9 +163,7 @@ def __parse_args(desc: str) -> object:
     options.add_analyzed_after_arg(parser)
     options.add_dateformat_arg(parser)
     options.add_url_arg(parser)
-    args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
-
-    return args
+    return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
 def __get_ts(ts: str, **kwargs) -> str:
@@ -188,8 +186,8 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyLi
             hist_data = {}
             if "history" not in obj_data:
                 continue
-            for ts, key, val in obj_data["history"]:
-                ts = __get_ts(ts, **kwargs)
+            for raw_ts, key, val in obj_data["history"]:
+                ts = __get_ts(raw_ts, **kwargs)
                 if ts not in hist_data:
                     hist_data[ts] = {"date": ts} | {k: obj_data.get(k, "") for k in ("key", "name", "branch", "url")}
                 hist_data[ts] |= {key: val}
@@ -210,7 +208,7 @@ def __write_measures_history_csv_as_list(file: str, data: dict[str, str], **kwar
                 continue
             constant_data = [component_data["key"]] + [component_data[v] for k, v in mapping.items() if kwargs[k]]
             for ts, key, val in component_data["history"]:
-                csvwriter.writerow([__get_ts(ts, **kwargs)] + constant_data + [key, val])
+                csvwriter.writerow([__get_ts(ts, **kwargs), *constant_data, key, val])
 
 
 def __write_measures_history_csv(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:

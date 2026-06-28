@@ -21,7 +21,6 @@
 """Converts Ruff report format to Sonar external issues format"""
 
 import sys
-import json
 import re
 
 TOOLNAME = "ruff"
@@ -99,7 +98,6 @@ def main() -> None:
     external_issues = {"rules": list(rules_dict.values()), "issues": issue_list}
     if v1:
         external_issues.pop("rules")
-    print(json.dumps(external_issues, indent=3, separators=(",", ": ")))
 
 
 if __name__ == "__main__":

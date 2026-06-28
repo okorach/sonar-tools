@@ -149,10 +149,7 @@ class Group(SqObject):
         log.info("Updating %s with name = %s, description = %s", self, name, description)
         params = util.remove_nones({"currentName": self.name, "id": self.group_id, "name": name, "description": description})
         api, method, params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, **params)
-        if method == "PATCH":
-            ok = self.endpoint.patch(api, params=params).ok
-        else:
-            ok = self.endpoint.post(api, params=params).ok
+        ok = self.endpoint.patch(api, params=params).ok if method == "PATCH" else self.endpoint.post(api, params=params).ok
         if ok:
             if name:
                 self.name = name

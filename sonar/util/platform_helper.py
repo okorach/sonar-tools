@@ -70,7 +70,7 @@ def convert_global_settings_json(old_json: dict[str, Any], full: bool = False) -
 
         new_json[settings.LANGUAGES_SETTINGS] = util.dict_to_list(dict(sorted(new_json[settings.LANGUAGES_SETTINGS].items())), "language", "settings")
     if settings.DEVOPS_INTEGRATION in new_json:
-        for k, v in new_json[settings.DEVOPS_INTEGRATION].items():
+        for v in new_json[settings.DEVOPS_INTEGRATION].values():
             if v.get("type") == "bitbucketcloud":
                 v.pop("url", None)
         new_json[settings.DEVOPS_INTEGRATION] = util.dict_to_list(dict(sorted(new_json[settings.DEVOPS_INTEGRATION].items())), "key")

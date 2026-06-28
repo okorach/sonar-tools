@@ -22,10 +22,9 @@
 from __future__ import annotations
 from typing import Any, Optional, TYPE_CHECKING
 
+import contextlib
 import json
-from http import HTTPStatus
 import concurrent.futures
-import requests
 
 from sonar.api.manager import ApiOperation as Oper
 import sonar.logging as log
@@ -36,6 +35,8 @@ import sonar.util.misc as util
 import sonar.utilities as sutil
 
 if TYPE_CHECKING:
+    from http import HTTPStatus
+    import requests
     from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload
 
@@ -89,10 +90,8 @@ class SqObject(object):
         :param endpoint: Optional, clears only the cache fo rthis platfiorm if specified, clear all if not
         """
         log.info("Emptying cache of %s", str(cls))
-        try:
+        with contextlib.suppress(AttributeError):
             cls.CACHE.clear(endpoint)
-        except AttributeError:
-            pass
 
     @classmethod
     def exists(cls, endpoint: Platform, **kwargs: Any) -> bool:
@@ -277,10 +276,7 @@ class SqObject(object):
         log.info("Deleting %s", self)
         try:
             api, method, params, _ = self.endpoint.api.get_details(self, Oper.DELETE, **kwargs)
-            if method == "DELETE":
-                ok = self.endpoint.delete(api=api, params=params).ok
-            else:
-                ok = self.endpoint.post(api=api, params=params).ok
+            ok = self.endpoint.delete(api=api, params=params).ok if method == "DELETE" else self.endpoint.post(api=api, params=params).ok
             if ok:
                 log.info("Removing from %s cache", str(self.__class__.__name__))
                 self.__class__.CACHE.pop(self)

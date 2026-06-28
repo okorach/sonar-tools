@@ -183,8 +183,7 @@ class Setting(SqObject):
         log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
         api, _, params, _ = endpoint.api.get_details(Setting, Oper.CREATE, key=key, component=component, branc=branch)
         endpoint.post(api, params=params)
-        o = cls.get_object(endpoint, key, component, branch)
-        return o
+        return cls.get_object(endpoint, key, component, branch)
 
     def __reload_inheritance(self, data: ApiPayload) -> bool:
         """Verifies if a setting is inherited from the data returned by SQ"""
@@ -572,9 +571,8 @@ def set_visibility(endpoint: Platform, visibility: str, component: Optional[str]
     if component:
         log.debug("Setting setting '%s' of %s to value '%s'", COMPONENT_VISIBILITY, str(component), visibility)
         return endpoint.post("projects/update_visibility", params={"project": component, "visibility": visibility}).ok
-    else:
-        log.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
-        return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
+    log.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
+    return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
 
 
 def set_setting(endpoint: Platform, key: str, value: Any, component: Optional[str] = None, branch: Optional[str] = None) -> bool:
@@ -598,7 +596,7 @@ def decode(setting_key: str, setting_value: Any) -> Any:
     if setting_key == NEW_CODE_PERIOD:
         if isinstance(setting_value, int):
             return ("NUMBER_OF_DAYS", setting_value)
-        elif setting_value == "PREVIOUS_VERSION":
+        if setting_value == "PREVIOUS_VERSION":
             return (setting_value, "")
         return string_to_new_code(setting_value)
     if not isinstance(setting_value, str):
@@ -637,8 +635,5 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[str], br
         data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)["settings"]
         if len(data) == 0 and component is None:
             raise exceptions.ObjectNotFound(key, f"Setting '{key}' not found")
-        if not endpoint.is_sonarcloud() and len(data) > 0:
-            data = data[0]
-        else:
-            data = {"inherited": True}
+        data = data[0] if not endpoint.is_sonarcloud() and len(data) > 0 else {"inherited": True}
     return data | {"key": key, "component": component, "branch": branch}

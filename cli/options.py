@@ -333,9 +333,7 @@ def set_common_args(desc: str) -> ArgumentParser:
     parser = add_optional_arg(parser, *args, action="store_true", help="Prevents sonar-tools to occasionnally check from more recent version")
 
     args = [f"-{LOGFILE_SHORT}", f"--{LOGFILE}"]
-    parser = add_optional_arg(parser, *args, help="Define location of logfile, logs are only sent to stderr if not set")
-
-    return parser
+    return add_optional_arg(parser, *args, help="Define location of logfile, logs are only sent to stderr if not set")
 
 
 def set_key_arg(parser: ArgumentParser) -> ArgumentParser:
@@ -370,8 +368,7 @@ def set_target_sonar_args(parser: ArgumentParser) -> ArgumentParser:
 
     args = [f"-{ORG_TARGET_SHORT}", f"--{ORG_TARGET}"]
     help_str = "Organization when using sonar-findings-sync with SonarQube Cloud as target platform"
-    parser = add_optional_arg(parser, *args, help=help_str)
-    return parser
+    return add_optional_arg(parser, *args, help=help_str)
 
 
 def set_output_file_args(parser: ArgumentParser, help_str: Optional[str] = None, allowed_formats: tuple[str, ...] = ("csv",)) -> ArgumentParser:

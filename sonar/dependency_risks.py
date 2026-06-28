@@ -200,7 +200,7 @@ class DependencyRisk(SqObject):
 
     def __str__(self) -> str:
         """Returns a human-readable representation of the risk."""
-        return f"{self._compute_headline()} for {str(self.project_key)}{f' branch {self.branch}' if self.branch else ''}{f' PR {self.pull_request}' if self.pull_request else ''}"
+        return f"{self._compute_headline()} for {self.project_key!s}{f' branch {self.branch}' if self.branch else ''}{f' PR {self.pull_request}' if self.pull_request else ''}"
 
     def url(self) -> str:
         """Returns the permalink to the dependency risk in the SonarQube UI."""

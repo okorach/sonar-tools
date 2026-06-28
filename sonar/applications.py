@@ -401,10 +401,7 @@ class Application(aggr.Aggregation):
         list_mode = isinstance(branch_definition, list)
         for proj in branch_definition:
             o_proj = projects.Project.get_object(self.endpoint, proj)
-            if list_mode:
-                proj_br = o_proj.main_branch().name
-            else:
-                proj_br = branch_definition[proj]
+            proj_br = o_proj.main_branch().name if list_mode else branch_definition[proj]
             project_branches.append(
                 o_proj if proj_br == c.DEFAULT_BRANCH else branches.Branch.get_object(self.endpoint, project=o_proj, branch_name=proj_br)
             )
@@ -441,7 +438,7 @@ def export(endpoint: Platform, export_settings: ConfigSettings, **kwargs: Any) -
 
     app_list = {k: v for k, v in Application.search(endpoint).items() if not key_regexp or re.match(key_regexp, k)}
     apps_settings = []
-    for k, app in app_list.items():
+    for app in app_list.values():
         app_json = app.export(export_settings)
         if write_q:
             write_q.put(app_json)

@@ -48,7 +48,7 @@ def __write_rules_csv(file: str, rule_list: dict[str, rules.Rule], separator: st
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=separator, quotechar='"', quoting=csv.QUOTE_MINIMAL)
         print("# ", file=fd, end="")
-        if list(rule_list.values())[0].endpoint.is_mqr_mode():
+        if next(iter(rule_list.values())).endpoint.is_mqr_mode():
             csvwriter.writerow(rules.CSV_EXPORT_FIELDS)
         else:
             csvwriter.writerow(rules.LEGACY_CSV_EXPORT_FIELDS)

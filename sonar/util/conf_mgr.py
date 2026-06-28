@@ -85,7 +85,7 @@ def configure(config_file: str, package_location: str) -> None:
     config_file = f"{os.path.expanduser('~')}{os.sep}.{config_file}"
     if os.path.isfile(config_file):
         log.info("Config file '%s' already exists, sending configuration to stdout", config_file)
-        print(text)
+        print(text)  # noqa: T201
     else:
         log.info("Creating file '%s'", config_file)
         with open(config_file, "w", encoding="utf-8") as fh:

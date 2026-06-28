@@ -19,6 +19,7 @@
 #
 """Abstraction of the SonarQube System Info File (or Support Info File) concept"""
 
+import contextlib
 import datetime
 import re
 from typing import Optional
@@ -85,10 +86,8 @@ class Sif(object):
         ed = None
         for section in (_STATS, _SYSTEM, "License"):
             for subsection in ("edition", "Edition"):
-                try:
+                with contextlib.suppress(KeyError):
                     ed = self.json[section][subsection]
-                except KeyError:
-                    pass
         if "Application Nodes" in self.json:
             log.debug("DCE edition detected from the presence in SIF of the 'Application Nodes' key")
             ed = c.DCE

@@ -24,7 +24,6 @@ from __future__ import annotations
 from typing import Optional, Any, TYPE_CHECKING
 
 import json
-from datetime import datetime
 from copy import deepcopy
 import traceback
 import concurrent.futures
@@ -47,6 +46,7 @@ from sonar.audit.problem import Problem
 from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
+    from datetime import datetime
     from sonar.platform import Platform
     from sonar.util.types import ApiPayload, ObjectJsonRepr, KeyList, ConfigSettings
 
@@ -375,8 +375,7 @@ class QualityProfile(SqObject):
         rules_to_deactivate = list(set(current_rules) - set(ruleset_d.keys()))
         log.info("set_rules: Activating %d rules and deactivating %d rules", len(rules_to_activate), len(rules_to_deactivate))
         ok = self.activate_rules(rules_to_activate)
-        ok = ok and self.deactivate_rules(rules_to_deactivate)
-        return ok
+        return ok and self.deactivate_rules(rules_to_deactivate)
 
     def update(self, data: ObjectJsonRepr) -> QualityProfile:
         """Updates a QP with data coming from sonar-config"""
@@ -537,10 +536,7 @@ class QualityProfile(SqObject):
                     log.debug("Got QP %s data = %s", self.key, str(data))
                     self._projects += [p["key"] for p in data[ret]]
                     page += 1
-                    if self.endpoint.version() >= (10, 0, 0):
-                        more = sutil.nbr_pages(data) >= page
-                    else:
-                        more = data["more"]
+                    more = sutil.nbr_pages(data) >= page if self.endpoint.version() >= (10, 0, 0) else data["more"]
 
                 log.debug("Projects for %s = '%s'", str(self), ", ".join(self._projects))
         return self._projects
@@ -861,8 +857,8 @@ def import_config(endpoint: Platform, config_data: ObjectJsonRepr, key_list: Key
     qps_data = util.list_to_dict(qps_data, "language", keep_in_values=True)
     with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="QPImport") as executor:
         futures, futures_map = [], {}
-        for lang, lang_data in qps_data.items():
-            lang_data = util.list_to_dict(lang_data["profiles"], "name", keep_in_values=True)
+        for lang, lang_qps in qps_data.items():
+            lang_data = util.list_to_dict(lang_qps["profiles"], "name", keep_in_values=True)
             if not languages.Language.exists(endpoint, language=lang):
                 log.warning("Language '%s' does not exist, quality profiles import skipped for this language", lang)
                 continue

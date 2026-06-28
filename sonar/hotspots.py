@@ -23,7 +23,6 @@ from __future__ import annotations
 from typing import Optional, Any, Union, TYPE_CHECKING
 
 import json
-from datetime import datetime
 from copy import deepcopy
 import requests.utils
 
@@ -39,6 +38,7 @@ import sonar.utilities as sutil
 from sonar.api.manager import ApiOperation as Oper
 
 if TYPE_CHECKING:
+    from datetime import datetime
     from sonar.platform import Platform
     from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
     from sonar.projects import Project

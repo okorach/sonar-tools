@@ -89,7 +89,7 @@ def __convert_qp_json(qp_json: dict[str, Any]) -> list[dict[str, Any]]:
             r.pop("params", None)
         for rtype in "addedRules", "modifiedRules", "rules":
             for r in v.get(rtype, {}):
-                r = __convert_rule_json(r)
+                r = __convert_rule_json(r)  # noqa: PLW2901
         if "removedRules" in v:
             v["removedRules"] = list(v["removedRules"])
         for rule in [r for r in v.get("rules", []) if "params" in r]:
