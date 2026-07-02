@@ -410,14 +410,14 @@ class Issue(findings.Finding):
         if "debt" in self.sq_json:
             kdays, days, hours, minutes = 0, 0, 0, 0
             debt = self.sq_json["debt"]
-            if m := re.search(r"(\d+)kd", debt):
-                kdays = int(m.group(1))
-            if m := re.search(r"(\d+)d", debt):
-                days = int(m.group(1))
-            if m := re.search(r"(\d+)h", debt):
-                hours = int(m.group(1))
-            if m := re.search(r"(\d+)min", debt):
-                minutes = int(m.group(1))
+            if m_kd := re.search(r"(\d+)kd", debt):
+                kdays = int(m_kd.group(1))
+            if m_d := re.search(r"(\d+)d", debt):
+                days = int(m_d.group(1))
+            if m_h := re.search(r"(\d+)h", debt):
+                hours = int(m_h.group(1))
+            if m_min := re.search(r"(\d+)min", debt):
+                minutes = int(m_min.group(1))
             self._debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
         elif "effort" in self.sq_json:
             self._debt = 0
