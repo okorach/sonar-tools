@@ -134,7 +134,10 @@ class Task(SqObject):
         """Searches for last background task of a component"""
         branch = search_params.pop("branch", None)
         search_params = search_params | {"onlyCurrents": branch is None, "component": component}
-        bg_tasks = Task.search(endpoint=endpoint, **search_params)
+        try:
+            bg_tasks = Task.search(endpoint=endpoint, **search_params)
+        except exceptions.ObjectNotFound:
+            return None
         if branch:
             bg_tasks = [t for t in bg_tasks if t.sq_json.get("branch", "") == branch]
         bg = next(iter(bg_tasks), None)

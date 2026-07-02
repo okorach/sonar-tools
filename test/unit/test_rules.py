@@ -188,11 +188,11 @@ def test_export_fields() -> None:
     rule_list = rules.export(endpoint=tutil.SQ, export_settings={})
     assert "standard" not in rule_list
     if not tutil.SQ.is_sonarcloud():
-        assert len(rule_list.get("extended", {})) > 0
-        for r in rule_list.get("extended", {}).values():
+        assert len(rule_list.get("extended", [])) > 0
+        for r in rule_list.get("extended", []):
             assert any(key in r for key in ("description", "tags", "params"))
-    assert len(rule_list.get("instantiated", {})) > 0
-    for r in rule_list.get("instantiated", {}).values():
+    assert len(rule_list.get("instantiated", [])) > 0
+    for r in rule_list.get("instantiated", []):
         assert all(key in r for key in ("language", "params", "severity", "impacts", "templateKey"))
 
 
