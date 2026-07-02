@@ -520,7 +520,7 @@ def test_apply_event_false_positive() -> None:
     from sonar.changelog import Changelog
 
     fp_event = Changelog(
-        {"creationDate": "2026-01-01T00:00:00+0000", "diffs": [{"key": "resolution", "newValue": "FALSE-POSITIVE"}]},
+        {"creationDate": "2026-01-01T00:00:00+0000", "diffs": [{"key": "issueStatus", "newValue": "FALSE_POSITIVE"}]},
         concerned_object=issue,
     )
 
