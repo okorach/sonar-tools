@@ -410,14 +410,14 @@ class Issue(findings.Finding):
         if "debt" in self.sq_json:
             kdays, days, hours, minutes = 0, 0, 0, 0
             debt = self.sq_json["debt"]
-            if m := re.search(r"(\d+)kd", debt):
-                kdays = int(m.group(1))
-            if m := re.search(r"(\d+)d", debt):
-                days = int(m.group(1))
-            if m := re.search(r"(\d+)h", debt):
-                hours = int(m.group(1))
-            if m := re.search(r"(\d+)min", debt):
-                minutes = int(m.group(1))
+            if m_kd := re.search(r"(\d+)kd", debt):
+                kdays = int(m_kd.group(1))
+            if m_d := re.search(r"(\d+)d", debt):
+                days = int(m_d.group(1))
+            if m_h := re.search(r"(\d+)h", debt):
+                hours = int(m_h.group(1))
+            if m_min := re.search(r"(\d+)min", debt):
+                minutes = int(m_min.group(1))
             self._debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
         elif "effort" in self.sq_json:
             self._debt = 0
@@ -959,7 +959,7 @@ def _get_facets(
     log.info("Facets for %s = %s", facet, facets_d)
     facets_d = {k: v for k, v in facets_d.items() if v >= min_count}
     if len(facets_d) == _MAX_FACETS:
-        if endpoint.edition() in (c.CE, c.DE, c.SC) and not raise_error:
+        if not raise_error:
             log.error("Too many facets (%d) for '%s' in issue search results, the search result may be incomplete", len(facets_d), facet)
         else:
             raise TooManyFacetsError(len(facets_d), facet=facet, **search_params)

@@ -39,8 +39,15 @@ OPTS = f"{CMD} {SC_OPTS} -{opt.EXPORT_SHORT}"
 MY_ORG_2 = "okorach-github"
 
 
+def _skip_if_no_sc_org() -> None:
+    """Skip test if SonarCloud organization is not configured"""
+    if creds.ORGANIZATION is None:
+        pytest.skip("No SonarCloud organization configured for this test platform")
+
+
 def test_sc_config_export(json_file: Generator[str]) -> None:
     """test_sc_config_export"""
+    _skip_if_no_sc_org()
     cmd = f"{OPTS} --{opt.REPORT_FILE} {json_file} -{opt.ORG_SHORT} {creds.ORGANIZATION}"
     assert tutil.run_cmd(config.main, cmd) == errcodes.OK
 
@@ -52,6 +59,7 @@ def test_sc_config_export_no_org() -> None:
 
 def test_org_search() -> None:
     """test_org_search"""
+    _skip_if_no_sc_org()
     org_list = organizations.Organization.search(tutil.SC)
     assert creds.ORGANIZATION in org_list
     assert MY_ORG_2 in org_list
@@ -68,12 +76,14 @@ def test_org_get_non_existing() -> None:
 
 def test_org_str() -> None:
     """test_org_str"""
+    _skip_if_no_sc_org()
     org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
     assert str(org) == f"organization key '{creds.ORGANIZATION}'"
 
 
 def test_org_export() -> None:
     """test_org_export"""
+    _skip_if_no_sc_org()
     org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
     exp = org.export()
     assert "newCodePeriod" in exp
@@ -81,6 +91,7 @@ def test_org_export() -> None:
 
 def test_org_attr() -> None:
     """test_org_attr"""
+    _skip_if_no_sc_org()
     org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
     assert org.key == creds.ORGANIZATION
     assert org.name is not None and len(org.name) > 0
@@ -104,11 +115,13 @@ def test_org_search_sqs() -> None:
 
 def test_audit() -> None:
     """test_audit"""
+    _skip_if_no_sc_org()
     tutil.SC.audit({})
 
 
 def test_org_resolve_id() -> None:
     """Test that _resolve_id returns a non-empty string and caches the result"""
+    _skip_if_no_sc_org()
     org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
     # Remove any cached id so we force a real API call on first invocation
     org.sq_json.pop("id", None)
@@ -123,6 +136,7 @@ def test_org_resolve_id() -> None:
 
 def test_org_resolve_id_non_existing() -> None:
     """Test that _resolve_id raises ObjectNotFound for an unknown org key"""
+    _skip_if_no_sc_org()
     org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
     org.sq_json.pop("id", None)
     original_key = org.key
@@ -136,6 +150,7 @@ def test_org_resolve_id_non_existing() -> None:
 
 def test_org_set_new_code_period_previous_version() -> None:
     """Test setting org new code period to PREVIOUS_VERSION"""
+    _skip_if_no_sc_org()
     org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
     assert org.set_new_code_period("PREVIOUS_VERSION", None) is True
     # Verify it round-trips: the new_code_period() accessor should reflect it
@@ -145,6 +160,7 @@ def test_org_set_new_code_period_previous_version() -> None:
 
 def test_org_set_new_code_period_days() -> None:
     """Test setting org new code period to NUMBER_OF_DAYS (and DAYS alias)"""
+    _skip_if_no_sc_org()
     org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
     assert org.set_new_code_period("NUMBER_OF_DAYS", 30) is True
     assert org.set_new_code_period("DAYS", 14) is True
@@ -154,6 +170,7 @@ def test_org_set_new_code_period_days() -> None:
 
 def test_org_set_new_code_period_unsupported_type() -> None:
     """Test that an unsupported nc_type raises UnsupportedOperation"""
+    _skip_if_no_sc_org()
     org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
     with pytest.raises(exceptions.UnsupportedOperation):
         org.set_new_code_period("REFERENCE_BRANCH", "main")
@@ -161,6 +178,7 @@ def test_org_set_new_code_period_unsupported_type() -> None:
 
 def test_org_export_keys() -> None:
     """Test that export() returns the expected top-level keys"""
+    _skip_if_no_sc_org()
     org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
     exp = org.export()
     assert exp.get("key") == creds.ORGANIZATION
@@ -174,6 +192,7 @@ def test_org_export_keys() -> None:
 
 def test_org_export_days_new_code_period() -> None:
     """Test that export() renders newCodePeriod correctly when type is NUMBER_OF_DAYS"""
+    _skip_if_no_sc_org()
     org = organizations.Organization.get_object(endpoint=tutil.SC, key=creds.ORGANIZATION)
     org.set_new_code_period("NUMBER_OF_DAYS", 30)
     # Force sq_json to reflect the updated period so export() picks it up

@@ -409,11 +409,9 @@ class Setting(SqObject):
 
         if re.match(r"^.*(\.reports?Paths?$|unit\..*$|cov.*$)", self.key):
             return (TEST_SETTINGS, None)
-        m = re.match(r"^sonar\.(auth\.|authenticator\.downcase).*$", self.key)
-        if m:
+        if re.match(r"^sonar\.(auth\.|authenticator\.downcase).*$", self.key):
             return (AUTH_SETTINGS, None)
-        m = re.match(r"^sonar\.forceAuthentication$", self.key)
-        if m:
+        if re.match(r"^sonar\.forceAuthentication$", self.key):
             return (AUTH_SETTINGS, None)
         if re.match(r"^sonar\.dependencyCheck\..*$", self.key):
             return ("thirdParty", None)
@@ -516,7 +514,7 @@ def new_code_to_string(data: Union[int, str, dict[str, str]]) -> Union[int, str,
 
 def string_to_new_code(value: str) -> list[str]:
     """Converts a new code period from str to list"""
-    return re.split(r"\s*=\s*", value)
+    return re.split(r"\s*=\s*", value, maxsplit=1)
 
 
 def get_special_settings(endpoint: Platform, setting_key: str, component: Optional[str] = None, branch: Optional[str] = None) -> dict[str, Setting]:
@@ -564,6 +562,10 @@ def set_new_code_period(
             Setting, Oper.SET_NEW_CODE_PERIOD, type=nc_type, value=nc_value, project=project_key, branch=branch
         )
         ok = endpoint.post(api, params=params).ok
+    if ok:
+        cached = Setting.CACHE.get(endpoint.local_url, NEW_CODE_PERIOD, project_key, branch)
+        if cached:
+            cached.refresh()
     return ok
 
 

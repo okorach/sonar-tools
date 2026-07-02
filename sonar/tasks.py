@@ -134,7 +134,10 @@ class Task(SqObject):
         """Searches for last background task of a component"""
         branch = search_params.pop("branch", None)
         search_params = search_params | {"onlyCurrents": branch is None, "component": component}
-        bg_tasks = Task.search(endpoint=endpoint, **search_params)
+        try:
+            bg_tasks = Task.search(endpoint=endpoint, **search_params)
+        except exceptions.ObjectNotFound:
+            return None
         if branch:
             bg_tasks = [t for t in bg_tasks if t.sq_json.get("branch", "") == branch]
         bg = next(iter(bg_tasks), None)
@@ -295,7 +298,7 @@ class Task(SqObject):
             short_err = ZIP_DOESNT_MATCH
         elif "Can not unzip file" in errmsg:
             short_err = CANT_UNZIP
-        elif re.match(r"Project dump was generated with .* but .* is required", errmsg):
+        elif re.search(r"Project dump was generated with .* but .* is required", errmsg):
             short_err = INCOMPATIBLE_SQ
         elif "Project dump can't be imported as installed plugins in the target SonarQube instance are not compatible with the dump" in errmsg:
             short_err = INCOMPATIBLE_PLUGINS
