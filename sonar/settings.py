@@ -564,6 +564,10 @@ def set_new_code_period(
             Setting, Oper.SET_NEW_CODE_PERIOD, type=nc_type, value=nc_value, project=project_key, branch=branch
         )
         ok = endpoint.post(api, params=params).ok
+    if ok:
+        cached = Setting.CACHE.get(endpoint.local_url, NEW_CODE_PERIOD, project_key, branch)
+        if cached:
+            cached.refresh()
     return ok
 
 

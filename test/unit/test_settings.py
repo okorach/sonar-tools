@@ -120,6 +120,7 @@ def test_visi_cache() -> None:
 
 def test_set_visibility() -> None:
     """test_set_visibility"""
+    settings.set_visibility(tutil.SQ, "private", component=tutil.PROJECT_1)
     o = settings.Setting.get_visibility(tutil.SQ, component=tutil.PROJECT_1)
     assert o.value == "private"
     settings.set_visibility(tutil.SQ, "public", component=tutil.PROJECT_1)

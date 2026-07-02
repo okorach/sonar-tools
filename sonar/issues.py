@@ -959,7 +959,7 @@ def _get_facets(
     log.info("Facets for %s = %s", facet, facets_d)
     facets_d = {k: v for k, v in facets_d.items() if v >= min_count}
     if len(facets_d) == _MAX_FACETS:
-        if endpoint.edition() in (c.CE, c.DE, c.SC) and not raise_error:
+        if not raise_error:
             log.error("Too many facets (%d) for '%s' in issue search results, the search result may be incomplete", len(facets_d), facet)
         else:
             raise TooManyFacetsError(len(facets_d), facet=facet, **search_params)

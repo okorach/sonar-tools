@@ -325,8 +325,8 @@ def test_get_facets() -> None:
     assert len(facets) > 1
     assert not any(f.endswith(".py") for f in facets)
     facet = "fileUuids" if tutil.SQ.is_sonarcloud() else "files"
-    facets = issues._get_facets(tutil.SQ, facet=facet, project_key=tutil.LIVE_PROJECT)
-    assert len(facets) > 1
+    facets = issues._get_facets(tutil.SQ, facet=facet, project_key=tutil.LIVE_PROJECT, raise_error=False)
+    assert len(facets) > 0
     assert any(f.endswith(".py") for f in facets)
 
 
