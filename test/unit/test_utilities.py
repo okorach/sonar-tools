@@ -241,3 +241,25 @@ def test_list_to_csv() -> None:
     assert util.list_to_csv(None) is None
     assert util.list_to_csv(["  a ", " b ", " c  "]) == "a,b,c"
     assert util.list_to_csv("  a , b , c  ") == "a,b,c"
+
+
+def test_levenshtein_distance() -> None:
+    """test_levenshtein_distance"""
+    assert sutil.levenshtein_distance("", "") == 0
+    assert sutil.levenshtein_distance("abc", "abc") == 0
+    assert sutil.levenshtein_distance("", "abc") == 3
+    assert sutil.levenshtein_distance("abc", "") == 3
+    assert sutil.levenshtein_distance("abc", "ab") == 1
+    assert sutil.levenshtein_distance("ab", "abc") == 1
+    assert sutil.levenshtein_distance("abc", "axc") == 1
+    assert sutil.levenshtein_distance("kitten", "sitting") == 3
+    assert sutil.levenshtein_distance("sunday", "saturday") == 3
+    assert sutil.levenshtein_distance("abcdef", "xyz") == 6
+
+
+def test_levenshtein_distance_score_cutoff() -> None:
+    """score_cutoff returns cutoff+1 when actual distance would exceed it"""
+    assert sutil.levenshtein_distance("kitten", "sitting", score_cutoff=5) == 3
+    assert sutil.levenshtein_distance("kitten", "sitting", score_cutoff=2) == 3
+    assert sutil.levenshtein_distance("abcdef", "xyz", score_cutoff=4) == 5
+    assert sutil.levenshtein_distance("completely", "different", score_cutoff=3) == 4
