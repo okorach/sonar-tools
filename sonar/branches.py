@@ -269,9 +269,7 @@ class Branch(components.Component):
         :return: Whether the operation was successful
         """
         log.info("Setting %s new code to %s / %s", self, new_code_type, additional_data)
-        return settings.set_new_code_period(
-            endpoint=self.endpoint, nc_type=new_code_type, nc_value=additional_data, project_key=self.concerned_object.key, branch=self.name
-        )
+        return settings.set_new_code_period(endpoint=self.endpoint, nc_type=new_code_type, nc_value=additional_data, component=self)
 
     def export(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
         """Exports a branch configuration (is main, keep when inactive, optionally name, project)

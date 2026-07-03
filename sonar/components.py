@@ -195,13 +195,13 @@ class Component(SqObject):
     def visibility(self) -> str:
         """Returns a component visibility (public or private)"""
         if not self._visibility:
-            self._visibility = settings.Setting.get_visibility(self.endpoint, self.key).value
+            self._visibility = settings.Setting.get_visibility(self.endpoint, self).value
         return self._visibility
 
     def set_visibility(self, visibility: str) -> None:
         """Sets a component visibility (public or private)"""
         if visibility:
-            settings.set_visibility(self.endpoint, visibility=visibility, component=self.key)
+            settings.set_visibility(self.endpoint, visibility=visibility, component=self)
             self._visibility = visibility
 
     def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None, **search_params: Any) -> ApiPayload:

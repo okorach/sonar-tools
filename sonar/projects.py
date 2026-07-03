@@ -907,7 +907,7 @@ class Project(Component):
                 json_data["webhooks"] = hooks
             json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
-            settings_dict = settings.Setting.search(self.endpoint, include_not_set=False, component=self.key, keys=settings_list)
+            settings_dict = settings.Setting.search(self.endpoint, include_not_set=False, component=self, keys=settings_list)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
             contains_ai = False
             try:
@@ -946,7 +946,7 @@ class Project(Component):
         :rtype: str
         """
         if self._new_code is None:
-            new_code = settings.Setting.get_object(self.endpoint, settings.NEW_CODE_PERIOD, self.key)
+            new_code = settings.Setting.get_object(self.endpoint, settings.NEW_CODE_PERIOD, self)
             self._new_code = new_code.value if new_code else ""
             log.info("%s new code is %s", self, self._new_code)
         return self._new_code
@@ -1075,7 +1075,7 @@ class Project(Component):
             if key in ("branches", settings.NEW_CODE_PERIOD):
                 continue
             log.debug("Setting 2 %s settings with %s %s", str(self), key, value)
-            settings.set_setting(self.endpoint, key, value, component=self.key)
+            settings.set_setting(self.endpoint, key, value, component=self)
 
     def set_devops_binding(self, binding_data: ObjectJsonRepr) -> bool:
         """Sets project devops binding settings
@@ -1242,7 +1242,7 @@ class Project(Component):
             self.set_settings(settings_to_apply)
         if nc := config.get(settings.NEW_CODE_PERIOD):
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, nc)
-            settings.set_new_code_period(self.endpoint, nc_type, nc_val, project_key=self.key)
+            settings.set_new_code_period(self.endpoint, nc_type, nc_val, component=self)
         if "aiCodeAssurance" in config:
             log.warning("'aiCodeAssurance' project setting is deprecated, please use '%s' instead", _CONTAINS_AI_CODE)
         self.set_contains_ai_code(config.get(_CONTAINS_AI_CODE, config.get("aiCodeAssurance", False)))
