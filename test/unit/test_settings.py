@@ -26,33 +26,66 @@ from sonar import settings, exceptions
 
 def test_set_single_valued() -> None:
     """test_set_single_valued_setting"""
-    o = settings.Setting.get_object(tutil.SQ, "sonar.dbcleaner.daysBeforeDeletingClosedIssues")
-    assert o.value == 30
-    assert o.set(60)
-    assert o.value == 60
-    assert o.reset()
-    assert o.value == 30
+    if tutil.SQ.is_sonarcloud():
+        # On SonarCloud, test a project-level integer setting: CPD minimum token count
+        o = settings.Setting.get_object(tutil.SQ, "sonar.cpd.minimumTokens", tutil.LIVE_PROJECT)
+        assert o is not None
+        assert o.set(200)
+        assert o.value == 200
+        assert o.set(50)
+        assert o.value == 50
+        assert o.reset()
+        assert o.is_default_value()
+    else:
+        o = settings.Setting.get_object(tutil.SQ, "sonar.dbcleaner.daysBeforeDeletingClosedIssues")
+        assert o.value == 30
+        assert o.set(60)
+        assert o.value == 60
+        assert o.reset()
+        assert o.value == 30
 
 
 def test_set_boolean() -> None:
     """test_set_boolean_setting"""
-    o = settings.Setting.get_object(tutil.SQ, "sonar.cpd.cross_project")
-    assert o.value is False
-    assert o.set(True)
-    assert o.value is True
-    assert o.reset()
-    assert o.value is False
+    if tutil.SQ.is_sonarcloud():
+        # On SonarCloud, test a project-level boolean setting: SCM disabled
+        o = settings.Setting.get_object(tutil.SQ, "sonar.scm.disabled", tutil.LIVE_PROJECT)
+        assert o is not None
+        assert o.value is False
+        assert o.set(True)
+        assert o.value is True
+        assert o.reset()
+        assert o.value is False
+    else:
+        o = settings.Setting.get_object(tutil.SQ, "sonar.cpd.cross_project")
+        assert o.value is False
+        assert o.set(True)
+        assert o.value is True
+        assert o.reset()
+        assert o.value is False
 
 
 def test_multi_valued() -> None:
     """test_multi_valued"""
-    o = settings.Setting.get_object(tutil.SQ, "sonar.java.file.suffixes", tutil.PROJECT_1)
-    assert o.set([".jav", ".java", ".javacard"])
-    assert sorted(o.value) == sorted([".jav", ".java", ".javacard"])
-    assert o.set([".jav", ".java", ".javacard", ".jah"])
-    assert sorted(o.value) == sorted([".jav", ".java", ".javacard", ".jah"])
-    assert o.reset()
-    assert sorted(o.value) == sorted([".jav", ".java"])
+    if tutil.SQ.is_sonarcloud():
+        # On SonarCloud, use project-level exclusions on the live project (Python repo)
+        o = settings.Setting.get_object(tutil.SQ, "sonar.exclusions", tutil.LIVE_PROJECT)
+        assert o is not None
+        orig = list(o.value) if o.value else []
+        assert o.set(["**/*.foo", "**/*.bar"])
+        assert sorted(o.value) == sorted(["**/*.foo", "**/*.bar"])
+        assert o.set(["**/*.foo", "**/*.bar", "**/*.baz"])
+        assert sorted(o.value) == sorted(["**/*.foo", "**/*.bar", "**/*.baz"])
+        assert o.reset()
+        assert sorted(o.value) == sorted(orig)
+    else:
+        o = settings.Setting.get_object(tutil.SQ, "sonar.java.file.suffixes", tutil.PROJECT_1)
+        assert o.set([".jav", ".java", ".javacard"])
+        assert sorted(o.value) == sorted([".jav", ".java", ".javacard"])
+        assert o.set([".jav", ".java", ".javacard", ".jah"])
+        assert sorted(o.value) == sorted([".jav", ".java", ".javacard", ".jah"])
+        assert o.reset()
+        assert sorted(o.value) == sorted([".jav", ".java"])
 
 
 def test_autodetect_ai() -> None:
@@ -77,6 +110,8 @@ def test_autodetect_ai() -> None:
 
 def test_mqr_mode() -> None:
     """test_mqr_mode"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("MQR mode is a SonarQube Server-only concept")
     o = settings.Setting.get_object(tutil.SQ, "sonar.multi-quality-mode.enabled")
     if tutil.SQ.version() < (25, 0, 0):
         assert o is None
@@ -91,6 +126,8 @@ def test_mqr_mode() -> None:
 
 def test_unsettable() -> None:
     """test_unsettable"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("sonar.core.startTime and sonar.auth.github.apiUrl are SonarQube Server-only settings")
     o = settings.Setting.get_object(tutil.SQ, "sonar.core.startTime")
     assert o is not None
     assert not o.set("2025-01-01")
@@ -102,17 +139,29 @@ def test_unsettable() -> None:
 
 def test_is_default_value() -> None:
     """test_is_default_value"""
-    o = settings.Setting.get_object(tutil.SQ, "sonar.python.file.suffixes")
-    assert o is not None
-    assert o.is_default_value()
-    assert o.set([".py", ".pyw", ".pyx", ".pyz"])
-    assert not o.is_default_value()
-    assert o.reset()
-    assert o.is_default_value()
+    if tutil.SQ.is_sonarcloud():
+        # On SonarCloud, test project-level exclusions: default is empty
+        o = settings.Setting.get_object(tutil.SQ, "sonar.exclusions", tutil.LIVE_PROJECT)
+        assert o is not None
+        assert o.is_default_value()
+        assert o.set(["**/*.generated.py"])
+        assert not o.is_default_value()
+        assert o.reset()
+        assert o.is_default_value()
+    else:
+        o = settings.Setting.get_object(tutil.SQ, "sonar.python.file.suffixes")
+        assert o is not None
+        assert o.is_default_value()
+        assert o.set([".py", ".pyw", ".pyx", ".pyz"])
+        assert not o.is_default_value()
+        assert o.reset()
+        assert o.is_default_value()
 
 
 def test_visi_cache() -> None:
     """test_visi_cache"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("Project default visibility does not exist on SonarQube Cloud")
     o = settings.Setting.get_visibility(tutil.SQ)
     assert o is not None
     assert settings.Setting.get_visibility(tutil.SQ) is o
@@ -120,6 +169,8 @@ def test_visi_cache() -> None:
 
 def test_set_visibility() -> None:
     """test_set_visibility"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("Project visibility cannot be changed via settings API on SonarQube Cloud")
     settings.set_visibility(tutil.SQ, "private", component=tutil.PROJECT_1)
     o = settings.Setting.get_visibility(tutil.SQ, component=tutil.PROJECT_1)
     assert o.value == "private"
@@ -133,24 +184,37 @@ def test_set_visibility() -> None:
 
 def test_set_new_code_period() -> None:
     """test_set_new_code_period"""
-    assert settings.set_new_code_period(tutil.SQ, "NUMBER_OF_DAYS", 42, project_key=tutil.PROJECT_1)
-    o = settings.get_new_code_period(tutil.SQ, component=tutil.PROJECT_1)
-    assert o.value == "NUMBER_OF_DAYS = 42"
-    # Legacy alias DAYS must be normalized to NUMBER_OF_DAYS at the API boundary.
-    assert settings.set_new_code_period(tutil.SQ, "DAYS", 30, project_key=tutil.PROJECT_1)
-    o = settings.get_new_code_period(tutil.SQ, component=tutil.PROJECT_1)
-    assert o.value == "NUMBER_OF_DAYS = 30"
-    assert settings.set_new_code_period(tutil.SQ, "SPECIFIC_ANALYSIS", "XXX", project_key=tutil.PROJECT_1)
-    assert o.value == "SPECIFIC_ANALYSIS = XXX"
-    assert o.reset()
-    assert o.value == "PREVIOUS_VERSION"
+    if tutil.SQ.is_sonarcloud():
+        # On SonarCloud, test org-level new code period (no project_key)
+        assert settings.set_new_code_period(tutil.SQ, "NUMBER_OF_DAYS", 42)
+        o = settings.get_new_code_period(tutil.SQ)
+        assert o.value == "NUMBER_OF_DAYS = 42"
+        # Legacy alias DAYS must be normalized to NUMBER_OF_DAYS at the API boundary.
+        assert settings.set_new_code_period(tutil.SQ, "DAYS", 30)
+        o = settings.get_new_code_period(tutil.SQ)
+        assert o.value == "NUMBER_OF_DAYS = 30"
+        # Restore to PREVIOUS_VERSION
+        assert settings.set_new_code_period(tutil.SQ, "PREVIOUS_VERSION", None)
+    else:
+        assert settings.set_new_code_period(tutil.SQ, "NUMBER_OF_DAYS", 42, project_key=tutil.PROJECT_1)
+        o = settings.get_new_code_period(tutil.SQ, component=tutil.PROJECT_1)
+        assert o.value == "NUMBER_OF_DAYS = 42"
+        # Legacy alias DAYS must be normalized to NUMBER_OF_DAYS at the API boundary.
+        assert settings.set_new_code_period(tutil.SQ, "DAYS", 30, project_key=tutil.PROJECT_1)
+        o = settings.get_new_code_period(tutil.SQ, component=tutil.PROJECT_1)
+        assert o.value == "NUMBER_OF_DAYS = 30"
+        assert settings.set_new_code_period(tutil.SQ, "SPECIFIC_ANALYSIS", "XXX", project_key=tutil.PROJECT_1)
+        assert o.value == "SPECIFIC_ANALYSIS = XXX"
+        assert o.reset()
+        assert o.value == "PREVIOUS_VERSION"
 
 
 def test_is_internal() -> None:
     """test_is_internal"""
     name = "sonar.filesize.limit" if tutil.SQ.is_sonarcloud() else "sonar.plugins.risk.consent"
     assert settings.Setting.get_object(tutil.SQ, name).is_internal()
-    assert not settings.Setting.get_object(tutil.SQ, "sonar.python.file.suffixes").is_internal()
+    if not tutil.SQ.is_sonarcloud():
+        assert not settings.Setting.get_object(tutil.SQ, "sonar.python.file.suffixes").is_internal()
 
 
 def test_set_non_existing() -> None:

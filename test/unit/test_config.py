@@ -123,6 +123,8 @@ def test_config_non_existing_project() -> None:
 
 def test_config_dont_inline_lists(json_file: Generator[str]) -> None:
     """test_config_dont_inline_lists"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("Global settings structure differs on SonarQube Cloud")
     assert tutil.run_cmd(config.main, f"{OPTS} --{opt.REPORT_FILE} {json_file} --{opt.WHAT} settings,projects,portfolios") == e.OK
     with open(file=json_file, encoding="utf-8") as fh:
         json_config = json.loads(fh.read())

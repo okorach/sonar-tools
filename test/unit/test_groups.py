@@ -35,6 +35,8 @@ import credentials
 GROUP1 = tutil.SQ.default_user_group()
 GROUP2 = credentials.ADMIN_GROUP
 
+pytestmark = pytest.mark.skipif(tutil.SQ.is_sonarcloud(), reason="Group management API not available on SonarQube Cloud")
+
 
 def test_get_object() -> None:
     """test_get_object"""
